@@ -112,6 +112,9 @@ mod el_par_sigue_atado {
     }
 }
 
+/// **El presupuesto de la clave**: 2^(8·ancho del índice) hojas, derivado y no tecleado.
+pub const PRESUPUESTO_DE_LA_CLAVE: u64 = 1 << (8 * zk_ssl_verify::ANCHO_INDICE);
+
 #[derive(Debug)]
 pub enum FirmaError {
     Guardian(GuardianError),
@@ -121,6 +124,10 @@ pub enum FirmaError {
     Verifica(VerificaError),
     /// El acta no se puede firmar o, firmada, no la acepta su juez (RFC-0015, §644).
     Acta(String),
+    /// ⚠️ §645 · La clave está en el techo: no queda hoja que firmar, y no se reserva ninguna.
+    Agotada {
+        hoja: u64,
+    },
 }
 
 impl std::fmt::Display for FirmaError {
@@ -130,6 +137,11 @@ impl std::fmt::Display for FirmaError {
             FirmaError::Xmss(e) => write!(f, "firmante: xmss rechazó: {e}"),
             FirmaError::Verifica(e) => write!(f, "firmante: {e}"),
             FirmaError::Acta(e) => write!(f, "firmante, acta de clave: {e}"),
+            FirmaError::Agotada { hoja } => write!(
+                f,
+                "firmante: la clave esta AGOTADA en la hoja {hoja} de {PRESUPUESTO_DE_LA_CLAVE}: \
+                 no se reserva ni se firma; toca rotar a la sucesora comprometida (RFC-0015)"
+            ),
         }
     }
 }
@@ -180,6 +192,8 @@ impl FirmanteCabeza {
 
     /// **Reserva el índice y luego firma. Ese orden es la pieza.**
     pub fn firmar(&mut self, epoch_digest: &[u8; 32]) -> Result<CabezaFirmada, FirmaError> {
+        // ── 0 · ⚠️ §645: en el techo NO se reserva ──
+        self.hoja_con_presupuesto()?;
         // ── 1 · persistir con fsync ANTES de firmar ──
         let indice = self.guardian.reservar()?;
         // ── 2 · y solo entonces gastar el índice de la clave ──
@@ -217,10 +231,11 @@ impl FirmanteCabeza {
         &mut self,
         acta: zk_ssl_verify::actas::Acta,
         previa: Option<&zk_ssl_verify::actas::Acta>,
+        firma_anterior: Option<Vec<u8>>,
     ) -> Result<(zk_ssl_verify::actas::ActaFirmada, u64), FirmaError> {
         use zk_ssl_verify::actas::{preambulo_acta, verificar_acta, ActaFirmada, ACTA_VERSION};
         use zk_ssl_wire::digest_to_wire;
-        let hoja = self.indice_de_la_clave()?;
+        let hoja = self.hoja_con_presupuesto()?;
         if acta.desde != hoja {
             return Err(FirmaError::Acta(format!(
                 "el acta dice desde {} y la clave esta en la hoja {hoja}",
@@ -237,10 +252,76 @@ impl FirmanteCabeza {
         let firmada = ActaFirmada {
             acta,
             firma: sig.as_ref().to_vec(),
-            firma_anterior: None,
+            firma_anterior,
         };
         verificar_acta(&firmada, previa).map_err(|e| FirmaError::Acta(e.to_string()))?;
         Ok((firmada, indice))
+    }
+
+    /// **La clave que se va firma el acta de su sucesora** (RFC-0015, decisión 5; §645), con
+    /// la hoja que el contador da -la siguiente a todo lo que firmó-, reservada ANTES de firmar
+    /// por el MISMO guardián. Después, la clave que entra salta a la hoja siguiente: el `desde`
+    /// del acta tiene que ser esa, y su hoja de abajo queda perdida, sin firmar nunca.
+    ///
+    /// ⚠️ Comprueba ANTES de reservar que la semilla es la de la clave del acta en vigor: una
+    /// semilla equivocada no gasta nada. Y que el estado de la vieja es fiable lo afirma el
+    /// operador al darla; la puerta del contador (§594) ya garantiza que la hoja no se usó.
+    pub fn firmar_con_la_anterior(
+        &mut self,
+        semilla: &[u8],
+        clave_anterior: &[u8],
+        acta: &zk_ssl_verify::actas::Acta,
+    ) -> Result<Vec<u8>, FirmaError> {
+        use zk_ssl_verify::actas::{preambulo_acta, ACTA_VERSION};
+        use zk_ssl_wire::digest_to_wire;
+        let mut vieja = KeyPair::<Conjunto>::from_seed(semilla)
+            .map_err(|e| FirmaError::Xmss(format!("{e}")))?;
+        if vieja.verifying_key().as_ref() != clave_anterior {
+            return Err(FirmaError::Acta(
+                "la semilla anterior no es la de la clave del acta en vigor".into(),
+            ));
+        }
+        let hoja = self.hoja_con_presupuesto()?;
+        if acta.desde != hoja + 1 {
+            return Err(FirmaError::Acta(format!(
+                "con la firma de la anterior en la hoja {hoja}, el acta tiene que decir desde {}",
+                hoja + 1
+            )));
+        }
+        let mut sk = vieja.signing_key().as_ref().to_vec();
+        poner_indice_en_sk(&mut sk, hoja)?;
+        aplicar_apano_del_oid(&mut sk).map_err(|e| FirmaError::Xmss(format!("{e:?}")))?;
+        *vieja.signing_key() = SigningKey::<Conjunto>::try_from(sk.as_slice())
+            .map_err(|e| FirmaError::Xmss(format!("{e}")))?;
+        sk.zeroize();
+        self.guardian.reservar()?;
+        let pre = preambulo_acta(ACTA_VERSION, &digest_to_wire(&acta.digest()).0);
+        let sig = vieja
+            .signing_key()
+            .sign(&pre)
+            .map_err(|e| FirmaError::Xmss(format!("{e}")))?;
+        self.resincronizar_a(hoja + 1)?;
+        Ok(sig.as_ref().to_vec())
+    }
+
+    /// ⚠️ §645 · **En el techo no se reserva.** La hoja en que la clave está, si queda
+    /// presupuesto; si no, `Agotada` SIN tocar el contador. Antes el guardián reservaba y el
+    /// `xmss` fallaba después, así que cada latido en el techo quemaba un índice más.
+    ///
+    /// ⚠️⚠️ **El techo lo dice el CONTADOR, no el SK. MEDIDO en el §645**: tras firmar con la
+    /// última hoja, el índice del SK sigue leyendo 2^40 − 1 -su campo de cinco bytes no
+    /// representa 2^40-, así que la clave en su última hoja y la clave agotada se leen igual. Y
+    /// una segunda firma no da `KeyExhausted`: da una firma que NO verifica, y solo la
+    /// autoverificación de `firmar` impide publicarla. El contador es un `u64` y sí llega a 2^40.
+    fn hoja_con_presupuesto(&mut self) -> Result<u64, FirmaError> {
+        let hoja = self.indice_de_la_clave()?;
+        let contador = self.guardian.actual();
+        if contador >= PRESUPUESTO_DE_LA_CLAVE || hoja >= PRESUPUESTO_DE_LA_CLAVE {
+            return Err(FirmaError::Agotada {
+                hoja: contador.max(hoja),
+            });
+        }
+        Ok(hoja)
     }
 
     /// El índice que la clave dice tener, leído de su SK.
@@ -388,5 +469,36 @@ mod tests {
                 "CRITICO: el contador no esta persistido tras firmar"
             );
         }
+    }
+
+    /// ⚠️ §645: **en el techo no se reserva.** Con el contador y la clave en la ultima hoja, la
+    /// ultima firma sale; la siguiente es `Agotada` y el contador NO se mueve. Antes, el guardian
+    /// reservaba y el `xmss` devolvia una firma que no verifica: cada latido en el techo quemaba
+    /// un indice mas. Y el SK no sirve de juez: tras la ultima hoja sigue leyendo 2^40 - 1.
+    #[test]
+    fn en_el_techo_no_se_reserva_ni_se_firma() {
+        let ruta = en_disco("techo");
+        let ultima = PRESUPUESTO_DE_LA_CLAVE - 1;
+        std::fs::write(&ruta, ultima.to_le_bytes()).expect("contador en la ultima hoja");
+        let mut f = FirmanteCabeza::desde_semilla(&semilla(), &ruta).expect("abrir");
+        f.resincronizar_a(ultima)
+            .expect("la clave en la ultima hoja");
+        let c = f.firmar(&[3u8; 32]).expect("la ultima hoja firma");
+        assert_eq!(indice_de_firma(&c.firma).expect("embebido"), ultima);
+        assert_eq!(f.indice_del_guardian(), PRESUPUESTO_DE_LA_CLAVE);
+        assert_eq!(
+            f.indice_de_la_clave().expect("sk"),
+            ultima,
+            "el SK no representa 2^40"
+        );
+        match f.firmar(&[4u8; 32]) {
+            Err(FirmaError::Agotada { hoja }) => assert_eq!(hoja, PRESUPUESTO_DE_LA_CLAVE),
+            otra => panic!("en el techo tiene que ser Agotada: {otra:?}"),
+        }
+        assert_eq!(
+            f.indice_del_guardian(),
+            PRESUPUESTO_DE_LA_CLAVE,
+            "y el contador no se mueve"
+        );
     }
 }

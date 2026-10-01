@@ -46294,3 +46294,86 @@ firma actas todavía, y ninguno cambia: sin `--siguiente`, el nodo es el de ayer
 
 **Lo que NO cierra.** La 84 sigue abierta, con la E2 y la E3a de su RFC construidas.
 
+
+## §645 — RFC-0015 E3b-1: la clave que se va firma el acta de su sucesora, y en el techo el firmante no reserva ni firma
+
+El commit que lleva este asiento, sobre `dfdbfb8` (el §644). Un solo sello: el firmante gana la
+firma de la clave que se va y la negativa en el techo; el nodo, la bandera `--clave-anterior-fichero`
+y su paso en el arranque; el RFC-0015, la entrada 84, la fila del canon y las cifras de tres
+documentos se ponen al día; y este asiento. 9 ficheros fuera de él, ninguno nuevo. Lo escribe, lo
+prueba y lo commitea la misma sesión de Claude Code que el §644, no el autor en su máquina, fuera
+del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En
+la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-node` en 190 de 190
+y `check_tests` en 1800.
+
+**Rehecho sobre el §675**, como el §643 y el §644: el código es el mismo, y las cifras son las de
+la base nueva.
+
+**De dónde sale.** El §644 cortó la E3 en dos y dejó en la E3b tres cosas: la firma de la clave
+que se va (decisión 5), `zkssl_keyActs` en el cable y el latido que quema el contador en el techo.
+Este sello toma la primera y la tercera, que son del firmante y no tocan el cable; el método es la
+E3b-2, un sello aparte, porque mueve el contrato publicado y sus cifras en cuatro documentos.
+
+**Lo que hace.**
+
+1. **La vieja firma solo si el operador la da.** `--clave-anterior-fichero` lleva la semilla de la
+   clave que se va, con la misma lectura que `--clave-fichero` (permisos incluidos). Darla es
+   afirmar que su estado es fiable, y el nodo no lo puede saber por su cuenta: sin ella, el acta
+   la declara quemada, como en el §644. Fuera de una rotación, el nodo no arranca con ella, y sin
+   `--clave`/`--clave-fichero` tampoco: ignorarla en silencio haría creer al operador que la vieja
+   firmó.
+2. **La cuenta es una.** `firmar_con_la_anterior` comprueba que la semilla es la de la clave del
+   acta en vigor ANTES de reservar, pone la vieja en la hoja que el contador del operador da,
+   reserva con `fsync`, firma el mismo preámbulo que firmará la nueva, y lleva la nueva a la hoja
+   siguiente, que es el `desde` del acta. Dos hojas por una rotación con las dos firmas; una por
+   la que declara quemada a la vieja. El juez del tercero, `verificar_acta`, ya exigía que la hoja
+   de la vieja cayera entre su `desde` y el de la nueva (§643): el nodo lo cumple por
+   construcción, y lo comprueba al firmar.
+3. **En el techo no se reserva.** Antes de este sello el guardián reservaba y el `xmss` fallaba
+   después, así que cada latido en el techo quemaba un índice más del contador. Ahora `firmar`,
+   `firmar_acta` y la firma de la vieja preguntan antes a `hoja_con_presupuesto`, que devuelve
+   `Agotada` sin tocar el contador. El latido en el techo falla con su error y no gasta nada.
+4. **Un productor del presupuesto.** `PRESUPUESTO_DE_LA_CLAVE` sale de `main.rs` y vive en el
+   firmante, que es quien se niega: el aviso de agotamiento del arranque lo importa de ahí.
+
+**Medido.** Una cosa que el RFC no sabía: **el techo lo dice el contador, no el SK.** Tras firmar
+con la última hoja, el índice del SK sigue leyendo 2^40 − 1, porque su campo de cinco bytes no
+representa 2^40: la clave en su última hoja y la clave agotada se leen igual. Y una segunda firma
+NO da el `KeyExhausted` del §112: da una firma que no verifica, que solo la autoverificación de
+`firmar` impedía publicar. El contador es un `u64` y sí llega a 2^40, así que la negativa lo lee a
+él. Lo fija un test nuevo con un contador en disco en la última hoja: la última firma sale con
+índice embebido 2^40 − 1, el SK sigue leyendo 2^40 − 1, la siguiente es `Agotada { hoja: 2^40 }`
+y el contador se queda en 2^40.
+
+Los 190 tests del nodo pasan en release. Dos son nuevos: ese, y la rotación con la anterior (la
+bandera fuera de una rotación no arranca; una semilla anterior que no es la del acta en vigor no
+gasta ninguna hoja; con la buena, la vieja en la hoja 1, la nueva desde la 2, el contador en 3 y
+la cadena aceptada por el juez del tercero). Y con el binario de release, de punta a punta sobre
+un contador y un diario en disco: la génesis de A en la hoja 0; una rotación a B con una semilla
+que no es la de A, que no arranca y deja el contador donde estaba; la rotación a B con las dos
+firmas —en esta corrida, la vieja en la hoja 4 y la nueva desde la 5: las hojas dependen de
+cuántos latidos caben antes de parar el nodo—; el rearranque de B con la bandera, que no
+arranca, y sin ella, que no firma acta nueva; y una segunda rotación, de B a C firmada por B, que
+deja en el diario una cadena de tres actas; y la bandera sin `--clave-fichero`, que no arranca con
+su mensaje. Los tres bancos que arrancan y rearrancan nodos con
+clave, `banco_reutilizacion.sh`, `banco_mentiroso_ausentes.sh` y `banco_apagado.sh`, salieron VERDES sobre
+él, con el árbol limpio: sin `--siguiente` ni `--clave-anterior-fichero`, el nodo es el de ayer.
+
+**Contadores.** `zk-ssl-node` pasa de 188 a 190 tests. TOTAL DE SELLO 1639 -> 1641 y TOTAL CON
+LARGOS 1776 -> 1778, en los tres párrafos ancla, con el desglose del nodo en 190. La cuenta de
+`check_tests` pasa de 1798 a 1800. El censo de `NUCLEO.md` no se mueve. El `BACKLOG.md` sigue en
+43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** El cable no sirve las actas (`zkssl_keyActs` es la E3b-2). El nodo no sabe si
+el estado de la clave que se va es fiable: lo afirma el operador al dar su semilla, y esa
+afirmación no se comprueba más allá de que la semilla sea la de la clave del acta en vigor. Un
+nodo en el techo sigue latiendo sin firmar —falla cada latido con `Agotada`—, no se para. Y
+**rotar no lo saca del techo**, cosa que el RFC decía al revés y que este sello precisa en su D-F
+sin reescribirla: con la cuenta del operador (D-A), la sucesora empieza por encima de todo lo que
+firmó la vieja, con el mismo campo de cinco bytes, así que a 2^40 la que se agota es la cuenta del
+operador y no la clave. A la cadencia del latido está a dos millones de años; si llegara a
+importar, lo que se revisa es la decisión 2, reversible, y eso es del autor. El testigo
+sigue deteniéndose ante un cambio de clave (E4) y los sobres del kit siguen exigiendo una sola
+clave (E5).
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2, la E3a y la E3b-1 de su RFC construidas.

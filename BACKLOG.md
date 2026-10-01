@@ -684,6 +684,11 @@ instrumentacion) al grupo E.*
   clave que nadie comprometió; el aviso de agotamiento exige
   reconocimiento. QUEDAN la E3b (la firma de la vieja y el cable), el
   testigo, los sobres y el medio: sigue abierta.
+  ✅ a medias (§645): la E3b-1, la clave que se va firma el acta de su
+  sucesora con `--clave-anterior-fichero`, y en el techo el firmante no
+  reserva ni firma: el latido deja de quemar un índice por latido.
+  QUEDAN el cable (`zkssl_keyActs`, E3b-2), el testigo, los sobres y el
+  medio: sigue abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con

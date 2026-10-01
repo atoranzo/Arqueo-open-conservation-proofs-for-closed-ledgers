@@ -180,6 +180,12 @@ struct Args {
     #[arg(long)]
     reconozco_agotamiento: bool,
 
+    /// **La semilla de la clave que se va**, en una rotación (RFC-0015, decisión 5; §645): con
+    /// ella la vieja firma también el acta de su sucesora. Darla es afirmar que su estado es
+    /// fiable; sin ella, el acta declara la vieja QUEMADA. Fuera de una rotación, no arranca.
+    #[arg(long)]
+    clave_anterior_fichero: Option<String>,
+
     /// **Imprime la huella de la clave de una semilla y sale**, sin contador, sin diario y sin
     /// escucha: es lo que se pasa a `--siguiente` desde la máquina donde vive la clave fría.
     #[arg(long)]
@@ -674,12 +680,20 @@ fn firmar_acta_si_toca(
     f: &mut firma_cabeza::FirmanteCabeza,
     ruta: &str,
     siguiente: Option<&str>,
+    anterior: Option<&[u8]>,
 ) -> anyhow::Result<()> {
     use zk_ssl_verify::actas::{huella_de_clave, Acta, Procedencia, ESQUEMA_XMSSMT_SHA2_40_8_256};
     let actas = crate::diario::actas(ruta);
     verificar_cadena_de_actas(&actas).map_err(|e| anyhow::anyhow!("{e}"))?;
     let siguiente = siguiente.map(leer_huella).transpose()?;
-    let (previa, siguiente) = match decidir_acta(&actas, &f.clave_publica(), siguiente) {
+    let decision = decidir_acta(&actas, &f.clave_publica(), siguiente);
+    if anterior.is_some() && !matches!(decision, DecisionDeActa::Rotacion { .. }) {
+        anyhow::bail!(
+            "--clave-anterior-fichero solo vale en una rotacion, y este arranque no lo es: \
+             la clave que se va solo firma el acta de su sucesora"
+        );
+    }
+    let (previa, siguiente) = match decision {
         DecisionDeActa::Ninguna => return Ok(()),
         DecisionDeActa::EnVigor => {
             tracing::info!(actas = actas.len(), "la clave es la del acta en vigor");
@@ -702,16 +716,27 @@ fn firmar_acta_si_toca(
             mmr_size: hojas.len() as u64,
         }
     });
+    // ⚠️ §645: con la firma de la vieja, la vieja toma la hoja que el contador da y la nueva
+    //    empieza en la siguiente; sin ella, la nueva empieza en esa misma.
+    let hoja = f.indice_de_la_clave().map_err(|e| anyhow::anyhow!("{e}"))?;
     let acta = Acta {
         clave: f.clave_publica(),
         esquema: ESQUEMA_XMSSMT_SHA2_40_8_256,
-        desde: f.indice_de_la_clave().map_err(|e| anyhow::anyhow!("{e}"))?,
+        desde: hoja + u64::from(anterior.is_some()),
         siguiente,
         procedencia,
     };
+    let firma_anterior = match (anterior, previa.as_ref()) {
+        (Some(semilla), Some(p)) => Some(
+            f.firmar_con_la_anterior(semilla, &p.clave, &acta)
+                .map_err(|e| anyhow::anyhow!("{e}"))?,
+        ),
+        _ => None,
+    };
+    let con_la_anterior = firma_anterior.is_some();
     let es_genesis = acta.procedencia.is_none();
     let (firmada, indice) = f
-        .firmar_acta(acta, previa.as_ref())
+        .firmar_acta(acta, previa.as_ref(), firma_anterior)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
     crate::diario::anotar_acta(ruta, &crate::diario::linea_de_acta(&firmada, indice))?;
     if es_genesis {
@@ -720,12 +745,18 @@ fn firmar_acta_si_toca(
             indice,
             "ACTA GENESIS firmada y anotada: esta clave compromete a su sucesora"
         );
+    } else if con_la_anterior {
+        tracing::warn!(
+            desde = firmada.acta.desde,
+            indice,
+            "ACTA DE ROTACION firmada por las dos claves y anotada: entra la sucesora comprometida"
+        );
     } else {
         tracing::warn!(
             desde = firmada.acta.desde,
             indice,
             "ACTA DE ROTACION firmada y anotada: entra la sucesora comprometida, y la anterior \
-             queda QUEMADA por declaracion (su firma del acta es la E3b)"
+             queda QUEMADA por declaracion: sin --clave-anterior-fichero, no firma"
         );
     }
     Ok(())
@@ -755,8 +786,8 @@ fn huella_de_semilla(semilla: &[u8]) -> anyhow::Result<String> {
     Ok(format!("0x{}", hex_de(&digest_to_wire(&huella).0)))
 }
 
-/// **El presupuesto de la clave**: 2^(8·ancho del indice), derivado y no tecleado.
-const PRESUPUESTO_DE_LA_CLAVE: u64 = 1 << (8 * zk_ssl_verify::ANCHO_INDICE);
+// ⚠️ §645: un productor del presupuesto, el del firmante, que es quien se niega en el techo.
+use firma_cabeza::PRESUPUESTO_DE_LA_CLAVE;
 
 /// **El aviso de agotamiento** (RFC-0015 D-F, el RFC 10033 §3.4): por debajo de un año de
 /// latidos a la cadencia configurada, el nodo lo dice. Con el latido apagado, solo en el
@@ -1326,8 +1357,8 @@ mod acta_de_arranque {
         let huella = |x: u8| huella_de_semilla(&semilla(x)).expect("huella");
 
         let mut a = FirmanteCabeza::desde_semilla(&semilla(1), &contador).expect("A");
-        firmar_acta_si_toca(&mut a, ruta, Some(&huella(2))).expect("genesis");
-        firmar_acta_si_toca(&mut a, ruta, Some(&huella(2))).expect("en vigor");
+        firmar_acta_si_toca(&mut a, ruta, Some(&huella(2)), None).expect("genesis");
+        firmar_acta_si_toca(&mut a, ruta, Some(&huella(2)), None).expect("en vigor");
         assert_eq!(
             crate::diario::actas(&diario).len(),
             1,
@@ -1343,7 +1374,7 @@ mod acta_de_arranque {
         {
             b.resincronizar_a(hasta).expect("resincronizar");
         }
-        firmar_acta_si_toca(&mut b, ruta, Some(&huella(3))).expect("rotacion");
+        firmar_acta_si_toca(&mut b, ruta, Some(&huella(3)), None).expect("rotacion");
         let actas = crate::diario::actas(&diario);
         assert_eq!(actas.len(), 2);
         assert_eq!(
@@ -1359,13 +1390,74 @@ mod acta_de_arranque {
         drop(b);
 
         let mut ladron = FirmanteCabeza::desde_semilla(&semilla(4), &contador).expect("D");
-        let e = firmar_acta_si_toca(&mut ladron, ruta, Some(&huella(5))).expect_err("robo");
+        let e = firmar_acta_si_toca(&mut ladron, ruta, Some(&huella(5)), None).expect_err("robo");
         assert!(e.to_string().contains("robo"), "{e}");
 
         // una cadena tocada no arranca: la siguiente de la genesis cambiada rompe la rotacion
         let mut rota = actas.clone();
         rota[0].acta.siguiente = huella_de_clave(b"otra");
         assert!(verificar_cadena_de_actas(&rota).is_err());
+    }
+
+    /// ⚠️ §645: **la rotacion con la anterior lleva las dos firmas.** La vieja toma la hoja que
+    /// el contador da y la nueva empieza en la siguiente; el juez del tercero acepta la cadena con
+    /// la firma de la vieja dentro. Una semilla anterior que no es la del acta en vigor no gasta
+    /// nada, y la bandera fuera de una rotacion no arranca.
+    #[test]
+    fn la_rotacion_con_la_anterior_lleva_las_dos_firmas() {
+        use crate::firma_cabeza::FirmanteCabeza;
+        let d = crate::tests_dir("acta_con_la_anterior");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let (contador, diario) = (d.join("indice.bin"), d.join("diario.jsonl"));
+        let ruta = diario.to_str().expect("utf8");
+        let semilla = |x: u8| [x; 96];
+        let huella = |x: u8| huella_de_semilla(&semilla(x)).expect("huella");
+
+        let mut a = FirmanteCabeza::desde_semilla(&semilla(1), &contador).expect("A");
+        let e = firmar_acta_si_toca(&mut a, ruta, Some(&huella(2)), Some(&semilla(9)))
+            .expect_err("fuera de una rotacion");
+        assert!(e.to_string().contains("solo vale en una rotacion"), "{e}");
+        firmar_acta_si_toca(&mut a, ruta, Some(&huella(2)), None).expect("genesis");
+        drop(a);
+
+        let abrir_b = || {
+            let mut b = FirmanteCabeza::desde_semilla(&semilla(2), &contador).expect("B");
+            let r = b.reconciliar().expect("reconciliar");
+            if let DecisionDeArranque::ArrancaResincronizando { hasta, .. } =
+                politica_de_reconciliacion(&r, crate::diario::maximo_indice(&diario))
+            {
+                b.resincronizar_a(hasta).expect("resincronizar");
+            }
+            b
+        };
+        let mut b = abrir_b();
+        let e = firmar_acta_si_toca(&mut b, ruta, Some(&huella(3)), Some(&semilla(9)))
+            .expect_err("otra semilla");
+        assert!(
+            e.to_string()
+                .contains("no es la de la clave del acta en vigor"),
+            "{e}"
+        );
+        assert_eq!(
+            b.indice_del_guardian(),
+            1,
+            "una semilla equivocada no gasta nada"
+        );
+        firmar_acta_si_toca(&mut b, ruta, Some(&huella(3)), Some(&semilla(1))).expect("rotacion");
+        let actas = crate::diario::actas(&diario);
+        assert_eq!(actas.len(), 2);
+        assert!(actas[1].firma_anterior.is_some(), "la vieja firma el acta");
+        assert_eq!(
+            actas[1].acta.desde, 2,
+            "la vieja en la hoja 1, la nueva desde la 2"
+        );
+        assert_eq!(verificar_cadena_de_actas(&actas), Ok(()));
+        assert_eq!(
+            b.indice_del_guardian(),
+            3,
+            "dos hojas reservadas: la de la vieja y la del acta"
+        );
     }
 
     #[test]
@@ -1458,6 +1550,12 @@ async fn main() -> anyhow::Result<()> {
     if args.siguiente.is_some() && semilla_hex.is_none() {
         anyhow::bail!("--siguiente sin --clave/--clave-fichero: no hay clave que firme el acta");
     }
+    // ⚠️ §645: ignorarla en silencio haria creer al operador que la vieja firmo.
+    if args.clave_anterior_fichero.is_some() && semilla_hex.is_none() {
+        anyhow::bail!(
+            "--clave-anterior-fichero sin --clave/--clave-fichero: no hay sucesora cuya acta firmar"
+        );
+    }
     if firma_sin_diario(semilla_hex.is_some(), args.diario.is_some()) {
         anyhow::bail!(
             "quien firma, anota: --clave/--clave-fichero exige --diario. \
@@ -1510,7 +1608,11 @@ async fn main() -> anyhow::Result<()> {
             //    esta en la hoja que el contador dice, y su primera firma, si toca, es su acta.
             //    Sin `--siguiente` y sin actas en el diario, nada cambia (opt-in, D-I).
             if let Some(ruta) = args.diario.as_deref() {
-                firmar_acta_si_toca(&mut f, ruta, args.siguiente.as_deref())?;
+                let anterior = match args.clave_anterior_fichero.as_deref() {
+                    Some(r) => Some(descodificar_semilla(&leer_semilla_de_fichero(r)?)?),
+                    None => None,
+                };
+                firmar_acta_si_toca(&mut f, ruta, args.siguiente.as_deref(), anterior.as_deref())?;
             }
             // ⚠️ §644 · el aviso de agotamiento (RFC-0015 D-F; RFC 10033 §3.4), con
             //    reconocimiento explicito: por debajo del umbral, sin la bandera, no se arranca.
