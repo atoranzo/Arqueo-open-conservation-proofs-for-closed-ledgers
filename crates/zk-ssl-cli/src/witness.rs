@@ -1441,6 +1441,35 @@ pub struct WitnessArgs {
     #[arg(long, value_name = "K", requires_all = ["testigos"])]
     k: Option<usize>,
 
+    /// **Juzga el umbral de un sobre `ancla-cofirmada`** (§635, RFC-0013 D-D).
+    ///
+    /// ⚠️ El kit verifica el sobre y REPORTA que testigos lo cofirman con
+    /// las vkeys que trae EL PROPIO SOBRE (§633): verificar no es valer.
+    /// Esto es la otra mitad, la del cliente: con `--testigos-medio`
+    /// cuenta los testigos que EL nombra, y por debajo de `--k-medio` no
+    /// acredita. Acredita el CHECKPOINT de la nota; la cabeza, su ancla y
+    /// el atado al medio son del kit, sobre el MISMO fichero.
+    #[arg(long, value_name = "SOBRE", requires_all = ["testigos_medio"],
+          conflicts_with_all = ["auditar", "comparar", "ausentes", "cofirmar", "verificar_cofirmas"])]
+    ancla_cofirmada: Option<PathBuf>,
+
+    /// **La politica del medio** (§635): las vkeys de los testigos del
+    /// medio en los que el cliente confia, una por linea, en el formato
+    /// `nombre+keyid+base64` de `signed-note`; se ignoran las lineas en
+    /// blanco y las que empiezan por almohadilla.
+    ///
+    /// ⚠️ Entra por FUERA, como la de `--testigos`: las vkeys del campo
+    /// `testigos` del sobre se ignoran.
+    #[arg(long, value_name = "VKEYS", requires_all = ["ancla_cofirmada"])]
+    testigos_medio: Option<PathBuf>,
+
+    /// **Cuantos testigos del medio NOMBRADOS hacen falta** (§635).
+    ///
+    /// ⚠️ Por defecto **1**, DECLARADO y no medido, como el `--k` del
+    /// S319. Y `0` se RECHAZA: acreditaria cualquier nota.
+    #[arg(long, value_name = "K", requires_all = ["testigos_medio"])]
+    k_medio: Option<usize>,
+
     /// **RECOLECTA del nodo las cofirmas que otros le enviaron** (§320) y
     /// las añade al fichero, en el formato que lee `--verificar-cofirmas`.
     ///
@@ -2114,6 +2143,34 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             return Ok(());
         }
         anyhow::bail!("{} hallazgo(s) en el diario", r.hallazgos.len());
+    }
+    // ── §635 · el juez del umbral del medio: lee, no observa ──
+    if let Some(p) = &a.ancla_cofirmada {
+        let sobre: Value = serde_json::from_str(
+            &std::fs::read_to_string(p).map_err(|e| anyhow::anyhow!("{}: {e}", p.display()))?,
+        )
+        .map_err(|e| anyhow::anyhow!("{}: JSON ilegible: {e}", p.display()))?;
+        let pt = a.testigos_medio.as_ref().expect("clap exige --testigos-medio");
+        let politica = crate::medio::leer_politica(&leer(pt)?)
+            .map_err(|e| anyhow::anyhow!("{}: {e}", pt.display()))?;
+        let k = a.k_medio.unwrap_or(1);
+        let j = crate::medio::juzgar(&sobre, &politica)
+            .map_err(|e| anyhow::anyhow!("{}: {e}", p.display()))?;
+        println!("{}: el checkpoint de {} anclas del medio {}", p.display(), j.tamano, j.origen);
+        println!("politica del medio: {} testigo(s) NOMBRADO(s) · k = {k}", politica.len());
+        for (n, h, m) in &j.cofirman {
+            println!("  cofirma {n} · clave sha256:{h} · marca {m}");
+        }
+        println!("  descartadas: {} que no verifican · {} de testigo NO nombrado · {} repetida(s)",
+                 j.no_verifican, j.no_nombradas, j.repetidas);
+        if j.acredita(k).map_err(|e| anyhow::anyhow!(e))? {
+            println!("ACREDITADO el checkpoint: {} testigo(s) nombrado(s), k = {k} -- la cabeza, \
+                      su ancla y el atado al medio son del kit, sobre este mismo fichero",
+                     j.cofirman.len());
+            return Ok(());
+        }
+        anyhow::bail!("el checkpoint tiene {} cofirma(s) de testigos NOMBRADOS y k = {k}: NO acredita",
+                      j.cofirman.len());
     }
     if let Some(p) = &a.verificar_cofirmas {
         let ls = leer(p)?;

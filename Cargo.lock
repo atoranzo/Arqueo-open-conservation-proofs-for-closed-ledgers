@@ -3600,6 +3600,7 @@ dependencies = [
  "zk-ssl",
  "zk-ssl-guardian",
  "zk-ssl-hash",
+ "zk-ssl-medio",
  "zk-ssl-sdk",
  "zk-ssl-verify",
  "zk-ssl-wire",

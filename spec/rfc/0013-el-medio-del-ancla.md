@@ -20,8 +20,8 @@
   (RFC-0012, el ancla y su sobre), §594 (el gate del diario en todo estado), §599 (la vista
   dividida servida por un nodo real: cada testigo solo no la ve), §603 (la integración), §631
   (la E2a: el árbol del medio, y la D-G decidida), §632 (la E2b: la nota, contrastada con
-  torchwood), §633 (la E4a: el sobre en el kit, y la D-D corregida) y §634 (la E4b: el catálogo y
-  el banco); y, en mtc-core, sus asientos
+  torchwood), §633 (la E4a: el sobre en el kit, y la D-D corregida), §634 (la E4b: el catálogo y
+  el banco) y §635 (el juez del umbral en el cli); y, en mtc-core, sus asientos
   §14 y §15 (la interoperabilidad medida contra la implementación de referencia del IETF, en las
   dos direcciones, y el checkpoint de esa herramienta reconstruido desde sus tejas).
 - **Backlog:** la 86 (elegir y medir el medio), que este RFC cierra en diseño y deja abierta en
@@ -154,6 +154,13 @@ argumento y el arnés de conformidad no cambia. Las otras dos opciones —`--tes
 kit, o las dos cosas— cambiaban el contrato publicado del kit y quedan descartadas por ahora.
 Juzgar el umbral de las cofirmas del medio en `zk-ssl-cli`, como el S319 juzga las XMSS, queda
 sin construir.
+
+**Construido en el §635: el juez del cliente.** `zk-ssl-cli witness --ancla-cofirmada SOBRE
+--testigos-medio VKEYS [--k-medio K]` lee la política del cliente —las vkeys de los testigos del
+medio en los que confía, por fuera del sobre, cuyas vkeys ignora—, vuelve a verificar la nota con
+su publicador y cuenta los testigos NOMBRADOS y distintos cuya cofirma verifica sobre su
+checkpoint; por debajo de `k` no acredita, y `k = 0` se rechaza. Acredita el CHECKPOINT: la
+cabeza, su ancla y el atado al medio son del kit, sobre el mismo fichero.
 
 ### D-E — Lo que un tercero comprueba, sin el nodo
 

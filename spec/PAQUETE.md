@@ -532,7 +532,9 @@ es un identificador y se fabrica—.
 ⚠️ **REPORTA, NO JUZGA** (§633), como el paquete v2 con sus cofirmas: qué testigos valen y
 cuántos hacen falta lo decide quien verifica con su política (RFC-0013 D-D), no el sobre, que
 puede armarlo el operador. Ni el umbral, ni la frescura de las marcas de tiempo, ni que el medio
-sea el único del operador los decide este mando.
+sea el único del operador los decide este mando. El umbral lo juzga, desde el §635,
+`zk-ssl-cli witness --ancla-cofirmada SOBRE --testigos-medio VKEYS [--k-medio K]`, con la política
+del cliente y sobre el mismo fichero.
 
 **El banco es `tools/banco_ancla_cofirmada.sh`** (§634), que lo reproduce en vivo contra un nodo
 real que firma —tres cabezas, sus anclas derivadas por el mando, y el medio del operador firmado

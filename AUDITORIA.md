@@ -44673,3 +44673,61 @@ sus documentos, y el kit nuevo saldrá en la próxima. No juzga el umbral.
 de las cofirmas del medio en `zk-ssl-cli`. Con el RFC-0013 entero salvo la E3, su paso a ACEPTADO es
 del autor.
 
+## §635 — el juez del umbral del medio: el cliente nombra a sus testigos, y por debajo de k no acredita
+
+El commit que lleva este asiento, sobre `6956ffc` (el §634). Un solo sello: nace
+`crates/zk-ssl-cli/src/medio.rs`, el juez; `zk-ssl-cli witness` gana tres banderas; el cli
+depende de `zk-ssl-medio` sin `firmar`; el RFC-0013, `spec/PAQUETE.md` y la entrada 86 lo
+recogen; la fila del canon y las cifras de tres documentos se ponen al día; y este asiento. 12
+ficheros fuera de él, uno que nace, con 297 inserciones y 11 borrados. Lo escribe, lo prueba y
+lo commitea la misma sesión de Claude Code que el §634, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión,
+sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-cli` en 131 de 131 y
+`check_tests` en 1733.
+
+**De dónde sale.** El §633 decidió, por el autor, que el kit reporte y no juzgue, y nombró la mitad
+que faltaba: el juez del umbral en el cli, como el S319 lo es para las cofirmas XMSS. Tras el
+§634, el autor no eligió entre lo pendiente —la E3, que habla con testigos públicos; este juez;
+el RFC a ACEPTADO—, y la sesión tomó el único que no necesita ni red ni una decisión suya.
+
+**Lo que hace.** `zk-ssl-cli witness --ancla-cofirmada SOBRE --testigos-medio VKEYS [--k-medio
+K]`.
+1. La política la pone el cliente por fuera: una vkey de `signed-note` por línea, con comentarios
+   y blancos permitidos. Una línea que no es vkey, o una vkey repetida, es un error con su número
+   de línea. Las vkeys que el SOBRE trae en `testigos` se ignoran: las pone quien lo arma.
+2. El juez vuelve a verificar la nota con su publicador, porque una cofirma solo vale sobre el
+   checkpoint que la nota dice.
+3. Cuenta los testigos NOMBRADOS y distintos cuya cofirma verifica. Las líneas que no verifican,
+   las de testigos no nombrados y las segundas de un testigo que ya cuenta se descartan y se
+   cuentan aparte.
+4. Por debajo de `k` no acredita, con salida 1, y `k = 0` se rechaza porque acreditaría cualquier
+   nota. El 1 por defecto está declarado, no medido, como el `--k` del S319.
+
+Acredita el CHECKPOINT. La cabeza, su ancla y el atado al medio son del kit, sobre el mismo
+fichero, y la línea del ACREDITADO lo dice.
+
+**Medido.** Los tres tests del juez usan sobres del catálogo del §634, firmados de verdad:
+1. Con las dos vkeys, `k = 2` acredita y `k = 3` no.
+2. Con una sola, cuenta uno y deja otro como no nombrado.
+3. Sin política, nada acredita aunque el sobre traiga sus vkeys.
+4. La cofirma tocada no cuenta, y la repetida cuenta una vez.
+5. La nota con la firma del publicador tocada no se juzga.
+
+Tres mutaciones, cada una restaurada después, caen cada una en su test: contar la cofirma que no
+verifica, contar dos veces al testigo repetido y aceptar `k = 0`. De punta a punta, con los
+binarios de este árbol y `cofirmada-dos-testigos.json`, el kit da VERDE y el juez ACREDITA con
+`k = 2`. Con `k = 3` y con `k = 0` el juez sale con 1 y su mensaje, y sin `--testigos-medio` clap
+lo exige.
+
+**Contadores.** `zk-ssl-cli` pasa de 128 a 131 tests. TOTAL DE SELLO 1571 -> 1574 y TOTAL CON
+LARGOS 1708 -> 1711, en los tres párrafos ancla, con el desglose del testigo en 131. La cuenta de
+`check_tests` pasa de 1730 a 1733. La puerta de clausura del cli no se mueve: el medio ya estaba
+en ella por el kit. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas: la 86 gana su avance y
+sigue abierta.
+
+**Lo que NO hace.** No juzga la frescura de las marcas de tiempo. No guarda la política en ningún
+sitio, ni la deriva de nada. No toca el kit ni su contrato.
+
+**Lo que NO cierra.** La E3, el publicador, que espera la decisión del autor sobre con qué testigo
+público medir. Con ella, el RFC-0013 estaría construido entero.
+

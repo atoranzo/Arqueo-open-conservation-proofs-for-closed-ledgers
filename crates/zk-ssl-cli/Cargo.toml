@@ -51,6 +51,10 @@ zk-ssl-verify = { path = "../zk-ssl-verify" }
 # ⚠️ **§411 (RFC-0005, E5).** Los KAT del nucleo: `nucleo_kat` recompone cada fn NUCLEO de
 #    `zk-ssl-hash` contra `spec/vectors/nucleo/`. Suma CERO nodos al grafo: `zk-ssl` ya lo trae.
 zk-ssl-hash = { path = "../zk-ssl-hash" }
+# ⚠️ **§635 (RFC-0013 D-D).** El juez del umbral del medio: verifica la nota y las cofirmas
+#    de los testigos que el cliente NOMBRA. SIN `firmar`, como el kit: el cli no firma notas.
+#    Suma CERO nodos al grafo: el kit ya lo trae desde el §633.
+zk-ssl-medio = { path = "../zk-ssl-medio", default-features = false }
 ureq = { version = "2.10", features = ["json"] }
 
 # ⚠️ **El CABLE** (§312). El testigo deja de leer la cabeza firmada a pelo

@@ -723,6 +723,10 @@ instrumentacion) al grupo E.*
   y su banco contra un nodo real. QUEDAN el publicador (E3), con el
   despliegue y su medida (qué testigos, cadencia, coste), y el juez del
   umbral en `zk-ssl-cli`: sigue abierta.
+  ✅ a medias (§635): el juez del umbral, `zk-ssl-cli witness
+  --ancla-cofirmada --testigos-medio --k-medio`, con la política del
+  cliente. QUEDA el publicador (E3), con el despliegue y su medida:
+  sigue abierta.
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro
   tiene dos eras (§281). **El esquema de firma no tiene ninguna de las

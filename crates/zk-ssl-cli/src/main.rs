@@ -20,6 +20,7 @@ mod cobro;
 mod commands;
 mod conformance;
 mod fmt;
+mod medio;
 #[cfg(test)]
 mod nucleo_kat;
 mod pago;
