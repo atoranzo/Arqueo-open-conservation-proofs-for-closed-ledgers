@@ -593,7 +593,8 @@ pub trait Prover {
         // ocultacion
         let semilla = ocultacion.semilla_filas;
         let mut moneda = DefaultRandomCoin::<Blake3_256<Self::BaseField>>::new(&[]);
-        moneda.reseed(Blake3_256::<Self::BaseField>::hash(&semilla.to_le_bytes()));
+        // §652 (CRIPTO-01): los 32 bytes de la semilla, no 8.
+        moneda.reseed(Blake3_256::<Self::BaseField>::hash(&semilla));
 
         // la traza principal: T filas aleatorias detras de las reales y una columna aleatoria
         let t = trace.info().length();
@@ -737,6 +738,9 @@ pub trait Prover {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Ocultacion {
     pub m: usize,
-    pub semilla_filas: u64,
-    pub semilla_cociente: u64,
+    /// §652 (CRIPTO-01): 32 bytes cada una. Con un `u64` las filas aleatorias de cada columna
+    /// salian de 2^64 semillas posibles, y una columna constante del testigo -la clave de gasto,
+    /// la de un custodio- se despejaba de una prueba con unas 2^74 compresiones (ESTIMADO).
+    pub semilla_filas: [u8; 32],
+    pub semilla_cociente: [u8; 32],
 }

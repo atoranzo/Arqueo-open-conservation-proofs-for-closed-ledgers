@@ -183,7 +183,7 @@ fn segmentar<E: FieldElement>(
     trace_len: usize,
     num_cols: usize,
     m: usize,
-    semilla: Option<u64>,
+    semilla: Option<[u8; 32]>,
 ) -> Vec<Vec<E>> {
     use crypto::{hashers::Blake3_256, DefaultRandomCoin, Hasher, RandomCoin};
 
@@ -206,7 +206,8 @@ fn segmentar<E: FieldElement>(
         s
     );
     let mut moneda = DefaultRandomCoin::<Blake3_256<E::BaseField>>::new(&[]);
-    moneda.reseed(Blake3_256::<E::BaseField>::hash(&semilla.to_le_bytes()));
+    // §652 (CRIPTO-01): la semilla entera, sus 32 bytes.
+    moneda.reseed(Blake3_256::<E::BaseField>::hash(&semilla));
     let mut r_ant: Vec<E> = (0..m).map(|_| E::ZERO).collect();
     let mut trozos = Vec::with_capacity(num_cols);
     for i in 0..num_cols {

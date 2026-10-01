@@ -153,11 +153,16 @@ fn con_sal<H: Hasher>(items: &[H::Digest], sales: &[H::Digest]) -> Vec<H::Digest
     items.iter().zip(sales).map(|(item, sal)| H::merge(&[item.clone(), sal.clone()])).collect()
 }
 
-/// E3b2-M3: una semilla fresca de 64 bits, de la misma entropia que la sal.
-pub fn semilla() -> u64 {
-    let mut bytes = [0u8; 8];
+/// E3b2-M3: una semilla fresca de 32 bytes, la misma entropia que la sal.
+///
+/// ⚠️ §652 (CRIPTO-01): hasta aqui este comentario decia «de 64 bits, de la misma entropia que la
+/// sal» y devolvia un `u64` de 8 bytes de OsRng, mientras la sal toma 32. La equivalencia era
+/// falsa, y nadie la contrasto: con 2^64 semillas posibles las filas aleatorias de la ocultacion se
+/// recuperaban por fuerza bruta y, con ellas, cualquier columna constante del testigo.
+pub fn semilla() -> [u8; 32] {
+    let mut bytes = [0u8; 32];
     OsRng.fill_bytes(&mut bytes);
-    u64::from_le_bytes(bytes)
+    bytes
 }
 
 /// Una sal fresca: 32 bytes de la entropia del sistema, pasados por `H`. Aqui, y solo aqui, este

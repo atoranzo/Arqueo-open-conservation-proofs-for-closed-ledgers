@@ -664,6 +664,13 @@ Los 23 probadores con fila devuelven `Some(crate::ocultacion_encendida())`: m = 
 dependencia normal de `stark-experiment` (ya estaba en su clausura por `winterfell`: el lock no se
 mueve, `f8c226859ec029af`), y `Ocultacion` no sale por el paraguas `winterfell`.
 
+> ⚠️ **Corregido en el §652 (CRIPTO-01).** «La misma entropía que la sal» era falso: `semilla()`
+> devolvía un `u64` de 8 bytes de `OsRng` y la sal toma 32. Con 2^64 semillas, las filas aleatorias
+> de una columna se recuperaban por fuerza bruta (unas 2^74 compresiones Blake3, ESTIMADO) y, con
+> ellas, cualquier columna constante del testigo: la clave de gasto o la de un custodio. Desde el
+> §652 las dos semillas de `Ocultacion` son `[u8; 32]` y `semilla()` toma 32 bytes; un falsador ata
+> el ancho. La frase de arriba se deja como estaba.
+
 Gana un solo constructor frente a uno por circuito: coherencia (el mismo patrón en los 23, y en la
 fila de D-B se lee de dónde sale cada uno). **Reversible** hacia un m por AIR si D-AG no bastara.
 

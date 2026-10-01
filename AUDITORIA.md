@@ -45311,3 +45311,48 @@ señaló. El `BACKLOG.md` no se mueve.
 **Lo que NO cierra.** El juez único (ARQ-01 del §637), que haría de las siete guardas una. La
 versión nueva del kit. Y que el verificador del fork elija el modo por el meta: la marca sigue
 mandando, pero ya sólo se acepta la de la casa.
+
+## §652 — las semillas de la ocultación, de 32 bytes: la clave ya no se despeja con 2^74 operaciones
+
+El commit que lleva este asiento, sobre el §651 de esta misma rama. Es el tercer corte del aviso
+privado de seguridad del §637 (CRIPTO-01, P0). Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre
+este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del nivel en sus pines, con 702 s de tests.
+
+**El defecto, leído.** Desde el §538 el probador oculto rellena las filas aleatorias de cada columna
+y los aleatorizadores del cociente con una moneda sembrada con `Blake3(semilla.to_le_bytes())`, y
+las dos semillas de `Ocultacion` eran `u64`: `zk_ssl_air::sal::semilla()` tomaba 8 bytes de `OsRng`.
+Su comentario decía «de la misma entropía que la sal», y la sal toma 32: la equivalencia, escrita
+también en la D-AE del RFC-0009, era falsa y nadie la contrastó. Con 2^64 semillas posibles, quien
+vea una prueba —el nodo las ve todas, y los paquetes de evidencia las publican— prueba candidatas: la
+moneda va por contador, así que para cada una le bastan los unos 2^10 sorteos de una sola columna, y
+dos aperturas de cualquier columna constante del testigo dan su valor y la comprobación. Unas
+2^64 × 2^10 ≈ 2^74 compresiones Blake3 (ESTIMADO, por el verificador del enjambre; el especialista
+decía 2^79 contando unos 37.000 sorteos secuenciales) frente a los 127 bits declarados, y con
+Grover unas 2^32 iteraciones. Lo que se despeja es la clave de gasto y, en la emisión, la quema y la
+congelación, la clave del custodio. No afecta a la conservación. No hay ataque ejecutado: lo
+confirmó la sesión del §637 por lectura (`crates/winter-prover/src/lib.rs`, `Ocultacion`, y
+`crates/zk-ssl-air/src/sal.rs`, `semilla`).
+
+**Lo que hace.** `Ocultacion.semilla_filas` y `semilla_cociente` pasan a `[u8; 32]`, como la semilla
+del dominio (`StarkDomain::con_semilla_del_cociente`) y la de `segmentar`; las dos monedas se
+siembran con Blake3 sobre los 32 bytes; `sal::semilla()` toma 32 bytes de `OsRng`, y su comentario
+y la D-AE del RFC-0009 llevan la corrección (el RFC con una nota que deja su frase como estaba). Las
+semillas no viajan en la prueba: no cambian el cable, ni la marca, ni un vector, ni el verificador.
+
+**Falsadores.** Dos semillas que sólo difieren en el byte 31 dan pruebas distintas, de filas y de
+cociente; **medido con la semilla truncada a 8 bytes en el probador, el test cae** («el byte 31 de la
+semilla de las filas no llega a la prueba»), y con el arreglo pasa. El test que ya había —dos
+semillas distintas dan bytes distintos— pasaba con 64 bits, y por eso no bastaba. Y la semilla de
+producción son 32 bytes frescos: dos seguidas no coinciden y los 24 altos no van vacíos.
+
+**Lo que NO cierra, y conviene decirlo fuera.** Las pruebas ocultas emitidas desde el §538 hasta este
+corte siguen protegidas sólo a unas 2^74 operaciones: el ataque es fuera de línea, y una prueba
+emitida no se puede volver a ocultar. La exposición conocida son despliegues de desarrollo y de
+prueba, con claves ya públicas (el nodo sin la feature `dev` no arranca, §637 ARQ-02); quien haya
+publicado pruebas con claves propias debe rotarlas. Lo dice también `SECURITY.md` cuando el autor
+decida divulgarlo.
+
+**Contadores.** `stark-experiment` 404 -> 406. TOTAL DE SELLO 1595 -> 1597; TOTAL CON LARGOS 1732 ->
+1734, en los tres párrafos ancla, y la cifra de los circuitos en `PAPER.md`, `PAPER_EN.md`,
+`doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`. El `BACKLOG.md` no se mueve.

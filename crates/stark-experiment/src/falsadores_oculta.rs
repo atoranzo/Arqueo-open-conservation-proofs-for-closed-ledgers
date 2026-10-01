@@ -46,11 +46,23 @@ use winterfell::{
 
 use crate::{build_trace, WorkAir, WorkProver};
 
-/// La ocultacion de los falsadores: m 64 (D-G) y las semillas del spike (F1 y Q1).
+/// §652: una semilla de 32 bytes reproducible: `n` en los ocho primeros y el resto fijo.
+const fn s32(n: u64) -> [u8; 32] {
+    let b = n.to_le_bytes();
+    let mut s = [0x5a; 32];
+    let mut i = 0;
+    while i < 8 {
+        s[i] = b[i];
+        i += 1;
+    }
+    s
+}
+
+/// La ocultacion de los falsadores: m 64 (D-G) y las semillas del spike (F1 y Q1), ya de 32 bytes.
 const OC: Ocultacion = Ocultacion {
     m: 64,
-    semilla_filas: 0xf11a_0001,
-    semilla_cociente: 0xc0c1_0001,
+    semilla_filas: s32(0xf11a_0001),
+    semilla_cociente: s32(0xc0c1_0001),
 };
 
 /// Las opciones de la casa para los circuitos y la foto: 32/8/0/None/8/31.
@@ -286,11 +298,11 @@ fn regresion_apagada() {
     let a = prueba_work(256, Some(OC));
     assert_eq!(a, prueba_work(256, Some(OC)));
     // otra semilla de filas: otros bytes, y otra raiz de la traza
-    let b = prueba_work(256, Some(Ocultacion { semilla_filas: 0xf11a_0002, ..OC }));
+    let b = prueba_work(256, Some(Ocultacion { semilla_filas: s32(0xf11a_0002), ..OC }));
     assert_ne!(a, b);
     // otra semilla del cociente: otros bytes, las raices de la traza quedan y la de restricciones
     // se mueve
-    let c = prueba_work(256, Some(Ocultacion { semilla_cociente: 0xc0c1_0002, ..OC }));
+    let c = prueba_work(256, Some(Ocultacion { semilla_cociente: s32(0xc0c1_0002), ..OC }));
     assert_ne!(a, c);
     let (traza_a, restricciones_a) = raices(&a);
     let (traza_b, _) = raices(&b);
@@ -594,4 +606,31 @@ fn censo_cero() {
     assert_eq!(cuenta(&o, CONTROL), 0);
     let falso = Publico { ultimo: publico_o.ultimo + Base::ONE };
     assert!(verificar_constante(&o, falso).is_err());
+}
+
+/// §652 (CRIPTO-01): EL ANCHO DE LA SEMILLA. Dos semillas que solo difieren en el ULTIMO byte dan
+/// pruebas distintas, de filas y de cociente. Con la semilla truncada a 8 bytes -el defecto que
+/// cierra este corte- las dos darian los mismos bytes y este test caeria: ata los 32 bytes, no solo
+/// que dos semillas cualesquiera difieran (eso ya lo hacia el test de arriba, y paso con 64 bits).
+#[test]
+fn el_ultimo_byte_de_cada_semilla_mueve_la_prueba() {
+    let mut filas = OC.semilla_filas;
+    filas[31] ^= 1;
+    let mut cociente = OC.semilla_cociente;
+    cociente[31] ^= 1;
+    let a = prueba_work(256, Some(OC));
+    let b = prueba_work(256, Some(Ocultacion { semilla_filas: filas, ..OC }));
+    let c = prueba_work(256, Some(Ocultacion { semilla_cociente: cociente, ..OC }));
+    assert_ne!(a, b, "el byte 31 de la semilla de las filas no llega a la prueba");
+    assert_ne!(a, c, "el byte 31 de la semilla del cociente no llega a la prueba");
+}
+
+/// §652: la semilla de produccion son 32 bytes de la entropia del sistema, y dos seguidas no
+/// coinciden (prueba de vida de que `semilla()` no devuelve una constante ni un truncado).
+#[test]
+fn la_semilla_de_produccion_son_32_bytes_frescos() {
+    let (a, b) = (zk_ssl_air::sal::semilla(), zk_ssl_air::sal::semilla());
+    assert_eq!(a.len(), 32);
+    assert_ne!(a, b);
+    assert_ne!(a[8..], [0u8; 24], "los 24 bytes altos no pueden ir vacios");
 }

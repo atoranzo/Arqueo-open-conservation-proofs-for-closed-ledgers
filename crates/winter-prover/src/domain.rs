@@ -35,7 +35,9 @@ pub struct StarkDomain<B: StarkField> {
     /// del meta de la traza (0 sin marca), y la semilla propia del cociente, que solo pone el
     /// probador oculto. Los lee `constraints::composition_poly::segmentar`.
     cociente_m: usize,
-    semilla_cociente: Option<u64>,
+    // §652 (CRIPTO-01): 32 bytes, no un u64. Con 64 bits la ocultacion entera se recuperaba por
+    // fuerza bruta de la semilla.
+    semilla_cociente: Option<[u8; 32]>,
 }
 
 // STARK DOMAIN IMPLEMENTATION
@@ -172,13 +174,13 @@ impl<B: StarkField> StarkDomain<B> {
     }
 
     /// La semilla propia del cociente, si el probador oculto la puso.
-    pub fn semilla_cociente(&self) -> Option<u64> {
+    pub fn semilla_cociente(&self) -> Option<[u8; 32]> {
         self.semilla_cociente
     }
 
     /// El probador oculto pone la semilla propia del cociente; m ya lo dijo la marca al construir
     /// el dominio.
-    pub fn con_semilla_del_cociente(mut self, semilla: u64) -> Self {
+    pub fn con_semilla_del_cociente(mut self, semilla: [u8; 32]) -> Self {
         self.semilla_cociente = Some(semilla);
         self
     }
