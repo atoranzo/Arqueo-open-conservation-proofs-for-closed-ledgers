@@ -45397,3 +45397,49 @@ aviso; publicarla es del autor.
 huella ya canónica pide el conjunto de pruebas aplicadas y un suelo para el delta del reembolso),
 SEG-05 y SEG-06, que piden decisiones de diseño del autor; SEG-01 y SEG-08 los cierra la rama
 `claude/nice-cannon-arzmc9` (§641, RFC-0017), aún fuera de `main`.
+
+## §654 — una prueba aplicada no vuelve a valer: el reenvío por recurrencia de raíz, cerrado
+
+El commit que lleva este asiento, sobre el §653 de esta misma rama, que desde aquí va sobre el §641
+de `claude/nice-cannon-arzmc9` (RFC-0016 y RFC-0017). Es el quinto corte del aviso privado de
+seguridad del §637 (SEG-03, P1), y va detrás del §653, como pedía el aviso: sin bytes canónicos, una
+cola cambiaba la huella y esquivaba el conjunto. El autor pidió cerrar todo el aviso. Lo escribe, lo
+prueba y lo commitea una sesión de Claude Code en la nube, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del nivel en sus pines, con 457 s de tests.
+
+**El defecto, medido.** La protección contra el reenvío de un envío, un cobro, una quema o un
+reembolso era sólo que las raíces que la prueba acredita sean las vigentes. Pero el estado global
+SÍ se repite: el envío no sube el nonce y el reembolso restaura la hoja con el mismo nonce y la
+misma sal. Dos casos, reproducidos con tests sobre este árbol y con la comprobación desactivada:
+(1) Alicia envía y se reembolsa enseguida (sobre v2 con `delta` 1): las raíces de cuentas y de
+pendientes vuelven a las de antes, y el MISMO recibo de envío devuelve `Ok(())` otra vez: quien lo
+tenga —el nodo, un agregador— debita a Alicia por un pago que canceló. (2) Alicia paga a Bob, Bob
+cobra, Bob le devuelve lo mismo y Alicia cobra: las raíces vuelven a las del principio y el primer
+recibo de Alicia vuelve a valer (`Ok(())`). Es nulo en un libro concurrido y alto en uno de pocas
+partes.
+
+**Lo que hace.** `TransitionLog` gana un conjunto con la huella de cada prueba del titular ya
+aplicada (`Send`, `Claim`, `Burn` y `Refund`), derivado del propio registro: se mantiene en
+`append_con_compromiso` y se rehace en `from_entries`, así que no tiene persistencia ni raíz propias
+—la instantánea ya lleva el registro— y sobrevive al reinicio por construcción. `validate_send`,
+`validate_claim`, `apply_refund`, `apply_deissue` y `apply_burn` lo consultan antes de nada y
+rechazan con `StaleState`: la misma causa que un reenvío con la raíz obsoleta, ninguna nueva en el
+cable. Las vías delegadas (emisión, emisión a pendiente, congelación, recuperación, gobernanza) quedan
+fuera: atan raíz y suministro en su compromiso; que eso baste es SUPUESTO, no medido.
+
+**Lo que no hace, y por qué.** El aviso proponía además un suelo `delta >= 1` en el reembolso v2.
+Leído al implementarlo (`commit_send`, `nacido = self.log.len()` antes del `append`): el nacimiento de un pendiente se toma ANTES de asentar el propio envío, así
+que justo después de enviar `ahora - nacido = 1`, y un suelo de 1 no cierra el reembolso inmediato.
+El conjunto cierra el reenvío con o sin él; el suelo no se pone. Un duplicado dentro del mismo lote
+de `zkssl_applyMany` lo rechaza la raíz, porque la segunda copia se valida contra el estado que dejó
+la primera: es lectura del código, no medida, y queda sin falsador propio.
+
+**Falsadores.** Los dos casos de arriba, con la premisa del ataque asertada (las raíces vuelven a ser
+las de antes) para que un cambio que la rompa no deje el test pasando en vano. **Medido con la
+comprobación desactivada**: los dos reenvíos dan `Ok(())` y los dos tests caen.
+
+**Coste.** 32 bytes por operación del titular en memoria (unos 64 KB por cada mil pagos, ESTIMADO) y
+una búsqueda en un `HashSet` por validación; la huella ya se calculaba.
+
+**Contadores.** `zk-ssl` 426 -> 428, y los totales en los párrafos ancla y donde `check_cifras` los
+señaló. El `BACKLOG.md` no se mueve.

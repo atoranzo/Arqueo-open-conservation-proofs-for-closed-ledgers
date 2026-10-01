@@ -418,6 +418,12 @@ impl SovereignLayer {
     /// por emisión). Las compuertas de tiempo y materiales son las del
     /// reembolso; la mutación es destruir — hoja vacía y suministro ABAJO.
     pub fn apply_deissue(&mut self, receipt: &DeissueReceipt) -> Result<(), LayerError> {
+        // §654 (SEG-03): una prueba del titular ya aplicada no vuelve a valer aunque las raices
+        // hayan vuelto a las de antes (reembolso, ciclo A->B->A). `StaleState`: la misma causa que
+        // un reenvio con raiz obsoleta, y ninguna nueva en el cable.
+        if self.log.ya_aplicada(&receipt.refund_proof) {
+            return Err(LayerError::StaleState);
+        }
         use stark_experiment::circuit_refund::{RefundAir, RefundPublicInputs};
 
         let pos = receipt.position;
@@ -641,6 +647,12 @@ impl SovereignLayer {
     /// fijan los registros (`meta.sender_index`) — pruebe quien pruebe— y
     /// la subida solo casa si la fabricó el titular de ESA hoja.
     pub fn apply_refund(&mut self, receipt: &RefundReceipt) -> Result<(), LayerError> {
+        // §654 (SEG-03): una prueba del titular ya aplicada no vuelve a valer aunque las raices
+        // hayan vuelto a las de antes (reembolso, ciclo A->B->A). `StaleState`: la misma causa que
+        // un reenvio con raiz obsoleta, y ninguna nueva en el cable.
+        if self.log.ya_aplicada(&receipt.refund_proof) {
+            return Err(LayerError::StaleState);
+        }
         use stark_experiment::circuit_credit_climb::{CreditClimbAir, CreditClimbPublicInputs};
         use stark_experiment::circuit_refund::{RefundAir, RefundPublicInputs};
 
@@ -933,6 +945,12 @@ impl SovereignLayer {
         sender_state: &ClientState,
         amount: u64,
     ) -> Result<SendPlan, LayerError> {
+        // §654 (SEG-03): una prueba del titular ya aplicada no vuelve a valer aunque las raices
+        // hayan vuelto a las de antes (reembolso, ciclo A->B->A). `StaleState`: la misma causa que
+        // un reenvio con raiz obsoleta, y ninguna nueva en el cable.
+        if self.log.ya_aplicada(&receipt.proof) {
+            return Err(LayerError::StaleState);
+        }
         let pi = &receipt.public_inputs;
         if pi.root_old != accounts.root() || pi.pending_root_old != pending.root() {
             return Err(LayerError::StaleState);
@@ -1290,6 +1308,12 @@ impl SovereignLayer {
         receiver_state: &ClientState,
         notice: &PendingNotice,
     ) -> Result<ClaimPlan, LayerError> {
+        // §654 (SEG-03): una prueba del titular ya aplicada no vuelve a valer aunque las raices
+        // hayan vuelto a las de antes (reembolso, ciclo A->B->A). `StaleState`: la misma causa que
+        // un reenvio con raiz obsoleta, y ninguna nueva en el cable.
+        if self.log.ya_aplicada(&receipt.proof) {
+            return Err(LayerError::StaleState);
+        }
         let pi = &receipt.public_inputs;
         if pi.root_old != accounts.root() || pi.pending_root_old != pending.root() {
             return Err(LayerError::StaleState);
@@ -3741,6 +3765,81 @@ mod tests_verificacion {
             )
             .expect("materiales v2");
         layer.apply_refund(&materiales).expect("refund v2 tras delta");
+        assert_eq!(state_of(&layer, alice).balance, 1_000_000);
+    }
+
+    /// §654 (SEG-03): EL REENVIO TRAS EL REEMBOLSO. Envio, reembolso inmediato (sobre v2 con
+    /// delta 1): las raices de cuentas y de pendientes vuelven a las de antes del envio, y el MISMO
+    /// recibo de envio pasaba otra vez la comprobacion de raices y debitaba al emisor por un pago
+    /// que cancelo. Ahora `StaleState`, y el saldo no se mueve.
+    #[test]
+    fn un_envio_reembolsado_no_se_puede_reenviar() {
+        use crate::pending::pending_commitment_v2;
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let f = layer.public_id_of(alice).expect("alice");
+        let ea = state_of(&layer, alice);
+        let raices = (layer.accounts.root(), layer.pending.root());
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0x654), 300_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 300_000).expect("apply");
+        let pos = recibo.notice.position;
+        layer
+            .pending
+            .set_leaf(pos, pending_commitment_v2(receptor, salt_de(0x654), 300_000, f, 1));
+        layer.pending_meta.insert(pos, (alice, 0));
+        let ea2 = state_of(&layer, alice);
+        let r = layer
+            .refund_v2(BaseElement::new(SK_ALICE), alice, &ea2, pos, receptor, salt_de(0x654), 300_000, f, 1)
+            .expect("materiales");
+        layer.apply_refund(&r).expect("reembolso");
+        assert_eq!(
+            (layer.accounts.root(), layer.pending.root()),
+            raices,
+            "premisa del ataque: las raices han vuelto a las de antes del envio"
+        );
+        let reenvio = layer.apply_send(&recibo, alice, &ea, 300_000);
+        assert!(matches!(reenvio, Err(LayerError::StaleState)), "{reenvio:?}");
+        assert_eq!(state_of(&layer, alice).balance, 1_000_000, "nadie debita dos veces");
+    }
+
+    /// §654 (SEG-03): EL REENVIO TRAS UN CICLO A->B->A. Alicia paga a Bob, Bob cobra, Bob le
+    /// devuelve lo mismo y Alicia cobra: el envio no sube el nonce, asi que las raices vuelven a
+    /// las del principio, y el primer recibo de Alicia volvia a valer.
+    #[test]
+    fn un_pago_tras_un_ciclo_de_ida_y_vuelta_no_se_puede_reenviar() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let ea = state_of(&layer, alice);
+        let raices = (layer.accounts.root(), layer.pending.root());
+        let a_bob = layer.public_id_of(bob).expect("bob");
+        let ida = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, a_bob, salt_de(0x6541), 300_000)
+            .expect("ida");
+        layer.apply_send(&ida, alice, &ea, 300_000).expect("aplicar ida");
+        let eb = state_of(&layer, bob);
+        let c = layer.claim(BaseElement::new(SK_BOB), bob, &eb, &ida.notice).expect("cobro");
+        layer.apply_claim(&c, bob, &eb, &ida.notice).expect("aplicar cobro");
+        let a_alice = layer.public_id_of(alice).expect("alice");
+        let eb2 = state_of(&layer, bob);
+        let vuelta = layer
+            .send(BaseElement::new(SK_BOB), bob, &eb2, a_alice, salt_de(0x6542), 300_000)
+            .expect("vuelta");
+        layer.apply_send(&vuelta, bob, &eb2, 300_000).expect("aplicar vuelta");
+        let ea2 = state_of(&layer, alice);
+        let c2 = layer.claim(BaseElement::new(SK_ALICE), alice, &ea2, &vuelta.notice).expect("cobro 2");
+        layer.apply_claim(&c2, alice, &ea2, &vuelta.notice).expect("aplicar cobro 2");
+        if (layer.accounts.root(), layer.pending.root()) != raices {
+            // Si algun dia el ciclo deja de recurrir, el ataque desaparece por otra via y este
+            // test lo dice en vez de pasar en vano.
+            panic!("el ciclo ya no devuelve las raices: revisar la premisa de SEG-03");
+        }
+        let reenvio = layer.apply_send(&ida, alice, &ea, 300_000);
+        assert!(matches!(reenvio, Err(LayerError::StaleState)), "{reenvio:?}");
         assert_eq!(state_of(&layer, alice).balance, 1_000_000);
     }
 

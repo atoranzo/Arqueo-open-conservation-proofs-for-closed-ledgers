@@ -128,6 +128,12 @@ impl SovereignLayer {
         account_index: AccountIndex,
         account_state: &crate::commitment::ClientState,
     ) -> Result<(), LayerError> {
+        // §654 (SEG-03): una prueba del titular ya aplicada no vuelve a valer aunque las raices
+        // hayan vuelto a las de antes (reembolso, ciclo A->B->A). `StaleState`: la misma causa que
+        // un reenvio con raiz obsoleta, y ninguna nueva en el cable.
+        if self.log.ya_aplicada(&receipt.proof) {
+            return Err(LayerError::StaleState);
+        }
         let pi = &receipt.public_inputs;
 
         // La raíz de congelados declarada debe ser la vigente: si no, la

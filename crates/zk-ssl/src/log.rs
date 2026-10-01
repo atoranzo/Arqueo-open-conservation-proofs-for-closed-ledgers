@@ -297,6 +297,18 @@ pub fn chain_digest_v2(
 #[derive(Clone, Debug, Default)]
 pub struct TransitionLog {
     entries: Vec<LogEntry>,
+    /// §654 (SEG-03): la huella de cada prueba del TITULAR ya aplicada (Send, Claim, Burn y
+    /// Refund). La proteccion contra el reenvio era solo la igualdad de raices, y el estado global
+    /// SI se repite: tras un reembolso, o tras un ciclo A->B->A, las raices vuelven a las de antes y
+    /// una prueba ya aplicada volvia a valer. Se DERIVA del registro (sin persistencia ni raiz
+    /// propias: la instantanea ya lleva el registro) y se mantiene en `append_con_compromiso`. Las
+    /// vias delegadas quedan fuera: atan raiz y suministro en su compromiso (`mint.rs`).
+    aplicadas: std::collections::HashSet<[u8; 32]>,
+}
+
+/// §654: las clases cuya prueba es del titular y no puede aplicarse dos veces.
+fn es_del_titular(kind: OpKind) -> bool {
+    matches!(kind, OpKind::Send | OpKind::Claim | OpKind::Burn | OpKind::Refund)
 }
 
 impl TransitionLog {
@@ -310,7 +322,19 @@ impl TransitionLog {
     /// separa a propósito, para que cargar y comprobar sean dos actos
     /// distintos y visibles.
     pub fn from_entries(entries: Vec<LogEntry>) -> Self {
-        Self { entries }
+        let aplicadas =
+            entries
+                .iter()
+                .filter(|e| es_del_titular(e.kind))
+                .map(|e| zk_ssl_hash::digest_to_bytes(&e.proof_digest))
+                .collect();
+        Self { entries, aplicadas }
+    }
+
+    /// §654 (SEG-03): ¿esta prueba del titular ya se aplico? Sobre la huella de sus bytes, que el
+    /// §653 hizo canonica: una cola ya no da otra huella de la misma prueba.
+    pub fn ya_aplicada(&self, proof: &[u8]) -> bool {
+        self.aplicadas.contains(&zk_ssl_hash::digest_to_bytes(&digest_of_proof(proof)))
     }
 
     pub fn len(&self) -> usize {
@@ -365,6 +389,9 @@ impl TransitionLog {
     ) -> Digest {
         let seq = self.entries.len() as u64;
         let proof_digest = digest_of_proof(proof);
+        if es_del_titular(kind) {
+            self.aplicadas.insert(zk_ssl_hash::digest_to_bytes(&proof_digest));
+        }
         let previous = self.head();
         let chain =
             chain_digest_v2(seq, kind, root_old, root_new, proof_digest, previous, compromiso);
