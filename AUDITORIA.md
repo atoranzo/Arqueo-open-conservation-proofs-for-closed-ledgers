@@ -43693,3 +43693,63 @@ recuenta su línea de estado, que seguía con las cifras del §597: 45 abiertas 
 **Lo que NO cierra.** El registro: la release publicada sobre este commit y medida desde fuera, con
 su huella al lado de su commit en los dos manuales, y la 107 cerrada. Y la 114.
 
+## §621 — la 114: la compuerta del tamaño de prueba, calibrada y con más potencia
+
+El commit que lleva este asiento, sobre `65cabfb` (el S620). Un solo sello: el test
+`proof_size_does_not_correlate_with_amount` cambia su compuerta, dos comentarios de `metrics.rs`
+dejan de decir que el tamaño de una prueba es determinista, la entrada 114 se cierra, y este
+asiento, con el canon `--sello` VERDE dentro del bloque. 2 ficheros más este asiento, con 114
+inserciones y 65 borrados fuera de él. El tag `arqueo-verify-v0.3.0` va sobre `65cabfb`, no sobre
+este commit: el kit no lleva este test.
+
+**De dónde sale.** De la 114, abierta en el §620: el primer canon de ese sello cayó en este test con
+r lineal −0,791 sobre 16 pruebas y el umbral en 0,7; diez corridas más pasaron, y las once juntas
+no mostraban dependencia del importe. Quedaba abierta una señal: el índice 13 salía +457 B en diez
+de once, y el test no separaba el importe del orden de generación.
+
+**Lo medido.** (1) **El orden, separado del importe.** Un test de experimento, fuera del árbol, con
+los mismos 16 importes BARAJADOS en cada corrida (Fisher-Yates con un xorshift sembrado por
+corrida, semillas 101 a 112) y lo demás como en el test: 12 corridas, 192 pruebas. Centrado el
+tamaño por corrida y barajada la etiqueta dentro de cada corrida, ni la posición (p 0,65) ni el
+importe (p 0,64) explican el tamaño; r 0,007 contra la posición y −0,055 contra log2(importe). El
+índice 13 baja a +113 B y el importe 2^16 a +126: la señal de las once corridas era azar, como
+permitían sus dieciséis comparaciones. **No hay fuga del importe en el tamaño, medido en 368
+pruebas.** (2) **El ruido.** El tamaño cambia de una corrida a otra con las mismas entradas -la
+misma posición, el mismo importe, la misma sal de compromiso-, porque desde el S538 la sal de la
+ocultación sale de la entropía; su distribución tiene cola izquierda (asimetría −0,79). (3) **Por
+qué saltaba la compuerta.** Con importes en potencias de dos, la r lineal la deciden los dos
+últimos puntos; con esa cola, bajo la hipótesis nula «|r| ≥ 0,7» sale en el 0,6 % de las
+corridas (simulado con las 368 medidas). Un canon que un tercero corre daba ROJO sin que nada
+estuviera mal.
+
+**Lo que hace.** (1) **Dos pasadas, 32 pruebas**: los 16 importes y después los mismos en orden
+INVERSO, para que el importe no viaje con el orden de generación. (2) **La compuerta es un p de
+permutación**, no un umbral sobre r: la fracción de 200.000 barajados de los tamaños -Fisher-Yates
+con un xorshift de semilla FIJA, así que es función de las medidas y de nada más- cuya |r| iguala
+o supera la medida, con el +1 de rigor. Salta si p < 1e-4 en la escala lineal o en la log2: falsa
+alarma ≤ 2e-4 por corrida, sea cual sea la forma de la distribución, porque un test de permutación
+no supone ninguna. Imprime r y p en las dos escalas. (3) **La potencia, medida y no supuesta**:
+simulado con el ruido de las 368 pruebas y una señal en log2 de correlación verdadera ρ, la
+compuerta vieja (16 pruebas, |r| ≥ 0,7) salta el 0,6 %, el 10 %, el 52 % y el 96 % de las veces
+con ρ 0, 0,5, 0,7 y 0,8; la nueva (32 pruebas; para la simulación, |r| ≥ 0,633, el p 1e-4 de la t
+con 30 grados), ~0 %, el 11 %, el 83 % y el 100 %. Gana en todos. (4) La doc del test lo cuenta, y
+dice lo que sigue sin descartar: una fuga que no siga al importe sino a otra cosa de él -cuántos
+bits a 1 tiene: aquí todos son potencias de dos-. (5) Dos comentarios de `metrics.rs` decían que el
+tamaño es DETERMINISTA para las mismas entradas: lo era hasta el S538, y la nota D-AC de debajo ya
+lo sabía. Ahora lo dicen.
+
+**Las corridas de la compuerta nueva.** Siete, todas en verde, 31 s cada una (la vieja, 15): p
+lineal 2,4e-3, 0,74, 0,90, 0,63, 0,083, 0,068 y 0,98; p log2 0,10, 0,77, 0,61, 0,49, 0,029, 0,39 y
+0,70. La primera, con r lineal +0,476, también la dejaba pasar la vieja; la nueva le pone número,
+p 2,4e-3, y con un umbral de 1e-4 eso es azar admitido, no una señal.
+
+**Lo que NO hace.** No salta el test ni lo ignora: corre en cada canon, con más pruebas que antes.
+No toca la prueba ni la ocultación. No toca los pines: el test sigue siendo uno. No versiona el
+test del experimento (un instrumento ignorado más movería el censo de instrumentos y sus cifras
+publicadas por una medida de un día); su diseño queda arriba, para repetirlo.
+
+**Contadores.** Ninguno se mueve: 423 tests en `zk-ssl`, los mismos 7 ignorados, cero avisos.
+`BACKLOG.md`: la 114 cerrada, y la línea de estado en 44 abiertas y 70 resueltas.
+
+**Lo que NO cierra.** El registro de la 0.3.0, que espera a su publicación sobre `65cabfb`.
+

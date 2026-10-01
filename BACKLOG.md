@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 45 abiertas, 69 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
-recontadas en el §620: la línea seguía con las del §597 (45 y 63).
+**Estado**: 44 abiertas, 70 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
+recontadas en el §620 (la línea seguía con las del §597, 45 y 63) y en el §621.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -2201,7 +2201,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   de `spec/vectors/` y exige que `README.md` y `README_EN.md` digan ese número, y
   que ninguno de los dos deje de decirlo sin salir de su lista con su razón.
 
-- [ ] **114. Un test del canon da ROJO por azar: el de la correlación entre
+- [x] **114. Un test del canon da ROJO por azar: el de la correlación entre
   importe y tamaño de prueba.** Medido en el §620: el primer `--sello` sobre ese
   commit, que no toca código, cayó en `proof_size_does_not_correlate_with_amount`
   con r lineal −0,791 (el umbral es 0,7) sobre 16 pruebas. Diez corridas más de
@@ -2222,6 +2222,13 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   o nada-, y después una compuerta calibrada (permutación, con falsa alarma
   declarada y muy por debajo del 1 %) que conserve la potencia contra una fuga
   grosera. Ni se salta ni se ignora el test mientras tanto.
+  ✅ **CERRADA en el §621**: con los importes BARAJADOS por corrida (12 corridas,
+  192 pruebas) ni el importe ni la posición explican el tamaño (p 0,64 y 0,65), y
+  el índice 13 baja a +113 B: era azar. La compuerta es ahora un p de permutación
+  con semilla fija, 32 pruebas (los 16 importes dos veces, la segunda al revés) y
+  umbral 1e-4 por escala: falsa alarma ≤ 2e-4, y más potencia que la vieja
+  (simulado con el ruido medido: frente a una correlación verdadera de 0,7, el 83 %
+  contra el 52 %). Cuesta 31 s en vez de 15.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

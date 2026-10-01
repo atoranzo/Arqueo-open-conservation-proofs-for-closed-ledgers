@@ -103,11 +103,15 @@ mod tests {
     // decimal lee un 9,9 % menos de lo real. La etiqueta ya la cazo
     // AUDITORIA.md §83.3 y nadie la arreglo.
     //
-    // El tamano de una prueba es DETERMINISTA para las MISMAS entradas
-    // (cuatro corridas, byte a byte), pero varia ~4 % entre entradas
-    // distintas: lo mide proof_size_does_not_correlate_with_amount. Por
-    // eso el gate exacto exige un montaje GEMELO, y por eso existe
-    // medir_el_pago_publicado.
+    // Hasta el S538 el tamano de una prueba era DETERMINISTA para las
+    // MISMAS entradas (cuatro corridas, byte a byte) y variaba ~4 % entre
+    // entradas distintas. Desde el S538 la sal de la ocultacion sale de la
+    // entropia, y varia tambien entre corridas de las mismas entradas
+    // (medido en el §621: la misma posicion, el mismo importe y la misma
+    // sal de compromiso dan tamanos distintos de una corrida a otra). Que
+    // no siga al importe lo mide proof_size_does_not_correlate_with_amount.
+    // Por eso la cifra es una BANDA (D-AC, abajo), medida sobre un montaje
+    // GEMELO del de metrics_of_the_layer: medir_el_pago_publicado.
     //
     // Quien mueva esta constante mueve tambien los documentos:
     // tools/check_publicadas.py los ata y dice cuales faltan.
@@ -506,8 +510,10 @@ mod tests {
         //
         // Los tiempos dependen de la maquina y por eso arriba solo se
         // afirman RELACIONES. **El tamaño de la prueba no depende de la
-        // maquina**: es determinista, funcion del circuito y de las
-        // opciones de prueba.
+        // maquina**: depende del circuito, de las opciones de prueba y,
+        // desde el S538, de la sal de la ocultacion, que sale de la
+        // entropia; por eso se comprueba contra una BANDA (D-AC), no contra
+        // un valor.
         //
         // Y es la cifra que los documentos publican. Sin esta comprobacion,
         // un cambio que engordara la prueba dejaria esas cifras falsas **sin
@@ -858,18 +864,38 @@ mod tests {
     ///
     /// ## Qué mide este test, y qué fuerza tiene
     ///
-    /// Genera pruebas con importes que abarcan cuatro órdenes de
-    /// magnitud y calcula la **correlación de Pearson** entre importe y
-    /// tamaño.
+    /// Genera pruebas con importes que abarcan cinco órdenes de magnitud
+    /// y calcula la **correlación de Pearson** entre importe y tamaño, en
+    /// escala lineal y en log2. Desde el §621 son **32 pruebas**: los 16
+    /// importes dos veces, la segunda pasada en orden INVERSO, para que el
+    /// importe no viaje con el orden de generación.
     ///
-    /// ⚠️ **Es evidencia débil, no demostración.** Con esta cantidad de
-    /// muestras, una correlación espuria de magnitud moderada es
-    /// perfectamente posible por azar. Descartar la fuga exigiría
-    /// centenares de muestras y un análisis estadístico serio, que **no
-    /// se ha hecho**. Lo que este test descarta es una fuga *grosera*.
+    /// La compuerta es un **p de permutación**, no un umbral sobre r. Desde
+    /// el S538 la sal de la ocultación sale de la entropía, así que el
+    /// tamaño cambia de una corrida a otra con las mismas entradas, y su
+    /// distribución tiene cola izquierda. Con 16 pruebas y «|r| < 0,7» la
+    /// r lineal la decidían los dos últimos puntos, y la compuerta saltaba
+    /// por azar en torno al 0,5 % de las corridas: le pasó al canon del
+    /// §620 (r −0,791). Medido en el §621 sobre 368 pruebas en 23 corridas,
+    /// 192 de ellas con el orden barajado: ni el importe ni la posición
+    /// explican el tamaño (p 0,64 y 0,65 por permutación). Ahora salta sólo
+    /// si p < `ALFA` (1e-4) en alguna de las dos escalas: falsa alarma
+    /// ≤ 2e-4 por corrida, sea cual sea la forma de la distribución. Y con
+    /// 32 pruebas gana potencia: simulado con el ruido medido, frente a una
+    /// correlación verdadera de 0,7 salta el 83 % de las veces (la vieja, el
+    /// 52 %), y frente a una de 0,8, siempre (la vieja, el 96 %).
+    ///
+    /// ⚠️ **Sigue siendo evidencia, no demostración.** Descarta una fuga
+    /// *grosera* -que el tamaño siga al importe-; no una que dependa de él
+    /// de otra forma (por ejemplo, de cuántos bits a 1 tiene: aquí todos
+    /// los importes son potencias de dos).
     #[test]
     fn proof_size_does_not_correlate_with_amount() {
-        const N: usize = 16;
+        const POR_PASADA: usize = 16;
+        const N: usize = 2 * POR_PASADA;
+        // Falsa alarma DECLARADA por escala: bajo la hipotesis de que el
+        // tamano no depende del importe, p < ALFA ocurre con probabilidad ALFA.
+        const ALFA: f64 = 1e-4;
         let mut layer = new_layer();
         // Cada transferencia va capada al limite regulatorio, asi que el
         // fondo necesario es N por ese limite — no una cifra arbitraria,
@@ -880,10 +906,11 @@ mod tests {
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
         // Importes repartidos por varios ordenes de magnitud, todos
-        // dentro del limite.
-        let amounts: Vec<u64> = (0..N)
+        // dentro del limite: dos pasadas, la segunda en orden INVERSO.
+        let pasada: Vec<u64> = (0..POR_PASADA)
             .map(|i| (1u64 << (i + 3)).min(LIMIT))
             .collect();
+        let amounts: Vec<u64> = pasada.iter().chain(pasada.iter().rev()).copied().collect();
 
         println!("\n=== Tamano de prueba frente a importe ===");
         let mut samples: Vec<(f64, f64)> = Vec::with_capacity(N);
@@ -910,41 +937,17 @@ mod tests {
             samples.push((capped as f64, s.proof.len() as f64));
         }
 
-        let n = samples.len() as f64;
-        let mean_x = samples.iter().map(|(x, _)| x).sum::<f64>() / n;
-        let mean_y = samples.iter().map(|(_, y)| y).sum::<f64>() / n;
-        let cov: f64 = samples
-            .iter()
-            .map(|(x, y)| (x - mean_x) * (y - mean_y))
-            .sum::<f64>();
-        let var_x: f64 = samples.iter().map(|(x, _)| (x - mean_x).powi(2)).sum();
-        let var_y: f64 = samples.iter().map(|(_, y)| (y - mean_y).powi(2)).sum();
-        let r = if var_x > 0.0 && var_y > 0.0 {
-            cov / (var_x.sqrt() * var_y.sqrt())
-        } else {
-            0.0
-        };
-
+        let xs: Vec<f64> = samples.iter().map(|(x, _)| *x).collect();
         // Correlacion tambien en escala LOGARITMICA, que es la natural
         // cuando los importes abarcan varios ordenes de magnitud: una
         // fuga plausible dependeria del numero de bits del importe, no de
         // su valor absoluto.
-        let log_samples: Vec<(f64, f64)> =
-            samples.iter().map(|(x, y)| (x.log2(), *y)).collect();
-        let mean_lx = log_samples.iter().map(|(x, _)| x).sum::<f64>() / n;
-        let cov_l: f64 = log_samples
-            .iter()
-            .map(|(x, y)| (x - mean_lx) * (y - mean_y))
-            .sum();
-        let var_lx: f64 = log_samples
-            .iter()
-            .map(|(x, _)| (x - mean_lx).powi(2))
-            .sum();
-        let r_log = if var_lx > 0.0 && var_y > 0.0 {
-            cov_l / (var_lx.sqrt() * var_y.sqrt())
-        } else {
-            0.0
-        };
+        let lxs: Vec<f64> = xs.iter().map(|x| x.log2()).collect();
+        let ys: Vec<f64> = samples.iter().map(|(_, y)| *y).collect();
+        let r = pearson(&xs, &ys);
+        let r_log = pearson(&lxs, &ys);
+        let p = p_permutacion(&xs, &ys, r);
+        let p_log = p_permutacion(&lxs, &ys, r_log);
 
         let sizes: Vec<usize> = samples.iter().map(|(_, y)| *y as usize).collect();
         let min = *sizes.iter().min().unwrap();
@@ -955,25 +958,25 @@ mod tests {
             min,
             100.0 * (max - min) as f64 / min as f64
         );
-        println!("  correlacion de Pearson importe/tamano:      {r:+.3}");
-        println!("  correlacion log2(importe)/tamano:            {r_log:+.3}");
+        println!("  correlacion de Pearson importe/tamano:      {r:+.3}  (p {p:.1e})");
+        println!("  correlacion log2(importe)/tamano:            {r_log:+.3}  (p {p_log:.1e})");
         println!(
-            "  ⚠️  evidencia DEBIL con {N} muestras: descarta una fuga grosera, \
-             no demuestra ausencia de fuga"
+            "  ⚠️  evidencia con {N} muestras y falsa alarma <= {:.0e}: descarta una fuga \
+             grosera, no demuestra ausencia de fuga",
+            2.0 * ALFA
         );
 
         assert!(
-            r.abs() < 0.7,
-            "CRITICO: correlacion {r:+.3} entre importe y tamano de prueba. \
-             Una correlacion fuerte significaria que el tamano filtra \
-             informacion sobre una operacion que se supone privada."
+            p >= ALFA,
+            "CRITICO: correlacion {r:+.3} entre importe y tamano de prueba, con p {p:.1e} \
+             por permutacion (el umbral es {ALFA:.0e}). Una correlacion que el azar no \
+             explica significaria que el tamano filtra informacion sobre una operacion \
+             que se supone privada."
         );
-        // La correlacion en escala logaritmica es la comprobacion
-        // principal: una fuga plausible dependeria del numero de bits del
-        // importe.
         assert!(
-            r_log.abs() < 0.7,
-            "CRITICO: correlacion {r_log:+.3} entre log2(importe) y tamano"
+            p_log >= ALFA,
+            "CRITICO: correlacion {r_log:+.3} entre log2(importe) y tamano, con p {p_log:.1e} \
+             por permutacion (el umbral es {ALFA:.0e})"
         );
 
         // NOTA: **no** se comprueba que la variacion absoluta sea pequena.
@@ -983,6 +986,45 @@ mod tests {
         // de medir lo que importa. La magnitud de la variacion (~5%) no
         // es una fuga si no correlaciona con el secreto; lo que habria que
         // comprobar, y aqui se comprueba, es la correlacion.
+    }
+
+    /// r de Pearson; 0 si una de las dos series es constante.
+    fn pearson(x: &[f64], y: &[f64]) -> f64 {
+        let n = x.len() as f64;
+        let mx = x.iter().sum::<f64>() / n;
+        let my = y.iter().sum::<f64>() / n;
+        let cov: f64 = x.iter().zip(y).map(|(a, b)| (a - mx) * (b - my)).sum();
+        let vx: f64 = x.iter().map(|a| (a - mx).powi(2)).sum();
+        let vy: f64 = y.iter().map(|b| (b - my).powi(2)).sum();
+        if vx > 0.0 && vy > 0.0 {
+            cov / (vx.sqrt() * vy.sqrt())
+        } else {
+            0.0
+        }
+    }
+
+    /// p de PERMUTACION de una r medida: la fraccion de barajados de `y`
+    /// (Fisher-Yates con un xorshift de semilla FIJA) cuya |r| iguala o
+    /// supera la medida, con el +1 de rigor arriba y abajo. Con la semilla
+    /// fija es funcion de las medidas y de nada mas, y no supone nada de la
+    /// forma de su distribucion.
+    fn p_permutacion(x: &[f64], y: &[f64], r: f64) -> f64 {
+        const PERMUTACIONES: u32 = 200_000;
+        let mut s: u64 = 0x9E37_79B9_7F4A_7C15;
+        let mut yy = y.to_vec();
+        let mut alcanzan = 0u32;
+        for _ in 0..PERMUTACIONES {
+            for i in (1..yy.len()).rev() {
+                s ^= s << 13;
+                s ^= s >> 7;
+                s ^= s << 17;
+                yy.swap(i, (s % (i as u64 + 1)) as usize);
+            }
+            if pearson(x, &yy).abs() >= r.abs() - 1e-12 {
+                alcanzan += 1;
+            }
+        }
+        (alcanzan as f64 + 1.0) / (PERMUTACIONES as f64 + 1.0)
     }
 }
 
