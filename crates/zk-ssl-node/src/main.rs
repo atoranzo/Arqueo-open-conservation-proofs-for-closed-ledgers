@@ -614,6 +614,12 @@ fn politica_de_reconciliacion(
     //    juntas. La consecuencia si es cierta, y la ata
     //    `el_maximo_no_mira_de_que_clave_es_cada_linea`. Mirarlo seria decidir
     //    que hace el nodo al ROTAR de clave, y eso es la entrada 84, no un arreglo.
+    //
+    // ⚠️ PRECISADO (§638): la consecuencia vale solo con un contador NUEVO.
+    //    Con el de la vieja, la clave nueva da `ClaveEnCero`, se resincroniza
+    //    y arranca siguiendo su cuenta: el nodo no distingue una rotacion de un
+    //    reinicio. Lo ata
+    //    `una_clave_nueva_con_el_contador_de_la_vieja_arranca_y_sigue_su_cuenta`.
     let leido = match r {
         zk_ssl_guardian::Reconciliacion::Coincide { indice } => Some(*indice),
         zk_ssl_guardian::Reconciliacion::ContadorAdelantado { contador, .. } => Some(*contador),
@@ -986,6 +992,40 @@ mod gate_del_diario {
             ),
             DecisionDeArranque::NoArranca(_)
         ));
+    }
+
+    /// ⚠️ §638: **una clave NUEVA con el contador de la vieja ARRANCA, y sigue su cuenta.** La
+    /// clave de una semilla nueva está en cero y el contador dice dónde iba la vieja: es
+    /// `ClaveEnCero`, se resincroniza hasta el contador y firma desde ahí, y el diario de la
+    /// vieja no la para porque el contador no ha retrocedido. El nodo no distingue una rotación
+    /// de un reinicio. Lo que no arranca es la clave nueva con un contador NUEVO
+    /// (`un_contador_borrado_que_coincide_en_cero_no_arranca_si_el_diario_firmo`).
+    #[test]
+    fn una_clave_nueva_con_el_contador_de_la_vieja_arranca_y_sigue_su_cuenta() {
+        use crate::firma_cabeza::{verificar_cabeza, FirmanteCabeza};
+        let d = crate::tests_dir("rotar_con_el_contador");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let contador = d.join("indice.bin");
+        let digest = [5u8; 32];
+        let mut vieja = FirmanteCabeza::desde_semilla(&[1u8; 96], &contador).expect("vieja");
+        let pk_vieja = vieja.clave_publica();
+        let ultima = (0..3).map(|_| vieja.firmar(&digest).expect("firmar").indice).last();
+        drop(vieja);
+        let mut nueva = FirmanteCabeza::desde_semilla(&[2u8; 96], &contador).expect("nueva");
+        let r = nueva.reconciliar().expect("reconciliar");
+        let hasta = match politica_de_reconciliacion(&r, ultima) {
+            DecisionDeArranque::ArrancaResincronizando { hasta, .. } => hasta,
+            otra => panic!("con el contador de la vieja tiene que resincronizar: {otra:?}"),
+        };
+        nueva.resincronizar_a(hasta).expect("resincronizar");
+        let c = nueva.firmar(&digest).expect("firmar con la nueva");
+        assert_eq!(Some(c.indice), ultima.map(|i| i + 1), "sigue la cuenta de la vieja");
+        verificar_cabeza(&nueva.clave_publica(), &digest, &c).expect("verifica con la NUEVA");
+        assert!(
+            verificar_cabeza(&pk_vieja, &digest, &c).is_err(),
+            "y no con la vieja"
+        );
     }
 }
 

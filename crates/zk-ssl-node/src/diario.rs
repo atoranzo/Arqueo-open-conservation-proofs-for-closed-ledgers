@@ -259,6 +259,9 @@ mod maximo_del_diario {
     /// Los indices de una clave vieja cuentan para la nueva: por eso una clave nueva con el
     /// diario de la vieja no arranca (`politica_de_reconciliacion`). Es la consecuencia
     /// declarada en el §594, con su razon corregida; cambiarla es la entrada 84.
+    /// ⚠️ PRECISADO (§638): eso vale con un contador NUEVO. Con el de la vieja, la clave nueva
+    /// arranca y sigue su cuenta
+    /// (`una_clave_nueva_con_el_contador_de_la_vieja_arranca_y_sigue_su_cuenta`).
     #[test]
     fn el_maximo_no_mira_de_que_clave_es_cada_linea() {
         let con_clave = |indice: u64, clave: &str| {

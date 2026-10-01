@@ -44799,3 +44799,52 @@ agotamiento, ni transición firmada por la clave anterior, ni identificador de c
 lo que se firma. El testigo se detiene ante cualquier cambio de clave, y cada sobre del kit con dos
 cabezas exige que sean de un mismo firmante.
 
+## §638 — el alcance de lo que dijo el §636: una clave nueva con el contador de la vieja arranca y sigue su cuenta
+
+El commit que lleva este asiento, sobre `02f73df` (el §636). El número anterior, el §637, lo tiene
+reservado otra sesión del autor, y si entra después irá detrás de este. Un sello de precisión: una
+frase del §636 decía más de lo medido, y se precisa donde estaba, con un test que mide lo que de
+verdad pasa; la fila del nodo y las cifras de tres documentos se ponen al día; y este asiento. 7
+ficheros fuera de él, ninguno nuevo, con 57 inserciones y 8 borrados. Lo escribe, lo prueba y lo
+commitea la misma sesión de Claude Code que el §636, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión, sobre
+este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-node` en 176 de 176 y `check_tests`
+en 1736.
+
+**De dónde sale.** Al seguir midiendo el terreno de la 84 para su propuesta, la sesión vio que el
+§636 había escrito «una clave nueva con el diario de la vieja no arranca» como si valiera siempre:
+en el comentario de `politica_de_reconciliacion`, en la doc del test del máximo, en la entrada 84 y
+en su asiento. El autor ya lo había empujado (`f7aad05..02f73df`) cuando la precisión estuvo lista.
+Se precisa encima, y no se reescribe.
+
+**Lo medido.** El contador del guardián es un fichero aparte de la semilla. Una semilla nueva da
+una clave en el índice 0; con el contador de la vieja en C, `reconciliar` da `ClaveEnCero`, la
+política mira el diario, cuyo máximo es el C de la vieja, no ve retroceso, y el nodo resincroniza
+la clave nueva hasta C y arranca. La primera firma de la nueva lleva el índice C+1, y verifica con
+la clave nueva y no con la vieja. Lo que no arranca es la clave nueva con un contador NUEVO:
+`Coincide` en cero contra el máximo del diario, el rojo del §594. El nodo no distingue una rotación
+de un reinicio. Para la 84 eso es una pieza y no un hueco, y se dice como razonado, no medido: si
+la cuenta de índices sigue de una clave a la otra, la puerta del diario no estorba y la era de los
+recibos, que es el índice más uno, no vuelve a cero.
+
+**Lo que hace.** Las frases del §636 se quedan, y cada una gana un «PRECISADO (§638)» debajo: el
+comentario de `politica_de_reconciliacion`, la doc del test del máximo y la entrada 84. El asiento
+§636 no se toca: lo precisa este. Nace un test en el nodo,
+`una_clave_nueva_con_el_contador_de_la_vieja_arranca_y_sigue_su_cuenta`, con dos claves XMSS
+reales: la vieja firma tres veces, la nueva se abre sobre el mismo contador, la política de
+arranque la resincroniza, y su primera firma sigue la cuenta y verifica solo con la nueva.
+
+**Medido.** Los 176 tests del nodo pasan sobre este árbol. Una mutación, restaurada después: la
+puerta del diario en `ClaveEnCero` con `<=` en vez de `<` pone rojos el test nuevo y
+`contador_igual_al_diario_es_el_caso_limpio_y_resincroniza`, y deja verdes los otros siete del
+módulo.
+
+**Contadores.** `zk-ssl-node` pasa de 175 a 176 tests. TOTAL DE SELLO 1576 -> 1577 y TOTAL CON
+LARGOS 1713 -> 1714, en los tres párrafos ancla, con el desglose del nodo en 176. La cuenta de
+`check_tests` pasa de 1735 a 1736. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** No cambia el arranque: describe lo que ya hacía. No decide si una rotación debe
+seguir la cuenta de la clave vieja: eso es de la propuesta de la 84.
+
+**Lo que NO cierra.** La 84. Su propuesta, el RFC-0015, es lo siguiente.
+

@@ -659,6 +659,12 @@ instrumentacion) al grupo E.*
   lo ata. La razón que dio el §594 («el diario no dice de qué clave es cada
   línea») era falsa y queda corregida en el código. Qué debe hacer el nodo
   al rotar es de esta entrada, no de un arreglo.
+  ⚠️ **PRECISADO (§638): lo de arriba vale solo con un contador NUEVO.**
+  El nodo no distingue una rotación de un reinicio: una clave nueva con el
+  contador de la vieja da `ClaveEnCero`, se resincroniza hasta el contador
+  y arranca firmando desde donde iba la vieja. Lo ata
+  `una_clave_nueva_con_el_contador_de_la_vieja_arranca_y_sigue_su_cuenta`.
+  Queda precisado aquí en vez de borrarlo.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con
