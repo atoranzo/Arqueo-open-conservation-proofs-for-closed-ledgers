@@ -44249,3 +44249,60 @@ otra herramienta. Y `--bancos`: en este contenedor el canon dice que no se ha co
 `.canon/` no se versiona; el último dato del autor, el del §624, es que sigue sin correrse desde
 `8b8e3f4`.
 
+## §629 — la limpieza: una rama borrada, `xmss-kat` sin la marca de sesión, y el `--completo` tras 273 sellos
+
+El commit que lleva este asiento, sobre `2c0671e` (el §628). Un solo sello de documento: este
+asiento. Lo escribe y lo commitea una sesión de Claude Code -la del S619 al S628-, no el autor en
+su máquina, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. Registra tres actos
+del autor del 01-10-2026, hechos en su máquina con los pasos que esa sesión preparó, y dos datos que
+no estaban en ningún asiento.
+
+**1. El §626 y el §628, cómo entraron.** El §626 entró tal cual, `808e9b9`: el mismo commit que la
+rama de su sesión. El §628 entró como `2c0671e` y no como el `4c7ce39` de la sesión que lo escribió:
+los mismos cambios -identidad de parche `a7412eb8…` en los dos-, con el mensaje reescrito para no
+nombrar al asistente -nombraba `CLAUDE.md` y citaba la línea que prohíbe- y sin la firma SSH de su
+contenedor. Canon `--sello` VERDE en la máquina del autor sobre `2c0671e`.
+
+**2. La rama de esa sesión, borrada.** `claude/wonderful-euler-wd8re4` (`4c7ce39`), después de
+comprobar que era la que era y que sus cambios son, por identidad de parche, los que entraron en
+`main` como `2c0671e`. Queda `claude/nice-planck-ax35zl`, que ya está dentro de `main` (`808e9b9` es
+ancestro) y es de una sesión que sigue viva.
+
+**3. `xmss-kat`, sin la línea de sesión.** El repositorio partido en el §623 llevaba la línea
+`Claude-Session:` en sus dos commits. Se reescribió por decisión del autor y se empujó con
+`--force-with-lease=main:a94e86f`, y la etiqueta con `--force`. Los árboles no cambian ni un byte:
+
+| antes | ahora | árbol |
+|---|---|---|
+| `81c50a8` | `4444862` | idéntico |
+| `a94e86f` (`main`) | `d3569bd` (`main`) | idéntico |
+| etiqueta `v0.1.0`: objeto `1b2122b`, sobre `a94e86f` | objeto `da1b219`, sobre `d3569bd` | — |
+
+`vectores.json` sigue en sha256 `259b8df2bb6633ffe5c40da91a1c4d2dc7697b375546b0fa3bd63e2a2a3c653a`.
+La etiqueta conserva su mensaje palabra por palabra, a nombre del autor. La release «v0.1.0 — primer
+corpus», medida con `gh release view` antes y después, sale igual: ni borrador ni prerelease, el
+mismo texto, sin ficheros adjuntos. Medido aquí después: `main` es `d3569bd`, la etiqueta pelada da
+`d3569bd`, y ningún mensaje nombra al asistente. El §623 cita `a94e86f`; esta tabla lo resuelve. El
+autor conserva en su clon local la rama `respaldo-a94e86f`.
+
+**4. El `--completo`, VERDE.** Sobre `2c0671e`, en la máquina del autor: los 21 crates con sus
+pines, y los tres que sólo corre este nivel, `halo2-experiment` 27 de 27 (386 s),
+`plonk-experiment` 36 de 36 con sus 3 avisos fijados (730 s) y `zk-core` 74 de 74 con sus 10
+(2.103 s); 3.481 s en total. El anterior era de `dd495fa`, el 07-09-2026: 273 sellos atrás. Queda
+anotado en `.canon/ultimo-completo` de su máquina, que no se versiona; por eso se escribe aquí.
+
+**5. El `--bancos`, que ningún asiento recogía.** El autor lo corrió sobre `6f56956` (el S624 de
+antes de la reescritura, mismo árbol que `68a8f98`): 21 de 21 VERDE, 854 s. El canon de `2c0671e`
+lo da por bueno: «limpio en lo que ejercen: la foto VALE». El §628 dice que sigue sin correrse desde
+`8b8e3f4`; no es así.
+
+**Lo que NO hace.** No toca ningún fichero fuera de este asiento. No reescribe `main` de Arqueo ni
+sus etiquetas. No borra `claude/nice-planck-ax35zl`: su sesión sigue, y su próximo número libre es
+el §630.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin, ni una entrada del `BACKLOG.md`, que sigue
+en 43 abiertas y 73 resueltas.
+
+**Lo que NO cierra.** GitHub puede seguir sirviendo por su hash, durante un tiempo, los commits
+viejos de `xmss-kat` y de Arqueo, aunque ya nada los alcance.
+
