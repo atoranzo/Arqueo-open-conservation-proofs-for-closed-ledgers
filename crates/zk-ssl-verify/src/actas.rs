@@ -15,7 +15,11 @@
 //! primera hoja de la clave que entra firma su acta, asi que su firma lleva dentro el `desde`.
 
 use xmss::Signature;
-use zk_ssl_hash::{acta_digest, digest_to_bytes, huella_de_clave, Digest};
+use zk_ssl_hash::{acta_digest, digest_to_bytes};
+
+// ⚠️ Reexportados para que quien arme un acta -el nodo- nombre la clave con la MISMA huella con
+// que este juez la compara, sin depender de `zk-ssl-hash` por su cuenta.
+pub use zk_ssl_hash::{huella_de_clave, Digest};
 
 use crate::{clave_desde_bytes, indice_de_firma, Conjunto, VerificaError};
 

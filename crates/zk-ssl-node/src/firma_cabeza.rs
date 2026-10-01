@@ -119,6 +119,8 @@ pub enum FirmaError {
     Xmss(String),
     /// La firma recién hecha no verifica, o verifica contra otra cosa.
     Verifica(VerificaError),
+    /// El acta no se puede firmar o, firmada, no la acepta su juez (RFC-0015, §644).
+    Acta(String),
 }
 
 impl std::fmt::Display for FirmaError {
@@ -127,6 +129,7 @@ impl std::fmt::Display for FirmaError {
             FirmaError::Guardian(e) => write!(f, "firmante: {e}"),
             FirmaError::Xmss(e) => write!(f, "firmante: xmss rechazó: {e}"),
             FirmaError::Verifica(e) => write!(f, "firmante: {e}"),
+            FirmaError::Acta(e) => write!(f, "firmante, acta de clave: {e}"),
         }
     }
 }
@@ -200,6 +203,44 @@ impl FirmanteCabeza {
         // si el firmante y el testigo no comparten codigo, pueden discrepar.
         verificar_cabeza(&self.clave_publica(), epoch_digest, &c)?;
         Ok(c)
+    }
+
+    /// **Firma un acta de clave** (RFC-0015, E3a; §644) por el MISMO camino que una cabeza:
+    /// reservar con `fsync`, firmar, y verificar la propia salida con el juez del tercero
+    /// (`verificar_acta`) antes de devolverla. Devuelve el acta firmada y el índice DECLARADO
+    /// que reservó, el que su línea del diario lleva para la puerta del contador.
+    ///
+    /// ⚠️ El `desde` del acta tiene que ser la hoja en que la clave está: la primera firma de la
+    /// clave que entra es su acta, y lleva dentro el `desde` (D-C). Si no cuadra, no se reserva
+    /// ni se firma nada.
+    pub fn firmar_acta(
+        &mut self,
+        acta: zk_ssl_verify::actas::Acta,
+        previa: Option<&zk_ssl_verify::actas::Acta>,
+    ) -> Result<(zk_ssl_verify::actas::ActaFirmada, u64), FirmaError> {
+        use zk_ssl_verify::actas::{preambulo_acta, verificar_acta, ActaFirmada, ACTA_VERSION};
+        use zk_ssl_wire::digest_to_wire;
+        let hoja = self.indice_de_la_clave()?;
+        if acta.desde != hoja {
+            return Err(FirmaError::Acta(format!(
+                "el acta dice desde {} y la clave esta en la hoja {hoja}",
+                acta.desde
+            )));
+        }
+        let indice = self.guardian.reservar()?;
+        let pre = preambulo_acta(ACTA_VERSION, &digest_to_wire(&acta.digest()).0);
+        let sig = self
+            .par
+            .signing_key()
+            .sign(&pre)
+            .map_err(|e| FirmaError::Xmss(format!("{e}")))?;
+        let firmada = ActaFirmada {
+            acta,
+            firma: sig.as_ref().to_vec(),
+            firma_anterior: None,
+        };
+        verificar_acta(&firmada, previa).map_err(|e| FirmaError::Acta(e.to_string()))?;
+        Ok((firmada, indice))
     }
 
     /// El índice que la clave dice tener, leído de su SK.

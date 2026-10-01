@@ -3,7 +3,8 @@
 - **Estado:** PROPUESTO (§639) — el texto y sus decisiones, escritos sobre lo medido en el árbol
   (§636, §638) y en el RFC 10033 de la IETF. Las cinco decisiones, TOMADAS en el §642 por
   delegación del autor, con el criterio del §609, y REVERSIBLES: ver «Decisiones». Construida la
-  E2, el núcleo del acta (§643); E3 a E6 sin construir.
+  E2, el núcleo del acta (§643), y la E3a, el nodo que firma sus actas (§644); E3b a E6 sin
+  construir.
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude (sesión 193, §639, que lo escribe entero sobre la medida de los
   §636 y §638) — ver [`GENAI.md`](../../GENAI.md)
@@ -18,7 +19,8 @@
   reconciliación al arrancar), §399 (el índice embebido), §567 (el reloj del recibo es el
   índice), §591 (la huella de la clave), §594 (la puerta del diario en todo estado), §636 y §638
   (lo que hoy pasa al cambiar de clave, medido), §639 (esta propuesta), §642 (las decisiones) y
-  §643 (la E2).
+  §643 (la E2) y
+  §644 (la E3a).
 - **Backlog:** la **84** (agotamiento, rotación y pérdida del índice), con la **92** (custodia y
   supervivencia del índice) y la **19** en su línea de familia, que el §288 pidió cortar juntas;
   la **87** (agilidad criptográfica: el acta lleva el esquema de la clave que presenta); y la
@@ -30,7 +32,8 @@
 |---|---|---|---|
 | E1 — el ciclo de vida, escrito | este texto | no | **propuesto (§639), decidido (§642)** |
 | E2 — el núcleo | `DOMINIO_ACTA`, `acta_digest` y su KAT, y `verificar_acta` en el kit, con la segunda implementación | no (aditivo: una familia nueva) | **construida (§643)**: `DOMINIO_ACTA` (`ACTAS_V1`) y `acta_digest` en `zk-ssl-hash`; el módulo `actas` del kit con el preámbulo (`ZK-SSL-key-act`), el esquema de hoy y `verificar_acta`, con las reglas antes que las firmas; tres KAT —génesis, rotación y preámbulo— que la segunda implementación reproduce, 29 de 29; doce filas de la familia ACTA en `NUCLEO.md` |
-| E3 — el nodo | el acta génesis, la rotación como orden del operador, el aviso de agotamiento y `zkssl_keyActs` | no (aditivo: un método) | pendiente |
+| E3a — el nodo firma sus actas | el acta génesis, la rotación a la sucesora comprometida y el aviso de agotamiento, al arrancar | no | **construida (§644)**: opt-in con `--siguiente` (sin ella y sin actas, el nodo firma como hasta hoy); `--huella-de-clave-fichero` imprime la huella de la clave fría; al arrancar, el nodo juzga la cadena de actas del diario, firma la génesis o la rotación por el camino de las cabezas y la anota con `fsync`, y no arranca con una clave que nadie comprometió; el umbral de un año de latidos exige `--reconozco-agotamiento`. La línea del acta no la ve ningún lector de cabezas y sí la puerta del contador |
+| E3b — el nodo, lo que falta | la firma de la clave que se va (decisión 5), `zkssl_keyActs` en el cable, y el latido que deja de quemar el contador en el techo | no (aditivo: un método) | pendiente |
 | E4 — el testigo | ante un cambio de clave pide el acta, la juzga contra la clave que fijó y sigue o se detiene; `--auditar` la juzga en el diario | no | pendiente |
 | E5 — el kit, el catálogo y el banco | el campo `actas` en los sobres que comparan cabezas, sus vectores y `tools/banco_rotacion.sh` contra un nodo real | no (aditivo: un campo opcional) | pendiente |
 | E6 — el medio | el acta como hoja del medio de la clave que se va y de la que llega, con la E3 del RFC-0013 | no | pendiente, tras la E3 del RFC-0013 |
@@ -141,6 +144,14 @@ en los 32 bits altos y su OID en los bajos; otro se rechaza con su número. El `
 EMBEBIDO, y la primera firma de la clave que entra lo lleva dentro. Y `verificar_acta` juzga las
 reglas ANTES que las firmas: una clave no comprometida se rechaza aunque la firmen la nueva y la
 vieja, porque ninguna firma la rescata.
+
+**Fijado en la E3a (§644).** El acta entra por el arranque y es **opt-in**: sin `--siguiente` y sin
+actas en el diario, el nodo no firma ninguna, y queda el residuo de la D-I. La `procedencia` de una
+rotación es la última cabeza que firmó la clave que se va y **el acumulador de cabezas que hereda
+la que entra**: la cima y el tamaño del MMR del diario, que es la pareja que firmará su primera
+cabeza. Sin cabeza de la anterior, su digest es el cero declarado del génesis del MMR. Y en la E3a
+la clave que se va **no firma**: toda acta de rotación que el nodo firma la declara quemada, hasta
+que la E3b la deje firmar cuando su estado es fiable.
 
 ### D-D — Dónde vive el acta
 

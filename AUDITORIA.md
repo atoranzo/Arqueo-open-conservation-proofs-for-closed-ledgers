@@ -46217,3 +46217,80 @@ el conjunto de versiones no se mueven.
 
 **Lo que NO cierra.** La 84 sigue abierta, con su RFC PROPUESTO y la E2 construida.
 
+## §644 — RFC-0015 E3a: el nodo firma su acta génesis y la de rotación, y no arranca con una clave que nadie comprometió
+
+El commit que lleva este asiento, sobre `24a0bfc` (el §643). Un solo sello: el nodo gana el acta de
+clave en su arranque, su línea en el diario, `firmar_acta` en el firmante, tres banderas y el aviso
+de agotamiento; el módulo `actas` del kit reexporta la huella de clave; el RFC-0015, la entrada 84,
+la fila del canon y las cifras de tres documentos se ponen al día; y este asiento. 11 ficheros
+fuera de él, ninguno nuevo, con 653 inserciones y 13 borrados. Lo escribe, lo prueba y lo commitea
+la misma sesión de Claude Code que el §643, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión, sobre
+este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-node` en 188 de 188 y `check_tests`
+en 1798. Y los tres bancos que arrancan y rearrancan nodos con clave, `banco_reutilizacion.sh`,
+`banco_mentiroso_ausentes.sh` y `banco_apagado.sh`, salieron VERDES sobre él: sin `--siguiente`, el
+arranque nuevo no cambia nada.
+
+**Rehecho sobre el §675**, como el §643: el código es el mismo salvo dos puntos, y las cifras son
+las de la base nueva. El primero: el §650 dejó un solo lector de hexadecimal en `zk-ssl-hash`, y los
+ayudantes que este sello añade al diario leen con él —`hex_canonico`, sobre bytes— en vez de
+trocear la cadena, y también la huella de `--siguiente`. Esa la cazó la puerta del §650 en el primer
+canon de este rebase: `leer_huella` troceaba el `&str` por bytes. No podía entrar en pánico —antes
+comprobaba que todo fuesen cifras hex—, pero es el patrón que la puerta prohíbe, y ahora lee con
+`bytes_de_hex`. El segundo: el §666 hizo que los lectores del diario lean línea a línea sobre bytes,
+para que un byte ilegible se lleve su línea y no el diario; los dos que este sello añade —las actas
+y la última cabeza de una clave— leían con `read_to_string`, que falla entero, y ahora usan
+`lineas_del_diario`, como los demás.
+
+**De dónde sale.** La E3 del RFC-0015 es el nodo. Se corta en dos: la E3a, que el nodo firme sus
+actas al arrancar, y la E3b, la firma de la clave que se va, el método de cable y el latido en el
+techo. Antes de escribir se midió quién lee el diario del nodo: seis lectores en el nodo y tres en
+el testigo, y los bancos que lo parsean.
+
+**Lo que hace.**
+
+1. **Opt-in.** Si cada arranque con clave firmara una génesis, todos los nodos de los bancos y de
+   los tests gastarían una hoja más y correrían los índices de sus cabezas. El acta entra con
+   `--siguiente`, la huella de la sucesora: sin ella y sin actas en el diario, el nodo firma como
+   hasta hoy. Es el residuo que el RFC declara en la D-I, y la regla del nodo desde el §236: las
+   capacidades se encienden con bandera explícita.
+2. **El arranque.** Tras reconciliar el contador, el nodo juzga la cadena de actas del diario con
+   `verificar_acta` (una cadena rota no arranca) y decide con una función pura: ninguna, en vigor,
+   génesis, rotación a la sucesora comprometida, o no arrancar. No arrancan la clave que nadie
+   comprometió («no se distingue de un robo»), la sucesora sin `--siguiente`, un `--siguiente`
+   distinto del comprometido sin rotar, ni una clave que se comprometa a sí misma.
+3. **La firma.** `firmar_acta` va por el camino de las cabezas: reservar con `fsync`, firmar el
+   preámbulo del acta y verificar la propia salida con el juez del tercero. El `desde` es la hoja
+   en que la clave está, y la rotación sigue la cuenta de la vieja (§638). La procedencia es la
+   última cabeza que firmó la clave que se va y el acumulador de cabezas que la nueva hereda. En la
+   E3a la vieja no firma: el acta la declara quemada.
+4. **El diario.** La línea del acta lleva `v`, su `tipo`, el índice declarado y el acta con sus
+   firmas, y ninguna clave de las que leen los lectores de cabezas; se anota con `fsync`, al revés
+   que las cabezas, porque un acta perdida deja una rotación sin objeto.
+5. **El agotamiento y la huella.** Por debajo de un año de latidos a la cadencia configurada, el
+   nodo no arranca sin `--reconozco-agotamiento` (el RFC 10033 §3.4). Y `--huella-de-clave-fichero`
+   imprime la huella de una semilla y sale, sin contador ni diario: es lo que se pasa a
+   `--siguiente` desde donde vive la clave fría.
+
+**Medido.** Los 188 tests del nodo pasan en release. Cuatro son nuevos: la decisión, rama a rama;
+el arranque entero con claves XMSS^MT de verdad sobre un contador y un diario en disco (la génesis,
+un rearranque que no firma otra, la rotación con el contador de la vieja, la cadena juzgada y
+tocada, y una cuarta clave que no arranca); el umbral de agotamiento en sus bordes; y la línea del
+acta entre dos cabezas, que no cambia lo que leen los límites, el último `seq`, el último
+`recepCount`, los cierres de recepción y las hojas del MMR, y sí la ve `maximo_indice`. Y con el
+binario de release, de punta a punta: la génesis en la hoja 0, un rearranque en vigor, la rotación
+en la hoja 5 siguiendo la cuenta, un rearranque de la sucesora sin acta nueva, y una clave que
+nadie comprometió saliendo con su mensaje.
+
+**Contadores.** `zk-ssl-node` pasa de 184 a 188 tests. TOTAL DE SELLO 1635 -> 1639 y TOTAL CON
+LARGOS 1772 -> 1776, en los tres párrafos ancla, con el desglose del nodo en 188. La cuenta de
+`check_tests` pasa de 1794 a 1798. El censo de `NUCLEO.md` no se mueve: la reexportación de la
+huella desde un módulo público no se cuenta. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** La clave que se va no firma el acta, ni el cable la sirve (`zkssl_keyActs`), ni
+el latido deja de quemar el contador en el techo: eso es la E3b. El testigo sigue deteniéndose ante
+un cambio de clave (E4) y los sobres del kit siguen exigiendo una sola clave (E5). Ningún banco
+firma actas todavía, y ninguno cambia: sin `--siguiente`, el nodo es el de ayer.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2 y la E3a de su RFC construidas.
+
