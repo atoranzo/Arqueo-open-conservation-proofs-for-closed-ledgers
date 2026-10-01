@@ -1,0 +1,24 @@
+[package]
+name = "zk-ssl-medio"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# **El árbol del medio del ancla** (RFC-0013 E2a, §631). Cada ancla del
+# RFC-0012 es una hoja; los nodos son SHA-256 con los prefijos `0x00`/`0x01`
+# de RFC 6962 (D-B), y las pruebas de inclusión y de consistencia son las
+# que un testigo genérico de `tlog-witness` comprueba.
+#
+# ⚠️ **Es un crate aparte por la regla de siempre** (§243, §254, §296,
+# §463): quien comprueba el medio no compila el nodo, ni el probador, ni
+# winterfell. Aquí no hay campo finito: hay SHA-256.
+#
+# ⚠️ **El árbol está COPIADO de mtc-core, no dependido** (D-G, decidido en
+# §631): `src/hash.rs` y `src/subtree.rs` de `github.com/atoranzo/mtc-core`
+# en `d3b0ca6`, byte a byte salvo las líneas `ADAPTADO (§631)`. Las
+# razones, en `src/lib.rs`.
+
+[dependencies]
+# SHA-256, el hash del log (RFC 6962/9162). Ya está en el Cargo.lock del
+# workspace en 0.10.9: no entra ninguna versión nueva.
+sha2 = "0.10"

@@ -1,7 +1,8 @@
 # RFC-0013 — El medio del ancla: las cabezas como checkpoints C2SP, cofirmadas por testigos ajenos
 
 - **Estado:** PROPUESTO — el texto y las decisiones, escritos sobre lo medido en mtc-core y en
-  las especificaciones C2SP; ninguna etapa construida. Nació BORRADOR y entra PROPUESTO al
+  las especificaciones C2SP; construida la E2a (§631), el árbol del medio, y el resto sin
+  construir. Nació BORRADOR y entra PROPUESTO al
   integrarse (§603): BORRADOR no tiene cara publicada en el cerrojo de `check_publicadas`, y el
   RFC-0011 nació igual, propuesto con sus decisiones delegadas. Las decisiones D-A a D-H son DELEGADAS y
   REVERSIBLES: la aceptación es del autor.
@@ -16,7 +17,8 @@
 - **Asiento(s) de AUDITORIA:** §174 (el diseño del anclaje externo), §248 (una raíz servida por
   el acusado no prueba nada), §291–§292 (el MMR de cabezas y su pareja firmada), §590–§593
   (RFC-0012, el ancla y su sobre), §594 (el gate del diario en todo estado), §599 (la vista
-  dividida servida por un nodo real: cada testigo solo no la ve); y, en mtc-core, sus asientos
+  dividida servida por un nodo real: cada testigo solo no la ve), §603 (la integración) y §631
+  (la E2a: el árbol del medio, y la D-G decidida); y, en mtc-core, sus asientos
   §14 y §15 (la interoperabilidad medida contra la implementación de referencia del IETF, en las
   dos direcciones, y el checkpoint de esa herramienta reconstruido desde sus tejas).
 - **Backlog:** la 86 (elegir y medir el medio), que este RFC cierra en diseño y deja abierta en
@@ -31,7 +33,8 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — el medio, decidido | este texto: qué se publica (D-A), en qué árbol (D-B), con qué firma (D-C), a qué testigos y cómo (D-D), quién lo comprueba (D-E), con qué cadencia (D-F), con qué piezas (D-G) y qué no resuelve (D-H) | no | **este texto, propuesto (§603)** |
-| E2 — la nota y el árbol del medio | el árbol SHA-256 de anclas, la nota `checkpoint` con su firma ML-DSA-44 tipo `0x06`, y los vectores: positivos y negativos de la nota, consistencia SHA-256 | no (aditivo, fuera del cable) | pendiente |
+| E2a — el árbol del medio | el árbol SHA-256 de anclas (`crates/zk-ssl-medio`) y los vectores de consistencia SHA-256: los acumulados y los grandes del borrador del IETF y las 685 sondas de `transparency-dev/merkle` | no (aditivo, fuera del cable) | **construida (§631)** |
+| E2b — la nota del medio | la nota `checkpoint` con su firma ML-DSA-44 tipo `0x06`, y sus vectores positivos y negativos | no (aditivo, fuera del cable) | pendiente |
 | E3 — el publicador | el cliente `add-checkpoint` del protocolo tlog-witness, la retención de las cofirmas de testigos y su publicación como nota cofirmada | no | pendiente |
 | E4 — el sobre en el kit | `tipo: "ancla-cofirmada"`: la nota, la política de testigos con umbral, la inclusión del ancla en el árbol del medio y, debajo, el sobre del ancla del RFC-0012; su banco y su catálogo | no | pendiente |
 
@@ -167,6 +170,21 @@ copiar los tres módulos con su procedencia. Lo primero evita dos implementacion
 problema; lo segundo evita una dependencia sobre un crate no auditado. Cualquiera de las dos vale
 para E2; ninguna cambia el cable.
 
+> ⚠️ **Corregido (§631).** «Como se depende de `hbs-state`» era falso: ningún `Cargo.toml` ni el
+> `Cargo.lock` de Arqueo nombran `hbs-state`; quien depende de él es mtc-core. No había un
+> precedente de dependencia por git que seguir. La frase se deja como estaba y se corrige aquí.
+
+**Decidido en el §631, por delegación: copiar.** `src/hash.rs` y `src/subtree.rs` de mtc-core
+`d3b0ca6` viven en `crates/zk-ssl-medio`, byte a byte salvo las líneas marcadas `ADAPTADO (§631)`,
+con su procedencia en la cabecera del crate y en `NOTICE`. Por tres razones medidas: mtc-core
+depende sin `optional` de `hbs-state` por git y, por defecto, de `ml-dsa`, y trae el formato
+X.509/MTC entero, cuando el árbol necesita dos ficheros y `sha2`, que ya estaba en el `Cargo.lock`;
+el kit de E4 debe reconstruirse desde este repositorio y crates.io; y la premisa del precedente era
+falsa. `log.rs` no se copia: es un log de entradas MTC, y el medio usa la recursión literal, O(n)
+por consulta, que E3 medirá si se queda corta. El precio, declarado: dos copias que pueden
+divergir, atadas por los mismos vectores del IETF, que pasan en los dos repositorios. `cosign.rs` y
+`pem.rs` se deciden en E2b, con la misma regla.
+
 ### D-H — El residuo, declarado
 
 Los del RFC-0012 D-H siguen: el medio es confianza **desplazada, no eliminada** —ahora a un
@@ -201,7 +219,8 @@ cable —el árbol del medio, la nota, el publicador— y en el kit, como una fa
 `tipo`, sus vectores y su banco, que es la vía que `NUCLEO.md` §3 reserva y que el RFC-0012 ya
 usó. Los vectores nuevos son de tres clases: notas positivas y negativas (firma mal, `origin`
 distinto, raíz que no cuadra, cofirma de testigo no nombrado), consistencia SHA-256 (los del
-borrador del IETF sirven tal cual, y ya están copiados en mtc-core con su licencia), y cofirmas
+borrador del IETF sirven tal cual, y ya están copiados en mtc-core con su licencia; desde el §631,
+también en `crates/zk-ssl-medio`, con las 685 sondas de `transparency-dev/merkle`), y cofirmas
 `0x06` (el corpus de mtc-core, contrastado con Go).
 
 ### Por qué entra por RFC
@@ -240,5 +259,8 @@ porque contesta una pregunta que el BACKLOG tenía marcada como «antes de dise�
 - mtc-core (`github.com/atoranzo/mtc-core`): `src/subtree.rs`, `src/log.rs`, `src/cosign.rs`,
   `src/pem.rs`, `examples/interop.rs`; su registro de auditoría, §9 (el arranque consulta el
   diario en todo estado, leído en este nodo), §14 y §15 (la interoperabilidad, medida dos veces).
+- `transparency-dev/merkle` (`fbbcd74`): `testdata/`, las 685 sondas que copia la E2a, y
+  `proof.VerifyConsistency`, con la que comprueba la consistencia el testigo de
+  `transparency-dev/witness` (`witness/witness.go`, `b4c9458`).
 - `ietf-plants-wg/merkle-tree-certs`, issue #341: el checkpoint de la herramienta de referencia
   no es todavía una línea de `tlog-cosignature`; confirmado por su autor.

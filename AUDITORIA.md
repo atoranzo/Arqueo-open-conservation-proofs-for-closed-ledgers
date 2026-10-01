@@ -44306,3 +44306,102 @@ en 43 abiertas y 73 resueltas.
 **Lo que NO cierra.** GitHub puede seguir sirviendo por su hash, durante un tiempo, los commits
 viejos de `xmss-kat` y de Arqueo, aunque ya nada los alcance.
 
+## §631 — RFC-0013 E2a: el árbol del medio, copiado con su procedencia y contrastado con tres corpus ajenos
+
+El commit que lleva este asiento, sobre `3200b3a` (el §629). Un solo sello: nace el crate
+`zk-ssl-medio`, con su fila en el canon y su entrada en `NOTICE`; el RFC-0013 marca la E2a
+construida y decide su D-G; la entrada 86 del `BACKLOG.md` y la fila del RFC en `spec/README.md`
+lo recogen; las cifras de seis documentos se ponen al día; y este asiento. 13 ficheros tocados, con
+77 inserciones y 18 borrados fuera de él, y 696 que nacen: 9 de texto (2.140 líneas) y 687 de
+vectores copiados. El número es el §631 porque el §630 es el de la otra sesión, como dejó dicho el
+§629. Lo escribe, lo prueba y lo commitea una sesión de Claude Code —la del S619 al §629—, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon
+`--sello` y empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19
+crates de ese nivel en sus pines, `zk-ssl-medio` 25 de 25 en 4 s.
+
+**De dónde sale.** El autor pidió la E2 del RFC-0013, pendiente desde el §603. Se parte en dos
+sellos. Esta E2a es el árbol, que no necesita ninguna dependencia nueva. La E2b, la nota
+`checkpoint` y su firma `0x06`, trae `ml-dsa`, que no está auditado (D-H, 2), y la decisión sobre
+`cosign.rs`; va en su propio sello.
+
+**La D-G, decidida por delegación: copiar, no depender.** Al ir a decidirla apareció que su
+premisa era falsa. «Depender de mtc-core por commit fijado, como se depende de `hbs-state`»: ningún
+`Cargo.toml` ni el `Cargo.lock` de Arqueo nombran `hbs-state`, y quien depende de él es mtc-core. Se
+corrige en el RFC con una nota que deja la frase como estaba. Se copia por tres razones medidas.
+mtc-core depende sin `optional` de `hbs-state` por git y, por defecto, de `ml-dsa`, y trae el
+formato X.509/MTC entero; el árbol necesita dos ficheros y `sha2`, que ya estaba en el `Cargo.lock`
+en 0.10.9, así que el lock sólo gana el paquete nuevo. El kit de E4 debe poder reconstruirse desde
+este repositorio y crates.io. Y no había precedente que seguir. `src/hash.rs` y `src/subtree.rs`
+son los de mtc-core `d3b0ca614e51f177a0c30f1d21abd87b91208f59`, su `HEAD` publicado. Medido con
+`diff`: en `hash.rs` cambian 7 líneas, todas en el módulo de tests (un `hex` local en lugar de
+`crate::der::hex`); en `subtree.rs`, 13, todas en la documentación de cabecera (los nombres de los
+tests y `log::IssuanceLog`, que no se copia). Ni una línea de código de los algoritmos difiere.
+Cada cambio lleva la marca `ADAPTADO (§631)`. Los dos ficheros de tests vienen de
+`tests/vectors.rs` y `tests/large_vectors.rs`, con el nombre del crate cambiado. Del último de
+`vectors.rs` sólo queda su segunda mitad, la prueba de otro índice: la primera recortaba un byte
+de un `MtcProof` codificado, que es del formato MTC y no del árbol. Los dos JSON grandes son byte
+a byte los de mtc-core.
+
+**Lo que hace.** (1) `crates/zk-ssl-medio`, el quinto crate nacido de la misma regla (§243, §254,
+§296, §463): quien comprueba el medio no compila el nodo, ni el probador, ni winterfell. (2)
+`src/medio.rs`, lo propio de aquí: la hoja es `SHA-256(0x00 || huella)` del ancla de 32 bytes
+(RFC-0012 D-A), `ArbolDelMedio` añade anclas y da raíces y pruebas a cualquier tamaño pasado, y
+`verificar_inclusion` y `verificar_consistencia` son las de RFC 9162 sobre `[0, tamaño)`, delegando
+en el borrador. Lo que añaden son los bordes, fijados como en `transparency-dev/merkle`: un índice
+fuera del árbol no tiene inclusión, un log que decrece es un error, y desde el árbol vacío no hay
+consistencia que probar. `tlog-witness` trata `old 0` en el protocolo, no en el árbol. (3)
+`tests/vectores/README.md` y `NOTICE`, con la procedencia y las licencias de los tres corpus: la
+Simplified BSD License del IETF Trust para los vectores del borrador y Apache-2.0 para las sondas.
+
+**Tres corpus, de tres manos.** Los 65.058 casos acumulados del borrador del IETF y sus vectores
+grandes hasta `2^64-1` hojas, que mtc-core ya pasaba y aquí pasan igual. Y uno nuevo: las 685
+sondas de `testdata/` de `transparency-dev/merkle` en `fbbcd74`. Es la biblioteca con la que el
+testigo de `transparency-dev/witness` comprueba la consistencia antes de cofirmar
+(`witness/witness.go`, `proof.VerifyConsistency`, en `b4c9458`): el código que correrá al otro
+lado del medio. Copiadas sin tocar; el hash de la lista ordenada de sus `sha256sum` es
+`d9edf5f2…204da6e` aquí y en el origen. Cada sonda se corre con su función de aquí y el veredicto
+tiene que ser el suyo. De las 43 positivas, 39 pasan. Las otras 4 llevan como raíz el texto
+`"don't care N"`, de 12 bytes, en casos en que su verificador no la mira; aquí una raíz es `[u8;
+32]` y el tipo no deja escribirlas, así que quedan fijadas por nombre. De las 642 negativas
+**ninguna se acepta**: 162 las rechaza el tipo (un hash de 0, 9 o 12 bytes) y 480 el árbol. Las
+raíces de RFC 6962 de su `testonly/constants.go`, de 0 a 8 hojas, también cuadran.
+
+**El punto ciego, medido.** Las dos cuentas se separan porque importa, y se comprobó con cuatro
+mutaciones del verificador, cada una restaurada después:
+
+| mutación | las 685 sondas | lo que cae |
+|---|---|---|
+| inclusión sin `ProofTooShort` | caen dos carpetas | — |
+| inclusión sin `ProofTooLong` | caen dos carpetas | — |
+| consistencia **sin comparar la raíz vieja** | **pasan las 685** | `medio::tests`, los vectores grandes y los acumulados del IETF |
+| `medio` sin sus bordes | pasan las 685 | `medio::tests::los_bordes` |
+
+La tercera es la que importa. Las negativas «wrong root1», «wrong root2» y «wrong leaf» de
+`transparency-dev` sustituyen el hash por el texto `WrongRoot` o `WrongLeaf`, de 9 bytes. En Go
+llegan a la comparación; en un verificador tipado las rechaza el tipo antes, y la comparación de la
+raíz vieja no se ejerce nunca. Un verificador en Rust que se la salte pasa el corpus entero. Lo
+tapa un test nuevo, `sus_positivas_con_un_bit_cambiado_en_32_bytes`, con 46 negativas de 32 bytes
+derivadas de sus positivas escribibles y declaradas como de Arqueo, no de `transparency-dev`. Con
+la mutación cae. La cuarta dice otra cosa: los bordes de `medio` son defensa en profundidad, porque
+el verificador del borrador ya rechaza esos casos por su cuenta, y sólo los fija un test unitario.
+
+**Contadores.** `zk-ssl-medio` nace con 25 tests —10 unitarios, 7 y 2 en los dos ficheros de
+vectores del IETF y 6 en el de las sondas—, 0 ignorados, 0 warnings y 6 s en frío; su fila del
+canon, con 60 s. TOTAL DE SELLO 1529 -> 1554; TOTAL CON LARGOS 1666 -> 1691: los tres párrafos
+ancla al día (`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, cuyo desglose nombra ya el árbol del
+medio). La cuenta de
+`check_tests`, 1688 -> 1713. Crates del workspace, 21 -> 22, 19 propios: `README.md`,
+`README_EN.md` y los dos lados de `RESUMEN_BILINGUE.md`. Siguen rancias a propósito, como desde el
+§503 (5.A-319), las «1364 declaradas», las «1349 declared» y las «18 ignoradas». El `BACKLOG.md`
+sigue en 43 abiertas y 73 resueltas: la 86 gana su avance y sigue abierta.
+
+**Lo que NO hace.** No toca el cable, ni la cabeza, ni el nodo, ni el kit. No copia `log.rs`: el
+medio usa la recursión literal, O(n) por consulta, y si el publicador la necesita más rápida lo
+medirá E3. No firma ni lee notas. No reporta el punto ciego a `transparency-dev`: es salida hacia
+fuera y la decide el autor.
+
+**Lo que NO cierra.** La E2b: la nota `checkpoint`, la firma ML-DSA-44 de tipo `0x06` con su
+`key_id`, sus vectores positivos y negativos, y su contraste con el verificador de mtc-core. Las
+copias de aquí y de mtc-core pueden divergir: las atan los mismos vectores del IETF, no una
+dependencia.
+

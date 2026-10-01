@@ -48,6 +48,27 @@ crates/winter-air/, crates/winter-prover/, crates/winter-verifier/
     §538 y lo primero en el §537 y el §575. El error se registra en vez
     de borrarse.
 
+crates/zk-ssl-medio/  (§631)
+
+    `src/hash.rs` y `src/subtree.rs` proceden de mtc-core
+    (https://github.com/atoranzo/mtc-core, commit d3b0ca6), del mismo
+    autor y bajo la misma licencia dual MIT / Apache-2.0; las líneas
+    cambiadas llevan la marca «ADAPTADO (§631)».
+
+    `tests/vectores/large_*.json` son los vectores grandes del borrador
+    draft-ietf-plants-merkle-tree-certs (ietf-plants-wg/merkle-tree-certs,
+    commit 99097c9), Copyright (c) IETF Trust and the persons identified
+    as authors of the code, bajo la Simplified BSD License de la sección
+    4.c de las IETF Trust Legal Provisions
+    (https://trustee.ietf.org/license-info).
+
+    `tests/vectores/transparency-dev/` son las sondas de `testdata/` de
+    https://github.com/transparency-dev/merkle (commit fbbcd74),
+    Copyright 2025 Google LLC, bajo la Apache License 2.0
+    (LICENSE-APACHE). Sin modificar.
+
+    Detalles y hashes en crates/zk-ssl-medio/tests/vectores/README.md.
+
 --------------------------------------------------------------------------
 SIN AFILIACIÓN INSTITUCIONAL
 --------------------------------------------------------------------------

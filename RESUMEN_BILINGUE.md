@@ -46,7 +46,7 @@ contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CAS
 
 ### Estado
 
-21 crates en Rust (18 propios y el fork de winterfell 0.13.1 en tres) con canon en cada cambio;
+22 crates en Rust (19 propios y el fork de winterfell 0.13.1 en tres) con canon en cada cambio;
 protocolo `zkssl/0.4` con 31 métodos y vectores que no se reescriben;
 RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 y 0014 aceptados, 0005 y 0013 propuestos; verificador
 `zk-ssl-verify` 0.3.0 (publicada, `arqueo-verify-v0.3.0`, reproducible); registro con un asiento por
@@ -103,7 +103,7 @@ counterparties, nor a central-bank digital currency ([`doc/USE_CASES.md`](./doc/
 
 ### Status
 
-21 crates in Rust (18 of our own and the winterfell 0.13.1 fork in three) with the canon on every
+22 crates in Rust (19 of our own and the winterfell 0.13.1 fork in three) with the canon on every
 change; protocol `zkssl/0.4` with 31 methods and vectors that are never rewritten;
 RFCs 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 and 0014 accepted, 0005 and 0013 proposed;
 verifier `zk-ssl-verify` 0.3.0 (published, `arqueo-verify-v0.3.0`, reproducible); a record with one

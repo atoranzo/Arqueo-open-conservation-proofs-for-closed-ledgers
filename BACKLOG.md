@@ -706,6 +706,10 @@ instrumentacion) al grupo E.*
   —nota `tlog-checkpoint` firmada con ML-DSA-44 tipo `0x06`, árbol SHA-256 de
   anclas, testigos ajenos por `tlog-witness`— y deja el despliegue y su medida
   como etapas E2 a E4, pendientes. Sigue abierta por eso.
+  ✅ a medias (§631): la E2a, el árbol SHA-256 de anclas, construido en
+  `crates/zk-ssl-medio` y contrastado con los vectores del IETF y las 685
+  sondas de `transparency-dev/merkle`. QUEDAN la nota (E2b), el publicador
+  (E3) y el sobre del kit (E4): sigue abierta.
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro
   tiene dos eras (§281). **El esquema de firma no tiene ninguna de las

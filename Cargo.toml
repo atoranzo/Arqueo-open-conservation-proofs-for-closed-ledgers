@@ -29,6 +29,10 @@ members = [
     # `-crypto`, `-math` y `-verifier` SUELTOS, clavados con `=`; el
     # probador (`winter-prover`) no entra.
     "crates/zk-ssl-air",
+    # ⚠️ El ARBOL DEL MEDIO del ancla (RFC-0013 E2a, §631). Quinta vez de
+    # la regla: quien comprueba el medio no compila el nodo. SHA-256 de
+    # RFC 6962, copiado de mtc-core con su procedencia; solo `sha2`.
+    "crates/zk-ssl-medio",
     # ⚠️ El FORK de winterfell 0.13.1 (RFC-0009 E3a-1, §533): entra APAGADO
     # por el [patch.crates-io] del final, con los NOMBRES de crates.io, para
     # que el gate de H2 -que mide la clausura del kit por nombre- siga
