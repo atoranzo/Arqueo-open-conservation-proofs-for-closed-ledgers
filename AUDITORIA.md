@@ -45119,3 +45119,90 @@ añade ni regenera un vector de `spec/vectors/`. No toca los AIR del kit ni sus 
 corre `--bancos` ni `--completo`: sólo `--sello`. La integración sobre `main` —el rebase, el renombre
 de la canonicidad al §640 y al RFC-0016, y el recálculo de los contadores sobre la base nueva— queda
 para cuando el autor la autorice.
+
+## §637 — el plano v2.0: un enjambre diagnostica, debate y propone por cortes, y ocho hallazgos van en privado
+
+El commit que lleva este asiento, sobre `e1d1db3` (el §642). Un solo sello de documentos: nace
+`doc/blueprint-v2.md` (1.257 líneas), y este asiento; ningún otro fichero. El número es el §637
+porque se reservó cuando `main` llegaba al §635 y otra sesión escribía el §636; esa sesión lo saltó
+(§638, §639 y §642 en `main`; el §640 y el §641 son de la rama `claude/nice-cannon-arzmc9`), y este
+asiento va detrás del §642 porque entra después. El trabajo empezó sobre `7d13f26`, se comprobó
+sobre `e69fadd` y `f7aad05` y se rehízo sobre `e1d1db3` con un rebase de su propia rama: el commit
+sólo añade un documento y este asiento, y las tres citas que el §633 al §635 movieron se pusieron
+al día. Lo escribe, lo mide y lo commitea una sesión de Claude Code en la nube, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre `f7aad05` con
+este documento, el canon `--sello` salió VERDE: los 19 crates del nivel en sus pines, 436 s de
+tests y 8 min 52 s en total, con las compuertas de documentos y la segunda implementación en verde;
+sobre `e1d1db3` lo vuelve a correr el sello siguiente de esta rama.
+
+**De dónde sale.** El autor pidió, con una plantilla genérica de «prompt maestro», que un enjambre
+de cuatro agentes —criptografía y ZK, rendimiento y estructuras de datos, seguridad, y arquitectura
+y API— analizara Arqueo, debatiera y entregara un «Architecture Blueprint v2.0»: matriz comparativa,
+diagrama de bloques, plan de refactorización y fragmentos de código. La plantilla daba por objetivos
+«millones de pruebas de conservación por segundo» y «refactorizaciones extremas», y sugería
+Pedersen, vector commitments, SNARK y Bulletproofs. Se trató como hipótesis que contrastar con lo
+medido, no como objetivo dado.
+
+**Cómo se hizo.** Dos flujos de agentes de Claude Code, con las reglas de `CONTRIBUTING.md` en cada
+encargo: fuente y etiqueta para cada cifra, la tesis poscuántica, y nada presentado como nuevo si el
+registro ya lo había medido o descartado. El primero, 17 agentes en 70 minutos: cuatro especialistas
+leyeron `7d13f26` (el §631); un verificador adversarial por informe juzgó cada hallazgo, y de 41 no
+refutó ninguno, confirmó 15 y matizó 26; cinco debates cruzados (D1-D5) tomaron 60 posturas (6
+aceptar, 53 aceptar con condiciones, 1 rechazar), y cuatro réplicas respondieron 45 objeciones (38
+enmiendas, 6 concesiones, 1 defensa). El segundo, 10 agentes en 86 minutos: la síntesis pública, un
+aviso privado aparte, cinco revisiones del documento público (citas, cifras, embargo, bocetos con sus
+compuertas, y completitud), una del aviso y dos correctores. Después, la sesión comprobó el documento
+sobre `e69fadd` y corrió el canon.
+
+**Lo medido por la sesión**, sobre `7d13f26`, en release, en un contenedor de 4 vCPU con agentes de
+solo lectura corriendo a la vez (load average 1,6-2,8): el canon `--sello` VERDE, 16 min 45 s en
+frío; generar, mediana de cinco procesos, 865,4 ms el envío y 817,2 ms el cobro; aplicar en la capa
+en memoria, 4,8-6,2 ms; verificar, 3,98-4,93 ms por prueba en tres procesos
+(`el_coste_de_verificar_una_prueba`); y 79.241 y 79.000 B por prueba, medianas. La tabla «Métricas
+de la capa, medidas» de `ARQUITECTURA.md` da 61.966 B y ~620 ms para la transferencia: es anterior a
+la ocultación del §538. El documento lo señala en su §2.3 y no la toca.
+
+**Lo que dice el documento.** A «millones por segundo», que no, con números: una cadena de raíces se
+queda en ≈1.300 op/s (ESTIMADO) y el RTGS que el repositorio fija pide 21-105
+(`doc/DIAGNOSTICO_ESCALADO.md` §6.2); el techo es el encadenamiento de raíces con un solo escritor,
+no la criptografía. Lo que sí propone, en nueve cortes ordenados: medir el nodo tras el §538 antes de
+tocar nada; sacar del candado global el trabajo que crece con la historia; verificar en paralelo y
+aplicar en serie, sin clonar; un juez único de verificación; un solo corte de cable `zkssl/0.5` para
+todo lo que cambie los bytes de la prueba; memoria y arranque en O(época); y la integración: un nodo
+de producción que compile, errores tipados en el SDK, un testigo sin el probador y el verificador
+como biblioteca. Descarta Pedersen, KZG, Groth16, PLONK-KZG, Bulletproofs y las «zero-sum proofs»
+por la tesis, y la recursión de varios titulares por su coste. Los cinco bocetos se compilaron en una
+copia desechable de `e69fadd`; el boceto 4 midió con la función del fork la seguridad de una prueba
+de envío oculta real: 127 bits conjeturados, LDR 80 y UDR 59.
+
+**Ocho hallazgos, en privado.** El enjambre y su revisión encontraron ocho hallazgos de seguridad
+abiertos en `main`: cuatro P0, tres P1 y un P2. Por `SECURITY.md` §5 no se describen aquí ni en el
+documento. Se entregaron al autor en un aviso aparte, fuera del árbol, con la forma de un aviso
+privado de GitHub. Tres se reprodujeron con tests en un worktree desechable sobre `e69fadd`, que no
+se commitea; los demás constan con el veredicto de su verificador. El documento público pasó una
+revisión de embargo y, antes de este commit, un barrido con `grep` de los términos de cada uno: cero.
+
+**Decisiones (REVERSIBLES).** D-1: los ocho van en embargo, también el octavo, que no encontraron
+los especialistas sino la revisión. Si el autor divulga alguno antes de corregirlo, cambia el
+recuento del documento. D-2: los identificadores del documento (REND, ZK, SEC, ARQ) no son los del
+expediente del enjambre, para que los huecos no cuenten lo que se calla; la tabla de equivalencia la
+tiene el autor. D-3: el expediente y las medidas en bruto no se versionan; el §2.1 del documento
+transcribe las medidas. D-4: las cifras envejecidas de `ARQUITECTURA.md` no se tocan en este sello;
+el documento las lista.
+
+**Lo que NO hace.** No construye ningún corte ni cambia código. No abre entradas del `BACKLOG.md`.
+No publica el aviso privado. No enlaza el documento desde los README.
+
+**Lección.** Que un verificador no refute no es que confirme: de 41 hallazgos, 26 necesitaron una
+corrección, casi siempre de cifra o de alcance, y más de una cifra «MEDIDO» resultó ser un cálculo.
+Y el debate entre dimensiones vio lo que ninguna dimensión sola: el octavo hallazgo salió de cruzar
+dos informes, no de ninguno de los cuatro. La plantilla genérica, por su parte, cayó al contacto con
+lo medido; lo que la sesión añadió fue el número que convierte ese «no» en una cifra con fuente.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin, ni una entrada del `BACKLOG.md`, que sigue
+en 43 abiertas y 73 resueltas.
+
+**Lo que NO cierra.** Los ocho hallazgos, hasta que su corte 0 esté en `main`. La medida del nodo
+por RPC con disco tras el §538: el margen a pico RTGS de la vía suelta con disco, ≈1,04× a ≈2,2×,
+es ESTIMADO, y es lo primero que el corte 1 tiene que medir. Diecisiete agentes de una sesión no son
+una auditoría externa. Y esta sesión no corrió `--bancos` ni `--completo`.
