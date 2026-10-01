@@ -8,7 +8,7 @@ distintos** se detecta con las dos cabezas firmadas y los dos nodos apagados · 
 de libros se rechaza con su nombre. Desde la 0.3.0, una quinta: que lo que el nodo **recibió**
 bajo su firma quedó resuelto en su ventana, o el programa nombra al operador que no lo resolvió. Lo
 que va dentro del tarball y por qué está en
-`spec/PAQUETE.md`, sección 11, que viaja dentro. Ninguna de las cuatro comprobaciones necesita el
+`spec/PAQUETE.md`, sección 11, que viaja dentro. Ninguna de las cinco comprobaciones necesita el
 repositorio, al autor, un nodo ni una conexión.
 
 Es una CLI y no una página web a propósito: la respuesta a «¿cómo sé que ese programa hace lo que
@@ -16,34 +16,22 @@ dice?» es «descárguelo y córralo usted», y sólo vale si la descarga existe
 
 ## 0. Descargar, y comprobar la descarga antes de creerla
 
-La release vigente es `arqueo-verify-v0.2.0`, publicada en
-<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.2.0>,
-producida sobre el commit `1528943fdfb9399f56fd836f75ffbe655d004d78`:
-tarball `arqueo-verify-0.2.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
-`2fe9030a310a1e0b02768eaac19ac079114e8e4dae3bec04bb2bf2a3da79f5ce` (2.891.949 B, 109 ficheros);
-binario `6356debde7f117b15d16cc755a798fdd29ba55ef98707a7a9d05124406dc478b`. Las dos huellas están
-medidas desde fuera —descarga por `curl`, asset en la API, el kit descargado corriendo los cuatro
-pasos— en el asiento de `AUDITORIA.md` que registra esta release.
+La release vigente es `arqueo-verify-v0.3.0`, publicada en
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.3.0>,
+producida sobre el commit `65cabfb523d69382e216bf8bca6681393c755ead`:
+tarball `arqueo-verify-0.3.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`06648502e0171fea6d3cb2721a5289c8734ffb9b499f7018b1acf1773e745cdd` (15.485.894 B, 334 ficheros);
+binario `38fe5b9a6d04144b2cdbf3076542f6bd080d84ed8432db91be76e8f09edb7e29`. Las dos huellas están
+medidas desde fuera —descarga por `curl`, asset en la API, el kit descargado corriendo los cinco
+pasos y los diez catálogos— en el asiento de `AUDITORIA.md` que registra esta release. Recompone
+cabezas hasta la **v6**, la que el nodo firma hoy, y lee las diez familias de la sección 11 de
+`spec/PAQUETE.md`.
 
-⚠️ **Lo que esta release ya NO cubre (declarado el 2026-09-30; `BACKLOG.md`, entrada 107).** El
-binario de `arqueo-verify-v0.2.0` recompone cabezas hasta la **v4** —importa `epoch_digest_v2` a
-`epoch_digest_v4` y nada más—, y el nodo firma la v5 desde el §452 y la **v6** desde el §570. Medido
-el 2026-09-30 con ese binario compilado desde su tag contra los vectores de `main` en 71c5aad: sus
-propios paquetes —`posicion-v2.json` con cabeza v3, `consumo.json` con cabeza v4— siguen saliendo
-VERDE, y los sobres que nacieron después —`edad`, `prenda`, `cobro_pendiente`, `completitud`, con
-cabezas v5 y v6, y el `ancla` del §593, medida en el §596 contra `main` en ab79a50— salen **ROJO con
-salida 1** («tipo desconocido»). **Falla cerrada: nunca da un VERDE falso.** Los cuatro pasos de
-abajo usan los vectores que viajan dentro del tarball y con ellos funciona; lo que no puede es
-comprobar un paquete de un nodo de hoy. Para eso, hoy, el `zk-ssl-verify` del árbol (`cargo build
---release -p zk-ssl-verify`), que **no** es un artefacto publicado con huella.
-
-**La 0.3.0 está CORTADA en el código desde el §619.** El autor dio la v6 por estable el
-2026-10-01, y el verificador del árbol es `zk-ssl-verify` 0.3.0: recompone cabezas hasta la v6 y lee
-las diez familias de la sección 11 de `spec/PAQUETE.md`. Se publica sobre el commit del §620 -que
-corrige, antes de que viajen en el tarball, una frase falsa de cuatro de sus manifiestos- y en el
-orden de esa sección -tag, producir, subir-; publicarla es un acto del autor medido desde
-fuera (D-K5 del §442), y hasta que el asiento que la registre la fije con su huella, la release
-vigente sigue siendo la 0.2.0 de arriba.
+**La 0.2.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.2.0`, commit `1528943`,
+tarball `2fe9030a310a1e0b…`). Recompone cabezas hasta la v4: con los vectores de su propio tarball
+funciona, y los sobres que nacieron después —`edad`, `prenda`, `cobro_pendiente`, `completitud` y el
+`ancla`, con cabezas v5 y v6— los rechaza con salida 1 («tipo desconocido»). Falla cerrada: nunca da
+un VERDE falso (medido el 2026-09-30; `BACKLOG.md`, entrada 107).
 
 Cada release lleva un tag y se produce sobre el commit que su fichero `VERSION` nombra; la huella
 del tarball se publica **con su commit al lado**, en la página de la release y en el asiento de

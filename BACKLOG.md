@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 70 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
-recontadas en el §620 (la línea seguía con las del §597, 45 y 63) y en el §621.
+**Estado**: 43 abiertas, 71 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
+recontadas en el §620 (la línea seguía con las del §597, 45 y 63), el §621 y el §622.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -2311,7 +2311,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   commit **ya no son byte a byte los PDF depositados**. Rehacer los papers
   sigue suspendido: esto no lo adelanta.
 
-- [ ] **107. El kit publicado no comprueba lo que el nodo firma hoy.**
+- [x] **107. El kit publicado no comprueba lo que el nodo firma hoy.**
   `arqueo-verify-v0.2.0` (§442, §443; commit `1528943`) recompone cabezas hasta
   la v4 y el nodo firma la v5 desde el §452 y la v6 desde el §570. **Medido el
   2026-09-30** con el binario compilado desde su tag contra los vectores de
@@ -2343,6 +2343,13 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   verifica `arqueo-verify-v0.2.0`, y medido es falso (0 de 38; los verifica el
   arbol en `0eda58c`, 38 de 38). Se corrige antes de publicar, y el tag va sobre
   el commit del §620.
+  ✅ **CERRADA en el §622**: `arqueo-verify-v0.3.0` publicada por el autor sobre
+  `65cabfb` (tag ligero, tarball producido sobre `target/artefacto/` vacio,
+  `gh release create --verify-tag`) y medida desde fuera en DOS maquinas, que
+  dicen lo mismo byte a byte: tarball `06648502e0171fea` (15.485.894 B, 334
+  ficheros), binario `38fe5b9a6d04144b`, y los cinco pasos del manual y los diez
+  catalogos desde el kit DESCARGADO. La 0.2.0 sigue publicada, ya no vigente,
+  con su limite declarado en la seccion 0 de los dos manuales.
 
 ## G. Otro proyecto, no una incidencia
 

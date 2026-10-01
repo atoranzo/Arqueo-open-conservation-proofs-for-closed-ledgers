@@ -200,12 +200,14 @@ protege a nadie.
 
 ### 17. ¿Cómo compruebo un expediente sin el nodo, sin red y sin fiarme del autor?
 
-Con el kit ([`doc/KIT.md`](./doc/KIT.md)): una descarga, la release `arqueo-verify-v0.2.0`, cuya
+Con el kit ([`doc/KIT.md`](./doc/KIT.md)): una descarga, la release `arqueo-verify-v0.3.0`, cuya
 huella se publica con su commit al lado. El verificador es una CLI de una línea:
 `./zk-ssl-verify <fichero.json>` sale 0 y escribe `VERDE: …` si el fichero se sostiene, 1 y el
-**primer** fallo con nombre (`ROJO: …`) si no. Cuatro pasos: un expediente que cuadra; uno
+**primer** fallo con nombre (`ROJO: …`) si no. Cinco pasos: un expediente que cuadra; uno
 manipulado que no cuadra, con la regla rota nombrada; la misma etiqueta en dos libros, detectada
-con las dos cabezas y los dos nodos apagados; y un intercambio de libros, rechazado con su nombre.
+con las dos cabezas y los dos nodos apagados; un intercambio de libros, rechazado con su nombre; y
+lo que el nodo recibió bajo su firma, resuelto en su ventana o con el operador que no lo resolvió
+nombrado.
 Los catálogos enteros se comprueban con el arnés que viaja dentro del tarball, y el binario se
 reproduce desde el commit que su `VERSION` nombra.
 

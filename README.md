@@ -46,15 +46,13 @@ operador. Prueba **conservación, no solvencia**: las pruebas hablan del libro, 
 
 ### Sin Rust y sin repositorio: el kit del verificador
 
-Una descarga, y cuatro comprobaciones en la máquina del que comprueba, sin red. La release vigente
-es `arqueo-verify-v0.2.0`, producida sobre el commit `1528943fdfb9399f56fd836f75ffbe655d004d78`;
+Una descarga, y cinco comprobaciones en la máquina del que comprueba, sin red. La release vigente
+es `arqueo-verify-v0.3.0`, producida sobre el commit `65cabfb523d69382e216bf8bca6681393c755ead`;
 la huella del tarball se publica con su commit al lado, en la página de la release y en el asiento
 de `AUDITORIA.md` que la registra. El guion completo, con la salida esperada de cada paso, es
-[`doc/KIT.md`](./doc/KIT.md). ⚠️ Esa release recompone cabezas hasta la v4 y el nodo firma hoy la
-v6: con los vectores de su tarball funciona, y un paquete de un nodo actual lo rechaza —falla
-cerrada, nunca un VERDE falso—. La 0.3.0, que lee la v6 y las diez familias, está cortada en el
-código desde el §619 y se publica sobre el commit del §620; hasta que su asiento la registre, la
-vigente es ésta. Medido y declarado en `doc/KIT.md`, sección 0.
+[`doc/KIT.md`](./doc/KIT.md). Recompone cabezas hasta la v6, la que el nodo firma hoy, y lee las
+diez familias de sobres; la 0.2.0, que se queda en la v4, sigue publicada y rechaza lo posterior
+—falla cerrada, nunca un VERDE falso—. Medido y declarado en `doc/KIT.md`, sección 0.
 
 ```bash
 sha256sum arqueo-verify-*.tar.gz          # tiene que ser la huella publicada junto al commit
@@ -78,6 +76,10 @@ cat VERSION                               # commit, describe, toolchain, glibc_m
 # 4 · un intercambio de libros se rechaza con su nombre            -> salida 1 en los dos
 ./zk-ssl-verify spec/vectors/conflicto/rechazo-conf-camino-no-sube.json; echo "salida $?"
 ./zk-ssl-verify spec/vectors/conflicto/rechazo-conf-misma-clave.json; echo "salida $?"
+
+# 5 · lo que el nodo RECIBIO bajo su firma: resuelto en su ventana, o el operador nombrado
+./zk-ssl-verify spec/vectors/completitud/resuelta-por-acuse.json; echo "salida $?"   # -> 0
+./zk-ssl-verify spec/vectors/completitud/no-resuelta.json; echo "salida $?"          # -> 1
 ```
 
 Y los catálogos enteros, con el arnés que viaja dentro del tarball: `bash conformidad.sh
@@ -199,7 +201,7 @@ a mirar el código con intención de romperlo, empieza ahí.
 | **21 crates** en un workspace —18 propios y los tres del fork de winterfell 0.13.1 (§533)—; el canon (`tools/canon.sh --sello`) corre los tests de todos, en release, y las ocho herramientas de `tools/` que vigilan cifras, citas, dominios y geometría | la tabla de [`tools/canon.sh`](./tools/canon.sh) lleva los tests que pasan por crate; cada sello la actualiza |
 | **Protocolo `zkssl/0.4`**: 31 métodos JSON-RPC (28 `zkssl_*`, 3 `dev_*`), OpenRPC generado desde el código, vectores por versión que jamás se reescriben | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (419 ficheros: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla, los catálogos 0.3 bajo `0.3/` y los cuatro `zkssl-0.N.json`) |
 | **RFC**: 0002, 0003, 0004, 0006, 0007 (las pruebas sobre el estado comprometido), 0008 (las pruebas portables del pendiente), 0009 (lo que revela una prueba), 0010 (el recibo de recepción), 0011 (el nodo mentiroso), 0012 (el ancla de cabezas) y 0014 (el recibo del lote y de la prenda) aceptados; 0005 (el núcleo congelado) y 0013 (el medio del ancla) propuestos | [`spec/rfc/`](./spec/rfc/) |
-| **Verificador independiente** `zk-ssl-verify` 0.3.0 en el árbol, cortada en el §619 para su release; la publicada es `arqueo-verify-v0.2.0`, reproducible desde el commit que su `VERSION` nombra | [`doc/KIT.md`](./doc/KIT.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
+| **Verificador independiente** `zk-ssl-verify` 0.3.0, publicada como `arqueo-verify-v0.3.0` y reproducible desde el commit que su `VERSION` nombra | [`doc/KIT.md`](./doc/KIT.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
 | **Registro**: un asiento por cambio verificado, con su commit; lo corregido se marca, no se borra | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |
 
 El diseño se eligió midiendo **el mismo circuito en cinco sistemas de prueba**

@@ -43753,3 +43753,86 @@ publicadas por una medida de un día); su diseño queda arriba, para repetirlo.
 
 **Lo que NO cierra.** El registro de la 0.3.0, que espera a su publicación sobre `65cabfb`.
 
+## §622 — la 107, segundo sello: el registro de la release arqueo-verify-v0.3.0, medida desde fuera
+
+El commit que lleva este asiento, sobre `53de116` (el S621). Un solo sello de documentos: los dos
+manuales del kit con la release vigente en su sección 0, los dos README, los dos resúmenes, las dos
+preguntas frecuentes, la entrada 107 cerrada, y este asiento, con el canon `--sello` VERDE dentro
+del bloque. 9 ficheros más este asiento, con 78 inserciones y 86 borrados fuera de él. Es el segundo
+sello del D-K5 del §442: el §619 cortó la versión, el §620 llevó el corte a su commit, y entre los
+dos sellos el autor publicó.
+
+**Lo que hizo el autor, en el orden de la sección 11 de `spec/PAQUETE.md`.** (1) **Tag** ligero
+`arqueo-verify-v0.3.0` sobre `65cabfb` (el §620), como el de la 0.2.0: `git cat-file -t` dice
+`commit`, `git describe` dice `arqueo-verify-v0.3.0-0-g65cabfb`, y la lista de tags de GitHub lo da
+sobre `65cabfb523d69382e216bf8bca6681393c755ead`. (2) **Producir** con `bash tools/artefacto.sh`
+sobre un `target/artefacto/` vacío, salida 0 y entera a un fichero: tarball
+`arqueo-verify-0.3.0-x86_64-unknown-linux-gnu.tar.gz` sha256
+`06648502e0171fea6d3cb2721a5289c8734ffb9b499f7018b1acf1773e745cdd`, **15.485.894 B, 334
+ficheros**; binario `38fe5b9a6d04144b2cdbf3076542f6bd080d84ed8432db91be76e8f09edb7e29`, 2.529.632
+B; manifiestos paquete 70/70, consumo 14/14, conflicto 16/16, rechazo 84/84, edad 11/11, pendiente
+9/9, pago 9/9, prenda 9/9, completitud 73/73 y ancla 21/21. `VERSION`: el commit y el describe de
+arriba, rustc 1.97.1 (`8bab26f4f`, LLVM 22.1.6), cargo 1.97.1, `glibc_max` 2.34, dinámico. (3)
+**Subir** con `gh release create --verify-tag`, título «arqueo-verify 0.3.0 - the verifier kit», y
+las notas en el molde de la 0.2.0, compuestas desde la salida de (2) sin copiar a mano ninguna
+huella.
+
+**El binario es reproducible, medido tres veces.** `38fe5b9a6d04144b` es el que el `artefacto.sh
+--check` del canon del autor midió en el S619 y en el S620: tres compilaciones, los mismos bytes. El
+tarball de aquel `--check` sobre `65cabfb` (`f0b61e8ba74ce08e`) no es este, y debe no serlo:
+entonces el tag no existía y `VERSION` decía otro `describe`. El de rustc 1.94.1 de este
+contenedor, `e7651e1709ccdac9`, tampoco: otro compilador, otros bytes, y por eso las notas nombran
+el rustc al lado de la huella.
+
+**Lo medido desde fuera, en DOS máquinas.** La del autor (WSL, 07:59:07 UTC) y este contenedor
+(07:57:06 UTC, glibc 2.39, una máquina que no produjo el tarball), con la misma orden, sobre lo
+DESCARGADO y no sobre `target/`. Sus dos salidas, de 117 líneas, son idénticas byte a byte salvo la
+línea de la hora. (a) **La descarga** por `curl -sL` de la URL del asset da
+`06648502e0171fea6d3cb2721a5289c8734ffb9b499f7018b1acf1773e745cdd` y 15.485.894 B. (b) **La API**
+(`releases/tags/arqueo-verify-v0.3.0`): `draft: false`, `prerelease: false`, `published_at
+2026-10-01T07:56:48Z`, y el asset EN EL ARRAY con `size 15485894` y un `digest`
+`sha256:06648502…` que GitHub calcula por su cuenta: una tercera huella del mismo fichero,
+independiente de las dos descargas. (c) **El kit descargado**: 334 ficheros; `sha256sum -c
+SHA256SUMS`, 333 OK y ninguno mal (los 334 menos el propio `SHA256SUMS`); `VERSION` con el commit y
+el describe; el binario `38fe5b9a6d04144b`; los cinco pasos del manual, once ficheros, cada uno con
+su salida y su texto: `posicion-v2.json`, `consumo.json`, `conflicto.json`,
+`resuelta-por-acuse.json` y `lote-aplicado.json` VERDE con salida 0; `rechazo-n-adulterado.json`,
+`rechazo-cons-ausencia-ya-estaba.json`, `rechazo-conf-camino-no-sube.json`,
+`rechazo-conf-misma-clave.json`, `no-resuelta.json` («NO RESUELTA EN LA VENTANA») y
+`prenda-sin-fundamento.json` («RECHAZO SIN FUNDAMENTO») ROJO con salida 1; y los diez catálogos con
+el arnés que viaja dentro, todos con salida 0 y las diez cifras de arriba. **Antes** de existir la
+release, la misma URL dio 404 y 9 B, «Not Found», huella `0019dfc4b32d63c1` (06:14:59 UTC, la misma
+que midió el §443), y la API, 404.
+
+**Lo que hace.** (1) `doc/KIT.md` y `doc/KIT_EN.md`, sección 0: la release vigente es la 0.3.0, con
+su URL, su commit y sus dos huellas al lado, medidas desde fuera en el asiento que la registra (D-R2
+del §443: sin nombrarlo por número); la 0.2.0 queda como publicada y ya no vigente, con su límite en
+la v4 y su falla cerrada; el párrafo de «cortada» desaparece, y la introducción dice cinco
+comprobaciones. (2) `README.md` y `README_EN.md`: el párrafo del kit con la 0.3.0 y su commit, el
+paso 5 en el bloque de órdenes, y la fila «Verificador independiente» de la tabla «Estado». (3) Los
+dos resúmenes. (4) `PREGUNTAS.md` y `QUESTIONS.md`, la 17: la release 0.3.0 y los cinco pasos. (5)
+`BACKLOG.md`: la 107 se cierra, y la línea de estado queda en 43 abiertas y 71 resueltas.
+
+**Decisiones (REVERSIBLES).** Las cuatro del §443 siguen: D-R1 notas con tarball, bytes, ficheros,
+commit y binario, y las tres frases que no van en letra pequeña, sin cifras de rendimiento; D-R2 el
+párrafo de la release vigente en la sección 0 de los dos manuales, con la huella al lado del commit;
+D-R3 este registro no mueve código, pines ni cifras; D-R4 publicada con `gh` desde WSL. Y dos más.
+**D-R5**: las notas dicen además lo que la 0.3.0 lee de nuevo y el límite del sobre de completitud
+(«an unresolved receipt is evidence the operator can rebut, not a cryptographic proof of absence»):
+un límite nuevo va donde va la release, no sólo en el manual. **D-R6**: la 0.2.0 no se retira; sus
+propios vectores siguen verificando, su asiento la registra, y quien la tenga descargada tiene que
+poder seguir comprobándola contra su huella.
+
+**Lo que NO hace.** No toca `tools/artefacto.sh`, `spec/PAQUETE.md` ni el código. No toca los
+documentos con base declarada que nombran la 0.2.0 como la publicada de su fecha
+(`doc/ecst/ECST.md` y su versión inglesa, sobre `71c5aad`; `doc/ecst/VERIFICACION.md`): dicen lo que
+era verdad en su base. No mueve la web ni deposita nada: el enlace de descarga entra en `arqueo.org`
+en su propia pasada, con esta huella y este commit.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin. El tarball pasa de 2,9 MB a 15,5 MB: son
+las pruebas reales de los vectores de completitud y de prenda.
+
+**Lo que NO cierra.** `--bancos` no se corre desde `8b8e3f4`, y el canon lo pide: dos ficheros de
+lo que ejercen cambiaron (la versión del crate y su `Cargo.lock`, en el §619). Ningún banco mira el
+número de versión, pero eso se mide, no se supone.
+

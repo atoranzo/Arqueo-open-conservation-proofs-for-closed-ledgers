@@ -8,7 +8,7 @@ ledgers** is detected from the two signed heads with both nodes off · and that 
 rejected by name. Since 0.3.0, a fifth: that what the node **received** under its signature was
 resolved within its window, or the program names the operator that did not resolve it. What travels
 in the tarball, and why, is in `spec/PAQUETE.md`, section 11, which
-travels inside. None of the four checks needs the repository, the author, a node or a connection.
+travels inside. None of the five checks needs the repository, the author, a node or a connection.
 
 It is a CLI and not a web page on purpose: the answer to "how do I know that program does what it
 says?" is "download it and run it yourself", and that only holds if the download exists and can be
@@ -16,34 +16,23 @@ reproduced.
 
 ## 0. Download, and check the download before believing it
 
-The current release is `arqueo-verify-v0.2.0`, published at
-<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.2.0>,
-produced on commit `1528943fdfb9399f56fd836f75ffbe655d004d78`:
-tarball `arqueo-verify-0.2.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
-`2fe9030a310a1e0b02768eaac19ac079114e8e4dae3bec04bb2bf2a3da79f5ce` (2,891,949 bytes, 109 files);
-binary `6356debde7f117b15d16cc755a798fdd29ba55ef98707a7a9d05124406dc478b`. Both hashes are
-measured from the outside — `curl` download, asset in the API, the downloaded kit running the four
-steps — in the `AUDITORIA.md` entry that registers this release.
+The current release is `arqueo-verify-v0.3.0`, published at
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.3.0>,
+produced on commit `65cabfb523d69382e216bf8bca6681393c755ead`:
+tarball `arqueo-verify-0.3.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`06648502e0171fea6d3cb2721a5289c8734ffb9b499f7018b1acf1773e745cdd` (15,485,894 bytes, 334 files);
+binary `38fe5b9a6d04144b2cdbf3076542f6bd080d84ed8432db91be76e8f09edb7e29`. Both hashes are
+measured from the outside — `curl` download, asset in the API, the downloaded kit running the five
+steps and the ten catalogues — in the `AUDITORIA.md` entry that registers this release. It
+recomposes heads up to **v6**, the one the node signs today, and reads the ten families of section
+11 of `spec/PAQUETE.md`.
 
-⚠️ **What this release NO LONGER covers (declared on 2026-09-30; `BACKLOG.md`, entry 107).** The
-`arqueo-verify-v0.2.0` binary recomposes heads up to **v4** — it imports `epoch_digest_v2` to
-`epoch_digest_v4` and nothing else — and the node signs v5 since §452 and **v6** since §570.
-Measured on 2026-09-30 with that binary built from its tag against the vectors of `main` at 71c5aad:
-its own packages — `posicion-v2.json` with a v3 head, `consumo.json` with a v4 head — still come out
-GREEN, and the envelopes born later — `edad`, `prenda`, `cobro_pendiente`, `completitud`, with v5
-and v6 heads, and the `ancla` of §593, measured in §596 against `main` at ab79a50 — come out **RED
-with exit 1** ("tipo desconocido", unknown type). **It fails closed: it never gives a false GREEN.**
-The four steps below use the vectors that travel inside the tarball, and with them it works; what it
-cannot do is check a package from today's node. For that, today, the in-tree `zk-ssl-verify` (`cargo
-build --release -p zk-ssl-verify`), which is **not** a published artifact with a fingerprint.
-
-**Release 0.3.0 is CUT in the code since §619.** The author declared v6 stable on 2026-10-01, and
-the in-tree verifier is `zk-ssl-verify` 0.3.0: it recomposes heads up to v6 and reads the ten
-families of section 11 of `spec/PAQUETE.md`. It is published on the commit of §620 — which corrects,
-before they travel in the tarball, a false sentence in four of its manifests — and in that section's
-order — tag, produce, upload —; publishing it is the author's act, measured from the
-outside (D-K5 of §442), and until the entry that registers it fixes it with its hash, the current
-release is still the 0.2.0 above.
+**Release 0.2.0 is still published and is no longer the current one** (`arqueo-verify-v0.2.0`,
+commit `1528943`, tarball `2fe9030a310a1e0b…`). It recomposes heads up to v4: with the vectors in
+its own tarball it works, and the envelopes born later — `edad`, `prenda`, `cobro_pendiente`,
+`completitud` and the `ancla`, with v5 and v6 heads — it rejects with exit 1 ("tipo desconocido",
+unknown type). It fails closed: it never gives a false GREEN (measured on 2026-09-30; `BACKLOG.md`,
+entry 107).
 
 Every release carries a tag and is produced on the commit its `VERSION` file names; the tarball's
 hash is published **next to its commit**, on the release page and in the `AUDITORIA.md` entry that

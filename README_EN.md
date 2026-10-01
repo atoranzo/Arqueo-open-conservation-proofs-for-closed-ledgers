@@ -47,15 +47,14 @@ speak of the ledger, not of the world.
 
 ### Without Rust and without the repository: the verifier kit
 
-One download, and four checks on the checker's own machine, offline. The current release is
-`arqueo-verify-v0.2.0`, produced on commit `1528943fdfb9399f56fd836f75ffbe655d004d78`; the
+One download, and five checks on the checker's own machine, offline. The current release is
+`arqueo-verify-v0.3.0`, produced on commit `65cabfb523d69382e216bf8bca6681393c755ead`; the
 tarball's fingerprint is published next to its commit, on the release page and in the
 `AUDITORIA.md` entry that records it. The full script, with the expected output of every step, is
-[`doc/KIT_EN.md`](./doc/KIT_EN.md). ⚠️ That release recomposes heads up to v4 and the node signs v6
-today: with the vectors in its tarball it works, and a package from a current node is rejected — it
-fails closed, never a false GREEN. Release 0.3.0, which reads v6 and the ten families, is cut in the
-code since §619 and is published on the commit of §620; until its entry registers it, this one is
-current. Measured and declared in `doc/KIT_EN.md`, section 0.
+[`doc/KIT_EN.md`](./doc/KIT_EN.md). It recomposes heads up to v6, the one the node signs today, and
+reads the ten envelope families; release 0.2.0, which stops at v4, is still published and rejects
+what came later — it fails closed, never a false GREEN. Measured and declared in `doc/KIT_EN.md`,
+section 0.
 
 ```bash
 sha256sum arqueo-verify-*.tar.gz          # must be the fingerprint published next to the commit
@@ -79,6 +78,10 @@ cat VERSION                               # commit, describe, toolchain, glibc_m
 # 4 · a swap of ledgers is rejected by name                    -> exit 1 on both
 ./zk-ssl-verify spec/vectors/conflicto/rechazo-conf-camino-no-sube.json; echo "exit $?"
 ./zk-ssl-verify spec/vectors/conflicto/rechazo-conf-misma-clave.json; echo "exit $?"
+
+# 5 · what the node RECEIVED under its signature: resolved in its window, or the operator named
+./zk-ssl-verify spec/vectors/completitud/resuelta-por-acuse.json; echo "exit $?"   # -> 0
+./zk-ssl-verify spec/vectors/completitud/no-resuelta.json; echo "exit $?"          # -> 1
 ```
 
 And the whole catalogues, with the harness that travels inside the tarball: `bash conformidad.sh
@@ -207,7 +210,7 @@ there.
 | **21 crates** in one workspace —18 of our own and the three of the winterfell 0.13.1 fork (§533)—; the canon (`tools/canon.sh --sello`) runs every crate's tests, in release, and the eight tools under `tools/` that watch figures, citations, domains and geometry | the table in [`tools/canon.sh`](./tools/canon.sh) carries the passing tests per crate; every seal updates it |
 | **Protocol `zkssl/0.4`**: 31 JSON-RPC methods (28 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version that are never rewritten | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (419 files: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla, the 0.3 catalogues under `0.3/` and the four `zkssl-0.N.json`) |
 | **RFCs**: 0002, 0003, 0004, 0006, 0007 (proofs over the committed state), 0008 (the portable proofs of a pending item), 0009 (what a proof reveals), 0010 (the reception receipt), 0011 (the lying node), 0012 (the head anchor) and 0014 (the batch and pledge receipt) accepted; 0005 (the frozen core) and 0013 (the anchor's medium) proposed | [`spec/rfc/`](./spec/rfc/) |
-| **Independent verifier** `zk-ssl-verify` 0.3.0 in the tree, cut in §619 for its release; the published one is `arqueo-verify-v0.2.0`, reproducible from the commit its `VERSION` names | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
+| **Independent verifier** `zk-ssl-verify` 0.3.0, published as `arqueo-verify-v0.3.0` and reproducible from the commit its `VERSION` names | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
 | **Record**: one entry per verified change, with its commit; what is corrected is marked, not erased | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |
 
 The design was chosen by measuring **the same circuit in five proof systems**
