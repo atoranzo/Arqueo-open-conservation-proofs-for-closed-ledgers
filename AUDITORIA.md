@@ -45443,3 +45443,36 @@ una búsqueda en un `HashSet` por validación; la huella ya se calculaba.
 
 **Contadores.** `zk-ssl` 426 -> 428, y los totales en los párrafos ancla y donde `check_cifras` los
 señaló. El `BACKLOG.md` no se mueve.
+
+## §655 — un fallo del almacén para el nodo: la memoria ya no firma lo que el disco no tiene
+
+El commit que lleva este asiento, sobre el §654 de esta misma rama. Es el sexto corte del aviso
+privado de seguridad del §637 (SEG-06, P2), en la parte (c), la única que el debate dejó para este
+sello. Lo escribe, lo prueba y lo commitea una sesión de Claude Code en la nube, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE: los 19 crates del nivel en sus pines, con 302 s de tests.
+
+**El defecto, leído.** La capa muta la memoria y después persiste. Si `commit()` falla —el disco
+lleno, por spam o por otra causa—, el error vuelve al cliente como un rechazo con causa `Store` y el
+nodo sigue sirviendo con la memoria por delante del disco: las cabezas firmadas desde memoria pueden
+acreditar raíces que el disco no tiene, y el siguiente `commit` escribe una raíz sin el registro del
+fallo, así que al reabrir la raíz no casa. Lo describió el auditor del enjambre por lectura; el
+comportamiento de sled con el disco lleno es SUPUESTO, no medido.
+
+**Lo que hace.** `despachar`, el único sitio que ya decide la PARADA (§530), gana un brazo: si la
+llamada devuelve un error cuya causa, que viaja como dato desde el §454 (`data.causa`), es `Store`,
+fija la PARADA con esa causa y la petición siguiente ya no se ejecuta. Es la misma clase que el
+candado envenenado: un estado que puede haber quedado a medio escribir no sigue sirviendo. Vale para
+cualquier método, no sólo los de escritura: en esta capa `Store` sólo nace al persistir o al abrir.
+
+**Falsadores.** Un rechazo con causa `Store` inyectado por el cierre, como los del §530: PARADA con
+su causa, y la petición siguiente no corre. Y su gemelo: un rechazo de otra causa (`StaleState`) no
+para el nodo.
+
+**Lo que NO cierra.** (a), anotar y pagar un fsync por una petición sin credencial antes de
+verificar, va al RFC-0010 como pregunta abierta: es una decisión de diseño del registro de
+recepción. (b), cachear la pareja de recepción, espera a un banco que mida `pareja_de_recepcion` y
+`zkssl_epochHead` frente al número de entradas. Las dos las decide el autor.
+
+**Contadores.** `zk-ssl-node` 177 -> 179, y los totales donde `check_cifras` los señaló. El
+`BACKLOG.md` no se mueve.

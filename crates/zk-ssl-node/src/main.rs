@@ -1829,6 +1829,17 @@ fn despachar(
         return Err(RpcError::parada(causa));
     }
     match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        // §655 (SEG-06 c): un fallo del ALMACEN deja la memoria por delante del disco -la capa
+        // muta y despues persiste-, y una cabeza firmada desde memoria acreditaria raices que el
+        // disco no tiene. Es la misma clase que el candado envenenado: el nodo no sigue sirviendo.
+        // La causa ya viaja como dato (RFC-0007 E2, `data.causa`), y este es el unico sitio que
+        // decide la PARADA.
+        Ok(Err(e)) if e.data.as_ref().and_then(|d| d.get("causa")).and_then(|c| c.as_str()) == Some("Store") => {
+            let _ = app.parada.set(format!("un fallo del almacen en {method}: {}", e.message));
+            let causa = app.parada.get().map(String::as_str).unwrap_or("");
+            tracing::error!(method = %method, causa = %causa, "PARADA: el nodo deja de servir");
+            Err(RpcError::parada(causa))
+        }
         Ok(r) => r,
         Err(p) => {
             let msg = if let Some(t) = p.downcast_ref::<&str>() {
@@ -3422,6 +3433,38 @@ mod tests {
         assert!(!app.estado.is_poisoned());
         let r2 = despachar(&app, "zkssl_supply", || dispatch(&app, "zkssl_supply", json!({})));
         assert!(r2.is_ok(), "la peticion siguiente se sirve: {r2:?}");
+    }
+
+    /// §655 (SEG-06 c): un rechazo de la capa con causa `Store` (el disco fallo despues de mutar
+    /// la memoria) pone el nodo en PARADA con esa causa, y la peticion siguiente no se ejecuta.
+    /// Falsador: sin el brazo de `despachar`, el error se devolvia y el nodo seguia firmando.
+    #[test]
+    fn un_fallo_del_almacen_para_el_nodo() {
+        let app = nodo(60);
+        let r = despachar(&app, "zkssl_applySend", || {
+            Err(RpcError::layer(
+                LayerError::Store(zk_ssl::store::StoreError::Malformed("disco lleno".into())),
+                0,
+            ))
+        });
+        let e = r.expect_err("un fallo del almacen no da Ok");
+        assert!(e.message.starts_with("nodo en PARADA: "), "{}", e.message);
+        assert!(app.parada.get().expect("PARADA con causa").contains("almacen"));
+        let corrio = std::cell::Cell::new(false);
+        let _ = despachar(&app, "zkssl_supply", || {
+            corrio.set(true);
+            Ok(Value::Null)
+        });
+        assert!(!corrio.get(), "en PARADA la peticion siguiente no se ejecuta");
+    }
+
+    /// §655: un rechazo de la capa por OTRA causa no para el nodo.
+    #[test]
+    fn un_rechazo_que_no_es_del_almacen_no_para_el_nodo() {
+        let app = nodo(60);
+        let r = despachar(&app, "zkssl_applySend", || Err(RpcError::layer(LayerError::StaleState, 0)));
+        assert!(r.is_err());
+        assert!(app.parada.get().is_none());
     }
 
     /// §530 - LA RED DEL PANICO: un pánico con el `estado` tomado lo envenena, y
