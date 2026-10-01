@@ -43925,3 +43925,41 @@ inserciones, 20 borrados), más la rama `xmss-kat-main` partida de dos de ellos.
 **Lo que NO cierra.** El cuarto hito de la 85 (el verificador STARK en Python, decidido pero sin
 escribir); el envío del reporte del §575, que es del autor; la aceptación de `GENAI.md` de toda esta
 rama; y la numeración, si el S622 de la otra sesión empuja antes y reclama el §623.
+
+## §624 — la 0.3.0 publicada lleva un `NOTICE` viejo: declarado donde la release se describe
+
+El commit que lleva este asiento, sobre `5da0081` (el §623). Un solo sello de documentos: la
+sección 0 de los dos manuales del kit gana un aviso, y este asiento, con el canon `--sello` VERDE
+dentro del bloque. 2 ficheros más este asiento, con 17 inserciones fuera de él.
+
+**De dónde sale.** De un aviso de la otra sesión de trabajo del autor (rama
+`claude/nice-planck-ax35zl`), medido aquí antes de escribir nada. El `NOTICE` del tarball de
+`arqueo-verify-v0.3.0` -el DESCARGADO de su release, idéntico al de `65cabfb`, porque
+`tools/artefacto.sh` lo copia tal cual- dice que la ocultación del fork la enciende sólo
+`Prover::ocultacion`, «que ningún probador de ARQUEO devuelve: ocho ficheros tocados y dos nuevos».
+La primera mitad es falsa desde el §538: en `65cabfb`, las 26 implementaciones de `fn ocultacion`
+fuera de `crates/winter-*` devuelven `Some` (el §623 cuenta los 23 probadores con fila, que es otro
+censo). La segunda la midió el §623: once ficheros tocados y tres nuevos desde el §575. El §623
+corrigió el `NOTICE` del árbol y registró el error; faltaba decirlo donde la release se describe. Ni
+el §620, que buscó frases falsas en lo que viaja en el tarball, ni el §622, que la registró, miraron
+`NOTICE`: miraron los manifiestos. Error mío.
+
+**Lo que hace.** `doc/KIT.md` y `doc/KIT_EN.md`, sección 0, debajo del párrafo de la release
+vigente: un aviso que cita la frase vieja, dice qué es verdad desde el §538 y desde el §575, que no
+cambia lo que el verificador comprueba -verifica pruebas con la ocultación encendida, y sus diez
+catálogos lo miden- y que un tarball publicado no se corrige: el `NOTICE` del árbol se corrigió en
+el §623, y la próxima release lo lleva. Es el molde del aviso que la 0.2.0 llevó en el §619.
+
+**Lo que NO hace.** No toca `NOTICE` ni los README de `crates/winter-*`, que son del §623. No
+republica ni reemplaza la release: la 0.3.0 sigue vigente, con sus huellas.
+
+**Lección.** Lo que viaja en el tarball no son sólo los manifiestos: `tools/artefacto.sh` copia del
+árbol, sin generarlos, `spec/PAQUETE.md`, los diez manifiestos con sus vectores, `conformidad.sh`,
+`NOTICE` y las dos licencias. Antes de cortar la próxima release, se leen todos, no sólo los que se
+sospechan.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin, ni una entrada del `BACKLOG.md`, que sigue
+en 43 abiertas y 73 resueltas.
+
+**Lo que NO cierra.** `--bancos` sigue sin correrse desde `8b8e3f4`, y el canon lo pide.
+

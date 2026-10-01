@@ -27,6 +27,15 @@ pasos y los diez catálogos— en el asiento de `AUDITORIA.md` que registra esta
 cabezas hasta la **v6**, la que el nodo firma hoy, y lee las diez familias de la sección 11 de
 `spec/PAQUETE.md`.
 
+⚠️ **Una frase vieja viaja en su `NOTICE`, declarada.** El `NOTICE` del tarball dice que la
+ocultación del testigo del fork de winterfell la enciende sólo `Prover::ocultacion`, «que ningún
+probador de ARQUEO devuelve», y que el fork toca «ocho ficheros y dos nuevos». Era la descripción
+del §534; desde el §538 todos los probadores de ARQUEO la encienden, y desde el §575 el fork toca
+once ficheros y tres nuevos. No cambia lo que el verificador comprueba -verifica las pruebas con la
+ocultación encendida, y sus catálogos lo miden-, pero es una descripción falsa del fork. Un tarball
+publicado no se corrige: el `NOTICE` del árbol se corrigió en el §623, y la próxima release lo
+lleva.
+
 **La 0.2.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.2.0`, commit `1528943`,
 tarball `2fe9030a310a1e0b…`). Recompone cabezas hasta la v4: con los vectores de su propio tarball
 funciona, y los sobres que nacieron después —`edad`, `prenda`, `cobro_pendiente`, `completitud` y el

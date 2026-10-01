@@ -27,6 +27,14 @@ steps and the ten catalogues — in the `AUDITORIA.md` entry that registers this
 recomposes heads up to **v6**, the one the node signs today, and reads the ten families of section
 11 of `spec/PAQUETE.md`.
 
+⚠️ **An outdated sentence travels in its `NOTICE`, declared.** The tarball's `NOTICE` says the
+witness hiding in the winterfell fork is switched on only by `Prover::ocultacion`, "which no ARQUEO
+prover returns", and that the fork touches "eight files and two new ones". That was the description
+of §534; since §538 every ARQUEO prover switches it on, and since §575 the fork touches eleven files
+and three new ones. It does not change what the verifier checks — it verifies proofs with hiding
+on, and its catalogues measure it — but it is a false description of the fork. A published tarball
+is not corrected: the tree's `NOTICE` was corrected in §623, and the next release carries it.
+
 **Release 0.2.0 is still published and is no longer the current one** (`arqueo-verify-v0.2.0`,
 commit `1528943`, tarball `2fe9030a310a1e0b…`). It recomposes heads up to v4: with the vectors in
 its own tarball it works, and the envelopes born later — `edad`, `prenda`, `cobro_pendiente`,
