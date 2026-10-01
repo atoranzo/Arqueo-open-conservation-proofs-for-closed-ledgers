@@ -45266,3 +45266,48 @@ este corte va en la versión nueva de `arqueo-verify` que pide el aviso, junto c
 **Lo que NO cierra.** Sacar `parse` fuera del candado, que el aviso deja como red adicional del
 enrutador de ARQ-09. La publicación de la versión nueva del kit. Y los otros siete hallazgos del
 aviso, de los que SEG-01 y SEG-08 los cierra la rama `claude/nice-cannon-arzmc9` (§641, RFC-0017).
+
+## §651 — la marca es parte de la forma: una prueba oculta con el meta vaciado ya no entra en pánico
+
+El commit que lleva este asiento, sobre el §650 de esta misma rama. Es el segundo corte del aviso
+privado de seguridad del §637 (D3-META, P0): lo señaló un debate del enjambre por lectura y lo
+reprodujo la redacción del aviso, en la capa y en el kit. Lo escribe, lo prueba y lo commitea una
+sesión de Claude Code en la nube, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la
+sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del nivel en sus pines, con 711 s de tests.
+
+**El defecto, medido.** El verificador del fork elige el modo leyendo el meta de la traza, y ese
+meta lo pone quien envía la prueba. Las guardas de forma del §529 —`comprobar_forma` en la capa,
+cinco copias en el kit (edad, banda, cobro pendiente, pago en curso y prenda) y el cierre `forma_ok`
+de `verify_threshold_pair`— exigían la forma oculta (ancho + 1, 2T) y no miraban el meta. Una prueba
+oculta honesta con sus 19 bytes de marca quitados pasaba la guarda y llegaba a `AIR::new` como una
+prueba en claro, que hace `assert_eq!` del ancho y entra en pánico. Medido en la sesión, en release:
+un envío honesto con el meta vaciado hace entrar en pánico a `apply_send` en
+`crates/stark-experiment/src/circuit_send.rs:751` (58 frente a 59). En el nodo eso ocurre con el
+candado tomado, por el camino de PARADA que el §650 midió; esa cadena entera por el nodo es
+ESTIMADA, no ejecutada. En el kit, `prenda.json` con el meta vaciado salía con 101 en vez de ROJO.
+
+**Lo que hace.** `zk-ssl-air` gana `M_OCULTACION` (la `m` de la casa, 64, que ahora también lee
+`ocultacion_encendida`: un solo productor) y `comprobar_marca(meta)`: sólo la marca de la casa con
+esa `m` es una prueba que se juzga. La llaman, antes de construir ningún AIR, las siete guardas: las
+cinco del kit, `comprobar_forma` de la capa (que gana la dependencia directa de `zk-ssl-air`, ya en
+su clausura por `stark-experiment`) y el par umbral. No cambia el cable, ni un vector, ni los bytes
+de ninguna prueba: las pruebas de la casa ya llevan esa marca.
+
+**Falsadores, y cuáles discriminan.** En la capa, el test unitario de la guarda (la forma oculta sin
+marca, y con `m = 4`, son `Err`) y un envío honesto con el meta vaciado que tiene que ser
+`VerificationFailed` sin pánico. En el par umbral, `WrongTraceWidth` sin pánico. En el kit, un
+vector positivo de cada familia con el meta vaciado tiene que salir ROJO, con el positivo primero y
+solo. **Medido con la regla desactivada**: caen el de la capa y cuatro de los cinco del kit (prenda,
+banda, cobro pendiente y pago en curso entran en pánico); el de edad pasa igual, porque esa familia
+rechaza la prueba sin meta por otro camino antes de `AIR::new`. Su guarda queda como defensa en
+profundidad, y se dice.
+
+**Contadores.** `zk-ssl` 423 -> 424, `stark-experiment` 403 -> 404, `zk-ssl-verify` 155 -> 160.
+TOTAL DE SELLO 1588 -> 1595; TOTAL CON LARGOS 1725 -> 1732, en los tres párrafos ancla, y las cifras
+de la capa y de los circuitos en `ARQUITECTURA.md`, `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`, que `check_cifras`
+señaló. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** El juez único (ARQ-01 del §637), que haría de las siete guardas una. La
+versión nueva del kit. Y que el verificador del fork elija el modo por el meta: la marca sigue
+mandando, pero ya sólo se acepta la de la casa.

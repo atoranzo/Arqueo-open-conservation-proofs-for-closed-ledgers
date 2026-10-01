@@ -92,7 +92,7 @@ pub use zk_ssl_air::sal::MerkleConSal;
 /// E3b2-M3: la ocultacion de los probadores con fila (D-Z, D-AE): m 64, semillas.
 pub fn ocultacion_encendida() -> winter_prover::Ocultacion {
     winter_prover::Ocultacion {
-        m: 64,
+        m: zk_ssl_air::M_OCULTACION,
         semilla_filas: zk_ssl_air::sal::semilla(),
         semilla_cociente: zk_ssl_air::sal::semilla(),
     }

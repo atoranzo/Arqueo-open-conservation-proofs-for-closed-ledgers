@@ -3603,3 +3603,64 @@ mod tests_hex_650 {
         assert!(hex_a_bytes("abcd").unwrap_err().starts_with("sin 0x: "));
     }
 }
+
+/// §651 (D3-META): en cada una de las cinco familias con prueba STARK, la prueba de un vector
+/// positivo con el meta VACIADO. Antes, la forma oculta pasaba la guarda y `AIR::new` entraba en
+/// panico por el ancho: el mando salia con 101. Ahora es ROJO, salida 1. Las cinco guardas son
+/// copias independientes (edad, banda, cobro pendiente, pago en curso, prenda): un vector cada una.
+#[cfg(test)]
+mod tests_marca_651 {
+    use super::*;
+
+    fn sin_meta(hex: &str) -> String {
+        let b = hex_a_bytes(hex).unwrap();
+        let largo = u16::from_le_bytes([b[4], b[5]]) as usize;
+        assert_eq!(largo, 19, "la prueba de la casa lleva la marca de 19 bytes");
+        let mut c = b[0..4].to_vec();
+        c.extend_from_slice(&[0, 0]);
+        c.extend_from_slice(&b[6 + largo..]);
+        format!("0x{}", c.iter().map(|x| format!("{x:02x}")).collect::<String>())
+    }
+
+    fn caso(vector: &str, ruta_prueba: &[&str]) {
+        let base = format!("{}/../../spec/vectors/{vector}", env!("CARGO_MANIFEST_DIR"));
+        assert_eq!(codigo_de_salida(&correr(&base)), 0, "{vector}: el positivo va primero y solo");
+        let mut v: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&base).unwrap()).unwrap();
+        let mut p = &mut v;
+        for k in &ruta_prueba[..ruta_prueba.len() - 1] {
+            p = &mut p[*k];
+        }
+        let campo = ruta_prueba[ruta_prueba.len() - 1];
+        let mala = sin_meta(p[campo].as_str().unwrap());
+        p[campo] = serde_json::Value::String(mala);
+        let tmp = std::env::temp_dir()
+            .join(format!("d3meta-{}-{}", std::process::id(), vector.replace('/', "-")));
+        std::fs::write(&tmp, serde_json::to_string(&v).unwrap()).unwrap();
+        let r = std::panic::catch_unwind(|| correr(tmp.to_str().unwrap()));
+        let _ = std::fs::remove_file(&tmp);
+        let r = r.unwrap_or_else(|_| panic!("CRITICO: {vector} sin marca hace entrar en panico al kit"));
+        assert_eq!(codigo_de_salida(&r), 1, "{vector}: ROJO, no otra cosa: {r:?}");
+    }
+
+    #[test]
+    fn la_prueba_de_edad_sin_marca_es_rojo() {
+        caso("edad/edad-todos.json", &["prueba"]);
+    }
+    #[test]
+    fn la_prueba_de_banda_sin_marca_es_rojo() {
+        caso("rechazo/saldo-insuficiente.json", &["banda", "prueba"]);
+    }
+    #[test]
+    fn la_prueba_del_cobro_pendiente_sin_marca_es_rojo() {
+        caso("pendiente/cobro-inferior-0.json", &["prueba"]);
+    }
+    #[test]
+    fn la_prueba_del_pago_en_curso_sin_marca_es_rojo() {
+        caso("pago/pago-t-seq.json", &["prueba"]);
+    }
+    #[test]
+    fn la_prueba_de_la_prenda_sin_marca_es_rojo() {
+        caso("prenda/prenda.json", &["prueba"]);
+    }
+}

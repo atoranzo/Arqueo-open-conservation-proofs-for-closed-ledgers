@@ -678,6 +678,8 @@ pub fn verify_threshold_pair(
             && i.aux_segment_width() == 0
             && i.get_num_aux_segment_rand_elements() == 0
             && i.length() == 2 * TRACE_LENGTH
+            // §651 (D3-META): y la marca, sin la que `AIR::new` entra en panico.
+            && zk_ssl_air::comprobar_marca(i.meta()).is_ok()
     };
     if !forma_ok(&proof_a) || !forma_ok(&proof_b) {
         return Err(PairRejection::WrongTraceWidth);
@@ -905,6 +907,29 @@ mod tests {
         assert_eq!(bytes[0] as usize, TRACE_WIDTH + 1, "byte0 es el ancho principal OCULTO");
         bytes[0] = TRACE_WIDTH as u8;
         let pa_mala = Proof::from_bytes(&bytes).expect("deserializa con la forma mutada");
+        assert_eq!(
+            verify_threshold_pair(pa_mala, ia, pb, ib, dominio(), root, op, &opciones()),
+            Err(PairRejection::WrongTraceWidth)
+        );
+    }
+
+    /// §651 (D3-META): la forma oculta EXACTA con el meta vaciado. Antes pasaba la
+    /// guarda del par y `AIR::new` entraba en panico por el ancho; ahora es
+    /// WrongTraceWidth. Byte 4-5: el largo u16 del meta; detras, la marca.
+    #[test]
+    fn una_prueba_oculta_sin_marca_da_wrong_trace_width_y_no_panico() {
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let op = operacion(8);
+        let (pa, ia) = autorizar(keys[1], &paths[1], op);
+        let (pb, ib) = autorizar(keys[2], &paths[2], op);
+        let bytes = pa.to_bytes();
+        let largo = u16::from_le_bytes([bytes[4], bytes[5]]) as usize;
+        assert_eq!(largo, winter_air::marca::LARGO, "la prueba de la casa lleva la marca");
+        let mut sin_meta = bytes[0..4].to_vec();
+        sin_meta.extend_from_slice(&[0, 0]);
+        sin_meta.extend_from_slice(&bytes[6 + largo..]);
+        let pa_mala = Proof::from_bytes(&sin_meta).expect("deserializa sin meta");
         assert_eq!(
             verify_threshold_pair(pa_mala, ia, pb, ib, dominio(), root, op, &opciones()),
             Err(PairRejection::WrongTraceWidth)

@@ -499,6 +499,8 @@ pub fn verificar(prueba: &[u8], pi: &CobroPendientePublicInputs) -> Result<(), S
             (ANCHO + 1, 0, 0, 2 * TRAZA)
         ));
     }
+    // §651 (D3-META): la marca es parte de la forma; sin ella, panico en `AIR::new`.
+    crate::comprobar_marca(info.meta())?;
     let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
     verify::<CobroPendienteAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
         proof,

@@ -145,6 +145,25 @@ pub const AUXILIARES: usize = 5 + 3 + 1;
 
 // ------------------------------------------------------------------ las opciones
 
+/// §651 (D3-META): la `m` de la ocultacion de la casa, la de `ocultacion_encendida` en todos los
+/// probadores con fila (D-Z, D-AE). Un solo productor: el probador la escribe en la marca y las
+/// guardas de forma la exigen.
+pub const M_OCULTACION: usize = 64;
+
+/// §651 (D3-META): la marca del meta es parte de la FORMA. El verificador del fork elige el modo
+/// leyendo el meta que pone quien envia la prueba: con el meta vaciado, una prueba de forma oculta
+/// (ancho + 1, 2T) pasaba la guarda de forma y llegaba a `AIR::new` en claro, que entra en panico
+/// por el ancho (`assert_eq!`). Toda guarda de forma llama a esto ANTES de construir ningun AIR:
+/// solo la marca de la casa, con su `m`, es una prueba que se juzga.
+pub fn comprobar_marca(meta: &[u8]) -> Result<(), String> {
+    match winter_air::Marca::leer(meta) {
+        Ok(Some(winter_air::Marca { m: M_OCULTACION })) => Ok(()),
+        otra => Err(format!(
+            "marca de la ocultacion {otra:?}; el enunciado pide m = {M_OCULTACION}"
+        )),
+    }
+}
+
 /// **Las opciones que el juez ACEPTA, y solo esas** (decision D-4). Son las `proof_options()` de
 /// la capa; un test de la capa las ata (dos literales son dos productores si nadie los cruza).
 pub fn opciones() -> ProofOptions {
@@ -608,6 +627,8 @@ pub fn verificar(prueba: &[u8], pi: &EdadPublicInputs) -> Result<(), String> {
             (ANCHO + 1, ANCHO_AUX, ALEATORIOS, 2 * filas)
         ));
     }
+    // §651 (D3-META): la marca es parte de la forma; sin ella, panico en `AIR::new`.
+    comprobar_marca(info.meta())?;
     let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
     verify::<EdadAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
         proof,

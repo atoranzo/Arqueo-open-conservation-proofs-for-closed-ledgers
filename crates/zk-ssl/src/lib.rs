@@ -258,7 +258,10 @@ pub(crate) fn comprobar_forma(
             "forma de traza {real:?}; el enunciado exige {exige:?}"
         )));
     }
-    Ok(())
+    // §651 (D3-META): y la MARCA. Con el meta vaciado, una prueba de forma oculta
+    // llegaba a `AIR::new` en claro y entraba en panico por el ancho, con el
+    // candado del nodo tomado.
+    zk_ssl_air::comprobar_marca(info.meta()).map_err(LayerError::VerificationFailed)
 }
 
 #[derive(Debug)]
@@ -1100,6 +1103,41 @@ impl SovereignLayer {
 mod guarda_forma {
     use super::{comprobar_forma, LayerError};
     use winterfell::TraceInfo;
+
+    /// La marca del meta, escrita a mano: el prefijo y m en cuatro bytes LE.
+    fn marca(m: u32) -> Vec<u8> {
+        let mut v = b"arqueo:oculta:1".to_vec();
+        v.extend_from_slice(&m.to_le_bytes());
+        v
+    }
+
+    /// §651 (D3-META): un envio honesto con el meta de su prueba VACIADO. Antes:
+    /// `apply_send` llegaba a `SendAir::new` y entraba en panico (58 frente a 59),
+    /// con el candado del nodo tomado. Ahora: `VerificationFailed`, sin panico.
+    #[test]
+    fn un_envio_con_el_meta_vaciado_es_err_y_no_panico() {
+        use crate::tests_support::*;
+        use winterfell::math::fields::f64::BaseElement;
+        let mut layer = new_layer();
+        let a = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let b = open_and_fund(&mut layer, SK_BOB, 0);
+        let ea = state_of(&layer, a);
+        let receptor = layer.public_id_of(b).expect("cuenta");
+        let mut envio = layer
+            .send(BaseElement::new(SK_ALICE), a, &ea, receptor, salt_de(0x651), 250_000)
+            .expect("envio");
+        let largo = u16::from_le_bytes([envio.proof[4], envio.proof[5]]) as usize;
+        assert_eq!(largo, 19, "la prueba de la casa lleva la marca de 19 bytes");
+        let mut sin_meta = envio.proof[0..4].to_vec();
+        sin_meta.extend_from_slice(&[0, 0]);
+        sin_meta.extend_from_slice(&envio.proof[6 + largo..]);
+        envio.proof = sin_meta;
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            layer.apply_send(&envio, a, &ea, 250_000)
+        }));
+        let r = r.expect("CRITICO: el meta vaciado no puede hacer entrar en panico a la capa");
+        assert!(matches!(r, Err(LayerError::VerificationFailed(ref m)) if m.contains("marca")), "{r:?}");
+    }
     #[test]
     fn una_forma_ajena_da_err_no_panico() {
         // ancho ajeno
@@ -1111,9 +1149,18 @@ mod guarda_forma {
         // longitud ajena
         let j = TraceInfo::new(44, 128);
         assert!(comprobar_forma(&j, 44, 0, 0, 512).is_err());
-        // la forma EXACTA pasa, y desde D-AD (RFC-0009) es la OCULTA: ancho + 1 y 2T
-        let k = TraceInfo::new(45, 1024);
+        // la forma EXACTA pasa, y desde D-AD (RFC-0009) es la OCULTA: ancho + 1 y 2T,
+        // y desde el §651 (D3-META) con la MARCA de la casa en el meta
+        let k = TraceInfo::with_meta(45, 1024, marca(64));
         assert!(comprobar_forma(&k, 44, 0, 0, 512).is_ok());
+        // §651: la forma oculta con el meta VACIO llegaba a `AIR::new` y entraba en panico
+        let sin_marca = TraceInfo::new(45, 1024);
+        assert!(matches!(
+            comprobar_forma(&sin_marca, 44, 0, 0, 512),
+            Err(LayerError::VerificationFailed(m)) if m.contains("marca")
+        ));
+        // §651: otra m tampoco es la de la casa
+        assert!(comprobar_forma(&TraceInfo::with_meta(45, 1024, marca(4)), 44, 0, 0, 512).is_err());
         // la forma APAGADA -la del AIR- se rechaza: en zkssl/0.4 solo hay una forma
         let apagada = TraceInfo::new(44, 512);
         assert!(matches!(
