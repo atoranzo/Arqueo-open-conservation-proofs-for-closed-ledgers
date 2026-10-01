@@ -607,6 +607,13 @@ fn politica_de_reconciliacion(
     // ⚠️ CONSECUENCIA DECLARADA: una clave NUEVA con el diario de la vieja
     //    tampoco arranca ahora -el diario no dice de que clave es cada linea-.
     //    Es fallar cerrada: se aparta el diario viejo a mano, y se sabe.
+    //
+    // ⚠️ CORREGIDO (§636): la razon entre guiones es FALSA. Cada linea firmada
+    //    lleva su `publicKey` (`diario::linea`); el que no lo mira es
+    //    `diario::maximo_indice`, que agrega los indices de todas las claves
+    //    juntas. La consecuencia si es cierta, y la ata
+    //    `el_maximo_no_mira_de_que_clave_es_cada_linea`. Mirarlo seria decidir
+    //    que hace el nodo al ROTAR de clave, y eso es la entrada 84, no un arreglo.
     let leido = match r {
         zk_ssl_guardian::Reconciliacion::Coincide { indice } => Some(*indice),
         zk_ssl_guardian::Reconciliacion::ContadorAdelantado { contador, .. } => Some(*contador),
@@ -3996,6 +4003,42 @@ mod tests {
             firma,
         };
         verificar_cabeza(&pk, &digest, &c).expect("lo que sirve el RPC debe verificar");
+    }
+
+    /// ⚠️ §636: **el «a demanda» de §115 y §121 NO existe.** Pedir la cabeza firmada sirve la
+    /// que el latido conservó y no firma otra, aunque el estado haya cambiado: el guardián no
+    /// sube y `seq`, `index` y la firma son los mismos. Si un día se construye, esto se pone
+    /// rojo y `latido.rs` tiene que dejar de decir que no existe.
+    #[test]
+    fn pedir_la_cabeza_firmada_no_firma_otra() {
+        use crate::firma_cabeza::FirmanteCabeza;
+        let app = nodo(30);
+        let d = crate::tests_dir("rpc_a_demanda");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let mut f = FirmanteCabeza::desde_semilla(&[7u8; 96], d.join("indice.bin")).expect("abrir");
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir");
+        crate::latido::conservar(&app, l);
+        let antes = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("cabeza");
+        assert_eq!(antes["available"], json!(true));
+        // El estado cambia: con la cache por `seq` de §115, aquí se firmaría otra.
+        cuenta(&app, 0xA1, 10);
+        let ahora = dispatch(&app, "zkssl_epochHead", json!({})).expect("epochHead");
+        assert_ne!(
+            ahora["seq"], antes["seq"],
+            "el estado tiene que haber cambiado"
+        );
+        for _ in 0..3 {
+            let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("cabeza");
+            for k in ["seq", "index", "signature", "epochDigest"] {
+                assert_eq!(v[k], antes[k], "{k}: pedir no firma otra cabeza");
+            }
+        }
+        assert_eq!(
+            f.indice_del_guardian(),
+            1,
+            "un latido, un índice: pedir no gasta ninguno"
+        );
     }
 
     /// RFC-0007 E1b (§452): **la cabeza que el nodo sirve lleva la familia de v5, y lo servido

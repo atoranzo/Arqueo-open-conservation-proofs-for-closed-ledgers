@@ -10,6 +10,13 @@
 //! por operación, al precio declarado de dar al operador **una ventana de
 //! un minuto**. No se reabre aquí.
 //!
+//! ⚠️ **CORREGIDO (§636): el «a demanda» NO existe.** Se decidió en §115 y §121 y nunca se
+//! construyó: el único que llama a `firmar` es este latido, y `zkssl_signedEpochHead` sirve
+//! la última cabeza que el latido conservó, sin firmar otra. Lo vio de pasada el §455, y el
+//! RFC-0008 descartó firmar a petición porque quema índices XMSS. Lo que rige es el latido:
+//! la ventana es de un latido, sin atajo. La línea de arriba queda corregida aquí en vez de
+//! borrarla (§247), y el test `pedir_la_cabeza_firmada_no_firma_otra` lo ata.
+//!
 //! Y de ella cuelgan cosas de §121: *«el plazo se cuenta en cabezas de
 //! época firmadas»*, *«llega en ≤1 latido»*, y **«estirar el latido para
 //! esquivar N es en sí evidencia oponible»**.

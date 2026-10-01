@@ -652,6 +652,14 @@ instrumentacion) al grupo E.*
   pérdida total de clave a la cuarta.** Es un dato que se puede **medir
   en el propio árbol** —no hace falta creerse el suyo— y merece un banco.
 
+  ⚠️ **(§636) Lo que hoy pasa al cambiar de clave, medido**: una clave
+  nueva con el diario de la vieja NO arranca. `diario::maximo_indice`
+  agrega los índices de todas las claves aunque cada línea firmada lleve
+  su `publicKey`, y el test `el_maximo_no_mira_de_que_clave_es_cada_linea`
+  lo ata. La razón que dio el §594 («el diario no dice de qué clave es cada
+  línea») era falsa y queda corregida en el código. Qué debe hacer el nodo
+  al rotar es de esta entrada, no de un arreglo.
+
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con
   XMSS^MT de RFC 8391 (los 42 fallos, negativos), 121/121 entradas del segundo verificador en las
@@ -2982,6 +2990,10 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ✅ **Cadencia (§115)**: **1/min + a demanda**, con cache por `seq`
   idempotente. El peor caso —un testigo pidiendo cada segundo— **degenera al
   escenario 1/s ya cuantificado**: techo conocido, no regimen.
+  ⚠️ **CORREGIDO (§636): el «a demanda» se decidió y NO se construyó.** Sólo
+  firma el latido; `zkssl_signedEpochHead` sirve la última cabeza conservada,
+  y el test `pedir_la_cabeza_firmada_no_firma_otra` lo ata. Un testigo pidiendo
+  cada segundo no cuesta ninguna firma. Queda corregido aquí en vez de borrarlo.
   ✅ **La premisa esta MEDIDA**: `t1_chain_retroactivo`, **3/3** — una cabeza
   firmada en `n` **ata las epocas anteriores**, asi que los 60 s son
   **latencia de oponibilidad, no impunidad**.

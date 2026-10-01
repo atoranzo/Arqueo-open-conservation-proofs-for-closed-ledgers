@@ -44731,3 +44731,71 @@ sitio, ni la deriva de nada. No toca el kit ni su contrato.
 **Lo que NO cierra.** La E3, el publicador, que espera la decisión del autor sobre con qué testigo
 público medir. Con ella, el RFC-0013 estaría construido entero.
 
+## §636 — la firma a demanda que no existe, y el diario que sí dice de qué clave es cada línea
+
+El commit que lleva este asiento, sobre `f7aad05` (el §635). Un solo sello de corrección: dos
+frases del árbol que el código no cumple, corregidas donde estaban y atadas cada una con un test;
+la fila del nodo y las cifras de tres documentos se ponen al día; y este asiento. 10 ficheros fuera
+de él, ninguno nuevo, con 94 inserciones y 10 borrados. Lo escribe, lo prueba y lo commitea la
+misma sesión de Claude Code que el §635, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión, sobre este mismo
+árbol, el canon `--sello` salió VERDE, con `zk-ssl-node` en 175 de 175 y `check_tests` en 1735.
+
+**De dónde sale.** Tras el §635, la siguiente por prioridad del grupo B es la 84, el ciclo de vida
+de la clave XMSS. Antes de proponer nada se midió el terreno leyendo el árbol (agotamiento,
+rotación, pérdida del índice), y la medida encontró dos frases que el código no cumple. Las dos
+tocan a la 84, y una propuesta no se escribe encima de frases falsas: van primero.
+
+**La primera: la firma «a demanda».** El §115 decidió «1/min + a demanda» —toda petición externa se
+responde firmada, con caché por `seq`— y el §121 lo repitió. No se construyó: fuera de los tests,
+el único que llama a `firmar` es el latido, y `zkssl_signedEpochHead` sirve la última cabeza que el
+latido conservó. Lo vio de pasada el §455 y lo anotó el registro generado
+`doc/ecst/VERIFICACION.md`, pero la cabecera de `latido.rs`, los mapas de
+`doc/CONFIANZA_RESIDUAL.md` y `doc/ESCALADO.md` y la entrada de la cadencia del `BACKLOG.md` lo
+seguían dando por hecho. El RFC-0008, además, descartó firmar a petición (su opción iv) porque
+quema índices XMSS. Lo que rige es el latido: la ventana es de un latido, sin atajo.
+
+**La segunda: «el diario no dice de qué clave es cada línea».** El §594 dio esa razón para una
+consecuencia que sí es cierta: una clave nueva con el diario de la vieja no arranca. La razón es
+falsa: `diario::linea` escribe `publicKey` en toda línea firmada desde que el diario nació en el
+§272. El que no lo mira es `diario::maximo_indice`, que agrega los índices de todas las claves
+juntas. A la 84 le importa la diferencia: no es un límite del diario sino una decisión de quien lo
+lee, y cambiarla es decidir qué hace el nodo al rotar de clave.
+
+**Lo que hace.** Cada frase queda corregida donde estaba, con «CORREGIDO (§636)» y sin borrar la
+original (§247): la cabecera de `latido.rs`, el comentario de `politica_de_reconciliacion`, los dos
+mapas de `doc/` y el `BACKLOG.md`. Los asientos §115, §121 y §594 no se tocan: los corrige
+este. El registro `doc/ecst/VERIFICACION.md` tampoco, porque es generado; su línea 2513 todavía
+dice «1/min más a demanda», y su línea 703, que no existe. Dos tests atan lo corregido:
+1. `pedir_la_cabeza_firmada_no_firma_otra`, en el nodo: con un firmante real, un latido y después
+   una cuenta abierta y fondeada, el `seq` cambia, que es cuando la caché por `seq` del §115
+   firmaría. Tres peticiones devuelven el mismo `seq`, `index`, firma y digest, y el guardián sigue
+   en 1.
+2. `el_maximo_no_mira_de_que_clave_es_cada_linea`, en el diario: dos líneas de dos claves, y el
+   máximo es el de la otra clave.
+
+La entrada 84 gana lo medido sobre qué pasa hoy al cambiar de clave.
+
+**Medido.** Los 175 tests del nodo pasan sobre este árbol. Una mutación, restaurada después:
+`maximo_indice` agregando solo las líneas de la última clave del diario —un nodo que ya supiera
+rotar— pone rojo `el_maximo_no_mira_de_que_clave_es_cada_linea` y deja verdes los otros dos tests
+del máximo, que no ven claves. El test de la firma a demanda no tiene mutación de una línea: el
+firmante solo lo tiene la tarea del latido, y el despacho del cable no lo alcanza. Eso también es
+lo medido. Antes de tocar nada, en la sesión, `--bancos` corrió los 22 bancos sobre `f7aad05`:
+VERDE, 22 de 22, en 1185 s.
+
+**Contadores.** `zk-ssl-node` pasa de 173 a 175 tests. TOTAL DE SELLO 1574 -> 1576 y TOTAL CON
+LARGOS 1711 -> 1713, en los tres párrafos ancla, con el desglose del nodo en 175. La cuenta de
+`check_tests` pasa de 1733 a 1735. Las «1364 declaradas» y las «1349 declared» no se tocan, como en
+los sellos anteriores. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** No construye la firma a demanda ni decide si se construye: la decisión del §115
+sigue escrita y sin código, y su condición de reversión, también. No cambia `maximo_indice` ni el
+arranque: una clave nueva con el diario de la vieja sigue sin arrancar.
+
+**Lo que NO cierra.** La 84. El agotamiento, la rotación y la pérdida del índice siguen sin
+respuesta escrita. Lo medido para ella va a su propuesta: no hay umbral de aviso antes del
+agotamiento, ni transición firmada por la clave anterior, ni identificador de clave o de esquema en
+lo que se firma. El testigo se detiene ante cualquier cambio de clave, y cada sobre del kit con dos
+cabezas exige que sean de un mismo firmante.
+

@@ -255,6 +255,25 @@ mod maximo_del_diario {
         let _ = std::fs::remove_file(&p);
     }
 
+    /// ⚠️ §636: el diario SI dice de que clave es cada linea firmada, y el maximo NO lo mira.
+    /// Los indices de una clave vieja cuentan para la nueva: por eso una clave nueva con el
+    /// diario de la vieja no arranca (`politica_de_reconciliacion`). Es la consecuencia
+    /// declarada en el §594, con su razon corregida; cambiarla es la entrada 84.
+    #[test]
+    fn el_maximo_no_mira_de_que_clave_es_cada_linea() {
+        let con_clave = |indice: u64, clave: &str| {
+            json!({"seq": q(1), "index": q(indice), "publicKey": clave}).to_string()
+        };
+        let cuerpo = [con_clave(9, "0xaa"), con_clave(2, "0xbb")].join("\n");
+        let p = en_disco("zkssl_max_indice_claves.jsonl", &(cuerpo + "\n"));
+        assert_eq!(
+            maximo_indice(&p),
+            Some(9),
+            "el 9 de la clave 0xaa cuenta para la 0xbb"
+        );
+        let _ = std::fs::remove_file(&p);
+    }
+
     #[test]
     fn sin_firmas_no_hay_indice_que_leer() {
         let cuerpo = json!({"seq": q(1)}).to_string() + "\n";

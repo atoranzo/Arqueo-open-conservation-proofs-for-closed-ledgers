@@ -21,7 +21,9 @@ decidido, y dónde):
   la entrada 53 / §112–114: XMSS^MT-SHA2_40/8_256, crate `xmss` de
   RustCrypto con guardián de índice obligatorio y declarado; cadencia en
   §115: 1 firma/min + a demanda (no cada época), techo adversarial 1/s
-  ya tarifado (16 % de núcleo).
+  ya tarifado (16 % de núcleo). ⚠️ CORREGIDO (§636): el «a demanda»
+  se decidió y NO se construyó: sólo firma el latido, y pedir la cabeza
+  firmada sirve la última. La ventana es de un latido, sin atajo.
 · §2.3 (costes)  → predatan la firma: la cabeza firmada real son
   ~18,5 KB (no ~200 B); a 1/min ≈ 9,7 GB/año/shard — la cifra de §115.
   El «recibo de inclusión ~1 KB» debe re-tarifarse con la cabeza real.
