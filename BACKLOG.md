@@ -673,6 +673,8 @@ instrumentacion) al grupo E.*
   agotamiento es el del RFC 10033 §3.4; y el índice indeterminado tiene
   procedimiento escrito. Cinco decisiones del autor, ninguna tomada, y
   ninguna etapa construida: sigue abierta.
+  ⚠️ (§642) Las cinco, TOMADAS por delegación del autor con el criterio
+  del §609, las recomendadas y REVERSIBLES. Ninguna etapa construida.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con

@@ -44902,3 +44902,34 @@ el arranque, el testigo ni el kit. No exige hardware para la custodia, y lo dice
 **Lo que NO cierra.** La 84, la 92 y la 19 siguen abiertas, y la 103 también: perder a la vez el
 contador y el diario sigue apagando la puerta, y el RFC lo declara en su residuo.
 
+## §642 — las cinco decisiones del RFC-0015, tomadas por delegación: pre-rotación, una cuenta, un medio por clave
+
+El commit que lleva este asiento, sobre `3642a3a` (el §639). El §640 y el §641 los tiene reservados
+la sesión del núcleo, y este es el primero libre después. Un sello de documentos: el RFC-0015 gana
+sus decisiones TOMADAS, su fila de `spec/README.md` y la entrada 84 lo recogen, y este asiento. 3
+ficheros fuera de él, ninguno nuevo, con 36 inserciones y 5 borrados. Ningún código, ningún pin,
+ningún vector. Lo escribe y lo commitea la misma sesión de Claude Code que el §639, no el autor en
+su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon
+`--sello` y empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE.
+
+**De dónde sale.** El RFC-0015 dejó cinco decisiones al autor. Preguntado en la sesión, el autor
+las delegó con el criterio que dictó para el §609: los principios del proyecto y su portada,
+aplicables al mayor número de casos de uso sin modificaciones significativas, porque el objetivo es
+fijar el estándar.
+
+**Las cinco, las recomendadas, y todas REVERSIBLES**, con su razón escrita en el propio RFC,
+«Decisiones»: (1) pre-rotación, la sucesora comprometida firma su acta; (2) la clave nueva sigue la
+cuenta de índices; (3) un medio por clave, sin tocar nada construido del RFC-0013; (4) el umbral de
+aviso por defecto es un año de latidos a la cadencia configurada, con reconocimiento explícito para
+arrancar por debajo; (5) la firma de la vieja es obligatoria si su estado es fiable y está
+prohibida si no, y un acta sin ella declara la vieja quemada.
+
+**Contadores.** Ningún test, ningún pin, ningún vector. `check_publicadas` sigue en 14 RFC con
+estado propio: el RFC-0015 sigue PROPUESTO, porque aceptarlo exige la regla 4 del PROCESO y no hay
+ninguna etapa construida. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** No construye ninguna etapa. No pasa el RFC a ACEPTADO.
+
+**Lo que NO cierra.** La 84. La siguiente etapa es la E2, el núcleo del acta: su dominio, su digest
+con su KAT y su verificador en el kit.
+

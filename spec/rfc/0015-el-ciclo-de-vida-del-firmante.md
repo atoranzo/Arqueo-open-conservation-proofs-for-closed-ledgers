@@ -1,8 +1,9 @@
 # RFC-0015 — El ciclo de vida del firmante: rotar, agotar y perder el índice, con la clave siguiente comprometida
 
 - **Estado:** PROPUESTO (§639) — el texto y sus decisiones, escritos sobre lo medido en el árbol
-  (§636, §638) y en el RFC 10033 de la IETF; ninguna etapa construida. Las cinco decisiones son
-  del autor: el texto recomienda una en cada una y no toma ninguna.
+  (§636, §638) y en el RFC 10033 de la IETF; ninguna etapa construida. Las cinco decisiones,
+  TOMADAS en el §642 por delegación del autor, con el criterio del §609, y REVERSIBLES: ver
+  «Decisiones».
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude (sesión 193, §639, que lo escribe entero sobre la medida de los
   §636 y §638) — ver [`GENAI.md`](../../GENAI.md)
@@ -16,7 +17,7 @@
   hay clave que anclar), §288 (la familia 19-84-92), §298 y §328–§337 (el guardián y la
   reconciliación al arrancar), §399 (el índice embebido), §567 (el reloj del recibo es el
   índice), §591 (la huella de la clave), §594 (la puerta del diario en todo estado), §636 y §638
-  (lo que hoy pasa al cambiar de clave, medido) y §639 (esta propuesta).
+  (lo que hoy pasa al cambiar de clave, medido), §639 (esta propuesta) y §642 (las decisiones).
 - **Backlog:** la **84** (agotamiento, rotación y pérdida del índice), con la **92** (custodia y
   supervivencia del índice) y la **19** en su línea de familia, que el §288 pidió cortar juntas;
   la **87** (agilidad criptográfica: el acta lleva el esquema de la clave que presenta); y la
@@ -26,7 +27,7 @@
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
-| E1 — el ciclo de vida, escrito | este texto | no | **propuesto (§639)** |
+| E1 — el ciclo de vida, escrito | este texto | no | **propuesto (§639), decidido (§642)** |
 | E2 — el núcleo | `DOMINIO_ACTA`, `acta_digest` y su KAT, y `verificar_acta` en el kit, con la segunda implementación | no (aditivo: una familia nueva) | pendiente |
 | E3 — el nodo | el acta génesis, la rotación como orden del operador, el aviso de agotamiento y `zkssl_keyActs` | no (aditivo: un método) | pendiente |
 | E4 — el testigo | ante un cambio de clave pide el acta, la juzga contra la clave que fijó y sigue o se detiene; `--auditar` la juzga en el diario | no | pendiente |
@@ -221,6 +222,34 @@ Las cinco que este texto deja al autor, con la que recomienda primero:
 5. **La firma de la vieja (D-B).** Obligatoria cuando su estado es fiable y prohibida cuando no lo
    es, frente a opcional siempre. La primera da al verificador una firma más donde se puede, y
    una regla que el nodo comprueba.
+
+**TOMADAS en el §642**, por delegación del autor y con el criterio que dictó para el §609 (el
+RFC-0014, «Decisiones»): los principios del proyecto y su portada, aplicables al mayor número de
+casos de uso sin modificaciones significativas, porque el objetivo es fijar el estándar. Las cinco,
+las recomendadas, y todas REVERSIBLES.
+
+- **1, pre-rotación (D-B).** Es la única de las dos que responde en los tres casos en que una
+  rotación hace falta —la clave robada, con el índice indeterminado o perdida—, y la que tiene
+  precedente con nombre: el RFC 8649, que el NIST SP 800-208 sugiere. Para el verificador son dos
+  reglas más (la huella comprometida y la firma de la sucesora), y para el operador, una clave fría
+  que el nodo no ve: vale para cualquier operador, con cualquier custodia.
+- **2, la cuenta sigue (D-A).** Un reloj por operador, no uno por clave: la era del recibo, el
+  reloj del ancla, la puerta del diario y la clasificación del testigo no cambian una línea, y es
+  lo que el nodo ya hace con el contador de la vieja (§638). Empezar en cero habría puesto pares
+  `(clave, índice)` en cuatro reglas, y otra implementación tendría que copiar las cuatro.
+- **3, un medio por clave (D-D).** No toca nada construido del RFC-0013 —ni `origen_del_medio`, ni
+  sus 27 sobres, ni las 33 notas contrastadas con torchwood— y deja a los testigos del medio con la
+  regla de C2SP, un `origin` por clave, que es lo que un testigo genérico sabe hacer. El acta es la
+  costura: la última hoja del medio que se va y la primera del que llega. El precio, reconfigurar
+  los testigos del medio en cada rotación, es de una operación rara.
+- **4, el umbral por defecto es un año de latidos, con reconocimiento explícito (D-F).** Es el RFC
+  10033 §3.4 tal cual —un aviso que no se salta sin querer—, medido en la unidad que el operador
+  configura: un año a la cadencia de su latido, sea la que sea. Solo un aviso habría sido un
+  mensaje más en un registro.
+- **5, la firma de la vieja, obligatoria si su estado es fiable y prohibida si no (D-B).** Una
+  regla que el nodo comprueba en vez de una opción. El verificador acepta el acta con la firma de
+  la vieja o sin ella, y si la trae, la exige válida; un acta sin ella es la declaración del
+  operador de que la vieja está quemada (D-G), y queda escrita en el acta que él firma.
 
 ## Lo que se DESCARTÓ al medir
 
