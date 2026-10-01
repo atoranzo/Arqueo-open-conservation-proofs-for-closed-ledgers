@@ -49,3 +49,6 @@ neg-contraria-de-otra-clave.json|1|claves DISTINTAS
 neg-contraria-indice-distinto.json|1|los indices embebidos son DISTINTOS
 neg-contraria-identica.json|1|no hay vista que dividir
 neg-contraria-v2.json|1|contraria: formatVersion
+# RFC-0016 (S631): el cero del campo escrito como p en el primer elemento del chainDigest de
+# ancla-exacta. Antes la referencia lo leia como cero y decia VERDE; la segunda lo rechazaba.
+neg-ancla-cero-escrito-como-p.json|1|chainDigest: 0xffffffff00000001 no es canonico

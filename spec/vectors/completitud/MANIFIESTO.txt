@@ -127,3 +127,7 @@ prenda-rechazada-por-la-capa.json|0|RESUELTA como PRENDA rechazada por la capa
 neg-prenda-colision-como-negativa.json|1|la negativa lleva causa
 neg-prenda-rechazo-de-otro-recibo.json|1|resolucion.rechazo: es de OTRA operacion
 neg-prenda-tipo-desconocido.json|1|desconocido: se lee acuse, rechazo o declarada
+# RFC-0016 (S631): no-resuelta con la n del cierre y del recibo MAS p. La misma firma, la misma
+# hoja; antes el veredicto pasaba de NO RESUELTA EN LA VENTANA a ventana ABIERTA, y el operador
+# nombrado salia del rojo. Ahora la n no canonica se rechaza antes de la firma.
+neg-n-no-canonico.json|1|n: 0xffffffff000005a1 no es canonico

@@ -480,6 +480,27 @@ mantenedor —el aviso privado de GitHub no está habilitado en `facebook/winter
 política hereda la de Meta, que exige una cuenta de Facebook—, con el arreglo ofrecido como
 PR y sin reproductor; pendiente de respuesta. `AUDITORIA.md` §575, §578, §625.
 
+### 3.8 Una firma acreditaba un entero módulo `p` — ⚠️ MEDIDO, cerrado en el núcleo y en el mando
+
+El núcleo compone sobre `F_p`, `p = 2^64 - 2^32 + 1`, y dos lecturas reducían en silencio:
+`as_digest` embebe un `u64` reducido módulo `p`, y `element_from_bytes` leía ocho bytes con
+`BaseElement::new`, que también reduce. Así una cabeza firmada fijaba cada entero sólo **módulo
+`p`**, y el mando razona sobre el entero. Medido el 01-10-2026 (`AUDITORIA.md` §640) sobre vectores
+reales mutados en un solo campo: la misma firma acreditaba una cabeza con `n` y otra con `n + p`; el
+sobre de completitud que nombra al operador —«NO RESUELTA EN LA VENTANA»— pasaba a «ventana ABIERTA»
+con la misma firma, de modo que **el acusado elegía el veredicto** escribiendo `n + p`; una extensión
+con `mmrSize + p` **colgaba el mando** (la partición del MMR desbordaba para tamaños mayores que
+`2^63`); y el cero escrito como `p` pasaba en la referencia y se rechazaba en la segunda
+implementación.
+
+**Cerrado** en el §640 (RFC-0016): `u64_canonico` es el único productor de la regla «un `u64` escribe
+un elemento sólo si es menor que `p`»; `element_from_bytes` la aplica a cada elemento y el mando a
+cada `u64` del sobre, antes de recomponer y antes de la firma; la partición del MMR es total. Cuatro
+vectores negativos lo atan, y la segunda implementación los rechaza con el mismo texto. Ningún KAT ni
+ninguna cabeza custodiada se mueve. **Residuo**: el lector de `QUANTITY` del cable y el recompositor
+del testigo siguen leyendo sin la regla —lo que firman y comparan es el digest, no el entero—, y el
+kit publicado `arqueo-verify-v0.3.0` es anterior: acepta los cuatro negativos hasta una release nueva.
+
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
 Desde agosto de 2026 esto no es solo una capa: hay cable, nodo, SDK y un

@@ -137,9 +137,10 @@ const P_SEG_LINK: usize = P_CONT_S + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
-fn as_digest(x: BaseElement) -> Digest {
-    [x, BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
-}
+// RFC-0016 (§640): el embebido tiene UNA definicion, la del nucleo. Esta era una de las
+// siete copias privadas que `zk_ssl_hash::embeber` anotaba; se importa con su nombre de
+// siempre para que ningun llamante cambie, y es literalmente la misma funcion.
+use zk_ssl_hash::embeber as as_digest;
 
 /// Identidad pública de un custodio desde su clave.
 pub fn derive_custodian_id(key: BaseElement) -> Digest {

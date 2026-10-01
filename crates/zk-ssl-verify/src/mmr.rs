@@ -51,13 +51,18 @@ pub fn hoja_desde_bytes(b: &[u8; 32]) -> Option<Digest> {
 /// La mayor potencia de dos ESTRICTAMENTE menor que `n`. Solo para
 /// `n >= 2`: es la particion de RFC 6962, compartida por generacion y
 /// verificacion.
+///
+/// ⚠️ **Total en todo `n >= 2`** (RFC-0016, §640). Era un bucle que doblaba
+/// `k` mientras `k * 2 < n`: para `n > 2^63` el doble de `2^63` desborda, en
+/// release da la vuelta a cero, y `0 < n` no acaba nunca. Un sobre con un
+/// `mmrSize` de `t + p` -que la firma acreditaba, porque `as_digest` reduce-
+/// colgaba el mando (medido: salida 124 a los 20 s), y uno firmado con un
+/// tamano mayor que `2^63` lo colgaria igual. Ahora es el bit mas alto de
+/// `n - 1`: `2^(63 - lz(n-1)) <= n - 1 < n <= 2^(64 - lz(n-1))`, la misma
+/// particion para todo `n` en que el bucle acababa (atado en los tests).
 fn mitad(n: u64) -> u64 {
     debug_assert!(n >= 2);
-    let mut k = 1u64;
-    while k * 2 < n {
-        k *= 2;
-    }
-    k
+    1u64 << (63 - (n - 1).leading_zeros())
 }
 
 fn mth(hojas: &[Digest]) -> Digest {
@@ -308,6 +313,47 @@ mod tests {
         assert!(!verificar_consistencia(vieja, 3, nueva, 7, &sobra));
         let falta = &camino[..camino.len() - 1];
         assert!(!verificar_consistencia(vieja, 3, nueva, 7, falta));
+    }
+
+    /// RFC-0016 (§640): la particion nueva es la del bucle viejo en todo `n`
+    /// donde aquel acababa, y acaba donde aquel no.
+    #[test]
+    fn la_mitad_es_la_de_siempre_y_ahora_es_total() {
+        fn mitad_del_bucle(n: u64) -> u64 {
+            let mut k = 1u64;
+            while k * 2 < n {
+                k *= 2;
+            }
+            k
+        }
+        for n in 2..=4097u64 {
+            assert_eq!(mitad(n), mitad_del_bucle(n), "n = {n}");
+        }
+        for e in 12..63u32 {
+            for n in [(1u64 << e) - 1, 1u64 << e, (1u64 << e) + 1] {
+                assert_eq!(mitad(n), mitad_del_bucle(n), "n = {n:#x}");
+            }
+        }
+        // Donde el bucle no acababa: la mayor potencia de dos < n es 2^63.
+        assert_eq!(mitad(1u64 << 63), 1u64 << 62);
+        assert_eq!(mitad((1u64 << 63) + 1), 1u64 << 63);
+        assert_eq!(mitad(u64::MAX), 1u64 << 63);
+        assert_eq!(mitad(zk_ssl_hash::MODULO + 4), 1u64 << 63, "el mmrSize del vector m3");
+    }
+
+    /// RFC-0016 (§640): un tamano enorme ya no cuelga la verificacion: sale
+    /// `false`, porque el camino no es el de esa historia.
+    #[test]
+    fn un_tamano_enorme_no_cuelga_la_consistencia_ni_la_inclusion() {
+        let todas = hojas(4);
+        let vieja = cima(&todas[..2]).unwrap();
+        let nueva = cima(&todas).unwrap();
+        let camino = prueba_de_consistencia(&todas, 2).unwrap();
+        assert!(verificar_consistencia(vieja, 2, nueva, 4, &camino), "la honesta sigue");
+        for grande in [(1u64 << 63) + 1, zk_ssl_hash::MODULO + 4, u64::MAX] {
+            assert!(!verificar_consistencia(vieja, 2, nueva, grande, &camino), "{grande:#x}");
+            assert!(!verificar_inclusion(todas[0], 0, grande, nueva, &camino), "{grande:#x}");
+        }
     }
 
     #[test]

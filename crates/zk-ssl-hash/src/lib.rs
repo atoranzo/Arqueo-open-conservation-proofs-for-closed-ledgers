@@ -81,7 +81,7 @@
 
 use winter_crypto::hashers::Rp64_256;
 use winter_math::fields::f64::BaseElement;
-use winter_math::FieldElement;
+use winter_math::{FieldElement, StarkField};
 
 /// Cuatro elementos de campo: el resumen que circula por todo el proyecto.
 pub type Digest = [BaseElement; 4];
@@ -112,12 +112,17 @@ pub fn native_merge(left: Digest, right: Digest) -> Digest {
 /// rellena—. [`as_digest`] es un **atajo tipado** que la llama: no son dos
 /// definiciones con dos firmas, es **una y su conveniencia**.
 ///
-/// ⚠️ Siete copias privadas de esta misma función viven en
+/// ⚠️ Siete copias privadas de esta misma función vivían en
 /// `stark-experiment` (`native.rs`, `nullifier.rs`, `circuit_governance.rs`,
 /// `circuit_threshold.rs`, `compliance_circuit.rs`, `double_entry.rs`,
-/// `circuit_mint_pending.rs`). **§258 no las toca**: no cruzan al
-/// verificador, igual que en §255. Pero ahora existe **una pública contra
-/// la que compararlas** el día que se aborden.
+/// `circuit_mint_pending.rs`). §258 no las tocó, porque no cruzaban al
+/// verificador; **el §640 las retira**: los siete ficheros importan ÉSTA con
+/// su nombre de siempre, `as_digest`, y no hay ya una segunda definición del
+/// embebido en el árbol de producción.
+///
+/// ⚠️ **Inyectiva en `F_p`**: lo que entra ya es un elemento, así que dos
+/// entradas distintas dan dos digests distintos. La reducción, si la hay, ya
+/// ocurrió ANTES, al hacer el elemento: ver [`as_digest`] y [`MODULO`].
 pub fn embeber(x: BaseElement) -> Digest {
     [x, BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
 }
@@ -127,8 +132,46 @@ pub fn embeber(x: BaseElement) -> Digest {
 /// ⚠️ Era **privada** en `zk-ssl/src/log.rs`. Es una **decisión de
 /// formato** —dónde va el número y con qué se rellena—, así que un
 /// verificador independiente tiene que usar **esta misma**, no una copia.
+///
+/// ⚠️⚠️ **Inyectiva en `[0, p)` y en ningún sitio más** (RFC-0016, §640). Un
+/// `u64` tiene `2^64` valores y el campo `p = 2^64 - 2^32 + 1`: `BaseElement::new`
+/// REDUCE, y para `x < 2^32 - 1` `as_digest(x + p)` es `as_digest(x)`. La
+/// función NO cambia -es núcleo congelado, sus KAT no se mueven y ningún
+/// productor honesto compone un `u64` que no quepa-; lo que cierra el hueco
+/// es la frontera: quien LEE un `u64` de fuera para componerlo lo pasa por
+/// [`u64_canonico`] antes. Sin eso, una cabeza firmada con `n` acreditaba
+/// también `n + p`, y el mando razonaba sobre el entero que la firma no fija.
 pub fn as_digest(x: u64) -> Digest {
     embeber(BaseElement::new(x))
+}
+
+/// **El cardinal del campo**: el primo de Goldilocks, `p = 2^64 - 2^32 + 1`,
+/// **tomado del propio campo** (`StarkField::MODULUS` de `winter-math`), no
+/// tecleado: copiarlo a mano lo desligaría del campo que de verdad se usa,
+/// la razón de [`STATE_WIDTH`].
+///
+/// ⚠️ **Es la frontera de todo lo que el núcleo compone** (RFC-0016, D-A): un
+/// `u64` es la escritura de un elemento SÓLO si es menor que `MODULO`. Los
+/// `2^32 - 1` valores de `[p, 2^64)` no escriben ningún elemento: escriben,
+/// reducidos, uno que ya tiene su escritura.
+pub const MODULO: u64 = <BaseElement as StarkField>::MODULUS;
+
+/// **La lectura canónica de un `u64`** (RFC-0016, D-A y D-B): `Ok(x)` si
+/// `x < p`, y el rechazo con nombre si no.
+///
+/// ⚠️ **Es el ÚNICO productor de la regla.** [`element_from_bytes`] la aplica
+/// a cada elemento que entra por bytes -y con él [`digest_from_bytes`] a cada
+/// digest-, y quien lee un `u64` de fuera para componerlo con [`as_digest`]
+/// -el mando, con los campos de una cabeza- la aplica antes de componer. Dos
+/// lecturas con dos reglas divergían ya: la segunda implementación
+/// (`tools/segunda/nucleo.py`) rechazaba el elemento que la referencia
+/// reducía, medido en el §640.
+pub fn u64_canonico(x: u64) -> Result<u64, FormatoError> {
+    if x < MODULO {
+        Ok(x)
+    } else {
+        Err(FormatoError::NoCanonico(x))
+    }
 }
 
 /// **Hoja de cuenta**: `merge(merge(pk, saldo), nonce)`.
@@ -807,8 +850,9 @@ pub const DOMINIO_PARAMS: u64 = u64::from_be_bytes(*b"PARAM_V1");
 /// divergir es la regla R2 de `tools/check_dominios.py`, que corre en cada sello.
 ///
 /// ⚠️ **El nombre no es negociable**: con cualquier otro, la regla R3 daria colision de
-/// valor dentro del grupo `produccion`. Lo que queda pendiente es que la de
-/// `stark-experiment` pase a REEXPORTAR esta, como el §258 hizo con la hoja.
+/// valor dentro del grupo `produccion`. Lo que quedaba pendiente -que la de
+/// `stark-experiment` pasara a REEXPORTAR esta, como el §258 hizo con la hoja- lo hace
+/// el §640 (RFC-0016): `stark_experiment::native::SPEND_KEY_DOMAIN` ES esta constante.
 pub const SPEND_KEY_DOMAIN: u64 = 0x53504B59; // "SPKY"
 
 /// **Dominio de la MARCA de una prenda** (RFC-0008 E3, D-AW), con version en el propio
@@ -915,6 +959,9 @@ pub enum FormatoError {
     LongitudElemento(usize),
     /// Un digest que no mide 32 bytes.
     LongitudDigest(usize),
+    /// Un `u64` que no es la escritura canónica de un elemento: no es menor
+    /// que `p` (RFC-0016). Lleva el valor tal como llegó, sin reducir.
+    NoCanonico(u64),
 }
 
 impl core::fmt::Display for FormatoError {
@@ -925,6 +972,11 @@ impl core::fmt::Display for FormatoError {
             FormatoError::LongitudElemento(n) => write!(f, "elemento de {n} bytes"),
             FormatoError::LongitudDigest(n) => {
                 write!(f, "digest de {n} bytes, se esperaban 32")
+            }
+            // ⚠️ El texto lo fijan los MANIFIESTOS de los vectores del §640 y
+            // lo reproduce la segunda implementacion: cambiarlo es romperlos.
+            FormatoError::NoCanonico(x) => {
+                write!(f, "{x:#x} no es canonico: no es menor que p = 2^64 - 2^32 + 1")
             }
         }
     }
@@ -937,11 +989,21 @@ pub fn element_to_bytes(e: BaseElement) -> [u8; 8] {
     e.as_int().to_le_bytes()
 }
 
+/// Un elemento desde sus 8 bytes little-endian, **sólo si la escritura es
+/// canónica** (RFC-0016, D-A): `p` y lo que le sigue se RECHAZA, en vez de
+/// reducirse a un elemento que ya tiene su escritura.
+///
+/// ⚠️ Hasta el §640 esto llamaba `BaseElement::new` a pelo, que reduce: el
+/// cero del campo tenía dos escrituras -`0` y `p`- y un sobre con la segunda
+/// verificaba igual. Con la regla, esta y [`element_to_bytes`] son inversas
+/// EXACTAS: una biyección entre `F_p` y los `u64` menores que `p`. Ningún
+/// productor de la casa escribe otra cosa -`as_int` es canónico-, así que
+/// nada de lo persistido ni de lo publicado cambia de lectura.
 pub fn element_from_bytes(b: &[u8]) -> Result<BaseElement, FormatoError> {
     let arr: [u8; 8] = b
         .try_into()
         .map_err(|_| FormatoError::LongitudElemento(b.len()))?;
-    Ok(BaseElement::new(u64::from_le_bytes(arr)))
+    Ok(BaseElement::new(u64_canonico(u64::from_le_bytes(arr))?))
 }
 
 /// Cuatro elementos en orden, 8 bytes cada uno.
@@ -1443,6 +1505,14 @@ const DOMINIO_LOTE: &[u8] = b"ZK-SSL-batch-v1";
 /// finales no colisionan). UN productor para [`digest_of_proof`] y
 /// [`huella_de_clave`]: dos implementaciones del mismo molde podrian
 /// discrepar.
+///
+/// ⚠️ **Un PRODUCTOR reduce; un LECTOR rechaza** (RFC-0016, §640). Los 32
+/// bytes de Blake3 son cuatro `u64` y cada elemento se hace con
+/// `BaseElement::new`, que reduce modulo `p`: la salida es un digest
+/// canonico y una FUNCION de los bytes, aunque un limbo no quepa (`2^-32` por
+/// limbo). Lo que [`u64_canonico`] rechaza es una ESCRITURA que llega de
+/// fuera, no una salida del hash. La segunda implementacion devolvia los
+/// bytes de Blake3 tal cual y rechazaba el limbo que no cabia: divergia aqui.
 fn resumen_con_dominio(dominio: &[u8], datos: &[u8]) -> Digest {
     use winter_crypto::hashers::Blake3_256;
     use winter_crypto::{Digest as _, Hasher as _};
@@ -1595,5 +1665,78 @@ mod tests_consumo {
         let bajo: Digest = [BaseElement::new(5), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO];
         assert_eq!(posicion_de_consumo(&bajo), posicion_de_consumo(&alto));
         assert_ne!(bajo, alto, "y son digests DISTINTOS: la hoja los separa");
+    }
+}
+
+#[cfg(test)]
+mod tests_canonicidad {
+    //! RFC-0016 (§640): un valor, una escritura.
+    use super::*;
+
+    #[test]
+    fn el_modulo_es_goldilocks_y_sale_del_campo() {
+        // El valor, escrito con su forma: 2^64 - 2^32 + 1. Si el campo cambiara,
+        // esto y todo el nucleo dejarian de decir lo mismo, y aqui se ve.
+        assert_eq!(MODULO, u64::MAX - (1u64 << 32) + 2);
+        assert_eq!(MODULO, 0xffff_ffff_0000_0001);
+        // Y es el cardinal DE VERDAD: el campo lo reduce a cero.
+        assert_eq!(BaseElement::new(MODULO), BaseElement::ZERO);
+        assert_eq!(BaseElement::new(MODULO - 1).as_int(), MODULO - 1, "p - 1 es canonico");
+    }
+
+    #[test]
+    fn as_digest_no_es_inyectiva_fuera_de_p_y_por_eso_existe_la_lectura() {
+        // ⚠️ EL HUECO, pinchado: x y x + p componen LO MISMO. Es la razon de
+        // u64_canonico; si algun dia as_digest separara estos dos, este test lo
+        // dice y la regla de lectura podria revisarse (con RFC: es nucleo).
+        for x in [0u64, 5, 0x5a0, (1u64 << 32) - 2] {
+            assert_eq!(as_digest(x + MODULO), as_digest(x), "x = {x:#x}");
+        }
+        // Y dentro de [0, p) si separa: los extremos y sus vecinos.
+        assert_ne!(as_digest(0), as_digest(MODULO - 1));
+        assert_ne!(as_digest(MODULO - 2), as_digest(MODULO - 1));
+    }
+
+    #[test]
+    fn la_lectura_canonica_acepta_hasta_p_menos_uno_y_rechaza_desde_p() {
+        assert_eq!(u64_canonico(0), Ok(0));
+        assert_eq!(u64_canonico(MODULO - 1), Ok(MODULO - 1));
+        assert_eq!(u64_canonico(MODULO), Err(FormatoError::NoCanonico(MODULO)));
+        assert_eq!(u64_canonico(u64::MAX), Err(FormatoError::NoCanonico(u64::MAX)));
+        // El texto que los manifiestos fijan, con el valor SIN reducir.
+        assert_eq!(
+            u64_canonico(0x5a0 + MODULO).unwrap_err().to_string(),
+            "0xffffffff000005a1 no es canonico: no es menor que p = 2^64 - 2^32 + 1"
+        );
+    }
+
+    #[test]
+    fn el_cero_ya_no_tiene_dos_escrituras() {
+        // ⚠️ El vector m4 del §640: el cero escrito como p. Antes se leia como
+        // cero y un sobre con esa escritura verificaba; la segunda
+        // implementacion lo rechazaba. Ahora las dos lo rechazan.
+        assert_eq!(
+            element_from_bytes(&MODULO.to_le_bytes()),
+            Err(FormatoError::NoCanonico(MODULO))
+        );
+        let mut b = [0u8; 32];
+        b[8..16].copy_from_slice(&MODULO.to_le_bytes());
+        assert_eq!(digest_from_bytes(&b), Err(FormatoError::NoCanonico(MODULO)));
+        // La escritura canonica sigue leyendose, y la longitud se juzga ANTES.
+        assert_eq!(element_from_bytes(&0u64.to_le_bytes()), Ok(BaseElement::ZERO));
+        assert_eq!(element_from_bytes(&[0u8; 7]), Err(FormatoError::LongitudElemento(7)));
+    }
+
+    #[test]
+    fn escribir_y_leer_son_inversas_exactas() {
+        // La biyeccion F_p <-> [0, p): ida y vuelta en los dos sentidos, en los
+        // bordes y en valores del medio.
+        for x in [0u64, 1, 7, (1u64 << 32) - 1, 1u64 << 32, 1u64 << 63, MODULO - 1] {
+            let e = BaseElement::new(x);
+            assert_eq!(element_from_bytes(&element_to_bytes(e)), Ok(e), "elemento {x:#x}");
+            assert_eq!(element_to_bytes(element_from_bytes(&x.to_le_bytes()).unwrap()), x.to_le_bytes());
+        }
+        let d = [BaseElement::new(MODULO - 1), BaseElement::ZERO, BaseElement::new(1u64 << 63), BaseElement::ONE];
+        assert_eq!(digest_from_bytes(&digest_to_bytes(&d)), Ok(d));
     }
 }

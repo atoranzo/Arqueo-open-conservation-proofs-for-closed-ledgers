@@ -28,7 +28,7 @@ python3 tools/segunda/juez_cabezas.py
 # 1 ter · el corpus KAT de XMSS^MT: dos implementaciones, los mismos bytes       -> 8 de 8
 python3 tools/segunda/kat_xmss/juez_xmss.py
 
-# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 121 de 121
+# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 124 de 124
 for m in paquete consumo conflicto ancla; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
 # 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 23 de 23
@@ -80,10 +80,10 @@ que el binario de referencia, las cuatro familias que no exigen STARK:
 
 | familia | entradas | segundo verificador |
 |---|---|---|
-| `paquete` (posición v1 y v2, extensión) | 70 | 70 de 70 |
+| `paquete` (posición v1 y v2, extensión) | 72 | 72 de 72 |
 | `consumo` | 14 | 14 de 14 |
 | `conflicto` | 16 | 16 de 16 |
-| `ancla` | 21 | 21 de 21 |
+| `ancla` | 22 | 22 de 22 |
 
 Y en los positivos de las cuatro, su salida es **idéntica línea a línea** a la del binario, la
 huella del ancla y la posición derivada del consumo incluidas. Lo que destapó: `NUCLEO.md` §6 no
@@ -91,7 +91,10 @@ escribe `posicion_de_consumo` ni la hoja vacía ni la convención de `isRight`, 
 RFC-0006 §413 (los 63 bits bajos de los primeros ocho bytes; la hoja vacía es el digest cero;
 `isRight[i]` es el bit `i`) y no tienen KAT; y la huella de la clave, que es Blake3, entra en
 `ancla_digest` leída como Digest de cuatro elementos, lo que deja sin decir qué pasa si un limbo
-queda fuera del campo (2⁻³² por limbo): aquí es ROJO con nombre.
+queda fuera del campo (2⁻³² por limbo): aquí era ROJO con nombre, y la referencia lo REDUCÍA. Desde
+el §640 (RFC-0016, `NUCLEO.md` sección 6, «Canonicidad») la regla está escrita: un productor reduce
+—`limbos_reducidos`, como `resumen_con_dominio`— y un lector rechaza lo que no es menor que `p`, con
+el mismo texto en las dos implementaciones.
 
 **El verificador STARK** (§626). Las 58 pruebas de las seis familias que el kit verifica hoy van
 **ocultas** (la marca `arqueo:oculta:1` en el meta de la traza: L = 2T, una columna más, las

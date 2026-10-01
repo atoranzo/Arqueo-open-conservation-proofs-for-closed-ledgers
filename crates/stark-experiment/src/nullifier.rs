@@ -46,10 +46,10 @@ pub const TRACE_LENGTH: usize = 2 * CYCLE_LENGTH;
 
 type Blake3 = Blake3_256<BaseElement>;
 
-/// Empaqueta un escalar como digest de 4 elementos (relleno con ceros).
-fn as_digest(x: BaseElement) -> Digest {
-    [x, BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
-}
+// RFC-0016 (§640): el embebido tiene UNA definicion, la del nucleo. Esta era una de las
+// siete copias privadas que `zk_ssl_hash::embeber` anotaba; se importa con su nombre de
+// siempre para que ningun llamante cambie, y es literalmente la misma funcion.
+use zk_ssl_hash::embeber as as_digest;
 
 /// Calcula el nullifier de forma nativa, con la librería real.
 pub fn native_nullifier(account_id: BaseElement, nonce: BaseElement) -> Digest {

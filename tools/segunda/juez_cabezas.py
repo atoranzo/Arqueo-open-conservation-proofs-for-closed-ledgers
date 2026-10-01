@@ -40,7 +40,8 @@ def hexbytes(s):
 
 
 def u64(s):
-    return int(s, 16)
+    # RFC-0016 (S631): canonico, o ValueError con el texto del nucleo; sin esto `n + p` recompone igual.
+    return N.u64_canonico(int(s, 16))
 
 
 def dig(s):

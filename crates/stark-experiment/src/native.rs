@@ -4,19 +4,22 @@
 //! identidades, salts y claves de vista con estas funciones: el museo se
 //! va, la fragua se queda — aquí.
 
-use winterfell::math::{fields::f64::BaseElement, FieldElement};
+use winterfell::math::fields::f64::BaseElement;
 
 use crate::merkle::{native_merge, Digest, MerklePath, TREE_DEPTH};
 use crate::nullifier::NULLIFIER_DOMAIN;
 
-/// Un elemento como digest: el resto del ancho, a cero. El mismo
-/// utilitario privado que cada circuito replica (p. ej. governance).
-fn as_digest(x: BaseElement) -> Digest {
-    [x, BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
-}
+// RFC-0016 (§640): el embebido tiene UNA definicion, la del nucleo. Esta era una de las
+// siete copias privadas que `zk_ssl_hash::embeber` anotaba; se importa con su nombre de
+// siempre para que ningun llamante cambie, y es literalmente la misma funcion.
+use zk_ssl_hash::embeber as as_digest;
 
 /// Dominio de derivación de la identidad desde la clave de gasto.
-pub const SPEND_KEY_DOMAIN: u64 = 0x53504B59; // "SPKY"
+///
+/// RFC-0016 (§640): REEXPORTADO del nucleo, que lo declara para quien juzga una
+/// prenda sin compilar el probador. Eran dos declaraciones del mismo valor que
+/// solo la regla R2 de `tools/check_dominios.py` mantenia iguales; ahora es una.
+pub use zk_ssl_hash::SPEND_KEY_DOMAIN;
 
 /// Identidad de cuenta desde la clave de gasto. **Digest completo.**
 pub fn derive_public_id(spend_key: BaseElement) -> Digest {
@@ -56,10 +59,9 @@ pub fn derive_public_id_wide(spend_key: Digest) -> Digest {
 //    componerla exigia compilar el PROBADOR. Un recibo que su destinatario
 //    no puede interpretar no es un recibo.
 //
-// ⚠️ El `as_digest` privado de este fichero NO se toca: sigue siendo una de
-//    las siete copias anotadas (§255), porque no cruza al verificador. Lo
-//    que §258 anade es una publica —`zk_ssl_hash::embeber`— contra la que
-//    compararlas el dia que se aborden.
+// ⚠️ El `as_digest` de este fichero ERA una copia privada de las siete
+//    anotadas (§255); desde el §640 (RFC-0016) es `zk_ssl_hash::embeber`,
+//    importado con su nombre de siempre. El dia que §258 preveia es este.
 pub use zk_ssl_hash::{native_leaf, native_leaf_salted};
 
 /// Nullifier desde la CLAVE, no desde la identidad pública.

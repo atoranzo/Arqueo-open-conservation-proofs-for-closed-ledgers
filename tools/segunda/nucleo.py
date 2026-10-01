@@ -164,13 +164,22 @@ def digest_to_bytes(d):
     return b"".join(x.to_bytes(8, "little") for x in d)
 
 
+# La canonicidad (RFC-0016, NUCLEO.md seccion 6, <<Canonicidad>>): un u64 escribe un elemento solo si
+# es menor que p. Un productor en esta implementacion, como `u64_canonico` en la de referencia, y el
+# MISMO texto, que fijan los manifiestos de los vectores del S631.
+NO_CANONICO = "{:#x} no es canonico: no es menor que p = 2^64 - 2^32 + 1"
+
+
+def u64_canonico(u):
+    if not 0 <= u < P:
+        raise ValueError(NO_CANONICO.format(u))
+    return u
+
+
 def digest_from_bytes(b):
     if len(b) != 32:
         raise ValueError("digest_from_bytes exige 32 bytes")
-    d = [int.from_bytes(b[8 * i:8 * i + 8], "little") for i in range(4)]
-    if any(x >= P for x in d):
-        raise ValueError("elemento fuera del campo")
-    return d
+    return [u64_canonico(int.from_bytes(b[8 * i:8 * i + 8], "little")) for i in range(4)]
 
 
 def embeber(x):
@@ -308,8 +317,17 @@ def hoja_de_acuse(hash_prueba, seq, n):
     return acuse_digest(hash_prueba, seq + 1, n)
 
 
+def limbos_reducidos(b32):
+    """RFC-0016 (S631): un PRODUCTOR reduce, un LECTOR rechaza. Los 32 bytes de Blake3 son cuatro u64
+    little-endian, y la referencia hace cada elemento con `BaseElement::new`, que REDUCE modulo P
+    (`resumen_con_dominio`, el molde del S116): la salida es un digest canonico y una FUNCION de los
+    bytes. Hasta el S631 esta implementacion devolvia los bytes de Blake3 tal cual y el lector los
+    rechazaba si un limbo no cabia (2^-32 por limbo): divergia de la referencia en vez de reducir."""
+    return digest_to_bytes([int.from_bytes(b32[8 * i:8 * i + 8], "little") % P for i in range(4)])
+
+
 def huella_de_clave(clave):
-    return blake3(DOMINIO_ANCLA_CLAVE + len(clave).to_bytes(8, "little") + bytes(clave))
+    return limbos_reducidos(blake3(DOMINIO_ANCLA_CLAVE + len(clave).to_bytes(8, "little") + bytes(clave)))
 
 
 def hash_del_lote(operaciones):
@@ -319,7 +337,7 @@ def hash_del_lote(operaciones):
     el molde del S116 (`len(u64 LE)` de lo que sigue); NO es k. La frase <<k va en la longitud>> de
     NUCLEO.md seccion 6 y de RFC-0014 E2 hay que leerla como <<k queda implicito en la longitud>>."""
     cuerpo = b"".join(bytes(h) + c.to_bytes(8, "little") + p.to_bytes(8, "little") for h, c, p in operaciones)
-    return blake3(DOMINIO_LOTE + len(cuerpo).to_bytes(8, "little") + cuerpo)
+    return limbos_reducidos(blake3(DOMINIO_LOTE + len(cuerpo).to_bytes(8, "little") + cuerpo))
 
 
 def preambulo(version, epoch_dig):

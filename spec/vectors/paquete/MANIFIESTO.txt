@@ -71,4 +71,9 @@ rechazo-ext-sin-camino.json|1|falta camino (lista de digests)
 rechazo-ext-camino-no-cadena.json|1|camino[0] no es cadena
 rechazo-ext-camino-corto.json|1|camino[0]: 31 bytes
 rechazo-ext-camino-nibble.json|1|NO extiende a la vieja
+# RFC-0016 (S631): un valor, una escritura. Derivados por MUTACION de un positivo de esta familia:
+# el campo pasa a su valor MAS p, que el campo reduce al mismo elemento -la firma lo acreditaba y el
+# mando decia VERDE, o colgaba-. El rechazo nombra el campo y el valor sin reducir, ANTES de la firma.
+rechazo-n-no-canonico.json|1|n: 0xffffffff000005a1 no es canonico
+rechazo-mmrSize-no-canonico.json|1|mmrSize: 0xffffffff00000005 no es canonico
 no-existe.json|1|no se puede leer

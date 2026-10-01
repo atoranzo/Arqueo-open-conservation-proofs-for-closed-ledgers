@@ -677,8 +677,14 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
 - `sin 0x: {s:.18}` · `hex impar ({} chars)` · `hex: {e}`
-- `falta {campo} o no es cadena` · `{campo}: {} bytes, se esperaban 32` · `{campo}: {e:?}`
+- `falta {campo} o no es cadena` · `{campo}: {} bytes, se esperaban 32` · `{campo}: {e}`
 - `falta {campo} o no es cadena 0x` · `{campo} sin 0x` · `{campo}: {e}`
+- `{campo}: 0x… no es canonico: no es menor que p = 2^64 - 2^32 + 1` — desde el §640 (RFC-0016,
+  `NUCLEO.md` sección 6, «Canonicidad»): un `u64` del sobre, o uno de los cuatro elementos de un
+  digest, que no es menor que el módulo del campo. Se rechaza al LEER, antes de recomponer y antes
+  de la firma, con el valor tal como llegó. El mismo texto en los caminos: `sibling {i}: …`,
+  `camino[{i}]: …`, `{mote}: siblings[{i}]: …`. Hasta el §640 el digest se leía reduciendo y el
+  texto de este punto era `{campo}: {e:?}`, inalcanzable.
 
 **La cabeza** (paso 1 y 2)
 
@@ -692,7 +698,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 **El acuse** (paso 3)
 
 - `acuse sin camino` · `camino sin siblings` · `camino sin isRight`
-- `sibling {i} no es cadena` · `sibling {i}: {} bytes` · `sibling {i}: {e:?}`
+- `sibling {i} no es cadena` · `sibling {i}: {} bytes` · `sibling {i}: {e}`
 - `isRight no booleano`
 - `acuse: {e:?}` — la hoja no sube hasta la raíz firmada, en v2 o en v3 (dos sitios, un texto).
 
@@ -970,10 +976,17 @@ bucle. `tools/canon.sh` lo corre en cada canon sobre el binario de referencia y 
 si un solo vector no dice lo que el manifiesto dice, o si aparece un vector sin entrada. Un
 nibble adulterado en cualquiera pone el canon en rojo.
 
-Cuatro textos del catálogo **no tienen vector**, y se declaran: `{campo}: {e:?}`,
+Cuatro textos del catálogo **no tenían vector**, y se declaraban: `{campo}: {e:?}`,
 `sibling {i}: {e:?}`, `camino[{i}]: {e:?}` y `{cual}: siblings[{i}]: {e:?}` exigen 32 bytes que
-`digest_from_bytes` rechace, y no se conoce un valor que lo haga. Siguen siendo reglas: lo que
-no tienen es testigo en el árbol. **Desde §431 «las cabezas llevan claves DISTINTAS» sí lo
+`digest_from_bytes` rechace, y no se conocía un valor que lo hiciera. ⚠️ **No lo había**: la
+lectura reducía módulo `p`, y la única forma de fallar era la longitud, que el lector ya había
+juzgado antes. **Desde el §640 (RFC-0016) el valor existe**: cualquier elemento escrito como
+`x + p`, y el texto pasa a `{e}`, la regla con su nombre. `{campo}: …` tiene vector, el cero del
+`chainDigest` escrito como `p` en `ancla/neg-ancla-cero-escrito-como-p.json`, y dos de `u64`
+viven aquí: `rechazo-n-no-canonico` y `rechazo-mmrSize-no-canonico`. Los tres de camino siguen
+sin vector: hace falta un hermano con un elemento menor que `2^32 - 1` para escribirlo como
+`x + p`, y los caminos capturados no lo traen; la regla tiene testigo en los tests del mando y del
+núcleo. **Desde §431 «las cabezas llevan claves DISTINTAS» sí lo
 tiene**: el banco de dos libros produce ese sobre con su defecto AISLADO —las dos cabezas son v4,
 las dos recomponen su digest y las dos firmas verifican—, y su vector vive en la familia del
 consumo, que es la del sobre que lo lleva.
@@ -1204,6 +1217,11 @@ corrida. Su productor es `tools/banco_ancla_cofirmada.sh` (§634).
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.
+- §640 — la canonicidad (RFC-0016): un `u64` del sobre o un elemento de un digest que no es menor
+  que `p` se rechaza al leer, con su valor; los tres lectores de digest dicen la regla por `{e}` y no
+  por `{e:?}`; cuatro vectores negativos -dos aquí, uno en `ancla/` y uno en `completitud/`-, que
+  la referencia y la segunda implementación rechazan con el mismo texto. Ningún veredicto anterior
+  se mueve: los diez manifiestos dicen lo mismo que antes en cada entrada que ya tenían.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 52 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 105, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 54 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 107, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -89,6 +89,8 @@ real de sus llaves, no por la primera marca.
 | `native_merge` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `path_root` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `posicion_de_consumo` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
+| `MODULO` | `hash/lib.rs` | NÚCLEO | HASH | `const` |
+| `u64_canonico` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `epoch_digest` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v2` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v3` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
@@ -211,7 +213,9 @@ real de sus llaves, no por la primera marca.
 
 - **HASH** — la permutación y el merge 2-a-1, cómo se embebe un `u64`, cómo se sube un camino y cómo
   un digest se escribe en bytes: es la frontera entre el JSON y los bytes. Dos implementaciones que
-  difieran aquí no coinciden en nada.
+  difieran aquí no coinciden en nada. Desde el §640 (RFC-0016) la familia fija también **qué es una
+  escritura válida**: el módulo `p` y la lectura canónica, sin la cual una misma firma acreditaba dos
+  enteros y las dos implementaciones del núcleo leían distinto el mismo byte.
 - **CABEZA** — las cinco composiciones del digest de la cabeza (v1, v2, v3, v4, v5) y el digest de
   los parámetros que v5 firma. Lo custodiado no caduca (§290): una composición vieja tiene que
   poder recomponerse siempre.
@@ -252,6 +256,35 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   [x, 0, 0, 0]`; `as_digest(u)` embebe el `u64`.
 - **Serialización**: cada elemento en 8 bytes *little-endian* (`as_int`), los cuatro en orden;
   `digest_from_bytes` exige 32 bytes. En el cable van como `DATA`/`Digest` (`RPC.md`).
+- **Canonicidad** (RFC-0016, §640). El campo es `F_p` con `p = MODULO = 2^64 - 2^32 + 1`. Un `u64`
+  **escribe** un elemento sólo si es menor que `p`; los `2^32 - 1` valores de `[p, 2^64)` no escriben
+  ninguno. Dos reglas, con un solo productor, `u64_canonico`:
+
+  1. **Un elemento se lee canónico.** `element_from_bytes`, y con él `digest_from_bytes`, rechaza
+     los ocho bytes de un valor `>= p` con `0x… no es canonico: no es menor que p = 2^64 - 2^32 + 1`,
+     en vez de reducirlo. Así escribir y leer son inversas exactas: `element_to_bytes` es una
+     biyección de `F_p` sobre `[0, p)`, y un digest tiene **una** escritura de 32 bytes.
+  2. **Un `u64` que entra en una composición se lee canónico.** `as_digest(x) = [x mod p, 0, 0, 0]`
+     es inyectiva en `[0, p)` y en ningún sitio más: `as_digest(x + p) = as_digest(x)` para
+     `x < 2^32 - 1`. La función no cambia y sus KAT no se mueven; quien lee de fuera un `u64` que
+     va a componer (`seq`, `n`, `t`, los contadores, las marcas, el índice) lo pasa por
+     `u64_canonico` antes, y lo rechaza con el mismo texto si no cabe.
+  3. **Un productor reduce.** Lo que sale de Blake3 —`digest_of_proof`, `huella_de_clave`,
+     `hash_del_lote`— son 32 bytes que se leen como cuatro `u64` *little-endian* y se REDUCEN cada
+     uno módulo `p` (`BaseElement::new`): la salida es un digest canónico y una función de los bytes,
+     aunque un limbo no quepa (`2^-32` por limbo). Reducir es de quien produce; rechazar, de quien lee
+     una escritura que llega de fuera. La segunda implementación devolvía los bytes de Blake3 tal cual
+     y rechazaba el limbo que no cabía: divergía aquí también, y desde el §640 reduce.
+
+  La consecuencia, que es lo que el núcleo promete: **sobre lo canónico, cada composición de esta
+  sección que produce un digest es inyectiva en sus entradas salvo colisión del hash**, con una
+  excepción que no es del hash sino de la forma: en `path_root`, un nivel cuyo hermano es igual al
+  nodo que sube da lo mismo con las dos orientaciones (`merge(x, x)`). Por eso la posición no se lee
+  nunca de la raíz: donde la posición afirma algo, el verificador cruza el camino contra el índice
+  (CONSUMO, CONGELADOS, CUENTAS, RECIBOS). Fuera de lo canónico
+  no había tal función: una cabeza firmada con `n` verificaba igual con `n + p`, y quien razonaba
+  sobre el entero -la ventana de la promesa, el tamaño del MMR- razonaba sobre uno que la firma no
+  fija (medido en el §640 con vectores reales, que ahora son negativos con nombre).
 - **Los dominios**: `u64` leídos *big-endian* de ocho bytes ASCII (`ACUSE_V1`, `MMRHOJA1`,
   `MMRNODO1`, `PARAM_V1`), embebidos con `as_digest` y mezclados por delante. Los de la firma
   son cadenas de bytes: `b"ZK-SSL-epoch-head"` (17) y `b"ZK-SSL-witness-cosign"` (21).
@@ -318,6 +351,11 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   compartida entre operadores. La unicidad entre libros es familia nueva con RFC propio.
 
 ## 8. Historia
+
+- §640 — la canonicidad (RFC-0016): `MODULO` y `u64_canonico`, dos filas nuevas en la familia
+  HASH; `element_from_bytes` deja de reducir y rechaza lo que no es menor que `p`; la sección 6
+  gana su párrafo «Canonicidad». Ningún byte de lo que el núcleo produce se mueve: los 26 KAT,
+  iguales; lo que cambia es qué bytes y qué enteros se ACEPTAN al leer.
 
 - §623 — la segunda implementación del núcleo
   (`tools/segunda/`, entrada 85) reproduce los 26 KAT desde esta sección y verifica las cabezas

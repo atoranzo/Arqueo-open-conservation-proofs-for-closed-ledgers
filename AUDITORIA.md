@@ -44933,3 +44933,100 @@ ninguna etapa construida. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
 **Lo que NO cierra.** La 84. La siguiente etapa es la E2, el núcleo del acta: su dominio, su digest
 con su KAT y su verificador en el kit.
 
+
+## §640 — RFC-0016: un valor, una escritura; la firma ya no acredita un entero módulo `p`
+
+El commit que lleva este asiento, sobre `e1d1db3` (el §642). Un solo sello: el núcleo, el mando, el
+probador, la segunda implementación, cuatro vectores, la spec, el RFC-0016 PROPUESTO, `SECURITY.md`
+y las cifras, con el canon `--sello` VERDE dentro del bloque. 34 ficheros más este asiento -29 modificados, con 457 inserciones y 93 borrados, y 5 nuevos, con 330 líneas: el RFC y los cuatro vectores-. El trabajo empezó sobre `2c0671e`; `main` avanzó a `3200b3a`, que sólo toca `AUDITORIA.md`, y la rama se adelantó a él sin fusión antes de sellar. El número es el §640
+porque el §629 deja el §630 a la sesión de `claude/nice-planck-ax35zl`. Lo construyó un asistente,
+Claude Code en una sesión en la nube, con el método de `GENAI.md` salvo en su paso 4, que se
+declara: el cambio lo aplicó, el canon lo corrió y el commit lo hace la sesión en su contenedor, no
+el autor en su máquina; la aceptación del autor pasa del commit a su entrada en `main`, y la del
+RFC-0016, de PROPUESTO a ACEPTADO, es suya.
+
+**De dónde sale.** De una petición del autor: mejorar el núcleo criptográfico «para que tenga la
+máxima potencia, coherencia y claridad matemática». La sesión leyó `NUCLEO.md` sección 6 contra
+`zk-ssl-hash` y el mando, y encontró que la sección dice cómo se escriben los bytes y no qué bytes
+son una escritura válida. El campo es `F_p`, `p = 2^64 - 2^32 + 1`; un `u64` tiene `2^64` valores y
+`BaseElement::new` reduce. Dos lecturas del núcleo reducían en silencio: `as_digest`, que es
+inyectiva en `[0, p)` y en ningún sitio más, y `element_from_bytes`, que daba al elemento
+`x < 2^32 - 1` dos escrituras, `x` y `x + p`.
+
+**Lo medido, antes de tocar nada.** Cuatro vectores reales, mutados en un solo campo, contra el
+binario de referencia (`target/release/zk-ssl-verify`) y contra la segunda implementación
+(`tools/segunda/verificador.py`):
+
+| vector | mutación | referencia | segunda |
+|---|---|---|---|
+| `paquete/posicion-v2.json` | `cabeza.n` a `n + p` | VERDE, 0 | VERDE, 0 |
+| `completitud/no-resuelta.json` | `n` del cierre y del recibo a `n + p` | «ventana ABIERTA … el sobre es prematuro», 1 | no lee la familia |
+| `paquete/extension.json` | `nueva.mmrSize` a `t + p` | colgado: 124 a los 20 s de `timeout` | ROJO «NO extiende», 1 |
+| `ancla/ancla-exacta.json` | el cero del `chainDigest` escrito como `p` | VERDE, 0 | ROJO «elemento fuera del campo», 1 |
+
+Cuatro defectos de una causa. La misma firma XMSS, y las mismas cofirmas, acreditaban una cabeza con
+`n` y otra con `n + p`. El sobre de completitud que nombra al operador, «NO RESUELTA EN LA VENTANA»,
+pasaba a «ventana ABIERTA» con la misma firma: el acusado elegía el veredicto. La partición del MMR
+doblaba `k` mientras `k * 2 < n`, y para `n > 2^63` el doble desborda, en release vuelve a cero y no
+acaba. Y la segunda implementación, escrita desde la spec, ya rechazaba lo que la referencia reducía.
+Dos indicios de que la regla estaba en la intención y no en el código: el cable declara
+`WireError::NotCanonical` sobre `digest_from_bytes` y no podía producirlo, y `PAQUETE.md` sección 9
+declaraba cuatro textos de rechazo sin vector porque «no se conoce un valor» que `digest_from_bytes`
+rechace. No lo había.
+
+**Lo que hace.** (1) **El núcleo** (`zk-ssl-hash`): `MODULO`, tomado de `StarkField::MODULUS` y no
+tecleado; `u64_canonico`, el único productor de la regla; `FormatoError::NoCanonico`, con el texto
+`0x… no es canonico: no es menor que p = 2^64 - 2^32 + 1`; y `element_from_bytes`, que pasa el `u64`
+por la regla antes de hacer el elemento, con lo que escribir y leer son inversas exactas.
+`as_digest` NO cambia: su doc dice ahora dónde es inyectiva, y un test pincha `as_digest(x + p) =
+as_digest(x)`. `resumen_con_dominio` documenta la otra mitad: un productor reduce, un lector
+rechaza. Cinco tests. (2) **El mando**: `u64_de` lee canónico todos los `u64` del sobre, antes de
+recomponer y antes de la firma; los lectores de digest dicen la regla por `{e}` y no por `{e:?}`; y
+`mmr::mitad` es el bit más alto de `n - 1`, atado en un test contra el bucle viejo en todo `n` donde
+aquel acababa. Cinco tests, uno de punta a punta sobre `posicion-v2.json` con `n + p`. (3) **El
+probador**: las siete copias privadas del embebido que la cabecera de `embeber` censaba desde el
+§258 pasan a ser `zk_ssl_hash::embeber`, importada como `as_digest`, y `SPEND_KEY_DOMAIN` de
+`native.rs` se reexporta del núcleo, la deuda que su doc dejó escrita. (4) **La segunda
+implementación**: `nucleo.py` gana `u64_canonico` con el mismo texto y `limbos_reducidos`, porque
+devolvía los bytes de Blake3 tal cual y rechazaba el limbo que la referencia reduce (`2^-32` por
+limbo, el ROJO con nombre que su README ya confesaba); `verificador.py` y `juez_cabezas.py` leen
+canónico. (5) **Cuatro vectores negativos**, uno por defecto medido, derivados de los cuatro de la
+tabla: `paquete/rechazo-n-no-canonico.json`, `paquete/rechazo-mmrSize-no-canonico.json`,
+`ancla/neg-ancla-cero-escrito-como-p.json` y `completitud/neg-n-no-canonico.json`, con su entrada
+de manifiesto; el formato de cada original se reproduce byte a byte antes de mutar. (6) **La spec**:
+`NUCLEO.md` gana dos filas (`MODULO`, `u64_canonico`) y el párrafo «Canonicidad» de la sección 6,
+con sus tres reglas y lo que promete -sobre lo canónico, cada composición que produce un digest es
+inyectiva salvo colisión del hash, con la excepción de forma de `path_root`, cuya orientación no se
+lee de la raíz cuando el hermano es igual al nodo-; `PAQUETE.md`, el texto en la sección 5 y la
+nota corregida en la 9; el RFC-0016, PROPUESTO, con sus cinco etapas; y `SECURITY.md` §3.8.
+
+**Contadores.** El hash 40 -> 45 y el verificador independiente 147 -> 152; los otros diecinueve, sin mover, con el probador en 403 y 13 ignorados tras retirar sus siete copias. TOTAL DE SELLO 1529 -> 1539; TOTAL CON LARGOS 1666 -> 1676; los tres párrafos ancla (`PRINCIPIOS.md` y los dos `PAPER`) al día, y el desglose de `PRINCIPIOS.md` con los 152 del verificador. `check_tests`, 1688 -> 1698 declarados. `spec/vectors/`, 419 -> 423 ficheros, en los dos README; los manifiestos, paquete 70 -> 72, ancla 21 -> 22 y completitud 73 -> 74; el segundo verificador, 121 -> 124 entradas; el juez de cabezas de la segunda, 376 de 418 -> 378 de 424 cabezas y 7 de 11 -> 8 de 12 cofirmas, y las dos cabezas nuevas que verifican son la vieja de la extensión y la vigente de la completitud, que no se mutaron. `check_dominios`, 29 -> 28 declaraciones u64 con las mismas 25 ternas; `check_nucleo`, 132 -> 134 filas (NÚCLEO 105 -> 107). Los RFC con estado propio, 13 -> 14: las cinco cuentas de cuatro documentos y su fila en `spec/README.md`. Sin mover: los 26 KAT, la conformidad 0.4 «todo IDENTICO», el juez STARK de la segunda (23 de 23 pares, 33 de 33 falsadores), ningún `Cargo` y el `BACKLOG.md`, que sigue en 43 abiertas y 73 resueltas. Canon `--sello` VERDE: 946 s de tests y 17 min 58 s en total, con el artefacto reproducible -binario `092685ec901eb082`, tarball `3603155765ee6374`- y los diez manifiestos desde el árbol y desde dentro del tarball.
+
+**Decisiones (REVERSIBLES).** D-1: la frontera va en la lectura y `as_digest` no cambia; la
+alternativa, dos limbos de 32 bits, movería los bytes de todo valor mayor que `2^32` y pediría
+versión de preámbulo para un rango que nadie produce. D-2: el mando lee canónicos TODOS los `u64`
+del sobre y no sólo los que componen: todos razonan junto a una composición y ningún productor de
+la casa escribe uno que no quepa. D-3: el rechazo nombra el campo y el valor sin reducir, y llega
+antes de la firma, para que quien lo lee sepa qué escritura reducir y no tenga que adivinarla. D-4:
+el RFC queda PROPUESTO; aceptarlo es del autor.
+
+**Lo que NO hace.** No mueve un byte de lo que el núcleo produce: los 26 KAT, iguales por las dos
+implementaciones; los diez manifiestos dicen lo mismo en sus 316 entradas anteriores; las 376
+cabezas que el juez de la segunda verificaba siguen verificando. No toca el cable ni el OpenRPC. No
+corta una release del kit: la publicada, `arqueo-verify-v0.3.0`, lee reduciendo y acepta los cuatro
+negativos. No toca la cifra «1364 declarados» de `PRINCIPIOS.md` y los `PAPER`, cuyo productor no
+está en el árbol (§591). No corre `--bancos` ni `--completo`: sólo `--sello`.
+
+**Lección.** La segunda implementación ya había elegido la regla; faltaba escribirla. Una spec que
+dice cómo se escriben los bytes y no cuáles son válidos deja la elección a cada implementación, y
+dos honestas eligieron distinto. Y el agujero mayor no era la divergencia: era que una firma
+acreditara una clase de enteros y el mando razonara sobre uno, de modo que el operador elegía el
+veredicto que lo nombra. Lo encontró la aritmética del campo, no un test: ninguno lo buscaba.
+
+**Lo que NO cierra.** El lector de `QUANTITY` de `zk-ssl-wire` y el recompositor del testigo leen
+`u64` sin la regla: lo que firman y comparan es el digest, no el entero, y ningún veredicto de un
+tercero depende de ellos; queda nombrado, sin etapa. `verificar_inclusion` y sus hermanas v2 a v6 no
+fijan la profundidad del árbol de cuentas ni cruzan el camino con el `indice` que el recibo lleva y
+no usa; ningún consumidor las llama. Los tres textos de camino siguen sin vector. `as_digest` sigue
+reduciendo: un productor nuevo que componga un `u64` sin pasar por `u64_canonico` reabre el hueco, y
+lo vigilan tests, no una compuerta. Y una release del kit con la regla, que es decisión del autor.

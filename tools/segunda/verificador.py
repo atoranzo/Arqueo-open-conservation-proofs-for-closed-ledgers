@@ -60,7 +60,7 @@ def digest_de(obj, campo):
     try:
         return N.digest_from_bytes(b)
     except ValueError as e:
-        raise Rojo(f"{campo}: {str(e)!r}")
+        raise Rojo(f"{campo}: {e}")  # RFC-0016: el texto de la referencia, que lo da por Display
 
 
 def u64_de(obj, campo):
@@ -75,7 +75,10 @@ def u64_de(obj, campo):
         raise Rojo(f"{campo}: invalid digit found in string")
     if s[2:] == "" or v >= 2**64:
         raise Rojo(f"{campo}: number too large to fit in target type")
-    return v
+    try:
+        return N.u64_canonico(v)  # RFC-0016 (S631): un u64 que entra en una composicion es menor que p
+    except ValueError as e:
+        raise Rojo(f"{campo}: {e}")
 
 
 def bytes_de(obj, campo):
@@ -509,11 +512,11 @@ def leer_lista_de_digests(doc, campo):
 
 
 def huella_como_digest(huella):
-    """Los 32 bytes de Blake3, leidos como Digest para el merge de ancla_digest (NUCLEO.md seccion 6)."""
-    try:
-        return N.digest_from_bytes(huella)
-    except ValueError:
-        raise Rojo("la huella de la clave no cabe en el campo: un limbo de Blake3 queda fuera de Goldilocks")
+    """La huella de la clave, como Digest para el merge de ancla_digest (NUCLEO.md seccion 6). Desde el S631
+    (RFC-0016) `huella_de_clave` REDUCE cada limbo, como la referencia: su salida es canonica y esta lectura
+    no puede fallar. Hasta entonces aqui habia un ROJO con nombre para el limbo fuera del campo, que la
+    referencia reducia y aceptaba: las dos implementaciones divergian con probabilidad 2^-32 por limbo."""
+    return N.digest_from_bytes(huella)
 
 
 def ancla(doc):

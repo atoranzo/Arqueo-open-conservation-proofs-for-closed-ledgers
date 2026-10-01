@@ -94,16 +94,27 @@ fn digest_de(v: &serde_json::Value, campo: &str) -> Result<Digest, String> {
         .as_slice()
         .try_into()
         .map_err(|_| err(format!("{campo}: {} bytes, se esperaban 32", b.len())))?;
-    digest_from_bytes(&arr).map_err(|e| err(format!("{campo}: {e:?}")))
+    digest_from_bytes(&arr).map_err(|e| err(format!("{campo}: {e}")))
 }
 
+/// Un `u64` del sobre, **sólo si es canónico** (RFC-0016, D-B; §640): menor
+/// que `p`, por `zk_ssl_hash::u64_canonico`, el único productor de la regla.
+///
+/// ⚠️ Todo `u64` que este mando lee entra en una composición o razona junto a
+/// una -`n`, `seq`, `mmrSize`, los contadores, el índice-, y `as_digest`
+/// reduce módulo `p`: sin esta lectura, una cabeza firmada con `n = 1440`
+/// verificaba igual con `n = 1440 + p`, y el sobre de completitud pasaba de
+/// «NO RESUELTA EN LA VENTANA» a «ventana ABIERTA» con la MISMA firma
+/// (medido). Ningún productor honesto escribe un `u64` que no quepa: lo que
+/// se rechaza aquí no lo emitió nunca un nodo de la casa.
 fn u64_de(v: &serde_json::Value, campo: &str) -> Result<u64, String> {
     let s = v
         .get(campo)
         .and_then(|x| x.as_str())
         .ok_or_else(|| err(format!("falta {campo} o no es cadena 0x")))?;
     let h = s.strip_prefix("0x").ok_or_else(|| err(format!("{campo} sin 0x")))?;
-    u64::from_str_radix(h, 16).map_err(|e| err(format!("{campo}: {e}")))
+    let x = u64::from_str_radix(h, 16).map_err(|e| err(format!("{campo}: {e}")))?;
+    zk_ssl_hash::u64_canonico(x).map_err(|e| err(format!("{campo}: {e}")))
 }
 
 /// La familia de la cabeza v5 (RFC-0007 D-B; §451): los siete parametros en un digest, la
@@ -328,7 +339,7 @@ fn verificar_paquete(p: &serde_json::Value) -> Result<(), String> {
                         .as_slice()
                         .try_into()
                         .map_err(|_| err(format!("sibling {i}: {} bytes", b.len())))?;
-                    digest_from_bytes(&arr).map_err(|e| err(format!("sibling {i}: {e:?}")))
+                    digest_from_bytes(&arr).map_err(|e| err(format!("sibling {i}: {e}")))
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             let derecha = der
@@ -753,7 +764,7 @@ fn camino_mmr(p: &serde_json::Value) -> Result<Vec<Digest>, String> {
                 .as_slice()
                 .try_into()
                 .map_err(|_| err(format!("camino[{i}]: {} bytes", bts.len())))?;
-            digest_from_bytes(&arr).map_err(|e| err(format!("camino[{i}]: {e:?}")))
+            digest_from_bytes(&arr).map_err(|e| err(format!("camino[{i}]: {e}")))
         })
         .collect()
 }
@@ -788,7 +799,7 @@ fn camino_de(
                 .as_slice()
                 .try_into()
                 .map_err(|_| err(format!("{mote}: siblings[{i}]: {} bytes", bts.len())))?;
-            digest_from_bytes(&arr).map_err(|e| err(format!("{mote}: siblings[{i}]: {e:?}")))
+            digest_from_bytes(&arr).map_err(|e| err(format!("{mote}: siblings[{i}]: {e}")))
         })
         .collect::<Result<Vec<_>, _>>()?;
     let derecha = der
@@ -3504,5 +3515,47 @@ mod tests {
                   "pago_en_curso", "prenda"] {
             assert!(otro.contains(&format!("`tipo: \"{t}\"`")), "no nombra {t}: {otro}");
         }
+    }
+
+    // ── RFC-0016 (§640): un valor, una escritura ──────────────────────────
+
+    /// El lector de `u64` del sobre rechaza lo que no escribe un elemento, y
+    /// dice el valor tal como llego.
+    #[test]
+    fn un_u64_que_no_es_canonico_se_rechaza_con_su_valor() {
+        let p = zk_ssl_hash::MODULO;
+        assert_eq!(u64_de(&json!({ "n": format!("{:#x}", p - 1) }), "n"), Ok(p - 1));
+        let e = u64_de(&json!({ "n": format!("{:#x}", 0x5a0 + p) }), "n").unwrap_err();
+        assert_eq!(e, "n: 0xffffffff000005a1 no es canonico: no es menor que p = 2^64 - 2^32 + 1");
+        let e = u64_de(&json!({ "n": "0xffffffffffffffff" }), "n").unwrap_err();
+        assert!(e.contains("no es canonico"), "{e}");
+    }
+
+    /// El lector de digests dice la regla, no un `Debug`: el cero escrito como
+    /// `p` en el primer elemento.
+    #[test]
+    fn un_digest_que_no_es_canonico_se_rechaza_con_su_regla() {
+        let mut b = [0u8; 32];
+        b[..8].copy_from_slice(&zk_ssl_hash::MODULO.to_le_bytes());
+        let hex: String = b.iter().map(|x| format!("{x:02x}")).collect();
+        let e = digest_de(&json!({ "chainDigest": format!("0x{hex}") }), "chainDigest").unwrap_err();
+        assert_eq!(e, "chainDigest: 0xffffffff00000001 no es canonico: no es menor que p = 2^64 - 2^32 + 1");
+    }
+
+    /// ⚠️ EL CASO MEDIDO, de punta a punta y sobre un vector REAL: la cabeza
+    /// de `posicion-v2.json` con `n + p`. La firma es la misma y el digest
+    /// recompone igual, porque `as_digest` reduce; hasta el §640 el mando decia
+    /// VERDE. Ahora la lectura lo para ANTES de la firma, con el nombre del campo.
+    #[test]
+    fn la_misma_firma_ya_no_acredita_dos_n() {
+        let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../spec/vectors/paquete/posicion-v2.json");
+        let mut p: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&base).expect("el vector existe")).unwrap();
+        assert_eq!(verificar_paquete(&p), Ok(()), "el vector honesto verifica");
+        let n = u64::from_str_radix(p["cabeza"]["n"].as_str().unwrap().trim_start_matches("0x"), 16).unwrap();
+        p["cabeza"]["n"] = json!(format!("{:#x}", n + zk_ssl_hash::MODULO));
+        let e = verificar_paquete(&p).unwrap_err();
+        assert!(e.starts_with("n: ") && e.contains("no es canonico"), "{e}");
     }
 }
