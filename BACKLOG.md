@@ -719,6 +719,10 @@ instrumentacion) al grupo E.*
   reporta las cofirmas y no juzga el umbral (decisión del autor). QUEDAN
   su catálogo y su banco (E4b), el publicador (E3) y el juez del umbral
   en `zk-ssl-cli`: sigue abierta.
+  ✅ a medias (§634): la E4b, el catálogo `spec/vectors/ancla-cofirmada/`
+  y su banco contra un nodo real. QUEDAN el publicador (E3), con el
+  despliegue y su medida (qué testigos, cadencia, coste), y el juez del
+  umbral en `zk-ssl-cli`: sigue abierta.
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro
   tiene dos eras (§281). **El esquema de firma no tiene ninguna de las

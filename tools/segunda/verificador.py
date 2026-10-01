@@ -26,7 +26,7 @@ VERSIONES_CABEZA = (2, 3, 4, 5, 6)
 VERSIONES_EXTENSION = (3, 4, 5, 6)
 COFIRMA_V_MAX = 1
 TIPOS_CONOCIDOS = ("extension", "consumo", "conflicto", "rechazo", "edad", "cobro_pendiente", "pago_en_curso",
-                   "prenda", "completitud", "ancla")
+                   "prenda", "completitud", "ancla", "ancla-cofirmada")
 
 
 class Rojo(Exception):
@@ -618,9 +618,12 @@ def juzgar(ruta):
             return ancla(doc)
         if tipo in TIPOS_CONOCIDOS:
             raise Rojo(f"tipo {tipo}: la segunda implementacion no lee este sobre todavia")
+        # §634: el texto del binario de referencia, letra por letra (PAQUETE.md, seccion 5); hasta
+        # aqui acababa en `prenda`, rancio como el del catalogo desde el §573.
         raise Rojo(f"tipo desconocido: {tipo} - se lee un paquete de posicion (sin `tipo`), `tipo: \"extension\"`, "
                    f"`tipo: \"consumo\"`, `tipo: \"conflicto\"`, `tipo: \"rechazo\"`, `tipo: \"edad\"`, "
-                   f"`tipo: \"cobro_pendiente\"`, `tipo: \"pago_en_curso\"` o `tipo: \"prenda\"`")
+                   f"`tipo: \"cobro_pendiente\"`, `tipo: \"pago_en_curso\"`, `tipo: \"prenda\"`, "
+                   f"`tipo: \"completitud\"`, `tipo: \"ancla\"` o `tipo: \"ancla-cofirmada\"`")
     if v == 1 and "cofirmas" in doc:
         raise Rojo("un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, "
                    "o quitalas")

@@ -469,6 +469,18 @@ else
   grep -q '^ROJO' "$OUT/ancla.txt" || falla "ancla: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/ancla.txt"))"
 fi
 
+# ── 3 bis ancla cofirmada · el sobre del ANCLA COFIRMADA (RFC-0013 E4b, desde el §634) ──
+msg ""
+msg "== CANON · las formas del sobre del ancla cofirmada =="
+# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
+# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
+if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/ancla-cofirmada/MANIFIESTO.txt > "$OUT/ancla_cofirmada.txt" 2>&1; then
+  msg "  OK  ancla-cofirmada: $(tail -n 1 "$OUT/ancla_cofirmada.txt" | sed 's/^conformidad: //')"
+else
+  while IFS= read -r L; do falla "ancla-cofirmada $L"; done < <(grep '^ROJO' "$OUT/ancla_cofirmada.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/ancla_cofirmada.txt" || falla "ancla-cofirmada: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/ancla_cofirmada.txt"))"
+fi
+
 # ── 3 duodecies · la SEGUNDA implementacion (BACKLOG 85; tools/segunda/) ──
 # Otro codigo, en Python y sin dependencias, reproduce el nucleo congelado desde NUCLEO.md (26 KAT)
 # y verifica las cabezas firmadas de TODOS los vectores con XMSS^MT escrito desde RFC 8391

@@ -534,7 +534,11 @@ cuántos hacen falta lo decide quien verifica con su política (RFC-0013 D-D), n
 puede armarlo el operador. Ni el umbral, ni la frescura de las marcas de tiempo, ni que el medio
 sea el único del operador los decide este mando.
 
-**El catálogo y el banco** son del §634.
+**El banco es `tools/banco_ancla_cofirmada.sh`** (§634), que lo reproduce en vivo contra un nodo
+real que firma —tres cabezas, sus anclas derivadas por el mando, y el medio del operador firmado
+por el ejemplo `medio` de `zk-ssl-medio`, que no es el publicador (E3)—, y **el catálogo es
+`spec/vectors/ancla-cofirmada/`** (§634), la undécima familia del artefacto, COPIADA de una
+corrida suya: sección 9.
 
 ## 3. El sobre — lo que el binario lee
 
@@ -1127,6 +1131,18 @@ del camino plano— viven en ellas, y se declara. Dos corridas del banco no dan 
 (`emittedAtUnix` no va firmado): la familia se COPIA de la corrida del sello. Su productor es
 `tools/banco_ancla.sh` (§593).
 
+**Desde §634 cubre el sobre del ANCLA COFIRMADA** (RFC-0013, E4b): `spec/vectors/ancla-cofirmada/`
+trae CINCO positivos CAPTURADOS de un nodo real que firma un latido por segundo —la semilla del
+operador de `ancla/`—: tres cabezas, sus anclas DERIVADAS por el mando como en el sobre del ancla,
+y el medio de ese operador, que publica las tres en su árbol y firma su nota con ML-DSA-44 tipo
+`0x06`, CON SAL, cofirmada por testigos de prueba. Un testigo, dos, la cofirma sin su vkey en el
+sobre —se cuenta y no se juzga—, un medio de una sola ancla y la última de las tres. Y VEINTIDÓS
+negativos por UNA mutación cada uno, uno por regla producible y por sitio; el del ATAQUE de verdad
+—el medio de OTRO operador, bien firmado, con el ancla de esta cabeza dentro— lleva la clave de un
+segundo nodo, de otra semilla. El umbral de testigos no tiene vector: el mando no lo juzga (§633).
+La familia se COPIA de la corrida del sello: las cabezas, las marcas y la sal cambian en cada
+corrida. Su productor es `tools/banco_ancla_cofirmada.sh` (§634).
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1192,23 +1208,23 @@ del camino plano— viven en ellas, y se declara. Dos corridas del banco no dan 
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
 `zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
-(este documento), `spec/vectors/<familia>/` por cada una de las DIEZ familias de `FAMILIAS`
-—paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud y ancla— (los
-diez
-manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
+(este documento), `spec/vectors/<familia>/` por cada una de las ONCE familias de `FAMILIAS`
+—paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla y ancla
+cofirmada— (los once manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
 licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
 y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`, y
-el binario contra los diez catálogos con `bash conformidad.sh ./zk-ssl-verify` —el del paquete,
+el binario contra los once catálogos con `bash conformidad.sh ./zk-ssl-verify` —el del paquete,
 por defecto— y `bash conformidad.sh ./zk-ssl-verify spec/vectors/<familia>/MANIFIESTO.txt` para
-cada una de las otras nueve: cada entrada dice el código de salida y el texto. Esta sección decía
+cada una de las otras diez: cada entrada dice el código de salida y el texto. Esta sección decía
 SEIS hasta el §574: el pago (§509) y la prenda (§546) entraron en `FAMILIAS`, y en el tarball, sin
-que ella lo dijera; el §574 lo corrige al sumar la novena, y el §593 suma la décima, el ancla.
+que ella lo dijera; el §574 lo corrige al sumar la novena, el §593 suma la décima, el ancla, y el
+§634 la undécima, el ancla cofirmada.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
 nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
 binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
-compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los diez manifiestos desde el
+compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los once manifiestos desde el
 árbol y, desde §425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo
 veredicto). Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
 declara (`glibc_max`); no es estático, y se dice.

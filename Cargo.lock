@@ -3623,6 +3623,7 @@ version = "0.1.0"
 dependencies = [
  "getrandom 0.4.3",
  "ml-dsa",
+ "serde_json",
  "sha2",
  "zeroize",
 ]

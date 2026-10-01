@@ -44612,3 +44612,64 @@ README): el kit nuevo saldrá en la próxima. `SECURITY.md` no enumera dependenc
 de las marcas de tiempo, que tampoco juzga el kit. Y `ml-dsa`, ya en el kit, sigue sin auditar:
 el contraste byte a byte con el ML-DSA de Go lo acota, no lo sustituye.
 
+## §634 — RFC-0013 E4b: el catálogo del ancla cofirmada, copiado de un banco contra un nodo real
+
+El commit que lleva este asiento, sobre `aea0549` (el §633). Un solo sello: nace el banco
+`tools/banco_ancla_cofirmada.sh` y el ejemplo `medio` de `zk-ssl-medio` que firma por él; nace el
+catálogo `spec/vectors/ancla-cofirmada/`, copiado de una corrida suya, con su bloque del canon y su
+sitio en el artefacto; la segunda implementación conoce el tipo; `spec/PAQUETE.md`, los README, la
+fila del catálogo y la del RFC en `spec/README.md`, el RFC-0013 y la entrada 86 se ponen al día; y
+este asiento. 42 ficheros: 28 del catálogo, 2 que nacen fuera de él y 11 tocados, con 371
+inserciones y 18 borrados fuera del catálogo y de este asiento. Con este sello la E4 del RFC-0013
+está entera. Lo escribe, lo prueba y lo commitea la misma sesión de Claude Code que el §633, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon
+`--sello` y empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con el
+bloque nuevo en 27 de 27 y la familia también dentro del tarball desempaquetado.
+
+**Lo que hace.** (1) `tools/banco_ancla_cofirmada.sh`, el vigesimosegundo banco, con el molde de
+`banco_ancla.sh`: fuera del canon, en un temporal que borra, y comprobando al final que no ha tocado
+el árbol. Levanta un nodo REAL de semilla `37` x 96 —el operador de `spec/vectors/ancla/`—, toma
+tres cabezas firmadas y lo para. El mando DERIVA el ancla de cada una, como en el sobre del ancla:
+un solo productor, y el banco solo lee lo que imprime. El ejemplo `medio` de `zk-ssl-medio` (con
+`firmar`, por la entrada y la salida estándar en JSON) monta el medio de ese operador con las tres
+anclas, firma su nota CON SAL y la hace cofirmar por testigos de prueba. No es el publicador, que es
+E3, y su cabecera lo dice. Un segundo nodo, de semilla `38` x 96, firma una vez y se para: es la
+otra clave. El mando juzga cada sobre con los nodos muertos. (2) El catálogo: 5 positivos y 22
+negativos, cada uno de UNA mutación de lo capturado, uno por regla producible del sobre y por
+sitio. Los positivos son un testigo; dos; la cofirma sin su vkey en el sobre, que se cuenta y no se
+juzga; un medio de una sola ancla, sin camino; y la última de las tres. Entre los negativos está
+el ataque de verdad, `neg-medio-de-otra-clave`: el medio del OTRO operador publica, bien firmada,
+el ancla de esta cabeza, y todo verifica menos el atado del publicador a la clave XMSS. El umbral
+de testigos no tiene vector, porque el mando no lo juzga (§633), y se declara en el `MANIFIESTO`.
+Sus textos esperados son ASCII. (3) El bloque del canon «3 bis ancla cofirmada», copiado del del
+ancla, con el mismo arnés y otro manifiesto. Y `ancla-cofirmada` en `FAMILIAS` de
+`tools/artefacto.sh`: la undécima familia del tarball, cuyos sobres llevan la nota dentro como
+texto, porque `montar` solo copia JSON. (4) `tools/segunda`
+conoce el tipo y responde que todavía no lo lee. Su texto del «tipo desconocido», rancio desde el
+§573 como el del catálogo, sale ahora letra por letra igual que el del binario de referencia: se
+comprobó con los dos.
+
+**Medido.** El banco salió VERDE a la primera: 27 de 27. El arnés de conformidad sobre el
+catálogo copiado da 27 de 27 con el binario de este árbol. El catálogo pesa 1,3 MB: cada sobre
+lleva una cabeza firmada con XMSS entera y una nota con dos o tres firmas ML-DSA-44.
+`spec/vectors/` pasa de 419 a 447 ficheros, la cifra que el ATADO E de `check_publicadas` exige a
+los dos README. Y un contraste que no se buscó: el juez de cabezas de la segunda implementación
+recorre todo `spec/vectors/` y ve las 27 cabezas nuevas. Pasa de 418 a 445, y de esas 27
+verifican en Python 25; las 2 que no son las de `neg-cabeza-v2` y `neg-cabeza-tocada`, y ninguna
+positiva falla.
+
+**Contadores.** Ningún pin se mueve. El ejemplo se compila con los tests de `zk-ssl-medio`, que
+sigue en 37, y ningún crate gana tests. TOTAL DE SELLO 1571 y TOTAL CON LARGOS 1708, sin cambio.
+La cuenta de `check_tests` sigue en 1730. Las familias del artefacto pasan de diez a once, y los
+ficheros de `spec/vectors/` de 419 a 447. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas: la
+86 gana su avance y sigue abierta.
+
+**Lo que NO hace.** No construye el publicador: el ejemplo firma con semillas de prueba que viajan
+en claro por la entrada estándar, y eso no es custodia. No enseña a la segunda implementación a
+leer el sobre: haría falta un ML-DSA en Python, y queda nombrado. No toca la release publicada ni
+sus documentos, y el kit nuevo saldrá en la próxima. No juzga el umbral.
+
+**Lo que NO cierra.** La E3, que pide decidir con qué testigo público medir. Y el juez del umbral
+de las cofirmas del medio en `zk-ssl-cli`. Con el RFC-0013 entero salvo la E3, su paso a ACEPTADO es
+del autor.
+

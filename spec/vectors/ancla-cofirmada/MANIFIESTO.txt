@@ -1,0 +1,53 @@
+# Vectores del sobre del ANCLA COFIRMADA (spec/PAQUETE.md 2.13, RFC-0013 E4; asientos 633 y 634).
+# zkssl/0.4. fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# TODOS se CAPTURAN de UNA corrida de su productor, que vive en el arbol:
+# `bash tools/banco_ancla_cofirmada.sh --guardar <dir>` (S634), contra un nodo REAL que firma un
+# latido por segundo con la semilla '37' x 96 -el operador de spec/vectors/ancla/-. El mando DERIVA
+# el ancla de cada una de tres cabezas firmadas (el modo 1 del sobre del ancla: un solo productor),
+# y el medio del operador, `zkssl/v1/` y la huella de su clave, publica las tres en su arbol SHA-256
+# y firma su nota checkpoint con ML-DSA-44 tipo 0x06, CON SAL; los testigos de prueba
+# `testigo.invalid/uno` y `testigo.invalid/dos` la cofirman con sus claves. Lo firma el ejemplo
+# `medio` de zk-ssl-medio, que NO es el publicador (E3): las semillas del medio son de prueba.
+# Los CINCO positivos:
+#   - `cofirmada-un-testigo`, salida 0: la cabeza del medio (posicion 1 de 3), la nota y una cofirma
+#     con su vkey en el sobre: el mando la lista con la huella de su clave entera;
+#   - `cofirmada-dos-testigos`, salida 0: lo mismo con dos;
+#   - `cofirmada-sin-claves-de-testigo`, salida 0: la nota lleva la cofirma y el sobre no trae su
+#     vkey: la linea se cuenta y no se juzga -el mando REPORTA, NO JUZGA (S633)-;
+#   - `cofirmada-medio-de-una`, salida 0: un medio de una sola ancla, sin camino;
+#   - `cofirmada-ultima`, salida 0: la ultima de las tres.
+# Los VEINTIDOS negativos salen de lo capturado por UNA mutacion cada uno, uno por regla producible
+# del sobre y por sitio; jamas se reescriben (regla 2 del PROCESO). El de la otra clave,
+# `neg-medio-de-otra-clave`, es el ATAQUE de verdad: el medio de un SEGUNDO operador -un nodo de
+# semilla '38' x 96 que el banco levanta un momento- publica bien firmada el ancla de ESTA cabeza;
+# todo verifica menos el atado del publicador a la clave XMSS (RFC-0013 D-A).
+# El umbral de testigos NO tiene vector aqui, y se declara: el mando no lo juzga (S633).
+# Dos corridas del banco no dan los mismos bytes (las cabezas, las marcas y la sal cambian): la
+# familia se COPIA de la corrida del sello y no se re-deriva.
+cofirmada-un-testigo.json|0|la cofirman 1 testigo(s)
+cofirmada-dos-testigos.json|0|la cofirman 2 testigo(s)
+cofirmada-sin-claves-de-testigo.json|0|lineas sin clave en el sobre, sin juzgar: 1
+cofirmada-medio-de-una.json|0|en la posicion 0
+cofirmada-ultima.json|0|en la posicion 2
+neg-con-ancla.json|1|no lleva ancla
+neg-con-contraria.json|1|no lleva contraria
+neg-sin-cabeza.json|1|falta cabeza (la firmada cuya ancla se publico)
+neg-sin-nota.json|1|falta nota
+neg-sin-publicador.json|1|falta publicador
+neg-sin-posicion.json|1|falta posicion
+neg-sin-inclusion.json|1|falta inclusion
+neg-inclusion-corta.json|1|inclusion: 31 bytes
+neg-testigo-vkey-mala.json|1|testigos: clave
+neg-testigo-dos-veces.json|1|esta dos veces
+neg-cabeza-v2.json|1|el ancla lee cabezas
+neg-cabeza-tocada.json|1|NO recomponen su epochDigest
+neg-medio-de-otra-clave.json|1|el publicador es
+neg-publicador-otra-clave.json|1|ninguna firma del publicador
+neg-nota-firma-tocada.json|1|la firma del publicador no verifica
+neg-nota-con-extension.json|1|checkpoint mal formado
+neg-cofirma-tocada.json|1|la cofirma de testigo.invalid/uno no verifica
+neg-cofirma-repetida.json|1|la nota lleva dos cofirmas de testigo.invalid/uno
+neg-posicion-otra.json|1|no esta en la posicion 2
+neg-inclusion-tocada.json|1|no esta en la posicion 1
+neg-medio-sin-el-ancla.json|1|no esta en la posicion 1
+neg-ancla-de-otra-cabeza.json|1|no esta en la posicion 1
