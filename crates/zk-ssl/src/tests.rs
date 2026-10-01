@@ -2402,6 +2402,38 @@ use super::*;
         assert!(verify_audit(&d).is_ok());
     }
 
+    /// **LA COTA NATIVA DE LA BANDA (§641).** El supervisor no acepta una
+    /// banda con `lower > upper` ni con `upper` fuera del rango sano del
+    /// campo (`> 2^62 - 1`): `verify_audit` lo rechaza ANTES de tocar la
+    /// prueba, asi que cierra una banda forjada aunque la prueba fuera
+    /// fabricada fuera de la casa.
+    #[test]
+    fn verify_audit_rechaza_una_banda_fuera_del_rango_sano() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let mut d = layer
+            .audit(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 0, 2_000_000)
+            .expect("banda");
+        assert!(verify_audit(&d).is_ok(), "la banda valida verifica");
+        // `upper` por encima de 2^62 - 1.
+        d.public_inputs.upper =
+            BaseElement::new(stark_experiment::circuit_audit::MAX_VALUE + 1);
+        assert!(
+            matches!(verify_audit(&d), Err(LayerError::BalanceOutsideBand { .. })),
+            "una banda con upper > 2^62 - 1 debe rechazarse"
+        );
+        // `lower > upper`.
+        let mut d2 = layer
+            .audit(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 0, 2_000_000)
+            .expect("banda");
+        d2.public_inputs.lower = BaseElement::new(5);
+        d2.public_inputs.upper = BaseElement::new(4);
+        assert!(
+            matches!(verify_audit(&d2), Err(LayerError::BalanceOutsideBand { .. })),
+            "una banda con lower > upper debe rechazarse"
+        );
+    }
+
     /// **NO SE PUEDE FINGIR SOLVENCIA.**
     #[test]
     fn cannot_prove_a_minimum_that_is_not_met() {

@@ -1026,15 +1026,55 @@ impl SovereignLayer {
         // `circuit_burn`. Si la capa lo hiciera, la hoja resultante seria
         // otra y la raiz no cuadraria con la que la prueba acredita. La
         // proteccion contra reenvio viene del encadenamiento de raices.
-        let updated = ClientState {
-            balance: sender_state.balance - amount,
-            ..sender_state.clone()
-        };
+        // ===== ATADURA NATIVA (§641, RFC-0017) =====
+        //
+        // El agujero medido: `circuit_send` acreditaba `saldo - importe` con
+        // un segmento de rango de 63 bits que ENVUELVE en Goldilocks cuando
+        // el deficit supera `p - 2^63`. Con saldo 0 e importe en la ventana
+        // alta de 63 bits la resta daba un saldo enorme y esta capa lo
+        // escribia. El AIR se cierra a 62 bits (RFC-0017); aqui va la defensa
+        // en profundidad, que ademas tapa la via de llamar al apply con una
+        // traza propia.
         let leaf_salt_rec = self
             .records
             .get(&sender_index)
             .map(|r| r.leaf_salt)
             .unwrap_or(crate::store::LEAF_SALT_LEGACY);
+        // (a) el parametro es el importe PROBADO, no uno libre.
+        if amount != pi.amount.as_int() {
+            return Err(LayerError::StaleState);
+        }
+        // (b) el estado del remitente es el del arbol (como en el cobro).
+        let hoja_vieja = native_leaf_salted(
+            sender_state.public_id,
+            BaseElement::new(sender_state.balance),
+            sender_state.nonce,
+            leaf_salt_rec,
+        );
+        if hoja_vieja != accounts.leaf(sender_index) {
+            return Err(LayerError::StaleState);
+        }
+        // (c) el importe no supera el limite regulatorio (defensa nativa del
+        // tope que el AIR prueba contra el limite DECLARADO).
+        if amount > self.regulatory_limit {
+            return Err(LayerError::OverRegulatoryLimit {
+                limit: self.regulatory_limit,
+                requested: amount,
+            });
+        }
+        // (d) y el saldo alcanza: resta COMPROBADA, nunca envuelve.
+        let saldo_nuevo =
+            sender_state
+                .balance
+                .checked_sub(amount)
+                .ok_or(LayerError::InsufficientBalance {
+                    available: sender_state.balance,
+                    requested: amount,
+                })?;
+        let updated = ClientState {
+            balance: saldo_nuevo,
+            ..sender_state.clone()
+        };
         let hoja_nueva = native_leaf_salted(
             updated.public_id,
             BaseElement::new(updated.balance),
@@ -1307,8 +1347,18 @@ impl SovereignLayer {
         }
         .map_err(|e| LayerError::VerificationFailed(format!("cobro: {e:?}")))?;
 
+        // ===== ATADURA NATIVA (§641, RFC-0017) =====
+        // El importe del aviso es el PROBADO, y la suma es COMPROBADA: con
+        // saldos canonicos (< p) no desborda, pero no se confia en ello.
+        if notice.amount != pi.amount.as_int() {
+            return Err(LayerError::StaleState);
+        }
+        let saldo_nuevo = receiver_state
+            .balance
+            .checked_add(notice.amount)
+            .ok_or(LayerError::StaleState)?;
         let updated = ClientState {
-            balance: receiver_state.balance + notice.amount,
+            balance: saldo_nuevo,
             ..receiver_state.clone()
         };
         let leaf_salt_rec = self

@@ -55,7 +55,7 @@ custodios distintos**, no una clave; y el flujo documentado es el de
 hallazgo propio. Corregido en §361; el error se registra en vez de
 borrarse.
 
-`crates/zk-ssl` — **423 tests** (7 ignorados, declarados). Material para
+`crates/zk-ssl` — **424 tests** (7 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
 El backend STARK añade **18 circuitos** verificados por separado.
 
@@ -1133,7 +1133,7 @@ comprueba que transferir no altera el suministro.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 33 módulos y **423 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 33 módulos y **424 tests**, frente a
 > los 2 módulos y 17 de este.
 >
 > Una versión anterior de este documento lo titulaba *"La capa"* sin más,
@@ -1481,7 +1481,7 @@ crates/
     src/iso_bridge.rs             traductor ISO 20022 -> Halo2
     src/persistent_nullifier_registry.rs  persistencia en sled
   stark-experiment/        mismo circuito, reimplementado en STARK/AIR
-    src/range_check.rs            range check de 63 bits (techo de Goldilocks)
+    src/range_check.rs            range check de 62 bits (RFC-0017: sólido para restas)
     src/rescue_hash.rs            permutacion Rescue Prime como restricciones AIR
     src/merkle.rs                 arbol de Merkle de 32 niveles
     src/nullifier.rs              nullifier con separacion de dominio
@@ -1561,8 +1561,10 @@ rojo si corres esa orden tal cual. **La capa se mide con
   árbol de Groth16 no existe en el de STARK. El trait
   `SettlementProver` unifica la FORMA de la llamada, no los datos — ver
   la nota extensa en `crates/settlement-prover/src/lib.rs`.
-- **El backend STARK cubre 63 bits de rango, no 64**, por el tamaño del
-  campo Goldilocks (2^64 - 2^32 + 1, menor que 2^64). Suficiente para
+- **El backend STARK cubre 62 bits de rango, no 64** (RFC-0017, §641), por
+  el tamaño del campo Goldilocks (2^64 - 2^32 + 1, menor que 2^64): el rango
+  de 63 bits no era sólido para una resta, cuyo resultado envuelto podía
+  caber en él; con 62 bits no (`2*2^62 < p`). Suficiente para
   cualquier importe monetario real, pero es una diferencia con los otros
   dos motores, no una equivalencia.
 - **La resistencia post-cuántica del backend STARK no es gratuita.**

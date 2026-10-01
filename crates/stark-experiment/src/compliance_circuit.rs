@@ -75,7 +75,7 @@ pub const HASH_ROWS: usize = HASH_CYCLES * CYCLE_LENGTH;
 pub const TRACE_LENGTH: usize = 512;
 /// Segmentos de solvencia (idénticos a `solvency.rs`).
 pub const SEGMENT_LENGTH: usize = 64;
-pub const MAX_VALUE: u64 = (1u64 << 63) - 1;
+pub const MAX_VALUE: u64 = (1u64 << 62) - 1; // RFC-0017 (§641): 62 bits, no 63
 
 const TRACE_WIDTH: usize = 20;
 // Carril de hash.
@@ -401,6 +401,7 @@ impl Air for ComplianceAir {
         let mut first_s = vec![zero; TRACE_LENGTH];
         for seg in 0..4 {
             first_s[seg * SEGMENT_LENGTH] = one;
+            first_s[seg * SEGMENT_LENGTH + 1] = one; // RFC-0017 (§641): 62 bits, no 63 (bit 62 a cero)
         }
         columns.push(first_s);
 

@@ -769,6 +769,18 @@ pub struct AuditDisclosure {
 /// pretende auditar — igual que en las liquidaciones, el circuito prueba
 /// la afirmación y quien la recibe ancla el contexto.
 pub fn verify_audit(disclosure: &AuditDisclosure) -> Result<(), LayerError> {
+    // ===== COTA NATIVA DE LA BANDA (§641, RFC-0017) =====
+    // El AIR acota cada segmento a 62 bits, pero el supervisor no debe
+    // aceptar una banda con `lower > upper` ni con `upper` fuera del rango
+    // sano del campo: se exige `lower <= upper <= 2^62 - 1`. Cierra la
+    // banda forjada incluso ante una prueba fabricada fuera de la casa.
+    let (lower, upper) = (
+        disclosure.public_inputs.lower.as_int(),
+        disclosure.public_inputs.upper.as_int(),
+    );
+    if lower > upper || upper > stark_experiment::circuit_audit::MAX_VALUE {
+        return Err(LayerError::BalanceOutsideBand { lower, upper });
+    }
     let proof = winterfell::Proof::from_bytes(&disclosure.proof)
         .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
     let min_opts = AcceptableOptions::OptionSet(vec![proof_options()]);

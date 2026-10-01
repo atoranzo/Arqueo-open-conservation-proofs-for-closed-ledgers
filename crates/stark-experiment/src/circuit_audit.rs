@@ -405,10 +405,11 @@ impl Air for AuditAir {
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
         AuditAir {
-            // 20 - 3: se retiraron las que fijaban a cero `state[9..12]` en
-            // `ROW_PK_START`, que dejaron de ser relleno al ensanchar la
-            // clave (§92.2). Son tres y no seis porque hay UN carril.
-            context: AirContext::new(trace_info, degrees, 17, options),
+            // 17 + 4: las 17 de antes (20 - 3, las que fijaban a cero
+            // `state[9..12]` se retiraron al ensanchar la clave, §92.2) mas
+            // las CUATRO que atan `COL_ID` al `public_id` publico (§641):
+            // la banda ya no se puede atribuir a una cuenta ajena.
+            context: AirContext::new(trace_info, degrees, 21, options),
             pub_inputs,
         }
     }
@@ -475,6 +476,7 @@ impl Air for AuditAir {
         let mut cont_s = vec![zero; TRACE_LENGTH];
         for seg in 0..NUM_SEGMENTS {
             first_s[seg * SEGMENT_LENGTH] = one;
+            first_s[seg * SEGMENT_LENGTH + 1] = one; // RFC-0017 (§641): 62 bits, no 63 (bit 62 a cero)
             for p in 0..SEGMENT_LENGTH - 1 {
                 cont_s[seg * SEGMENT_LENGTH + p] = one;
             }
@@ -649,6 +651,18 @@ impl Air for AuditAir {
         // `C_PK_INPUT` contra `COL_KEY` —constante por `C_TRANSPORT`— y
         // `C_PK_CHECK` exige que la `pk` derivada iguale `COL_ID`. Pasan de
         // estar fijadas a CERO a estarlo a la CLAVE: mas fuerte.
+        // ===== ATADURA DE IDENTIDAD (§641, RFC-0017) =====
+        //
+        // ⚠️ El hueco medido: `get_assertions` ataba la raiz y la banda,
+        // pero NO `COL_ID` —el id de la cuenta, derivado de la clave del
+        // testigo— al `public_id` PUBLICO. Un probador acreditaba SU cuenta
+        // y declaraba el `public_id` de OTRA: la banda se leia de una cuenta
+        // y se atribuia a quien el verificador nombra. Se ata el id de la
+        // fila 0 al publico; `get_pub_inputs` ya lo toma de ahi, asi que un
+        // probador honesto sigue pasando.
+        for i in 0..4 {
+            a.push(Assertion::single(COL_ID + i, 0, self.pub_inputs.public_id[i]));
+        }
         a.push(Assertion::single(COL_LOWER, 0, self.pub_inputs.lower));
         a.push(Assertion::single(COL_UPPER, 0, self.pub_inputs.upper));
 
@@ -944,6 +958,37 @@ mod tests {
                 pi(root, victim_id, 1_000_000, 1_000_000)
             ),
             "CRITICO: solo el titular puede revelar su saldo"
+        );
+    }
+
+    /// **LA BANDA NO SE ATRIBUYE A UN `public_id` DECLARADO AJENO (§641).**
+    ///
+    /// Distinto del de arriba: aqui el probador usa SU clave y SU id (asi
+    /// `C_PK_CHECK` queda satisfecho), pero DECLARA en las entradas publicas
+    /// el `public_id` de otra cuenta. Antes de §641 nada ataba `COL_ID` al
+    /// `public_id` declarado, y el verificador atribuia la banda a la
+    /// victima. La asercion de identidad de §641 lo rechaza.
+    #[test]
+    fn la_banda_no_se_atribuye_a_un_public_id_declarado_ajeno() {
+        let (w, root, id) = scenario(1_000_000);
+        let ajeno: Digest = [
+            BaseElement::new(0x0B0B),
+            BaseElement::new(0x0B0B2),
+            BaseElement::new(0x0B0B3),
+            BaseElement::new(0x0B0B4),
+        ];
+        assert_ne!(id, ajeno, "el id ajeno debe diferir del real");
+        // Banda que SI contiene el saldo real: el unico motivo de rechazo
+        // ha de ser la identidad, no la banda.
+        let (lo, hi) = (0u64, 2_000_000u64);
+        assert!(
+            !run_with_id(&w, lo, hi, id, pi(root, ajeno, lo, hi)),
+            "CRITICO (§641): la banda de una cuenta no puede atribuirse a un public_id ajeno"
+        );
+        // Con el public_id correcto, la revelacion verifica.
+        assert!(
+            run_with_id(&w, lo, hi, id, pi(root, id, lo, hi)),
+            "con el public_id correcto, la revelacion verifica"
         );
     }
 

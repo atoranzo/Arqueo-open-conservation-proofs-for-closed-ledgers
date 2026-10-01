@@ -713,6 +713,7 @@ impl Air for SendV2Air {
         let mut cont_s = vec![zero; TRACE_LENGTH];
         for seg in 0..NUM_SEGMENTS {
             first_s[seg * SEGMENT_LENGTH] = one;
+            first_s[seg * SEGMENT_LENGTH + 1] = one; // RFC-0017 (§641): 62 bits, no 63 (bit 62 a cero)
             for p in 0..SEGMENT_LENGTH - 1 {
                 cont_s[seg * SEGMENT_LENGTH + p] = one;
             }

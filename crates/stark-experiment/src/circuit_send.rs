@@ -448,8 +448,9 @@ pub fn build_trace(
         c_bal_new.as_int(),
         c_supply_new.as_int(),
         // **El limite regulatorio.** Si el importe lo superara, esta resta
-        // envuelve y da un valor de 64 bits que no cabe en los 63 del
-        // segmento: la descomposicion seria imposible.
+        // envuelve y da `p - deficit`; con operandos < 2^62 (RFC-0017, §641)
+        // ese valor supera 2^62 y no cabe en los 62 del segmento: la
+        // descomposicion seria imposible.
         (BaseElement::new(regulatory_limit) - c_amt).as_int(),
     ];
     // ⚠️ **Esta cuenta tiene que coincidir con `NUM_SEGMENTS`.**
@@ -901,6 +902,13 @@ impl Air for SendAir {
         let mut cont_s = vec![zero; TRACE_LENGTH];
         for seg in 0..NUM_SEGMENTS {
             first_s[seg * SEGMENT_LENGTH] = one;
+            // RFC-0017 (§641): rango de 62 bits, no 63. `first_s` fuerza a
+            // cero el bit de su fila via `C_FIRST_S = first_s * sbit`. Antes
+            // solo cubria la fila 0 (bit 63 -> rango < 2^63); ahora cubre
+            // tambien la fila 1 (bit 62 -> rango < 2^62). Es lo que cierra el
+            // wraparound: una resta a-b que envuelve da p-deficit, y con
+            // operandos < 2^62 ese valor supera 2^62 y NO cabe en el segmento.
+            first_s[seg * SEGMENT_LENGTH + 1] = one;
             for p in 0..SEGMENT_LENGTH - 1 {
                 cont_s[seg * SEGMENT_LENGTH + p] = one;
             }
@@ -1233,8 +1241,9 @@ impl Air for SendAir {
             current[COL_BAL_NEW],
             current[COL_SUPPLY_NEW],
             // **El límite regulatorio.** Si el importe lo superara, esta
-            // resta envuelve y da un valor de 64 bits que no cabe en los
-            // 63 del segmento: no hay descomposición posible.
+            // resta envuelve y da `p - deficit`; con operandos < 2^62
+            // (RFC-0017, §641) ese valor supera 2^62 y no cabe en los 62
+            // del segmento: no hay descomposición posible.
             current[COL_LIMIT] - current[COL_AMT],
         ];
         for seg in 0..NUM_SEGMENTS {
@@ -2216,8 +2225,8 @@ mod tests {
     /// Ver `AUDITORIA.md` §25.
     ///
     /// El mecanismo es el mismo que el tope de emisión: un segmento
-    /// descompone `límite − importe` en **63 bits**. Si el importe lo
-    /// superara, esa resta envuelve y da 64 bits: no cabe.
+    /// descompone `límite − importe` en **62 bits** (RFC-0017, §641). Si el
+    /// importe lo superara, esa resta envuelve a `p - deficit > 2^62`: no cabe.
     #[test]
     fn sending_more_than_the_regulatory_limit_is_rejected() {
         let s = scenario(1_000_000, 250_000, 10_000_000);

@@ -159,6 +159,14 @@ pub fn elem_from_wire(q: Q) -> Result<BaseElement, WireError> {
     element_from_bytes(&q.0.to_le_bytes()).map_err(|_| WireError::NotCanonical)
 }
 
+/// Lee un `Q` como u64 **canonico** (`< p`): un saldo escrito como `b + p`
+/// se rechaza AQUI, antes de que la capa lo sume o reste (RFC-0016, §641).
+/// Reutiliza la regla del nucleo: `element_from_bytes` rechaza `>= p`.
+pub fn cantidad_canonica(q: Q) -> Result<u64, WireError> {
+    elem_from_wire(q)?;
+    Ok(q.0)
+}
+
 // ─────────────────────────────── DTOs ───────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -219,7 +227,7 @@ impl TryFrom<&AccountViewDto> for AccountView {
     fn try_from(d: &AccountViewDto) -> Result<Self, WireError> {
         Ok(AccountView {
             public_id: digest_from_wire(&d.public_id)?,
-            balance: d.balance.0,
+            balance: cantidad_canonica(d.balance)?,
             nonce: elem_from_wire(d.nonce)?,
             leaf_salt: digest_from_wire(&d.leaf_salt)?,
         })
@@ -249,7 +257,7 @@ impl TryFrom<&ClientStateDto> for ClientState {
     fn try_from(d: &ClientStateDto) -> Result<Self, WireError> {
         Ok(ClientState {
             public_id: digest_from_wire(&d.public_id)?,
-            balance: d.balance.0,
+            balance: cantidad_canonica(d.balance)?,
             nonce: elem_from_wire(d.nonce)?,
         })
     }
@@ -1800,5 +1808,44 @@ mod tests {
             Err(CabezaMalformada::FaltaCampo(k)) => assert_eq!(k, "recepRoot"),
             otro => panic!("una v5 ya no recompone la cabeza sin firmar: {otro:?}"),
         }
+    }
+
+    // ───────────── §641 · el saldo del cliente, canonico ─────────────
+
+    /// El estado que aporta el cliente pasa por la regla canonica antes de
+    /// que la capa lo sume o reste: un saldo escrito como `b + p` se rechaza
+    /// en el cable (RFC-0016, §641). `u64::MAX >= p`, luego no es canonico.
+    #[test]
+    fn un_saldo_no_canonico_del_cliente_se_rechaza_en_el_cable() {
+        let malo = ClientStateDto {
+            public_id: B32([0u8; 32]),
+            balance: Q(u64::MAX),
+            nonce: Q(0),
+        };
+        assert!(
+            matches!(ClientState::try_from(&malo), Err(WireError::NotCanonical)),
+            "un saldo >= p debe rechazarse como no canonico, no reducirse en silencio"
+        );
+        // Y uno canonico pasa, con el mismo id y nonce.
+        let bueno = ClientStateDto {
+            public_id: B32([0u8; 32]),
+            balance: Q(1_000),
+            nonce: Q(0),
+        };
+        assert!(
+            ClientState::try_from(&bueno).is_ok(),
+            "un saldo < p pasa sin tocar"
+        );
+        // La vista de cuenta comparte la regla.
+        let vista_mala = AccountViewDto {
+            public_id: B32([0u8; 32]),
+            balance: Q(u64::MAX),
+            nonce: Q(0),
+            leaf_salt: B32([0u8; 32]),
+        };
+        assert!(
+            matches!(AccountView::try_from(&vista_mala), Err(WireError::NotCanonical)),
+            "la vista de cuenta tambien rechaza un saldo no canonico"
+        );
     }
 }

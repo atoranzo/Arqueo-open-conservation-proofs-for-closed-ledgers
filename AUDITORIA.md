@@ -44939,7 +44939,7 @@ con su KAT y su verificador en el kit.
 El commit que lleva este asiento, sobre `e1d1db3` (el §642). Un solo sello: el núcleo, el mando, el
 probador, la segunda implementación, cuatro vectores, la spec, el RFC-0016 PROPUESTO, `SECURITY.md`
 y las cifras, con el canon `--sello` VERDE dentro del bloque. 34 ficheros más este asiento -29 modificados, con 457 inserciones y 93 borrados, y 5 nuevos, con 330 líneas: el RFC y los cuatro vectores-. El trabajo empezó sobre `2c0671e`; `main` avanzó a `3200b3a`, que sólo toca `AUDITORIA.md`, y la rama se adelantó a él sin fusión antes de sellar. El número es el §640
-porque el §629 deja el §630 a la sesión de `claude/nice-planck-ax35zl`. Lo construyó un asistente,
+porque la coordinación entre sesiones lo reservó a la canonicidad de esta rama (RFC-0016), rebasada sobre `e1d1db3` (el §642). Lo construyó un asistente,
 Claude Code en una sesión en la nube, con el método de `GENAI.md` salvo en su paso 4, que se
 declara: el cambio lo aplicó, el canon lo corrió y el commit lo hace la sesión en su contenedor, no
 el autor en su máquina; la aceptación del autor pasa del commit a su entrada en `main`, y la del
@@ -45030,3 +45030,92 @@ fijan la profundidad del árbol de cuentas ni cruzan el camino con el `indice` q
 no usa; ningún consumidor las llama. Los tres textos de camino siguen sin vector. `as_digest` sigue
 reduciendo: un productor nuevo que componga un `u64` sin pasar por `u64_canonico` reabre el hueco, y
 lo vigilan tests, no una compuerta. Y una release del kit con la regla, que es decisión del autor.
+
+## §641 — RFC-0017: la firma acredita la aritmética; el rango a 62 bits y la capa no confía
+
+El commit que lleva este asiento, sobre el §640 (la canonicidad de esta rama, ya renombrada de RFC-0015 a RFC-0016). Un solo sello: la capa, los
+diecisiete circuitos, la auditoría, el cable y las cifras, con el canon `--sello` VERDE dentro del
+bloque. Lo construyó un asistente, Claude Code en una sesión en la nube, con el método de `GENAI.md`
+salvo en su paso 4, que se declara: el cambio lo aplicó, el canon lo corrió y el commit lo hace la
+sesión en su contenedor, no el autor en su máquina; la aceptación del autor pasa del commit a su
+entrada en `main`, y la del RFC-0017, de PROPUESTO a ACEPTADO, es suya. El número es el §641 porque
+la coordinación entre sesiones reserva del §636 al §639 a otras ramas: el §636 a `importar-contexto`,
+el §637 al plano v2.0, y el §640 al renombre de la canonicidad de esta rama (hoy §631) cuando se
+rebase sobre `main`. El RFC es el 0017 porque el 0015 queda para el ciclo de vida de la clave XMSS y
+el 0016 para la canonicidad renombrada.
+
+**De dónde sale.** Del análisis de tres especificaciones externas que el autor pidió evaluar. Ninguna
+aportó código aprovechable, pero la relación `R = {(x; w): predicado}` y la notación «referenciada ≠
+determinada» llevaron a mirar si la firma, que acredita un digest y por él cada entero módulo `p`,
+acreditaba también la ARITMÉTICA que la capa hace con esos enteros. No lo hacía.
+
+**Lo medido, antes de tocar nada.** Con el probador y el verificador reales (perfil release), sobre la
+capa, el agujero y su control:
+
+| caso | antes |
+|---|---|
+| envío: saldo 0, límite 500 000, importe en la ventana alta de 63 bits | `Ok(())` — valor acuñado de la nada |
+| envío: importe de control 500 001 | rechazado |
+| quema: saldo `1e6`, suministro `1e8`, importe `2^63 - 1` | `Ok` |
+| auditoría: banda `[2^63-1, 2^63-1]` sobre saldo 0 | `Ok` |
+| auditoría: `public_id` ajeno con un probador propio | `Ok` |
+
+El núcleo prueba `saldo - importe >= 0` descomponiendo la **diferencia** y comprobando que cabe en un
+rango de 63 bits. Sobre Goldilocks, `p = 2^64 - 2^32 + 1`, una resta `a - b` con `b > a` da `p - d`
+con `d = b - a`; si `d > p - 2^63 = 2^63 - 2^32 + 1`, entonces `p - d < 2^63` y la resta envuelta PASA
+el rango. Con los operandos acotados a 63 bits, esa ventana de unos `2^32` déficits existe. End to
+end: un `apply_send` con saldo 0 e importe en la ventana dejaba a Alice con un saldo de más de
+`9,2 x 10^18`, el suministro sin mover y el pendiente desbordado; un envío honesto posterior seguía
+aceptándose. La cuenta que lo cierra: con operandos `< 2^62`, un déficit real `d < 2^62`, luego
+`p - d > 2^62` y NO cabe en 62 bits; `2 * 2^62 < p`, sin solape.
+
+**Lo que hace** (las cuatro etapas del RFC-0017). (1) **La capa no confía** (E1, `two_phase.rs` y
+`burn.rs`): `validate_send` ata `amount == pi.amount`, el estado del remitente a la hoja del árbol
+(como ya hacía el cobro) y `pi.amount <= límite`, y resta con `checked_sub`, que rechaza en vez de
+envolver; el cobro ata `notice.amount == pi.amount` y suma con `checked_add`; la quema deriva el
+suministro nuevo con `checked_sub` del vigente y exige que `pi.supply_new` sea EXACTAMENTE ese valor,
+en lugar de copiarlo, y ata su estado a la hoja. Reutiliza `InsufficientBalance`, `OverRegulatoryLimit`
+y `StaleState`: ni una variante nueva, cero ripple en el ISO ni en el cable. (2) **El rango a 62 bits**
+(E2, `stark-experiment`): en los diecisiete circuitos, el selector periódico `first_s` de la primera
+fila de cada segmento pasa a cubrir las filas 0 y 1, de modo que `first_s * sbit` fuerza a cero el bit
+63 y el bit 62; `MAX_VALUE` de `compliance_circuit`, `double_entry` y `range_check` baja a `2^62 - 1`
+(en `circuit_audit` ya lo era), y `range_check` fija el bit 62 con una aserción (5 -> 6). No cambia ni
+restricciones, ni grados, ni aserciones, ni columnas de ningún circuito de la capa. (3) **La auditoría**
+(E3): `circuit_audit::get_assertions` ata las cuatro ranuras de `COL_ID` en la fila 0 al `public_id`
+público (17 -> 21 aserciones) —el probador acreditaba su cuenta y declaraba el `public_id` de otra—, y
+`verify_audit` exige `lower <= upper <= 2^62 - 1` antes de parsear la prueba. (4) **El cable** (E4,
+`zk-ssl-wire`): `ClientStateDto` y `AccountViewDto` leen el `balance` con la regla canónica de
+RFC-0015, antes de que la capa lo sume o reste.
+
+**El kit ya estaba.** Los AIR del kit (`zk-ssl-air`: `banda`, `cobro_pendiente`) exigen
+`comprobar_enunciado` en el verificador —`lower, upper <= MAX_VALOR = 2^62 - 1` y `lower <= upper`—
+ANTES de verificar el STARK, así que el tercero que verifica con el kit ya estaba a salvo del
+wraparound por una cota NATIVA. E3 lleva a `circuit_audit` y a `verify_audit` al nivel que el kit ya
+tenía. No se toca ningún AIR del kit, y por eso ningún vector portable (`edad`, `pendiente`, `pago`,
+`prenda`) se mueve ni hay que regenerarlo. `zk-ssl-verify` no depende de `stark-experiment`, así que
+el cambio de los circuitos de la capa no toca ninguno de los diez manifiestos de conformidad.
+
+**Contadores.** La capa 423 -> 424 (la cota de banda en `verify_audit`), los circuitos 403 -> 404 (el
+`public_id` ajeno), el cable 23 -> 24 (el saldo no canónico); los demás, sin mover. TOTAL DE SELLO
+1539 -> 1542; TOTAL CON LARGOS 1676 -> 1679; los tres párrafos ancla (`PRINCIPIOS.md` y los dos
+`PAPER`) y las dos citas de `ARQUITECTURA.md` (la capa a 424) al día. Los RFC con estado propio,
+14 -> 15: el RFC-0017 PROPUESTO, con su fila en `spec/README.md`. Sin mover: los 26 KAT, ninguna
+cabeza firmada, ningún fichero de `spec/vectors/`, ningún `Cargo`, el cable y el OpenRPC. Tres tests
+negativos nuevos, uno por hueco de circuito/capa/cable. Canon `--sello` VERDE.
+
+**Decisiones (REVERSIBLES).** D-1: dos defensas —el rango en el circuito protege al tercero que sólo
+tiene la prueba; la atadura nativa protege al nodo y tapa la vía de llamar al `apply` con traza propia—;
+ninguna sola basta. D-2: 62 y no menos: `2 * 2^62 < p` es la cota exacta. D-3: el kit no se toca,
+ya protegido por su cota nativa. D-4: el RFC queda PROPUESTO; aceptarlo es del autor.
+
+**Lo que corrige del §631.** El §631 (RFC-0015) cerró con que «ningún veredicto de un tercero depende»
+del lector de `u64` del cable sin la regla canónica. Para el saldo del cliente eso ya no se sostiene:
+E4 lo lee canónico, de modo que un saldo escrito como `b + p` no descuadra la conservación del
+suministro al reabrir ni bloquea los reembolsos. Lo que el §631 dejó nombrado sin etapa, aquí tiene
+etapa para el saldo.
+
+**Lo que NO hace.** No sube el cable ni toca el OpenRPC; no mueve un KAT ni una cabeza firmada. No
+añade ni regenera un vector de `spec/vectors/`. No toca los AIR del kit ni sus vectores portables. No
+corre `--bancos` ni `--completo`: sólo `--sello`. La integración sobre `main` —el rebase, el renombre
+de la canonicidad al §640 y al RFC-0016, y el recálculo de los contadores sobre la base nueva— queda
+para cuando el autor la autorice.

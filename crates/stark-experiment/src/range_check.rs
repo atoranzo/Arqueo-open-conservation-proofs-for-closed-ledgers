@@ -6,6 +6,14 @@
 //!
 //! ## ⚠️ Hallazgo real de la migración: el rango efectivo es de 63 bits
 //!
+//! ⚠️ **Actualizado a 62 bits en RFC-0017 (§641).** El rango de 63 bits NO
+//! era sólido para una RESTA sobre Goldilocks: una resta envuelta vale
+//! `p - deficit`, y para un deficit mayor que `p - 2^63 = 2^63 - 2^32 + 1`
+//! ese valor cae por debajo de `2^63` y pasaba el rango. Con operandos de 62
+//! bits el valor envuelto supera `2^62` y no cabe (`2*2^62 < p`). Este módulo
+//! y los diecisiete circuitos de la capa fuerzan ahora a cero los DOS bits
+//! altos.
+//!
 //! El campo Goldilocks es **p = 2^64 - 2^32 + 1**, que es MENOR que 2^64.
 //! Consecuencia: `u64::MAX = 2^64 - 1` NO cabe en el campo (se reduce
 //! módulo p y da 2^32 - 2). Eso rompería la solidez de un range check de
@@ -17,8 +25,8 @@
 //! Es un cambio de solidez REAL introducido por la migración, no un
 //! detalle de implementación.
 //!
-//! **Solución aplicada**: forzar el bit 63 a cero mediante una aserción,
-//! de modo que el rango demostrado es [0, 2^63), cómodamente por debajo
+//! **Solución aplicada** (RFC-0017, §641): forzar los bits 63 Y 62 a cero
+//! mediante dos aserciones, de modo que el rango demostrado es [0, 2^62),
 //! de p. La traza conserva 64 filas (requisito de potencia de dos de
 //! Winterfell). Para el caso de uso no hay pérdida práctica: 2^63 es
 //! aproximadamente 9,2 x 10^18 unidades mínimas, un techo muy por encima
@@ -65,7 +73,7 @@ use winterfell::{
 pub const TRACE_ROWS: usize = 64;
 /// Bits efectivamente demostrados: 63, no 64. Ver la advertencia sobre el
 /// tamaño del campo Goldilocks en la cabecera de este módulo.
-pub const EFFECTIVE_BITS: usize = 63;
+pub const EFFECTIVE_BITS: usize = 62; // RFC-0017 (§641): 62 bits, no 63
 /// Valor máximo que este range check puede demostrar: 2^63 - 1.
 pub const MAX_VALUE: u64 = (1u64 << EFFECTIVE_BITS) - 1;
 
@@ -74,7 +82,7 @@ const TRACE_WIDTH: usize = 3; // bit, power, acc
 type Blake3 = Blake3_256<BaseElement>;
 
 /// Descompone `value` en bits little-endian, ocupando las 64 filas de la
-/// traza. El bit 63 siempre es cero (garantizado por `MAX_VALUE`).
+/// traza. Los bits 63 y 62 son siempre cero (garantizado por `MAX_VALUE`).
 fn value_to_bits_le(value: u64) -> Vec<bool> {
     assert!(
         value <= MAX_VALUE,
@@ -147,9 +155,9 @@ impl Air for RangeCheckAir {
             TransitionConstraintDegree::new(2), // acc acumula
         ];
         RangeCheckAir {
-            // 5 aserciones (ver get_assertions). Este numero DEBE coincidir
+            // 6 aserciones (ver get_assertions). Este numero DEBE coincidir
             // con la longitud del vector devuelto por `get_assertions`.
-            context: AirContext::new(trace_info, degrees, 5, options),
+            context: AirContext::new(trace_info, degrees, 6, options),
             value: pub_inputs.value,
             first_bit: pub_inputs.first_bit,
         }
@@ -187,9 +195,13 @@ impl Air for RangeCheckAir {
             Assertion::single(0, 0, self.first_bit),
             Assertion::single(1, 0, BaseElement::ONE),
             Assertion::single(2, 0, self.first_bit),
-            // El bit mas significativo DEBE ser cero: es lo que limita el
-            // rango a [0, 2^63) y mantiene la solidez sobre Goldilocks.
+            // Los DOS bits mas significativos (63 y 62) DEBEN ser cero: es
+            // lo que limita el rango a [0, 2^62) y cierra el wraparound de
+            // una resta sobre Goldilocks (RFC-0017, §641): con operandos
+            // < 2^62, una resta que envuelve da p - deficit > 2^62, que NO
+            // cabe en el rango y no tiene descomposicion.
             Assertion::single(0, last_step, BaseElement::ZERO),
+            Assertion::single(0, last_step - 1, BaseElement::ZERO),
             // Y el resultado acumulado final:
             Assertion::single(2, last_step, self.value),
         ]
@@ -327,7 +339,7 @@ mod tests {
     /// `zero_value_only_works_in_release_mode` justo debajo.
     #[test]
     fn boundary_values_produce_verifiable_proofs() {
-        for value in [1u64, MAX_VALUE / 2, (1u64 << 62), MAX_VALUE] {
+        for value in [1u64, MAX_VALUE / 2, (1u64 << 61), MAX_VALUE] {
             let trace = build_trace(value);
             let prover = RangeCheckProver::new(default_options());
             let proof = prover

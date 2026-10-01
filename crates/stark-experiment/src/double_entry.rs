@@ -74,7 +74,7 @@ pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: s_bal, r_bal, amount, limit, s_bal_new, limit-amount, r_bal_new.
 pub const NUM_SEGMENTS: usize = 7;
 /// Rango efectivo: 63 bits (techo del campo Goldilocks, ver `range_check.rs`).
-pub const MAX_VALUE: u64 = (1u64 << 63) - 1;
+pub const MAX_VALUE: u64 = (1u64 << 62) - 1; // RFC-0017 (§641): 62 bits, no 63
 
 // ===== Columnas =====
 const LANE_B: usize = STATE_WIDTH; // 12
@@ -553,6 +553,7 @@ impl Air for DoubleEntryAir {
         let mut cont_s = vec![zero; TRACE_LENGTH];
         for seg in 0..NUM_SEGMENTS {
             first_s[seg * SEGMENT_LENGTH] = one;
+            first_s[seg * SEGMENT_LENGTH + 1] = one; // RFC-0017 (§641): 62 bits, no 63 (bit 62 a cero)
             for p in 0..SEGMENT_LENGTH - 1 {
                 cont_s[seg * SEGMENT_LENGTH + p] = one;
             }

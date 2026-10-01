@@ -172,9 +172,34 @@ impl SovereignLayer {
 
         let amount = pi.amount.as_int();
         let account = account_state.clone();
+        // ===== ATADURA NATIVA (§641, RFC-0017) =====
+        // (b) el estado es el del arbol; (d) la resta es COMPROBADA; y el
+        // suministro se deriva aqui, no se copia de la prueba.
+        let leaf_salt_guardado = self
+            .records
+            .get(&account_index)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
+        let hoja_vieja = native_leaf_salted(
+            account.public_id,
+            BaseElement::new(account.balance),
+            account.nonce,
+            leaf_salt_guardado,
+        );
+        if hoja_vieja != self.accounts.leaf(account_index) {
+            return Err(LayerError::StaleState);
+        }
+        let saldo_nuevo =
+            account
+                .balance
+                .checked_sub(amount)
+                .ok_or(LayerError::InsufficientBalance {
+                    available: account.balance,
+                    requested: amount,
+                })?;
         let updated = AccountRecord {
             public_id: account.public_id,
-            balance: account.balance - amount,
+            balance: saldo_nuevo,
             nonce: account.nonce,
             // view_id del record GUARDADO, no del ClientState entrante
             // (`account` es un ClientState): el cliente no reescribe su
@@ -206,9 +231,18 @@ impl SovereignLayer {
             return Err(LayerError::StaleState);
         }
 
+        // El suministro se deriva aqui (resta COMPROBADA) y se exige que la
+        // prueba acredite EXACTAMENTE ese valor; no se copia `pi.supply_new`.
+        let suministro_nuevo = self
+            .total_supply
+            .checked_sub(amount)
+            .ok_or(LayerError::StaleState)?;
+        if pi.supply_new != BaseElement::new(suministro_nuevo) {
+            return Err(LayerError::StaleState);
+        }
         self.accounts = tentativo;
         self.records.insert(account_index, updated);
-        self.total_supply = pi.supply_new.as_int();
+        self.total_supply = suministro_nuevo;
 
         // Deja constancia en el registro ANTES de persistir: si el
         // proceso muere en medio, el lote atomico incluye o excluye
