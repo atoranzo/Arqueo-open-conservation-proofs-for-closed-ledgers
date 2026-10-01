@@ -5,7 +5,9 @@ un tercero —un interventor, un auditor, un solicitante— comprueba por sí mi
 red, cuatro cosas en este orden: que un expediente cuadra · que un expediente manipulado **no**
 cuadra y el programa **nombra la regla rota** · que la misma etiqueta publicada en **dos libros
 distintos** se detecta con las dos cabezas firmadas y los dos nodos apagados · y que un intercambio
-de libros se rechaza con su nombre. Lo que va dentro del tarball y por qué está en
+de libros se rechaza con su nombre. Desde la 0.3.0, una quinta: que lo que el nodo **recibió**
+bajo su firma quedó resuelto en su ventana, o el programa nombra al operador que no lo resolvió. Lo
+que va dentro del tarball y por qué está en
 `spec/PAQUETE.md`, sección 11, que viaja dentro. Ninguna de las cuatro comprobaciones necesita el
 repositorio, al autor, un nodo ni una conexión.
 
@@ -33,9 +35,14 @@ cabezas v5 y v6, y el `ancla` del §593, medida en el §596 contra `main` en ab7
 salida 1** («tipo desconocido»). **Falla cerrada: nunca da un VERDE falso.** Los cuatro pasos de
 abajo usan los vectores que viajan dentro del tarball y con ellos funciona; lo que no puede es
 comprobar un paquete de un nodo de hoy. Para eso, hoy, el `zk-ssl-verify` del árbol (`cargo build
---release -p zk-ssl-verify`), que **no** es un artefacto publicado con huella. La siguiente release
-está en la cola con su disparador, no cortada: publicarla es un acto del autor medido desde fuera
-(D-K5 del §442).
+--release -p zk-ssl-verify`), que **no** es un artefacto publicado con huella.
+
+**La 0.3.0 está CORTADA en el código desde el §619.** El autor dio la v6 por estable el
+2026-10-01, y el verificador del árbol es `zk-ssl-verify` 0.3.0: recompone cabezas hasta la v6 y lee
+las diez familias de la sección 11 de `spec/PAQUETE.md`. Se publica sobre el commit de ese asiento y
+en el orden de esa sección -tag, producir, subir-; publicarla es un acto del autor medido desde
+fuera (D-K5 del §442), y hasta que el asiento que la registre la fije con su huella, la release
+vigente sigue siendo la 0.2.0 de arriba.
 
 Cada release lleva un tag y se produce sobre el commit que su fichero `VERSION` nombra; la huella
 del tarball se publica **con su commit al lado**, en la página de la release y en el asiento de
@@ -121,6 +128,37 @@ Esperado: salida 1 en los dos. El primero es una captura tal cual con los camino
 mismo libro dos veces: `las cabezas llevan la MISMA clave`. Un sobre de conflicto exige dos libros
 de verdad, y dice cuál de las dos reglas se rompió.
 
+## 5. Un recibo bajo la firma del operador, y lo que hizo con él (desde la 0.3.0)
+
+```bash
+./zk-ssl-verify spec/vectors/completitud/resuelta-por-acuse.json; echo "salida $?"
+./zk-ssl-verify spec/vectors/completitud/no-resuelta.json; echo "salida $?"
+```
+Esperado: el primero, salida 0 y `VERDE: el recibo se resolvio dentro de la ventana, y se sostiene
+sin el nodo`, con `RESUELTA como transicion aplicada` en su tercer paso; el segundo, salida 1 y `NO
+RESUELTA EN LA VENTANA`. Es el sobre de completitud (`spec/PAQUETE.md` 2.11, RFC-0010): el recibo
+que el nodo emitió al RECIBIR una operación queda bajo una raíz que su cabeza firmada compromete, y
+el sobre dice, sin el nodo, si la resolvió dentro de su ventana -aplicada, o rechazada con prueba- o
+nombra al operador que no lo hizo. El segundo es eso: la promesa firmada por el acusado, una cabeza
+suya fuera de la ventana y ninguna resolución exhibida. No es una prueba criptográfica de ausencia,
+sino evidencia oponible: el operador la desmiente exhibiendo la resolución.
+
+```bash
+./zk-ssl-verify spec/vectors/completitud/lote-aplicado.json; echo "salida $?"
+./zk-ssl-verify spec/vectors/completitud/prenda-sin-fundamento.json; echo "salida $?"
+```
+Esperado: salida 0 y `RESUELTA como LOTE aplicado` -un lote de dos envíos con pruebas reales que
+mandó un agregador, con el acuse de cada prueba-; y salida 1 y `RECHAZO SIN FUNDAMENTO`: el sobre de
+una prenda que el verificador juzga OTRA VEZ, con el mismo juez y contra la cabeza que el nodo
+juzgó, y que verifica, frente a un nodo que dijo que no (RFC-0014). Ese vector se derivó por
+mutación de una captura real -un nodo honrado no lo produce- y su manifiesto lo declara.
+
+```bash
+bash conformidad.sh ./zk-ssl-verify spec/vectors/completitud/MANIFIESTO.txt
+```
+Esperado: `conformidad: N de N entradas dicen lo que deben`. La 0.2.0 no conoce este sobre y
+rechaza los cuatro ficheros con `tipo desconocido`: falla cerrada.
+
 ## Lo que esto dice, y lo que no
 
 - **Detecta, no impide.** Dos libros soberanos pueden aceptar la misma etiqueta; nadie ordena entre
@@ -144,5 +182,6 @@ El tarball se produce sobre el commit que `VERSION` nombra: con el `rustc` que `
 compilado con `--remap-path-prefix`) y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad
 en cada sello. Las demostraciones con nodos vivos —levantar dos libros, publicar la misma etiqueta
 en los dos, capturar el sobre— son los bancos `tools/banco_dos_libros.sh`, `tools/banco_consumo.sh`
-y `tools/banco_apagado.sh`; no viajan en el kit porque levantan procesos, y los vectores de arriba
-son sus capturas.
+y `tools/banco_apagado.sh`, y los del paso 5, `tools/banco_completitud.sh`,
+`tools/banco_mentiroso_sin_resolver.sh` y `tools/banco_recibo_agregado.sh`; no viajan en el kit
+porque levantan procesos, y los vectores de arriba son sus capturas.

@@ -5,7 +5,9 @@ third party — an inspector, an auditor, an applicant — checks by themselves,
 and offline, four things in this order: that a file adds up · that a tampered file does **not**
 add up and the program **names the broken rule** · that the same label published in **two distinct
 ledgers** is detected from the two signed heads with both nodes off · and that a swap of ledgers is
-rejected by name. What travels in the tarball, and why, is in `spec/PAQUETE.md`, section 11, which
+rejected by name. Since 0.3.0, a fifth: that what the node **received** under its signature was
+resolved within its window, or the program names the operator that did not resolve it. What travels
+in the tarball, and why, is in `spec/PAQUETE.md`, section 11, which
 travels inside. None of the four checks needs the repository, the author, a node or a connection.
 
 It is a CLI and not a web page on purpose: the answer to "how do I know that program does what it
@@ -33,9 +35,14 @@ and v6 heads, and the `ancla` of §593, measured in §596 against `main` at ab79
 with exit 1** ("tipo desconocido", unknown type). **It fails closed: it never gives a false GREEN.**
 The four steps below use the vectors that travel inside the tarball, and with them it works; what it
 cannot do is check a package from today's node. For that, today, the in-tree `zk-ssl-verify` (`cargo
-build --release -p zk-ssl-verify`), which is **not** a published artifact with a fingerprint. The
-next release is queued with its trigger, not cut: publishing it is the author's act, measured from
-the outside (D-K5 of §442).
+build --release -p zk-ssl-verify`), which is **not** a published artifact with a fingerprint.
+
+**Release 0.3.0 is CUT in the code since §619.** The author declared v6 stable on 2026-10-01, and
+the in-tree verifier is `zk-ssl-verify` 0.3.0: it recomposes heads up to v6 and reads the ten
+families of section 11 of `spec/PAQUETE.md`. It is published on the commit of that entry and in that
+section's order — tag, produce, upload —; publishing it is the author's act, measured from the
+outside (D-K5 of §442), and until the entry that registers it fixes it with its hash, the current
+release is still the 0.2.0 above.
 
 Every release carries a tag and is produced on the commit its `VERSION` file names; the tarball's
 hash is published **next to its commit**, on the release page and in the `AUDITORIA.md` entry that
@@ -123,6 +130,38 @@ consumption root). The second presents the same ledger twice: `las cabezas lleva
 (the heads carry the same key). A conflict envelope demands two real ledgers, and says which of the
 two rules broke.
 
+## 5. A receipt under the operator's signature, and what it did with it (since 0.3.0)
+
+```bash
+./zk-ssl-verify spec/vectors/completitud/resuelta-por-acuse.json; echo "exit $?"
+./zk-ssl-verify spec/vectors/completitud/no-resuelta.json; echo "exit $?"
+```
+Expected: the first, exit 0 and `VERDE: el recibo se resolvio dentro de la ventana, y se sostiene
+sin el nodo`, with `RESUELTA como transicion aplicada` in its third step; the second, exit 1 and `NO
+RESUELTA EN LA VENTANA`. This is the completeness envelope (`spec/PAQUETE.md` 2.11, RFC-0010): the
+receipt the node issued on RECEIVING an operation sits under a root its signed head commits to, and
+the envelope says, with no node, whether it was resolved within its window — applied, or rejected
+with proof — or names the operator that did not. The second is exactly that: the promise signed by
+the accused, one of its heads past the window, and no resolution shown. It is not a cryptographic
+proof of absence but opposable evidence: the operator refutes it by showing the resolution.
+
+```bash
+./zk-ssl-verify spec/vectors/completitud/lote-aplicado.json; echo "exit $?"
+./zk-ssl-verify spec/vectors/completitud/prenda-sin-fundamento.json; echo "exit $?"
+```
+Expected: exit 0 and `RESUELTA como LOTE aplicado` — a batch of two sends with real proofs that an
+aggregator submitted, with the acknowledgement of each proof —; and exit 1 and `RECHAZO SIN
+FUNDAMENTO`: the envelope of a pledge that the verifier judges AGAIN, with the same judge and
+against the head the node judged, and that verifies, against a node that said no (RFC-0014). That
+vector was derived by mutation of a real capture — an honest node does not produce it — and its
+manifest says so.
+
+```bash
+bash conformidad.sh ./zk-ssl-verify spec/vectors/completitud/MANIFIESTO.txt
+```
+Expected: `conformidad: N de N entradas dicen lo que deben`. Release 0.2.0 does not know this
+envelope and rejects the four files with `tipo desconocido`: it fails closed.
+
 ## What this says, and what it does not
 
 - **It detects; it does not prevent.** Two sovereign ledgers can accept the same label; nobody
@@ -148,5 +187,6 @@ The tarball is produced on the commit `VERSION` names: with the `rustc` `VERSION
 `--remap-path-prefix`) and the same tarball, and `tools/canon.sh` checks that property at every
 seal. The demonstrations with live nodes — bringing up two ledgers, publishing the same label in
 both, capturing the envelope — are the benches `tools/banco_dos_libros.sh`, `tools/banco_consumo.sh`
-and `tools/banco_apagado.sh`; they do not travel in the kit because they spawn processes, and the
-vectors above are their captures.
+and `tools/banco_apagado.sh`, and those of step 5, `tools/banco_completitud.sh`,
+`tools/banco_mentiroso_sin_resolver.sh` and `tools/banco_recibo_agregado.sh`; they do not travel in
+the kit because they spawn processes, and the vectors above are their captures.

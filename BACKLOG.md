@@ -2161,7 +2161,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `spec/vectors/completitud/`, copiado de `banco_mentiroso_sin_resolver.sh
   --guardar`; el arnés da 36 de 36, desde el árbol y desde el tarball.
 
-- [ ] **111. Tres ejemplos del sdk llevan rotos desde el §261.** Medido en el §614:
+- [x] **111. Tres ejemplos del sdk llevan rotos desde el §261.** Medido en el §614:
   `h1_techo_apply`, `i1_concurrencia` y `j1_lote_mixto` llaman a
   `zkssl_sendMaterials` -y el último también a `zkssl_claimMaterials`- sin la clave
   de VISTA que esos brazos exigen desde el §261, y el nodo los rechaza con
@@ -2176,7 +2176,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   operación pesa hoy ~159 KB y no los 132,7 KB del §218-, así que caben 13; el
   ejemplo, `spec/RPC.md`, `spec/README.md` y el comentario del nodo lo dicen ya.
 
-- [ ] **112. Las citas por línea de `spec/README.md` a `spec/RPC.md` están
+- [x] **112. Las citas por línea de `spec/README.md` a `spec/RPC.md` están
   desfasadas.** Medido en el §615: la guía «Reading `RPC.md` in order» cita
   tramos como `RPC.md:133-142` para «Errors», y en 221170f -antes de los sellos
   del RFC-0014- ese tramo ya empezaba en la sección `dev_*`; de las diecisiete,
@@ -2190,7 +2190,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   estrenarse nombró el precedente, que estaba roto: citaba en `README.md` una
   sección «Estado y límites» que no existe.
 
-- [ ] **113. La cifra de vectores de `README.md` no la ata nada.** Medido en el
+- [x] **113. La cifra de vectores de `README.md` no la ata nada.** Medido en el
   §616: la tabla «Estado» decía que `spec/vectors/` tiene 380 ficheros, y en
   221170f tenía 381; el §610 le sumó un KAT y el §614 treinta y siete vectores sin
   moverla, porque `check_figures` sólo vigila cifras de tests. Corregida a 419 en
@@ -2303,6 +2303,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   desde fuera— cuando el autor de por estable la v6, y **en todo caso ANTES** de
   cualquier deposito, anuncio o correo que invite a un tercero a verificar un
   paquete de un nodo real.
+  **Disparador CUMPLIDO (2026-10-01)**: el autor dio la v6 por estable, con el
+  RFC-0014 ya aceptado (§618). La 0.3.0 se CORTA en el §619 -el crate, los dos
+  manuales con su paso 5 y los sitios que publican la version- y se publica
+  sobre ese commit en el orden de la seccion 11 de `PAQUETE.md`; la entrada se
+  cierra con el asiento que REGISTRE la release medida desde fuera.
 
 ## G. Otro proyecto, no una incidencia
 

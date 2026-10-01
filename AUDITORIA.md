@@ -43582,3 +43582,47 @@ lo cuentan entre los aceptados: quedan propuestos el 0005 y el 0013. El ATADO D 
 **Lo que NO cierra.** El RFC-0013, el medio del ancla, sigue PROPUESTO y su E2 es decisión del
 autor. Empujar este sello es la aceptación del autor, como la regla del PROCESO pide.
 
+## §619 — la 107, primer sello: el kit 0.3.0, cortado
+
+El commit que lleva este asiento, sobre `4e1ffe0` (el S618). Un solo sello: la versión del crate,
+los dos manuales del kit con su sección 0 y su paso 5, los sitios que publican la versión, la
+entrada 107 y las casillas de tres cerradas, y este asiento, con el canon `--sello` VERDE dentro del
+bloque. 9 ficheros más este asiento, con 112 inserciones y 26 borrados fuera de él. Es el primer
+sello de los dos del D-K5 del §442: corta la versión; publicar y registrar viene después.
+
+**De dónde sale.** De la 107: la release publicada, `arqueo-verify-v0.2.0`, recompone cabezas hasta
+la v4, y los sobres que nacieron después -edad, prenda, cobro pendiente, completitud, ancla, con
+cabezas v5 y v6- salen ROJO con «tipo desconocido». Falla cerrada, nunca un VERDE falso, pero sin
+cobertura de lo que el nodo firma hoy. Su disparador era que el autor diera la v6 por estable, y en
+todo caso antes de invitar a un tercero a verificar un paquete de un nodo real: **el autor lo dio
+el 2026-10-01**, con el RFC-0014 aceptado en el §618 y la elección de este frente.
+
+**Lo que hace.** (1) `zk-ssl-verify` 0.2.0 -> 0.3.0: `crates/zk-ssl-verify/Cargo.toml` y la línea
+`version` de su bloque en `Cargo.lock`, que compila con `--locked`. (2) `doc/KIT.md` y
+`doc/KIT_EN.md`: la sección 0 conserva lo que la 0.2.0 no cubre, medido, y dice que la 0.3.0 está
+CORTADA y que la vigente sigue siendo la 0.2.0 hasta que el asiento que la registre la fije con su
+huella; la introducción gana la quinta comprobación, y nace el **paso 5**: un recibo bajo la firma
+del operador y lo que hizo con él -`resuelta-por-acuse` VERDE, `no-resuelta` ROJO NOMBRADO,
+`lote-aplicado` VERDE y `prenda-sin-fundamento` ROJO con su nombre, y el arnés con el manifiesto de
+la completitud-, con los textos copiados de lo que el binario del árbol imprime de verdad (D-K2 del
+§442), corrido sobre esos cuatro vectores antes de escribir. La sección de reproducir nombra los
+tres bancos de ese paso. (3) Los sitios que publican la versión dicen la verdad del árbol: la 0.3.0
+cortada y la 0.2.0 publicada -los dos README, su párrafo del kit y su tabla «Estado», y los dos
+resúmenes-. (4) `BACKLOG.md`: la 107 anota el disparador cumplido y cómo se cierra; y la 111, la 112
+y la 113, cerradas en sus asientos, pasan su casilla a `[x]`: el §615, el §616 y el §617 escribieron
+«CERRADA» y dejaron la casilla abierta, y el recuento de abiertas las seguía contando. Error mío,
+corregido aquí.
+
+**Lo que NO hace.** No publica: el tag `arqueo-verify-v0.3.0` va sobre el commit de este asiento y
+DESPUÉS de él -el tarball no puede publicar su propia huella-, se produce con `bash
+tools/artefacto.sh` sobre un `target/artefacto/` vacío, y se sube a mano (D-R4 del §443). No toca
+`spec/PAQUETE.md` ni `tools/artefacto.sh`: su sección 11 ya describe el tarball con sus diez
+familias, y el canon comprueba en cada sello que el artefacto es reproducible y que sus diez
+manifiestos dicen lo que deben también desde dentro. No toca `PREGUNTAS.md` ni `QUESTIONS.md`, que
+nombran la release vigente, ni la cita histórica del RFC-0009: lo hará el registro.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin.
+
+**Lo que NO cierra.** El segundo sello: la release producida, subida y medida desde fuera, con su
+huella al lado de su commit en los dos manuales, y la 107 cerrada.
+
