@@ -63,10 +63,10 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 58 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 107, REFERENCIA 11, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 90 elementos alcanzables en `zk-ssl-verify` y 60 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 118, REFERENCIA 12, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
-`cuentas`, `recibos`) y los
+`cuentas`, `recibos`, `actas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
 reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila. En `zk-ssl-hash`,
 todo `pub` de `lib.rs` fuera de las zonas de test. Las zonas de test se recortan por el anidamiento
@@ -182,6 +182,18 @@ real de sus llaves, no por la primera marca.
 | `DOMINIO_ANCLA` | `hash/lib.rs` | NÚCLEO | ANCLA | `const` |
 | `ancla_digest` | `hash/lib.rs` | NÚCLEO | ANCLA | `fn` |
 | `huella_de_clave` | `hash/lib.rs` | NÚCLEO | ANCLA | `fn` |
+| `DOMINIO_ACTA` | `hash/lib.rs` | NÚCLEO | ACTA | `const` |
+| `acta_digest` | `hash/lib.rs` | NÚCLEO | ACTA | `fn` |
+| `ACTA_VERSION` | `verify/actas.rs` | NÚCLEO | ACTA | `const` |
+| `DOMINIO_ACTA_FIRMA` | `verify/actas.rs` | NÚCLEO | ACTA | `const` |
+| `ESQUEMA_XMSSMT_SHA2_40_8_256` | `verify/actas.rs` | NÚCLEO | ACTA | `const` |
+| `preambulo_acta` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `Procedencia` | `verify/actas.rs` | NÚCLEO | ACTA | `struct` |
+| `Acta` | `verify/actas.rs` | NÚCLEO | ACTA | `struct` |
+| `digest` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `ActaFirmada` | `verify/actas.rs` | NÚCLEO | ACTA | `struct` |
+| `ActaError` | `verify/actas.rs` | REFERENCIA | ACTA | `enum` |
+| `verificar_acta` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |
@@ -240,6 +252,10 @@ real de sus llaves, no por la primera marca.
 - **ANCLA** — la huella del ancla de cabezas y la huella de la clave del operador (RFC-0012):
   lo que se publica en un medio ajeno al operador y lo que un tercero recompone para compararlo.
   Un solo productor: dos implementaciones que difieran aquí no comparan la misma ancla.
+- **ACTA** — el acta con que una clave del operador entra, y compromete a su sucesora
+  (RFC-0015, E2): su huella, el preámbulo que firma, el esquema que presenta y las reglas con que
+  un tercero juzga una rotación contra el acta previa. Una implementación que componga otra
+  huella no reconoce la sucesora comprometida, y una rotación legítima le parece un robo.
 
 ## 6. Los bytes: lo que un KAT fija
 
@@ -291,12 +307,14 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   fija (medido en el §640 con vectores reales, que ahora son negativos con nombre).
 - **Los dominios**: `u64` leídos *big-endian* de ocho bytes ASCII (`ACUSE_V1`, `MMRHOJA1`,
   `MMRNODO1`, `PARAM_V1`), embebidos con `as_digest` y mezclados por delante. Los de la firma
-  son cadenas de bytes: `b"ZK-SSL-epoch-head"` (17) y `b"ZK-SSL-witness-cosign"` (21).
+  son cadenas de bytes: `b"ZK-SSL-epoch-head"` (17), `b"ZK-SSL-witness-cosign"` (21) y, desde el
+  §643, `b"ZK-SSL-key-act"` (14), el del acta.
 - **Los preámbulos** (mudados aquí desde `zk-ssl-verify/src/lib.rs`, que remite a esta sección):
 
   ```text
   b"ZK-SSL-epoch-head" ‖ version ‖ epoch_digest                            (17 + 1 + 32 = 50)
   b"ZK-SSL-witness-cosign" ‖ version ‖ epoch_digest ‖ len(u16 BE) ‖ clave_op     (21 + 1 + 32 + 2 + N)
+  b"ZK-SSL-key-act" ‖ version ‖ acta_digest                                (14 + 1 + 32 = 47)
   ```
 
 - **Las composiciones**, en el orden exacto de los merges: `native_leaf = merge(merge(pk,
@@ -319,6 +337,14 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   dominio y el índice EMBEBIDO en la firma;
   `huella_de_clave = Blake3(b"ZK-SSL-anchor-key-v1" ‖ len(u64 LE) ‖ clave)`, el molde de
   `digest_of_proof` (§116) con dominio de bytes propio;
+  `acta_digest = merge(as_digest(ACTAS_V1), merge(as_digest(etiqueta), resto))` (RFC-0015,
+  §643), con `cuerpo = merge(huella_clave, merge(as_digest(esquema), merge(as_digest(desde),
+  siguiente)))`; en el acta génesis `etiqueta = 0` y `resto = cuerpo`; en una rotación
+  `etiqueta = 1` y `resto = merge(anterior, merge(merge(epoch_digest, merge(mmr_root,
+  as_digest(mmr_size))), cuerpo))`, con `anterior` y `siguiente` huellas de clave, `desde` el
+  índice EMBEBIDO de la primera firma de la clave que entra, y `esquema` el de la clave de hoy,
+  `ESQUEMA_XMSSMT_SHA2_40_8_256 = 0x1_0000_0005` (la familia de RFC 8391 en los 32 bits altos
+  y su OID en los bajos);
   `hash_del_lote = Blake3(b"ZK-SSL-batch-v1" ‖ len(u64 LE) ‖ (hash_prueba_i ‖ cuenta_i ‖
   posicion_i)*)` (RFC-0014, §610), el mismo molde, con 48 bytes por operación en el orden del lote
   -el digest de su prueba, y su cuenta y su posición como `u64 LE`-; `len` son los **bytes** de la
@@ -356,6 +382,11 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §643 — `DOMINIO_ACTA` y `acta_digest` en `zk-ssl-hash`, y el módulo `actas` de
+  `zk-ssl-verify`: el acta de clave del RFC-0015 (E2), con el dominio de bytes `ZK-SSL-key-act`
+  de su firma, y tres KAT -la génesis, la rotación y el preámbulo-, que la segunda implementación
+  reproduce. Doce filas nuevas, familia ACTA. La cabeza y el conjunto de versiones no se mueven:
+  el acta no entra bajo la firma de ninguna cabeza.
 - §662 — `cantidad_canonica`: la QUANTITY (un `u64` en hexadecimal) en su escritura minima, sin
   `+`, sin mayusculas y sin ceros a la izquierda, para el kit y el cable. Una fila nueva,
   REFERENCIA: no compone ningun byte firmado; `HexError` gana `NoMinima`.

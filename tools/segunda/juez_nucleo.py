@@ -27,6 +27,7 @@ import nucleo as N  # noqa: E402
 U, ULE, D, B, I = "u64", "u64le", "digest", "bytes", "int"
 CABEZA = {"seq": U, "accounts_root": D, "pending_root": D, "frozen_root": D, "chain_digest": D}
 ESQUEMA = {
+    "acta_digest": {"huella_clave": D, "esquema": U, "desde": U, "siguiente": D, "procedencia": "procedencia"},
     "acuse_digest": {"hash_prueba": D, "epoca": U, "n": U},
     "ancla_digest": {"huella_clave": D, "indice": U, "epoch_digest": D, "mmr_root": D, "mmr_size": U},
     "as_digest": {"x": U},
@@ -55,6 +56,7 @@ ESQUEMA = {
                       "governance_set_root": D, "refund_ttl": U, "max_custodian_uses": U},
     "path_root": {"leaf": D, "siblings": "digests", "is_right": "bools"},
     "preambulo": {"version": I, "epoch_digest": D},
+    "preambulo_acta": {"version": I, "acta_digest": D},
     "preambulo_cofirma": {"version": I, "epoch_digest": D, "clave_del_operador": B},
     "recibo_digest": {"hash_prueba": D, "era": U, "n": U},
 }
@@ -86,6 +88,11 @@ def leer(valor, tipo):
         return [(hexbytes(o["hash_prueba"]), int(o["cuenta"], 16), int(o["posicion"], 16)) for o in valor]
     if tipo == "sym":
         return valor
+    if tipo == "procedencia":
+        if valor is None:
+            return None
+        return (N.digest_from_bytes(hexbytes(valor["anterior"])), N.digest_from_bytes(hexbytes(valor["epoch_digest"])),
+                N.digest_from_bytes(hexbytes(valor["mmr_root"])), int(valor["mmr_size"], 16))
     raise ValueError(tipo)
 
 
@@ -102,6 +109,8 @@ def cabeza_v1(e):
 
 
 def calcular(fn, e, notas):
+    if fn == "acta_digest":
+        return dig(N.acta_digest(e["huella_clave"], e["esquema"], e["desde"], e["siguiente"], e["procedencia"]))
     if fn == "acuse_digest":
         return dig(N.acuse_digest(e["hash_prueba"], e["epoca"], e["n"]))
     if fn == "ancla_digest":
@@ -153,6 +162,8 @@ def calcular(fn, e, notas):
         return dig(N.path_root(e["leaf"], e["siblings"], e["is_right"]))
     if fn == "preambulo":
         return hx(N.preambulo(e["version"], e["epoch_digest"]))
+    if fn == "preambulo_acta":
+        return hx(N.preambulo_acta(e["version"], e["acta_digest"]))
     if fn == "preambulo_cofirma":
         return hx(N.preambulo_cofirma(e["version"], e["epoch_digest"], e["clave_del_operador"]))
     if fn == "recibo_digest":

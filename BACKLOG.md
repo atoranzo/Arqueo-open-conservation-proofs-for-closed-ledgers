@@ -675,6 +675,10 @@ instrumentacion) al grupo E.*
   ninguna etapa construida: sigue abierta.
   ⚠️ (§642) Las cinco, TOMADAS por delegación del autor con el criterio
   del §609, las recomendadas y REVERSIBLES. Ninguna etapa construida.
+  ✅ a medias (§643): la E2, el núcleo del acta —su huella, su preámbulo
+  y `verificar_acta` en el kit, con tres KAT que la segunda implementación
+  reproduce—. QUEDAN el nodo (E3), el testigo (E4), los sobres con su
+  banco (E5) y el medio (E6): sigue abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con

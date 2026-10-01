@@ -1,9 +1,9 @@
 # RFC-0015 — El ciclo de vida del firmante: rotar, agotar y perder el índice, con la clave siguiente comprometida
 
 - **Estado:** PROPUESTO (§639) — el texto y sus decisiones, escritos sobre lo medido en el árbol
-  (§636, §638) y en el RFC 10033 de la IETF; ninguna etapa construida. Las cinco decisiones,
-  TOMADAS en el §642 por delegación del autor, con el criterio del §609, y REVERSIBLES: ver
-  «Decisiones».
+  (§636, §638) y en el RFC 10033 de la IETF. Las cinco decisiones, TOMADAS en el §642 por
+  delegación del autor, con el criterio del §609, y REVERSIBLES: ver «Decisiones». Construida la
+  E2, el núcleo del acta (§643); E3 a E6 sin construir.
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude (sesión 193, §639, que lo escribe entero sobre la medida de los
   §636 y §638) — ver [`GENAI.md`](../../GENAI.md)
@@ -17,7 +17,8 @@
   hay clave que anclar), §288 (la familia 19-84-92), §298 y §328–§337 (el guardián y la
   reconciliación al arrancar), §399 (el índice embebido), §567 (el reloj del recibo es el
   índice), §591 (la huella de la clave), §594 (la puerta del diario en todo estado), §636 y §638
-  (lo que hoy pasa al cambiar de clave, medido), §639 (esta propuesta) y §642 (las decisiones).
+  (lo que hoy pasa al cambiar de clave, medido), §639 (esta propuesta), §642 (las decisiones) y
+  §643 (la E2).
 - **Backlog:** la **84** (agotamiento, rotación y pérdida del índice), con la **92** (custodia y
   supervivencia del índice) y la **19** en su línea de familia, que el §288 pidió cortar juntas;
   la **87** (agilidad criptográfica: el acta lleva el esquema de la clave que presenta); y la
@@ -28,7 +29,7 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — el ciclo de vida, escrito | este texto | no | **propuesto (§639), decidido (§642)** |
-| E2 — el núcleo | `DOMINIO_ACTA`, `acta_digest` y su KAT, y `verificar_acta` en el kit, con la segunda implementación | no (aditivo: una familia nueva) | pendiente |
+| E2 — el núcleo | `DOMINIO_ACTA`, `acta_digest` y su KAT, y `verificar_acta` en el kit, con la segunda implementación | no (aditivo: una familia nueva) | **construida (§643)**: `DOMINIO_ACTA` (`ACTAS_V1`) y `acta_digest` en `zk-ssl-hash`; el módulo `actas` del kit con el preámbulo (`ZK-SSL-key-act`), el esquema de hoy y `verificar_acta`, con las reglas antes que las firmas; tres KAT —génesis, rotación y preámbulo— que la segunda implementación reproduce, 29 de 29; doce filas de la familia ACTA en `NUCLEO.md` |
 | E3 — el nodo | el acta génesis, la rotación como orden del operador, el aviso de agotamiento y `zkssl_keyActs` | no (aditivo: un método) | pendiente |
 | E4 — el testigo | ante un cambio de clave pide el acta, la juzga contra la clave que fijó y sigue o se detiene; `--auditar` la juzga en el diario | no | pendiente |
 | E5 — el kit, el catálogo y el banco | el campo `actas` en los sobres que comparan cabezas, sus vectores y `tools/banco_rotacion.sh` contra un nodo real | no (aditivo: un campo opcional) | pendiente |
@@ -132,6 +133,14 @@ implementación:
    `desde` del acta de `K` —esa hoja es del acta— y por debajo del de la siguiente, si la hay.
    Una cabeza de la vieja por encima del `desde` de la nueva es **solapamiento**: evidencia
    oponible con nombre, como la vista dividida.
+
+**Fijado en la E2 (§643).** La composición exacta de `acta_digest` está en `NUCLEO.md` §6 y sus
+bytes en tres KAT: una etiqueta detrás del dominio separa la génesis (0) de la rotación (1), y la
+procedencia entra delante del cuerpo. El esquema de hoy es `0x1_0000_0005`: la familia de RFC 8391
+en los 32 bits altos y su OID en los bajos; otro se rechaza con su número. El `desde` es el índice
+EMBEBIDO, y la primera firma de la clave que entra lo lleva dentro. Y `verificar_acta` juzga las
+reglas ANTES que las firmas: una clave no comprometida se rechaza aunque la firmen la nueva y la
+vieja, porque ninguna firma la rescata.
 
 ### D-D — Dónde vive el acta
 

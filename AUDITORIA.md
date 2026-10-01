@@ -46152,3 +46152,68 @@ decisiones abiertas y ninguna etapa construida (§639).
 **Lo que NO hace.** No decide nada: el RFC-0018 deja cinco decisiones al autor (D-A a D-E) y el
 RFC-0019 cuatro (D-A a D-D). No construye ninguna etapa. No cambia el cable, ni un vector, ni un test.
 El `BACKLOG.md` no se mueve.
+
+## §643 — RFC-0015 E2: el núcleo del acta, su huella, su preámbulo y su juez, con tres KAT
+
+El commit que lleva este asiento, sobre `7b8a4dd` (el §675). Un solo sello: nacen el módulo `actas`
+de `zk-ssl-verify` y tres KAT en `spec/vectors/nucleo/`; `zk-ssl-hash` gana `DOMINIO_ACTA` y
+`acta_digest`; la segunda implementación aprende las dos funciones; `NUCLEO.md` registra la familia
+ACTA; el RFC-0015, la entrada 84, las filas del canon y las cifras de cinco documentos se ponen al
+día; y este asiento. 20 ficheros fuera de él, cuatro que nacen, con 740 inserciones y 31 borrados.
+Lo escribe, lo prueba y lo commitea la misma sesión de Claude Code que el §642, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y
+empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-verify`
+en 172 de 172, `zk-ssl-hash` en 52 de 52, `check_tests` en 1794 y la segunda implementación en 29
+de 29 KAT.
+
+**Rehecho sobre el §675.** Este sello se cerró primero sobre `e1d1db3` y se entregó sin empujarse;
+entre medias, `main` recibió el §640 y el §641 (RFC-0016 y RFC-0017), el §637 y del §650 al §675.
+Se rehace aquí, sobre el `main` de hoy: el código del acta es el mismo, y lo que cambia son las
+cifras, que se miden otra vez sobre la base nueva y son las de este asiento.
+
+**De dónde sale.** Con las decisiones del §642 tomadas, la E2 es la primera etapa que se puede
+construir: necesita la 1 (pre-rotación: el acta lleva la huella de la sucesora) y la 5 (la firma de
+la vieja, si viene, se exige válida), y no toca el nodo, el testigo ni el cable.
+
+**Lo que hace.**
+
+1. **La huella** (`zk-ssl-hash`). `DOMINIO_ACTA`, los ocho bytes `ACTAS_V1`, con su fila en el
+   REGISTRO de dominios, y `acta_digest`: la huella de la clave que entra, su esquema, su `desde` y
+   la huella de la sucesora; en una rotación, delante, la huella de la que se va y la última cabeza
+   que firmó. Una etiqueta detrás del dominio separa la génesis (0) de la rotación (1).
+2. **El juez** (`zk-ssl-verify`, módulo `actas`). El preámbulo que firma un acta, con el dominio de
+   bytes `ZK-SSL-key-act` registrado; el esquema de hoy, `0x1_0000_0005` (la familia de RFC 8391 y
+   su OID); los tipos `Acta`, `Procedencia` y `ActaFirmada`; y `verificar_acta` con las reglas 1 a
+   3 de la D-C, cada una con su error en `ActaError`. Las reglas van ANTES que las firmas: una
+   clave no comprometida se rechaza aunque la firmen la nueva y la vieja. El `desde` es el índice
+   EMBEBIDO, y la primera firma de la clave que entra lo lleva dentro. `VerificaError` gana
+   `Clone`, `PartialEq` y `Eq`, sin cambiar una variante.
+3. **Los KAT y la segunda implementación.** Tres vectores, la génesis, la rotación y el preámbulo,
+   emitidos por la referencia; `tools/segunda/` compone las dos funciones desde la sección 6 de
+   `NUCLEO.md` y los reproduce: 29 de 29.
+4. **El registro.** Doce filas nuevas en la tabla de `NUCLEO.md`, familia ACTA (once NÚCLEO y
+   `ActaError` REFERENCIA), su párrafo en la sección 5, sus bytes en la 6 y su línea en la 8.
+
+**Medido.** `zk-ssl-hash` pasa sus 42 tests y `zk-ssl-verify` sus 156 en release, en 7 s. Los tests
+del acta firman con claves XMSS^MT reales en hojas elegidas, como el nodo tras resincronizar: la
+génesis, la rotación con y sin la firma de la vieja, la clave no comprometida que trae la firma de
+la vieja, y un rojo por regla. Una firma cuesta unos 13 s en depuración en este contenedor, así que
+la escena se firma una vez, en paralelo, y la comparten los tests. Tres mutaciones, cada una
+restaurada después: quitar la regla de la clave comprometida pone rojo su test; quitar la de la
+hoja de la firma pone rojo el suyo; y la rotación con la etiqueta de la génesis no reproduce su
+KAT. `check_nucleo` da 150 filas en las dos direcciones, y `check_dominios`, el censo y el registro
+iguales.
+
+**Contadores.** `zk-ssl-hash` 50 -> 52 y `zk-ssl-verify` 168 -> 172. TOTAL DE SELLO 1629 -> 1635 y
+TOTAL CON LARGOS 1766 -> 1772, en los tres párrafos ancla, con el desglose del verificador en 172.
+La cuenta de `check_tests` pasa de 1788 a 1794. El censo de `NUCLEO.md` pasa de 80 y 58 a 90 y 60.
+Los vectores de `spec/vectors/` pasan de 453 a 456, en los dos README. La segunda implementación
+pasa de 26 a 29 KAT. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** No hay quien firme un acta: el nodo es la E3, con su formato de cable y
+`zkssl_keyActs`. El testigo no rota (E4), los sobres no aceptan `actas` (E5) y el medio no las
+publica (E6). La regla 4 de la D-C, la de las cabezas entre dos `desde`, es de la E5. La cabeza y
+el conjunto de versiones no se mueven.
+
+**Lo que NO cierra.** La 84 sigue abierta, con su RFC PROPUESTO y la E2 construida.
+

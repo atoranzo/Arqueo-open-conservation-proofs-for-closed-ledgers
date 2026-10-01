@@ -808,6 +808,58 @@ pub fn ancla_digest(
     )
 }
 
+/// **Dominio del acta de clave** (RFC-0015, D-C; §643), con version en el
+/// propio valor: los ocho bytes ASCII de `ACTAS_V1` leidos como `u64`,
+/// hermano de `ANCLA_V1`, con su fila en el REGISTRO.
+///
+/// ⚠️ **Noveno dominio, y separado A PROPOSITO de todos.** El acta no es la
+/// hoja de ningun arbol ni un ancla: es lo que el operador declara cuando una
+/// clave entra, y cual la sucedera. Sin dominio propio, su huella podria
+/// componer como un ancla o como un nodo cualquiera.
+pub const DOMINIO_ACTA: u64 = u64::from_be_bytes(*b"ACTAS_V1");
+
+/// **La huella del acta** (RFC-0015, D-C): la clave que entra (por su
+/// [`huella_de_clave`]), su esquema, el `desde` en que empieza a firmar y la
+/// huella de la clave que la sucedera; y, en una rotacion, su
+/// `procedencia`: `(anterior, epoch_digest, mmr_root, mmr_size)`, la huella
+/// de la clave que se va y la ultima cabeza que firmo. `None` es el acta
+/// genesis.
+///
+/// ⚠️ **Esta es LA composicion**, por la razon de [`acuse_digest`]: el nodo
+/// que firma el acta y el testigo o el kit que la comprueban tienen que
+/// componer exactamente igual.
+///
+/// ⚠️ **La genesis y la rotacion llevan una etiqueta distinta** (0 y 1)
+/// detras del dominio: sin ella, un acta genesis podria leerse como una
+/// rotacion con la procedencia escondida en otro campo. El `desde` es el
+/// indice EMBEBIDO (RFC-0012, D-C): el que la firma acredita.
+pub fn acta_digest(
+    huella_clave: Digest,
+    esquema: u64,
+    desde: u64,
+    siguiente: Digest,
+    procedencia: Option<(Digest, Digest, Digest, u64)>,
+) -> Digest {
+    let cuerpo = native_merge(
+        huella_clave,
+        native_merge(
+            as_digest(esquema),
+            native_merge(as_digest(desde), siguiente),
+        ),
+    );
+    let (etiqueta, resto) = match procedencia {
+        None => (0, cuerpo),
+        Some((anterior, epoch_digest, mmr_root, mmr_size)) => {
+            let historia = native_merge(epoch_digest, native_merge(mmr_root, as_digest(mmr_size)));
+            (1, native_merge(anterior, native_merge(historia, cuerpo)))
+        }
+    };
+    native_merge(
+        as_digest(DOMINIO_ACTA),
+        native_merge(as_digest(etiqueta), resto),
+    )
+}
+
 
 /// **Dominios del MMR de cabezas** (§291, eslabon 2 de la nota 83), con
 /// version en el propio valor, como `ACUSE_V1`: ocho bytes ASCII leidos
@@ -1371,6 +1423,49 @@ mod acuse {
     }
 
     #[test]
+    fn el_acta_tiene_dominio_propio_y_cada_campo_mueve_su_huella() {
+        // D-C del RFC-0015: el dominio por delante, como el ancla, y cada campo por su lado:
+        // un acta con la clave, el esquema, el desde o la sucesora mentidos no da la misma huella.
+        let (k, s) = (as_digest(1), as_digest(2));
+        let base = acta_digest(k, 5, 9, s, None);
+        let valor = u64::from_be_bytes(*b"ACTAS_V1");
+        assert_eq!(DOMINIO_ACTA, valor, "el dominio, con version");
+        assert_ne!(base, acta_digest(as_digest(11), 5, 9, s, None), "clave");
+        assert_ne!(base, acta_digest(k, 6, 9, s, None), "esquema");
+        assert_ne!(base, acta_digest(k, 5, 10, s, None), "desde");
+        assert_ne!(base, acta_digest(k, 5, 9, as_digest(22), None), "siguiente");
+        let resto = native_merge(as_digest(5), native_merge(as_digest(9), s));
+        let pelado = native_merge(as_digest(0), native_merge(k, resto));
+        assert_ne!(base, pelado, "el acta compone como el merge pelado");
+        let p = |a, e, r, t| Some((as_digest(a), as_digest(e), as_digest(r), t));
+        let rot = acta_digest(k, 5, 9, s, p(3, 4, 6, 7));
+        let anterior = acta_digest(k, 5, 9, s, p(33, 4, 6, 7));
+        let ultima = acta_digest(k, 5, 9, s, p(3, 44, 6, 7));
+        let raiz = acta_digest(k, 5, 9, s, p(3, 4, 66, 7));
+        let tamano = acta_digest(k, 5, 9, s, p(3, 4, 6, 8));
+        assert_ne!(rot, anterior, "anterior");
+        assert_ne!(rot, ultima, "ultima cabeza");
+        assert_ne!(rot, raiz, "raiz");
+        assert_ne!(rot, tamano, "tamano");
+    }
+
+    #[test]
+    fn la_genesis_y_la_rotacion_no_componen_igual() {
+        // La etiqueta 0/1 detras del dominio: una genesis no se lee como una rotacion, ni con
+        // una procedencia hecha de ceros, ni con la del ancla de la misma cabeza.
+        let (k, s) = (as_digest(1), as_digest(2));
+        let cero = as_digest(0);
+        assert_ne!(
+            acta_digest(k, 5, 9, s, None),
+            acta_digest(k, 5, 9, s, Some((cero, cero, cero, 0)))
+        );
+        assert_ne!(
+            DOMINIO_ACTA, DOMINIO_ANCLA,
+            "el acta no comparte dominio con el ancla"
+        );
+    }
+
+    #[test]
     fn la_huella_de_clave_codifica_la_longitud_y_no_es_el_digest_de_prueba() {
         // D-B del RFC-0012: el molde del §116 -- dos claves que difieran en
         // ceros finales no colisionan -- y un dominio de bytes propio: la
@@ -1533,6 +1628,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: u64 produccion DOMINIO_PRENDA 0x5052454E445F5631
 // REGISTRO: u64 produccion DOMINIO_RECEP 0x52454345505F5631
 // REGISTRO: u64 produccion DOMINIO_ANCLA 0x414E434C415F5631
+// REGISTRO: u64 produccion DOMINIO_ACTA 0x41435441535F5631
 // REGISTRO: bytes ZK-SSL-ledger-key-v1
 // REGISTRO: bytes ZK-SSL-epoch-head
 // REGISTRO: bytes ZK-SSL-keystore-v1
@@ -1542,6 +1638,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: bytes ZK-SSL-witness-cosign
 // REGISTRO: bytes ZK-SSL-anchor-key-v1
 // REGISTRO: bytes ZK-SSL-batch-v1
+// REGISTRO: bytes ZK-SSL-key-act
 
 /// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
 /// congelacion no pueda reutilizarse como autorizacion de emision.
