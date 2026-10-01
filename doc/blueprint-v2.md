@@ -47,7 +47,9 @@ Ninguna persona lo revisó antes de escribirse. La aceptación que describe
 **Embargo** ([`SECURITY.md`](../SECURITY.md) §5: los fallos de solidez se reportan en privado
 antes de divulgarse). **Ocho hallazgos están en embargo: cuatro P0, tres P1 y un P2.** Se entregaron
 al autor en privado. Tres de ellos se reprodujeron con tests en la sesión. **El corte 0 del plan
-(§5.3) es cerrarlos.** Este documento no los describe, y por eso tampoco da su componente, su
+(§5.3) es cerrarlos.** ⚠️ **Actualizado (§656):** el corte 0 está hecho —siete cerrados en el §641 y
+del §650 al §655, y uno acotado—, y desde entonces los ocho están descritos en la sección 3.9 de
+[`SECURITY.md`](../SECURITY.md). Este documento no los describe, y por eso tampoco da su componente, su
 mecanismo ni su arreglo. Allí donde el expediente público mezclaba un hallazgo publicable con uno
 embargado, se publica solo lo que se sostiene sin el segundo, y se dice.
 

@@ -376,7 +376,7 @@ del código y no supuesto:
 | método | credencial | veredicto |
 |---|---|---|
 | `zkssl_accountView` | **exige clave de VISTA** (49-A) | ✅ el RPC nació con el control de acceso puesto |
-| `zkssl_publicId`, `zkssl_logEntries`, `zkssl_epochHead`, `zkssl_supply`, `zkssl_accountCount` | ninguna | **público por diseño** — el registro y los agregados son auditables a propósito |
+| `zkssl_publicId`, `zkssl_logEntries`, `zkssl_epochHead`, `zkssl_supply`, `zkssl_accountCount` | ninguna | **público por diseño** — el registro y los agregados son auditables a propósito. ⚠️ **CORREGIDO (§656)**: el `pending` de `zkssl_supply`, consultado tras cada entrada de `zkssl_logEntries`, da por diferencias el importe de cada envío y cobro; el proxy no debe exponerlo a terceros (sección 3.9) |
 | `dev_*` | doble cerrojo: feature de compilación **y** `--dev` | un build de producción no los tiene |
 
 **Lo que sigue abierto, dicho sin adornos**: el nodo **no tiene
@@ -500,6 +500,44 @@ vectores negativos lo atan, y la segunda implementación los rechaza con el mism
 ninguna cabeza custodiada se mueve. **Residuo**: el lector de `QUANTITY` del cable y el recompositor
 del testigo siguen leyendo sin la regla —lo que firman y comparan es el digest, no el entero—, y el
 kit publicado `arqueo-verify-v0.3.0` es anterior: acepta los cuatro negativos hasta una release nueva.
+
+### 3.9 Ocho hallazgos de un análisis con agentes — ⚠️ MEDIDO, siete cerrados y uno acotado
+
+En el §637 una sesión de Claude Code analizó el árbol con un enjambre de agentes
+([`doc/blueprint-v2.md`](doc/blueprint-v2.md)) y entregó al autor, en privado, ocho hallazgos
+abiertos en `main`. Se corrigieron antes de describirlos aquí, como pide la sección 5. Tres se
+reprodujeron con tests antes del arreglo; cada arreglo lleva falsadores que caen con él desactivado.
+
+| hallazgo | qué rompía | prioridad | cerrado en |
+|---|---|---|---|
+| El hexadecimal del cable y del kit se troceaba por bytes de un `&str` | una sola petición sin credencial con un carácter multibyte paraba el nodo (PARADA); el kit salía con 101 en vez de ROJO; `+` y mayúsculas se aceptaban | P0 | §650 |
+| La guarda de forma no miraba la marca del meta | una prueba oculta con el meta vaciado hacía entrar en pánico a la capa (con el candado del nodo tomado) y al kit | P0 | §651 |
+| Las semillas de la ocultación eran de 64 bits | quien ve una prueba despejaba cualquier columna constante del testigo —la clave de gasto, la de un custodio— con unas 2^74 compresiones Blake3 (ESTIMADO) | P0 | §652 |
+| `applySend` y `applyClaim` guardaban el importe y el saldo que mandaba el cliente | un titular rompía la conservación en la contabilidad `u64` y el libro no volvía a abrir | P0 | §641 (RFC-0017) |
+| `Proof::from_bytes` aceptaba bytes de cola | la huella de una prueba no identificaba una operación | P1 | §653 |
+| El reenvío sólo se paraba por la igualdad de raíces | tras un reembolso o un ciclo A→B→A, un recibo ya aplicado volvía a valer | P1 | §654 |
+| `zkssl_supply` publica sin credencial el total en tránsito | por diferencias da el importe de cada envío y cobro | P1 | **acotado**: ver abajo |
+| Un fallo del almacén no paraba el nodo | la memoria podía firmar raíces que el disco no tiene | P2 | §655 (c) |
+
+⚠️ **Lo que conviene hacer si se usó el sistema con claves propias.** Las pruebas ocultas emitidas
+entre el §538 y el §652 protegen la clave de gasto y las de los custodios sólo a unas 2^74
+operaciones clásicas (ESTIMADO; con Grover, unas 2^32 iteraciones). El ataque es fuera de línea y
+una prueba emitida no se puede volver a ocultar: **quien haya publicado pruebas con claves propias
+debe rotarlas**. La exposición conocida son despliegues de desarrollo y de prueba, con claves ya
+públicas: el nodo sin la feature `dev` no arranca (§637).
+
+⚠️ **`zkssl_supply`, acotado y no cerrado.** El campo `pending` es normativo (`spec/RPC.md`,
+`spec/openrpc.json`): exigir la credencial del operador o quitarlo cambia el cable, y se hará con la
+próxima versión que ya haga falta, no subiéndola sólo por esto. **Mientras tanto, el proxy que
+publique el nodo no debe exponer `zkssl_supply` a terceros**: la fila de la tabla de la sección 3.3
+que lo llamaba «público por diseño» queda corregida. Quien ve una prueba de envío o de cobro ya ve
+su importe (son entradas públicas, RFC-0009); lo que el método añadía es dárselo a cualquiera.
+
+Lo que queda abierto de estos ocho, y es decisión del autor: las partes (a) y (b) del fallo del
+almacén (anotar antes de verificar, y cachear la pareja de recepción), la versión nueva del kit
+`arqueo-verify` —su binario cambia con los §650 a §653, y la `v0.3.0` publicada sigue afectada por
+los tres primeros y por la cola— y el cambio de cable de `zkssl_supply`. `AUDITORIA.md` §637, §641,
+§650 a §656.
 
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 

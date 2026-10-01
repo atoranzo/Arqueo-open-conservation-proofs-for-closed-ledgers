@@ -45476,3 +45476,51 @@ recepción. (b), cachear la pareja de recepción, espera a un banco que mida `pa
 
 **Contadores.** `zk-ssl-node` 177 -> 179, y los totales donde `check_cifras` los señaló. El
 `BACKLOG.md` no se mueve.
+
+## §656 — los ocho hallazgos del aviso, descritos: `SECURITY.md` 3.9, y `zkssl_supply` acotado
+
+El commit que lleva este asiento, sobre el §655 de esta misma rama. Un sello de documentos: nace la
+sección 3.9 de `SECURITY.md`, se corrigen la fila de `zkssl_supply` de su tabla de credenciales y la
+frase «ni importes» de `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md` (sección 7), y el plano del
+§637 anota que su corte 0 está hecho. Lo escribe y lo commitea una sesión de Claude Code en la nube,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon
+`--sello` salió VERDE: los 19 crates del nivel en sus pines, con 293 s de tests.
+
+**De dónde sale.** El aviso privado del §637 pedía publicar la descripción después del arreglo. El
+autor pidió cerrarlo todo: siete de los ocho están cerrados (el §641 de la otra sesión, RFC-0017, y
+del §650 al §655 aquí) y uno queda acotado. La sección 3.9 los lista con lo que rompían, su prioridad
+y dónde se cerraron, y dice lo que conviene hacer: **quien haya publicado pruebas ocultas con claves
+propias entre el §538 y el §652 debe rotarlas**, porque el ataque del §652 es fuera de línea y una
+prueba emitida no se puede volver a ocultar.
+
+**`zkssl_supply`, acotado y no cerrado (SEG-05).** El campo `pending` es normativo (`spec/RPC.md`,
+`spec/openrpc.json`): exigir la credencial del operador o quitarlo cambia el cable, y el debate del
+§637 lo dejó para la próxima versión que ya haga falta, sin subirla sólo por esto. Lo que entra hoy
+es la recomendación —el proxy no debe exponer el método a terceros— y las dos correcciones de prosa,
+que describen el canal y por eso esperaron al arreglo de lo demás.
+
+**Los contadores de los §650 a §653, tras el rebase.** Esos cuatro asientos se escribieron sobre
+`e1d1db3`; la rama se puso después sobre el §641 de `claude/nice-cannon-arzmc9` (RFC-0016 y RFC-0017,
+que movieron los mismos pines), y cada pin pasó a ser el de esa base más el delta de su asiento. Los
+deltas de los asientos valen; las cifras absolutas que citan, no. Por commit, tras el rebase:
+
+| asiento | zk-ssl | stark-experiment | zk-ssl-verify | zk-ssl-node | zk-ssl-cli | zk-ssl-wire | zk-ssl-hash | zk-ssl-guardian |
+|---|---|---|---|---|---|---|---|---|
+| §641 (base) | 424 | 404 | 157 | 176 | 131 | 24 | 45 | 27 |
+| §650 | 424 | 404 | 160 | 177 | 132 | 25 | 49 | 28 |
+| §651 | 425 | 405 | 165 | 177 | 132 | 25 | 49 | 28 |
+| §652 | 425 | 407 | 165 | 177 | 132 | 25 | 49 | 28 |
+| §653 | 426 | 407 | 166 | 177 | 132 | 25 | 49 | 28 |
+| §654 | 428 | 407 | 166 | 177 | 132 | 25 | 49 | 28 |
+| §655 | 428 | 407 | 166 | 179 | 132 | 25 | 49 | 28 |
+
+TOTAL DE SELLO 1616; TOTAL CON LARGOS 1753. En el rebase, la resolución automática de las filas del
+canon perdió tres deltas (los de los §651, §652 y §653 en tres filas); el canon los cazó al medir, y se
+repusieron dentro de su propio commit, de modo que cada sello lleva sus pines. Un canon anterior,
+colgado en la conformidad con un binario viejo del kit ante un vector nuevo del RFC-0016, corrió 51
+minutos a la vez que los siguientes e hizo caer un test de tiempos (`cost_per_transfer_stays_stable`);
+muerto ese proceso, el canon salió VERDE.
+
+**Lo que NO cierra.** La versión nueva de `arqueo-verify` (el binario del kit cambia con los §650 a
+§653). El cambio de cable de `zkssl_supply`. Las partes (a) y (b) del §655. El `BACKLOG.md` no se
+mueve.

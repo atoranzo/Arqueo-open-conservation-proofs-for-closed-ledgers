@@ -386,6 +386,12 @@ Ni identidades, ni saldos, ni importes. Solo ve una prueba criptográfica y
 las raíces de estado públicas, que son compromisos y no revelan su
 contenido.
 
+⚠️ **CORREGIDO (§656): «ni importes» no es cierto hoy en dos casos.** Quien ve
+una prueba de envío o de cobro ve su importe, que es entrada pública
+(RFC-0009). Y el `pending` de `zkssl_supply`, público en el cable, da por
+diferencias el importe de cada envío y cobro a quien consulte el método; el
+proxy que publique el nodo no debe exponerlo (`SECURITY.md` sección 3.9).
+
 **El nullifier solo lo puede calcular el titular**, porque se deriva de su
 clave de gasto. Eso impide a un observador precomputar los nullifiers de
 cuentas ajenas para vigilar cuándo gastan.

@@ -372,6 +372,12 @@ Neither identities, nor balances, nor amounts. Only a cryptographic proof
 and the public state roots, which are commitments and reveal nothing about
 their contents.
 
+⚠️ **CORRECTED (§656): "nor amounts" is not true today in two cases.** Whoever sees
+a send or claim proof sees its amount, which is a public input (RFC-0009). And the
+`pending` field of `zkssl_supply`, public on the wire, yields by differencing the amount
+of every send and claim to whoever queries it; the proxy that publishes the node must
+not expose it (`SECURITY.md` section 3.9).
+
 **Only the holder can compute their nullifier**, since it derives from
 their spend key. This prevents an observer from precomputing the
 nullifiers of other accounts to monitor when they spend.
