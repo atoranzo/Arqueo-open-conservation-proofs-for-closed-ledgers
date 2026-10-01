@@ -44848,3 +44848,57 @@ seguir la cuenta de la clave vieja: eso es de la propuesta de la 84.
 
 **Lo que NO cierra.** La 84. Su propuesta, el RFC-0015, es lo siguiente.
 
+## §639 — el RFC-0015, propuesto: el ciclo de vida del firmante, con la clave siguiente comprometida
+
+El commit que lleva este asiento, sobre `bb2ac82` (el §638). Un sello de documentos: nace
+`spec/rfc/0015-el-ciclo-de-vida-del-firmante.md`, PROPUESTO; su fila en `spec/README.md` y su
+número en las cuatro listas de RFC propuestos (los dos README y los dos resúmenes); dos líneas en
+las entradas 84 y 92; y este asiento. 7 ficheros fuera de él, uno que nace, con 294 inserciones y 5
+borrados. Ningún código, ningún pin, ningún vector. Lo escribe y lo commitea la misma sesión de
+Claude Code que el §638, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión, sobre este mismo árbol, el
+canon `--sello` salió VERDE, con `check_publicadas` en 14 RFC con estado propio.
+
+**De dónde sale.** La 84 es la siguiente por prioridad del grupo B, y el §288 pidió cortarla junto
+con la 92 y la 19. Antes de proponer se midió: el §636 corrigió dos frases que el código no
+cumplía, y el §638 midió con dos claves reales lo que de verdad pasa al cambiar de clave. Fuera del
+árbol se leyeron el RFC 10033 de la IETF (PQUIP, gestión del estado y de las copias en las firmas
+basadas en hash) y el RFC 8649 (el resumen de la clave raíz siguiente), los dos del mismo espejo de
+texto que usa la bibliografía verificada de `doc/ecst/`. Las secciones que el RFC-0015 cita se
+leyeron en esa copia.
+
+**Lo que propone.** Cinco piezas, y la cabeza no se mueve:
+
+1. **Pre-rotación (D-B).** Cada clave entra con un acta que compromete la huella de la siguiente,
+   que vive fría: el nodo solo conoce su huella. La sucesora firma su acta, y la vieja también
+   cuando su estado es fiable. Es el RFC 8649 llevado a una firma con estado, y resuelve los tres
+   casos en que un acta firmada solo por la vieja falla: la vieja robada, con el índice
+   indeterminado, o perdida.
+2. **La cuenta es del operador (D-A).** La clave nueva empieza por encima de todo lo que firmó la
+   vieja. La era del recibo, el reloj del ancla y la puerta del diario siguen siendo monótonos, que
+   es lo que el §638 midió que el nodo ya hace.
+3. **El acta (D-C, D-D).** Un objeto con dominio propio, que nombra las claves con la huella del
+   RFC-0012 y trae escritas las reglas del verificador. Vive en el diario, en el cable
+   (`zkssl_keyActs`) y, con la E3 del RFC-0013, en el medio.
+4. **El agotamiento (D-F).** El umbral de aviso del RFC 10033 §3.4, con reconocimiento explícito. A
+   la cadencia del latido el techo está a dos millones de años; se pone porque es barato y porque
+   agotar pasa a ser rotar.
+5. **El índice perdido (D-G).** Un procedimiento escrito: si el estado de la clave no es fiable, la
+   clave está quemada, no firma nada más, y se rota a la sucesora saltando por encima de todo
+   índice conocido.
+
+**Las decisiones.** Cinco, del autor, con la recomendada primero y ninguna tomada: quién firma el
+acta, si la cuenta sigue, si el medio es por clave o por operador, el umbral de aviso, y si la
+firma de la vieja es obligatoria cuando se puede. Ninguna etapa está construida, y la E2, el núcleo
+del acta, necesita antes la decisión 1.
+
+**Contadores.** Ningún test, ningún pin, ningún vector. `check_publicadas` cuenta 14 RFC con estado
+propio, uno más, con su fila en `spec/README.md` y sus cinco cuentas en cuatro sitios. El
+`BACKLOG.md` sigue en 43 abiertas y 73 resueltas: la 84 y la 92 ganan su línea y siguen abiertas.
+
+**Lo que NO hace.** No toma ninguna de las cinco decisiones, ni construye ninguna etapa. No cambia
+el arranque, el testigo ni el kit. No exige hardware para la custodia, y lo dice.
+
+**Lo que NO cierra.** La 84, la 92 y la 19 siguen abiertas, y la 103 también: perder a la vez el
+contador y el diario sigue apagando la puerta, y el RFC lo declara en su residuo.
+

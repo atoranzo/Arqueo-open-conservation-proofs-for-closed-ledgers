@@ -666,6 +666,14 @@ instrumentacion) al grupo E.*
   `una_clave_nueva_con_el_contador_de_la_vieja_arranca_y_sigue_su_cuenta`.
   Queda precisado aquí en vez de borrarlo.
 
+  ⚠️ **(§639) La propuesta, escrita: el RFC-0015, PROPUESTO.** Pre-rotación
+  como el RFC 8649: cada clave entra con un acta que compromete la huella
+  de la siguiente, que vive fría, y la sucesora firma su propia acta. La
+  cuenta de índices es del operador y no de la clave; el aviso de
+  agotamiento es el del RFC 10033 §3.4; y el índice indeterminado tiene
+  procedimiento escrito. Cinco decisiones del autor, ninguna tomada, y
+  ninguna etapa construida: sigue abierta.
+
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con
   XMSS^MT de RFC 8391 (los 42 fallos, negativos), 121/121 entradas del segundo verificador en las
@@ -916,6 +924,9 @@ instrumentacion) al grupo E.*
   ⚠️ Compone con la **84** (agotamiento y rotación) y con la **19**
   (sin WAL). **Son la misma familia y convendría cortarlas juntas**:
   las tres son el ciclo de vida del firmante.
+  ⚠️ (§639) El RFC-0015, la propuesta de la 84, escribe el (c) como
+  procedimiento (su D-G) y deja la clave siguiente fría por diseño (D-B);
+  el (a) y el (b) siguen como están. Sigue abierta.
 
 ## C. Solidez y verificacion: resueltas y en revision
 
