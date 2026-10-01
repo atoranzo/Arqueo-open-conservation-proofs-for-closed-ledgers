@@ -31,11 +31,27 @@ sha2 = "0.10"
 # como `xmss`: ⚠️ el propio crate declara que **no está auditado**
 # (RFC-0013 D-H, 2). Sin `pkcs8` ni `alloc`: aquí no se lee DER. Con él
 # entran 11 paquetes al Cargo.lock y ninguno de los que había cambia de
-# versión (medido en §632).
-ml-dsa = { version = "=0.1.1", default-features = false, features = ["rand_core", "zeroize"] }
+# versión (medido en §632). Verificar no pide más; firmar, sí: lo pone
+# `firmar`, abajo.
+ml-dsa = { version = "=0.1.1", default-features = false }
 # La sal de la firma con sal (FIPS 204, la variante recomendada): 32 bytes
-# del sistema por firma. Ya está en el Cargo.lock en 0.4.3.
-getrandom = { version = "0.4", features = ["sys_rng"] }
+# del sistema por firma. Ya está en el Cargo.lock en 0.4.3. Solo con
+# `firmar`.
+getrandom = { version = "0.4", features = ["sys_rng"], optional = true }
 # Borrar la copia local de la semilla del publicador. Ya está en el
-# Cargo.lock en 1.9.0.
-zeroize = "1"
+# Cargo.lock en 1.9.0. Solo con `firmar`.
+zeroize = { version = "1", optional = true }
+
+[features]
+# ⚠️ **Firmar es opcional desde el §633.** El kit (`zk-ssl-verify`) verifica
+# notas y no firma ninguna: depende de este crate sin `firmar`, y así no
+# enlaza la sal del sistema, ni el borrado de la semilla, ni el firmado de
+# `ml-dsa`. El publicador (E3) y los tests la llevan, y es la de por defecto.
+default = ["firmar"]
+firmar = ["dep:getrandom", "dep:zeroize", "ml-dsa/rand_core", "ml-dsa/zeroize"]
+
+# Las notas firmadas aquí se rehacen con `Publicador`: sin `firmar` no se
+# compila, y se declara.
+[[test]]
+name = "vectores_notas"
+required-features = ["firmar"]

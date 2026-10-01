@@ -34,8 +34,9 @@ operador. Prueba **conservación, no solvencia**: las pruebas hablan del libro, 
   operador ve todos los saldos** y puede omitir una operación: sin dejar rastro si no emite
   recibo; si lo emitió, el sobre de completitud lo nombra (RFC-0010). Entre libros **detecta, no
   previene**.
-- **No está auditado por terceros.** Ninguna cantidad de tests propios lo sustituye. Una
-  dependencia criptográfica (`xmss`, pre-release) va clavada con `=` y declarada. Todo en
+- **No está auditado por terceros.** Ninguna cantidad de tests propios lo sustituye. Dos
+  dependencias criptográficas sin auditoría independiente —`xmss`, pre-release, y `ml-dsa`, en
+  el kit desde el §633— van clavadas con `=` y declaradas. Todo en
   [`SECURITY.md`](./SECURITY.md).
 - **Los seis depósitos con DOI preceden a correcciones del árbol.** Lo que se corrigió se marca, no
   se borra: [`doc/preprints/ERRATA.md`](./doc/preprints/ERRATA.md).

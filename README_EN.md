@@ -35,8 +35,9 @@ speak of the ledger, not of the world.
   operator sees every balance** and can omit an operation: without a trace if it issues no
   receipt; if it issued one, the completeness envelope names it (RFC-0010). Across ledgers it
   **detects, it does not prevent**.
-- **Not audited by third parties.** No amount of the author's own tests replaces that. One
-  cryptographic dependency (`xmss`, a pre-release) is pinned with `=` and declared. All of it in
+- **Not audited by third parties.** No amount of the author's own tests replaces that. Two
+  cryptographic dependencies without an independent audit —`xmss`, a pre-release, and `ml-dsa`,
+  in the kit since §633— are pinned with `=` and declared. All of it in
   [`SECURITY.md`](./SECURITY.md).
 - **The six deposits with a DOI predate corrections in the tree.** What was corrected is marked,
   not erased: [`doc/preprints/ERRATA.md`](./doc/preprints/ERRATA.md).

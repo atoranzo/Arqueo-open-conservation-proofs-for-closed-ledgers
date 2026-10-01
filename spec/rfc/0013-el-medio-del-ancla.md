@@ -2,7 +2,7 @@
 
 - **Estado:** PROPUESTO — el texto y las decisiones, escritos sobre lo medido en mtc-core y en
   las especificaciones C2SP; construida la E2 —el árbol del medio (E2a, §631) y su nota firmada
-  (E2b, §632)—, y E3 y E4 sin construir. Nació BORRADOR y entra PROPUESTO al
+  (E2b, §632)— y la E4a, el sobre en el kit (§633); E3 y E4b sin construir. Nació BORRADOR y entra PROPUESTO al
   integrarse (§603): BORRADOR no tiene cara publicada en el cerrojo de `check_publicadas`, y el
   RFC-0011 nació igual, propuesto con sus decisiones delegadas. Las decisiones D-A a D-H son DELEGADAS y
   REVERSIBLES: la aceptación es del autor.
@@ -18,8 +18,8 @@
   el acusado no prueba nada), §291–§292 (el MMR de cabezas y su pareja firmada), §590–§593
   (RFC-0012, el ancla y su sobre), §594 (el gate del diario en todo estado), §599 (la vista
   dividida servida por un nodo real: cada testigo solo no la ve), §603 (la integración), §631
-  (la E2a: el árbol del medio, y la D-G decidida) y §632 (la E2b: la nota, contrastada con
-  torchwood); y, en mtc-core, sus asientos
+  (la E2a: el árbol del medio, y la D-G decidida), §632 (la E2b: la nota, contrastada con
+  torchwood) y §633 (la E4a: el sobre en el kit, y la D-D corregida); y, en mtc-core, sus asientos
   §14 y §15 (la interoperabilidad medida contra la implementación de referencia del IETF, en las
   dos direcciones, y el checkpoint de esa herramienta reconstruido desde sus tejas).
 - **Backlog:** la 86 (elegir y medir el medio), que este RFC cierra en diseño y deja abierta en
@@ -37,7 +37,8 @@
 | E2a — el árbol del medio | el árbol SHA-256 de anclas (`crates/zk-ssl-medio`) y los vectores de consistencia SHA-256: los acumulados y los grandes del borrador del IETF y las 685 sondas de `transparency-dev/merkle` | no (aditivo, fuera del cable) | **construida (§631)** |
 | E2b — la nota del medio | la nota `checkpoint` con su firma ML-DSA-44 tipo `0x06` (`zk_ssl_medio::nota`), y 33 notas positivas y negativas con el veredicto de `filippo.io/torchwood` | no (aditivo, fuera del cable) | **construida (§632)** |
 | E3 — el publicador | el cliente `add-checkpoint` del protocolo tlog-witness, la retención de las cofirmas de testigos y su publicación como nota cofirmada | no | pendiente |
-| E4 — el sobre en el kit | `tipo: "ancla-cofirmada"`: la nota, la política de testigos con umbral, la inclusión del ancla en el árbol del medio y, debajo, el sobre del ancla del RFC-0012; su banco y su catálogo | no | pendiente |
+| E4a — el sobre en el kit | `tipo: "ancla-cofirmada"`: la nota, las cofirmas de los testigos —reportadas, no juzgadas: D-D—, la inclusión del ancla en el árbol del medio y, debajo, el ancla derivada de la cabeza firmada | no (aditivo: una forma nueva del kit) | **construida (§633)** |
+| E4b — el catálogo y el banco | `spec/vectors/ancla-cofirmada/`, su bloque del canon, la familia del artefacto y su banco | no | pendiente |
 
 ## Motivación
 
@@ -137,6 +138,20 @@ y el testigo lo dice. Qué testigos valen y cuántos lo decide **el cliente**, n
 kit ya tiene esa política para las cofirmas XMSS (`--testigos`, `--k`, S319) y la reutiliza. El
 testigo propio de ZK-SSL sigue existiendo y cofirmando cabezas con XMSS; este canal no lo
 sustituye, lo rodea de terceros que no son de la casa.
+
+> ⚠️ **Corregido (§633).** «El kit ya tiene esa política (`--testigos`, `--k`, S319)» era
+> falso: la política vive en `zk-ssl-cli witness --verificar-cofirmas`, y el kit acepta un solo
+> argumento y, con las cofirmas XMSS del paquete v2, **reporta y no juzga** (`spec/PAQUETE.md`
+> §1). La frase se deja como estaba y se corrige aquí.
+
+**Decidido en el §633, por el autor: el kit reporta, no juzga.** El sobre `ancla-cofirmada`
+lista los testigos cuya cofirma verifica con las vkeys que trae el sobre, cada uno con la huella
+SHA-256 de su clave ENTERA —el `key_id` de cuatro bytes es un identificador y se fabrica—, y el
+umbral lo aplica el cliente con su política, como con las cofirmas XMSS. Así el kit sigue con un
+argumento y el arnés de conformidad no cambia. Las otras dos opciones —`--testigos`/`--k` en el
+kit, o las dos cosas— cambiaban el contrato publicado del kit y quedan descartadas por ahora.
+Juzgar el umbral de las cofirmas del medio en `zk-ssl-cli`, como el S319 juzga las XMSS, queda
+sin construir.
 
 ### D-E — Lo que un tercero comprueba, sin el nodo
 

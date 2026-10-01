@@ -3678,6 +3678,7 @@ dependencies = [
  "zk-ssl-air",
  "zk-ssl-guardian",
  "zk-ssl-hash",
+ "zk-ssl-medio",
 ]
 
 [[package]]

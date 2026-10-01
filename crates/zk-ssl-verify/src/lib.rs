@@ -1205,7 +1205,10 @@ mod tests {
             ("dependencies", "zk-ssl-hash"),
             // S465 (RFC-0007 E4b-2): el juez de la prueba de edad, sin el probador.
             ("dependencies", "zk-ssl-air"),
+            // §633 (RFC-0013 E4a): el medio del ancla, sin `firmar`; con ella, solo en los tests.
+            ("dependencies", "zk-ssl-medio"),
             ("dev-dependencies", "zk-ssl-guardian"),
+            ("dev-dependencies", "zk-ssl-medio"),
         ]
         .iter()
         .map(|(s, n)| (s.to_string(), n.to_string()))
@@ -1256,12 +1259,39 @@ mod tests {
                 cola.extend(deps.get(&n).cloned().unwrap_or_default());
             }
         }
-        for vivo in ["zk-ssl-air", "winter-verifier"] {
+        for vivo in ["zk-ssl-air", "winter-verifier", "zk-ssl-medio", "ml-dsa"] {
             assert!(vistos.contains(vivo), "prueba de vida: la clausura no ve {vivo}");
         }
         for prohibido in ["winter-prover", "winterfell"] {
             assert!(!vistos.contains(prohibido), "el kit arrastra {prohibido}: {vistos:?}");
         }
+    }
+
+    /// **§633 (RFC-0013 E4a): el kit VERIFICA la nota del medio y no firma ninguna.** La
+    /// dependencia normal de `zk-ssl-medio` va sin sus features por defecto, que traen
+    /// `firmar` (la sal del sistema, el borrado de la semilla y el firmado de `ml-dsa`); la
+    /// dev-dependency la lleva, y no entra en el binario. Si alguien quita la linea, este
+    /// test lo dice antes que el binario.
+    #[test]
+    fn el_kit_verifica_el_medio_sin_firmar() {
+        let toml = include_str!("../Cargo.toml");
+        let mut seccion = "";
+        let mut vista = false;
+        for linea in toml.lines() {
+            let s = linea.trim();
+            if s.starts_with('[') {
+                seccion = s;
+            } else if s.starts_with("zk-ssl-medio") {
+                if seccion == "[dependencies]" {
+                    assert!(
+                        s.contains("default-features = false") && !s.contains("firmar"),
+                        "el kit depende del medio CON firmar: {s}"
+                    );
+                    vista = true;
+                }
+            }
+        }
+        assert!(vista, "prueba de vida: el kit no depende del medio");
     }
 
     #[test]

@@ -44506,3 +44506,109 @@ política no nombra es de E4, que es quien tiene política. `ml-dsa` sigue sin a
 contraste byte a byte con el `crypto/mldsa` de Go lo acota, no lo sustituye. Si una marca de
 tiempo del futuro se rechaza lo decide quien verifica, en E4.
 
+## §633 — RFC-0013 E4a: el sobre del ancla cofirmada en el kit, que reporta y no juzga
+
+El commit que lleva este asiento, sobre `e69fadd` (el §632). Un solo sello. El kit gana su
+decimotercera forma, `tipo: "ancla-cofirmada"`, y `zk-ssl-medio` entra en él sin la feature de
+firmar. El medio gana esa feature, `firmar`, y un `Cofirmante`. El contrato en `spec/PAQUETE.md`
+§2.13, §3, §4, §5 y §6. El RFC-0013 corrige su D-D y registra la decisión; la entrada 86, la
+fila del RFC en `spec/README.md`, la fila del canon y las cifras de cinco documentos se ponen al
+día; y este asiento. 18 ficheros tocados, con 721 inserciones y 79 borrados fuera de él, y
+ninguno que nazca. Lo escribe, lo prueba y lo commitea la misma sesión de Claude Code que el
+§632, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor
+corre el canon `--sello` y empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE a la segunda (la primera, abajo): el kit 152 de 152, el cli 128 de 128, el medio 37 de 37,
+los diez catálogos de antes enteros con el binario nuevo, y el artefacto reproducible.
+
+**De dónde sale, y lo que decidió el autor.** Tras el §632 la sesión propuso E4 antes que E3: E4
+se construye sin red, y E3 hablaría con testigos públicos de verdad, que es una acción hacia
+fuera. Al ir a construirla aparecieron dos cosas que eran del autor, y se le preguntaron. La
+primera, otra premisa falsa del RFC, como la del §631: la D-D dice que el kit ya tiene la
+política de testigos (`--testigos`, `--k`, S319) y la reutiliza. No la tiene. Vive en
+`zk-ssl-cli witness --verificar-cofirmas`; el kit acepta un solo argumento, el arnés de
+conformidad le pasa uno, y con las cofirmas XMSS del paquete v2 reporta y no juzga
+(`PAQUETE.md` §1). El autor eligió que **el kit reporte y no juzgue** también aquí, frente a
+añadir `--testigos`/`--k` al kit o las dos cosas, que cambiaban su contrato publicado. La
+segunda: meter `ml-dsa`, sin auditar, en la clausura del kit. El autor eligió **sí, solo para
+verificar**. La D-D se corrige con una nota que deja la frase como estaba, y la decisión queda
+escrita debajo.
+
+**Lo que hace.** (1) `zk-ssl-medio` gana la feature `firmar`, por defecto encendida: trae
+`getrandom`, `zeroize` y el firmado de `ml-dsa` (`rand_core`, `zeroize`). Sin ella, el crate
+verifica y no firma; con ella y sin ella pasa sus tests sin un warning (37 y 30). `Publicador`
+y el nuevo `Cofirmante`, la firma de un testigo, comparten un único núcleo privado, `Firmante`.
+El `Cofirmante` verifica su línea antes de devolverla, como el publicador su nota (§299), y en
+`tests/vectores_notas.rs` **reproduce byte a byte** las cinco cofirmas que firmó torchwood, con
+la misma semilla y la misma marca. (2) El kit depende de `zk-ssl-medio` sin features por
+defecto, y con `firmar` solo como dev-dependency. Medido con `cargo tree`: en el binario, el
+medio entra sin `firmar`, y `getrandom` y `zeroize` siguen en la clausura, pero por `xmss`, que
+ya estaba. La clausura del kit leída del `Cargo.lock`, con el algoritmo del gate H2, pasa de 85 a
+92 nombres. Los 7 nuevos son `zk-ssl-medio`, `ml-dsa`, `module-lattice`, `shake`,
+`sponge-cursor`, `num-traits` y `autocfg`, y no sale ninguno. El `Cargo.lock` cambia en una
+línea. (3) El gate H2 lo sabe. `el_cierre_del_verificador_es_el_declarado` lista el medio en las
+dos secciones; `la_clausura_del_kit_no_lleva_el_probador` exige verlo, con `ml-dsa`; y un test
+nuevo, `el_kit_verifica_el_medio_sin_firmar`, se pone ROJO si la dependencia normal pierde el
+`default-features = false` o gana `firmar`. La puerta de clausura del cli (5.A-359) también lo
+vio: el cli depende del kit y hereda el medio, y su test exigía «exactamente estos trece» crates
+del árbol. Pasa a catorce, y su nombre cambia con la cuenta
+(`la_clausura_del_cli_son_catorce_crates_del_arbol_y_no_el_nodo`). Lo cazó la primera pasada del
+canon, ROJO con el cli en 127 de 128: los tests de esta sesión habían corrido el medio y el kit,
+y no el cli. (4) El brazo `ancla-cofirmada`. Primero la forma:
+sin `ancla`, `camino` ni `contraria`, que son del sobre del ancla, y cada campo que falta con su
+nombre. Después cuatro pasos:
+   1. La cabeza, ENTERA, como en el sobre del ancla, y de ella el ancla, que no viaja: se
+      deriva. Es el último paso de la D-E, que aquí va primero porque el `origin` de la nota se
+      deriva de la clave XMSS de la cabeza.
+   2. La nota, cuyo publicador tiene que llamarse `zkssl/v1/` más la huella de esa clave (D-A),
+      con las reglas de `zk_ssl_medio::nota`.
+   3. Las cofirmas con vkey en el sobre se VERIFICAN, y una que no verifica es ROJO; las líneas
+      sin vkey se cuentan y no se juzgan.
+   4. La hoja del ancla sube por `inclusion` hasta la raíz de la nota en `posicion`.
+
+   El VERDE lista cada testigo que cofirma con la huella SHA-256 de su clave entera, porque el
+   `key_id` de cuatro bytes se fabrica, y dice que el umbral es de quien verifica. Los hashes del
+   camino se leen como bytes SHA-256, no como digests de Goldilocks.
+
+**Medido, no supuesto.** El positivo usa la cabeza firmada de verdad de
+`spec/vectors/ancla/ancla-exacta.json`, su ancla en la posición 1 de un medio de tres, la nota de
+su publicador y la cofirma de un testigo, con claves de prueba. Es VERDE, y lo es también sin la
+vkey del testigo en el sobre. Los negativos caen cada uno por su nombre: otra posición, el
+camino tocado, la cofirma tocada, un publicador de otro medio, el testigo dos veces, una nota
+bien firmada de un medio sin el ancla, y **el ataque de verdad: el ancla publicada en el medio
+de OTRA clave**, bien firmado por su publicador y con el ancla dentro. Tres mutaciones,
+restauradas después:
+
+| mutación del brazo | lo que cae |
+|---|---|
+| sin atar el publicador a la clave XMSS | el ataque del medio ajeno, que da **VERDE** |
+| la cofirma se cuenta sin verificarla | la cofirma tocada |
+| la hoja sin su prefijo `0x00` | el positivo |
+
+La primera, antes de que existiera el ataque, solo caía de refilón, por el texto de otro
+rechazo: por eso se añadió el ataque.
+
+**El contrato.** `spec/PAQUETE.md` pasa a trece formas. Gana la §2.13, una fila en la tabla de
+claves de §3, el orden en §4, el bloque de rechazos en §5 y el VERDE número quince en §6. El
+texto del «tipo desconocido» del catálogo acababa en `prenda`, rancio desde el §573; se pone al
+día con una marca. Los README dicen ahora dos dependencias criptográficas sin auditar y
+clavadas, `xmss` y `ml-dsa`, donde decían una.
+
+**Contadores.** `zk-ssl-verify` pasa de 147 a 152 tests: cuatro del brazo y el cerrojo de
+`firmar`. `zk-ssl-medio` sigue en 37, porque su contraste nuevo vive dentro de un test que ya
+estaba. TOTAL DE SELLO 1566 -> 1571 y TOTAL CON LARGOS 1703 -> 1708, en los tres párrafos ancla,
+con el desglose del verificador independiente en 152. La cuenta de `check_tests` pasa de 1725 a
+1730. Los crates siguen siendo 22. Siguen rancias a propósito (5.A-319) las «1364 declaradas»,
+las «1349 declared» y las «18 ignoradas». El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas: la
+86 gana su avance y sigue abierta.
+
+**Lo que NO hace.** No juzga el umbral: ese juez, para las cofirmas del medio, no existe aún en
+`zk-ssl-cli`, y se nombra. No trae catálogo, ni bloque del canon, ni familia del artefacto, ni
+banco: eso es la E4b, el §634. No cambia la invocación del kit, que sigue con un argumento. No
+toca la release publicada ni sus documentos (`doc/KIT.md`, la sección de la release del
+README): el kit nuevo saldrá en la próxima. `SECURITY.md` no enumera dependencias, y no se toca.
+`doc/integracion-vertical-evaluacion.md` dice «doce formas»: es una evaluación fechada y se deja.
+
+**Lo que NO cierra.** La E4b y la E3. El juez del umbral de las cofirmas del medio. La frescura
+de las marcas de tiempo, que tampoco juzga el kit. Y `ml-dsa`, ya en el kit, sigue sin auditar:
+el contraste byte a byte con el ML-DSA de Go lo acota, no lo sustituye.
+

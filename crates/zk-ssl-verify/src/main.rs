@@ -58,6 +58,9 @@ use zk_ssl_air::{verificar_contra_cabeza, Afirmacion, CabezaEdad};
 use winter_math::fields::f64::BaseElement;
 use winter_math::FieldElement;
 use zk_ssl_air::banda::{verificar as verificar_banda, BandaPublicInputs};
+use zk_ssl_medio::hash::sha256;
+use zk_ssl_medio::medio::{hoja, verificar_inclusion};
+use zk_ssl_medio::nota::{origen_del_medio, verificar_nota, ClaveDeNota};
 use zk_ssl_hash::{
     ancla_digest, digest_from_bytes, digest_of_proof, digest_to_bytes, epoch_digest_v2,
     epoch_digest_v3, epoch_digest_v4, epoch_digest_v5, epoch_digest_v6, huella_de_clave,
@@ -181,13 +184,15 @@ fn verificar_paquete(p: &serde_json::Value) -> Result<(), String> {
         Some("completitud") => return verificar_completitud(&p),
         // RFC-0012 E3 (§586): el ancla de cabezas, sus tres modos y la vista dividida.
         Some("ancla") => return verificar_ancla(&p),
+        // RFC-0013 E4a (§633): el ancla publicada en el medio y cofirmada por testigos ajenos.
+        Some("ancla-cofirmada") => return verificar_ancla_cofirmada(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
                  `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"`, \
                  `tipo: \"rechazo\"`, `tipo: \"edad\"`, `tipo: \"cobro_pendiente\"`, \
-                 `tipo: \"pago_en_curso\"`, `tipo: \"prenda\"`, `tipo: \"completitud\"` \
-                 o `tipo: \"ancla\"`"
+                 `tipo: \"pago_en_curso\"`, `tipo: \"prenda\"`, `tipo: \"completitud\"`, \
+                 `tipo: \"ancla\"` o `tipo: \"ancla-cofirmada\"`"
             )))
         }
     }
@@ -2490,6 +2495,182 @@ fn verificar_ancla(p: &serde_json::Value) -> Result<(), String> {
     }
 }
 
+/// Una cadena del sobre, con su nombre al faltar.
+fn cadena_de<'a>(p: &'a serde_json::Value, campo: &str, que: &str) -> Result<&'a str, String> {
+    p.get(campo)
+        .and_then(|x| x.as_str())
+        .ok_or_else(|| err(format!("falta {campo} o no es cadena ({que})")))
+}
+
+/// Un hash SHA-256 del medio: `0x` y 64 hex, los bytes TAL CUAL. No es un digest de
+/// Goldilocks: `digest_de` rechazaria con razon un elemento no canonico, y aqui no hay campo.
+fn sha256_de(s: &str, campo: &str) -> Result<[u8; 32], String> {
+    let b = hex_a_bytes(s).map_err(|e| err(format!("{campo}: {e}")))?;
+    b.as_slice()
+        .try_into()
+        .map_err(|_| err(format!("{campo}: {} bytes, se esperaban 32", b.len())))
+}
+
+/// **El sobre del ANCLA COFIRMADA** (RFC-0013 E4a, §633): una cabeza firmada, la nota del
+/// medio que publica su ancla, las claves para leerla y el camino que las une.
+///
+/// El ancla no viaja: se DERIVA de la cabeza (el modo 1 del sobre del ancla), y por eso ES la
+/// cabeza firmada que dice ser, que es el ultimo paso de la D-E. El orden de esa D-E es nota,
+/// cofirmas, inclusion y ancla; aqui la cabeza va PRIMERO, porque el `origin` de la nota se
+/// deriva de su clave XMSS (D-A) y sin ella no hay medio con que comparar.
+///
+/// ⚠️ **REPORTA, NO JUZGA** (decidido en el §633, como el paquete v2 con sus cofirmas): lista
+/// los testigos cuya cofirma verifica con las claves que trae el sobre, cada uno con la huella
+/// SHA-256 de su clave ENTERA —el `key_id` de 4 bytes de la nota es un identificador, no una
+/// garantia, y se fabrica—. Que testigos valen y cuantos hacen falta lo decide quien verifica
+/// con su politica (D-D): quien arma el sobre puede ser el operador. Una cofirma de una clave
+/// del sobre que NO verifica es ROJO, como pide `signed-note`; una linea sin clave en el
+/// sobre se cuenta y no se juzga.
+fn verificar_ancla_cofirmada(p: &serde_json::Value) -> Result<(), String> {
+    // Las reglas de FORMA, antes de tocar la criptografia.
+    for ajeno in ["ancla", "camino", "contraria"] {
+        if p.get(ajeno).is_some() {
+            return Err(err(format!(
+                "el sobre del ancla cofirmada no lleva {ajeno}: el ancla se deriva de la \
+                 cabeza, y la extension y la vista dividida son del sobre del ancla"
+            )));
+        }
+    }
+    let c = p
+        .get("cabeza")
+        .ok_or_else(|| err("falta cabeza (la firmada cuya ancla se publico)".into()))?;
+    let nota = cadena_de(p, "nota", "la nota checkpoint del medio, entera")?;
+    let vkey_publicador = cadena_de(p, "publicador", "la vkey del publicador del medio")?;
+    let posicion = u64_de(p, "posicion")?;
+    let inclusion: Vec<[u8; 32]> = p
+        .get("inclusion")
+        .and_then(|x| x.as_array())
+        .ok_or_else(|| err("falta inclusion o no es lista (el camino del ancla a la raiz)".into()))?
+        .iter()
+        .map(|x| sha256_de(x.as_str().unwrap_or(""), "inclusion"))
+        .collect::<Result<_, _>>()?;
+    let testigos: Vec<ClaveDeNota> = match p.get("testigos") {
+        None => Vec::new(),
+        Some(t) => t
+            .as_array()
+            .ok_or_else(|| err("testigos no es lista (las vkeys de los testigos)".into()))?
+            .iter()
+            .map(|x| {
+                ClaveDeNota::leer_vkey(x.as_str().unwrap_or(""))
+                    .map_err(|e| err(format!("testigos: {e}")))
+            })
+            .collect::<Result<_, _>>()?,
+    };
+    for (i, a) in testigos.iter().enumerate() {
+        if testigos[..i]
+            .iter()
+            .any(|b| b.nombre() == a.nombre() && b.id() == a.id())
+        {
+            return Err(err(format!("testigos: {} esta dos veces", a.nombre())));
+        }
+    }
+
+    // 1. La cabeza, ENTERA, como en el sobre del ancla.
+    let version = u64_de(c, "formatVersion")?;
+    match VersionCabeza::try_from(version) {
+        Ok(v) if v.lleva_mmr() => {}
+        _ => {
+            return Err(err(format!(
+                "cabeza: formatVersion {version}: el ancla lee cabezas {}: la pareja del MMR \
+                 viaja firmada desde ellas",
+                VersionCabeza::texto_con_mmr()
+            )))
+        }
+    }
+    let (cima, t, clave_hex, _) = cabeza_v3_verificada(c, "cabeza")?;
+    let epoch_digest = digest_de(c, "epochDigest")?;
+    let firma = hex_a_bytes(c.get("signature").and_then(|x| x.as_str()).unwrap_or(""))?;
+    let embebido = indice_de_firma(&firma).map_err(|e| err(format!("cabeza: {e}")))?;
+    let huella_clave = huella_de_clave(&hex_a_bytes(&clave_hex)?);
+    let huella_ancla = ancla_digest(huella_clave, embebido, epoch_digest, cima, t);
+    println!(
+        "1/4 la cabeza (v{version}) recompone su digest y su firma verifica (indice embebido \
+         {embebido}); su ancla: {}",
+        hex_de_digest(&huella_ancla)
+    );
+
+    // 2. La nota: del medio de ESTA clave, y firmada por su publicador.
+    let origen = origen_del_medio(&digest_to_bytes(&huella_clave));
+    let publicador =
+        ClaveDeNota::leer_vkey(vkey_publicador).map_err(|e| err(format!("publicador: {e}")))?;
+    if publicador.nombre() != origen {
+        return Err(err(format!(
+            "el publicador es {:?} y el medio de esta cabeza es {origen:?}: el origin lleva la \
+             huella de la clave XMSS (RFC-0013 D-A)",
+            publicador.nombre()
+        )));
+    }
+    let v = verificar_nota(nota, &publicador).map_err(|e| err(format!("la nota: {e}")))?;
+    println!(
+        "2/4 la nota del medio verifica con su publicador (ML-DSA-44, tipo 0x06): {} anclas, \
+         marca {}",
+        v.checkpoint.tamano, v.marca
+    );
+
+    // 3. Las cofirmas: las que tienen clave en el sobre se verifican; las demas se cuentan.
+    let mut cofirman: Vec<(&ClaveDeNota, u64)> = Vec::new();
+    let mut sin_clave = 0;
+    for linea in &v.ajenas {
+        match testigos
+            .iter()
+            .find(|k| k.nombre() == linea.nombre && k.id() == linea.id)
+        {
+            None => sin_clave += 1,
+            Some(k) => {
+                if cofirman.iter().any(|(o, _)| std::ptr::eq(*o, k)) {
+                    return Err(err(format!(
+                        "la nota lleva dos cofirmas de {}",
+                        k.nombre()
+                    )));
+                }
+                let marca = k.verificar_cofirma(&v.checkpoint, linea).map_err(|e| {
+                    err(format!("la cofirma de {} no verifica: {e}", k.nombre()))
+                })?;
+                cofirman.push((k, marca));
+            }
+        }
+    }
+    println!(
+        "3/4 cofirmas que verifican con las claves del sobre: {}; lineas sin clave en el sobre, \
+         sin juzgar: {sin_clave}; testigos del sobre sin cofirma: {}",
+        cofirman.len(),
+        testigos.len() - cofirman.len()
+    );
+    for (k, marca) in &cofirman {
+        let h: String = sha256(k.bytes()).iter().map(|b| format!("{b:02x}")).collect();
+        println!("   testigo {} clave sha256:{h} marca {marca}", k.nombre());
+    }
+
+    // 4. La inclusion: el ancla de ESTA cabeza esta en la raiz de la nota, donde dice.
+    let tamano = v.checkpoint.tamano;
+    verificar_inclusion(
+        &hoja(&digest_to_bytes(&huella_ancla)),
+        posicion,
+        tamano,
+        &inclusion,
+        &v.checkpoint.raiz,
+    )
+    .map_err(|e| {
+        err(format!(
+            "el ancla de esta cabeza no esta en la posicion {posicion} de las {tamano} de la \
+             nota: {e}"
+        ))
+    })?;
+    println!("4/4 el ancla esta en la posicion {posicion} de las {tamano} anclas de la nota");
+    println!(
+        "VERDE: la cabeza estaba publicada en el medio {origen}, en la posicion {posicion}, y la \
+         cofirman {} testigo(s) con clave en el sobre. Que testigos valen y cuantos hacen falta \
+         lo decide quien verifica (RFC-0013 D-D): este mando reporta, no juzga",
+        cofirman.len()
+    );
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let ruta = match (args.next(), args.next()) {
@@ -2613,6 +2794,207 @@ mod tests {
     fn el_tipo_desconocido_enumera_el_ancla() {
         let e = verificar_paquete(&json!({ "v": 1, "tipo": "otra" })).unwrap_err();
         assert!(e.contains("`tipo: \"ancla\"`"), "{e}");
+    }
+
+    /// §633 · el desconocido enumera el brazo nuevo.
+    #[test]
+    fn el_tipo_desconocido_enumera_el_ancla_cofirmada() {
+        let e = verificar_paquete(&json!({ "v": 1, "tipo": "otra" })).unwrap_err();
+        assert!(e.contains("`tipo: \"ancla-cofirmada\"`"), "{e}");
+    }
+
+    /// §633 · la FORMA del ancla cofirmada corta antes de tocar la criptografia: las claves del
+    /// sobre del ancla no van aqui, y cada campo que falta se nombra.
+    #[test]
+    fn la_forma_del_ancla_cofirmada_corta_antes_de_creer_nada() {
+        let e = verificar_paquete(&json!({ "v": 1, "tipo": "ancla-cofirmada", "ancla": {} }))
+            .unwrap_err();
+        assert!(e.starts_with("el sobre del ancla cofirmada no lleva ancla"), "{e}");
+        let e = verificar_paquete(&json!({ "v": 1, "tipo": "ancla-cofirmada" })).unwrap_err();
+        assert!(e.starts_with("falta cabeza"), "{e}");
+        for (sobre, falta) in [
+            (json!({ "v": 1, "tipo": "ancla-cofirmada", "cabeza": {} }), "falta nota"),
+            (
+                json!({ "v": 1, "tipo": "ancla-cofirmada", "cabeza": {}, "nota": "x" }),
+                "falta publicador",
+            ),
+            (
+                json!({ "v": 1, "tipo": "ancla-cofirmada", "cabeza": {}, "nota": "x",
+                        "publicador": "x" }),
+                "falta posicion",
+            ),
+            (
+                json!({ "v": 1, "tipo": "ancla-cofirmada", "cabeza": {}, "nota": "x",
+                        "publicador": "x", "posicion": "0x0" }),
+                "falta inclusion",
+            ),
+            (
+                json!({ "v": 1, "tipo": "ancla-cofirmada", "cabeza": {}, "nota": "x",
+                        "publicador": "x", "posicion": "0x0", "inclusion": ["0x00"] }),
+                "inclusion: 1 bytes",
+            ),
+            (
+                json!({ "v": 1, "tipo": "ancla-cofirmada", "cabeza": {}, "nota": "x",
+                        "publicador": "x", "posicion": "0x0", "inclusion": [],
+                        "testigos": ["no es una vkey"] }),
+                "testigos: clave",
+            ),
+        ] {
+            let e = verificar_paquete(&sobre).unwrap_err();
+            assert!(e.starts_with(falta), "{falta}: {e}");
+        }
+    }
+
+    /// Lo que arma un sobre de ancla cofirmada con la cabeza firmada DE VERDAD de
+    /// `spec/vectors/ancla/ancla-exacta.json`: su ancla en la posicion 1 de un medio de tres,
+    /// la nota de su publicador y la cofirma de un testigo, con claves de prueba.
+    mod cofirmada {
+        use super::*;
+        use zk_ssl_medio::medio::ArbolDelMedio;
+        use zk_ssl_medio::nota::{Checkpoint, Cofirmante, Publicador};
+
+        pub const TESTIGO: &str = "testigo.invalid/ajeno";
+
+        pub fn cabeza() -> serde_json::Value {
+            let v: serde_json::Value = serde_json::from_str(include_str!(
+                "../../../spec/vectors/ancla/ancla-exacta.json"
+            ))
+            .unwrap();
+            v["cabeza"].clone()
+        }
+
+        /// La huella del ancla de la cabeza, por el mismo camino que el sobre del ancla.
+        pub fn huella_del_ancla(c: &serde_json::Value) -> [u8; 32] {
+            let (cima, t, clave_hex, _) = cabeza_v3_verificada(c, "cabeza").unwrap();
+            let firma = hex_a_bytes(c["signature"].as_str().unwrap()).unwrap();
+            let h = ancla_digest(
+                huella_de_clave(&hex_a_bytes(&clave_hex).unwrap()),
+                indice_de_firma(&firma).unwrap(),
+                digest_de(c, "epochDigest").unwrap(),
+                cima,
+                t,
+            );
+            digest_to_bytes(&h)
+        }
+
+        pub fn origen(c: &serde_json::Value) -> String {
+            let (_, _, clave_hex, _) = cabeza_v3_verificada(c, "cabeza").unwrap();
+            origen_del_medio(&digest_to_bytes(&huella_de_clave(&hex_a_bytes(&clave_hex).unwrap())))
+        }
+
+        pub fn hex(b: &[u8]) -> String {
+            format!("0x{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>())
+        }
+
+        /// `(sobre, arbol, checkpoint)`: el medio tiene tres anclas y la de la cabeza es la 1.
+        pub fn sobre() -> (serde_json::Value, ArbolDelMedio, Checkpoint) {
+            let c = cabeza();
+            let mut arbol = ArbolDelMedio::nuevo();
+            arbol.anadir(&[0x11; 32]);
+            arbol.anadir(&huella_del_ancla(&c));
+            arbol.anadir(&[0x33; 32]);
+            let checkpoint = Checkpoint {
+                origen: origen(&c),
+                tamano: 3,
+                raiz: arbol.raiz(),
+            };
+            let publicador = Publicador::determinista(&checkpoint.origen, [1; 32]).unwrap();
+            let testigo = Cofirmante::determinista(TESTIGO, [2; 32]).unwrap();
+            let nota = publicador.firmar(&checkpoint, 1_790_000_000).unwrap()
+                + &testigo.cofirmar(&checkpoint, 1_790_000_060).unwrap();
+            let inclusion: Vec<String> = arbol
+                .prueba_de_inclusion(1, 3)
+                .unwrap()
+                .iter()
+                .map(|h| hex(h))
+                .collect();
+            let sobre = json!({
+                "v": 1, "tipo": "ancla-cofirmada", "cabeza": c, "nota": nota,
+                "publicador": publicador.clave_publica().vkey(),
+                "testigos": [testigo.clave_publica().vkey()],
+                "posicion": "0x1", "inclusion": inclusion,
+            });
+            (sobre, arbol, checkpoint)
+        }
+    }
+
+    /// §633 · el ancla cofirmada de una cabeza firmada de verdad: VERDE con la cofirma del
+    /// testigo, y VERDE tambien sin su clave en el sobre —la linea se cuenta y no se juzga:
+    /// el mando reporta, no juzga—.
+    #[test]
+    fn el_ancla_cofirmada_de_una_cabeza_real() {
+        let (sobre, _, _) = cofirmada::sobre();
+        verificar_paquete(&sobre).unwrap();
+        let mut sin_testigos = sobre.clone();
+        sin_testigos.as_object_mut().unwrap().remove("testigos");
+        verificar_paquete(&sin_testigos).unwrap();
+    }
+
+    /// §633 · cada mentira cae por su nombre: la posicion, el camino, la cofirma tocada, el
+    /// publicador de otro medio, el testigo dos veces y una nota de un medio sin el ancla.
+    #[test]
+    fn el_ancla_cofirmada_rechaza_cada_mentira_por_su_nombre() {
+        use zk_ssl_medio::medio::ArbolDelMedio;
+        use zk_ssl_medio::nota::{Checkpoint, Publicador};
+        let (sobre, _, checkpoint) = cofirmada::sobre();
+        let rojo = |s: &serde_json::Value| verificar_paquete(s).unwrap_err();
+
+        let mut s = sobre.clone();
+        s["posicion"] = json!("0x2");
+        assert!(rojo(&s).contains("no esta en la posicion 2"), "{}", rojo(&s));
+
+        let mut s = sobre.clone();
+        s["inclusion"][0] = json!(cofirmada::hex(&[0x44; 32]));
+        assert!(rojo(&s).contains("no esta en la posicion 1"), "{}", rojo(&s));
+
+        // La cofirma, con un caracter de su base64 cambiado.
+        let mut s = sobre.clone();
+        let nota = s["nota"].as_str().unwrap().to_string();
+        let i = nota.rfind(cofirmada::TESTIGO).unwrap() + cofirmada::TESTIGO.len() + 100;
+        let c = if &nota[i..i + 1] == "A" { "B" } else { "A" };
+        s["nota"] = json!(format!("{}{c}{}", &nota[..i], &nota[i + 1..]));
+        assert!(rojo(&s).starts_with("la cofirma de testigo.invalid/ajeno no verifica"), "{}", rojo(&s));
+
+        // El ataque de verdad: el ancla publicada en el medio de OTRA clave, bien firmado por
+        // el publicador de ese medio y con el ancla dentro. Todo verifica menos el atado.
+        let ajeno = Checkpoint {
+            origen: "zkssl/v1/00".into(),
+            ..checkpoint.clone()
+        };
+        let suyo = Publicador::determinista(&ajeno.origen, [9; 32]).unwrap();
+        let mut s = sobre.clone();
+        s["nota"] = json!(suyo.firmar(&ajeno, 1_790_000_000).unwrap());
+        s["publicador"] = json!(suyo.clave_publica().vkey());
+        assert!(rojo(&s).starts_with("el publicador es \"zkssl/v1/00\""), "{}", rojo(&s));
+
+        let mut s = sobre.clone();
+        let otro = Publicador::determinista("zkssl/v1/00", [1; 32]).unwrap();
+        s["publicador"] = json!(otro.clave_publica().vkey());
+        assert!(rojo(&s).starts_with("el publicador es \"zkssl/v1/00\""), "{}", rojo(&s));
+
+        let mut s = sobre.clone();
+        let t = s["testigos"][0].clone();
+        s["testigos"] = json!([t.clone(), t]);
+        assert!(rojo(&s).contains("esta dos veces"), "{}", rojo(&s));
+
+        // Un medio de tres anclas en el que la de la cabeza NO esta, bien firmado.
+        let mut ajeno = ArbolDelMedio::nuevo();
+        for b in [0x11, 0x22, 0x33] {
+            ajeno.anadir(&[b; 32]);
+        }
+        let ck = Checkpoint { raiz: ajeno.raiz(), ..checkpoint };
+        let mut s = sobre.clone();
+        s["nota"] = json!(Publicador::determinista(&ck.origen, [1; 32])
+            .unwrap()
+            .firmar(&ck, 1_790_000_000)
+            .unwrap());
+        s["inclusion"] = json!(ajeno
+            .prueba_de_inclusion(1, 3)
+            .unwrap()
+            .iter()
+            .map(|h| cofirmada::hex(h))
+            .collect::<Vec<_>>());
+        assert!(rojo(&s).contains("no esta en la posicion 1"), "{}", rojo(&s));
     }
 
     /// §573 · la grieta de la D-G, nombrada: las cuatro causas que el RFC-0007 dejo sin prueba

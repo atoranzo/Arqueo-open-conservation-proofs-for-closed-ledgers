@@ -58,9 +58,14 @@
 //! - **No decide la frescura.** La marca de tiempo se devuelve; si una
 //!   marca del futuro se rechaza lo decide quien verifica (E4).
 
+#[cfg(feature = "firmar")]
 use getrandom::SysRng;
+#[cfg(feature = "firmar")]
 use ml_dsa::signature::Keypair;
-use ml_dsa::{EncodedVerifyingKey, MlDsa44, Seed, Signature, SigningKey, VerifyingKey};
+use ml_dsa::{EncodedVerifyingKey, MlDsa44, Signature, VerifyingKey};
+#[cfg(feature = "firmar")]
+use ml_dsa::{Seed, SigningKey};
+#[cfg(feature = "firmar")]
 use zeroize::Zeroize;
 
 use crate::base64::{base64_decode, base64_encode};
@@ -405,6 +410,7 @@ impl ClaveDeNota {
 }
 
 /// Cómo firma un [`Publicador`].
+#[cfg(feature = "firmar")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Modo {
     /// La variante que FIPS 204 recomienda: 32 bytes del sistema por firma.
@@ -415,58 +421,35 @@ pub enum Modo {
     Determinista,
 }
 
-/// Quien firma las notas del medio.
-pub struct Publicador {
+/// El núcleo de firma que comparten el publicador y el cofirmante: una
+/// clave ML-DSA-44 con su nombre, y la línea `— nombre base64(key_id ||
+/// marca || firma)` sobre el `cosigned_message` de un checkpoint.
+#[cfg(feature = "firmar")]
+struct Firmante {
     clave: SigningKey<MlDsa44>,
     publica: ClaveDeNota,
     modo: Modo,
 }
 
-impl Publicador {
-    /// ⚠️ La semilla es material de clave: de dónde sale y dónde vive es del
-    /// publicador (E3). La copia de aquí se borra; la del llamador es suya.
-    pub fn desde_semilla(nombre: &str, semilla: [u8; 32]) -> Result<Self, ErrorDeNota> {
-        Self::con_modo(nombre, semilla, Modo::ConSal)
-    }
-
-    /// Firma determinista: solo para vectores (ver [`Modo::Determinista`]).
-    pub fn determinista(nombre: &str, semilla: [u8; 32]) -> Result<Self, ErrorDeNota> {
-        Self::con_modo(nombre, semilla, Modo::Determinista)
-    }
-
-    fn con_modo(nombre: &str, mut semilla: [u8; 32], modo: Modo) -> Result<Self, ErrorDeNota> {
+#[cfg(feature = "firmar")]
+impl Firmante {
+    /// ⚠️ La semilla es material de clave: la copia de aquí se borra; la del
+    /// llamador es suya.
+    fn nuevo(nombre: &str, mut semilla: [u8; 32], modo: Modo) -> Result<Self, ErrorDeNota> {
         let clave = SigningKey::<MlDsa44>::from_seed(&Seed::from(semilla));
         semilla.zeroize();
         let bytes = clave.verifying_key().encode().to_vec();
         let publica = ClaveDeNota::nueva(nombre, &bytes)?;
-        Ok(Publicador {
+        Ok(Firmante {
             clave,
             publica,
             modo,
         })
     }
 
-    pub fn clave_publica(&self) -> &ClaveDeNota {
-        &self.publica
-    }
-
-    pub fn modo(&self) -> Modo {
-        self.modo
-    }
-
-    /// Firma el checkpoint con la marca de tiempo `marca` y devuelve la nota
-    /// entera: el texto, la línea en blanco y la línea del publicador.
-    ///
-    /// ⚠️ Antes de devolverla la verifica con el mismo verificador que usará
-    /// un tercero (la regla del §299).
-    pub fn firmar(&self, checkpoint: &Checkpoint, marca: u64) -> Result<String, ErrorDeNota> {
-        if checkpoint.origen != self.publica.nombre {
-            return Err(ErrorDeNota::OrigenAjeno {
-                esperado: self.publica.nombre.clone(),
-                visto: checkpoint.origen.clone(),
-            });
-        }
-        let texto = checkpoint.texto()?;
+    /// La línea de firma, con su salto final.
+    fn linea(&self, checkpoint: &Checkpoint, marca: u64) -> Result<String, ErrorDeNota> {
+        checkpoint.comprobar()?;
         let mensaje = mensaje_cofirmado(
             &self.publica.nombre,
             marca,
@@ -484,12 +467,58 @@ impl Publicador {
         let mut bytes = self.publica.id.to_vec();
         bytes.extend_from_slice(&marca.to_be_bytes());
         bytes.extend_from_slice(&firma.encode());
-        let nota = format!(
-            "{texto}\n{PREFIJO_FIRMA}{} {}\n",
+        Ok(format!(
+            "{PREFIJO_FIRMA}{} {}\n",
             self.publica.nombre,
             base64_encode(&bytes)
+        ))
+    }
+}
+
+/// Quien firma las notas del medio. Solo con la feature `firmar` (§633):
+/// el kit verifica sin ella.
+#[cfg(feature = "firmar")]
+pub struct Publicador(Firmante);
+
+#[cfg(feature = "firmar")]
+impl Publicador {
+    /// ⚠️ La semilla es material de clave: de dónde sale y dónde vive es del
+    /// publicador (E3). La copia de aquí se borra; la del llamador es suya.
+    pub fn desde_semilla(nombre: &str, semilla: [u8; 32]) -> Result<Self, ErrorDeNota> {
+        Firmante::nuevo(nombre, semilla, Modo::ConSal).map(Publicador)
+    }
+
+    /// Firma determinista: solo para vectores (ver [`Modo::Determinista`]).
+    pub fn determinista(nombre: &str, semilla: [u8; 32]) -> Result<Self, ErrorDeNota> {
+        Firmante::nuevo(nombre, semilla, Modo::Determinista).map(Publicador)
+    }
+
+    pub fn clave_publica(&self) -> &ClaveDeNota {
+        &self.0.publica
+    }
+
+    pub fn modo(&self) -> Modo {
+        self.0.modo
+    }
+
+    /// Firma el checkpoint con la marca de tiempo `marca` y devuelve la nota
+    /// entera: el texto, la línea en blanco y la línea del publicador.
+    ///
+    /// ⚠️ Antes de devolverla la verifica con el mismo verificador que usará
+    /// un tercero (la regla del §299).
+    pub fn firmar(&self, checkpoint: &Checkpoint, marca: u64) -> Result<String, ErrorDeNota> {
+        if checkpoint.origen != self.0.publica.nombre {
+            return Err(ErrorDeNota::OrigenAjeno {
+                esperado: self.0.publica.nombre.clone(),
+                visto: checkpoint.origen.clone(),
+            });
+        }
+        let nota = format!(
+            "{}\n{}",
+            checkpoint.texto()?,
+            self.0.linea(checkpoint, marca)?
         );
-        match verificar_nota(&nota, &self.publica) {
+        match verificar_nota(&nota, &self.0.publica) {
             Ok(v) if v.checkpoint == *checkpoint && v.marca == marca => Ok(nota),
             Ok(_) => Err(ErrorDeNota::Firmando(
                 "la nota recién hecha no dice lo que se firmó".into(),
@@ -497,6 +526,57 @@ impl Publicador {
             Err(e) => Err(ErrorDeNota::Firmando(format!(
                 "la nota recién hecha no verifica: {e}"
             ))),
+        }
+    }
+}
+
+/// Quien cofirma la nota de OTRO: un testigo (D-D). En el medio los
+/// testigos son ajenos y no corren este código; existe para los vectores y
+/// los bancos, y se contrasta con las cofirmas que firmó torchwood
+/// (`tests/vectores_notas.rs`). Solo con la feature `firmar` (§633).
+#[cfg(feature = "firmar")]
+pub struct Cofirmante(Firmante);
+
+#[cfg(feature = "firmar")]
+impl Cofirmante {
+    pub fn desde_semilla(nombre: &str, semilla: [u8; 32]) -> Result<Self, ErrorDeNota> {
+        Firmante::nuevo(nombre, semilla, Modo::ConSal).map(Cofirmante)
+    }
+
+    /// Firma determinista: solo para vectores (ver [`Modo::Determinista`]).
+    pub fn determinista(nombre: &str, semilla: [u8; 32]) -> Result<Self, ErrorDeNota> {
+        Firmante::nuevo(nombre, semilla, Modo::Determinista).map(Cofirmante)
+    }
+
+    pub fn clave_publica(&self) -> &ClaveDeNota {
+        &self.0.publica
+    }
+
+    /// La línea de cofirma del checkpoint, con su salto final, para ir
+    /// detrás de las de la nota. Como el publicador, la verifica antes de
+    /// devolverla.
+    pub fn cofirmar(&self, checkpoint: &Checkpoint, marca: u64) -> Result<String, ErrorDeNota> {
+        let linea = self.0.linea(checkpoint, marca)?;
+        let resto = linea
+            .strip_prefix(PREFIJO_FIRMA)
+            .and_then(|r| r.strip_suffix('\n'))
+            .and_then(|r| r.split_once(' '))
+            .map(|(_, b64)| b64)
+            .ok_or(ErrorDeNota::Firmando(
+                "la línea recién hecha no se lee".into(),
+            ))?;
+        let bytes = base64_decode(resto)
+            .map_err(|_| ErrorDeNota::Firmando("la línea recién hecha no es base64".into()))?;
+        let ajena = FirmaAjena {
+            nombre: self.0.publica.nombre.clone(),
+            id: self.0.publica.id,
+            firma: bytes[4..].to_vec(),
+        };
+        match self.0.publica.verificar_cofirma(checkpoint, &ajena) {
+            Ok(m) if m == marca => Ok(linea),
+            _ => Err(ErrorDeNota::Firmando(
+                "la cofirma recién hecha no verifica".into(),
+            )),
         }
     }
 }
@@ -592,6 +672,7 @@ mod tests {
 
     const HUELLA: [u8; 32] = [0x5a; 32];
 
+    #[cfg(feature = "firmar")]
     fn publicador(modo: Modo) -> Publicador {
         let nombre = origen_del_medio(&HUELLA);
         match modo {
@@ -661,6 +742,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "firmar")]
     #[test]
     fn la_vkey_va_y_vuelve_y_su_key_id_se_comprueba() {
         let p = publicador(Modo::Determinista);
@@ -682,6 +764,7 @@ mod tests {
         assert!(ClaveDeNota::nueva("con espacio", p.clave_publica().bytes()).is_err());
     }
 
+    #[cfg(feature = "firmar")]
     #[test]
     fn lo_firmado_verifica_con_sal_y_sin_ella() {
         for modo in [Modo::ConSal, Modo::Determinista] {
@@ -706,6 +789,7 @@ mod tests {
         assert_eq!(d.firmar(&c, 9).unwrap(), d.firmar(&c, 9).unwrap());
     }
 
+    #[cfg(feature = "firmar")]
     #[test]
     fn el_publicador_no_firma_otro_origen_ni_un_vacio_con_raiz() {
         let p = publicador(Modo::Determinista);

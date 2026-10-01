@@ -284,10 +284,13 @@ mod tests {
     /// **La puerta de clausura del cli (5.A-359).** El kit tiene la suya
     /// (`la_clausura_del_kit_no_lleva_el_probador`); el cli no tenia ninguna, y este corte le mete
     /// `zk-ssl-sdk`. Camina el `Cargo.lock` desde `zk-ssl-cli` como la del kit y exige que los
-    /// crates SIN `source` -los del arbol: el workspace y el fork- sean EXACTAMENTE estos trece, y
-    /// que el NODO no este. Los de crates.io los fija el propio lock.
+    /// crates SIN `source` -los del arbol: el workspace y el fork- sean EXACTAMENTE estos catorce,
+    /// y que el NODO no este. Los de crates.io los fija el propio lock.
+    ///
+    /// §633: eran trece. El kit gana `zk-ssl-medio` (RFC-0013 E4a) y el cli lo hereda por
+    /// `zk-ssl-verify`: la puerta lo vio, y el nombre del test cambia con la cuenta.
     #[test]
-    fn la_clausura_del_cli_son_trece_crates_del_arbol_y_no_el_nodo() {
+    fn la_clausura_del_cli_son_catorce_crates_del_arbol_y_no_el_nodo() {
         let lock = include_str!("../../../Cargo.lock");
         let mut deps: std::collections::BTreeMap<String, Vec<String>> = Default::default();
         let mut del_arbol = std::collections::BTreeSet::new();
@@ -329,7 +332,7 @@ mod tests {
             [
                 "settlement-prover", "stark-experiment", "winter-air", "winter-prover",
                 "winter-verifier", "zk-ssl", "zk-ssl-air", "zk-ssl-cli", "zk-ssl-guardian",
-                "zk-ssl-hash", "zk-ssl-sdk", "zk-ssl-verify", "zk-ssl-wire",
+                "zk-ssl-hash", "zk-ssl-medio", "zk-ssl-sdk", "zk-ssl-verify", "zk-ssl-wire",
             ],
             "un crate del arbol entra en la clausura del cli o sale de ella: que pase por aqui"
         );

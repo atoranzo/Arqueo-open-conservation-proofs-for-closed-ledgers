@@ -35,6 +35,11 @@ license.workspace = true
 # al PROBADOR (`winter-prover`, `winterfell`), ni la capa, ni el nodo, ni
 # el cable. La guardan dos tests del lib: las dependencias por ruta, y la
 # clausura leida del `Cargo.lock`.
+#
+# ⚠️ §633 (RFC-0013 E4a): entra `zk-ssl-medio`, y con el `ml-dsa` de
+# RustCrypto, SIN auditoria independiente (lo declara el propio crate). Es
+# lo que hace falta para VERIFICAR la nota del medio y la inclusion del
+# ancla; firmar no entra: el kit depende del medio sin la feature `firmar`.
 
 [dependencies]
 serde_json = "1"
@@ -56,6 +61,11 @@ zk-ssl-air = { path = "../zk-ssl-air" }
 #    version que `zk-ssl-hash`: dos `BaseElement` de versiones distintas
 #    NO son el mismo tipo.
 winter-math = "=0.13.1"
+# ⚠️ §633: el medio del ancla (RFC-0013): el arbol SHA-256 de RFC 6962 y la
+#    nota checkpoint firmada con ML-DSA-44 tipo 0x06. SIN `firmar`: el kit
+#    verifica y no firma, asi que no enlaza la sal del sistema ni el borrado
+#    de la semilla. `ml-dsa` va clavado con `=` dentro del medio.
+zk-ssl-medio = { path = "../zk-ssl-medio", default-features = false }
 
 # ⚠️ Solo para el ATADO del ancho del indice de hoja. Es dev-dependency a
 #    proposito: `zk-ssl-verify` NO depende del guardian para funcionar —un
@@ -63,3 +73,7 @@ winter-math = "=0.13.1"
 #    (verify --dev--> guardian, que no depende de nadie).
 [dev-dependencies]
 zk-ssl-guardian = { path = "../zk-ssl-guardian" }
+# ⚠️ §633: CON `firmar`, solo para que los tests armen notas y cofirmas de
+#    verdad. Una dev-dependency no entra en el binario: el kit que se
+#    publica verifica sin ella.
+zk-ssl-medio = { path = "../zk-ssl-medio", features = ["firmar"] }

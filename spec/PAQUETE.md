@@ -32,10 +32,10 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las doce formas
+## 2. Las trece formas
 
-El binario acepta doce objetos (la undécima, desde el §573; la duodécima, desde el §592). Los
-doce son JSON; los esqueletos van con puntos suspensivos
+El binario acepta trece objetos (la undécima, desde el §573; la duodécima, desde el §592; la
+decimotercera, desde el §633). Los trece son JSON; los esqueletos van con puntos suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
 ### 2.1 El paquete v1 — la posición
@@ -493,6 +493,49 @@ firma —la vista dividida incluida, reproduciendo el ataque de verdad: la misma
 contador de índice fresco y otro libro—, y **el catálogo es `spec/vectors/ancla/`** (§593), la
 décima familia del artefacto, COPIADA de una corrida suya: sección 9.
 
+### 2.13 El sobre del ancla cofirmada (§633, RFC-0013 E4a)
+
+```text
+{ "v": 1, "tipo": "ancla-cofirmada",
+  "cabeza": {…},                        la cabeza firmada cuya ancla se publico (como en 2.12)
+  "nota": "zkssl/v1/…\n…",              la nota checkpoint del medio, ENTERA, como texto: sus tres
+                                        lineas, la linea en blanco y las de firma (RFC-0013 D-A)
+  "publicador": "zkssl/v1/…+…+…",       la vkey del publicador del medio (signed-note, tipo 0x06)
+  "testigos": ["nombre+…+…", …],        OPCIONAL: las vkeys de los testigos cuyas cofirmas se
+                                        reportan
+  "posicion": "0x…",                    la posicion del ancla en el arbol del medio
+  "inclusion": ["0x…", …] }             el camino RFC 9162 del ancla a la raiz de la nota: hashes
+                                        SHA-256 en bytes, NO digests de Goldilocks
+```
+
+El ancla **no viaja**: se DERIVA de la cabeza, como en el modo 1 de 2.12, y por eso es la
+cabeza firmada que dice ser. El orden: primero la FORMA —`ancla`, `camino` y `contraria` son del
+sobre del ancla y aquí se rechazan con su nombre; cada campo que falta, también—; después la
+`cabeza`, ENTERA, porque el `origin` de la nota se deriva de su clave; después la nota, las
+cofirmas y la inclusión:
+
+1. La cabeza recompone su digest y su firma verifica; se derivan el índice EMBEBIDO, la huella
+   de la clave y el ancla.
+2. La nota es del medio de ESTA clave —el publicador se llama `zkssl/v1/` y la huella de la
+   clave XMSS en hexadecimal (RFC-0013 D-A)— y la línea del publicador verifica con su vkey:
+   ML-DSA-44, tipo `0x06`, con las reglas de `signed-note` y `tlog-checkpoint` que declara
+   `crates/zk-ssl-medio/src/nota.rs`.
+3. Las cofirmas: cada línea de la nota con una vkey del sobre del mismo nombre y `key_id` se
+   VERIFICA, y si no verifica es ROJO; las líneas sin vkey en el sobre se cuentan y no se juzgan.
+4. La hoja `SHA-256(0x00 || huella del ancla)` sube por la `inclusion` hasta la raíz de la nota
+   en la `posicion` declarada.
+
+VERDE: la cabeza estaba publicada en ese medio, en esa posición, y la cofirman los testigos que
+el mando lista, cada uno con la huella SHA-256 de su clave ENTERA —el `key_id` de cuatro bytes
+es un identificador y se fabrica—.
+
+⚠️ **REPORTA, NO JUZGA** (§633), como el paquete v2 con sus cofirmas: qué testigos valen y
+cuántos hacen falta lo decide quien verifica con su política (RFC-0013 D-D), no el sobre, que
+puede armarlo el operador. Ni el umbral, ni la frescura de las marcas de tiempo, ni que el medio
+sea el único del operador los decide este mando.
+
+**El catálogo y el banco** son del §634.
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -512,6 +555,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | edad | `enunciado` → `t`, `k`, `emisor`; `subraices` → `pendientes`, `meta`; `prueba` | este documento, sección 2.7 |
 | cobro pendiente | `enunciado` → `receptor`, `nacido`, `inferior`; `prueba` | este documento, sección 2.8 |
 | pago en curso | `enunciado` → `receptor`, `importe`, `t`, `nacido`; `prueba` | este documento, sección 2.9 |
+| ancla cofirmada | `nota`, `publicador`, `testigos`, `posicion`, `inclusion`, y la `cabeza` de 2.12 | este documento, sección 2.13 (§633) |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
 `presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
@@ -596,6 +640,13 @@ campo, y el `nacido` que el sobre afirma es anterior al `seq` firmado · `3/3` l
 contra ese enunciado, con las opciones de la casa. Las dos últimas las decide el MISMO juez, que
 comprueba el `nacido` **antes** de tocar la prueba.
 
+**Sobre del ancla cofirmada** (§633): antes de tocar la criptografía, la forma (sin `ancla`,
+`camino` ni `contraria`; con `cabeza`, `nota`, `publicador`, `posicion` e `inclusion`, cada
+hash de 32 bytes, y vkeys legibles en `testigos`) · `1/4` la cabeza recompone su digest y su
+firma verifica, y su ancla se deriva · `2/4` la nota es del medio de su clave y la firma del
+publicador verifica · `3/4` las cofirmas con clave en el sobre verifican, y se listan · `4/4` el
+ancla sube hasta la raíz de la nota en su posición.
+
 Cabezas **v2, v3, v4 y v5** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
 
@@ -615,7 +666,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
-- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"`, `tipo: "edad"`, `tipo: "cobro_pendiente"`, `tipo: "pago_en_curso"` o `tipo: "prenda"``
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"`, `tipo: "edad"`, `tipo: "cobro_pendiente"`, `tipo: "pago_en_curso"`, `tipo: "prenda"`, `tipo: "completitud"`, `tipo: "ancla"` o `tipo: "ancla-cofirmada"`` — ⚠️ §633: hasta aquí el texto acababa en `prenda`, rancio desde el §573; se pone al día al añadir el brazo, y el test que lo ata busca el último.
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
@@ -794,6 +845,30 @@ Lo que el sobre exige de una cabeza —`available:true`, la recomposición del d
 y la lectura del `camino` son los de la extensión, con `cabeza` o `contraria` como sujeto: viven
 en su bloque y no se repiten aquí.
 
+**El ancla cofirmada** (§633, RFC-0013 E4a)
+
+- `el sobre del ancla cofirmada no lleva {ajeno}: el ancla se deriva de la cabeza, y la
+  extension y la vista dividida son del sobre del ancla`, con `{ajeno}` uno de `ancla`,
+  `camino` y `contraria`
+- `falta cabeza (la firmada cuya ancla se publico)`
+- `falta {campo} o no es cadena ({que})`, con `{campo}` uno de `nota` y `publicador`
+- `falta inclusion o no es lista (el camino del ancla a la raiz)` · `inclusion: {e}` ·
+  `inclusion: {} bytes, se esperaban 32`
+- `testigos no es lista (las vkeys de los testigos)` · `testigos: {e}` · `testigos: {nombre}
+  esta dos veces`
+- `cabeza: formatVersion {version}: el ancla lee cabezas v3, v4, v5 o v6: la pareja del MMR
+  viaja firmada desde ellas` — el del sobre del ancla, letra por letra
+- `publicador: {e}` — la vkey no se lee; `{e}` es el error de `zk-ssl-medio`
+- `el publicador es {nombre:?} y el medio de esta cabeza es {origen:?}: el origin lleva la
+  huella de la clave XMSS (RFC-0013 D-A)`
+- `la nota: {e}` — la nota no verifica con su publicador; `{e}` nombra la regla de
+  `zk-ssl-medio::nota` que cae (mal formada, checkpoint no canónico, origin ajeno, sin firma
+  del publicador, firma repetida o firma inválida)
+- `la nota lleva dos cofirmas de {nombre}` · `la cofirma de {nombre} no verifica: {e}`
+- `el ancla de esta cabeza no esta en la posicion {p} de las {n} de la nota: {e}`
+
+`posicion` se lee con `u64_de`: sus rechazos son los de la forma de los valores.
+
 ## 6. El contrato del mando
 
 - **Invocación:** `zk-ssl-verify <paquete.json>` — **un** argumento, la ruta del fichero. Es la
@@ -802,8 +877,8 @@ en su bloque y no se repiten aquí.
   de posición (o `3/3 sin acuse en el paquete: la cabeza sola queda demostrada`), de extensión,
   de rechazo, de edad, de cobro pendiente, de pago en curso, de prenda y del ancla; `1/5` a
   `5/5` en el
-  de consumo; `1/4` a `4/4` en el de conflicto—, la de cofirmas cuando el sobre es v2, y al
-  final el VERDE de su forma, uno de estos catorce; los seis del cuarto al noveno siguen en una segunda
+  de consumo; `1/4` a `4/4` en el de conflicto y en el del ancla cofirmada—, la de cofirmas
+  cuando el sobre es v2, y al final el VERDE de su forma, uno de estos quince; los seis del cuarto al noveno siguen en una segunda
   línea, el del cobro llega a una tercera, y los del pago y la prenda a una cuarta:
   - `VERDE: el paquete se sostiene sin el nodo`
   - `VERDE: la extension se sostiene sin el nodo`
@@ -821,6 +896,10 @@ en su bloque y no se repiten aquí.
   - `VERDE: la cabeza extiende el ancla: la historia anclada es un prefijo, y se sostiene sin el nodo` (§592)
   - `VERDE: VISTA DIVIDIDA - la clave firmo DOS cabezas con el indice embebido {i}. Es
     DETECCION del operador: dos historias, y solo quien tiene la clave pudo producirlas` (§592)
+  - `VERDE: la cabeza estaba publicada en el medio {origen}, en la posicion {p}, y la cofirman
+    {k} testigo(s) con clave en el sobre. Que testigos valen y cuantos hacen falta lo decide
+    quien verifica (RFC-0013 D-D): este mando reporta, no juzga` (§633; una sola línea, y
+    antes de ella una por testigo: `testigo {nombre} clave sha256:{hex} marca {t}`)
 - **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para.
 - **Cuatro códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
   argumento, o más de uno; imprime el uso en la salida de error) · `3`, desde el §573, el cuarto

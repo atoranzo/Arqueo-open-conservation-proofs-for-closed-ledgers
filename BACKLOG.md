@@ -715,6 +715,10 @@ instrumentacion) al grupo E.*
   ML-DSA de Go: la línea del publicador sale byte a byte. QUEDAN el
   publicador (E3), con el despliegue y su medida (qué testigos, cadencia,
   coste), y el sobre del kit (E4): sigue abierta.
+  ✅ a medias (§633): la E4a, el sobre `ancla-cofirmada` en el kit, que
+  reporta las cofirmas y no juzga el umbral (decisión del autor). QUEDAN
+  su catálogo y su banco (E4b), el publicador (E3) y el juez del umbral
+  en `zk-ssl-cli`: sigue abierta.
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro
   tiene dos eras (§281). **El esquema de firma no tiene ninguna de las

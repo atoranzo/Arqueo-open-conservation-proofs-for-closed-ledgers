@@ -16,7 +16,8 @@
 //! - que la raíz de cada nota, que torchwood calculó con el árbol de
 //!   `golang.org/x/mod/sumdb/tlog`, es la de [`ArbolDelMedio`];
 //! - que la cofirma del testigo, también de torchwood, verifica con
-//!   [`ClaveDeNota::verificar_cofirma`];
+//!   [`ClaveDeNota::verificar_cofirma`], y que [`Cofirmante`] la reproduce
+//!   byte a byte (§633);
 //! - y que el `MANIFIESTO.txt` dice lo que dicen los dos verificadores, con
 //!   las cuatro negativas que torchwood acepta y el medio no, cada una con
 //!   su motivo, y ninguna al revés.
@@ -27,7 +28,8 @@ use std::path::PathBuf;
 use zk_ssl_medio::hash::sha256;
 use zk_ssl_medio::medio::ArbolDelMedio;
 use zk_ssl_medio::nota::{
-    origen_del_medio, verificar_nota, ClaveDeNota, ErrorDeNota, NotaVerificada, Publicador,
+    origen_del_medio, verificar_nota, ClaveDeNota, Cofirmante, ErrorDeNota, NotaVerificada,
+    Publicador,
 };
 
 /// La huella de la clave del operador de `spec/vectors/ancla/`.
@@ -121,6 +123,16 @@ fn las_de_torchwood_verifican_y_la_linea_del_publicador_sale_igual() {
             .verificar_cofirma(&v.checkpoint, &v.ajenas[0])
             .unwrap();
         assert!(marca > 1_700_000_000);
+        // §633: y el cofirmante de aquí, con la misma semilla y la misma
+        // marca, escribe la misma línea.
+        let linea = Cofirmante::determinista(TESTIGO, semilla(0x20))
+            .unwrap()
+            .cofirmar(&v.checkpoint, marca)
+            .unwrap();
+        assert!(
+            nota.ends_with(&linea),
+            "{n} anclas: la cofirma no sale byte a byte"
+        );
         // La del testigo no es del publicador, ni al revés.
         assert!(clave
             .verificar_cofirma(&v.checkpoint, &v.ajenas[0])
