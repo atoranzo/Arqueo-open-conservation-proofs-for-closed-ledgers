@@ -44933,3 +44933,90 @@ ninguna etapa construida. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
 **Lo que NO cierra.** La 84. La siguiente etapa es la E2, el núcleo del acta: su dominio, su digest
 con su KAT y su verificador en el kit.
 
+
+## §652 — el plano v2.0, segunda pasada: otro enjambre, sin ver al primero, mide, debate y se contrasta con el §637; dieciséis hallazgos van en privado
+
+El commit que lleva este asiento, sobre `e1d1db3` (el §642). Un solo sello de documentos: nace
+`doc/blueprint-v2-enjambre.md`, y este asiento; ningún otro fichero. El número es el §652 porque
+`main` llega al §642, el §637, el §650 y el §651 están en `claude/vibrant-cannon-qmxurq` y el §640 y
+el §641 en `claude/nice-cannon-arzmc9`; las dos sesiones que el autor nombró para sincronizar
+—la que trabaja sobre `main` y la del núcleo criptográfico— recibieron el reparto antes del
+commit, y la segunda confirmó que el §652 estaba libre. Lo escribe, lo mide y lo commitea una
+sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE en todo salvo `verificar_citas.py`, que cazó dos citas de este
+mismo asiento a un fichero que sólo vive en la rama del §637; se reescribieron sin el nombre y la
+herramienta salió VERDE en una segunda pasada.
+
+**De dónde sale.** El autor pidió, con la misma plantilla genérica de «prompt maestro» que originó
+el §637, un enjambre de cuatro especialistas —criptografía y ZK, rendimiento y estructuras de
+datos, seguridad, y arquitectura y API— con diagnóstico independiente, debate y un «Architecture
+Blueprint v2.0». Esta sesión lo hizo sin conocer el §637: empezó sobre `7d13f26` (§631) a la vez
+que la otra, y supo de ella al sincronizar. El documento no sustituye al del §637:
+es una segunda pasada independiente, y su §7 compara las dos.
+
+**Cómo se hizo.** Dos flujos de agentes. El primero, 33 agentes, interrumpido por un reinicio del
+contenedor y reanudado desde su diario sin repetir lo hecho: una línea base medida en la sesión y un
+historiador del registro; ocho lentes de diagnóstico, dos por especialista, de solo lectura; seis
+contrainterrogatorios cruzados (D1-D6: seguridad contra rendimiento, criptografía contra las
+estructuras de rendimiento, seguridad contra criptografía, criptografía y seguridad contra el motor
+intercambiable, rendimiento y arquitectura contra el coste de los endurecimientos, criptografía
+contra los ataques de seguridad); una medición dirimente en un worktree aislado sobre `f7aad05`,
+con bancos temporales que no se versionan; cuatro réplicas; y dos verificadores adversariales por
+especialista, uno de evidencia y otro de solidez y compatibilidad. Después la síntesis, un validador
+que compiló los fragmentos en un worktree desechable, un crítico de completitud y una revisión. El
+segundo, 6 agentes: un triaje de embargo contra `main` y las dos ramas hermanas, el contraste con
+el §637, la versión pública, dos verificadores de fuga —un barrido por términos y un lector que
+lee como atacante— y el cierre de las 16 fugas que encontraron.
+
+**Lo medido por la sesión**, en release, en un contenedor de 4 vCPU (Xeon a 2,10 GHz), con el código
+de `zk-ssl`, `stark-experiment`, `winter-*` y `zk-ssl-node` idéntico al de `7d13f26`: aplicar en la
+capa, 5,6-6,0 ms por operación, de los que verificar es el 74 % (4,30 ms); el techo del nodo por
+RPC, 145 op/s en lote y 101-122 op/s en serie; generar, el 96 % del ciclo, con la molienda como
+causa del 99 % de su dispersión (r² = 0,993); y con `winterfell/concurrent`, generar ×1,64-1,86 más
+rápido en 4 núcleos y un 10-14 % más lento en uno. El registro daba 3,67 ms de aplicar (§219) y 248
+op/s de techo (§229): las dos cifras son anteriores a la ocultación del §538, y el documento lo
+señala sin tocarlas. Las cifras del nodo y del kit son de `f7aad05`; nada se volvió a medir sobre
+`e1d1db3`.
+
+**Lo que dice el documento.** A «millones por segundo», que no, con la misma conclusión que el
+§637 por otro camino: verificar a 4,30 ms son unas 232 por segundo y núcleo, y cada raíz es serie
+(ESTIMADO). Las opciones de prueba ya están en el mínimo honesto; lo que sobra es la traza doblada
+por la ocultación, el resto de FRI y el probador de un hilo. El sistema de prueba no es
+intercambiable; el enunciado sí. Propone seis tramos: testigos y compuertas sin cambiar conducta;
+cerrar los hallazgos en embargo, fuera del documento; rendimiento sin cambio de formato (verificar
+en paralelo sin clonar en `apply_many`, `rebuild_from` para las vistas de la cabeza, que midió ×8,5
+con la misma raíz, el MMR incremental); modularidad e integración con métodos aditivos; un solo tren
+`zkssl/0.5` para lo que cambie bytes; y lo que espera una decisión del autor. Descarta Pedersen,
+Bulletproofs, KZG/Verkle, Groth16/PLONK, la recursión general, la GPU, quitar el `Mutex` y renombrar
+crates, cada uno con su evidencia.
+
+**Dieciséis hallazgos, en privado.** El triaje contó 23 hallazgos de seguridad en el expediente;
+16 están abiertos en `main` y van en embargo por `SECURITY.md` §5: dos P0, seis P1, siete P2 y un
+P3. Cinco de ellos los corrige ya, en todo o en parte, trabajo de las ramas hermanas que no está
+en `main`; un corregido en una rama no cuenta como público. Se entregaron al autor en un aviso
+aparte, fuera del árbol, con la forma de un aviso privado de GitHub; la sesión del núcleo
+criptográfico recibió la lista para cruzarla con su §640 y su §641. Los siete restantes no son
+explotables o ya los declara el código, y el documento los describe. Antes de este commit, un
+barrido con `grep` de los términos de cada hallazgo embargado sobre el documento: cero apariciones
+delatoras.
+
+**Decisiones (REVERSIBLES).** D-1: el documento lleva otro nombre que el del §637, para que el
+autor decida si conviven, se funden o queda uno; el §7 dice qué haría falta para fundirlos. D-2:
+los identificadores públicos (Z, R, S, A, y E-1 a E-16 para lo embargado) no son los del
+expediente; la correspondencia la tiene el autor. D-3: el expediente, los bancos temporales y las
+salidas en bruto no se versionan; el Anexo A transcribe lo esencial. D-4: no se cruza el aviso con
+los ocho del §637, que esta sesión no conoce; se le pide al autor que los cruce antes de numerar
+avisos.
+
+**Lo que NO hace.** No construye ningún tramo ni cambia código. No abre entradas del `BACKLOG.md`:
+las que el documento propone van marcadas como provisionales. No publica el aviso privado. No
+enlaza el documento desde los README. No toca el documento del §637, que no está en `main`.
+
+**Lección.** Dos enjambres sobre el mismo árbol y con la misma plantilla llegan a las mismas
+conclusiones gruesas y a conjuntos de hallazgos distintos: el primero embargó ocho y este dieciséis,
+y hasta que el autor los cruce no se sabe cuántos son comunes. Un segundo enjambre no sustituye a
+una auditoría, pero es la misma regla que la segunda implementación de la 85: lo que dos manos
+independientes encuentran juntas es más creíble que lo que encuentra una.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin, ni una entrada del `BACKLOG.md`, que sigue
+en 43 abiertas y 73 resueltas.
