@@ -5,19 +5,28 @@
 > defecto, y avisarle es deuda»*. Lo redactó un asistente con el método de `GENAI.md`; enviarlo y
 > aceptarlo es del autor.
 
-## Por qué canal, y no un issue público
+## Por qué canal, y cuál al final — MEDIDO el 01-10-2026
 
-La política de seguridad de winterfell (`SECURITY.md` del repositorio `facebook/winterfell`, leída
-el 01-10-2026) pide **no abrir issues ni pull requests públicos** para un fallo de seguridad y
-reportarlo por el programa de recompensas de Meta en `facebook.com/whitehat`. El fallo es de
-denegación de servicio en la deserialización de datos ajenos, así que entra en esa política: el
-reporte va por ese canal, en privado, no como un issue. El arreglo, cuando lo acepten, puede ir
-como pull request si lo piden.
+El fallo es de denegación de servicio en la deserialización de datos ajenos, así que no va como
+issue ni PR público mientras siga sin arreglar aguas arriba. Buscando el canal privado se midió
+esto, y no se dio por supuesto:
 
-⚠️ El repositorio lleva sin un commit en `main` desde el 19-07-2025 y su equipo mantenedor se
-movió a otro proyecto (ver `doc/integracion-vertical-evaluacion.md`, §4). Si el canal de Meta no
-responde, la vía honesta es una nota privada a `irakliyk`, que publicó la última versión; nunca un
-issue público mientras el fallo esté sin arreglar aguas arriba.
+- **El aviso privado de GitHub NO está habilitado** en `facebook/winterfell`: no hay botón «Report a
+  vulnerability». Esa puerta, la que no pide Facebook, está cerrada, y sólo el dueño del repo la abre.
+- **No hay `SECURITY.md` propio** en el árbol de winterfell (`HEAD` en `2f78ee9`, la 0.13.1). La
+  política que GitHub muestra —reportar por el programa de Meta en `facebook.com/whitehat`— es la
+  **plantilla por defecto de la organización Facebook**, heredada, no una del proyecto. Y ese
+  programa exige una cuenta de Facebook.
+- **El mantenedor, con correo verificable:** quien publicó la 0.13.1 (commit `2f78ee9`, 19-07-2025)
+  es **Irakliy Khaburzaniya**, que commitea con un correo público, `irakliy81@gmail.com`.
+
+Sin Facebook, la vía honesta que queda para un fallo sin arreglar es el **correo privado directo al
+mantenedor**. Es lo que se hizo: reporte enviado el **01-10-2026** a `irakliy81@gmail.com`, con la
+causa y la vía, el arreglo ofrecido como PR, y **sin reproductor**. El repositorio lleva sin un
+commit en `main` desde el 19-07-2025 y su equipo se movió a Plonky3 (ver
+`doc/integracion-vertical-evaluacion.md`, §4), así que puede no haber respuesta: el correo fija
+**90 días**, y pasados sin respuesta la escalada de divulgación coordinada es un aviso en RustSec
+(`rustsec.org`), nunca un issue público en winterfell mientras siga sin arreglar. `AUDITORIA.md` §625.
 
 ## El fallo, en una frase
 

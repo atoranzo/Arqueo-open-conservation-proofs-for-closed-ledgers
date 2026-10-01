@@ -475,7 +475,10 @@ lote con el `BatchMerkleProof` de upstream, sin acotar. ⚠️ **CORRECCIÓN (§
 entrada ajena llega a ellos está sin medir». La lista salió de una búsqueda recortada
 y estaba mal por los dos lados: la gobernanza se verifica con sal
 (`verify_threshold_pair`), y sin sal hay más, ninguno alcanzable. `winterfell`
-upstream tiene el mismo defecto, y avisarle es deuda. `AUDITORIA.md` §575, §578.
+upstream tiene el mismo defecto. **Reportado el 01-10-2026** por correo privado a su
+mantenedor —el aviso privado de GitHub no está habilitado en `facebook/winterfell` y su
+política hereda la de Meta, que exige una cuenta de Facebook—, con el arreglo ofrecido como
+PR y sin reproductor; pendiente de respuesta. `AUDITORIA.md` §575, §578, §625.
 
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 

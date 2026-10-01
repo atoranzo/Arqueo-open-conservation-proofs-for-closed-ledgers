@@ -43963,3 +43963,59 @@ en 43 abiertas y 73 resueltas.
 
 **Lo que NO cierra.** `--bancos` sigue sin correrse desde `8b8e3f4`, y el canon lo pide.
 
+## §625 — la deuda del §575, saldada: el reporte a winterfell enviado por correo privado
+
+El §575 cerró en la copia de la casa un fallo de `winterfell` 0.13.1: al deserializar una prueba o
+un lote de Merkle, `read_many` de `winter-utils` reserva memoria con una cuenta sacada de los
+propios bytes **antes** de comprobar que esos bytes existen; una longitud gigante hace que la
+reserva falle, y una reserva que falla **aborta el proceso** —no es un pánico, `catch_unwind` no lo
+recoge—. `SECURITY.md` 3.7 y el §578 lo dejaron escrito como deuda: «`winterfell` upstream tiene el
+mismo defecto, y avisarle es deuda». El borrador del reporte vivía en
+`doc/reporte-winterfell-575.md` desde que la rama de la segunda implementación entró (§623). Hoy se
+envió, y la deuda se salda.
+
+**Por qué por correo, y no por el canal de la política — MEDIDO, no supuesto.** Buscando el canal
+privado se leyó el repositorio, no la memoria:
+
+- El **aviso privado de GitHub no está habilitado** en `facebook/winterfell`: no hay botón «Report a
+  vulnerability». La única puerta que no pide Facebook está cerrada.
+- **No hay `SECURITY.md` propio** en el árbol (`HEAD` en `2f78ee9`, la 0.13.1). La política que
+  GitHub enseña —el programa de Meta en `facebook.com/whitehat`— es la plantilla **por defecto de la
+  organización Facebook**, heredada, y exige cuenta de Facebook, que el autor no tiene.
+- El **mantenedor que publicó la 0.13.1** (commit `2f78ee9`, 19-07-2025) es Irakliy Khaburzaniya,
+  que commitea con un correo público verificable.
+
+Sin Facebook y sin aviso privado de GitHub, la vía honesta para un fallo sin arreglar es el correo
+privado al mantenedor. Es la que el propio borrador nombraba como respaldo; medido que las otras dos
+estaban cerradas, pasó a ser la principal.
+
+**Lo que se envió.** Un correo privado a la dirección pública del mantenedor, el **01-10-2026 a las
+12:03**, con asunto «Private security report: winterfell 0.13.1 DoS on untrusted proof
+deserialization». Describe la causa (el `with_capacity` antes de comprobar bytes), las tres vías
+confirmadas sobre los crates **publicados** en crates.io a `=0.13.1` (`read_many` de `winter-utils`,
+`Proof::from_bytes` de `winter-air`, `BatchMerkleProof::read_from` de `winter-crypto`), que una
+longitud honesta devuelve `UnexpectedEOF` y una gigante aborta, y el arreglo —acotar la cuenta por
+los bytes que quedan antes de reservar—, ofrecido como PR si lo piden. Nota de paso al mantenedor: el
+PR #383 de junio de 2025 arregló otra comprobación del lector de rodajas y entró en la 0.13.1, pero
+no es esta vía.
+
+**Lo que NO se envió.** Ningún guion que tumbe un despliegue, ningún byte de prueba, ningún
+despliegue de terceros: con la causa y la vía, un mantenedor lo reproduce en cinco minutos, y dejar
+escrita un arma no es divulgación responsable. El reporte es sobre la biblioteca, no sobre quién la
+usa.
+
+**El plazo.** El correo fija 90 días. El repositorio lleva sin un commit en `main` desde el
+19-07-2025 y su equipo se movió a Plonky3 (`doc/integracion-vertical-evaluacion.md`, §4), así que
+puede no haber respuesta. Pasados los 90 días sin respuesta, la escalada de divulgación coordinada es
+un aviso en RustSec (`rustsec.org`); nunca un issue público en winterfell mientras el fallo siga sin
+arreglar aguas arriba.
+
+**Contadores.** Ningún pin del canon se mueve: este asiento es prosa. Tres ficheros tocados:
+`SECURITY.md` 3.7 pasa de «deuda» a «reportado el 01-10-2026, pendiente de respuesta»;
+`doc/reporte-winterfell-575.md` registra en «Por qué canal» lo medido hoy (aviso de GitHub no
+habilitado, política heredada de Meta, correo del mantenedor); y este asiento.
+
+**Lo que NO cierra.** Que winterfell arregle el fallo: eso es de su mantenedor, y el árbol sólo
+registra el aviso, no la respuesta. El cuarto hito de la 85 (el verificador STARK en Python, decidido
+en el §623 y aún sin escribir) sigue vivo. Y la aceptación de `GENAI.md` de toda la rama, que es del
+autor.
