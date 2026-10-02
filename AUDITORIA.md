@@ -45663,3 +45663,41 @@ un pin se mueven.
 asiento, y la release se sube a mano; las huellas de este asiento son las de la sesión, no las del
 asset publicado, que las fija el asiento que registre la release, medidas desde fuera, como hizo el
 §658 con la 0.4.0. Y el §659 no está en `main` hasta que el autor integre esta rama.
+
+## §661 — el kit 0.4.1, registrado: publicado y medido desde fuera
+
+El commit que lleva este asiento, sobre `ff1f06f` (el §660). Registra la release que el §660 cortó.
+Lo escribe y lo commitea una sesión de Claude Code en la nube, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. El tag y la release los creó el autor en su máquina y en la web de GitHub, porque
+esta sesión no tiene credenciales para ello; el autor corrió además el canon `--sello` en su máquina
+sobre `ff1f06f`, VERDE, antes de empujarlo a `main`.
+
+**La release, medida desde fuera.** `arqueo-verify-v0.4.1`, tag anotado sobre
+`ff1f06f8677522b5a01fce66a64e4d38c896c9fc` (`git ls-remote`), publicada el 2026-10-02 a las 06:41 UTC
+(API de GitHub: ni borrador ni prerelease). La primera subida llevaba por error el asset de la 0.4.0
+(`90184e41…`, con su nombre): esta sesión lo vio en la API antes de registrar nada, el autor lo
+sustituyó a las 06:46 UTC, y lo que sigue se midió después. Un asset,
+`arqueo-verify-0.4.1-x86_64-unknown-linux-gnu.tar.gz`, 16.544.680 B, con `digest` sha256
+`505de994f243bc7669045e7f546496423e8f4bfe03c7777d6829656f73827e14` en la API. Descargado por `curl`
+desde la URL pública: el mismo sha256 y el mismo tamaño; 366 ficheros, todos cuadran con su
+`SHA256SUMS`; el binario dentro es `d81923cc942455d787392e044005f687fdc4cabd96b9aa58e2a88809ab4d1b7b`,
+el mismo que el canon del autor midió reproducible entre rutas. `VERSION` nombra el commit,
+`describe=arqueo-verify-v0.4.1-0-gff1f06f` y rustc 1.97.1. El tarball tiene 380 entradas —366
+ficheros y 14 directorios—, las mismas que el de la 0.4.0: los «380 ficheros» del §658 contaban
+entradas, no ficheros.
+
+**El kit descargado, corriendo.** Desde dentro del tarball, sin repositorio, `conformidad.sh` sobre
+sus once manifiestos: paquete 72/72, consumo 14/14, conflicto 16/16, rechazo 84/84, edad 11/11,
+pendiente 9/9, pago 9/9, prenda 9/9, completitud 74/74, ancla 22/22 y ancla cofirmada 27/27: 347 de
+347. Y el caso del §659: `pago/pago-t-seq.json` con un digest de más dentro de un lote de Merkle sale
+ROJO (`TraceQueryDoesNotMatchCommitment`, salida 1), y el original, VERDE.
+
+**Lo que hace.** `doc/KIT.md` y `doc/KIT_EN.md`: la sección 0 da la 0.4.1 como vigente con sus
+huellas, y la 0.4.0 como publicada y ya no vigente, con su defecto. Los dos README (el párrafo del kit
+y la tabla «Estado»), el resumen ejecutivo, el bilingüe, `PREGUNTAS.md` y `QUESTIONS.md` nombran la
+0.4.1. `SECURITY.md`, en la 3.9, describe la variante del §659 —ya cerrada en `main` y en un kit
+publicado, como pide su sección 5— y da la 0.4.1 como vigente.
+
+**Lo que NO hace.** No retira la 0.4.0 ni la 0.3.0, que siguen publicadas y se marcan, no se borran.
+Ni un test ni un pin se mueven. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE,
+con 270 s de tests.

@@ -537,7 +537,10 @@ su importe (son entradas públicas, RFC-0009); lo que el método añadía es dá
 Lo que queda abierto de estos ocho, y es decisión del autor: las partes (a) y (b) del fallo del
 almacén (anotar antes de verificar, y cachear la pareja de recepción), el cambio de cable de `zkssl_supply`.
 La versión nueva del kit está publicada: `arqueo-verify-v0.4.0` (§658); la `v0.3.0` sigue afectada
-por los dos primeros y por la cola. `AUDITORIA.md` §637, §641,
+por los dos primeros y por la cola. ⚠️ **Y una variante de la cola, por dentro (§659)**: nodos de más
+dentro de un lote de Merkle no movían la raíz, así que la prueba verificaba con otros bytes y el
+índice de pruebas aplicadas del §654 se esquivaba; la capa y el kit los rechazan desde el §659, y la
+vigente es `arqueo-verify-v0.4.1` (§661). `AUDITORIA.md` §637, §641,
 §650 a §656.
 
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende

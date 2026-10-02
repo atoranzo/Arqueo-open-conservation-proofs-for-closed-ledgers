@@ -16,21 +16,23 @@ dice?» es «descárguelo y córralo usted», y sólo vale si la descarga existe
 
 ## 0. Descargar, y comprobar la descarga antes de creerla
 
-La release vigente es `arqueo-verify-v0.4.0`, publicada en
-<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.0>,
-producida sobre el commit `65d1e8967a002cd793b89d4167a5b9f19ea16660`:
-tarball `arqueo-verify-0.4.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
-`90184e41299e737a1fafda489147af26df53f6b3195938cbcd10d16a21ebc21a` (16.539.810 B, 380 ficheros);
-binario `c0b9929c8c8203a14856d67e8abfc73175d3d62f173f8b4ffe268a6b9c2dbc1b`. Las dos huellas están
+La release vigente es `arqueo-verify-v0.4.1`, publicada en
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.1>,
+producida sobre el commit `ff1f06f8677522b5a01fce66a64e4d38c896c9fc`:
+tarball `arqueo-verify-0.4.1-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`505de994f243bc7669045e7f546496423e8f4bfe03c7777d6829656f73827e14` (16.544.680 B, 366 ficheros);
+binario `d81923cc942455d787392e044005f687fdc4cabd96b9aa58e2a88809ab4d1b7b`. Las dos huellas están
 medidas desde fuera —descarga por `curl`, el `digest` del asset en la API, el kit descargado
 corriendo sus once catálogos desde dentro del tarball— en el asiento de `AUDITORIA.md` que registra
-esta release (§658). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee once
+esta release (§661). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee once
 familias: las diez de la sección 11 de `spec/PAQUETE.md` y la del ancla cofirmada (§633, §634).
 
-⚠️ **La 0.4.1 está CORTADA y no publicada (§660).** La vigente sigue siendo la 0.4.0 hasta que el
-asiento que registre la 0.4.1 fije su huella. La 0.4.1 corrige un defecto de la 0.4.0: una prueba
-con nodos de más dentro de un lote de Merkle verificaba igual, con otros bytes (§659). Lee las mismas
-once familias y da los mismos veredictos a todos los vectores publicados.
+**La 0.4.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
+tarball `90184e41299e737a…`). Tiene un defecto que la 0.4.1 corrige: una prueba con nodos de más
+dentro de un lote de Merkle verifica igual, con otros bytes (§659). El veredicto sobre el enunciado
+no cambia —la prueba retocada prueba lo mismo que la original—, pero sus bytes dejan de identificar
+la operación. Use la 0.4.1. Las dos leen las mismas once familias y dan los mismos veredictos a
+todos los vectores publicados.
 
 **La 0.3.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.3.0`, commit `65cabfb`,
 tarball `06648502e0171fea…`). Tiene cuatro defectos que la 0.4.0 corrige, descritos en la sección 3.9
@@ -38,7 +40,7 @@ de `SECURITY.md`: un campo hex con un carácter multibyte, o una prueba oculta c
 hacen salir con **101** (pánico) en vez de ROJO (§650, §651); una prueba con bytes de cola se lee
 igual que sin ellos (§653); y acepta los cuatro negativos de la lectura canónica (RFC-0016, §640).
 Falla con un código que no es el suyo, nunca con un VERDE falso para esos casos; aun así, use la
-0.4.0.
+0.4.1.
 
 ⚠️ **En la 0.3.0, una frase vieja viaja en su `NOTICE`, declarada; la 0.4.0 lleva el corregido.** El `NOTICE` de aquel tarball dice que la
 ocultación del testigo del fork de winterfell la enciende sólo `Prover::ocultacion`, «que ningún
