@@ -147,19 +147,81 @@ pub fn limites(ruta: impl AsRef<Path>) -> Vec<u64> {
         Some(t) => t,
         None => return Vec::new(),
     };
-    let mut v = Vec::new();
-    for l in &texto {
-        let j: Value = match serde_json::from_str(l) {
-            Ok(j) => j,
-            Err(_) => continue,
+    texto.iter().filter_map(|l| serde_json::from_str::<Value>(l).ok()).filter_map(|j| seq_de(&j)).collect()
+}
+
+/// §674: el `seq` de una linea, la regla de [`limites`] para una sola.
+fn seq_de(j: &Value) -> Option<u64> {
+    j["seq"].as_str().and_then(|s| u64::from_str_radix(s.trim_start_matches("0x"), 16).ok())
+}
+
+/// §674: el cierre de una linea, la regla de [`cierres_de_recepcion`] para una sola.
+fn cierre_de(j: &Value) -> Option<(u64, Option<u64>)> {
+    let hex = |v: &Value| v.as_str().and_then(|s| u64::from_str_radix(s.trim_start_matches("0x"), 16).ok());
+    hex(&j["recepCount"]).map(|c| (c, hex(&j["index"])))
+}
+
+/// §674: lo que `zkssl_ackPath` y `zkssl_recepPath` leen del diario —sus
+/// limites de epoca y sus cierres de era—, leido UNA vez y puesto al dia con
+/// lo que se haya añadido desde la ultima lectura.
+///
+/// ⚠️ Hasta aqui cada peticion releia el fichero ENTERO, sin credencial y con
+/// el candado del estado tomado: medido por el segundo enjambre, 1,7 s y 1,58
+/// GB de memoria a 43.200 lineas (un mes de latidos). El diario solo crece por
+/// el final (`anotar`), asi que basta leer desde donde se quedo: lo leido se
+/// recuerda en bytes, y solo se consumen lineas COMPLETAS (con su `\n`). Si el
+/// fichero encoge -alguien lo trunco o lo cambio-, se vuelve a leer desde el
+/// principio. Las reglas por linea son las de [`limites`] y
+/// [`cierres_de_recepcion`]: una linea ilegible se salta igual.
+#[derive(Default)]
+pub struct IndiceDiario {
+    consumido: u64,
+    pub limites: Vec<u64>,
+    pub cierres: Vec<(u64, Option<u64>)>,
+}
+
+impl IndiceDiario {
+    /// Pone el indice al dia con el fichero. Si no se puede leer, lo deja
+    /// como estaba: es lo que daban `limites` y `cierres_de_recepcion` con un
+    /// diario ilegible, salvo que aquellos lo daban vacio.
+    pub fn al_dia(&mut self, ruta: impl AsRef<Path>) {
+        use std::io::{Read, Seek, SeekFrom};
+        let mut f = match std::fs::File::open(ruta) {
+            Ok(f) => f,
+            Err(_) => return,
         };
-        if let Some(s) = j["seq"].as_str() {
-            if let Ok(x) = u64::from_str_radix(s.trim_start_matches("0x"), 16) {
-                v.push(x);
+        let largo = match f.metadata() {
+            Ok(m) => m.len(),
+            Err(_) => return,
+        };
+        if largo < self.consumido {
+            *self = IndiceDiario::default();
+        }
+        if largo == self.consumido || f.seek(SeekFrom::Start(self.consumido)).is_err() {
+            return;
+        }
+        let mut nuevo = Vec::new();
+        if f.read_to_end(&mut nuevo).is_err() {
+            return;
+        }
+        let completo = match nuevo.iter().rposition(|b| *b == b'\n') {
+            Some(k) => k + 1,
+            None => return,
+        };
+        for l in nuevo[..completo].split(|b| *b == b'\n') {
+            let j = match std::str::from_utf8(l).ok().and_then(|t| serde_json::from_str::<Value>(t.trim_end_matches('\r')).ok()) {
+                Some(j) => j,
+                None => continue,
+            };
+            if let Some(s) = seq_de(&j) {
+                self.limites.push(s);
+            }
+            if let Some(c) = cierre_de(&j) {
+                self.cierres.push(c);
             }
         }
+        self.consumido += completo as u64;
     }
-    v
 }
 
 /// El último `seq` anotado, para `limite_de_epoca` cuando la memoria
@@ -195,25 +257,16 @@ pub fn ultimo_recep_count(ruta: impl AsRef<Path>) -> Option<u64> {
 /// `recepCount` -desde el §570, todas-, esa cuenta y el `index` de su firma si lo lleva, en el
 /// orden en que se anotaron. Las ilegibles y las anteriores al §570 se saltan, como en
 /// [`limites`]: una línea perdida junta dos eras en la lectura -una era gorda-, no un pánico.
+///
+/// §674: el nodo ya no la llama -`zkssl_recepPath` lee el [`IndiceDiario`]-; queda como el
+/// ORACULO de los tests del indice, la lectura entera con la misma regla por linea.
+#[cfg(test)]
 pub fn cierres_de_recepcion(ruta: impl AsRef<Path>) -> Vec<(u64, Option<u64>)> {
     let texto = match lineas_del_diario(ruta) {
         Some(t) => t,
         None => return Vec::new(),
     };
-    let hex = |v: &Value| {
-        v.as_str().and_then(|s| u64::from_str_radix(s.trim_start_matches("0x"), 16).ok())
-    };
-    let mut v = Vec::new();
-    for l in &texto {
-        let j: Value = match serde_json::from_str(l) {
-            Ok(j) => j,
-            Err(_) => continue,
-        };
-        if let Some(c) = hex(&j["recepCount"]) {
-            v.push((c, hex(&j["index"])));
-        }
-    }
-    v
+    texto.iter().filter_map(|l| serde_json::from_str::<Value>(l).ok()).filter_map(|j| cierre_de(&j)).collect()
 }
 
 /// El MAXIMO `index` anotado, o `None` si el diario no tiene ni una firma.
@@ -285,6 +338,52 @@ mod maximo_del_diario {
         std::fs::write(&p, &cuerpo).expect("escribir el diario de prueba");
         assert_eq!(maximo_indice(&p), Some(9), "las lineas sanas siguen contando; la rota no");
         assert_eq!(limites(&p).len(), 2, "solo se saltan las dos lineas con el byte ilegible");
+        let _ = std::fs::remove_file(&p);
+    }
+
+    /// §674: el indice puesto al dia por tramos da lo mismo que leer el diario
+    /// entero (`limites` y `cierres_de_recepcion`, los oraculos): con lineas
+    /// firmadas y sin firmar, una ilegible, una a medias que se completa
+    /// despues, y un diario que encoge. Falsador: si el indice consumiera la
+    /// linea a medias, contaria una de menos y discreparia del oraculo.
+    #[test]
+    fn el_indice_del_diario_da_lo_mismo_que_leerlo_entero() {
+        use std::io::Write;
+        let p = std::env::temp_dir().join("zkssl_indice_diario_674.jsonl");
+        let _ = std::fs::remove_file(&p);
+        let linea_n = |seq: u64, rc: u64, idx: Option<u64>| {
+            let mut v = json!({"seq": q(seq), "recepCount": q(rc)});
+            if let Some(i) = idx {
+                v["index"] = json!(q(i));
+            }
+            v.to_string()
+        };
+        let mut ix = IndiceDiario::default();
+        let comprobar = |ix: &IndiceDiario, cuando: &str| {
+            assert_eq!(ix.limites, limites(&p), "limites, {cuando}");
+            assert_eq!(ix.cierres, cierres_de_recepcion(&p), "cierres, {cuando}");
+        };
+        let mut f = std::fs::OpenOptions::new().create(true).append(true).open(&p).expect("abrir");
+        for k in 0..5u64 {
+            writeln!(f, "{}", linea_n(10 * k, k, (k % 2 == 0).then_some(k))).expect("escribir");
+        }
+        writeln!(f, "esto no es json").expect("escribir");
+        ix.al_dia(&p);
+        comprobar(&ix, "tras cinco lineas y una ilegible");
+        let media = linea_n(50, 5, Some(5));
+        write!(f, "{}", &media[..10]).expect("escribir");
+        f.flush().expect("flush");
+        ix.al_dia(&p);
+        assert_eq!(ix.limites.len(), 5, "la linea a medias no se consume todavia");
+        writeln!(f, "{}", &media[10..]).expect("escribir");
+        writeln!(f, "{}", linea_n(60, 6, None)).expect("escribir");
+        f.flush().expect("flush");
+        ix.al_dia(&p);
+        comprobar(&ix, "tras completar la linea a medias");
+        drop(f);
+        std::fs::write(&p, format!("{}\n", linea_n(7, 1, Some(1)))).expect("encoger");
+        ix.al_dia(&p);
+        comprobar(&ix, "tras encoger el diario");
         let _ = std::fs::remove_file(&p);
     }
 

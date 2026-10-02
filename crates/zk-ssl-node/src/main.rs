@@ -388,6 +388,9 @@ struct App {
     /// O(t). Es una cache derivada: `pareja_mmr` la pone al dia con las hojas
     /// que falten, siempre con el candado de las hojas tomado antes.
     frontera_mmr: Mutex<latido::Frontera>,
+    /// §674: los limites y los cierres del diario, puestos al dia con lo que se
+    /// añade; `zkssl_ackPath` y `zkssl_recepPath` ya no releen el fichero.
+    indice_diario: Mutex<diario::IndiceDiario>,
     /// La clave pública de firma, en bytes del formato RFC. **Vacía** si el
     /// nodo arrancó sin `--clave`. Un testigo la necesita para verificar.
     clave_publica_firma: Vec<u8>,
@@ -1206,6 +1209,7 @@ async fn main() -> anyhow::Result<()> {
         ultima_cabeza: Mutex::new(None),
         hojas_mmr: Mutex::new(hojas_mmr_iniciales),
         frontera_mmr: Mutex::new(latido::Frontera::default()),
+        indice_diario: Mutex::new(diario::IndiceDiario::default()),
         clave_publica_firma,
         diario: args.diario.as_ref().map(std::path::PathBuf::from),
         latido_s: args.latido,
@@ -1802,14 +1806,16 @@ fn parse<T: serde::de::DeserializeOwned>(params: Value) -> Result<T, RpcError> {
 }
 
 impl App {
-    /// ¿Queda algún candado envenenado? (§530). Los siete `Mutex` de `App`, uno a
+    /// ¿Queda algún candado envenenado? (§530). Los ocho `Mutex` de `App`, uno a
     /// uno: si `App` gana otro, entra aquí. El sexto, el registro, desde §569; el
-    /// septimo, la frontera del MMR, desde §673.
+    /// septimo, la frontera del MMR, desde §673; el octavo, el indice del diario,
+    /// desde §674.
     fn algun_candado_envenenado(&self) -> bool {
         self.estado.is_poisoned()
             || self.ultima_cabeza.is_poisoned()
             || self.hojas_mmr.is_poisoned()
             || self.frontera_mmr.is_poisoned()
+            || self.indice_diario.is_poisoned()
             || self.cofirmas.is_poisoned()
             || self.recepcion.is_poisoned()
             || self.registro.is_poisoned()
@@ -2526,8 +2532,17 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     "reason": "el nodo corre sin --diario: los limites de epoca no se conservan",
                 })),
                 Some(ruta) => {
-                    let limites = crate::diario::limites(ruta);
-                    match crate::vista_acuses::limites_para(&limites, p.seq.0) {
+                    // §674: del indice, puesto al dia, y no del fichero entero.
+                    let epoca = {
+                        let mut ix = app.indice_diario.lock().map_err(|_| RpcError {
+                            code: -32603,
+                            message: "candado del indice del diario envenenado".into(),
+                            data: None,
+                        })?;
+                        ix.al_dia(ruta);
+                        crate::vista_acuses::limites_para(&ix.limites, p.seq.0)
+                    };
+                    match epoca {
                         None => Ok(json!({
                             "available": false,
                             "reason": "la epoca de esa entrada sigue ABIERTA: vuelve tras el proximo latido",
@@ -2584,9 +2599,20 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 }
                 Some(r) => r,
             };
-            let cierres = crate::diario::cierres_de_recepcion(ruta);
-            let cuentas: Vec<u64> = cierres.iter().map(|c| c.0).collect();
-            let (q, r, i) = match crate::vista_recibos::era_cerrada_de(&cuentas, p.rx.0) {
+            // §674: del indice, puesto al dia, y no del fichero entero. El indice de
+            // la firma que cierra la era se copia aqui y el candado se suelta antes
+            // de tomar el del registro.
+            let era = {
+                let mut ix = app.indice_diario.lock().map_err(|_| RpcError {
+                    code: -32603,
+                    message: "candado del indice del diario envenenado".into(),
+                    data: None,
+                })?;
+                ix.al_dia(ruta);
+                let cuentas: Vec<u64> = ix.cierres.iter().map(|c| c.0).collect();
+                crate::vista_recibos::era_cerrada_de(&cuentas, p.rx.0).map(|(q, r, i)| (q, r, ix.cierres[i].1))
+            };
+            let (q, r, indice_del_cierre) = match era {
                 None => {
                     return Ok(json!({
                         "available": false,
@@ -2627,7 +2653,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                             "isRight": derecha,
                         },
                     });
-                    if let Some(idx) = cierres[i].1 {
+                    if let Some(idx) = indice_del_cierre {
                         v["index"] = json!(Q(idx));
                     }
                     Ok(v)
@@ -3409,6 +3435,7 @@ mod tests {
             ultima_cabeza: Mutex::new(None),
             hojas_mmr: Mutex::new(Vec::new()),
             frontera_mmr: Mutex::new(crate::latido::Frontera::default()),
+            indice_diario: Mutex::new(crate::diario::IndiceDiario::default()),
             clave_publica_firma: Vec::new(),
             diario: None,
             latido_s: crate::latido::LATIDO_POR_DEFECTO_S,

@@ -46082,3 +46082,40 @@ en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG
 **Lo que NO cierra.** `zkssl_consistencyProof` sigue componiendo su prueba de consistencia sobre todas
 las hojas (O(t)), y la primera puesta al día tras arrancar cuesta una pasada entera. Queda el tercer
 coste de H15: el diario releído entero en cada `zkssl_ackPath`.
+
+## §674 — el diario, leído una vez y puesto al día: `zkssl_ackPath` y `zkssl_recepPath` ya no lo releen entero
+
+El commit que lleva este asiento, sobre el §673. Tercer y último corte de H15 que no cambia el cable.
+Lo escribe, lo prueba y lo commitea una sesión de Claude Code en la nube, no el autor en su máquina,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon
+`--sello` salió VERDE, con 313 s de tests.
+
+**El coste.** `zkssl_ackPath` y `zkssl_recepPath` —públicas, sin credencial— leían el diario ENTERO en
+cada petición (`limites`, `cierres_de_recepcion`), con el candado del estado tomado. El segundo
+enjambre midió 1,7 s y 1,58 GB de memoria a 43.200 líneas (un mes de latidos). Medido en la sesión,
+con 43.200 líneas firmadas de tamaño aproximado (444 MB; la firma tiene una longitud supuesta, no la
+del formato): **4,64 s** por petición.
+
+**Lo que hace.** `diario::IndiceDiario`: los límites de época y los cierres de era, leídos una vez y
+puestos al día con lo que se haya añadido. El diario solo crece por el final, así que el índice
+recuerda cuántos bytes ha leído, lee solo los nuevos y consume solo líneas completas; si el fichero
+encoge, vuelve a leer desde el principio. Las reglas por línea son las de siempre, en dos funciones
+(`seq_de`, `cierre_de`) que comparten la lectura entera y el índice. `App` gana `indice_diario`, cuyo
+candado entra en `algun_candado_envenenado`; en `zkssl_recepPath` el índice de la firma que cierra la
+era se copia y su candado se suelta antes de tomar el del registro. En la misma medida: la primera
+puesta al día cuesta 1,63 s, y cada petición siguiente, **20 µs**. `cierres_de_recepcion` deja de
+usarse en el nodo y queda solo en los tests, como oráculo del índice.
+
+**Falsador.** `el_indice_del_diario_da_lo_mismo_que_leerlo_entero`: líneas firmadas y sin firmar, una
+ilegible, una a medias que se completa después y un diario que encoge, siempre frente a la lectura
+entera. **Medido consumiendo también la línea a medias**: cae.
+
+**Contadores.** `zk-ssl-node` 183 -> 184. TOTAL DE SELLO 1628 -> 1629; TOTAL CON LARGOS 1765 -> 1766,
+en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra de H15.** El despacho sigue entero bajo el candado del estado. `zkssl_ackPath` y
+`zkssl_inclusionReceipt` siguen copiando los pares del registro entero y construyendo el árbol de la
+época (ahora con `rebuild_from`, §672). `zkssl_consistencyProof` compone sobre todas las hojas del MMR,
+y `zkssl_verifyChain` recorre la cadena entera. Las lecturas públicas siguen sin límite de tasa. Lo que
+queda pide decisiones de arquitectura —sacar el despacho del candado, credencial o tasa en el cable— y
+es del autor.
