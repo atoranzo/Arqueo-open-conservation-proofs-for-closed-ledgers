@@ -160,7 +160,7 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
     // fases con control—, y hasta entonces queda declarado aqui.
     // §292: la pareja del MMR se lee ANTES y con SU candado — no depende
     // del estado de la capa, y meterla dentro alargaria el candado gordo.
-    let (cima_mmr, t_mmr) = pareja_mmr(app);
+    let (cima_mmr, t_mmr) = pareja_mmr(app)?;
     // ⚠ §318 - EL PRE-FILTRO VA AQUI PORQUE EL SLICE VIVE CON EL
     // CANDADO, y en el caso normal es O(1): `len()` no recorre nada, y
     // `len() < N` implica `pagos < N` porque cada pago escribe al menos una
@@ -465,14 +465,19 @@ pub fn conservar(app: &App, l: Latido) {
 /// latido: O(hojas) por latido, despreciable a 1/min durante meses
 /// (§292 lo declara y deja los picos incrementales anotados en el
 /// BACKLOG — no se optimiza sin medir).
-pub fn pareja_mmr(app: &App) -> (zk_ssl_verify::acuses::Digest, u64) {
-    if let Ok(h) = app.hojas_mmr.lock() {
-        let t = h.len() as u64;
-        let cima = zk_ssl_verify::mmr::cima(&h)
-            .unwrap_or_else(|| zk_ssl_verify::acuses::as_digest(0));
-        return (cima, t);
-    }
-    (zk_ssl_verify::acuses::as_digest(0), 0)
+///
+/// ⚠️ §667: con el candado envenenado devolvia el genesis, `(as_digest(0), 0)`,
+/// y el latido FIRMABA una cabeza que decia «ninguna cabeza emitida»: una
+/// historia vacia bajo la firma del operador. Ahora es un error, y el latido
+/// no compone ni firma, como con el candado del estado.
+pub fn pareja_mmr(app: &App) -> anyhow::Result<(zk_ssl_verify::acuses::Digest, u64)> {
+    let h = app
+        .hojas_mmr
+        .lock()
+        .map_err(|_| anyhow::anyhow!("el candado de las hojas del MMR esta envenenado"))?;
+    let t = h.len() as u64;
+    let cima = zk_ssl_verify::mmr::cima(&h).unwrap_or_else(|| zk_ssl_verify::acuses::as_digest(0));
+    Ok((cima, t))
 }
 
 #[cfg(test)]
@@ -494,6 +499,26 @@ mod tests {
             *b = (i as u8).wrapping_mul(11).wrapping_add(5);
         }
         s
+    }
+
+    /// §667: con el candado de las hojas envenenado, la pareja es un error y el
+    /// latido no firma. Antes salia `(as_digest(0), 0)` -el genesis- y el latido
+    /// componia una cabeza con la historia vacia. Falsador: con la version de
+    /// antes, `pareja_mmr` da `Ok` y el `is_err` cae.
+    #[test]
+    fn con_las_hojas_envenenadas_no_hay_pareja_ni_latido() {
+        let app = std::sync::Arc::new(crate::tests::nodo(30));
+        app.hojas_mmr.lock().expect("hojas").push(zk_ssl_verify::acuses::as_digest(7));
+        assert!(pareja_mmr(&app).is_ok(), "sano, hay pareja");
+        let a = app.clone();
+        let _ = std::thread::spawn(move || {
+            let _g = a.hojas_mmr.lock().expect("hojas");
+            panic!("envenenar el candado de las hojas");
+        })
+        .join();
+        assert!(app.hojas_mmr.is_poisoned(), "premisa: el candado esta envenenado");
+        assert!(pareja_mmr(&app).is_err(), "envenenado, no hay pareja que firmar");
+        assert!(latir(&app, None).is_err(), "y el latido no compone");
     }
 
     #[test]

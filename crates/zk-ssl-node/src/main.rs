@@ -1956,7 +1956,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             // §570 (RFC-0010 E2d): la pareja de recepcion, del MISMO productor que el latido.
             let (rr, rc) = pareja_de_recepcion_rpc(app)?;
             {
-                let (cm, tm) = crate::latido::pareja_mmr(app);
+                let (cm, tm) = pareja_mmr_rpc(app)?;
                 Ok(serde_json::to_value(wire::EpochHeadDto::from(&l.epoch_head(r, n, cm, tm, rr, rc))).unwrap())
             }
         }
@@ -2490,7 +2490,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 leaf: digest_to_wire(&m.leaf),
                 path: wire::MerklePathDto::from(&m.path),
                 leaf_format: m.forma.como_cable().to_string(),
-                head: wire::EpochHeadDto::from(&{ let p_epoca = crate::latido::limite_de_epoca(app); let pares = crate::vista_acuses::pares(l.transition_log().entries()); let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca); let (cm, tm) = crate::latido::pareja_mmr(app); let (rr, rc) = pareja_de_recepcion_rpc(app)?; l.epoch_head(r, n, cm, tm, rr, rc) }),
+                head: wire::EpochHeadDto::from(&{ let p_epoca = crate::latido::limite_de_epoca(app); let pares = crate::vista_acuses::pares(l.transition_log().entries()); let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca); let (cm, tm) = pareja_mmr_rpc(app)?; let (rr, rc) = pareja_de_recepcion_rpc(app)?; l.epoch_head(r, n, cm, tm, rr, rc) }),
             })
             .unwrap())
         }
@@ -3129,6 +3129,11 @@ fn recibir(app: &App) -> Result<u64, RpcError> {
 
 /// La pareja de recepcion para los brazos que sirven cabeza (RFC-0010 E2d, §570): el productor
 /// del latido, con su `Q`, y su fallo como `-32603`.
+/// §667: la pareja del MMR para el RPC, con el error del latido como `-32603`.
+fn pareja_mmr_rpc(app: &App) -> Result<(zk_ssl_verify::acuses::Digest, u64), RpcError> {
+    crate::latido::pareja_mmr(app).map_err(|e| RpcError { code: -32603, message: format!("{e}"), data: None })
+}
+
 fn pareja_de_recepcion_rpc(app: &App) -> Result<(zk_ssl_verify::acuses::Digest, u64), RpcError> {
     crate::latido::pareja_de_recepcion(app, crate::latido::limite_de_recepcion(app))
         .map_err(|e| RpcError { code: -32603, message: format!("{e}"), data: None })

@@ -45862,3 +45862,32 @@ en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG
 **Lo que NO cierra.** Un diario que existe y no se puede leer entero —permisos, un disco que
 falla— sigue dando `None` y deja arrancar: es el lado permisivo que el propio `maximo_indice` declara.
 Convertirlo en PARADA es una decisión de operación, no de este corte.
+
+## §667 — con las hojas del MMR envenenadas no hay pareja que firmar: el latido ya no compone una historia vacía
+
+El commit que lleva este asiento, sobre el §666. Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del
+nivel en sus pines, 306 s de tests.
+
+**El defecto (P3).** `pareja_mmr` da la cima del MMR de cabezas y cuántas son, para la cabeza que el
+latido va a firmar. Si el candado de las hojas estaba envenenado, devolvía el génesis,
+`(as_digest(0), 0)`: el latido componía y firmaba una cabeza que decía «ninguna cabeza emitida», una
+historia vacía bajo la firma del operador. El candado del estado ya fallaba en ese caso; este no. Es
+P3: un candado solo se envenena por un pánico dentro, y la red del §530 lleva entonces el despacho a
+PARADA; pero el latido corre en su propio hilo.
+
+**Lo que hace.** `pareja_mmr` devuelve `anyhow::Result`: con el candado envenenado es un error, y
+`latir` lo propaga antes de componer, como con el estado. Los dos sitios del RPC que la piden
+(`zkssl_epochHead` y la cabeza de `zkssl_inclusionReceipt`) responden `-32603` con el mismo texto, por
+`pareja_mmr_rpc`, igual que `pareja_de_recepcion_rpc`.
+
+**Falsador.** `con_las_hojas_envenenadas_no_hay_pareja_ni_latido`: se envenena el candado con un hilo
+que entra en pánico teniéndolo, y la pareja y el latido son errores. **Medido con la versión de
+antes** (el génesis con el candado envenenado): cae.
+
+**Contadores.** `zk-ssl-node` 180 -> 181. TOTAL DE SELLO 1623 -> 1624; TOTAL CON LARGOS 1760 -> 1761,
+en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** El alta de la hoja en `conservar` sigue saltándose en silencio si el candado
+está envenenado; con este corte, el latido siguiente falla en vez de firmar sobre esa falta.
