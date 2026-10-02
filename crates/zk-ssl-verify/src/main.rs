@@ -636,6 +636,24 @@ fn cabeza_v3_verificada(
     ))
 }
 
+/// RFC-0019 E1 (§681): el indice XMSS que va DENTRO de la firma de una cabeza. El `index`
+/// declarado no entra en lo firmado (§399: solo se ata por abajo, `embebido < declarado`), asi que
+/// cualquiera puede inflarlo en un sobre; el embebido no se cambia sin romper la firma. La ventana
+/// de completitud se mide con este, en los dos extremos.
+fn indice_embebido(c: &serde_json::Value, cual: &str) -> Result<u64, String> {
+    let firma = c
+        .get("signature")
+        .and_then(|x| x.as_str())
+        .ok_or_else(|| err(format!("{cual}: falta signature")))?;
+    indice_de_firma(&hex_a_bytes(firma)?).map_err(|e| err(format!("{cual}: {e}")))
+}
+
+/// RFC-0019 E1 (§681): el indice que la firma ACREDITA, `embebido + 1`: el de la cabeza si ningun
+/// indice se quemo sin firmar. Es el `S` de la ventana.
+fn indice_acreditado(c: &serde_json::Value, cual: &str) -> Result<u64, String> {
+    Ok(indice_embebido(c, cual)? + 1)
+}
+
 /// El paquete de EXTENSION (§293): dos cabezas v3 firmadas y el camino
 /// de consistencia entre sus cimas — el eslabon 2 entero, verificable
 /// **sin el nodo**: quien custodia la vieja comprueba que la nueva la
@@ -1706,7 +1724,7 @@ fn exige_mismo_recibo(data: &serde_json::Value, hash: Digest, que: &str) -> Resu
 fn resolver_por_acuse(
     x: &serde_json::Value,
     hash: Digest,
-    era: u64,
+    inicio: u64,
     n: u64,
     clave: &str,
     que: &str,
@@ -1720,10 +1738,10 @@ fn resolver_por_acuse(
     if digest_de(a, "hashPrueba")? != hash {
         return Err(err(format!("{que}: el acuse es de OTRA prueba: no resuelve este recibo")));
     }
-    let s = u64_de(c, "index")?;
-    if !recibos::dentro_de_ventana(era, s, n) {
+    let s = indice_acreditado(c, &format!("{que}.cabeza"))?;
+    if !recibos::dentro_de_ventana(inicio, s, n) {
         return Err(err(format!(
-            "{que}: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
+            "{que}: llega FUERA de la ventana (indice acreditado {s}, inicio {inicio}, n {n})"
         )));
     }
     println!("   la resolucion, como paquete de posicion con su acuse:");
@@ -1738,7 +1756,7 @@ fn resolver_por_acuse(
 fn resolver_por_rechazo<'a>(
     sobre: &'a serde_json::Value,
     hash: Digest,
-    era: u64,
+    inicio: u64,
     n: u64,
     clave: &str,
     que: &str,
@@ -1757,10 +1775,10 @@ fn resolver_por_rechazo<'a>(
     if clave_r != clave {
         return Err(claves_distintas());
     }
-    let s = u64_de(c, "index")?;
-    if !recibos::dentro_de_ventana(era, s, n) {
+    let s = indice_acreditado(c, &format!("{que}.cabeza"))?;
+    if !recibos::dentro_de_ventana(inicio, s, n) {
         return Err(err(format!(
-            "resolucion: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
+            "resolucion: llega FUERA de la ventana (indice acreditado {s}, inicio {inicio}, n {n})"
         )));
     }
     println!("   la resolucion, como sobre de rechazo:");
@@ -1864,7 +1882,7 @@ fn juzgar_forma(
 fn resolver_lote(
     x: &serde_json::Value,
     hash: Digest,
-    era: u64,
+    inicio: u64,
     n: u64,
     clave: &str,
 ) -> Result<(), String> {
@@ -1890,15 +1908,15 @@ fn resolver_lote(
                 )));
             }
             for (i, (par, op)) in acuses.iter().zip(&comp).enumerate() {
-                resolver_por_acuse(par, op.0, era, n, clave, &format!("resolucion.acuses[{i}]"))?;
+                resolver_por_acuse(par, op.0, inicio, n, clave, &format!("resolucion.acuses[{i}]"))?;
             }
             println!(
                 "3/3 RESUELTA como LOTE aplicado: sus {k} operacion(es), cada una con el acuse de \
-                 SU prueba dentro de la ventana (era {era}, n {n})"
+                 SU prueba dentro de la ventana (inicio {inicio}, n {n})"
             );
         }
         (false, true, false) => {
-            let (s, d) = resolver_por_rechazo(&x["sobre"], hash, era, n, clave, "resolucion.sobre")?;
+            let (s, d) = resolver_por_rechazo(&x["sobre"], hash, inicio, n, clave, "resolucion.sobre")?;
             let j = operacion_nombrada(d, k, "resolucion.sobre.data")?;
             println!(
                 "3/3 RESUELTA como LOTE rechazado con prueba, dentro de la ventana (indice {s}): \
@@ -1981,6 +1999,7 @@ fn resolver_prenda(
     x: &serde_json::Value,
     hash: Digest,
     era: u64,
+    inicio: u64,
     n: u64,
     clave: &str,
 ) -> Result<(), String> {
@@ -2020,10 +2039,10 @@ fn resolver_prenda(
                 return Err(claves_distintas());
             }
             let raiz = cons.ok_or_else(|| exige_consumos("prenda"))?;
-            let s = u64_de(cc, "index")?;
-            if !recibos::dentro_de_ventana(era, s, n) {
+            let s = indice_acreditado(cc, "resolucion.consumo.cabeza")?;
+            if !recibos::dentro_de_ventana(inicio, s, n) {
                 return Err(err(format!(
-                    "resolucion: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
+                    "resolucion: llega FUERA de la ventana (indice acreditado {s}, inicio {inicio}, n {n})"
                 )));
             }
             let pos = zk_ssl_verify::consumos::posicion_de_consumo(&af.marca);
@@ -2043,7 +2062,7 @@ fn resolver_prenda(
             println!(
                 "3/3 RESUELTA como PRENDA aceptada: el PAR -el sobre verifica y su marca \
                  {marca_hex} esta bajo el consRoot de la cabeza de indice {s}, dentro de la \
-                 ventana (era {era}, n {n})-"
+                 ventana (inicio {inicio}, n {n})-"
             );
         }
         (false, true, false) => {
@@ -2108,7 +2127,7 @@ fn resolver_prenda(
         }
         (false, false, true) => {
             let (s, d) =
-                resolver_por_rechazo(&x["rechazo"], hash, era, n, clave, "resolucion.rechazo")?;
+                resolver_por_rechazo(&x["rechazo"], hash, inicio, n, clave, "resolucion.rechazo")?;
             let rechazado = d.get("campos").and_then(|c| digest_de(c, "consumo").ok());
             if rechazado != Some(af.marca) {
                 return Err(err(
@@ -2148,8 +2167,12 @@ fn resolver_prenda(
 /// 4. `resolucion.tipo = "declarada"` con una causa sin prueba portable: el cuarto estado, salida 3.
 ///
 /// `limiteAnterior` (Q) va DECLARADO (D1): la hoja no lleva `rx`, asi que un Q mentido solo produce
-/// un camino que no cruza. `S` es siempre el indice de una cabeza FIRMADA, que `verificar_cabeza` ata
-/// al embebido en la firma (§399): la ventana no se declara, se mide (D2).
+/// un camino que no cruza. La ventana no se declara, se mide (D2), y desde el §681 (RFC-0019 E1) en
+/// la unidad de la firma en sus dos extremos: empieza en el indice EMBEBIDO del cierre y `S` es el
+/// ACREDITADO (`embebido + 1`) de la cabeza que la mide. El `index` declarado no va firmado y solo
+/// se ata por abajo (§399): medida con el, una cabeza honrada con el `index` inflado en el sobre
+/// daba un ROJO contra el operador; y la `era` de la hoja va en la unidad del contador del nodo, en
+/// la que un indice quemado sin firmar retrasaria la ventana.
 fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
     // 1 · el cierre: una cabeza v6 firmada, entera
     let cierre = p
@@ -2170,6 +2193,11 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
         )));
     }
     let (_, _, clave, _) = cabeza_v3_verificada(cierre, "cierre")?;
+    // RFC-0019 E1 (§681): la ventana EMPIEZA en el indice embebido del cierre -el acreditado de la
+    // ultima cabeza firmada antes de el, la era en la unidad de la firma- y no en la `era` de la
+    // hoja, que el nodo cuenta con su contador (`anotar`: el declarado mas uno). En esa unidad un
+    // indice quemado sin firmar -gratis para el operador- retrasaria todas las ventanas.
+    let inicio = indice_embebido(cierre, "cierre")?;
     let raiz = digest_de(cierre, "recepRoot")?;
     let r = u64_de(cierre, "recepCount")?;
     let n_firmada = u64_de(cierre, "n")?;
@@ -2235,25 +2263,26 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
             if clave_v != clave {
                 return Err(claves_distintas());
             }
-            let s = u64_de(vig, "index")?;
-            if recibos::dentro_de_ventana(era, s, n) {
+            let s = indice_acreditado(vig, "vigente")?;
+            if recibos::dentro_de_ventana(inicio, s, n) {
                 return Err(err(format!(
-                    "ventana ABIERTA: la cabeza vigente tiene indice {s} y la era es {era}; con \
-                     n {n} la promesa sigue viva y el sobre es prematuro"
+                    "ventana ABIERTA: la cabeza vigente tiene indice acreditado {s} y la ventana \
+                     empieza en {inicio}; con n {n} la promesa sigue viva y el sobre es prematuro"
                 )));
             }
             return Err(err(format!(
                 "NO RESUELTA EN LA VENTANA: el operador recibio la operacion bajo su firma \
-                 (rx {rx}, era {era}) y su cabeza vigente de indice {s} -{} cabezas despues, \
-                 n {n}- llega sin resolucion: se comprometio a resolver y no lo hizo",
-                s - era
+                 (rx {rx}, era {era}) y su cabeza vigente de indice acreditado {s} -{} cabezas \
+                 firmadas despues del inicio {inicio}, n {n}- llega sin resolucion: se \
+                 comprometio a resolver y no lo hizo",
+                s - inicio
             )));
         }
         Some(Some("acuse")) => {
-            let s = resolver_por_acuse(res.expect("hay resolucion"), hash, era, n, &clave, "resolucion")?;
+            let s = resolver_por_acuse(res.expect("hay resolucion"), hash, inicio, n, &clave, "resolucion")?;
             println!(
-                "3/3 RESUELTA como transicion aplicada, dentro de la ventana (indice {s}, \
-                 era {era}, n {n})"
+                "3/3 RESUELTA como transicion aplicada, dentro de la ventana (indice acreditado \
+                 {s}, inicio {inicio}, n {n})"
             );
         }
         Some(Some("rechazo")) => {
@@ -2261,17 +2290,17 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
                 .expect("hay resolucion")
                 .get("sobre")
                 .ok_or_else(|| err("resolucion: falta sobre (el de rechazo)".into()))?;
-            let (s, _) = resolver_por_rechazo(sobre, hash, era, n, &clave, "resolucion.sobre")?;
+            let (s, _) = resolver_por_rechazo(sobre, hash, inicio, n, &clave, "resolucion.sobre")?;
             println!(
                 "3/3 RESUELTA como rechazo con prueba, dentro de la ventana (indice {s}); la \
                  atadura al recibo es la palabra del nodo en su data"
             );
         }
         Some(Some("lote")) => {
-            resolver_lote(res.expect("hay resolucion"), hash, era, n, &clave)?;
+            resolver_lote(res.expect("hay resolucion"), hash, inicio, n, &clave)?;
         }
         Some(Some("prenda")) => {
-            resolver_prenda(res.expect("hay resolucion"), hash, era, n, &clave)?;
+            resolver_prenda(res.expect("hay resolucion"), hash, era, inicio, n, &clave)?;
         }
         Some(Some("declarada")) => {
             let d = res
@@ -3136,7 +3165,7 @@ mod tests {
         let sobre = json!({ "v": 1, "tipo": "prenda", "prueba": "0x01020304",
                             "enunciado": { "receptor": hex(&dg(1)), "marca": hex(&dg(2)) } });
         let rec = json!({ "hashPrueba": hex(&h) });
-        let r = |x: serde_json::Value| resolver_prenda(&x, h, 5, 1440, "0xaa").unwrap_err();
+        let r = |x: serde_json::Value| resolver_prenda(&x, h, 5, 4, 1440, "0xaa").unwrap_err();
         let casos = [
             (json!({}), "falta sobre (el de la prenda"),
             (json!({ "sobre": { "tipo": "rechazo" } }), "el sobre no es de tipo prenda"),
@@ -3155,7 +3184,7 @@ mod tests {
             let e = r(x);
             assert!(e.contains(texto), "se esperaba «{texto}» y salio: {e}");
         }
-        let e = resolver_prenda(&json!({ "sobre": sobre }), dg(9), 5, 1440, "0xaa").unwrap_err();
+        let e = resolver_prenda(&json!({ "sobre": sobre }), dg(9), 5, 4, 1440, "0xaa").unwrap_err();
         assert!(e.contains("la prenda es de OTRA prueba"), "{e}");
     }
 
@@ -3665,6 +3694,27 @@ mod tests_marca_651 {
         let _ = std::fs::remove_file(&tmp);
         let r = r.unwrap_or_else(|_| panic!("CRITICO: {vector} sin marca hace entrar en panico al kit"));
         assert_eq!(codigo_de_salida(&r), 1, "{vector}: ROJO, no otra cosa: {r:?}");
+    }
+
+    /// §681 (RFC-0019 E1): la ventana de completitud se mide con el indice que la FIRMA acredita,
+    /// no con el `index` declarado, que no va firmado. Sobre `completitud/neg-ventana-abierta.json`
+    /// -la vigente es el propio cierre-: con el `index` de la vigente inflado a 1444, o el del cierre,
+    /// el veredicto sigue siendo «ventana ABIERTA». Falsador, ensayado: con `S` leido del `index`
+    /// declarado, como hasta el §681, la vigente inflada da «NO RESUELTA EN LA VENTANA», un ROJO que
+    /// cualquiera fabrica contra un operador honrado (H10).
+    #[test]
+    fn la_ventana_se_mide_con_el_indice_que_la_firma_acredita() {
+        let base = format!(
+            "{}/../../spec/vectors/completitud/neg-ventana-abierta.json",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&base).unwrap()).unwrap();
+        for campo in ["vigente", "cierre"] {
+            let mut w = v.clone();
+            w[campo]["index"] = serde_json::json!("0x5a4");
+            let e = verificar_paquete(&w).expect_err("la ventana sigue abierta: ROJO de prematuro");
+            assert!(e.contains("ventana ABIERTA"), "{campo} inflado: {e}");
+        }
     }
 
     #[test]

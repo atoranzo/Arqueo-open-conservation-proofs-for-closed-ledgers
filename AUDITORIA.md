@@ -46361,3 +46361,54 @@ RFC-0018 marca E1 construida, con su fila en la tabla de la D-A.
 `cargo test -p stark-experiment` en `PAPER.md`, `PAPER_EN.md`, `doc/INSTITUCIONAL.md` y
 `doc/INSTITUTIONAL.md`, que `check_cifras` nombró en la primera vuelta del canon. El `BACKLOG.md` no
 se mueve.
+
+## §681 — RFC-0019 E1: la ventana de completitud, medida en la unidad de la firma en sus dos extremos
+
+El commit que lleva este asiento, sobre el §680. Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE.
+
+**La decisión del autor.** La D-A del RFC-0019 quedó abierta en el §679, porque lo que la sesión
+recomendó —exigir `declarado == embebido + 1`— daría ROJO sobre cabezas legítimas con índices
+huérfanos. La sesión le dio al autor las dos ramas coherentes y el autor eligió medir con el índice
+acreditado y enmendar la D-D del RFC-0010.
+
+**Lo que la sesión vio al construirla, y lo que se construyó.** El kit medía la ventana como
+`S − era`, con `S` leído del `index` declarado de la cabeza vigente o de la resolución y `era` de la
+hoja. Cambiar solo `S` por el acreditado dejaba otro agujero: la `era` la cuenta el nodo con su
+contador (`anotar`, en `zk-ssl-node`: el declarado de la última cabeza firmada más uno), y un índice
+quemado sin firmar —gratis para el operador: `reservar` sin firmar— movería en esa unidad todas las
+ventanas hacia delante. Lo construido mide los dos extremos en la unidad de la firma:
+`indice_embebido` e `indice_acreditado` en el mando; la ventana EMPIEZA en el embebido del cierre —el
+acreditado de la última cabeza firmada antes de él— y `S` es el acreditado de la vigente, del acuse,
+del sobre de rechazo, del lote y de la cabeza del consumo de la prenda. La `era` de la hoja sigue
+atando el recibo a su camino y sigue en la comprobación de la cabeza juzgada de la prenda
+(`juzgada.index + 1 == era`, del mismo contador); ya no mide la ventana. En un flujo honrado sin
+huérfanos el inicio es la era, o la era menos uno si el recibo llegó mientras se firmaba: a favor del
+operador, a lo sumo una cabeza. Es lo que se pierde, junto con que los huérfanos ya no cuentan contra
+quien los quemó.
+
+**Lo que no cambia.** Los 74 vectores publicados del sobre de completitud dicen lo mismo con la regla
+nueva, y los de paquete (73) y rechazo (84) también: medido con `tools/conformidad.sh` sobre el kit
+de este árbol antes de escribir nada más. El cable no cambia.
+
+**El vector nuevo, con nombre nuevo (RFC-0019 D-C).** `completitud/neg-vigente-index-inflado.json`:
+`neg-ventana-abierta.json` con el `index` de la vigente inflado a `0x5a4` (1444), la sonda H10 del
+re-triaje. Con el kit de antes, «NO RESUELTA EN LA VENTANA» —un ROJO que cualquiera fabrica contra un
+operador honrado, porque el declarado no va firmado—; con este, «ventana ABIERTA: la cabeza vigente
+tiene indice acreditado 2», que es lo que el manifiesto exige. `tools/banco_completitud.sh` lo produce
+también. Los vectores pasan de 453 a 454 en los dos README.
+
+**Falsador, ensayado.** `la_ventana_se_mide_con_el_indice_que_la_firma_acredita`: sobre
+`neg-ventana-abierta.json`, con el `index` de la vigente o el del cierre inflados, el veredicto sigue
+siendo «ventana ABIERTA». Con `S` leído del declarado, como antes, cae con «NO RESUELTA EN LA
+VENTANA … indice acreditado 1444». Dos tests de `resolver_prenda` ganan el argumento del inicio.
+
+**Las prosas.** La D-D del RFC-0010 lleva su ENMIENDA (§681), citada junto a la corrección del §567,
+que no se borra. `spec/PAQUETE.md` dice cómo se mide la ventana. El RFC-0019 dice la D-A decidida,
+E1 construida y corrige su propia frase de compatibilidad («que un nodo honesto no firma» no era
+cierto). El doc de `verificar_completitud` lo explica.
+
+**Contadores.** `zk-ssl-verify` 168 -> 169. TOTAL DE SELLO 1642 -> 1643; TOTAL CON LARGOS 1779 ->
+1780, en los tres párrafos ancla, y la cifra del verificador en `PRINCIPIOS.md`. El `BACKLOG.md` no
+se mueve.

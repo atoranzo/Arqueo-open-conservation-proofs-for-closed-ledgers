@@ -172,6 +172,8 @@ try:
     # sin resolucion: la ventana
     mando('neg-sin-resolucion-ni-vigente', base, 1, 'sin resolucion y sin cabeza vigente')
     mando('neg-ventana-abierta', dict(base, vigente=cierre), 1, 'ventana ABIERTA')
+    # §681 (RFC-0019 E1): el index declarado de la vigente, inflado; no va firmado y ya no mide nada
+    mando('neg-vigente-index-inflado', dict(base, vigente=dict(cierre, index='0x5a4')), 1, 'ventana ABIERTA')
     mando('neg-vigente-de-otra-clave', dict(base, vigente=cabeza_ajena), 1, 'claves DISTINTAS')
     # la resolucion por acuse
     mando('neg-acuse-sin-cabeza', res({'tipo': 'acuse', 'acuse': acuse}), 1, 'resolucion: falta cabeza')

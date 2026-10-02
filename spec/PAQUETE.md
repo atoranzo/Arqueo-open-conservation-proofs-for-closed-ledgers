@@ -381,8 +381,11 @@ El mando comprueba, en orden, que el `cierre` es una cabeza v6 que recompone y c
 verifica, que la `n` del recibo es la firmada, que `Q < rx <= recepCount`, y que la hoja
 `recibo_digest(hashPrueba, era, n)` sube por un camino de `RECEP_DEPTH` niveles con los lados de
 la posición `rx − Q − 1` hasta la `recepRoot` del cierre: el operador **recibió** la operación.
-Después, el veredicto (RFC-0010, D-F y D-G). La ventana se MIDE siempre con el índice XMSS de una
-cabeza firmada por la misma clave, el que la firma lleva embebido (§399), con `S − era <= n` (D2):
+Después, el veredicto (RFC-0010, D-F y D-G). La ventana se MIDE siempre en la unidad de la firma
+(D2; desde el §681, RFC-0019 E1): empieza en el índice XMSS **embebido** del cierre, y `S` es el
+índice **acreditado** —el embebido más uno— de una cabeza firmada por la misma clave, con
+`S − inicio <= n`. El `index` declarado no entra en lo firmado (§399) y ya no mide nada; la `era` de
+la hoja la ata a su camino pero no mide la ventana:
 
 1. **`acuse`**: la cabeza está dentro de la ventana, el acuse es de la MISMA prueba y el par
    cabeza+acuse verifica como el paquete de posición de la sección 2.1. VERDE, «resuelta como

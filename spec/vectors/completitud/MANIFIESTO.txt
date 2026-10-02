@@ -52,6 +52,11 @@ neg-camino-truncado.json|1|no mide 32 niveles
 neg-era-mentida.json|1|NO sube a la recepRoot
 neg-sin-resolucion-ni-vigente.json|1|sin resolucion y sin cabeza vigente
 neg-ventana-abierta.json|1|ventana ABIERTA
+# §681 (RFC-0019 E1): el de arriba con el `index` de la vigente inflado a 0x5a4 (1444). El declarado no
+# va firmado; medida con el, la ventana daba NO RESUELTA, un ROJO que cualquiera fabrica contra un
+# operador honrado (la sonda H10 del re-triaje). Medida con el indice que la firma acredita, la vigente
+# es la cabeza de indice 1 y la ventana sigue ABIERTA. Vector nuevo, con nombre nuevo (RFC-0019 D-C).
+neg-vigente-index-inflado.json|1|ventana ABIERTA: la cabeza vigente tiene indice acreditado 2
 neg-vigente-de-otra-clave.json|1|claves DISTINTAS
 neg-acuse-sin-cabeza.json|1|resolucion: falta cabeza
 neg-acuse-sin-acuse.json|1|resolucion: falta acuse

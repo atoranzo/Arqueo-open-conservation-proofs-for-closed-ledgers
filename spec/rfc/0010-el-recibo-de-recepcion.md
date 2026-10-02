@@ -183,6 +183,21 @@ clave del nodo sólo firma cabezas, así que el índice cuenta **cabezas firmada
 índices huérfanos, quemados sin firma, que sólo acortan la ventana y cuentan en contra de quien
 los quemó—, y `N = 1.440` vuelve a ser lo que dice: 1.440 cabezas firmadas.
 
+⚠️ **ENMIENDA (§681, RFC-0019 E1, decisión del autor), citada y no borrada.** La corrección del
+§567 tenía dos agujeros en el kit, que leía `S` del `index` **declarado** de la cabeza y `e` de la
+hoja. El declarado no entra en lo firmado (§399: solo se ata por abajo, `embebido < declarado`):
+cualquiera podía inflarlo en un sobre y fabricar un «NO RESUELTA EN LA VENTANA» contra un operador
+honrado (H10 del re-triaje del segundo enjambre). Y la `e` de la hoja la cuenta el nodo con su
+contador (`anotar`: el declarado de la última cabeza más uno), en el que un índice quemado sin firmar
+—gratis para el operador— movería todas las ventanas. Rige: la ventana se mide en la unidad de la
+FIRMA en sus dos extremos. Empieza en el índice **embebido** del cierre —el acreditado de la última
+cabeza firmada antes de él, la era en esa unidad— y `S` es el **acreditado** (`embebido + 1`) de la
+cabeza que la mide; la promesa es `S - inicio <= N`. Los huérfanos dejan de contar en contra de quien
+los quemó: es lo único que se pierde. La `e` de la hoja sigue dentro de la hoja y sigue atando el
+recibo a su camino; ya no mide la ventana. En un flujo honrado sin huérfanos el inicio es la era, o
+la era menos uno cuando el recibo llegó mientras se firmaba: a favor del operador, a lo sumo una
+cabeza. Los 74 vectores publicados del sobre de completitud dicen lo mismo con la regla nueva.
+
 ### D-E — Cuenta lo que el nodo llegó a EVALUAR; ni el ruido ni lo aceptado
 
 La regla ya está medida y escrita en `recepcion.rs`, y este RFC la eleva a norma sin cambiarla:
