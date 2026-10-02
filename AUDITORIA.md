@@ -45637,8 +45637,8 @@ clave del índice del §654, que sigue siendo la huella de los bytes, ahora ya �
 entregó al autor fuera del árbol.
 
 **Y en la misma rama, un documento retirado.** La rama de este asiento, `claude/ecstatic-archimedes-bb4gmb`,
-llevaba ya publicado un sello de documentos sobre `e1d1db3` (`887c280`): `doc/blueprint-v2-enjambre.md`,
-el informe del segundo enjambre del plano v2.0, con un asiento numerado §652. No entra en `main`. El
+llevaba ya publicado un sello de documentos sobre `e1d1db3` (`887c280`): el informe del segundo
+enjambre del plano v2.0, en `doc/`, con un asiento numerado §652. No entra en `main`. El
 número lo ocupa ya el §652 de las semillas, y el documento describía como abiertos hallazgos que los
 §640 a §656 cerraron después. La rama no se reescribe: se fusiona con `main` sin el asiento viejo y
 el documento se borra en un commit aparte, de modo que `887c280` sigue en la historia y se puede leer.
