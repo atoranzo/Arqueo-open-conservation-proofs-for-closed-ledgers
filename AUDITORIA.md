@@ -46457,3 +46457,51 @@ marca E2 construida.
 **Contadores.** `zk-ssl-verify` 169 -> 170. TOTAL DE SELLO 1643 -> 1644; TOTAL CON LARGOS 1780 ->
 1781, en los tres párrafos ancla, y la cifra del verificador en `PRINCIPIOS.md`. El `BACKLOG.md` no
 se mueve.
+
+## §683 — RFC-0018 E2, primera pieza: las derivaciones anchas de custodios y gobernadores, y la corrección del §679
+
+El commit que lleva este asiento, sobre el §682. Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE.
+
+**La decisión del autor.** Sobre la D-B y la D-C del RFC-0018, que el §679 dejó abiertas, el autor
+eligió las dos claves anchas y un libro nuevo para la gobernanza, de las dos ramas que la sesión le
+dio.
+
+**La corrección, citada y no borrada.** El §679 escribió que las claves anchas de gobernanza y la
+rotación no cabían juntas, porque «con hojas anchas cambia su raíz». Era falso. Antes de tocar un
+circuito, un subagente de la sesión mapeó, solo leyendo, los ocho circuitos que llevan una clave de
+custodio o de gobernador, y encontró que una clave ancha rellenada con ceros da EXACTAMENTE la
+identidad estrecha: el `native_merge` del dominio con `[k,0,0,0]` es el de siempre. Lo fijan ahora
+tres tests. Un libro escrito en claves estrechas conserva sus dos raíces bajo un AIR de claves anchas
+y sus gobernadores siguen firmando con la clave rellenada; sus custodios pueden rotar a claves de 256
+bits con esa firma. Lo que solo da un libro nuevo es una gobernanza de 256 bits, porque es inmutable.
+Lo decidido se mantiene y el RFC lo escribe con la corrección al lado.
+
+**Lo que hace.** `derive_custodian_id_wide` (en `circuit_threshold`) y `derive_governor_id_wide` (en
+`circuit_governance`), el molde de `derive_public_id_wide`: el dominio y la clave de cuatro elementos
+en el mismo `native_merge`. `build_custodian_set_wide` y `build_governance_set_wide`. El árbol de 16
+posiciones, que estaba copiado en los dos constructores, sale a `conjunto_de_hojas`, que usan los
+cuatro. Ningún AIR cambia en este sello, ni ninguna raíz: los constructores estrechos dan lo mismo
+que antes, y el test lo mide.
+
+**Lo que el mapa encontró además.** El doc de `derive_public_id_wide` citaba un test,
+`the_wide_derivation_generalises_the_narrow_one`, que no existía en el árbol: nace ahora en
+`native.rs` con ese nombre. En los ocho circuitos la clave entra en `state[8]`, con el dominio en
+`state[4]` y `state[9..12]` sin asertar: cuatro elementos caben sin un ciclo de hash más. La excepción
+es el nullificador de `circuit_threshold_single_nullifier`, el único de los ocho que va por el cable,
+que llena la tasa entera y con la clave ancha no cabe: se compondrá en dos hashes, como
+`native_nullifier_wide`. Que `state[9..12]` no esté asertado no es un agujero: el testigo puede poner
+ahí lo que quiera, pero la hoja es un digest de 256 bits del dominio y los cuatro, y acertar la de un
+custodio con elementos de más es una preimagen, no la búsqueda de 2^64 de H14.
+
+**Falsadores, ensayados.** `la_derivacion_ancha_de_custodios_y_gobernadores_generaliza_la_estrecha`
+(con la clave del lado del dominio cae), `el_conjunto_ancho_con_claves_rellenadas_es_el_estrecho`
+(raíz y caminos iguales; con una clave ancha de verdad, otra raíz) y
+`the_wide_derivation_generalises_the_narrow_one`.
+
+**Contadores.** `stark-experiment` 417 -> 420. TOTAL DE SELLO 1644 -> 1647; TOTAL CON LARGOS 1781 ->
+1784, en los tres párrafos ancla, la cifra de circuitos en `PRINCIPIOS.md` y la línea de
+`cargo test -p stark-experiment` en `PAPER.md`, `PAPER_EN.md`, `doc/INSTITUCIONAL.md` y
+`doc/INSTITUTIONAL.md`; y `ARQUITECTURA.md`, que cuenta los tests de `circuit_threshold` (11 -> 13) y
+que `check_figures` nombró en la primera vuelta del canon. El `BACKLOG.md` no se mueve.

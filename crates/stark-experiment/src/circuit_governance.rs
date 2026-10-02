@@ -154,39 +154,26 @@ pub fn derive_governor_id(key: BaseElement) -> Digest {
     )
 }
 
+/// **Identidad de un gobernador desde una clave de CUATRO elementos** (RFC-0018 E2, §683). Como
+/// [`crate::circuit_threshold::derive_custodian_id_wide`], con el dominio de la gobernanza; con la
+/// clave rellenada con ceros devuelve lo mismo que [`derive_governor_id`]. El conjunto de gobernanza
+/// es inmutable: uno escrito en claves estrechas conserva su raiz escrito en anchas, y solo un libro
+/// nuevo le da claves de 256 bits.
+pub fn derive_governor_id_wide(key: Digest) -> Digest {
+    native_merge(as_digest(BaseElement::new(GOVERNANCE_DOMAIN)), key)
+}
+
 /// Construye el conjunto de gobernanza. Misma estructura que el de
 /// custodios, distinto dominio.
 pub fn build_governance_set(keys: &[BaseElement]) -> (Digest, Vec<CustodianPath>) {
-    let size = 1usize << CUSTODIAN_DEPTH;
-    assert!(keys.len() <= size, "demasiados gobernadores");
+    assert!(keys.len() <= 1usize << CUSTODIAN_DEPTH, "demasiados gobernadores");
+    crate::circuit_threshold::conjunto_de_hojas(keys.iter().map(|k| derive_governor_id(*k)).collect())
+}
 
-    let empty: Digest = [BaseElement::ZERO; 4];
-    let mut leaves: Vec<Digest> = keys.iter().map(|k| derive_governor_id(*k)).collect();
-    leaves.resize(size, empty);
-
-    let mut levels = vec![leaves];
-    for _ in 0..CUSTODIAN_DEPTH {
-        let prev = levels.last().unwrap();
-        let next: Vec<Digest> = prev.chunks(2).map(|p| native_merge(p[0], p[1])).collect();
-        levels.push(next);
-    }
-    let root = levels[CUSTODIAN_DEPTH][0];
-
-    let paths = (0..keys.len())
-        .map(|index| {
-            let mut siblings = Vec::with_capacity(CUSTODIAN_DEPTH);
-            let mut is_right = Vec::with_capacity(CUSTODIAN_DEPTH);
-            let mut idx = index;
-            for level in 0..CUSTODIAN_DEPTH {
-                siblings.push(levels[level][idx ^ 1]);
-                is_right.push(idx % 2 == 1);
-                idx /= 2;
-            }
-            CustodianPath { siblings, is_right }
-        })
-        .collect();
-
-    (root, paths)
+/// El conjunto de gobernanza con claves de cuatro elementos (RFC-0018 E2, §683).
+pub fn build_governance_set_wide(keys: &[Digest]) -> (Digest, Vec<CustodianPath>) {
+    assert!(keys.len() <= 1usize << CUSTODIAN_DEPTH, "demasiados gobernadores");
+    crate::circuit_threshold::conjunto_de_hojas(keys.iter().map(|k| derive_governor_id_wide(*k)).collect())
 }
 
 /// Autorización de dos miembros de la gobernanza.

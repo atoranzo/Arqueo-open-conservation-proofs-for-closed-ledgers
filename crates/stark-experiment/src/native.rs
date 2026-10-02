@@ -185,3 +185,22 @@ pub fn view_id_of_wide(spend_key: Digest) -> Digest {
         derive_view_key_wide(spend_key),
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use winterfell::math::FieldElement;
+
+    /// §683: el test que el doc de `derive_public_id_wide` citaba y ya no existia en el arbol (lo
+    /// encontro el mapa de RFC-0018 E2). La derivacion ancha de la identidad, con la clave rellenada
+    /// con ceros, es la estrecha; con algo en sus otros tres elementos, otra.
+    #[test]
+    fn the_wide_derivation_generalises_the_narrow_one() {
+        for k in [0u64, 1, 0x00A1_1CE5, u64::MAX - 0xFFFF_FFFF] {
+            let k = BaseElement::new(k);
+            let z = BaseElement::ZERO;
+            assert_eq!(derive_public_id_wide([k, z, z, z]), derive_public_id(k));
+            assert_ne!(derive_public_id_wide([k, z, BaseElement::ONE, z]), derive_public_id(k));
+        }
+    }
+}

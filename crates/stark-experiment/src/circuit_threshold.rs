@@ -150,6 +150,19 @@ pub fn derive_custodian_id(key: BaseElement) -> Digest {
     )
 }
 
+/// **Identidad de un custodio desde una clave de CUATRO elementos** (RFC-0018 E2, §683), el molde
+/// de `derive_public_id_wide`: el dominio y la clave entera, en el mismo `native_merge`.
+///
+/// ⚠️ **Generaliza la estrecha, no la reemplaza**: con la clave rellenada con ceros devuelve
+/// EXACTAMENTE lo mismo que [`derive_custodian_id`] (lo fija
+/// `la_derivacion_ancha_de_custodios_y_gobernadores_generaliza_la_estrecha`). Un conjunto de
+/// custodios estrechos tiene la misma raiz escrito en claves anchas, y la rotacion a claves de 256
+/// bits la firma la gobernanza que haya. Conservar la identidad no conserva la seguridad: una clave
+/// rellenada sigue teniendo 64 bits.
+pub fn derive_custodian_id_wide(key: Digest) -> Digest {
+    native_merge(as_digest(BaseElement::new(CUSTODIAN_DOMAIN)), key)
+}
+
 /// Camino de autenticación dentro del conjunto de custodios.
 #[derive(Clone, Debug)]
 pub struct CustodianPath {
@@ -162,11 +175,24 @@ pub struct CustodianPath {
 ///
 /// El conjunto es pequeño (16 posiciones), así que se materializa entero.
 pub fn build_custodian_set(keys: &[BaseElement]) -> (Digest, Vec<CustodianPath>) {
-    let size = 1usize << CUSTODIAN_DEPTH;
-    assert!(keys.len() <= size, "demasiados custodios");
+    assert!(keys.len() <= 1usize << CUSTODIAN_DEPTH, "demasiados custodios");
+    conjunto_de_hojas(keys.iter().map(|k| derive_custodian_id(*k)).collect())
+}
 
+/// El conjunto de custodios con claves de cuatro elementos (RFC-0018 E2, §683).
+pub fn build_custodian_set_wide(keys: &[Digest]) -> (Digest, Vec<CustodianPath>) {
+    assert!(keys.len() <= 1usize << CUSTODIAN_DEPTH, "demasiados custodios");
+    conjunto_de_hojas(keys.iter().map(|k| derive_custodian_id_wide(*k)).collect())
+}
+
+/// El arbol de un conjunto de autoridad -custodios o gobernanza- desde sus hojas: 16 posiciones,
+/// las vacias a cero, y el camino de cada hoja dada. §683: una sola copia para los cuatro
+/// constructores, estrechos y anchos.
+pub fn conjunto_de_hojas(mut leaves: Vec<Digest>) -> (Digest, Vec<CustodianPath>) {
+    let size = 1usize << CUSTODIAN_DEPTH;
+    assert!(leaves.len() <= size, "demasiadas hojas para el conjunto");
+    let n = leaves.len();
     let empty: Digest = [BaseElement::ZERO; 4];
-    let mut leaves: Vec<Digest> = keys.iter().map(|k| derive_custodian_id(*k)).collect();
     leaves.resize(size, empty);
 
     let mut levels = vec![leaves];
@@ -177,7 +203,7 @@ pub fn build_custodian_set(keys: &[BaseElement]) -> (Digest, Vec<CustodianPath>)
     }
     let root = levels[CUSTODIAN_DEPTH][0];
 
-    let paths = (0..keys.len())
+    let paths = (0..n)
         .map(|index| {
             let mut siblings = Vec::with_capacity(CUSTODIAN_DEPTH);
             let mut is_right = Vec::with_capacity(CUSTODIAN_DEPTH);
@@ -732,6 +758,53 @@ mod tests {
     use super::*;
     use crate::native::derive_public_id;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+
+    /// §683 (RFC-0018 E2): las dos derivaciones anchas, con la clave rellenada con ceros, dan
+    /// EXACTAMENTE la identidad estrecha, y una clave con algo en sus otros tres elementos da otra.
+    /// Es lo que deja a un libro escrito en claves estrechas conservar sus raices bajo un AIR de
+    /// claves anchas. Falsador, ensayado: con el dominio del otro conjunto, o la clave en el lado
+    /// del dominio, cae.
+    #[test]
+    fn la_derivacion_ancha_de_custodios_y_gobernadores_generaliza_la_estrecha() {
+        use crate::circuit_governance::{derive_governor_id, derive_governor_id_wide};
+        for k in [0u64, 1, 0xC057_0D1A, u64::MAX - 0xFFFF_FFFF] {
+            let k = BaseElement::new(k);
+            let rellena = [k, BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO];
+            assert_eq!(derive_custodian_id_wide(rellena), derive_custodian_id(k));
+            assert_eq!(derive_governor_id_wide(rellena), derive_governor_id(k));
+            let ancha = [k, BaseElement::ONE, BaseElement::ZERO, BaseElement::ZERO];
+            assert_ne!(derive_custodian_id_wide(ancha), derive_custodian_id(k));
+            assert_ne!(derive_governor_id_wide(ancha), derive_governor_id(k));
+        }
+        assert_ne!(
+            derive_custodian_id(BaseElement::new(7)),
+            derive_governor_id(BaseElement::new(7)),
+            "los dos dominios separan los dos conjuntos"
+        );
+    }
+
+    /// §683: el conjunto escrito en claves anchas rellenadas tiene la MISMA raiz y los MISMOS
+    /// caminos que el estrecho, en custodios y en gobernanza; con una clave ancha de verdad, otra
+    /// raiz.
+    #[test]
+    fn el_conjunto_ancho_con_claves_rellenadas_es_el_estrecho() {
+        use crate::circuit_governance::{build_governance_set, build_governance_set_wide};
+        let estrechas: Vec<BaseElement> = (0..5u64).map(|i| BaseElement::new(0xC057_0D1A + i)).collect();
+        let rellenas: Vec<Digest> = estrechas
+            .iter()
+            .map(|k| [*k, BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO])
+            .collect();
+        let (r, c) = build_custodian_set(&estrechas);
+        let (rw, cw) = build_custodian_set_wide(&rellenas);
+        assert_eq!(r, rw);
+        for (a, b) in c.iter().zip(&cw) {
+            assert_eq!((&a.siblings, &a.is_right), (&b.siblings, &b.is_right));
+        }
+        assert_eq!(build_governance_set(&estrechas).0, build_governance_set_wide(&rellenas).0);
+        let mut ancha = rellenas.clone();
+        ancha[2][3] = BaseElement::new(9);
+        assert_ne!(build_custodian_set_wide(&ancha).0, r);
+    }
 
     fn default_options() -> ProofOptions {
         ProofOptions::new(
