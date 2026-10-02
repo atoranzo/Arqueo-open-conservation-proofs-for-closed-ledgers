@@ -95,7 +95,8 @@ const COL_X: usize = 56; // 56..60
 pub const TRACE_WIDTH: usize = 62;
 
 /// **Acumulador del indice de la subida de CUENTAS** (arreglo B, 5.A-272). Dobla
-/// y suma el bit en la ultima fila de cada ciclo de `CYC_ACC` y SOSTIENE su valor
+/// y suma el bit de la PRIMERA fila de cada ciclo de `CYC_ACC` -el que el
+/// multiplexor de la subida lee como `next`; §680, RFC-0018 E1- y SOSTIENE su valor
 /// el resto de la traza. No es el indice: es una funcion INYECTIVA de la secuencia
 /// de bits, y la MISMA que usa la subida de congelados.
 pub const COL_IACC: usize = 60;
@@ -228,14 +229,12 @@ const P_PEND_VAL: usize = P_PEND_IN + 1;
 const P_PEND_ENV: usize = P_PEND_VAL + 1;
 const P_PEND_ENTRY: usize = P_PEND_ENV + 1;
 const P_PEND_LINK: usize = P_PEND_ENTRY + 1;
-/// UNO en la ULTIMA fila de CADA ciclo de la subida de cuentas. **No es
-/// `P_LINK_MERKLE`**: aquel cubre `TREE_DEPTH - 1` enlaces y dejaria el ultimo
-/// bit fuera del acumulador.
-const P_ACC_STEP: usize = P_PEND_LINK + 1;
-/// Lo mismo para la subida de congelados.
-const P_FACC_STEP: usize = P_ACC_STEP + 1;
+// §680 (RFC-0018 E1): el paso de los dos acumuladores ya no tiene periodicas
+// propias. Va en la fila que el multiplexor de cada subida usa, y esas filas
+// son las de `link_place + link_merkle` (cuentas) y las de `frozen_entry +
+// frozen_link` (congelados): `P_ACC_STEP` y `P_FACC_STEP` sobraban.
 /// UNO en la fila en la que los DOS acumuladores estan completos.
-const P_ACC_EQ: usize = P_FACC_STEP + 1;
+const P_ACC_EQ: usize = P_PEND_LINK + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
@@ -527,32 +526,40 @@ pub fn build_trace(
         }
     }
 
-    // Los dos acumuladores del arreglo B. Se rellenan DESPUES de los bits porque
-    // los leen, y en TODAS las filas: una columna declarada que la traza no
-    // rellena hace que sus restricciones se cumplan trivialmente.
-    {
-        let mut iacc = zero;
-        let mut facc = zero;
-        for r in 0..TRACE_LENGTH {
-            rows[r][COL_IACC] = iacc;
-            rows[r][COL_FACC] = facc;
-            let c = r / CYCLE_LENGTH;
-            let ultima = r % CYCLE_LENGTH == CYCLE_LENGTH - 1;
-            if ultima && (CYC_ACC..CYC_ACC + TREE_DEPTH).contains(&c) {
-                iacc = iacc + iacc + rows[r][COL_BIT];
-            }
-            if ultima && (CYC_FROZEN..CYC_FROZEN + FROZEN_DEPTH).contains(&c) {
-                facc = facc + facc + rows[r][COL_FBIT];
-            }
-        }
-    }
-
     let mut trace = TraceTable::new(TRACE_WIDTH, TRACE_LENGTH);
     trace.fill(
         |s| s.copy_from_slice(&rows[0]),
         |step, s| s.copy_from_slice(&rows[step + 1]),
     );
+    rellena_acumuladores(&mut trace);
     trace
+}
+
+/// **Los dos acumuladores del arreglo B** (§511), atados de verdad en el §680
+/// (RFC-0018 E1, variante A). Cada uno dobla y suma el bit que su MULTIPLEXOR
+/// lee: el de la primera fila de cada ciclo de su subida, que la fila anterior
+/// -la de entrada o la de enlace- lee como `next`. Hasta el §680 sumaban el de
+/// la ULTIMA fila, que nada ataba al del multiplexor: una traza podia subir por
+/// una posicion y acumular otra (SECURITY.md 3.6). Se rellenan DESPUES de los
+/// bits porque los leen, y en TODAS las filas: una columna declarada que la
+/// traza no rellena hace que sus restricciones se cumplan trivialmente.
+pub(crate) fn rellena_acumuladores(t: &mut TraceTable<BaseElement>) {
+    let mut iacc = BaseElement::ZERO;
+    let mut facc = BaseElement::ZERO;
+    for r in 0..TRACE_LENGTH {
+        t.set(COL_IACC, r, iacc);
+        t.set(COL_FACC, r, facc);
+        if r % CYCLE_LENGTH != CYCLE_LENGTH - 1 || r + 1 == TRACE_LENGTH {
+            continue;
+        }
+        let c = (r + 1) / CYCLE_LENGTH;
+        if (CYC_ACC..CYC_ACC + TREE_DEPTH).contains(&c) {
+            iacc = iacc + iacc + t.get(COL_BIT, r + 1);
+        }
+        if (CYC_FROZEN..CYC_FROZEN + FROZEN_DEPTH).contains(&c) {
+            facc = facc + facc + t.get(COL_FBIT, r + 1);
+        }
+    }
 }
 
 pub struct SendV2Air {
@@ -766,20 +773,9 @@ impl Air for SendV2Air {
         }
         columns.push(pend_link);
 
-        // El atado del arreglo B: un paso del acumulador por NIVEL, no por enlace,
-        // y la igualdad donde los dos estan completos.
-        let mut acc_step = vec![zero; TRACE_LENGTH];
-        for level in 0..TREE_DEPTH {
-            acc_step[(CYC_ACC + level) * CYCLE_LENGTH + 7] = one;
-        }
-        columns.push(acc_step);
-
-        let mut facc_step = vec![zero; TRACE_LENGTH];
-        for level in 0..FROZEN_DEPTH {
-            facc_step[(CYC_FROZEN + level) * CYCLE_LENGTH + 7] = one;
-        }
-        columns.push(facc_step);
-
+        // El atado del arreglo B: la igualdad donde los dos acumuladores estan
+        // completos. El paso de cada uno va en las filas del multiplexor de su
+        // subida, con sus selectores (§680).
         // OJO: el ULTIMO bit de la subida de congelados entra en la TRANSICION de
         // `ROW_FROZEN_ROOT`, asi que los dos acumuladores solo estan completos en
         // la fila SIGUIENTE. Medido al escribir el corte, no supuesto.
@@ -1032,19 +1028,23 @@ impl Air for SendV2Air {
         // -- EL ATADO DEL ARREGLO B (5.A-272) ------------------------------
         // Sin esto el circuito prueba que ALGUNA posicion del arbol de congelados
         // tiene hoja vacia, no que la tenga la de ESTA cuenta.
-        let p_acc_step = periodic[P_ACC_STEP];
-        let p_facc_step = periodic[P_FACC_STEP];
+        // §680 (RFC-0018 E1): el paso, en las filas del multiplexor de cada subida
+        // y con el bit que el multiplexor lee (`next`). Fuera de ellas, el valor
+        // se sostiene: el complemento se nombra aparte porque abarca toda clase.
+        let fuera_cuentas = E::ONE - tree_link;
+        let paso_congelados = frozen_entry + frozen_link;
+        let fuera_congelados = E::ONE - paso_congelados;
         let p_acc_eq = periodic[P_ACC_EQ];
         let iacc_cur = current[COL_IACC];
         let iacc_next = next[COL_IACC];
         let facc_cur = current[COL_FACC];
         let facc_next = next[COL_FACC];
         result[C_IACC_STEP] =
-            p_acc_step * (iacc_next - (iacc_cur + iacc_cur + current[COL_BIT]));
-        result[C_IACC_HOLD] = (E::ONE - p_acc_step) * (iacc_next - iacc_cur);
+            tree_link * (iacc_next - (iacc_cur + iacc_cur + next[COL_BIT]));
+        result[C_IACC_HOLD] = fuera_cuentas * (iacc_next - iacc_cur);
         result[C_FACC_STEP] =
-            p_facc_step * (facc_next - (facc_cur + facc_cur + current[COL_FBIT]));
-        result[C_FACC_HOLD] = (E::ONE - p_facc_step) * (facc_next - facc_cur);
+            paso_congelados * (facc_next - (facc_cur + facc_cur + next[COL_FBIT]));
+        result[C_FACC_HOLD] = fuera_congelados * (facc_next - facc_cur);
         result[C_ACC_EQ] = p_acc_eq * (iacc_cur - facc_cur);
     }
 
@@ -1097,8 +1097,8 @@ impl Air for SendV2Air {
             self.pub_inputs.supply_new,
         ));
 
-        // La raiz de congelados: ALGUNA posicion esta libre; la del titular
-        // no esta atada (S487). La no-congelacion la impone la capa.
+        // La raiz de congelados: la posicion libre es la del titular desde el
+        // §680 (los acumuladores, RFC-0018 E1). La capa la impone tambien (S487).
         for i in 0..4 {
             a.push(Assertion::single(
                 4 + i,
@@ -1657,6 +1657,63 @@ mod tests {
         assert!(
             !(run(&s, s.key, 0).is_ok()),
             "CRITICO: el camino de congelados de otra posicion verifico"
+        );
+    }
+
+    /// §680 (RFC-0018 E1, variante A): la traza de un ataque a los acumuladores.
+    /// `s` sube los congelados por la VECINA (su bit de nivel 0 cambiado); en la
+    /// ultima fila de cada ciclo de una subida se ponen los bits que el atacante
+    /// quiere que su acumulador sume, y los acumuladores se rellenan con la regla
+    /// del circuito. Verificar es el fallo.
+    fn ataque_a_los_acumuladores(s: &Scenario, col: usize, cyc: usize, bits: &[bool]) -> bool {
+        let mut t = build_trace(s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path, s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt, s.sobre, &s.pending_path);
+        for (l, bit) in bits.iter().enumerate() {
+            let v = if *bit { BaseElement::ONE } else { BaseElement::ZERO };
+            t.set(col, (cyc + l) * CYCLE_LENGTH + CYCLE_LENGTH - 1, v);
+        }
+        rellena_acumuladores(&mut t);
+        let prover = SendV2Prover::new(default_options());
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(t))) {
+            Ok(Ok(proof)) => verify::<SendV2Air, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                proof,
+                s.public_inputs.clone(),
+                &AcceptableOptions::OptionSet(vec![default_options()]),
+            )
+            .is_ok(),
+            _ => false,
+        }
+    }
+
+    /// **§680, ATAQUE F** (el del re-triaje, `SECURITY.md` 3.6): la subida de
+    /// congelados recorre la vecina y la ultima fila de cada ciclo lleva los bits
+    /// del titular, para que `COL_FACC` diga el titular. Verificaba hasta el §680:
+    /// el acumulador sumaba la ultima fila y el multiplexor leia la primera.
+    /// Falsador, ensayado: con la regla de antes (la fila +7, `current`) verifica.
+    #[test]
+    fn el_acumulador_de_congelados_suma_el_bit_que_sube() {
+        let mut s = scenario(1_000_000, 250_000, 10_000_000);
+        let del_titular = s.frozen_path.is_right.clone();
+        s.frozen_path.is_right[0] = !s.frozen_path.is_right[0];
+        assert!(
+            !ataque_a_los_acumuladores(&s, COL_FBIT, CYC_FROZEN, &del_titular),
+            "CRITICO: la subida de congelados de la vecina verifico con FACC del titular"
+        );
+    }
+
+    /// **§680, ATAQUE I** (medido en el banco de la D-A del RFC-0018): la subida de
+    /// cuentas es la del titular, la de congelados la de la vecina, y la ultima
+    /// fila de cada ciclo de la subida de cuentas lleva los bits que hacen que
+    /// `COL_IACC` valga lo que `COL_FACC` de la vecina. Verificaba hasta el §680.
+    /// Falsador, ensayado: con la regla de antes verifica.
+    #[test]
+    fn el_acumulador_de_cuentas_suma_el_bit_que_sube() {
+        let mut s = scenario(1_000_000, 250_000, 10_000_000);
+        s.frozen_path.is_right[0] = !s.frozen_path.is_right[0];
+        let objetivo = s.frozen_path.is_right.iter().fold(0u64, |a, b| 2 * a + *b as u64);
+        let bits: Vec<bool> = (0..TREE_DEPTH).map(|l| (objetivo >> (TREE_DEPTH - 1 - l)) & 1 == 1).collect();
+        assert!(
+            !ataque_a_los_acumuladores(&s, COL_BIT, CYC_ACC, &bits),
+            "CRITICO: la subida de cuentas del titular verifico con IACC de la vecina"
         );
     }
 

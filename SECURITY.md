@@ -465,6 +465,13 @@ sube las cuentas por el titular congelado y pone en la fila +7 los bits de la ve
 también verifica. Misma clase y misma defensa: la capa la para con `AccountFrozen`. El arreglo
 (E1 del RFC-0018, variante A medida) ata los dos acumuladores.
 
+**§680: atado en el AIR del árbol.** E1 del RFC-0018 está construida en los cinco
+circuitos: el paso de cada acumulador va en las filas del multiplexor de su subida y
+suma el bit que el multiplexor lee. Los dos ataques medidos dejan de verificar en los
+cinco (diez falsadores). El cable sigue diciendo `zkssl/0.4` hasta el corte del tren
+`zkssl/0.5`, que sube la versión y emite sus vectores; hasta entonces lo que ata es el
+código del árbol, no una versión publicada.
+
 ### 3.7 Una prueba malformada abortaba el proceso — ⚠️ MEDIDO, cerrado en las vías con sal
 
 Al leer una prueba, `winter-utils` 0.13.1 (`read_many`) y `winter-crypto` 0.13.1

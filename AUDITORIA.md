@@ -46302,3 +46302,62 @@ las ramas coherentes. Decide el autor.
 
 **Lo que NO hace.** No construye ninguna etapa ni cambia código, vectores o tests. Los dos RFC siguen
 PROPUESTOS. El `BACKLOG.md` no se mueve.
+
+## §680 — RFC-0018 E1: los dos acumuladores suman el bit que sube, en los cinco circuitos
+
+El commit que lleva este asiento, sobre el §679. Primera etapa del tren `zkssl/0.5`. Lo escribe, lo
+prueba y lo commitea una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4
+de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE.
+
+**Lo que cierra.** `SECURITY.md` 3.6 en el AIR. El arreglo B del §511 dio a `circuit_send`,
+`circuit_send_v2`, `circuit_claim`, `circuit_claim_v2` y `circuit_burn` dos acumuladores de la
+posición —`COL_IACC` de la subida de cuentas, `COL_FACC` de la de congelados— y su igualdad. Los dos
+sumaban el bit de la ÚLTIMA fila de cada ciclo, y el multiplexor de cada subida lee el de la PRIMERA
+del siguiente; solo `C_BIT_BOOL`/`C_FBIT_BOOL` miran esas celdas, y solo exigen que sean booleanas. Dos
+ataques medidos en el §679 lo explotaban: F (el del re-triaje) y I (el de cuentas).
+
+**Lo que hace: la variante A, decidida en la D-A.** `rellena_acumuladores`, una función por circuito
+que `build_trace` llama sobre la traza ya rellena: cada acumulador dobla y suma el bit de la primera
+fila de cada ciclo de su subida, leído desde la fila anterior. En el AIR, el paso va en las filas del
+multiplexor —`tree_link` (`link_place + link_merkle`) para cuentas, `frozen_entry + frozen_link` para
+congelados— y suma `next[COL_BIT]` y `next[COL_FBIT]`; fuera de ellas el valor se sostiene. Con eso
+`P_ACC_STEP` y `P_FACC_STEP` sobraban, porque sus filas pasaban a ser exactamente esas: se quitan, y
+`P_ACC_EQ` sube dos puestos. Mismas 208 restricciones en `circuit_send`, 46 periódicas en vez de 48,
+ningún grado nuevo. Medido con el banco de la D-A sobre la forma final: `prove` 998 ms, `verify`
+4,31 ms, 79.788 B, y los dos ataques dan `UnsatisfiedTransitionConstraintError(544)`, la fila de la
+igualdad.
+
+**Por qué sin las dos periódicas, y no con ellas.** Con la variante A tal como se midió —las dos
+periódicas con sus filas movidas— el censo FV-1 de `send` y `claim` (`doc/fv`, en
+`check_constraint_layout`) daba 40 y 18 declaraciones RANCIAS: solo cuenta lecturas de `next`, no
+conoce `P_ACC_STEP`, y daba la nueva lectura de `COL_BIT` y `COL_FBIT` por universal. Con los
+selectores del multiplexor el censo la atribuye a sus clases, y sale con 0 rancias y 0 celdas sin
+dueño **sin tocar una sola declaración de `CELDAS_LIBRES`**: lo declarado libre lo sigue siendo. Los
+dos complementos se nombran aparte (`fuera_cuentas`, `fuera_congelados`) porque abarcan toda clase.
+
+**Falsadores, ensayados.** Dos por circuito, diez: `el_acumulador_de_congelados_suma_el_bit_que_sube`
+(ataque F: la subida de congelados por la vecina, la última fila de cada ciclo con los bits del
+titular) y `el_acumulador_de_cuentas_suma_el_bit_que_sube` (ataque I: la subida de cuentas por el
+titular, la última fila con los bits que hacen que `COL_IACC` valga lo que `COL_FACC` de la vecina),
+sobre `ataque_a_los_acumuladores`, que rellena los acumuladores con la regla del propio circuito. Con
+la regla de antes —la fila +7, `current`— caen los diez; con el paso en la fila del selector pero
+leyendo `current`, caen los diez. Los diez nacen con un error de la sesión, dicho: el de `burn`
+construía la traza con `supply_delta = 0` y no verificaba ni la honrada; con `s.amount`, el de los
+demás tests de `burn`, caen como los otros.
+
+**Lo que no cambia todavía.** El cable sigue diciendo `zkssl/0.4`, y los vectores de 0.4 siguen
+IDÉNTICOS en la conformidad, porque esta no compara bytes de prueba (D-AI); las pruebas de envío,
+cobro y quema de este árbol no verifican con el AIR de 0.4, y al revés. La versión sube en el corte
+del tren, con sus vectores. El kit no verifica pruebas de envío, cobro ni quema, y `tools/segunda`
+tampoco.
+
+**Las prosas.** La documentación de los cinco circuitos deja de decir que el congelado «no está
+atado» y que «el arreglo B la devolverá al AIR». `SECURITY.md` 3.6 gana el párrafo del §680. El
+RFC-0018 marca E1 construida, con su fila en la tabla de la D-A.
+
+**Contadores.** `stark-experiment` 407 -> 417. TOTAL DE SELLO 1632 -> 1642; TOTAL CON LARGOS 1769 ->
+1779, en los tres párrafos ancla, y la cifra de circuitos en `PRINCIPIOS.md`; y la de la línea de
+`cargo test -p stark-experiment` en `PAPER.md`, `PAPER_EN.md`, `doc/INSTITUCIONAL.md` y
+`doc/INSTITUTIONAL.md`, que `check_cifras` nombró en la primera vuelta del canon. El `BACKLOG.md` no
+se mueve.
