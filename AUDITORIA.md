@@ -45831,3 +45831,34 @@ RFC-0010; lo decide el autor, como la ventana con el índice declarado (D-D).
 **Lo que NO hace.** No publica: el tag `arqueo-verify-v0.4.2` va sobre el commit que lleva este
 asiento y la release se sube a mano; las huellas las fija el asiento que la registre, medidas desde
 fuera, como el §661 con la 0.4.1.
+
+## §666 — un byte ilegible en el diario se lleva su línea, no el diario: el tope del contador XMSS ya no se pierde al arrancar
+
+El commit que lleva este asiento, sobre el §665. Primero de los cortes del nodo y de la capa que el
+autor pidió tras el re-triaje del segundo enjambre. Lo escribe, lo prueba y lo commitea una sesión
+de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del
+nivel en sus pines, 296 s de tests.
+
+**El defecto (P2).** Los cinco lectores del diario (`limites`, `ultimo_recep_count`,
+`cierres_de_recepcion`, `maximo_indice`, `digests`) dicen que una línea ilegible se SALTA: cuesta una
+época gorda en la lectura, no un diario inservible. Pero leían con `read_to_string`, que falla
+ENTERO si un solo byte no es UTF-8. Un `0xFF` en una línea dejaba el diario sin ninguna, y
+`maximo_indice` daba `None`: el arranque perdía el tope del contador XMSS, la defensa de un contador
+restaurado hacia atrás. Medido por el re-triaje sobre `ed0f96b`: `None` con el byte, `Some(16)` sin
+él. Explotarlo exige escribir en el disco del nodo, y por eso es P2 y no P1.
+
+**Lo que hace.** `lineas_del_diario`: lee el fichero en bytes, lo parte por `\n` y descarta solo la
+línea que no es UTF-8, como ya se descartaba la que no es JSON. Los cinco lectores la usan. `None`
+solo si el fichero no se puede leer, como antes.
+
+**Falsador.** `un_byte_ilegible_se_lleva_su_linea_y_no_el_diario`: un diario con dos líneas sanas y
+dos con un `0xFF` da el máximo de las sanas y dos límites. **Medido con la lectura de antes**
+(`read_to_string` dentro del ayudante): cae.
+
+**Contadores.** `zk-ssl-node` 179 -> 180. TOTAL DE SELLO 1622 -> 1623; TOTAL CON LARGOS 1759 -> 1760,
+en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** Un diario que existe y no se puede leer entero —permisos, un disco que
+falla— sigue dando `None` y deja arrancar: es el lado permisivo que el propio `maximo_indice` declara.
+Convertirlo en PARADA es una decisión de operación, no de este corte.

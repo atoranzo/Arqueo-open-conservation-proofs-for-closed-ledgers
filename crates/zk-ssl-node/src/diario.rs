@@ -115,6 +115,26 @@ pub fn anotar(ruta: impl AsRef<Path>, l: &Latido, clave_publica: &[u8]) -> std::
     writeln!(f, "{}", linea(l, clave_publica))
 }
 
+/// §666: las lineas del diario, leidas sobre BYTES, cada una por su cuenta.
+///
+/// ⚠️ Hasta aqui los cinco lectores usaban `read_to_string`, que falla ENTERO
+/// si un solo byte no es UTF-8: un `0xFF` en una linea dejaba el diario sin
+/// ninguna, y `maximo_indice` daba `None`, asi que el arranque perdia el tope
+/// del contador XMSS (medido: `None` frente a `Some(16)`). La doctrina escrita
+/// en cada lector -«una linea ilegible se SALTA»- no se cumplia para este
+/// caso. Ahora una linea que no es UTF-8 se salta sola, como una que no es
+/// JSON. `None` solo si el fichero no se puede leer.
+fn lineas_del_diario(ruta: impl AsRef<Path>) -> Option<Vec<String>> {
+    let bytes = std::fs::read(ruta).ok()?;
+    Some(
+        bytes
+            .split(|b| *b == b'\n')
+            .filter_map(|l| std::str::from_utf8(l).ok())
+            .map(|l| l.trim_end_matches('\r').to_string())
+            .collect(),
+    )
+}
+
 /// Los límites de época que el diario conserva: los `seq` de sus líneas,
 /// en el orden en que se anotaron.
 ///
@@ -123,12 +143,12 @@ pub fn anotar(ruta: impl AsRef<Path>, l: &Latido, clave_publica: &[u8]) -> std::
 /// Las líneas ilegibles se **saltan**: una línea corrupta cuesta una
 /// época gorda en la lectura, no un pánico ni un diario inservible.
 pub fn limites(ruta: impl AsRef<Path>) -> Vec<u64> {
-    let texto = match std::fs::read_to_string(ruta) {
-        Ok(t) => t,
-        Err(_) => return Vec::new(),
+    let texto = match lineas_del_diario(ruta) {
+        Some(t) => t,
+        None => return Vec::new(),
     };
     let mut v = Vec::new();
-    for l in texto.lines() {
+    for l in &texto {
         let j: Value = match serde_json::from_str(l) {
             Ok(j) => j,
             Err(_) => continue,
@@ -155,9 +175,9 @@ pub fn ultimo_seq(ruta: impl AsRef<Path>) -> Option<u64> {
 /// pánico—, y las anteriores al §570, que no lo llevan, también. Un diario solo de ellas da
 /// `None`, y la primera era sale gorda: declarado, como la primera época de acuses.
 pub fn ultimo_recep_count(ruta: impl AsRef<Path>) -> Option<u64> {
-    let texto = std::fs::read_to_string(ruta).ok()?;
+    let texto = lineas_del_diario(ruta)?;
     let mut ultimo = None;
-    for l in texto.lines() {
+    for l in &texto {
         let j: Value = match serde_json::from_str(l) {
             Ok(j) => j,
             Err(_) => continue,
@@ -176,15 +196,15 @@ pub fn ultimo_recep_count(ruta: impl AsRef<Path>) -> Option<u64> {
 /// orden en que se anotaron. Las ilegibles y las anteriores al §570 se saltan, como en
 /// [`limites`]: una línea perdida junta dos eras en la lectura -una era gorda-, no un pánico.
 pub fn cierres_de_recepcion(ruta: impl AsRef<Path>) -> Vec<(u64, Option<u64>)> {
-    let texto = match std::fs::read_to_string(ruta) {
-        Ok(t) => t,
-        Err(_) => return Vec::new(),
+    let texto = match lineas_del_diario(ruta) {
+        Some(t) => t,
+        None => return Vec::new(),
     };
     let hex = |v: &Value| {
         v.as_str().and_then(|s| u64::from_str_radix(s.trim_start_matches("0x"), 16).ok())
     };
     let mut v = Vec::new();
-    for l in texto.lines() {
+    for l in &texto {
         let j: Value = match serde_json::from_str(l) {
             Ok(j) => j,
             Err(_) => continue,
@@ -208,12 +228,12 @@ pub fn cierres_de_recepcion(ruta: impl AsRef<Path>) -> Vec<(u64, Option<u64>)> {
 /// en [`limites`]. Las dos empujan al mismo lado: quien lo use falla hacia el
 /// lado PERMISIVO -deja arrancar-, nunca hacia un rojo falso.
 pub fn maximo_indice(ruta: impl AsRef<Path>) -> Option<u64> {
-    let texto = match std::fs::read_to_string(ruta) {
-        Ok(t) => t,
-        Err(_) => return None,
+    let texto = match lineas_del_diario(ruta) {
+        Some(t) => t,
+        None => return None,
     };
     let mut max: Option<u64> = None;
-    for l in texto.lines() {
+    for l in &texto {
         let j: Value = match serde_json::from_str(l) {
             Ok(j) => j,
             Err(_) => continue,
@@ -242,6 +262,30 @@ mod maximo_del_diario {
         let _ = std::fs::remove_file(&p);
         std::fs::write(&p, cuerpo).expect("escribir el diario de prueba");
         p
+    }
+
+    /// §666: un byte que no es UTF-8 en UNA linea solo se lleva esa linea. Antes
+    /// `read_to_string` fallaba entero y el maximo salia `None`: el arranque
+    /// perdia el tope del contador XMSS. Falsador: con `read_to_string`, `None`.
+    #[test]
+    fn un_byte_ilegible_se_lleva_su_linea_y_no_el_diario() {
+        let mut cuerpo = Vec::new();
+        for (k, i) in [3u64, 16, 9].iter().enumerate() {
+            cuerpo.extend_from_slice(linea_con(*i).as_bytes());
+            if k == 1 {
+                cuerpo.push(0xFF);
+            }
+            cuerpo.push(b'\n');
+        }
+        let mut basura = linea_con(40).into_bytes();
+        basura[2] = 0xFF;
+        cuerpo.extend_from_slice(&basura);
+        cuerpo.push(b'\n');
+        let p = std::env::temp_dir().join("zkssl_max_indice_ff.jsonl");
+        std::fs::write(&p, &cuerpo).expect("escribir el diario de prueba");
+        assert_eq!(maximo_indice(&p), Some(9), "las lineas sanas siguen contando; la rota no");
+        assert_eq!(limites(&p).len(), 2, "solo se saltan las dos lineas con el byte ilegible");
+        let _ = std::fs::remove_file(&p);
     }
 
     /// ⚠️⚠️ EL CASO ADVERSARIO: un indice MENOR detras de uno mayor, que
@@ -292,12 +336,12 @@ mod maximo_del_diario {
 /// ilegible o sin digest legible se SALTA — cuesta una hoja en la
 /// lectura, no un panico.
 pub fn digests(ruta: impl AsRef<Path>) -> Vec<zk_ssl_verify::acuses::Digest> {
-    let texto = match std::fs::read_to_string(ruta) {
-        Ok(t) => t,
-        Err(_) => return Vec::new(),
+    let texto = match lineas_del_diario(ruta) {
+        Some(t) => t,
+        None => return Vec::new(),
     };
     let mut v = Vec::new();
-    for l in texto.lines() {
+    for l in &texto {
         let j: Value = match serde_json::from_str(l) {
             Ok(j) => j,
             Err(_) => continue,
