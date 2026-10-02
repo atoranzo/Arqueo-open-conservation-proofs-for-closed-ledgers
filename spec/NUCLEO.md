@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 57 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 107, REFERENCIA 10, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 58 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 107, REFERENCIA 11, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -88,6 +88,7 @@ real de sus llaves, no por la primera marca.
 | `element_to_bytes` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `bytes_de_hex` | `hash/lib.rs` | REFERENCIA | HASH | `fn` |
 | `hex_canonico` | `hash/lib.rs` | REFERENCIA | HASH | `fn` |
+| `cantidad_canonica` | `hash/lib.rs` | REFERENCIA | HASH | `fn` |
 | `embeber` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `native_merge` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `path_root` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
@@ -355,6 +356,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §662 — `cantidad_canonica`: la QUANTITY (un `u64` en hexadecimal) en su escritura minima, sin
+  `+`, sin mayusculas y sin ceros a la izquierda, para el kit y el cable. Una fila nueva,
+  REFERENCIA: no compone ningun byte firmado; `HexError` gana `NoMinima`.
 - §650 — `HexError`, `bytes_de_hex` y `hex_canonico`: un solo lector de hexadecimal, sobre
   bytes, para el cable, el kit, el SDK y el testigo; el canónico exige `0x` y `[0-9a-f]`, la forma
   de los valores de `PAQUETE.md`. Tres filas nuevas, REFERENCIA: no componen ningún byte firmado.

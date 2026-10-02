@@ -1005,6 +1005,9 @@ pub enum HexError {
     LongitudImpar(usize),
     /// En esa posicion del cuerpo (en bytes) no hay una cifra admitida.
     NoHex(usize),
+    /// Una QUANTITY que no es la escritura minima de su numero: vacia, con un
+    /// cero a la izquierda o con mas de 16 cifras (§662).
+    NoMinima,
 }
 
 impl core::fmt::Display for HexError {
@@ -1013,6 +1016,7 @@ impl core::fmt::Display for HexError {
             HexError::SinPrefijo => write!(f, "hex sin 0x"),
             HexError::LongitudImpar(n) => write!(f, "hex de longitud impar ({n})"),
             HexError::NoHex(i) => write!(f, "hex: cifra no admitida en la posicion {i}"),
+            HexError::NoMinima => write!(f, "cantidad hex no minima"),
         }
     }
 }
@@ -1054,6 +1058,30 @@ pub fn bytes_de_hex(h: &str) -> Result<Vec<u8>, HexError> {
 pub fn hex_canonico(s: &str) -> Result<Vec<u8>, HexError> {
     let h = s.strip_prefix("0x").ok_or(HexError::SinPrefijo)?;
     descodificar(h, false)
+}
+
+/// §662: una QUANTITY del cable y del paquete —un `u64` en hexadecimal— leida
+/// SOLO en su escritura canonica, la que el nodo emite con `{:#x}`: `0x`, de 1 a
+/// 16 cifras `[0-9a-f]` y sin ceros a la izquierda (`0x0` para el cero).
+///
+/// ⚠️ Hasta aqui el kit y el cable la leian con `u64::from_str_radix`, que
+/// admite un `+` delante, mayusculas y ceros a la izquierda: `0x+2`, `0x02` y
+/// `0x2` eran el mismo numero, y el `+` pasaba aunque el §650 dijera que el
+/// lector de hexadecimal ya no lo admitia. No cambiaba ningun veredicto -lo que
+/// se firma y se compara es el digest, no el texto-, pero un valor tenia varias
+/// escrituras. La cota `< p` NO es de esta funcion: la pone `u64_canonico`.
+pub fn cantidad_canonica(s: &str) -> Result<u64, HexError> {
+    let h = s.strip_prefix("0x").ok_or(HexError::SinPrefijo)?;
+    let b = h.as_bytes();
+    if b.is_empty() || b.len() > 16 || (b.len() > 1 && b[0] == b'0') {
+        return Err(HexError::NoMinima);
+    }
+    let mut x: u64 = 0;
+    for (i, &c) in b.iter().enumerate() {
+        let d = cifra(c, false).ok_or(HexError::NoHex(i))?;
+        x = x << 4 | d as u64;
+    }
+    Ok(x)
 }
 
 /// Un elemento de Goldilocks cabe en 8 bytes, little-endian.
@@ -1837,6 +1865,27 @@ mod tests_hex {
         // `u8::from_str_radix("+f", 16)` da 15: antes "0x+f+f" era [15, 15].
         assert_eq!(hex_canonico("0x+f+f"), Err(HexError::NoHex(0)));
         assert_eq!(hex_canonico("0xabc"), Err(HexError::LongitudImpar(3)));
+    }
+
+    /// §662: la QUANTITY en su escritura minima y en ninguna otra. Falsador:
+    /// con `u64::from_str_radix`, `0x+2`, `0x02` y `0xA` leen 2, 2 y 10.
+    #[test]
+    fn la_cantidad_es_la_escritura_minima_y_ninguna_otra() {
+        assert_eq!(cantidad_canonica("0x0"), Ok(0));
+        assert_eq!(cantidad_canonica("0x2"), Ok(2));
+        assert_eq!(cantidad_canonica("0x3d0900"), Ok(4_000_000));
+        assert_eq!(cantidad_canonica("0xffffffffffffffff"), Ok(u64::MAX));
+        assert_eq!(cantidad_canonica("0x+2"), Err(HexError::NoHex(0)));
+        assert_eq!(cantidad_canonica("0x02"), Err(HexError::NoMinima));
+        assert_eq!(cantidad_canonica("0x00"), Err(HexError::NoMinima));
+        assert_eq!(cantidad_canonica("0x"), Err(HexError::NoMinima));
+        assert_eq!(cantidad_canonica("0x1ffffffffffffffff"), Err(HexError::NoMinima));
+        assert_eq!(cantidad_canonica("0xA"), Err(HexError::NoHex(0)));
+        assert_eq!(cantidad_canonica("0x2\u{e9}"), Err(HexError::NoHex(1)));
+        assert_eq!(cantidad_canonica("2"), Err(HexError::SinPrefijo));
+        for x in [0u64, 1, 15, 16, 4_000_000, u64::MAX] {
+            assert_eq!(cantidad_canonica(&format!("{x:#x}")), Ok(x), "ida y vuelta de {x}");
+        }
     }
 
     #[test]

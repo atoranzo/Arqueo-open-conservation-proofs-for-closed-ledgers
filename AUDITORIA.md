@@ -45701,3 +45701,41 @@ publicado, como pide su sección 5— y da la 0.4.1 como vigente.
 **Lo que NO hace.** No retira la 0.4.0 ni la 0.3.0, que siguen publicadas y se marcan, no se borran.
 Ni un test ni un pin se mueven. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE,
 con 270 s de tests.
+
+## §662 — la QUANTITY en su escritura mínima: el `+` y los ceros a la izquierda de un `u64` ya no se leen
+
+El commit que lleva este asiento, sobre `ed0f96b` (el §661). Primero de los cuatro cortes del kit
+0.4.2 que el autor pidió tras el re-triaje del segundo enjambre. Lo escribe, lo prueba y lo commitea
+una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19
+crates del nivel en sus pines, 752 s de tests, la conformidad y los once catálogos en verde.
+
+**El defecto (P3).** El §650 llevó todo el hexadecimal del cable y del kit a un lector sobre bytes que
+no admite `+` ni mayúsculas, y `SECURITY.md` 3.9 lo dio por cerrado. Pero los `u64` —la QUANTITY del
+cable y los enteros del sobre que lee el kit— no pasaban por ese lector: se leían con
+`u64::from_str_radix`, que admite un `+` delante, mayúsculas y ceros a la izquierda. `0x+2`, `0x02`
+y `0x2` eran el mismo número. Ningún veredicto cambiaba —lo que se firma y se compara es el digest,
+no el texto—, pero un valor tenía varias escrituras, y la sonda del enjambre con `"0x+2"` en un `u64`
+salía VERDE.
+
+**Lo que hace.** `zk_ssl_hash::cantidad_canonica`: `0x`, de 1 a 16 cifras `[0-9a-f]` y sin ceros a la
+izquierda, la escritura que el propio nodo emite con `{:#x}`; `HexError` gana `NoMinima`. La usan
+`u64_de` del kit, antes de la cota `< p` del §640, y el `Deserialize` de `Q` en `zk-ssl-wire`. La
+tabla de `spec/NUCLEO.md` gana su fila, REFERENCIA, y la fila del hexadecimal de `SECURITY.md` 3.9
+nombra este sello para los `u64`. Los vectores, la conformidad y los once catálogos salen iguales en
+el canon: ningún productor de la casa escribe una QUANTITY que no sea mínima.
+
+**Falsadores.** Uno por crate: `la_cantidad_es_la_escritura_minima_y_ninguna_otra` en `zk-ssl-hash`,
+`la_quantity_del_cable_es_la_escritura_minima` en `zk-ssl-wire` y
+`un_u64_del_sobre_es_la_escritura_minima` en `zk-ssl-verify`. **Medido con el lector laxo**
+(`from_str_radix` dentro de `cantidad_canonica`): los tres caen.
+
+**Contadores.** `zk-ssl-hash` 49 -> 50, `zk-ssl-wire` 25 -> 26, `zk-ssl-verify` 166 -> 167. TOTAL DE
+SELLO 1618 -> 1621; TOTAL CON LARGOS 1755 -> 1758, en los tres párrafos ancla, y la cifra del
+verificador en `PRINCIPIOS.md`. El censo de `spec/NUCLEO.md`, 57 -> 58 `pub` en `zk-ssl-hash` y
+REFERENCIA 10 -> 11. El `BACKLOG.md` no se mueve.
+
+**Lo que NO hace.** No toca los lectores de `u64` de la CLI (`zk-ssl-cli`: `witness.rs`, `cobro.rs`) ni
+del SDK, que leen ficheros y respuestas locales; ni la segunda implementación de `tools/segunda`,
+que no tiene vector nuevo que rechazar: este sello no añade vectores. No publica un kit: el corte de
+la 0.4.2 llega al final de los cuatro arreglos.

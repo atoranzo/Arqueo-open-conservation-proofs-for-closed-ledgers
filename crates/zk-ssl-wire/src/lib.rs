@@ -90,8 +90,11 @@ impl Serialize for Q {
 impl<'de> Deserialize<'de> for Q {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let s = String::deserialize(d)?;
-        let h = s.strip_prefix("0x").ok_or_else(|| D::Error::custom("QUANTITY sin 0x"))?;
-        u64::from_str_radix(h, 16)
+        if !s.starts_with("0x") {
+            return Err(D::Error::custom("QUANTITY sin 0x"));
+        }
+        // §662: la escritura minima, la que este mismo tipo serializa con `{:#x}`.
+        zk_ssl_hash::cantidad_canonica(&s)
             .map(Q)
             .map_err(|_| D::Error::custom("QUANTITY inválida"))
     }
@@ -1295,6 +1298,19 @@ mod tests {
     /// §650: el DATA del cable se lee sobre bytes. Un multibyte, un `+` o una
     /// mayuscula son `BadHex` dentro de `Deserialize`, no un panico. Falsador:
     /// con la copia que troceaba el `&str`, el primer caso entra en panico.
+    /// §662: la QUANTITY del cable en su escritura minima. Falsador: con
+    /// `u64::from_str_radix`, `0x+2`, `0x02` y `0xA` se aceptaban.
+    #[test]
+    fn la_quantity_del_cable_es_la_escritura_minima() {
+        let lee = |s: &str| serde_json::from_value::<Q>(Value::String(s.into()));
+        assert_eq!(lee("0x0").expect("cero"), Q(0));
+        assert_eq!(lee("0x3d0900").expect("canonica"), Q(4_000_000));
+        for mal in ["0x+2", "0x02", "0xA", "0x", "2", "0x1ffffffffffffffff"] {
+            assert!(lee(mal).is_err(), "{mal} no es una QUANTITY canonica");
+        }
+        assert_eq!(serde_json::to_value(Q(4_000_000)).expect("ser"), Value::String("0x3d0900".into()));
+    }
+
     #[test]
     fn el_data_del_cable_es_el_hex_canonico() {
         let mal = |s: &str| serde_json::from_value::<B32>(Value::String(s.into())).unwrap_err().to_string();

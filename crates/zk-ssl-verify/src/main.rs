@@ -83,6 +83,7 @@ fn hex_a_bytes(s: &str) -> Result<Vec<u8>, String> {
         HexError::SinPrefijo => err(format!("sin 0x: {s:.18}")),
         HexError::LongitudImpar(n) => err(format!("hex impar ({n} chars)")),
         HexError::NoHex(i) => err(format!("hex: cifra no admitida en la posicion {i}")),
+        HexError::NoMinima => err(format!("hex no minimo: {s:.18}")),
     })
 }
 
@@ -114,8 +115,12 @@ fn u64_de(v: &serde_json::Value, campo: &str) -> Result<u64, String> {
         .get(campo)
         .and_then(|x| x.as_str())
         .ok_or_else(|| err(format!("falta {campo} o no es cadena 0x")))?;
-    let h = s.strip_prefix("0x").ok_or_else(|| err(format!("{campo} sin 0x")))?;
-    let x = u64::from_str_radix(h, 16).map_err(|e| err(format!("{campo}: {e}")))?;
+    if !s.starts_with("0x") {
+        return Err(err(format!("{campo} sin 0x")));
+    }
+    // §662: la escritura minima y ninguna otra (sin `+`, sin mayusculas, sin
+    // ceros a la izquierda); despues, la cota `< p` del §640.
+    let x = zk_ssl_hash::cantidad_canonica(s).map_err(|e| err(format!("{campo}: {e}")))?;
     zk_ssl_hash::u64_canonico(x).map_err(|e| err(format!("{campo}: {e}")))
 }
 
@@ -2741,6 +2746,17 @@ mod tests {
     }
 
     /// §573 · el `tipo` completitud se despacha, y sin cierre se rechaza con su nombre.
+
+    /// §662: cada `u64` del sobre se lee en su escritura minima. Falsador: con
+    /// `u64::from_str_radix`, `0x+2` y `0x02` leian 2 y la sonda del enjambre
+    /// con `"0x+2"` en un `u64` salia VERDE.
+    #[test]
+    fn un_u64_del_sobre_es_la_escritura_minima() {
+        assert_eq!(u64_de(&json!({"n": "0x2"}), "n"), Ok(2));
+        for mal in ["0x+2", "0x02", "0xA", "0x", "2"] {
+            assert!(u64_de(&json!({"n": mal}), "n").is_err(), "{mal} no es un u64 canonico");
+        }
+    }
     #[test]
     fn el_sobre_de_completitud_se_despacha_y_sin_cierre_lo_dice() {
         let e = verificar_paquete(&json!({ "v": 1, "tipo": "completitud" })).unwrap_err();
