@@ -384,6 +384,10 @@ struct App {
     /// cabeza se resetea VISIBLEMENTE, y quien firma lleva diario
     /// obligado (§285), asi que toda cabeza FIRMADA lleva continuidad.
     hojas_mmr: Mutex<Vec<zk_ssl_verify::acuses::Digest>>,
+    /// §673: la FRONTERA de `hojas_mmr`, para que la cima cueste O(log t) y no
+    /// O(t). Es una cache derivada: `pareja_mmr` la pone al dia con las hojas
+    /// que falten, siempre con el candado de las hojas tomado antes.
+    frontera_mmr: Mutex<latido::Frontera>,
     /// La clave pública de firma, en bytes del formato RFC. **Vacía** si el
     /// nodo arrancó sin `--clave`. Un testigo la necesita para verificar.
     clave_publica_firma: Vec<u8>,
@@ -1201,6 +1205,7 @@ async fn main() -> anyhow::Result<()> {
         reserva_ttl: Duration::from_secs(args.reserva_ttl),
         ultima_cabeza: Mutex::new(None),
         hojas_mmr: Mutex::new(hojas_mmr_iniciales),
+        frontera_mmr: Mutex::new(latido::Frontera::default()),
         clave_publica_firma,
         diario: args.diario.as_ref().map(std::path::PathBuf::from),
         latido_s: args.latido,
@@ -1797,12 +1802,14 @@ fn parse<T: serde::de::DeserializeOwned>(params: Value) -> Result<T, RpcError> {
 }
 
 impl App {
-    /// ¿Queda algún candado envenenado? (§530). Los seis `Mutex` de `App`, uno a
-    /// uno: si `App` gana otro, entra aquí. El sexto, el registro, desde §569.
+    /// ¿Queda algún candado envenenado? (§530). Los siete `Mutex` de `App`, uno a
+    /// uno: si `App` gana otro, entra aquí. El sexto, el registro, desde §569; el
+    /// septimo, la frontera del MMR, desde §673.
     fn algun_candado_envenenado(&self) -> bool {
         self.estado.is_poisoned()
             || self.ultima_cabeza.is_poisoned()
             || self.hojas_mmr.is_poisoned()
+            || self.frontera_mmr.is_poisoned()
             || self.cofirmas.is_poisoned()
             || self.recepcion.is_poisoned()
             || self.registro.is_poisoned()
@@ -3401,6 +3408,7 @@ mod tests {
             reserva_ttl: Duration::from_secs(ttl_segundos),
             ultima_cabeza: Mutex::new(None),
             hojas_mmr: Mutex::new(Vec::new()),
+            frontera_mmr: Mutex::new(crate::latido::Frontera::default()),
             clave_publica_firma: Vec::new(),
             diario: None,
             latido_s: crate::latido::LATIDO_POR_DEFECTO_S,

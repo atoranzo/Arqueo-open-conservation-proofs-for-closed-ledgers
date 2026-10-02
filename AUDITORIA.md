@@ -46049,3 +46049,36 @@ en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG
 **Lo que NO cierra.** El trabajo sigue haciéndose bajo el candado y sigue creciendo con K; lo que
 cambia es la constante. Quedan los otros dos costes de H15: la cima del MMR recompuesta desde todas las
 hojas en cada latido y en cada `zkssl_epochHead`, y el diario releído entero en cada `zkssl_ackPath`.
+
+## §673 — la cima del MMR de cabezas, al día y no recompuesta: 11,3 s -> 79 µs por latido a un año de cabezas
+
+El commit que lleva este asiento, sobre el §672. Segundo corte de H15. Lo escribe, lo prueba y lo
+commitea una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE, con 314 s de tests.
+
+**El coste.** `pareja_mmr` daba la cima del MMR de cabezas recomponiéndola de todas las hojas con
+`zk_ssl_verify::mmr::cima`, el árbol de Merkle de RFC 6962: O(t) por llamada, en cada latido y en
+cada `zkssl_epochHead`, la lectura pública sin credencial. Medido en la sesión, en release y sobre
+este árbol, con t = 525.960 hojas —un año de latidos de un minuto—: **11,34 s** por llamada. El
+segundo enjambre había medido 0,95 s a 43.830 hojas (un mes) y 11,6 s al año.
+
+**Lo que hace.** `latido::Frontera`: las raíces de los subárboles perfectos en que se parten las
+hojas, como un contador binario. Añadir una hoja cuesta O(1) amortizado y la cima es el pliegue por la
+derecha de esas raíces, O(log t). `App` gana `frontera_mmr`, una caché derivada de `hojas_mmr`:
+`pareja_mmr`, con el candado de las hojas tomado, la pone al día con las que falten y da su cima. Si
+las hojas fueran menos que las vistas —no pasa: solo se añaden—, la frontera empieza de cero. El
+candado nuevo entra en `algun_candado_envenenado` (§530). Medido en la sesión a t = 525.960: una hoja
+más y la cima, **79 µs**. La primera puesta al día tras arrancar recorre todas las hojas una vez (11,2 s
+a un año), igual que antes cada llamada. Ningún formato ni ninguna cima cambian.
+
+**Falsador.** `la_frontera_da_la_cima_de_todas_las_hojas`: para cada t de 1 a 300 la cima de la
+frontera es la del oráculo, `zk_ssl_verify::mmr::cima`, hoja a hoja y a saltos. **Medido con el
+pliegue por la izquierda**: cae.
+
+**Contadores.** `zk-ssl-node` 182 -> 183. TOTAL DE SELLO 1627 -> 1628; TOTAL CON LARGOS 1764 -> 1765,
+en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** `zkssl_consistencyProof` sigue componiendo su prueba de consistencia sobre todas
+las hojas (O(t)), y la primera puesta al día tras arrancar cuesta una pasada entera. Queda el tercer
+coste de H15: el diario releído entero en cada `zkssl_ackPath`.

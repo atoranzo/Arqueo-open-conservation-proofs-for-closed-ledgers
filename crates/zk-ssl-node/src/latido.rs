@@ -470,14 +470,73 @@ pub fn conservar(app: &App, l: Latido) {
 /// y el latido FIRMABA una cabeza que decia «ninguna cabeza emitida»: una
 /// historia vacia bajo la firma del operador. Ahora es un error, y el latido
 /// no compone ni firma, como con el candado del estado.
+///
+/// ⚠️ §673: la cima ya no se recompone de todas las hojas: la da la
+/// [`Frontera`], que se pone al dia con las hojas nuevas. Medido por el
+/// segundo enjambre, recomponerla costaba 0,95 s a 43.830 hojas (un mes) y
+/// 11,6 s a 525.960 (un año), y se hacia en cada latido y en cada
+/// `zkssl_epochHead`.
 pub fn pareja_mmr(app: &App) -> anyhow::Result<(zk_ssl_verify::acuses::Digest, u64)> {
     let h = app
         .hojas_mmr
         .lock()
         .map_err(|_| anyhow::anyhow!("el candado de las hojas del MMR esta envenenado"))?;
-    let t = h.len() as u64;
-    let cima = zk_ssl_verify::mmr::cima(&h).unwrap_or_else(|| zk_ssl_verify::acuses::as_digest(0));
-    Ok((cima, t))
+    let mut f = app
+        .frontera_mmr
+        .lock()
+        .map_err(|_| anyhow::anyhow!("el candado de la frontera del MMR esta envenenado"))?;
+    f.al_dia(&h);
+    let cima = f.cima().unwrap_or_else(|| zk_ssl_verify::acuses::as_digest(0));
+    Ok((cima, h.len() as u64))
+}
+
+/// §673: la frontera de un arbol de Merkle de RFC 6962 (la `mth` de
+/// `zk_ssl_verify::mmr`): las raices de los subarboles perfectos en que se
+/// parten las hojas, de izquierda a derecha y de mayor a menor. Añadir una
+/// hoja cuesta O(1) amortizado; la cima es el pliegue por la derecha de esas
+/// raices, O(log t). `zk_ssl_verify::mmr::cima` es su oraculo en los tests.
+#[derive(Default)]
+pub struct Frontera {
+    picos: Vec<(u32, zk_ssl_verify::acuses::Digest)>,
+    hojas: usize,
+}
+
+impl Frontera {
+    fn push(&mut self, hoja: zk_ssl_verify::acuses::Digest) {
+        let mut nodo = zk_ssl_hash::mmr_hoja(hoja);
+        let mut altura = 0u32;
+        while let Some(&(a, izquierda)) = self.picos.last() {
+            if a != altura {
+                break;
+            }
+            self.picos.pop();
+            nodo = zk_ssl_hash::mmr_nodo(izquierda, nodo);
+            altura += 1;
+        }
+        self.picos.push((altura, nodo));
+        self.hojas += 1;
+    }
+
+    /// Pone la frontera al dia con `hojas`: añade las que falten. Si `hojas`
+    /// fuera mas corta que lo ya visto -no pasa: solo se añaden-, empieza de
+    /// cero en vez de servir una cima de otra serie.
+    fn al_dia(&mut self, hojas: &[zk_ssl_verify::acuses::Digest]) {
+        if hojas.len() < self.hojas {
+            *self = Frontera::default();
+        }
+        for h in &hojas[self.hojas..] {
+            self.push(*h);
+        }
+    }
+
+    fn cima(&self) -> Option<zk_ssl_verify::acuses::Digest> {
+        let mut it = self.picos.iter().rev();
+        let mut acc = it.next()?.1;
+        for (_, izquierda) in it {
+            acc = zk_ssl_hash::mmr_nodo(*izquierda, acc);
+        }
+        Some(acc)
+    }
 }
 
 #[cfg(test)]
@@ -505,6 +564,26 @@ mod tests {
     /// latido no firma. Antes salia `(as_digest(0), 0)` -el genesis- y el latido
     /// componia una cabeza con la historia vacia. Falsador: con la version de
     /// antes, `pareja_mmr` da `Ok` y el `is_err` cae.
+    /// §673: la frontera da la MISMA cima que recomponerla de todas las hojas
+    /// (`zk_ssl_verify::mmr::cima`, el oraculo) para cada t de 1 a 300, añadida
+    /// hoja a hoja y puesta al dia a saltos. Falsador: con el pliegue al reves
+    /// (por la izquierda), las cimas difieren desde t = 3.
+    #[test]
+    fn la_frontera_da_la_cima_de_todas_las_hojas() {
+        let hojas: Vec<_> = (0..300u64).map(zk_ssl_verify::acuses::as_digest).collect();
+        let mut f = Frontera::default();
+        assert_eq!(f.cima(), None);
+        for t in 1..=hojas.len() {
+            f.al_dia(&hojas[..t]);
+            assert_eq!(f.cima(), zk_ssl_verify::mmr::cima(&hojas[..t]), "t = {t}");
+        }
+        let mut g = Frontera::default();
+        for t in [1usize, 2, 7, 64, 65, 200, 300] {
+            g.al_dia(&hojas[..t]);
+            assert_eq!(g.cima(), zk_ssl_verify::mmr::cima(&hojas[..t]), "a saltos, t = {t}");
+        }
+    }
+
     #[test]
     fn con_las_hojas_envenenadas_no_hay_pareja_ni_latido() {
         let app = std::sync::Arc::new(crate::tests::nodo(30));
