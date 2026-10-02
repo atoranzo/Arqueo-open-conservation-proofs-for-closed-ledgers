@@ -23,7 +23,7 @@
   índice), §591 (la huella de la clave), §594 (la puerta del diario en todo estado), §636 y §638
   (lo que hoy pasa al cambiar de clave, medido), §639 (esta propuesta), §642 (las decisiones) y
   §643 (la E2),
-  §644 (la E3a), §645 (la E3b-1), §646 (la E3b-2), §647 (la E4), §648 (la E5a), §649 (la E5b) y §686 (la E5c).
+  §644 (la E3a), §645 (la E3b-1), §646 (la E3b-2), §647 (la E4), §648 (la E5a), §649 (la E5b), §686 (la E5c) y §687 (el testigo que arma su sobre).
 - **Backlog:** la **84** (agotamiento, rotación y pérdida del índice), con la **92** (custodia y
   supervivencia del índice) y la **19** en su línea de familia, que el §288 pidió cortar juntas;
   la **87** (agilidad criptográfica: el acta lleva el esquema de la clave que presenta); y la
@@ -41,7 +41,7 @@
 | E4 — el testigo | ante un cambio de clave pide el acta, la juzga contra la clave que fijó y sigue o se detiene; `--auditar` la juzga en el diario | no | **construida (§647)**: ante un cambio de clave el testigo pide `zkssl_keyActs` y la juzga con `juzgar_rotacion` del kit; si la cadena lleva de la clave fijada a la recibida, anota `rotada` con la cadena dentro, fija la nueva con su tramo y sigue; si no, se detiene como antes, con el motivo. Nace `solapamiento`, que detiene (reglas 3 y 4). `--auditar` rejuzga la rotación desde la línea, sin el nodo. El diario del testigo pasa a v4 |
 | E5a — el kit | el campo `actas` en los sobres que comparan cabezas | no (aditivo: un campo opcional) | **construida (§648)**: `juzgar_continuidad` en el kit, un juez para los ocho sitios que exigen la continuidad de un firmante —la extensión, el consumo y las seis cabezas que la completitud compara con su cierre—; el índice EMBEBIDO ordena las dos cabezas, la cadena lleva de la anterior a la posterior (reglas 1 a 3) y la posterior cae en su tramo (regla 4, que nace con nombre: `FueraDeTramo`). Sin `actas`, el texto de `claves_distintas` byte a byte. El conflicto y la vista dividida no la leen, y `spec/PAQUETE.md` dice por qué |
 | E5b — el catálogo y el banco | los vectores con `actas`, `tools/banco_rotacion.sh` contra un nodo real y la segunda implementación que los lee | no | **construida (§649)**: `spec/vectors/rotacion/`, la duodécima familia del artefacto, copiada de un nodo real que rota dos veces —A, B con la firma de A, C sin la de B—: tres positivos, las dos conductas del operador que la cadena delata sembradas con sus claves —la vieja que firma después, la nueva que firma antes— y dieciocho negativos por una mutación; la segunda implementación lee `actas` y pasa los 23 con el mismo arnés, y su salida es la del binario línea a línea en los positivos |
-| E5c — el sobre del solapamiento | `tipo: "solapamiento"`: una cabeza y la cadena; la detección portable de las reglas 3 y 4 | no (aditivo: un sobre nuevo) | **construida (§686)**: `Tramo` y `tramos_de` en el núcleo —un tramo por cada entrada de la clave en la cadena, y la génesis sin juzgar lo de antes de optar—; una cabeza fuera de todos los tramos de su clave es DETECCIÓN con salida 0, el molde de la vista dividida; once sobres derivados de la familia `rotacion/` sin otra corrida, que la segunda implementación pasa; y la refutación del conflicto entre dos claves de un operador, escrita: el sobre de extensión con la cadena, no la cadena sola |
+| E5c — el sobre del solapamiento | `tipo: "solapamiento"`: una cabeza y la cadena; la detección portable de las reglas 3 y 4 | no (aditivo: un sobre nuevo) | **construida (§686)**: `Tramo` y `tramos_de` en el núcleo —un tramo por cada entrada de la clave en la cadena, y la génesis sin juzgar lo de antes de optar—; una cabeza fuera de todos los tramos de su clave es DETECCIÓN con salida 0, el molde de la vista dividida; once sobres derivados de la familia `rotacion/` sin otra corrida, que la segunda implementación pasa; y la refutación del conflicto entre dos claves de un operador, escrita: el sobre de extensión con la cadena, no la cadena sola. Desde el §687 lo arma el testigo desde su diario, `--auditar --sobres` |
 | E6 — el medio | el acta como hoja del medio de la clave que se va y de la que llega, con la E3 del RFC-0013 | no | pendiente, tras la E3 del RFC-0013 |
 
 ## Motivación
@@ -241,7 +241,10 @@ delataría a un operador honrado. Una cabeza fuera de TODOS los tramos de su cla
 salida 0. Quien delata no puede fabricar un tramo —las actas las firman las claves del operador— y
 un prefijo de la cadena solo delata menos. Y el conflicto entre dos claves de un operador se refuta
 con el sobre de extensión entre sus dos cabezas, con la cadena: la cadena sola no basta, porque dos
-operadores de acuerdo pueden firmarse una, y no una historia común.
+operadores de acuerdo pueden firmarse una, y no una historia común. Desde el §687 el testigo arma
+el sobre desde su diario: por la regla 4, con la cabeza de la línea y la cadena de la rotación que
+fijó su tramo; por la regla 3, con la cabeza de la clave vieja de hoja más alta —la que la memoria
+usa como lo visto— y la cadena de la línea que la delata.
 
 ### D-F — El agotamiento: un aviso con umbral, y la sucesora ya comprometida
 

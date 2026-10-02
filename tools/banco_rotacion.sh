@@ -12,7 +12,10 @@
 # la regla 3- y B firmando con un contador fresco por debajo de su acta -fuera de su tramo, la
 # regla 4-. Y un negativo por cada regla del lector y de la cadena que una mutacion produce.
 # Desde el §686, las dos conductas tambien en su propio sobre, `tipo: "solapamiento"` -la cabeza y la
-# cadena, sin la otra cabeza-, con las tres claves dentro de su tramo como negativos.
+# cadena, sin la otra cabeza-, con las tres claves dentro de su tramo como negativos. Y desde el §687,
+# un TESTIGO de verdad sobre otro diario: ve la rotacion de A a B, sigue, ve a B firmar por debajo
+# de su acta con un contador fresco y se detiene; `--auditar --sobres` arma el sobre del solapamiento
+# desde su diario, y el mando lo juzga sin el nodo ni el testigo.
 #
 # FUERA del canon: levanta procesos y espera latidos. NO ESCRIBE EN EL ARBOL: todo vive en un
 # temporal bajo $HOME, que borra al salir, y lo comprueba al final por `git status --porcelain`.
@@ -36,13 +39,13 @@ done
 DIR=$(mktemp -d "$HOME/.banco_rotacion.XXXXXX")
 trap 'rm -rf "$DIR"' EXIT INT TERM HUP QUIT
 msg "compilando nodo y verificador en RELEASE (aqui se firma de verdad)"
-cargo build --release -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
-  || cargo build --release -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
+cargo build --release -q -p zk-ssl-node -p zk-ssl-verify -p zk-ssl-cli 2>/dev/null \
+  || cargo build --release -p zk-ssl-node -p zk-ssl-verify -p zk-ssl-cli || fallo "no compila"
 
 python3 - "$DIR" "${GUARDAR:-}" <<'PY'
-import copy, json, os, shutil, subprocess, sys, time, urllib.request
+import copy, glob, json, os, shutil, subprocess, sys, time, urllib.request
 DIR, GUARDAR = sys.argv[1], sys.argv[2]
-NODO, MANDO = 'target/release/zk-ssl-node', 'target/release/zk-ssl-verify'
+NODO, MANDO, CLI = 'target/release/zk-ssl-node', 'target/release/zk-ssl-verify', 'target/release/zk-ssl-cli'
 P = 8831
 def msg(m): print('BANCO-ROTACION| ' + m, file=sys.stderr, flush=True)
 def rojo(m): msg('ROJO: ' + m); sys.exit(1)
@@ -273,6 +276,52 @@ mando('neg-solap-sin-cabeza', con(solap(h_a), lambda s: s.pop('cabeza')), 1,
       'falta cabeza (la firmada que se juzga contra su tramo)')
 mando('neg-solap-cabeza-v2', solap(dict(h_a, formatVersion='0x2')), 1,
       'cabeza: formatVersion 2: el sobre del solapamiento lee cabezas v3, v4, v5 o v6: las que firma un nodo con actas')
+# ── §687 · el TESTIGO, de verdad, sobre otro diario: la rotacion de A a B la explica la cadena y
+#    sigue; B con un contador fresco firma por debajo de su acta y se detiene. Del diario sale el
+#    sobre, y el mando lo juzga sin el nodo ni el testigo.
+op2, diario_t = DIR + '/op2', DIR + '/testigo.jsonl'
+testigo = subprocess.Popen([CLI, 'witness', '--nodo', 'http://127.0.0.1:%d' % P, '--cada', '1',
+                            '--veces', '90', '--no-color', '--diario', diario_t],
+                           stdout=open(DIR + '/testigo.out', 'w'), stderr=subprocess.STDOUT)
+try:
+    nodo = levantar('A', op2, '--siguiente', HB)
+    try:
+        cabeza(lambda r: int(r['mmrSize'], 16) >= 2, 'A, con el testigo mirando')
+        time.sleep(3)
+    finally:
+        parar(nodo)
+    nodo = levantar('B', op2, '--siguiente', HC, '--clave-anterior-fichero', CLAVES['A'])
+    try:
+        cabeza(lambda r: r['publicKey'] != h_a['publicKey'], 'B rotada, con el testigo mirando')
+        time.sleep(4)
+    finally:
+        parar(nodo)
+    nodo = levantar('B', DIR + '/fresco-testigo')
+    try:
+        testigo.wait(timeout=60)
+    except subprocess.TimeoutExpired:
+        rojo('el testigo no se detuvo ante la B que firma por debajo de su acta')
+    finally:
+        parar(nodo)
+finally:
+    if testigo.poll() is None:
+        testigo.kill(); testigo.wait()
+clases = [json.loads(l).get('clase') for l in open(diario_t) if l.strip()]
+if 'rotada' not in clases or clases[-1] != 'solapamiento':
+    rojo('el diario del testigo no es rotada y despues solapamiento: %s' % clases)
+msg('el testigo: %d lineas, rotada y despues solapamiento; se detuvo' % len(clases))
+p = subprocess.run([CLI, 'witness', '--auditar', diario_t, '--sobres', DIR + '/sobres-testigo', '--no-color'],
+                   capture_output=True, text=True)
+sobres = sorted(glob.glob(DIR + '/sobres-testigo/*.json'))
+if len(sobres) != 1:
+    rojo('--auditar --sobres no armo un sobre: %s' % (p.stdout + p.stderr)[-600:])
+q = subprocess.run([MANDO, sobres[0]], capture_output=True, text=True)
+ok = q.returncode == 0 and 'VERDE: SOLAPAMIENTO' in q.stdout
+fallos += 0 if ok else 1
+msg('%s el sobre que arma el testigo desde su diario: exit %d (se esperaba 0: VERDE: SOLAPAMIENTO)'
+    % ('OK  ' if ok else 'ROJO', q.returncode))
+if not ok:
+    msg('     ' + (q.stdout + q.stderr).strip().replace('\n', '\n     '))
 if GUARDAR:
     open(GUARDAR + '/entradas.txt', 'w').write('\n'.join(entradas) + '\n')
 sys.exit(1 if fallos else 0)

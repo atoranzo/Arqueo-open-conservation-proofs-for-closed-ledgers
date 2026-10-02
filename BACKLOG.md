@@ -710,6 +710,9 @@ instrumentacion) al grupo E.*
   de los tramos de su clave es detección portable, sin el testigo—, y la
   refutación del conflicto entre dos claves de un operador, escrita. QUEDA
   el medio (E6): sigue abierta.
+  ✅ a medias (§687): el testigo arma el sobre del solapamiento desde su
+  diario (`--auditar --sobres`), y el banco de la rotación lo demuestra con
+  un testigo de verdad. QUEDA el medio (E6): sigue abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con

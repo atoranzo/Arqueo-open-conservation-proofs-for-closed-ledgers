@@ -47195,3 +47195,57 @@ hoja donde firmó el acta de su sucesora— no la ve este sobre: es la reutiliza
 delata con las dos firmas.
 
 **Lo que NO cierra.** La 84 sigue abierta, con la E2 a la E5 de su RFC construidas; le queda la E6.
+
+## §687 — el testigo arma el sobre del solapamiento desde su diario: lo que detecta, cualquiera lo verifica sin él
+
+El commit que lleva este asiento, sobre `01afa98` (el §686). Un solo sello: `--auditar` del testigo
+arma, con `--sobres DIR`, un sobre del solapamiento por cada solapamiento que su diario delata; la
+lista de campos de la cabeza que guarda el diario pasa a una constante con un productor para la
+línea y para el sobre; el banco de la rotación gana una fase con un testigo de verdad;
+`spec/PAQUETE.md`, el RFC-0015, la entrada 84, la fila del canon y las cifras de tres documentos se
+ponen al día; y este asiento. Lo escribe, lo prueba y lo commitea la sesión de Claude Code del §643
+al §686, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor
+corre el canon `--sello` y empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE, con `zk-ssl-cli` en 136 de 136 y `check_tests` en 1833.
+
+**De dónde sale.** El §686 dejó dicho que el testigo, al ver un solapamiento, se detiene y lo anota
+con la cadena, pero no arma el sobre: la detección se quedaba en un diario que hay que creerle al
+testigo. El diario ya guarda todo lo que hace falta —los campos de la cabeza firmada, para
+reverificarla sin el nodo, y la cadena en la línea de la rotación—.
+
+**Lo que hace.**
+
+1. **El auditor recuerda lo que el sobre necesita.** La cadena de la última rotación que aceptó, y
+   la línea de la clave fijada con la hoja más alta dentro de su tramo, que es la misma hoja que la
+   memoria usa como «lo visto» para la regla 3.
+2. **Un sobre por solapamiento.** Por la regla 4, la cabeza de la línea que cae fuera de su tramo,
+   con la cadena que fijó el tramo. Por la regla 3, la cabeza de la clave vieja con esa hoja, con la
+   cadena de la línea que la delata. `sobre_de_solapamiento` arma el objeto de la sección 2.14 de
+   `spec/PAQUETE.md` con los campos que el diario guardó y `available`.
+3. **`--sobres DIR`**, que exige `--auditar`, escribe `solapamiento-linea-N.json` por cada uno y lo
+   dice. Ningún otro modo del testigo cambia, y el diario no sube de versión: solo se lee.
+4. **El banco, con un testigo de verdad.** `tools/banco_rotacion.sh` levanta, sobre otro diario, un
+   testigo que ve a A, la rotación a B con la firma de A —la cadena la explica, `rotada`, sigue—, y
+   después a B con un contador fresco firmando por debajo de su acta: `solapamiento`, y se detiene.
+   `--auditar --sobres` arma el sobre desde su diario, y el mando lo juzga sin el nodo ni el testigo.
+
+**Medido.** En la sesión, dos diarios con las cabezas de verdad de `spec/vectors/rotacion/`: el de
+la regla 3 —la A en la hoja 14 y después la C con la cadena— y el de la regla 4 —la B rotada en la
+8 y después en la 4—. `--auditar --sobres` armó un sobre de cada uno, y el mando y la segunda
+implementación dijeron de los dos «VERDE: SOLAPAMIENTO», en la hoja 14 y en la 4. Y el banco de la
+rotación, con su fase del testigo, VERDE.
+
+**Probado.** Un test nuevo en el testigo, sobre las mismas cabezas de verdad: la regla 3 deja un
+sobre con la cabeza de la A, la 4 uno con la de la B fresca, cada uno con su cadena, y un diario sin
+solapamiento ninguno.
+
+**Contadores.** `zk-ssl-cli` 135 -> 136. TOTAL DE SELLO 1673 -> 1674 y TOTAL CON LARGOS
+1810 -> 1811, en los tres párrafos ancla, con el desglose del testigo en 136. La cuenta de
+`check_tests` pasa de 1832 a 1833. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** El testigo vivo no escribe el sobre al detenerse: lo arma `--auditar` desde el
+diario, que es donde vive la evidencia. La vista dividida que el auditor encuentra sigue sin sobre
+armado: el del ancla, modo 4, lo arma quien tiene las dos cabezas, y hacerlo desde el diario es otro
+sello.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2 a la E5 de su RFC construidas; le queda la E6.

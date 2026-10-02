@@ -600,6 +600,10 @@ corrida suya: sección 9.
   delata menos, nunca de más.
 - **El banco es `tools/banco_rotacion.sh`** (§649; el sobre, desde el §686) y **el catálogo vive
   en `spec/vectors/rotacion/`**, con los sobres de la extensión entre dos claves: sección 9.
+- **Lo arma el testigo** (§687): `zk-ssl-cli witness --auditar DIARIO --sobres DIR` escribe un sobre
+  por cada solapamiento que su diario delata, con la cabeza que cruza —la de la línea, o por la
+  regla 3 la de la clave vieja con la hoja más alta— y la cadena de la rotación que fijó el tramo.
+  La detección del testigo se vuelve evidencia que cualquiera verifica sin él y sin el nodo.
 
 ## 3. El sobre — lo que el binario lee
 
@@ -1035,7 +1039,8 @@ escribe el sobre, no el sobre —y así fue en el §466 y en el §473—. **El d
 produce el COBRADOR** (§497, RFC-0008 D-M y D-P): con su aviso v2 y su credencial, la boca del
 cli, `zk-ssl-cli prueba-cobro`, pide la cabeza firmada y la foto a un nodo VIVO, exige que sean
 del mismo latido y escribe el sobre con la cabeza VERBATIM; el banco que lo reproduce en vivo y
-sus vectores son de E4 (sección 9).
+sus vectores son de E4 (sección 9). **El del solapamiento lo arma el TESTIGO** (§687), desde su
+diario y sin el nodo: `zk-ssl-cli witness --auditar DIARIO --sobres DIR` (2.14).
 
 ## 8. Lo que este documento NO afirma
 
@@ -1353,6 +1358,9 @@ negativos, las tres claves dentro de su tramo entre ellos.
   sobres en `spec/vectors/rotacion/`, derivados de los de la rotación sin otra corrida, que la
   segunda implementación pasa con el mismo arnés. Y la refutación del conflicto entre dos claves de
   un operador, escrita: es el sobre de extensión con la cadena, no la cadena sola.
+- §687 — el sobre del solapamiento tiene productor: el testigo lo arma desde su diario con
+  `--auditar --sobres`. `tools/banco_rotacion.sh` lo demuestra con un testigo de verdad que ve una
+  rotación, sigue, y se detiene ante la clave nueva firmando por debajo de su acta.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

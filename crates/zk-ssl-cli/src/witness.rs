@@ -525,12 +525,7 @@ pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value
         // ata esta lista a la forma firmada del cable (punto 89 de la cola): ya no son dos
         // productores sueltos (`la_lista_del_diario_es_la_forma_firmada_del_cable`).
         // RFC-0010 E2d (§570): la pareja de recepcion, otra vez por el mismo criterio.
-        for k in ["index", "epochDigest", "domain", "formatVersion", "signature",
-                  "publicKey", "emittedAtUnix", "beatSeconds", "custody",
-                  "custodyChecked", "mmrRoot", "mmrSize", "consRoot", "consCount",
-                  "seq", "n", "accountsRoot", "pendingRoot", "frozenRoot",
-                  "chainDigest", "acusesRoot", "paramsDigest", "pmetaRoot",
-                  "nextPending", "nextIndex", "totalSupply", "recepRoot", "recepCount"] {
+        for k in CAMPOS_DE_LA_CABEZA {
             if !servido[k].is_null() {
                 l[k] = servido[k].clone();
             }
@@ -544,6 +539,53 @@ pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value
         l["motivo"] = json!(motivo);
     }
     l
+}
+
+/// Los campos de la cabeza firmada que la linea del diario guarda: los que hacen falta para
+/// reverificarla SIN el nodo (§248, §294, §295, §452, §570). Desde el §687 tambien son la cabeza del
+/// sobre del solapamiento que arma `--auditar --sobres`: un productor para los dos.
+pub const CAMPOS_DE_LA_CABEZA: [&str; 28] = [
+    "index",
+    "epochDigest",
+    "domain",
+    "formatVersion",
+    "signature",
+    "publicKey",
+    "emittedAtUnix",
+    "beatSeconds",
+    "custody",
+    "custodyChecked",
+    "mmrRoot",
+    "mmrSize",
+    "consRoot",
+    "consCount",
+    "seq",
+    "n",
+    "accountsRoot",
+    "pendingRoot",
+    "frozenRoot",
+    "chainDigest",
+    "acusesRoot",
+    "paramsDigest",
+    "pmetaRoot",
+    "nextPending",
+    "nextIndex",
+    "totalSupply",
+    "recepRoot",
+    "recepCount",
+];
+
+/// ⚠️ §687 · **El sobre del solapamiento, armado desde el diario** (`spec/PAQUETE.md` 2.14, RFC-0015
+/// E5c): la cabeza de la linea —sus campos, con `available`— y la cadena de actas. Lo verifica el
+/// kit sin el nodo y sin el testigo: la detección del testigo se vuelve evidencia portable.
+pub fn sobre_de_solapamiento(linea: &Value, actas: &Value) -> Value {
+    let mut cabeza = json!({ "available": true });
+    for k in CAMPOS_DE_LA_CABEZA {
+        if !linea[k].is_null() {
+            cabeza[k] = linea[k].clone();
+        }
+    }
+    json!({ "v": 1, "tipo": "solapamiento", "cabeza": cabeza, "actas": actas })
 }
 
 /// La linea con **los dos canales** (§294).
@@ -1171,6 +1213,9 @@ pub struct Auditoria {
     pub con_firma: usize,
     pub reverificadas: usize,
     pub hallazgos: Vec<Hallazgo>,
+    /// ⚠️ §687: un sobre del solapamiento por cada solapamiento que el diario delata, con la linea
+    /// del hallazgo: la cabeza fuera de su tramo y la cadena que fijo el tramo.
+    pub sobres: Vec<(usize, Value)>,
 }
 
 /// **Relee un diario y lo reverifica SIN EL NODO.**
@@ -1191,6 +1236,11 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
     let mut vistos: BTreeMap<u64, String> = BTreeMap::new();
     // ⚠️ §647: la misma memoria del tramo que el testigo vivo, para rejuzgar sus rotaciones.
     let mut m = Memoria::nueva();
+    // ⚠️ §687: lo que hace falta para ARMAR el sobre del solapamiento sin el nodo: la cadena de la
+    //    ultima rotacion aceptada, y la linea de la clave fijada con la hoja mas alta en su tramo
+    //    —la misma que la memoria usa para la regla 3—.
+    let mut actas_vigentes: Option<Value> = None;
+    let mut cumbre: Option<(u64, Value)> = None;
 
     for (i, l) in lineas.iter().enumerate() {
         let n = i + 1;
@@ -1269,13 +1319,21 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
         if let (Some(f), true) = (clave.clone(), v["actas"].is_array()) {
             if f != k {
                 match juzgar_cambio(&mut m, &f, &k, &v) {
-                    Ok(Veredicto::Rotada { .. }) => clave = Some(k.clone()),
+                    Ok(Veredicto::Rotada { .. }) => {
+                        clave = Some(k.clone());
+                        actas_vigentes = Some(v["actas"].clone());
+                        cumbre = None;
+                    }
                     Ok(Veredicto::Solapamiento { indice, desde }) => {
                         a.hallazgos.push(Hallazgo::Solapamiento {
                             linea: n,
                             indice,
                             desde,
-                        })
+                        });
+                        // La regla 3: la evidencia es la cabeza de la vieja con esa hoja.
+                        if let Some((_, c)) = cumbre.as_ref().filter(|(e, _)| *e == indice) {
+                            a.sobres.push((n, sobre_de_solapamiento(c, &v["actas"])));
+                        }
                     }
                     Ok(_) => {}
                     Err(error) => a
@@ -1307,15 +1365,27 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
                 let embebido = leer_hex(&v["signature"])
                     .ok()
                     .and_then(|f| indice_de_firma(&f).ok());
-                if let Some(Veredicto::Solapamiento { indice, desde }) = embebido
-                    .filter(|_| de_la_fijada)
-                    .and_then(|e| m.en_su_tramo(e))
-                {
-                    a.hallazgos.push(Hallazgo::Solapamiento {
-                        linea: n,
-                        indice,
-                        desde,
-                    });
+                if let Some(e) = embebido.filter(|_| de_la_fijada) {
+                    match m.en_su_tramo(e) {
+                        Some(Veredicto::Solapamiento { indice, desde }) => {
+                            a.hallazgos.push(Hallazgo::Solapamiento {
+                                linea: n,
+                                indice,
+                                desde,
+                            });
+                            // La regla 4: la evidencia es esta cabeza, contra la cadena que fijo
+                            // su tramo.
+                            if let Some(actas) = &actas_vigentes {
+                                a.sobres.push((n, sobre_de_solapamiento(&v, actas)));
+                            }
+                        }
+                        Some(_) => {}
+                        None => {
+                            if cumbre.as_ref().map_or(true, |(x, _)| e > *x) {
+                                cumbre = Some((e, v.clone()));
+                            }
+                        }
+                    }
                 }
             }
             Err(e) => a.hallazgos.push(Hallazgo::FirmaNoVerifica { linea: n, indice, error: e }),
@@ -1477,6 +1547,12 @@ pub struct WitnessArgs {
     /// que un tercero reverifique sin el nodo*— en algo **ejecutable**.
     #[arg(long, value_name = "DIARIO", conflicts_with = "comparar")]
     auditar: Option<PathBuf>,
+
+    /// **Con `--auditar`, arma los sobres del SOLAPAMIENTO** (§687, RFC-0015 E5c): uno por cada
+    /// solapamiento que el diario delate, en este directorio, con la cabeza fuera de su tramo y la
+    /// cadena de actas. `zk-ssl-verify` los juzga sin el nodo y sin el testigo.
+    #[arg(long, value_name = "DIR", requires = "auditar")]
+    sobres: Option<PathBuf>,
 
     /// **Compara dos diarios**: el mismo índice con distinto contenido.
     ///
@@ -2286,6 +2362,22 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
                  p.display(), r.lineas, r.con_firma, r.reverificadas);
         for h in &r.hallazgos {
             println!("  ⚠️ {} · {h:?}", h.clase());
+        }
+        // ⚠️ §687: la deteccion, portable. Cada sobre lo verifica el kit sin el nodo ni el testigo.
+        if let Some(dir) = &a.sobres {
+            std::fs::create_dir_all(dir).map_err(|e| anyhow::anyhow!("{}: {e}", dir.display()))?;
+            for (n, sobre) in &r.sobres {
+                let ruta = dir.join(format!("solapamiento-linea-{n}.json"));
+                std::fs::write(&ruta, serde_json::to_string_pretty(sobre)?)
+                    .map_err(|e| anyhow::anyhow!("{}: {e}", ruta.display()))?;
+                println!(
+                    "sobre del solapamiento: {} (zk-ssl-verify lo juzga)",
+                    ruta.display()
+                );
+            }
+            if r.sobres.is_empty() {
+                println!("ningun solapamiento en el diario: ningun sobre");
+            }
         }
         if r.hallazgos.is_empty() {
             println!("sin hallazgos");
@@ -4424,6 +4516,91 @@ mod tests {
         let mala = clases(vec![dia("0x1", "0xaa", &e.a), rotada(json!([e.actas[1]]))]);
         assert!(mala.contains(&"rotacion-invalida"), "{mala:?}");
         assert!(mala.contains(&"cambio-de-clave"), "{mala:?}");
+    }
+
+    /// ⚠️ §687 · **el diario delata, y el sobre sale de él.** Con las cabezas de verdad de
+    /// `spec/vectors/rotacion/`: la A firmando en la hoja 14 y después la C con la cadena —la regla
+    /// 3, la evidencia es la cabeza de la A— y la B rotada en la 8 y después en la 4 —la regla 4, la
+    /// evidencia es la de la 4—. Cada solapamiento deja su sobre, con la cabeza que cruza y la cadena
+    /// que fijó el tramo; un diario sin solapamiento no deja ninguno. El kit los juzga en el banco.
+    #[test]
+    fn el_auditor_arma_el_sobre_de_cada_solapamiento() {
+        let leer = |t: &str| -> Value { serde_json::from_str(t).expect("vector") };
+        let linea = |c: &Value, clase: &str, actas: Option<&Value>| -> String {
+            let nueva = Veredicto::Nueva {
+                indice: 0,
+                digest: String::new(),
+            };
+            let mut l = linea_de_diario(&nueva, c, 0);
+            l["clase"] = json!(clase);
+            if let Some(x) = actas {
+                l["actas"] = x.clone();
+            }
+            l.to_string()
+        };
+        let despues = leer(include_str!(
+            "../../../spec/vectors/rotacion/neg-solapamiento-la-vieja-firma-despues.json"
+        ));
+        let r = auditar_lineas(&[
+            linea(&despues["vieja"], "nueva", None),
+            linea(&despues["nueva"], "solapamiento", Some(&despues["actas"])),
+        ]);
+        assert!(
+            r.hallazgos.iter().any(|h| matches!(
+                h,
+                Hallazgo::Solapamiento {
+                    linea: 2,
+                    indice: 14,
+                    desde: 7
+                }
+            )),
+            "{:?}",
+            r.hallazgos
+        );
+        assert_eq!(r.sobres.len(), 1);
+        let (n, sobre) = &r.sobres[0];
+        assert_eq!(*n, 2);
+        assert_eq!(sobre["tipo"], json!("solapamiento"));
+        assert_eq!(sobre["cabeza"]["available"], json!(true));
+        assert_eq!(sobre["cabeza"]["signature"], despues["vieja"]["signature"]);
+        assert_eq!(sobre["actas"], despues["actas"]);
+
+        let un = leer(include_str!(
+            "../../../spec/vectors/rotacion/rotacion-un-eslabon.json"
+        ));
+        let antes = leer(include_str!(
+            "../../../spec/vectors/rotacion/neg-solapamiento-la-nueva-firma-antes.json"
+        ));
+        let r = auditar_lineas(&[
+            linea(&un["vieja"], "nueva", None),
+            linea(&un["nueva"], "rotada", Some(&un["actas"])),
+            linea(&antes["nueva"], "nueva", None),
+        ]);
+        assert!(
+            r.hallazgos.iter().any(|h| matches!(
+                h,
+                Hallazgo::Solapamiento {
+                    linea: 3,
+                    indice: 4,
+                    ..
+                }
+            )),
+            "{:?}",
+            r.hallazgos
+        );
+        assert_eq!(r.sobres.len(), 1);
+        assert_eq!(
+            r.sobres[0].1["cabeza"]["signature"],
+            antes["nueva"]["signature"]
+        );
+        assert_eq!(r.sobres[0].1["actas"], un["actas"]);
+
+        let r = auditar_lineas(&[
+            linea(&un["vieja"], "nueva", None),
+            linea(&un["nueva"], "rotada", Some(&un["actas"])),
+        ]);
+        assert!(r.sobres.is_empty(), "{:?}", r.hallazgos);
+        assert!(r.hallazgos.is_empty(), "{:?}", r.hallazgos);
     }
 
     #[test]
