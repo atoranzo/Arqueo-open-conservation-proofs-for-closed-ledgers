@@ -220,6 +220,7 @@ def cofirmas(doc, cab):
         return "cofirmas: el paquete v2 no trae ninguna: la cabeza queda sola"
     if not isinstance(lista, list):
         raise Rojo("cofirmas no es una lista")
+    testigos = []  # §663: un testigo, una cofirma
     for i, co in enumerate(lista, start=1):
         if not isinstance(co, dict):
             raise Rojo(f"cofirma {i}: no es un objeto")
@@ -241,6 +242,9 @@ def cofirmas(doc, cab):
             raise Rojo(f"cofirma {i}: acredita OTRA cabeza, no la empaquetada")
         if clave_op != cab["pk"]:
             raise Rojo(f"cofirma {i}: acredita a OTRO operador, no al que firmo la cabeza")
+        if clave_t in testigos:
+            raise Rojo(f"cofirma {i}: repite el testigo de la cofirma {testigos.index(clave_t) + 1}")
+        testigos.append(clave_t)
         try:
             oid, _, _ = xmss.parsear_clave(clave_t)
         except ValueError as e:

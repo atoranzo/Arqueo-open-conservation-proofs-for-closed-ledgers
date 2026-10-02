@@ -59,6 +59,7 @@ rechazo-cofirma-otra-cabeza.json|1|cofirma 1: acredita OTRA cabeza, no la empaqu
 rechazo-cofirma-otro-operador.json|1|cofirma 1: acredita a OTRO operador, no al que firmo la cabeza
 rechazo-cofirma-firma-nibble.json|1|cofirma 1: 
 rechazo-cofirma-testigo-nibble.json|1|cofirma 1: 
+rechazo-cofirma-repetida.json|1|cofirma 2: repite el testigo de la cofirma 1
 rechazo-ext-sin-vieja.json|1|falta vieja
 rechazo-ext-sin-nueva.json|1|falta nueva
 rechazo-ext-vieja-no-available.json|1|vieja: la cabeza no era available:true

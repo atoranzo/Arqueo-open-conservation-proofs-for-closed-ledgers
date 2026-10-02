@@ -462,6 +462,10 @@ fn verificar_cofirmas_del_paquete(
             .as_array()
             .ok_or_else(|| err("cofirmas no es una lista".into()))?,
     };
+    // §663: un testigo, una cofirma. Sin esto, la misma cofirma copiada cinco
+    // veces salia como «cofirmas: 5 verifican», y quien decide su politica por
+    // ese numero contaba cinco testigos donde habia uno.
+    let mut testigos: Vec<Vec<u8>> = Vec::with_capacity(lista.len());
     for (i, c) in lista.iter().enumerate() {
         let n = i + 1;
         let cv = u64_de(c, "v")?;
@@ -484,6 +488,10 @@ fn verificar_cofirmas_del_paquete(
             )));
         }
         let kt = hex_de_cofirma(c, "clavePublicaTestigo", n)?;
+        if let Some(m) = testigos.iter().position(|t| *t == kt) {
+            return Err(err(format!("cofirma {n}: repite el testigo de la cofirma {}", m + 1)));
+        }
+        testigos.push(kt.clone());
         let firma = hex_de_cofirma(c, "firma", n)?;
         let cf = CabezaFirmada {
             version_formato: u64_de(c, "versionFormato")? as u8,

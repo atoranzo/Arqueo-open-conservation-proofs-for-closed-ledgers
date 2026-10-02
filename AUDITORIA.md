@@ -45739,3 +45739,36 @@ REFERENCIA 10 -> 11. El `BACKLOG.md` no se mueve.
 del SDK, que leen ficheros y respuestas locales; ni la segunda implementación de `tools/segunda`,
 que no tiene vector nuevo que rechazar: este sello no añade vectores. No publica un kit: el corte de
 la 0.4.2 llega al final de los cuatro arreglos.
+
+## §663 — un testigo, una cofirma: la misma cofirma repetida ya no cuenta como varios testigos
+
+El commit que lleva este asiento, sobre el §662. Segundo de los cuatro cortes del kit 0.4.2. Lo
+escribe, lo prueba y lo commitea una sesión de Claude Code en la nube, no el autor en su máquina,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon
+`--sello` salió VERDE: los 19 crates del nivel en sus pines, 305 s de tests, y el paquete 73 de 73 en el
+kit y en la segunda implementación.
+
+**El defecto (P2).** El paso 4 del paquete v2 verifica cada cofirma contra la cabeza empaquetada y el
+operador, y dice cuántas verifican: «cuantas hacen falta lo decide TU política, no el paquete». Pero
+no miraba si dos cofirmas eran del mismo testigo: la misma cofirma copiada cinco veces salía
+«cofirmas: 5 verifican» y VERDE, y quien decide su política por ese número contaba cinco testigos
+donde había uno. Igual en la segunda implementación. El sobre del ancla cofirmada ya rechazaba «dos
+cofirmas de» un testigo (§633); el paquete v2 no.
+
+**Lo que hace.** En el kit (`verificar_cofirmas_del_paquete`) y en `tools/segunda/verificador.py`,
+con el mismo texto: una cofirma cuya clave de testigo ya apareció es ROJO, «cofirma N: repite el
+testigo de la cofirma M», antes de verificar su firma. Un vector negativo nuevo,
+`spec/vectors/paquete/rechazo-cofirma-repetida.json`, derivado de `posicion-v2.json` duplicando su
+única cofirma, con su entrada en el manifiesto. Los vectores existentes no se tocan.
+
+**Falsadores.** El vector nuevo, en las dos implementaciones. **Medido con la comprobación
+desactivada** en cada una: «exit 0, el manifiesto espera 1», 72 de 73. Con ella, 73 de 73. La sonda
+del enjambre con la cofirma quintuplicada sale ROJO en las dos.
+
+**Contadores.** Ningún pin de tests se mueve: el falsador es un vector. El manifiesto del paquete, 72
+-> 73 entradas; `spec/vectors/`, 451 -> 452 ficheros, en los dos README. El `BACKLOG.md` no se
+mueve.
+
+**Lo que NO cierra.** La comparación es por los bytes de la clave. Una misma clave escrita con otro
+OID todavía no se reconoce como la misma: eso es el corte siguiente (§664), que exige el OID
+canónico al leer una clave XMSS.
