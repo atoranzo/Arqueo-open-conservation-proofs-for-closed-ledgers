@@ -45982,3 +45982,38 @@ agotar una clave y el arreglo, claves de cuatro elementos, que cambia el formato
 **Lo que NO hace.** No cambia ningún circuito ni ninguna clave: los dos arreglos rompen el formato de la
 prueba y van al tren `zkssl/0.5`, que decide el autor. No abre entradas del `BACKLOG.md`: si el autor
 quiere seguirlos allí, son dos entradas nuevas. Ningún test ni pin se mueve.
+
+## §671 — el kit 0.4.2, registrado: publicado y medido desde fuera
+
+El commit que lleva este asiento, sobre `a4e888d` (el §670). Registra la release de los tres arreglos
+del kit del re-triaje (§662, §663, §664), cortada en el §665 y construida desde `a4e888d` para que lleve
+también las comprobaciones de desbordamiento del §669. Lo escribe y lo commitea una sesión de Claude
+Code en la nube, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El tag y la release los creó el
+autor en su máquina y en la web de GitHub, porque esta sesión no tiene credenciales para ello; el autor
+corrió además el canon `--sello` en su máquina sobre `a4e888d`, VERDE, antes de empujarlo a `main`.
+
+**La release, medida desde fuera.** `arqueo-verify-v0.4.2`, tag anotado sobre
+`a4e888d8b98ca6254904486f6ada8710c2a5fe08` (`git ls-remote`), publicada el 2026-10-02 a las 11:30 UTC
+(API de GitHub: ni borrador ni prerelease). Un asset, `arqueo-verify-0.4.2-x86_64-unknown-linux-gnu.tar.gz`,
+16.677.910 B, con `digest` sha256 `33acdc9a8fe38f0355b4e49e11338a9a94b6f933d86eb5bde23ead315ae1831d` en
+la API. Descargado por `curl` desde la URL pública: el mismo sha256 y el mismo tamaño; 382 entradas, 368
+ficheros, todos cuadran con su `SHA256SUMS`; el binario dentro es
+`7734376463d120b0bbd47d3bde852da628557caf28b530cbe5076fce17a68ee2`, el que el canon del autor midió
+reproducible entre rutas. `VERSION` nombra el commit, `describe=arqueo-verify-v0.4.2-0-ga4e888d` y rustc
+1.97.1. En la sesión, con rustc 1.97.0, el mismo árbol dio otro binario (`b168fbf680c7f946`, §669): la
+huella depende del toolchain, como `tools/artefacto.sh` declara, y la que vale es la del asset.
+
+**El kit descargado, corriendo.** Desde dentro del tarball, sin repositorio, `conformidad.sh` sobre sus
+once manifiestos: paquete 73/73, consumo 14/14, conflicto 17/17, rechazo 84/84, edad 11/11, pendiente
+9/9, pago 9/9, prenda 9/9, completitud 74/74, ancla 22/22 y ancla cofirmada 27/27: 349 de 349. Los dos
+vectores nuevos salen ROJO con su texto («cofirma 2: repite el testigo de la cofirma 1» y «OID
+0x00010005 no es un XMSS^MT de RFC 8391»); la sonda del `u64` con `+` sale ROJO, y la prueba con un
+nodo de más dentro del lote (§659) también.
+
+**Lo que hace.** `doc/KIT.md` y `doc/KIT_EN.md`: la sección 0 da la 0.4.2 como vigente con sus huellas,
+y la 0.4.1 como publicada y ya no vigente, con sus tres defectos. Los dos README, el resumen ejecutivo,
+el bilingüe, `PREGUNTAS.md`, `QUESTIONS.md` y `SECURITY.md` 3.9 nombran la 0.4.2.
+
+**Lo que NO hace.** No retira la 0.4.1 ni las anteriores, que siguen publicadas y se marcan, no se
+borran. Ni un test ni un pin se mueven. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE, con 347 s de tests.

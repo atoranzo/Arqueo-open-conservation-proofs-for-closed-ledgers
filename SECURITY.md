@@ -551,7 +551,7 @@ La versión nueva del kit está publicada: `arqueo-verify-v0.4.0` (§658); la `v
 por los dos primeros y por la cola. ⚠️ **Y una variante de la cola, por dentro (§659)**: nodos de más
 dentro de un lote de Merkle no movían la raíz, así que la prueba verificaba con otros bytes y el
 índice de pruebas aplicadas del §654 se esquivaba; la capa y el kit los rechazan desde el §659, y la
-vigente es `arqueo-verify-v0.4.1` (§661). `AUDITORIA.md` §637, §641,
+vigente era `arqueo-verify-v0.4.1` (§661); hoy es `arqueo-verify-v0.4.2` (§671), que corrige además los §662 a §664. `AUDITORIA.md` §637, §641,
 §650 a §656.
 
 ### 3.10 Las claves de custodio y de gobernanza son de un elemento — ⚠️ DECLARADO (§670)

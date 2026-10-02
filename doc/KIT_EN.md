@@ -16,30 +16,29 @@ reproduced.
 
 ## 0. Download, and check the download before believing it
 
-The current release is `arqueo-verify-v0.4.1`, published at
-<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.1>,
-produced on commit `ff1f06f8677522b5a01fce66a64e4d38c896c9fc`:
-tarball `arqueo-verify-0.4.1-x86_64-unknown-linux-gnu.tar.gz`, sha256
-`505de994f243bc7669045e7f546496423e8f4bfe03c7777d6829656f73827e14` (16,544,680 bytes, 366 files);
-binary `d81923cc942455d787392e044005f687fdc4cabd96b9aa58e2a88809ab4d1b7b`. Both hashes are
+The current release is `arqueo-verify-v0.4.2`, published at
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.2>,
+produced on commit `a4e888d8b98ca6254904486f6ada8710c2a5fe08`:
+tarball `arqueo-verify-0.4.2-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`33acdc9a8fe38f0355b4e49e11338a9a94b6f933d86eb5bde23ead315ae1831d` (16,677,910 bytes, 368 files);
+binary `7734376463d120b0bbd47d3bde852da628557caf28b530cbe5076fce17a68ee2`. Both hashes are
 measured from the outside — `curl` download, the asset's `digest` in the API, the downloaded kit
 running its eleven catalogues from inside the tarball — in the `AUDITORIA.md` entry that registers
-this release (§661). It recomposes heads up to **v6**, the one the node signs today, and reads
+this release (§671). It recomposes heads up to **v6**, the one the node signs today, and reads
 eleven families: the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor (§633, §634).
 
-⚠️ **0.4.2 is CUT and not published (§665).** The current release remains 0.4.1 until the entry
-that registers 0.4.2 pins its fingerprint. 0.4.2 fixes three defects of 0.4.1: it reads every `u64`
-of the envelope only in its minimal form, with no `+` and no leading zeros (§662); the same
-co-signature repeated no longer counts as several witnesses in a v2 package (§663); and an XMSS key
-written with the alternate OID `0x00010005` is no longer read as the published one, so a "conflict
-between two ledgers" with a single ledger written twice comes out RED (§664). The last two bring
-their negative vector.
+**0.4.1 is still published and is no longer current** (`arqueo-verify-v0.4.1`, commit `ff1f06f`,
+tarball `505de994f243bc76…`). It has three defects that 0.4.2 fixes: it reads a `u64` of the
+envelope with a `+` or leading zeros (§662); it counts the same co-signature repeated as several
+witnesses in a v2 package (§663); and it reads an XMSS key with the alternate OID `0x00010005` as the
+published one, so it gives GREEN to a "conflict between two ledgers" with a single ledger written
+twice (§664). Use 0.4.2.
 
 **0.4.0 is still published and is no longer current** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). It has one defect that 0.4.1 fixes: a proof with extra nodes inside a
 Merkle batch verifies anyway, with different bytes (§659). The verdict on the statement does not
 change — the altered proof proves the same as the original — but its bytes no longer identify the
-operation. Use 0.4.1. Both read the same eleven families and give the same verdicts to every
+operation. Use 0.4.2. Both read the same eleven families and give the same verdicts to every
 published vector.
 
 **Release 0.3.0 is still published and is no longer the current one** (`arqueo-verify-v0.3.0`,
@@ -48,7 +47,7 @@ section 3.9 of `SECURITY.md`: a hex field with a multibyte character, or a hidde
 emptied, make it exit with **101** (panic) instead of RED (§650, §651); a proof with trailing bytes
 is read as if they were not there (§653); and it accepts the four negatives of the canonical reading
 (RFC-0016, §640). It fails with the wrong code, never with a false GREEN for those cases; still,
-use 0.4.1.
+use 0.4.2.
 
 ⚠️ **In 0.3.0, an outdated sentence travels in its `NOTICE`, declared; 0.4.0 carries the corrected one.** That tarball's `NOTICE` says the
 witness hiding in the winterfell fork is switched on only by `Prover::ocultacion`, "which no ARQUEO

@@ -200,7 +200,7 @@ sentence above protects nobody.
 ### 17. How do I check a file without the node, offline and without trusting the author?
 
 With the kit ([`doc/KIT_EN.md`](./doc/KIT_EN.md)): one download, the release
-`arqueo-verify-v0.4.1`, whose fingerprint is published next to its commit. The verifier is a
+`arqueo-verify-v0.4.2`, whose fingerprint is published next to its commit. The verifier is a
 one-line CLI: `./zk-ssl-verify <file.json>` exits 0 and prints `VERDE: …` if the file holds, 1 and
 the **first** failure by name (`ROJO: …`) if not. Five steps: a file that adds up; a tampered one
 that does not, with the broken rule named; the same label in two ledgers, detected from the two

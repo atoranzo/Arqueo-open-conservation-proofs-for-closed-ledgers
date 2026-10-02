@@ -16,29 +16,28 @@ dice?» es «descárguelo y córralo usted», y sólo vale si la descarga existe
 
 ## 0. Descargar, y comprobar la descarga antes de creerla
 
-La release vigente es `arqueo-verify-v0.4.1`, publicada en
-<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.1>,
-producida sobre el commit `ff1f06f8677522b5a01fce66a64e4d38c896c9fc`:
-tarball `arqueo-verify-0.4.1-x86_64-unknown-linux-gnu.tar.gz`, sha256
-`505de994f243bc7669045e7f546496423e8f4bfe03c7777d6829656f73827e14` (16.544.680 B, 366 ficheros);
-binario `d81923cc942455d787392e044005f687fdc4cabd96b9aa58e2a88809ab4d1b7b`. Las dos huellas están
+La release vigente es `arqueo-verify-v0.4.2`, publicada en
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.2>,
+producida sobre el commit `a4e888d8b98ca6254904486f6ada8710c2a5fe08`:
+tarball `arqueo-verify-0.4.2-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`33acdc9a8fe38f0355b4e49e11338a9a94b6f933d86eb5bde23ead315ae1831d` (16.677.910 B, 368 ficheros);
+binario `7734376463d120b0bbd47d3bde852da628557caf28b530cbe5076fce17a68ee2`. Las dos huellas están
 medidas desde fuera —descarga por `curl`, el `digest` del asset en la API, el kit descargado
 corriendo sus once catálogos desde dentro del tarball— en el asiento de `AUDITORIA.md` que registra
-esta release (§661). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee once
+esta release (§671). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee once
 familias: las diez de la sección 11 de `spec/PAQUETE.md` y la del ancla cofirmada (§633, §634).
 
-⚠️ **La 0.4.2 está CORTADA y no publicada (§665).** La vigente sigue siendo la 0.4.1 hasta que el
-asiento que registre la 0.4.2 fije su huella. La 0.4.2 corrige tres defectos de la 0.4.1: lee cada
-`u64` del sobre solo en su escritura mínima, sin `+` ni ceros a la izquierda (§662); la misma cofirma
-repetida ya no cuenta como varios testigos en el paquete v2 (§663); y una clave XMSS escrita con el
-OID alterno `0x00010005` ya no se lee como la publicada, con lo que un «conflicto entre dos libros»
-con un solo libro escrito dos veces sale ROJO (§664). Los dos últimos traen su vector negativo.
+**La 0.4.1 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.1`, commit `ff1f06f`,
+tarball `505de994f243bc76…`). Tiene tres defectos que la 0.4.2 corrige: lee un `u64` del sobre con
+`+` o con ceros a la izquierda (§662); cuenta la misma cofirma repetida como varios testigos en el
+paquete v2 (§663); y lee una clave XMSS con el OID alterno `0x00010005` como la publicada, con lo que
+da VERDE a un «conflicto entre dos libros» con un solo libro escrito dos veces (§664). Use la 0.4.2.
 
 **La 0.4.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). Tiene un defecto que la 0.4.1 corrige: una prueba con nodos de más
 dentro de un lote de Merkle verifica igual, con otros bytes (§659). El veredicto sobre el enunciado
 no cambia —la prueba retocada prueba lo mismo que la original—, pero sus bytes dejan de identificar
-la operación. Use la 0.4.1. Las dos leen las mismas once familias y dan los mismos veredictos a
+la operación. Use la 0.4.2. Las dos leen las mismas once familias y dan los mismos veredictos a
 todos los vectores publicados.
 
 **La 0.3.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.3.0`, commit `65cabfb`,
@@ -47,7 +46,7 @@ de `SECURITY.md`: un campo hex con un carácter multibyte, o una prueba oculta c
 hacen salir con **101** (pánico) en vez de ROJO (§650, §651); una prueba con bytes de cola se lee
 igual que sin ellos (§653); y acepta los cuatro negativos de la lectura canónica (RFC-0016, §640).
 Falla con un código que no es el suyo, nunca con un VERDE falso para esos casos; aun así, use la
-0.4.1.
+0.4.2.
 
 ⚠️ **En la 0.3.0, una frase vieja viaja en su `NOTICE`, declarada; la 0.4.0 lleva el corregido.** El `NOTICE` de aquel tarball dice que la
 ocultación del testigo del fork de winterfell la enciende sólo `Prover::ocultacion`, «que ningún
