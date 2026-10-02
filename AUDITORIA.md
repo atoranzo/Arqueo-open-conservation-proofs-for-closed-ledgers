@@ -46119,3 +46119,36 @@ en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG
 y `zkssl_verifyChain` recorre la cadena entera. Las lecturas públicas siguen sin límite de tasa. Lo que
 queda pide decisiones de arquitectura —sacar el despacho del candado, credencial o tasa en el cable— y
 es del autor.
+
+## §675 — dos RFC para lo que el re-triaje dejó al autor: el tren `zkssl/0.5` (RFC-0018) y la enmienda de la completitud (RFC-0019)
+
+El commit que lleva este asiento, sobre el §674. Sello solo de documentos: nacen
+`spec/rfc/0018-el-tren-0-5.md` y `spec/rfc/0019-la-completitud-que-no-se-esquiva.md`, PROPUESTOS, con
+sus filas en `spec/README.md` y su cuenta en los dos README y los dos resúmenes; y este asiento. Lo
+escribe y lo commitea una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4
+de `GENAI.md`, como pide `CLAUDE.md`, a petición del autor. En la sesión, sobre este mismo árbol, el
+canon `--sello` salió VERDE, con 310 s de tests.
+
+**De dónde salen.** El re-triaje del segundo enjambre del plano v2.0 dejó cuatro hallazgos que no se
+cierran sin cambiar el formato de la prueba o un RFC aceptado: el congelado que el §511 no llegó a atar
+en el AIR (H07) y las claves de custodio y de gobernanza de un elemento (H14), que el §670 declaró; y
+la ventana de completitud medida con el índice declarado (H10) y el `StaleState` que resuelve un sobre
+de completitud sin estar atado a la operación (H12). El autor pidió escribirlos como RFC, juntos por
+tren: lo que cambia bytes de la prueba en uno, lo que enmienda el RFC-0010 en otro.
+
+**Lo que dicen.** El RFC-0018 propone `zkssl/0.5` con dos etapas: E1, que el acumulador de la subida de
+congelados lea el bit que usa su multiplexor en los cinco circuitos; E2, claves de cuatro elementos
+para custodios y gobernanza, con el molde de `derive_public_id_wide`. El RFC-0019 enmienda el RFC-0010:
+E1, la ventana con el índice que la firma acredita (`embebido + 1`), que choca con la corrección del
+§567 a la D-D sobre los índices huérfanos; E2, que un `StaleState` salga como el cuarto estado,
+«DECLARADA, NO PROBADA», lo que cambia el veredicto de dos vectores publicados
+(`completitud/resuelta-por-rechazo.json` y `completitud/lote-rechazado-con-prueba.json`); E3, la hoja
+del recibo con el digest de las entradas públicas, para el tren `zkssl/0.5`.
+
+**Por qué PROPUESTOS y no BORRADOR.** `tools/check_publicadas.py` (ATADO D) solo da cara publicada a
+PROPUESTO y ACEPTADO; un BORRADOR no tiene dónde contarse. El RFC-0015 entró igual: PROPUESTO con sus
+decisiones abiertas y ninguna etapa construida (§639).
+
+**Lo que NO hace.** No decide nada: el RFC-0018 deja cinco decisiones al autor (D-A a D-E) y el
+RFC-0019 cuatro (D-A a D-D). No construye ninguna etapa. No cambia el cable, ni un vector, ni un test.
+El `BACKLOG.md` no se mueve.
