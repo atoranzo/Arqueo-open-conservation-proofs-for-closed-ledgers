@@ -499,7 +499,8 @@ cada `u64` del sobre, antes de recomponer y antes de la firma; la partición del
 vectores negativos lo atan, y la segunda implementación los rechaza con el mismo texto. Ningún KAT ni
 ninguna cabeza custodiada se mueve. **Residuo**: el lector de `QUANTITY` del cable y el recompositor
 del testigo siguen leyendo sin la regla —lo que firman y comparan es el digest, no el entero—, y el
-kit publicado `arqueo-verify-v0.3.0` es anterior: acepta los cuatro negativos hasta una release nueva.
+kit publicado `arqueo-verify-v0.3.0` es anterior: acepta los cuatro negativos hasta una release nueva. La
+`arqueo-verify-v0.4.0` (§658) los rechaza, medido con el kit descargado.
 
 ### 3.9 Ocho hallazgos de un análisis con agentes — ⚠️ MEDIDO, siete cerrados y uno acotado
 
@@ -534,9 +535,9 @@ que lo llamaba «público por diseño» queda corregida. Quien ve una prueba de 
 su importe (son entradas públicas, RFC-0009); lo que el método añadía es dárselo a cualquiera.
 
 Lo que queda abierto de estos ocho, y es decisión del autor: las partes (a) y (b) del fallo del
-almacén (anotar antes de verificar, y cachear la pareja de recepción), la versión nueva del kit
-`arqueo-verify` —su binario cambia con los §650 a §653, y la `v0.3.0` publicada sigue afectada por
-los tres primeros y por la cola— y el cambio de cable de `zkssl_supply`. `AUDITORIA.md` §637, §641,
+almacén (anotar antes de verificar, y cachear la pareja de recepción), el cambio de cable de `zkssl_supply`.
+La versión nueva del kit está publicada: `arqueo-verify-v0.4.0` (§658); la `v0.3.0` sigue afectada
+por los dos primeros y por la cola. `AUDITORIA.md` §637, §641,
 §650 a §656.
 
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende

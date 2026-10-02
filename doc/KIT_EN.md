@@ -16,26 +16,26 @@ reproduced.
 
 ## 0. Download, and check the download before believing it
 
-The current release is `arqueo-verify-v0.3.0`, published at
-<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.3.0>,
-produced on commit `65cabfb523d69382e216bf8bca6681393c755ead`:
-tarball `arqueo-verify-0.3.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
-`06648502e0171fea6d3cb2721a5289c8734ffb9b499f7018b1acf1773e745cdd` (15,485,894 bytes, 334 files);
-binary `38fe5b9a6d04144b2cdbf3076542f6bd080d84ed8432db91be76e8f09edb7e29`. Both hashes are
-measured from the outside — `curl` download, asset in the API, the downloaded kit running the five
-steps and the ten catalogues — in the `AUDITORIA.md` entry that registers this release. It
-recomposes heads up to **v6**, the one the node signs today, and reads the ten families of section
-11 of `spec/PAQUETE.md`.
+The current release is `arqueo-verify-v0.4.0`, published at
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.0>,
+produced on commit `65d1e8967a002cd793b89d4167a5b9f19ea16660`:
+tarball `arqueo-verify-0.4.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`90184e41299e737a1fafda489147af26df53f6b3195938cbcd10d16a21ebc21a` (16,539,810 bytes, 380 files);
+binary `c0b9929c8c8203a14856d67e8abfc73175d3d62f173f8b4ffe268a6b9c2dbc1b`. Both hashes are
+measured from the outside — `curl` download, the asset's `digest` in the API, the downloaded kit
+running its eleven catalogues from inside the tarball — in the `AUDITORIA.md` entry that registers
+this release (§658). It recomposes heads up to **v6**, the one the node signs today, and reads
+eleven families: the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor (§633, §634).
 
-⚠️ **0.4.0 is CUT and not published (§657).** The current release remains 0.3.0 until the entry
-that registers 0.4.0 pins its fingerprint. 0.4.0 fixes four defects of 0.3.0 described in section
-3.9 of `SECURITY.md`: a hex field with a multibyte character, or a hidden proof with its meta
-emptied, made it exit with **101** (panic) instead of RED (§650, §651); a proof with trailing bytes
-was read as if they were not there (§653); and it reads every integer of the envelope canonically
-(RFC-0016, §640), so it rejects the four negatives that 0.3.0 accepts. It also reads the co-signed
-anchor family (§633, §634): eleven families.
+**Release 0.3.0 is still published and is no longer the current one** (`arqueo-verify-v0.3.0`,
+commit `65cabfb`, tarball `06648502e0171fea…`). It has four defects that 0.4.0 fixes, described in
+section 3.9 of `SECURITY.md`: a hex field with a multibyte character, or a hidden proof with its meta
+emptied, make it exit with **101** (panic) instead of RED (§650, §651); a proof with trailing bytes
+is read as if they were not there (§653); and it accepts the four negatives of the canonical reading
+(RFC-0016, §640). It fails with the wrong code, never with a false GREEN for those cases; still,
+use 0.4.0.
 
-⚠️ **An outdated sentence travels in its `NOTICE`, declared.** The tarball's `NOTICE` says the
+⚠️ **In 0.3.0, an outdated sentence travels in its `NOTICE`, declared; 0.4.0 carries the corrected one.** That tarball's `NOTICE` says the
 witness hiding in the winterfell fork is switched on only by `Prover::ocultacion`, "which no ARQUEO
 prover returns", and that the fork touches "eight files and two new ones". That was the description
 of §534; since §538 every ARQUEO prover switches it on, and since §575 the fork touches eleven files

@@ -45551,3 +45551,40 @@ Registrar la huella medida desde fuera es el sello siguiente, cuando la release 
 `PREGUNTAS.md` ni `QUESTIONS.md`, que nombran la release vigente: lo hará el registro.
 
 **Contadores.** Ninguno se mueve: ni un test, ni un pin.
+
+## §658 — el kit 0.4.0, registrado: publicado y medido desde fuera
+
+El commit que lleva este asiento, sobre `65d1e89` (el §657). Segundo sello de los dos del D-K5 del
+§442: registra la release que el §657 cortó. Lo escribe y lo commitea una sesión de Claude Code en
+la nube, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El tag y la release los creó el autor
+en su máquina y en la web de GitHub, porque esta sesión no tiene credenciales para ello. En la
+sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del nivel en sus pines, con 344 s de tests.
+
+**La release, medida desde fuera.** `arqueo-verify-v0.4.0`, tag sobre
+`65d1e8967a002cd793b89d4167a5b9f19ea16660` (`git ls-remote`), publicada el 2026-10-02 a las 05:22 UTC
+(API de GitHub: ni borrador ni prerelease). Un asset, `arqueo-verify-0.4.0-x86_64-unknown-linux-gnu.tar.gz`,
+16.539.810 B, con `digest` sha256 `90184e41299e737a1fafda489147af26df53f6b3195938cbcd10d16a21ebc21a`
+en la API. Descargado por `curl` desde la URL pública: el mismo sha256 y el mismo tamaño, 380
+ficheros, los 380 cuadran con su `SHA256SUMS`, y el binario dentro es
+`c0b9929c8c8203a14856d67e8abfc73175d3d62f173f8b4ffe268a6b9c2dbc1b`, el que el canon del §657 midió
+reproducible entre rutas. `VERSION` nombra el commit, `describe=arqueo-verify-v0.4.0-0-g65d1e89` y
+rustc 1.97.0.
+
+**El kit descargado, corriendo.** Desde dentro del tarball, sin repositorio, `conformidad.sh` sobre
+sus once manifiestos: paquete 72/72, consumo 14/14, conflicto 16/16, rechazo 84/84, edad 11/11,
+pendiente 9/9, pago 9/9, prenda 9/9, completitud 74/74, ancla 22/22 y ancla cofirmada 27/27: 347 de
+347. Y los dos casos que la 0.3.0 resolvía con un pánico: `paquete/posicion-v2.json` con un
+carácter multibyte en `accountsRoot` sale ROJO con `hex: cifra no admitida en la posicion 0`, salida
+1; `prenda/prenda.json` con el meta de la prueba vaciado sale ROJO con `prenda: marca de la ocultacion
+Ok(None)`, salida 1. Su `NOTICE` es el corregido en el §623.
+
+**Lo que hace.** `doc/KIT.md` y `doc/KIT_EN.md`: la sección 0 da la 0.4.0 como vigente con sus
+huellas, y la 0.3.0 como publicada y ya no vigente, con sus cuatro defectos. Los dos README (el
+párrafo del kit y la tabla «Estado»), el resumen ejecutivo, el bilingüe, `PREGUNTAS.md` y
+`QUESTIONS.md` nombran la 0.4.0. `SECURITY.md`, en la 3.8 y la 3.9, dice que la 0.4.0 está
+publicada y rechaza lo que la 0.3.0 aceptaba.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** De los ocho hallazgos del aviso del §637 quedan, como decisiones del autor, el
+cambio de cable de `zkssl_supply` y las partes (a) y (b) del §655.
