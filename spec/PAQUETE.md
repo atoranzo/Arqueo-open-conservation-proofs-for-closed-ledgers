@@ -103,7 +103,8 @@ donde el valor es una respuesta del cable sin reescribir.
   o hacia atrás, un acta que no vale, o el **SOLAPAMIENTO**. El juez es uno,
   `zk_ssl_verify::actas::juzgar_continuidad`, y es el mismo en los ocho sitios que exigen
   continuidad: aquí, en el consumo (2.4) y en las seis cabezas que el sobre de completitud
-  compara con su cierre (2.11).
+  compara con su cierre (2.11). Su catálogo, desde el §649, es `spec/vectors/rotacion/`, de un
+  nodo real que rota (sección 9).
 
 ### 2.4 El paquete de consumo (§419)
 
@@ -1204,6 +1205,21 @@ segundo nodo, de otra semilla. El umbral de testigos no tiene vector: el mando n
 La familia se COPIA de la corrida del sello: las cabezas, las marcas y la sal cambian en cada
 corrida. Su productor es `tools/banco_ancla_cofirmada.sh` (§634).
 
+**Desde §649 cubre la ROTACIÓN de la clave del operador** (RFC-0015, E5b): `spec/vectors/rotacion/`
+trae TRES positivos CAPTURADOS de UN nodo real que rota dos veces sobre el mismo diario —A, su
+génesis comprometiendo a B; B, con la firma de A; C, sin la de B— y sobres de extensión con la
+cadena que sirvió `zkssl_keyActs`: un eslabón con las dos firmas, uno con la de la que entra sola, y
+dos eslabones de un salto. Las DOS conductas del operador que la cadena delata, sembradas con sus
+claves de verdad como la vista dividida del ancla: la clave vieja firmando otra vez con su contador
+restaurado —SOLAPAMIENTO por la regla 3— y la nueva firmando con un contador fresco por debajo de su
+acta —fuera de su tramo, la regla 4—. Y DIECIOCHO negativos por UNA mutación cada uno: uno por regla
+del lector del acta y de la cadena que una mutación produce, y uno que dice que las actas no
+ordenan —con los papeles cambiados la continuidad se sostiene y cae la consistencia—. Las dos reglas
+que una mutación no produce sin volver a firmar —la hoja de la firma de la que entra distinta de su
+`desde`, la de la que se va fuera de su tramo— las juzgan los tests del núcleo, y se declara. La
+segunda implementación pasa la familia entera con el mismo arnés (§649). La familia se COPIA de la
+corrida del sello. Su productor es `tools/banco_rotacion.sh` (§649).
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1274,29 +1290,33 @@ corrida. Su productor es `tools/banco_ancla_cofirmada.sh` (§634).
   `actas`, ni un byte cambia: ningún vector se mueve. El conflicto y la vista dividida no la leen,
   y se dice por qué. Sin vector todavía: los de la E5b los sacará `tools/banco_rotacion.sh` de un
   nodo que rota, y la segunda implementación aprenderá a leerla con ellos.
+- §649 — el catálogo de la rotación (RFC-0015 E5b): `spec/vectors/rotacion/`, la duodécima familia
+  del artefacto, copiada de `tools/banco_rotacion.sh` contra un nodo real que rota dos veces; la
+  segunda implementación lee `actas` y la pasa entera. La línea `1/3` de la extensión deja de decir
+  «v3» —la extensión lee v3 a v6—, en las dos implementaciones: ningún manifiesto la fijaba.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
 `zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
-(este documento), `spec/vectors/<familia>/` por cada una de las ONCE familias de `FAMILIAS`
-—paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla y ancla
-cofirmada— (los once manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
+(este documento), `spec/vectors/<familia>/` por cada una de las DOCE familias de `FAMILIAS`
+—paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla, ancla
+cofirmada y rotación— (los doce manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
 licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
 y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`, y
-el binario contra los once catálogos con `bash conformidad.sh ./zk-ssl-verify` —el del paquete,
+el binario contra los doce catálogos con `bash conformidad.sh ./zk-ssl-verify` —el del paquete,
 por defecto— y `bash conformidad.sh ./zk-ssl-verify spec/vectors/<familia>/MANIFIESTO.txt` para
-cada una de las otras diez: cada entrada dice el código de salida y el texto. Esta sección decía
+cada una de las otras once: cada entrada dice el código de salida y el texto. Esta sección decía
 SEIS hasta el §574: el pago (§509) y la prenda (§546) entraron en `FAMILIAS`, y en el tarball, sin
 que ella lo dijera; el §574 lo corrige al sumar la novena, el §593 suma la décima, el ancla, y el
-§634 la undécima, el ancla cofirmada.
+§634 la undécima, el ancla cofirmada, y el §649 la duodécima, la rotación.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
 nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
 binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
-compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los once manifiestos desde el
+compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los doce manifiestos desde el
 árbol y, desde §425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo
 veredicto). Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
 declara (`glibc_max`); no es estático, y se dice.

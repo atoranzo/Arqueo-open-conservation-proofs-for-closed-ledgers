@@ -481,6 +481,18 @@ else
   grep -q '^ROJO' "$OUT/ancla_cofirmada.txt" || falla "ancla-cofirmada: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/ancla_cofirmada.txt"))"
 fi
 
+# ── 3 bis rotacion · la ROTACION de la clave en el sobre de extension (RFC-0015 E5b, desde el §649) ──
+msg ""
+msg "== CANON · la rotacion de la clave, con su cadena de actas =="
+# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
+# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
+if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/rotacion/MANIFIESTO.txt > "$OUT/rotacion.txt" 2>&1; then
+  msg "  OK  rotacion: $(tail -n 1 "$OUT/rotacion.txt" | sed 's/^conformidad: //')"
+else
+  while IFS= read -r L; do falla "rotacion $L"; done < <(grep '^ROJO' "$OUT/rotacion.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/rotacion.txt" || falla "rotacion: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/rotacion.txt"))"
+fi
+
 # ── 3 duodecies · la SEGUNDA implementacion (BACKLOG 85; tools/segunda/) ──
 # Otro codigo, en Python y sin dependencias, reproduce el nucleo congelado desde NUCLEO.md (26 KAT)
 # y verifica las cabezas firmadas de TODOS los vectores con XMSS^MT escrito desde RFC 8391
@@ -512,10 +524,11 @@ else
   grep '^ROJO' "$OUT/segunda_kat_xmss.txt" | sed 's/^/      /' >&2
   falla "el corpus KAT de xmss NO verifica con la implementacion de RFC 8391 ($(tail -n 1 "$OUT/segunda_kat_xmss.txt"))"
 fi
-# El SEGUNDO VERIFICADOR (tools/segunda/verificador.py): las cinco formas sin STARK del paquete, con
+# El SEGUNDO VERIFICADOR (tools/segunda/verificador.py): las cinco formas sin STARK del paquete -y
+# desde el §649 la extension entre dos claves con su cadena de actas, la familia rotacion-, con
 # el contrato del mando, juzgadas por el MISMO arnes y los MISMOS manifiestos que el binario de
 # referencia. Si un vector nuevo entra en estas familias, los dos codigos tienen que decir lo mismo.
-for F in paquete consumo conflicto ancla; do
+for F in paquete consumo conflicto ancla rotacion; do
   if bash tools/conformidad.sh tools/segunda/verificador.py "spec/vectors/$F/MANIFIESTO.txt" > "$OUT/segunda_$F.txt" 2>&1; then
     msg "  OK  segunda $F: $(tail -n 1 "$OUT/segunda_$F.txt" | sed 's/^conformidad: //; s/ - binario.*//')"
   else

@@ -664,7 +664,9 @@ fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
     let (cima_v, t_v, clave_v, _) = cabeza_v3_verificada(vieja, "vieja")?;
     let nueva = p.get("nueva").ok_or_else(|| err("falta nueva".into()))?;
     let (cima_n, t_n, clave_n, _) = cabeza_v3_verificada(nueva, "nueva")?;
-    println!("1/3 las DOS cabezas v3 recomponen su digest y sus firmas verifican");
+    // §649: decia «v3» a fuego, y la extension lee v3 a v6; la medida de la segunda implementacion
+    // sobre la familia de la rotacion, de cabezas v6, lo destapo. Sin version, como el consumo.
+    println!("1/3 las DOS cabezas recomponen su digest y sus firmas verifican");
     match misma_continuidad(p, (vieja, &clave_v), (nueva, &clave_n))? {
         None => println!("2/3 misma publicKey: el mismo firmante en los dos extremos"),
         Some(r) => println!(

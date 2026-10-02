@@ -1,0 +1,50 @@
+# Vectores de la ROTACION de la clave del operador en el sobre de extension (spec/PAQUETE.md 2.3,
+# RFC-0015 E5; asiento 649). zkssl/0.4.
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# TODOS se CAPTURAN de UNA corrida de su productor, que vive en el arbol:
+# `bash tools/banco_rotacion.sh --guardar <dir>` (S649), contra UN nodo REAL que firma un latido por
+# segundo y rota dos veces sobre el mismo diario: A (semilla '41' x 96, su genesis comprometiendo a
+# B) -> B ('42', con la firma de A, desde la hoja 7) -> C ('43', sin la de B, desde la 10). Las
+# actas son las que sirvio zkssl_keyActs con C en curso, tal cual; las cabezas y los caminos, los
+# del cable.
+# Los TRES positivos, salida 0, son la extension entre dos claves que la cadena une: un eslabon con
+# las dos firmas (A -> B), uno con la de la que entra sola (B -> C), y dos eslabones de un salto
+# (A -> C: el titular que estuvo apagado ve la clave de hoy, no la de en medio).
+# Las DOS conductas del operador que la cadena delata se siembran con sus claves de verdad, como la
+# vista dividida del ancla: A, ya rotada, firma otra vez con su contador restaurado en un
+# directorio fresco -su hoja queda por encima del desde de su sucesora: SOLAPAMIENTO, regla 3-, y
+# B firma con un contador fresco por debajo de la hoja de su acta -fuera de su tramo, regla 4-.
+# Solo quien tiene las claves puede producir cualquiera de los dos pares.
+# Los DIECIOCHO negativos restantes salen de lo capturado por UNA mutacion cada uno, uno por regla
+# producible del lector del acta y de la cadena; jamas se reescriben (regla 2 del PROCESO). No
+# tienen vector, y se declara, las dos reglas que una mutacion no produce sin volver a firmar: la
+# hoja de la firma de la que entra distinta de su `desde`, y la de la que se va fuera de su tramo.
+# Las juzgan los tests del nucleo (zk-ssl-verify, modulo actas).
+# El ultimo negativo dice que las actas no ORDENAN: con los papeles cambiados la continuidad se
+# sostiene -el indice embebido decide cual es la anterior- y cae la extension, por la consistencia.
+# Dos corridas del banco no dan los mismos bytes (emittedAtUnix no va firmado, y los latidos que
+# caben entre rotaciones cambian las hojas): la familia se COPIA de la corrida del sello y no se
+# re-deriva.
+rotacion-un-eslabon.json|0|(1 eslabon(es), la posterior desde la hoja 7): el mismo OPERADOR en los dos extremos
+rotacion-sin-firma-de-la-vieja.json|0|(1 eslabon(es), la posterior desde la hoja 10): el mismo OPERADOR en los dos extremos
+rotacion-dos-eslabones.json|0|(2 eslabon(es), la posterior desde la hoja 10): el mismo OPERADOR en los dos extremos
+neg-solapamiento-la-vieja-firma-despues.json|1|SOLAPAMIENTO: la clave que se va firmo en la hoja 14, y su sucesora empieza en la 7
+neg-solapamiento-la-nueva-firma-antes.json|1|SOLAPAMIENTO: la clave que llega firmo en la hoja 4, fuera de su tramo: por encima de la 7 y por debajo de la 10
+neg-sin-actas.json|1|las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante
+neg-actas-no-es-lista.json|1|actas no es lista (la cadena de zkssl_keyActs)
+neg-acta-sin-procedencia.json|1|actas[1]: falta acta.procedencia: null en la genesis
+neg-acta-sin-firma-anterior.json|1|actas[1]: falta firmaAnterior: null si la clave que se va no firma
+neg-acta-desde-no-minimo.json|1|actas[1]: desde: cantidad hex no minima
+neg-acta-siguiente-corto.json|1|actas[0]: siguiente: 31 bytes, se esperaban 32
+neg-cadena-sin-genesis.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 0 de la cadena no vale: una rotacion se juzga contra el acta de la que viene, y no esta
+neg-cadena-corta.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: la clave que llega no esta en la cadena: nadie la comprometio
+neg-genesis-repetida.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 1 de la cadena no vale: un acta genesis no continua a otra: no lleva procedencia
+neg-genesis-con-firma-anterior.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 0 de la cadena no vale: un acta genesis no tiene clave anterior que la firme
+neg-esquema-ajeno.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 0 de la cadena no vale: el acta presenta una clave de esquema 0x100000006, que este verificador no conoce
+neg-anterior-ajena.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 1 de la cadena no vale: la anterior del acta no es la clave del acta previa
+neg-clave-no-comprometida.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 1 de la cadena no vale: la clave que entra NO es la que el acta previa comprometio
+neg-desde-no-crece.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 2 de la cadena no vale: el desde 7 no supera el 7 de la clave previa
+neg-desde-tocado.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 1 de la cadena no vale: la firma de la clave que entra: la firma es VALIDA pero de otro mensaje
+neg-firma-tocada.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 1 de la cadena no vale: la firma de la clave que entra: la firma no verifica
+neg-firma-de-la-vieja-tocada.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 1 de la cadena no vale: la firma de la clave que se va: la firma no verifica
+neg-papeles-cambiados.json|1|NO extiende a la vieja

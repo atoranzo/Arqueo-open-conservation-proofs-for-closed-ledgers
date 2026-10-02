@@ -701,6 +701,11 @@ instrumentacion) al grupo E.*
   de un firmante aceptan `actas`, y una cadena hace de dos claves UN
   operador; sin ella, ni un byte cambia. QUEDAN los vectores, el banco y la
   segunda implementación (E5b) y el medio (E6): sigue abierta.
+  ✅ a medias (§649): la E5b, `spec/vectors/rotacion/` copiado de
+  `tools/banco_rotacion.sh` contra un nodo que rota dos veces, con las dos
+  conductas que la cadena delata sembradas con sus claves, y la segunda
+  implementación que lee `actas`. QUEDA el medio (E6), tras la E3 del
+  RFC-0013: sigue abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con

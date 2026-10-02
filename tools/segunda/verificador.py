@@ -6,7 +6,8 @@ estandar y el VERDE de su forma; `ROJO: {motivo}` por la de error con un texto d
 seccion 5; exit 0 verde, 1 el primer fallo con nombre, 2 uso.
 
 Lo que lee hoy: las cinco formas que no exigen una prueba STARK -POSICION (v1 y v2, con acuse y
-cofirmas), EXTENSION, CONSUMO, CONFLICTO y ANCLA-; las que la exigen quedan fuera. Un `tipo` conocido que esta implementacion no lee todavia
+cofirmas), EXTENSION, CONSUMO, CONFLICTO y ANCLA-, y desde el §649 las `actas` que unen dos claves de
+un operador en la extension y el consumo (RFC-0015); las que exigen una prueba quedan fuera. Un `tipo` conocido que esta implementacion no lee todavia
 sale ROJO con su nombre, nunca VERDE.
 
 De donde sale: PAQUETE.md secciones 2.1 a 2.3, 3, 4, 5 y 6; NUCLEO.md seccion 6 a traves de
@@ -310,6 +311,211 @@ def posicion(doc, v):
     return salida
 
 
+# ─── las actas de clave (RFC-0015 D-C y D-E; PAQUETE.md 2.3; §648, §649) ─────────────────────────
+# El sobre que exige UN firmante acepta `actas`, la cadena de zkssl_keyActs: si une las dos claves,
+# la continuidad es de UN operador. Escrito desde la D-C del RFC-0015 y la seccion 2.3 de PAQUETE.md,
+# con el digest y el preambulo de NUCLEO.md seccion 6 (nucleo.py) y la firma de RFC 8391 (xmss.py).
+# Los textos son los de la referencia, letra por letra, salvo los que alli son el `Debug` de un error
+# de la biblioteca XMSS: aqui dicen lo mismo con las palabras de xmss.py.
+ESQUEMA_XMSSMT_SHA2_40_8_256 = (1 << 32) | 0x00000005
+ACTA_VERSION = 1
+
+
+class Fallo(Exception):
+    """Un acta que no se lee o no vale, con el texto de la referencia; quien lo recoge pone delante
+    el sitio (`actas[k]: `, `el acta k de la cadena no vale: `)."""
+
+
+def _texto_de(obj, campo):
+    s = obj.get(campo) if isinstance(obj, dict) else None
+    if not isinstance(s, str):
+        raise Fallo(f"falta {campo}, o no es una cadena")
+    return s
+
+
+def _hex_canonico(s):
+    """El hex del cable (zk_ssl_hash::hex_canonico): `0x`, minuscula, por pares; mide en bytes."""
+    if not s.startswith("0x"):
+        raise ValueError("hex sin 0x")
+    h = s[2:].encode("utf-8")
+    if len(h) % 2:
+        raise ValueError(f"hex de longitud impar ({len(h)})")
+    malo = next((i for i, c in enumerate(h) if c not in b"0123456789abcdef"), None)
+    if malo is not None:
+        raise ValueError(f"hex: cifra no admitida en la posicion {malo}")
+    return bytes.fromhex(h.decode())
+
+
+def _data_de(obj, campo):
+    try:
+        return _hex_canonico(_texto_de(obj, campo))
+    except ValueError as e:
+        raise Fallo(f"{campo}: {e}")
+
+
+def _digest_del_acta(obj, campo):
+    b = _data_de(obj, campo)
+    if len(b) != 32:
+        raise Fallo(f"{campo}: {len(b)} bytes, se esperaban 32")
+    try:
+        return N.digest_from_bytes(b)
+    except ValueError as e:
+        raise Fallo(f"{campo}: {e}")
+
+
+def _q_del_acta(obj, campo):
+    """Un Q en su escritura minima (zk_ssl_hash::cantidad_canonica, §662)."""
+    s = _texto_de(obj, campo)
+    if not s.startswith("0x"):
+        raise Fallo(f"{campo}: hex sin 0x")
+    h = s[2:].encode("utf-8")
+    if not h or len(h) > 16 or (len(h) > 1 and h[:1] == b"0"):
+        raise Fallo(f"{campo}: cantidad hex no minima")
+    malo = next((i for i, c in enumerate(h) if c not in b"0123456789abcdef"), None)
+    if malo is not None:
+        raise Fallo(f"{campo}: hex: cifra no admitida en la posicion {malo}")
+    return int(h, 16)
+
+
+def acta_de_json(v):
+    """Lee el JSON de un acta (spec/RPC.md, zkssl_keyActs): leer NO es juzgar."""
+    a = v.get("acta") if isinstance(v, dict) else None
+    if not isinstance(a, dict):
+        raise Fallo("falta acta, o no es un objeto")
+    if "procedencia" not in a:
+        raise Fallo("falta acta.procedencia: null en la genesis")
+    p = a["procedencia"]
+    procedencia = None if p is None else (_digest_del_acta(p, "anterior"), _digest_del_acta(p, "epochDigest"),
+                                          _digest_del_acta(p, "mmrRoot"), _q_del_acta(p, "mmrSize"))
+    if "firmaAnterior" not in v:
+        raise Fallo("falta firmaAnterior: null si la clave que se va no firma")
+    firma_anterior = None if v["firmaAnterior"] is None else _data_de(v, "firmaAnterior")
+    return {"clave": _data_de(a, "clave"), "esquema": _q_del_acta(a, "esquema"), "desde": _q_del_acta(a, "desde"),
+            "siguiente": _digest_del_acta(a, "siguiente"), "procedencia": procedencia,
+            "firma": _data_de(v, "firma"), "firmaAnterior": firma_anterior}
+
+
+def _huella(clave):
+    return N.digest_from_bytes(N.huella_de_clave(clave))
+
+
+def _firma_sobre(clave, mensaje, firmado):
+    """La firma verifica, el mensaje que lleva dentro ES el esperado, y devuelve su indice embebido."""
+    try:
+        oid, _, _ = xmss.parsear_clave(clave)
+    except ValueError as e:
+        raise Fallo(f"clave publica ilegible: {e}")
+    largo = xmss.largo_firma(oid)
+    firma, recuperado = firmado[:largo], firmado[largo:]
+    if len(firma) != largo:
+        raise Fallo(f"firma ilegible: la firma tiene {len(firma)} bytes y RFC 8391 pide {largo}")
+    if not xmss.verificar(clave, recuperado, firma):
+        raise Fallo("la firma no verifica: XMSS^MT de RFC 8391")
+    if recuperado != mensaje:
+        raise Fallo(f"la firma es VALIDA pero de otro mensaje (preambulo esperado {len(mensaje)} bytes, recibido "
+                    f"{len(recuperado)}). Verificar sin comparar no prueba nada.")
+    return xmss.indice_embebido(oid, firma)
+
+
+def verificar_acta(a, previa):
+    """Las reglas 1 a 3 de la D-C, ANTES que las firmas: ninguna firma rescata una clave no comprometida."""
+    if a["esquema"] != ESQUEMA_XMSSMT_SHA2_40_8_256:
+        raise Fallo(f"el acta presenta una clave de esquema {a['esquema']:#x}, que este verificador no conoce")
+    p = a["procedencia"]
+    if p is None and previa is None:
+        if a["firmaAnterior"] is not None:
+            raise Fallo("un acta genesis no tiene clave anterior que la firme")
+    elif p is None:
+        raise Fallo("un acta genesis no continua a otra: no lleva procedencia")
+    elif previa is None:
+        raise Fallo("una rotacion se juzga contra el acta de la que viene, y no esta")
+    else:
+        if p[0] != _huella(previa["clave"]):
+            raise Fallo("la anterior del acta no es la clave del acta previa")
+        if _huella(a["clave"]) != previa["siguiente"]:
+            raise Fallo("la clave que entra NO es la que el acta previa comprometio: la pre-rotacion la rechaza")
+        if a["desde"] <= previa["desde"]:
+            raise Fallo(f"el desde {a['desde']} no supera el {previa['desde']} de la clave previa: la cuenta es del "
+                        f"operador")
+    digest = N.acta_digest(_huella(a["clave"]), a["esquema"], a["desde"], a["siguiente"], p)
+    pre = N.preambulo_acta(ACTA_VERSION, digest)
+    try:
+        embebido = _firma_sobre(a["clave"], pre, a["firma"])
+    except Fallo as e:
+        raise Fallo(f"la firma de la clave que entra: {e}")
+    if embebido != a["desde"]:
+        raise Fallo(f"la clave que entra firma su acta en la hoja {embebido} y el acta dice desde {a['desde']}")
+    if a["firmaAnterior"] is not None and previa is not None:
+        try:
+            e = _firma_sobre(previa["clave"], pre, a["firmaAnterior"])
+        except Fallo as x:
+            raise Fallo(f"la firma de la clave que se va: {x}")
+        if e <= previa["desde"] or e >= a["desde"]:
+            raise Fallo(f"la clave que se va firma en la hoja {e}, fuera de ({previa['desde']}, {a['desde']})")
+
+
+def juzgar_rotacion(actas, de, a, ultimo):
+    """La cadena entera vale, `a` esta en ella y `de` antes, y lo visto de `de` queda por debajo del
+    `desde` de su sucesora. Devuelve (desde, hasta, eslabones) del tramo de `a`."""
+    for i, x in enumerate(actas):
+        try:
+            verificar_acta(x, actas[i - 1] if i else None)
+        except Fallo as e:
+            raise Fallo(f"el acta {i} de la cadena no vale: {e}")
+    j = next((k for k in range(len(actas) - 1, -1, -1) if actas[k]["clave"] == a), None)
+    if j is None:
+        raise Fallo("la clave que llega no esta en la cadena: nadie la comprometio")
+    i = next((k for k in range(j - 1, -1, -1) if actas[k]["clave"] == de), None)
+    if i is None:
+        raise Fallo("la clave que se tenia no esta en la cadena antes de la que llega")
+    if ultimo is not None and ultimo >= actas[i + 1]["desde"]:
+        raise Fallo(f"SOLAPAMIENTO: la clave que se va firmo en la hoja {ultimo}, y su sucesora empieza en la "
+                    f"{actas[i + 1]['desde']}")
+    return actas[j]["desde"], (actas[j + 1]["desde"] if j + 1 < len(actas) else None), j - i
+
+
+def juzgar_continuidad(actas, una, otra):
+    """El indice EMBEBIDO ordena las dos cabezas (la cuenta es una, D-A); la anterior, por la regla 3, y
+    la posterior en su tramo, por la 4. Cada lado es (clave, embebido)."""
+    anterior, posterior = (otra, una) if otra[1] < una[1] else (una, otra)
+    desde, hasta, eslabones = juzgar_rotacion(actas, anterior[0], posterior[0], anterior[1])
+    e = posterior[1]
+    if not (e > desde and (hasta is None or e < hasta)):
+        raise Fallo(f"SOLAPAMIENTO: la clave que llega firmo en la hoja {e}, fuera de su tramo: por encima de la "
+                    f"{desde}" + (f" y por debajo de la {hasta}" if hasta is not None else ""))
+    return desde, hasta, eslabones
+
+
+def misma_continuidad(doc, una, otra):
+    """PAQUETE.md 2.3: con la misma clave, None y `actas` no se lee; sin `actas`, el rechazo de siempre;
+    con ellas, el juez. Cada lado es (publicKey en bytes, indice embebido)."""
+    if una[0] == otra[0]:
+        return None
+    if "actas" not in doc:
+        raise Rojo("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante")
+    lista = doc["actas"]
+    if not isinstance(lista, list):
+        raise Rojo("actas no es lista (la cadena de zkssl_keyActs)")
+    actas = []
+    for k, x in enumerate(lista):
+        try:
+            actas.append(acta_de_json(x))
+        except Fallo as e:
+            raise Rojo(f"actas[{k}]: {e}")
+    try:
+        return juzgar_continuidad(actas, una, otra)
+    except Fallo as e:
+        raise Rojo(f"las cabezas llevan claves DISTINTAS y las actas no las unen: {e}")
+
+
+def linea_de_continuidad(paso, r, resto=""):
+    if r is None:
+        return None
+    return (f"{paso} claves distintas que las actas unen ({r[2]} eslabon(es), la posterior desde la hoja {r[0]})"
+            f"{resto}")
+
+
+
 def extension(doc):
     salida = []
     cabs = {}
@@ -325,13 +531,13 @@ def extension(doc):
             raise Rojo(f"{cual}: formatVersion {fv} — la extension exige cabezas v3, v4 o v5: una v2 no lleva la pareja del "
                        f"MMR que extender")
         cab = leer_cabeza(c, cual)
-        verificar_cabeza(cab, cual)
+        cab["embebido"] = verificar_cabeza(cab, cual)
         cabs[cual] = cab
     vieja, nueva = cabs["vieja"], cabs["nueva"]
-    salida.append(f"1/3 las DOS cabezas v{nueva['v']} recomponen su digest y sus firmas verifican")
-    if vieja["pk"] != nueva["pk"]:
-        raise Rojo("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante")
-    salida.append("2/3 misma publicKey: el mismo firmante en los dos extremos")
+    salida.append("1/3 las DOS cabezas recomponen su digest y sus firmas verifican")  # §649, como la referencia
+    r = misma_continuidad(doc, (vieja["pk"], vieja["embebido"]), (nueva["pk"], nueva["embebido"]))
+    salida.append(linea_de_continuidad("2/3", r, ": el mismo OPERADOR en los dos extremos")
+                  or "2/3 misma publicKey: el mismo firmante en los dos extremos")
     cam = doc.get("camino")
     if not isinstance(cam, list):
         raise Rojo("falta camino (lista de digests)")
@@ -437,9 +643,9 @@ def consumo(doc):
     vieja = leer_cabeza_de(doc, "vieja", (4, 5, 6), msg_v)
     nueva = leer_cabeza_de(doc, "nueva", (4, 5, 6), msg_v)
     salida.append("1/5 las DOS cabezas recomponen su digest y sus firmas verifican")
-    if vieja["pk"] != nueva["pk"]:
-        raise Rojo("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante")
-    salida.append("2/5 misma publicKey y las dos cabezas llevan consRoot (v4, v5 o v6) a los dos lados")
+    r = misma_continuidad(doc, (vieja["pk"], vieja["embebido"]), (nueva["pk"], nueva["embebido"]))
+    salida.append(linea_de_continuidad("2/5", r, ", y las dos cabezas llevan consRoot (v4, v5 o v6) a los dos lados")
+                  or "2/5 misma publicKey y las dos cabezas llevan consRoot (v4, v5 o v6) a los dos lados")
     camino = leer_lista_de_digests(doc, "camino")
     if not consistencia(vieja["mmrSize"], nueva["mmrSize"], vieja["mmrRoot"], nueva["mmrRoot"], camino):
         raise Rojo(f"la nueva (t={nueva['mmrSize']}) NO extiende a la vieja (t={vieja['mmrSize']}): historia bifurcada, "

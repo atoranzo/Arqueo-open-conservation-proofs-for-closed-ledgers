@@ -47047,3 +47047,81 @@ segunda implementación no lee `actas`: ante el sobre del humo dice lo de antes,
 vectores de la E5b. Una clave que vuelve a la cadena se juzga por su última entrada, como en el testigo.
 
 **Lo que NO cierra.** La 84 sigue abierta, con la E2, la E3, la E4 y la E5a de su RFC construidas.
+
+## §649 — RFC-0015 E5b: la rotación tiene catálogo, sacado de un nodo que rota, y la segunda implementación lee `actas`
+
+El commit que lleva este asiento, sobre `0ade55d` (el §648). Un solo sello: nace
+`tools/banco_rotacion.sh`; nace `spec/vectors/rotacion/`, copiado de una corrida suya, la duodécima
+familia del artefacto, con su bloque en el canon; la segunda implementación aprende a leer `actas`
+y entra en el bucle del canon con la familia nueva; la línea `1/3` de la extensión deja de decir
+«v3» en las dos implementaciones; `spec/PAQUETE.md`, los dos README, el README de la segunda, el
+RFC-0015, `spec/README.md` y la entrada 84 se ponen al día; y este asiento. Lo escribe, lo prueba y
+lo commitea la sesión de Claude Code del §643 al §648, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión, sobre
+este mismo árbol, el canon `--sello` salió VERDE.
+
+**El número.** El §649 es el segundo de los dos huecos que `main` dejó entre el §647 y el §650, el
+que el §648 no tomó.
+
+**De dónde sale.** La E5 del RFC-0015 pedía el campo, sus vectores y un banco contra un nodo real;
+el §648 dio el campo y dejó escrito que no tenía vector y que la segunda implementación, ante un
+sobre con `actas`, decía lo de antes. Una familia sin la segunda implementación habría escondido
+esa divergencia: el canon la corre sobre los manifiestos de las formas que lee.
+
+**Lo que hace.**
+
+1. **El banco.** `tools/banco_rotacion.sh` levanta UN nodo y lo rota dos veces sobre el mismo
+   diario: A, con su génesis comprometiendo a B; B, con la firma de A (`--clave-anterior-fichero`);
+   C, sin la de B, que el acta declara quemada. De cada tramo, una cabeza; con C en curso, los
+   caminos de consistencia que unen las cimas y la cadena de `zkssl_keyActs`. Después siembra las
+   dos conductas del operador que la cadena delata, con sus claves de verdad: A, ya rotada,
+   firmando otra vez con su contador restaurado en un directorio fresco —su hoja, por encima del
+   `desde` de B: la regla 3—, y B con un contador fresco, firmando por debajo de la hoja de su acta
+   —la regla 4—. Con el nodo parado, el mando juzga cada sobre. Como los demás bancos, no escribe en
+   el árbol, lo comprueba, y `--guardar` copia los sobres con las líneas de su manifiesto.
+2. **El catálogo.** `spec/vectors/rotacion/`, 23 sobres de extensión copiados de la corrida del
+   sello: tres positivos —un eslabón con las dos firmas, uno con la de la que entra sola, y dos
+   eslabones de un salto, el titular que estuvo apagado—, las dos conductas sembradas —«SOLAPAMIENTO:
+   la clave que se va firmo en la hoja 14, y su sucesora empieza en la 7» y «la clave que llega
+   firmo en la hoja 4, fuera de su tramo: por encima de la 7 y por debajo de la 10»— y dieciocho
+   negativos por una mutación: los seis del lector del acta, los once de la cadena que una mutación
+   produce —sin génesis, corta, génesis repetida, génesis con firma de la vieja, esquema ajeno,
+   anterior ajena, clave no comprometida, `desde` que no crece, `desde` tocado, y las dos firmas
+   tocadas— y uno que dice que las actas no ordenan: con los papeles cambiados la continuidad se
+   sostiene y cae la consistencia. Dos reglas no tienen vector, porque una mutación no las produce
+   sin volver a firmar: la hoja de la firma de la que entra distinta de su `desde` y la de la que se
+   va fuera de su tramo; las juzgan los tests del núcleo, y el manifiesto lo declara.
+3. **La segunda implementación.** `tools/segunda/verificador.py` lee `actas` en la extensión y en
+   el consumo: el lector con sus textos, las reglas 1 a 3 antes que las firmas, las firmas XMSS con
+   `kat_xmss/xmss.py`, la cadena, `juzgar_rotacion` y `juzgar_continuidad`, escritos desde la D-C
+   del RFC-0015 y la sección 2.3 de `spec/PAQUETE.md`, con el digest y el preámbulo del acta que ya
+   tenía `nucleo.py`. Pasa la familia, 23 de 23, en 8 s, y entra en el bucle del canon.
+4. **Un hallazgo de la medida.** La salida de los positivos de las dos implementaciones difería en
+   una línea: la referencia imprimía «1/3 las DOS cabezas v3 recomponen...» a fuego, y la extensión
+   lee v3 a v6 —las cabezas de esta familia son v6—; la segunda imprimía la versión de la nueva. Ni
+   un manifiesto la fijaba. Las dos dicen ahora «1/3 las DOS cabezas recomponen su digest y sus firmas
+   verifican», como el consumo y el conflicto, y los tres positivos salen idénticos línea a línea.
+
+**Medido.** El banco, VERDE a la primera: 23 de 23, con la cadena desde 0, 7 y 10. El arnés sobre la
+familia copiada, 23 de 23 con el binario y 23 de 23 con la segunda implementación; el bucle entero de
+la segunda, 149 de 149 en cinco familias. `juez_cabezas.py`, que recorre todas las cabezas de los
+vectores, sigue VERDE: 457 de 506 verifican y las que no son de negativos, ninguno de un positivo. Y
+los bancos que ejercen los sobres que el §648 y este tocan, con el árbol limpio: la extensión, el
+consumo, los dos libros, la completitud, el recibo agregado, el ancla y la rotación, VERDES.
+
+**Probado.** Ningún test nuevo de Rust: lo nuevo es un banco, un catálogo que el canon juzga con
+las dos implementaciones, y un verificador en Python. `zk-ssl-verify` sigue en 178, y `check_tests`
+en 1829.
+
+**Contadores.** Los ficheros de vectores, de 460 a 484 en los dos README, con la familia nombrada;
+las familias del artefacto, de once a doce en `spec/PAQUETE.md`. Ningún pin se mueve. El
+`BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** No hay vector de la rotación en el consumo ni en la completitud: el juez es el
+mismo productor, y producirlos pide un consumo y un recibo a través de una rotación. El kit
+publicado, la 0.4.2, no lee `actas`: ante esta familia da el rechazo de siempre, y la leerá el
+próximo corte. El sobre propio del solapamiento —una cabeza de la clave vieja y la cadena— sigue sin
+etapa.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2, la E3, la E4 y la E5 de su RFC construidas; le
+queda la E6, el medio, tras la E3 del RFC-0013.
