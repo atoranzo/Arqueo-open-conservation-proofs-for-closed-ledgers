@@ -27,6 +27,14 @@ pasos y los diez catálogos— en el asiento de `AUDITORIA.md` que registra esta
 cabezas hasta la **v6**, la que el nodo firma hoy, y lee las diez familias de la sección 11 de
 `spec/PAQUETE.md`.
 
+⚠️ **La 0.4.0 está CORTADA y no publicada (§657).** La vigente sigue siendo la 0.3.0 hasta que el
+asiento que registre la 0.4.0 fije su huella. La 0.4.0 corrige cuatro defectos de la 0.3.0 descritos
+en la sección 3.9 de `SECURITY.md`: un campo hex con un carácter multibyte, o una prueba oculta con el
+meta vaciado, la hacían salir con **101** (pánico) en vez de ROJO (§650, §651); una prueba con bytes
+de cola se leía igual que sin ellos (§653); y lee canónico cada entero del sobre (RFC-0016, §640),
+con lo que rechaza los cuatro negativos que la 0.3.0 acepta. Lee además la familia del ancla
+cofirmada (§633, §634): once familias.
+
 ⚠️ **Una frase vieja viaja en su `NOTICE`, declarada.** El `NOTICE` del tarball dice que la
 ocultación del testigo del fork de winterfell la enciende sólo `Prover::ocultacion`, «que ningún
 probador de ARQUEO devuelve», y que el fork toca «ocho ficheros y dos nuevos». Era la descripción

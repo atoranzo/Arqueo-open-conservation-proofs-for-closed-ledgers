@@ -45524,3 +45524,30 @@ muerto ese proceso, el canon salió VERDE.
 **Lo que NO cierra.** La versión nueva de `arqueo-verify` (el binario del kit cambia con los §650 a
 §653). El cambio de cable de `zkssl_supply`. Las partes (a) y (b) del §655. El `BACKLOG.md` no se
 mueve.
+
+## §657 — el kit 0.4.0, cortado: lo que la 0.3.0 hace mal ante una entrada hostil, corregido
+
+El commit que lleva este asiento, sobre el §656 de esta misma rama. Primer sello de los dos del D-K5
+del §442: corta la versión; publicar y registrar viene después. Lo escribe y lo commitea una sesión
+de Claude Code en la nube, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre
+este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del nivel en sus pines, con 322 s de tests, y el artefacto reproducible con sus once catálogos también desde dentro del tarball.
+
+**De dónde sale.** El binario de `zk-ssl-verify` cambió con los §650, §651 y §653 (y con el §640, la
+lectura canónica del RFC-0016, en la otra rama), y la release vigente, `arqueo-verify-v0.3.0`, sigue
+saliendo con 101 ante un hex multibyte o una prueba oculta sin marca, lee igual una prueba con cola y
+acepta los cuatro negativos del §640. El aviso del §637 pedía una sola versión nueva con todo lo que
+toca al kit, no tres seguidas; el autor pidió cerrarlo todo.
+
+**Lo que hace.** `zk-ssl-verify` 0.3.0 -> 0.4.0 en su `Cargo.toml` y en su bloque de `Cargo.lock`.
+`doc/KIT.md` y `doc/KIT_EN.md`: la sección 0 dice que la 0.4.0 está CORTADA y no publicada, qué
+corrige y que lee once familias (la del ancla cofirmada, §633 y §634); la vigente sigue siendo la
+0.3.0. Los dos README, el resumen ejecutivo y el bilingüe dicen la 0.4.0 cortada y la 0.3.0
+publicada.
+
+**Lo que NO hace.** No publica. El tag `arqueo-verify-v0.4.0` va sobre el commit de este asiento y
+después de él; el tarball se produce con `bash tools/artefacto.sh` sobre un `target/artefacto/` vacío
+y se sube a mano (D-R4 del §443): esta sesión no tiene credenciales para crear una release en GitHub.
+Registrar la huella medida desde fuera es el sello siguiente, cuando la release exista. No toca
+`PREGUNTAS.md` ni `QUESTIONS.md`, que nombran la release vigente: lo hará el registro.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin.

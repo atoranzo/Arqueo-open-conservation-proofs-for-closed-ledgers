@@ -27,6 +27,14 @@ steps and the ten catalogues — in the `AUDITORIA.md` entry that registers this
 recomposes heads up to **v6**, the one the node signs today, and reads the ten families of section
 11 of `spec/PAQUETE.md`.
 
+⚠️ **0.4.0 is CUT and not published (§657).** The current release remains 0.3.0 until the entry
+that registers 0.4.0 pins its fingerprint. 0.4.0 fixes four defects of 0.3.0 described in section
+3.9 of `SECURITY.md`: a hex field with a multibyte character, or a hidden proof with its meta
+emptied, made it exit with **101** (panic) instead of RED (§650, §651); a proof with trailing bytes
+was read as if they were not there (§653); and it reads every integer of the envelope canonically
+(RFC-0016, §640), so it rejects the four negatives that 0.3.0 accepts. It also reads the co-signed
+anchor family (§633, §634): eleven families.
+
 ⚠️ **An outdated sentence travels in its `NOTICE`, declared.** The tarball's `NOTICE` says the
 witness hiding in the winterfell fork is switched on only by `Prover::ocultacion`, "which no ARQUEO
 prover returns", and that the fork touches "eight files and two new ones". That was the description
