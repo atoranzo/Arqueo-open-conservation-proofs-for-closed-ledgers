@@ -1479,6 +1479,10 @@ fn open_layer(a: &Args) -> anyhow::Result<SovereignLayer> {
         "build sin feature `dev`: pasar raíces de custodios/gobernanza reales (pendiente de flags --custodian-root/--governance-root)"
     );
 
+    // §668: el tope de la capa, dicho al arrancar y no como un panico de `new`.
+    if a.max_supply > zk_ssl::MAX_SUMINISTRO {
+        anyhow::bail!("--max-supply {} por encima del tope de la capa, 2^62 - 1", a.max_supply);
+    }
     Ok(match &a.ledger {
         Some(path) => SovereignLayer::open(path, c_root, g_root, a.limit, a.max_supply, a.max_accounts)
             .map_err(|e| anyhow::anyhow!("abriendo {path}: {e:?}"))?,

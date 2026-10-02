@@ -259,7 +259,9 @@ impl SovereignLayer {
     }
 
     pub fn total_pending(&self) -> u64 {
-        self.pending_amounts.values().sum()
+        // §668: saturada. Cada pendiente es parte del suministro, que no pasa de 2^62 - 1:
+        // en un estado sano no satura nunca, y en uno roto no da la vuelta.
+        self.pending_amounts.values().fold(0u64, |a, &x| a.saturating_add(x))
     }
 
     /// **Asigna una posición en el árbol de pendientes, REUTILIZANDO las
@@ -513,6 +515,12 @@ impl SovereignLayer {
         }
         .map_err(|e| LayerError::VerificationFailed(format!("apertura: {e:?}")))?;
 
+        // §668: la resta, comprobada y ANTES de tocar nada: un reembolso por mas de lo que hay
+        // emitido no existe en un estado sano, y en uno roto no puede dejar el arbol a medias.
+        let supply_new = self
+            .total_supply
+            .checked_sub(receipt.amount)
+            .ok_or(LayerError::RefundUnavailable)?;
         let vacia: Digest = [BaseElement::ZERO; 4];
         let root = self.accounts.root();
         self.pending.set_leaf(pos, vacia);
@@ -520,7 +528,7 @@ impl SovereignLayer {
         self.meta_clear(pos);
         // Lo emitido-a-pendiente subió el suministro al nacer (two_phase,
         // mint_to_pending): al caducar sin cobro, BAJA exactamente eso.
-        self.total_supply -= receipt.amount;
+        self.total_supply = supply_new;
         // La raíz de cuentas no se mueve: el log la repite a ambos lados.
         self.log
             .append(OpKind::Refund, root, root, &receipt.refund_proof);
@@ -706,7 +714,10 @@ impl SovereignLayer {
             }
         }
         let root_old = self.accounts.root();
-        let updated_balance = rec.balance + receipt.amount;
+        // §668: comprobada; el saldo y el pendiente caben en el suministro, que no pasa de 2^62 - 1.
+        let updated_balance = rec.balance.checked_add(receipt.amount).ok_or(
+            LayerError::SupplyCapExceeded { cap: self.max_supply, would_be: u64::MAX },
+        )?;
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(
             sender_index,
@@ -1684,7 +1695,11 @@ impl SovereignLayer {
 
         let root_old = self.pending.root();
         let supply_old = self.total_supply;
-        let supply_new = supply_old + amount;
+        // §668: comprobada, como en `mint`.
+        let supply_new = supply_old.checked_add(amount).ok_or(LayerError::SupplyCapExceeded {
+            cap: self.max_supply,
+            would_be: u64::MAX,
+        })?;
 
         // Sobre una COPIA, no sobre el estado. Si algo falla despues, el
         // arbol real no se ha tocado.

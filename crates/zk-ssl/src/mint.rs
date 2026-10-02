@@ -56,11 +56,15 @@ impl SovereignLayer {
 
         let root_old = self.accounts.root();
         let supply_old = self.total_supply;
-        let supply_new = supply_old + amount;
+        // §668: comprobadas. Con el tope de la capa por debajo de 2^62 no fallan nunca; si un
+        // estado roto las hiciera fallar, es un error y no una vuelta silenciosa.
+        let desborde = || LayerError::SupplyCapExceeded { cap: self.max_supply, would_be: u64::MAX };
+        let supply_new = supply_old.checked_add(amount).ok_or_else(desborde)?;
+        let balance_new = account.balance.checked_add(amount).ok_or_else(desborde)?;
 
         let updated = AccountRecord {
             public_id: account.public_id,
-            balance: account.balance + amount,
+            balance: balance_new,
             nonce: account.nonce,
             view_id: account.view_id,
             // opera sobre el record guardado -> preserva el salt.

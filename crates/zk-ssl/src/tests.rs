@@ -3383,3 +3383,27 @@ fn t487_una_congelada_no_quema_con_camino_ajeno() {
     assert_eq!(layer.balance_of(alice), Some(1_000_000), "el saldo no se destruyo");
     assert_eq!(layer.total_supply(), 1_000_000, "el suministro no bajo");
 }
+
+/// §668: el tope de suministro de la capa es `2^62 - 1`, el rango de los AIR. Con uno mayor
+/// -antes valia hasta `u64::MAX`- una suma de saldo o de suministro podia dar la vuelta en `u64`.
+/// `new` lo rechaza con un panico al arrancar; `open` con un error. Falsador: sin la
+/// comprobacion, `new` arranca y `open` abre.
+#[test]
+#[should_panic(expected = "por encima del tope de la capa")]
+fn un_tope_de_suministro_por_encima_de_2_a_la_62_no_arranca() {
+    let _ = SovereignLayer::new(custodian_root(), governance_root(), LIMIT, MAX_SUMINISTRO + 1, MAX_ACCOUNTS);
+}
+
+#[test]
+fn un_tope_de_suministro_por_encima_de_2_a_la_62_no_abre() {
+    let ruta = temp_path("tope_suministro_668");
+    let r = SovereignLayer::open(&ruta, custodian_root(), governance_root(), LIMIT, u64::MAX, MAX_ACCOUNTS);
+    assert!(
+        matches!(r, Err(LayerError::SupplyCapExceeded { cap: MAX_SUMINISTRO, would_be: u64::MAX })),
+        "{:?}",
+        r.as_ref().err()
+    );
+    let ok = SovereignLayer::open(&ruta, custodian_root(), governance_root(), LIMIT, MAX_SUMINISTRO, MAX_ACCOUNTS);
+    assert!(ok.is_ok(), "el tope maximo si abre");
+    let _ = std::fs::remove_dir_all(&ruta);
+}

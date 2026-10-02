@@ -55,6 +55,10 @@ impl SovereignLayer {
         max_accounts: u64,
         key: Option<crate::crypto::LedgerKey>,
     ) -> Result<Self, LayerError> {
+        // §668: el mismo tope que `new`, como error y no como panico.
+        if max_supply > crate::MAX_SUMINISTRO {
+            return Err(LayerError::SupplyCapExceeded { cap: crate::MAX_SUMINISTRO, would_be: max_supply });
+        }
         let db = sled::open(path).map_err(|e| StoreError::Io(e.to_string()))?;
 
         let mut layer = Self {

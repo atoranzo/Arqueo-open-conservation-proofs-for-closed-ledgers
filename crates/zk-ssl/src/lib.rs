@@ -1050,6 +1050,13 @@ pub struct SovereignLayer {
     key: Option<crate::crypto::LedgerKey>,
 }
 
+/// §668: el tope de suministro que la capa admite: el rango de los AIR desde
+/// el §641, `2^62 - 1`. Con el tope por debajo, todo saldo, todo pendiente y el
+/// suministro caben en `u64` con holgura, y las sumas de la capa no pueden
+/// desbordar; con un tope mayor -antes se aceptaba cualquiera, hasta
+/// `u64::MAX`- una suma de saldo o de suministro podia dar la vuelta.
+pub const MAX_SUMINISTRO: u64 = (1u64 << 62) - 1;
+
 impl SovereignLayer {
     /// Arranca la capa.
     ///
@@ -1063,6 +1070,10 @@ impl SovereignLayer {
         max_supply: u64,
         max_accounts: u64,
     ) -> Self {
+        assert!(
+            max_supply <= MAX_SUMINISTRO,
+            "max_supply {max_supply} por encima del tope de la capa, 2^62 - 1 (§668)"
+        );
         Self {
             accounts: SparseTree::new(),
             pending: SparseTree::new(),

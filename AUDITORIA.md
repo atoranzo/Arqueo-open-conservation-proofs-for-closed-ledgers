@@ -45891,3 +45891,38 @@ en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG
 
 **Lo que NO cierra.** El alta de la hoja en `conservar` sigue saltándose en silencio si el candado
 está envenenado; con este corte, el latido siguiente falla en vez de firmar sobre esa falta.
+
+## §668 — la aritmética de la capa, acotada y comprobada: el tope de suministro es `2^62 - 1`, y las sumas de dinero que quedaban no dan la vuelta
+
+El commit que lleva este asiento, sobre el §667. Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del
+nivel en sus pines, 508 s de tests.
+
+**El defecto (P3).** El §641 comprobó la aritmética del envío, el cobro y la quema. Quedaban sin
+comprobar cinco sumas y restas de dinero en la capa: el suministro y el saldo nuevos de `mint`, el
+suministro nuevo de la emisión a pendiente, la resta del suministro en el reembolso por caducidad y
+el saldo nuevo del reembolso al emisor, más la suma de `total_pending`. Todas están acotadas por un
+invariante —ningún saldo ni pendiente pasa del suministro, y el suministro no pasa del tope—, pero el
+tope no lo estaba: `SovereignLayer::new` y `open` aceptaban cualquier `max_supply`, hasta `u64::MAX`,
+y con uno así una suma de saldo o de suministro podía dar la vuelta en `u64`, que en release no avisa.
+El re-triaje revisó `mint.rs` y no tiene el patrón del §641: su cuenta y su hoja las pone la capa y el
+importe va atado a la prueba.
+
+**Lo que hace.** `MAX_SUMINISTRO = 2^62 - 1`, el rango de los AIR desde el §641. `new` lo exige al
+arrancar (un pánico con su texto) y `open` lo devuelve como `SupplyCapExceeded`; el nodo lo dice antes,
+como error de arranque, si `--max-supply` lo pasa. Las cinco operaciones usan `checked_*` y, si un
+estado roto las hiciera fallar, devuelven un error sin tocar nada: `SupplyCapExceeded` para las sumas,
+`RefundUnavailable` para la resta del reembolso, que ahora se calcula antes de vaciar la posición.
+`total_pending` suma saturando. Ninguna causa nueva en el cable: los errores son los que ya había.
+
+**Falsadores.** `un_tope_de_suministro_por_encima_de_2_a_la_62_no_arranca` y `..._no_abre`.
+**Medido con las dos comprobaciones quitadas**: caen los dos. Las cinco operaciones no tienen
+falsador propio: con el tope acotado no se pueden hacer fallar desde fuera, y eso es justo lo que el
+tope garantiza.
+
+**Contadores.** `zk-ssl` 429 -> 431. TOTAL DE SELLO 1624 -> 1626; TOTAL CON LARGOS 1761 -> 1763, en los
+tres párrafos ancla, y la cifra de la capa donde `check_cifras` la señaló. El `BACKLOG.md` no se mueve.
+
+**Lo que NO hace.** No añade `overflow-checks` al perfil release; va en su propio corte (§669), porque
+cambia el comportamiento de todo el workspace.
