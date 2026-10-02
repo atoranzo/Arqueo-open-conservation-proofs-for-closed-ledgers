@@ -32,6 +32,10 @@
 //! nulificador = H(NULLIFIER_DOMAIN, clave, operación)
 //! ```
 //!
+//! ⚠️ §684 (RFC-0018 E2): con la clave de cuatro elementos, es
+//! `H(H(NULLIFIER_DOMAIN, clave), operación)`: nueve elementos no caben en la tasa de una
+//! permutación. La traza pasa a 21 columnas y el nulificador sale en la fila 55.
+//!
 //! Esa sola atadura cierra dos cosas que parecían separadas:
 //!
 //! ✅ **No hay reproducción.** La prueba solo autoriza *esta* operación: sus
@@ -84,16 +88,22 @@ pub use crate::nullifier::NULLIFIER_DOMAIN;
 pub const TRACE_LENGTH: usize = 64;
 
 const COL_BIT: usize = STATE_WIDTH; // 12
-const COL_KEY: usize = STATE_WIDTH + 1; // 13
+/// §684 (RFC-0018 E2): la clave del custodio o del gobernador en CUATRO columnas, constantes en
+/// toda la traza. Una clave estrecha `k` es `[k, 0, 0, 0]` y da su misma identidad.
+const COL_KEY: usize = STATE_WIDTH + 1; // 13..17
 /// Compromiso de la operacion autorizada, constante en toda la traza.
-const COL_OP: usize = STATE_WIDTH + 2; // 14..18
-pub const TRACE_WIDTH: usize = STATE_WIDTH + 6; // 18
+const COL_OP: usize = STATE_WIDTH + 5; // 17..21
+pub const TRACE_WIDTH: usize = STATE_WIDTH + 9; // 21
 
 /// Fila donde el estado contiene la raíz del conjunto.
 const ROW_ROOT: usize = 39;
-/// Fila donde el estado contiene el nulificador. El hash arranca en la 40
-/// —fila libre tras la raíz— y consume sus siete rondas hasta la 46.
-const ROW_NULL: usize = 47;
+/// Fila donde el estado contiene el INTERIOR del nulificador, `H(dominio, clave)`. El hash
+/// arranca en la 40 —fila libre tras la raíz— y consume sus siete rondas hasta la 46.
+const ROW_NULL_INNER: usize = 47;
+/// Fila donde el estado contiene el nulificador, `H(interior, operación)`: el segundo hash arranca
+/// en la 48 y acaba aqui. §684: con la clave de cuatro elementos, dominio, clave y operación (nueve
+/// elementos) no caben en la tasa de una permutación (ocho); es el molde de `native_nullifier_wide`.
+const ROW_NULL: usize = 55;
 
 // ===== Disposición de las restricciones =====
 //
@@ -102,12 +112,14 @@ const C_HASH: usize = 0; // STATE_WIDTH
 const C_CAP: usize = C_HASH + STATE_WIDTH; // 4
 const C_PLACE: usize = C_CAP + 4; // 4
 const C_BIT_BOOL: usize = C_PLACE + 4; // 1
-const C_KEY_INPUT: usize = C_BIT_BOOL + 1; // 1
-const C_TRANSPORT: usize = C_KEY_INPUT + 1; // 5 (clave + 4 de operacion)
-const C_NULL_INIT: usize = C_TRANSPORT + 5; // STATE_WIDTH
+const C_KEY_INPUT: usize = C_BIT_BOOL + 1; // 4
+const C_TRANSPORT: usize = C_KEY_INPUT + 4; // 8 (4 de clave + 4 de operacion)
+const C_NULL_INIT: usize = C_TRANSPORT + 8; // STATE_WIDTH
+/// §684: el enlace entre los dos hashes del nulificador.
+const C_NULL_LINK: usize = C_NULL_INIT + STATE_WIDTH; // STATE_WIDTH
 /// Publica para que la tabla de §52/§55 la lea del codigo y no se quede
 /// rancia: escribirla a mano ya fallo una vez (35 cuando eran 39).
-pub const NUM_CONSTRAINTS: usize = C_NULL_INIT + STATE_WIDTH;
+pub const NUM_CONSTRAINTS: usize = C_NULL_LINK + STATE_WIDTH;
 
 // ===== Columnas periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -116,6 +128,7 @@ const P_ARK2: usize = P_ARK1 + STATE_WIDTH;
 const P_TREE_LINK: usize = P_ARK2 + STATE_WIDTH;
 const P_FIRST_ROW: usize = P_TREE_LINK + 1;
 const P_NULL_INIT: usize = P_FIRST_ROW + 1;
+const P_NULL_LINK: usize = P_NULL_INIT + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
@@ -137,15 +150,26 @@ pub use zk_ssl_hash::{
 
 /// El nulificador de un custodio **para una operacion concreta**.
 ///
-/// Una sola permutacion absorbe los seis elementos: dominio y clave en la
-/// mitad izquierda, el compromiso de la operacion en la derecha. No cuesta
-/// filas adicionales respecto a la version sin atadura.
+/// Hasta el §684 una sola permutacion absorbia los seis elementos: dominio y
+/// clave en la mitad izquierda, el compromiso de la operacion en la derecha.
+///
+/// ⚠️ §684 (RFC-0018 E2): **cambia de forma**. Con la clave de cuatro elementos ya no caben dominio,
+/// clave y operación en una permutación, y el nulificador es ahora `H(H(dominio, clave), operación)`
+/// -[`derive_nullifier_wide`]-; la estrecha es la ancha con la clave rellenada. La capa no persiste
+/// nulificadores: solo exige que los dos de UN par difieran, así que el cambio no invalida nada
+/// guardado.
 pub fn derive_nullifier(key: BaseElement, operation: Digest) -> Digest {
     let zero = BaseElement::ZERO;
-    native_merge(
-        [BaseElement::new(NULLIFIER_DOMAIN), key, zero, zero],
-        operation,
-    )
+    derive_nullifier_wide([key, zero, zero, zero], operation)
+}
+
+/// El nulificador de un custodio o gobernador con clave de cuatro elementos para una operación
+/// (§684): `H(H([NULLIFIER_DOMAIN,0,0,0], clave), operación)`, el molde de `native_nullifier_wide`
+/// con la operación en lugar del nonce.
+pub fn derive_nullifier_wide(key: Digest, operation: Digest) -> Digest {
+    let zero = BaseElement::ZERO;
+    let interior = native_merge([BaseElement::new(NULLIFIER_DOMAIN), zero, zero, zero], key);
+    native_merge(interior, operation)
 }
 
 /// Construye la traza: subida al árbol y, a continuación, el nulificador.
@@ -161,10 +185,22 @@ pub fn build_trace(
     operation: Digest,
 ) -> TraceTable<BaseElement> {
     let zero = BaseElement::ZERO;
+    build_trace_wide(identity_domain, [key, zero, zero, zero], path, operation)
+}
+
+/// La traza con una clave de cuatro elementos (§684, RFC-0018 E2). [`build_trace`] es esta con la
+/// clave rellenada con ceros.
+pub fn build_trace_wide(
+    identity_domain: BaseElement,
+    key: Digest,
+    path: &CustodianPath,
+    operation: Digest,
+) -> TraceTable<BaseElement> {
+    let zero = BaseElement::ZERO;
     let mut rows: Vec<Vec<BaseElement>> = vec![vec![zero; TRACE_WIDTH]; TRACE_LENGTH];
 
     for row in rows.iter_mut() {
-        row[COL_KEY] = key;
+        row[COL_KEY..COL_KEY + 4].copy_from_slice(&key);
         row[COL_OP..COL_OP + 4].copy_from_slice(&operation);
     }
 
@@ -181,7 +217,7 @@ pub fn build_trace(
     // Ciclo 0: derivación de la identidad desde la clave.
     let mut state = [zero; STATE_WIDTH];
     state[4] = identity_domain;
-    state[8] = key;
+    state[8..12].copy_from_slice(&key);
     rows[0][..STATE_WIDTH].copy_from_slice(&state);
 
     for r in 0..ROW_ROOT {
@@ -200,17 +236,25 @@ pub fn build_trace(
     }
 
     // ===== El nulificador, en las filas libres tras la raíz =====
-    // Fila 40: estado reiniciado con el dominio del nulificador y la clave.
+    // Fila 40: estado reiniciado con el dominio del nulificador y la clave (§684: la clave
+    // entera, en la mitad derecha de la tasa).
     let mut null_state = [zero; STATE_WIDTH];
     null_state[4] = BaseElement::new(NULLIFIER_DOMAIN);
-    null_state[5] = key;
-    null_state[8..12].copy_from_slice(&operation);
+    null_state[8..12].copy_from_slice(&key);
     rows[ROW_ROOT + 1][..STATE_WIDTH].copy_from_slice(&null_state);
 
     for r in (ROW_ROOT + 1)..ROW_NULL {
-        let pos = r % CYCLE_LENGTH;
-        if pos < NUM_ROUNDS {
-            Rp64_256::apply_round(&mut null_state, pos);
+        if r == ROW_NULL_INNER {
+            // Fila 48: el segundo hash, con el interior y la operación.
+            let interior: Digest = [null_state[4], null_state[5], null_state[6], null_state[7]];
+            null_state = [zero; STATE_WIDTH];
+            null_state[4..8].copy_from_slice(&interior);
+            null_state[8..12].copy_from_slice(&operation);
+        } else {
+            let pos = r % CYCLE_LENGTH;
+            if pos < NUM_ROUNDS {
+                Rp64_256::apply_round(&mut null_state, pos);
+            }
         }
         rows[r + 1][..STATE_WIDTH].copy_from_slice(&null_state);
     }
@@ -291,14 +335,16 @@ impl Air for NullifierThresholdAir {
         }
         // C_BIT_BOOL (1): grado 2 sin ciclo.
         degrees.push(TransitionConstraintDegree::new(2));
-        // C_KEY_INPUT (1): un selector periódico.
-        degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
-        // C_TRANSPORT (5): clave y las 4 de operacion, grado 1 sin ciclo.
-        for _ in 0..5 {
+        // C_KEY_INPUT (4): un selector periódico.
+        for _ in 0..4 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
+        // C_TRANSPORT (8): las 4 de clave y las 4 de operacion, grado 1 sin ciclo.
+        for _ in 0..8 {
             degrees.push(TransitionConstraintDegree::new(1));
         }
-        // C_NULL_INIT (12): un selector periódico, grado 1.
-        for _ in 0..STATE_WIDTH {
+        // C_NULL_INIT (12) y C_NULL_LINK (12): un selector periódico, grado 1.
+        for _ in 0..2 * STATE_WIDTH {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
 
@@ -363,6 +409,11 @@ impl Air for NullifierThresholdAir {
         null_init[ROW_ROOT] = one;
         columns.push(null_init);
 
+        // §684: el enlace entre los dos hashes del nulificador, en la transición 47 → 48.
+        let mut null_link = vec![zero; TRACE_LENGTH];
+        null_link[ROW_NULL_INNER] = one;
+        columns.push(null_link);
+
         columns
     }
 
@@ -381,6 +432,7 @@ impl Air for NullifierThresholdAir {
         let tree_link = periodic[P_TREE_LINK];
         let first_row = periodic[P_FIRST_ROW];
         let null_init = periodic[P_NULL_INIT];
+        let null_link = periodic[P_NULL_LINK];
 
         // La ronda de Rescue. Cubre la subida al árbol y el nulificador:
         // son el mismo hash sobre tramos distintos de la traza.
@@ -416,34 +468,47 @@ impl Air for NullifierThresholdAir {
 
         result[C_BIT_BOOL] = current[COL_BIT] * (current[COL_BIT] - E::ONE);
 
-        // La clave entra en la derivación de identidad.
-        result[C_KEY_INPUT] = first_row * (current[8] - current[COL_KEY]);
+        // La clave entra en la derivación de identidad: los cuatro elementos (§684). Hasta el
+        // §684 solo se ataba `state[8]`; `state[9..12]` no lo asertaba nadie.
+        for i in 0..4 {
+            result[C_KEY_INPUT + i] = first_row * (current[8 + i] - current[COL_KEY + i]);
+        }
 
         // La clave es la misma en toda la traza. ⚠️ Esto es lo que ata el
         // nulificador a la identidad probada: sin ello se podría subir al
         // árbol con una clave y nulificar con otra, y dos autorizaciones del
         // mismo custodio pasarían por distintas.
-        result[C_TRANSPORT] = next[COL_KEY] - current[COL_KEY];
+        for i in 0..4 {
+            result[C_TRANSPORT + i] = next[COL_KEY + i] - current[COL_KEY + i];
+        }
         // Y la operacion tambien: si variara entre filas, el nulificador no
         // seria el de la operacion declarada.
         for i in 0..4 {
-            result[C_TRANSPORT + 1 + i] = next[COL_OP + i] - current[COL_OP + i];
+            result[C_TRANSPORT + 4 + i] = next[COL_OP + i] - current[COL_OP + i];
         }
 
         // ===== Reinicio del estado para el nulificador =====
         // En la transición 39 → 40 el estado pasa a ser
-        // [0,0,0,0, NULLIFIER_DOMAIN, clave,0,0, operacion(4)].
+        // [0,0,0,0, NULLIFIER_DOMAIN,0,0,0, clave(4)] (§684).
         for i in 0..4 {
             result[C_NULL_INIT + i] = null_init * next[i];
         }
         result[C_NULL_INIT + 4] =
             null_init * (next[4] - E::from(BaseElement::new(NULLIFIER_DOMAIN)));
-        result[C_NULL_INIT + 5] = null_init * (next[5] - current[COL_KEY]);
-        for i in 6..8 {
+        for i in 5..8 {
             result[C_NULL_INIT + i] = null_init * next[i];
         }
         for i in 0..4 {
-            result[C_NULL_INIT + 8 + i] = null_init * (next[8 + i] - current[COL_OP + i]);
+            result[C_NULL_INIT + 8 + i] = null_init * (next[8 + i] - current[COL_KEY + i]);
+        }
+
+        // ===== El enlace entre los dos hashes (§684) =====
+        // En la transición 47 → 48 el estado pasa a ser
+        // [0,0,0,0, interior(4), operacion(4)], con el interior el digest de la fila 47.
+        for i in 0..4 {
+            result[C_NULL_LINK + i] = null_link * next[i];
+            result[C_NULL_LINK + 4 + i] = null_link * (next[4 + i] - current[4 + i]);
+            result[C_NULL_LINK + 8 + i] = null_link * (next[8 + i] - current[COL_OP + i]);
         }
     }
 
@@ -749,6 +814,117 @@ mod tests {
                 .is_ok()
             }
         }
+    }
+
+    fn prueba_traza(trace: TraceTable<BaseElement>, declared: NullifierThresholdPublicInputs) -> bool {
+        let prover = NullifierThresholdProver::new(default_options());
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace))) {
+            Ok(Ok(proof)) => verify::<NullifierThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                proof,
+                declared,
+                &AcceptableOptions::OptionSet(vec![default_options()]),
+            )
+            .is_ok(),
+            _ => false,
+        }
+    }
+
+    fn claves_anchas() -> Vec<Digest> {
+        (1..=4u64)
+            .map(|i| [BaseElement::new(0xC0000 + i), BaseElement::new(i), BaseElement::new(7 * i), BaseElement::new(0xA0 + i)])
+            .collect()
+    }
+
+    /// Rehace el estado desde `fila` hasta el nulificador, con rondas en las posiciones de hash.
+    fn rehace_desde(t: &mut TraceTable<BaseElement>, fila: usize, mut estado: [BaseElement; STATE_WIDTH]) {
+        for (i, v) in estado.iter().enumerate() {
+            t.set(i, fila, *v);
+        }
+        for r in fila..ROW_NULL {
+            let pos = r % CYCLE_LENGTH;
+            if pos < NUM_ROUNDS {
+                Rp64_256::apply_round(&mut estado, pos);
+            }
+            for (i, v) in estado.iter().enumerate() {
+                t.set(i, r + 1, *v);
+            }
+        }
+    }
+
+    /// §684 (RFC-0018 E2): una clave de cuatro elementos de verdad autoriza, y su nulificador es el
+    /// ancho, `H(H(dominio, clave), operación)`; declarado con el de su primer elemento solo, no.
+    #[test]
+    fn una_clave_ancha_autoriza_y_su_nulificador_es_el_ancho() {
+        let keys = claves_anchas();
+        let (root, paths) = crate::circuit_threshold::build_custodian_set_wide(&keys);
+        let op = operacion(1);
+        let pi = |nullifier| NullifierThresholdPublicInputs {
+            identity_domain: dominio(),
+            custodian_set_root: root,
+            nullifier,
+            operation: op,
+        };
+        let t = || build_trace_wide(dominio(), keys[1], &paths[1], op);
+        assert!(prueba_traza(t(), pi(derive_nullifier_wide(keys[1], op))));
+        assert!(!prueba_traza(t(), pi(derive_nullifier(keys[1][0], op))));
+    }
+
+    /// §684: la clave ENTERA entra en la identidad, y es la misma con la que se nulifica. La traza
+    /// sube al conjunto con la clave K del custodio y nulifica con K', que solo difiere en su tercer
+    /// elemento, y las columnas de clave dicen K'. Si la identidad atara solo el primer elemento -como
+    /// hasta el §684, cuando solo existia ese-, el mismo custodio sacaria dos nulificadores y el
+    /// umbral 2-de-N seria 1-de-N. Falsador, ensayado: con `C_KEY_INPUT` sobre el primer elemento
+    /// solo, verifica.
+    #[test]
+    fn la_clave_ancha_entra_entera_en_la_identidad() {
+        let keys = claves_anchas();
+        let (root, paths) = crate::circuit_threshold::build_custodian_set_wide(&keys);
+        let op = operacion(1);
+        let mut otra = keys[2];
+        otra[2] = otra[2] + BaseElement::ONE;
+        let mut t = build_trace_wide(dominio(), keys[2], &paths[2], op);
+        let t_otra = build_trace_wide(dominio(), otra, &paths[2], op);
+        for r in 0..TRACE_LENGTH {
+            for c in COL_KEY..COL_KEY + 4 {
+                t.set(c, r, t_otra.get(c, r));
+            }
+            if r > ROW_ROOT {
+                for c in 0..STATE_WIDTH {
+                    t.set(c, r, t_otra.get(c, r));
+                }
+            }
+        }
+        let declared = NullifierThresholdPublicInputs {
+            identity_domain: dominio(),
+            custodian_set_root: root,
+            nullifier: derive_nullifier_wide(otra, op),
+            operation: op,
+        };
+        assert!(!prueba_traza(t, declared), "CRITICO: el mismo custodio nulifico con otra clave");
+    }
+
+    /// §684: el segundo hash del nulificador parte del digest del primero. La traza sustituye el
+    /// interior por otro digest en la fila del enlace y rehace el segundo hash: el nulificador sale
+    /// libre. Falsador, ensayado: sin `C_NULL_LINK` sobre el interior, verifica.
+    #[test]
+    fn el_segundo_hash_del_nulificador_parte_del_primero() {
+        let keys = claves_anchas();
+        let (root, paths) = crate::circuit_threshold::build_custodian_set_wide(&keys);
+        let op = operacion(1);
+        let mut t = build_trace_wide(dominio(), keys[0], &paths[0], op);
+        let zero = BaseElement::ZERO;
+        let mut estado = [zero; STATE_WIDTH];
+        estado[4] = BaseElement::new(0x1D0);
+        estado[8..12].copy_from_slice(&op);
+        rehace_desde(&mut t, ROW_NULL_INNER + 1, estado);
+        let libre = [t.get(4, ROW_NULL), t.get(5, ROW_NULL), t.get(6, ROW_NULL), t.get(7, ROW_NULL)];
+        let declared = NullifierThresholdPublicInputs {
+            identity_domain: dominio(),
+            custodian_set_root: root,
+            nullifier: libre,
+            operation: op,
+        };
+        assert!(!prueba_traza(t, declared), "CRITICO: el nulificador no parte de la clave");
     }
 
     /// El caso honesto.

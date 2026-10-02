@@ -46505,3 +46505,45 @@ custodio con elementos de más es una preimagen, no la búsqueda de 2^64 de H14.
 `cargo test -p stark-experiment` en `PAPER.md`, `PAPER_EN.md`, `doc/INSTITUCIONAL.md` y
 `doc/INSTITUTIONAL.md`; y `ARQUITECTURA.md`, que cuenta los tests de `circuit_threshold` (11 -> 13) y
 que `check_figures` nombró en la primera vuelta del canon. El `BACKLOG.md` no se mueve.
+
+## §684 — RFC-0018 E2, segunda pieza: el umbral del cable con la clave entera y el nulificador en dos hashes
+
+El commit que lleva este asiento, sobre el §683. Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE.
+
+**Lo que cambia.** `circuit_threshold_single_nullifier` (`NullifierThresholdAir`): es el único de los
+ocho circuitos que llevan una clave de custodio o de gobernador que va por el cable; por él pasan la
+emisión, la congelación, la recuperación, el pago a pendiente y la gobernanza de la capa. La clave va
+en cuatro columnas (`COL_KEY` 13..17; la operación pasa a 17..21; la traza, de 18 a 21) y
+`C_KEY_INPUT` ata los cuatro elementos a la identidad, en `state[8..12]`, donde hasta ahora solo se
+ataba `state[8]`. El transporte lleva las cuatro columnas de la clave y las cuatro de la operación.
+
+**El nulificador, en dos hashes.** Con la clave de cuatro elementos, dominio, clave y operación son
+nueve elementos y la tasa de una permutación es de ocho. El nulificador pasa a ser
+`H(H([NULLIFIER_DOMAIN,0,0,0], clave), operación)`, el molde de `native_nullifier_wide` con la
+operación en el lugar del nonce: el interior en las filas 40-47, y `C_NULL_LINK` (doce ranuras, la
+periódica `null_link` en la fila 47) lo enlaza con la operación para el segundo, en las 48-55.
+`ROW_NULL` pasa de 47 a 55; la traza sigue siendo de 64 filas. 39 -> 57 restricciones.
+`derive_nullifier_wide` es el nativo; `derive_nullifier(k, op)` es el ancho con la clave rellenada.
+**Cambia el valor del nulificador** para las mismas clave y operación: la capa no los persiste, solo
+exige que los dos de un par difieran, así que no hay nada guardado que invalidar.
+
+**Lo que no cambia.** `build_trace` con una clave estrecha es `build_trace_wide` con la clave
+rellenada con ceros, y da la misma identidad (§683): la capa, el nodo, el CLI y sus 431 tests de la
+capa no cambian una línea y siguen VERDES. La conformidad de 0.4 no compara pruebas de autoridad.
+`verify_threshold_pair` compara la forma con `TRACE_WIDTH`, así que la sigue. El cable sigue diciendo
+`zkssl/0.4` hasta el corte del tren.
+
+**Falsadores, ensayados.** `una_clave_ancha_autoriza_y_su_nulificador_es_el_ancho` (una clave de
+cuatro elementos de verdad prueba y verifica; con el nulificador de su primer elemento solo, no).
+`la_clave_ancha_entra_entera_en_la_identidad`: la traza sube al conjunto con la clave K y nulifica con
+K', que solo difiere en su tercer elemento; con `C_KEY_INPUT` sobre el primer elemento solo, verifica
+y cae: el mismo custodio sacaría dos nulificadores y el umbral 2-de-N sería 1-de-N.
+`el_segundo_hash_del_nulificador_parte_del_primero`: con otro interior en la fila del enlace, el
+nulificador sale libre; sin la ranura del interior en `C_NULL_LINK`, verifica y cae.
+
+**Contadores.** `stark-experiment` 420 -> 423. TOTAL DE SELLO 1647 -> 1650; TOTAL CON LARGOS 1784 ->
+1787, en los tres párrafos ancla, la cifra de circuitos en `PRINCIPIOS.md` y la línea de
+`cargo test -p stark-experiment` en los dos papers y los dos documentos institucionales. El
+`BACKLOG.md` no se mueve.
