@@ -1471,6 +1471,36 @@ pub struct Comparacion {
 /// luego `repetida` —y las dos llevan la cabeza—, **la última línea tapaba
 /// a la primera** y una manipulación de la primera desaparecía del mapa.
 /// Lo encontró el banco L.2, no los tests.
+/// ⚠️ §689 · **Los sobres de las divergencias entre dos diarios**: por cada índice que los dos
+/// testigos vieron con contenidos distintos y la MISMA clave, el sobre del ancla, modo 4, con la
+/// primera cabeza de ese índice en cada diario. Una por índice, en su orden; la que el kit no
+/// podría juzgar (otro índice embebido) no se arma.
+pub fn sobres_de_divergencias(a: &[String], b: &[String], c: &Comparacion) -> Vec<(u64, Value)> {
+    let primeras = |ls: &[String]| -> BTreeMap<u64, Value> {
+        let mut m = BTreeMap::new();
+        for l in ls {
+            if let Ok(v) = serde_json::from_str::<Value>(l) {
+                if v["signature"].is_null() {
+                    continue;
+                }
+                if let Ok(i) = leer_q(&v["index"]) {
+                    m.entry(i).or_insert(v);
+                }
+            }
+        }
+        m
+    };
+    let (pa, pb) = (primeras(a), primeras(b));
+    c.divergencias
+        .iter()
+        .filter(|d| d.misma_clave)
+        .filter_map(|d| {
+            let sobre = sobre_de_vista_dividida(pa.get(&d.indice)?, pb.get(&d.indice)?)?;
+            Some((d.indice, sobre))
+        })
+        .collect()
+}
+
 pub fn comparar_lineas(a: &[String], b: &[String]) -> Comparacion {
     // Devuelve (mapa con la PRIMERA de cada indice, se_contradice).
     let mapa = |ls: &[String]| -> (BTreeMap<u64, (String, String)>, bool) {
@@ -1588,9 +1618,10 @@ pub struct WitnessArgs {
     /// **Con `--auditar`, arma los sobres del SOLAPAMIENTO** (§687, RFC-0015 E5c): uno por cada
     /// solapamiento que el diario delate, en este directorio, con la cabeza fuera de su tramo y la
     /// cadena de actas. Y desde el §688 los de la VISTA DIVIDIDA (el modo 4 del sobre del ancla):
-    /// las dos cabezas de la misma clave con el mismo indice embebido. `zk-ssl-verify` los juzga
-    /// sin el nodo y sin el testigo.
-    #[arg(long, value_name = "DIR", requires = "auditar")]
+    /// las dos cabezas de la misma clave con el mismo indice embebido. Desde el §689 tambien con
+    /// `--comparar`: uno por cada indice que los dos diarios vieron dividido. `zk-ssl-verify` los
+    /// juzga sin el nodo y sin el testigo.
+    #[arg(long, value_name = "DIR")]
     sobres: Option<PathBuf>,
 
     /// **Compara dos diarios**: el mismo índice con distinto contenido.
@@ -2394,6 +2425,12 @@ fn texto_del_veredicto(v: &Veredicto) -> String {
 }
 
 pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
+    // §689: `--sobres` arma la evidencia de lo que LEE `--auditar` o `--comparar`, y de nada mas.
+    if a.sobres.is_some() && a.auditar.is_none() && a.comparar.is_none() {
+        anyhow::bail!(
+            "--sobres va con --auditar o con --comparar: arma lo que esos modos encuentran"
+        );
+    }
     // ── §249/§283 · los tres modos que LEEN, antes del que observa ──
     if let Some(p) = &a.auditar {
         let r = auditar_lineas(&leer(p)?);
@@ -2523,6 +2560,19 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         for v in &c.divergencias {
             println!("  ⚠️⚠️ VISTA DIVIDIDA en el indice {}: {} != {} (misma clave: {})",
                      v.indice, v.digest_a, v.digest_b, v.misma_clave);
+        }
+        // ⚠️ §689: cada divergencia de la misma clave, como el sobre del ancla, modo 4.
+        if let Some(dir) = &a.sobres {
+            std::fs::create_dir_all(dir).map_err(|e| anyhow::anyhow!("{}: {e}", dir.display()))?;
+            for (i, sobre) in sobres_de_divergencias(&x, &y, &c) {
+                let ruta = dir.join(format!("vista-dividida-indice-{i}.json"));
+                std::fs::write(&ruta, serde_json::to_string_pretty(&sobre)?)
+                    .map_err(|e| anyhow::anyhow!("{}: {e}", ruta.display()))?;
+                println!(
+                    "sobre de vista-dividida: {} (zk-ssl-verify lo juzga)",
+                    ruta.display()
+                );
+            }
         }
         eprintln!();
         eprintln!("   DETECTAR NO ES DISTINGUIR: esto no dice cual miente.");
@@ -4683,6 +4733,40 @@ mod tests {
         let mut ajena = par["contraria"].clone();
         ajena["publicKey"] = json!("0xaa");
         assert_eq!(sobre_de_vista_dividida(&par["cabeza"], &ajena), None);
+    }
+
+    /// ⚠️ §689 · **dos diarios, dos vistas, un sobre por índice.** Cada testigo vio una de las dos
+    /// cabezas de `spec/vectors/ancla/vista-dividida.json`: `--comparar` encuentra la divergencia
+    /// de la misma clave y su sobre lleva la cabeza del primero y la del segundo. Con la segunda de
+    /// otra clave, la divergencia queda y el sobre no se arma.
+    #[test]
+    fn dos_diarios_dan_un_sobre_por_indice_dividido() {
+        let par: Value = serde_json::from_str(include_str!(
+            "../../../spec/vectors/ancla/vista-dividida.json"
+        ))
+        .expect("vector");
+        let linea = |c: &Value| {
+            let nueva = Veredicto::Nueva {
+                indice: 0,
+                digest: String::new(),
+            };
+            linea_de_diario(&nueva, c, 0).to_string()
+        };
+        let (x, y) = (vec![linea(&par["cabeza"])], vec![linea(&par["contraria"])]);
+        let c = comparar_lineas(&x, &y);
+        let sobres = sobres_de_divergencias(&x, &y, &c);
+        assert_eq!(sobres.len(), 1);
+        assert_eq!(sobres[0].1["tipo"], json!("ancla"));
+        assert_eq!(
+            sobres[0].1["cabeza"]["signature"],
+            par["cabeza"]["signature"]
+        );
+        let mut ajena = par["contraria"].clone();
+        ajena["publicKey"] = json!("0xaa");
+        let z = vec![linea(&ajena)];
+        let c = comparar_lineas(&x, &z);
+        assert_eq!(c.divergencias.len(), 1);
+        assert!(sobres_de_divergencias(&x, &z, &c).is_empty());
     }
 
     #[test]

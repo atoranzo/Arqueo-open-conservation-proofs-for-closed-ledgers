@@ -529,7 +529,9 @@ décima familia del artefacto, COPIADA de una corrida suya: sección 9. **El de 
 arma también el TESTIGO** (§688): `zk-ssl-cli witness --auditar DIARIO --sobres DIR` escribe el
 sobre del modo 4 con las dos cabezas que su diario guardó, cuando son de la misma clave y del mismo
 índice embebido; `tools/banco_mentiroso_vista.sh` lo demuestra con un testigo vivo ante un nodo que
-vuelve con el contador restaurado.
+vuelve con el contador restaurado. Y desde el §689, `--comparar DIARIO_A DIARIO_B --sobres DIR` arma
+uno por cada índice que DOS testigos vieron dividido —cada uno, solo, no ve nada—, con la cabeza de
+cada diario.
 
 ### 2.13 El sobre del ancla cofirmada (§633, RFC-0013 E4a)
 
@@ -1368,6 +1370,8 @@ negativos, las tres claves dentro de su tramo entre ellos.
   rotación, sigue, y se detiene ante la clave nueva firmando por debajo de su acta.
 - §688 — la vista dividida que el testigo ve tiene sobre armado: `--auditar --sobres` escribe el
   del ancla, modo 4, con las dos cabezas de su diario, y el mando lo juzga sin el nodo ni el testigo.
+- §689 — `--comparar --sobres` arma el sobre del ancla, modo 4, de cada índice que dos testigos
+  vieron dividido, uno por diario: la escena de los dos testigos y las dos vistas, portable.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

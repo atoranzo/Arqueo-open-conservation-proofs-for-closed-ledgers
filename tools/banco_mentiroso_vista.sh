@@ -11,7 +11,9 @@
 #   ESCENA 1  DOS TESTIGOS, DOS VISTAS. Dos nodos de la misma semilla a la vez, un testigo en cada
 #             uno. Cada testigo, SOLO, no ve nada (exit 0) y su diario pasa `--auditar` LIMPIO:
 #             el silencio se ASIERTA, porque es lo que el testigo aislado puede ver y lo que no.
-#             `--comparar` de los dos diarios: ROJO, nombrando CADA indice dividido, misma clave.
+#             `--comparar` de los dos diarios: ROJO, nombrando CADA indice dividido, misma clave. Desde
+#             el §689, `--comparar --sobres` arma un sobre del ancla, modo 4, por indice, y el mando
+#             los juzga sin los nodos ni los testigos.
 #   ESCENA 2  EL CONTADOR RESTAURADO, bajo un testigo VIVO. El nodo cae y vuelve con la misma
 #             semilla y el contador fresco en el MISMO puerto: el testigo SE DETIENE con
 #             `vista-dividida` y el indice, y `--auditar` de su diario lo ve SIN el nodo. Desde el
@@ -161,6 +163,15 @@ try:
            and '%d divergencia(s)' % len(divididos) in out,
            '--comparar: ROJO, nombra los %d indices divididos, todos de la MISMA clave'
            % len(divididos), out[-1500:])
+    # §689: cada indice dividido, como el sobre del ancla, modo 4, armado de los dos diarios.
+    rc, out = cli('--comparar', d1 + '/diario.jsonl', d2 + '/diario.jsonl', '--sobres', DIR + '/sobres-1')
+    sobres = sorted(glob.glob(DIR + '/sobres-1/vista-dividida-indice-*.json'))
+    exigir(len(sobres) == len(divididos),
+           '--comparar --sobres arma %d sobre(s), uno por indice dividido' % len(divididos), out[-1000:])
+    veredictos = [subprocess.run([MANDO, x], capture_output=True, text=True) for x in sobres]
+    exigir(sobres and all(q.returncode == 0 and 'VERDE: VISTA DIVIDIDA' in q.stdout for q in veredictos),
+           'el mando los juzga sin los nodos ni los testigos: VERDE, VISTA DIVIDIDA, los %d' % len(sobres),
+           '\n'.join((q.stdout + q.stderr)[-300:] for q in veredictos))
 
     # ── ESCENA 2 · el contador restaurado, bajo un testigo VIVO ──
     PC = 8813

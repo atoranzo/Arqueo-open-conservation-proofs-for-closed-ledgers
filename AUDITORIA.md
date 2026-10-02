@@ -47300,3 +47300,42 @@ guardó: un diario de antes del §295 sin los campos de la cabeza no da un sobre
 
 **Lo que NO cierra.** Nada de la cola: el RFC-0011 está ACEPTADO, y este sello le da al testigo un
 productor más.
+
+## §689 — dos testigos, dos vistas, un sobre: `--comparar` arma la evidencia que ninguno de los dos ve solo
+
+El commit que lleva este asiento, sobre `48fa9a6` (el §688). Un solo sello: `--comparar --sobres`
+arma el sobre del ancla, modo 4, de cada índice que dos diarios vieron con contenidos distintos y la
+misma clave; `--sobres` sin `--auditar` ni `--comparar` falla con su motivo; el banco de la vista
+dividida lo ejerce en su escena de los dos testigos; `spec/PAQUETE.md`, la fila del canon y las
+cifras de tres documentos se ponen al día; y este asiento. Lo escribe, lo prueba y lo commitea la
+sesión de Claude Code del §643 al §688, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión, sobre este mismo
+árbol, el canon `--sello` salió VERDE, con `zk-ssl-cli` en 138 de 138 y `check_tests` en 1835.
+
+**De dónde sale.** El §688 dejó escrito que `--comparar` no armaba el sobre. Es el caso que más
+importa: un operador que sirve una vista a cada testigo no deja nada en el diario de ninguno —la
+escena 1 del banco lo asierta: cada uno, solo, pasa `--auditar` limpio—, y la vista dividida solo
+aparece al juntar los dos diarios.
+
+**Lo que hace.** `sobres_de_divergencias` toma, de cada diario, la primera cabeza de cada índice, y
+por cada divergencia de la misma clave arma el sobre con `sobre_de_vista_dividida` —que no lo arma
+si el índice embebido no coincide—: la cabeza del primer diario y la del segundo.
+`--comparar --sobres DIR` escribe `vista-dividida-indice-N.json` por cada uno antes de salir con
+su ROJO. Y `--sobres` sin un modo que lea se rechaza: arma lo que esos modos encuentran, y nada más.
+
+**Medido.** En la sesión, cada cabeza de `spec/vectors/ancla/vista-dividida.json` en el diario de un
+testigo: `--comparar --sobres` armó un sobre y el mando dijo «VERDE: VISTA DIVIDIDA». Y el banco de
+la vista dividida, con los dos testigos sobre dos nodos de la misma semilla, VERDE: un sobre por
+índice dividido, y el mando los juzga todos sin los nodos ni los testigos.
+
+**Probado.** Un test nuevo en el testigo: dos diarios con una cabeza cada uno dan un sobre por el
+índice dividido, y con la segunda de otra clave la divergencia queda y el sobre no se arma.
+
+**Contadores.** `zk-ssl-cli` 137 -> 138. TOTAL DE SELLO 1675 -> 1676 y TOTAL CON LARGOS
+1812 -> 1813, en los tres párrafos ancla, con el desglose del testigo en 138. La cuenta de
+`check_tests` pasa de 1834 a 1835. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** `--ausentes`, que delata índices que el testigo tiene y el nodo no, no arma
+sobre: su evidencia es la ausencia en el diario del nodo, que no tiene sobre en el kit.
+
+**Lo que NO cierra.** Nada de la cola.
