@@ -45643,3 +45643,23 @@ número lo ocupa ya el §652 de las semillas, y el documento describía como abi
 §640 a §656 cerraron después. La rama no se reescribe: se fusiona con `main` sin el asiento viejo y
 el documento se borra en un commit aparte, de modo que `887c280` sigue en la historia y se puede leer.
 Rehacerlo sobre el `main` vigente, con número libre, es decisión del autor.
+
+## §660 — el kit 0.4.1, cortado: la prueba con nodos de más dentro del lote, rechazada
+
+El commit que lleva este asiento, sobre el §659 de esta misma rama. Lo escribe, lo prueba y lo
+commitea una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE: los 19 crates del nivel en sus pines, 283 s de tests, y el artefacto reproducible entre rutas
+(binario `99af4310a2ff8ac3`, tarball `d5a6397c5e9acb26`), con los once catálogos en verde desde
+fuera y desde dentro del tarball.
+
+**Lo que hace.** `zk-ssl-verify` 0.4.0 -> 0.4.1 en `Cargo.toml` y `Cargo.lock`. `doc/KIT.md` y
+`doc/KIT_EN.md` dicen en su sección 0 que la 0.4.1 está cortada y no publicada, y que corrige el
+defecto del §659: una prueba con nodos de más dentro de un lote de Merkle verificaba igual, con
+otros bytes. Los README y los resúmenes dicen la 0.4.1 cortada y la 0.4.0 publicada. Ni un test ni
+un pin se mueven.
+
+**Lo que NO hace.** No publica. El tag `arqueo-verify-v0.4.1` va sobre el commit que lleva este
+asiento, y la release se sube a mano; las huellas de este asiento son las de la sesión, no las del
+asset publicado, que las fija el asiento que registre la release, medidas desde fuera, como hizo el
+§658 con la 0.4.0. Y el §659 no está en `main` hasta que el autor integre esta rama.

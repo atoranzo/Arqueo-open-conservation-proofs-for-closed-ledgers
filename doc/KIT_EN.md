@@ -27,6 +27,11 @@ running its eleven catalogues from inside the tarball — in the `AUDITORIA.md` 
 this release (§658). It recomposes heads up to **v6**, the one the node signs today, and reads
 eleven families: the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor (§633, §634).
 
+⚠️ **0.4.1 is CUT and not published (§660).** The current release remains 0.4.0 until the entry
+that registers 0.4.1 pins its fingerprint. 0.4.1 fixes one defect of 0.4.0: a proof with extra
+nodes inside a Merkle batch verified anyway, with different bytes (§659). It reads the same eleven
+families and gives the same verdicts to every published vector.
+
 **Release 0.3.0 is still published and is no longer the current one** (`arqueo-verify-v0.3.0`,
 commit `65cabfb`, tarball `06648502e0171fea…`). It has four defects that 0.4.0 fixes, described in
 section 3.9 of `SECURITY.md`: a hex field with a multibyte character, or a hidden proof with its meta
