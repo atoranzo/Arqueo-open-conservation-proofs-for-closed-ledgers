@@ -97,6 +97,7 @@ RFC-0009 (D-A, D-C). Ver `SECURITY.md`.
 | `zkssl_frozenPath` | `{index: Q, viewKey: Digest}` | `{s: Q, index: Q, leaf: Digest, camino: {siblings: Digest[], isRight: bool[]}}` (credencial del titular, §261) |
 | `zkssl_pendingPath` | `{index: Q, viewKey: Digest, position: Q, salt: Digest, amount: Q, x: Digest, receiverId?: Digest}` | `{available, s?: Q, caminoPendiente?: {siblings: Digest[], isRight: bool[]}, hermanosMeta?: Digest[], emisor?: Q, nacido?: Q, reason?}` (credencial del receptor, §261; RFC-0008 D-F; con `receiverId`, la del PAGADOR, que nombra al receptor: RFC-0008 D-AE, §505) |
 | `zkssl_recepPath` | `{rx: Q}` | `{available, recepCount?: Q, index?: Q, camino?: {siblings: Digest[], isRight: bool[]}, reason?, beatSeconds?}` (RFC-0010 E3, §571) |
+| `zkssl_keyActs` | — | `{actas: ActaFirmada[]}`, desde la génesis; vacía si el nodo no firma actas (RFC-0015 E3b-2, §646) |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -813,6 +814,24 @@ Dice lo que falta, en la forma de §241: sin `--diario`, `available: false`; con
 ABIERTA, `available: false` y `beatSeconds`; con un `rx` reservado y sin anotar —un HUECO
 declarado—, `available: false`. El `rx` 0 no existe (el contador empieza en 1) y es `-32602`.
 ⚠️ Aditivo: la superficie pasa de 30 a 31 métodos y `zkssl/0.4` no sube.
+
+### `zkssl_keyActs` — la cadena de actas de clave del operador (§646)
+
+Sin parámetros → `{actas}`: la cadena entera desde la génesis, en el orden en que el nodo las
+anotó (RFC-0015, D-D). Cada `ActaFirmada` es
+`{acta: {clave: DATA, esquema: Q, desde: Q, siguiente: Digest, procedencia: {anterior, epochDigest,
+mmrRoot: Digest, mmrSize: Q} | null}, firma: DATA, firmaAnterior: DATA | null}`: `procedencia` es
+`null` en la génesis, y `firmaAnterior` cuando la clave que se fue no firmó —el acta la declara
+quemada—. Las dos claves van SIEMPRE, con su `null`. Es el mismo objeto que la línea del diario
+lleva, sin el `v`, el `tipo` y el `index` del diario: lo escribe y lo lee el kit
+(`zk_ssl_verify::actas::acta_a_json` y `acta_de_json`), y un elemento de un digest que vale `p` o
+más no se lee.
+
+El nodo la juzgó al ARRANCAR —una cadena rota no arranca— y la arma una vez: las actas solo nacen
+al arrancar. Quien la pide la juzga con `verificar_acta`, eslabón a eslabón: la génesis sola, y
+cada rotación contra la anterior. Vacía si el nodo no firma actas (sin `--siguiente` nunca, la
+D-I): entonces un cambio de clave no tiene objeto que lo explique, y el testigo se detiene como
+hoy. ⚠️ Aditivo: la superficie pasa de 31 a 32 métodos y `zkssl/0.4` no sube.
 
 ### `zkssl_inclusionReceipt` — la inclusión, comprobable sin el nodo
 

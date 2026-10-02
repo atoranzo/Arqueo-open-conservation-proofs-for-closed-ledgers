@@ -214,6 +214,8 @@ MMRHOJA1 = dominio(b"MMRHOJA1")
 MMRNODO1 = dominio(b"MMRNODO1")
 PARAM_V1 = dominio(b"PARAM_V1")
 ANCLA_V1 = dominio(b"ANCLA_V1")
+ACTAS_V1 = dominio(b"ACTAS_V1")
+DOMINIO_ACTA_FIRMA = b"ZK-SSL-key-act"
 DOMINIO_EPOCH_HEAD = b"ZK-SSL-epoch-head"
 DOMINIO_COFIRMA = b"ZK-SSL-witness-cosign"
 DOMINIO_ANCLA_CLAVE = b"ZK-SSL-anchor-key-v1"
@@ -273,6 +275,21 @@ def recibo_digest(hash_prueba, era, n):
 def ancla_digest(huella_clave, indice, epoch_dig, mmr_root, mmr_size):
     return merge(as_digest(ANCLA_V1),
                  merge(huella_clave, merge(as_digest(indice), merge(epoch_dig, merge(mmr_root, as_digest(mmr_size))))))
+
+
+def acta_digest(huella_clave, esquema, desde, siguiente, procedencia):
+    """RFC-0015 D-C y NUCLEO.md seccion 6: el dominio, la etiqueta (0 la genesis, 1 la rotacion) y
+    el cuerpo `merge(clave, merge(esquema, merge(desde, siguiente)))`; en la rotacion, delante del
+    cuerpo, la anterior y la historia `merge(epoch_digest, merge(mmr_root, mmr_size))`.
+    `procedencia`: None, o (anterior, epoch_digest, mmr_root, mmr_size)."""
+    cuerpo = merge(huella_clave, merge(as_digest(esquema), merge(as_digest(desde), siguiente)))
+    if procedencia is None:
+        etiqueta, resto = 0, cuerpo
+    else:
+        anterior, epoch_dig, mmr_root, mmr_size = procedencia
+        historia = merge(epoch_dig, merge(mmr_root, as_digest(mmr_size)))
+        etiqueta, resto = 1, merge(anterior, merge(historia, cuerpo))
+    return merge(as_digest(ACTAS_V1), merge(as_digest(etiqueta), resto))
 
 
 def params_digest(regulatory_limit, max_supply, max_accounts, custodian_set_root, governance_set_root,
@@ -342,6 +359,10 @@ def hash_del_lote(operaciones):
 
 def preambulo(version, epoch_dig):
     return DOMINIO_EPOCH_HEAD + bytes([version]) + digest_to_bytes(epoch_dig)
+
+
+def preambulo_acta(version, acta_dig):
+    return DOMINIO_ACTA_FIRMA + bytes([version]) + digest_to_bytes(acta_dig)
 
 
 def preambulo_cofirma(version, epoch_dig, clave_op):

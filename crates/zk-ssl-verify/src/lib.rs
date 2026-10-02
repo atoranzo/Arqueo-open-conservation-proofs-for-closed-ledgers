@@ -124,6 +124,11 @@ pub mod cuentas;
 /// OJO: la era NO se computa como la epoca del acuse. Ver la cabecera del modulo.
 pub mod recibos;
 
+/// ⚠️ §643 · **El acta de clave** (RFC-0015, E2): el preambulo que firma un acta y las reglas
+/// con que un tercero juzga una rotacion -la clave que entra es la que la previa comprometio, y
+/// la cuenta sigue-. Sin la cadena ni las cabezas: eso es de los sobres (E5).
+pub mod actas;
+
 pub use zk_ssl_hash::{
     epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5, epoch_digest_v6,
 };
@@ -343,7 +348,7 @@ pub struct CabezaFirmada {
     pub firma: Vec<u8>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VerificaError {
     /// La clave pública no se pudo leer.
     ClaveIlegible(String),

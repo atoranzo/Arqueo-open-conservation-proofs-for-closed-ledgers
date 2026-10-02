@@ -675,6 +675,28 @@ instrumentacion) al grupo E.*
   ninguna etapa construida: sigue abierta.
   ⚠️ (§642) Las cinco, TOMADAS por delegación del autor con el criterio
   del §609, las recomendadas y REVERSIBLES. Ninguna etapa construida.
+  ✅ a medias (§643): la E2, el núcleo del acta —su huella, su preámbulo
+  y `verificar_acta` en el kit, con tres KAT que la segunda implementación
+  reproduce—. QUEDAN el nodo (E3), el testigo (E4), los sobres con su
+  banco (E5) y el medio (E6): sigue abierta.
+  ✅ a medias (§644): la E3a, el nodo firma su acta génesis y la de
+  rotación al arrancar, opt-in con `--siguiente`, y no arranca con una
+  clave que nadie comprometió; el aviso de agotamiento exige
+  reconocimiento. QUEDAN la E3b (la firma de la vieja y el cable), el
+  testigo, los sobres y el medio: sigue abierta.
+  ✅ a medias (§645): la E3b-1, la clave que se va firma el acta de su
+  sucesora con `--clave-anterior-fichero`, y en el techo el firmante no
+  reserva ni firma: el latido deja de quemar un índice por latido.
+  QUEDAN el cable (`zkssl_keyActs`, E3b-2), el testigo, los sobres y el
+  medio: sigue abierta.
+  ✅ a medias (§646): la E3b-2, `zkssl_keyActs` sirve la cadena de actas
+  desde la génesis, con el JSON del acta escrito y leído por el kit, que
+  es también la línea del diario. QUEDAN el testigo (E4), los sobres con
+  su banco (E5) y el medio (E6): sigue abierta.
+  ✅ a medias (§647): la E4, el testigo sigue una rotación que la cadena
+  explica y se detiene ante la que no, con el solapamiento por su nombre,
+  y `--auditar` la rejuzga sin el nodo. QUEDAN los sobres con su banco
+  (E5) y el medio (E6): sigue abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con

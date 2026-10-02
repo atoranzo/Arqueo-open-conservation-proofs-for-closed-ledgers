@@ -25,12 +25,14 @@ use std::path::PathBuf;
 
 use serde_json::{json, Value};
 use zk_ssl_hash::{
-    acuse_digest, ancla_digest, as_digest, digest_from_bytes, digest_to_bytes, element_from_bytes,
+    acta_digest, acuse_digest, ancla_digest, as_digest, digest_from_bytes, digest_to_bytes, element_from_bytes,
     embeber, epoch_digest, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5,
     epoch_digest_v6, hash_del_lote, huella_de_clave, mmr_hoja, mmr_nodo, native_leaf, native_leaf_salted,
     native_merge, params_digest, path_root, recibo_digest, Digest,
 };
-use zk_ssl_verify::{acuses::hoja_de_acuse, mmr::cima, preambulo, preambulo_cofirma};
+use zk_ssl_verify::{
+    actas::preambulo_acta, acuses::hoja_de_acuse, mmr::cima, preambulo, preambulo_cofirma,
+};
 
 /// `spec/vectors/nucleo/` relativo a este crate, salvo que `ZKSSL_KAT_DIR` diga otro.
 fn directorio() -> PathBuf {
@@ -150,6 +152,16 @@ fn casos() -> Vec<(&'static str, Value)> {
             "entradas": {"huella_clave": dg(&a), "indice": q(7), "epoch_digest": dg(&b),
                          "mmr_root": dg(&c), "mmr_size": q(9)},
             "salida": dg(&ancla_digest(a, 7, b, c, 9))})),
+        ("acta_digest_genesis", json!({"fn": "acta_digest",
+            "entradas": {"huella_clave": dg(&a), "esquema": q(0x1_0000_0005), "desde": q(0),
+                         "siguiente": dg(&b), "procedencia": null},
+            "salida": dg(&acta_digest(a, 0x1_0000_0005, 0, b, None))})),
+        ("acta_digest_rotacion", json!({"fn": "acta_digest",
+            "entradas": {"huella_clave": dg(&b), "esquema": q(0x1_0000_0005), "desde": q(0x28),
+                         "siguiente": dg(&c),
+                         "procedencia": {"anterior": dg(&a), "epoch_digest": dg(&d),
+                                         "mmr_root": dg(&e), "mmr_size": q(0x27)}},
+            "salida": dg(&acta_digest(b, 0x1_0000_0005, 0x28, c, Some((a, d, e, 0x27))))})),
         ("huella_de_clave", json!({"fn": "huella_de_clave",
             "entradas": {"clave": hx(&clave_op)},
             "salida": dg(&huella_de_clave(&clave_op))})),
@@ -175,6 +187,9 @@ fn casos() -> Vec<(&'static str, Value)> {
             "entradas": {"version": 3, "epoch_digest": dg(&a), "clave_del_operador": hx(&clave_op)},
             "salida": hx(&preambulo_cofirma(3, &digest_to_bytes(&a), &clave_op)
                 .unwrap_or_else(|_| panic!("clave corta")))})),
+        ("preambulo_acta", json!({"fn": "preambulo_acta",
+            "entradas": {"version": 1, "acta_digest": dg(&a)},
+            "salida": hx(&preambulo_acta(1, &digest_to_bytes(&a)))})),
     ]
 }
 

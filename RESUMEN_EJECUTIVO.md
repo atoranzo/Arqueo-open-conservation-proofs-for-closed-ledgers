@@ -68,7 +68,7 @@ están revisados: [`doc/USE_CASES.md`](./doc/USE_CASES.md).
 | pieza | estado |
 |---|---|
 | El motor | 18 crates en Rust; cada cambio pasa por el canon (los tests de todos los crates y ocho herramientas que vigilan cifras, citas, dominios y geometría) |
-| El protocolo | `zkssl/0.4`: 31 métodos JSON-RPC, vectores de conformidad por versión que jamás se reescriben; RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 y 0014 aceptados; 0005, 0013, 0015, 0016, 0017, 0018 y 0019 propuestos |
+| El protocolo | `zkssl/0.4`: 32 métodos JSON-RPC, vectores de conformidad por versión que jamás se reescriben; RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 y 0014 aceptados; 0005, 0013, 0015, 0016, 0017, 0018 y 0019 propuestos |
 | El verificador | `zk-ssl-verify` 0.4.2, publicada como `arqueo-verify-v0.4.2` y reproducible desde el commit que su `VERSION` nombra |
 | El registro | [`AUDITORIA.md`](./AUDITORIA.md): un asiento por cambio verificado, con su commit; lo que se corrige se marca, no se borra |
 

@@ -46153,6 +46153,400 @@ decisiones abiertas y ninguna etapa construida (§639).
 RFC-0019 cuatro (D-A a D-D). No construye ninguna etapa. No cambia el cable, ni un vector, ni un test.
 El `BACKLOG.md` no se mueve.
 
+## §643 — RFC-0015 E2: el núcleo del acta, su huella, su preámbulo y su juez, con tres KAT
+
+El commit que lleva este asiento, sobre `7b8a4dd` (el §675). Un solo sello: nacen el módulo `actas`
+de `zk-ssl-verify` y tres KAT en `spec/vectors/nucleo/`; `zk-ssl-hash` gana `DOMINIO_ACTA` y
+`acta_digest`; la segunda implementación aprende las dos funciones; `NUCLEO.md` registra la familia
+ACTA; el RFC-0015, la entrada 84, las filas del canon y las cifras de cinco documentos se ponen al
+día; y este asiento. 20 ficheros fuera de él, cuatro que nacen, con 740 inserciones y 31 borrados.
+Lo escribe, lo prueba y lo commitea la misma sesión de Claude Code que el §642, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y
+empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-verify`
+en 172 de 172, `zk-ssl-hash` en 52 de 52, `check_tests` en 1794 y la segunda implementación en 29
+de 29 KAT.
+
+**Rehecho sobre el §675.** Este sello se cerró primero sobre `e1d1db3` y se entregó sin empujarse;
+entre medias, `main` recibió el §640 y el §641 (RFC-0016 y RFC-0017), el §637 y del §650 al §675.
+Se rehace aquí, sobre el `main` de hoy: el código del acta es el mismo, y lo que cambia son las
+cifras, que se miden otra vez sobre la base nueva y son las de este asiento.
+
+**De dónde sale.** Con las decisiones del §642 tomadas, la E2 es la primera etapa que se puede
+construir: necesita la 1 (pre-rotación: el acta lleva la huella de la sucesora) y la 5 (la firma de
+la vieja, si viene, se exige válida), y no toca el nodo, el testigo ni el cable.
+
+**Lo que hace.**
+
+1. **La huella** (`zk-ssl-hash`). `DOMINIO_ACTA`, los ocho bytes `ACTAS_V1`, con su fila en el
+   REGISTRO de dominios, y `acta_digest`: la huella de la clave que entra, su esquema, su `desde` y
+   la huella de la sucesora; en una rotación, delante, la huella de la que se va y la última cabeza
+   que firmó. Una etiqueta detrás del dominio separa la génesis (0) de la rotación (1).
+2. **El juez** (`zk-ssl-verify`, módulo `actas`). El preámbulo que firma un acta, con el dominio de
+   bytes `ZK-SSL-key-act` registrado; el esquema de hoy, `0x1_0000_0005` (la familia de RFC 8391 y
+   su OID); los tipos `Acta`, `Procedencia` y `ActaFirmada`; y `verificar_acta` con las reglas 1 a
+   3 de la D-C, cada una con su error en `ActaError`. Las reglas van ANTES que las firmas: una
+   clave no comprometida se rechaza aunque la firmen la nueva y la vieja. El `desde` es el índice
+   EMBEBIDO, y la primera firma de la clave que entra lo lleva dentro. `VerificaError` gana
+   `Clone`, `PartialEq` y `Eq`, sin cambiar una variante.
+3. **Los KAT y la segunda implementación.** Tres vectores, la génesis, la rotación y el preámbulo,
+   emitidos por la referencia; `tools/segunda/` compone las dos funciones desde la sección 6 de
+   `NUCLEO.md` y los reproduce: 29 de 29.
+4. **El registro.** Doce filas nuevas en la tabla de `NUCLEO.md`, familia ACTA (once NÚCLEO y
+   `ActaError` REFERENCIA), su párrafo en la sección 5, sus bytes en la 6 y su línea en la 8.
+
+**Medido.** `zk-ssl-hash` pasa sus 42 tests y `zk-ssl-verify` sus 156 en release, en 7 s. Los tests
+del acta firman con claves XMSS^MT reales en hojas elegidas, como el nodo tras resincronizar: la
+génesis, la rotación con y sin la firma de la vieja, la clave no comprometida que trae la firma de
+la vieja, y un rojo por regla. Una firma cuesta unos 13 s en depuración en este contenedor, así que
+la escena se firma una vez, en paralelo, y la comparten los tests. Tres mutaciones, cada una
+restaurada después: quitar la regla de la clave comprometida pone rojo su test; quitar la de la
+hoja de la firma pone rojo el suyo; y la rotación con la etiqueta de la génesis no reproduce su
+KAT. `check_nucleo` da 150 filas en las dos direcciones, y `check_dominios`, el censo y el registro
+iguales.
+
+**Contadores.** `zk-ssl-hash` 50 -> 52 y `zk-ssl-verify` 168 -> 172. TOTAL DE SELLO 1629 -> 1635 y
+TOTAL CON LARGOS 1766 -> 1772, en los tres párrafos ancla, con el desglose del verificador en 172.
+La cuenta de `check_tests` pasa de 1788 a 1794. El censo de `NUCLEO.md` pasa de 80 y 58 a 90 y 60.
+Los vectores de `spec/vectors/` pasan de 453 a 456, en los dos README. La segunda implementación
+pasa de 26 a 29 KAT. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** No hay quien firme un acta: el nodo es la E3, con su formato de cable y
+`zkssl_keyActs`. El testigo no rota (E4), los sobres no aceptan `actas` (E5) y el medio no las
+publica (E6). La regla 4 de la D-C, la de las cabezas entre dos `desde`, es de la E5. La cabeza y
+el conjunto de versiones no se mueven.
+
+**Lo que NO cierra.** La 84 sigue abierta, con su RFC PROPUESTO y la E2 construida.
+
+## §644 — RFC-0015 E3a: el nodo firma su acta génesis y la de rotación, y no arranca con una clave que nadie comprometió
+
+El commit que lleva este asiento, sobre `24a0bfc` (el §643). Un solo sello: el nodo gana el acta de
+clave en su arranque, su línea en el diario, `firmar_acta` en el firmante, tres banderas y el aviso
+de agotamiento; el módulo `actas` del kit reexporta la huella de clave; el RFC-0015, la entrada 84,
+la fila del canon y las cifras de tres documentos se ponen al día; y este asiento. 11 ficheros
+fuera de él, ninguno nuevo, con 653 inserciones y 13 borrados. Lo escribe, lo prueba y lo commitea
+la misma sesión de Claude Code que el §643, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión, sobre
+este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-node` en 188 de 188 y `check_tests`
+en 1798. Y los tres bancos que arrancan y rearrancan nodos con clave, `banco_reutilizacion.sh`,
+`banco_mentiroso_ausentes.sh` y `banco_apagado.sh`, salieron VERDES sobre él: sin `--siguiente`, el
+arranque nuevo no cambia nada.
+
+**Rehecho sobre el §675**, como el §643: el código es el mismo salvo dos puntos, y las cifras son
+las de la base nueva. El primero: el §650 dejó un solo lector de hexadecimal en `zk-ssl-hash`, y los
+ayudantes que este sello añade al diario leen con él —`hex_canonico`, sobre bytes— en vez de
+trocear la cadena, y también la huella de `--siguiente`. Esa la cazó la puerta del §650 en el primer
+canon de este rebase: `leer_huella` troceaba el `&str` por bytes. No podía entrar en pánico —antes
+comprobaba que todo fuesen cifras hex—, pero es el patrón que la puerta prohíbe, y ahora lee con
+`bytes_de_hex`. El segundo: el §666 hizo que los lectores del diario lean línea a línea sobre bytes,
+para que un byte ilegible se lleve su línea y no el diario; los dos que este sello añade —las actas
+y la última cabeza de una clave— leían con `read_to_string`, que falla entero, y ahora usan
+`lineas_del_diario`, como los demás.
+
+**De dónde sale.** La E3 del RFC-0015 es el nodo. Se corta en dos: la E3a, que el nodo firme sus
+actas al arrancar, y la E3b, la firma de la clave que se va, el método de cable y el latido en el
+techo. Antes de escribir se midió quién lee el diario del nodo: seis lectores en el nodo y tres en
+el testigo, y los bancos que lo parsean.
+
+**Lo que hace.**
+
+1. **Opt-in.** Si cada arranque con clave firmara una génesis, todos los nodos de los bancos y de
+   los tests gastarían una hoja más y correrían los índices de sus cabezas. El acta entra con
+   `--siguiente`, la huella de la sucesora: sin ella y sin actas en el diario, el nodo firma como
+   hasta hoy. Es el residuo que el RFC declara en la D-I, y la regla del nodo desde el §236: las
+   capacidades se encienden con bandera explícita.
+2. **El arranque.** Tras reconciliar el contador, el nodo juzga la cadena de actas del diario con
+   `verificar_acta` (una cadena rota no arranca) y decide con una función pura: ninguna, en vigor,
+   génesis, rotación a la sucesora comprometida, o no arrancar. No arrancan la clave que nadie
+   comprometió («no se distingue de un robo»), la sucesora sin `--siguiente`, un `--siguiente`
+   distinto del comprometido sin rotar, ni una clave que se comprometa a sí misma.
+3. **La firma.** `firmar_acta` va por el camino de las cabezas: reservar con `fsync`, firmar el
+   preámbulo del acta y verificar la propia salida con el juez del tercero. El `desde` es la hoja
+   en que la clave está, y la rotación sigue la cuenta de la vieja (§638). La procedencia es la
+   última cabeza que firmó la clave que se va y el acumulador de cabezas que la nueva hereda. En la
+   E3a la vieja no firma: el acta la declara quemada.
+4. **El diario.** La línea del acta lleva `v`, su `tipo`, el índice declarado y el acta con sus
+   firmas, y ninguna clave de las que leen los lectores de cabezas; se anota con `fsync`, al revés
+   que las cabezas, porque un acta perdida deja una rotación sin objeto.
+5. **El agotamiento y la huella.** Por debajo de un año de latidos a la cadencia configurada, el
+   nodo no arranca sin `--reconozco-agotamiento` (el RFC 10033 §3.4). Y `--huella-de-clave-fichero`
+   imprime la huella de una semilla y sale, sin contador ni diario: es lo que se pasa a
+   `--siguiente` desde donde vive la clave fría.
+
+**Medido.** Los 188 tests del nodo pasan en release. Cuatro son nuevos: la decisión, rama a rama;
+el arranque entero con claves XMSS^MT de verdad sobre un contador y un diario en disco (la génesis,
+un rearranque que no firma otra, la rotación con el contador de la vieja, la cadena juzgada y
+tocada, y una cuarta clave que no arranca); el umbral de agotamiento en sus bordes; y la línea del
+acta entre dos cabezas, que no cambia lo que leen los límites, el último `seq`, el último
+`recepCount`, los cierres de recepción y las hojas del MMR, y sí la ve `maximo_indice`. Y con el
+binario de release, de punta a punta: la génesis en la hoja 0, un rearranque en vigor, la rotación
+en la hoja 5 siguiendo la cuenta, un rearranque de la sucesora sin acta nueva, y una clave que
+nadie comprometió saliendo con su mensaje.
+
+**Contadores.** `zk-ssl-node` pasa de 184 a 188 tests. TOTAL DE SELLO 1635 -> 1639 y TOTAL CON
+LARGOS 1772 -> 1776, en los tres párrafos ancla, con el desglose del nodo en 188. La cuenta de
+`check_tests` pasa de 1794 a 1798. El censo de `NUCLEO.md` no se mueve: la reexportación de la
+huella desde un módulo público no se cuenta. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** La clave que se va no firma el acta, ni el cable la sirve (`zkssl_keyActs`), ni
+el latido deja de quemar el contador en el techo: eso es la E3b. El testigo sigue deteniéndose ante
+un cambio de clave (E4) y los sobres del kit siguen exigiendo una sola clave (E5). Ningún banco
+firma actas todavía, y ninguno cambia: sin `--siguiente`, el nodo es el de ayer.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2 y la E3a de su RFC construidas.
+
+
+## §645 — RFC-0015 E3b-1: la clave que se va firma el acta de su sucesora, y en el techo el firmante no reserva ni firma
+
+El commit que lleva este asiento, sobre `dfdbfb8` (el §644). Un solo sello: el firmante gana la
+firma de la clave que se va y la negativa en el techo; el nodo, la bandera `--clave-anterior-fichero`
+y su paso en el arranque; el RFC-0015, la entrada 84, la fila del canon y las cifras de tres
+documentos se ponen al día; y este asiento. 9 ficheros fuera de él, ninguno nuevo. Lo escribe, lo
+prueba y lo commitea la misma sesión de Claude Code que el §644, no el autor en su máquina, fuera
+del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En
+la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-node` en 190 de 190
+y `check_tests` en 1800.
+
+**Rehecho sobre el §675**, como el §643 y el §644: el código es el mismo, y las cifras son las de
+la base nueva.
+
+**De dónde sale.** El §644 cortó la E3 en dos y dejó en la E3b tres cosas: la firma de la clave
+que se va (decisión 5), `zkssl_keyActs` en el cable y el latido que quema el contador en el techo.
+Este sello toma la primera y la tercera, que son del firmante y no tocan el cable; el método es la
+E3b-2, un sello aparte, porque mueve el contrato publicado y sus cifras en cuatro documentos.
+
+**Lo que hace.**
+
+1. **La vieja firma solo si el operador la da.** `--clave-anterior-fichero` lleva la semilla de la
+   clave que se va, con la misma lectura que `--clave-fichero` (permisos incluidos). Darla es
+   afirmar que su estado es fiable, y el nodo no lo puede saber por su cuenta: sin ella, el acta
+   la declara quemada, como en el §644. Fuera de una rotación, el nodo no arranca con ella, y sin
+   `--clave`/`--clave-fichero` tampoco: ignorarla en silencio haría creer al operador que la vieja
+   firmó.
+2. **La cuenta es una.** `firmar_con_la_anterior` comprueba que la semilla es la de la clave del
+   acta en vigor ANTES de reservar, pone la vieja en la hoja que el contador del operador da,
+   reserva con `fsync`, firma el mismo preámbulo que firmará la nueva, y lleva la nueva a la hoja
+   siguiente, que es el `desde` del acta. Dos hojas por una rotación con las dos firmas; una por
+   la que declara quemada a la vieja. El juez del tercero, `verificar_acta`, ya exigía que la hoja
+   de la vieja cayera entre su `desde` y el de la nueva (§643): el nodo lo cumple por
+   construcción, y lo comprueba al firmar.
+3. **En el techo no se reserva.** Antes de este sello el guardián reservaba y el `xmss` fallaba
+   después, así que cada latido en el techo quemaba un índice más del contador. Ahora `firmar`,
+   `firmar_acta` y la firma de la vieja preguntan antes a `hoja_con_presupuesto`, que devuelve
+   `Agotada` sin tocar el contador. El latido en el techo falla con su error y no gasta nada.
+4. **Un productor del presupuesto.** `PRESUPUESTO_DE_LA_CLAVE` sale de `main.rs` y vive en el
+   firmante, que es quien se niega: el aviso de agotamiento del arranque lo importa de ahí.
+
+**Medido.** Una cosa que el RFC no sabía: **el techo lo dice el contador, no el SK.** Tras firmar
+con la última hoja, el índice del SK sigue leyendo 2^40 − 1, porque su campo de cinco bytes no
+representa 2^40: la clave en su última hoja y la clave agotada se leen igual. Y una segunda firma
+NO da el `KeyExhausted` del §112: da una firma que no verifica, que solo la autoverificación de
+`firmar` impedía publicar. El contador es un `u64` y sí llega a 2^40, así que la negativa lo lee a
+él. Lo fija un test nuevo con un contador en disco en la última hoja: la última firma sale con
+índice embebido 2^40 − 1, el SK sigue leyendo 2^40 − 1, la siguiente es `Agotada { hoja: 2^40 }`
+y el contador se queda en 2^40.
+
+Los 190 tests del nodo pasan en release. Dos son nuevos: ese, y la rotación con la anterior (la
+bandera fuera de una rotación no arranca; una semilla anterior que no es la del acta en vigor no
+gasta ninguna hoja; con la buena, la vieja en la hoja 1, la nueva desde la 2, el contador en 3 y
+la cadena aceptada por el juez del tercero). Y con el binario de release, de punta a punta sobre
+un contador y un diario en disco: la génesis de A en la hoja 0; una rotación a B con una semilla
+que no es la de A, que no arranca y deja el contador donde estaba; la rotación a B con las dos
+firmas —en esta corrida, la vieja en la hoja 4 y la nueva desde la 5: las hojas dependen de
+cuántos latidos caben antes de parar el nodo—; el rearranque de B con la bandera, que no
+arranca, y sin ella, que no firma acta nueva; y una segunda rotación, de B a C firmada por B, que
+deja en el diario una cadena de tres actas; y la bandera sin `--clave-fichero`, que no arranca con
+su mensaje. Los tres bancos que arrancan y rearrancan nodos con
+clave, `banco_reutilizacion.sh`, `banco_mentiroso_ausentes.sh` y `banco_apagado.sh`, salieron VERDES sobre
+él, con el árbol limpio: sin `--siguiente` ni `--clave-anterior-fichero`, el nodo es el de ayer.
+
+**Contadores.** `zk-ssl-node` pasa de 188 a 190 tests. TOTAL DE SELLO 1639 -> 1641 y TOTAL CON
+LARGOS 1776 -> 1778, en los tres párrafos ancla, con el desglose del nodo en 190. La cuenta de
+`check_tests` pasa de 1798 a 1800. El censo de `NUCLEO.md` no se mueve. El `BACKLOG.md` sigue en
+43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** El cable no sirve las actas (`zkssl_keyActs` es la E3b-2). El nodo no sabe si
+el estado de la clave que se va es fiable: lo afirma el operador al dar su semilla, y esa
+afirmación no se comprueba más allá de que la semilla sea la de la clave del acta en vigor. Un
+nodo en el techo sigue latiendo sin firmar —falla cada latido con `Agotada`—, no se para. Y
+**rotar no lo saca del techo**, cosa que el RFC decía al revés y que este sello precisa en su D-F
+sin reescribirla: con la cuenta del operador (D-A), la sucesora empieza por encima de todo lo que
+firmó la vieja, con el mismo campo de cinco bytes, así que a 2^40 la que se agota es la cuenta del
+operador y no la clave. A la cadencia del latido está a dos millones de años; si llegara a
+importar, lo que se revisa es la decisión 2, reversible, y eso es del autor. El testigo
+sigue deteniéndose ante un cambio de clave (E4) y los sobres del kit siguen exigiendo una sola
+clave (E5).
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2, la E3a y la E3b-1 de su RFC construidas.
+
+## §646 — RFC-0015 E3b-2: `zkssl_keyActs` sirve la cadena de actas, y el acta tiene un JSON con un productor, en el kit
+
+El commit que lleva este asiento, sobre `52e4742` (el §645). Un solo sello: el kit gana el JSON
+del acta, `acta_a_json` y `acta_de_json`; el diario lo usa para su línea; el nodo arma la cadena al
+arrancar y la sirve con un método nuevo; el contrato publicado, `RPC.md` y los seis sitios que
+cuentan métodos pasan de 31 a 32; el RFC-0015, `NUCLEO.md`, la entrada 84, las filas del canon y
+las cifras de tres documentos se ponen al día; y este asiento. Lo
+escribe, lo prueba y lo commitea la misma sesión de Claude Code que el §645, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello`
+y empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-node`
+en 191 de 191, `zk-ssl-verify` en 173 de 173 y `check_tests` en 1802; y los tres bancos que
+arrancan y rearrancan nodos con clave, `banco_reutilizacion.sh`, `banco_mentiroso_ausentes.sh` y
+`banco_apagado.sh`, salieron VERDES con el árbol limpio.
+
+**Rehecho sobre el §675**, con tres cambios de fondo. El lector del acta lee el hexadecimal con el
+lector común del §650 (`hex_canonico`), en vez de trocear la cadena, y sus `Q` con el del §662
+(`cantidad_canonica`, la escritura mínima); el diario sigue leyendo sus líneas con el lector del
+§666. Y lo que la primera versión de
+este sello midió y fichó como la entrada 115 del BACKLOG ya no es verdad en esta base: el §640
+(RFC-0016) hizo que `digest_from_bytes` rechace un elemento que vale `p` o más, así que el lector
+del acta hereda la regla del núcleo y deja de repetirla, y la 115 no se abre.
+
+**De dónde sale.** La D-D del RFC-0015 pone el acta en tres sitios, «en todos tal cual»: el
+diario, el cable y el medio. El §644 la escribió en el diario con un JSON propio del nodo; el
+cable la tenía pendiente (E3b-2), y los sobres de la E5 la necesitarán leer en el kit. Tres
+lectores y dos escritores de un mismo objeto piden un productor, y el sitio es el kit, que es lo
+que un tercero tiene.
+
+**Lo que hace.**
+
+1. **El acta en JSON, en el kit.** `acta_a_json` escribe `{acta: {clave, esquema, desde,
+   siguiente, procedencia}, firma, firmaAnterior}` con las convenciones de `RPC.md`, y
+   `procedencia` y `firmaAnterior` van siempre, con `null` cuando no hay: un campo ausente no se
+   lee como uno vacío. `acta_de_json` lo lee campo a campo y dice cuál falla; ignora las claves de
+   más —la línea del diario lleva `v`, `tipo` e `index`— y no las que faltan. Leer no es juzgar:
+   eso sigue siendo `verificar_acta`. Dos filas nuevas en `NUCLEO.md`, familia ACTA.
+2. **El diario, con el mismo productor.** `linea_de_acta` es el JSON del kit con el marco del
+   diario delante, y `actas` lo lee con el lector del kit; salen del nodo los dos ayudantes de hex
+   que el §644 escribió solo para el acta y que se quedan sin uso. Lo anotado no se mueve: con el
+   binario nuevo, las dos líneas de acta del humo del §645 salen **idénticas byte a byte**.
+3. **El método.** `zkssl_keyActs`, sin parámetros, responde `{actas}` desde la génesis. El nodo
+   arma la cadena **una vez, al arrancar**, después de juzgarla y de firmar la que toque, y la
+   guarda en su estado: las actas solo nacen al arrancar, y releer el diario en cada petición
+   costaría lo que el diario mide, una firma por latido. Vacía sin clave o sin actas (D-I). El
+   nodo no la juzga al servirla: quien la pide la juzga con `verificar_acta`.
+4. **El contrato.** El método entra en la tabla de `openrpc.rs` con su esquema, `KeyActs`, y
+   `spec/openrpc.json` se regenera; `RPC.md` gana su fila y su sección; `README.md`,
+   `README_EN.md`, `RESUMEN_EJECUTIVO.md`, `RESUMEN_BILINGUE.md` dos veces y `spec/README.md` pasan
+   de 31 a 32 métodos, y de 28 a 29 `zkssl_*` donde se desglosan. `zkssl/0.4` no sube.
+
+**El borde del campo.** Sobre la base vieja, al escribir el lector salió que `digest_from_bytes`
+reducía módulo `p` ocho bytes que valían `p` o más, y que la segunda implementación los rechazaba.
+El §640 lo había cerrado ya en su rama, y en el `main` de hoy es regla del núcleo. Lo que queda de aquí es
+el test: el lector del acta rechaza un digest con un elemento que vale `p`, y `p − 1` se lee.
+
+**Probado.** Los 191 tests del nodo y los 173 del kit pasan en release. Dos son nuevos: en el kit,
+el JSON del acta va y vuelve —la génesis con sus dos `null`, la rotación entera—, ignora las claves
+del diario y rechaza con su nombre un campo que falta, un `Q` sin `0x`, un digest corto, un
+elemento que vale `p` y una firma impar; en el nodo, un nodo sin actas sirve la cadena vacía, y uno
+con la génesis y una rotación firmada por las dos claves sirve las dos, que el kit lee de vuelta
+iguales a las del diario y `verificar_acta` acepta eslabón a eslabón. El test que cruza el despacho
+con el contrato publicado no cambia y sigue verde con el método nuevo en los dos lados. Y por el
+cable de verdad, con el binario de release y `curl`: dos actas servidas, iguales a las del diario
+sin su marco.
+
+**Contadores.** `zk-ssl-node` 190 -> 191 y `zk-ssl-verify` 172 -> 173. TOTAL DE SELLO 1641 -> 1643
+y TOTAL CON LARGOS 1778 -> 1780, en los tres párrafos ancla, con el desglose del nodo en 191 y el
+del verificador en 173. La cuenta de `check_tests` pasa de 1800 a 1802. El censo de `NUCLEO.md`
+pasa de 90 a 92 en `zk-ssl-verify` (NÚCLEO 118 -> 120). El contrato publicado, de 31 a 32
+métodos. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** El testigo no pide todavía las actas ante un cambio de clave (E4), ni los
+sobres del kit las aceptan (E5), ni el medio las publica (E6). El JSON del acta no tiene vectores
+propios: los traerán los sobres de la E5, que son los que un tercero guarda.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2 y la E3 de su RFC construidas.
+
+## §647 — RFC-0015 E4: el testigo sigue una rotación que la cadena de actas explica, se detiene ante la que no, y nombra el solapamiento
+
+El commit que lleva este asiento, sobre `c8f7e34` (el §646). Un solo sello: el kit gana el juicio
+de la cadena y de una rotación; el testigo, dos veredictos, la petición de `zkssl_keyActs` ante un
+cambio de clave y un auditor que rejuzga la rotación sin el nodo; el diario del testigo sube a v4;
+el nodo recorre su cadena con el juez del kit; el RFC-0015, `NUCLEO.md`, la entrada 84, las filas
+del canon y las cifras de tres documentos se ponen al día; y este asiento. Lo escribe, lo prueba y
+lo commitea la misma sesión de Claude Code que el §646, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión,
+sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-verify` en 174 de 174,
+`zk-ssl-cli` en 135 de 135, `zk-ssl-node` en 191 de 191 y `check_tests` en 1806.
+
+**Rehecho sobre el §675**, como los cuatro anteriores: el código es el mismo, y las cifras, el humo
+de punta a punta y los bancos de este asiento son los de la base nueva.
+
+**De dónde sale.** La D-E del RFC-0015: ante un `CambioDeClave` el testigo pide `zkssl_keyActs`,
+juzga la cadena desde la clave que fijó y, si vale, fija la nueva con un veredicto nuevo,
+«rotada», que anota y sigue; si no hay acta o no vale, se detiene como hoy; `--auditar` hace lo
+mismo con el diario. Las reglas 3 y 4 de la D-C dan el resto: el `desde` de la sucesora supera lo
+que la vieja firmó, cada cabeza cae en el tramo de su clave, y lo contrario es **solapamiento**,
+evidencia oponible con nombre.
+
+**Lo que hace.**
+
+1. **El juicio, en el kit.** `verificar_cadena` recorre la cadena entera —el nodo la usa ya al
+   arrancar, en vez de su bucle propio—, y `juzgar_rotacion(actas, de, a, último_de_la_vieja)`
+   comprueba que la cadena vale, que `a` está en ella y `de` antes, y que lo que se vio firmar a
+   `de` queda por debajo del `desde` de su sucesora. Devuelve el tramo de `a` —por encima de su
+   `desde`, que es la hoja de su acta, y por debajo del de la siguiente, si la hay— y cuántos
+   eslabones cruzó: un testigo apagado ve la clave de hoy, no las de en medio. Cinco filas en
+   `NUCLEO.md`, familia ACTA.
+2. **El testigo vivo.** Ante un cambio de clave pide `zkssl_keyActs` y la juzga con una función
+   pura. Si la cadena lo explica, anota una línea `rotada` con la cadena dentro, fija la clave
+   nueva con su tramo y juzga la MISMA cabeza otra vez con ella; si no, sigue siendo
+   `cambio-de-clave`, se detiene, dice el motivo y deja la cadena en la línea. Cada cabeza que
+   verifica se mide contra el tramo de su clave, y la regla 3 se aplica a lo que el testigo VIO:
+   el mayor índice EMBEBIDO de la clave fijada entre las cabezas que verificaron. Nace
+   `solapamiento`, que detiene. Con TOFU no hay tramo: nadie lo dijo.
+3. **El auditor.** Una línea con actas y otra clave es una rotación que `--auditar` rejuzga con el
+   mismo juez, sin el nodo: si vale, la clave nueva queda fijada; si no, `rotacion-invalida` con el
+   motivo, y además `cambio-de-clave`. Mide también cada cabeza verificada contra el tramo de la
+   clave fijada, y nace `solapamiento` entre sus hallazgos.
+4. **El diario del testigo, v4.** Nacen las clases `rotada` y `solapamiento` y el campo `actas`, y
+   el significado de `cambio-de-clave` se estrecha al cambio que la cadena no explica: por eso sube
+   la versión, como en el §314. Los diarios v1 a v3 siguen auditándose.
+
+**Medido.** De punta a punta con los binarios de release: un nodo con la clave A y su génesis, un
+testigo mirándolo, el nodo parado y rearrancado con B y la firma de A. El testigo anota `rotada`
+—desde 5, un eslabón—, un `hueco` con las dos hojas que gastaron las actas, que no detiene, y sigue
+con las cabezas de B; su diario, en v4, sale de `--auditar` **sin hallazgos**, con todas sus
+cabezas reverificadas sin el nodo. Después, un testigo que fijó B ve una clave X con su propia
+génesis: «el cambio de clave NO se explica: la clave que se tenia no esta en la cadena antes de la
+que llega», y se detiene. Su diario auditado da `indice-retrocede` —X cuenta desde otro contador—,
+`rotacion-invalida` y `cambio-de-clave`.
+
+**Un rojo propio, cazado de punta a punta y no por los tests.** La primera auditoría de ese
+diario dio además un `solapamiento` que no existía: el auditor medía la cabeza de X contra el
+tramo de B, que no es su clave. El tramo es de la clave fijada, y la cabeza de otra clave ya es
+`cambio-de-clave`; corregido. Los tests del auditor no lo veían porque sus líneas llevan firmas
+sintéticas que no verifican, y el tramo solo se mide sobre cabezas que verifican; queda escrito
+aquí en vez de forzado en un test.
+
+**Los bancos del testigo, con el árbol limpio.** Los nueve que usan el testigo o un nodo con
+clave —`banco_reutilizacion.sh`, `banco_mentiroso_ausentes.sh`, `banco_apagado.sh`,
+`banco_cofirma.sh`, `banco_consistencia.sh`, `banco_evidencia_v2.sh`, `banco_mentiroso_vista.sh`,
+`banco_mentiroso_censura.sh` y `banco_mentiroso_sin_resolver.sh`— salieron VERDES sobre la base
+nueva. En la primera versión de este sello, sobre la base vieja, `banco_consistencia.sh` salió
+ROJO una vez de tres —en su positivo, catorce vueltas sin una línea `extiende`, todas `anclando` y
+`consistencia-pendiente`—, y VERDE en el mismo commit y en su base. El sello no toca el canal de
+la consistencia, y la causa no se demostró; aquí salió VERDE a la primera. Queda como medida, no
+como explicación.
+
+**Probado.** Los 174 tests del kit y los 135 del testigo pasan en release; el nodo sigue en 191.
+Cuatro son nuevos: en el kit, la rotación juzgada con la cadena —el tramo, la cadena al revés, la
+clave que nadie comprometió, la cadena sin su génesis y el solapamiento en el borde exacto—; en el
+testigo, un cambio con su cadena que rota y sigue, uno sin cadena que lo explique que sigue
+deteniendo con cada motivo —y el solapamiento, que detiene sin rotar—, y el auditor que rejuzga la
+rotación desde la línea. Las dos claves de esos tests son XMSS^MT de verdad, firmadas una vez.
+
+**Contadores.** `zk-ssl-verify` 173 -> 174 y `zk-ssl-cli` 132 -> 135. TOTAL DE SELLO 1643 -> 1647
+y TOTAL CON LARGOS 1780 -> 1784, en los tres párrafos ancla, con el desglose del verificador en
+174 y el del testigo en 135. La cuenta de `check_tests` pasa de 1802 a 1806. El censo de
+`NUCLEO.md`, de 92 a 97 en `zk-ssl-verify` (NÚCLEO 120 -> 124, REFERENCIA 12 -> 13). El
+`BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** Los sobres del kit que comparan cabezas siguen exigiendo una sola clave (E5),
+y no hay todavía banco que rote contra un nodo real dentro del canon: el humo de este asiento es
+manual. El testigo no rehace su memoria de su propio diario al rearrancar, como antes: un testigo
+que rearranca fija con TOFU la clave que vea. Y la regla 3 juzga lo que el testigo vio, no lo que
+el operador firmó sin que nadie mirara.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2, la E3 y la E4 de su RFC construidas.
 ## §676 — el árbol del MMR con todos sus niveles: `zkssl_consistencyProof` de 11,7 s a 48 µs a un año de cabezas
 
 El commit que lleva este asiento, sobre el §675. Cuarto corte de H15, el primero de los que el autor
@@ -46547,3 +46941,21 @@ nulificador sale libre; sin la ranura del interior en `C_NULL_LINK`, verifica y 
 1787, en los tres párrafos ancla, la cifra de circuitos en `PRINCIPIOS.md` y la línea de
 `cargo test -p stark-experiment` en los dos papers y los dos documentos institucionales. El
 `BACKLOG.md` no se mueve.
+
+## §685 — la fusión de `main` (§643–§647, RFC-0015) en la rama del tren `zkssl/0.5` (§676–§684)
+
+El commit de fusión que lleva este asiento. Lo hace una sesión de Claude Code en la nube, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`, después de que el avance directo
+del autor fallara: otra sesión había llevado a `main` cinco sellos de la RFC-0015 (las actas del
+firmante, `a0d7715`) mientras esta rama llevaba los suyos. Sin forzar ni reescribir nada: un merge.
+En la sesión, sobre el árbol fusionado, el canon `--sello` salió VERDE.
+
+**Lo que se cruzó.** Solo contadores y el final de este fichero; el código se fusionó solo (el nodo,
+el kit, `spec/RPC.md`). Los asientos de las dos sesiones quedan en orden de llegada a `main`: primero
+los de la RFC-0015, después los del tren. Los pines se suman: `zk-ssl-node` 191 (los de la RFC-0015) +
+3 (§676–§678) = 194; `zk-ssl-verify` 174 + 2 (§681, §682) = 176; `zk-ssl-cli` 135 y `zk-ssl-hash` 52,
+de `main`; `stark-experiment` 423, de esta rama. Las notas de los pines de los §676–§678 y §681–§682
+se reescriben sobre la cuenta fusionada (191 -> 192 … 193 -> 194; 174 -> 175, 175 -> 176); los
+asientos conservan la cuenta con que se sellaron. TOTAL DE SELLO 1629 + 18 + 21 = 1668; TOTAL CON
+LARGOS 1805. Los vectores: 453 + 3 (los KAT del acta) + 4 (§681, §682) = 460 ficheros, con el catálogo
+`0.4/` nombrado en los dos README.

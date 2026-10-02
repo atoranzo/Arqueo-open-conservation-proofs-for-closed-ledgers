@@ -123,6 +123,7 @@ use serde_json::{json, Value};
 // `Veredicto` (el de `reverificacion`, §279), homonimo del de este modulo.
 use xmss::{KeyPair, SigningKey};
 use zk_ssl_guardian::{GuardianError, GuardianIndice, Reconciliacion};
+use zk_ssl_verify::actas::{acta_de_json, juzgar_rotacion, Rotacion, RotacionError};
 use zk_ssl_verify::{
     indice_de_firma, mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma,
     CabezaFirmada, VersionCabeza,
@@ -151,14 +152,29 @@ pub enum Veredicto {
     /// ⚠️ **MISMO ÍNDICE, DIGEST DISTINTO.** Se DETIENE.
     VistaDividida { indice: u64, digest_a: String, digest_b: String },
     /// ⚠️ **La clave pública no es la fijada.** Se DETIENE.
+    ///
+    /// ⚠️ §647 · desde la E4 del RFC-0015, solo cuando el cambio NO se explica: el nodo no sirve
+    /// actas, o su cadena no lleva de la clave fijada a la recibida.
     CambioDeClave { fijada: String, recibida: String },
+    /// ⚠️ §647 · **La clave cambió y la cadena de actas lo explica** (RFC-0015, D-E): la recibida
+    /// es la comprometida por la fijada, eslabón a eslabón. Anota, fija la nueva y **sigue**.
+    Rotada { de: String, a: String, desde: u64, eslabones: u64 },
+    /// ⚠️ §647 · **Una firma fuera del tramo de su clave** (RFC-0015, D-C reglas 3 y 4): la que
+    /// se va firmó en o por encima del `desde` de su sucesora, o una cabeza cae fuera del tramo
+    /// de la suya. Evidencia oponible con nombre, como la vista dividida. Se DETIENE.
+    Solapamiento { indice: u64, desde: u64 },
 }
 
 impl Veredicto {
     /// ⚠️ **Dos clases detienen**: la vista dividida y el cambio de clave.
     /// La segunda porque **rotar es cómo se escapa de la primera**.
     pub fn detiene(&self) -> bool {
-        matches!(self, Veredicto::VistaDividida { .. } | Veredicto::CambioDeClave { .. })
+        matches!(
+            self,
+            Veredicto::VistaDividida { .. }
+                | Veredicto::CambioDeClave { .. }
+                | Veredicto::Solapamiento { .. }
+        )
     }
 
     /// Nombre **estable** de la clase, para el diario.
@@ -178,6 +194,8 @@ impl Veredicto {
             Veredicto::NoVerifica { .. } => "no-verifica",
             Veredicto::VistaDividida { .. } => "vista-dividida",
             Veredicto::CambioDeClave { .. } => "cambio-de-clave",
+            Veredicto::Rotada { .. } => "rotada",
+            Veredicto::Solapamiento { .. } => "solapamiento",
         }
     }
 }
@@ -453,7 +471,11 @@ pub fn al_llegar_camino(m: &mut Memoria, r: &Value) -> Consistencia {
 /// `consistencia-sin-respuesta`, y con ellas el campo `motivo`. **No es
 /// solo un valor mas**: el significado de `sin-firma` se ESTRECHA, porque
 /// deja de cubrir <<no hubo respuesta>>. Por eso sube la version.
-pub const DIARIO_VERSION: u8 = 3;
+/// ⚠️ **3 -> 4 en §647** (RFC-0015, E4): nacen las clases `rotada` y `solapamiento`, y el campo
+/// `actas` con la cadena que el nodo sirvio. Y otra vez **no es solo un valor mas**: el
+/// significado de `cambio-de-clave` se ESTRECHA, porque deja de cubrir el cambio que la cadena
+/// explica. Un auditor v3 no sabe rejuzgar una rotacion, y lo dice en vez de leerla a medias.
+pub const DIARIO_VERSION: u8 = 4;
 
 /// Una línea del diario: **lo suficiente para que un tercero reverifique
 /// sin el nodo**, meses después.
@@ -641,6 +663,12 @@ pub struct Memoria {
     pareja: Option<(String, u64)>,
     /// El camino pedido y aun no juzgado.
     pendiente: Option<Pendiente>,
+    /// ⚠️ §647 · el mayor indice EMBEBIDO que la clave fijada firmo, entre las cabezas que
+    /// VERIFICARON: lo que la regla 3 de la D-C compara con el `desde` de su sucesora.
+    max_embebido: Option<u64>,
+    /// ⚠️ §647 · el tramo de la clave fijada, si llego por una rotacion juzgada. Con TOFU no
+    /// hay tramo: nadie lo dijo.
+    tramo: Option<Rotacion>,
 }
 
 impl Memoria {
@@ -668,6 +696,34 @@ impl Memoria {
     /// primera corrida del banco del §295.
     pub fn debe_pedir_camino(&self) -> bool {
         self.pendiente.is_none() && self.pareja.as_ref().map_or(false, |(_, t)| *t > 0)
+    }
+
+    /// ⚠️ §647 · fija la clave a la que la cadena rotó, con su tramo, y olvida lo que firmó la
+    /// anterior: desde aquí se cuenta la nueva.
+    pub fn rotar(&mut self, a: &str, r: Rotacion) {
+        self.clave_fijada = Some(a.to_string());
+        self.tramo = Some(r);
+        self.max_embebido = None;
+    }
+
+    /// ⚠️ §647 · **Una cabeza verificada, contra el tramo de su clave** (D-C, regla 4). Fuera del
+    /// tramo es `Solapamiento`, con el borde que cruza; dentro, cuenta para la regla 3.
+    pub fn en_su_tramo(&mut self, embebido: u64) -> Option<Veredicto> {
+        if let Some(t) = self.tramo {
+            if !t.en_su_tramo(embebido) {
+                let borde = if embebido <= t.desde {
+                    t.desde
+                } else {
+                    t.hasta.unwrap_or(t.desde)
+                };
+                return Some(Veredicto::Solapamiento {
+                    indice: embebido,
+                    desde: borde,
+                });
+            }
+        }
+        self.max_embebido = Some(self.max_embebido.map_or(embebido, |m| m.max(embebido)));
+        None
     }
 
     /// Fija la clave la primera vez, y **la compara siempre después**.
@@ -787,7 +843,55 @@ pub fn una_vuelta(v: &Value, m: &mut Memoria) -> Veredicto {
     // ── 3 · verificar, con el MISMO codigo que usa el firmante ──
     match verificar(v) {
         Err(e) => Veredicto::NoVerifica { indice, error: e },
-        Ok(()) => m.clasificar(indice, &digest),
+        Ok(()) => {
+            // ── 4 · §647: la cabeza, dentro del tramo de su clave ──
+            let embebido = leer_hex(&v["signature"])
+                .ok()
+                .and_then(|f| indice_de_firma(&f).ok());
+            if let Some(fuera) = embebido.and_then(|e| m.en_su_tramo(e)) {
+                return fuera;
+            }
+            m.clasificar(indice, &digest)
+        }
+    }
+}
+
+/// ⚠️ §647 · **Un cambio de clave, juzgado con lo que sirve `zkssl_keyActs`** (RFC-0015, D-E).
+/// `Ok` con `Rotada` —y la memoria ya rotada— o con `Solapamiento`; `Err` con el motivo por el
+/// que el cambio NO se explica, y entonces sigue siendo `CambioDeClave`. Pura: la peticion la
+/// hace el bucle.
+pub fn juzgar_cambio(
+    m: &mut Memoria,
+    fijada: &str,
+    recibida: &str,
+    servido: &Value,
+) -> Result<Veredicto, String> {
+    let lista = servido["actas"]
+        .as_array()
+        .ok_or("el nodo no sirve `actas`: no hay objeto que explique el cambio")?;
+    if lista.is_empty() {
+        return Err("el nodo no tiene actas: nadie comprometio la clave nueva".into());
+    }
+    let actas = lista
+        .iter()
+        .enumerate()
+        .map(|(k, a)| acta_de_json(a).map_err(|e| format!("el acta {k} no se lee: {e}")))
+        .collect::<Result<Vec<_>, _>>()?;
+    let (de, a) = (leer_hex(&json!(fijada))?, leer_hex(&json!(recibida))?);
+    match juzgar_rotacion(&actas, &de, &a, m.max_embebido) {
+        Ok(r) => {
+            m.rotar(recibida, r);
+            Ok(Veredicto::Rotada {
+                de: fijada.to_string(),
+                a: recibida.to_string(),
+                desde: r.desde,
+                eslabones: r.eslabones as u64,
+            })
+        }
+        Err(RotacionError::Solapamiento { indice, desde }) => {
+            Ok(Veredicto::Solapamiento { indice, desde })
+        }
+        Err(e) => Err(e.to_string()),
     }
 }
 
@@ -1025,6 +1129,12 @@ pub enum Hallazgo {
     /// corriendo**. Un diario que llega de un tercero se comprueba en
     /// frío.
     VistaDividida { linea: usize, indice: u64, digest_a: String, digest_b: String },
+    /// ⚠️ §647 · **Una linea trae actas y la cadena NO explica el cambio de clave** (RFC-0015,
+    /// D-E): el motivo, del juez del kit. El cambio se anota ademas como `CambioDeClave`.
+    RotacionInvalida { linea: usize, error: String },
+    /// ⚠️ §647 · **Una firma fuera del tramo de su clave** (D-C, reglas 3 y 4), el mismo
+    /// nombre que en [`Veredicto`].
+    Solapamiento { linea: usize, indice: u64, desde: u64 },
 }
 
 impl Hallazgo {
@@ -1039,6 +1149,8 @@ impl Hallazgo {
             // llame igual en las tres herramientas es lo que permite
             // hablar de ella sin ambiguedad.
             Hallazgo::VistaDividida { .. } => "vista-dividida",
+            Hallazgo::RotacionInvalida { .. } => "rotacion-invalida",
+            Hallazgo::Solapamiento { .. } => "solapamiento",
         }
     }
 }
@@ -1077,6 +1189,8 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
     let mut ultimo: Option<u64> = None;
     let mut clave: Option<String> = None;
     let mut vistos: BTreeMap<u64, String> = BTreeMap::new();
+    // ⚠️ §647: la misma memoria del tramo que el testigo vivo, para rejuzgar sus rotaciones.
+    let mut m = Memoria::nueva();
 
     for (i, l) in lineas.iter().enumerate() {
         let n = i + 1;
@@ -1150,6 +1264,29 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
         // cambia a mitad es el caso que §244 dejo abierto, y NO PUEDE PASAR
         // EN SILENCIO.
         let k = v["publicKey"].as_str().unwrap_or_default().to_string();
+        // ── §647 · una linea con actas y otra clave es una ROTACION que se rejuzga aqui, con el
+        //    mismo juez que uso el testigo vivo y sin el nodo: la cadena va en la linea ──
+        if let (Some(f), true) = (clave.clone(), v["actas"].is_array()) {
+            if f != k {
+                match juzgar_cambio(&mut m, &f, &k, &v) {
+                    Ok(Veredicto::Rotada { .. }) => clave = Some(k.clone()),
+                    Ok(Veredicto::Solapamiento { indice, desde }) => {
+                        a.hallazgos.push(Hallazgo::Solapamiento {
+                            linea: n,
+                            indice,
+                            desde,
+                        })
+                    }
+                    Ok(_) => {}
+                    Err(error) => a
+                        .hallazgos
+                        .push(Hallazgo::RotacionInvalida { linea: n, error }),
+                }
+            }
+        }
+        // ⚠️ El tramo es de la clave fijada: la cabeza de OTRA clave ya es `cambio-de-clave`, y
+        //    medirla contra un tramo que no es el suyo inventaria un solapamiento.
+        let de_la_fijada = clave.as_deref().map_or(true, |f| f == k);
         match &clave {
             None => clave = Some(k),
             Some(f) if *f == k => {}
@@ -1163,7 +1300,24 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
         }
 
         match verificar(&v) {
-            Ok(()) => a.reverificadas += 1,
+            Ok(()) => {
+                a.reverificadas += 1;
+                // ⚠️ §647: la cabeza verificada, contra el tramo de su clave (regla 4), y su hoja
+                //    para la regla 3 de la rotacion siguiente.
+                let embebido = leer_hex(&v["signature"])
+                    .ok()
+                    .and_then(|f| indice_de_firma(&f).ok());
+                if let Some(Veredicto::Solapamiento { indice, desde }) = embebido
+                    .filter(|_| de_la_fijada)
+                    .and_then(|e| m.en_su_tramo(e))
+                {
+                    a.hallazgos.push(Hallazgo::Solapamiento {
+                        linea: n,
+                        indice,
+                        desde,
+                    });
+                }
+            }
             Err(e) => a.hallazgos.push(Hallazgo::FirmaNoVerifica { linea: n, indice, error: e }),
         }
     }
@@ -2449,6 +2603,60 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             }
         };
 
+        // ── §647 · RFC-0015 E4: un cambio de clave se EXPLICA con las actas, o detiene ──
+        //
+        // ⚠️ La cadena se pide AQUI, donde se sabe que la clave cambio, y la juzga una funcion
+        //    pura con el juez del kit. Si la explica, la rotacion se anota en su propia linea,
+        //    con la cadena dentro para que `--auditar` la rejuzgue sin el nodo, y la MISMA
+        //    cabeza se juzga otra vez con la clave nueva fijada.
+        let mut actas_servidas: Option<Value> = None;
+        let cambio = match &veredicto {
+            Veredicto::CambioDeClave { fijada, recibida } => {
+                Some((fijada.clone(), recibida.clone()))
+            }
+            _ => None,
+        };
+        let veredicto = match cambio {
+            None => veredicto,
+            Some((fijada, recibida)) => {
+                let peticion = json!({"jsonrpc":"2.0","id":n,"method":"zkssl_keyActs","params":{}});
+                let juicio = match pedir(&agente, &a.nodo, peticion) {
+                    Servido::SinRespuesta { motivo } => {
+                        Err(format!("zkssl_keyActs no respondio: {motivo}"))
+                    }
+                    Servido::Respuesta(r) => {
+                        actas_servidas = Some(r["actas"].clone());
+                        juzgar_cambio(&mut m, &fijada, &recibida, &r)
+                    }
+                };
+                match juicio {
+                    Ok(v) => v,
+                    Err(motivo) => {
+                        eprintln!("[{n}] el cambio de clave NO se explica: {motivo}");
+                        veredicto
+                    }
+                }
+            }
+        };
+        let veredicto = if let Veredicto::Rotada { .. } = &veredicto {
+            println!("[{n}] {veredicto:?}");
+            if let Some(f) = diario.as_mut() {
+                let t = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0);
+                let mut l = linea_de_diario_con(&veredicto, &servido, t, None);
+                if let Some(x) = &actas_servidas {
+                    l["actas"] = x.clone();
+                }
+                writeln!(f, "{l}")?;
+                f.flush()?;
+            }
+            una_vuelta(&servido, &mut m)
+        } else {
+            veredicto
+        };
+
         // ── §294 · el SEGUNDO canal: la historia ──
         // ⚠️ Solo si la cabeza VERIFICO. Juzgar la historia de una cabeza
         // que no verifica seria dar valor a lo que acaba de fallar.
@@ -2583,6 +2791,11 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             let mut l = linea_de_diario_con(&veredicto, servido, t, cons.as_ref());
             if let Some(mm) = &marca {
                 l["cofirmada"] = mm.clone();
+            }
+            // ⚠️ §647: la cadena que NO explico el cambio, o que mostro el solapamiento, va con
+            //    la linea que detiene: es la evidencia de por que se detuvo.
+            if let (Some(x), true) = (&actas_servidas, veredicto.detiene()) {
+                l["actas"] = x.clone();
             }
             writeln!(f, "{l}")?;
             f.flush()?;
@@ -3552,7 +3765,8 @@ mod tests {
         });
         let c = Consistencia::Extiende { de_t: 3, a_t: 4, camino: vec![cima(9)] };
         let l = linea_de_diario_con(&v, &servido, 1000, Some(&c));
-        assert_eq!(l["v"], json!(3), "la version del diario SUBE");
+        // §647: 3 -> 4 con la rotacion (RFC-0015 E4); la linea de cabeza no cambia de forma.
+        assert_eq!(l["v"], json!(4), "la version del diario SUBE");
         assert_eq!(l["clase"], json!("nueva"), "la clase de la CABEZA no se pierde");
         assert_eq!(l["mmrRoot"], json!(cima(1)));
         assert_eq!(l["mmrSize"], json!("0x4"));
@@ -3854,7 +4068,8 @@ mod tests {
                    "lo que vio el cliente va en `motivo`");
         assert!(a["reason"].is_null(),
                 "el nodo no dijo nada: no se le atribuye un `reason`");
-        assert_eq!(a["v"], json!(3), "la clase nueva vive en el formato v3");
+        // §647: la clase nacio en el v3 y sigue en el v4 de la rotacion.
+        assert_eq!(a["v"], json!(4), "la clase nueva vive en el formato v3 y siguientes");
     }
 
     #[test]
@@ -3883,6 +4098,8 @@ mod tests {
              "vista-dividida"),
             (Veredicto::CambioDeClave { fijada: "a".into(), recibida: "b".into() },
              "cambio-de-clave"),
+            (Veredicto::Rotada { de: "a".into(), a: "b".into(), desde: 5, eslabones: 1 }, "rotada"),
+            (Veredicto::Solapamiento { indice: 5, desde: 5 }, "solapamiento"),
         ];
         for (v, nombre) in esperadas {
             assert_eq!(v.clase(), nombre);
@@ -3992,9 +4209,12 @@ mod tests {
         assert!(v.detiene(), "un cambio de clave DEBE detener al testigo");
     }
 
+    /// §647: eran dos -la vista dividida y el cambio de clave-; el solapamiento es la tercera, y
+    /// la rotacion explicada NO detiene.
     #[test]
-    fn solo_dos_clases_detienen() {
+    fn solo_tres_clases_detienen() {
         for v in [
+            Veredicto::Rotada { de: "a".into(), a: "b".into(), desde: 5, eslabones: 1 },
             Veredicto::Nueva { indice: 1, digest: "0xaa".into() },
             Veredicto::Repetida { indice: 1 },
             Veredicto::Hueco { desde: 2, hasta: 3 },
@@ -4009,6 +4229,201 @@ mod tests {
         }
         .detiene());
         assert!(Veredicto::CambioDeClave { fijada: "a".into(), recibida: "b".into() }.detiene());
+        assert!(Veredicto::Solapamiento { indice: 5, desde: 5 }.detiene());
+    }
+
+    // ── §647 · RFC-0015 E4: el cambio de clave, explicado con las actas ──
+
+    /// Dos claves de verdad: la genesis de A comprometiendo a B, y la rotacion a B desde la hoja
+    /// 5, firmada por B. Se firma UNA vez y la comparten los tests.
+    struct EscenaDeActas {
+        a: String,
+        b: String,
+        actas: Vec<Value>,
+    }
+
+    fn escena_de_actas() -> &'static EscenaDeActas {
+        use zk_ssl_verify::actas::{
+            acta_a_json, huella_de_clave, preambulo_acta, Acta, ActaFirmada, Procedencia,
+            ACTA_VERSION, ESQUEMA_XMSSMT_SHA2_40_8_256,
+        };
+        static E: std::sync::OnceLock<EscenaDeActas> = std::sync::OnceLock::new();
+        E.get_or_init(|| {
+            let firmar_en = |kp: &mut KeyPair<Conjunto>, hoja: u64, m: &[u8]| -> Vec<u8> {
+                let mut sk = kp.signing_key().as_ref().to_vec();
+                zk_ssl_guardian::poner_indice_en_sk(&mut sk, hoja).expect("indice");
+                zk_ssl_verify::aplicar_apano_del_oid(&mut sk).expect("apano");
+                *kp.signing_key() = SigningKey::<Conjunto>::try_from(sk.as_slice()).expect("sk");
+                kp.signing_key().sign(m).expect("firmar").as_ref().to_vec()
+            };
+            let (mut ka, mut kb) = std::thread::scope(|s| {
+                let a = s.spawn(|| KeyPair::<Conjunto>::from_seed(&[0x41; 96]).expect("A"));
+                let b = s.spawn(|| KeyPair::<Conjunto>::from_seed(&[0x42; 96]).expect("B"));
+                (a.join().expect("A"), b.join().expect("B"))
+            });
+            let (pa, pb) = (
+                ka.verifying_key().as_ref().to_vec(),
+                kb.verifying_key().as_ref().to_vec(),
+            );
+            let g = Acta {
+                clave: pa.clone(),
+                esquema: ESQUEMA_XMSSMT_SHA2_40_8_256,
+                desde: 0,
+                siguiente: huella_de_clave(&pb),
+                procedencia: None,
+            };
+            let r = Acta {
+                clave: pb.clone(),
+                esquema: ESQUEMA_XMSSMT_SHA2_40_8_256,
+                desde: 5,
+                siguiente: zk_ssl_hash::as_digest(9),
+                procedencia: Some(Procedencia {
+                    anterior: huella_de_clave(&pa),
+                    epoch_digest: zk_ssl_hash::as_digest(1),
+                    mmr_root: zk_ssl_hash::as_digest(2),
+                    mmr_size: 4,
+                }),
+            };
+            let pre =
+                |x: &Acta| preambulo_acta(ACTA_VERSION, &zk_ssl_hash::digest_to_bytes(&x.digest()));
+            let (fg, fr) = std::thread::scope(|s| {
+                let (pg, pr) = (pre(&g), pre(&r));
+                let x = s.spawn(move || firmar_en(&mut ka, 0, &pg));
+                let y = s.spawn(move || firmar_en(&mut kb, 5, &pr));
+                (x.join().expect("g"), y.join().expect("r"))
+            });
+            let hex = |b: &[u8]| {
+                format!(
+                    "0x{}",
+                    b.iter().map(|x| format!("{x:02x}")).collect::<String>()
+                )
+            };
+            EscenaDeActas {
+                a: hex(&pa),
+                b: hex(&pb),
+                actas: vec![
+                    acta_a_json(&ActaFirmada {
+                        acta: g,
+                        firma: fg,
+                        firma_anterior: None,
+                    }),
+                    acta_a_json(&ActaFirmada {
+                        acta: r,
+                        firma: fr,
+                        firma_anterior: None,
+                    }),
+                ],
+            }
+        })
+    }
+
+    /// ⚠️ §647: **un cambio de clave con su cadena rota y sigue.** La clave fijada firmo hasta la
+    /// hoja 3; la cadena lleva de ella a la recibida, que empieza en la 5: `Rotada`, que no
+    /// detiene, y la memoria fija la nueva con su tramo. La hoja 5 es del acta: una cabeza ahi es
+    /// solapamiento; en la 6, no.
+    #[test]
+    fn un_cambio_de_clave_con_su_cadena_rota_y_sigue() {
+        let e = escena_de_actas();
+        let mut m = Memoria::nueva();
+        m.anclar(&e.a);
+        assert_eq!(m.en_su_tramo(3), None, "sin tramo, la cabeza solo cuenta");
+        assert!(matches!(
+            m.anclar(&e.b),
+            Some(Veredicto::CambioDeClave { .. })
+        ));
+        let v = juzgar_cambio(&mut m, &e.a, &e.b, &json!({ "actas": e.actas })).expect("rota");
+        assert_eq!(
+            v,
+            Veredicto::Rotada {
+                de: e.a.clone(),
+                a: e.b.clone(),
+                desde: 5,
+                eslabones: 1
+            }
+        );
+        assert!(!v.detiene(), "una rotacion explicada NO detiene");
+        assert_eq!(m.clave_fijada(), Some(e.b.as_str()));
+        assert_eq!(m.anclar(&e.b), None, "la nueva ya es la fijada");
+        assert_eq!(
+            m.en_su_tramo(5),
+            Some(Veredicto::Solapamiento {
+                indice: 5,
+                desde: 5
+            })
+        );
+        assert_eq!(m.en_su_tramo(6), None);
+    }
+
+    /// ⚠️ §647: **sin cadena que lo explique, el cambio sigue deteniendo**, y cada motivo se dice:
+    /// el nodo no sirve actas, no tiene ninguna, su cadena no empieza en la genesis, o no lleva a
+    /// la clave recibida. Y si la fijada firmo en la hoja 5 —el `desde` de su sucesora—, la
+    /// cadena vale pero lo visto la contradice: `Solapamiento`, que detiene, sin rotar.
+    #[test]
+    fn un_cambio_sin_cadena_que_lo_explique_sigue_deteniendo() {
+        let e = escena_de_actas();
+        let fijada = |max: Option<u64>| {
+            let mut m = Memoria::nueva();
+            m.anclar(&e.a);
+            if let Some(x) = max {
+                m.en_su_tramo(x);
+            }
+            m
+        };
+        let motivo = |servido: Value, recibida: &str| {
+            juzgar_cambio(&mut fijada(None), &e.a, recibida, &servido).expect_err("no explica")
+        };
+        assert!(motivo(json!({}), &e.b).contains("no sirve"));
+        assert!(motivo(json!({ "actas": [] }), &e.b).contains("no tiene actas"));
+        assert!(motivo(json!({ "actas": [e.actas[1]] }), &e.b).contains("acta 0"));
+        assert!(motivo(json!({ "actas": e.actas }), "0xbeef").contains("nadie la comprometio"));
+        let mut m = fijada(Some(5));
+        let v = juzgar_cambio(&mut m, &e.a, &e.b, &json!({ "actas": e.actas })).expect("juzgado");
+        assert_eq!(
+            v,
+            Veredicto::Solapamiento {
+                indice: 5,
+                desde: 5
+            }
+        );
+        assert!(v.detiene());
+        assert_eq!(
+            m.clave_fijada(),
+            Some(e.a.as_str()),
+            "el solapamiento no rota"
+        );
+    }
+
+    /// ⚠️ §647: **el auditor rejuzga la rotacion con la cadena de la linea**, sin el nodo. Con la
+    /// cadena buena, el cambio de A a B no es hallazgo; con una cadena sin su genesis, es
+    /// `rotacion-invalida` y `cambio-de-clave`. Las firmas de `dia()` son de mentira y su
+    /// hallazgo es el de siempre.
+    #[test]
+    fn auditar_rejuzga_la_rotacion_con_la_cadena_de_la_linea() {
+        let e = escena_de_actas();
+        let rotada = |actas: Value| {
+            let mut v: Value = serde_json::from_str(&dia("0x7", "0xbb", &e.b)).expect("json");
+            v["clase"] = json!("rotada");
+            v["actas"] = actas;
+            v.to_string()
+        };
+        let clases = |ls: Vec<String>| -> Vec<&'static str> {
+            auditar_lineas(&ls)
+                .hallazgos
+                .iter()
+                .map(|h| h.clase())
+                .collect()
+        };
+        let buena = clases(vec![
+            dia("0x1", "0xaa", &e.a),
+            rotada(json!(e.actas)),
+            dia("0x8", "0xcc", &e.b),
+        ]);
+        assert!(!buena.contains(&"cambio-de-clave"), "{buena:?}");
+        assert!(!buena.contains(&"rotacion-invalida"), "{buena:?}");
+        assert!(buena.iter().all(|c| *c == "firma-no-verifica"), "{buena:?}");
+        let mala = clases(vec![dia("0x1", "0xaa", &e.a), rotada(json!([e.actas[1]]))]);
+        assert!(mala.contains(&"rotacion-invalida"), "{mala:?}");
+        assert!(mala.contains(&"cambio-de-clave"), "{mala:?}");
     }
 
     #[test]

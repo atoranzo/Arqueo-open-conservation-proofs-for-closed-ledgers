@@ -135,6 +135,86 @@ fn lineas_del_diario(ruta: impl AsRef<Path>) -> Option<Vec<String>> {
     )
 }
 
+// ── El acta de clave (RFC-0015, E3a; §644) ──────────────────────────
+//
+// ⚠️ Una línea de acta lleva `v`, su `tipo` y un `index` -el declarado, como las cabezas, para
+//    que `maximo_indice` cuente la hoja que el acta gasta y la puerta del contador la vea-, y
+//    NINGUNA de las claves que leen los lectores de cabezas: ni `seq`, ni `epochDigest`, ni
+//    `recepCount`, ni `signature`. Así `limites`, `ultimo_seq`, `digests`, los cierres de
+//    recepción y el `--auditar`, el `--comparar` y el `--ausentes` del testigo la saltan sin
+//    cambiar una línea; lo ata `una_linea_de_acta_no_la_ve_ningun_lector_de_cabezas`.
+
+fn hex(b: &[u8]) -> String {
+    format!("0x{}", crate::hex_de(b))
+}
+
+// ⚠️ El lector de hex es el de `zk-ssl-hash` (§650): sobre bytes, con `0x` y en minúscula, como
+//    escribe este diario. Uno propio aquí sería otro productor del mismo contrato.
+fn bytes_de_hex(s: &str) -> Option<Vec<u8>> {
+    zk_ssl_hash::hex_canonico(s).ok()
+}
+
+fn digest_de_hex(v: &Value) -> Option<zk_ssl_verify::acuses::Digest> {
+    let b: [u8; 32] = bytes_de_hex(v.as_str()?)?.try_into().ok()?;
+    zk_ssl_wire::digest_from_wire(&zk_ssl_wire::B32(b)).ok()
+}
+
+/// La línea de un acta firmada, con el índice que su firma reservó.
+///
+/// ⚠️ §646 · el acta la escribe el kit ([`zk_ssl_verify::actas::acta_a_json`]), el mismo productor
+/// que el cable: el diario solo le pone delante su versión, su tipo y el índice declarado.
+pub fn linea_de_acta(a: &zk_ssl_verify::actas::ActaFirmada, indice_declarado: u64) -> Value {
+    let mut linea = zk_ssl_verify::actas::acta_a_json(a);
+    linea["v"] = json!(DIARIO_VERSION);
+    linea["tipo"] = json!("acta");
+    linea["index"] = json!(q(indice_declarado));
+    linea
+}
+
+/// Añade un acta al diario, **con `fsync`**. Al revés que [`anotar`]: una cabeza perdida
+/// cuesta una línea, pero un acta perdida deja una rotación sin objeto que la explique.
+pub fn anotar_acta(ruta: impl AsRef<Path>, linea: &Value) -> std::io::Result<()> {
+    let mut f = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(ruta)?;
+    writeln!(f, "{linea}")?;
+    f.sync_all()
+}
+
+/// Las actas que el diario conserva, en orden de anotación. Una línea que no es un acta, o un
+/// acta ilegible, se SALTA, como en [`limites`]: quien la use juzga la cadena entera con
+/// `verificar_acta`, y un acta que falte se nota en la cadena, no aquí.
+pub fn actas(ruta: impl AsRef<Path>) -> Vec<zk_ssl_verify::actas::ActaFirmada> {
+    // ⚠️ Con el lector del §666: una línea con un byte ilegible se salta sola, no el diario.
+    let texto = match lineas_del_diario(ruta) {
+        Some(t) => t,
+        None => return Vec::new(),
+    };
+    texto
+        .iter()
+        .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+        .filter(|j| j["tipo"].as_str() == Some("acta"))
+        .filter_map(|j| zk_ssl_verify::actas::acta_de_json(&j).ok())
+        .collect()
+}
+
+/// El `epochDigest` de la última cabeza FIRMADA por `clave` que el diario conserva, si la hay:
+/// la que el acta de rotación nombra como la última de la clave que se va.
+pub fn ultima_cabeza_de(
+    ruta: impl AsRef<Path>,
+    clave: &[u8],
+) -> Option<zk_ssl_verify::acuses::Digest> {
+    let texto = lineas_del_diario(ruta)?;
+    let pk = hex(clave);
+    texto
+        .iter()
+        .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+        .filter(|j| j["signature"].is_string() && j["publicKey"].as_str() == Some(pk.as_str()))
+        .filter_map(|j| digest_de_hex(&j["epochDigest"]))
+        .last()
+}
+
 /// Los límites de época que el diario conserva: los `seq` de sus líneas,
 /// en el orden en que se anotaron.
 ///
@@ -503,6 +583,65 @@ mod tests {
             emitida_unix: 1_700_000_000,
             foto: std::sync::Arc::new(zk_ssl::tests_support::new_layer().foto_pendientes()),
         }
+    }
+
+    /// ⚠️ §644: una linea de acta entre dos cabezas no la ve ningun lector de cabezas -los
+    /// limites, el ultimo `seq`, el ultimo `recepCount`, los cierres de recepcion, las hojas
+    /// del MMR- y SI la ve `maximo_indice`, porque gasta una hoja. Y `actas` la devuelve igual.
+    #[test]
+    fn una_linea_de_acta_no_la_ve_ningun_lector_de_cabezas() {
+        use zk_ssl_verify::actas::{huella_de_clave, Acta, ActaFirmada, Procedencia};
+        let dir = std::env::temp_dir().join(format!("zkssl_diario_acta_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let (solo, con) = (dir.join("solo.jsonl"), dir.join("con.jsonl"));
+        let _ = std::fs::remove_file(&solo);
+        let _ = std::fs::remove_file(&con);
+        let (c1, c2) = (cabeza(3, 0x11, true), cabeza(4, 0x22, true));
+        let acta = ActaFirmada {
+            acta: Acta {
+                clave: vec![0x01, 0x02],
+                esquema: 7,
+                desde: 9,
+                siguiente: huella_de_clave(b"siguiente"),
+                procedencia: Some(Procedencia {
+                    anterior: huella_de_clave(b"anterior"),
+                    epoch_digest: as_digest(5),
+                    mmr_root: as_digest(6),
+                    mmr_size: 2,
+                }),
+            },
+            firma: vec![0xAB; 4],
+            firma_anterior: Some(vec![0xCD; 3]),
+        };
+        for (ruta, con_acta) in [(&solo, false), (&con, true)] {
+            anotar(ruta, &c1, &[0x01, 0x02]).expect("c1");
+            if con_acta {
+                anotar_acta(ruta, &linea_de_acta(&acta, 10)).expect("acta");
+            }
+            anotar(ruta, &c2, &[0x01, 0x02]).expect("c2");
+        }
+        assert_eq!(limites(&solo), limites(&con), "limites");
+        assert_eq!(ultimo_seq(&solo), ultimo_seq(&con), "ultimo seq");
+        assert_eq!(
+            ultimo_recep_count(&solo),
+            ultimo_recep_count(&con),
+            "ultimo recepCount"
+        );
+        assert_eq!(
+            cierres_de_recepcion(&solo),
+            cierres_de_recepcion(&con),
+            "cierres"
+        );
+        assert_eq!(digests(&solo), digests(&con), "las hojas del MMR");
+        assert_eq!(maximo_indice(&solo), Some(4));
+        assert_eq!(
+            maximo_indice(&con),
+            Some(10),
+            "el acta gasta una hoja y la puerta la ve"
+        );
+        assert_eq!(actas(&solo), vec![]);
+        assert_eq!(actas(&con), vec![acta], "la linea se lee como se escribio");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
