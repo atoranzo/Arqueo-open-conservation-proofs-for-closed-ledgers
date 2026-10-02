@@ -14,7 +14,9 @@
 #             `--comparar` de los dos diarios: ROJO, nombrando CADA indice dividido, misma clave.
 #   ESCENA 2  EL CONTADOR RESTAURADO, bajo un testigo VIVO. El nodo cae y vuelve con la misma
 #             semilla y el contador fresco en el MISMO puerto: el testigo SE DETIENE con
-#             `vista-dividida` y el indice, y `--auditar` de su diario lo ve SIN el nodo.
+#             `vista-dividida` y el indice, y `--auditar` de su diario lo ve SIN el nodo. Desde el
+#             §688, `--auditar --sobres` arma de su diario el sobre del ancla, modo 4, y el mando lo
+#             juzga sin el nodo ni el testigo: VERDE, VISTA DIVIDIDA.
 #
 # Exito (D-D del RFC-0011): que la defensa DISPARE nombrando el indice. Los indices esperados
 # salen de los diarios crudos (el mismo indice, dos digests), no del texto de la herramienta.
@@ -33,14 +35,14 @@ fallo(){ msg "ROJO: $*"; exit 1; }
 # persiste, y en WSL /tmp es tmpfs (medido en §290).
 DIR=$(mktemp -d "$HOME/.banco_mentiroso_vista.XXXXXX")
 trap 'rm -rf "$DIR"' EXIT INT TERM HUP QUIT
-msg "compilando nodo y cli en RELEASE (aqui se firma de verdad)"
-cargo build --release -q -p zk-ssl-node -p zk-ssl-cli 2>/dev/null \
-  || cargo build --release -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
+msg "compilando nodo, cli y mando en RELEASE (aqui se firma de verdad)"
+cargo build --release -q -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify 2>/dev/null \
+  || cargo build --release -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify || fallo "no compila"
 
 python3 - "$DIR" <<'PY'
-import json, os, re, subprocess, sys, time, urllib.request
+import glob, json, os, re, subprocess, sys, time, urllib.request
 DIR = sys.argv[1]
-NODO, CLI = 'target/release/zk-ssl-node', 'target/release/zk-ssl-cli'
+NODO, CLI, MANDO = 'target/release/zk-ssl-node', 'target/release/zk-ssl-cli', 'target/release/zk-ssl-verify'
 def msg(m): print('BANCO-MENT-VISTA| ' + m, file=sys.stderr, flush=True)
 fallos = 0
 def exigir(ok, texto, detalle=''):
@@ -194,6 +196,16 @@ try:
            '--auditar, SIN el nodo: ROJO, vista-dividida en el indice %s' % detenido, out[-1500:])
     otros = sorted(set(re.findall(r'⚠️ ([a-z-]+) ·', out)) - {'vista-dividida'})
     msg('     y ademas: %s (el contador que vuelve atras)' % (', '.join(otros) or 'nada'))
+    # §688: la deteccion del testigo, portable: el sobre del ancla, modo 4, armado de su diario.
+    rc, out = cli('--auditar', d3 + '/diario.jsonl', '--sobres', d3 + '/sobres')
+    sobres = sorted(glob.glob(d3 + '/sobres/vista-dividida-*.json'))
+    exigir(len(sobres) == 1, '--auditar --sobres arma el sobre de la vista dividida desde el diario',
+           out[-1000:])
+    if sobres:
+        q = subprocess.run([MANDO, sobres[0]], capture_output=True, text=True)
+        exigir(q.returncode == 0 and 'VERDE: VISTA DIVIDIDA - la clave firmo DOS cabezas' in q.stdout,
+               'el mando lo juzga sin el nodo ni el testigo: VERDE, VISTA DIVIDIDA',
+               q.stdout + q.stderr)
 finally:
     for p in procesos:
         matar(p)

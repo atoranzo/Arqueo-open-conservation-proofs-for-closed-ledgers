@@ -579,13 +579,41 @@ pub const CAMPOS_DE_LA_CABEZA: [&str; 28] = [
 /// E5c): la cabeza de la linea —sus campos, con `available`— y la cadena de actas. Lo verifica el
 /// kit sin el nodo y sin el testigo: la detección del testigo se vuelve evidencia portable.
 pub fn sobre_de_solapamiento(linea: &Value, actas: &Value) -> Value {
+    json!({ "v": 1, "tipo": "solapamiento", "cabeza": cabeza_de_linea(linea), "actas": actas })
+}
+
+/// La cabeza firmada que una linea del diario guarda, como la sirvio el cable: sus campos y
+/// `available`. Un productor para los sobres que arma `--auditar --sobres` (§687, §688).
+pub fn cabeza_de_linea(linea: &Value) -> Value {
     let mut cabeza = json!({ "available": true });
     for k in CAMPOS_DE_LA_CABEZA {
         if !linea[k].is_null() {
             cabeza[k] = linea[k].clone();
         }
     }
-    json!({ "v": 1, "tipo": "solapamiento", "cabeza": cabeza, "actas": actas })
+    cabeza
+}
+
+/// ⚠️ §688 · **El sobre de la vista dividida, armado desde el diario** (`spec/PAQUETE.md` 2.12,
+/// modo 4): las dos cabezas de la misma clave con el mismo indice embebido y contenidos distintos.
+/// `None` si no lo son: el auditor encuentra la vista por el indice DECLARADO, y el sobre exige la
+/// misma clave y el mismo EMBEBIDO; sin eso, queda el hallazgo y no se arma un sobre que el kit
+/// rechazaria.
+pub fn sobre_de_vista_dividida(una: &Value, otra: &Value) -> Option<Value> {
+    let embebido = |l: &Value| {
+        leer_hex(&l["signature"])
+            .ok()
+            .and_then(|f| indice_de_firma(&f).ok())
+    };
+    if una["publicKey"] != otra["publicKey"] || embebido(una)?.ne(&embebido(otra)?) {
+        return None;
+    }
+    Some(json!({
+        "v": 1,
+        "tipo": "ancla",
+        "cabeza": cabeza_de_linea(una),
+        "contraria": cabeza_de_linea(otra),
+    }))
 }
 
 /// La linea con **los dos canales** (§294).
@@ -1214,7 +1242,8 @@ pub struct Auditoria {
     pub reverificadas: usize,
     pub hallazgos: Vec<Hallazgo>,
     /// ⚠️ §687: un sobre del solapamiento por cada solapamiento que el diario delata, con la linea
-    /// del hallazgo: la cabeza fuera de su tramo y la cadena que fijo el tramo.
+    /// del hallazgo: la cabeza fuera de su tramo y la cadena que fijo el tramo. Y desde el §688, uno
+    /// de la vista dividida -el modo 4 del ancla- por cada vista que el kit pueda juzgar.
     pub sobres: Vec<(usize, Value)>,
 }
 
@@ -1233,7 +1262,9 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
     let mut a = Auditoria::default();
     let mut ultimo: Option<u64> = None;
     let mut clave: Option<String> = None;
-    let mut vistos: BTreeMap<u64, String> = BTreeMap::new();
+    // §688: con el digest, la posicion de la linea que lo trajo: la vista dividida arma su sobre
+    //       releyendo esa linea, sin guardar las cabezas enteras en memoria.
+    let mut vistos: BTreeMap<u64, (String, usize)> = BTreeMap::new();
     // ⚠️ §647: la misma memoria del tramo que el testigo vivo, para rejuzgar sus rotaciones.
     let mut m = Memoria::nueva();
     // ⚠️ §687: lo que hace falta para ARMAR el sobre del solapamiento sin el nodo: la cadena de la
@@ -1297,16 +1328,22 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
         let dg = v["epochDigest"].as_str().unwrap_or_default().to_string();
         match vistos.get(&indice) {
             None => {
-                vistos.insert(indice, dg);
+                vistos.insert(indice, (dg, i));
             }
-            Some(previo) if *previo == dg => {}
-            Some(previo) => {
+            Some((previo, _)) if *previo == dg => {}
+            Some((previo, j)) => {
                 a.hallazgos.push(Hallazgo::VistaDividida {
                     linea: n,
                     indice,
                     digest_a: previo.clone(),
                     digest_b: dg,
                 });
+                if let Some(sobre) = serde_json::from_str::<Value>(&lineas[*j])
+                    .ok()
+                    .and_then(|primera| sobre_de_vista_dividida(&primera, &v))
+                {
+                    a.sobres.push((n, sobre));
+                }
             }
         }
 
@@ -1550,7 +1587,9 @@ pub struct WitnessArgs {
 
     /// **Con `--auditar`, arma los sobres del SOLAPAMIENTO** (§687, RFC-0015 E5c): uno por cada
     /// solapamiento que el diario delate, en este directorio, con la cabeza fuera de su tramo y la
-    /// cadena de actas. `zk-ssl-verify` los juzga sin el nodo y sin el testigo.
+    /// cadena de actas. Y desde el §688 los de la VISTA DIVIDIDA (el modo 4 del sobre del ancla):
+    /// las dos cabezas de la misma clave con el mismo indice embebido. `zk-ssl-verify` los juzga
+    /// sin el nodo y sin el testigo.
     #[arg(long, value_name = "DIR", requires = "auditar")]
     sobres: Option<PathBuf>,
 
@@ -2367,16 +2406,20 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         if let Some(dir) = &a.sobres {
             std::fs::create_dir_all(dir).map_err(|e| anyhow::anyhow!("{}: {e}", dir.display()))?;
             for (n, sobre) in &r.sobres {
-                let ruta = dir.join(format!("solapamiento-linea-{n}.json"));
+                let que = match sobre["tipo"].as_str() {
+                    Some("ancla") => "vista-dividida",
+                    _ => "solapamiento",
+                };
+                let ruta = dir.join(format!("{que}-linea-{n}.json"));
                 std::fs::write(&ruta, serde_json::to_string_pretty(sobre)?)
                     .map_err(|e| anyhow::anyhow!("{}: {e}", ruta.display()))?;
                 println!(
-                    "sobre del solapamiento: {} (zk-ssl-verify lo juzga)",
+                    "sobre de {que}: {} (zk-ssl-verify lo juzga)",
                     ruta.display()
                 );
             }
             if r.sobres.is_empty() {
-                println!("ningun solapamiento en el diario: ningun sobre");
+                println!("ni solapamiento ni vista dividida que el kit juzgue: ningun sobre");
             }
         }
         if r.hallazgos.is_empty() {
@@ -4601,6 +4644,45 @@ mod tests {
         ]);
         assert!(r.sobres.is_empty(), "{:?}", r.hallazgos);
         assert!(r.hallazgos.is_empty(), "{:?}", r.hallazgos);
+    }
+
+    /// ⚠️ §688 · **la vista dividida del diario sale como el sobre del ancla, modo 4.** Con las dos
+    /// cabezas de verdad de `spec/vectors/ancla/vista-dividida.json` -misma clave, mismo indice
+    /// embebido, digests distintos- en un diario: el hallazgo y su sobre, con las dos cabezas en su
+    /// orden. Con la segunda de otra clave, el hallazgo queda y el sobre no se arma: el kit lo
+    /// rechazaria.
+    #[test]
+    fn la_vista_dividida_del_diario_sale_como_sobre_del_ancla() {
+        let par: Value = serde_json::from_str(include_str!(
+            "../../../spec/vectors/ancla/vista-dividida.json"
+        ))
+        .expect("vector");
+        let linea = |c: &Value| {
+            let nueva = Veredicto::Nueva {
+                indice: 0,
+                digest: String::new(),
+            };
+            linea_de_diario(&nueva, c, 0).to_string()
+        };
+        let r = auditar_lineas(&[linea(&par["cabeza"]), linea(&par["contraria"])]);
+        assert!(
+            r.hallazgos
+                .iter()
+                .any(|h| matches!(h, Hallazgo::VistaDividida { linea: 2, .. })),
+            "{:?}",
+            r.hallazgos
+        );
+        assert_eq!(r.sobres.len(), 1);
+        let sobre = &r.sobres[0].1;
+        assert_eq!(sobre["tipo"], json!("ancla"));
+        assert_eq!(sobre["cabeza"]["signature"], par["cabeza"]["signature"]);
+        assert_eq!(
+            sobre["contraria"]["signature"],
+            par["contraria"]["signature"]
+        );
+        let mut ajena = par["contraria"].clone();
+        ajena["publicKey"] = json!("0xaa");
+        assert_eq!(sobre_de_vista_dividida(&par["cabeza"], &ajena), None);
     }
 
     #[test]

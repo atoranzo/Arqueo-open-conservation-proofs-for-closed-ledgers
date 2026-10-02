@@ -525,7 +525,11 @@ sobre verifica la criptografía; el orden externo lo da el medio.
 **El banco es `tools/banco_ancla.sh`** (§593), que lo reproduce en vivo contra un nodo real que
 firma —la vista dividida incluida, reproduciendo el ataque de verdad: la misma semilla con un
 contador de índice fresco y otro libro—, y **el catálogo es `spec/vectors/ancla/`** (§593), la
-décima familia del artefacto, COPIADA de una corrida suya: sección 9.
+décima familia del artefacto, COPIADA de una corrida suya: sección 9. **El de la vista dividida lo
+arma también el TESTIGO** (§688): `zk-ssl-cli witness --auditar DIARIO --sobres DIR` escribe el
+sobre del modo 4 con las dos cabezas que su diario guardó, cuando son de la misma clave y del mismo
+índice embebido; `tools/banco_mentiroso_vista.sh` lo demuestra con un testigo vivo ante un nodo que
+vuelve con el contador restaurado.
 
 ### 2.13 El sobre del ancla cofirmada (§633, RFC-0013 E4a)
 
@@ -1040,7 +1044,8 @@ produce el COBRADOR** (§497, RFC-0008 D-M y D-P): con su aviso v2 y su credenci
 cli, `zk-ssl-cli prueba-cobro`, pide la cabeza firmada y la foto a un nodo VIVO, exige que sean
 del mismo latido y escribe el sobre con la cabeza VERBATIM; el banco que lo reproduce en vivo y
 sus vectores son de E4 (sección 9). **El del solapamiento lo arma el TESTIGO** (§687), desde su
-diario y sin el nodo: `zk-ssl-cli witness --auditar DIARIO --sobres DIR` (2.14).
+diario y sin el nodo: `zk-ssl-cli witness --auditar DIARIO --sobres DIR` (2.14), y con el mismo
+mando, desde el §688, el de la vista dividida (2.12, modo 4).
 
 ## 8. Lo que este documento NO afirma
 
@@ -1361,6 +1366,8 @@ negativos, las tres claves dentro de su tramo entre ellos.
 - §687 — el sobre del solapamiento tiene productor: el testigo lo arma desde su diario con
   `--auditar --sobres`. `tools/banco_rotacion.sh` lo demuestra con un testigo de verdad que ve una
   rotación, sigue, y se detiene ante la clave nueva firmando por debajo de su acta.
+- §688 — la vista dividida que el testigo ve tiene sobre armado: `--auditar --sobres` escribe el
+  del ancla, modo 4, con las dos cabezas de su diario, y el mando lo juzga sin el nodo ni el testigo.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

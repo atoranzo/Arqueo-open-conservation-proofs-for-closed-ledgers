@@ -47249,3 +47249,54 @@ armado: el del ancla, modo 4, lo arma quien tiene las dos cabezas, y hacerlo des
 sello.
 
 **Lo que NO cierra.** La 84 sigue abierta, con la E2 a la E5 de su RFC construidas; le queda la E6.
+
+## §688 — la vista dividida que ve el testigo sale de su diario como el sobre del ancla: la mentira central del RFC-0011, portable
+
+El commit que lleva este asiento, sobre `65c14b3` (el §687). Un solo sello: `--auditar --sobres` del
+testigo arma también el sobre de la vista dividida —el modo 4 del sobre del ancla, con las dos
+cabezas que su diario guardó—; el banco de la vista dividida lo ejerce con su testigo vivo;
+`spec/PAQUETE.md`, la fila del canon y las cifras de tres documentos se ponen al día; y este asiento.
+Lo escribe, lo prueba y lo commitea la sesión de Claude Code del §643 al §687, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y
+empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-cli` en
+137 de 137 y `check_tests` en 1834.
+
+**De dónde sale.** El RFC-0011 hizo de la vista dividida la mentira que el testigo delata: el
+testigo vivo se detiene, y `--auditar` la ve sin el nodo. Pero la evidencia seguía siendo una línea
+de su diario: el sobre que un tercero verifica —el del ancla, modo 4, desde el §586— lo tenía que
+armar alguien a mano con las dos cabezas. El §687 dio a `--auditar` la manera de armar un sobre
+desde el diario; la vista dividida es el caso que más pesa.
+
+**Lo que hace.**
+
+1. **El auditor recuerda dónde vio cada índice**, no solo su digest: al encontrar la vista
+   dividida relee esa línea —las líneas ya están en memoria; las cabezas enteras no se guardan
+   aparte— y arma el sobre con las dos cabezas en el orden en que llegaron.
+2. **Solo si el kit lo puede juzgar.** El auditor encuentra la vista por el índice DECLARADO, y el
+   modo 4 exige la misma clave y el mismo índice EMBEBIDO: sin eso queda el hallazgo, como antes, y
+   no se escribe un sobre que el kit rechazaría.
+3. **`--sobres` nombra cada sobre por lo que es**: `vista-dividida-linea-N.json` y
+   `solapamiento-linea-N.json`. La cabeza que guarda una línea la arma un productor,
+   `cabeza_de_linea`, para los dos.
+4. **El banco.** `tools/banco_mentiroso_vista.sh`, escena 2 —el testigo vivo ante un nodo que vuelve
+   con la misma semilla y el contador restaurado—: después de `--auditar`, `--auditar --sobres` arma
+   el sobre y el mando lo juzga: VERDE, VISTA DIVIDIDA.
+
+**Medido.** En la sesión, un diario con las dos cabezas de verdad de
+`spec/vectors/ancla/vista-dividida.json`: `--auditar --sobres` armó el sobre, y el mando y la
+segunda implementación dijeron «VERDE: VISTA DIVIDIDA - la clave firmo DOS cabezas con el indice
+embebido 1». Y el banco de la vista dividida, VERDE.
+
+**Probado.** Un test nuevo en el testigo, con esas dos cabezas: el hallazgo y su sobre, con las dos
+cabezas en su orden, y ninguno cuando la segunda es de otra clave.
+
+**Contadores.** `zk-ssl-cli` 136 -> 137. TOTAL DE SELLO 1674 -> 1675 y TOTAL CON LARGOS
+1811 -> 1812, en los tres párrafos ancla, con el desglose del testigo en 137. La cuenta de
+`check_tests` pasa de 1833 a 1834. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** `--comparar`, que encuentra la vista dividida entre los diarios de DOS testigos
+—la escena 1 del mismo banco—, no arma el sobre todavía. Y el sobre se arma de lo que el diario
+guardó: un diario de antes del §295 sin los campos de la cabeza no da un sobre que el kit acepte.
+
+**Lo que NO cierra.** Nada de la cola: el RFC-0011 está ACEPTADO, y este sello le da al testigo un
+productor más.
