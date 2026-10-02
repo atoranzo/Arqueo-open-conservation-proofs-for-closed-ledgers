@@ -86,7 +86,7 @@ RFC-0009 (D-A, D-C). Ver `SECURITY.md`.
 | `zkssl_accountView` | `{index: Q, viewKey: Digest}` | `AccountView` (autenticada; `AccountNotFound` si la clave de vista no corresponde) |
 | `zkssl_logEntry` | `{seq: Q}` | `LogEntry` |
 | `zkssl_logEntries` | `{fromSeq?: Q, limit?: Q}` | `LogEntry[]` (límite ≤ 1000) |
-| `zkssl_verifyChain` | — | `{ok: bool, entries?, error?}` |
+| `zkssl_verifyChain` | — | `{ok: bool, entries?, error?}`; como mucho una vez cada 60 s para todos, si no `-32005` (§678) |
 | `zkssl_inclusionReceipt` | `{index: Q, viewKey: Digest}` | `{index, leaf, path, leafFormat, head}` |
 | `zkssl_ackPath` | `{seq: Q}` | `{available, s?, camino?: {siblings: Digest[], isRight: bool[]}, reason?, beatSeconds?}` |
 | `zkssl_consistencyProof` | `{oldSize: Q}` | `{available, mmrSize: Q, camino?: Digest[], reason?}` |
@@ -159,6 +159,7 @@ para que un banco con nodo real pueda provocar `AccountFrozen` y capturar su cam
 | `-32602` | parámetros inválidos / codificación no canónica |
 | `-32000` | rechazo de la capa: `message` = `LayerError` (p. ej. `InsufficientBalance{…}`, `StaleState`, `OverRegulatoryLimit{…}`, `AccountFrozen(…)`); desde el §454, `data` = su causa (abajo) |
 | `-32004` | credencial inválida para la cuenta pedida (§261, «La credencial») |
+| `-32005` | límite de ritmo de una lectura cara (§678): `data.retryAfterSeconds` (Q) dice cuánto falta. Hoy solo `zkssl_verifyChain`, que recorre el registro entero con el candado del estado tomado |
 | `-32603` | fallo interno del nodo: un candado envenenado, una serialización, el contador de recepción |
 
 `StaleState` es esperable bajo concurrencia: el estado declarado quedó

@@ -46228,3 +46228,39 @@ en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG
 **Lo que NO cierra.** La raíz de la época se sigue componiendo bajo el candado, ahora en O(K log K) y
 no O(registro). `zkssl_verifyChain` recorre el registro entero sin límite: el corte siguiente.
 `zkssl_logEntry` busca su `seq` recorriendo el registro; es lineal pero no hashea.
+
+## §678 — `zkssl_verifyChain` con límite de ritmo: como mucho una vez por minuto, para todos
+
+El commit que lleva este asiento, sobre el §677. Sexto corte de H15, el límite de ritmo que el autor
+decidió para las lecturas caras que quedaban. Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE.
+
+**El coste.** `zkssl_verifyChain` recompone la cadena del registro entero —un hash por entrada— con el
+candado del estado tomado, sin credencial y sin límite: quien la llama en bucle mantiene el candado y
+el nodo no aplica nada. De las dos lecturas que el autor nombró, `zkssl_consistencyProof` ya no lo
+necesita: el §676 la dejó en O(log² t).
+
+**Lo que hace.** `permiso_de_ritmo`: la llamada toma la vez si la última fue hace un intervalo o más, o
+nunca, con un `compare_exchange` sobre un `AtomicU64` del `App` (`ultima_cadena`), así que dos llamadas
+a la vez no corren las dos. Si no, `-32005` con el mensaje y `data.retryAfterSeconds` (Q). El intervalo
+es `INTERVALO_VERIFY_CHAIN`, 60 s, para todos los que llaman: no hay cuenta por cliente porque el coste
+es del nodo, no de quien pide; un atacante solo le quita la vez a otros lectores de este método, y el
+candado queda tomado como mucho una vez por minuto. Es atómico y sin candado propio, como
+`aviso_acumulacion`, porque se lee dentro del del estado. El reloj es monótono (`reloj_ms`).
+`spec/RPC.md` gana el código `-32005` en su tabla de errores y lo dice en la fila del método. El
+OpenRPC no lo describe, como no describe ningún código de error.
+
+**Falsador, ensayado.** `verify_chain_corre_como_mucho_una_vez_por_intervalo`: la primera llamada da
+`ok`; la segunda seguida, `-32005` con entre 1 y 60 s en `retryAfterSeconds`; con el intervalo a cero
+corren las dos (el control). Sin el permiso, la segunda da `Ok` y cae.
+
+**Contadores.** `zk-ssl-node` 186 -> 187. TOTAL DE SELLO 1631 -> 1632; TOTAL CON LARGOS 1768 -> 1769,
+en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG.md` no se mueve.
+
+**Con esto, H15.** De lo que el re-triaje midió, quedan cerrados la cima (§673), el diario (§674), el
+árbol de la época (§672), la prueba de consistencia (§676), la copia del registro (§677) y la cadena
+(§678). Queda abierto, y dicho: el despacho entero sigue serializado por el candado del estado, como
+explica el propio `dispatch` (§230: lo que serializa es la raíz exacta del recibo, no el candado); la
+raíz de la época se compone bajo él en O(K log K); y `zkssl_inclusionReceipt`, que exige credencial,
+compone una cabeza en cada llamada.

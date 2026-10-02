@@ -352,6 +352,14 @@ struct App {
     /// aviso es para quien opera, no un registro.
     aviso_acumulacion: std::sync::atomic::AtomicBool,
     reserva_ttl: Duration,
+    /// §678: el límite de ritmo de `zkssl_verifyChain`, una lectura pública que
+    /// recorre el registro entero con el candado del estado tomado: como mucho
+    /// una vez cada `intervalo_cadena`, para todos los que llaman. Guarda el
+    /// instante de la última, en milisegundos desde [`reloj_ms`] más uno (cero
+    /// es «nunca»). Atómica y sin candado propio por la misma razón que
+    /// `aviso_acumulacion`: se lee dentro del candado del estado.
+    ultima_cadena: std::sync::atomic::AtomicU64,
+    intervalo_cadena: Duration,
     /// **La última cabeza firmada, en memoria.**
     ///
     /// ⚠️ Candado PROPIO, no el del estado: guardarla no debe volver a
@@ -1207,6 +1215,8 @@ async fn main() -> anyhow::Result<()> {
         dev: args.dev,
         aviso_acumulacion: std::sync::atomic::AtomicBool::new(false),
         reserva_ttl: Duration::from_secs(args.reserva_ttl),
+        ultima_cadena: std::sync::atomic::AtomicU64::new(0),
+        intervalo_cadena: INTERVALO_VERIFY_CHAIN,
         ultima_cabeza: Mutex::new(None),
         hojas_mmr: Mutex::new(hojas_mmr_iniciales),
         arbol_mmr: Mutex::new(latido::ArbolMmr::default()),
@@ -1883,6 +1893,50 @@ fn despachar(
                 })
             }
         }
+    }
+}
+
+/// §678: cada cuánto puede correr `zkssl_verifyChain`, que recorre el registro
+/// entero con el candado del estado tomado.
+const INTERVALO_VERIFY_CHAIN: Duration = Duration::from_secs(60);
+
+/// Milisegundos de un reloj monótono que empieza la primera vez que se lee.
+fn reloj_ms() -> u64 {
+    static BASE: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+    BASE.get_or_init(Instant::now).elapsed().as_millis() as u64
+}
+
+/// §678: el permiso de una lectura cara con límite de ritmo. Toma la vez si la
+/// última fue hace `intervalo` o más (o nunca); si no, `-32005` con los
+/// segundos que faltan en `data.retryAfterSeconds`. La vez se toma ANTES de
+/// trabajar, con un `compare_exchange`: dos llamadas a la vez no corren las dos.
+fn permiso_de_ritmo(
+    ultima: &std::sync::atomic::AtomicU64,
+    intervalo: Duration,
+    metodo: &str,
+) -> Result<(), RpcError> {
+    use std::sync::atomic::Ordering;
+    let ahora = reloj_ms() + 1;
+    let antes = ultima.load(Ordering::Relaxed);
+    let intervalo_ms = intervalo.as_millis() as u64;
+    if antes != 0 && ahora.saturating_sub(antes) < intervalo_ms {
+        let faltan = (intervalo_ms - ahora.saturating_sub(antes)).div_ceil(1_000).max(1);
+        return Err(limite_de_ritmo(metodo, intervalo, faltan));
+    }
+    if ultima.compare_exchange(antes, ahora, Ordering::Relaxed, Ordering::Relaxed).is_err() {
+        return Err(limite_de_ritmo(metodo, intervalo, intervalo.as_secs().max(1)));
+    }
+    Ok(())
+}
+
+fn limite_de_ritmo(metodo: &str, intervalo: Duration, faltan: u64) -> RpcError {
+    RpcError {
+        code: -32005,
+        message: format!(
+            "limite de ritmo: {metodo} corre como mucho una vez cada {} s; vuelve en {faltan} s",
+            intervalo.as_secs()
+        ),
+        data: Some(json!({ "retryAfterSeconds": Q(faltan) })),
     }
 }
 
@@ -2788,7 +2842,10 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             Ok(serde_json::to_value(out).unwrap())
         }
 
-        "zkssl_verifyChain" => match l.transition_log().verify_chain() {
+        "zkssl_verifyChain" => match {
+            permiso_de_ritmo(&app.ultima_cadena, app.intervalo_cadena, "zkssl_verifyChain")?;
+            l.transition_log().verify_chain()
+        } {
             Ok(()) => Ok(json!({ "ok": true, "entries": l.transition_log().len() })),
             Err(e) => Ok(json!({ "ok": false, "error": format!("{e:?}") })),
         },
@@ -3444,6 +3501,8 @@ mod tests {
             dev: true,
             aviso_acumulacion: std::sync::atomic::AtomicBool::new(false),
             reserva_ttl: Duration::from_secs(ttl_segundos),
+            ultima_cadena: std::sync::atomic::AtomicU64::new(0),
+            intervalo_cadena: crate::INTERVALO_VERIFY_CHAIN,
             ultima_cabeza: Mutex::new(None),
             hojas_mmr: Mutex::new(Vec::new()),
             arbol_mmr: Mutex::new(crate::latido::ArbolMmr::default()),
@@ -4242,6 +4301,26 @@ mod tests {
         let h = dispatch(&app, "zkssl_epochHead", json!({})).expect("epochHead");
         assert!(h["signature"].is_null(), "epochHead NO debe llevar firma");
         assert!(h["epochDigest"].is_string());
+    }
+
+    /// §678: `zkssl_verifyChain` corre como mucho una vez por intervalo, para
+    /// todos: la segunda llamada seguida es `-32005` con los segundos que
+    /// faltan, y no recorre el registro. Control: con intervalo cero corren las
+    /// dos. Falsador, ensayado: sin el permiso, la segunda da `Ok` y cae.
+    #[test]
+    fn verify_chain_corre_como_mucho_una_vez_por_intervalo() {
+        let app = nodo(30);
+        let v = dispatch(&app, "zkssl_verifyChain", json!({})).expect("la primera corre");
+        assert_eq!(v["ok"], json!(true));
+        let e = dispatch(&app, "zkssl_verifyChain", json!({})).expect_err("la segunda espera");
+        assert_eq!(e.code, -32005, "{}", e.message);
+        let faltan = e.data.as_ref().and_then(|d| d["retryAfterSeconds"].as_str()).expect("retryAfterSeconds");
+        let faltan = u64::from_str_radix(faltan.trim_start_matches("0x"), 16).expect("Q");
+        assert!((1..=60).contains(&faltan), "faltan {faltan} s");
+        let mut libre = nodo(30);
+        libre.intervalo_cadena = Duration::ZERO;
+        assert!(dispatch(&libre, "zkssl_verifyChain", json!({})).is_ok());
+        assert!(dispatch(&libre, "zkssl_verifyChain", json!({})).is_ok(), "sin intervalo corren las dos");
     }
 
     #[test]
