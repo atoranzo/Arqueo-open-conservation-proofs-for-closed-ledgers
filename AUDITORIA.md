@@ -45956,3 +45956,29 @@ No se midió el coste en tiempo de la prueba ni del `apply`: el total de tests s
 
 **Lo que NO cierra.** Un desbordamiento ya no da la vuelta, pero para el proceso: donde la capa sabe
 que puede ocurrir, el error con nombre de los `checked_*` sigue siendo lo correcto.
+
+## §670 — dos límites dichos donde se leen: el arreglo B del §511 no ata, y las claves de custodio y de gobernanza son de un elemento
+
+El commit que lleva este asiento, sobre el §669. Sello solo de documentos: `SECURITY.md` y este
+asiento. Lo escribe y lo commitea una sesión de Claude Code en la nube, no el autor en su máquina,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`, a petición del autor tras el re-triaje del
+segundo enjambre. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con 296 s de
+tests.
+
+**El arreglo B, corregido sin borrarlo.** El §511 dice que el camino de congelados queda atado a la
+cuenta en los cinco circuitos. El re-triaje lo midió sobre `ed0f96b` y no lo está: el acumulador de la
+subida de congelados no suma el mismo bit que lee su multiplexor, así que la igualdad de los dos
+acumuladores no obliga a recorrer la posición del titular. La traza de una cuenta congelada que recorre
+otra posición da `prove: Ok` y `verify(SendAir): Ok(())`, y `apply_send` la para con
+`AccountFrozen(…)`. El dinero sigue a salvo por la capa (S487), como `SECURITY.md` 3.6 ya decía; lo que
+cambia es que el arreglo del AIR, que el §511 dio por hecho, no está hecho. El §511 no se toca —un
+asiento no se reescribe—: la corrección vive en `SECURITY.md` 3.6 y aquí.
+
+**Las claves de un elemento, declaradas.** `derive_custodian_id` y `derive_governor_id` derivan la
+identidad de una clave de un solo elemento de Goldilocks, unos 64 bits; la de gasto tiene versión ancha
+desde la entrada 15 y estas no. `SECURITY.md` no lo decía. Nueva sección 3.10, con el coste ESTIMADO de
+agotar una clave y el arreglo, claves de cuatro elementos, que cambia el formato.
+
+**Lo que NO hace.** No cambia ningún circuito ni ninguna clave: los dos arreglos rompen el formato de la
+prueba y van al tren `zkssl/0.5`, que decide el autor. No abre entradas del `BACKLOG.md`: si el autor
+quiere seguirlos allí, son dos entradas nuevas. Ningún test ni pin se mueve.

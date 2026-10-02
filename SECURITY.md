@@ -447,6 +447,17 @@ rotura de formato, con fecha detrás del AIR de E1 del RFC-0008.
 No hay libro desplegado ni terceros a quien avisar; por eso el aviso es esta sección
 y los asientos §487 y §488, no un GHSA. `AUDITORIA.md` §487, §488.
 
+⚠️ **§670: el arreglo B está en el árbol y NO ata.** El §511 dio a los cinco circuitos
+dos acumuladores de la posición —uno por subida— y una igualdad entre ellos, y dio el
+atado por hecho. Medido en el re-triaje del segundo enjambre sobre `ed0f96b`: el
+acumulador de la subida de congelados no suma el mismo bit que lee el multiplexor de esa
+subida, así que la igualdad de acumuladores no obliga a que el camino recorrido sea el
+del titular. Una traza de una cuenta congelada que recorre otra posición **verifica**
+(`prove` y `verify` dan `Ok`), y la capa la para con `AccountFrozen`. El estado de esta
+sección no cambia —cerrado en la capa, abierto en el AIR—, pero el arreglo del AIR
+**no está hecho**, aunque el §511 lo diga: tiene que acumular el mismo bit que el
+multiplexor lee, en los cinco, y cambia el formato de la prueba (tren `zkssl/0.5`).
+
 ### 3.7 Una prueba malformada abortaba el proceso — ⚠️ MEDIDO, cerrado en las vías con sal
 
 Al leer una prueba, `winter-utils` 0.13.1 (`read_many`) y `winter-crypto` 0.13.1
@@ -542,6 +553,19 @@ dentro de un lote de Merkle no movían la raíz, así que la prueba verificaba c
 índice de pruebas aplicadas del §654 se esquivaba; la capa y el kit los rechazan desde el §659, y la
 vigente es `arqueo-verify-v0.4.1` (§661). `AUDITORIA.md` §637, §641,
 §650 a §656.
+
+### 3.10 Las claves de custodio y de gobernanza son de un elemento — ⚠️ DECLARADO (§670)
+
+La identidad de un custodio (`derive_custodian_id`, `circuit_threshold.rs`) y la de un
+miembro de la gobernanza (`derive_governor_id`, `circuit_governance.rs`) se derivan de
+una clave de **un solo** elemento de Goldilocks: unos 64 bits. La identidad es pública,
+así que agotar el espacio de una clave es un ataque fuera de línea de unas 2^63
+evaluaciones (ESTIMADO; con Grover, unas 2^32 iteraciones). La clave de gasto tiene ya
+su versión ancha, de cuatro elementos (entrada 15, §82: `derive_public_id_wide`); las
+de custodio y de gobernanza no. La emisión pide dos custodios (2-de-N), así que hacen
+falta dos claves. **No hay arreglo sin cambiar el formato**: claves de cuatro elementos
+en los dos circuitos, en el tren `zkssl/0.5`. Hasta entonces, las claves de custodio y
+de gobernanza valen lo que vale un elemento, y se dice aquí.
 
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
