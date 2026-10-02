@@ -50,7 +50,9 @@
 //! catalogo de `spec/PAQUETE.md`.
 use std::process::ExitCode;
 
-use zk_ssl_verify::actas::{acta_de_json, juzgar_continuidad, Rotacion};
+use zk_ssl_verify::actas::{
+    acta_de_json, juzgar_continuidad, tramos_de, verificar_cadena, ActaFirmada, Rotacion, Tramo,
+};
 use zk_ssl_verify::{
     acuses, recibos, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
     CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse, VersionCabeza,
@@ -205,13 +207,15 @@ fn verificar_paquete(p: &serde_json::Value) -> Result<(), String> {
         Some("ancla") => return verificar_ancla(&p),
         // RFC-0013 E4a (§633): el ancla publicada en el medio y cofirmada por testigos ajenos.
         Some("ancla-cofirmada") => return verificar_ancla_cofirmada(&p),
+        // RFC-0015 E5c (§686): una cabeza firmada fuera de los tramos de su clave en la cadena.
+        Some("solapamiento") => return verificar_solapamiento(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
                  `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"`, \
                  `tipo: \"rechazo\"`, `tipo: \"edad\"`, `tipo: \"cobro_pendiente\"`, \
                  `tipo: \"pago_en_curso\"`, `tipo: \"prenda\"`, `tipo: \"completitud\"`, \
-                 `tipo: \"ancla\"` o `tipo: \"ancla-cofirmada\"`"
+                 `tipo: \"ancla\"`, `tipo: \"ancla-cofirmada\"` o `tipo: \"solapamiento\"`"
             )))
         }
     }
@@ -791,17 +795,7 @@ fn misma_continuidad(
     if una.1 == otra.1 {
         return Ok(None);
     }
-    let lista = match sobre.get("actas") {
-        None => return Err(claves_distintas()),
-        Some(l) => l
-            .as_array()
-            .ok_or_else(|| err("actas no es lista (la cadena de zkssl_keyActs)".into()))?,
-    };
-    let actas = lista
-        .iter()
-        .enumerate()
-        .map(|(k, a)| acta_de_json(a).map_err(|e| err(format!("actas[{k}]: {e}"))))
-        .collect::<Result<Vec<_>, _>>()?;
+    let actas = actas_del_sobre(sobre)?.ok_or_else(claves_distintas)?;
     let lado = |(c, clave): (&serde_json::Value, &str)| -> Result<(Vec<u8>, u64), String> {
         Ok((hex_a_bytes(clave)?, indice_embebido(c, "cabeza")?))
     };
@@ -813,6 +807,23 @@ fn misma_continuidad(
                 "las cabezas llevan claves DISTINTAS y las actas no las unen: {e}"
             ))
         })
+}
+
+/// ⚠️ §686 · Las `actas` de un sobre, LEÍDAS —leer no es juzgar—: `None` si no las lleva, y cada
+/// una con `acta_de_json` y su posición en el texto. Un productor para los sobres que las leen.
+fn actas_del_sobre(sobre: &serde_json::Value) -> Result<Option<Vec<ActaFirmada>>, String> {
+    let lista = match sobre.get("actas") {
+        None => return Ok(None),
+        Some(l) => l
+            .as_array()
+            .ok_or_else(|| err("actas no es lista (la cadena de zkssl_keyActs)".into()))?,
+    };
+    lista
+        .iter()
+        .enumerate()
+        .map(|(k, a)| acta_de_json(a).map_err(|e| err(format!("actas[{k}]: {e}"))))
+        .collect::<Result<Vec<_>, _>>()
+        .map(Some)
 }
 
 /// ⚠️ §648 · La cabeza contra la que se comparan las de una resolución —el cierre del sobre de
@@ -2649,6 +2660,86 @@ fn verificar_ancla(p: &serde_json::Value) -> Result<(), String> {
     }
 }
 
+/// ⚠️ §686 · **El sobre del SOLAPAMIENTO** (RFC-0015 E5c; D-C, reglas 3 y 4): una cabeza firmada y
+/// la cadena de actas de su operador. La cuenta de índices es una por operador (D-A): cada clave
+/// firma cabezas solo en sus tramos, y una hoja fuera de TODOS los de su clave ya era de otra clave
+/// suya o de un acta. DETECCIÓN con salida 0, el molde de la vista dividida (§586): el sobre que la
+/// exhibe no falla —delata—, y solo quien tiene la clave pudo producirla.
+///
+/// ⚠️ La cadena la firman las claves del operador: quien delata no puede añadir un acta, y un
+/// prefijo de la cadena solo quita tramos superiores —delata menos, nunca de más—. Lo que la
+/// génesis firmó antes de su acta no se juzga: es el residuo de la D-I.
+fn verificar_solapamiento(p: &serde_json::Value) -> Result<(), String> {
+    let c = p
+        .get("cabeza")
+        .ok_or_else(|| err("falta cabeza (la firmada que se juzga contra su tramo)".into()))?;
+    let actas = actas_del_sobre(p)?.ok_or_else(|| {
+        err("falta actas (la cadena de zkssl_keyActs: sin ella no hay tramo que cruzar)".into())
+    })?;
+    let version = u64_de(c, "formatVersion")?;
+    match VersionCabeza::try_from(version) {
+        Ok(v) if v.lleva_mmr() => {}
+        _ => {
+            return Err(err(format!(
+                "cabeza: formatVersion {version}: el sobre del solapamiento lee cabezas {}: las \
+                 que firma un nodo con actas",
+                VersionCabeza::texto_con_mmr()
+            )))
+        }
+    }
+    let (_, _, clave_hex, _) = cabeza_v3_verificada(c, "cabeza")?;
+    let e = indice_embebido(c, "cabeza")?;
+    println!(
+        "1/3 la cabeza (v{version}) recompone su digest y su firma verifica (indice embebido {e})"
+    );
+    verificar_cadena(&actas)
+        .map_err(|(i, x)| err(format!("el acta {i} de la cadena no vale: {x}")))?;
+    let tramos = tramos_de(&actas, &hex_a_bytes(&clave_hex)?);
+    if tramos.is_empty() {
+        return Err(err(
+            "la clave de la cabeza no esta en la cadena: nadie la comprometio".into(),
+        ));
+    }
+    println!(
+        "2/3 la cadena vale entera, {} acta(s), y la clave de la cabeza entra en {} de ellas",
+        actas.len(),
+        tramos.len()
+    );
+    if let Some(t) = tramos.iter().find(|t| t.contiene(e)) {
+        return Err(err(format!(
+            "la cabeza firma en la hoja {e}, dentro de su tramo {}: no hay solapamiento",
+            texto_de_tramo(t)
+        )));
+    }
+    let lista: Vec<String> = tramos.iter().map(texto_de_tramo).collect();
+    println!(
+        "3/3 la hoja {e} cae fuera de los tramos de su clave: {}",
+        lista.join(", ")
+    );
+    println!(
+        "VERDE: SOLAPAMIENTO - la clave firmo una cabeza en la hoja {e}, que la cuenta del \
+         operador (RFC-0015 D-A) daba a otra clave suya o a un acta. Es DETECCION del operador: \
+         solo quien tiene la clave pudo firmarla"
+    );
+    Ok(())
+}
+
+/// Un tramo dicho para leerlo: el acta de la que sale y sus bordes.
+fn texto_de_tramo(t: &Tramo) -> String {
+    let abajo = if t.eslabon == 0 {
+        format!(
+            "acta 0, la genesis: cualquier hoja salvo la {} de su acta",
+            t.desde
+        )
+    } else {
+        format!("acta {}: por encima de la hoja {}", t.eslabon, t.desde)
+    };
+    match t.hasta {
+        Some(h) => format!("({abajo}, por debajo de la {h})"),
+        None => format!("({abajo})"),
+    }
+}
+
 /// Una cadena del sobre, con su nombre al faltar.
 fn cadena_de<'a>(p: &'a serde_json::Value, campo: &str, que: &str) -> Result<&'a str, String> {
     p.get(campo)
@@ -2966,6 +3057,13 @@ mod tests {
     fn el_tipo_desconocido_enumera_el_ancla_cofirmada() {
         let e = verificar_paquete(&json!({ "v": 1, "tipo": "otra" })).unwrap_err();
         assert!(e.contains("`tipo: \"ancla-cofirmada\"`"), "{e}");
+    }
+
+    /// §686 · el desconocido enumera el brazo nuevo, el último: `tipo: "solapamiento"`.
+    #[test]
+    fn el_tipo_desconocido_enumera_el_solapamiento() {
+        let e = verificar_paquete(&json!({ "v": 1, "tipo": "otra" })).unwrap_err();
+        assert!(e.ends_with("o `tipo: \"solapamiento\"`"), "{e}");
     }
 
     /// §633 · la FORMA del ancla cofirmada corta antes de tocar la criptografia: las claves del
@@ -3356,6 +3454,55 @@ mod tests {
         ));
         vista["actas"] = json!([]);
         assert_eq!(verificar_paquete(&vista), Err(claves_distintas()));
+    }
+
+    /// ⚠️ §686 · RFC-0015 E5c · **el sobre del solapamiento delata, y solo fuera de los tramos.**
+    /// Sobre los vectores de `spec/vectors/rotacion/`, de un nodo que rotó: la clave vieja firmando
+    /// después del `desde` de su sucesora y la nueva antes del suyo salen VERDE —detección, salida
+    /// 0—; la misma clave en su tramo, ROJO; y una cadena sin la clave, o sin génesis, también. El
+    /// veredicto lo da la hoja de la cabeza contra los tramos de su clave, y nada más.
+    #[test]
+    fn el_sobre_del_solapamiento_delata_solo_fuera_de_los_tramos() {
+        let leer = |t: &str| -> serde_json::Value { serde_json::from_str(t).unwrap() };
+        for sobre in [
+            leer(include_str!(
+                "../../../spec/vectors/rotacion/solapamiento-la-vieja-firma-despues.json"
+            )),
+            leer(include_str!(
+                "../../../spec/vectors/rotacion/solapamiento-la-nueva-firma-antes.json"
+            )),
+        ] {
+            assert_eq!(verificar_paquete(&sobre), Ok(()));
+        }
+        for (sobre, texto) in [
+            (
+                leer(include_str!(
+                    "../../../spec/vectors/rotacion/neg-solap-la-vieja-en-su-tramo.json"
+                )),
+                "dentro de su tramo (acta 0, la genesis",
+            ),
+            (
+                leer(include_str!(
+                    "../../../spec/vectors/rotacion/neg-solap-la-ultima-en-su-tramo.json"
+                )),
+                "dentro de su tramo (acta 2: por encima de la hoja 10): no hay solapamiento",
+            ),
+            (
+                leer(include_str!(
+                    "../../../spec/vectors/rotacion/neg-solap-clave-fuera-de-la-cadena.json"
+                )),
+                "la clave de la cabeza no esta en la cadena",
+            ),
+            (
+                leer(include_str!(
+                    "../../../spec/vectors/rotacion/neg-solap-cadena-sin-genesis.json"
+                )),
+                "el acta 0 de la cadena no vale",
+            ),
+        ] {
+            let e = verificar_paquete(&sobre).unwrap_err();
+            assert!(e.contains(texto), "{texto}: {e}");
+        }
     }
 
     /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.

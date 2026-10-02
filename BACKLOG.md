@@ -706,6 +706,10 @@ instrumentacion) al grupo E.*
   conductas que la cadena delata sembradas con sus claves, y la segunda
   implementación que lee `actas`. QUEDA el medio (E6), tras la E3 del
   RFC-0013: sigue abierta.
+  ✅ a medias (§686): la E5c, el sobre del solapamiento —una cabeza fuera
+  de los tramos de su clave es detección portable, sin el testigo—, y la
+  refutación del conflicto entre dos claves de un operador, escrita. QUEDA
+  el medio (E6): sigue abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con

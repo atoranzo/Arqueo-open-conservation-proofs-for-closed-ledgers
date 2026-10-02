@@ -48,3 +48,25 @@ neg-desde-tocado.json|1|las cabezas llevan claves DISTINTAS y las actas no las u
 neg-firma-tocada.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 1 de la cadena no vale: la firma de la clave que entra: la firma no verifica
 neg-firma-de-la-vieja-tocada.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: el acta 1 de la cadena no vale: la firma de la clave que se va: la firma no verifica
 neg-papeles-cambiados.json|1|NO extiende a la vieja
+#
+# ── El sobre del SOLAPAMIENTO (spec/PAQUETE.md 2.14, RFC-0015 E5c; asiento 686) ──
+# ONCE sobres `tipo: "solapamiento"` -una cabeza y la cadena- DERIVADOS de los de arriba, sin otra
+# corrida: la cabeza y la cadena salen tal cual de los sobres de esta familia (la A restaurada y la
+# B fresca, de los dos negativos de las conductas; la A, la B y la C de los positivos) y se
+# recombinan, como manda la regla 2 del PROCESO. Los DOS positivos, salida 0 -DETECCION, el molde de
+# la vista dividida-, son las dos conductas sembradas: la A firmando en la hoja 14, por encima del
+# desde de B (7), y la B en la 4, por debajo del suyo. Los NUEVE negativos: las tres claves dentro de
+# su tramo (la genesis no juzga lo de antes de optar, salvo la hoja de su acta), la clave que la
+# cadena no trae, la cadena sin genesis, y las reglas de forma del sobre. `tools/banco_rotacion.sh`
+# juzga los mismos sobres armados de su propia corrida.
+solapamiento-la-vieja-firma-despues.json|0|VERDE: SOLAPAMIENTO - la clave firmo una cabeza en la hoja 14
+solapamiento-la-nueva-firma-antes.json|0|VERDE: SOLAPAMIENTO - la clave firmo una cabeza en la hoja 4
+neg-solap-la-vieja-en-su-tramo.json|1|la cabeza firma en la hoja 3, dentro de su tramo (acta 0, la genesis: cualquier hoja salvo la 0 de su acta, por debajo de la 7): no hay solapamiento
+neg-solap-la-nueva-en-su-tramo.json|1|la cabeza firma en la hoja 8, dentro de su tramo (acta 1: por encima de la hoja 7, por debajo de la 10): no hay solapamiento
+neg-solap-la-ultima-en-su-tramo.json|1|la cabeza firma en la hoja 12, dentro de su tramo (acta 2: por encima de la hoja 10): no hay solapamiento
+neg-solap-clave-fuera-de-la-cadena.json|1|la clave de la cabeza no esta en la cadena: nadie la comprometio
+neg-solap-cadena-sin-genesis.json|1|el acta 0 de la cadena no vale: una rotacion se juzga contra el acta de la que viene, y no esta
+neg-solap-sin-actas.json|1|falta actas (la cadena de zkssl_keyActs: sin ella no hay tramo que cruzar)
+neg-solap-actas-no-es-lista.json|1|actas no es lista (la cadena de zkssl_keyActs)
+neg-solap-sin-cabeza.json|1|falta cabeza (la firmada que se juzga contra su tramo)
+neg-solap-cabeza-v2.json|1|cabeza: formatVersion 2: el sobre del solapamiento lee cabezas v3, v4, v5 o v6: las que firma un nodo con actas

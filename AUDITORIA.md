@@ -47125,3 +47125,73 @@ etapa.
 
 **Lo que NO cierra.** La 84 sigue abierta, con la E2, la E3, la E4 y la E5 de su RFC construidas; le
 queda la E6, el medio, tras la E3 del RFC-0013.
+
+## §686 — RFC-0015 E5c: el solapamiento tiene sobre, y una sola firma contra la cadena lo delata sin el testigo
+
+El commit que lleva este asiento, sobre `8b347fd` (el §649). Un solo sello: el núcleo gana los tramos
+de una clave en la cadena; el kit, el sobre `tipo: "solapamiento"`, la decimocuarta forma; once
+sobres entran en `spec/vectors/rotacion/`, derivados de los de esa familia sin otra corrida; el
+banco de la rotación juzga los mismos sobres armados de la suya; la segunda implementación aprende
+el tipo; `spec/PAQUETE.md` escribe además la refutación del conflicto entre dos claves de un
+operador; el RFC-0015, `NUCLEO.md`, la entrada 84, los README, la fila del canon y las cifras de
+tres documentos se ponen al día; y este asiento. Lo escribe, lo prueba y lo commitea la sesión de
+Claude Code del §643 al §649, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión, sobre este mismo árbol, el
+canon `--sello` salió VERDE, con `zk-ssl-verify` en 181 de 181 y `check_tests` en 1832.
+
+**El número.** `main` llega al §685 y al §649: el siguiente libre es el §686. Ninguna rama del
+repositorio lo lleva.
+
+**De dónde sale.** La D-C del RFC-0015 dice que una cabeza de la clave vieja por encima del `desde`
+de la nueva es «solapamiento: evidencia oponible con nombre, como la vista dividida». Hasta este
+sello solo lo veía el testigo, que se detiene y lo anota en su diario; el kit lo nombraba dentro de
+la extensión entre dos claves, como rechazo. Un tercero sin testigo no tenía un sobre que delatara.
+El §648 lo dejó escrito como pendiente, sin etapa.
+
+**Lo que hace.**
+
+1. **Los tramos, en el núcleo.** `Tramo` y `tramos_de`: un tramo por cada vez que la clave entra en
+   la cadena —por encima del `desde` de su acta, que es la hoja del acta, y por debajo del de la
+   siguiente si la hay—, y `contiene` dice si un índice embebido cae dentro. La génesis admite lo
+   que su clave firmó antes de optar, salvo la hoja de su acta: es el residuo de la D-I, y juzgarlo
+   delataría a un operador honrado que adoptó las actas tarde. Tres filas en `NUCLEO.md`.
+2. **El sobre.** `{v, tipo: "solapamiento", cabeza, actas}`. La forma antes que la criptografía —la
+   cabeza, las actas leídas una a una, la versión—; después, la cabeza recompone y verifica, la
+   cadena vale entera y la clave de la cabeza está en ella. Si su índice cae fuera de TODOS los
+   tramos de su clave —basta caer en uno, por si la clave vuelve a la cadena—, VERDE: SOLAPAMIENTO,
+   detección con salida 0, el molde de la vista dividida. Si cae dentro, ROJO: no hay solapamiento.
+   Quien delata no puede fabricar un tramo: las actas las firman las claves del operador, cada una
+   comprometida por la anterior; un prefijo de la cadena solo quita tramos y delata menos.
+3. **El catálogo, sin otra corrida.** Los once sobres salen de los de la familia `rotacion/`, tal
+   cual: la cabeza de la A restaurada y la de la B fresca —las dos conductas sembradas en el §649—
+   son los dos positivos; la A, la B y la C dentro de su tramo, la C contra una cadena que no la
+   trae, la cadena sin génesis y las reglas de forma, los nueve negativos. El banco arma los mismos
+   once de su propia corrida.
+4. **La segunda implementación** lee el tipo con las mismas reglas, escritas desde la sección 2.14
+   de `spec/PAQUETE.md`, y el texto del tipo desconocido, letra por letra.
+5. **La refutación del conflicto, escrita.** El §648 dejó dicho que una rotación hace pasar por
+   conflicto entre dos libros la historia de uno. La refutación es el sobre de extensión entre las
+   dos cabezas, con la cadena: si verifica, son una historia. La cadena sola no basta: dos
+   operadores de acuerdo pueden firmarse una cadena que una sus claves, y no una historia común.
+
+**Medido.** El arnés sobre la familia, 34 de 34 con el binario y 34 de 34 con la segunda
+implementación; en los nueve negativos, la línea ROJO y el código de salida son los mismos en las
+dos, y en los dos positivos la salida entera. El banco de la rotación, con el árbol limpio, VERDE.
+
+**Probado.** Tres tests nuevos: los tramos de una clave en el núcleo —la génesis y su hoja, la clave
+que vuelve, la que nadie comprometió—, el sobre sobre los vectores de la familia —las dos
+detecciones y cuatro rojos— y el tipo desconocido, que enumera el brazo nuevo.
+
+**Contadores.** `zk-ssl-verify` 178 -> 181. TOTAL DE SELLO 1670 -> 1673 y TOTAL CON LARGOS
+1807 -> 1810, en los tres párrafos ancla, con el desglose del verificador en 181. La cuenta de
+`check_tests` pasa de 1829 a 1832. El censo de `NUCLEO.md`, de 98 a 101 en `zk-ssl-verify`
+(NÚCLEO 125 -> 128). Los ficheros de vectores, de 484 a 495 en los dos README. El `BACKLOG.md`
+sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** El testigo no arma este sobre: cuando ve un solapamiento se detiene y lo anota
+con la cadena, y armarlo desde su diario queda para otro sello. El kit publicado, la 0.4.2, no
+conoce el tipo. Y una hoja reutilizada DENTRO del tramo de su clave —la cabeza de la vieja en la
+hoja donde firmó el acta de su sucesora— no la ve este sobre: es la reutilización del §110.2, que se
+delata con las dos firmas.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2 a la E5 de su RFC construidas; le queda la E6.

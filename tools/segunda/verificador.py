@@ -27,7 +27,7 @@ VERSIONES_CABEZA = (2, 3, 4, 5, 6)
 VERSIONES_EXTENSION = (3, 4, 5, 6)
 COFIRMA_V_MAX = 1
 TIPOS_CONOCIDOS = ("extension", "consumo", "conflicto", "rechazo", "edad", "cobro_pendiente", "pago_en_curso",
-                   "prenda", "completitud", "ancla", "ancla-cofirmada")
+                   "prenda", "completitud", "ancla", "ancla-cofirmada", "solapamiento")
 
 
 class Rojo(Exception):
@@ -486,13 +486,8 @@ def juzgar_continuidad(actas, una, otra):
     return desde, hasta, eslabones
 
 
-def misma_continuidad(doc, una, otra):
-    """PAQUETE.md 2.3: con la misma clave, None y `actas` no se lee; sin `actas`, el rechazo de siempre;
-    con ellas, el juez. Cada lado es (publicKey en bytes, indice embebido)."""
-    if una[0] == otra[0]:
-        return None
-    if "actas" not in doc:
-        raise Rojo("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante")
+def leer_actas(doc):
+    """Las `actas` del sobre, LEIDAS (leer no es juzgar), con su posicion en el texto."""
     lista = doc["actas"]
     if not isinstance(lista, list):
         raise Rojo("actas no es lista (la cadena de zkssl_keyActs)")
@@ -502,6 +497,66 @@ def misma_continuidad(doc, una, otra):
             actas.append(acta_de_json(x))
         except Fallo as e:
             raise Rojo(f"actas[{k}]: {e}")
+    return actas
+
+
+def _contiene(tramo, e):
+    """La regla 4 de la D-C, con la genesis sin juzgar lo firmado antes de optar (§686)."""
+    eslabon, desde, hasta = tramo
+    abajo = e != desde if eslabon == 0 else e > desde
+    return abajo and (hasta is None or e < hasta)
+
+
+def _texto_de_tramo(tramo):
+    eslabon, desde, hasta = tramo
+    abajo = (f"acta 0, la genesis: cualquier hoja salvo la {desde} de su acta" if eslabon == 0
+             else f"acta {eslabon}: por encima de la hoja {desde}")
+    return f"({abajo}, por debajo de la {hasta})" if hasta is not None else f"({abajo})"
+
+
+def solapamiento(doc):
+    """PAQUETE.md 2.14 (§686, RFC-0015 E5c): una cabeza fuera de TODOS los tramos de su clave en la
+    cadena es una hoja que la cuenta del operador ya daba a otra clave suya o a un acta. DETECCION."""
+    salida = []
+    if doc.get("cabeza") is None:
+        raise Rojo("falta cabeza (la firmada que se juzga contra su tramo)")
+    if "actas" not in doc:
+        raise Rojo("falta actas (la cadena de zkssl_keyActs: sin ella no hay tramo que cruzar)")
+    actas = leer_actas(doc)
+    msg_v = lambda s, fv: (f"{s}: formatVersion {fv}: el sobre del solapamiento lee cabezas v3, v4, v5 o v6: las que "
+                           f"firma un nodo con actas")
+    cab = leer_cabeza_de(doc, "cabeza", (3, 4, 5, 6), msg_v)
+    e = cab["embebido"]
+    salida.append(f"1/3 la cabeza (v{cab['v']}) recompone su digest y su firma verifica (indice embebido {e})")
+    for i, x in enumerate(actas):
+        try:
+            verificar_acta(x, actas[i - 1] if i else None)
+        except Fallo as f:
+            raise Rojo(f"el acta {i} de la cadena no vale: {f}")
+    tramos = [(i, a["desde"], actas[i + 1]["desde"] if i + 1 < len(actas) else None)
+              for i, a in enumerate(actas) if a["clave"] == cab["pk"]]
+    if not tramos:
+        raise Rojo("la clave de la cabeza no esta en la cadena: nadie la comprometio")
+    salida.append(f"2/3 la cadena vale entera, {len(actas)} acta(s), y la clave de la cabeza entra en {len(tramos)} de "
+                  f"ellas")
+    for t in tramos:
+        if _contiene(t, e):
+            raise Rojo(f"la cabeza firma en la hoja {e}, dentro de su tramo {_texto_de_tramo(t)}: no hay solapamiento")
+    salida.append(f"3/3 la hoja {e} cae fuera de los tramos de su clave: {', '.join(_texto_de_tramo(t) for t in tramos)}")
+    salida.append(f"VERDE: SOLAPAMIENTO - la clave firmo una cabeza en la hoja {e}, que la cuenta del operador (RFC-0015 "
+                  f"D-A) daba a otra clave suya o a un acta. Es DETECCION del operador: solo quien tiene la clave pudo "
+                  f"firmarla")
+    return salida
+
+
+def misma_continuidad(doc, una, otra):
+    """PAQUETE.md 2.3: con la misma clave, None y `actas` no se lee; sin `actas`, el rechazo de siempre;
+    con ellas, el juez. Cada lado es (publicKey en bytes, indice embebido)."""
+    if una[0] == otra[0]:
+        return None
+    if "actas" not in doc:
+        raise Rojo("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante")
+    actas = leer_actas(doc)
     try:
         return juzgar_continuidad(actas, una, otra)
     except Fallo as e:
@@ -834,6 +889,8 @@ def juzgar(ruta):
             return conflicto(doc)
         if tipo == "ancla":
             return ancla(doc)
+        if tipo == "solapamiento":
+            return solapamiento(doc)
         if tipo in TIPOS_CONOCIDOS:
             raise Rojo(f"tipo {tipo}: la segunda implementacion no lee este sobre todavia")
         # §634: el texto del binario de referencia, letra por letra (PAQUETE.md, seccion 5); hasta
@@ -841,7 +898,8 @@ def juzgar(ruta):
         raise Rojo(f"tipo desconocido: {tipo} - se lee un paquete de posicion (sin `tipo`), `tipo: \"extension\"`, "
                    f"`tipo: \"consumo\"`, `tipo: \"conflicto\"`, `tipo: \"rechazo\"`, `tipo: \"edad\"`, "
                    f"`tipo: \"cobro_pendiente\"`, `tipo: \"pago_en_curso\"`, `tipo: \"prenda\"`, "
-                   f"`tipo: \"completitud\"`, `tipo: \"ancla\"` o `tipo: \"ancla-cofirmada\"`")
+                   f"`tipo: \"completitud\"`, `tipo: \"ancla\"`, `tipo: \"ancla-cofirmada\"` o "
+                   f"`tipo: \"solapamiento\"`")
     if v == 1 and "cofirmas" in doc:
         raise Rojo("un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, "
                    "o quitalas")

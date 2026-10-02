@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 98 elementos alcanzables en `zk-ssl-verify` y 60 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 125, REFERENCIA 13, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 101 elementos alcanzables en `zk-ssl-verify` y 60 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 128, REFERENCIA 13, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`, `actas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -202,6 +202,9 @@ real de sus llaves, no por la primera marca.
 | `RotacionError` | `verify/actas.rs` | REFERENCIA | ACTA | `enum` |
 | `juzgar_rotacion` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
 | `juzgar_continuidad` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `Tramo` | `verify/actas.rs` | NÚCLEO | ACTA | `struct` |
+| `contiene` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `tramos_de` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |
@@ -390,6 +393,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §686 — `Tramo`, con `contiene`, y `tramos_de` en el módulo `actas`: los tramos de una clave en la
+  cadena, uno por cada vez que entra, con la génesis sin juzgar lo firmado antes de optar; el juez
+  del sobre del solapamiento (RFC-0015, E5c). Tres filas nuevas, familia ACTA.
 - §648 — `juzgar_continuidad` en el módulo `actas`: dos cabezas de claves distintas son de UN
   operador si la cadena lleva de la de índice embebido menor a la otra, con las reglas 3 y 4 de la
   D-C; el juez de los sobres del kit que leen `actas` (RFC-0015, E5a). Una fila nueva, familia

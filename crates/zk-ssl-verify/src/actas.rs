@@ -398,6 +398,47 @@ pub fn juzgar_continuidad(
     Ok(r)
 }
 
+/// ⚠️ §686 · **Un tramo de una clave en la cadena** (D-C, regla 4): las hojas en que esa clave
+/// puede firmar cabezas desde su acta `eslabon`. Por encima de su `desde` —esa hoja es del acta— y
+/// por debajo del de la siguiente, si la cadena la trae. En la génesis, por debajo de su `desde` no
+/// se juzga —es lo que la clave firmó antes de optar, el residuo de la D-I—, y solo la hoja del acta
+/// queda fuera.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Tramo {
+    pub eslabon: usize,
+    pub desde: u64,
+    pub hasta: Option<u64>,
+}
+
+impl Tramo {
+    /// Si una cabeza con este índice EMBEBIDO cae en el tramo.
+    pub fn contiene(&self, embebido: u64) -> bool {
+        let abajo = if self.eslabon == 0 {
+            embebido != self.desde
+        } else {
+            embebido > self.desde
+        };
+        abajo && self.hasta.map_or(true, |h| embebido < h)
+    }
+}
+
+/// ⚠️ §686 · **Los tramos de una clave**, uno por cada vez que entra en la cadena, en su orden. Vacío
+/// si nadie la comprometió. El juicio del sobre del solapamiento: una cabeza de la clave fuera de
+/// TODOS sus tramos es una hoja que la cuenta del operador (D-A) ya había dado a otra clave suya o a
+/// un acta. La cadena se juzga aparte, con [`verificar_cadena`]: esto solo la lee.
+pub fn tramos_de(actas: &[ActaFirmada], clave: &[u8]) -> Vec<Tramo> {
+    actas
+        .iter()
+        .enumerate()
+        .filter(|(_, a)| a.acta.clave == clave)
+        .map(|(i, a)| Tramo {
+            eslabon: i,
+            desde: a.acta.desde,
+            hasta: actas.get(i + 1).map(|x| x.acta.desde),
+        })
+        .collect()
+}
+
 /// ⚠️ §646 · **El acta en JSON, con UN productor** (RFC-0015 D-D: en el diario, en el cable y en
 /// los sobres, tal cual). Con las convenciones de `spec/RPC.md`: la clave y las firmas en `DATA`,
 /// el esquema, el `desde` y el tamaño del MMR en `Q`, y los digests en `Digest`, con la
@@ -863,6 +904,52 @@ mod tests {
                 .to_string()
                 .ends_with("por encima de la 40 y por debajo de la 90"),
             "{con_techo}"
+        );
+    }
+
+    /// ⚠️ §686 · **los tramos de una clave, y la génesis sin juzgar lo de antes de optar.** Sin
+    /// firmar nada. La 1 entra en la génesis desde la hoja 0 y la 2 desde la 40: el tramo de la 1
+    /// acaba en la 40 y no juzga lo de antes, salvo la hoja de su acta; el de la 2 empieza por encima
+    /// de la 40 y no acaba. Una clave que vuelve a la cadena tiene dos tramos, y una que nadie
+    /// comprometió, ninguno.
+    #[test]
+    fn los_tramos_de_una_clave_y_la_genesis_sin_juzgar_lo_de_antes() {
+        let e = escena();
+        let cadena = [e.genesis.clone(), e.rotacion.clone()];
+        let (k1, k2) = (&e.genesis.acta.clave[..], &e.rotacion.acta.clave[..]);
+        let t1 = tramos_de(&cadena, k1);
+        assert_eq!(
+            t1,
+            vec![Tramo {
+                eslabon: 0,
+                desde: 0,
+                hasta: Some(40)
+            }]
+        );
+        assert!(
+            !t1[0].contiene(0),
+            "la hoja del acta génesis no es de una cabeza"
+        );
+        assert!(t1[0].contiene(1) && t1[0].contiene(39));
+        assert!(!t1[0].contiene(40) && !t1[0].contiene(41));
+        let t2 = tramos_de(&cadena, k2);
+        assert!(
+            !t2[0].contiene(40)
+                && !t2[0].contiene(39)
+                && t2[0].contiene(41)
+                && t2[0].contiene(u64::MAX)
+        );
+        let vuelve = [e.genesis.clone(), e.rotacion.clone(), e.genesis.clone()];
+        assert_eq!(tramos_de(&vuelve, k1).len(), 2);
+        assert!(tramos_de(&cadena, &[9u8; 4]).is_empty());
+        let genesis_tardia = Tramo {
+            eslabon: 0,
+            desde: 7,
+            hasta: None,
+        };
+        assert!(
+            genesis_tardia.contiene(3) && !genesis_tardia.contiene(7),
+            "antes de optar no se juzga; la hoja del acta, sí"
         );
     }
 

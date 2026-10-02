@@ -11,6 +11,8 @@
 # sus claves de verdad: A, ya rotada, firmando otra vez con su contador restaurado -SOLAPAMIENTO por
 # la regla 3- y B firmando con un contador fresco por debajo de su acta -fuera de su tramo, la
 # regla 4-. Y un negativo por cada regla del lector y de la cadena que una mutacion produce.
+# Desde el §686, las dos conductas tambien en su propio sobre, `tipo: "solapamiento"` -la cabeza y la
+# cadena, sin la otra cabeza-, con las tres claves dentro de su tramo como negativos.
 #
 # FUERA del canon: levanta procesos y espera latidos. NO ESCRIBE EN EL ARBOL: todo vive en un
 # temporal bajo $HOME, que borra al salir, y lo comprueba al final por `git status --porcelain`.
@@ -246,6 +248,31 @@ mando('neg-firma-de-la-vieja-tocada', con(base, lambda s: s['actas'][1].update(f
 # ── las actas no ordenan: con los papeles cambiados la continuidad se sostiene y cae la extension
 mando('neg-papeles-cambiados', con(base, lambda s: s.update(vieja=h_b, nueva=h_a)), 1,
       'NO extiende a la vieja')
+# ── §686 · el sobre del SOLAPAMIENTO: una cabeza y la cadena. DETECCION con salida 0.
+def solap(cab, act=None):
+    return {'v': 1, 'tipo': 'solapamiento', 'cabeza': cab, 'actas': actas if act is None else act}
+dentro = 'la cabeza firma en la hoja %d, dentro de su tramo %s: no hay solapamiento'
+mando('solapamiento-la-vieja-firma-despues', solap(h_z), 0,
+      'VERDE: SOLAPAMIENTO - la clave firmo una cabeza en la hoja %d' % embebido(h_z))
+mando('solapamiento-la-nueva-firma-antes', solap(h_f), 0,
+      'VERDE: SOLAPAMIENTO - la clave firmo una cabeza en la hoja %d' % embebido(h_f))
+mando('neg-solap-la-vieja-en-su-tramo', solap(h_a), 1, dentro % (embebido(h_a),
+      '(acta 0, la genesis: cualquier hoja salvo la %d de su acta, por debajo de la %d)' % (desdes[0], d_b)))
+mando('neg-solap-la-nueva-en-su-tramo', solap(h_b), 1, dentro % (embebido(h_b),
+      '(acta 1: por encima de la hoja %d, por debajo de la %d)' % (d_b, d_c)))
+mando('neg-solap-la-ultima-en-su-tramo', solap(h_c1), 1, dentro % (embebido(h_c1),
+      '(acta 2: por encima de la hoja %d)' % d_c))
+mando('neg-solap-clave-fuera-de-la-cadena', solap(h_c1, actas[:2]), 1,
+      'la clave de la cabeza no esta en la cadena: nadie la comprometio')
+mando('neg-solap-cadena-sin-genesis', solap(h_z, actas[1:]), 1,
+      'el acta 0 de la cadena no vale: una rotacion se juzga contra el acta de la que viene, y no esta')
+mando('neg-solap-sin-actas', con(solap(h_a), lambda s: s.pop('actas')), 1,
+      'falta actas (la cadena de zkssl_keyActs: sin ella no hay tramo que cruzar)')
+mando('neg-solap-actas-no-es-lista', solap(h_a, actas[0]), 1, 'actas no es lista (la cadena de zkssl_keyActs)')
+mando('neg-solap-sin-cabeza', con(solap(h_a), lambda s: s.pop('cabeza')), 1,
+      'falta cabeza (la firmada que se juzga contra su tramo)')
+mando('neg-solap-cabeza-v2', solap(dict(h_a, formatVersion='0x2')), 1,
+      'cabeza: formatVersion 2: el sobre del solapamiento lee cabezas v3, v4, v5 o v6: las que firma un nodo con actas')
 if GUARDAR:
     open(GUARDAR + '/entradas.txt', 'w').write('\n'.join(entradas) + '\n')
 sys.exit(1 if fallos else 0)

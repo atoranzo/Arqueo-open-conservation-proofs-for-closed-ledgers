@@ -32,10 +32,10 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las trece formas
+## 2. Las catorce formas
 
-El binario acepta trece objetos (la undécima, desde el §573; la duodécima, desde el §592; la
-decimotercera, desde el §633). Los trece son JSON; los esqueletos van con puntos suspensivos
+El binario acepta catorce objetos (la undécima, desde el §573; la duodécima, desde el §592; la
+decimotercera, desde el §633; la decimocuarta, desde el §686). Los catorce son JSON; los esqueletos van con puntos suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
 ### 2.1 El paquete v1 — la posición
@@ -150,7 +150,10 @@ donde el valor es una respuesta del cable sin reescribir.
   exhibe aquí como un conflicto entre dos libros que es la historia de uno. El sobre no puede
   exigir la cadena —quien lo arma es el delator, y no la trae—, así que quien lo juzga pide
   `zkssl_keyActs` a los dos operadores: si una cadena une las dos claves, no hay dos libros.
-  Declarado, no resuelto.
+  **La refutación tiene sobre** (§686): el de extensión entre las dos cabezas, con la cadena
+  (2.3). Si verifica, las dos son UNA historia y el consumo bajo las dos es el mismo, publicado una
+  vez. ⚠️ La cadena sola NO basta: dos operadores de acuerdo pueden firmarse una cadena que una sus
+  claves, y no pueden firmarse una historia común —la consistencia del MMR entre las dos cabezas—.
 - ⚠️ **Lo que esto demuestra y lo que no.** Demuestra que dos libros aceptaron el mismo
   consumo: eso es **detección**, y llega después. **No previene nada**, y no dice que la unidad
   consumida sea la misma en los dos: que el identificador signifique lo mismo a los dos lados
@@ -573,6 +576,31 @@ por el ejemplo `medio` de `zk-ssl-medio`, que no es el publicador (E3)—, y **e
 `spec/vectors/ancla-cofirmada/`** (§634), la undécima familia del artefacto, COPIADA de una
 corrida suya: sección 9.
 
+### 2.14 El sobre del solapamiento (§686, RFC-0015 E5c)
+
+```text
+{ "v": 1, "tipo": "solapamiento", "cabeza": {…}, "actas": [ … ] }
+```
+
+- `cabeza` es una cabeza firmada (v3 a v6) tal como la sirvió `zkssl_signedEpochHead`; `actas`, la
+  cadena del operador tal como la sirve `zkssl_keyActs` (la de 2.3). Sin la otra cabeza: el
+  solapamiento lo prueba una sola firma contra la cadena.
+- **La regla** (RFC-0015, D-C, reglas 3 y 4, y D-A): la cuenta de índices es una por operador, y
+  cada clave firma cabezas solo en sus **tramos** —por encima del `desde` de su acta, que es la hoja
+  del acta, y por debajo del de la siguiente si la cadena la trae—. Una cabeza cuyo índice EMBEBIDO
+  cae fuera de TODOS los tramos de su clave es una hoja que el operador ya daba a otra clave suya o
+  a un acta: **DETECCIÓN con salida 0**, el molde de la vista dividida (2.12, modo 4) y del
+  conflicto: el sobre que la exhibe no falla, delata. Dentro de un tramo, ROJO: no hay solapamiento.
+- ⚠️ **La génesis no juzga lo que su clave firmó antes de optar** (el residuo de la D-I del
+  RFC-0015): su tramo admite cualquier hoja salvo la de su acta. Una clave que vuelve a la cadena
+  tiene un tramo por cada entrada, y basta caer en uno.
+- ⚠️ **Lo que quien delata no puede fabricar.** Las actas las firman las claves del operador —cada
+  una, la que entra, y comprometida antes por la anterior—: quien arma el sobre no puede añadir un
+  tramo ni moverlo. Puede presentar un prefijo de la cadena, y eso solo quita tramos superiores:
+  delata menos, nunca de más.
+- **El banco es `tools/banco_rotacion.sh`** (§649; el sobre, desde el §686) y **el catálogo vive
+  en `spec/vectors/rotacion/`**, con los sobres de la extensión entre dos claves: sección 9.
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -594,6 +622,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | cobro pendiente | `enunciado` → `receptor`, `nacido`, `inferior`; `prueba` | este documento, sección 2.8 |
 | pago en curso | `enunciado` → `receptor`, `importe`, `t`, `nacido`; `prueba` | este documento, sección 2.9 |
 | ancla cofirmada | `nota`, `publicador`, `testigos`, `posicion`, `inclusion`, y la `cabeza` de 2.12 | este documento, sección 2.13 (§633) |
+| solapamiento | `cabeza` y `actas`, las de 2.3 | este documento, sección 2.14 (§686) |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
 `presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
@@ -686,6 +715,12 @@ firma verifica, y su ancla se deriva · `2/4` la nota es del medio de su clave y
 publicador verifica · `3/4` las cofirmas con clave en el sobre verifican, y se listan · `4/4` el
 ancla sube hasta la raíz de la nota en su posición.
 
+**Sobre del solapamiento** (§686): antes de tocar la criptografía, la forma (`cabeza`, y `actas`
+leídas una a una) y la versión de la cabeza · `1/3` la cabeza recompone su digest y su firma
+verifica, y se lee su índice embebido · `2/3` la cadena vale entera, eslabón a eslabón, y la clave
+de la cabeza entra en ella · `3/3` el índice cae fuera de todos los tramos de su clave: VERDE,
+SOLAPAMIENTO, la detección.
+
 Cabezas **v2, v3, v4 y v5** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
 
@@ -705,7 +740,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
-- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"`, `tipo: "edad"`, `tipo: "cobro_pendiente"`, `tipo: "pago_en_curso"`, `tipo: "prenda"`, `tipo: "completitud"`, `tipo: "ancla"` o `tipo: "ancla-cofirmada"`` — ⚠️ §633: hasta aquí el texto acababa en `prenda`, rancio desde el §573; se pone al día al añadir el brazo, y el test que lo ata busca el último.
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"`, `tipo: "edad"`, `tipo: "cobro_pendiente"`, `tipo: "pago_en_curso"`, `tipo: "prenda"`, `tipo: "completitud"`, `tipo: "ancla"`, `tipo: "ancla-cofirmada"` o `tipo: "solapamiento"`` — ⚠️ §633: hasta aquí el texto acababa en `prenda`, rancio desde el §573; se pone al día al añadir el brazo, y el test que lo ata busca el último (desde el §686, `solapamiento`).
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
@@ -897,7 +932,7 @@ dice (D-AS).
   letra por letra. ⚠️ §648: aquí **no se lee `actas`**: la vista dividida es de UNA clave. Dos
   claves de un operador con el mismo índice embebido son un solapamiento, y su sobre, que no
   necesita la segunda cabeza —basta una de la vieja por encima del `desde` de su sucesora, con la
-  cadena—, queda para después, sin etapa todavía (RFC-0015, «Fijado en la E5a»). Tampoco el modo 3 con un ancla de la clave que se
+  cadena—, es el de la sección 2.14 (§686). Tampoco el modo 3 con un ancla de la clave que se
   fue: esa costura es la del medio (RFC-0015, E6)
 
 Lo que el sobre exige de una cabeza —`available:true`, la recomposición del digest, la firma—
@@ -927,6 +962,22 @@ en su bloque y no se repiten aquí.
 - `el ancla de esta cabeza no esta en la posicion {p} de las {n} de la nota: {e}`
 
 `posicion` se lee con `u64_de`: sus rechazos son los de la forma de los valores.
+
+**El solapamiento** (§686, RFC-0015 E5c)
+
+- `falta cabeza (la firmada que se juzga contra su tramo)`
+- `falta actas (la cadena de zkssl_keyActs: sin ella no hay tramo que cruzar)` · `actas no es
+  lista (la cadena de zkssl_keyActs)` · `actas[{k}]: {e}` — los de 2.3, letra por letra
+- `cabeza: formatVersion {version}: el sobre del solapamiento lee cabezas v3, v4, v5 o v6: las
+  que firma un nodo con actas`
+- `el acta {i} de la cadena no vale: {regla}`, con `{regla}` una de las de `verificar_acta`
+- `la clave de la cabeza no esta en la cadena: nadie la comprometio`
+- `la cabeza firma en la hoja {e}, dentro de su tramo {tramo}: no hay solapamiento`, con
+  `{tramo}` `(acta 0, la genesis: cualquier hoja salvo la {d} de su acta[, por debajo de la {h}])`
+  o `(acta {i}: por encima de la hoja {d}[, por debajo de la {h}])`
+
+Lo que el sobre exige de una cabeza —`available:true`, la recomposición, la firma— es lo de la
+extensión, con `cabeza` como sujeto.
 
 ## 6. El contrato del mando
 
@@ -1218,7 +1269,10 @@ ordenan —con los papeles cambiados la continuidad se sostiene y cae la consist
 que una mutación no produce sin volver a firmar —la hoja de la firma de la que entra distinta de su
 `desde`, la de la que se va fuera de su tramo— las juzgan los tests del núcleo, y se declara. La
 segunda implementación pasa la familia entera con el mismo arnés (§649). La familia se COPIA de la
-corrida del sello. Su productor es `tools/banco_rotacion.sh` (§649).
+corrida del sello. Su productor es `tools/banco_rotacion.sh` (§649). **Desde §686 trae también el
+sobre del SOLAPAMIENTO** (2.14): once sobres derivados de los de arriba sin otra corrida —la cabeza y
+la cadena tal cual—: las dos conductas sembradas, ahora como detección con salida 0, y nueve
+negativos, las tres claves dentro de su tramo entre ellos.
 
 ## 10. Historia
 
@@ -1294,6 +1348,11 @@ corrida del sello. Su productor es `tools/banco_rotacion.sh` (§649).
   del artefacto, copiada de `tools/banco_rotacion.sh` contra un nodo real que rota dos veces; la
   segunda implementación lee `actas` y la pasa entera. La línea `1/3` de la extensión deja de decir
   «v3» —la extensión lee v3 a v6—, en las dos implementaciones: ningún manifiesto la fijaba.
+- §686 — el sobre del SOLAPAMIENTO (RFC-0015 E5c), la decimocuarta forma: una cabeza firmada
+  fuera de todos los tramos de su clave en la cadena de actas es DETECCIÓN, con salida 0; once
+  sobres en `spec/vectors/rotacion/`, derivados de los de la rotación sin otra corrida, que la
+  segunda implementación pasa con el mismo arnés. Y la refutación del conflicto entre dos claves de
+  un operador, escrita: es el sobre de extensión con la cadena, no la cadena sola.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto
