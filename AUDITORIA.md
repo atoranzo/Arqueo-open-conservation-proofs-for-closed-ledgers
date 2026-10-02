@@ -45805,3 +45805,29 @@ VERDE con el vector (16 de 17). Con ella, 17 de 17 en el kit y en la segunda imp
 1759, en los tres párrafos ancla, y la cifra del verificador en `PRINCIPIOS.md`. El manifiesto del
 conflicto, 16 -> 17 entradas; `spec/vectors/`, 452 -> 453 ficheros, en los dos README. Con este
 corte, la comparación por bytes del §663 tampoco se esquiva con el OID. El `BACKLOG.md` no se mueve.
+
+## §665 — el kit 0.4.2, cortado: los tres arreglos del re-triaje que no cambian el cable
+
+El commit que lleva este asiento, sobre el §664. Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del
+nivel en sus pines, 320 s de tests, y el artefacto reproducible entre rutas (binario
+`f56be87eb7ad44f4`, tarball `7162477d72cb7c5b`), con los once catálogos en verde desde fuera y desde
+dentro del tarball.
+
+**Lo que hace.** `zk-ssl-verify` 0.4.1 -> 0.4.2 en `Cargo.toml` y `Cargo.lock`. `doc/KIT.md` y
+`doc/KIT_EN.md` dicen en su sección 0 que la 0.4.2 está cortada y no publicada, y qué corrige: la
+QUANTITY mínima (§662), un testigo por cofirma (§663) y el OID canónico de una clave publicada
+(§664). Los README y los resúmenes dicen la 0.4.2 cortada y la 0.4.1 publicada. Ni un test ni un pin
+se mueven.
+
+**Lo que se quedó fuera, y por qué.** El autor pidió cuatro cortes para la 0.4.2. El cuarto —que un
+`StaleState` no resuelva por sí solo un sobre de completitud, porque se ata a la operación por un
+`hashPrueba` que no va firmado— no es un endurecimiento del kit: el vector publicado
+`completitud/resuelta-por-rechazo.json` se resuelve justo por un `StaleState`, y su manifiesto exige
+VERDE. Cambiar ese veredicto es cambiar lo que dice un vector publicado y enmendar la D3 y la D-F del
+RFC-0010; lo decide el autor, como la ventana con el índice declarado (D-D).
+
+**Lo que NO hace.** No publica: el tag `arqueo-verify-v0.4.2` va sobre el commit que lleva este
+asiento y la release se sube a mano; las huellas las fija el asiento que la registre, medidas desde
+fuera, como el §661 con la 0.4.1.

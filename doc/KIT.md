@@ -27,6 +27,13 @@ corriendo sus once catálogos desde dentro del tarball— en el asiento de `AUDI
 esta release (§661). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee once
 familias: las diez de la sección 11 de `spec/PAQUETE.md` y la del ancla cofirmada (§633, §634).
 
+⚠️ **La 0.4.2 está CORTADA y no publicada (§665).** La vigente sigue siendo la 0.4.1 hasta que el
+asiento que registre la 0.4.2 fije su huella. La 0.4.2 corrige tres defectos de la 0.4.1: lee cada
+`u64` del sobre solo en su escritura mínima, sin `+` ni ceros a la izquierda (§662); la misma cofirma
+repetida ya no cuenta como varios testigos en el paquete v2 (§663); y una clave XMSS escrita con el
+OID alterno `0x00010005` ya no se lee como la publicada, con lo que un «conflicto entre dos libros»
+con un solo libro escrito dos veces sale ROJO (§664). Los dos últimos traen su vector negativo.
+
 **La 0.4.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). Tiene un defecto que la 0.4.1 corrige: una prueba con nodos de más
 dentro de un lote de Merkle verifica igual, con otros bytes (§659). El veredicto sobre el enunciado

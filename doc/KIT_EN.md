@@ -27,6 +27,14 @@ running its eleven catalogues from inside the tarball — in the `AUDITORIA.md` 
 this release (§661). It recomposes heads up to **v6**, the one the node signs today, and reads
 eleven families: the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor (§633, §634).
 
+⚠️ **0.4.2 is CUT and not published (§665).** The current release remains 0.4.1 until the entry
+that registers 0.4.2 pins its fingerprint. 0.4.2 fixes three defects of 0.4.1: it reads every `u64`
+of the envelope only in its minimal form, with no `+` and no leading zeros (§662); the same
+co-signature repeated no longer counts as several witnesses in a v2 package (§663); and an XMSS key
+written with the alternate OID `0x00010005` is no longer read as the published one, so a "conflict
+between two ledgers" with a single ledger written twice comes out RED (§664). The last two bring
+their negative vector.
+
 **0.4.0 is still published and is no longer current** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). It has one defect that 0.4.1 fixes: a proof with extra nodes inside a
 Merkle batch verifies anyway, with different bytes (§659). The verdict on the statement does not
