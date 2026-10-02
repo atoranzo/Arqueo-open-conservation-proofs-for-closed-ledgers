@@ -46152,3 +46152,44 @@ decisiones abiertas y ninguna etapa construida (§639).
 **Lo que NO hace.** No decide nada: el RFC-0018 deja cinco decisiones al autor (D-A a D-E) y el
 RFC-0019 cuatro (D-A a D-D). No construye ninguna etapa. No cambia el cable, ni un vector, ni un test.
 El `BACKLOG.md` no se mueve.
+
+## §676 — el árbol del MMR con todos sus niveles: `zkssl_consistencyProof` de 11,7 s a 48 µs a un año de cabezas
+
+El commit que lleva este asiento, sobre el §675. Cuarto corte de H15, el primero de los que el autor
+pidió tras decidir el RFC-0018 y el RFC-0019 «como recomienda» la sesión. Lo escribe, lo prueba y lo
+commitea una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE.
+
+**El coste.** `zkssl_consistencyProof`, una lectura pública sin credencial, componía su camino con
+`zk_ssl_verify::mmr::prueba_de_consistencia` sobre todas las hojas: O(t) por llamada, con el candado
+de las hojas del MMR tomado, que es el que el latido necesita para firmar (`pareja_mmr`). Medido en la
+sesión, en release, con t = 525.960 hojas —un año de latidos de un minuto—: **11,70 s** con `oldSize`
+1, 11,84 s con 43.830 y 11,55 s con 525.959. El §673 dejó este coste escrito en su «Lo que NO
+cierra».
+
+**Lo que hace.** La `Frontera` del §673 pasa a `latido::ArbolMmr` y guarda todos los subárboles
+perfectos alineados, no solo los de la frontera: `niveles[h][j]` es la `mth` de las hojas
+`[j·2^h, (j+1)·2^h)`. La `mth` de un tramo cuesta O(log t): la partición de RFC 6962 solo pide bloques
+alineados, y si alguno no lo estuviera se parte como antes, sin cambiar el valor. La prueba de
+consistencia es el `SUBPROOF` de `zk_ssl_verify::mmr` con la misma recursión y la `mth` de los niveles:
+O(log² t). El RPC toma el candado de las hojas, pone el árbol al día, suelta las hojas y compone con
+el del árbol; el orden de los candados es el de `pareja_mmr`. `App` cambia `frontera_mmr` por
+`arbol_mmr`, que sigue en `algun_candado_envenenado`. Medido a t = 525.960, con el mismo camino que
+el oráculo: **47 µs** con `oldSize` 1, 50 µs con 43.830, 5 µs con 525.959. El precio es memoria: unos
+2·t digests, unos 34 MB a un año. La primera puesta al día tras arrancar sigue recorriendo todas las
+hojas una vez (12,0 s a un año), como en el §673. Ningún formato ni ningún camino cambian.
+
+**Falsadores, ensayados.** `el_arbol_da_el_camino_de_consistencia_de_todas_las_hojas`: para t de 1 a
+40 y para 63, 64, 65, 100 y 129, y para cada `oldSize` de 0 a t + 1, el camino es el del oráculo y
+verifica con `verificar_consistencia` entre las dos cimas. Con el bloque perfecto leído del vecino de
+la izquierda cae en t = 2; con el hermano de la derecha empujado donde va el de la izquierda, en t = 4.
+Quitar la condición de alineado no cambia nada, y el test lo dice: está para que el árbol no dependa
+de la partición. `la_frontera_da_la_cima_de_todas_las_hojas` sigue igual, sobre el árbol.
+
+**Contadores.** `zk-ssl-node` 184 -> 185. TOTAL DE SELLO 1629 -> 1630; TOTAL CON LARGOS 1766 -> 1767,
+en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** `zkssl_epochHead`, `zkssl_ackPath` y `zkssl_inclusionReceipt` siguen copiando el
+registro entero bajo el candado del estado (`vista_acuses::pares`), y `zkssl_verifyChain` lo recorre
+entero sin límite. Son los dos cortes siguientes.

@@ -471,8 +471,9 @@ pub fn conservar(app: &App, l: Latido) {
 /// historia vacia bajo la firma del operador. Ahora es un error, y el latido
 /// no compone ni firma, como con el candado del estado.
 ///
-/// ⚠️ §673: la cima ya no se recompone de todas las hojas: la da la
-/// [`Frontera`], que se pone al dia con las hojas nuevas. Medido por el
+/// ⚠️ §673: la cima ya no se recompone de todas las hojas: la da el
+/// [`ArbolMmr`] (la frontera del §673, con todos sus niveles desde el §676),
+/// que se pone al dia con las hojas nuevas. Medido por el
 /// segundo enjambre, recomponerla costaba 0,95 s a 43.830 hojas (un mes) y
 /// 11,6 s a 525.960 (un año), y se hacia en cada latido y en cada
 /// `zkssl_epochHead`.
@@ -482,61 +483,116 @@ pub fn pareja_mmr(app: &App) -> anyhow::Result<(zk_ssl_verify::acuses::Digest, u
         .lock()
         .map_err(|_| anyhow::anyhow!("el candado de las hojas del MMR esta envenenado"))?;
     let mut f = app
-        .frontera_mmr
+        .arbol_mmr
         .lock()
-        .map_err(|_| anyhow::anyhow!("el candado de la frontera del MMR esta envenenado"))?;
+        .map_err(|_| anyhow::anyhow!("el candado del arbol del MMR esta envenenado"))?;
     f.al_dia(&h);
     let cima = f.cima().unwrap_or_else(|| zk_ssl_verify::acuses::as_digest(0));
     Ok((cima, h.len() as u64))
 }
 
 /// §673: la frontera de un arbol de Merkle de RFC 6962 (la `mth` de
-/// `zk_ssl_verify::mmr`): las raices de los subarboles perfectos en que se
-/// parten las hojas, de izquierda a derecha y de mayor a menor. Añadir una
-/// hoja cuesta O(1) amortizado; la cima es el pliegue por la derecha de esas
-/// raices, O(log t). `zk_ssl_verify::mmr::cima` es su oraculo en los tests.
+/// `zk_ssl_verify::mmr`), para que la cima cueste O(log t).
+///
+/// §676: ya no guarda solo la frontera sino TODOS los subarboles perfectos
+/// alineados: `niveles[h][j]` es la `mth` de las hojas `[j·2^h, (j+1)·2^h)`.
+/// Con ellos la `mth` de cualquier tramo que la particion de RFC 6962 pide
+/// cuesta O(log t), y la prueba de consistencia O(log² t) en vez de O(t):
+/// medido por el segundo enjambre, `zkssl_consistencyProof` recomponia 11,5 s
+/// a 525.960 hojas (un año al latido), con el candado de las hojas tomado y
+/// el latido esperando. Cuesta unos 2·t digests de memoria (unos 34 MB al
+/// año). Añadir una hoja sigue siendo O(1) amortizado. `zk_ssl_verify::mmr`
+/// es su oraculo en los tests: la misma cima y los mismos caminos.
 #[derive(Default)]
-pub struct Frontera {
-    picos: Vec<(u32, zk_ssl_verify::acuses::Digest)>,
+pub struct ArbolMmr {
+    niveles: Vec<Vec<zk_ssl_verify::acuses::Digest>>,
     hojas: usize,
 }
 
-impl Frontera {
+impl ArbolMmr {
     fn push(&mut self, hoja: zk_ssl_verify::acuses::Digest) {
-        let mut nodo = zk_ssl_hash::mmr_hoja(hoja);
-        let mut altura = 0u32;
-        while let Some(&(a, izquierda)) = self.picos.last() {
-            if a != altura {
-                break;
-            }
-            self.picos.pop();
-            nodo = zk_ssl_hash::mmr_nodo(izquierda, nodo);
-            altura += 1;
+        if self.niveles.is_empty() {
+            self.niveles.push(Vec::new());
         }
-        self.picos.push((altura, nodo));
+        self.niveles[0].push(zk_ssl_hash::mmr_hoja(hoja));
+        let mut h = 0;
+        while self.niveles[h].len() % 2 == 0 {
+            let n = self.niveles[h].len();
+            let nodo = zk_ssl_hash::mmr_nodo(self.niveles[h][n - 2], self.niveles[h][n - 1]);
+            if self.niveles.len() == h + 1 {
+                self.niveles.push(Vec::new());
+            }
+            self.niveles[h + 1].push(nodo);
+            h += 1;
+        }
         self.hojas += 1;
     }
 
-    /// Pone la frontera al dia con `hojas`: añade las que falten. Si `hojas`
+    /// Pone el arbol al dia con `hojas`: añade las que falten. Si `hojas`
     /// fuera mas corta que lo ya visto -no pasa: solo se añaden-, empieza de
     /// cero en vez de servir una cima de otra serie.
-    fn al_dia(&mut self, hojas: &[zk_ssl_verify::acuses::Digest]) {
+    pub(crate) fn al_dia(&mut self, hojas: &[zk_ssl_verify::acuses::Digest]) {
         if hojas.len() < self.hojas {
-            *self = Frontera::default();
+            *self = ArbolMmr::default();
         }
         for h in &hojas[self.hojas..] {
             self.push(*h);
         }
     }
 
-    fn cima(&self) -> Option<zk_ssl_verify::acuses::Digest> {
-        let mut it = self.picos.iter().rev();
-        let mut acc = it.next()?.1;
-        for (_, izquierda) in it {
-            acc = zk_ssl_hash::mmr_nodo(*izquierda, acc);
+    /// La `mth` de las hojas `[a, b)`, con `a < b <= hojas`. La particion de
+    /// RFC 6962 solo pide tramos cuyo `a` esta alineado a la mitad que corta,
+    /// asi que todo bloque perfecto que aparece esta en `niveles`.
+    fn mth(&self, a: usize, b: usize) -> zk_ssl_verify::acuses::Digest {
+        let n = b - a;
+        if n.is_power_of_two() && a % n == 0 {
+            let h = n.trailing_zeros() as usize;
+            return self.niveles[h][a >> h];
         }
-        Some(acc)
+        let k = mitad(n);
+        zk_ssl_hash::mmr_nodo(self.mth(a, a + k), self.mth(a + k, b))
     }
+
+    fn cima(&self) -> Option<zk_ssl_verify::acuses::Digest> {
+        (self.hojas > 0).then(|| self.mth(0, self.hojas))
+    }
+
+    /// El camino de consistencia de `viejo` hojas a todas: el `SUBPROOF` de
+    /// `zk_ssl_verify::mmr::prueba_de_consistencia`, con la misma recursion,
+    /// y la `mth` de cada tramo de los `niveles`.
+    pub fn prueba_de_consistencia(&self, viejo: u64) -> Option<Vec<zk_ssl_verify::acuses::Digest>> {
+        if viejo == 0 || viejo > self.hojas as u64 {
+            return None;
+        }
+        let mut camino = Vec::new();
+        self.subprueba(0, self.hojas, viejo as usize, true, &mut camino);
+        Some(camino)
+    }
+
+    fn subprueba(&self, a: usize, b: usize, m: usize, borde: bool, out: &mut Vec<zk_ssl_verify::acuses::Digest>) {
+        let n = b - a;
+        if m == n {
+            if !borde {
+                out.push(self.mth(a, b));
+            }
+            return;
+        }
+        let k = mitad(n);
+        if m <= k {
+            self.subprueba(a, a + k, m, borde, out);
+            out.push(self.mth(a + k, b));
+        } else {
+            self.subprueba(a + k, b, m - k, false, out);
+            out.push(self.mth(a, a + k));
+        }
+    }
+}
+
+/// La mayor potencia de dos ESTRICTAMENTE menor que `n >= 2`: la particion de
+/// RFC 6962, la de `zk_ssl_verify::mmr`.
+fn mitad(n: usize) -> usize {
+    debug_assert!(n >= 2);
+    1usize << (usize::BITS - 1 - (n - 1).leading_zeros())
 }
 
 #[cfg(test)]
@@ -571,16 +627,43 @@ mod tests {
     #[test]
     fn la_frontera_da_la_cima_de_todas_las_hojas() {
         let hojas: Vec<_> = (0..300u64).map(zk_ssl_verify::acuses::as_digest).collect();
-        let mut f = Frontera::default();
+        let mut f = ArbolMmr::default();
         assert_eq!(f.cima(), None);
         for t in 1..=hojas.len() {
             f.al_dia(&hojas[..t]);
             assert_eq!(f.cima(), zk_ssl_verify::mmr::cima(&hojas[..t]), "t = {t}");
         }
-        let mut g = Frontera::default();
+        let mut g = ArbolMmr::default();
         for t in [1usize, 2, 7, 64, 65, 200, 300] {
             g.al_dia(&hojas[..t]);
             assert_eq!(g.cima(), zk_ssl_verify::mmr::cima(&hojas[..t]), "a saltos, t = {t}");
+        }
+    }
+
+    /// §676: el arbol da el MISMO camino de consistencia que recomponerlo de
+    /// todas las hojas (`zk_ssl_verify::mmr::prueba_de_consistencia`, el
+    /// oraculo) para cada t de 1 a 40 y a saltos hasta 129, y cada `viejo` de 0
+    /// a t + 1, y el camino verifica entre las dos cimas. Falsadores, ensayados:
+    /// con el bloque perfecto leido del vecino de la izquierda, o con el
+    /// hermano de la derecha empujado en lugar del de la izquierda, los caminos
+    /// difieren desde t = 3. Quitar la condicion de alineado NO cambia nada:
+    /// la particion solo pide bloques alineados; la condicion esta para que el
+    /// arbol no dependa de eso.
+    #[test]
+    fn el_arbol_da_el_camino_de_consistencia_de_todas_las_hojas() {
+        let hojas: Vec<_> = (0..129u64).map(|i| zk_ssl_verify::acuses::as_digest(0x9000 + i)).collect();
+        let mut f = ArbolMmr::default();
+        for t in (1..=40).chain([63, 64, 65, 100, 129]) {
+            f.al_dia(&hojas[..t]);
+            let nueva = zk_ssl_verify::mmr::cima(&hojas[..t]).expect("cima");
+            for viejo in 0..=(t as u64 + 1) {
+                let camino = f.prueba_de_consistencia(viejo);
+                assert_eq!(camino, zk_ssl_verify::mmr::prueba_de_consistencia(&hojas[..t], viejo), "t = {t}, viejo = {viejo}");
+                if let Some(c) = camino {
+                    let vieja = zk_ssl_verify::mmr::cima(&hojas[..viejo as usize]).expect("cima vieja");
+                    assert!(zk_ssl_verify::mmr::verificar_consistencia(vieja, viejo, nueva, t as u64, &c), "t = {t}, viejo = {viejo}");
+                }
+            }
         }
     }
 

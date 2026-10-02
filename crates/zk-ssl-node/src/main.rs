@@ -386,8 +386,9 @@ struct App {
     hojas_mmr: Mutex<Vec<zk_ssl_verify::acuses::Digest>>,
     /// §673: la FRONTERA de `hojas_mmr`, para que la cima cueste O(log t) y no
     /// O(t). Es una cache derivada: `pareja_mmr` la pone al dia con las hojas
-    /// que falten, siempre con el candado de las hojas tomado antes.
-    frontera_mmr: Mutex<latido::Frontera>,
+    /// que falten, siempre con el candado de las hojas tomado antes. §676: con
+    /// todos sus niveles, para que `zkssl_consistencyProof` cueste O(log² t).
+    arbol_mmr: Mutex<latido::ArbolMmr>,
     /// §674: los limites y los cierres del diario, puestos al dia con lo que se
     /// añade; `zkssl_ackPath` y `zkssl_recepPath` ya no releen el fichero.
     indice_diario: Mutex<diario::IndiceDiario>,
@@ -1208,7 +1209,7 @@ async fn main() -> anyhow::Result<()> {
         reserva_ttl: Duration::from_secs(args.reserva_ttl),
         ultima_cabeza: Mutex::new(None),
         hojas_mmr: Mutex::new(hojas_mmr_iniciales),
-        frontera_mmr: Mutex::new(latido::Frontera::default()),
+        arbol_mmr: Mutex::new(latido::ArbolMmr::default()),
         indice_diario: Mutex::new(diario::IndiceDiario::default()),
         clave_publica_firma,
         diario: args.diario.as_ref().map(std::path::PathBuf::from),
@@ -1814,7 +1815,7 @@ impl App {
         self.estado.is_poisoned()
             || self.ultima_cabeza.is_poisoned()
             || self.hojas_mmr.is_poisoned()
-            || self.frontera_mmr.is_poisoned()
+            || self.arbol_mmr.is_poisoned()
             || self.indice_diario.is_poisoned()
             || self.cofirmas.is_poisoned()
             || self.recepcion.is_poisoned()
@@ -2678,12 +2679,22 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     data: None,
                 })?
                 .0;
+            // §676: el camino sale del arbol, puesto al dia con las hojas que
+            // falten, en O(log² t), y no de recomponer todas las hojas con su
+            // candado tomado: el latido espera a ese candado para firmar.
             let h = app.hojas_mmr.lock().map_err(|_| RpcError {
                 code: -32603,
                 message: "candado de las hojas del MMR envenenado".into(),
                 data: None,
             })?;
+            let mut arbol = app.arbol_mmr.lock().map_err(|_| RpcError {
+                code: -32603,
+                message: "candado del arbol del MMR envenenado".into(),
+                data: None,
+            })?;
+            arbol.al_dia(&h);
             let t = h.len() as u64;
+            drop(h);
             if viejo == 0 {
                 Ok(json!({
                     "available": false,
@@ -2702,7 +2713,8 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     "mmrSize": Q(t),
                 }))
             } else {
-                let camino = zk_ssl_verify::mmr::prueba_de_consistencia(&h, viejo)
+                let camino = arbol
+                    .prueba_de_consistencia(viejo)
                     .expect("0 < viejo <= t: la prueba existe por construccion");
                 Ok(json!({
                     "available": true,
@@ -3434,7 +3446,7 @@ mod tests {
             reserva_ttl: Duration::from_secs(ttl_segundos),
             ultima_cabeza: Mutex::new(None),
             hojas_mmr: Mutex::new(Vec::new()),
-            frontera_mmr: Mutex::new(crate::latido::Frontera::default()),
+            arbol_mmr: Mutex::new(crate::latido::ArbolMmr::default()),
             indice_diario: Mutex::new(crate::diario::IndiceDiario::default()),
             clave_publica_firma: Vec::new(),
             diario: None,
