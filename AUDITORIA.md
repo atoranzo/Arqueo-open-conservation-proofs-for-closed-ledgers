@@ -46017,3 +46017,35 @@ el bilingüe, `PREGUNTAS.md`, `QUESTIONS.md` y `SECURITY.md` 3.9 nombran la 0.4.
 **Lo que NO hace.** No retira la 0.4.1 ni las anteriores, que siguen publicadas y se marcan, no se
 borran. Ni un test ni un pin se mueven. En la sesión, sobre este mismo árbol, el canon `--sello` salió
 VERDE, con 347 s de tests.
+
+## §672 — el árbol de la época, de una vez: `rebuild_from` en la vista de acuses, ×8,8 con la misma raíz
+
+El commit que lleva este asiento, sobre el §671. Primero de los cortes de H15 —lecturas que cuestan lo
+que la edad del libro, bajo el candado del estado—, que el autor pidió tras el re-triaje del segundo
+enjambre. Lo escribe, lo prueba y lo commitea una sesión de Claude Code en la nube, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol,
+el canon `--sello` salió VERDE, con 313 s de tests.
+
+**El coste.** `raiz_de_epoca` y `camino_de_epoca` construían el árbol de acuses de la época hoja a hoja
+con `set_leaf`, que rehace el camino entero de cada hoja. Es el trabajo que hacen, con el candado del
+estado tomado, el latido al componer su cabeza y las lecturas públicas `zkssl_epochHead` y
+`zkssl_ackPath`. Medido por el segundo enjambre sobre `f7aad05`, con el `vista_acuses.rs` real, a
+1e6 entradas en el registro: con K = 8.700 entradas por época, 2.221 ms de mediana (n = 15); con
+`rebuild_from` sobre las mismas hojas, 252 ms, ×8,8, y la MISMA raíz. Con K = 400, 109 ms frente a
+12 ms. Los crudos están fuera del árbol, en el expediente del enjambre.
+
+**Lo que hace.** Las dos funciones recogen las hojas de la época y construyen el árbol con
+`SparseTree::rebuild_from`, que existe desde el §217 para el arranque y cuya cabecera explica por qué
+da exactamente el mismo árbol que `set_leaf` hoja a hoja. Ningún formato, ninguna raíz y ningún
+camino cambian.
+
+**Falsador.** `rebuild_from_da_la_misma_epoca_que_hoja_a_hoja`: cinco épocas con límites repartidos y
+entradas fuera, y para cada una la raíz y tres caminos frente a la vía de antes. **Medido con una hoja
+de menos** en la construcción nueva: cae.
+
+**Contadores.** `zk-ssl-node` 181 -> 182. TOTAL DE SELLO 1626 -> 1627; TOTAL CON LARGOS 1763 -> 1764,
+en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** El trabajo sigue haciéndose bajo el candado y sigue creciendo con K; lo que
+cambia es la constante. Quedan los otros dos costes de H15: la cima del MMR recompuesta desde todas las
+hojas en cada latido y en cada `zkssl_epochHead`, y el diario releído entero en cada `zkssl_ackPath`.

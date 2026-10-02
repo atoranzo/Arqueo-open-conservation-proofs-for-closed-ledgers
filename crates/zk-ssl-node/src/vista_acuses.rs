@@ -40,15 +40,14 @@ pub fn raiz_de_epoca(
     limite: u64,
     n: u64,
 ) -> Digest {
+    // §672: el arbol de la epoca de una vez, con `rebuild_from`, y no hoja a
+    // hoja con `set_leaf`, que rehace el camino entero de cada hoja: medido
+    // ×8,5 a 1e6 entradas y K = 8.700 por epoca (2,2 s -> 0,26 s), con la
+    // MISMA raiz. Es el trabajo que el latido y el RPC hacen bajo el candado.
     let mut arbol = SparseTree::new();
-    for (seq, hash_prueba) in entradas {
-        if pertenece(seq, limite_anterior, limite) {
-            arbol.set_leaf(
-                indice_de_hoja(seq, limite_anterior),
-                hoja_de_acuse(hash_prueba, seq, n),
-            );
-        }
-    }
+    arbol.rebuild_from(entradas.into_iter().filter(|(seq, _)| pertenece(*seq, limite_anterior, limite)).map(
+        |(seq, hash_prueba)| (indice_de_hoja(seq, limite_anterior), hoja_de_acuse(hash_prueba, seq, n)),
+    ));
     arbol.root()
 }
 
@@ -103,22 +102,22 @@ pub fn camino_de_epoca(
     if !pertenece(seq, limite_anterior, limite) {
         return None;
     }
-    let mut arbol = SparseTree::new();
+    // §672: `rebuild_from`, como `raiz_de_epoca`.
     let mut vista = false;
-    for (s, hash_prueba) in pares.iter().copied() {
-        if pertenece(s, limite_anterior, limite) {
-            arbol.set_leaf(
-                indice_de_hoja(s, limite_anterior),
-                hoja_de_acuse(hash_prueba, s, n),
-            );
-            if s == seq {
-                vista = true;
-            }
-        }
-    }
+    let hojas: Vec<(u64, Digest)> = pares
+        .iter()
+        .copied()
+        .filter(|(s, _)| pertenece(*s, limite_anterior, limite))
+        .map(|(s, hash_prueba)| {
+            vista |= s == seq;
+            (indice_de_hoja(s, limite_anterior), hoja_de_acuse(hash_prueba, s, n))
+        })
+        .collect();
     if !vista {
         return None;
     }
+    let mut arbol = SparseTree::new();
+    arbol.rebuild_from(hojas);
     let camino = arbol.path_for(indice_de_hoja(seq, limite_anterior));
     Some((arbol.root(), camino.siblings, camino.is_right))
 }
@@ -130,6 +129,31 @@ mod tests {
 
     fn entradas(rango: std::ops::Range<u64>) -> Vec<(u64, Digest)> {
         rango.map(|s| (s, as_digest(0x1000 + s))).collect()
+    }
+
+    /// §672: `raiz_de_epoca` y `camino_de_epoca` construyen con `rebuild_from`;
+    /// este test rehace la epoca hoja a hoja con `set_leaf` -la via de antes- y
+    /// exige la misma raiz y el mismo camino, con limites y `seq` repartidos y
+    /// con entradas fuera de la epoca. Falsador: con un `rebuild_from` que
+    /// olvidara un nivel o una hoja, las raices difieren.
+    #[test]
+    fn rebuild_from_da_la_misma_epoca_que_hoja_a_hoja() {
+        let todas = entradas(0..300);
+        for (p, s) in [(0u64, 300u64), (17, 200), (150, 151), (0, 1), (299, 300)] {
+            let mut antes = SparseTree::new();
+            for (seq, h) in todas.iter().copied() {
+                if pertenece(seq, p, s) {
+                    antes.set_leaf(indice_de_hoja(seq, p), hoja_de_acuse(h, seq, N_MAX_CABEZAS));
+                }
+            }
+            assert_eq!(raiz_de_epoca(todas.clone(), p, s, N_MAX_CABEZAS), antes.root(), "[{p}, {s})");
+            for seq in [p, (p + s) / 2, s - 1] {
+                let (r, hermanos, derecha) =
+                    camino_de_epoca(&todas, p, s, seq, N_MAX_CABEZAS).expect("pertenece");
+                let c = antes.path_for(indice_de_hoja(seq, p));
+                assert_eq!((r, hermanos, derecha), (antes.root(), c.siblings, c.is_right), "seq {seq}");
+            }
+        }
     }
 
     #[test]
