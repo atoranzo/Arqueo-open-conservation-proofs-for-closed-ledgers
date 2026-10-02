@@ -282,6 +282,14 @@ pub enum RotacionError {
     /// embebido que alcanza el `desde` de su sucesora. Evidencia oponible con nombre, como la
     /// vista dividida: rotar no escapa de lo ya firmado.
     Solapamiento { indice: u64, desde: u64 },
+    /// ⚠️ §648 · **Solapamiento** por la regla 4: una firma de la clave que llega fuera de su
+    /// tramo —en la hoja de su acta o por debajo, o en el `desde` de su sucesora o por encima—.
+    /// La cuenta es una (D-A): esas hojas son de otra clave del mismo operador, o de un acta.
+    FueraDeTramo {
+        indice: u64,
+        desde: u64,
+        hasta: Option<u64>,
+    },
 }
 
 impl std::fmt::Display for RotacionError {
@@ -307,6 +315,21 @@ impl std::fmt::Display for RotacionError {
                 "SOLAPAMIENTO: la clave que se va firmo en la hoja {indice}, y su sucesora \
                  empieza en la {desde}"
             ),
+            RotacionError::FueraDeTramo {
+                indice,
+                desde,
+                hasta,
+            } => {
+                write!(
+                    f,
+                    "SOLAPAMIENTO: la clave que llega firmo en la hoja {indice}, fuera de su \
+                     tramo: por encima de la {desde}"
+                )?;
+                match hasta {
+                    Some(h) => write!(f, " y por debajo de la {h}"),
+                    None => Ok(()),
+                }
+            }
         }
     }
 }
@@ -345,6 +368,34 @@ pub fn juzgar_rotacion(
         hasta: actas.get(j + 1).map(|x| x.acta.desde),
         eslabones: j - i,
     })
+}
+
+/// ⚠️ §648 · **La continuidad de dos cabezas de claves distintas** (RFC-0015 E5, D-E): la de los
+/// sobres del kit que comparan cabezas, donde no hay un testigo que haya visto pasar la rotación,
+/// sino dos firmas y la cadena. La cuenta es una (D-A): el índice EMBEBIDO ordena las dos cabezas
+/// sea cual sea su clave, y la de índice menor es la anterior; con el mismo índice, el orden en que
+/// llegan. La cadena tiene que llevar de la clave de la anterior a la de la posterior
+/// (`juzgar_rotacion`, reglas 1 a 3, con el índice de la anterior como lo visto) y la posterior
+/// tiene que caer en su tramo (regla 4). Cada lado es `(clave, índice embebido)`.
+pub fn juzgar_continuidad(
+    actas: &[ActaFirmada],
+    una: (&[u8], u64),
+    otra: (&[u8], u64),
+) -> Result<Rotacion, RotacionError> {
+    let (anterior, posterior) = if otra.1 < una.1 {
+        (otra, una)
+    } else {
+        (una, otra)
+    };
+    let r = juzgar_rotacion(actas, anterior.0, posterior.0, Some(anterior.1))?;
+    if !r.en_su_tramo(posterior.1) {
+        return Err(RotacionError::FueraDeTramo {
+            indice: posterior.1,
+            desde: r.desde,
+            hasta: r.hasta,
+        });
+    }
+    Ok(r)
 }
 
 /// ⚠️ §646 · **El acta en JSON, con UN productor** (RFC-0015 D-D: en el diario, en el cable y en
@@ -752,6 +803,67 @@ mod tests {
             eslabones: 1,
         };
         assert!(tramo.en_su_tramo(89) && !tramo.en_su_tramo(90));
+    }
+
+    /// ⚠️ §648 · **la continuidad de dos cabezas la ordena el índice, no el orden de llegada.**
+    /// Sin firmar nada: la cadena es la de la escena, la génesis de la 1 en la hoja 0 y su
+    /// sucesora desde la 40. Una cabeza de la 1 en la 39 y otra de la 2 en la 41 son del mismo
+    /// operador, lleguen en el orden que lleguen. La 1 en la 40 cae por la regla 3; la 2 en la 40,
+    /// que es la hoja de su acta, por la 4, y con el mismo índice las dos no caben. Una cabeza de
+    /// la 2 por debajo de una de la 1 no se explica: la cadena no rota hacia atrás.
+    #[test]
+    fn la_continuidad_la_ordena_el_indice_y_cada_regla_tiene_su_rojo() {
+        let e = escena();
+        let cadena = [e.genesis.clone(), e.rotacion.clone()];
+        let (k1, k2) = (&e.genesis.acta.clave[..], &e.rotacion.acta.clave[..]);
+        let r = Rotacion {
+            desde: 40,
+            hasta: None,
+            eslabones: 1,
+        };
+        assert_eq!(juzgar_continuidad(&cadena, (k1, 39), (k2, 41)), Ok(r));
+        assert_eq!(
+            juzgar_continuidad(&cadena, (k2, 41), (k1, 39)),
+            Ok(r),
+            "el orden de llegada no cuenta"
+        );
+        assert_eq!(
+            juzgar_continuidad(&cadena, (k1, 40), (k2, 41)),
+            Err(RotacionError::Solapamiento {
+                indice: 40,
+                desde: 40
+            })
+        );
+        let fuera = |indice| RotacionError::FueraDeTramo {
+            indice,
+            desde: 40,
+            hasta: None,
+        };
+        assert_eq!(
+            juzgar_continuidad(&cadena, (k1, 39), (k2, 40)),
+            Err(fuera(40))
+        );
+        assert_eq!(juzgar_continuidad(&cadena, (k1, 5), (k2, 5)), Err(fuera(5)));
+        assert_eq!(
+            juzgar_continuidad(&cadena, (k2, 30), (k1, 50)),
+            Err(RotacionError::FijadaFuera)
+        );
+        assert_eq!(
+            fuera(40).to_string(),
+            "SOLAPAMIENTO: la clave que llega firmo en la hoja 40, fuera de su tramo: por \
+             encima de la 40"
+        );
+        let con_techo = RotacionError::FueraDeTramo {
+            indice: 90,
+            desde: 40,
+            hasta: Some(90),
+        };
+        assert!(
+            con_techo
+                .to_string()
+                .ends_with("por encima de la 40 y por debajo de la 90"),
+            "{con_techo}"
+        );
     }
 
     /// ⚠️ §646 · **el acta en JSON va y vuelve, y dice qué campo falla.** Sin firmar nada: leer

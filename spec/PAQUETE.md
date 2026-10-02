@@ -91,6 +91,19 @@ donde el valor es una respuesta del cable sin reescribir.
   de cabezas (§291) como juez, sin el registro y sin el nodo.
 - La forma se elige por `tipo`: si vale `"extension"`, el sobre es este; si no, es el de posición.
   `v` se comprueba antes en los dos casos.
+- ⚠️ **§648 (RFC-0015 E5a) — `actas`, opcional: la continuidad de UN operador.** Con la misma
+  `publicKey` en las dos cabezas no se lee. Con claves distintas y sin `actas`, el rechazo de
+  siempre, letra por letra. Con `actas` —la lista que sirve `zkssl_keyActs`, cada acta en el JSON
+  de `acta_a_json` (`spec/RPC.md`)—, las dos cabezas son del mismo operador si la cadena entera
+  vale (las reglas 1 y 2 de la D-C del RFC-0015), lleva de la clave de la cabeza de índice
+  EMBEBIDO menor a la de la otra —la cuenta de índices es una por operador (D-A), y por eso el
+  índice ordena, no el nombre del campo—, la anterior firmó por debajo del `desde` de su sucesora
+  (regla 3) y la posterior dentro de su tramo, por encima de su `desde` y por debajo del de la
+  siguiente si la cadena la trae (regla 4). Si no, ROJO con la regla que cae: fuera de la cadena
+  o hacia atrás, un acta que no vale, o el **SOLAPAMIENTO**. El juez es uno,
+  `zk_ssl_verify::actas::juzgar_continuidad`, y es el mismo en los ocho sitios que exigen
+  continuidad: aquí, en el consumo (2.4) y en las seis cabezas que el sobre de completitud
+  compara con su cierre (2.11).
 
 ### 2.4 El paquete de consumo (§419)
 
@@ -100,7 +113,8 @@ donde el valor es una respuesta del cable sin reescribir.
 ```
 
 - Superconjunto estricto del de extensión: **mismas dos cabezas y misma prueba de
-  consistencia**, y por eso el «antes» es de ESTA historia y no de una bifurcación firmada.
+  consistencia**, y por eso el «antes» es de ESTA historia y no de una bifurcación firmada. Y
+  las mismas `actas` opcionales (§648), con el mismo juez.
   Lo que añade son los dos caminos del árbol de consumos: `presencia` sube el digest del
   consumo hasta el `consRoot` de la **nueva**, `ausencia` sube la **hoja vacía** hasta el de
   la **vieja**. Las dos llevan `consRoot` (**v4 o v5**): una v2 o v3 no lo lleva.
@@ -130,6 +144,12 @@ donde el valor es una respuesta del cable sin reescribir.
   consumo exigen la MISMA `publicKey` —la continuidad es de un firmante—, aquí se exige que
   sean DISTINTAS: dos cabezas del mismo operador no son un conflicto entre libros, y aceptarlas
   haría pasar por conflicto lo que es historia de uno solo.
+- ⚠️ **§648 — el conflicto no lee `actas`, y una rotación lo engaña.** Dos claves de UN operador
+  que rotó (RFC-0015) son dos `publicKey` distintas, y un consumo bajo una cabeza de cada una se
+  exhibe aquí como un conflicto entre dos libros que es la historia de uno. El sobre no puede
+  exigir la cadena —quien lo arma es el delator, y no la trae—, así que quien lo juzga pide
+  `zkssl_keyActs` a los dos operadores: si una cadena une las dos claves, no hay dos libros.
+  Declarado, no resuelto.
 - ⚠️ **Lo que esto demuestra y lo que no.** Demuestra que dos libros aceptaron el mismo
   consumo: eso es **detección**, y llega después. **No previene nada**, y no dice que la unidad
   consumida sea la misma en los dos: que el identificador signifique lo mismo a los dos lados
@@ -384,7 +404,9 @@ la posición `rx − Q − 1` hasta la `recepRoot` del cierre: el operador **rec
 Después, el veredicto (RFC-0010, D-F y D-G). La ventana se MIDE siempre en la unidad de la firma
 (D2; desde el §681, RFC-0019 E1): empieza en el índice XMSS **embebido** del cierre, y `S` es el
 índice **acreditado** —el embebido más uno— de una cabeza firmada por la misma clave, con
-`S − inicio <= n`. El `index` declarado no entra en lo firmado (§399) y ya no mide nada; la `era` de
+`S − inicio <= n`. Desde el §648 esa cabeza puede ser de otra clave del mismo operador, si el sobre
+lleva `actas` que la unen al cierre (2.3): la cuenta de índices es una (RFC-0015 D-A), y la ventana
+se mide igual. El `index` declarado no entra en lo firmado (§399) y ya no mide nada; la `era` de
 la hoja la ata a su camino pero no mide la ventana:
 
 1. **`acuse`**: la cabeza está dentro de la ventana, el acuse es de la MISMA prueba y el par
@@ -558,7 +580,8 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 
 | objeto | claves que el binario lee | dónde está su semántica |
 |---|---|---|
-| sobre | `v`, `tipo`, `cabeza`, `acuse`, `cofirmas`, `vieja`, `nueva`, `camino` | este documento, sección 2 |
+| sobre | `v`, `tipo`, `cabeza`, `acuse`, `cofirmas`, `vieja`, `nueva`, `camino`; y `actas` (§648) | este documento, sección 2 |
+| cada acta de `actas` (§648) | `acta` → `clave`, `esquema`, `desde`, `siguiente`, `procedencia` → `anterior`, `epochDigest`, `mmrRoot`, `mmrSize`; `firma`, `firmaAnterior` | `zkssl_keyActs`, `RPC.md`; RFC-0015 D-C |
 | `cabeza` (y `vieja`/`nueva`) | `available`, `formatVersion`, `seq`, `n`, `accountsRoot`, `pendingRoot`, `frozenRoot`, `chainDigest`, `acusesRoot`, `epochDigest`, `publicKey`, `signature`, `index`; en v3 y v4 `mmrRoot`, `mmrSize`; y en v4 `consRoot`, `consCount` | `zkssl_signedEpochHead`, `RPC.md:437-482` |
 | `acuse` | `hashPrueba`, `seq`, `camino` → `siblings`, `isRight` | `zkssl_ackPath`, `RPC.md:568-739` |
 | cada cofirma | `v`, `epochDigest`, `clavePublicaOperador`, `clavePublicaTestigo`, `firma`, `versionFormato`, `indice` | `zkssl_cosigs`, `RPC.md:741-783` |
@@ -616,7 +639,8 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
    falta no es asunto del paquete.
 
 **Paquete de extensión:** `1/3` las dos cabezas (v3, v4 o v5) recomponen su digest y sus firmas verifican ·
-`2/3` misma `publicKey` en las dos: la continuidad es de **un** firmante · `3/3` la cima nueva
+`2/3` misma `publicKey` en las dos: la continuidad es de **un** firmante —o, con `actas` (§648),
+claves distintas que la cadena une: la continuidad es de **un** operador— · `3/3` la cima nueva
 extiende a la vieja por `camino`.
 
 **Paquete de consumo:** `1/5` las dos cabezas recomponen su digest y sus firmas verifican ·
@@ -728,7 +752,17 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `{cual}: los campos NO recomponen su epochDigest — adulterada o inventada`
 - `{cual}: falta publicKey` · `{cual}: falta signature`
 - `{cual}: cabeza: {e}`
-- `las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante`
+- `las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante` — sin `actas`; con
+  ellas (§648), uno de estos, los mismos en el consumo y en los sitios del cierre de la
+  completitud:
+  - `actas no es lista (la cadena de zkssl_keyActs)`
+  - `actas[{k}]: {e}`, con `{e}` el error de `acta_de_json`, que nombra el campo
+  - `las cabezas llevan claves DISTINTAS y las actas no las unen: {e}`, con `{e}` uno de: `el
+    acta {eslabon} de la cadena no vale: {regla}` · `la clave que llega no esta en la cadena:
+    nadie la comprometio` · `la clave que se tenia no esta en la cadena antes de la que llega` ·
+    `SOLAPAMIENTO: la clave que se va firmo en la hoja {indice}, y su sucesora empieza en la
+    {desde}` · `SOLAPAMIENTO: la clave que llega firmo en la hoja {indice}, fuera de su tramo:
+    por encima de la {desde}[ y por debajo de la {hasta}]`
 - `falta camino (lista de digests)`
 - `camino[{i}] no es cadena` · `camino[{i}]: {} bytes` · `camino[{i}]: {e:?}`
 - `la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia bifurcada, recortada, o camino que no es el suyo`
@@ -859,7 +893,11 @@ dice (D-AS).
   la vista`
 - `las dos cabezas son LA MISMA: no hay vista que dividir`
 - `las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante` — el de la extensión,
-  letra por letra
+  letra por letra. ⚠️ §648: aquí **no se lee `actas`**: la vista dividida es de UNA clave. Dos
+  claves de un operador con el mismo índice embebido son un solapamiento, y su sobre, que no
+  necesita la segunda cabeza —basta una de la vieja por encima del `desde` de su sucesora, con la
+  cadena—, queda para después, sin etapa todavía (RFC-0015, «Fijado en la E5a»). Tampoco el modo 3 con un ancla de la clave que se
+  fue: esa costura es la del medio (RFC-0015, E6)
 
 Lo que el sobre exige de una cabeza —`available:true`, la recomposición del digest, la firma—
 y la lectura del `camino` son los de la extensión, con `cabeza` o `contraria` como sujeto: viven
@@ -1230,6 +1268,12 @@ corrida. Su productor es `tools/banco_ancla_cofirmada.sh` (§634).
   por `{e:?}`; cuatro vectores negativos -dos aquí, uno en `ancla/` y uno en `completitud/`-, que
   la referencia y la segunda implementación rechazan con el mismo texto. Ningún veredicto anterior
   se mueve: los diez manifiestos dicen lo mismo que antes en cada entrada que ya tenían.
+- §648 — `actas`, opcional (RFC-0015 E5a): en los sobres que exigen la continuidad de un
+  firmante —la extensión, el consumo y las cabezas que la completitud compara con su cierre—, una
+  cadena de actas hace de dos claves UN operador, con el juez del kit (`juzgar_continuidad`). Sin
+  `actas`, ni un byte cambia: ningún vector se mueve. El conflicto y la vista dividida no la leen,
+  y se dice por qué. Sin vector todavía: los de la E5b los sacará `tools/banco_rotacion.sh` de un
+  nodo que rota, y la segunda implementación aprenderá a leerla con ellos.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

@@ -46959,3 +46959,91 @@ se reescriben sobre la cuenta fusionada (191 -> 192 … 193 -> 194; 174 -> 175, 
 asientos conservan la cuenta con que se sellaron. TOTAL DE SELLO 1629 + 18 + 21 = 1668; TOTAL CON
 LARGOS 1805. Los vectores: 453 + 3 (los KAT del acta) + 4 (§681, §682) = 460 ficheros, con el catálogo
 `0.4/` nombrado en los dos README.
+
+## §648 — RFC-0015 E5a: los sobres del kit que exigen un firmante aceptan `actas`, y una cadena hace de dos claves UN operador
+
+El commit que lleva este asiento, sobre `8262c80` (el §685). Un solo sello: el kit gana un juez de
+la continuidad de dos claves y lo usa en los ocho sitios que exigían una sola; `spec/PAQUETE.md`
+dice el campo, su orden y sus rechazos; el RFC-0015, `NUCLEO.md`, la entrada 84, la fila del canon
+y las cifras de tres documentos se ponen al día; y este asiento. Lo escribe, lo prueba y lo
+commitea una sesión de Claude Code, la misma que el §643 al §647, no el autor en su máquina, fuera
+del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la
+sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-verify` en 178 de 178
+y `check_tests` en 1829.
+
+**Rehecho sobre el §685.** La primera versión de este sello iba sobre el §647, y `main` llegó entre
+tanto al §685, con la ventana de completitud medida en la unidad de la firma (§681) y el
+`StaleState` que no resuelve solo (§682) en los mismos resolutores que este sello toca. El juez no
+cambia; los resolutores reciben el cierre entero junto a su `inicio`, y el índice embebido de cada
+lado lo lee `indice_embebido`, el lector del §681: un productor para la ventana y para el orden de
+las dos claves. Con una rotación la ventana se mide igual, porque la cuenta es una (D-A). Las
+cifras y el humo de este asiento son los de la base nueva.
+
+**El número.** `main` salta del §647 al §650: el §648 y el §649 quedaron libres, sin otra sesión
+que los cite, y este sello toma el primero.
+
+**De dónde sale.** La D-E del RFC-0015: «Los sobres que comparan cabezas aceptan un campo opcional
+`actas` con la cadena que une sus claves. Sin él, el texto de hoy, byte a byte [...]. Con él, la
+continuidad es de UN operador, con las reglas de D-C». Hasta hoy, cualquier sobre con dos cabezas
+de dos claves salía ROJO con `claves_distintas`, aunque la rotación estuviera comprometida, firmada
+por las dos claves y servida por `zkssl_keyActs`: el titular que custodió una cabeza de la clave
+vieja no podía oponer la extensión a una de la nueva.
+
+**Lo que hace.**
+
+1. **El juez, en el núcleo.** `juzgar_continuidad(actas, (clave, índice), (clave, índice))` en el
+   módulo `actas`. En un sobre no hay un testigo que viera pasar la rotación: hay dos firmas y una
+   cadena. Lo que ordena las dos cabezas es su índice EMBEBIDO, no el campo que las trae, porque la
+   cuenta es una por operador (D-A): la de índice menor es la anterior. La cadena tiene que llevar
+   de la clave de la anterior a la de la posterior —`juzgar_rotacion`, reglas 1 a 3, con el índice
+   de la anterior como lo visto— y la posterior tiene que caer en su tramo (regla 4). El rojo de la
+   regla 4 nace con nombre, `FueraDeTramo`, que también es SOLAPAMIENTO y dice el tramo. Una fila
+   en `NUCLEO.md`, familia ACTA.
+2. **Los ocho sitios.** `misma_continuidad`, en el binario, es el único productor: con la misma
+   `publicKey`, nada; con claves distintas y sin `actas`, `claves_distintas`, letra por letra; con
+   `actas`, cada una leída con `acta_de_json` y el juez de arriba. La usan la extensión, el consumo
+   y las seis cabezas que el sobre de completitud compara con su cierre —la `vigente`, la del
+   acuse, la del rechazo y las tres de la prenda—, que ahora reciben el cierre entero en vez de su
+   clave sola. La línea `2/3` de la extensión y la `2/5` del consumo dicen cuál de las dos es:
+   «misma publicKey», como antes, o «claves distintas que las actas unen».
+3. **Los que no.** El conflicto exige claves DISTINTAS y lo arma el delator, que no trae la cadena:
+   una rotación se le puede presentar como dos libros, y quien lo juzga tiene que pedir
+   `zkssl_keyActs` a los dos operadores. La vista dividida es de UNA clave, y el solapamiento entre
+   dos merece su propio sobre —basta una cabeza de la vieja por encima del `desde` de su sucesora,
+   con la cadena—. Y el ancla de la clave que se fue extendida por una cabeza de la que llega es la
+   costura del medio, la E6. Los tres, dichos en `spec/PAQUETE.md` y en el RFC, no resueltos.
+4. **El contrato.** `spec/PAQUETE.md` gana la clave en la tabla de la sección 3, con la fila del
+   acta; el orden de la sección 4; los tres rechazos nuevos en el catálogo, con los cinco motivos
+   del juez; y su historia.
+
+**Medido.** De punta a punta con los binarios de release: un nodo con la clave A y su génesis firma
+una cabeza de `mmrSize` 2; parado y rearrancado con B y la firma de A, el acta de B entra desde la
+hoja 5, y una cabeza de B firma el `mmrSize` 3 que el camino de consistencia pide. Con el nodo ya
+parado, el kit sobre el sobre de extensión: sin `actas`, «las cabezas llevan claves DISTINTAS: la
+continuidad es de UN firmante», como siempre; con la cadena servida, `2/3` «claves distintas que
+las actas unen (1 eslabon(es), la posterior desde la hoja 5)» y VERDE; con la cadena cortada a su
+génesis, «la clave que llega no esta en la cadena»; con el `desde` de la rotación tocado, «el acta
+1 de la cadena no vale», porque la firma ya no es de ese mensaje; y con `vieja` y `nueva`
+cambiadas, las actas las unen igual —el campo no ordena— y cae la consistencia: «la nueva (t=2) NO
+extiende a la vieja (t=3)».
+
+**Probado.** Los 178 tests del kit pasan en release. Dos son nuevos: en el núcleo, la continuidad
+ordenada por el índice —en los dos órdenes de llegada—, la regla 3 en su borde, la regla 4 en la
+hoja del acta y con el mismo índice a los dos lados, la cadena al revés y los dos textos del tramo,
+sin firmar nada nuevo; y en el binario, sobre los cuatro vectores de claves DISTINTAS del catálogo
+—el consumo y los tres sitios del cierre—, el rojo de siempre sin `actas`, y con ellas el que no es
+lista, el acta que no se lee y la cadena vacía, cada uno con el suyo; y la vista dividida, que no
+lee `actas`. Ningún vector se mueve: el catálogo entero sale como antes.
+
+**Contadores.** `zk-ssl-verify` 176 -> 178. TOTAL DE SELLO 1668 -> 1670 y TOTAL CON LARGOS
+1805 -> 1807, en los tres párrafos ancla, con el desglose del verificador en 178. La cuenta de
+`check_tests` pasa de 1827 a 1829. El censo de `NUCLEO.md`, de 97 a 98 en `zk-ssl-verify` (NÚCLEO
+124 -> 125). El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** No hay todavía un vector con `actas` en el catálogo, ni un banco que rote
+contra un nodo real dentro del canon: el humo de este asiento es manual, y los dos son la E5b. La
+segunda implementación no lee `actas`: ante el sobre del humo dice lo de antes,
+`claves_distintas` —medido—, y sin un vector que las lleve el canon no lo ve; aprenderá con los
+vectores de la E5b. Una clave que vuelve a la cadena se juzga por su última entrada, como en el testigo.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2, la E3, la E4 y la E5a de su RFC construidas.

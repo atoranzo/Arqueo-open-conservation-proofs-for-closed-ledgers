@@ -50,6 +50,7 @@
 //! catalogo de `spec/PAQUETE.md`.
 use std::process::ExitCode;
 
+use zk_ssl_verify::actas::{acta_de_json, juzgar_continuidad, Rotacion};
 use zk_ssl_verify::{
     acuses, recibos, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
     CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse, VersionCabeza,
@@ -659,19 +660,19 @@ fn indice_acreditado(c: &serde_json::Value, cual: &str) -> Result<u64, String> {
 /// **sin el nodo**: quien custodia la vieja comprueba que la nueva la
 /// EXTIENDE, con el objeto de §291 como juez.
 fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
-    let (cima_v, t_v, clave_v, _) = cabeza_v3_verificada(
-        p.get("vieja").ok_or_else(|| err("falta vieja".into()))?,
-        "vieja",
-    )?;
-    let (cima_n, t_n, clave_n, _) = cabeza_v3_verificada(
-        p.get("nueva").ok_or_else(|| err("falta nueva".into()))?,
-        "nueva",
-    )?;
+    let vieja = p.get("vieja").ok_or_else(|| err("falta vieja".into()))?;
+    let (cima_v, t_v, clave_v, _) = cabeza_v3_verificada(vieja, "vieja")?;
+    let nueva = p.get("nueva").ok_or_else(|| err("falta nueva".into()))?;
+    let (cima_n, t_n, clave_n, _) = cabeza_v3_verificada(nueva, "nueva")?;
     println!("1/3 las DOS cabezas v3 recomponen su digest y sus firmas verifican");
-    if clave_v != clave_n {
-        return Err(claves_distintas());
+    match misma_continuidad(p, (vieja, &clave_v), (nueva, &clave_n))? {
+        None => println!("2/3 misma publicKey: el mismo firmante en los dos extremos"),
+        Some(r) => println!(
+            "2/3 claves distintas que las actas unen ({} eslabon(es), la posterior desde la \
+             hoja {}): el mismo OPERADOR en los dos extremos",
+            r.eslabones, r.desde
+        ),
     }
-    println!("2/3 misma publicKey: el mismo firmante en los dos extremos");
     let camino = camino_mmr(p)?;
     if !zk_ssl_verify::mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, &camino) {
         return Err(err(format!(
@@ -693,26 +694,29 @@ fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
 /// son los caminos, y **la posicion se DERIVA aqui y se CRUZA** contra el
 /// `isRight` recibido: sin ese cruce la mitad de AUSENCIA es falsificable.
 fn verificar_consumo(p: &serde_json::Value) -> Result<(), String> {
-    let (cima_v, t_v, clave_v, cons_v) = cabeza_v3_verificada(
-        p.get("vieja").ok_or_else(|| err("falta vieja".into()))?,
-        "vieja",
-    )?;
-    let (cima_n, t_n, clave_n, cons_n) = cabeza_v3_verificada(
-        p.get("nueva").ok_or_else(|| err("falta nueva".into()))?,
-        "nueva",
-    )?;
+    let vieja = p.get("vieja").ok_or_else(|| err("falta vieja".into()))?;
+    let (cima_v, t_v, clave_v, cons_v) = cabeza_v3_verificada(vieja, "vieja")?;
+    let nueva = p.get("nueva").ok_or_else(|| err("falta nueva".into()))?;
+    let (cima_n, t_n, clave_n, cons_n) = cabeza_v3_verificada(nueva, "nueva")?;
     println!("1/5 las DOS cabezas recomponen su digest y sus firmas verifican");
-    if clave_v != clave_n {
-        return Err(claves_distintas());
-    }
+    let rotada = misma_continuidad(p, (vieja, &clave_v), (nueva, &clave_n))?;
     let (raiz_v, raiz_n) = match (cons_v, cons_n) {
         (Some(v), Some(n)) => (v, n),
         _ => return Err(exige_consumos("consumo")),
     };
-    println!(
-        "2/5 misma publicKey y las dos cabezas llevan consRoot ({}) a los dos lados",
-        VersionCabeza::texto_con_consumos()
-    );
+    match rotada {
+        None => println!(
+            "2/5 misma publicKey y las dos cabezas llevan consRoot ({}) a los dos lados",
+            VersionCabeza::texto_con_consumos()
+        ),
+        Some(r) => println!(
+            "2/5 claves distintas que las actas unen ({} eslabon(es), la posterior desde la \
+             hoja {}), y las dos cabezas llevan consRoot ({}) a los dos lados",
+            r.eslabones,
+            r.desde,
+            VersionCabeza::texto_con_consumos()
+        ),
+    }
     if !zk_ssl_verify::mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, &camino_mmr(p)?) {
         return Err(err(format!(
             "la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia \
@@ -765,6 +769,71 @@ fn camino_descuadrado(cual: &str) -> String {
 /// productores del mismo contrato, y el documento contando uno. Aqui queda uno.
 fn claves_distintas() -> String {
     err("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante".into())
+}
+
+/// ⚠️ §648 · RFC-0015 E5a · **¿La misma continuidad?** Dos cabezas YA verificadas, cada una con su
+/// `publicKey`: con la misma, nada que juzgar (`None`). Con claves distintas y sin `actas` en el
+/// sobre, el texto de siempre, byte a byte (`claves_distintas`): ningún vector se mueve. Con
+/// `actas` —la cadena que sirve `zkssl_keyActs`, cada una en el JSON de `acta_a_json`—, la
+/// continuidad es de UN operador si `juzgar_continuidad` lo dice: la cadena entera vale, lleva de
+/// la clave de la cabeza de índice EMBEBIDO menor a la de la otra, la anterior firmó por debajo del
+/// `desde` de su sucesora y la posterior en su tramo. El embebido lo lee `indice_embebido` (§681),
+/// el mismo que mide la ventana de completitud. Un productor para los ocho sitios que exigen
+/// continuidad; el conflicto exige claves distintas y la vista dividida la misma, y no leen
+/// `actas`. Con la misma clave, `actas` no se lee: no hay cambio que explicar.
+fn misma_continuidad(
+    sobre: &serde_json::Value,
+    una: (&serde_json::Value, &str),
+    otra: (&serde_json::Value, &str),
+) -> Result<Option<Rotacion>, String> {
+    if una.1 == otra.1 {
+        return Ok(None);
+    }
+    let lista = match sobre.get("actas") {
+        None => return Err(claves_distintas()),
+        Some(l) => l
+            .as_array()
+            .ok_or_else(|| err("actas no es lista (la cadena de zkssl_keyActs)".into()))?,
+    };
+    let actas = lista
+        .iter()
+        .enumerate()
+        .map(|(k, a)| acta_de_json(a).map_err(|e| err(format!("actas[{k}]: {e}"))))
+        .collect::<Result<Vec<_>, _>>()?;
+    let lado = |(c, clave): (&serde_json::Value, &str)| -> Result<(Vec<u8>, u64), String> {
+        Ok((hex_a_bytes(clave)?, indice_embebido(c, "cabeza")?))
+    };
+    let ((k1, e1), (k2, e2)) = (lado(una)?, lado(otra)?);
+    juzgar_continuidad(&actas, (&k1, e1), (&k2, e2))
+        .map(Some)
+        .map_err(|e| {
+            err(format!(
+                "las cabezas llevan claves DISTINTAS y las actas no las unen: {e}"
+            ))
+        })
+}
+
+/// ⚠️ §648 · La cabeza contra la que se comparan las de una resolución —el cierre del sobre de
+/// completitud—, con su clave y el sobre, que es quien lleva las `actas` si las lleva.
+struct Cierre<'a> {
+    sobre: &'a serde_json::Value,
+    cabeza: &'a serde_json::Value,
+    clave: &'a str,
+}
+
+impl Cierre<'_> {
+    /// `misma_continuidad` con el cierre como uno de los lados; `que` nombra la otra cabeza en la
+    /// línea que dice la rotación.
+    fn exige(&self, c: &serde_json::Value, clave: &str, que: &str) -> Result<(), String> {
+        if let Some(r) = misma_continuidad(self.sobre, (self.cabeza, self.clave), (c, clave))? {
+            println!(
+                "   {que}: otra clave del MISMO operador, unida al cierre por las actas ({} \
+                 eslabon(es), la posterior desde la hoja {})",
+                r.eslabones, r.desde
+            );
+        }
+        Ok(())
+    }
 }
 
 /// UN productor del texto de la version del sobre, con su SUJETO como hueco y el
@@ -1726,15 +1795,13 @@ fn resolver_por_acuse(
     hash: Digest,
     inicio: u64,
     n: u64,
-    clave: &str,
+    cierre: &Cierre,
     que: &str,
 ) -> Result<u64, String> {
     let c = x.get("cabeza").ok_or_else(|| err(format!("{que}: falta cabeza")))?;
     let a = x.get("acuse").ok_or_else(|| err(format!("{que}: falta acuse")))?;
     let (_, _, clave_r, _) = cabeza_v3_verificada(c, &format!("{que}.cabeza"))?;
-    if clave_r != clave {
-        return Err(claves_distintas());
-    }
+    cierre.exige(c, &clave_r, &format!("{que}.cabeza"))?;
     if digest_de(a, "hashPrueba")? != hash {
         return Err(err(format!("{que}: el acuse es de OTRA prueba: no resuelve este recibo")));
     }
@@ -1758,7 +1825,7 @@ fn resolver_por_rechazo<'a>(
     hash: Digest,
     inicio: u64,
     n: u64,
-    clave: &str,
+    cierre: &Cierre,
     que: &str,
 ) -> Result<(u64, &'a serde_json::Value), String> {
     if sobre.get("tipo").and_then(|t| t.as_str()) != Some("rechazo") {
@@ -1772,9 +1839,7 @@ fn resolver_por_rechazo<'a>(
         .get("cabeza")
         .ok_or_else(|| err(format!("{que}: falta cabeza")))?;
     let (_, _, clave_r, _) = cabeza_v3_verificada(c, &format!("{que}.cabeza"))?;
-    if clave_r != clave {
-        return Err(claves_distintas());
-    }
+    cierre.exige(c, &clave_r, &format!("{que}.cabeza"))?;
     let s = indice_acreditado(c, &format!("{que}.cabeza"))?;
     if !recibos::dentro_de_ventana(inicio, s, n) {
         return Err(err(format!(
@@ -1902,7 +1967,7 @@ fn resolver_lote(
     hash: Digest,
     inicio: u64,
     n: u64,
-    clave: &str,
+    cierre: &Cierre,
 ) -> Result<(), String> {
     let comp = composicion_de(x)?;
     let k = comp.len();
@@ -1926,7 +1991,14 @@ fn resolver_lote(
                 )));
             }
             for (i, (par, op)) in acuses.iter().zip(&comp).enumerate() {
-                resolver_por_acuse(par, op.0, inicio, n, clave, &format!("resolucion.acuses[{i}]"))?;
+                resolver_por_acuse(
+                    par,
+                    op.0,
+                    inicio,
+                    n,
+                    cierre,
+                    &format!("resolucion.acuses[{i}]"),
+                )?;
             }
             println!(
                 "3/3 RESUELTA como LOTE aplicado: sus {k} operacion(es), cada una con el acuse de \
@@ -1934,7 +2006,8 @@ fn resolver_lote(
             );
         }
         (false, true, false) => {
-            let (s, d) = resolver_por_rechazo(&x["sobre"], hash, inicio, n, clave, "resolucion.sobre")?;
+            let (s, d) =
+                resolver_por_rechazo(&x["sobre"], hash, inicio, n, cierre, "resolucion.sobre")?;
             let j = operacion_nombrada(d, k, "resolucion.sobre.data")?;
             stale_no_resuelve(d, s, "resolucion.sobre")?;
             println!(
@@ -2020,7 +2093,7 @@ fn resolver_prenda(
     era: u64,
     inicio: u64,
     n: u64,
-    clave: &str,
+    cierre: &Cierre,
 ) -> Result<(), String> {
     let sobre = x
         .get("sobre")
@@ -2044,9 +2117,7 @@ fn resolver_prenda(
                 .get("cabeza")
                 .ok_or_else(|| err("resolucion.sobre: falta cabeza".into()))?;
             let (_, _, clave_s, _) = cabeza_v3_verificada(c, "resolucion.sobre.cabeza")?;
-            if clave_s != clave {
-                return Err(claves_distintas());
-            }
+            cierre.exige(c, &clave_s, "resolucion.sobre.cabeza")?;
             println!("   la resolucion, como sobre de prenda:");
             verificar_prenda(sobre)?;
             let k = &x["consumo"];
@@ -2054,9 +2125,7 @@ fn resolver_prenda(
                 .get("cabeza")
                 .ok_or_else(|| err("resolucion.consumo: falta cabeza".into()))?;
             let (_, _, clave_c, cons) = cabeza_v3_verificada(cc, "resolucion.consumo.cabeza")?;
-            if clave_c != clave {
-                return Err(claves_distintas());
-            }
+            cierre.exige(cc, &clave_c, "resolucion.consumo.cabeza")?;
             let raiz = cons.ok_or_else(|| exige_consumos("prenda"))?;
             let s = indice_acreditado(cc, "resolucion.consumo.cabeza")?;
             if !recibos::dentro_de_ventana(inicio, s, n) {
@@ -2115,9 +2184,7 @@ fn resolver_prenda(
                 )));
             }
             let (_, _, clave_j, _) = cabeza_v3_verificada(j, "resolucion.juzgada")?;
-            if clave_j != clave {
-                return Err(claves_distintas());
-            }
+            cierre.exige(j, &clave_j, "resolucion.juzgada")?;
             let sj = u64_de(j, "index")?;
             if sj.checked_add(1) != Some(era) {
                 return Err(err(format!(
@@ -2146,7 +2213,7 @@ fn resolver_prenda(
         }
         (false, false, true) => {
             let (s, d) =
-                resolver_por_rechazo(&x["rechazo"], hash, inicio, n, clave, "resolucion.rechazo")?;
+                resolver_por_rechazo(&x["rechazo"], hash, inicio, n, cierre, "resolucion.rechazo")?;
             let rechazado = d.get("campos").and_then(|c| digest_de(c, "consumo").ok());
             if rechazado != Some(af.marca) {
                 return Err(err(
@@ -2212,6 +2279,11 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
         )));
     }
     let (_, _, clave, _) = cabeza_v3_verificada(cierre, "cierre")?;
+    let contra = Cierre {
+        sobre: p,
+        cabeza: cierre,
+        clave: &clave,
+    };
     // RFC-0019 E1 (§681): la ventana EMPIEZA en el indice embebido del cierre -el acreditado de la
     // ultima cabeza firmada antes de el, la era en la unidad de la firma- y no en la `era` de la
     // hoja, que el nodo cuenta con su contador (`anotar`: el declarado mas uno). En esa unidad un
@@ -2279,9 +2351,7 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
                 err("sin resolucion y sin cabeza vigente: no hay ventana que medir".into())
             })?;
             let (_, _, clave_v, _) = cabeza_v3_verificada(vig, "vigente")?;
-            if clave_v != clave {
-                return Err(claves_distintas());
-            }
+            contra.exige(vig, &clave_v, "vigente")?;
             let s = indice_acreditado(vig, "vigente")?;
             if recibos::dentro_de_ventana(inicio, s, n) {
                 return Err(err(format!(
@@ -2298,7 +2368,14 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
             )));
         }
         Some(Some("acuse")) => {
-            let s = resolver_por_acuse(res.expect("hay resolucion"), hash, inicio, n, &clave, "resolucion")?;
+            let s = resolver_por_acuse(
+                res.expect("hay resolucion"),
+                hash,
+                inicio,
+                n,
+                &contra,
+                "resolucion",
+            )?;
             println!(
                 "3/3 RESUELTA como transicion aplicada, dentro de la ventana (indice acreditado \
                  {s}, inicio {inicio}, n {n})"
@@ -2309,7 +2386,7 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
                 .expect("hay resolucion")
                 .get("sobre")
                 .ok_or_else(|| err("resolucion: falta sobre (el de rechazo)".into()))?;
-            let (s, d) = resolver_por_rechazo(sobre, hash, inicio, n, &clave, "resolucion.sobre")?;
+            let (s, d) = resolver_por_rechazo(sobre, hash, inicio, n, &contra, "resolucion.sobre")?;
             stale_no_resuelve(d, s, "resolucion.sobre")?;
             println!(
                 "3/3 RESUELTA como rechazo con prueba, dentro de la ventana (indice {s}); la \
@@ -2317,10 +2394,10 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
             );
         }
         Some(Some("lote")) => {
-            resolver_lote(res.expect("hay resolucion"), hash, inicio, n, &clave)?;
+            resolver_lote(res.expect("hay resolucion"), hash, inicio, n, &contra)?;
         }
         Some(Some("prenda")) => {
-            resolver_prenda(res.expect("hay resolucion"), hash, era, inicio, n, &clave)?;
+            resolver_prenda(res.expect("hay resolucion"), hash, era, inicio, n, &contra)?;
         }
         Some(Some("declarada")) => {
             let d = res
@@ -3185,7 +3262,13 @@ mod tests {
         let sobre = json!({ "v": 1, "tipo": "prenda", "prueba": "0x01020304",
                             "enunciado": { "receptor": hex(&dg(1)), "marca": hex(&dg(2)) } });
         let rec = json!({ "hashPrueba": hex(&h) });
-        let r = |x: serde_json::Value| resolver_prenda(&x, h, 5, 4, 1440, "0xaa").unwrap_err();
+        let (nada, sin) = (json!({}), json!(null));
+        let cierre = Cierre {
+            sobre: &nada,
+            cabeza: &sin,
+            clave: "0xaa",
+        };
+        let r = |x: serde_json::Value| resolver_prenda(&x, h, 5, 4, 1440, &cierre).unwrap_err();
         let casos = [
             (json!({}), "falta sobre (el de la prenda"),
             (json!({ "sobre": { "tipo": "rechazo" } }), "el sobre no es de tipo prenda"),
@@ -3204,8 +3287,73 @@ mod tests {
             let e = r(x);
             assert!(e.contains(texto), "se esperaba «{texto}» y salio: {e}");
         }
-        let e = resolver_prenda(&json!({ "sobre": sobre }), dg(9), 5, 4, 1440, "0xaa").unwrap_err();
+        let e =
+            resolver_prenda(&json!({ "sobre": sobre }), dg(9), 5, 4, 1440, &cierre).unwrap_err();
         assert!(e.contains("la prenda es de OTRA prueba"), "{e}");
+    }
+
+    /// ⚠️ §648 · RFC-0015 E5a · **con claves distintas, `actas` se lee y se juzga; sin ella, el
+    /// texto de siempre.** Sobre los vectores de claves DISTINTAS del catálogo —dos nodos de
+    /// verdad, sin acta que los una—, en el consumo y en los tres sitios del cierre: sin `actas`,
+    /// el rojo de siempre, byte a byte; con una que no es lista, con un acta que no se lee y con
+    /// una cadena vacía, cada uno el suyo. La vista dividida es de UNA clave y no lee `actas`.
+    #[test]
+    fn con_claves_distintas_las_actas_se_leen_y_se_juzgan() {
+        let leer = |t: &str| -> serde_json::Value { serde_json::from_str(t).unwrap() };
+        for (nombre, sobre) in [
+            (
+                "consumo",
+                leer(include_str!(
+                    "../../../spec/vectors/consumo/rechazo-cons-claves-distintas.json"
+                )),
+            ),
+            (
+                "vigente",
+                leer(include_str!(
+                    "../../../spec/vectors/completitud/neg-vigente-de-otra-clave.json"
+                )),
+            ),
+            (
+                "acuse",
+                leer(include_str!(
+                    "../../../spec/vectors/completitud/neg-acuse-de-otra-clave.json"
+                )),
+            ),
+            (
+                "rechazo",
+                leer(include_str!(
+                    "../../../spec/vectors/completitud/neg-rechazo-de-otra-clave.json"
+                )),
+            ),
+        ] {
+            assert_eq!(
+                verificar_paquete(&sobre),
+                Err(claves_distintas()),
+                "{nombre}"
+            );
+            for (actas, texto) in [
+                (
+                    json!("0x00"),
+                    "actas no es lista (la cadena de zkssl_keyActs)",
+                ),
+                (json!([{}]), "actas[0]: "),
+                (
+                    json!([]),
+                    "las cabezas llevan claves DISTINTAS y las actas no las unen: la clave que \
+                     llega no esta en la cadena",
+                ),
+            ] {
+                let mut con = sobre.clone();
+                con["actas"] = actas;
+                let e = verificar_paquete(&con).unwrap_err();
+                assert!(e.starts_with(texto), "{nombre}: {e}");
+            }
+        }
+        let mut vista = leer(include_str!(
+            "../../../spec/vectors/ancla/neg-contraria-de-otra-clave.json"
+        ));
+        vista["actas"] = json!([]);
+        assert_eq!(verificar_paquete(&vista), Err(claves_distintas()));
     }
 
     /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.

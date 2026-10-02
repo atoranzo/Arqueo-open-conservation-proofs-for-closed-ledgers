@@ -5,7 +5,8 @@
   delegación del autor, con el criterio del §609, y REVERSIBLES: ver «Decisiones». Construida la
   E2, el núcleo del acta (§643), la E3a, el nodo que firma sus actas (§644), la E3b-1, la firma
   de la clave que se va y el techo que no reserva (§645), la E3b-2, `zkssl_keyActs` (§646), y la
-  E4, el testigo que rota con las actas (§647); E5 y E6 sin construir.
+  E4, el testigo que rota con las actas (§647), y la E5a, los sobres del kit que leen `actas`
+  (§648); la E5b y la E6, sin construir.
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude (sesión 193, §639, que lo escribe entero sobre la medida de los
   §636 y §638) — ver [`GENAI.md`](../../GENAI.md)
@@ -21,7 +22,7 @@
   índice), §591 (la huella de la clave), §594 (la puerta del diario en todo estado), §636 y §638
   (lo que hoy pasa al cambiar de clave, medido), §639 (esta propuesta), §642 (las decisiones) y
   §643 (la E2),
-  §644 (la E3a), §645 (la E3b-1), §646 (la E3b-2) y §647 (la E4).
+  §644 (la E3a), §645 (la E3b-1), §646 (la E3b-2), §647 (la E4) y §648 (la E5a).
 - **Backlog:** la **84** (agotamiento, rotación y pérdida del índice), con la **92** (custodia y
   supervivencia del índice) y la **19** en su línea de familia, que el §288 pidió cortar juntas;
   la **87** (agilidad criptográfica: el acta lleva el esquema de la clave que presenta); y la
@@ -37,7 +38,8 @@
 | E3b-1 — la vieja firma y el techo | la firma de la clave que se va (decisión 5), y el latido que deja de quemar el contador en el techo | no | **construida (§645)**: `--clave-anterior-fichero` da la semilla de la clave que se va, solo en una rotación; la vieja firma el mismo preámbulo en la hoja que da el contador y la nueva empieza en la siguiente, y una semilla que no es la del acta en vigor no gasta nada. En el techo el firmante devuelve `Agotada` **sin reservar**: el contador dice el techo, porque el SK no lo representa (medido) |
 | E3b-2 — el cable | `zkssl_keyActs`, que sirve la cadena de actas desde la génesis | no (aditivo: un método) | **construida (§646)**: sin parámetros, `{actas}` desde la génesis, armada una vez al arrancar tras juzgarla; el acta en JSON la escriben y la leen `acta_a_json` y `acta_de_json` del kit, que son también la línea del diario —byte a byte la de antes—; un elemento de un digest que vale `p` o más no se lee. La superficie pasa de 31 a 32 métodos y `zkssl/0.4` no sube |
 | E4 — el testigo | ante un cambio de clave pide el acta, la juzga contra la clave que fijó y sigue o se detiene; `--auditar` la juzga en el diario | no | **construida (§647)**: ante un cambio de clave el testigo pide `zkssl_keyActs` y la juzga con `juzgar_rotacion` del kit; si la cadena lleva de la clave fijada a la recibida, anota `rotada` con la cadena dentro, fija la nueva con su tramo y sigue; si no, se detiene como antes, con el motivo. Nace `solapamiento`, que detiene (reglas 3 y 4). `--auditar` rejuzga la rotación desde la línea, sin el nodo. El diario del testigo pasa a v4 |
-| E5 — el kit, el catálogo y el banco | el campo `actas` en los sobres que comparan cabezas, sus vectores y `tools/banco_rotacion.sh` contra un nodo real | no (aditivo: un campo opcional) | pendiente |
+| E5a — el kit | el campo `actas` en los sobres que comparan cabezas | no (aditivo: un campo opcional) | **construida (§648)**: `juzgar_continuidad` en el kit, un juez para los ocho sitios que exigen la continuidad de un firmante —la extensión, el consumo y las seis cabezas que la completitud compara con su cierre—; el índice EMBEBIDO ordena las dos cabezas, la cadena lleva de la anterior a la posterior (reglas 1 a 3) y la posterior cae en su tramo (regla 4, que nace con nombre: `FueraDeTramo`). Sin `actas`, el texto de `claves_distintas` byte a byte. El conflicto y la vista dividida no la leen, y `spec/PAQUETE.md` dice por qué |
+| E5b — el catálogo y el banco | los vectores con `actas`, `tools/banco_rotacion.sh` contra un nodo real y la segunda implementación que los lee | no | pendiente |
 | E6 — el medio | el acta como hoja del medio de la clave que se va y de la que llega, con la E3 del RFC-0013 | no | pendiente, tras la E3 del RFC-0013 |
 
 ## Motivación
@@ -205,6 +207,19 @@ vea; lo que cambia es que ahora puede **explicarlo con un objeto**, no con una e
 que une sus claves. Sin él, el texto de hoy, byte a byte: «las cabezas llevan claves DISTINTAS: la
 continuidad es de UN firmante», y ningún vector existente se mueve. Con él, la continuidad es de
 UN operador, con las reglas de D-C.
+
+**Fijado en la E5a (§648).** En un sobre no hay un testigo que haya visto pasar la rotación: hay
+dos cabezas firmadas y una cadena. El juez es `juzgar_continuidad`, en el kit, y lo que ordena las
+dos cabezas es su índice EMBEBIDO, no el nombre del campo que las trae: la cuenta es una (D-A), así
+que la de índice menor es la anterior, sea `vieja`, `cierre` o `juzgada`. La regla 3 se aplica a la
+anterior —lo que el verificador vio firmar a la clave que se va es esa cabeza— y la 4 a la
+posterior; su rojo nace con nombre, `FueraDeTramo`, que también es SOLAPAMIENTO. Con la misma clave
+`actas` no se lee: no hay cambio que explicar. Lo que la E5a NO cubre, dicho en `spec/PAQUETE.md`:
+el **conflicto** exige claves distintas y lo arma el delator, que no trae la cadena, así que una
+rotación se le puede presentar como dos libros —quien lo juzga pide `zkssl_keyActs` a los dos—; la
+**vista dividida** es de una clave, y el solapamiento entre dos merece su propio sobre, con una sola
+cabeza de la vieja y la cadena; y el **ancla** de la clave que se fue, extendida por una cabeza de la
+que llega, es la costura del medio, la E6.
 
 ### D-F — El agotamiento: un aviso con umbral, y la sucesora ya comprometida
 
