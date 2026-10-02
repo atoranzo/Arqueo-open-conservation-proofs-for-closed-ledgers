@@ -23,7 +23,7 @@
   índice), §591 (la huella de la clave), §594 (la puerta del diario en todo estado), §636 y §638
   (lo que hoy pasa al cambiar de clave, medido), §639 (esta propuesta), §642 (las decisiones) y
   §643 (la E2),
-  §644 (la E3a), §645 (la E3b-1), §646 (la E3b-2), §647 (la E4), §648 (la E5a), §649 (la E5b), §686 (la E5c) y §687 (el testigo que arma su sobre).
+  §644 (la E3a), §645 (la E3b-1), §646 (la E3b-2), §647 (la E4), §648 (la E5a), §649 (la E5b), §686 (la E5c), §687 (el testigo que arma su sobre) y §690 (el salto del `desde`).
 - **Backlog:** la **84** (agotamiento, rotación y pérdida del índice), con la **92** (custodia y
   supervivencia del índice) y la **19** en su línea de familia, que el §288 pidió cortar juntas;
   la **87** (agilidad criptográfica: el acta lleva el esquema de la clave que presenta); y la
@@ -277,6 +277,15 @@ uno indeterminado»). La regla, escrita como procedimiento del operador y no com
 
 Lo que el nodo puede hacer por construcción (E3): ofrecer la rotación con el `desde` calculado
 desde lo que él ve, y negarse a arrancar con la clave quemada si se le dice que lo está.
+
+**Fijado en el §690.** El paso 3 tiene bandera: `--desde-minimo HOJA`, solo en una rotación, es la
+hoja más alta que la clave que se va pudo firmar según lo que el operador sabe de fuera —los
+diarios de los testigos, el medio, un respaldo—. El contador salta por encima con `fsync`, las hojas
+de en medio quedan quemadas sin firma, y la sucesora entra por encima: con un contador restaurado
+por detrás de lo que la vieja firmó, rotar desde él habría dejado sus cabezas reales dentro del
+tramo de la nueva, un solapamiento contra un operador que solo perdió su estado. Y «negarse a
+arrancar con la clave quemada» lo hace ya la cadena: con el diario rotado, la clave que se fue no es
+la del acta en vigor ni la comprometida, y el nodo no arranca ni gasta (medido en el §690).
 
 ### D-H — La custodia, declarada como hoy
 

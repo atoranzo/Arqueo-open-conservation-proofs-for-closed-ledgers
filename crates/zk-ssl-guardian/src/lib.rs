@@ -459,6 +459,18 @@ impl GuardianIndice {
         Ok(siguiente)
     }
 
+    /// ⚠️ §690 · **Adelanta el contador hasta `hasta` sin firmar nada**, con `fsync`: las hojas de
+    /// en medio quedan QUEMADAS, sin firma —perdidas, nunca indeterminadas—. Si ya está ahí o por
+    /// encima, no hace nada: **nunca retrocede**. Es el salto del `desde` de la D-G del RFC-0015:
+    /// rotar por encima de toda hoja que la clave que se va pudo firmar.
+    pub fn adelantar(&mut self, hasta: u64) -> Result<(), GuardianError> {
+        if hasta > self.actual {
+            self.persistir(hasta)?;
+            self.actual = hasta;
+        }
+        Ok(())
+    }
+
     /// El último índice persistido. **Nunca retrocede.**
     pub fn actual(&self) -> u64 {
         self.actual
@@ -582,6 +594,24 @@ mod tests {
         }
         let g2 = GuardianIndice::abrir(&p).expect("reabrir");
         assert_eq!(g2.actual(), 5, "CRITICO: el contador retrocedio al reabrir");
+    }
+
+    /// §690 · adelantar persiste, sobrevive al cierre, y nunca retrocede: pedirle menos no hace
+    /// nada, y la reserva siguiente es la de encima.
+    #[test]
+    fn adelantar_salta_hacia_delante_y_nunca_retrocede() {
+        let p = en_disco("adelantar");
+        {
+            let mut g = GuardianIndice::abrir(&p).expect("abrir");
+            g.reservar().expect("reservar");
+            g.adelantar(40).expect("adelantar");
+            assert_eq!(g.actual(), 40);
+            g.adelantar(7).expect("pedir menos");
+            assert_eq!(g.actual(), 40, "CRITICO: adelantar retrocedio");
+        }
+        let mut g = GuardianIndice::abrir(&p).expect("reabrir");
+        assert_eq!(g.actual(), 40, "el salto se persistio");
+        assert_eq!(g.reservar().expect("reservar"), 41);
     }
 
     #[test]

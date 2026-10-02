@@ -713,6 +713,8 @@ instrumentacion) al grupo E.*
   ✅ a medias (§687): el testigo arma el sobre del solapamiento desde su
   diario (`--auditar --sobres`), y el banco de la rotación lo demuestra con
   un testigo de verdad. QUEDA el medio (E6): sigue abierta.
+  ✅ a medias (§690): el paso 3 de la D-G, `--desde-minimo`, para rotar
+  con un índice indeterminado. QUEDA el medio (E6): sigue abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con
@@ -967,6 +969,11 @@ instrumentacion) al grupo E.*
   ⚠️ (§639) El RFC-0015, la propuesta de la 84, escribe el (c) como
   procedimiento (su D-G) y deja la clave siguiente fría por diseño (D-B);
   el (a) y el (b) siguen como están. Sigue abierta.
+  ✅ a medias (§690): el procedimiento del (c) tiene su pieza en el nodo:
+  `--desde-minimo` hace entrar a la sucesora por encima de toda hoja que la
+  clave que se va pudo firmar, quemando las de en medio, y la clave rotada
+  no arranca sobre su diario. El (a) y el (b) siguen como están: sigue
+  abierta.
 
 ## C. Solidez y verificacion: resueltas y en revision
 

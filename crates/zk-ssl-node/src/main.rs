@@ -186,6 +186,15 @@ struct Args {
     #[arg(long)]
     clave_anterior_fichero: Option<String>,
 
+    /// **La hoja más alta que la clave que se va pudo firmar**, en una rotación (RFC-0015, D-G,
+    /// paso 3; §690): la de los diarios de los testigos, el medio, o un respaldo. La sucesora
+    /// entra por encima: el contador salta y las hojas de en medio quedan QUEMADAS, sin firma. Es
+    /// el procedimiento del índice indeterminado: con un contador restaurado por detrás de lo que
+    /// la vieja firmó, rotar desde él dejaría sus cabezas reales en el tramo de la nueva. Fuera de
+    /// una rotación, no arranca.
+    #[arg(long, value_name = "HOJA")]
+    desde_minimo: Option<u64>,
+
     /// **Imprime la huella de la clave de una semilla y sale**, sin contador, sin diario y sin
     /// escucha: es lo que se pasa a `--siguiente` desde la máquina donde vive la clave fría.
     #[arg(long)]
@@ -696,12 +705,26 @@ fn decidir_acta(
     }
 }
 
-/// El cableado: decide, firma por el camino de las cabezas y anota con `fsync`.
+/// El cableado: decide, firma por el camino de las cabezas y anota con `fsync`. Desde el §690 el
+/// arranque llama a [`firmar_acta_saltando`]; esta forma, sin salto, queda para los tests.
+#[cfg(test)]
 fn firmar_acta_si_toca(
     f: &mut firma_cabeza::FirmanteCabeza,
     ruta: &str,
     siguiente: Option<&str>,
     anterior: Option<&[u8]>,
+) -> anyhow::Result<()> {
+    firmar_acta_saltando(f, ruta, siguiente, anterior, None)
+}
+
+/// ⚠️ §690 · `firmar_acta_si_toca` con `--desde-minimo`: en una rotación, la sucesora entra por
+/// encima de esa hoja (RFC-0015, D-G, paso 3).
+fn firmar_acta_saltando(
+    f: &mut firma_cabeza::FirmanteCabeza,
+    ruta: &str,
+    siguiente: Option<&str>,
+    anterior: Option<&[u8]>,
+    desde_minimo: Option<u64>,
 ) -> anyhow::Result<()> {
     use zk_ssl_verify::actas::{huella_de_clave, Acta, Procedencia, ESQUEMA_XMSSMT_SHA2_40_8_256};
     let actas = crate::diario::actas(ruta);
@@ -712,6 +735,12 @@ fn firmar_acta_si_toca(
         anyhow::bail!(
             "--clave-anterior-fichero solo vale en una rotacion, y este arranque no lo es: \
              la clave que se va solo firma el acta de su sucesora"
+        );
+    }
+    if desde_minimo.is_some() && !matches!(decision, DecisionDeActa::Rotacion { .. }) {
+        anyhow::bail!(
+            "--desde-minimo solo vale en una rotacion, y este arranque no lo es: lo que salta es \
+             el desde de la sucesora"
         );
     }
     let (previa, siguiente) = match decision {
@@ -737,6 +766,21 @@ fn firmar_acta_si_toca(
             mmr_size: hojas.len() as u64,
         }
     });
+    // ⚠️ §690: por encima de toda hoja que la vieja pudo firmar, ANTES de tomar la del acta.
+    if let Some(m) = desde_minimo {
+        let antes = f.indice_del_guardian();
+        let hoja = f
+            .saltar_por_encima_de(m)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        if hoja > antes {
+            tracing::warn!(
+                desde_minimo = m,
+                quemadas = hoja - antes,
+                "el contador SALTA por encima de lo que la clave que se va pudo firmar: las hojas \
+                 de en medio quedan QUEMADAS, sin firma"
+            );
+        }
+    }
     // ⚠️ §645: con la firma de la vieja, la vieja toma la hoja que el contador da y la nueva
     //    empieza en la siguiente; sin ella, la nueva empieza en esa misma.
     let hoja = f.indice_de_la_clave().map_err(|e| anyhow::anyhow!("{e}"))?;
@@ -1481,6 +1525,61 @@ mod acta_de_arranque {
         );
     }
 
+    /// ⚠️ §690: **la sucesora entra por encima de lo que la vieja pudo firmar.** Con
+    /// `--desde-minimo 30` la rotación salta: el acta dice desde 31 y las hojas de en medio quedan
+    /// quemadas, sin firma. Por debajo de lo que el contador ya da no salta nada, y fuera de una
+    /// rotación —en la génesis— no arranca ni gasta.
+    #[test]
+    fn la_rotacion_salta_por_encima_del_desde_minimo() {
+        use crate::firma_cabeza::FirmanteCabeza;
+        let d = crate::tests_dir("acta_desde_minimo");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let (contador, diario) = (d.join("indice.bin"), d.join("diario.jsonl"));
+        let ruta = diario.to_str().expect("utf8");
+        let semilla = |x: u8| [x; 96];
+        let huella = |x: u8| huella_de_semilla(&semilla(x)).expect("huella");
+        let abrir = |x: u8| {
+            let mut f = FirmanteCabeza::desde_semilla(&semilla(x), &contador).expect("firmante");
+            let r = f.reconciliar().expect("reconciliar");
+            if let DecisionDeArranque::ArrancaResincronizando { hasta, .. } =
+                politica_de_reconciliacion(&r, crate::diario::maximo_indice(&diario))
+            {
+                f.resincronizar_a(hasta).expect("resincronizar");
+            }
+            f
+        };
+
+        let mut a = abrir(1);
+        let e = firmar_acta_saltando(&mut a, ruta, Some(&huella(2)), None, Some(30))
+            .expect_err("fuera de una rotacion");
+        assert!(e.to_string().contains("solo vale en una rotacion"), "{e}");
+        assert_eq!(
+            a.indice_del_guardian(),
+            0,
+            "la bandera fuera de sitio no gasta nada"
+        );
+        firmar_acta_si_toca(&mut a, ruta, Some(&huella(2)), None).expect("genesis");
+        drop(a);
+
+        let mut b = abrir(2);
+        firmar_acta_saltando(&mut b, ruta, Some(&huella(3)), None, Some(30)).expect("rotacion");
+        let actas = crate::diario::actas(&diario);
+        assert_eq!(
+            actas[1].acta.desde, 31,
+            "la sucesora, por encima de la hoja 30"
+        );
+        assert_eq!(verificar_cadena_de_actas(&actas), Ok(()));
+        assert_eq!(b.indice_del_guardian(), 32);
+        drop(b);
+
+        let mut c = abrir(3);
+        firmar_acta_saltando(&mut c, ruta, Some(&huella(4)), None, Some(5)).expect("rotacion");
+        let actas = crate::diario::actas(&diario);
+        assert_eq!(actas[2].acta.desde, 32, "por debajo del contador no salta");
+        assert_eq!(verificar_cadena_de_actas(&actas), Ok(()));
+    }
+
     /// ⚠️ §646: **el cable sirve la cadena de actas, y el kit la juzga.** Un nodo sin actas
     /// responde la cadena vacia; con la genesis y una rotacion firmada por las dos claves, sirve
     /// las dos, en orden, que el codec del kit lee de vuelta y `verificar_acta` acepta eslabon a
@@ -1635,6 +1734,9 @@ async fn main() -> anyhow::Result<()> {
             "--clave-anterior-fichero sin --clave/--clave-fichero: no hay sucesora cuya acta firmar"
         );
     }
+    if args.desde_minimo.is_some() && semilla_hex.is_none() {
+        anyhow::bail!("--desde-minimo sin --clave/--clave-fichero: no hay sucesora que entre");
+    }
     if firma_sin_diario(semilla_hex.is_some(), args.diario.is_some()) {
         anyhow::bail!(
             "quien firma, anota: --clave/--clave-fichero exige --diario. \
@@ -1693,7 +1795,13 @@ async fn main() -> anyhow::Result<()> {
                     Some(r) => Some(descodificar_semilla(&leer_semilla_de_fichero(r)?)?),
                     None => None,
                 };
-                firmar_acta_si_toca(&mut f, ruta, args.siguiente.as_deref(), anterior.as_deref())?;
+                firmar_acta_saltando(
+                    &mut f,
+                    ruta,
+                    args.siguiente.as_deref(),
+                    anterior.as_deref(),
+                    args.desde_minimo,
+                )?;
                 actas_de_clave = cadena_servida(ruta);
             }
             // ⚠️ §644 · el aviso de agotamiento (RFC-0015 D-F; RFC 10033 §3.4), con

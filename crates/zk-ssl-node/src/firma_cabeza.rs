@@ -324,6 +324,23 @@ impl FirmanteCabeza {
         Ok(hoja)
     }
 
+    /// ⚠️ §690 · **Salta por encima de una hoja que la clave que se va pudo firmar** (RFC-0015,
+    /// D-G, paso 3): el contador y la clave pasan a la hoja `minimo + 1` si están por debajo, sin
+    /// firmar nada; las de en medio quedan QUEMADAS. El contador se persiste ANTES de mover la
+    /// clave, como al reservar. Nunca retrocede. Devuelve la hoja en que la clave queda.
+    pub fn saltar_por_encima_de(&mut self, minimo: u64) -> Result<u64, FirmaError> {
+        let destino = minimo
+            .checked_add(1)
+            .filter(|d| *d < PRESUPUESTO_DE_LA_CLAVE)
+            .ok_or(FirmaError::Agotada { hoja: minimo })?;
+        self.guardian.adelantar(destino)?;
+        let hoja = self.guardian.actual();
+        if self.indice_de_la_clave()? < hoja {
+            self.resincronizar_a(hoja)?;
+        }
+        Ok(hoja)
+    }
+
     /// El índice que la clave dice tener, leído de su SK.
     pub fn indice_de_la_clave(&mut self) -> Result<u64, FirmaError> {
         // ⚠️ §298: la lectura vive en el guardián y su error es el suyo. El

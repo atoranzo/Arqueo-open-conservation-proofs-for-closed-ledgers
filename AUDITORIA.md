@@ -47339,3 +47339,60 @@ la vista dividida, con los dos testigos sobre dos nodos de la misma semilla, VER
 sobre: su evidencia es la ausencia en el diario del nodo, que no tiene sobre en el kit.
 
 **Lo que NO cierra.** Nada de la cola.
+
+## §690 — RFC-0015 D-G, paso 3: con el índice indeterminado, la sucesora entra por encima de todo lo que la vieja pudo firmar
+
+El commit que lleva este asiento, sobre `5f9cbda` (el §689). Un solo sello: el guardián del índice
+aprende a adelantar sin firmar; el firmante, a saltar por encima de una hoja; el nodo gana
+`--desde-minimo`, solo en una rotación; el RFC-0015, las entradas 84 y 92, las filas del canon y
+las cifras de tres documentos se ponen al día; y este asiento. Lo escribe, lo prueba y lo commitea
+la sesión de Claude Code del §643 al §689, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión, sobre
+este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-node` en 195 de 195,
+`zk-ssl-guardian` en 29 de 29 y `check_tests` en 1837.
+
+**De dónde sale.** La D-G del RFC-0015 escribe el procedimiento del índice indeterminado —la 92:
+«un índice perdido es mejor que uno indeterminado»—: la clave cuyo estado no es fiable está
+quemada, se rota a la sucesora comprometida, y **el `desde` de la sucesora salta por encima de todo
+índice conocido**: el diario, los diarios de los testigos y el medio. El nodo sabía calcular el
+`desde` desde lo que él ve, y nada más: con un contador restaurado de un respaldo, por detrás de lo
+que la vieja firmó de verdad, rotar desde él dejaba sus cabezas reales dentro del tramo de la
+nueva, y desde el §686 eso es un solapamiento que cualquiera delata, contra un operador que solo
+perdió su estado.
+
+**Lo que hace.**
+
+1. **El guardián adelanta.** `adelantar(hasta)` persiste el contador con `fsync` sin firmar nada:
+   las hojas de en medio quedan quemadas —perdidas, nunca indeterminadas—. Si ya está ahí o por
+   encima, no hace nada: nunca retrocede.
+2. **El firmante salta.** `saltar_por_encima_de(minimo)` lleva el contador y la clave a la hoja
+   `minimo + 1` si están por debajo, persistiendo el contador antes de mover la clave, como al
+   reservar.
+3. **El nodo, `--desde-minimo HOJA`**: la hoja más alta que la clave que se va pudo firmar según lo
+   que el operador sabe de fuera. Solo en una rotación: en la génesis o con la clave en vigor no
+   arranca, y no gasta nada. Con la firma de la vieja, la vieja firma en la hoja siguiente al salto
+   y la sucesora en la de después; sin ella, la sucesora en la siguiente al salto. El arranque lo
+   avisa con cuántas hojas quedan quemadas.
+4. **Lo que ya estaba, medido.** «Negarse a arrancar con la clave quemada si se le dice que lo
+   está»: con el diario rotado de A a B, arrancar con la clave A no arranca —«la clave no es la del
+   acta en vigor ni la sucesora que esta comprometio»— y el contador no se mueve. La cadena lo hace.
+
+**Medido.** De punta a punta con los binarios de release: un nodo con A y su génesis, parado con el
+contador en 3; arrancado otra vez con A y `--desde-minimo 60`, no arranca: no es una rotación;
+arrancado con B, la firma de A y `--desde-minimo 60`, la cadena que sirve `zkssl_keyActs` dice
+desde 0 y desde 62, con la firma de la vieja en la 61, y el arranque avisa de 58 hojas quemadas.
+
+**Probado.** Dos tests nuevos: en el guardián, adelantar persiste, sobrevive al cierre y nunca
+retrocede; en el nodo, la rotación con `--desde-minimo 30` entra desde la 31, una segunda con el
+mínimo por debajo del contador no salta, y en la génesis la bandera no arranca ni gasta.
+
+**Contadores.** `zk-ssl-node` 194 -> 195 y `zk-ssl-guardian` 28 -> 29. TOTAL DE SELLO 1676 -> 1678
+y TOTAL CON LARGOS 1813 -> 1815, en los tres párrafos ancla, con el desglose del nodo en 195. La
+cuenta de `check_tests` pasa de 1835 a 1837. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** El nodo no busca solo la hoja más alta en los diarios de los testigos ni en el
+medio: la da el operador, que es quien los tiene. Y no juzga si el estado de la vieja es fiable: con
+`--clave-anterior-fichero` lo afirma el operador, como desde el §645.
+
+**Lo que NO cierra.** La 92 sigue abierta —el (a), la supervivencia del índice, y el (b), la
+custodia, como estaban— y la 84 también, con la E6 pendiente.
