@@ -45772,3 +45772,36 @@ mueve.
 **Lo que NO cierra.** La comparación es por los bytes de la clave. Una misma clave escrita con otro
 OID todavía no se reconoce como la misma: eso es el corte siguiente (§664), que exige el OID
 canónico al leer una clave XMSS.
+
+## §664 — una clave XMSS, una escritura: el OID con el bit del apaño ya puesto no se lee como clave publicada
+
+El commit que lleva este asiento, sobre el §663. Tercero de los cuatro cortes del kit 0.4.2. Lo
+escribe, lo prueba y lo commitea una sesión de Claude Code en la nube, no el autor en su máquina,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon
+`--sello` salió VERDE: los 19 crates del nivel en sus pines, 322 s de tests, y el conflicto 17 de 17 en
+el kit y en la segunda implementación.
+
+**El defecto (P2).** `clave_desde_bytes` lee una clave publicada aplicando el apaño del OID: un OR del
+bit `0x00010000`, que la biblioteca `xmss` necesita para releer la clave multiárbol. Un OR es
+idempotente, así que la clave escrita ya «apañada» —OID `0x00010005`— se leía igual que la publicada
+con el de RFC 8391, `0x00000005`: una clave, dos escrituras. El sobre de conflicto compara las claves
+de sus dos libros por su escritura, y un «conflicto entre dos libros» con un solo libro escrito dos
+veces —el mismo, con el OID alterno en el segundo— salía VERDE. La segunda implementación ya lo
+rechazaba: su lector exige un OID de RFC 8391. Las mayúsculas, la otra escritura alterna, las cerró
+el §650.
+
+**Lo que hace.** `clave_desde_bytes` rechaza, antes del apaño, un OID con ese bit puesto, con el texto
+de la segunda implementación: «OID 0x00010005 no es un XMSS^MT de RFC 8391». Todo lo que lee una
+clave publicada en el kit —cabezas, cofirmas, conflicto, ancla— entra por aquí. El apaño sigue donde
+estaba y su centinela también. Un vector negativo nuevo,
+`spec/vectors/conflicto/rechazo-conf-oid-alterno.json`, la sonda del segundo enjambre: `conflicto.json`
+con el primer libro en los dos sitios y el OID alterno en el segundo.
+
+**Falsadores.** `una_clave_con_el_oid_ya_apanado_no_se_lee`, en `zk-ssl-verify`, y el vector nuevo en
+las dos implementaciones. **Medido con la comprobación desactivada**: el test cae, y el kit sale
+VERDE con el vector (16 de 17). Con ella, 17 de 17 en el kit y en la segunda implementación.
+
+**Contadores.** `zk-ssl-verify` 167 -> 168. TOTAL DE SELLO 1621 -> 1622; TOTAL CON LARGOS 1758 ->
+1759, en los tres párrafos ancla, y la cifra del verificador en `PRINCIPIOS.md`. El manifiesto del
+conflicto, 16 -> 17 entradas; `spec/vectors/`, 452 -> 453 ficheros, en los dos README. Con este
+corte, la comparación por bytes del §663 tampoco se esquiva con el OID. El `BACKLOG.md` no se mueve.

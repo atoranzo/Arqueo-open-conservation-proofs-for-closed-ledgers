@@ -614,6 +614,19 @@ mod el_apano_tiene_un_solo_dueno {
 ///    SK no se publica jamas, y lo publicado sigue llevando su OID del RFC,
 ///    `0x00000005`, sin apano ninguno.
 pub fn clave_desde_bytes(rfc: &[u8]) -> Result<VerifyingKey<Conjunto>, VerificaError> {
+    // §664: lo publicado lleva el OID de RFC 8391, sin el bit del apano. Sin
+    // esto, `0x00010005` -el apano ya aplicado- leia la MISMA clave que
+    // `0x00000005`: una clave con dos escrituras, y un «conflicto entre dos
+    // libros» con un solo libro escrito dos veces salia VERDE. La segunda
+    // implementacion ya lo rechazaba, con este mismo texto.
+    if rfc.len() >= 4 {
+        let oid = u32::from_be_bytes([rfc[0], rfc[1], rfc[2], rfc[3]]);
+        if oid & OFFSET_MT_UPSTREAM != 0 {
+            return Err(VerificaError::ClaveIlegible(format!(
+                "OID {oid:#010x} no es un XMSS^MT de RFC 8391"
+            )));
+        }
+    }
     let mut b = rfc.to_vec();
     aplicar_apano_del_oid(&mut b)?;
     VerifyingKey::<Conjunto>::try_from(b.as_slice())
@@ -941,6 +954,21 @@ mod tests {
         );
         // Y con el apaño, vuelve.
         assert!(clave_desde_bytes(&pk).is_ok(), "con el offset la clave debe volver");
+    }
+
+    /// §664: la clave publicada con el OID ya «apanado» (`0x00010005`) leia la
+    /// misma clave que la de RFC 8391. Ahora no se lee, y la firma legitima
+    /// tampoco verifica con ella. Falsador: sin la comprobacion, las dos `is_err`
+    /// fallan.
+    #[test]
+    fn una_clave_con_el_oid_ya_apanado_no_se_lee() {
+        let (pk, cf) = firmado(&[7u8; 32]);
+        assert!(clave_desde_bytes(&pk).is_ok(), "la publicada se lee");
+        let mut alterna = pk.clone();
+        alterna[1] |= 0x01;
+        assert_eq!(u32::from_be_bytes([alterna[0], alterna[1], alterna[2], alterna[3]]), 0x0001_0005);
+        assert!(clave_desde_bytes(&alterna).is_err(), "la escritura alterna no es una clave publicada");
+        assert!(verificar_cabeza(&alterna, &[7u8; 32], &cf).is_err());
     }
 
     // ── la COFIRMA del testigo (§297) ──

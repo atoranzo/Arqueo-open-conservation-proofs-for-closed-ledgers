@@ -19,3 +19,4 @@ rechazo-conf-isright-no-booleano.json|1|libro[0]: isRight[0] no es booleano
 rechazo-conf-isright-otra-posicion.json|1|libro[0]: el isRight recibido NO es el de la posicion
 rechazo-conf-camino-63-niveles.json|1|libro[0]: el camino no tiene los 63 niveles del arbol de consumos
 rechazo-conf-camino-no-sube.json|1|libro[0]: el camino NO sube al consRoot de su cabeza
+rechazo-conf-oid-alterno.json|1|OID 0x00010005 no es un XMSS^MT de RFC 8391
