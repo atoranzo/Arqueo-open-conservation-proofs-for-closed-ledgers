@@ -45926,3 +45926,33 @@ tres párrafos ancla, y la cifra de la capa donde `check_cifras` la señaló. El
 
 **Lo que NO hace.** No añade `overflow-checks` al perfil release; va en su propio corte (§669), porque
 cambia el comportamiento de todo el workspace.
+
+## §669 — en release, un desbordamiento para en vez de dar la vuelta: `overflow-checks` en todo el workspace
+
+El commit que lleva este asiento, sobre el §668. Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE: los 19 crates del
+nivel en sus pines, 934 s de tests —recompilado todo con las comprobaciones—, la conformidad, los
+once catálogos, la segunda implementación y el artefacto reproducible entre rutas (binario
+`b168fbf680c7f946`, tarball `336dd409b44695f0`).
+
+**El defecto (P3).** El workspace no tenía ningún `[profile]`: en release —lo que corre el nodo, el
+kit y el canon— un desbordamiento de enteros daba la vuelta en silencio, y solo en depuración
+avisaba. El §641 y el §668 comprueban a mano las sumas de dinero de la capa; lo que se escapara a esa
+lista no tenía red.
+
+**Lo que hace.** `[profile.release] overflow-checks = true` en el `Cargo.toml` del workspace: un
+desbordamiento en release es un pánico, que en el nodo la red del §530 lleva a PARADA. Vale para el
+workspace y sus dependencias.
+
+**Lo medido.** El canon entero en verde con las comprobaciones encendidas: ningún test ni ningún
+catálogo dependía de dar la vuelta en silencio. El binario del kit cambia de huella respecto del
+corte del §665 (`f56be87eb7ad44f4` -> `b168fbf680c7f946`), porque ahora lleva las comprobaciones; la
+0.4.2 se publicará desde este árbol o uno posterior, y su huella la fija el asiento que la registre.
+No se midió el coste en tiempo de la prueba ni del `apply`: el total de tests sube de 508 s (§668) a
+934 s, pero esa cifra incluye recompilar todo el workspace y no es un banco.
+
+**Contadores.** Ningún pin se mueve. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** Un desbordamiento ya no da la vuelta, pero para el proceso: donde la capa sabe
+que puede ocurrir, el error con nombre de los `checked_*` sigue siendo lo correcto.

@@ -76,3 +76,10 @@ rand_chacha = "0.3"
 winter-air = { path = "crates/winter-air" }
 winter-prover = { path = "crates/winter-prover" }
 winter-verifier = { path = "crates/winter-verifier" }
+
+# ⚠️ §669: en release, un desbordamiento aritmetico PARA en vez de dar la vuelta. Sin esto, una
+# suma de dinero que se escapara a los `checked_*` de la capa (§641, §668) envolvia en silencio:
+# en depuracion avisaba y en release, que es lo que corre, no. Para todo el workspace y sus
+# dependencias; lo que envuelve a proposito usa `wrapping_*`.
+[profile.release]
+overflow-checks = true
