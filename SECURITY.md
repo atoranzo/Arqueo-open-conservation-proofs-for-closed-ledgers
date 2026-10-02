@@ -458,6 +458,13 @@ sección no cambia —cerrado en la capa, abierto en el AIR—, pero el arreglo 
 **no está hecho**, aunque el §511 lo diga: tiene que acumular el mismo bit que el
 multiplexor lee, en los cinco, y cambia el formato de la prueba (tren `zkssl/0.5`).
 
+⚠️ **§679: tampoco ata el acumulador de cuentas.** Medido en la sesión que decidió el
+RFC-0018: `COL_IACC` suma `COL_BIT` en la fila +7 de cada ciclo de la subida de cuentas y el
+multiplexor de esa subida lo lee en la fila +0 del siguiente, el mismo desfase. Una traza que
+sube las cuentas por el titular congelado y pone en la fila +7 los bits de la vecina libre
+también verifica. Misma clase y misma defensa: la capa la para con `AccountFrozen`. El arreglo
+(E1 del RFC-0018, variante A medida) ata los dos acumuladores.
+
 ### 3.7 Una prueba malformada abortaba el proceso — ⚠️ MEDIDO, cerrado en las vías con sal
 
 Al leer una prueba, `winter-utils` 0.13.1 (`read_many`) y `winter-crypto` 0.13.1

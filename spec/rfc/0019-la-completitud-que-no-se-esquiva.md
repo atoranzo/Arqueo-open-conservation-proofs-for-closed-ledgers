@@ -1,8 +1,8 @@
 # RFC-0019 — La completitud que no se esquiva: la ventana con el índice acreditado, y el `StaleState` que no resuelve solo
 
-- **Estado:** PROPUESTO (§675), con sus cuatro decisiones abiertas y nada construido, como entró el
-  RFC-0015. Enmienda el RFC-0010 (ACEPTADO); el paso a ACEPTADO exige decidirlas y construir sus
-  etapas (regla 4 del PROCESO).
+- **Estado:** PROPUESTO (§675), con tres de sus cuatro decisiones tomadas (§679) y la D-A abierta.
+  Enmienda el RFC-0010 (ACEPTADO); el paso a ACEPTADO exige decidirlas y construir sus etapas (regla 4
+  del PROCESO).
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§675): redactó el borrador
   sobre lo que midió el re-triaje del segundo enjambre del plano v2.0, fuera del paso 4 de
@@ -10,7 +10,7 @@
 - **Fecha:** 2026-10-02
 - **Versión del protocolo afectada:** `zkssl/0.4`. E1 no cambia el cable; cambia un veredicto del kit.
   E2 cambia el veredicto de un vector publicado. E3, la hoja del recibo, sí cambia el cable.
-- **Asiento(s) de AUDITORIA:** §675 (este borrador).
+- **Asiento(s) de AUDITORIA:** §675 (este borrador), §679 (las decisiones).
 
 ## Motivación
 
@@ -57,16 +57,24 @@ se conservan con su veredicto de entonces.
 
 E3 rompe el cable: `zkssl/0.5`.
 
-## Decisiones abiertas (del autor)
+## Decisiones (del autor, §679)
 
-- **D-A.** E1 choca con la frase de la D-D del RFC-0010 (§567) de que los índices huérfanos «cuentan en
-  contra de quien los quemó»: con el acreditado, un índice quemado sin firma deja de acortar la
-  ventana. ¿Se enmienda la D-D así, o se exige `declarado == embebido + 1` y se rechaza la cabeza que
-  no lo cumpla?
-- **D-B.** ¿E2 como cuarto estado (recomendado), o VERDE con una advertencia explícita en la salida?
-- **D-C.** ¿Manifiestos por versión del kit para los dos vectores de E2, o vectores nuevos bajo un
-  nombre nuevo?
-- **D-D.** ¿E3 dentro del RFC-0018 o en su propio tren?
+El autor las decidió en la sesión del §676 al §678, «como recomienda» la sesión. Tres quedan tomadas;
+la D-A sigue abierta, porque lo recomendado no se sostiene.
+
+- **D-A — ABIERTA.** La sesión recomendó exigir `declarado == embebido + 1` y rechazar la cabeza que no
+  lo cumpla. **No se sostiene**, y la sesión lo dijo al autor antes de construir nada: el §332 y el §399
+  lo descartaron por escrito (`crates/zk-ssl-verify/src/lib.rs`, `verificar_cabeza` y
+  `verificar_cofirma`). `GuardianIndice::reservar` persiste el índice ANTES de firmar y el contador
+  nunca retrocede, así que un proceso muerto entre la reserva y la firma deja un índice huérfano y el
+  desfase crece para siempre: exigir el +1 daría ROJO sobre cabezas legítimas. Queda la otra rama:
+  medir con el acreditado y enmendar la D-D del RFC-0010 (los huérfanos dejan de acortar la ventana).
+  Decide el autor.
+- **D-B — el cuarto estado.** E2 sale como «DECLARADA, NO PROBADA» (salida 3), no como VERDE con una
+  advertencia, que se acabaría leyendo como VERDE.
+- **D-C — vectores nuevos, con nombre nuevo.** Los dos vectores publicados se quedan con su manifiesto
+  y su veredicto de `0.4`; los de E2 nacen con otro nombre. Ningún vector se reescribe.
+- **D-D — E3 dentro del tren del RFC-0018** (su D-D).
 
 ## Seguridad
 

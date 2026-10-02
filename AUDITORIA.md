@@ -46264,3 +46264,41 @@ en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG
 explica el propio `dispatch` (§230: lo que serializa es la raíz exacta del recibo, no el candado); la
 raíz de la época se compone bajo él en O(K log K); y `zkssl_inclusionReceipt`, que exige credencial,
 compone una cabeza en cada llamada.
+
+## §679 — las decisiones del autor sobre el RFC-0018 y el RFC-0019, con la D-A medida y dos recomendaciones que no se sostienen
+
+El commit que lleva este asiento, sobre el §678. Sello solo de documentos: `spec/rfc/0018-el-tren-0-5.md`,
+`spec/rfc/0019-la-completitud-que-no-se-esquiva.md` y `SECURITY.md` 3.6. Lo escribe y lo commitea una
+sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE.
+
+**De dónde sale.** El autor decidió las nueve decisiones de los dos RFC «como recomienda» la sesión.
+Al construir, dos de las recomendaciones no se sostuvieron, y la sesión lo dijo al autor antes de
+construir nada que dependiera de ellas. Los RFC dicen qué quedó decidido y qué no.
+
+**La D-A del RFC-0018, medida.** Antes de elegir, un banco de la sesión, fuera del árbol, sobre
+`circuit_send` en un worktree desechable: la base, la variante A (el paso del acumulador en la fila
+del multiplexor, leyendo `next`) y la variante B (el bit constante dentro del ciclo), con la misma
+traza honrada y dos ataques. Base: 208 restricciones, 48 periódicas, `prove` 1.011 ms, `verify`
+4,36 ms. A: 208 y 48, 924 ms, 4,53 ms. B: 210 y 50, 1.005 ms, 4,38 ms. Las pruebas, entre 76 y 80 KB,
+dentro del ruido. **Ataque F**, el del re-triaje (`COL_FBIT` de la fila +7 con los bits del titular
+congelado y la subida por la vecina libre): la base da `prove: Ok`; A y B, `Err`. **Ataque I**, nuevo
+(la subida de cuentas por el titular y `COL_BIT` de la fila +7 con los bits de la vecina, para que
+`IACC` la diga a ella): la base da `prove: Ok`; A y B, `Err`. Gana A, que no añade restricciones ni
+periódicas. Y E1 ata los dos acumuladores, no solo el de congelados: `SECURITY.md` 3.6 gana la nota
+de que el de cuentas tampoco ataba. Misma clase y misma defensa en la capa (`AccountFrozen`).
+
+**Lo decidido.** RFC-0018: D-A, la variante A; D-D, el E3 del RFC-0019 entra en este tren; D-E, el kit
+`0.5.0` sale cuando el nodo hable `zkssl/0.5`. RFC-0019: D-B, el cuarto estado; D-C, vectores nuevos
+con nombre nuevo; D-D, E3 dentro del RFC-0018. Y cómo se construye el tren: una etapa por sello, y el
+corte al final, con la versión y los vectores de `0.5` en el mismo sello, como el encendido del §538.
+
+**Lo que no se sostuvo, y queda abierto.** La D-A del RFC-0019: exigir `declarado == embebido + 1`
+daría ROJO sobre cabezas legítimas, porque `GuardianIndice::reservar` persiste antes de firmar y un
+índice huérfano abre el desfase para siempre; el §332 y el §399 ya lo habían descartado por escrito.
+La D-B y la D-C del RFC-0018: las claves de gobernanza anchas y la rotación no caben juntas, porque el
+conjunto de gobernanza es inmutable por diseño y con hojas anchas cambia su raíz. Cada RFC escribe
+las ramas coherentes. Decide el autor.
+
+**Lo que NO hace.** No construye ninguna etapa ni cambia código, vectores o tests. Los dos RFC siguen
+PROPUESTOS. El `BACKLOG.md` no se mueve.
