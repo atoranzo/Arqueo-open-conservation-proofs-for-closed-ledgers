@@ -58,6 +58,8 @@ pub enum ErrorSal<X> {
     Arbol(X),
     /// `verify_many` con tantas sales como items o nada: falla cerrado
     Longitud,
+    /// SEG-03b: el lote trae nodos que la reconstruccion de la raiz no consume
+    NoCanonico,
 }
 
 impl<H: Hasher> Clone for UnaConSal<H> {
@@ -243,8 +245,55 @@ impl<H: Hasher> VectorCommitment<H> for MerkleConSal<H> {
             &hojas,
             &proof.lote,
         )
-        .map_err(ErrorSal::Arbol)
+        .map_err(ErrorSal::Arbol)?;
+        // SEG-03b: la raiz cuadra, pero `get_root` de winter-crypto 0.13.1 no mira si sobran
+        // nodos: un digest de mas al final de un vector del lote no se lee, la prueba verifica
+        // igual y sus bytes -y su huella- son otros. Eso deshacia el §653 por dentro y dejaba
+        // reenviar un recibo ya aplicado con otra huella (§654). Una prueba son sus bytes: cada
+        // vector tiene que traer exactamente los nodos que la reconstruccion consume.
+        match nodos_consumidos(indexes, proof.lote.depth as usize) {
+            Some(n)
+                if n.len() == proof.lote.nodes.len()
+                    && n.iter().zip(&proof.lote.nodes).all(|(k, v)| *k == v.len()) =>
+            {
+                Ok(())
+            }
+            _ => Err(ErrorSal::NoCanonico),
+        }
     }
+}
+
+/// SEG-03b: cuantos nodos consume de cada vector del lote la reconstruccion de la raiz de
+/// `BatchMerkleProof::get_root` (winter-crypto 0.13.1, `merkle/proofs.rs`), contados sobre los
+/// indices solos y con su mismo recorrido: los mismos indices normalizados, el mismo puntero por
+/// POSICION en cada nivel y la misma regla de hermanos. Se llama solo despues de que la raiz
+/// cuadre, asi que lo imposible ya lo rechazo aquella; aqui devuelve `None`.
+fn nodos_consumidos(indexes: &[usize], depth: usize) -> Option<Vec<usize>> {
+    use std::collections::BTreeSet;
+    let hojas: BTreeSet<usize> = indexes.iter().copied().collect();
+    let normal: BTreeSet<usize> = indexes.iter().map(|i| i - (i & 1)).collect();
+    let offset = 1usize.checked_shl(depth as u32)?;
+    let mut punteros = Vec::with_capacity(normal.len());
+    let mut siguientes = Vec::with_capacity(normal.len());
+    for &i in &normal {
+        let pareja = hojas.contains(&i) && hojas.contains(&(i + 1));
+        punteros.push(if pareja { 0 } else { 1 });
+        siguientes.push((offset + i) >> 1);
+    }
+    for _ in 1..depth {
+        let nivel = std::mem::take(&mut siguientes);
+        let mut i = 0;
+        while i < nivel.len() {
+            if i + 1 < nivel.len() && nivel[i + 1] == (nivel[i] ^ 1) {
+                i += 1;
+            } else {
+                *punteros.get_mut(i)? += 1;
+            }
+            siguientes.push(nivel[i] >> 1);
+            i += 1;
+        }
+    }
+    Some(punteros)
 }
 
 // LOS TESTIGOS (RFC-0009 E3b-0): lo que la sal tiene que hacer, y lo que tiene que rechazar.
@@ -292,6 +341,34 @@ mod tests {
         let leida = UnaConSal::<Blake3>::read_from(&mut SliceReader::new(&bytes))
             .expect("la apertura se lee de sus bytes");
         ConSal::verify(c.commitment(), 5, it[5].clone(), &leida).expect("y sigue verificando");
+    }
+
+    /// SEG-03b: un nodo de mas en cualquier vector del lote se rechazaba solo si movia la raiz, y
+    /// al final de un vector no la mueve: `get_root` no lo lee. Ahora falla cerrado, en todas las
+    /// formas de abrir (hojas sueltas, una pareja de hermanas, todas), y el lote honesto pasa.
+    #[test]
+    fn un_nodo_de_mas_en_el_lote_no_verifica() {
+        let (it, c) = con_sal();
+        let formas = [vec![1usize, 3, 6], vec![0, 1], vec![2, 3, 4], (0..8).collect(), vec![7]];
+        for idx in formas {
+            let (_, lote) = c.open_many(&idx).expect("abrir");
+            let abiertos: Vec<_> = idx.iter().map(|&k| it[k].clone()).collect();
+            ConSal::verify_many(c.commitment(), &idx, &abiertos, &lote).expect("el honesto pasa");
+            for v in 0..lote.lote.nodes.len() {
+                let mut maleado =
+                    VariasConSal::<Blake3>::read_from(&mut SliceReader::new(&lote.to_bytes()))
+                        .expect("el lote se lee de sus bytes");
+                let extra = maleado.lote.nodes[v].first().cloned().unwrap_or_else(|| it[0].clone());
+                maleado.lote.nodes[v].push(extra);
+                assert!(
+                    matches!(
+                        ConSal::verify_many(c.commitment(), &idx, &abiertos, &maleado),
+                        Err(ErrorSal::NoCanonico)
+                    ),
+                    "un nodo de mas en el vector {v} de {idx:?} tiene que fallar cerrado"
+                );
+            }
+        }
     }
 
     #[test]

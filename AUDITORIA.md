@@ -45588,3 +45588,50 @@ publicada y rechaza lo que la 0.3.0 aceptaba.
 
 **Lo que NO cierra.** De los ocho hallazgos del aviso del §637 quedan, como decisiones del autor, el
 cambio de cable de `zkssl_supply` y las partes (a) y (b) del §655.
+
+## §659 — una prueba son sus bytes también por dentro: un nodo de más en el lote de Merkle ya no verifica, y el reenvío del §654 no se esquiva
+
+El commit que lleva este asiento, sobre `9bf67cd` (el §658). Lo escribe, lo prueba y lo commitea una
+sesión de Claude Code en la nube —la del segundo enjambre del plano v2.0—, no el autor en su máquina,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el
+canon `--sello` salió VERDE: los 19 crates del nivel en sus pines, 664 s de tests, la segunda
+implementación y los once catálogos en verde.
+
+**El defecto (SEG-03b, P1).** El §653 hizo que `Proof::from_bytes` rechazara la cola, y el §654 guardó
+la huella de cada prueba aplicada para que no volviera a valer. Pero la huella seguía sin identificar
+la operación: el lote de Merkle de una apertura (`VariasConSal`, en `zk-ssl-air/src/sal.rs`, el
+compromiso de la traza, de la composición y de las capas FRI) se verifica con `get_root` de
+winter-crypto 0.13.1, que reconstruye la raíz leyendo los nodos que necesita y **no mira si sobran**.
+Una prueba con nodos de más verificaba igual, con otros bytes y otra huella. Medido sobre `9bf67cd`,
+en la capa: tras el ciclo A->B->A del §654, el mismo recibo de envío con la prueba retocada así
+volvía a aplicarse (`Ok`, y la cuenta del pagador debitada dos veces), mientras que con sus bytes
+originales daba `StaleState`. El kit 0.4.0 daba VERDE a un vector publicado retocado del mismo modo.
+Lo encontró el verificador de solidez del segundo enjambre del plano v2.0, y esta sesión lo
+reprodujo sobre `main` antes de arreglarlo.
+
+**Lo que hace.** En `zk-ssl-air/src/sal.rs`, después de que la raíz cuadre, `verify_many` cuenta
+cuántos nodos consume la reconstrucción de cada vector —con el mismo recorrido que `get_root`, sobre
+los índices solos— y exige que cada vector traiga exactamente esos; si no, `ErrorSal::NoCanonico`.
+Es el código común de la capa, el nodo y el kit, así que el cierre llega a los tres sin tocar el
+fork ni el cable. No cambia ningún byte que una prueba honesta produzca: los vectores, la
+conformidad y los catálogos salen iguales en el canon.
+
+**Falsadores.** `sal::tests::un_nodo_de_mas_en_el_lote_no_verifica`: cinco formas de abrir el lote
+—hojas sueltas, una pareja de hermanas, tres seguidas, todas y la última— y un nodo de más en cada
+vector, todos `NoCanonico`, con el honesto en verde antes. `un_reenvio_con_la_prueba_maleada_por_dentro_no_vale`,
+en la capa: el ciclo del §654 con la prueba retocada falla y el pagador conserva su saldo.
+**Medido con la comprobación desactivada**: los dos caen. El kit construido con este árbol da ROJO al
+vector retocado y VERDE al original.
+
+**Contadores.** `zk-ssl` 428 -> 429, `zk-ssl-air` 41 -> 42. TOTAL DE SELLO 1616 -> 1618; TOTAL CON
+LARGOS 1753 -> 1755, en los tres párrafos ancla, y la cifra de la capa donde `check_cifras` la
+señaló. El `BACKLOG.md` no se mueve.
+
+**Lo que NO hace.** No publica un kit nuevo: el `arqueo-verify-v0.4.0` publicado acepta la prueba
+retocada por dentro y hace falta una versión con este cambio; publicarla es del autor. No cambia la
+clave del índice del §654, que sigue siendo la huella de los bytes, ahora ya única. No toca el
+`UnaConSal` de una sola apertura, que lee un camino de longitud fija.
+
+**Lo que NO cierra.** El cierre estructural del reenvío, el nonce en toda transición deudora (C2 de
+`doc/ESCALADO.md`), que pide el tren `zkssl/0.5`. Y el resto del aviso del segundo enjambre, que se
+entregó al autor fuera del árbol.

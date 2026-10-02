@@ -3806,6 +3806,106 @@ mod tests_verificacion {
         assert_eq!(state_of(&layer, alice).balance, 1_000_000, "nadie debita dos veces");
     }
 
+    /// SEG-03b: lee un `usize` con la codificacion de winter-utils (vint, el numero de bytes en los
+    /// ceros finales del primero; `0` y ocho bytes para lo grande).
+    fn leer_usize_de(b: &[u8], i: usize) -> (usize, usize) {
+        if b[i] == 0 {
+            let v = u64::from_le_bytes(b[i + 1..i + 9].try_into().expect("ocho bytes"));
+            return (v as usize, i + 9);
+        }
+        let n = b[i].trailing_zeros() as usize + 1;
+        let mut buf = [0u8; 8];
+        buf[..n].copy_from_slice(&b[i..i + n]);
+        ((u64::from_le_bytes(buf) >> n) as usize, i + n)
+    }
+
+    /// SEG-03b: la escritura canonica (la minima) de un `usize`, la misma de winter-utils.
+    fn escribir_usize(v: usize) -> Vec<u8> {
+        let mut n = 1;
+        while n < 9 && (v as u64) >= (1u64 << (7 * n)) {
+            n += 1;
+        }
+        if n == 9 {
+            let mut o = vec![0u8];
+            o.extend_from_slice(&(v as u64).to_le_bytes());
+            return o;
+        }
+        ((((v as u64) << 1) | 1) << (n - 1)).to_le_bytes()[..n].to_vec()
+    }
+
+    /// SEG-03b: anade un digest de mas, con codificacion canonica, al final del primer vector de
+    /// nodos del lote de Merkle de la primera apertura de la traza. Recorre el formato de
+    /// `Proof::write_into` del fork; si el formato cambia, el test que lo usa cae en vez de pasar.
+    fn con_un_nodo_de_mas(b: &[u8]) -> Vec<u8> {
+        let mut i = 4;
+        i += 2 + u16::from_le_bytes([b[i], b[i + 1]]) as usize; // meta
+        i += 1 + b[i] as usize; // nombre del campo
+        i += 10; // ProofOptions
+        i = leer_usize_de(b, i).1; // compromisos (la cuenta)
+        i += 1; // consultas unicas
+        i += 2 + u16::from_le_bytes([b[i], b[i + 1]]) as usize; // compromisos
+        let (valores, j) = leer_usize_de(b, i);
+        let pos = j + valores;
+        let (largo, j) = leer_usize_de(b, pos);
+        let op = &b[j..j + largo];
+        let primero = leer_usize_de(op, 1).1; // tras `depth` y la cuenta de vectores
+        let (k, nodos) = leer_usize_de(op, primero);
+        let mut nueva = op[..primero].to_vec();
+        nueva.extend(escribir_usize(k + 1));
+        nueva.extend_from_slice(&op[nodos..nodos + 32 * k]);
+        nueva.extend_from_slice(&op[nodos..nodos + 32]);
+        nueva.extend_from_slice(&op[nodos + 32 * k..]);
+        let mut fuera = b[..pos].to_vec();
+        fuera.extend(escribir_usize(nueva.len()));
+        fuera.extend(nueva);
+        fuera.extend_from_slice(&b[j + largo..]);
+        fuera
+    }
+
+    /// SEG-03b: EL REENVIO CON LA PRUEBA MALEADA POR DENTRO. El §653 rechaza la cola y el §654
+    /// guarda la huella de cada prueba aplicada, pero un digest de mas DENTRO del lote de Merkle
+    /// no movia la raiz: la prueba verificaba con otra huella, y tras el ciclo A->B->A el primer
+    /// recibo de Alicia volvia a valer (medido: `Ok`, y Alicia en 700.000).
+    #[test]
+    fn un_reenvio_con_la_prueba_maleada_por_dentro_no_vale() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let ea = state_of(&layer, alice);
+        let raices = (layer.accounts.root(), layer.pending.root());
+        let a_bob = layer.public_id_of(bob).expect("bob");
+        let ida = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, a_bob, salt_de(0x6541), 300_000)
+            .expect("ida");
+        layer.apply_send(&ida, alice, &ea, 300_000).expect("aplicar ida");
+        let eb = state_of(&layer, bob);
+        let c = layer.claim(BaseElement::new(SK_BOB), bob, &eb, &ida.notice).expect("cobro");
+        layer.apply_claim(&c, bob, &eb, &ida.notice).expect("aplicar cobro");
+        let a_alice = layer.public_id_of(alice).expect("alice");
+        let eb2 = state_of(&layer, bob);
+        let vuelta = layer
+            .send(BaseElement::new(SK_BOB), bob, &eb2, a_alice, salt_de(0x6542), 300_000)
+            .expect("vuelta");
+        layer.apply_send(&vuelta, bob, &eb2, 300_000).expect("aplicar vuelta");
+        let ea2 = state_of(&layer, alice);
+        let c2 = layer.claim(BaseElement::new(SK_ALICE), alice, &ea2, &vuelta.notice).expect("cobro 2");
+        layer.apply_claim(&c2, alice, &ea2, &vuelta.notice).expect("aplicar cobro 2");
+        assert_eq!(
+            (layer.accounts.root(), layer.pending.root()),
+            raices,
+            "premisa del ataque: las raices han vuelto a las de antes del envio"
+        );
+        let control = layer.apply_send(&ida, alice, &ea, 300_000);
+        assert!(matches!(control, Err(LayerError::StaleState)), "los mismos bytes: {control:?}");
+        let n0 = ida.proof.len();
+        let mut maleada = ida;
+        maleada.proof = con_un_nodo_de_mas(&maleada.proof);
+        assert_eq!(maleada.proof.len(), n0 + 32, "un digest de mas, y nada mas");
+        let r = layer.apply_send(&maleada, alice, &ea, 300_000);
+        assert!(r.is_err(), "el reenvio maleado no puede valer: {r:?}");
+        assert_eq!(state_of(&layer, alice).balance, 1_000_000, "nadie debita dos veces");
+    }
+
     /// §654 (SEG-03): EL REENVIO TRAS UN CICLO A->B->A. Alicia paga a Bob, Bob cobra, Bob le
     /// devuelve lo mismo y Alicia cobra: el envio no sube el nonce, asi que las raices vuelven a
     /// las del principio, y el primer recibo de Alicia volvia a valer.
