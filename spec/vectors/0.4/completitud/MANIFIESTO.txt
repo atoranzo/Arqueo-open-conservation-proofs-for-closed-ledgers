@@ -1,0 +1,10 @@
+# Sobre de completitud, CONSERVADO bajo el kit 0.4 (§682, RFC-0019 E2 y su D-C): estos dos vectores se
+# resuelven por un rechazo `StaleState` y su manifiesto de entonces exige VERDE. Desde el §682 el kit del
+# arbol los da como el cuarto estado, DECLARADA, NO PROBADA (salida 3): la causa se sostiene, pero su
+# atadura a la operacion es la palabra del nodo. Se MUEVEN aqui enteros, byte a byte, y no se reescriben
+# (regla 2 del PROCESO); los mismos bytes viven en `../../completitud/` con nombre nuevo y el veredicto
+# nuevo. Dicen lo que este manifiesto exige con el kit publicado arqueo-verify-v0.4.2 (medido en la
+# sesion del §682) y con el zk-ssl-verify del arbol en 41f765d (§681), corridos con tools/conformidad.sh.
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+resuelta-por-rechazo.json|0|VERDE: el recibo se resolvio dentro de la ventana, y se sostiene sin el nodo
+lote-rechazado-con-prueba.json|0|RESUELTA como LOTE rechazado con prueba

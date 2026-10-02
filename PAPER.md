@@ -33,9 +33,9 @@ obtenidas en condiciones idénticas, y documentamos un error metodológico
 propio —mezcla de compilaciones de depuración y optimizadas— detectado y
 corregido durante el trabajo.
 
-La implementación de referencia consta de **1643 pruebas ejecutables en la
+La implementación de referencia consta de **1644 pruebas ejecutables en la
 compuerta de sello** (55 son las de winterfell 0.13.1, que el fork del §533
-trae consigo) —1780 contando los pines de los niveles largo y completo, y
+trae consigo) —1781 contando los pines de los niveles largo y completo, y
 1364 declaradas—, con 18 ignoradas y declaradas, y
 está disponible públicamente. **No ha sido auditada por terceros y no
 implementa consenso distribuido**; discutimos en detalle las implicaciones

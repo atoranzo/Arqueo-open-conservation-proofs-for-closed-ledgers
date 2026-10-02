@@ -36,7 +36,10 @@
 # Dos corridas del banco dan el MISMO cierre salvo `emittedAtUnix`, que NO va firmado -la firma y
 # el epochDigest coinciden: medido en la sesion 193-. La familia se COPIA de la corrida del sello
 # y no se re-deriva byte a byte, y ningun texto pina un emittedAtUnix.
-resuelta-por-rechazo.json|0|VERDE: el recibo se resolvio dentro de la ventana, y se sostiene sin el nodo
+# §682 (RFC-0019 E2): `resuelta-por-rechazo` se resuelve por un `StaleState`, cuya atadura a la
+# operacion es la palabra del nodo; desde el §682 es el cuarto estado. El vector se MUEVE entero a
+# `../0.4/completitud/`, con su veredicto de entonces, y los mismos bytes viven aqui con nombre nuevo.
+rechazo-stale-declarada.json|3|DECLARADA, NO PROBADA: resolucion.sobre: el operador resuelve por StaleState
 no-resuelta.json|1|NO RESUELTA EN LA VENTANA
 declarada.json|3|DECLARADA, NO PROBADA
 resuelta-por-acuse.json|0|RESUELTA como transicion aplicada
@@ -96,7 +99,9 @@ neg-resolucion-desconocida.json|1|desconocido: se lee acuse, rechazo o declarada
 # de las formas de arriba, con sus vectores- y una resolucion FUERA de la ventana. Dos pruebas del
 # mismo enunciado no son los mismos bytes (S538): estos vectores se COPIAN, no se re-derivan.
 lote-aplicado.json|0|RESUELTA como LOTE aplicado
-lote-rechazado-con-prueba.json|0|RESUELTA como LOTE rechazado con prueba
+# §682 (RFC-0019 E2): `lote-rechazado-con-prueba`, lo mismo: su sobre es un `StaleState`. Se mueve a
+# `../0.4/completitud/`; aqui, los mismos bytes con nombre nuevo y el cuarto estado.
+lote-rechazado-stale-declarada.json|3|DECLARADA, NO PROBADA: resolucion.sobre: el operador resuelve por StaleState
 lote-por-su-forma.json|0|RESUELTA como LOTE rechazado por su FORMA
 lote-declarada.json|3|DECLARADA, NO PROBADA
 lote-sin-fundamento-cuenta.json|1|RECHAZO SIN FUNDAMENTO

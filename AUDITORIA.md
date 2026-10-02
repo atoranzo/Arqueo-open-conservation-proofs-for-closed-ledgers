@@ -46412,3 +46412,48 @@ cierto). El doc de `verificar_completitud` lo explica.
 **Contadores.** `zk-ssl-verify` 168 -> 169. TOTAL DE SELLO 1642 -> 1643; TOTAL CON LARGOS 1779 ->
 1780, en los tres párrafos ancla, y la cifra del verificador en `PRINCIPIOS.md`. El `BACKLOG.md` no
 se mueve.
+
+## §682 — RFC-0019 E2: un `StaleState` no resuelve solo, y los dos vectores que lo daban por VERDE se conservan bajo el kit 0.4
+
+El commit que lleva este asiento, sobre el §681. Lo escribe, lo prueba y lo commitea una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE.
+
+**Lo que cierra.** H12 del re-triaje, en el kit. Un recibo de recepción se resolvía como «rechazo
+con prueba» con un sobre de rechazo cuya causa fuera `StaleState`: el kit comprobaba que las raíces
+del `recibo` del rechazo no fueran las de la cabeza y daba VERDE. Pero ni ese `recibo` (los
+`publicInputs` del rechazado) ni el `data` van firmados, y la atadura a ESTA operación —el
+`data.recepcion.hashPrueba`— es la palabra del nodo: el acusado podía responder con un `StaleState`
+inventado y el sobre decía VERDE (medido en el re-triaje con `sonda_rechazo_recibo_inventado`).
+
+**Lo que hace (D-B del autor: el cuarto estado).** `stale_no_resuelve`: un rechazo cuya causa es
+`StaleState` sale como «DECLARADA, NO PROBADA» (salida 3), con su porqué. Se pregunta en el brazo del
+rechazo directo y en el del lote, DESPUÉS de sus propias comprobaciones: con la pregunta dentro de
+`resolver_por_rechazo`, `neg-lote-operacion-fuera.json` pasaba de ROJO con su nombre a la salida 3,
+y un sobre mal formado tiene que seguir siendo ROJO por lo suyo. La prenda no la necesita: su rechazo
+exige `campos.consumo`, que un `StaleState` no lleva. Las causas con prueba que sí está atada por la
+firma no cambian. E3 (la hoja del recibo con el digest de las entradas públicas, tren `zkssl/0.5`)
+es lo que podrá devolver el VERDE cuando la atadura sea verificable.
+
+**Los vectores (D-C del autor: nombre nuevo, nada se reescribe).** Cambian exactamente los dos que el
+RFC nombraba, medido con `tools/conformidad.sh` sobre los cuatro manifiestos que tocan rechazos
+(completitud, paquete, rechazo, prenda): `completitud/resuelta-por-rechazo.json` y
+`completitud/lote-rechazado-con-prueba.json`. Se MUEVEN enteros, con `git mv`, a
+`spec/vectors/0.4/completitud/`, con un manifiesto que conserva su veredicto de entonces y dice con
+qué kit se cumple: el `arqueo-verify-v0.4.2` publicado, medido en la sesión (2 de 2, binario
+`7734376463d120b0`), y el del árbol en `41f765d`, el §681, cuyo canon los verificó. Los mismos bytes
+viven en `completitud/` con nombre nuevo, `rechazo-stale-declarada.json` y
+`lote-rechazado-stale-declarada.json`, con el cuarto estado en su manifiesto. Los dos bancos que los
+producían (`banco_completitud.sh`, `banco_recibo_agregado.sh`) producen ahora los de nombre nuevo.
+Los vectores pasan de 454 a 457 ficheros en los dos README, que nombran el catálogo `0.4/`.
+
+**Falsador, ensayado.** `un_stale_state_no_resuelve_solo`: los dos vectores nuevos dan la salida 3 y
+nombran el `StaleState`, y un `StaleState` de otra operación sigue siendo ROJO (el control). Sin la
+pregunta en los dos brazos, los dos dan VERDE y cae.
+
+**Las prosas.** `spec/PAQUETE.md` lo dice en el veredicto 2 del sobre de completitud. El RFC-0019
+marca E2 construida.
+
+**Contadores.** `zk-ssl-verify` 169 -> 170. TOTAL DE SELLO 1643 -> 1644; TOTAL CON LARGOS 1780 ->
+1781, en los tres párrafos ancla, y la cifra del verificador en `PRINCIPIOS.md`. El `BACKLOG.md` no
+se mueve.

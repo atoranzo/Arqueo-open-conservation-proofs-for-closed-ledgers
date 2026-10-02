@@ -202,8 +202,9 @@ try:
     base_ap = L.base(res_ap['recepcion'])
     def lote(b, x): return dict(b, resolucion=dict(x, tipo='lote'))
     mando('lote-aplicado', lote(base_ap, {'composicion': comp_ap, 'acuses': acuses}), 0, 'RESUELTA como LOTE aplicado')
-    mando('lote-rechazado-con-prueba', lote(base_a, {'composicion': comp_a, 'sobre': rech_a}),
-          0, 'RESUELTA como LOTE rechazado con prueba')
+    # §682 (RFC-0019 E2): su sobre es un StaleState; el de antes vive en ../0.4/completitud
+    mando('lote-rechazado-stale-declarada', lote(base_a, {'composicion': comp_a, 'sobre': rech_a}),
+          3, 'DECLARADA, NO PROBADA: resolucion.sobre: el operador resuelve por StaleState')
     mando('lote-por-su-forma', lote(base_b, {'composicion': comp_b, 'data': db}),
           0, 'RESUELTA como LOTE rechazado por su FORMA')
     mando('lote-declarada', lote(base_b, {'composicion': comp_b, 'data': dict(db, causa='NotTheIssuer')}),

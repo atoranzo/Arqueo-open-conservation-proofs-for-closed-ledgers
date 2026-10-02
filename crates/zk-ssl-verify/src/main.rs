@@ -1786,6 +1786,24 @@ fn resolver_por_rechazo<'a>(
     Ok((s, d))
 }
 
+/// RFC-0019 E2 (§682): un `StaleState` no resuelve solo. Su causa se sostiene -las raices que el
+/// `recibo` del rechazo declaro no son las de la cabeza-, pero ni ese `recibo` ni el `data` van
+/// firmados: que esas raices sean las de la prueba que el operador RECIBIO es su palabra, y el
+/// acusado podia responder con un `StaleState` inventado y el sobre decia VERDE. Sale como el cuarto
+/// estado. Cada brazo lo pregunta DESPUES de sus propias comprobaciones, para que un sobre mal
+/// formado siga siendo ROJO por lo suyo.
+fn stale_no_resuelve(d: &serde_json::Value, s: u64, que: &str) -> Result<(), String> {
+    if d.get("causa").and_then(|c| c.as_str()) == Some("StaleState") {
+        return Err(format!(
+            "{DECLARADA_NO_PROBADA}{que}: el operador resuelve por StaleState. La causa se sostiene \
+             sobre el estado comprometido (cabeza de indice acreditado {s}), pero su atadura a \
+             ESTA operacion -los publicInputs del recibo del rechazo y su data- no va firmada: es \
+             la palabra del nodo (RFC-0019 E2)"
+        ));
+    }
+    Ok(())
+}
+
 /// Una operacion de un lote tal como la compone quien lo arma: el digest de su prueba, su cuenta y
 /// la posicion de su pendiente (RFC-0014 D-A). Los mismos tres campos que `hash_del_lote` escribe.
 type OperacionDelLote = (Digest, u64, u64);
@@ -1918,6 +1936,7 @@ fn resolver_lote(
         (false, true, false) => {
             let (s, d) = resolver_por_rechazo(&x["sobre"], hash, inicio, n, clave, "resolucion.sobre")?;
             let j = operacion_nombrada(d, k, "resolucion.sobre.data")?;
+            stale_no_resuelve(d, s, "resolucion.sobre")?;
             println!(
                 "3/3 RESUELTA como LOTE rechazado con prueba, dentro de la ventana (indice {s}): \
                  la operacion {j} no se sostenia, y sus companeras quedan resueltas por ella -el \
@@ -2290,7 +2309,8 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
                 .expect("hay resolucion")
                 .get("sobre")
                 .ok_or_else(|| err("resolucion: falta sobre (el de rechazo)".into()))?;
-            let (s, _) = resolver_por_rechazo(sobre, hash, inicio, n, &clave, "resolucion.sobre")?;
+            let (s, d) = resolver_por_rechazo(sobre, hash, inicio, n, &clave, "resolucion.sobre")?;
+            stale_no_resuelve(d, s, "resolucion.sobre")?;
             println!(
                 "3/3 RESUELTA como rechazo con prueba, dentro de la ventana (indice {s}); la \
                  atadura al recibo es la palabra del nodo en su data"
@@ -3715,6 +3735,23 @@ mod tests_marca_651 {
             let e = verificar_paquete(&w).expect_err("la ventana sigue abierta: ROJO de prematuro");
             assert!(e.contains("ventana ABIERTA"), "{campo} inflado: {e}");
         }
+    }
+
+    /// §682 (RFC-0019 E2): un rechazo `StaleState` no resuelve solo, ni en la via directa ni en el
+    /// lote: el cuarto estado, salida 3. Los mismos bytes que, con el kit 0.4, daban VERDE
+    /// (`spec/vectors/0.4/completitud/`). Control: un `StaleState` mal atado sigue siendo ROJO por lo
+    /// suyo (`neg-rechazo-de-otra-operacion`). Falsador, ensayado: sin la pregunta en los dos brazos,
+    /// los dos dan VERDE y cae.
+    #[test]
+    fn un_stale_state_no_resuelve_solo() {
+        let raiz = format!("{}/../../spec/vectors", env!("CARGO_MANIFEST_DIR"));
+        for v in ["rechazo-stale-declarada", "lote-rechazado-stale-declarada"] {
+            let r = correr(&format!("{raiz}/completitud/{v}.json"));
+            assert_eq!(codigo_de_salida(&r), 3, "{v}: {r:?}");
+            assert!(r.unwrap_err().contains("resuelve por StaleState"), "{v}");
+        }
+        let r = correr(&format!("{raiz}/completitud/neg-rechazo-de-otra-operacion.json"));
+        assert_eq!(codigo_de_salida(&r), 1, "mal atado, ROJO: {r:?}");
     }
 
     #[test]

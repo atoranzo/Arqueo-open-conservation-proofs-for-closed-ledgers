@@ -392,7 +392,12 @@ la hoja la ata a su camino pero no mide la ventana:
    transición aplicada».
 2. **`rechazo`**: el sobre verifica por sus propias reglas, su cabeza está dentro de la ventana, y
    su `data.recepcion.hashPrueba` es el del recibo (D3). ⚠️ Esa atadura es la PALABRA del nodo: el
-   `error` del cable no va firmado. VERDE, «resuelta como rechazo con prueba».
+   `error` del cable no va firmado. VERDE, «resuelta como rechazo con prueba». ⚠️ **Desde el §682
+   (RFC-0019 E2), un rechazo `StaleState` no resuelve solo**, ni en la vía directa ni en el lote:
+   su causa se sostiene, pero las raíces que su `recibo` declara y su `data` no van firmados, y que
+   sean las de ESTA operación es la palabra del acusado. Sale como el cuarto estado, «DECLARADA, NO
+   PROBADA» (salida 3). Los dos vectores que lo resolvían en VERDE se conservan en
+   `spec/vectors/0.4/completitud/` con su manifiesto de entonces.
 3. **Sin resolución**, con una cabeza `vigente` fuera de la ventana: **ROJO NOMBRADO**, «NO
    RESUELTA EN LA VENTANA». Es el producto del hito: la promesa firmada por el acusado, la ventana
    aritmética sobre dos cabezas firmadas, y la carga de exhibir la resolución de quien la tiene.

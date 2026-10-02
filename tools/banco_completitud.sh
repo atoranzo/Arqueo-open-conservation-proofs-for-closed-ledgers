@@ -149,8 +149,9 @@ try:
     def res(x):
         return dict(base, resolucion=x)
     # los dos veredictos que no esperan
-    mando('resuelta-por-rechazo', res({'tipo': 'rechazo', 'sobre': sobre_rechazo}),
-          0, 'VERDE: el recibo se resolvio dentro de la ventana, y se sostiene sin el nodo')
+    # §682 (RFC-0019 E2): un StaleState no resuelve solo; el de antes vive en ../0.4/completitud
+    mando('rechazo-stale-declarada', res({'tipo': 'rechazo', 'sobre': sobre_rechazo}),
+          3, 'DECLARADA, NO PROBADA: resolucion.sobre: el operador resuelve por StaleState')
     mando('declarada', res({'tipo': 'declarada', 'data': declarada}), 3, 'DECLARADA, NO PROBADA')
     # el cierre
     mando('neg-sin-cierre', sin(base, 'cierre'), 1, 'falta cierre')

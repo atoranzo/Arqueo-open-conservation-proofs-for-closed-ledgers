@@ -1,6 +1,7 @@
 # RFC-0019 — La completitud que no se esquiva: la ventana con el índice acreditado, y el `StaleState` que no resuelve solo
 
-- **Estado:** PROPUESTO (§675), con sus cuatro decisiones tomadas (§679, §681) y E1 construida (§681).
+- **Estado:** PROPUESTO (§675), con sus cuatro decisiones tomadas (§679, §681) y E1 y E2 construidas
+  (§681, §682).
   Enmienda el RFC-0010 (ACEPTADO); el paso a ACEPTADO exige decidirlas y construir sus etapas (regla 4
   del PROCESO).
 - **Autor:** Ángel José Toranzo Portela
@@ -10,7 +11,8 @@
 - **Fecha:** 2026-10-02
 - **Versión del protocolo afectada:** `zkssl/0.4`. E1 no cambia el cable; cambia un veredicto del kit.
   E2 cambia el veredicto de un vector publicado. E3, la hoja del recibo, sí cambia el cable.
-- **Asiento(s) de AUDITORIA:** §675 (este borrador), §679 (las decisiones), §681 (la D-A y E1).
+- **Asiento(s) de AUDITORIA:** §675 (este borrador), §679 (las decisiones), §681 (la D-A y E1), §682
+  (E2).
 
 ## Motivación
 
@@ -45,6 +47,13 @@ inflado a 1444 daba NO RESUELTA y da ventana ABIERTA.
 **E2 — `StaleState` no resuelve solo.** Una resolución por rechazo cuya causa sea `StaleState` sale
 como el cuarto estado del RFC-0010 D-G, «DECLARADA, NO PROBADA» (salida 3), y no como VERDE: la causa
 se sostiene sobre el estado comprometido, pero su atadura a ESTA operación es la palabra del nodo.
+
+**E2, construida (§682).** `stale_no_resuelve`, preguntado en el brazo del rechazo directo y en el
+del lote, después de sus propias comprobaciones: un sobre mal formado sigue siendo ROJO por lo suyo.
+Cambian exactamente los dos vectores que este RFC nombraba; se mueven enteros a
+`spec/vectors/0.4/completitud/` con su manifiesto de entonces, que el kit `0.4.2` publicado cumple, y
+los mismos bytes viven en `completitud/` como `rechazo-stale-declarada.json` y
+`lote-rechazado-stale-declarada.json`, con el cuarto estado.
 
 **E3 — La hoja del recibo lleva el digest de las entradas públicas.** El recibo de recepción gana
 `digest_pi`, el digest de las entradas públicas de la prueba recibida, bajo la firma. Un rechazo
