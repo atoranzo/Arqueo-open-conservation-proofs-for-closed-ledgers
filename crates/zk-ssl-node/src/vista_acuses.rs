@@ -56,8 +56,25 @@ pub fn raiz_de_epoca(
 /// El test del latido «la cabeza del latido es la que sirve el RPC» hace
 /// de compuerta: si `latir` y los arms del RPC mapearan cada uno a su
 /// manera, sus cabezas divergirían y ese test lo diría.
-pub fn pares(entradas: &[zk_ssl::log::LogEntry]) -> Vec<(u64, Digest)> {
-    entradas.iter().map(|e| (e.seq, e.proof_digest)).collect()
+///
+/// §677: solo el tramo `[desde, hasta)` del registro, y no el registro entero.
+/// Se toma por posición porque la posición ES el `seq`: `append` numera con
+/// `entries.len()` y `verify_chain` rechaza al abrir la entrada cuyo `seq` no
+/// sea su posición (`zk_ssl::log`). Lo que queda fuera del tramo no pertenece
+/// a la época y `raiz_de_epoca` y `camino_de_epoca` lo descartaban igual;
+/// copiarlo costaba O(registro) bajo el candado del estado: 32 ms a un millón
+/// de entradas, medido por el segundo enjambre, en cada `zkssl_epochHead`.
+pub fn pares(entradas: &[zk_ssl::log::LogEntry], desde: u64, hasta: u64) -> Vec<(u64, Digest)> {
+    let hasta = (hasta.min(entradas.len() as u64)) as usize;
+    let desde = (desde as usize).min(hasta);
+    entradas[desde..hasta]
+        .iter()
+        .enumerate()
+        .map(|(i, e)| {
+            debug_assert_eq!(e.seq, (desde + i) as u64, "la posicion es el seq");
+            (e.seq, e.proof_digest)
+        })
+        .collect()
 }
 
 /// La pareja que la cabeza **v2** firma: `(raíz de la época EN CURSO, N)`.
@@ -65,10 +82,12 @@ pub fn pares(entradas: &[zk_ssl::log::LogEntry]) -> Vec<(u64, Digest)> {
 /// El límite superior de la época en curso es `len` — el `seq` que la
 /// cabeza que se está componiendo va a llevar. `n` es [`N_MAX_CABEZAS`]:
 /// el techo declarado, ahora **firmado**, uno por época.
-pub fn pareja_de_ahora(entradas: &[(u64, Digest)], limite_anterior: u64) -> (Digest, u64) {
+///
+/// §677: recibe el registro y copia solo el tramo de la época en curso.
+pub fn pareja_de_ahora(entradas: &[zk_ssl::log::LogEntry], limite_anterior: u64) -> (Digest, u64) {
     let limite = entradas.len() as u64;
     (
-        raiz_de_epoca(entradas.iter().copied(), limite_anterior, limite, N_MAX_CABEZAS),
+        raiz_de_epoca(pares(entradas, limite_anterior, limite), limite_anterior, limite, N_MAX_CABEZAS),
         N_MAX_CABEZAS,
     )
 }
@@ -205,6 +224,42 @@ mod tests {
             raiz_de_epoca(entradas(0..3), 0, 3, 1_440),
             raiz_de_epoca(entradas(0..3), 0, 3, 720),
         );
+    }
+
+    /// §677: el tramo da la MISMA raiz y el MISMO camino que el registro
+    /// entero, con limites dentro, en el borde y mas alla del registro. El
+    /// oraculo es el mapeo de antes (todas las entradas, filtradas por la
+    /// epoca). Falsador, ensayado: con el tramo corrido una posicion
+    /// (`desde + 1`), la primera hoja de cada epoca se pierde y cae.
+    #[test]
+    fn el_tramo_da_la_misma_epoca_que_el_registro_entero() {
+        let mut log = zk_ssl::log::TransitionLog::new();
+        for i in 0..40u64 {
+            log.append(zk_ssl::log::OpKind::Mint, as_digest(i), as_digest(i + 1), &i.to_le_bytes());
+        }
+        let e = log.entries();
+        let todas: Vec<(u64, Digest)> = e.iter().map(|x| (x.seq, x.proof_digest)).collect();
+        for (p, s) in [(0u64, 1u64), (0, 40), (3, 9), (17, 40), (39, 40), (40, 40), (45, 50), (12, 60)] {
+            assert_eq!(
+                raiz_de_epoca(pares(e, p, s), p, s, N_MAX_CABEZAS),
+                raiz_de_epoca(todas.clone(), p, s, N_MAX_CABEZAS),
+                "[{p}, {s})"
+            );
+            for seq in p..s.min(40) {
+                assert_eq!(
+                    camino_de_epoca(&pares(e, p, s), p, s, seq, N_MAX_CABEZAS),
+                    camino_de_epoca(&todas, p, s, seq, N_MAX_CABEZAS),
+                    "[{p}, {s}) seq {seq}"
+                );
+            }
+        }
+        for p in [0u64, 1, 20, 39, 40, 41] {
+            assert_eq!(
+                pareja_de_ahora(e, p),
+                (raiz_de_epoca(todas.clone(), p, 40, N_MAX_CABEZAS), N_MAX_CABEZAS),
+                "ahora desde {p}"
+            );
+        }
     }
 
     #[test]

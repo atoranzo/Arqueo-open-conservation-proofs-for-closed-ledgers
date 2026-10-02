@@ -184,8 +184,7 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
         } else {
             Some(pagos_registrados(entradas))
         };
-        let pares = crate::vista_acuses::pares(entradas);
-        let (acuses_root, n) = crate::vista_acuses::pareja_de_ahora(&pares, limite_anterior);
+        let (acuses_root, n) = crate::vista_acuses::pareja_de_ahora(entradas, limite_anterior);
         // §570 (RFC-0010 E2d): la pareja de recepcion, BAJO el mismo candado: ver
         // `pareja_de_recepcion`, es lo que impide leer un `rx` reservado y sin anotar.
         let (recep_root, recep_count) = pareja_de_recepcion(app, limite_recepcion)?;

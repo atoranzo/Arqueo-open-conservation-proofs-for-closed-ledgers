@@ -46193,3 +46193,38 @@ en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG
 **Lo que NO cierra.** `zkssl_epochHead`, `zkssl_ackPath` y `zkssl_inclusionReceipt` siguen copiando el
 registro entero bajo el candado del estado (`vista_acuses::pares`), y `zkssl_verifyChain` lo recorre
 entero sin límite. Son los dos cortes siguientes.
+
+## §677 — bajo el candado del estado, el tramo de la época y no el registro: `zkssl_epochHead`, `zkssl_ackPath` y `zkssl_inclusionReceipt`
+
+El commit que lleva este asiento, sobre el §676. Quinto corte de H15. Lo escribe, lo prueba y lo
+commitea una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE.
+
+**El coste.** `vista_acuses::pares` copiaba el registro entero a pares `(seq, proof_digest)` en cada
+`zkssl_epochHead` y `zkssl_inclusionReceipt`, en cada `zkssl_ackPath` y en cada latido, con el candado
+del estado tomado, y `raiz_de_epoca` y `camino_de_epoca` descartaban después todo lo que no fuera de la
+época. El segundo enjambre lo midió: 1,7 ms a cien mil entradas y 32 ms a un millón por llamada, en
+lecturas públicas sin credencial (`zkssl_epochHead`, `zkssl_ackPath`) durante las que no se aplica
+nada.
+
+**Lo que hace.** `pares(entradas, desde, hasta)` copia solo el tramo `[desde, hasta)`, tomado por
+posición: la posición ES el `seq`, porque `append` numera con `entries.len()` y `verify_chain` rechaza
+al abrir la entrada cuyo `seq` no sea su posición (`zk_ssl::log`); un `debug_assert` lo vuelve a
+decir. `pareja_de_ahora` recibe el registro y copia solo la época en curso, `[P, len)`; `zkssl_ackPath`
+copia solo `[P, S)`. Lo copiado bajo el candado pasa de O(registro) a O(K), las entradas de una época.
+Los límites fuera del registro se recortan, y dan lo mismo que antes: ninguna hoja. Ninguna raíz ni
+ningún camino cambian, y el test del latido «la cabeza del latido es la que sirve el RPC» sigue de
+compuerta.
+
+**Falsador, ensayado.** `el_tramo_da_la_misma_epoca_que_el_registro_entero`: sobre un registro de 40
+entradas, la raíz y cada camino del tramo son los del registro entero filtrado, con límites dentro, en
+el borde y más allá del registro, y la pareja de ahora desde seis límites. Con el tramo corrido una
+posición cae en `[0, 1)`.
+
+**Contadores.** `zk-ssl-node` 185 -> 186. TOTAL DE SELLO 1630 -> 1631; TOTAL CON LARGOS 1767 -> 1768,
+en los tres párrafos ancla, y la cifra del nodo en `PRINCIPIOS.md`. El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** La raíz de la época se sigue componiendo bajo el candado, ahora en O(K log K) y
+no O(registro). `zkssl_verifyChain` recorre el registro entero sin límite: el corte siguiente.
+`zkssl_logEntry` busca su `seq` recorriendo el registro; es lineal pero no hashea.

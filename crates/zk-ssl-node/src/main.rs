@@ -1969,8 +1969,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             // mismas funciones, mismo P—; el test del latido «la cabeza
             // del latido es la que sirve el RPC» es la compuerta.
             let p_epoca = crate::latido::limite_de_epoca(app);
-            let pares = crate::vista_acuses::pares(l.transition_log().entries());
-            let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca);
+            let (r, n) = crate::vista_acuses::pareja_de_ahora(l.transition_log().entries(), p_epoca);
             // §570 (RFC-0010 E2d): la pareja de recepcion, del MISMO productor que el latido.
             let (rr, rc) = pareja_de_recepcion_rpc(app)?;
             {
@@ -2508,7 +2507,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 leaf: digest_to_wire(&m.leaf),
                 path: wire::MerklePathDto::from(&m.path),
                 leaf_format: m.forma.como_cable().to_string(),
-                head: wire::EpochHeadDto::from(&{ let p_epoca = crate::latido::limite_de_epoca(app); let pares = crate::vista_acuses::pares(l.transition_log().entries()); let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca); let (cm, tm) = pareja_mmr_rpc(app)?; let (rr, rc) = pareja_de_recepcion_rpc(app)?; l.epoch_head(r, n, cm, tm, rr, rc) }),
+                head: wire::EpochHeadDto::from(&{ let p_epoca = crate::latido::limite_de_epoca(app); let (r, n) = crate::vista_acuses::pareja_de_ahora(l.transition_log().entries(), p_epoca); let (cm, tm) = pareja_mmr_rpc(app)?; let (rr, rc) = pareja_de_recepcion_rpc(app)?; l.epoch_head(r, n, cm, tm, rr, rc) }),
             })
             .unwrap())
         }
@@ -2550,7 +2549,8 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                             "beatSeconds": Q(app.latido_s),
                         })),
                         Some((p_epoca, s)) => {
-                            let pares = crate::vista_acuses::pares(l.transition_log().entries());
+                            // §677: solo el tramo `[P, S)` de la epoca, no el registro.
+                            let pares = crate::vista_acuses::pares(l.transition_log().entries(), p_epoca, s);
                             match crate::vista_acuses::camino_de_epoca(
                                 &pares, p_epoca, s, p.seq.0, crate::vista_acuses::N_MAX_CABEZAS,
                             ) {
