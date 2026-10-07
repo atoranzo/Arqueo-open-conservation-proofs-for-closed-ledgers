@@ -149,9 +149,13 @@ verificación, e incorpora una propiedad adicional: **resistencia
 cuántica**, al depender exclusivamente de funciones hash.
 
 El coste es sustancial. Las pruebas STARK del circuito de comparación
-ocupan 36,7 KB frente a los 192 bytes de Groth16: un factor de
-**320×**. Los circuitos de producción de la capa son mayores —**53,6 a
-65,3 KB**, medidos en §218—, así que el factor real ronda 300-350×. En tiempo de generación
+ocupan 36,7 KB en la tabla comparativa frente a los 192 bytes de Groth16:
+un factor de **unas 196×** (remedidas el 2026-10-07, 39.048 B: unas
+203×). Las pruebas de producción de la capa son mayores: desde
+que ocultan su testigo (§538), las de envío y cobro ocupan **72.382 a
+84.244 B** cada una, la banda que ata un test (antes de ocultar, 64,6 y
+65,3 KB: §218), así que para ellas el factor ronda 380-440×; el tamaño de
+las demás no lo ata ninguna banda. En tiempo de generación
 del circuito completo, la diferencia favorece a STARK, pero el tamaño
 condiciona cualquier escenario donde las pruebas deban transmitirse o
 almacenarse en volumen.
@@ -573,13 +577,28 @@ seguridad sin permiso de dos. Las revisiones anteriores no lo decían.
 
 Sin extensión de campo, la configuración que un implementador elegiría por
 defecto —rápida y compacta— tiene un techo de **63 bits de solidez**,
-insuficiente y no comparable con los ~128 bits de los otros paradigmas.
+insuficiente y no comparable con los ~128 bits de los otros paradigmas. La
+capa usa la extensión cuadrática (§8.4).
 
 ### 8.4 Brecha entre seguridad conjeturada y demostrable
 
-En las configuraciones evaluadas, 127 bits de seguridad **conjeturada**
-conviven con 29-63 bits **demostrables**. Cerrar la brecha eleva el tamaño
-de prueba de 36,7 KB a 125,6 KB.
+En el circuito de comparación, con 32 consultas y sin molienda, 127 bits de
+seguridad **conjeturada** conviven con 29-63 bits **demostrables** (29 en
+UDR, 63 en LDR). Cerrar la brecha eleva el tamaño de prueba de 36,7 KB a
+125,6 KB.
+
+Las opciones de producción de la capa —42 consultas, blowup 16, molienda
+21 y extensión cuadrática— dan, sobre sus pruebas ocultas, 127 bits
+conjeturados y, demostrables, 59 en UDR y de 80 a 88 en LDR según el
+circuito; la prueba de edad baja con su `m`, hasta 48 con `m = 23`. Lo
+fijan tests (§697), y la tabla está en `SECURITY.md` §3.11. Lo que
+costaría llevarlas a 128 bits demostrables no está medido, y su nivel
+frente a un adversario cuántico tampoco.
+
+⚠️ **Corregido en el §698**: hasta entonces este apartado decía «En las
+configuraciones evaluadas», sin decir que eran las del circuito de
+comparación ni dar las de producción; y el §2.2 daba un factor de 320× y,
+para producción, 53,6 a 65,3 KB, anteriores a la ocultación.
 
 La distinción rara vez se explicita en comparaciones entre paradigmas, y
 es directamente relevante para quien deba elegir parámetros bajo criterios

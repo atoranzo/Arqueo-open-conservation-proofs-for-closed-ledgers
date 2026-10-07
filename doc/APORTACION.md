@@ -54,7 +54,10 @@ consorcio**. Esto la desplaza hacia pruebas verificables, y **se niega a
 esconder el poder residual del operador**.
 
 Además rechaza backends que reintroducen ceremonias inauditables, **aunque
-sean más rápidos**: Groth16 produce pruebas 320 veces menores y se descartó.
+sean más rápidos**: Groth16 produce pruebas 380-440 veces menores que las
+de envío y cobro de la capa, ocultas desde el §538, y se descartó. ⚠️
+**Corregido en el §698**: decía «320 veces», que no sale de los tamaños de
+hoy.
 
 No es *"otra blockchain privada con ZK"*. Es una capa de liquidación con
 propiedades demostrables y una ética de diseño: **no vender soberanía donde

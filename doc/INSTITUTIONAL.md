@@ -67,11 +67,11 @@ curves or pairings on the critical path.
 This matters for a financial infrastructure deployment horizon, where the
 system must remain secure decades after going live.
 
-**A technical caveat worth knowing**: the declared 127 bits of security are
-**conjectured**. *Provable* security in that configuration lies between 29
-and 63 bits. Closing the gap raises proof size from 36.7 KB to 125.6 KB.
-That distinction is rarely made explicit, and is directly relevant to
-parameter selection under regulatory criteria.
+**A technical caveat worth knowing**: the declared 127 bits are **conjectured**. The *provable*
+ones, with the production options and over the hidden proofs, are 59 (UDR) and 80-88 (LDR) by
+circuit, and fewer in the age proof as `m` grows (`SECURITY.md` §3.11); against a quantum
+adversary the level is not measured. That distinction is rarely made explicit, and is directly
+relevant to parameter selection under regulatory criteria.
 
 ### Sovereign identity — **partially**
 
@@ -163,8 +163,8 @@ Five paradigms were evaluated by implementing the same circuit in each:
 | Proof size | **192 B** | 4,096 B | 36.7 KB | 1,008 B |
 | Post-quantum | No | No | **Yes** | No |
 
-**Groth16 was rejected despite being faster and producing proofs 320×
-smaller.**
+**Groth16 was rejected despite being faster and producing proofs about 196× smaller than the
+comparison circuit's 36.7 KB, and 380-440× smaller than the production send and claim proofs.**
 
 The reason is the one that should matter most to a central bank: Groth16
 and PLONK/KZG **require a trusted setup ceremony**. A set of participants
@@ -431,19 +431,29 @@ Shor's algorithm breaks the discrete logarithm and factoring problems on
 which elliptic curves and pairings rely. **Groth16, PLONK/KZG, Halo2, and
 Nova use them; STARK/FRI does not.**
 
-Grover halves the effective security of hash functions, which is accounted
-for in parameter selection.
+Having no curves does not give a level against a quantum adversary: **that
+level is not measured**, and no parameter was chosen with one in mind
+(`SECURITY.md` §3.11).
 
 ### The appropriate caveat
 
 The quantum resistance of the proof system is a property of the
-construction, not a promise. But the caveat from §1 bears repeating: **the
-declared 127 bits are conjectured**; provable security in that
-configuration lies between 29 and 63 bits.
+construction — it uses no curves — not a promise nor a measured level. And
+the caveat from §1 bears repeating: **the declared 127 bits are
+conjectured**; the provable ones, with the production options, are 59 (UDR)
+and 80-88 (LDR) by circuit, fewer in the age proof.
 
 For a deployment under regulatory criteria, that distinction should be
-resolved explicitly during parameter selection, and the cost is measured:
-36.7 KB versus 125.6 KB per proof.
+resolved explicitly during parameter selection. The cost of 128 provable
+bits is measured in the comparison circuit — 36.7 KB versus 125.6 KB per
+proof, with other options and without hiding — not in the production
+proofs.
+
+⚠️ **Corrected in §698**: until then this section and §1 said that
+provable security «in that configuration» lay «between 29 and 63», which are
+the comparison circuit's figures; that Grover «is accounted for in parameter
+selection», and no parameter accounts for it; and that Groth16 gave proofs
+«320× smaller».
 
 ---
 

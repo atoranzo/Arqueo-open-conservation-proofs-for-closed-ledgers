@@ -48442,3 +48442,236 @@ no publica un kit: la huella del binario cambia con este sello (en «Medido»), 
 decide el autor.
 
 **Lo que NO cierra.** La 116, que abre.
+
+## §698 — las cifras de seguridad que se publican son las de producción: 127, 59 y 80-88, la edad por `m`, el nivel cuántico no medido y el azar del sistema como supuesto
+
+El commit que lleva este asiento, sobre `9da6906` (el §697). Un solo sello, sin código: cuatro
+comentarios —la cabecera y el de `proof_options` en `crates/zk-ssl/src/lib.rs`, el de
+`SendReceiptDto.proof` en `crates/zk-ssl-wire/src/lib.rs` y el del manifiesto de `zk-ssl`—; diez
+documentos con su corrección marcada —`SECURITY.md`, que gana la sección 3.11, `PRINCIPIOS.md`,
+`FIVE_BACKENDS.md`, `PAPER.md`, `PAPER_EN.md`, `doc/ZENODO.md`, `doc/INSTITUCIONAL.md`,
+`doc/INSTITUTIONAL.md`, `doc/APORTACION.md` y `doc/README-CLI.md`—; una nota en
+`doc/blueprint-v2.md`; una línea en la entrada 116 del `BACKLOG.md`; y este asiento. Lo escribe y
+lo comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El sello no cambia ningún test, ni
+las opciones, ni ningún verificador. En la sesión, sobre este mismo árbol —todo este sello menos la
+redacción final de este asiento—, el canon `--sello` salió ROJO sólo en la fila de `zk-ssl`, por
+tiempo y con la máquina cargada por otras tareas; esa fila, corrida aparte, pasa entera, pero en
+más de los 600 s de su timeout (en «Medido»).
+
+**De dónde sale.** El ZK-2 de `doc/blueprint-v2.md` (P1, CONFIRMADO): las cifras de seguridad
+demostrable y poscuántica que se publican no son las de producción. El §697 construyó los tests
+que fijan el nivel y dejó esto para otro sello. El autor aprobó corregirlo así: la frase de Grover
+se retira, el nivel frente a un adversario cuántico se declara no medido y no entra ninguna cifra
+cuántica nueva, ni siquiera estimada. Lo que se publicaba:
+
+- el comentario de `proof_options` (`crates/zk-ssl/src/lib.rs:212-215`): «alcanzar 128 bits
+  DEMOSTRABLES costaría 125,6 KB por prueba en vez de 36,7»;
+- `PRINCIPIOS.md` §7.4: «127 bits conviven con 29-63. Cerrarla cuesta 125,6 KB en vez de 36,7»; y
+  lo mismo, con otras palabras, `PAPER.md` y `PAPER_EN.md` §8.4, la fila de `doc/ZENODO.md`
+  («Coexisting in the same configuration») y los apartados 1 y 8 de los dos institucionales («La
+  seguridad *demostrable* en esa configuración está entre 29 y 63 bits»);
+- `doc/INSTITUCIONAL.md` §8 y su gemelo inglés: «Grover reduce a la mitad la seguridad efectiva de
+  las funciones hash, lo que está contemplado en la elección de parámetros»;
+- `SECURITY.md` §3.ter: «su configuración por defecto tiene techo de **63 bits de solidez** sin
+  extensión de campo»;
+- y, como tamaño de hoy, los de antes de la ocultación —53,6-65,3 KB, del §218— en la cabecera de
+  la capa, en la tabla de `SECURITY.md` §3.ter, en `FIVE_BACKENDS.md` y en `PAPER.md` §2.2, los
+  66.164 B del envío en `zk-ssl-wire` y los 54.3 y 64.6 KB de la salida típica de `simulate` en
+  `doc/README-CLI.md`; con un factor frente a Groth16 de «320×» y «300-350×».
+
+Los «29-63» salen de una configuración que producción no usa: la `target_128` de
+`crates/stark-experiment/src/compliance_real_proof.rs`, sobre el circuito de cumplimiento, con 32
+consultas, blowup 16, sin molienda y extensión cuadrática, la fila de los 36,7 KB en
+`FIVE_BACKENDS.md` §4. El ZK-2 y el ZK-1 midieron en su sesión las de producción —127, 80 y 59
+sobre una prueba de envío oculta—, y el §697 las fijó con tests. Y `SECURITY.md` se contradecía
+consigo mismo en tres sitios: su sección 1 decía que «hoy nadie fuera del operador observa
+cabezas», y la 2 que desde el §245 hay testigo; la 1 decía de la privacidad «medido que no se
+cumple», y la 3.2 que está «MEDIDO y RESUELTO»; y la 3.4 paraba el reenvío sólo con la raíz, y la
+3.9 que desde el §654 también con la huella de la prueba.
+
+**Lo que hace.**
+
+1. **`SECURITY.md` §3.11, «El nivel de las pruebas, y el azar del sistema».** Declara lo medido,
+   que es clásico: las opciones de producción —42 consultas, blowup 16, molienda 21, extensión
+   cuadrática— dan, sobre la forma oculta de cada prueba, 127 bits conjeturados, 59 en UDR en todas
+   y, en LDR, 88, 84, 82 y 80 con trazas ocultas de 128, 512, 1.024 y 2.048 filas, con las pruebas
+   que tiene cada longitud. La edad, en una tabla por `m`, de 88 con `m = 3` a 48 con `m = 23`, y
+   `m = 24` sin prueba generable hoy. Dice quién decide el nivel que se declara (la entrada 116),
+   que la conjeturada descansa en conjeturas sobre códigos Reed-Solomon que no están demostradas,
+   que nadie ajeno al proyecto ha contrastado la función de upstream con la construcción oculta del
+   fork (H7), de dónde son los «29-63» y los «36,7 frente a 125,6 KB», y que lo que costaría llevar
+   las pruebas de producción a 128 bits demostrables no está medido. **El nivel frente a un
+   adversario cuántico: no medido**, sin ninguna cifra. Y **el azar del sistema, como supuesto de
+   confianza**: las siete llamadas al generador del sistema operativo de la capa, el SDK y el medio,
+   con lo que cae si ese generador es predecible o se repite, y que Fiat-Shamir no usa azar.
+2. **La reserva de `SECURITY.md` §3.ter**: «post-cuántico» sigue significando sin supuestos de
+   curva, y ahora dice que el nivel cuántico no está medido, da el clásico medido y deja el techo de
+   63 bits en la configuración sin extensión, que la capa no usa. La fila del tamaño, la banda del
+   envío y el cobro, que es la única que ata un test.
+3. **Las tres contradicciones de `SECURITY.md`.** En la sección 1, la propiedad del historial dice
+   que alguien distinto del operador tiene que observar las cabezas, que el testigo existe desde el
+   §245 y que uno que opere el propio operador no prueba nada, como la sección 2; la de privacidad
+   remite a la 3.2 para el saldo y a la 3.bis para lo que las pruebas ocultan y lo que no se
+   promete, sin prometer nada nuevo. En la 3.4, el reenvío: la raíz sola no bastaba, desde el §654
+   la capa guarda además la huella de cada prueba aplicada, y desde el §659 rechaza también la que
+   sólo cambie en nodos de más dentro de un lote de Merkle, como ya decía la 3.9.
+4. **Grover, retirado.** En los dos institucionales, la frase deja paso a otra: que no haya curvas
+   no da un nivel frente a un adversario cuántico, ese nivel no está medido y ningún parámetro se
+   eligió pensando en él. Su «cautela que corresponde» deja de dar el «29-63» y dice dónde está
+   medido el coste de los 128 demostrables: en el circuito de comparación, no en producción.
+5. **Los «29-63», atribuidos.** `PRINCIPIOS.md` §7.3-7.4, `FIVE_BACKENDS.md` §3-§4, `PAPER.md` y
+   `PAPER_EN.md` §8.3-§8.4, la fila de `doc/ZENODO.md`, el apartado 1 de los dos institucionales y
+   el comentario de `proof_options` dicen de qué configuración son y dan, al lado, las de
+   producción, con la remisión a `SECURITY.md` §3.11. Las tablas comparativas de cuatro columnas
+   conservan sus 36,7 KB, como decidió el §218: comparan el circuito de comparación entre
+   paradigmas.
+6. **Los tamaños de hoy.** Donde se daba el tamaño de una prueba de la capa, la banda que ata
+   `la_cifra_publicada_sigue_siendo_la_medida` desde el §538, que es la del envío y el cobro y de
+   nada más: 72.382-84.244 B por prueba de envío o de cobro —envío 73.571-84.244 B y cobro
+   72.382-83.723 B— y 145.953-167.967 B por pago, con los 64,6 y 65,3 KB del §218 como los de
+   antes de ocultar (53,6-65,3 KB donde se habla de todos los circuitos, en la cabecera de la capa);
+   la cabecera, el manifiesto, `SECURITY.md`, `FIVE_BACKENDS.md` y los dos `PAPER` dicen que el
+   tamaño de las demás pruebas no lo ata ninguna banda. En bytes y no en KB, porque la casa usa los
+   dos KB. El factor frente a los 192 B de Groth16 pasa a «unas 196×» frente a los 36,7 KB del
+   circuito de comparación y «380-440×» frente a las pruebas de envío y cobro en `PAPER.md`,
+   `PAPER_EN.md`, `doc/ZENODO.md` §2, los dos institucionales, `PRINCIPIOS.md` §5 y
+   `doc/APORTACION.md`; `PAPER.md` y `PAPER_EN.md` dan además el de hoy, unas 203× con los 39.048 B
+   remedidos. La salida típica de `simulate` en `doc/README-CLI.md` pasa a una corrida de hoy, con
+   la nota de lo que daba antes.
+7. **La tabla de `FIVE_BACKENDS.md` §4, remedida y no reescrita.** Una nota con la fecha da lo que
+   el mismo test imprime hoy (en «Medido»): los mismos bits y otros tamaños. La tabla se queda,
+   porque es la de la comparación entre backends.
+8. **Corregido, marcado y no borrado**, como en el §696: cada documento cita lo que decía con
+   «⚠️ Corregido en el §698» o «⚠️ Corrected in §698». Los cuatro comentarios de código no lo
+   llevan: lo registra este asiento.
+9. **Los números de línea, intactos donde otros los citan.** `proof_options` sigue en la línea 216
+   de `crates/zk-ssl/src/lib.rs` (`doc/blueprint-v2.md` e `doc/integracion-vertical-evaluacion.md`
+   citan `:216-227`); los dos institucionales tienen las mismas líneas hasta la 271 y la 282, que
+   cita `spec/rfc/0006-consumo-publicado.md:96`; y el «4. Brecha» de `PRINCIPIOS.md` sigue en las
+   324-325, que cita `doc/blueprint-v2.md` tres veces: las correcciones de antes de esas líneas
+   ocupan las mismas que lo que sustituyen, y la nota del apartado 5 va en la del 4.
+10. **El plan y la decisión.** `doc/blueprint-v2.md` gana, junto a la nota del §697, la del ZK-2:
+    hecho en la prosa, sin nivel cuántico ni el coste estimado de los 128 demostrables, y sin
+    puerta en `check_publicadas`. La entrada 116 del `BACKLOG.md` gana una línea: lo medido está
+    publicado en estos textos, y lo que el autor decida los mueve en el mismo sello.
+11. **Lo que corrigió su revisión.** La primera pasada atribuía al circuito de cumplimiento el
+    cambio de tamaño de `FIVE_BACKENDS.md` §4 sin haberlo buscado; ahora dice que se movió por el
+    circuito o por la versión de winterfell, y que no se buscó cuál. Decía en `SECURITY.md` que
+    todo lo impredecible sale del generador del sistema, sin decir de qué crates: los experimentos
+    de comparación (`ceremony`, `halo2-experiment` y `plonk-experiment`) también lo usan, y la
+    frase se ciñe ahora a la capa, el SDK y el medio. Y la nota del blueprint decía que los tests
+    del §697 atan la prosa «en sus cifras»: atan las cifras, no la prosa. Los tres van corregidos
+    en este mismo sello.
+12. **Lo que corrigió la segunda revisión, sobre el sello entero.** Quedaba un «320 times» en
+    `doc/ZENODO.md` §2, fuera de toda corrección, aunque «Medido» decía que cada aparición quedaba
+    dentro de la suya. La banda de 72.382-84.244 B, que es sólo la del envío y el cobro, se daba
+    como el tamaño de toda prueba oculta de la capa, y con ella los 380-440×. La nota del apartado
+    5 de `PRINCIPIOS.md` añadía tres líneas y movía las 324-325 que cita el blueprint, contra lo que
+    decía el punto 9; y la apertura contaba «tres comentarios» y enumeraba cuatro.
+    `doc/README-CLI.md` daba como salida típica tamaños de antes de ocultar, que el `grep` no veía
+    porque buscaba «53,6» y «65,3 KB». A la fila de 1.024 filas de la 3.11 le faltaban las subidas
+    de emisión a pendiente y de recuperación, y a la 3.4, el §659; y el «unas 196×» no decía que
+    sale de los 36,7 KB de la tabla y no de lo que el test imprime hoy. Todo eso va corregido en
+    este mismo sello. Y el canon entero no se había corrido: ahora sí, y lo que dio está en
+    «Medido».
+
+**Medido.** En release; las medidas, sobre `9da6906`, antes de tocar nada, y las suites y las
+compuertas, sobre el árbol de este sello:
+
+- **El circuito de comparación**, `cargo test --release --locked -p stark-experiment --lib
+  real_proof_end_to_end_with_metrics -- --nocapture`, tres veces, con la misma salida: sin
+  extensión, 27.794 B, conjeturada 63 y demostrable 26 / 24 (UDR / LDR); cuadrática con blowup 8,
+  33.125 B, 95 y 26 / 47; cuadrática con blowup 16, 39.048 B, 127 y 29 / 63; y 120 consultas,
+  molienda 20 y cúbica, 127.274 B, 128 y 128 / 128. Los bits, los de la tabla de
+  `FIVE_BACKENDS.md` §4; los tamaños, no: la tabla dice 27,7, 32,7, 36,7 y 125,6 KB.
+- **Las pruebas de producción**, con los tests del §697: el envío v2, traza oculta de 2.048 filas,
+  127, LDR 80 y UDR 59; el crédito, 1.024 filas, 127, 82 y 59; la apertura del reembolso v2, 128
+  filas, 127, 88 y 59. La edad (`tests_nivel`): LDR 88, 86, 84, 82, 80, 78, 76, 74, 72, 70, 68,
+  66, 64, 62, 60, 58, 56, 54, 52, 50 y 48 para `m` de 3 a 23. El 84 de la tabla de longitudes es
+  el de la traza de 512 filas, la de la edad con `m = 5`: con batching lineal la función sólo
+  depende de las opciones y de la longitud (§697).
+- **El tamaño de hoy**, `la_cifra_publicada_sigue_siendo_la_medida`: envío 78.635 B, cobro
+  79.417 B, pago 158.052 B, dentro de sus bandas. Una corrida: desde el §538 el tamaño cambia con
+  la sal de cada corrida, y por eso lo que se publica es la banda.
+- **Los factores**: los 36,7 KB, con el KB de 1.024 B que imprime el test, son 37.581 B, y
+  37.581 / 192 = 195,7 (con 1.000 B, 191,1); con los 39.048 B de hoy, 203,4; 72.382 / 192 = 377,0
+  y 84.244 / 192 = 438,8. El «320×» es 61.440 / 192: no sale de los 36,7 KB ni de la banda.
+- **La salida de `simulate`**, `target/release/zk-ssl-cli simulate`, en memoria, tres corridas
+  sobre el árbol de este sello: la subida de emisión, 64,4 a 66,8 KB en las seis que hace; el envío,
+  76,5, 77,6 y 77,6 KB; el cobro, 75,0, 77,1 y 76,7 KB (KB de 1.024 B, como los imprime el CLI).
+  El envío y el cobro caen dentro de sus bandas. `doc/README-CLI.md` lleva la primera, abreviada.
+  Los 64.6 KB de la salida de antes son 66.164 / 1.024: el envío del §218.
+- **El azar**, con `grep` de `OsRng`, `thread_rng`, `SysRng`, `rand::random` y `from_entropy` sobre
+  `crates/*/src`: en los crates `zk-ssl*`, siete llamadas en cinco ficheros de cuatro crates
+  —`crates/zk-ssl-air/src/sal.rs:166` y `:174`, `crates/zk-ssl-sdk/src/lib.rs:101` y `:340`,
+  `crates/zk-ssl-sdk/src/keystore.rs:72`, `crates/zk-ssl/src/crypto.rs:104` y
+  `crates/zk-ssl-medio/src/nota.rs:464`—; fuera, sólo en `ceremony`, `halo2-experiment` y
+  `plonk-experiment`; en el fork, ninguna.
+- **Lo que queda**, con `grep` de «29-63» y sus variantes, «Grover», «36,7», «125,6», «53,6»,
+  «65,3 KB», «64,6 KB» y «54,3 KB» (con coma y con punto), «320» seguido de «×», «x», «veces» o
+  «times», y «300-350», en los `.md`, `.rs` y `.toml` del árbol, fuera de los registros
+  —`AUDITORIA.md`, `BACKLOG.md`, `doc/ecst/`, `doc/comparativa/`, `doc/historia/` y
+  `doc/preprints/`—, mirando cada acierto: las tablas comparativas de cuatro columnas y la de
+  `FIVE_BACKENDS.md` §4; los comentarios de `crates/stark-experiment/src/lib.rs` y
+  `crates/zk-core/src/performance.rs`, que hablan del circuito de comparación; los «320» de
+  `doc/ZENODO.md`, `PRINCIPIOS.md`, `PAPER.md`, `PAPER_EN.md`, `doc/APORTACION.md` y los dos
+  institucionales, todos dentro de su corrección; los demás textos corregidos, dentro de su
+  corrección o atribuidos al circuito de comparación; el análisis
+  de `doc/blueprint-v2.md`, que cuenta lo que se publicaba; `doc/integracion-vertical-evaluacion.md`,
+  una evaluación fechada que cita `lib.rs:211-215`; la tabla de backends de `ARQUITECTURA.md`, que
+  es la de `stark-experiment`; los dos «con Grover, unas 2^32 iteraciones» de `SECURITY.md` §3.9 y
+  §3.10, estimaciones de una búsqueda de claves; la fila del cifrado en reposo de los
+  institucionales; y `doc/firma-corta-evaluacion.md`, sobre el resumen de una firma.
+- **Las suites de los crates que toca**, antes de la segunda revisión, que sólo movió prosa y
+  comentarios: `zk-ssl-wire`, 26 pasan, 0 warnings, 41 s con su compilación; `zk-ssl`, 433 pasan
+  y 7 ignorados, 0 warnings, 416 s con su compilación, en la máquina de 4 CPU compartida con otra
+  tarea. Son los pines del canon: 26, y 433 con 7 ignorados.
+- **El canon**, `bash tools/canon.sh --sello`, sobre el árbol de este sello menos la redacción
+  final de este asiento: 1.638 s de reloj y 1.481 s de tests, con una carga media de 7 a 10 en las
+  4 CPU, que compartían otras tareas. ROJO, con sus tres fallos en la fila de `zk-ssl`: recompiló
+  la capa (2 min 30 s), seguía en sus tests a los 600 s de su timeout y salió con 124. En lo que
+  llegó a imprimir, 403 pasaban y uno de tiempos había caído, `cost_per_transfer_stays_stable`
+  (el quinto envío encadenado no puede tardar el doble que el primero), como en el canon bajo
+  carga que cuenta el §656. Las otras 18 filas dan sus pines —`zk-ssl-wire`, 26 en 93 s—, y todas
+  las demás comprobaciones del canon salen OK: `check_tests`, `check_modulos`, las nueve
+  herramientas, los vectores, las conformidades, la segunda implementación y el artefacto.
+- **La fila de `zk-ssl`, aparte**, con la orden del canon (`cargo test -p zk-ssl --release
+  --locked`), ya compilada: 433 pasan, 7 ignorados, 0 fallan y 0 warnings, el test de tiempos
+  incluido, en 625 s de tests con carga 9,4: por encima de los 600 del timeout de la fila.
+- **Las compuertas**, como las corre el canon, desde la raíz y sobre el texto final de este
+  asiento: `check_tests`, 1842 declarados, ninguno anidado; `check_modulos`, 204 ficheros, todos
+  declarados; `check_vectores`, 477 vectores y 925 líneas con su huella; y las nueve del bucle
+  «2 ter» —`check_cifras`, `check_figures`, `check_columns`, `check_constraint_layout`,
+  `verificar_citas`, `check_dominios`, `check_publicadas`, `check_nucleo` y `check_techo`—. Las
+  doce salen con 0. `verificar_citas` sigue en 46 encabezados citados: `SECURITY.md` §3.11 se cita
+  por número, y la cita `FIVE_BACKENDS.md` §4 del comentario de `proof_options` apunta a una
+  sección viva.
+
+**Probado.** Ningún test nuevo, y ninguno cambia. Las cifras que se publican las atan los tests del
+§697 sobre las pruebas reales; lo que dicen los textos no lo ata ninguna puerta.
+
+**Contadores.** Ninguno se mueve: `check_tests` sigue en 1842, el TOTAL DE SELLO en 1683 y el TOTAL
+CON LARGOS en 1820, como los dejó el §697. El `BACKLOG.md` sigue con 45 abiertas y 73 resueltas: la
+116 gana una línea y no se cierra.
+
+**Lo que NO hace.** No decide el nivel que se declara, ni el rango de `m`, ni los parámetros del
+corte zkssl/0.5: es la 116. No publica ninguna cifra cuántica, ni estimada, ni el coste estimado de
+los 128 demostrables en producción que proponía el ZK-2: no están medidos. No cita ningún trabajo
+sobre las conjeturas de proximidad: el texto dice que no están demostradas, y nada más. No construye
+la puerta de `check_publicadas` que proponía el ZK-2: un cambio de opciones lo ve el test del §697,
+y un texto que vuelva a decir «29-63» como si fuera la capa, nadie. No toca las dos estimaciones de
+Grover de `SECURITY.md` §3.9 y §3.10, ni la fila del cifrado en reposo de los institucionales, ni
+`ARQUITECTURA.md`, cuyo «Descansa en que la función hash resista el algoritmo de Grover» habla del
+tamaño del resumen y no del nivel; ni las tablas comparativas, ni los registros, ni
+`doc/integracion-vertical-evaluacion.md`. No remide los demás circuitos de la comparación entre
+backends, ni busca por qué se movieron los tamaños del STARK. No ata ni publica el tamaño de las
+pruebas que la banda no cubre, que son todas menos el envío y el cobro: el de la subida de emisión
+lo imprime `simulate` (en «Medido»), y ningún test lo acota. Los tiempos de la salida de
+`doc/README-CLI.md` son los de una corrida en esta máquina, y no se afirman. No sube el timeout
+de la fila de `zk-ssl` ni toca el test de tiempos: el canon VERDE, con la máquina sin otras
+tareas, queda por correr. No añade al supuesto del azar ninguna abstracción ni ningún test. No
+revisa la función de `winter-air`. Y no publica un kit: el sello no toca ningún crate que el kit
+compile.
+
+**Lo que NO cierra.** La 116.

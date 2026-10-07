@@ -24,13 +24,13 @@
 //!
 //! | qué | tamaño | dónde se mide |
 //! |---|---|---|
-//! | **circuito de comparación** (blowup 16, ext. cuadrática) | 36,7 KB | `FIVE_BACKENDS.md`: es lo que se enfrenta a Groth16, PLONK y Halo2 sobre la MISMA carga |
-//! | **circuitos de esta capa** | **53,6-65,3 KB** | §218, banco C0.1: `mint` 54.858 y 55.568 B · `send` 66.164 B · `claim` 66.820 B |
+//! | **circuito de comparación** (32 consultas, blowup 16, ext. cuadrática, sin molienda ni ocultación) | 36,7 KB | `FIVE_BACKENDS.md`: es lo que se enfrenta a Groth16, PLONK y Halo2 sobre la MISMA carga |
+//! | **pruebas de envío y de cobro de esta capa**, ocultas, con [`proof_options`] | **72.382-84.244 B** | la banda de `metrics.rs` (§538), que ata un test: envío 73.571-84.244 B, cobro 72.382-83.723 B; el tamaño de las demás pruebas no lo ata ninguno |
 //!
-//! Los circuitos de producción son **1,5-1,8× más grandes** que el de
-//! comparación. Las dos medidas son correctas; lo que faltaba era
-//! decir que son de cosas distintas. Nadie había medido los de
-//! producción hasta C0.1.
+//! Antes de ocultar el testigo (§538), los circuitos de producción
+//! medían 53,6-65,3 KB (§218, banco C0.1). Las dos medidas de la
+//! tabla son correctas; lo que faltaba era decir que son de cosas
+//! distintas, con opciones distintas.
 //!
 //! Frente a los 192 bytes de Groth16, es el coste de no depender de
 //! nadie: sin ceremonia de confianza y con resistencia cuántica.
@@ -207,12 +207,12 @@ type Blake3 = Blake3_256<BaseElement>;
 /// Índice de una cuenta dentro del árbol.
 pub type AccountIndex = u64;
 
-/// Opciones de prueba del sistema.
+/// Opciones de prueba del sistema: 42 consultas, blowup 16, molienda 21 y extensión cuadrática.
 ///
-/// **Configuración de 127 bits conjeturados** (blowup 16, extensión
-/// cuadrática). Ver `FIVE_BACKENDS.md` sobre la diferencia entre
-/// seguridad conjeturada y demostrable: alcanzar 128 bits DEMOSTRABLES
-/// costaría 125,6 KB por prueba en vez de 36,7.
+/// Sobre las pruebas ocultas dan **127 bits conjeturados** y, demostrables, UDR 59 y LDR 80-88
+/// según la longitud de la traza (80 en envío, cobro y quema; la edad baja con `m`): lo fijan los
+/// tests del §697. Los 36,7 y 125,6 KB de `FIVE_BACKENDS.md` §4 son del circuito de comparación,
+/// con 32 y 120 consultas y sin ocultar. Frente a un adversario cuántico el nivel no está medido.
 pub fn proof_options() -> ProofOptions {
     ProofOptions::new(
         42,

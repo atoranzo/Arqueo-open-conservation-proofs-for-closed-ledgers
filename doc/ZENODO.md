@@ -64,8 +64,14 @@ magnitude, not vendors.*
 
 ## 2. The decision that cost the most
 
-**Groth16 was rejected despite being faster and producing proofs 320 times
-smaller.**
+**Groth16 was rejected despite being faster and producing proofs about 196
+times smaller than the comparison circuit's 36.7 KB, and 380-440 times
+smaller than the layer's send and claim proofs.**
+
+⚠️ **Corrected in §698**: until then it said «320 times smaller», which
+follows from neither size: the 36.7 KB in the table above, nor the
+72,382-84,244 B band a test binds for the send and claim proofs since they
+hide their witness (§538).
 
 Groth16 and PLONK/KZG require a **trusted setup ceremony**: a group of
 participants generates parameters from a secret they must destroy. If they
@@ -116,11 +122,14 @@ construction. **This finding applies to anyone building on STARK.**
 |---|---|
 | **Goldilocks is too narrow for identities** | 64 bits means collision in 2³². An attacker could find an identity colliding with an innocent person's |
 | **63-bit soundness ceiling** | Without field extension, over Goldilocks. Correcting it costs **1.2× in time and 1.7× in size** — measured |
-| **127 conjectured vs 29-63 provable bits** | Coexisting in the same configuration |
+| **127 conjectured vs 29-63 provable bits** | Coexisting in the comparison circuit's configuration (32 queries, no grinding). The production options over the hidden proofs give 127 conjectured, 59 (UDR) and 80-88 (LDR) provable by circuit, less in the age proof as `m` grows; tests bind them, and the level against a quantum adversary is not measured (`SECURITY.md` §3.11) |
 | **PLONK/KZG was the slowest prover** | 16-22× slower than Groth16 among curve-based systems. Implementation may account for part of it; the data cannot separate the two |
 | **Only two of six libraries** | Prevent unsafe setup in code. The rest let it pass silently |
 | **The PLONK/KZG Rust ecosystem is vertically fragmented** | Components that should compose, do not |
 | **zkVMs are not comparable** | 3 dependencies against 349 |
+
+⚠️ **Corrected in §698**: until then the 29-63 row said «Coexisting in the same configuration»,
+without saying which one; those are the comparison circuit's figures, not the production ones.
 
 ---
 

@@ -256,6 +256,14 @@ acepte por nivel mínimo; y la edad, cuya longitud depende de `m`, se recorre pa
 forma de su prueba (`tests_nivel` en `crates/zk-ssl-air/src/lib.rs`) con el piso de hoy y no con
 80, porque con `m ≥ 8` queda por debajo. Lo que se declara es decisión del autor: la entrada 116
 de [`BACKLOG.md`](../BACKLOG.md).
+⚠️ **Actualizado (§698):** el ZK-2 está hecho en la prosa, de otra forma que la propuesta. Los
+«29-63» y el «125,6 frente a 36,7 KB» se atribuyen al circuito de comparación, y lo medido en
+producción —127, 59 y 80-88, con la tabla de la edad por `m`— se publica en
+[`SECURITY.md`](../SECURITY.md) §3.11, en el comentario de `proof_options`, en `PRINCIPIOS.md`,
+`FIVE_BACKENDS.md`, `PAPER.md`, `PAPER_EN.md`, `doc/ZENODO.md` y los dos institucionales. No se
+publica ningún nivel cuántico, ni estimado: la frase de Grover se retira y ese nivel se declara
+«no medido». Tampoco el coste de los 128 bits demostrables en producción, que no está medido. Y no
+nace ninguna puerta en `check_publicadas`: los tests del §697 atan las cifras, no la prosa que las cita.
 
 | id | título | prio. | verificador | propuesta final tras el debate | evidencia principal |
 |---|---|---|---|---|---|

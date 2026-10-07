@@ -15,8 +15,9 @@ license.workspace = true
 #     permanente e inauditable, incompatible con "soberanía".
 #   - **Resistencia cuántica.** Solo depende de funciones hash.
 #
-# El precio, medido: pruebas de 36,7 KB frente a los 192 bytes de Groth16.
-# Es el coste de no depender de nadie.
+# El precio, medido: 72.382-84.244 B por prueba de envío o de cobro, ocultas (la banda de
+# src/metrics.rs; las demás pruebas no las ata; los 36,7 KB de las tablas son del circuito de
+# comparación) frente a los 192 de Groth16. Es no depender de nadie.
 [dependencies]
 # ⚠️ §255: las primitivas de FORMATO —`native_merge`, `as_digest`,
 #    `path_root` y `epoch_digest`— que el nodo y un verificador

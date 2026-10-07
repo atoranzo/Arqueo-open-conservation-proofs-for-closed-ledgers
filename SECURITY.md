@@ -56,10 +56,17 @@ circuito sean completas, y eso **no está formalmente especificado ni auditado**
 - **Autoridad de gasto**: solo quien controla la clave puede gastar.
 - **No reescritura silenciosa del historial**: el registro encadenado impide
   reescrituras **detectables por quien haya observado una cabeza anterior**.
-  ⚠️ Garantía condicional, y **hoy nadie fuera del operador observa cabezas**
-  (§2).
-- **Privacidad del contenido frente a terceros**: ⚠️ **medido que no se
-  cumple**, ver §3.2.
+  ⚠️ Garantía condicional: alguien distinto del operador tiene que observar
+  sus cabezas. Desde el §245 existe el testigo que las anota (§2), pero uno
+  que opere el propio operador no prueba nada.
+- **Privacidad del contenido frente a terceros**: el compromiso de hoja oculta
+  el saldo desde la entrada 50 (§3.2); lo que las pruebas ocultan desde el
+  §538, y lo que no se promete, lo dice la sección 3.bis. El operador lo ve
+  todo (§2), y nada de esto está auditado.
+
+⚠️ **Corregido en el §698**: hasta entonces la tercera decía «hoy nadie fuera del operador
+observa cabezas» y la cuarta, «medido que no se cumple», contra el §2 y el §3.2 de este mismo
+documento.
 
 Ninguna debe citarse fuera de este repositorio como «garantizada». La
 formulación honesta es: *«el diseño pretende X; no está auditado»*.
@@ -399,7 +406,11 @@ Backlog 49. `AUDITORIA.md` §93.1, §129, §157.
 
 La vía de producción es la de **dos fases**, y **no usa nulificadores**: un
 envío cambia el saldo del pagador, luego su hoja, luego la raíz, de modo que
-un reenvío presenta una raíz obsoleta y se rechaza.
+un reenvío presenta una raíz obsoleta y se rechaza. Y la raíz sola no bastaba:
+el estado global se repite tras un reembolso o un ciclo A→B→A, y un recibo ya
+aplicado volvía a valer. Desde el §654 la capa guarda además la huella de cada
+prueba del titular ya aplicada y rechaza la que vuelva, y desde el §659 también
+la que sólo cambie en nodos de más dentro de un lote de Merkle (§3.9).
 
 ⚠️ **El problema existió y se retiró con su camino.** La vía de un paso
 derivaba la posición del marcador del propio marcador, con colisión por
@@ -581,6 +592,71 @@ falta dos claves. **No hay arreglo sin cambiar el formato**: claves de cuatro el
 en los dos circuitos, en el tren `zkssl/0.5`. Hasta entonces, las claves de custodio y
 de gobernanza valen lo que vale un elemento, y se dice aquí.
 
+### 3.11 El nivel de las pruebas, y el azar del sistema — ⚠️ MEDIDO y DECLARADO (§697, §698)
+
+**Lo medido es clásico.** Las opciones de producción, las de la capa y las del kit, son 42
+consultas, blowup 16, molienda de 21 bits y extensión cuadrática (`proof_options()` en
+`crates/zk-ssl/src/lib.rs`; la edad usa las mismas, y un test lo exige). Sobre la forma oculta
+de cada prueba, la función de `winter-air` (`proof/security.rs`, la de upstream) da **127 bits
+conjeturados** y, demostrables, **59 en UDR** (decodificación única) en todas, y en LDR
+(decodificación en lista) lo que dé la longitud de la traza:
+
+| traza oculta | LDR | pruebas |
+|---|---|---|
+| 128 filas | **88** | las dos aperturas del reembolso y el umbral (T = 64) |
+| 512 filas | **84** | la subida de congelados (T = 256) |
+| 1.024 filas | **82** | el crédito, las subidas de emisión, de emisión a pendiente y de recuperación, la auditoría y las cuatro del kit de longitud fija (T = 512) |
+| 2.048 filas | **80** | envío, cobro y quema (T = 1.024) |
+
+**La edad baja con `m`.** Su traza oculta tiene 2^(m+4) filas, con `m` el logaritmo del número
+de pendientes que cubre, y pierde dos bits de LDR cada vez que la traza se dobla:
+
+| `m` | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| LDR | 88 | 86 | 84 | 82 | 80 | 78 | 76 | 74 | 72 | 70 | 68 |
+
+| `m` | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| LDR | 66 | 64 | 62 | 60 | 58 | 56 | 54 | 52 | 50 | 48 | — |
+
+Conjeturada 127 y UDR 59 en todas. Con `m = 24`, que el enunciado admite, la prueba no se puede
+generar hoy.
+
+Lo fijan tests desde el §697: en las familias de longitud fija, conjeturada ≥ 127, LDR ≥ 80 y
+UDR = 59 sobre pruebas ocultas reales; en la edad, el piso de cada `m`. **El nivel que se
+declara —el piso de LDR, el umbral de UDR y el rango de `m`— lo decide el autor**
+(`BACKLOG.md`, entrada 116); hasta entonces, lo que vale son estas tablas. La conjeturada se
+apoya en conjeturas sobre la proximidad a códigos Reed-Solomon que no están demostradas; la
+demostrable, no. Las dos son lo que devuelve la función de upstream sobre la forma de la
+prueba, y nadie ajeno al proyecto las ha contrastado con la construcción oculta del fork (H7).
+
+Los «127 conjeturados frente a 29-63 demostrables» y los «36,7 KB frente a 125,6 KB» que
+publicaban varios documentos hasta el §698 son del circuito de comparación de
+`FIVE_BACKENDS.md` §4, con 32 consultas y sin molienda ni ocultación, no de estas pruebas. Lo
+que costaría llevar las de producción a 128 bits demostrables no está medido.
+
+**Frente a un adversario cuántico: no medido.** Que el sistema de pruebas sólo use hashes
+quiere decir que no tiene supuestos de curva. No quiere decir que tenga un nivel cuántico
+conocido: ninguna cifra de este apartado lo es, ningún parámetro se eligió pensando en uno, y
+ese nivel no se ha medido.
+
+**El azar del sistema es un supuesto de confianza.** Lo que tiene que ser impredecible en la
+capa, el SDK y el medio sale del generador aleatorio del sistema operativo, en siete llamadas y
+sin una abstracción común:
+
+- las sales de cada hoja de Merkle y las dos semillas de la ocultación de cada prueba
+  (`OsRng`, `crates/zk-ssl-air/src/sal.rs`);
+- la clave de gasto de `Wallet::random` y la sal del pendiente de `random_salt`
+  (`rand::thread_rng`, `crates/zk-ssl-sdk/src/lib.rs`);
+- los nonces del cifrado en reposo del libro y del keystore (`OsRng`,
+  `crates/zk-ssl/src/crypto.rs` y `crates/zk-ssl-sdk/src/keystore.rs`);
+- la aleatoriedad de la firma ML-DSA del medio en su modo con sal (`getrandom`,
+  `crates/zk-ssl-medio/src/nota.rs`).
+
+Si ese generador es predecible o se repite, la ocultación no protege el testigo, la clave de
+gasto se puede adivinar y los nonces pueden repetirse. Ningún test lo comprueba, ni puede. Fiat-Shamir
+no usa azar: la moneda sale de lo que la prueba compromete.
+
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
 Desde agosto de 2026 esto no es solo una capa: hay cable, nodo, SDK y un
@@ -669,12 +745,17 @@ y también trae dos defensas que antes no existían.
 | **Arqueo** | **conocimiento de preimagen**: identidad, salt de hoja y autoridad derivan de la clave **por hash** (§117) | **no hay firma clásica en la vía de pago**, y STARK/FRI solo usa hashes: no hay curva que romper |
 
 ⚠️ **La reserva que toca hacerse**: «post-cuántico» aquí significa *sin
-supuestos de curva*, no *invulnerable*. Grover degrada los hashes; y este
-proyecto **midió y publicó** que su configuración por defecto tiene techo
-de **63 bits de solidez** sin extensión de campo (hallazgo 3), frente a
-los ~128 conjeturados que se suelen citar. Un sistema con miles de
-validadores y años de producción sigue siendo, hoy, **más seguro en la
-práctica** que uno sin auditar.
+supuestos de curva*, no *invulnerable*, y el nivel frente a un adversario
+cuántico **no está medido** (§3.11). Lo medido es clásico: 127 bits
+conjeturados y, demostrables, 59 en UDR y 80-88 en LDR según el circuito,
+menos en la edad con `m` alta (§3.11). El techo de **63 bits de solidez**
+que este proyecto midió y publicó (hallazgo 3) es el de una configuración
+sin extensión de campo; la de producción usa la cuadrática. Un sistema con
+miles de validadores y años de producción sigue siendo, hoy, **más seguro
+en la práctica** que uno sin auditar. ⚠️ **Corregido en el §698**: hasta
+entonces este párrafo decía que «su configuración por defecto tiene techo de
+63 bits de solidez sin extensión de campo», y no decía que el nivel cuántico
+no está medido.
 
 **2. Sin ceremonia de confianza — y sin haberla tenido nunca.** Zcash la
 eliminó con Halo 2 en Orchard (mayo 2022), pero Sprout y Sapling nacieron
@@ -700,7 +781,7 @@ este eje solo aplica contra Zcash.
 | **Descentralización** | miles de validadores/mineros independientes | **UN nodo, un operador**. Ve el estado, ordena, puede censurar |
 | **Rendimiento** | Solana en miles de TPS; Bitcoin y Ethereum en un orden muy superior a este | **1,5-1,9 TPS** medidos (§123) |
 | **Madurez** | años en producción, auditorías repetidas, recompensas por fallos | **cero auditorías externas**, prototipo de investigación |
-| **Tamaño de prueba** | Groth16: 192 B | **53,6-65,3 KB** medidos en los circuitos de esta capa (§218) — el precio de no depender de nadie. Los 36,7 KB de las tablas comparativas son del circuito de comparación, no de éstos |
+| **Tamaño de prueba** | Groth16: 192 B | **72.382-84.244 B** por prueba de envío o de cobro, ocultas, la banda que ata un test desde el §538 (un pago son dos: 145.953-167.967 B); el tamaño de las demás pruebas no lo ata ninguna banda — el precio de no depender de nadie. Antes de ocultar, el envío y el cobro medían 64,6 y 65,3 KB (§218). Los 36,7 KB de las tablas comparativas son del circuito de comparación, con otras opciones y sin ocultar |
 
 **Y una lección que este proyecto toma prestada, no presta**: el fallo de
 sub-restringimiento de Orchard (junio de 2026) ocurrió en la clase que

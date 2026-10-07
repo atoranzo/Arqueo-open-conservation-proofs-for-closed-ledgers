@@ -141,9 +141,12 @@ verification, and adds a further property: **post-quantum security**,
 depending only on hash functions.
 
 The cost is substantial. The STARK proofs of the comparison circuit
-occupy 36.7 KB against Groth16's 192 bytes — a factor of **320×**. The
-layer's production circuits are larger —**53.6 to 65.3 KB**, measured
-in §218— so the real factor is around 300-350×. In proving time for
+occupy 36.7 KB in the comparison table against Groth16's 192 bytes — a
+factor of **about 196×** (remeasured on 2026-10-07, 39,048 B: about 203×).
+The layer's production proofs are larger: since they hide their witness
+(§538), the send and claim proofs take **72,382 to 84,244 B** each, the
+band a test binds (before hiding, 64.6 and 65.3 KB: §218), so for them the
+factor is around 380-440×; no band binds the size of the others. In proving time for
 the complete circuit the difference favors STARK, but proof size
 constrains any scenario where proofs must be transmitted or stored at
 volume.
@@ -540,12 +543,27 @@ security without the permission of two. Earlier revisions did not say so.
 Without field extension, the configuration an implementer would choose by
 default — fast and compact — has a ceiling of **63 bits of soundness**,
 insufficient and not comparable to the ~128 bits of the other paradigms.
+The layer uses the quadratic extension (§8.4).
 
 ### 8.4 The gap between conjectured and provable security
 
-In the configurations evaluated, 127 bits of **conjectured** security
-coexist with 29–63 bits of **provable** security. Closing the gap raises
-proof size from 36.7 KB to 125.6 KB.
+In the comparison circuit, with 32 queries and no grinding, 127 bits of
+**conjectured** security coexist with 29–63 bits of **provable** security
+(29 under UDR, 63 under LDR). Closing the gap raises proof size from
+36.7 KB to 125.6 KB.
+
+The layer's production options — 42 queries, blowup 16, grinding 21 and
+quadratic extension — give, over its hidden proofs, 127 conjectured bits
+and, provable, 59 under UDR and 80 to 88 under LDR depending on the
+circuit; the age proof drops with its `m`, down to 48 with `m = 23`.
+Tests bind these figures (§697), and the table is in `SECURITY.md`
+§3.11. What it would cost to bring them to 128 provable bits is not
+measured, and neither is their level against a quantum adversary.
+
+⚠️ **Corrected in §698**: until then this section said «In the
+configurations evaluated», without saying they were the comparison
+circuit's nor giving the production ones; and §2.2 gave a factor of 320×
+and, for production, 53.6 to 65.3 KB, from before hiding.
 
 The distinction is rarely made explicit in cross-paradigm comparisons, and
 is directly relevant to anyone selecting parameters under regulatory

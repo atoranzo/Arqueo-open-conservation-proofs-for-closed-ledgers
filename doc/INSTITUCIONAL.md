@@ -67,11 +67,11 @@ Es relevante para un horizonte de despliegue de infraestructura
 financiera, donde el sistema debe seguir siendo seguro décadas después de
 su puesta en marcha.
 
-**Matiz técnico que conviene conocer**: la seguridad declarada de 127 bits
-es **conjeturada**. La seguridad *demostrable* en esa configuración está
-entre 29 y 63 bits. Cerrar la brecha eleva el tamaño de prueba de 36,7 KB
-a 125,6 KB. Esa distinción rara vez se explicita, y es directamente
-relevante para elegir parámetros bajo criterios regulatorios.
+**Matiz técnico que conviene conocer**: los 127 bits declarados son **conjeturados**. Los
+*demostrables*, con las opciones de producción y sobre las pruebas ocultas, son 59 (UDR) y 80-88
+(LDR) según el circuito, y menos en la prueba de edad con `m` alta (`SECURITY.md` §3.11); frente a
+un adversario cuántico, el nivel no está medido. Esa distinción rara vez se explicita, y es
+directamente relevante para elegir parámetros bajo criterios regulatorios.
 
 ### Identidad soberana — **parcialmente**
 
@@ -163,8 +163,8 @@ Se evaluaron cinco paradigmas implementando el mismo circuito en cada uno:
 | Tamaño de prueba | **192 B** | 4.096 B | 36,7 KB | 1.008 B |
 | Post-cuántico | No | No | **Sí** | No |
 
-**Se descartó Groth16 pese a ser más rápido y producir pruebas 320 veces
-menores.**
+**Se descartó Groth16 pese a ser más rápido y producir pruebas unas 196 veces menores que los
+36,7 KB del circuito de comparación, y 380-440 veces menores que las de envío y cobro de la capa.**
 
 El motivo es el que más debería importar a un banco central: Groth16 y
 PLONK/KZG **exigen una ceremonia de setup de confianza**. Un conjunto de
@@ -448,19 +448,29 @@ factorización, en los que se basan las curvas elípticas y los
 emparejamientos. **Groth16, PLONK/KZG, Halo2 y Nova los usan; STARK/FRI
 no.**
 
-Grover reduce a la mitad la seguridad efectiva de las funciones hash, lo
-que está contemplado en la elección de parámetros.
+Que no haya curvas no da un nivel frente a un adversario cuántico: **ese
+nivel no está medido**, y ningún parámetro se eligió pensando en él
+(`SECURITY.md` §3.11).
 
 ### La cautela que corresponde
 
 La resistencia cuántica del sistema de prueba es una propiedad de la
-construcción, no una promesa. Pero conviene recordar el matiz del
-apartado 1: **los 127 bits declarados son conjeturados**; los demostrables
-en esa configuración están entre 29 y 63.
+construcción —no usa curvas—, no una promesa ni un nivel medido. Y
+conviene recordar el matiz del apartado 1: **los 127 bits declarados son
+conjeturados**; los demostrables, con las opciones de producción, son 59
+(UDR) y 80-88 (LDR) según el circuito, menos en la prueba de edad.
 
 Para un despliegue bajo criterios regulatorios, esa distinción debería
-resolverse explícitamente al elegir parámetros, y el coste está medido:
-36,7 KB frente a 125,6 KB por prueba.
+resolverse explícitamente al elegir parámetros. El coste de 128 bits
+demostrables está medido en el circuito de comparación —36,7 KB frente a
+125,6 KB por prueba, con otras opciones y sin ocultar—, no en las pruebas
+de producción.
+
+⚠️ **Corregido en el §698**: hasta entonces este apartado y el 1 decían que
+los demostrables «en esa configuración» estaban «entre 29 y 63», que son del
+circuito de comparación; que la reducción de Grover «está contemplada en la
+elección de parámetros», y ningún parámetro la contempla; y que Groth16 daba
+pruebas «320 veces menores».
 
 ---
 

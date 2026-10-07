@@ -79,25 +79,30 @@ cargo run -p zk-ssl-cli -- --json simulate | jq .
 cargo run -p zk-ssl-cli -- --log debug simulate
 ```
 
-Salida típica de `simulate` (abreviada):
+Salida típica de `simulate` (abreviada; una corrida en release del 2026-10-07):
 
 ```
-━━ FASE FUND ━━ emisión delegada de 1000000 a #0: exige DOS custodios
-  ✔ prueba STARK generada: 54.3 KB — digest 3fa2…9c01 [812 ms]
-  · custodio #1 autoriza — nullifier consumido: 8b1e…
-  · custodio #3 autoriza — nullifier consumido: 44c7…
-  ✔ aplicado → log#1 Mint  raíz a01b…→77d2…  cadena 5e90… [95 ms]
+━━ FASE FUND ━━ emisión delegada de 1000000 a #296740276: exige DOS custodios
+  ✔ prueba STARK generada: 66.4 KB — digest cd3d146d…1b38f2a7 [559 ms]
+  · custodio #1 autoriza — nullifier consumido: 81bf2d5f…  op: d441d94f…4c50121b
+  · custodio #3 autoriza — nullifier consumido: 50956ab9…  op: d441d94f…4c50121b
+  ✔ aplicado → log#1 Mint  raíz 6590b0bf…0ebb7b1a → f3fca118…3ebc0ad6  cadena 7dc073fa…f0c149c4 [3 ms]
 
-━━ FASE SEND ━━ #0 → #1, importe 250000: materiales → prueba LOCAL → apply_send
+━━ FASE SEND ━━ #296740276 → #4052836150, importe 250000: materiales → prueba LOCAL → apply_send
   · materiales listos (pendiente@0) [0 ms]
-  ✔ prueba STARK generada: 64.6 KB — digest c3d4… [1204 ms]
-  ✔ aplicado → log#3 Send  raíz 77d2…→b6aa…  cadena 09f1… [102 ms]
+  ✔ prueba STARK generada: 76.5 KB — digest 20d965d5…c320be5f [930 ms]
+  ✔ aplicado → log#4 Send  raíz 75418f6b…a592ea0b → d44542e0…6088e69e  cadena 50a3ace2…a1500ce1 [11 ms]
   el dinero está EN TRÁNSITO: no es del receptor hasta que cobre (§29)
 
 ━━ FASE CLAIM ━━ ...
-✔ cadena de transiciones íntegra (5 entradas)
+✔ cadena de transiciones íntegra (6 entradas)
 ── estado del libro mayor ── ...
 ```
+
+El CLI imprime KB de 1.024 B. Las pruebas ocultan su testigo desde el §538, y su tamaño cambia de
+una corrida a otra: el del envío y el del cobro lo acota la banda de `crates/zk-ssl/src/metrics.rs`.
+⚠️ **Corregido en el §698**: la salida de antes daba 54.3 KB para la emisión y 64.6 KB para el
+envío, que son los 66.164 B del envío del §218, de antes de ocultar.
 
 ## Decisiones de diseño
 

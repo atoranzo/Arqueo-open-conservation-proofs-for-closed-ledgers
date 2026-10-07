@@ -1139,6 +1139,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   edad, que cambian lo que el kit acepta—; y, con eso, los parámetros del corte zkssl/0.5 que
   propone el ZK-1 de `doc/blueprint-v2.md`. Lo que se decida cambia los pisos de los tests en el
   mismo sello, con su asiento.
+  **Publicado (§698)**: lo medido de hoy, con la tabla de la edad por `m`, está en `SECURITY.md`
+  §3.11, y lo repiten el comentario de `proof_options`, `PRINCIPIOS.md`, `FIVE_BACKENDS.md`,
+  `PAPER.md`, `PAPER_EN.md`, `doc/ZENODO.md` y los dos institucionales; el nivel cuántico se
+  declara no medido. Lo que se decida aquí mueve también esos textos, en el mismo sello.
 
 ## D. Declaradas, acotadas, sin urgencia
 

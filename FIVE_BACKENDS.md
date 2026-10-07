@@ -135,7 +135,8 @@ un mecanismo implementado.
 
 El campo mide 64 bits y la solidez no puede superarlo por muchas queries
 que se añadan. La configuración "rápida y compacta" que uno elegiría por
-defecto **no es comparable** con los ~128 bits de los otros tres.
+defecto **no es comparable** con los ~128 bits de los otros tres. La capa
+no la usa: sus opciones llevan extensión cuadrática.
 
 ### 4. La brecha entre seguridad conjeturada y demostrable en STARK
 
@@ -146,9 +147,29 @@ defecto **no es comparable** con los ~128 bits de los otros tres.
 | **blowup 16, ext. cuadrática** | **36,7 KB** | **39 ms** | **127 bits** | 29 / 63 |
 | 120 queries, grinding 20, ext. cúbica | 125,6 KB | 48 ms | 128 bits | **128 / 128** |
 
-Los 127 bits conjeturados que suele citar el ecosistema conviven con
-29-63 demostrables. Cerrar la brecha cuesta 125,6 KB en vez de 36,7 — y
-aun así sigue siendo el generador más rápido.
+Las cuatro filas son del circuito de cumplimiento, con 32 queries salvo la
+última y sin grinding salvo la última. Ahí, los 127 bits conjeturados que
+suele citar el ecosistema conviven con 29 (UDR) y 63 (LDR) demostrables.
+Cerrar la brecha cuesta 125,6 KB en vez de 36,7 — y aun así sigue siendo el
+generador más rápido.
+
+⚠️ **No son las cifras de producción.** Las opciones de la capa —42
+queries, blowup 16, grinding 21 y extensión cuadrática— dan, sobre sus
+pruebas ocultas, 127 bits conjeturados y, demostrables, 59 en UDR y 80-88 en
+LDR según la longitud del circuito, menos en la prueba de edad cuanto mayor
+es su `m`. Lo fijan tests desde el §697, y la tabla por circuito y por `m`
+está en [`SECURITY.md`](./SECURITY.md) §3.11. Lo que costaría llevar esas
+pruebas a 128 bits demostrables no está medido, y su nivel frente a un
+adversario cuántico tampoco. ⚠️ **Corregido en el §698**: hasta entonces el
+párrafo de la tabla decía «Los 127 bits conjeturados que suele citar el
+ecosistema conviven con 29-63 demostrables», sin decir con qué opciones, y
+otros documentos lo citaban como si fuera la capa.
+
+Remedido el 2026-10-07 (§698) con el mismo test
+(`real_proof_end_to_end_with_metrics`): los mismos bits en las cuatro filas,
+y 27.794, 33.125, 39.048 y 127.274 B. Los tamaños se movieron desde la medida
+de la tabla —por el circuito o por la versión de winterfell; no se ha buscado
+cuál—, y la tabla se conserva porque es la de la comparación entre backends.
 
 ### 5. Solo dos de seis librerías se defienden del uso inseguro
 
@@ -288,11 +309,12 @@ comprimir con un SNARK, así que los necesita.
 El tamaño no bloquea la mensajería: los buses financieros (ISO 20022
 sobre SWIFT, MQ, Kafka) mueven rutinariamente cargas de cientos de KB. La
 fricción real es la **acumulación histórica**: a millones de
-transacciones, almacenar **53,6-65,3 KB** por prueba —lo que miden los
-circuitos de esta capa (§218), no los 36,7 KB del circuito de
-comparación— en vez de 192 bytes cambia el tamaño del ledger, los
-tiempos de sincronización y la validación en frío en dos órdenes de
-magnitud.
+transacciones, almacenar **72.382-84.244 B** por prueba de envío o de
+cobro —la banda que ata un test para esas dos, ocultas, desde el §538; las
+demás pruebas no las ata; antes de ocultar eran 64,6 y 65,3 KB (§218), y
+nunca los 36,7 KB del circuito de comparación— en vez de 192 bytes cambia
+el tamaño del ledger, los tiempos de sincronización y la validación en frío
+en dos órdenes de magnitud.
 
 ---
 

@@ -220,8 +220,8 @@ error se registra en vez de borrarse.
 
 ### La decisión que define la arquitectura
 
-Se descartó **Groth16 pese a ser el más rápido y tener pruebas 320 veces
-más pequeñas** (192 bytes frente a ~65 KB — §130).
+Se descartó **Groth16 pese a ser el más rápido y tener pruebas 380-440 veces
+más pequeñas** que las de envío y cobro (192 B frente a 72.382-84.244 B — §538).
 
 El motivo no fue técnico sino de coherencia: exige ceremonia de
 confianza. Sin ceremonia quedan Halo2/IPA y STARK/FRI; de los dos, STARK
@@ -318,11 +318,21 @@ Obligó a diseñar un patrón en lockstep.
 64 bits: colisión en 2³². En BLS12-381 (255 bits) el problema no existe.
 
 **3. Techo de 63 bits de solidez** en STARK sobre Goldilocks sin
-extensión de campo. La configuración por defecto **no es comparable** con
-los ~128 bits de los otros.
+extensión de campo. Esa configuración **no es comparable** con los ~128
+bits de los otros; la capa usa la extensión cuadrática.
 
-**4. Brecha entre seguridad conjeturada y demostrable**: 127 bits
-conviven con 29-63. Cerrarla cuesta 125,6 KB en vez de 36,7.
+**4. Brecha entre seguridad conjeturada y demostrable**: en el circuito de
+comparación, con 32 consultas y sin molienda, 127 bits conjeturados
+conviven con 29 (UDR) y 63 (LDR) demostrables, y cerrarla cuesta 125,6 KB
+en vez de 36,7. Con las opciones de producción —42 consultas, blowup 16,
+molienda 21— y sobre las pruebas ocultas: 127 conjeturados, 59 en UDR y
+80-88 en LDR según el circuito, menos en la edad con `m` alta; lo fijan
+tests (§697) y la tabla está en `SECURITY.md` §3.11. Frente a un adversario
+cuántico, el nivel no está medido. ⚠️ **Corregido en el §698**: hasta entonces
+decía «127 bits conviven con 29-63», sin decir de qué circuito ni con qué
+opciones; el 3, que la configuración sin extensión era «la configuración por
+defecto»; y el apartado 5, que Groth16 tenía pruebas «320 veces más pequeñas»
+(192 bytes frente a ~65 KB, §130), con los tamaños de antes de ocultar.
 
 **5. PLONK-KZG resultó el generador más lento** de los cuatro, 16-22
 veces más lento que Groth16. *Matiz: parte puede deberse a la
