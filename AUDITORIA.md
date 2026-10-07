@@ -47396,3 +47396,68 @@ medio: la da el operador, que es quien los tiene. Y no juzga si el estado de la 
 
 **Lo que NO cierra.** La 92 sigue abierta —el (a), la supervivencia del índice, y el (b), la
 custodia, como estaban— y la 84 también, con la E6 pendiente.
+
+## §691 — un arreglo de seguridad se redacta en privado y sale de una vez, con su aviso; el reporte a otro proyecto no entra en el árbol
+
+El commit que lleva este asiento, sobre `161a233` (el §690). Un solo sello, sin código:
+`spec/rfc/PROCESO.md` gana la sección «Fallos de seguridad», con dos cláusulas; `SECURITY.md` §5
+dice qué sale cuando se arregla un fallo y cómo se arregla; la guía de `spec/README.md` lo nombra
+en la fila de `PROCESO.md` y en «Changing any of this»; y este asiento. Lo escribe y lo comprueba
+una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el autor en su máquina, fuera
+del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre: `main` llega al
+§690, y ninguna rama del repositorio lleva un §691. En la sesión, sobre este mismo árbol —armado
+aparte, en un repositorio de ensayo, con el contenido de `161a233` y este sello encima—, el canon
+`--sello` salió VERDE, con `zk-ssl-cli` en 138 de 138 y `check_tests` en 1837.
+
+**De dónde sale.** Lo decide el autor. `PROCESO.md` hace entrar por RFC todo cambio al protocolo, y
+sus estados suponen que el RFC se discute en el árbol antes que el cambio. Con un fallo de seguridad
+eso publica el fallo antes que su arreglo: lo que `SECURITY.md` §5 pide reportar en privado quedaría
+contado en un BORRADOR público. Y §5 decía cómo reportar, pero no qué sale cuando se arregla ni cómo
+se arregla.
+
+**Lo que hace.**
+
+1. **El RFC de un arreglo de seguridad, en privado.** Si el arreglo toca el protocolo, su RFC —o la
+   enmienda al RFC que el fallo toca— se redacta fuera del árbol, con el código, y entra en el mismo
+   sello que el arreglo, con su etapa ya construida. Es una excepción al orden, no a las reglas: la
+   2 —los vectores viejos se conservan bajo su versión y jamás se reescriben, la promesa del
+   README— y la 4 valen igual, y el asiento que lo sella dice que se redactó en privado. El número
+   se toma al entrar: un hueco en la numeración contaría lo que se calla.
+2. **El reporte a otro proyecto, fuera del árbol público.** El borrador, la correspondencia y
+   cualquier reproductor de un fallo que es de otro proyecto no entran. Mientras el plazo de la
+   divulgación coordinada corre, el árbol puede decir que hay un reporte en curso, sin cómo se
+   dispara el fallo. La cláusula dice que rige desde este asiento: lo que entró antes no lo
+   reescribe.
+3. **`SECURITY.md` §5, qué sale.** Cada fallo arreglado en el kit publicado —las releases
+   `arqueo-verify-v*`— sale con su aviso de seguridad, un *GitHub Security Advisory* de este
+   repositorio que nombra las versiones del kit afectadas y la primera que lo arregla. El arreglo se
+   desarrolla en el fork privado temporal que se crea desde el borrador del aviso, nunca en una
+   rama, un PR o un *issue* públicos, y se publica de una vez: el código, los vectores, el RFC o la
+   enmienda ya construida, el asiento, la release y el aviso. Si el arreglo cambia el cable, la
+   versión sube y los vectores viejos se conservan bajo la suya: §5 cita la regla 2.
+4. **La guía de `spec/README.md`**, en inglés, nombra las dos cláusulas en la fila de `PROCESO.md`
+   —la segunda, desde el §691— y dice la excepción en «Changing any of this», con la cita por
+   encabezado.
+
+**Medido.** `tools/verificar_citas.py` cuenta 35 encabezados citados y 0 muertos, frente a 33 en
+`161a233`: las dos citas nuevas a la sección, desde `SECURITY.md` y desde `spec/README.md`, caen en
+su encabezado. En una copia del árbol con el encabezado renombrado sale con 1 y nombra las dos.
+`check_cifras`, `check_figures`, `check_columns`, `check_dominios`, `check_publicadas`,
+`check_nucleo`, `check_techo`, `check_tests` y `check_modulos` salen con 0 sobre este árbol. Y el
+botón que §5 da por hecho existe: el reporte privado de vulnerabilidades del repositorio está
+activado; `gh api` sobre su `private-vulnerability-reporting` da `{"enabled":true}`, medido el
+07-10-2026.
+
+**Probado.** Ningún test nuevo: el sello no toca código, y la compuerta que lo vigila es la de las
+citas.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1837, el TOTAL DE SELLO en 1678 y el TOTAL
+CON LARGOS en 1815, como los dejó el §690. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas:
+ninguna entrada llevaba esto.
+
+**Lo que NO hace.** Las dos cláusulas son de método, y ninguna compuerta las comprueba. No promete
+plazos ni identificadores: §5 sigue sin compromisos de respuesta. Y la regla del reporte a otro
+proyecto mira hacia delante, y lo dice: lo que ya está en el árbol público no lo mueve este sello;
+qué hacer con ello lo decide el autor, en un asiento propio.
+
+**Lo que NO cierra.** Nada de la cola.

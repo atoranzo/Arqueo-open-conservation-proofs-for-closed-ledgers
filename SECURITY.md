@@ -745,6 +745,22 @@ el verificador acepta—.
 compromisos de respuesta ni recompensas. Se agradece la divulgación
 responsable y se da crédito a quien lo desee.
 
+**Qué sale cuando se arregla**: cada fallo arreglado en el kit publicado —las
+releases `arqueo-verify-v*`— sale con su **aviso de seguridad**, un *GitHub
+Security Advisory* de este repositorio que nombra las versiones del kit
+afectadas y la primera que lo arregla, con el crédito de quien lo reportó si lo
+desea.
+
+**Cómo se arregla**: en privado —en el fork privado temporal que se crea desde
+el borrador del aviso, nunca en una rama, un PR o un *issue* públicos— y se
+publica de una vez: el código, los vectores, el RFC o la enmienda con su etapa
+ya construida, el asiento de `AUDITORIA.md`, la release y el aviso. Los vectores
+viejos no se reescriben: si el arreglo cambia el cable, la versión sube y los
+viejos se conservan bajo la suya (regla 2 de `spec/rfc/PROCESO.md`). Lo escribe
+`spec/rfc/PROCESO.md` §«Fallos de seguridad», que dice también por qué el RFC
+de un arreglo de seguridad no pasa antes por el árbol, y que el borrador de un
+reporte a otro proyecto no entra en él.
+
 **No** se harán afirmaciones categóricas sobre la seguridad del sistema en
 respuesta a un reporte: se corregirá, o se documentará el límite.
 
