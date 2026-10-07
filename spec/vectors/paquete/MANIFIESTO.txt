@@ -77,4 +77,20 @@ rechazo-ext-camino-nibble.json|1|NO extiende a la vieja
 # mando decia VERDE, o colgaba-. El rechazo nombra el campo y el valor sin reducir, ANTES de la firma.
 rechazo-n-no-canonico.json|1|n: 0xffffffff000005a1 no es canonico
 rechazo-mmrSize-no-canonico.json|1|mmrSize: 0xffffffff00000005 no es canonico
+# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. Diez lineas de
+# arriba pinan el sujeto -`seq: `, `sin 0x: `, `hex: `, `cabeza: `, `acuse: `, `cofirma 1: ` y
+# `nueva: cabeza: `- y no dicen por que cae el vector. No se reescriben (regla 2 del PROCESO): estas
+# lineas NUEVAS pinan la causa con el texto que la casa gobierna, y paran antes del de la biblioteca
+# (`VerificationFailed` es de xmss y no se pina). `sin 0x: ` ya era una causa, y aqui lleva el valor
+# que el mando imprime. La segunda implementacion dice las diez igual.
+rechazo-seq-no-hex.json|1|seq: hex: cifra no admitida en la posicion 0
+rechazo-accountsRoot-sin-0x.json|1|sin 0x: 90c307507bf08a48d9
+rechazo-accountsRoot-no-hex.json|1|hex: cifra no admitida en la posicion 0
+rechazo-signature-nibble.json|1|cabeza: la firma no verifica
+rechazo-publicKey-nibble.json|1|cabeza: la firma no verifica
+rechazo-hashPrueba-nibble.json|1|acuse: RaizDistinta
+rechazo-sibling-nibble.json|1|acuse: RaizDistinta
+rechazo-cofirma-firma-nibble.json|1|cofirma 1: la firma no verifica
+rechazo-cofirma-testigo-nibble.json|1|cofirma 1: la firma no verifica
+rechazo-ext-nueva-signature-nibble.json|1|nueva: cabeza: la firma no verifica
 no-existe.json|1|no se puede leer

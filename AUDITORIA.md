@@ -47617,3 +47617,173 @@ y `RESUMEN_EJECUTIVO.md` no se mueve: la puerta va en su bloque, como `check_mod
 ya no cuadraba, como dejó dicho `doc/integracion-vertical-evaluacion.md`.
 
 **Lo que NO cierra.** Nada de la cola.
+
+## §693 — un negativo nombra su causa: el arnés no cuenta lo que el binario no lee, y la causa va en la línea del ROJO
+
+El commit que lleva este asiento, sobre `b9ea3c0` (el §692). Un solo sello: `spec/PAQUETE.md` gana la sección
+6.1, «La causa del rechazo», con la tabla de las causas, y en la 6 el texto reservado `NO
+SOPORTADO`; `tools/conformidad.sh` exige la causa; ocho manifiestos ganan dieciocho líneas nuevas
+que la pinan, sin reescribir ninguna, tres de ellas en `0.3/`, medidas con su kit;
+`tools/segunda/verificador.py` declara lo que no lee y nombra
+cuatro causas con el texto del binario; el RFC-0005, en su E4, `spec/README.md`, la sección 9 y la
+historia de `PAQUETE.md` y el README de `tools/segunda/` se ponen al día; y este asiento. Lo escribe
+y lo prueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo
+árbol, el canon `--sello` salió VERDE, con `zk-ssl-cli` en 139 de 139, `check_tests` en 1838, la
+puerta de los vectores en 477 vectores y 925 líneas, las doce familias del binario en 399 de 399,
+las cinco de la segunda implementación en 170 de 170, sus pares STARK en 28 de 28 y el artefacto
+reproducible.
+
+**De dónde sale.** El criterio de H3 es una segunda implementación que «pase y falle igual»
+(RFC-0005, E5), y fallar igual es fallar por la misma causa. El arnés miraba el código de salida y
+si el texto del manifiesto aparecía en algún sitio de la salida, y quince vectores de cinco
+familias tenían por único texto el sujeto del rechazo, no su causa: `edad:`, `pago:`, `cobro:`, dos
+`prenda:`, y en el paquete `seq: `, `sin 0x: `, `hex: `, dos `cabeza: `, dos `acuse: `, dos
+`cofirma 1: ` y `nueva: cabeza: `; y tres más en el catálogo conservado `0.3/`: `edad:`, `pago:` y
+`cobro:`. Las cabeceras de los cuatro con prueba lo decidieron así porque
+el nombre de la causa lo pone `winter-verifier` y caducaría con la dependencia; `rechazo/` ya lo
+pinaba (`banda: InconsistentOodConstraintEvaluations`). Medido sobre `161a233` con el §691 y el
+§692, con el arnés y los manifiestos de antes:
+
+- `tools/segunda/verificador.py`, que no lee los sobres de edad ni de prenda, pasaba
+  `prenda/neg-receptor-mentido`, `prenda/neg-marca-mentida`, `edad/neg-cota-movida` y el
+  `neg-cota-movida` de `0.3/edad` con su «ROJO: tipo prenda: la segunda implementacion no lee este
+  sobre todavia»: el texto contiene `prenda:`;
+- un ejecutable de tres líneas que lee la entrada estándar y escribe «VERDE: el paquete se sostiene
+  sin el nodo» pasaba el manifiesto del paquete: VERDE, exit 0, «1 de 1». El binario heredaba el
+  manifiesto como entrada, se comía las demás entradas y el bucle acababa con la que había visto;
+- uno que escribe en la salida estándar los textos del manifiesto y sale con 1 pasaba 68 de las 73
+  entradas del paquete: todos los negativos. Y uno que escribe una sola línea ROJO con los sujetos
+  —`ROJO: prenda: edad: … cabeza: acuse: …`— pasaba los quince negativos genéricos de las cinco
+  familias.
+
+**Lo que hace.**
+
+1. **La tabla** (`PAQUETE.md` §«6.1 La causa del rechazo»). Trece clases, leídas de la causa más
+   interna a la más externa: ilegible, fuera del contrato, campo ausente, de más o mal escrito,
+   cabeza fuera de su familia, recomposición, firma inválida, camino que no sube, no casa con lo
+   comprometido, la regla no se sostiene, y en las pruebas STARK prueba mal formada, opciones no
+   aceptadas, OOD inconsistente y consulta que no casa con el compromiso. Cada una con el texto que
+   la nombra en la línea del ROJO. La causa se nombra con el texto que la casa gobierna; lo que pone
+   una biblioteca detrás —el `VerificationFailed` de `xmss`, el mensaje del lector de JSON— no se
+   pina. En una prueba STARK el nombre es la variante de `VerifierError` de `winter-verifier`
+   0.13.1, la del `Cargo.lock`: si la dependencia la renombra, la línea se mueve a su versión, no se
+   reescribe.
+2. **`NO SOPORTADO`** (sección 6). Una implementación que no lee una forma lo dice con ese texto en
+   su línea de error, sale con 1 y lo declara aparte. No es una causa: es un hecho de ella, no del
+   sobre.
+3. **El arnés.** Una salida con `NO SOPORTADO` sale `ROJO <fichero>: NO SOPORTADO - <la línea que
+   lo dice>` —con su nombre, como cualquier otro ROJO, que es lo que leen los bloques del canon— y
+   no cuenta nunca, diga lo que diga el manifiesto; «no lee este sobre», «no implementado» y «not
+   implemented» se reconocen igual, por cortesía, y la cabecera del arnés y la 6.1 dicen que no son
+   todas las formas de decirlo; en una entrada con código 1 tiene que haber UNA línea con `ROJO:` y
+   el texto tiene que estar en ella; un vector con entradas de código 1 en el que ninguna nombra la
+   causa —texto vacío o que acaba en `:`— sale `SIN CAUSA`, ROJO del manifiesto como el vector sin
+   entrada; y el binario corre con `< /dev/null`. La línea final añade `; <k> NO SOPORTADAS` y `; <k> SIN CAUSA` sólo si
+   no son cero: en verde es la misma de antes, y `tools/artefacto.sh` la sigue leyendo igual.
+4. **Las líneas nuevas.** Una por cada uno de los quince vectores, con su comentario `§693`: la
+   variante de `winter-verifier` en los cinco del enunciado mentido —`edad:`, `pago:`, `cobro:` y
+   `prenda:` seguidos de `InconsistentOodConstraintEvaluations`—, y en el paquete `seq: hex: cifra
+   no admitida en la posicion 0`, `sin 0x: 90c307507bf08a48d9`, `hex: cifra no admitida en la
+   posicion 0`, `cabeza: la firma no verifica` (dos), `acuse: RaizDistinta` (dos), `cofirma 1: la
+   firma no verifica` (dos) y `nueva: cabeza: la firma no verifica`. Las del paquete van antes de
+   `no-existe.json`, que la cabecera dice que es la última; R3 de `check_vectores` admite intercalar.
+   Y en `0.3/edad`, `0.3/pago` y `0.3/pendiente`, la causa que imprime su kit, el `zk-ssl-verify`
+   del árbol en `0eda58c` compilado de ese commit: `edad:`, `pago:` y `cobro:` seguidos de
+   `InconsistentOodConstraintEvaluations`, medido. Las líneas viejas siguen, y siguen pasando.
+   `check_vectores --registrar` las fija: 63 líneas nuevas con sus comentarios, ninguna movida ni
+   borrada.
+5. **La segunda implementación.** `NO_SOPORTADOS` declara los siete tipos que no lee —`rechazo`,
+   `edad`, `cobro_pendiente`, `pago_en_curso`, `prenda`, `completitud` y `ancla-cofirmada`—, con un
+   `assert` que ata leídos más no soportados a los tipos conocidos, y su ROJO es `NO SOPORTADO: tipo
+   {tipo}: …`. Cuatro causas pasan a decirse como el binario: `la firma no verifica` en la cabeza y
+   en la cofirma, `acuse: RaizDistinta`, y el `u64` con la escritura mínima del §662 y sus textos
+   —`cantidad hex no minima`, `hex: cifra no admitida en la posicion {i}`—, como ya hacía
+   `_q_del_acta`; hasta aquí `int(s, 16)` admitía mayúsculas, ceros a la izquierda y `_`.
+6. **El doble hilo.** El RFC-0005 nombra el §693 en su cabecera y en la fila de E4, con un párrafo
+   en su sección; el RFC, `spec/README.md`, el README de `tools/segunda/` y este asiento citan la
+   sección por su encabezado, y `verificar_citas` las vigila.
+
+**Medido.** Sobre este árbol, con el `zk-ssl-verify` de release:
+
+- **El binario de referencia**, los 18 manifiestos con el arnés de antes y con el de ahora:
+  ninguna entrada existente cambia de veredicto, y las quince nuevas salen OK. Las doce familias
+  del canon dan 399 de 399, frente a 384 de 384: el paquete 83, la edad 12, el pago y el pendiente
+  10, la prenda 11. Los rechazos del cable, con el testigo, 21 de 21. Los manifiestos de `0.3/` y
+  el de `0.4/` ya salían ROJOS con este kit, que no es el suyo.
+- **El catálogo `0.3/`, con su kit.** El `zk-ssl-verify` del árbol en `0eda58c` (el §537, el último
+  sello del cable 0.3), compilado de ese commit —su tarball, de la API de GitHub, porque este clon
+  superficial no lo alcanza— con rustc 1.97.0 en un `target` aparte, para no pisar el binario del
+  árbol: binario `a2cce0c5bdb6b4b5`, no el `775428d29ee1ca1b` que el §620 compiló con rustc 1.94.1.
+  Con el arnés de `HEAD` y los manifiestos de antes da 11 de 11, 9 de 9, 9 de 9 y 9 de 9, los 38
+  de 38 del §620. Con el arnés de ahora y los mismos manifiestos, tres salen `SIN CAUSA` y exit 1:
+  `neg-cota-movida`, `neg-importe-mentido` y `neg-inferior-por-encima`, y el «38 de 38» que dicen
+  las cabeceras de esos manifiestos, el RFC-0009 y la entrada cerrada del `BACKLOG.md` habría dejado
+  de valer con el arnés del árbol. Su salida es `ROJO: edad: InconsistentOodConstraintEvaluations`,
+  y lo mismo con `pago:` y `cobro:`: esas son las tres líneas nuevas. Con ellas, 12 de 12, 10 de 10,
+  10 de 10 y 9 de 9 —41 de 41— y exit 0 en los cuatro, con el arnés de ahora y con el de `HEAD`.
+- **Desde una copia como la del tarball** —el arnés, el binario y las doce familias en un
+  directorio sin el árbol— las doce dan lo mismo, y el `sed` de `artefacto.sh` lee la línea final.
+- **La segunda implementación**, en las cinco familias que lee: 170 de 170, frente a 160. Ningún
+  veredicto se pierde, y en los 16 positivos la salida sigue siendo idéntica línea a línea a la del
+  binario. En los 144 negativos imprime la MISMA línea del ROJO que el binario en 125, frente a 122.
+  Los otros 19 dicen la misma causa con otro detalle, y los manifiestos los pasan en las dos: el de
+  la biblioteca en 8 (`VerificationFailed` en 7, el lector de JSON en 1), el campo o el sujeto
+  delante en 5, y seis textos de la segunda que no se pusieron al día: los conjuntos de versiones
+  sin la v6 (3), la cola del índice (2) y la clave ilegible (1).
+- **Lo que no lee.** Sobre los manifiestos de los siete tipos declarados, de `0.3/` y de `0.4/`, las
+  272 entradas salen `ROJO <fichero>: NO SOPORTADO - …` y ninguna OK; con el arnés de antes eran
+  cuatro OK. El verificador de `HEAD`, el del «no lee este sobre todavia», tampoco pasa ninguna con
+  el arnés de ahora: el texto lo caza. Y el canon las nombra: un falso que escribe `ROJO: NO
+  SOPORTADO: …` y sale con 1, contra el paquete, da 0 de 83 y 83 líneas `ROJO <fichero>: NO
+  SOPORTADO - …`, cada una con su fichero, que es lo que el bloque del canon convierte en fallas;
+  con el arnés de la primera pasada de este sello, antes de su revisión, que las escribía sin
+  `ROJO`, el canon no leía ninguna: decía que el arnés fallaba, sin nombrar la entrada.
+- **Los falsos de arriba**, con el arnés de ahora: el que se come la entrada, 2 de 83 y exit 1; el
+  que escribe los textos en la salida estándar, 0 de 83; uno que pone el texto en una línea ROJO y
+  añade otra, 0 de 83, frente a 68 de 73 con el arnés y el manifiesto de antes. El de los sujetos
+  pasa las diez líneas viejas del paquete y cae por las nuevas; con los manifiestos de `HEAD`, el
+  arnés de ahora da sus quince vectores `SIN CAUSA`.
+- **La tabla cubre lo que el binario dice.** Los 333 motivos de salida 1 de las doce familias,
+  clasificados con ella de la causa más interna a la más externa: ninguno queda fuera. El
+  clasificador es de la medida y no entra en el árbol.
+- **El texto reservado no lo dice la referencia.** El binario sobre los 477 vectores de
+  `spec/vectors/`, y un `grep` sobre su fuente: ninguna de las cuatro formas de «no soportado».
+  `winter-verifier` sí tiene `UnsupportedFieldExtension` —«is not supported»—, una causa de las
+  opciones; por eso el arnés no caza `unsupported` ni `not supported`.
+- **Lo que cuesta.** Las doce familias con el binario: de 5,3 a 5,5 s con el arnés de antes, de
+  7,5 a 8,0 s con el de ahora, tres corridas de cada uno; quince entradas más, y tres `grep` por
+  entrada.
+- **Las puertas.** `check_vectores` VERDE con 477 vectores y 925 líneas, frente a 862.
+  `verificar_citas`: 41 encabezados citados y 0 muertos, frente a 36: cuatro a la 6.1 y uno a la
+  6; en una copia con el encabezado de la 6.1 renombrado, los cuatro muertos, con su nombre.
+  `check_cifras`, `check_figures`, `check_columns`, `check_dominios`, `check_publicadas`,
+  `check_nucleo`, `check_techo`, `check_tests`, `check_modulos` y `check_constraint_layout` salen
+  con 0.
+
+**Probado.** Ningún test nuevo: el sello no toca el código del kit, y su binario es el mismo. El
+arnés y la segunda implementación son herramientas, ensayadas contra falsos y contra copias, como
+`check_vectores` en el §692.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1838, el TOTAL DE SELLO en 1679 y el TOTAL
+CON LARGOS en 1816, como los dejó el §692. Las entradas de las doce familias del canon pasan de 384
+a 399, y las de la segunda implementación, de 160 a 170, en su README. El `BACKLOG.md` sigue en 43
+abiertas y 73 resueltas: ninguna entrada llevaba esto.
+
+**Lo que NO hace.** El arnés no comprueba que la causa pinada sea de la tabla: rechaza el sujeto
+solo, y la tabla es de `PAQUETE.md`. Las líneas viejas cuentan OK con un binario que sólo escribe
+el sujeto: el vector cae por su línea nueva, no por ellas. La regla del `:` toma por sujeto un
+texto que ya nombraba la causa: `rechazo-accountsRoot-sin-0x.json|1|sin 0x: ` la decía —`sin 0x`—
+y acaba en `:`, así que para no salir `SIN CAUSA` ganó una línea que pina, además, el valor que el
+mando imprime (`sin 0x: 90c307507bf08a48d9`): un detalle, no una causa, al revés de lo que pide la
+6.1. Ninguna de las dos se reescribe; que la regla no tome por sujeto un texto de la tabla exigiría
+medir que no cambia ningún otro veredicto, y no se hace aquí. El arnés no reconoce todas las formas
+de decir «no soportado»: el texto reservado es `NO SOPORTADO`, las otras tres son de cortesía, y
+otra —«sin implementar», «no está implementado»— sale como un ROJO más; su vector no pasa igual,
+porque su línea nueva pina la causa. Y esas cuatro formas quedan reservadas: un texto del catálogo
+que las dijera saldría `NO SOPORTADO` en el arnés. Los 19 negativos en que la segunda
+implementación dice la causa con otro detalle no se alinean aquí. La causa de las pruebas STARK
+depende del nombre que `winter-verifier` 0.13.1 da a sus variantes. El verificador a WebAssembly no
+se ha corrido: necesita `wasmtime`, que este entorno no tiene.
+
+**Lo que NO cierra.** Nada de la cola.

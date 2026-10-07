@@ -9,7 +9,7 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 | `juez_nucleo.py` | el **juez**: corre los 29 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto; es el único llamador de `nucleo.py` |
 | `kat_xmss/xmss.py` | la **verificación XMSS^MT de RFC 8391** para `XMSSMT-SHA2_40/8_256`, el conjunto que la casa firma, escrita desde el texto del RFC y de ningún crate; solo verificar |
 | `juez_cabezas.py` | el **juez de las cabezas firmadas**: para cada cabeza y cofirma de los vectores recompone el `epochDigest` por versión, compara el preámbulo recuperado, verifica la firma con `kat_xmss/xmss.py` y comprueba el índice embebido (`PAQUETE.md`, 2/3 y sección 8); con un falsador que voltea un byte |
-| `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario |
+| `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario; desde el §693 declara lo que no lee, en `NO_SOPORTADOS`, y lo dice con el texto reservado `NO SOPORTADO` |
 | `stark.py` | el **verificador STARK** (§626): la maquinaria de `winter-verifier` 0.13.1 en Python, sin dependencias —el formato de `Proof`, la moneda pública sobre Blake3 en el orden exacto de Fiat-Shamir, la autenticación Merkle por lotes con la sal de `MerkleConSal`, el chequeo fuera del dominio, la composición DEEP, FRI y la envoltura `Oculta`—, leída de las fuentes de winterfell y no copiada; `INV_MDS` se calcula invirtiendo la MDS y el autotest la contrasta con la tabla de `winter-crypto` |
 | `airs.py` | las **cinco AIR** del paquete —Banda, Edad, Prenda, CobroPendiente y PagoEnCurso—, **transcritas** de `crates/zk-ssl-air/src/*.rs` restricción a restricción: ninguna RFC escribe sus restricciones y el `.rs` es la única fuente, así que una AIR infra-restringida pasaría aquí igual que allí |
 | `juez_stark.py` | el **juez del STARK**: compone, para cada vector con prueba, el par que el mando juzga —la prueba y el enunciado, con los campos y la cabeza que lee `zk-ssl-verify`— y lo compara con su `MANIFIESTO.txt`; tres falsadores por positivo |
@@ -28,7 +28,7 @@ python3 tools/segunda/juez_cabezas.py
 # 1 ter · el corpus KAT de XMSS^MT: dos implementaciones, los mismos bytes       -> 8 de 8
 python3 tools/segunda/kat_xmss/juez_xmss.py
 
-# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 160 de 160 (§686)
+# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 170 de 170 (§693)
 for m in paquete consumo conflicto ancla rotacion; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
 # 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 23 de 23
@@ -133,6 +133,22 @@ en `z²`; y que `check_leading_zeros` de la moneda cuenta los ceros **finales** 
 Los diez manifiestos: `ancla` 21, `completitud` 73, `conflicto` 16, `consumo` 14, `edad` 11,
 `pago` 9, `paquete` 70, `pendiente` 9, `prenda` 9 y `rechazo` 84. El de `cable` es del testigo,
 no del verificador, y no entra.
+
+## Lo que el segundo verificador no lee, declarado (§693)
+
+`verificador.py` lee seis formas de sobre —la de posición, sin `tipo`, y cinco tipos:
+`extension`, `consumo`, `conflicto`, `ancla` y `solapamiento`, los de `TIPOS_LEIDOS`— y declara los
+otros siete tipos en `NO_SOPORTADOS`: `rechazo`, `edad`, `cobro_pendiente`, `pago_en_curso`,
+`prenda`, `completitud` y `ancla-cofirmada`, los que piden una prueba STARK o el medio. Uno de ellos
+sale `ROJO: NO SOPORTADO: tipo {tipo}: …`, con exit 1: falla cerrado, y `tools/conformidad.sh` no lo
+cuenta nunca: lo da `ROJO <fichero>: NO SOPORTADO - …`
+(`spec/PAQUETE.md` §«6. El contrato del mando»). Hasta el §693 el texto era «no lee este sobre
+todavia», y el arnés lo contaba como un negativo superado cuando el manifiesto pinaba sólo el
+sujeto: `prenda/neg-receptor-mentido`, `prenda/neg-marca-mentida`, `edad/neg-cota-movida` y el
+`neg-cota-movida` de `0.3/edad`, medido. Hoy, sobre los manifiestos de esos siete tipos, de `0.3/`
+y de `0.4/`, todas las entradas salen `NO SOPORTADO` y ninguna `OK`. La causa de un rechazo se nombra con el texto del binario
+(`spec/PAQUETE.md` §«6.1 La causa del rechazo»): `la firma no verifica`, `acuse: RaizDistinta`, y
+la lectura de un `u64` con la escritura mínima del §662 y sus textos.
 
 ## Lo que la segunda implementación destapó de la spec
 

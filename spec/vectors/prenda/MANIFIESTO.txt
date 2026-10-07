@@ -38,3 +38,12 @@ neg-sin-firma.json|1|cabeza: falta signature
 neg-cabeza-v4.json|1|exige una cabeza v5
 neg-receptor-mentido.json|1|prenda:
 neg-marca-mentida.json|1|prenda:
+# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. Las lineas de
+# `neg-receptor-mentido` y `neg-marca-mentida` de arriba pinan el prefijo `prenda:`, y eso lo pasa
+# tambien quien no verifica nada: la segunda implementacion, que no lee este sobre, los pasaba con su
+# ROJO de sobre no leido (medido). No se reescriben (regla 2 del PROCESO): estas dos lineas NUEVAS
+# pinan la causa, el nombre que le da winter-verifier 0.13.1, el del Cargo.lock, como ya hace
+# `rechazo/`. Que sea la MISMA para los dos campos no la hace generica: los dos mienten el enunciado.
+# Caduca con la dependencia, y se declara: si la renombra, las lineas se mueven a su version.
+neg-receptor-mentido.json|1|prenda: InconsistentOodConstraintEvaluations
+neg-marca-mentida.json|1|prenda: InconsistentOodConstraintEvaluations

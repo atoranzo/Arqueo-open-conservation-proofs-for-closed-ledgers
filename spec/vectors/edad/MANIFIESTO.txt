@@ -25,3 +25,10 @@ neg-cabeza-v4.json|1|exige una cabeza v5
 neg-subraiz-pend.json|1|no es el pendingRoot de la cabeza
 neg-subraiz-meta.json|1|no es el pmetaRoot de la cabeza
 neg-cota-movida.json|1|edad:
+# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. La linea de
+# `neg-cota-movida` de arriba pina el prefijo `edad:`, y eso lo pasa tambien quien no verifica nada:
+# la segunda implementacion, que no lee este sobre, lo pasaba con su ROJO de sobre no leido (medido).
+# No se reescribe (regla 2 del PROCESO): esta linea NUEVA pina la causa, el nombre que le da
+# winter-verifier 0.13.1, el del Cargo.lock, como ya hace `rechazo/`. Caduca con la dependencia, y se
+# declara: si la renombra, la linea se mueve a su version con su vector; no se reescribe.
+neg-cota-movida.json|1|edad: InconsistentOodConstraintEvaluations

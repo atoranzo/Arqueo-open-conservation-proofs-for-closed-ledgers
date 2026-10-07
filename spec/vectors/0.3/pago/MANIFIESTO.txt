@@ -36,3 +36,9 @@ neg-sin-firma.json|1|falta signature
 neg-cabeza-v4.json|1|exige una cabeza v5
 neg-nacido-igual-seq.json|1|no es anterior a la cabeza de seq
 neg-importe-mentido.json|1|pago:
+# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. La linea de
+# `neg-importe-mentido` de arriba pina el prefijo `pago:`, que no dice por que cae. No se reescribe
+# (regla 2 del PROCESO): esta linea NUEVA pina la causa que imprime el kit de estos vectores, el
+# zk-ssl-verify del arbol en 0eda58c compilado de ese commit (medido en el §693): la variante de
+# winter-verifier 0.13.1, como ya hace `rechazo/`. El kit 0.4 sigue sin verificarlos.
+neg-importe-mentido.json|1|pago: InconsistentOodConstraintEvaluations

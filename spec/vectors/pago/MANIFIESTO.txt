@@ -35,3 +35,9 @@ neg-sin-firma.json|1|falta signature
 neg-cabeza-v4.json|1|exige una cabeza v5
 neg-nacido-igual-seq.json|1|no es anterior a la cabeza de seq
 neg-importe-mentido.json|1|pago:
+# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. La linea de
+# `neg-importe-mentido` de arriba pina el prefijo `pago:`, que no dice por que cae. No se reescribe
+# (regla 2 del PROCESO): esta linea NUEVA pina la causa, el nombre que le da winter-verifier 0.13.1,
+# el del Cargo.lock, como ya hace `rechazo/`. Caduca con la dependencia, y se declara: si la
+# renombra, la linea se mueve a su version con su vector; no se reescribe.
+neg-importe-mentido.json|1|pago: InconsistentOodConstraintEvaluations

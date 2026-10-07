@@ -1020,11 +1020,69 @@ extensión, con `cabeza` como sujeto.
     {k} testigo(s) con clave en el sobre. Que testigos valen y cuantos hacen falta lo decide
     quien verifica (RFC-0013 D-D): este mando reporta, no juzga` (§633; una sola línea, y
     antes de ella una por testigo: `testigo {nombre} clave sha256:{hex} marca {t}`)
-- **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para.
+- **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para. Desde
+  el §693 el motivo nombra una causa de la sección 6.1, y va en una sola línea.
 - **Cuatro códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
   argumento, o más de uno; imprime el uso en la salida de error) · `3`, desde el §573, el cuarto
   estado del sobre de completitud, «resolución declarada, no probada», que se imprime con su nombre
   y sin `ROJO`, porque no lo es.
+- **Lo que una implementación no lee** (§693). Una implementación que no lee una de las formas lo
+  dice con el texto reservado `NO SOPORTADO`, en su línea de error —`ROJO: NO SOPORTADO: {qué}`—,
+  y sale con `1`: falla cerrada, nunca `0`. No es un veredicto sobre el sobre, sino sobre ella, y
+  el arnés no lo cuenta nunca, ni como acierto ni como negativo superado (sección 6.1). Lo que no
+  lee lo declara aparte, en una lista, como hace `tools/segunda/verificador.py`. La referencia lee
+  las catorce formas y no lo imprime nunca.
+
+### 6.1 La causa del rechazo (§693)
+
+El `{motivo}` del ROJO nombra **una causa**. La tabla agrupa las del catálogo de la sección 5 en
+trece clases, leídas de la causa más interna a la más externa —en `nueva: cabeza: la firma no
+verifica` la causa es la firma, no la cabeza nueva—, para que dos implementaciones fallen **por la
+misma**: es el criterio de H3, «que pase y falle igual» (RFC-0005, E5). Una causa se nombra con el
+texto que la casa gobierna. Lo que le sigue y pone una biblioteca —el `VerificationFailed` de
+`xmss`, el mensaje del lector de JSON— es detalle, y no se pina. En una prueba STARK el nombre lo
+pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante de su
+`VerifierError`.
+
+| causa | qué la nombra en la línea del ROJO |
+|---|---|
+| **ilegible** — el fichero no se lee, o no es JSON | `no se puede leer` · `JSON ilegible` |
+| **fuera del contrato** — una versión o un tipo que el mando no lee | `el paquete no declara su version` · `el paquete declara v:` · `tipo desconocido` · `version {cv} desconocida` · `kind desconocido` · `el ancla no declara v 1` |
+| **campo ausente, de más o mal escrito** | `falta {campo}` · `no es cadena` · `no es lista` · `no booleano` · `sin 0x` · `hex impar` · `hex: cifra no admitida` · `cantidad hex no minima` · `bytes, se esperaban 32` · `no es canonico` · `no lleva {ajeno}` |
+| **cabeza fuera de su familia** | `no era available:true` · `formatVersion {v}:` · `exige una cabeza v5` · `exige cabezas v4` |
+| **recomposición** — los campos no dan el digest firmado | `NO recomponen` |
+| **firma inválida** | `la firma no verifica` · `la firma es VALIDA pero de otro mensaje` · `el indice declarado ({d}) no cuadra con el que va dentro de la firma` |
+| **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
+| **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
+| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` |
+| **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` |
+| **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
+| **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido | `InconsistentOodConstraintEvaluations` |
+| **consulta que no casa con el compromiso** | `TraceQueryDoesNotMatchCommitment` · `ConstraintQueryDoesNotMatchCommitment` |
+
+Cualquier otra variante de `VerifierError` nombra su causa por su nombre, como estas. `NO
+SOPORTADO` no es ninguna de ellas: dice algo de la implementación, no del sobre. Si
+`winter-verifier` renombra una variante, cambia lo que el mando imprime, y los manifiestos lo ven:
+la línea que la pina se mueve a su versión, con su vector, y no se reescribe (regla 2 del PROCESO).
+
+**Lo que pina un manifiesto.** Un negativo pina un texto que nombra la causa. El sujeto solo
+—`edad:`, `cabeza: `, `nueva: cabeza: `— no la nombra, y lo pasa también quien no verifica nada:
+`tools/segunda/verificador.py`, que no lee el sobre de prenda, pasaba los dos negativos del
+enunciado mentido con su ROJO de sobre no leído. Las líneas que pinaban el sujeto solo no se
+reescriben; desde el §693 cada una tiene al lado otra, nueva, que pina la causa (sección 9).
+
+**Lo que exige el arnés** (`tools/conformidad.sh`, desde el §693):
+
+- una salida que dice que el binario no lee el sobre sale `ROJO <fichero>: NO SOPORTADO - <la
+  línea que lo dice>` y no cuenta nunca, diga lo que diga el manifiesto. El texto reservado es
+  `NO SOPORTADO`; «no lee este sobre», «no implementado» y «not implemented» se reconocen por
+  cortesía, y no son todas las formas de decirlo: otra —«sin implementar»— sale como un ROJO más, y
+  su vector no pasa porque no nombra la causa;
+- en una entrada con código `1`, la salida tiene **una** línea con `ROJO:`, y el texto del
+  manifiesto está en ella;
+- un vector con entradas de código `1` tiene al menos una que nombra la causa: un texto vacío, o
+  que acaba en `:`, es el sujeto solo, y el vector sale `SIN CAUSA`;
+- el binario corre con la entrada estándar vacía: uno que la leyera se comía el manifiesto.
 
 ## 7. Quién arma el paquete
 
@@ -1286,6 +1344,19 @@ sobre del SOLAPAMIENTO** (2.14): once sobres derivados de los de arriba sin otra
 la cadena tal cual—: las dos conductas sembradas, ahora como detección con salida 0, y nueve
 negativos, las tres claves dentro de su tramo entre ellos.
 
+**Desde §693 cada negativo nombra su causa** (sección 6.1). Quince vectores de cinco familias
+tenían por único oráculo el sujeto: el `edad:`, el `pago:`, el `cobro:` y los dos `prenda:` de
+arriba, y diez del paquete —`seq: `, `sin 0x: `, `hex: `, dos `cabeza: `, dos `acuse: `, dos
+`cofirma 1: ` y `nueva: cabeza: `—, y tres más en el catálogo `0.3/`, los de edad, pago y
+pendiente. Los cuatro párrafos de arriba que dicen que se pina sólo el prefijo cuentan cómo era
+hasta entonces. Ninguna línea se reescribe: cada vector gana una línea NUEVA en su manifiesto, con
+su comentario, que pina la causa —la variante de `winter-verifier` en las ocho del enunciado
+mentido; `la firma no verifica`, `RaizDistinta`, `hex: cifra no admitida en la posicion 0`, y el
+valor tras `sin 0x: `, en las del paquete—, y la vieja sigue y sigue pasando. Las tres de `0.3/`
+pinan lo que imprime su kit, el `zk-ssl-verify` del árbol en `0eda58c` compilado de ese commit,
+medido en el §693: con él y el arnés de ahora, los cuatro manifiestos de `0.3/` dan 41 de 41 y
+salen con 0, como sus 38 de 38 del §620 con el arnés de entonces.
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1372,6 +1443,10 @@ negativos, las tres claves dentro de su tramo entre ellos.
   del ancla, modo 4, con las dos cabezas de su diario, y el mando lo juzga sin el nodo ni el testigo.
 - §689 — `--comparar --sobres` arma el sobre del ancla, modo 4, de cada índice que dos testigos
   vieron dividido, uno por diario: la escena de los dos testigos y las dos vistas, portable.
+- §693 — la causa del rechazo, con nombre (sección 6.1, RFC-0005 E4): trece clases, el texto
+  reservado `NO SOPORTADO` para lo que una implementación no lee, y el arnés que exige la causa en
+  la línea del ROJO; dieciocho líneas nuevas en ocho manifiestos, tres de ellos de `0.3/`, ninguna
+  reescrita (sección 9).
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

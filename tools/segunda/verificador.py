@@ -8,7 +8,9 @@ seccion 5; exit 0 verde, 1 el primer fallo con nombre, 2 uso.
 Lo que lee hoy: las cinco formas que no exigen una prueba STARK -POSICION (v1 y v2, con acuse y
 cofirmas), EXTENSION, CONSUMO, CONFLICTO y ANCLA-, y desde el §649 las `actas` que unen dos claves de
 un operador en la extension y el consumo (RFC-0015); las que exigen una prueba quedan fuera. Un `tipo` conocido que esta implementacion no lee todavia
-sale ROJO con su nombre, nunca VERDE.
+sale ROJO con su nombre, nunca VERDE. Desde el §693 esos tipos estan DECLARADOS, en NO_SOPORTADOS, y su ROJO
+lleva el texto reservado `NO SOPORTADO` (PAQUETE.md, seccion 6): tools/conformidad.sh no lo cuenta nunca como
+un negativo superado. Y la causa de un rechazo se nombra con el texto del binario de referencia (seccion 6.1).
 
 De donde sale: PAQUETE.md secciones 2.1 a 2.3, 3, 4, 5 y 6; NUCLEO.md seccion 6 a traves de
 nucleo.py; RFC 8391 a traves de kat_xmss/xmss.py; y la consistencia del MMR de RFC 6962 (RFC 9162, 2.1.4.2)
@@ -28,6 +30,11 @@ VERSIONES_EXTENSION = (3, 4, 5, 6)
 COFIRMA_V_MAX = 1
 TIPOS_CONOCIDOS = ("extension", "consumo", "conflicto", "rechazo", "edad", "cobro_pendiente", "pago_en_curso",
                    "prenda", "completitud", "ancla", "ancla-cofirmada", "solapamiento")
+# §693: lo que esta implementacion NO lee, declarado. Salen `ROJO: NO SOPORTADO: ...`, el texto que el contrato
+# reserva (PAQUETE.md, seccion 6), y el arnes no los cuenta nunca: ni como acierto ni como negativo superado.
+TIPOS_LEIDOS = ("extension", "consumo", "conflicto", "ancla", "solapamiento")
+NO_SOPORTADOS = ("rechazo", "edad", "cobro_pendiente", "pago_en_curso", "prenda", "completitud", "ancla-cofirmada")
+assert sorted(TIPOS_LEIDOS + NO_SOPORTADOS) == sorted(TIPOS_CONOCIDOS), "un tipo conocido sin declarar"
 
 
 class Rojo(Exception):
@@ -75,12 +82,16 @@ def u64_de(obj, campo):
         raise Rojo(f"falta {campo} o no es cadena 0x")
     if not s.startswith("0x"):
         raise Rojo(f"{campo} sin 0x")
-    try:
-        v = int(s[2:], 16)
-    except ValueError:
-        raise Rojo(f"{campo}: invalid digit found in string")
-    if s[2:] == "" or v >= 2**64:
-        raise Rojo(f"{campo}: number too large to fit in target type")
+    # §693: la escritura minima de zk_ssl_hash::cantidad_canonica (§662), con sus textos, como el mando y como
+    # _q_del_acta. Hasta aqui int(s, 16): admitia mayusculas, ceros a la izquierda y `_`, y nombraba la
+    # cifra mala con el texto de Rust de antes del §650.
+    h = s[2:].encode("utf-8")
+    if not h or len(h) > 16 or (len(h) > 1 and h[:1] == b"0"):
+        raise Rojo(f"{campo}: cantidad hex no minima")
+    malo = next((i for i, c in enumerate(h) if c not in b"0123456789abcdef"), None)
+    if malo is not None:
+        raise Rojo(f"{campo}: hex: cifra no admitida en la posicion {malo}")
+    v = int(h, 16)
     try:
         return N.u64_canonico(v)  # RFC-0016 (S631): un u64 que entra en una composicion es menor que p
     except ValueError as e:
@@ -159,7 +170,7 @@ def verificar_cabeza(cab, sujeto=""):
     if mensaje != N.preambulo(cab["v"], cab["digest"]):
         raise Rojo(p + "el preambulo recuperado no es el esperado")
     if not xmss.verificar(cab["pk"], mensaje, firma):
-        raise Rojo(p + "la firma XMSS no verifica")
+        raise Rojo(p + "la firma no verifica")  # §693: la causa con el texto del mando (seccion 6.1)
     embebido = xmss.indice_embebido(oid, firma)
     if cab["index"] <= embebido:
         raise Rojo(p + f"el indice declarado ({cab['index']}) no cuadra con el que va dentro de la firma ({embebido})")
@@ -211,7 +222,7 @@ def acuse(doc, cab):
     hash_prueba = digest_de(a, "hashPrueba")
     hoja = N.hoja_de_acuse(hash_prueba, seq, cab["n"])
     if N.path_root(hoja, siblings, is_right) != cab["acusesRoot"]:
-        raise Rojo("acuse: 'la hoja no sube hasta la raiz firmada'")
+        raise Rojo("acuse: RaizDistinta")  # §693: el nombre que el mando le da (seccion 6.1)
     return f"3/3 el acuse sube hasta la raiz firmada: la entrada {seq} queda demostrada"
 
 
@@ -255,7 +266,7 @@ def cofirmas(doc, cab):
         if mensaje != N.preambulo_cofirma(version, digest, clave_op):
             raise Rojo(f"cofirma {i}: el preambulo recuperado no es el esperado")
         if not xmss.verificar(clave_t, mensaje, firma):
-            raise Rojo(f"cofirma {i}: la firma del testigo no verifica")
+            raise Rojo(f"cofirma {i}: la firma no verifica")  # §693: el texto del mando (seccion 6.1)
     return (f"cofirmas: {len(lista)} verifican contra ESTA cabeza y ESTE operador (cuantas hacen falta lo decide TU "
             f"politica, no el paquete)")
 
@@ -891,8 +902,9 @@ def juzgar(ruta):
             return ancla(doc)
         if tipo == "solapamiento":
             return solapamiento(doc)
-        if tipo in TIPOS_CONOCIDOS:
-            raise Rojo(f"tipo {tipo}: la segunda implementacion no lee este sobre todavia")
+        if tipo in NO_SOPORTADOS:
+            raise Rojo(f"NO SOPORTADO: tipo {tipo}: la segunda implementacion no lee este sobre (NO_SOPORTADOS, "
+                       f"tools/segunda/README.md)")
         # §634: el texto del binario de referencia, letra por letra (PAQUETE.md, seccion 5); hasta
         # aqui acababa en `prenda`, rancio como el del catalogo desde el §573.
         raise Rojo(f"tipo desconocido: {tipo} - se lee un paquete de posicion (sin `tipo`), `tipo: \"extension\"`, "
