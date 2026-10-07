@@ -48842,3 +48842,184 @@ en el árbol, ni mide las otras pruebas, ni lo que la historia del clon no alcan
 kit: el kit no verifica estas pruebas.
 
 **Lo que NO cierra.** La 90.
+
+## §700 — `GENAI.md` dice cómo se trabaja: el paso 4 cuando lo da una sesión, sus compuertas y quién acepta; un solo nombre del autor; y nueve herramientas
+
+El commit que lleva este asiento, sobre `b9e7b0c` (el §699). Un solo sello, sin código: `GENAI.md`
+reescribe «Cómo se usa, exactamente» en sus dos mitades, con una sección nueva, `GENAI.md` §«Fuera
+del paso 4», y corrige «Qué se usa», «Alcance» y «Autoría y responsabilidad»; `README.md`,
+`README_EN.md` y `RESUMEN_EJECUTIVO.md` dicen nueve herramientas donde decían ocho; y este asiento.
+Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`: el modo que este sello
+describe. El número es el siguiente libre: la rama llega al §699, y ninguna de las seis ramas del
+repositorio en `origin` (`git ls-remote`) lleva un §700: las más altas, `main` y esta, llegan al
+§693. El sello no toca ningún crate, y en la sesión no se corrió el canon entero: sobre este
+mismo árbol se corrieron `check_tests`, `check_modulos`, `check_vectores` y las nueve herramientas
+del bucle «2 ter» (en «Medido»).
+
+**De dónde sale.** El autor aprobó corregirlo. `GENAI.md` es la declaración pública de cómo se usa
+el asistente, y decía tres cosas que el árbol no sostiene:
+
+- «El método no ha cambiado desde el principio», con el paso 4 —el autor ejecuta el bloque en su
+  máquina, corre el canon y commitea sólo lo verde— como único camino. Desde el §628 ningún asiento
+  dice haber salido así: los 71 que hay del §628 al §699 dicen en su apertura que los commiteó una
+  sesión de Claude Code. Y la práctica es anterior a esa declaración: hay commits con la marca de
+  una sesión desde el S563-C, y el §589 ya ponía la aceptación en la fusión del autor (en
+  «Medido»). `GENAI.md` sólo
+  lo mencionaba de pasada, en «Autoría y responsabilidad», para decir que el asistente no firma; no
+  decía qué compuertas pasa entonces un cambio ni quién lo acepta.
+- Que el canon corre «las ocho herramientas de `tools/`». Eran ocho cuando nació, en el §564
+  («`canon.sh:272` corre ocho herramientas»); el §572 metió `check_techo` en el bucle («Las
+  herramientas del canon, 8 -> 9»), y desde entonces son nueve. Lo mismo decían `README.md`,
+  `README_EN.md` y `RESUMEN_EJECUTIVO.md`, y lo dejó dicho, sin tocarlo, el punto 6 de «Pendientes
+  que deja» en `doc/integracion-vertical-evaluacion.md`.
+- Que el autor es «Ángel José Toranzo Portela», en las dos mitades, cuando `NOTICE`, `Cargo.toml`,
+  `LICENSE-MIT`, los dos README y los commits dicen Angel Toranzo Portela. El §564 ya contó las
+  formas y dejó la unificación para un corte propio.
+
+Y la medición encontró una cuarta, en «Alcance»: «No hay ninguna parte de este repositorio que sea
+salida de un modelo sin medición, ejecución y aceptación del autor». Cinco sitios del árbol dicen de
+sí mismos que su aceptación está pendiente.
+
+**Lo que hace.**
+
+1. **«Cómo se usa, exactamente».** Deja los cuatro pasos con su número —las cabeceras de los RFC
+   del 0016 al 0019, `CLAUDE.md` y 70 asientos citan «el paso 4», y `doc/blueprint-v2.md` «los
+   pasos 2 y 3»—, y quita «no ha cambiado»: lo que no ha sido igual es quién da el último. El canon
+   del paso 4 corre «la suite de cada crate en release, las nueve herramientas de su bucle de
+   `tools/` y el resto de compuertas que lista». La primera de las dos consecuencias pasa de «Nada
+   entra sin pasar las compuertas» a «Nada entra sin pasar las compuertas que declara su asiento»:
+   en el paso 4, el canon entero; en una sesión, lo que corrió la sesión, y el asiento dice qué fue
+   y qué dio cuando no fue el canon entero o el canon no salió verde, como el §695, el §696, el §698
+   y el §699.
+2. **`GENAI.md` §«Fuera del paso 4: la sesión de Claude Code»**, sección nueva, con su gemela en
+   inglés. Separa cuándo empezó de cuándo se declaró. Empezó antes: el S563-C original, el commit
+   más antiguo con la marca de una sesión que cuenta el registro; el §589, la primera sesión en un
+   contenedor remoto, con la aceptación ya en la fusión del autor; y la sesión que el §629 llama
+   «la del S619 al S628». Se declara desde el §628, el primer asiento que dice en su apertura que
+   su commit lo hizo una sesión, y desde él lo dicen los 71 que hay hasta el §699; remite a este
+   para la cuenta. Y dice tres cosas: quién aplica, comprueba y commitea —la sesión, en su
+   contenedor y sobre su rama, con la identidad del autor, y si otra sesión escribió o comprobó por
+   ella, el asiento dice cuál hizo qué—; sus compuertas —las del canon, corridas en el contenedor,
+   donde nadie más las ve: queda lo que el asiento declara, y ninguna compuerta comprueba que se
+   corriera—; y quién acepta —el autor, y su aceptación ya no es el commit sino la entrada en
+   `main`, como dijeron el §589 y el §628; puede volver a correr el canon antes, y algunos asientos
+   dicen que lo hizo, sin regla que lo exija—.
+3. **«Qué se usa»** gana una viñeta, «Dónde»: conversaciones de `claude.ai` y sesiones de Claude
+   Code en la nube, la primera declarada en el §589, cada una en su contenedor y sobre una rama
+   `claude/…`, que pueden lanzar otras sesiones o agentes. Va detrás de «Desde cuándo», para que la
+   línea 16 siga siendo la misma: la citan por número tres ficheros de `doc/ecst/borrador/`.
+4. **«Alcance».** Lo que entra en `main` pasa por el método, y entrar es la aceptación del autor. La
+   excepción se declara donde ocurre: lo que el asistente redactó en una sesión y entró con la
+   aceptación pendiente lo dice el propio documento, casi siempre con las palabras «integrar no es
+   aceptar», y no cuenta como decisión del autor hasta que un asiento suyo lo acepte. Nombra los
+   cinco sitios, con la fecha de hoy.
+5. **El nombre.** «Autoría y responsabilidad» dice Angel Toranzo Portela, el de `NOTICE`,
+   `Cargo.toml` y los commits, y declara las otras dos formas como la misma persona: Angel Jose
+   Toranzo Portela en `CITATION.cff` y los preprints, Ángel José Toranzo Portela en las cabeceras de
+   los RFC. En las dos mitades.
+6. **Nueve herramientas** en `README.md`, `README_EN.md` y `RESUMEN_EJECUTIVO.md`, cada una en su
+   línea y sin mover ninguna; y donde decían que vigilan «cifras, citas, dominios y geometría»
+   dicen también «el censo del núcleo», que es lo que mira `check_nucleo` y no cabía en ninguna de
+   las cuatro palabras. `check_techo`, la novena, cae dentro de «cifras»: ata a la prosa que lo
+   cita el techo N, cuyo productor es una constante del código, como `check_cifras` y
+   `check_figures` atan las cuentas de tests a los pines del canon y a los `#[test]` del código; y
+   `check_publicadas` también, con la cifra publicada, el estado de los RFC y la cuenta de
+   vectores, salvo su atado C, que vigila la URL del repositorio. Por eso la lista no gana «el
+   techo N».
+7. **Lo que corrigió su revisión.** La primera pasada decía en la sección nueva que el modo de
+   sesión iba del §628 al §699, y se leía como si hubiera empezado en el §628, aunque la
+   introducción prometía decir «desde cuándo»: ahora separa cuándo empezó de cuándo se declaró, y
+   este asiento lo mide. Decía que los cinco sitios pendientes lo declaran «en su cabecera»
+   —«integrar no es aceptar»—, y `doc/blueprint-v2.md` no usa esas palabras y `tools/segunda/`
+   las pone al final: ahora dice «el propio documento, casi siempre» con ellas. Contaba los 81
+   commits «de este clon» sin decir que es superficial. Decía que los 71 asientos del §628 al §699
+   «los commiteó una sesión», cuando lo medido es lo que dice cada apertura, y el §629 cuenta que el
+   §628 entró en `main` rehecho fuera de su sesión: ahora `GENAI.md` dice que lo dicen. Y el
+   encabezado de este asiento nombraba la herramienta, y su título es el mensaje del commit: ahora
+   dice «una sesión».
+
+**Medido.**
+
+- **El modo de cada asiento**, leído en `AUDITORIA.md` por su encabezado `## §N`, con los espacios
+  y los saltos de línea normalizados. Del §628 al §699 hay 71 asientos: el §630 lo reservó otra
+  sesión y no se selló (§629, §631). Los 71 dicen en su apertura que los commiteó una sesión de
+  Claude Code; el del §685, una fusión, «Lo hace una sesión». 70 lo declaran con la fórmula: 67
+  «fuera del paso 4 de `GENAI.md`», y el §628, el §640 y el §641 «salvo en su paso 4»; el §629
+  lo dice con otras palabras. Del §691 al §699, los nueve dicen además que lo escribió y lo
+  comprobó una sesión y lo commiteó «la sesión que la lanzó». El primer asiento que declara una
+  sesión en un contenedor remoto es el §589 («la primera que trabaja en un contenedor remoto»), y
+  el primero que nombra Claude Code, el §628.
+- **Antes del §628**, en los asientos que lo cuentan. El §564 contó, de 845 commits, uno con una
+  línea de atribución a un asistente, el S563-C, que se quitó con un `--amend`; el §628 da su
+  original, `3332c91` (26-09-2026), con `Co-Authored-By` y `Claude-Session:`, y midió sobre
+  `6f56956` 922 commits, de los que sólo nueve llevaban `Claude-Session:`: los del §623, que
+  reescribió el §627, y el §627 dice que el §625 traía la misma línea. Por eso el S563-C original es
+  el commit más antiguo con la marca de una sesión que cuenta el registro. El §589 declara «la
+  sesión 194, la primera que trabaja en un contenedor remoto», y que «la aceptación es el merge del
+  autor»; el §593 corre el canon «en el contenedor de la sesión 194». El §629 dice que lo commitea
+  una sesión de Claude Code, «la del S619 al S628», y el §631, «la del S619 al §629». Y el §629
+  cuenta que el §628 entró en `main` como `2c0671e`, no como el `4c7ce39` de la sesión que lo
+  escribió: los mismos cambios, con el mensaje reescrito, sin la firma del contenedor y con el canon
+  VERDE en la máquina del autor. Lo que mide este asiento del §628 al §699 es, por tanto, lo que
+  dice cada apertura. Ningún asiento anterior lo dice de su propio commit: en todo el texto que
+  precede al encabezado del §628, con los espacios normalizados, una sola frase lleva «commite…»,
+  «commit lo» o «lo commit…» junto a «sesión», «asistente», «Claude» o «contenedor», y es una
+  recomendación del asiento 120 que no se ejecutó: «commitearlos marcados como propuestas de sesion
+  no revisadas».
+- **Lo que declaran del canon**, en la misma apertura: 64, el canon `--sello` VERDE corrido en la
+  sesión; el §629, el §661 y el §671, asientos de registro, el del autor en su máquina, VERDE,
+  sobre el sello anterior; el §695, el §696 y el §699, que no se corrió entero y qué se corrió; y
+  el §698, que salió ROJO sólo en la fila de `zk-ssl`, por tiempo. 22 asientos —el §629, del §631
+  al §649 menos el §637, el §640 y el §641, y del §686 al §690— llevan «el autor corre el canon
+  `--sello` y empuja»; del §691 al §699, ninguno.
+- **Las herramientas**: el bucle «2 ter» de `tools/canon.sh` (la línea del `for`) nombra nueve —
+  `check_cifras`, `check_figures`, `check_columns`, `check_constraint_layout`, `verificar_citas`,
+  `check_dominios`, `check_publicadas`, `check_nucleo` y `check_techo`—. Aparte corre
+  `check_tests`, `check_modulos` y `check_vectores`; en la raíz de `tools/` hay trece `.py`, y el
+  canon corre doce: `verifica_geometria.py` no.
+- **El nombre**, con `git grep` fuera de los registros, sobre `b9e7b0c`: Angel Toranzo Portela en
+  `NOTICE`, `Cargo.toml`, `LICENSE-MIT`, los dos README, `CLAUDE.md`, `doc/ZENODO.md`, tres de
+  `doc/historia/` y la licencia de `tools/segunda/kat_xmss/`; Angel Jose Toranzo Portela en tres
+  ficheros de `doc/preprints/`, y `CITATION.cff` da «Angel Jose» y «Toranzo Portela» en dos
+  campos; Ángel José Toranzo Portela en `GENAI.md` (dos), los diecisiete RFC del 0003 al 0019, los
+  dos ECST y `tools/segunda/kat_xmss/README.md`. Los 81 commits que alcanza este clon, que es
+  superficial, llevan Angel Toranzo Portela como autor y como committer; la historia entera de
+  `main` la midió el §628: 914 commits sobre `073f2d7`, con el mismo autor y committer.
+- **La aceptación pendiente**, buscando en los ficheros del árbol fuera de los registros la palabra
+  «aceptación» o «acceptance» junto a `GENAI` y a «pendiente», «todavía» o «integrar no es
+  aceptar»: `doc/ecst/` (su README, `VERIFICACION.md`, `borrador/README.md` y los dos ECST),
+  `doc/blueprint-v2.md`, `doc/firma-corta-evaluacion.md`, `doc/integracion-vertical-evaluacion.md`
+  y `tools/segunda/README.md`. Los cinco están en `origin/main`.
+- **Lo que cita `GENAI.md`**, y sigue vivo: `GENAI.md:16` en tres ficheros de `doc/ecst/borrador/`
+  —la línea 16 sigue siendo «Desde cuándo»—; `GENAI.md` §«Autoría y responsabilidad» y
+  §«Authorship and accountability» en `CLAUDE.md`, con los dos encabezados intactos; «el paso 4» y
+  «los pasos 2 y 3», con los cuatro pasos en su número. `GENAI.md` pasa de 145 a 246 líneas.
+- **Las compuertas**, desde la raíz y sobre el texto final de este asiento: `check_tests`, 1843
+  declarados, ninguno anidado; `check_modulos`, 204 ficheros, todos declarados; `check_vectores`,
+  477 vectores y 925 líneas con su huella, ninguno tocado; y las nueve del bucle «2 ter». Las doce
+  salen con 0. `verificar_citas` pasa de 48 a 51 encabezados citados, 0 muertos: los tres de este
+  asiento, dos a la sección nueva y uno a «Autoría y responsabilidad».
+
+**Probado.** Ningún test nuevo: el sello no toca código. La sección nueva queda citada por su
+encabezado desde este asiento, dos veces, y `verificar_citas` la vigila: en una copia de los `.md`
+y los `.rs` del árbol con el encabezado renombrado, sale con 1 y nombra las dos citas, «ENCABEZADO
+MUERTO», con 51 citados y 2 muertos; sobre la copia sin tocar, 51 y 0.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1843, el TOTAL DE SELLO en 1684 y el
+TOTAL CON LARGOS en 1821, como los dejó el §699. El `BACKLOG.md` sigue en 45 abiertas y 73
+resueltas: ninguna entrada llevaba esto.
+
+**Lo que NO hace.** No pone compuerta a lo que declara `GENAI.md` ni a lo que declara el asiento de
+una sesión: la sección nueva lo dice así. No toca `NOTICE`, `Cargo.toml`, `CITATION.cff`, los
+preprints ni las cabeceras de los RFC: unificar las tres formas en todo el árbol es una decisión del
+autor que el §564 dejó para su propio corte, y los preprints depositados no se reescriben. No
+acepta nada de los cinco sitios pendientes: eso es del autor, en un asiento suyo. No toca los dos
+ECST, que resumen el método como «sólo entra lo que el autor ejecuta y acepta», ni el punto 6 de
+`doc/integracion-vertical-evaluacion.md`, que este sello cierra: son documentos fechados, con la
+aceptación pendiente. No toca la otra cifra de la misma fila de `RESUMEN_EJECUTIVO.md`, «18
+crates», frente a los 22 que dicen los dos README. Y no reescribe ningún asiento, ni dice cuántos
+saldrán así: la cuenta llega al §699.
+
+**Lo que NO cierra.** Nada de la cola. El atado que el §564 dejó nombrado —que cada RFC lleve su
+viñeta de autor y la de asistencia— sigue sin hacer.
