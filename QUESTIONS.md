@@ -297,7 +297,7 @@ already are code.
 Distributed consensus is another discipline and not this project's road: the road is provable
 accountability, and its pieces are built (question 7).
 
-What is already there: the format as a public contract with vectors that are never rewritten, the
+What is already there: the format as a public contract with vectors that since §692 are not rewritten, the
 reproducible verifier, and a kit with which anyone can check the above without believing this page.
 
 ---

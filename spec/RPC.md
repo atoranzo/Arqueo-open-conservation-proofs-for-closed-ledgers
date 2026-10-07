@@ -1,5 +1,5 @@
 # Arqueo JSON-RPC — especificación v0.4 (`zkssl/0.4`)
-
+⚠️ **`zkssl/0.4` no identifica qué pruebas acepta un nodo** (§699): las pruebas cambiaron sin subirla en el §641, el §680 y el §684, y así sigue hasta el corte de `zkssl/0.5`; y `vectors/zkssl-0.2.json` se re-emitió tres veces bajo su versión. El detalle, en «Versionado» (§«Notas operativas»).
 > **Qué cambió de `0.1` a `0.2` (§209, etapa 1 del RFC-0002).** Un solo
 > cambio, y no está en los métodos: **`proof_digest` deja de calcularse
 > con un hash algebraico**. Con él cambian `chain` y la cabeza de época,
@@ -462,7 +462,7 @@ lo dirán explícitamente.
 siguen siendo de N=1.** Eso es deliberado y no es una omisión: la
 superficie del protocolo es aditiva y los valores de cable no se
 movieron, así que los vectores existentes **siguen siendo válidos tal
-cual** hasta §354 —hoy `conformance --check` de `zkssl/0.2` los rechaza como «de OTRA versión» y se conservan bajo su versión, el régimen del `0.1`—. Una
+cual** hasta §354 —hoy `conformance --check` de `zkssl/0.2` los rechaza como «de OTRA versión» y se conservan bajo su versión, el régimen del `0.1`—. ⚠️ **Corregido en el §699**: «tal cual» vale frente a ese método; el fichero no siguió tal cual por otras causas, porque `vectors/zkssl-0.2.json` se re-emitió bajo su misma versión en el §275, el §278 y el §281 («Versionado», §«Notas operativas»). Una
 implementación que quiera acreditar el lote necesitará vectores propios;
 no los hay todavía.
 
@@ -1293,3 +1293,33 @@ si la distingue, y por eso el manifiesto pina clase y texto. Abrir una clase sub
   cambien los **valores que viajan**, no el tamaño de la superficie:
   añadir un método de forma aditiva —como `zkssl_applyMany` en §222— no
   la sube, porque los vectores de conformidad no se mueven.
+  ⚠️ **Corregido en el §699**: la compatibilidad que gobierna es la de los valores que comprueban
+  los vectores de conformidad, y estos no comparan bytes de prueba (RFC-0009, D-AI). Las pruebas
+  pueden cambiar sin que la versión suba, y han cambiado.
+- **Lo que `zkssl/0.4` no identifica (§699).** Qué pruebas acepta un nodo. Dentro de `0.4` el AIR
+  de las pruebas que viajan cambió tres veces sin subirla:
+  - en el §641 (RFC-0017 E2, el rango a 62 bits), el selector periódico de los diecisiete
+    circuitos de la capa;
+  - en el §680 (RFC-0018 E1), los acumuladores de la posición en los cinco circuitos de envío,
+    cobro y quema;
+  - en el §684 (RFC-0018 E2), el circuito de umbral —emisión, congelación, recuperación, pago a
+    pendiente y gobernanza—: la traza pasa de 18 a 21 columnas y el nulificador cambia de valor.
+
+  Medido en el §699 con el envío, entre nodos y clientes construidos en seis puntos de la
+  historia que dicen todos `zkssl/0.4` —el §622, el §640, el §641, el §679, el §680 y el árbol del
+  §699—: cuando entre los dos queda el §641 o el §680, el envío de un lado no verifica en el otro,
+  en los dos sentidos, con `VerificationFailed` («envio: InconsistentOodConstraintEvaluations»), y
+  cada corte se midió frente a su commit padre; entre el §622 y el §640, entre el §641 y el §679, y
+  entre el §680 y el §699, el envío y el cobro pasan en los dos sentidos. El umbral, por su forma y
+  sin medir. Del §538 al §622 no se midió: la historia que alcanzó la medida empieza en el §622.
+  Hasta el corte del tren `zkssl/0.5` (RFC-0018), que sube la versión y emite sus vectores, dos
+  implementaciones que digan `zkssl/0.4` pueden no aceptarse las pruebas: lo que las identifica hoy
+  es el commit, no la versión. El kit no verifica estas pruebas, y lo que acepta no cambia. No hay
+  libro desplegado (`SECURITY.md` 3.6).
+- **Los vectores de `zkssl/0.2` no se conservaron como se emitieron (§699).**
+  `vectors/zkssl-0.2.json`, emitido en el §209, se re-emitió tres veces bajo su misma versión: en el
+  §275 (la cabeza v2: cambian `epoch_digest` y `sellado`), en el §278 (cuatro `proof_digest`, todas
+  las cadenas y la cabeza) y en el §281 (las seis cadenas, la cabeza y un campo nuevo,
+  `compromiso`, en cada entrada). Lo publicado es la emisión del §281: una implementación de `0.2`
+  anterior a ese asiento no lo reproduce, y la etiqueta no la distingue. Fue contra la regla 2 de
+  `rfc/PROCESO.md`; desde el §692 la huella de cada vector (`vectors/HUELLAS.sha256`) lo impide.

@@ -918,6 +918,12 @@ instrumentacion) al grupo E.*
   `spec/RPC.md`, que ya lo es— con la superficie estable enumerada y la
   regla de ruptura escrita. Y una compuerta que la haga cierta: lo
   declarado estable no cambia sin que el canon lo diga.
+  **Declarado (§699)**: la práctica tampoco fue siempre buena. `zkssl-0.2.json` se re-emitió tres
+  veces bajo su versión (§275, §278 y §281), y `zkssl/0.4` no identifica qué pruebas acepta un
+  nodo: el AIR de las que viajan cambió sin subirla en el §641, el §680 y el §684, y medido en el
+  §699, un nodo no acepta el envío de un cliente si los dos dicen `zkssl/0.4` y entre ellos queda
+  el §641 o el §680. Lo dicen `spec/RPC.md` («Versionado»), el OpenRPC, `spec/README.md`, los dos
+  README y el RFC-0017; la promesa, y cómo se identifica una prueba, siguen abiertas.
 
 - [x] **91. El fin de vida: cómo se apaga esto sin dejar a nadie
   dentro.** Toda capa de liquidación termina — por cierre, por

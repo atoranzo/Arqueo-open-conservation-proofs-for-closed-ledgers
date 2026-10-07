@@ -267,7 +267,7 @@ pub fn document() -> Value {
         "info": {
             "title": "ZK-SSL JSON-RPC",
             "version": "zkssl/0.4",
-            "description": "Especificacion normativa: spec/RPC.md. Principio del API: la clave de gasto no viaja jamas. Desde el asiento 538 (RFC-0009 E3b-2, zkssl/0.4) el probador oculta el testigo y la clave no sale literal en ninguna prueba con fila; entre el asiento 521 y el 538 las pruebas de envio y de cobro la publicaban (winterfell 0.13 no ocultaba el testigo; AUDITORIA.md, asientos 521 y 538)."
+            "description": "Especificacion normativa: spec/RPC.md. Principio del API: la clave de gasto no viaja jamas. Desde el asiento 538 (RFC-0009 E3b-2, zkssl/0.4) el probador oculta el testigo y la clave no sale literal en ninguna prueba con fila; entre el asiento 521 y el 538 las pruebas de envio y de cobro la publicaban (winterfell 0.13 no ocultaba el testigo; AUDITORIA.md, asientos 521 y 538). Compatibilidad (asiento 699): la version fija los valores que comprueban los vectores de conformidad, que no comparan bytes de prueba, y no identifica que pruebas acepta un nodo. Las pruebas cambiaron sin subirla en los asientos 641 (RFC-0017: los diecisiete circuitos de la capa), 680 (RFC-0018 E1: envio, cobro y quema) y 684 (RFC-0018 E2: umbral): un nodo no acepta el envio de un cliente si los dos dicen zkssl/0.4 y entre ellos queda el 641 o el 680, sea cual sea el mas viejo. Vale hasta el corte del tren zkssl/0.5, que sube la version. Y spec/vectors/zkssl-0.2.json se re-emitio tres veces bajo su misma version (asientos 275, 278 y 281). El detalle, en spec/RPC.md, Notas operativas."
         },
         "methods": methods,
         "components": { "schemas": schemas }
@@ -388,6 +388,32 @@ mod tests {
                 tipos.iter().any(|t| t.rsplit("::").next() == Some(d)),
                 "{d} no es un tipo de zk_ssl_wire"
             );
+        }
+    }
+
+    /// §699: `zkssl/0.4` no identifica que pruebas acepta un nodo. Las pruebas cambiaron sin subir
+    /// la version en el §641, el §680 y el §684, porque la conformidad no compara bytes de prueba;
+    /// y `zkssl-0.2.json` se re-emitio bajo su version.
+    /// Mientras la version sea esta, el documento lo dice; el corte del tren la sube, y este test
+    /// cae con ella para que el aviso se reescriba en el mismo sello, y no se quede ni se pierda.
+    #[test]
+    fn el_aviso_de_compatibilidad_va_con_la_version() {
+        let doc = document();
+        assert_eq!(
+            doc["info"]["version"], "zkssl/0.4",
+            "la version subio: reescribir el aviso de compatibilidad de info.description (§699)"
+        );
+        let d = doc["info"]["description"].as_str().expect("description");
+        let aviso = [
+            "asientos 641 (RFC-0017",
+            "680 (RFC-0018 E1",
+            "684 (RFC-0018 E2",
+            "zkssl/0.5",
+            "zkssl-0.2.json",
+            "asientos 275, 278 y 281",
+        ];
+        for t in aviso {
+            assert!(d.contains(t), "info.description perdio el aviso de compatibilidad: falta «{t}»");
         }
     }
 }

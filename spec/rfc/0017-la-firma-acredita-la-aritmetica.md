@@ -12,6 +12,9 @@
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: ni un método ni un campo del cable
   cambian. Cambia lo que se ACEPTA: un importe, un saldo o un suministro en la ventana alta de 63
   bits (`[2^62, 2^63)`) dejan de pasar; el techo sano del campo baja de `2^63 - 1` a `2^62 - 1`.
+  ⚠️ **Corregido en el §699**: tampoco pasan las pruebas honradas de antes. El selector periódico de
+  los diecisiete AIR cambia, y una prueba de envío del §640 no verifica con el AIR del §641, ni al
+  revés (medido con el envío); `zkssl/0.4` no lo dice.
 - **Asiento(s) de AUDITORIA:** §641.
 
 ## Estado de las etapas

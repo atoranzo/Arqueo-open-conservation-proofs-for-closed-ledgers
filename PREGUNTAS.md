@@ -297,7 +297,7 @@ rechazo con causa y la completitud ya son código. El consenso distribuido es
 otra disciplina y no es el camino de este proyecto: el camino es la responsabilidad demostrable, y
 sus piezas están construidas (pregunta 7).
 
-Lo que ya está: el formato como contrato público con vectores que nunca se reescriben, el
+Lo que ya está: el formato como contrato público con vectores que desde el §692 no se reescriben, el
 verificador reproducible, y un kit con el que cualquiera puede comprobar lo anterior sin creerse
 esta página.
 

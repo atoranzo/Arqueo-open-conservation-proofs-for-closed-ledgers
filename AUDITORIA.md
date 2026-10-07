@@ -48675,3 +48675,170 @@ revisa la función de `winter-air`. Y no publica un kit: el sello no toca ningú
 compile.
 
 **Lo que NO cierra.** La 116.
+
+## §699 — `zkssl/0.4` no dice qué pruebas acepta un nodo: el aviso, medido, donde se lee el cable, y `zkssl-0.2.json` re-emitido tres veces bajo su versión
+
+El commit que lleva este asiento, sobre `c17f660` (el §698). Un solo sello: el aviso de
+compatibilidad del cable en `spec/RPC.md` —una línea bajo el título, la corrección de la nota de
+`zkssl_applyMany` y dos entradas nuevas en «Notas operativas»—; en la descripción de
+`spec/openrpc.json` y en su fuente, `crates/zk-ssl-wire/src/openrpc.rs`, con un test nuevo; en
+`spec/README.md` —dos filas, la del RFC-0017 y el principio 2—; en la cabecera del RFC-0017; en los
+dos README —el párrafo del nombre y la fila del protocolo—; una frase en los dos resúmenes y en las
+dos versiones de las preguntas; la fila de `zk-ssl-wire` en el canon; los tres párrafos ancla
+—`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`—; una línea en la entrada 90 del `BACKLOG.md`; y este
+asiento. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó,
+no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El sello no cambia ningún AIR, ningún vector, ni lo que acepta
+un nodo o el kit; tampoco el protocolo —ni un método, ni un campo, ni un valor—, y por eso no va por
+RFC: lo que añade a `spec/RPC.md` y al OpenRPC es la declaración de lo que ya cambió. El canon
+entero no se corrió: sí la suite del crate que toca y las compuertas rápidas (en «Medido»).
+
+**De dónde sale.** La regla 2 de `spec/rfc/PROCESO.md` y el «Versionado» de `spec/RPC.md`: la
+versión sube cuando cambian los valores que viajan, `zkssl_protocolVersion` «gobierna
+compatibilidad» y los vectores viejos no se reescriben. Dos hechos ya asentados lo contradecían, y
+ni la spec, ni el OpenRPC, ni los README lo decían:
+
+- las pruebas que viajan cambiaron bajo `zkssl/0.4`. El §680 (RFC-0018 E1) lo dijo de las de envío,
+  cobro y quema —«no verifican con el AIR de 0.4, y al revés»—, y el §684 (RFC-0018 E2) cambió el
+  circuito de umbral —la traza, de 18 a 21 columnas, y el valor del nulificador—. El cable siguió
+  en `zkssl/0.4` porque la conformidad de 0.4 no compara bytes de prueba (RFC-0009, D-AI). Lo
+  decían ese asiento, `SECURITY.md` 3.6 y la «Compatibilidad» del RFC-0018; nada de lo que lee quien
+  implementa el cable;
+- `spec/vectors/zkssl-0.2.json`, emitido en el §209, se re-emitió bajo su misma versión en el §275
+  (la cabeza v2: `sellado` de §197 a §275 y `epoch_digest`), en el §278 (cuatro `proof_digest`,
+  todas las cadenas y la cabeza) y en el §281 (las seis cadenas, la cabeza y el campo `compromiso`
+  en cada entrada). El §692 y el comentario de `crates/zk-ssl-cli/src/conformance.rs:107-113`
+  cuentan dos; la del §275 está en sus «Límites declarados». Mientras, la fila «Estado» de los
+  README decía «vectores por versión que jamás se reescriben».
+
+Y la medición de este sello encontró un tercer cambio, que ningún asiento había dicho: el del §641
+(RFC-0017 E2). Su RFC declaraba que «ni un método ni un campo del cable cambian» y que solo dejaban
+de pasar los valores de la ventana alta de 63 bits; el selector periódico `first_s` de los
+diecisiete circuitos de la capa cambió, y con él las pruebas honradas de antes dejaron de verificar.
+
+**Lo que hace.**
+
+1. **`spec/RPC.md`**, sin mover ninguna línea que otros documentos citen —`:9`, `:88`, `:101` y
+   `:164-165` lo están, y siguen donde estaban—: la línea en blanco bajo el título pasa a ser el
+   aviso, en una línea, con la remisión a «Versionado»; la nota de `zkssl_applyMany` («siguen siendo
+   válidos tal cual hasta §354»), sin tocar esa frase, gana en su misma línea su «⚠️ Corregido en
+   el §699», con el alcance —«tal cual» vale frente a ese método— y las re-emisiones; y al final
+   de «Notas operativas», donde ya no hay nada detrás, el «Versionado» gana su corrección —la
+   compatibilidad que gobierna es la de los valores que comprueban los vectores— y dos entradas: «Lo que `zkssl/0.4` no identifica», con los tres
+   cambios (§641, §680, §684), lo medido y lo que no, y «Los vectores de `zkssl/0.2` no se
+   conservaron como se emitieron», con las tres re-emisiones y lo que cambió en cada una.
+2. **El OpenRPC.** La descripción de `info` dice lo mismo en una frase, generada desde
+   `openrpc::document()` y volcada con `gen_openrpc`; `el_json_publicado_es_el_que_genera_esta_tabla`
+   ata los bytes. Y un test nuevo, `el_aviso_de_compatibilidad_va_con_la_version`: mientras
+   `info.version` sea `zkssl/0.4`, la descripción nombra los tres asientos con su RFC, el corte
+   `zkssl/0.5` y las tres re-emisiones del `0.2`; si la versión sube, el test cae, para que el aviso
+   se reescriba en el sello del corte y no se quede ni se pierda.
+3. **`spec/README.md`**: la fila de `RPC.md` dice que la versión no identifica qué pruebas acepta un
+   nodo; la de los vectores, que no se reescriben desde el §692 y que el `0.2` se re-emitió; la del
+   RFC-0017, que su «nothing on the wire changes» se corrige; y el principio 2 gana un párrafo con
+   las dos cosas que no cubre.
+4. **El RFC-0017**: bajo «Versión del protocolo afectada», un «⚠️ Corregido en el §699» con lo
+   medido. El cuerpo no se toca.
+5. **Los dos README**: el párrafo del nombre, donde aparece `zkssl/0.4` por primera vez, remite a
+   «Estado» en la misma línea, sin mover las que siguen; y la fila del protocolo deja «vectores
+   por versión que jamás se reescriben», con su «⚠️ Corregido en el §699», por la huella del §692,
+   el aviso con lo medido y las tres re-emisiones. `RESUMEN_EJECUTIVO.md`, `RESUMEN_BILINGUE.md` (sus dos lenguas), `PREGUNTAS.md` y
+   `QUESTIONS.md` decían lo mismo de los vectores: dicen «desde el §692», y los dos resúmenes, que
+   la versión no dice qué pruebas acepta un nodo.
+6. **La entrada 90 del `BACKLOG.md`** (la política de compatibilidad como promesa), que decía «Hoy
+   la práctica es buena», gana una línea: declarado, con lo que sigue abierto.
+7. **Lo que corrigió su revisión.** La primera pasada atribuía el corte del §680 por git, desde el
+   par del §679 con este sello, y los textos lo daban por medido: ahora está medido frente a su
+   padre, y frente a este sello (en «Medido»). Los dos README partían en dos la línea del aviso y
+   movían una posición todas las que siguen; la nota de `zkssl_applyMany` metía «frente a ese
+   método» dentro de la frase publicada, sin marcarlo; y la apertura de este asiento no nombraba
+   los tres párrafos ancla. Los cuatro van corregidos en este mismo sello.
+
+**Medido.** Las pruebas, entre nodos y clientes de seis puntos de la historia: el §622
+(`3d3bb3d`), el §640 (`7534380`), el §641 (`2901c54`, cuyo padre es el `7534380`), el §679
+(`3a1b5d7`), el §680 (`f543ccf`, cuyo padre es el `3a1b5d7`) y el árbol de este sello antes de la
+redacción de este asiento, que en código sólo difiere del §698 en la descripción del OpenRPC y en
+su test. Los cinco commits, sacados con `git archive` a un directorio aparte y compilados allí en
+release y con `--locked` —`zk-ssl-node` y el ejemplo `e2e` de `zk-ssl-sdk`—, cada uno con su
+propio `target`: de 5 min 23 s a 8 min 41 s, con la máquina compartida; el árbol de este sello,
+igual, con el `target` del clon. El ejemplo `e2e` es el mismo fichero en los seis (el mismo blob
+en git): abre dos cuentas con claves aleatorias, fondea una con `dev_fund`, paga 250.000 —la
+prueba de envío se hace en el cliente—, cobra y comprueba los dos saldos; sale con 0 sólo si todo
+pasa. El nodo, en `--dev` con las opciones del banco `tools/banco_mentiroso_sin_resolver.sh`; cada
+combinación, dos veces; 48 corridas, de 1,5 a 4,8 s. Los seis nodos contestan `zkssl/0.4` a
+`zkssl_protocolVersion`, las 48 veces.
+
+| nodo y cliente | resultado, en los dos sentidos y dos veces cada uno |
+|---|---|
+| cada nodo con su cliente (los seis) | pagan y cobran: 12 de 12 |
+| §622 y §640 | pagan y cobran: 4 de 4 |
+| §640 y §641 | el envío se rechaza: 4 de 4 |
+| §641 y §679 | pagan y cobran: 4 de 4 |
+| §679 y §680 | el envío se rechaza: 4 de 4 |
+| §680 y el de este sello | pagan y cobran: 4 de 4 |
+| §679 y el de este sello | el envío se rechaza: 4 de 4 |
+| §622 con §641, con §679 y con el de este sello | el envío se rechaza: 12 de 12 |
+
+Cada rechazo es el mismo: `zkssl_applySend` devuelve `-32000`, causa `VerificationFailed`,
+detalle «envio: InconsistentOodConstraintEvaluations»: el verificador del nodo evalúa las
+restricciones de su AIR y no casan con las de la prueba. Los dos cortes son el §641 y el §680, y
+cada uno se midió frente a su padre: el envío no pasa, en ningún sentido, entre el §640 y el §641,
+entre el §679 y el §680, ni entre dos puntos que tengan cualquiera de los dos en medio; dentro de
+cada tramo —del §622 al §640, del §641 al §679 y del §680 a este sello— el envío y el cobro pasan
+en los dos sentidos. Los commits de en medio de cada tramo no se midieron uno a uno; en git, desde
+el §622, sólo el §641 y el §680 tocan `circuit_send.rs`, `circuit_send_v2.rs` o `range_check.rs`.
+El par del §680 con este sello es el que dice que el §683 y el §684, que caen en ese tramo, no
+cambian el envío; la primera pasada de este sello lo atribuía por git, y su revisión pidió
+medirlo: son las diez corridas del §680. Los crates de prueba del §679 son los del §670, el commit
+de la release 0.4.2 del kit (`a4e888d`): `git diff` vacío en `stark-experiment`, `winter-*`,
+`zk-ssl/src` y `zk-ssl-sdk`. Lo que no se midió: el cobro y la quema a través de los cortes (el `e2e` para en el
+envío; el cobro sí pasa donde pasa el envío), las demás pruebas de los diecisiete circuitos del
+§641, y el umbral del §684, del que solo se leyó `TRACE_WIDTH` —18 en el §679, 21 hoy— y lo que
+dice el §684 de `verify_threshold_pair`, que compara la forma con él. Del §538 al §622, nada: la
+historia de este clon, superficial, empieza en el §622.
+
+Y además:
+
+- **Las re-emisiones del `0.2`**, leídas en el §209, el §275, el §278 y el §281 de este registro y
+  en el comentario de `conformance.rs`. El fichero publicado dice `zkssl/0.2` y `sellado` §281. Su
+  historia en git no está en este clon.
+- **Lo que queda de «jamás se reescriben»**, con `grep` de esa frase, «never rewritten», «nunca se
+  reescriben» y «no se reescriben» en los `.md`, `.rs` y `.json` fuera de los registros: la regla 2
+  en `spec/rfc/PROCESO.md` y su cita en los RFC 0002 a 0007, 0010, 0014 y 0019, fechados; el
+  principio 2 de `spec/README.md`, con el párrafo nuevo detrás; `SECURITY.md` §5, sobre un arreglo
+  futuro; `doc/KIT_EN.md`, sobre los catálogos del kit; `doc/integracion-vertical-evaluacion.md`,
+  una evaluación fechada; y dos comentarios de `zk-ssl-wire`, sobre los vectores v3.
+- **La suite del crate que toca**, `cargo test -p zk-ssl-wire --release --locked`: 27 pasan, 0
+  warnings, `gen_openrpc` vuelto a correr después del último cambio de la descripción.
+- **Las compuertas**, desde la raíz y sobre el texto final de este asiento: `check_tests`, 1843
+  declarados, ninguno anidado; `check_modulos`, 204 ficheros, todos declarados; `check_vectores`,
+  477 vectores y 925 líneas con su huella, ninguno tocado; y las nueve del bucle «2 ter»
+  —`check_cifras`, `check_figures`, `check_columns`, `check_constraint_layout`, `verificar_citas`,
+  `check_dominios`, `check_publicadas`, `check_nucleo` y `check_techo`—. Las doce salen con 0.
+  `verificar_citas` pasa de 46 a 48 encabezados citados: el `RPC.md` §«Notas operativas» del
+  párrafo nuevo de `spec/README.md` y el de este asiento, vivos.
+
+**Probado.** `el_aviso_de_compatibilidad_va_con_la_version`, ensayado contra tres mutaciones de
+`openrpc.rs`, restaurado después con el mismo sha256: sin la frase de compatibilidad, cae por
+«falta «asientos 641 (RFC-0017»»; con el 680 sin su RFC, por «falta «680 (RFC-0018 E1»»; con la
+versión en `zkssl/0.5`, por «la version subio: reescribir el aviso». La medida de las pruebas no es
+un test: es un banco fuera del árbol, contra seis compilaciones, y está descrita arriba para
+repetirla.
+
+**Contadores.** `zk-ssl-wire` 26 -> 27. TOTAL DE SELLO 1683 -> 1684 y TOTAL CON LARGOS 1820 ->
+1821, en los tres párrafos ancla: `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`. La cuenta de
+`check_tests` pasa de 1842 a 1843. Las «1364 declaradas» y las «1349 declared» no se tocan, como
+en los sellos anteriores (5.A-319). El `BACKLOG.md` sigue con 45 abiertas y 73 resueltas: la 90
+gana una línea y no se cierra.
+
+**Lo que NO hace.** No sube la versión, no cambia ninguna prueba y no decide cómo se identifica una
+prueba: eso es del corte del tren `zkssl/0.5` y de una decisión del autor que este sello no toma.
+No restaura ninguna emisión vieja del `0.2`: no están en este clon, y el fichero publicado se queda
+como está, con su huella. No toca el comentario de `conformance.rs`, que cuenta dos re-emisiones:
+`spec/rfc/0005-nucleo-congelado.md` cita sus líneas `:121` y `:163-168`, y añadir una las movería;
+lo corrige este asiento. No pone al día `SECURITY.md` 3.10, que no cuenta el §683 ni el §684, ni la
+3.6, que ya dice que el cable sigue en `zkssl/0.4` hasta el corte. No corrige los registros, el
+§641 ni el §692 entre ellos, ni las cifras de los README fechadas en su cabecera. No deja el banco
+en el árbol, ni mide las otras pruebas, ni lo que la historia del clon no alcanza. Y no publica un
+kit: el kit no verifica estas pruebas.
+
+**Lo que NO cierra.** La 90.
