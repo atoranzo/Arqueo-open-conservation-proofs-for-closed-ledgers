@@ -47461,3 +47461,159 @@ proyecto mira hacia delante, y lo dice: lo que ya está en el árbol público no
 qué hacer con ello lo decide el autor, en un asiento propio.
 
 **Lo que NO cierra.** Nada de la cola.
+
+## §692 — los vectores tienen huella: lo publicado no se reescribe, y el canon lo comprueba
+
+El commit que lleva este asiento, sobre `196bcb8` (el §691). Un solo sello: `spec/vectors/HUELLAS.sha256` fija
+el sha256 de cada vector y de cada línea de cada manifiesto; `tools/check_vectores.py` comprueba el
+árbol contra él y registra lo nuevo sin sobrescribir nada; el canon lo corre en un bloque propio; el
+emisor de los KAT del núcleo deja de reescribir uno publicado, con su test; los dos README,
+`spec/README.md`, la regla 2 de `spec/rfc/PROCESO.md`, la fila del canon y las cifras de tres
+documentos se ponen al día; y este asiento. Lo escribe y lo prueba una sesión de Claude Code, y lo
+commitea la sesión que la lanzó, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. En la sesión, sobre este mismo árbol —armado aparte, en un repositorio de ensayo,
+con el §691 y este sello encima del contenido de `161a233`—, el canon `--sello` salió VERDE, con
+`zk-ssl-cli` en 139 de 139, `check_tests` en 1838 y la puerta en 477 vectores y 862 líneas.
+
+**De dónde sale.** `README.md` promete, en la tabla «Estado», «vectores por versión que jamás se
+reescriben», y la regla 2 de `spec/rfc/PROCESO.md` lo exige: si un cambio rompe el cable, la
+versión sube y los vectores viejos se conservan bajo la suya. Ninguna compuerta lo comprobaba. El
+canon comprueba que el árbol PASA sus vectores —`conformance --check`, `tools/conformidad.sh` con
+cada manifiesto—, no que sean los publicados: un vector reescrito en su sitio, con su línea de
+manifiesto al día, pasaba igual. Y ha pasado: `zkssl-0.2.json` se re-emitió dos veces bajo su misma
+versión, en el §278 y en el §281, y lo cuenta `crates/zk-ssl-cli/src/conformance.rs:107-113`. El
+criterio de H3 —vectores de conformidad positivos y negativos, y una segunda implementación que
+pase y falle igual— necesita que el vector que esa implementación guardó siga siendo el del árbol.
+Y `ZKSSL_KAT_EMITIR` escribía los 29 KAT del núcleo encima de los publicados, sin mirar.
+
+**Lo que hace.**
+
+1. **Las huellas.** `spec/vectors/HUELLAS.sha256`: `<sha256>  <ruta relativa a spec/vectors>` por
+   cada `.json`, y `<sha256>  <manifiesto>#linea` por cada línea de cada `MANIFIESTO.txt` —la
+   huella de UNA línea sin su salto, una entrada por línea, repetida si la línea se repite—,
+   ordenado por ruta y por huella, con una cabecera que dice qué es. Las entradas de fichero son las
+   de `sha256sum`: un tercero comprueba los vectores que tiene sin Python, con
+   `cd spec/vectors && sha256sum -c --ignore-missing HUELLAS.sha256`.
+2. **La puerta, `tools/check_vectores.py`.** Siete reglas, declaradas antes de mirar: un vector
+   registrado sigue en su ruta con sus bytes (R1), o se MUEVE con los mismos bytes de
+   `spec/vectors/X` a `spec/vectors/<versión>/X` (R2), como hizo el §682, y deja en la ruta vieja
+   una LÁPIDA, `<sha256>  X#movido`, que no se borra: un `.json` que vuelva a esa ruta es ROJO, en
+   ese sello o en cualquiera de los siguientes, con sus bytes o con otros; cada línea registrada
+   sigue en su manifiesto, en cualquier posición, o se mueve idéntica al manifiesto del mismo sitio
+   bajo la versión, y solo con su vector: la de un vector, si ese vector se movió a la misma
+   versión, en ese sello o antes, con su lápida; un comentario, si se movió alguno de su
+   directorio; la de `no-existe.json`, nunca (R3); lo nuevo entra registrado en el mismo sello, y
+   sin huella es ROJO (R4), para que un vector no nazca en un sello y se reescriba en el siguiente;
+   bajo `spec/vectors/` no vive nada más que `.json`, `MANIFIESTO.txt` y las huellas (R5); las
+   huellas de `HEAD` siguen en las del árbol, con R1 a R3 aplicadas al propio fichero y a sus
+   lápidas (R6), así que reescribir a mano la huella de un
+   vector, o borrar el fichero y registrarlo de cero, es ROJO antes del sello; y el fichero está en
+   su forma canónica (R7). Cada ROJO dice qué fichero o qué línea —el texto de una línea perdida sale
+   de `git show HEAD:`— y qué hacer: restaurar, o mover lo viejo a su versión y dar a lo nuevo otro
+   nombre.
+3. **`--registrar`** añade las huellas de lo nuevo, lleva la de un vector movido a su ruta nueva y
+   deja su lápida en la vieja. Nunca sobrescribe ni borra una huella ni una lápida: con cualquier
+   ROJO que no sea R4 o R7 no escribe nada. `--desde REV` aplica R6 contra otro commit;
+   `VECTORES_RAIZ` ensaya la puerta contra una copia.
+4. **El canon**, bloque «2 quater», entre las herramientas de `tools/` y la conformidad: corre en
+   todos los niveles, `--sello` incluido, y cada ROJO entra en la lista final con su nombre. Si
+   `HEAD` no está en `origin/main`, corre otra vez con `--desde` la base —el commit de
+   `origin/main` del que desciende `HEAD`— y cuenta sus ROJO de R6: un commit local que reescriba
+   a la vez un vector y su huella sin pasar por el canon lo ve el canon siguiente, mientras no se
+   empuje.
+5. **El emisor de los KAT** (`crates/zk-ssl-cli/src/nucleo_kat.rs`). Con `ZKSSL_KAT_EMITIR`, un KAT
+   que ya está con los mismos bytes se deja y uno que falta se escribe; si alguno está con OTROS
+   bytes, la emisión se niega entera, nombra el fichero y no escribe ninguno: primero se comprueban
+   todos, después se escribe.
+6. **La prosa.** Los dos README dicen que la huella de cada vector está fijada y se comprueba, y
+   cuentan 496 ficheros en `spec/vectors/` —el ATADO E de `check_publicadas` lo exige—;
+   `spec/README.md` gana la fila de `vectors/HUELLAS.sha256` y lo dice en su principio 2; la regla
+   2 de `spec/rfc/PROCESO.md`, que lo comprueba el canon.
+
+**Medido.** Sobre este árbol: 477 vectores `.json` y 862 líneas de 18 manifiestos, VERDE en
+0,10 a 0,13 s, tres corridas; y `sha256sum -c --ignore-missing` da 477 OK y ningún fallo. Sobre
+copias del árbol, sin git, cada regla en su caso:
+
+- un byte cambiado en `paquete/posicion-v2.json`: ROJO, MODIFICADO, con las dos huellas; y
+  `--registrar` sobre esa copia se niega y deja el fichero de huellas con el mismo sha256;
+- la línea de `extension.json` reescrita en el manifiesto del paquete: ROJO por la línea que falta y
+  por la nueva sin huella; en una copia con git, el ROJO da el texto de la que falta, sacado de
+  `HEAD`;
+- `nucleo/cima.json` borrado, una línea del manifiesto del paquete borrada, un `notas.txt` en
+  `paquete/`: ROJO, BORRADO, LINEA y AJENO;
+- `paquete/extension.json` movido con sus bytes a `0.5/paquete/`: VERDE, «movido»; con su línea
+  movida idéntica a `0.5/paquete/MANIFIESTO.txt`, VERDE; `--registrar` lleva las dos huellas a su
+  ruta nueva y deja en la vieja solo la lápida; y movido con un byte de más, ROJO;
+- un vector y una línea nuevos: ROJO, SIN HUELLA, hasta `--registrar`; después, VERDE con 478 y 863;
+- el fichero de huellas desordenado a mano: ROJO, FORMA, y `--registrar` lo reordena;
+- con git: un vector y su huella reescritos a la vez pasan R1 y caen por R6; el fichero de huellas
+  borrado y `--registrar` de cero se niega, y con un vector cambiado además nombra los dos.
+
+Y los dos agujeros que encontró la revisión de este sello, reproducidos sobre copias con la puerta
+de antes y medidos con la de ahora:
+
+- **la línea movida sin su vector**: la de `extension.json`, `VERDE`, movida a
+  `0.9/paquete/MANIFIESTO.txt` sin el vector, y en el manifiesto del paquete una nueva,
+  `extension.json|1|ROJO: `. Con la puerta de antes: SIN HUELLA, `--registrar` lo aceptaba, y
+  después VERDE —el veredicto publicado de un vector, cambiado en su sitio sin tocar sus bytes—.
+  Ahora: ROJO, LINEA, «esta en `0.9/paquete/MANIFIESTO.txt`, pero su vector no se movio alli», y
+  `--registrar` se niega y deja el fichero de huellas con el mismo sha256. Un comentario movido
+  sin ningún vector: ROJO; con `extension.json` y su línea movidos a la vez: VERDE. La línea de
+  `no-existe.json` movida junto a otro vector: ROJO. El vector movido y registrado en un sello, y
+  su línea en el siguiente: VERDE, por su lápida;
+- **la ruta liberada**: `paquete/extension.json` movido a `0.9/paquete/` y registrado —VERDE, con
+  una lápida—, y en el sello siguiente otro `paquete/extension.json` con otros bytes. Con la puerta
+  de antes, `--registrar` lo registraba como nuevo y la puerta salía VERDE. Ahora: ROJO, REUSADO,
+  «esa ruta no se reutiliza; lo nuevo entra con OTRO nombre»; `--registrar` se niega; y con los
+  MISMOS bytes, también ROJO. Con git, la lápida borrada a mano del fichero de huellas cae por R6
+  —LAPIDA—, y con un `extension.json` nuevo registrado encima, REUSADO y LAPIDA.
+
+El bloque del canon, contra un repositorio de ensayo con su `origin/main`: con `HEAD` en ella, una
+sola pasada; un commit local que solo añade, VERDE; uno que reescribe `paquete/posicion-v2.json` y
+su huella a la vez, dos fallos con su nombre, R6-MODIFICADO y R6; ya empujado, la pasada de la base
+no corre; sin git, tampoco; y con la base sin huellas, «aun no tiene huellas».
+
+La historia que este clon alcanza —superficial, 72 commits— tiene diez transiciones que tocan
+`spec/vectors/`. Registrando sobre el padre y comprobando el hijo, ninguna sale ROJA por otra cosa
+que R4, y `--registrar` deja cada una VERDE, con la puerta de la primera pasada de este sello y con
+la de ahora. La del §682 pasa por R2 y R3: los dos vectores de completitud y sus dos líneas,
+movidos juntos a `0.4/completitud/` con sus bytes. Las re-emisiones del §278 y el §281 quedan antes
+de lo que el clon alcanza.
+
+Y el emisor, contra copias de `spec/vectors/nucleo/`: sobre una idéntica, «0 nuevos de 29 casos»;
+con `cima.json` borrado, escribe uno, byte a byte el publicado; con `mmr_hoja.json` cambiado y
+`hoja_de_acuse.json` borrado, se niega nombrando `mmr_hoja.json`, que queda como estaba, y no
+escribe `hoja_de_acuse.json`.
+
+**Probado.** Un test nuevo en el testigo, `emitir_no_reescribe_un_kat_publicado`: en un directorio
+vacío escribe dos; con los dos publicados igual, ninguno y sin tocarlos; con uno cambiado y un
+tercero que falta, se niega, nombra el fichero, no lo reescribe y no escribe el tercero; y los 29
+KAT publicados son, byte a byte, lo que el emisor escribe hoy. Con el emisor de antes —el que
+reescribía— cae en «a.json con otros bytes tenia que negarse». `zk-ssl-cli`, en release: 139 de
+139, sin warnings. La puerta no tiene test Rust: es una herramienta del canon, ensayada contra
+copias como las demás, con `VECTORES_RAIZ` como el `TECHO_RAIZ` de `check_techo`.
+
+**Contadores.** `zk-ssl-cli` 138 -> 139. TOTAL DE SELLO 1678 -> 1679 y TOTAL CON LARGOS
+1815 -> 1816, en los tres párrafos ancla, con el desglose del testigo en 139. La cuenta de
+`check_tests` pasa de 1837 a 1838. Las «1364 declaradas» y las «1349 declared» no se tocan, como en
+los sellos anteriores (5.A-319). `spec/vectors/` pasa de 495 a 496 ficheros, en los dos README. El
+`BACKLOG.md` sigue en 43 abiertas y 73 resueltas: ninguna entrada llevaba esto.
+
+**Lo que NO hace.** No juzga si un vector dice lo que debe: eso lo dicen los manifiestos, con
+`tools/conformidad.sh`. No mira vectores fuera de `spec/vectors/`, como el corpus KAT de XMSS de
+`tools/segunda/kat_xmss/`. R6 compara con `HEAD`, y el canon, además, con la base en
+`origin/main`: un commit que reescriba a la vez un vector y su huella sin pasar por el canon lo ve
+el canon hasta que se empuja, y ya empujado no lo ve nadie: no hay CI, y para eso quedan `--desde
+REV` y el diff de `HUELLAS.sha256` en la revisión. Y la base es la de `origin/main` tal como la
+conoce el clon, sin `fetch`: si va atrasada, la base es más vieja y la pasada mira más commits; en
+esta sesión, `origin/main` del clon estaba en `8262c80` (el §685) y la de GitHub en `161a233`. `conformance --emit RUTA` sigue escribiendo
+donde se le dice: si la ruta es un vector publicado, lo para el canon, no la herramienta. El emisor
+de los KAT no lee las lápidas: si un KAT se moviera a su versión, emitir lo volvería a escribir en
+`nucleo/`, y lo pararía el canon, con REUSADO. La línea de un vector que no existe, como la de
+`no-existe.json`, no se mueve nunca: se queda en su manifiesto. Las líneas de
+comentario de los manifiestos también quedan fijadas: una cabecera que envejece se corrige con una
+línea nueva, no reescribiéndola. Y la cifra «ocho herramientas de `tools/`» de los README, `GENAI.md`
+y `RESUMEN_EJECUTIVO.md` no se mueve: la puerta va en su bloque, como `check_modulos`, y esa cifra
+ya no cuadraba, como dejó dicho `doc/integracion-vertical-evaluacion.md`.
+
+**Lo que NO cierra.** Nada de la cola.

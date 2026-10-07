@@ -15,7 +15,10 @@ BORRADOR → PROPUESTO → ACEPTADO → FINAL · o RETIRADO en cualquier punto.
    correlativa desde 0001 (la 0000 es la plantilla).
 2. Todo RFC declara COMPATIBILIDAD: si rompe el cable, la versión sube
    (`zkssl/0.1` → `zkssl/0.2`) y los vectores viejos se conservan bajo
-   su versión — jamás se reescriben.
+   su versión — jamás se reescriben. Desde el §692 lo comprueba el canon:
+   `tools/check_vectores.py` contra `spec/vectors/HUELLAS.sha256`, que
+   sólo crece; un vector se mueve, con sus bytes y su línea de manifiesto,
+   a `spec/vectors/<versión>/`, y su ruta vieja no se reutiliza.
 3. Todo RFC declara su efecto sobre el principio del API: **la clave de
    gasto no viaja jamás**. Un RFC que lo erosione nace RETIRADO. Desde el
    §538 (RFC-0009 E3b-2) el probador oculta el testigo en lo que la suite de

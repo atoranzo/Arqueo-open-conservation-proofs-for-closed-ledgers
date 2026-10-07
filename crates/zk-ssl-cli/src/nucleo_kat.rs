@@ -8,9 +8,16 @@
 //! sentido pasarle el arnes de E4.
 //!
 //! Molde de `conformance` (`--emit` fija, `--check` reproduce): con `ZKSSL_KAT_EMITIR` en el
-//! entorno el test ESCRIBE los ficheros (la referencia fija la foto); sin ella, los LEE y
-//! COMPARA valor a valor. `ZKSSL_KAT_DIR` cambia el directorio, para emitir aparte y para
-//! ensayar el gate contra una copia saboteada.
+//! entorno el test ESCRIBE los ficheros que FALTAN (la referencia fija la foto de un KAT nuevo);
+//! sin ella, los LEE y COMPARA valor a valor. `ZKSSL_KAT_DIR` cambia el directorio, para emitir
+//! aparte y para ensayar el gate contra una copia saboteada.
+//!
+//! ⚠️ Desde el §692 **emitir no reescribe un KAT publicado**: un fichero que ya esta con los
+//! mismos bytes se deja, y uno que esta con OTROS bytes hace que la emision se niegue entera,
+//! sin escribir nada, y nombre el fichero. Un KAT es un vector de `spec/vectors/` como los demas
+//! (regla 2 de `spec/rfc/PROCESO.md`): si una `fn` NUCLEO cambia, su KAT nuevo entra con otro
+//! nombre o bajo una version nueva, y el viejo se conserva. `tools/check_vectores.py` lo vigila
+//! en cada canon; esto lo dice antes, en la herramienta que lo escribiria.
 //!
 //! Cada fichero es `{"fn": ..., "entradas": {...}, "salida": ...}`; los digests y los bytes van
 //! en hex `0x…` con la serializacion del cable (`digest_to_bytes`: cuatro elementos, ocho bytes
@@ -193,19 +200,43 @@ fn casos() -> Vec<(&'static str, Value)> {
     ]
 }
 
+/// Escribe en `dir` los KAT que FALTAN y devuelve cuantos escribio. Un KAT que ya esta con los
+/// mismos bytes se deja; si alguno esta con OTROS bytes, no escribe NINGUNO y devuelve el
+/// porque, con el fichero (§692): primero se comprueban todos, despues se escribe.
+fn emitir(dir: &std::path::Path, casos: &[(&str, Value)]) -> Result<usize, String> {
+    let mut nuevos = Vec::new();
+    for (nombre, v) in casos {
+        let texto = serde_json::to_string_pretty(v).map_err(|e| format!("json de {nombre}: {e}"))? + "\n";
+        let ruta = dir.join(format!("{nombre}.json"));
+        match std::fs::read(&ruta) {
+            Ok(publicado) if publicado == texto.as_bytes() => {}
+            Ok(_) => {
+                return Err(format!(
+                    "KAT {nombre}: {} ya esta publicado con otros bytes, y un KAT publicado no se \
+                     reescribe (regla 2 de spec/rfc/PROCESO.md): si la fn cambio, su KAT nuevo va \
+                     con otro nombre o bajo una version nueva. No se ha escrito nada.",
+                    ruta.display()
+                ))
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => nuevos.push((ruta, texto)),
+            Err(e) => return Err(format!("KAT {nombre}: no se puede leer {}: {e}", ruta.display())),
+        }
+    }
+    std::fs::create_dir_all(dir).map_err(|e| format!("crear {}: {e}", dir.display()))?;
+    for (ruta, texto) in &nuevos {
+        std::fs::write(ruta, texto).map_err(|e| format!("escribir {}: {e}", ruta.display()))?;
+    }
+    Ok(nuevos.len())
+}
+
 /// Los KAT se reproducen byte a byte, y el directorio y los casos son el mismo conjunto.
 #[test]
 fn los_kat_del_nucleo_se_reproducen_byte_a_byte() {
     let casos = casos();
     let dir = directorio();
     if std::env::var("ZKSSL_KAT_EMITIR").is_ok() {
-        std::fs::create_dir_all(&dir).unwrap_or_else(|e| panic!("crear {}: {e}", dir.display()));
-        for (nombre, v) in &casos {
-            let texto = serde_json::to_string_pretty(v).unwrap_or_else(|e| panic!("json: {e}")) + "\n";
-            std::fs::write(dir.join(format!("{nombre}.json")), texto)
-                .unwrap_or_else(|e| panic!("escribir {nombre}: {e}"));
-        }
-        eprintln!("KAT escritos: {} en {}", casos.len(), dir.display());
+        let n = emitir(&dir, &casos).unwrap_or_else(|e| panic!("{e}"));
+        eprintln!("KAT escritos: {n} nuevos de {} casos en {}", casos.len(), dir.display());
         return;
     }
     let mut en_disco: Vec<String> = std::fs::read_dir(&dir)
@@ -229,4 +260,37 @@ fn los_kat_del_nucleo_se_reproducen_byte_a_byte() {
             ruta.display()
         );
     }
+}
+
+/// §692: emitir solo AÑADE. Lo que falta se escribe; lo que esta igual se deja; un KAT publicado
+/// con otros bytes hace que la emision se niegue entera, sin escribir nada. Y los KAT publicados
+/// son, byte a byte, lo que el emisor escribiria hoy: una emision honesta no choca con ellos.
+#[test]
+fn emitir_no_reescribe_un_kat_publicado() {
+    let dir = std::env::temp_dir().join(format!("zkssl-kat-emitir-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let leer = |n: &str| std::fs::read(dir.join(n)).unwrap_or_else(|e| panic!("leer {n}: {e}"));
+    let dos = [("a", json!({"fn": "a", "salida": "0x01"})), ("b", json!({"fn": "b", "salida": "0x02"}))];
+
+    assert_eq!(emitir(&dir, &dos), Ok(2), "en un directorio vacio se escriben los dos");
+    let a = leer("a.json");
+    assert_eq!(emitir(&dir, &dos), Ok(0), "con los dos ya publicados igual, no se escribe nada");
+    assert_eq!(leer("a.json"), a, "y el publicado no se toca");
+
+    std::fs::write(dir.join("a.json"), "{}\n").unwrap_or_else(|e| panic!("sabotear a: {e}"));
+    let tres = [dos[0].clone(), dos[1].clone(), ("c", json!({"fn": "c", "salida": "0x03"}))];
+    let e = emitir(&dir, &tres).err().unwrap_or_else(|| panic!("a.json con otros bytes tenia que negarse"));
+    assert!(e.contains("a.json") && e.contains("no se reescribe"), "el porque nombra el fichero: {e}");
+    assert_eq!(leer("a.json"), b"{}\n", "el KAT con otros bytes NO se reescribe");
+    assert!(!dir.join("c.json").exists(), "y la emision negada no escribe ni el que faltaba");
+
+    let publicados = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../spec/vectors/nucleo");
+    let copia = dir.join("nucleo");
+    std::fs::create_dir_all(&copia).unwrap_or_else(|e| panic!("crear la copia: {e}"));
+    for x in std::fs::read_dir(&publicados).unwrap_or_else(|e| panic!("leer {}: {e}", publicados.display())) {
+        let x = x.unwrap_or_else(|e| panic!("entrada: {e}"));
+        std::fs::copy(x.path(), copia.join(x.file_name())).unwrap_or_else(|e| panic!("copiar: {e}"));
+    }
+    assert_eq!(emitir(&copia, &casos()), Ok(0), "los KAT publicados son los bytes que el emisor escribe hoy");
+    let _ = std::fs::remove_dir_all(&dir);
 }
