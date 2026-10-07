@@ -12,9 +12,9 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
-recontadas en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622 y el
-§696, que abre la 115.
+**Estado**: 45 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
+recontadas en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el
+§696, que abre la 115, y el §697, que abre la 116.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1122,6 +1122,23 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **generalizacion del hallazgo de §38**: mientras no se haga, no se sabe si
   quedan mas §50 sin mirar. Prioridad de solidez, por delante de lo
   declarativo.
+
+- [ ] **116. El nivel declarado de producción y el rango de `m` de la edad: lo decide el autor.**
+  Medido en el §697 con la función de `winter-air` (`proof/security.rs`) sobre las opciones de
+  producción —42 consultas, blowup 16, molienda 21, extensión cuadrática— y la forma oculta de cada
+  prueba: conjeturada 127 en todas; UDR 59; en las familias de longitud fija, LDR 88 con la traza
+  más corta (la apertura del reembolso, T = 64), 82 con T = 512 y 80 con la más larga (envío, cobro
+  y quema, T = 1024). La edad, cuya longitud depende de `m`, pierde dos bits de LDR cada vez que la
+  longitud se dobla: 88 con `m = 3`, 80 con `m = 7`, 62 con `m = 16` y 48 con `m = 23`; con 80 o
+  120 consultas en vez de 42 da las mismas cifras para cada `m`. Y la prueba de `m = 24`, que
+  `comprobar_enunciado` admite, no se puede generar hoy. Los tests del §697 fijan lo de hoy —en las
+  familias de longitud fija, conjeturada ≥ 127, LDR ≥ 80 y UDR = 59; en la edad, el piso de cada
+  `m`, con `m = 24` declarada sin piso— y no deciden nada.
+  **Lo que pide, y lo decide el autor**: el nivel que se declara —el piso de LDR y el umbral de
+  UDR—; el rango de `m` de la edad —un tope que la deje en ese piso, u otras opciones para la
+  edad, que cambian lo que el kit acepta—; y, con eso, los parámetros del corte zkssl/0.5 que
+  propone el ZK-1 de `doc/blueprint-v2.md`. Lo que se decida cambia los pisos de los tests en el
+  mismo sello, con su asiento.
 
 ## D. Declaradas, acotadas, sin urgencia
 

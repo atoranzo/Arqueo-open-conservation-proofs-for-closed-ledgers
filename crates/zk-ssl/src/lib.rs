@@ -1251,3 +1251,8 @@ mod tests_sal {
         assert_eq!(todas_con_sal(&[("verify_threshold_pair", &umbral[ini..ini + fin], 1)]), 1);
     }
 }
+
+// §697 (ZK-1 de doc/blueprint-v2.md): el nivel de seguridad de produccion, atado por tests. Solo
+// tests. Se declara al final para no mover las lineas que otros documentos citan de este fichero.
+#[cfg(test)]
+mod nivel_de_produccion;

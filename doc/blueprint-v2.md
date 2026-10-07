@@ -249,6 +249,13 @@ ocultación por duplicación de la traza. Bastan 64 filas aleatorias, y los cuat
 dejan 200-208 filas libres. La molienda de 21 bits no aporta nada a la conjeturada y sí ≈6 bits a
 la LDR, y el probador corre en un hilo. Ninguna tabla de seguridad está atada por un test: solo un
 módulo comparativo llama a `proven_security` (`crates/stark-experiment/src/compliance_real_proof.rs:110-113`).
+⚠️ **Actualizado (§697):** el paso (1) del ZK-1 está construido, con tres pruebas ocultas reales en
+vez de una —el envío v2, el crédito y la apertura del reembolso, de T = 1024 a T = 64— en
+`crates/zk-ssl/src/nivel_de_produccion.rs`, que además exige que ningún verificador fuera del fork
+acepte por nivel mínimo; y la edad, cuya longitud depende de `m`, se recorre para cada `m` sobre la
+forma de su prueba (`tests_nivel` en `crates/zk-ssl-air/src/lib.rs`) con el piso de hoy y no con
+80, porque con `m ≥ 8` queda por debajo. Lo que se declara es decisión del autor: la entrada 116
+de [`BACKLOG.md`](../BACKLOG.md).
 
 | id | título | prio. | verificador | propuesta final tras el debate | evidencia principal |
 |---|---|---|---|---|---|

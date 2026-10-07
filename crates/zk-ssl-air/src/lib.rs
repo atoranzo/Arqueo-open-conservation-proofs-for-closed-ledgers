@@ -914,3 +914,134 @@ mod tests_sal {
         assert_eq!(total, 5, "las cinco del kit");
     }
 }
+
+/// **§697: el piso de la LDR de la edad, para cada `m` que el enunciado admite** (ZK-1, paso (1),
+/// de `doc/blueprint-v2.md`). Las familias de longitud fija tienen su test en la capa
+/// (`crates/zk-ssl/src/nivel_de_produccion.rs`), sobre pruebas ocultas reales; la edad no puede
+/// tenerlo asi, porque su longitud depende de `m`: la traza oculta tiene `2 * CICLO * 2^m` filas, la
+/// forma que [`verificar`] exige. El test recorre la funcion real -`Proof::proven_security` y
+/// `conjectured_security` sobre el `Context` de esa forma con [`opciones`], como sobre el de una
+/// prueba- sin generar ninguna, y exige para cada `m` conjeturada >= 127, UDR = 59 y LDR >= su piso.
+///
+/// **Los pisos son los valores de hoy, no un objetivo.** La LDR baja dos bits cada vez que la
+/// longitud se dobla, y con `m >= 8` queda por debajo de los 80 que la capa exige a las familias de
+/// longitud fija. Subirla -un tope de `m`, u otras opciones para la edad- lo decide el autor, con el
+/// nivel declarado de produccion (BACKLOG 116). Mientras tanto, el test falla si alguna `m` admitida
+/// baja de su piso, si el enunciado admite una `m` sin piso declarado o si un piso nombra una `m`
+/// que el enunciado ya no admite.
+#[cfg(test)]
+mod tests_nivel {
+    use super::*;
+    use winter_air::proof::Context;
+
+    const CONJETURADA_MINIMA: u32 = 127;
+    /// La UDR de hoy, fijada como valor, la misma que en la capa: solo cambia con un asiento.
+    const UDR_ACTUAL: u32 = 59;
+
+    /// El piso declarado de la LDR, en bits, para cada `m` (§697): lo que la funcion da hoy.
+    const PISO_LDR: [(u32, u32); 21] = [
+        (3, 88),
+        (4, 86),
+        (5, 84),
+        (6, 82),
+        (7, 80),
+        (8, 78),
+        (9, 76),
+        (10, 74),
+        (11, 72),
+        (12, 70),
+        (13, 68),
+        (14, 66),
+        (15, 64),
+        (16, 62),
+        (17, 60),
+        (18, 58),
+        (19, 56),
+        (20, 54),
+        (21, 52),
+        (22, 50),
+        (23, 48),
+    ];
+
+    /// Las `m` que el enunciado admite y que no llevan piso. `m = 24`: su prueba no se puede
+    /// generar hoy, y si sale del rango o la edad cambia de opciones lo decide el autor (BACKLOG
+    /// 116). Se declara aqui para que no pase en silencio: el dia que el rango cambie, el test
+    /// obliga a tocar esta lista.
+    const SIN_PISO: [u32; 1] = [24];
+
+    /// Las `m` que [`comprobar_enunciado`] admite, con el resto del enunciado en su valor mas
+    /// pequeno: el rango sale del juez, no se teclea.
+    fn admitidas() -> Vec<u32> {
+        (0..=40u32)
+            .filter(|&m| {
+                let pi = EdadPublicInputs {
+                    subraiz_pend: [BaseElement::ZERO; 4],
+                    subraiz_meta: [BaseElement::ZERO; 4],
+                    m,
+                    n: 0,
+                    seq: 0,
+                    t: 0,
+                    emisor: 0,
+                    todos: true,
+                    k: 0,
+                };
+                comprobar_enunciado(&pi).is_ok()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn el_piso_de_la_edad_para_cada_m() {
+        let o = opciones();
+        assert_eq!(
+            (o.constraint_batching_method(), o.deep_poly_batching_method()),
+            (BatchingMethod::Linear, BatchingMethod::Linear),
+            "con otro batching el nivel depende del ancho y de las restricciones: el Context de \
+             este test tendria que llevar los del AIR"
+        );
+        let admitidas = admitidas();
+        let mut mal = Vec::new();
+        for (m, _) in PISO_LDR {
+            if !admitidas.contains(&m) {
+                mal.push(format!("m = {m} tiene piso y el enunciado ya no la admite"));
+            }
+        }
+        for m in SIN_PISO {
+            if !admitidas.contains(&m) {
+                mal.push(format!("m = {m} se declara sin piso y el enunciado ya no la admite"));
+            }
+        }
+        let mut medidas = Vec::new();
+        for &m in &admitidas {
+            if SIN_PISO.contains(&m) {
+                continue;
+            }
+            let Some(&(_, piso)) = PISO_LDR.iter().find(|(x, _)| *x == m) else {
+                mal.push(format!("m = {m}: el enunciado la admite y no tiene piso declarado"));
+                continue;
+            };
+            let filas = 2 * (CICLO << m);
+            let info = TraceInfo::new_multi_segment(ANCHO + 1, ANCHO_AUX, ALEATORIOS, filas, vec![]);
+            // Con batching lineal el numero de restricciones no entra en la cifra; `Context::new`
+            // solo pide que sea positivo.
+            let mut p = Proof::new_dummy();
+            p.context = Context::new::<BaseElement>(info, o.clone(), PRINCIPALES + AUXILIARES);
+            let conjeturada = p.conjectured_security::<Blake3>().bits();
+            let demostrable = p.proven_security::<Blake3>();
+            let (ldr, udr) = (demostrable.ldr_bits(), demostrable.udr_bits());
+            medidas.push(format!("m={m}: {ldr}"));
+            if conjeturada < CONJETURADA_MINIMA {
+                mal.push(format!("m = {m}: conjeturada {conjeturada} < {CONJETURADA_MINIMA}"));
+            }
+            if udr != UDR_ACTUAL {
+                mal.push(format!("m = {m}: UDR {udr}, y la fijada es {UDR_ACTUAL}"));
+            }
+            if ldr < piso {
+                mal.push(format!("m = {m}: LDR {ldr} por debajo de su piso, {piso}"));
+            }
+        }
+        println!("[§697] LDR de la edad, traza oculta de 2^(m+4) filas: {}", medidas.join(", "));
+        assert!(medidas.len() >= PISO_LDR.len(), "solo {} m medidas", medidas.len());
+        assert!(mal.is_empty(), "el piso de la edad: {}", mal.join("; "));
+    }
+}

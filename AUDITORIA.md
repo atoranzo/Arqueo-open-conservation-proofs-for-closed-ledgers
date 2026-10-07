@@ -48265,3 +48265,180 @@ tampoco verifica esas pruebas. Y la tabla de la sección 3 de este fichero sigue
 `circuit_settlement` donde la capa verifica `circuit_send_v2` y `circuit_claim_v2`; no se toca.
 
 **Lo que NO cierra.** La 115, que abre.
+
+## §697 — el nivel de producción lo atan tests: 127, 80 y 59 sobre las pruebas ocultas reales, el piso de hoy para cada `m` de la edad, y ningún verificador acepta por nivel mínimo
+
+El commit que lleva este asiento, sobre `2b39473` (el §696). Un solo sello: tres tests nuevos —dos
+en la capa, en un módulo de tests nuevo, `crates/zk-ssl/src/nivel_de_produccion.rs`, y uno en
+`zk-ssl-air`, `tests_nivel`—; las filas de `zk-ssl` y `zk-ssl-air` en el canon; los tres párrafos
+ancla y la cifra de la capa en los documentos que la cuentan; una nota en `doc/blueprint-v2.md`; la
+entrada 116 del `BACKLOG.md`; y este asiento. Lo escribe y lo comprueba una sesión de Claude Code, y
+lo commitea la sesión que la lanzó, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. El sello no toca la generación de pruebas, ni las opciones, ni ningún verificador:
+sólo añade tests. En la sesión, sobre este mismo árbol —todo este sello menos la redacción final de
+este asiento—, el canon `--sello` salió VERDE, en 1358 s de tests y unos 30 minutos en total, en
+una máquina de 4 CPU compartida con otra tarea: las 19 filas del nivel en su pin —`zk-ssl`, 433 y 7
+ignorados, en 351 s; `zk-ssl-air`, 43—, `check_tests` en 1842, `check_modulos` en 204, las nueve
+herramientas del bucle «2 ter», la puerta de los vectores en 477 vectores y 925 líneas, las cuatro
+conformidades de `spec/vectors/zkssl-0.*.json`, el cable en 21 de 21, las doce familias del
+binario, la segunda implementación, con sus pares STARK en 28 de 28, y el artefacto reproducible,
+con la huella `c375bcbcc559eb96`.
+
+**De dónde sale.** El ZK-1 de `doc/blueprint-v2.md` lo pedía en dos tiempos, y el (1) era «ya, sin
+cable»: un test que genere una prueba de envío oculta real y exija, con la función real,
+conjeturada ≥ 127 y LDR ≥ 80. Hasta este sello ningún test fijaba el nivel. Fuera del fork,
+`proven_security` y `conjectured_security` sólo los llama
+`crates/stark-experiment/src/compliance_real_proof.rs:110-113`, que imprime y no compara, y con
+otras opciones. Un cambio de `proof_options` o de la longitud de un circuito podía bajar la
+seguridad demostrable sin que nada se pusiera rojo. Y la edad no cabe en un umbral único, porque su
+longitud depende de `m`.
+
+**Lo que hace.**
+
+1. **Las familias de longitud fija** (`el_nivel_de_las_familias_de_longitud_fija`). Por el camino de
+   producción —`send_materials_v2`, `client::prove_send` con `proof_options()`, `apply_send` y
+   `refund_v2`, sobre una capa de test— salen tres pruebas ocultas reales: el envío v2 (`SendV2Air`,
+   T = 1024, la traza más larga de las familias de longitud fija, la misma que la del cobro y la
+   quema), el crédito del reembolso (`CreditClimbAir`, T = 512) y la apertura del reembolso v2
+   (`RefundAirV2`, T = 64, la más corta). De cada una, antes de medir, el test exige que lleve
+   `proof_options()` y la forma oculta que la capa exige al verificarla (`comprobar_forma`, la regla
+   de los quince `verify`). Después, con `Proof::conjectured_security::<Blake3_256>` y
+   `Proof::proven_security::<Blake3_256>`, exige conjeturada ≥ 127, LDR ≥ 80 y UDR = 59. La UDR se
+   fija como valor y no como suelo: sólo cambia con un asiento. Con batching lineal la función no
+   depende del ancho ni del número de restricciones, sólo de las opciones y de la longitud
+   (`crates/winter-air/src/proof/security.rs`, idéntico al de upstream: el ancho y las restricciones
+   entran sólo en el factor del batching, que con `Linear` es 1). Por eso basta una prueba por
+   longitud, y el test exige esa premisa a `proof_options()`. Como los del instrumento de D-B, en
+   depuración se salta.
+2. **Ningún verificador acepta por nivel mínimo** (`ningun_verificador_acepta_por_nivel_minimo`).
+   De las tres variantes de `AcceptableOptions`, `MinConjecturedSecurity` y `MinProvenSecurity`
+   aceptan cualquier `ProofOptions` cuyo nivel calculado llegue al mínimo. El batching y las
+   particiones no entran en el transcript —`ProofOptions::to_elements` lleva la extensión, el
+   plegado, el resto, el blowup, la molienda y las consultas—, así que con esas variantes nada los
+   fijaría. `OptionSet`, que compara `ProofOptions` entero, sí. El test recorre los `.rs` de
+   `crates/`, con sus subdirectorios, menos el fork y los `target`, y exige que ninguna línea de
+   código nombre esas dos variantes. Las líneas de comentario no cuentan, y las agujas se arman por
+   partes para que el propio fuente no las contenga. La prueba de vida: al menos 200 ficheros y 146
+   usos de `OptionSet`, lo medido hoy; un universo vacío no pasa.
+3. **La edad, para cada `m`** (`tests_nivel::el_piso_de_la_edad_para_cada_m`, al final de
+   `crates/zk-ssl-air/src/lib.rs`). La traza oculta de la edad tiene `2 · 8 · 2^m` filas, la forma
+   que exige `verificar`. Generar sus pruebas hasta `m = 23` no cabe en un test, así que el test hace
+   lo que hace `Proof::proven_security` sobre el `Context` de una prueba: construye el de esa forma
+   con `opciones()` sobre `Proof::new_dummy()` y llama a la función real. Lo hace para cada `m` que
+   admite `comprobar_enunciado`, cuyo rango lee del juez y no teclea, y exige conjeturada ≥ 127,
+   UDR = 59 y LDR ≥ el piso declarado de esa `m`. **Los pisos son los valores de hoy**, de 88 con
+   `m = 3` a 48 con `m = 23`. Con `m ≥ 8` quedan por debajo de los 80 de las familias de longitud
+   fija, y el test no fija un umbral que hoy no se cumple. `m = 24`, que el enunciado admite, se
+   declara sin piso: su prueba no se puede generar hoy (BACKLOG 116). El test cae si una `m`
+   admitida baja de su piso, si el enunciado admite una `m` que no tiene piso ni está declarada, o si
+   un piso o la declaración nombran una `m` que el enunciado ya no admite: el día que el rango
+   cambie, obliga a tocar la tabla.
+4. **Dónde vive cada uno.** Los dos primeros, en la capa, que tiene `proof_options()` y el camino de
+   producción. El módulo se declara al final de `crates/zk-ssl/src/lib.rs`: otros documentos citan
+   ese fichero por número de línea —`:216-227`, `proof_options`, en `doc/blueprint-v2.md` y en
+   `doc/integracion-vertical-evaluacion.md`—, y una declaración junto a las demás las movía tres
+   líneas. El de la edad, en `zk-ssl-air`, que tiene su AIR, sus opciones y `winter-air` como
+   dependencia directa: `winterfell` no reexporta `Context`, y la capa no depende de `winter-air`.
+   Las opciones de la edad son las de producción: `crates/zk-ssl/src/instrumento_edad.rs:518` exige
+   `edad::opciones() == proof_options()`.
+5. **La decisión, apuntada.** La entrada 116 del `BACKLOG.md` registra lo medido y deja al autor el
+   nivel que se declara, el rango de `m` de la edad y los parámetros del corte zkssl/0.5 que
+   propone el ZK-1. `doc/blueprint-v2.md` gana una nota en su sección 3.2: el paso (1) del ZK-1 está
+   construido, y en qué difiere de lo que proponía.
+6. **Lo que corrigió su revisión.** La primera pasada llamaba al envío v2 «la traza más larga que
+   la capa verifica», y no lo es: la capa verifica también la prueba de edad
+   (`crates/zk-ssl/src/prueba_edad.rs:120`), cuya traza oculta pasa de 2048 filas con `m ≥ 8`.
+   Ahora dice «de las familias de longitud fija», aquí, en el módulo de tests y en la 116. Daba el
+   205 del recorrido y el 204 de `check_modulos` sin decir que cuentan cosas distintas; dejaba en
+   `doc/ecst/VERIFICACION.md`, en la misma línea que ponía al día, la cita de una fila del canon que
+   ya no estaba allí; y no corría el canon entero. Los cuatro van corregidos en este mismo sello.
+
+**Medido.** Sobre este árbol, en release:
+
+- **Las tres pruebas ocultas**: el envío v2, traza oculta de 2048 filas, conjeturada 127, LDR 80 y
+  UDR 59; el crédito, 1024 filas, 127, 82 y 59; la apertura del reembolso v2, 128 filas, 127, 88 y
+  59. Los dos tests de la capa, juntos, de 2,4 a 3,4 s en tres corridas, en una máquina de 4 CPU
+  compartida con otra compilación, con una carga media de 6 a 10 en el último minuto. La suite
+  entera de la capa, 433 pasan y 7 ignorados, en 343 y 351 s en dos corridas, sin warnings, y otra
+  vez en 351 s dentro del canon.
+- **La edad**: LDR 88, 86, 84, 82, 80, 78, 76, 74, 72, 70, 68, 66, 64, 62, 60, 58, 56, 54, 52, 50
+  y 48 para `m` de 3 a 23; conjeturada 127 y UDR 59 en todas. Con 80 y con 120 consultas en vez de
+  42 —el mismo test con `opciones()` cambiada, y deshecha después—, las mismas 21 cifras: en la
+  edad, más consultas no suben la LDR.
+- **Las familias que no se miden una a una.** Las AIR que la capa y el kit verifican tienen hoy T de
+  64 a 1024 —1024 el envío, el cobro y la quema, v1 y v2; 512 el crédito, las subidas de emisión,
+  emisión a pendiente y recuperación, la auditoría y las cuatro del kit de longitud fija; 256 la de
+  congelados; 64 las dos aperturas del reembolso y el umbral—, medido con `grep` sobre sus
+  `verify::<…>` y sus `TRACE_LENGTH`. La edad aparte.
+- **El recorrido**: 205 ficheros fuera del fork, el nuevo entre ellos; 146 usos de `OptionSet` en
+  líneas de código —127 en `stark-experiment`, 14 en `zk-ssl` y 5 en `zk-ssl-air`—, y ningún `Min*`.
+  No es el universo de `check_modulos`, que da 204 más abajo: el test cuenta todos los `.rs` de
+  `crates/` fuera del fork —181 bajo `src/`, con `lib.rs`, `main.rs` y `src/bin/`, 19 de
+  `examples/` y 5 de `tests/`—, y `check_modulos` cuenta los de `src/` de todos los crates, el fork
+  incluido, menos las raíces —`lib.rs`, `main.rs` y `mod.rs`— y `src/bin/`: 159 fuera del fork y 45
+  dentro. Que salgan 205 y 204 es casualidad. Antes de este sello, fuera del fork las dos variantes
+  no aparecían ni en comentarios; dentro, las nombran `crates/winter-verifier/src/lib.rs`, que las
+  define, y su README.
+- **Falsadores**, cada uno sobre el árbol de este sello con un solo cambio, deshecho después:
+
+  | el cambio | lo que dice el test |
+  |---|---|
+  | `proof_options()` con 32 consultas | ROJO: LDR 78 en el envío y 79 en el crédito, y UDR 50 en las tres |
+  | un fichero en `crates/zk-ssl-node/src` con `AcceptableOptions::MinConjecturedSecurity(127)` en una línea de código | ROJO, con su fichero y su línea |
+  | ese fichero con `use …::AcceptableOptions::*;` y `MinProvenSecurity(80)` suelto | ROJO |
+  | la misma línea en un subdirectorio de `crates/zk-ssl-cli/src` | ROJO |
+  | la misma línea como comentario | verde: un comentario no cuenta |
+  | el recorrido sin `zk-ssl*` ni `stark-experiment` | ROJO: «solo 52 ficheros» |
+  | el piso de `m = 3` a 89 | ROJO: «LDR 88 por debajo de su piso, 89» |
+  | `SIN_PISO` vacía | ROJO: «m = 24: el enunciado la admite y no tiene piso declarado» |
+  | `comprobar_enunciado` hasta `m = 23` | ROJO: «m = 24 se declara sin piso y el enunciado ya no la admite» |
+  | `comprobar_enunciado` hasta `m = 25` | ROJO: `m = 25`, sin piso |
+  | `opciones()` de la edad con 32 consultas | ROJO: UDR 50 en todas, y la LDR bajo su piso de `m = 3` a `m = 8` |
+  | `opciones()` de la edad con batching algebraico | ROJO: la premisa del batching |
+
+- **El binario del kit cambia de huella**, como era de esperar: el sello toca
+  `crates/zk-ssl-air/src/lib.rs`, que el kit compila, y el §694 midió que la huella depende de los
+  bytes de los fuentes, tests incluidos. Dentro del canon de este sello, `artefacto.sh --check` da
+  `c375bcbcc559eb96` reproducible entre rutas y sin rutas de la máquina, con los doce manifiestos
+  en verde también desde dentro del tarball, y el tarball `0d0b1567cbd89f2c` reproducible. El §694
+  dio `aa94dc578ecfd88a`, y entre su árbol y `2b39473` no cambia ningún fichero de `crates/` ni
+  ningún `Cargo.*` (`git diff --stat`); la de `2b39473` no se volvió a medir aquí. Lo que mide
+  `--check` es la propiedad —dos compilaciones del mismo árbol, la misma huella—, no un pin.
+- **Las compuertas**, como las corre el canon, desde la raíz y sobre el texto final de este asiento:
+  `check_tests`, 1842 declarados, ninguno anidado; `check_modulos`, 204 ficheros, todos
+  declarados; `check_vectores`, 477 vectores y 925 líneas con su huella; y las nueve del bucle
+  «2 ter» —`check_cifras`, `check_figures`, `check_columns`, `check_constraint_layout`,
+  `verificar_citas`, `check_dominios`, `check_publicadas`, `check_nucleo` y `check_techo`—. Las
+  doce salen con 0.
+
+**Probado.** Tres tests nuevos, con los doce cambios de arriba: once los ponen en ROJO, y el del
+comentario sale verde a propósito. El guion que los arma no entra en el árbol.
+
+**Contadores.** `zk-ssl` 431 -> 433 y `zk-ssl-air` 42 -> 43. TOTAL DE SELLO 1680 -> 1683 y TOTAL CON
+LARGOS 1817 -> 1820, en los tres párrafos ancla, con el desglose de la capa en 433 en
+`PRINCIPIOS.md`. La cifra de la capa pasa de 431 a 433, como hizo el §668, también en
+`ARQUITECTURA.md` (dos líneas), otra línea de `PRINCIPIOS.md`, los bloques de reproducción de
+`PAPER.md` y `PAPER_EN.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y
+`doc/ecst/VERIFICACION.md`. En este último, la misma línea citaba la fila en `tools/canon.sh:99`,
+donde estaba en el S622, y la cita pasa a `:109`, donde está hoy; las demás rutas `path:línea` de
+ese registro generado son de su árbol y no se tocan. La cuenta de `check_tests` pasa de 1839 a
+1842. Las «1364 declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores
+(5.A-319). El `BACKLOG.md` pasa de 44 abiertas y 73 resueltas a 45 y 73: entra la 116, en el
+grupo C, y la línea de su estado lo dice.
+
+**Lo que NO hace.** No decide el nivel: los pisos y la UDR fijan lo de hoy, y lo que se declare es la
+116. No mide `m = 24`. No revisa la función de `winter-air`: el test fija lo que devuelve sobre la
+forma y las opciones de cada prueba. No corrige las cifras de seguridad que publican otros
+documentos —el comentario de `proof_options`, con sus «125,6 KB por prueba en vez de 36,7», y los
+«29-63» que registra el ZK-2 de `doc/blueprint-v2.md`—: es el ZK-2, otro sello. El test de longitud
+fija mide tres longitudes y no cada familia: que las demás caigan entre 64 y 1024 es lo medido hoy,
+y el test no lo comprueba; una familia nueva con una traza más larga necesitaría su prueba en la
+lista. El recorrido es textual: no ve una variante `Min*` construida por una función o una macro de
+otro crate, ni lo que vive fuera de `crates/` —`tools/segunda`, la segunda implementación, compara
+sus propias opciones y no se mira aquí—. Lo que escribe una línea de comentario tampoco cuenta, a
+propósito. En depuración el test de longitud fija se salta, como los del instrumento de D-B. La
+línea de `ARQUITECTURA.md` que cuenta la capa sigue diciendo «33 módulos», y no se recuenta aquí. Y
+no publica un kit: la huella del binario cambia con este sello (en «Medido»), y una release nueva la
+decide el autor.
+
+**Lo que NO cierra.** La 116, que abre.
