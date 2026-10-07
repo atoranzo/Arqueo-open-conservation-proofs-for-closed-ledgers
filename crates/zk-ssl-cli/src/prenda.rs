@@ -126,7 +126,7 @@ pub struct PruebaPrendaArgs {
     /// El aviso v2 del pendiente que se prenda: el fichero que `simulate --v2 --aviso` escribio.
     #[arg(long)]
     aviso: PathBuf,
-    /// El keystore `zkssl-keystore/1` del prendador (D-BC): la clave no sale del SDK.
+    /// El keystore del SDK del prendador (D-BC): la clave no sale del SDK. Desde el §702, `zkssl-keystore/2`; una `/1` se migra al abrirla.
     #[arg(long)]
     keystore: PathBuf,
     /// El fichero con la frase del keystore (D-BG): nunca en la linea de ordenes.

@@ -55,7 +55,7 @@ custodios distintos**, no una clave; y el flujo documentado es el de
 hallazgo propio. Corregido en §361; el error se registra en vez de
 borrarse.
 
-`crates/zk-ssl` — **436 tests** (7 ignorados, declarados). Material para
+`crates/zk-ssl` — **446 tests** (7 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
 El backend STARK añade **18 circuitos** verificados por separado.
 
@@ -276,10 +276,10 @@ La clave la aporta el operador al arrancar; guardarla junto a los datos no
 protegería nada. Eso significa que **el nodo no puede reiniciar solo**:
 alguien tiene que introducir la contraseña.
 
-Además, la derivación usa SHA-256, que **no es una función de derivación
-de contraseñas**: no tiene coste ajustable, así que una contraseña débil
-es vulnerable a fuerza bruta. Un despliegue real necesitaría Argon2 o
-scrypt.
+Desde el §702 (RFC-0001) la clave se deriva con Argon2id (RFC 9106), con sal por libro y coste;
+hasta entonces era SHA-256, sin sal ni coste, y un libro de antes se migra al abrirlo con su frase.
+El coste encarece cada intento de fuerza bruta, no los evita: una contraseña débil sigue siendo
+débil.
 
 ## La clave de gasto ya no llega al nodo como argumento
 
@@ -1133,7 +1133,7 @@ comprueba que transferir no altera el suministro.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 33 módulos y **436 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 33 módulos y **446 tests**, frente a
 > los 2 módulos y 17 de este.
 >
 > Una versión anterior de este documento lo titulaba *"La capa"* sin más,

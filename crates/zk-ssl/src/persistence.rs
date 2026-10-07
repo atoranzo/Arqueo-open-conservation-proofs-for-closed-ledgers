@@ -38,10 +38,10 @@ impl SovereignLayer {
 
     /// Abre una capa persistente **con cifrado en reposo**.
     ///
-    /// La clave la aporta el operador y **no se guarda junto a los
-    /// datos**: guardarla al lado no protegería nada. Eso significa que
-    /// el nodo **no puede reiniciar solo** — alguien tiene que
-    /// introducirla.
+    /// La clave la aporta el operador y **no se guarda junto a los datos**: guardarla al lado no
+    /// protegería nada. Eso significa que el nodo **no puede reiniciar solo** — alguien tiene que
+    /// introducirla. §702 (RFC-0001): se fija al KDF que el libro guarda en claro, y un libro de la
+    /// versión 1 se verifica y se migra a la 2 al abrirlo (`abrir_con_su_kdf`, al final).
     ///
     /// ⚠️ Protege contra el robo del disco o de una copia. **No contra el
     /// operador**, que ve los saldos en memoria.
@@ -59,7 +59,7 @@ impl SovereignLayer {
         if max_supply > crate::MAX_SUMINISTRO {
             return Err(LayerError::SupplyCapExceeded { cap: crate::MAX_SUMINISTRO, would_be: max_supply });
         }
-        let db = sled::open(path).map_err(|e| StoreError::Io(e.to_string()))?;
+        let (db, fijada, de_v1) = Self::abrir_con_su_kdf(path, key.as_ref())?;
 
         let mut layer = Self {
             accounts: SparseTree::new(),
@@ -91,11 +91,11 @@ impl SovereignLayer {
             max_accounts,
             options: proof_options(),
             db: Some(db),
-            key,
+            key: fijada,
         };
 
         if layer.has_existing_ledger()? {
-            layer.load()?;
+            layer.cargar_y_migrar(de_v1, key.as_ref())?;
         } else {
             // Ledger nuevo: escribir los parametros del sistema.
             layer.commit(&[], None)?;
@@ -914,6 +914,12 @@ impl SovereignLayer {
             batch.insert(key, self.seal(mv)?);
         }
 
+        // §702 (RFC-0001): la cabecera del KDF va EN CLARO en cada lote, con lo
+        // que se sella bajo ella: el primer lote de un libro nuevo la escribe
+        // junto a sus datos. Sin clave, o con la de la version 1, no hay.
+        if let Some(c) = self.key.as_ref().and_then(|k| k.kdf()).and_then(|k| k.cabecera()) {
+            batch.insert(CLAVE_KDF, c.to_vec());
+        }
         db.apply_batch(batch)
             .map_err(|e| StoreError::Io(e.to_string()))?;
         db.flush().map_err(|e| StoreError::Io(e.to_string()))?;
@@ -922,6 +928,121 @@ impl SovereignLayer {
         // seguro.
         self.log_persisted = self.log.len();
         self.cons_persisted = self.consumos_orden.len();
+        Ok(())
+    }
+}
+
+/// §702 (RFC-0001): la cabecera del KDF del libro cifrado, EN CLARO: la
+/// version, el coste y la sal no son secretos, y sin ellos no se deriva la
+/// clave. Un libro sin ella y con datos cifrados es de la version 1.
+pub(crate) const CLAVE_KDF: &[u8] = b"meta:kdf";
+
+/// §702: las claves del libro que van EN CLARO aunque el libro este cifrado.
+/// `meta:geometry_v7` y `meta:migrated` son marcadores de presencia (las
+/// raices arbitran), y `meta:kdf` es la cabecera. Todo lo demas va sellado, y
+/// la migracion lo comprueba: lo que no abre con la clave vieja la para.
+pub(crate) const EN_CLARO: [&[u8]; 3] = [b"meta:geometry_v7", b"meta:migrated", CLAVE_KDF];
+
+/// §702 (RFC-0001): el cifrado en reposo con su version. Va al final del
+/// fichero para que las citas `persistence.rs:linea` de los documentos que
+/// las llevan no se muevan.
+impl SovereignLayer {
+    /// **Abre el `sled` y fija la clave al KDF del libro.** Devuelve la clave
+    /// fijada y si el libro es de la version 1.
+    ///
+    /// - Con cabecera (`meta:kdf`), la clave se fija a ella.
+    /// - Sin cabecera y con datos, el libro es de la version 1 (SHA-256 sin
+    ///   sal): la clave se fija a ella, y `cargar_y_migrar` lo migra despues
+    ///   de verificarlo.
+    /// - Sin cabecera y sin datos, el libro nace en la version 2, con una sal
+    ///   nueva; el primer `commit` escribe la cabecera con sus datos.
+    /// - Con cabecera y sin clave, no se abre en claro: `ParameterMismatch`
+    ///   de «cifrado en reposo», en vez de un error de formato del primer
+    ///   valor sellado que se intentara leer.
+    #[allow(clippy::type_complexity)]
+    fn abrir_con_su_kdf(
+        path: &str,
+        key: Option<&crate::crypto::LedgerKey>,
+    ) -> Result<(sled::Db, Option<crate::crypto::LedgerKey>, bool), LayerError> {
+        use crate::crypto::Kdf;
+        let db = sled::open(path).map_err(|e| StoreError::Io(e.to_string()))?;
+        let guardado = db
+            .get(CLAVE_KDF)
+            .map_err(|e| StoreError::Io(e.to_string()))?
+            .map(|v| Kdf::de_cabecera(&v))
+            .transpose()?;
+        let con_datos = db
+            .contains_key(b"meta:custodians")
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        let (fijada, de_v1) = match (key, guardado) {
+            (None, None) => (None, false),
+            (None, Some(_)) => {
+                return Err(StoreError::ParameterMismatch { what: "cifrado en reposo" }.into())
+            }
+            (Some(k), Some(kdf)) => (Some(k.fijar(&kdf)?), false),
+            (Some(k), None) if con_datos => (Some(k.fijar(&Kdf::Sha256V1)?), true),
+            (Some(k), None) => (Some(k.fijar(&Kdf::nuevo())?), false),
+        };
+        Ok((db, fijada, de_v1))
+    }
+
+    /// `load`, y si el libro es de la version 1, la migracion: verificar
+    /// antes de mutar.
+    fn cargar_y_migrar(
+        &mut self,
+        de_v1: bool,
+        frase: Option<&crate::crypto::LedgerKey>,
+    ) -> Result<(), LayerError> {
+        self.load()?;
+        match (de_v1, frase) {
+            (true, Some(f)) => self.migrar_a_kdf_v2(f),
+            _ => Ok(()),
+        }
+    }
+
+    /// **La migracion del cifrado en reposo, de la version 1 a la 2.** La
+    /// llama `cargar_y_migrar` con un libro de la version 1 que `load` acaba
+    /// de verificar entero con la clave vieja.
+    ///
+    /// Abre CADA valor sellado con la clave v1 y lo vuelve a sellar con una
+    /// v2 de sal nueva, y escribe la cabecera, todo en UN lote: sled lo aplica
+    /// entero o no lo aplica, asi que el libro queda en una version o en la
+    /// otra, nunca a medias. Lo que no se sella son las tres claves de
+    /// `EN_CLARO`. Un valor que no abre con la clave v1 para la migracion
+    /// sin escribir nada y la dice: descartar sin verificar no se hace.
+    fn migrar_a_kdf_v2(&mut self, frase: &crate::crypto::LedgerKey) -> Result<(), LayerError> {
+        let db = match self.db() {
+            None => return Ok(()),
+            Some(d) => d.clone(),
+        };
+        let vieja = match &self.key {
+            Some(k) if k.kdf() == Some(crate::crypto::Kdf::Sha256V1) => k.clone(),
+            _ => return Ok(()),
+        };
+        let nueva = frase.fijar(&crate::crypto::Kdf::nuevo())?;
+        let cabecera = nueva
+            .kdf()
+            .and_then(|k| k.cabecera())
+            .ok_or_else(|| StoreError::Malformed("la clave nueva no es de la version 2".into()))?;
+        let mut lote = sled::Batch::default();
+        for item in db.iter() {
+            let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
+            if EN_CLARO.contains(&k.as_ref()) {
+                continue;
+            }
+            let claro = vieja.open(&v).map_err(|_| {
+                StoreError::Malformed(format!(
+                    "migracion del cifrado en reposo: el valor de {} no abre con la clave de la version 1",
+                    String::from_utf8_lossy(&k)
+                ))
+            })?;
+            lote.insert(k, nueva.seal(&claro)?);
+        }
+        lote.insert(CLAVE_KDF, cabecera.to_vec());
+        db.apply_batch(lote)
+            .map_err(|e| StoreError::Io(e.to_string()))?;
+        db.flush().map_err(|e| StoreError::Io(e.to_string()))?;
+        self.key = Some(nueva);
         Ok(())
     }
 }

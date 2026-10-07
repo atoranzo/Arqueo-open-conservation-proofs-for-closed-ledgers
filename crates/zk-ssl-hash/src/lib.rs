@@ -1639,6 +1639,8 @@ mod tests_cabeza_v2 {
 // REGISTRO: bytes ZK-SSL-anchor-key-v1
 // REGISTRO: bytes ZK-SSL-batch-v1
 // REGISTRO: bytes ZK-SSL-key-act
+// REGISTRO: bytes ZK-SSL-ledger-key-v2
+// REGISTRO: bytes ZK-SSL-keystore-v2
 
 /// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
 /// congelacion no pueda reutilizarse como autorizacion de emision.

@@ -1011,7 +1011,7 @@ rompe la simetría con `prueba-cobro` y `prueba-pago`. El coste, medido en el `C
 ella; ninguno nace en el lock, donde el SDK ya resuelve como miembro del workspace. El cli no
 tiene puerta de clausura, y ésta es la dependencia que el 5.A-359 anunció. La confianza residual,
 con las palabras del propio keystore: SHA-256 no es una función de derivación de contraseñas, así
-que el fichero guarda la clave tanto como la guarde su frase; endurecerlo es materia de otro RFC.
+que el fichero guarda la clave tanto como la guarde su frase; endurecerlo es materia de otro RFC. ⚠️ §702: ese RFC es el RFC-0001, y el keystore pasa a `zkssl-keystore/2`, con Argon2id, sal y coste; un `zkssl-keystore/1` se migra al abrirlo con su frase.
 **Reversible** sólo si el SDK dejara de custodiar la clave: entonces la boca necesitaría un
 formato propio, y esa sería otra decisión.
 

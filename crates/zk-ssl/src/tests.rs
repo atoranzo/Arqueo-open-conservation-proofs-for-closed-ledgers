@@ -3613,3 +3613,164 @@ fn un_libro_de_claves_estrechas_rota_sus_custodios_a_claves_anchas() {
         .expect("los custodios de clave ancha emiten en un libro de gobernanza estrecha");
     assert_eq!(layer.balance_of(alice), Some(2000));
 }
+
+// -----------------------------------------------------------------
+// §702 (RFC-0001): el KDF del libro cifrado, con su version
+// -----------------------------------------------------------------
+// Al final del fichero, como los del §701: ninguna cita `tests.rs:linea` se mueve.
+
+/// Lleva un libro cifrado de la version 2 a la 1, como lo habria dejado el codigo de antes del
+/// §702: cada valor sellado se abre con su clave y se vuelve a sellar con la de SHA-256 sin sal,
+/// y la cabecera se borra. Existe porque este codigo ya no ESCRIBE la version 1: la unica forma de
+/// probar aqui que un libro viejo abre es fabricar sus bytes con la regla documentada, como
+/// `v3_snapshot_bytes` en las instantaneas. Un libro escrito por el codigo de `590caae` se abrio
+/// y se migro, fuera del arbol, en el §702.
+fn rebajar_a_v1(path: &str, frase: &str) {
+    use crate::crypto::{Kdf, LedgerKey};
+    use crate::persistence::{CLAVE_KDF, EN_CLARO};
+    let db = sled_open_retry(path);
+    let kdf = Kdf::de_cabecera(&db.get(CLAVE_KDF).unwrap().expect("un libro v2 lleva cabecera"))
+        .expect("cabecera v2");
+    let v2 = LedgerKey::derivar(frase, &kdf).unwrap();
+    let v1 = LedgerKey::derivar(frase, &Kdf::Sha256V1).unwrap();
+    let mut lote = sled::Batch::default();
+    for item in db.iter() {
+        let (k, v) = item.unwrap();
+        if EN_CLARO.contains(&k.as_ref()) {
+            continue;
+        }
+        lote.insert(k, v1.seal(&v2.open(&v).expect("abre con la v2")).unwrap());
+    }
+    lote.remove(CLAVE_KDF);
+    db.apply_batch(lote).unwrap();
+    db.flush().unwrap();
+}
+
+/// Todas las parejas del `sled` del libro, para comparar un antes y un despues.
+fn volcado(path: &str) -> Vec<(Vec<u8>, Vec<u8>)> {
+    let db = sled_open_retry(path);
+    db.iter().map(|i| i.unwrap()).map(|(k, v)| (k.to_vec(), v.to_vec())).collect()
+}
+
+/// **§702: un libro cifrado de la version 1 abre con su frase y queda en la 2.** Antes de
+/// abrirlo no tiene cabecera y sus valores abren con la clave de SHA-256; despues tiene la
+/// cabecera de la version 2, ningun valor sellado abre ya con la clave vieja y todos abren con la
+/// nueva; y se reabre por la version 2 con el mismo saldo.
+#[test]
+fn un_libro_cifrado_de_la_version_1_se_migra_al_abrirlo() {
+    use crate::crypto::{Kdf, LedgerKey};
+    use crate::persistence::{CLAVE_KDF, EN_CLARO};
+    let path = temp_path("kdf_v1_migra");
+    let frase = "la frase del libro";
+    let abrir = |f: &str| {
+        open_encrypted_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            Some(LedgerKey::from_passphrase(f)),
+        )
+    };
+    let alice = {
+        let mut layer = abrir(frase).expect("abrir cifrado");
+        open_and_fund(&mut layer, SK_ALICE, 777_777)
+    };
+    rebajar_a_v1(&path, frase);
+    let v1 = LedgerKey::derivar(frase, &Kdf::Sha256V1).unwrap();
+    {
+        let db = sled_open_retry(&path);
+        assert!(db.get(CLAVE_KDF).unwrap().is_none(), "la v1 no lleva cabecera");
+        assert!(v1.open(&db.get(b"meta:supply").unwrap().unwrap()).is_ok(), "no es la v1");
+    }
+
+    {
+        let layer = abrir(frase).expect("la v1 abre con su frase");
+        assert_eq!(layer.balance_of(alice), Some(777_777));
+    }
+
+    let kdf = {
+        let db = sled_open_retry(&path);
+        let c = db.get(CLAVE_KDF).unwrap().expect("la migracion escribe la cabecera");
+        Kdf::de_cabecera(&c).expect("cabecera v2")
+    };
+    let v2 = LedgerKey::derivar(frase, &kdf).unwrap();
+    let mut sellados = 0;
+    for (k, v) in volcado(&path) {
+        if EN_CLARO.contains(&k.as_slice()) {
+            continue;
+        }
+        let nombre = String::from_utf8_lossy(&k).into_owned();
+        assert!(v1.open(&v).is_err(), "CRITICO: {nombre} sigue sellado con la clave v1");
+        assert!(v2.open(&v).is_ok(), "{nombre} no abre con la clave v2");
+        sellados += 1;
+    }
+    assert!(sellados >= 20, "la migracion tenia que tocar el libro entero: {sellados}");
+
+    let layer = abrir(frase).expect("reabre en la version 2");
+    assert_eq!(layer.balance_of(alice), Some(777_777));
+    drop(layer);
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+/// **§702: con otra frase, un libro de la version 1 no abre y NO SE TOCA**: el `sled` queda
+/// pareja a pareja como estaba, sin cabecera. La migracion solo empieza despues de que `load`
+/// verifique el libro entero con la clave vieja.
+#[test]
+fn un_libro_de_la_version_1_con_otra_frase_no_se_toca() {
+    use crate::crypto::LedgerKey;
+    let path = temp_path("kdf_v1_otra");
+    {
+        let mut layer = open_encrypted_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            Some(LedgerKey::from_passphrase("la buena")),
+        )
+        .expect("abrir cifrado");
+        open_and_fund(&mut layer, SK_ALICE, 1_000);
+    }
+    rebajar_a_v1(&path, "la buena");
+    let antes = volcado(&path);
+    let r = open_encrypted_retry(
+        &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        Some(LedgerKey::from_passphrase("la mala")),
+    );
+    assert!(r.is_err(), "CRITICO: otra frase abrio un libro de la version 1");
+    drop(r);
+    assert_eq!(volcado(&path), antes, "CRITICO: una frase mala toco el libro de la version 1");
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+/// **§702: la cabecera va en claro, cada libro tiene su sal, y sin frase no se abre en claro.**
+/// Dos libros con la misma frase llevan dos sales; la cabecera es la de la version 2, con su
+/// coste; y abrir uno sin clave es `ParameterMismatch` de «cifrado en reposo», no un error de
+/// formato del primer valor sellado.
+#[test]
+fn cada_libro_cifrado_lleva_su_cabecera_y_su_sal() {
+    use crate::crypto::{Kdf, LedgerKey, COSTE_V2};
+    use crate::persistence::CLAVE_KDF;
+    let (a, b) = (temp_path("kdf_sal_a"), temp_path("kdf_sal_b"));
+    for p in [&a, &b] {
+        let layer = open_encrypted_retry(
+            p, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            Some(LedgerKey::from_passphrase("la misma frase")),
+        )
+        .expect("abrir cifrado");
+        drop(layer);
+    }
+    let cabecera = |p: &str| sled_open_retry(p).get(CLAVE_KDF).unwrap().expect("cabecera").to_vec();
+    let (ca, cb) = (cabecera(&a), cabecera(&b));
+    assert_eq!(ca.len(), 29);
+    assert_eq!(ca[0], 2, "version");
+    assert_eq!(ca[1..5], COSTE_V2.m_kib.to_le_bytes());
+    assert_eq!(ca[5..9], COSTE_V2.t.to_le_bytes());
+    assert_eq!(ca[9..13], COSTE_V2.p.to_le_bytes());
+    assert_ne!(ca[13..], cb[13..], "dos libros con la misma sal");
+    assert!(matches!(Kdf::de_cabecera(&ca), Ok(Kdf::Argon2idV2 { .. })));
+
+    let r = open_encrypted_retry(
+        &a, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS, None,
+    );
+    assert!(
+        matches!(r, Err(LayerError::Store(StoreError::ParameterMismatch { what: "cifrado en reposo" }))),
+        "un libro cifrado sin su frase: {:?}",
+        r.err()
+    );
+    let _ = std::fs::remove_dir_all(&a);
+    let _ = std::fs::remove_dir_all(&b);
+}

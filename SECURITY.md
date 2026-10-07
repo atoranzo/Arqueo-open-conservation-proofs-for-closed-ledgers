@@ -672,21 +672,23 @@ conocido: ninguna cifra de este apartado lo es, ningún parámetro se eligió pe
 ese nivel no se ha medido.
 
 **El azar del sistema es un supuesto de confianza.** Lo que tiene que ser impredecible en la
-capa, el SDK y el medio sale del generador aleatorio del sistema operativo, en siete llamadas y
-sin una abstracción común:
+capa, el SDK y el medio sale del generador aleatorio del sistema operativo, en ocho llamadas y
+sin una abstracción común (siete hasta el §702, que añade la sal del KDF de reposo):
 
 - las sales de cada hoja de Merkle y las dos semillas de la ocultación de cada prueba
   (`OsRng`, `crates/zk-ssl-air/src/sal.rs`);
 - la clave de gasto de `Wallet::random` y la sal del pendiente de `random_salt`
   (`rand::thread_rng`, `crates/zk-ssl-sdk/src/lib.rs`);
 - los nonces del cifrado en reposo del libro y del keystore (`OsRng`,
-  `crates/zk-ssl/src/crypto.rs` y `crates/zk-ssl-sdk/src/keystore.rs`);
+  `crates/zk-ssl/src/crypto.rs` y `crates/zk-ssl-sdk/src/keystore.rs`), y la
+  sal del KDF de reposo de los dos (`OsRng`, `Kdf::nuevo` en `crates/zk-ssl/src/crypto.rs`);
 - la aleatoriedad de la firma ML-DSA del medio en su modo con sal (`getrandom`,
   `crates/zk-ssl-medio/src/nota.rs`).
 
 Si ese generador es predecible o se repite, la ocultación no protege el testigo, la clave de
-gasto se puede adivinar y los nonces pueden repetirse. Ningún test lo comprueba, ni puede. Fiat-Shamir
-no usa azar: la moneda sale de lo que la prueba compromete.
+gasto se puede adivinar, los nonces pueden repetirse y dos ficheros cifrados pueden compartir
+sal. Ningún test lo comprueba, ni puede. Fiat-Shamir no usa azar: la moneda sale de lo que la
+prueba compromete.
 
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
@@ -747,11 +749,17 @@ y también trae dos defensas que antes no existían.
   se vuelve detectable campo a campo en vez de silenciosa.
 - **El wallet en reposo** (§199) usa la misma construcción que el ledger
   con **dominio propio**, y un test exige que la clave del ledger **no**
-  abra el keystore. ⚠️ Su KDF es SHA-256, que **no** es una función de
-  derivación de contraseñas: una contraseña débil es forzable. Está
-  documentado en el módulo y el endurecimiento a Argon2 tiene cauce
-  abierto (RFC-0001, `spec/rfc/`) — **no es un descuido, es una deuda con
-  expediente**.
+  abra el keystore. Desde el §702 (RFC-0001) la clave de los dos se deriva
+  con **Argon2id** (RFC 9106: 64 MiB, tres pasadas, cuatro carriles) y una
+  sal de 16 bytes por fichero, guardadas en claro junto a lo cifrado; un
+  keystore `zkssl-keystore/1` o un libro cifrado de antes, abiertos con su
+  frase, se migran a la versión 2. ⚠️ **Corregido en el §702**: hasta
+  entonces este párrafo decía «Su KDF es SHA-256, que **no** es una función
+  de derivación de contraseñas: una contraseña débil es forzable», y lo era:
+  sin sal ni coste, cada intento fuera de línea costaba un SHA-256. Lo que
+  sigue en pie: una contraseña débil sigue siendo débil —el coste encarece
+  cada intento, no reduce los intentos—, y quien tenga el proceso en marcha
+  tiene la clave derivada en memoria.
 
 ---
 

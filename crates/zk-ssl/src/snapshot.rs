@@ -28,10 +28,10 @@
 //! fichero = marca (1 B) + cuerpo
 //!
 //!   marca 0x00   el cuerpo va EN CLARO
-//!   marca 0x01   el cuerpo va SELLADO, con el mismo cifrado autenticado
-//!                que el ledger. Con 0x01 nada de lo de abajo está en el
-//!                fichero a desplazamiento fijo: los desplazamientos son
-//!                DEL CUERPO, una vez abierto el sello.
+//!   marca 0x01   el cuerpo va SELLADO con la clave de la version 1 del KDF (solo se lee, §702)
+//!   marca 0x02   (§702, RFC-0001) 29 B en claro, la cabecera del KDF del libro -version 2,
+//!                coste y sal-, y el cuerpo SELLADO con la clave que deriva. Con 0x01 y 0x02
+//!                los desplazamientos de abajo son DEL CUERPO, una vez abierto el sello.
 //!
 //! cuerpo (desplazamiento desde su byte 0):
 //!
@@ -76,8 +76,8 @@
 //!   coordinación, que es el problema de sistemas distribuidos que este
 //!   proyecto no aborda.
 //! - **Va cifrada si la capa tiene clave**, con el mismo cifrado
-//!   autenticado que el ledger. Sin clave va en claro, y entonces quien
-//!   tenga el fichero **ve todos los saldos**.
+//!   autenticado que el ledger y la cabecera de su KDF (§702). Sin clave va
+//!   en claro, y entonces quien tenga el fichero **ve todos los saldos**.
 //! - **No hay copias incrementales.** Cada instantánea es completa.
 //! - **No lleva los pagos en vuelo.** El formato (v8) no tiene hueco
 //!   para el árbol de pendientes ni su raíz: una copia de un ledger
@@ -153,14 +153,14 @@ fn malformed(what: &str) -> LayerError {
 const LOG_SECCION_V2: u64 = 1 << 63;
 
 const SNAPSHOT_PLAIN: u8 = 0x00;
-/// Marca de instantánea cifrada.
+/// Marca de instantánea cifrada con la clave de la versión 1 del KDF: desde el §702, solo se lee.
 const SNAPSHOT_ENCRYPTED: u8 = 0x01;
 
 impl SovereignLayer {
     /// Importa una instantánea cifrada.
     ///
-    /// Existe aparte porque `import_snapshot` no tiene forma de conocer la
-    /// clave: es una función asociada, no un método.
+    /// Existe aparte porque `import_snapshot` no tiene forma de conocer la clave: es una función
+    /// asociada, no un método. §702: la fija al KDF de la instantánea (`abrir_sellada`, al final).
     pub fn import_snapshot_with_key(
         path: &str,
         key: &crate::crypto::LedgerKey,
@@ -172,7 +172,7 @@ impl SovereignLayer {
             .map_err(io_err)?;
 
         let plano = match buf.first() {
-            Some(&SNAPSHOT_ENCRYPTED) => key.open(&buf[1..]).map_err(LayerError::Store)?,
+            Some(&SNAPSHOT_ENCRYPTED) | Some(&SNAPSHOT_ENCRYPTED_V2) => abrir_sellada(&buf, key)?,
             Some(&SNAPSHOT_PLAIN) => buf[1..].to_vec(),
             _ => {
                 return Err(LayerError::Store(crate::store::StoreError::Malformed(
@@ -268,7 +268,7 @@ impl SovereignLayer {
         // sin adivinar.
         let bytes = match &self.key {
             Some(k) => {
-                let mut v = vec![SNAPSHOT_ENCRYPTED];
+                let mut v = marca_y_cabecera(k);
                 v.extend_from_slice(&k.seal(&out).map_err(LayerError::Store)?);
                 v
             }
@@ -307,7 +307,7 @@ impl SovereignLayer {
         // clave. Una instantanea cifrada exige `import_snapshot_with_key`.
         let buf = match buf.first() {
             Some(&SNAPSHOT_PLAIN) => buf[1..].to_vec(),
-            Some(&SNAPSHOT_ENCRYPTED) => {
+            Some(&SNAPSHOT_ENCRYPTED) | Some(&SNAPSHOT_ENCRYPTED_V2) => {
                 return Err(LayerError::Store(crate::store::StoreError::Malformed(
                     "la instantanea esta cifrada: usa import_snapshot_with_key".into(),
                 )))
@@ -1239,4 +1239,127 @@ mod tests {
         let _ = std::fs::remove_file(&file);
         let _ = std::fs::remove_dir_all(&path);
     }
+
+    // -----------------------------------------------------------------
+    // §702 (RFC-0001): la instantánea cifrada, con la versión de su KDF
+    // -----------------------------------------------------------------
+
+    /// **§702: la instantánea cifrada lleva la cabecera del KDF de su libro y abre con la
+    /// frase.** La marca es 0x02, detrás van los 29 bytes de `meta:kdf` del libro, y con la frase
+    /// se importa sin el libro; con un bit de la sal cambiado, la clave es otra y no abre.
+    #[test]
+    fn la_instantanea_cifrada_lleva_la_cabecera_de_su_libro() {
+        use super::SNAPSHOT_ENCRYPTED_V2;
+        use crate::crypto::{LedgerKey, LARGO_CABECERA};
+        let path = temp_path("snapkdf");
+        let file = temp_file("snapkdf");
+        let frase = "una contrasena larga de prueba";
+        let (alice, cabecera) = {
+            let mut layer = open_encrypted_retry(
+                &path,
+                custodian_root(),
+                governance_root(),
+                LIMIT,
+                MAX_SUPPLY,
+                MAX_ACCOUNTS,
+                Some(LedgerKey::from_passphrase(frase)),
+            )
+            .expect("abrir cifrada");
+            let alice = open_and_fund(&mut layer, SK_ALICE, 250_000);
+            layer.export_snapshot(&file).expect("exportar");
+            let c = layer.db().unwrap().get(crate::persistence::CLAVE_KDF).unwrap().unwrap();
+            (alice, c.to_vec())
+        };
+        let bytes = std::fs::read(&file).expect("leer");
+        assert_eq!(bytes[0], SNAPSHOT_ENCRYPTED_V2, "la marca de la version 2");
+        assert_eq!(bytes[1..1 + LARGO_CABECERA], cabecera[..], "la cabecera del libro");
+        let r = SovereignLayer::import_snapshot_with_key(&file, &LedgerKey::from_passphrase(frase))
+            .expect("importar con la frase");
+        assert_eq!(r.balance_of(alice), Some(250_000));
+
+        let mut otra = bytes.clone();
+        otra[1 + LARGO_CABECERA - 1] ^= 0x01;
+        std::fs::write(&file, &otra).unwrap();
+        assert!(
+            SovereignLayer::import_snapshot_with_key(&file, &LedgerKey::from_passphrase(frase))
+                .is_err(),
+            "CRITICO: una sal cambiada abrio la instantanea"
+        );
+        let _ = std::fs::remove_file(&file);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// **§702: una instantánea cifrada de la versión 1 se sigue importando.** Este código ya no
+    /// la escribe: se fabrica con la regla documentada -marca 0x01 y el cuerpo sellado con la
+    /// clave de SHA-256 sin sal-, como `v3_snapshot_bytes`. Con su frase restaura el estado; con
+    /// otra, no. Una escrita por el código de `590caae` se importó, fuera del árbol, en el §702.
+    #[test]
+    fn una_instantanea_cifrada_de_la_version_1_se_sigue_importando() {
+        use super::{SNAPSHOT_ENCRYPTED, SNAPSHOT_PLAIN};
+        use crate::crypto::{Kdf, LedgerKey};
+        let file = temp_file("snapv1");
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 123_456);
+        layer.export_snapshot(&file).expect("exportar en claro");
+        let claro = std::fs::read(&file).expect("leer");
+        assert_eq!(claro[0], SNAPSHOT_PLAIN);
+        let v1 = LedgerKey::derivar("la frase vieja", &Kdf::Sha256V1).unwrap();
+        let mut viejo = vec![SNAPSHOT_ENCRYPTED];
+        viejo.extend_from_slice(&v1.seal(&claro[1..]).unwrap());
+        std::fs::write(&file, &viejo).unwrap();
+
+        let r = SovereignLayer::import_snapshot_with_key(
+            &file,
+            &LedgerKey::from_passphrase("la frase vieja"),
+        )
+        .expect("la v1 se importa con su frase");
+        assert_eq!(r.balance_of(alice), Some(123_456));
+        assert_eq!(r.state_root(), layer.state_root());
+        assert!(
+            SovereignLayer::import_snapshot_with_key(&file, &LedgerKey::from_passphrase("otra"))
+                .is_err(),
+            "CRITICO: otra frase abrio la instantanea v1"
+        );
+        let _ = std::fs::remove_file(&file);
+    }
+}
+
+// ── §702 (RFC-0001): la instantánea cifrada con la versión 2 del KDF ──
+// Va al final del fichero, detrás de los tests, para que las citas
+// `snapshot.rs:línea` de los documentos que las llevan no se muevan.
+
+/// Marca de instantánea cifrada con la versión 2 del KDF: tras ella, la cabecera del KDF del libro
+/// en claro (29 B) y el cuerpo sellado. Es la que se escribe desde el §702.
+const SNAPSHOT_ENCRYPTED_V2: u8 = 0x02;
+
+/// La marca de una instantánea cifrada con la clave `k` y, con la versión 2, la cabecera del KDF
+/// detrás: la instantánea se abre con la frase, sin el libro. La versión 1 solo se vería aquí si
+/// la clave de la capa no se hubiera migrado, y `open_encrypted` la migra al abrir.
+fn marca_y_cabecera(k: &crate::crypto::LedgerKey) -> Vec<u8> {
+    match k.kdf().and_then(|kdf| kdf.cabecera()) {
+        Some(c) => {
+            let mut v = vec![SNAPSHOT_ENCRYPTED_V2];
+            v.extend_from_slice(&c);
+            v
+        }
+        None => vec![SNAPSHOT_ENCRYPTED],
+    }
+}
+
+/// El cuerpo de una instantánea cifrada -marca 0x01 o 0x02-, con la clave fijada al KDF que dice
+/// su marca: la versión 1 sin cabecera, o la cabecera de la 2. Una cabecera que no es exactamente
+/// la de la versión 2 no se lee, y una sal cambiada deriva otra clave y no abre.
+fn abrir_sellada(buf: &[u8], key: &crate::crypto::LedgerKey) -> Result<Vec<u8>, LayerError> {
+    use crate::crypto::{Kdf, LARGO_CABECERA};
+    let (kdf, cuerpo) = match buf.first() {
+        Some(&SNAPSHOT_ENCRYPTED_V2) => {
+            let fin = 1 + LARGO_CABECERA;
+            if buf.len() < fin {
+                return Err(malformed("instantanea cifrada sin la cabecera del KDF entera"));
+            }
+            (Kdf::de_cabecera(&buf[1..fin]).map_err(LayerError::Store)?, &buf[fin..])
+        }
+        _ => (Kdf::Sha256V1, buf.get(1..).unwrap_or(&[])),
+    };
+    key.fijar(&kdf).and_then(|k| k.open(cuerpo)).map_err(LayerError::Store)
 }

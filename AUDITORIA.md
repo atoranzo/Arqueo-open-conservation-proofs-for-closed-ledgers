@@ -49175,3 +49175,252 @@ verifica pruebas de autoridad.
 
 **Lo que NO cierra.** Nada de la cola: el `BACKLOG.md` no tenía entrada para esto. El corte del tren
 sigue pendiente.
+
+## §702 — RFC-0001: el keystore y el libro cifrado derivan su clave con Argon2id, con sal y coste, y lo que estaba en SHA-256 se migra al abrirlo
+
+El commit que lleva este asiento, sobre `590caae` (el §701). Un solo sello:
+`crates/zk-ssl/src/crypto.rs` gana el KDF de reposo con su versión, `Kdf`, y `LedgerKey` se fija a
+él; `persistence.rs` escribe la cabecera del KDF con cada lote y migra al abrirlo un libro de la
+versión 1; `snapshot.rs` gana la marca `0x02`; `crates/zk-ssl-sdk/src/keystore.rs` pasa a
+`zkssl-keystore/2` y migra el `/1` al abrirlo; `argon2` entra en el manifiesto de la capa clavada
+con `=0.5.3`, y `zeroize` con ella, y `sha2` sale del SDK; dos dominios nuevos en el registro de
+`zk-ssl-hash`; quince tests nuevos; el RFC-0001, que nace PROPUESTO con sus tres etapas construidas,
+con su fila en `spec/README.md` y su número en las cuentas de RFC de `README.md`, `README_EN.md`,
+`RESUMEN_BILINGUE.md` y `RESUMEN_EJECUTIVO.md`; `SECURITY.md`, `ARQUITECTURA.md`, una nota del
+RFC-0008 y dos líneas de ayuda del cli se ponen al día; los contadores; y este asiento. Lo escribe y
+lo comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre: la
+rama llega al §701, y ninguna de las seis ramas del repositorio en `origin` (`git ls-remote`, corrido
+otra vez justo antes del commit, y `git show` del `AUDITORIA.md` de cada una) lleva un §702: `main` y
+la propia rama en `origin` (`claude/cool-brown-4g0hr5`) llegan al §693, y las otras cuatro, al §685,
+§658, §641 y §627. El cable sigue en `zkssl/0.4`: ningún vector, ningún método y ningún AIR se tocan.
+El canon entero no se corrió: sí las suites de los cuatro crates que el sello toca o cuya puerta lee
+el lock, la del nodo, que compila la capa, y las compuertas rápidas (en «Medido»).
+
+**De dónde sale.** El autor aprobó endurecer el KDF de reposo: Argon2id o scrypt, con sal y coste,
+con versión de formato del keystore y del libro cifrado, migración de lo que ya existe, y la
+dependencia clavada sin que el kit la arrastre. Desde el §199 la clave de gasto dormía en el
+keystore del SDK cifrada con `SHA-256(ZK-SSL-keystore-v1 ‖ frase)`, y el libro cifrado de la capa
+con `SHA-256(ZK-SSL-ledger-key-v1 ‖ frase)`: sin sal y sin coste. Estaba declarado —en los dos
+módulos, en `SECURITY.md` §3 como «una deuda con expediente» y en `ARQUITECTURA.md`—, y el número
+estaba reservado desde el §206. Declarado no quiere decir inocuo: quien se lleve un keystore, un
+disco, una copia o una instantánea prueba frases fuera de línea a la velocidad de un hash, y sin sal
+una misma tabla sirve para todos los ficheros.
+
+**Lo que hace.**
+
+1. **El KDF, con su versión** (`crates/zk-ssl/src/crypto.rs`). `Kdf::Sha256V1` es la fórmula de
+   antes, que sólo se lee; `Kdf::Argon2idV2 { sal }` es Argon2id versión `0x13` del RFC 9106 con la
+   frase como `P`, una sal de 16 bytes del generador del sistema como `S`, el dominio de la versión
+   2 como dato asociado `X`, `t` = 3, `m` = 65 536 KiB, `p` = 4 y 32 bytes de salida: la segunda
+   opción recomendada del RFC 9106, la que argon2-cffi 25.1.0 llama `RFC_9106_LOW_MEMORY`. El coste
+   es uno por versión, `COSTE_V2`: un fichero de la versión 2 con otro coste no se lee, aunque sea
+   mayor. La cabecera tiene 29 bytes —versión, `m_kib`, `t` y `p` en `u32` LE, y la sal— y un solo
+   lector, `Kdf::de_cabecera`, que rechaza otro largo, otra versión u otro coste diciendo cuál. La
+   memoria de Argon2id la reserva `Kdf::clave` en un `Zeroizing<Vec<Block>>` y se borra al soltarse;
+   la clave derivada, también. `LedgerKey::from_passphrase` guarda la frase, que se borra al
+   soltarse, y ya no deriva nada: la clave se fija con `fijar` o `derivar` al KDF del contenedor, y
+   sin fijar, `seal` y `open` fallan. `Dominios` y `DOMINIOS_LIBRO` dan a cada uso los suyos; los de
+   la versión 2, `ZK-SSL-ledger-key-v2` y `ZK-SSL-keystore-v2`, entran en el registro de dominios.
+2. **El libro** (`persistence.rs`). `open_encrypted` fija la clave con `abrir_con_su_kdf`: con
+   `meta:kdf`, a su KDF; sin ella y con datos, a la versión 1; sin datos, a una versión 2 de sal
+   nueva. Un libro con `meta:kdf` abierto sin clave es `ParameterMismatch` de «cifrado en reposo».
+   `commit` escribe `meta:kdf` en claro en cada lote, con lo que sella. Un libro de la versión 1 lo
+   verifica `load` entero con la clave vieja, y después `migrar_a_kdf_v2` abre cada valor sellado
+   con ella, lo vuelve a sellar con una clave de la versión 2 y escribe la cabecera, todo en un lote
+   de sled. Van en claro sólo `meta:geometry_v7`, `meta:migrated` y `meta:kdf` (`EN_CLARO`); un
+   valor que no abre con la clave vieja para la migración sin escribir nada y la nombra. El código
+   nuevo va al final del fichero y lo de arriba cambia en su sitio: de las 916 primeras líneas
+   cambian siete (41-44, 62, 94 y 98) y ninguna se mueve, así que las citas `persistence.rs:línea`
+   de `doc/ecst/VERIFICACION.md` (20, 586-590), `doc/ecst/ECST.md` (839-841), `doc/blueprint-v2.md`,
+   `spec/RPC.md`, el RFC-0006 y el `BACKLOG.md` dan en la misma línea que en `590caae`.
+3. **La instantánea** (`snapshot.rs`). Con la clave de la versión 2, `export_snapshot` escribe la
+   marca `0x02`, la cabecera del libro y el cuerpo sellado: se abre con la frase, sin el libro.
+   `import_snapshot_with_key` fija la clave al KDF de la marca, y la `0x01` se sigue importando. Las
+   dos ayudas y la constante nueva van detrás de los tests, y las citas a `snapshot.rs` no se
+   mueven.
+4. **El keystore** (`crates/zk-ssl-sdk/src/keystore.rs`). `zkssl-keystore/2` lleva
+   `kdf: "argon2id"`, `kdf_sal` y `kdf_coste` en claro; el keystore recompone con ellos la cabecera
+   y la lee `Kdf::de_cabecera`, el mismo juez que el libro. `save` escribe siempre la versión 2 con
+   sal nueva, en un fichero al lado que se renombra encima (`escribir_entero`; en Unix, con 0600 y
+   con el directorio sincronizado después del rename, que es donde vive el nombre). `load` lee las
+   dos versiones, y un `zkssl-keystore/1` abierto con su frase lo reescribe en la 2 antes de
+   devolver el wallet; si no puede, falla y lo dice. Con otra frase no lo toca. El SDK deriva por
+   `Kdf` y deja de declarar `sha2`.
+5. **La dependencia.**
+   `argon2 = { version = "=0.5.3", default-features = false, features = ["zeroize"] }` en
+   `crates/zk-ssl/Cargo.toml`, y en ningún otro manifiesto; `zeroize = "1"` al lado. El lock gana
+   dos paquetes, `argon2` 0.5.3 y `base64ct` 1.8.3, y tres aristas cambian: `zk-ssl` gana `argon2`
+   y `zeroize`, y `zk-ssl-sdk` pierde `sha2`. Ninguna arista de un paquete que ya estuviera se
+   mueve. Por qué no la 0.6.0, la última, en «Medido».
+6. **Quince tests.** En `crypto.rs`, cinco: el vector de Argon2id del RFC 9106 con el crate clavado,
+   los KAT de la clave del libro en las dos versiones, la cabecera, la sal de cada libro con la
+   clave sin fijar, y `argon2_entra_clavada_y_solo_por_la_capa`, que lee el lock y los 22
+   manifiestos. En `tests.rs`, al final como los del §701, tres: el libro de la versión 1 que se
+   migra al abrirlo, el que con otra frase queda pareja a pareja como estaba, y la cabecera y la sal
+   de cada libro con el libro cifrado que no se abre sin clave. En `snapshot.rs`, dos: la
+   instantánea con la cabecera de su libro, y la de la versión 1 que se sigue importando. En el
+   keystore, cinco: lo que se escribe, el keystore v1 escrito por el código de `590caae` que abre y
+   queda migrado, el v1 con otra frase que no se toca, lo que declara la versión 2 —otro coste, otro
+   KDF, otra sal— y los KAT de la clave del keystore. Los seis tests de `crypto.rs` que había fijan
+   su clave, y `la_clave_del_ledger_no_abre_el_keystore` se reescribe: con una `LedgerKey` sin fijar
+   habría pasado sin probar nada, y ahora prueba las dos versiones, la 2 con la misma sal y el mismo
+   coste del keystore, y con su testigo de vida.
+7. **El RFC-0001**, `spec/rfc/0001-el-kdf-de-reposo.md`, PROPUESTO con E1, E2 y E3 construidas: el
+   diseño, las cinco decisiones tomadas en la sesión dentro de lo que el autor aprobó (D-A a D-E,
+   reversibles mientras no esté ACEPTADO), la compatibilidad —hacia atrás sí, hacia delante no— y lo
+   que no cambia. `spec/README.md` gana su fila y el párrafo de la reserva dice que se ocupó; las
+   cuentas de RFC de cuatro resúmenes ganan el 0001 entre los propuestos, que es lo que
+   `check_publicadas` exige.
+8. **La prosa.** `SECURITY.md` §3, «El wallet en reposo», con un «⚠️ Corregido en el §702» que cita
+   lo que decía; `SECURITY.md` §3.11, ocho llamadas al generador del sistema en vez de siete, con la
+   sal; `ARQUITECTURA.md`, las cuatro líneas de la derivación, en cuatro líneas; el RFC-0008, en
+   D-BC, una frase al final de la misma línea que remite al RFC-0001; y la ayuda de `--keystore` en
+   `zk-ssl-cli simulate` y `zk-ssl-cli prueba-prenda`, con la versión 2.
+9. **Lo que corrigió su revisión.** La primera pasada contaba seis ramas en `origin` y nombraba
+   cinco: faltaba la propia, que llega al §693 como `main`. `escribir_entero` renombraba sin
+   sincronizar el directorio, y tras un corte de corriente el nombre podía volver al keystore
+   anterior después de un `save` que había dicho que sí: ahora lo sincroniza en Unix, y el módulo y
+   el RFC dicen qué deja un proceso que muere antes del rename. Ni el RFC ni este asiento decían que
+   un keystore v1 que no se puede reescribir ya no se abre: ahora lo dicen el RFC, en
+   «Compatibilidad», la documentación de `load` y «Lo que NO hace». El RFC nombraba el modelo sin la
+   versión que pide la plantilla, y daba la cifra de OWASP sin haber leído la hoja: ahora nombra
+   `claude-opus-5-5`, y la hoja se leyó de su fuente (en «Medido»). La suite del nodo, que la
+   primera pasada no corrió, se corrió, y las del SDK y el cli, otra vez. Lo que la revisión dejaba a
+   elección, una marca de corrección en los dos ECST, no se pone (en «Lo que NO hace»).
+
+**Medido.**
+
+- **La 0.6.0 movía la clausura del kit.** En el árbol de `590caae` copiado fuera (`git archive`),
+  con `argon2` añadida al manifiesto de la capa y `cargo metadata` sobre su lock: `argon2` 0.6.0 sin
+  features por defecto entra con cuatro paquetes —`argon2`, `base64ct` 1.8.3, `blake2` 0.11.0 y
+  `block-buffer` 0.12.1— y añade a `digest` 0.11.3 las aristas `block-buffer 0.12.1` y `ctutils`;
+  con la feature `alloc` —medido antes en el clon, y deshecho—, seis, con `password-hash` 0.6.1 y
+  `phc` 0.6.1, que no se compilan (la feature es `password-hash?/alloc`). Una réplica en Python de
+  `clausura_del_lock` sobre los cuatro locks: el de `590caae` da 103 paquetes y casa con
+  `CLAUSURA_DEL_KIT`; el de la 0.6.0, 104, y entra `block-buffer 0.12.1 crates.io`; el de la 0.5.3 y
+  el de este sello, 103, sin nada que entre ni salga. Y el test de verdad, en la suite del kit,
+  verde con la lista sin tocar.
+- **Los KAT, fuera de Rust.** La implementación de referencia en C —la de P-H-C/phc-winner-argon2,
+  en el commit `f57e61e` que lleva dentro argon2-cffi-bindings 26.1.0, instalado en un entorno
+  virtual fuera del árbol— reproduce la etiqueta del RFC 9106 §5.3 (`0d640df5…6b01e659`), la misma
+  que la línea 12304 de `kats/argon2id` de P-H-C/phc-winner-argon2 y que el test con el crate
+  clavado; con el dominio como dato asociado, da `a74cb56e…b8a33c68` para el libro y
+  `edf21e3f…2d3794df` para el keystore, frase `la frase del KAT` y sal `00 01 … 0f`. Las de la
+  versión 1 son `hashlib.sha256`. Los cuatro valores están en los tests, enteros.
+- **La hoja de OWASP.** El proxy rechaza cheatsheetseries.owasp.org, como rfc-editor.org e
+  ietf.org. Se leyó de su fuente, el Markdown de `cheatsheets/Password_Storage_Cheat_Sheet` en
+  `OWASP/CheatSheetSeries`, en el commit `29994dd` (la cabeza de `master` que dio `git ls-remote`),
+  con sha256 `3869a8bf…943a9323`. Su resumen pide Argon2id «with a minimum configuration of 19 MiB
+  of memory, an iteration count of 2, and 1 degree of parallelism», y scrypt sólo «if Argon2id is not
+  available»: lo que dicen el RFC y su D-A. El texto del RFC 9106 sigue sin leerse.
+- **El coste.** Un banco fuera del árbol, con `argon2` =0.5.3 y el mismo camino que `Kdf::clave`: la
+  versión 2, siete derivaciones, mediana 426,7 ms (414,2 a 448,9); la versión 1, un millón de
+  derivaciones con `sha2`, 159 ns cada una. La máquina estaba compartida: `uptime` daba una carga de
+  20,64 en el último minuto, sobre cuatro CPU.
+- **Lo que escribió `590caae`.** Con el árbol de `590caae` copiado fuera (`git archive`) y dos
+  ejemplos que no entran en el sello, se escribieron un keystore `zkssl-keystore/1` —el de
+  `Wallet::from_elements([1, 2, 3, 4])`, que va literal en un test—, un libro cifrado con dos
+  cuentas financiadas y su instantánea cifrada. Con el código de este sello, desde un ejemplo
+  temporal que no entra en el sello: el libro, 27 claves y sin `meta:kdf`, con otra frase no abre
+  —«LEDGER CORRUPTO: la raiz reconstruida de 'dato cifrado: contrasena incorrecta o manipulacion'…»,
+  el texto de siempre— y sigue sin cabecera; con la suya abre con los dos saldos (777.777 y
+  123.456), el suministro de 901.233 y la raíz de estado que imprimió `590caae`, y después lleva la
+  cabecera de la versión 2 y la clave de la versión 1 ya no abre `meta:supply`. La instantánea,
+  marca `0x01`, se importa con la frase con la misma raíz y el mismo saldo, y con otra frase no. El
+  keystore es el que prueba `un_keystore_v1_de_590caae_se_abre_y_queda_migrado`.
+- **Las suites**, con `--release --locked` y `CARGO_TARGET_DIR` del clon, compilación incluida y la
+  máquina compartida (cargas de 23 a 30 en el último minuto): `zk-ssl-sdk`, 20 pasan, 0 ignorados, 0
+  warnings, en 487 s; `zk-ssl`, 446, 7 y 0, en 2217 s, de ellos 1424,73 de tests; `zk-ssl-verify`,
+  182, 0 y 0, en 118 s, con `la_clausura_del_kit_no_lleva_el_probador` y
+  `las_fijaciones_son_exactas` verdes; `zk-ssl-cli`, 139, 0 y 0, en 721 s, con su puerta de clausura
+  y los cinco tests que escriben o abren un keystore. Las de la capa y el SDK se volvieron a correr
+  sobre el árbol final, después de las sondas: `zk-ssl-sdk`, 20, 0 y 0, en 302 s; `zk-ssl`, 446, 7 y
+  0, en 2052 s, de ellos 1475,75 de tests. Después de la revisión, sobre el árbol de este commit y
+  con cargas de 19 a 25: `zk-ssl-node`, que compila la capa y no abre libros cifrados, 195, 0 y 0
+  —lo que pide su fila del canon—, en 696 s, de ellos 196,91 de tests; `zk-ssl-sdk`, con
+  `escribir_entero` corregido, 20, 0 y 0, en 64 s, de ellos 13,56 de tests, lejos de los 300 s de su
+  fila; y `zk-ssl-cli`, 139, 0 y 0, en 336 s, de ellos 31,89 de tests. Los diez tests nuevos de la
+  capa, solos y con su binario ya compilado, tardan 14,38 s con una carga de 23,8.
+- **El keystore, después de la revisión**, con un ejemplo temporal del SDK que no entra en el sello
+  y se borró después. `save` y `load` sobre una ruta sin directorio (`w.json`, desde el directorio
+  actual) guardan y abren, con 0600 y sin un `.escribiendo-` al lado. `strace` de la migración de la
+  foto v1 da el orden: el fichero de al lado con `O_EXCL` y 0600, su `fsync`, el `rename` y el
+  `fsync` del directorio. La misma foto v1 en un directorio de modo 555, abierta por un proceso sin
+  capacidades (`setpriv --bounding-set=-all`, para que root no se salte los permisos): con su frase,
+  «keystore zkssl-keystore/1 abierto, pero no se pudo migrar a zkssl-keystore/2: Permission denied
+  (os error 13)»; con otra, «contrasena incorrecta o fichero manipulado»; y el fichero, con el mismo
+  sha256 antes y después. Copiada a un directorio escribible, abre con su frase, con el wallet de la
+  foto, y queda en la versión 2.
+- **Las citas.** `persistence.rs` y `snapshot.rs`, línea a línea contra `590caae` (`diff`): en el
+  primero cambian en su sitio las líneas 41-44, 62, 94 y 98, y lo nuevo empieza en la 917; en el
+  segundo, la 31-34, 79-80, 156, 162-163, 175, 271 y 310, y lo nuevo empieza en la 1242. Cada línea
+  citada como `persistence.rs:línea` o `snapshot.rs:línea` fuera de `AUDITORIA.md` —19 y 4 números
+  distintos— es la misma que en `590caae`. `crypto.rs` y `keystore.rs` se reescriben en lo que esas
+  citas decían, y dos citas de `doc/ecst/VERIFICACION.md` ya no dan en su línea: `keystore.rs:27`,
+  el `use` de `comprobar_permisos`, está en la 34, y `crypto.rs:103-113`, `seal`, en la 322-332. El
+  documento dice que sus rutas son del árbol en 71c5aad y que envejecen; no se tocan.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 1861 declarados,
+  ninguno anidado; `check_modulos`, 204 ficheros, todos declarados; `check_vectores`, 477 vectores y
+  925 líneas con su huella, ninguno tocado; `check_cifras`, 26 cifras de tests y ninguna contradice
+  el canon; `check_dominios`, 12 cadenas `ZK-SSL-` de bytes, las dos nuevas en el registro;
+  `check_publicadas`, que antes de poner el 0001 en las cuatro cuentas de RFC salió ROJO con cinco
+  sitios («el RFC-0001 no esta en la cuenta»); y las otras del bucle «2 ter» —`verificar_citas`,
+  `check_figures`, `check_columns`, `check_constraint_layout`, `check_nucleo` y `check_techo`—. Las
+  doce salen con 0. Después de la revisión, sobre el texto final, otra vez las doce, y
+  `check_vectores --desde` la base en `origin/main`: salen con 0 y las mismas cuentas.
+  `verificar_citas` salió antes ROJO una vez («FALTA Password_Storage_Cheat_Sheet», con su
+  extensión `.md`): la hoja de OWASP iba citada por su nombre de fichero, que no está en el árbol, y
+  ahora se nombra sin la extensión.
+
+**Probado.** Los quince tests, y cinco sondas con el código mutado y restaurado después con el mismo
+sha256: en el SDK, un `load` que no migra hace caer
+`un_keystore_v1_de_590caae_se_abre_y_queda_migrado` («abrir la v1 no la migro»), y un lector que
+toma el coste de la constante en vez del fichero, `un_v2_con_otro_kdf_otro_coste_u_otra_sal_no_abre`
+(«CRITICO: abrio un keystore cambiado (coste del KDF)»); en la capa, un `cargar_y_migrar` que no
+migra hace caer `un_libro_cifrado_de_la_version_1_se_migra_al_abrirlo` («la migracion escribe la
+cabecera»), un `de_cabecera` que no mira el coste,
+`la_cabecera_va_y_vuelve_y_rechaza_lo_que_no_es_v2`, y una instantánea que se marca `0x01` sin
+cabecera, `la_instantanea_cifrada_lleva_la_cabecera_de_su_libro` («la marca de la version 2»). Cada
+sonda cae en su test, y los demás tests del keystore siguen verdes con las dos del SDK.
+
+**Contadores.** `zk-ssl` 436 -> 446 y `zk-ssl-sdk` 15 -> 20. TOTAL DE SELLO 1687 -> 1702 y TOTAL CON
+LARGOS 1824 -> 1839, en los tres párrafos ancla —`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`—, con
+el desglose de la capa en 446 en `PRINCIPIOS.md`. La cifra de la capa pasa de 436 a 446 también en
+`ARQUITECTURA.md` (dos líneas), otra línea de `PRINCIPIOS.md`, los bloques de reproducción de
+`PAPER.md` y `PAPER_EN.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y
+`doc/ecst/VERIFICACION.md`; y en las filas de `zk-ssl` y `zk-ssl-sdk` del canon. La cuenta de
+`check_tests` pasa de 1846 a 1861. Las «1364 declaradas» y las «1349 declared» no se tocan, como en
+los sellos anteriores (5.A-319). El `BACKLOG.md` sigue en 45 abiertas y 73 resueltas: ninguna
+entrada llevaba esto.
+
+**Lo que NO hace.** No toca el cable: ni la versión, ni un método, ni un vector, y los KAT del KDF
+viven en los tests y en el RFC, no en `spec/vectors/`, porque el reposo no cruza el cable. No hace
+fuerte una frase débil: el coste encarece cada intento, no los evita, y ningún lector rechaza una
+frase por corta o por común. No da un mando para migrar ni para elegir el coste: la migración es
+abrir, y el coste es el de la versión. No tiene vuelta: un keystore o un libro migrados no los abre
+el código anterior (en el RFC, «Compatibilidad»). No cambia que el nodo abra su `sled` sin cifrar
+(`SovereignLayer::open`, `crates/zk-ssl-node/src/main.rs:2173`): el libro cifrado lo usa la capa
+como biblioteca. No cambia que `import_snapshot_with_key` escriba el cuerpo descifrado en un
+temporal al lado de la instantánea mientras la importa (`snapshot.rs`, `{path}.tmp-descifrada`). No
+adopta `argon2` 0.6.0: hacerlo exige editar `CLAUSURA_DEL_KIT` por `block-buffer` 0.12.1, en el
+sello que lo haga. No audita `argon2` 0.5.3: el vector del RFC 9106 y los KAT de la implementación
+de referencia comprueban la salida, no el código. No reescribe `doc/ecst/ECST.md` §6.1 ni
+`ECST_EN.md`, que siguen diciendo que la derivación del keystore es SHA-256 y citan
+`keystore.rs:5-13`, ni les pone una marca de corrección: son documentos de su árbol, 71c5aad, su
+aceptación está pendiente y, como en el §622 y el §696, dicen lo que era verdad en su base. Tampoco
+toca las notas de numeración de los RFC-0002 a 0006, que dicen que el 0001 está reservado: lo
+estaba en su fecha, y `spec/README.md` dice ahora que se ocupó. No abre un keystore v1 donde no se
+puede escribir: abrir es migrar (D-D), y en un medio de sólo lectura o en un directorio sin permiso
+de escritura `load` falla con cualquier frase, cuando antes lo abría; se copia a un directorio
+escribible y se abre allí, y una lectura sin migrar sería otra decisión, del autor. No limpia el
+`<keystore>.escribiendo-<pid>` que deja un proceso muerto entre crear el fichero de al lado y
+renombrarlo: lleva 0600 y la clave de gasto cifrada como el keystore nuevo, se puede borrar, y sólo
+lo quita otra escritura del mismo fichero con el mismo pid. No corre el canon entero: con la
+máquina compartida, los tests de la capa tardaron 1475,75 s —los diez nuevos, solos, 14,38 s—, y
+su fila del canon tiene un timeout de 600 s que este sello no ha medido en una máquina libre.
+Tampoco corre los bancos —`tools/banco_prenda.sh` escribe y abre un keystore—. Y no pasa el
+RFC-0001 a ACEPTADO.
+
+**Lo que NO cierra.** Nada de la cola: el `BACKLOG.md` no tenía entrada para esto. El RFC-0001 sigue
+PROPUESTO: aceptarlo es del autor.

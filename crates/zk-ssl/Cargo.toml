@@ -38,7 +38,26 @@ sled = "0.34"
 chacha20poly1305 = "0.10"
 # Derivacion de clave desde contrasena. Sin esto habria que exigir al
 # operador una clave de 32 bytes en hexadecimal.
+# §702 (RFC-0001): desde aqui SOLO para LEER la version 1 -SHA-256 sin sal ni
+# coste- y migrarla; lo que se escribe deriva con Argon2id, abajo.
 sha2 = "0.10"
+# §702 (RFC-0001): el KDF de reposo, Argon2id (RFC 9106) con sal y coste, para
+# el libro cifrado y, por `crypto::Kdf`, para el keystore del SDK: una sola
+# ley de reposo. De RustCrypto, clavada con `=`, y solo con `zeroize`: sin el
+# formato PHC (`password-hash`) ni `alloc`, que lo arrastra; la sal sale del
+# mismo `OsRng` que el nonce, y la memoria la reserva `crypto.rs`, que la
+# borra al soltarla (la de `alloc` se devuelve sin borrar). La 0.5.3, no la
+# 0.6.0 -la ultima, del 27-08-2026-: MEDIDO en el lock, la 0.6.0 entra con
+# cuatro paquetes y mueve las aristas de `digest` 0.11.3, que esta en la lista
+# cerrada del kit, asi que el kit ganaria `block-buffer` 0.12.1 sin compilar
+# argon2; la 0.5.3 entra con dos, `argon2` y `base64ct`, y no mueve ninguna
+# arista de un paquete que ya estuviera. La clausura del kit no cambia (lo
+# comprueba `la_clausura_del_kit_no_lleva_el_probador`, con su lista sin
+# tocar), y que solo la capa la declare, `argon2_entra_clavada_y_solo_por_la_capa`.
+argon2 = { version = "=0.5.3", default-features = false, features = ["zeroize"] }
+# §702: la frase y la clave derivada se borran al soltarse. Ya estaba en el
+# lock (la declaran el nodo y el cli, y la trae `argon2`).
+zeroize = "1"
 
 [features]
 # Expone `tests_support` como sandbox para herramientas (zk-ssl-cli/node).

@@ -32,7 +32,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # Keystore del wallet: la MISMA construccion de reposo que la capa
 # (zk-ssl::crypto), con dominio propio. Ver src/keystore.rs.
+# §702 (RFC-0001): la clave la deriva `zk_ssl::crypto::Kdf` -Argon2id, y
+# SHA-256 solo para leer la version 1-, asi que `sha2` sale de aqui: el SDK no
+# deriva nada por su cuenta. El cifrado autenticado sigue siendo este.
 chacha20poly1305 = "0.10"
-sha2 = "0.10"
 rand = { workspace = true }
 anyhow = "1"

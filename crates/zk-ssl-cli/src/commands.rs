@@ -97,7 +97,7 @@ pub struct SimulateArgs {
     #[arg(long, requires = "v2")]
     credencial_pagador: Option<String>,
 
-    /// Escribe el KEYSTORE del receptor -`zkssl-keystore/1`, el del SDK- cifrado con la frase de
+    /// Escribe el KEYSTORE del receptor -`zkssl-keystore/2` (§702), el del SDK- cifrado con la frase de
     /// `--frase-fichero`: el QUINTO fichero de la siembra, y el UNICO con material de GASTO.
     ///
     /// Es lo que la boca del prendador exige (`prueba-prenda`, RFC-0008 D-BC), y sale de la MISMA
