@@ -12,11 +12,16 @@ per change.
 An operator keeps a ledger. The people who depend on it — members, holders, beneficiaries,
 counterparties — cannot see it, and the two sides do not trust each other. Today that conflict is
 settled by a third party who opens the ledger: an auditor, a supervisor, a court; once a year; by
-sample. Arqueo replaces the opening of the ledger with a **proof that the ledger did what its rules
-say**, which anyone checks **without the ledger, offline, and without trusting the author**. It fits
-wherever the unit of account is **born and dies inside the ledger**: issued by the operator, moved
-between accounts, retired by the operator. It proves **conservation, not solvency**: the proofs
-speak of the ledger, not of the world.
+sample. Arqueo replaces the opening of the ledger with **proofs that the ledger did what its rules
+say**. Part of it anyone checks **without the ledger, offline, and without trusting the author**:
+history, inclusion with a receipt, single use of a label, cut-off and completeness and, for the
+causes the rejection envelope covers, the cause of a refusal. Part of it, today, only the node
+checks: the **conservation** and the **authorship** of each payment travel inside its proof, and
+that proof is verified by the node before it applies the payment, not by the third party's
+verifier (rows 1 and 5 of [What it guarantees and what it does
+not](#what-it-guarantees-and-what-it-does-not)). It fits wherever the unit of account is **born and
+dies inside the ledger**: issued by the operator, moved between accounts, retired by the operator.
+It proves **conservation, not solvency**: the proofs speak of the ledger, not of the world.
 
 ---
 
@@ -26,11 +31,18 @@ speak of the ledger, not of the world.
   generated on the payer's machine — no trusted setup, no curves —; a **signed epoch head** with a
   hash-based signature (XMSS) that the node publishes; witnesses that **co-sign** it; and an
   **evidence package** that an independent verifier checks **with the node off**.
-- **What a third party can check today, measured.** Conservation (supply = balances + in flight,
-  also on reopening); single use of a label inside a ledger and **detection** of the same label in
-  two ledgers; unrewritable history with an extension proof; inclusion with a receipt; authorship
-  without the key travelling. The table in [What it guarantees and what it does
+- **What a third party can check today, measured.** Single use of a label inside a ledger and
+  **detection** of the same label in two ledgers; unrewritable history with an extension proof;
+  inclusion with a receipt. The table in [What it guarantees and what it does
   not](#what-it-guarantees-and-what-it-does-not) gives the source of every row.
+- **What the node checks, and a third party does not yet.** The conservation of each transition
+  — on a send and a claim, the balance changes by exactly the amount and the supply does not
+  change; on a burn, both drop by the amount — and authorship — only the holder of a key moves its
+  account — are enforced in circuit by the send, claim and burn proofs; the aggregate (supply =
+  balances + in flight) is checked by the layer on reopening the ledger. The node verifies each of
+  those proofs before it applies the transition, and the log keeps only their digest: the third
+  party's verifier does not verify them again, nor the issuance and refund ones. Of the supply, a
+  third party sees the one the head signs; of authorship, the pledge's.
 - **What it is not.** Not a chain: one node, one writer, no distributed consensus, no token. **The
   operator sees every balance** and can omit an operation: without a trace if it issues no
   receipt; if it issued one, the completeness envelope names it (RFC-0010). Across ledgers it
@@ -139,11 +151,11 @@ The same table, with the use cases, is [`doc/USE_CASES.md`](./doc/USE_CASES.md).
 
 | # | property | what a third party checks | status |
 |---|---|---|---|
-| 1 | Conservation | supply = balances + in flight; nothing created or lost between epochs | measured, in flight and on reopening (`AUDITORIA.md` §387–§394) |
+| 1 | Conservation | the supply the head signs (since v5) and, for a rejection by cap, that the head's supply plus the amount exceeds the committed cap (`spec/PAQUETE.md`, 2.6); **not** that supply = balances + in flight | measured **in the node**: in circuit, on every send, claim and burn, and the aggregate in the layer on reopening (`AUDITORIA.md` §379; the roots, §387, §388, §391 and §392); **without the node, no**: the kit verifies no transition proof — nor the issuance and refund ones —, and the log does not keep them |
 | 2 | No double use | a label is consumed once in a ledger and published in its signed head; the same label in two ledgers is detected from both | measured (RFC-0006; `doc/KIT_EN.md`) |
 | 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md`, `zkssl_consistencyProof`) |
 | 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
-| 5 | Authorship without the key travelling | only the holder of a key moves its account; the operator cannot | measured (`spec/RPC.md`, the API principle) |
+| 5 | Authorship without the key travelling | of the pledge, that whoever holds the key produced it (`spec/PAQUETE.md`, 2.10); **not** that only the holder of a key moves its account | measured **in the node**: in circuit (`C_PK_CHECK`), on every send, claim and burn; **without the node, only the pledge**. That the key does not travel: `spec/RPC.md`, the API principle |
 | 6 | Cut-off and completeness | nothing stays in flight past its time; every operation the node receives ends applied, rejected with proof or declared, or a named red says it did not | measured (RFC-0010; `spec/PAQUETE.md`, 2.11; the empty box, RFC-0007 E4) |
 | 7 | Rejection with cause | a refusal carries the rule that produced it | measured (RFC-0007; which causes are proven without the node: `spec/PAQUETE.md`, 2.6) |
 
@@ -157,6 +169,9 @@ batch and the pledge carry one since §611, and the completeness envelope resolv
 
 **What none of this claims:**
 
+- That a third party checks, without the node, the conservation or the authorship of a payment:
+  the send, claim and burn proofs are verified by the node, the log keeps only their digest, and
+  no method of the wire protocol serves them (rows 1 and 5).
 - Privacy against the operator: the operator sees everything.
 - That the ledger's units exist outside the ledger.
 - That an operation the node never acknowledged would be detected: an operator that issues no
@@ -169,6 +184,16 @@ batch and the pledge carry one since §611, and the completeness envelope resolv
 
 ⚠️ **Corrected in §581**: until then row 6 read «partly» and this list also said «censorship
 leaves no trace» and «Row 6 whole: the completeness of acknowledgements does not exist yet».
+
+⚠️ **Corrected in §696**: until then row 1 said that a third party checks «supply = balances + in
+flight; nothing created or lost between epochs», «measured, in flight and on reopening»; row 5,
+«only the holder of a key moves its account; the operator cannot», «measured»; the opening
+paragraph, «a proof that the ledger did what its rules say, which anyone checks without the
+ledger, offline, and without trusting the author», with no exception; and «Read this first»
+counted conservation and authorship among what a third party can check today. §379 and §387–§394
+are checks by the node, not by a third party. The title does not change in that entry:
+whether it is reworded, or the path that would make conservation checkable by a third party is
+built, is the author's decision (`BACKLOG.md`, entry 115).
 
 **What is missing, in order of importance:** distributed consensus (without it the operator sees
 the balances and can censor; the alternative this project does pursue — provable accountability,

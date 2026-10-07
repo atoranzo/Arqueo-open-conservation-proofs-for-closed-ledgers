@@ -4,7 +4,8 @@ This page maps what the engine proves to the situations where that proof is
 worth having. It adds no claim that the tree does not already make: every
 "measured" row below points to the file that carries it, and every domain not
 reviewed in the project's documents is marked as a candidate. Verified against
-`main` at commit `da6a768` (§589; before it, `dca287b`).
+`main` at commit `da6a768` (§589; before it, `dca287b`); rows 1 and 5, and what
+hangs on them, corrected in §696 against the tree at `1a9de32`.
 
 ## The shape of the problem
 
@@ -24,11 +25,11 @@ of the world (`SECURITY.md`, the oracle limit).
 
 | # | property | what a third party learns | status |
 |---|---|---|---|
-| 1 | Conservation | supply = balances + in flight; nothing created or lost between epochs | measured, in flight and on reopening (`AUDITORIA.md` §387–§394) |
+| 1 | Conservation | the supply the head signs (since v5) and, for a rejection by cap, that the head's supply plus the amount exceeds the committed cap (`spec/PAQUETE.md`, 2.6); **not** that supply = balances + in flight | measured **in the node**: in circuit, on every send, claim and burn, and the aggregate in the layer on reopening (`AUDITORIA.md` §379; the roots, §387, §388, §391 and §392); **without the node, no**: the checker verifies no transition proof — nor the issuance and refund ones —, and the log does not keep them |
 | 2 | No double use | a label is consumed once in a ledger and published in its signed head; the same label in two ledgers is detected from both | measured (RFC-0006; `doc/KIT.md`) |
 | 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md:785-812`, `zkssl_consistencyProof`) |
 | 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md:568-739`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
-| 5 | Authorship without the key travelling | only the holder of a key moves its account; the operator cannot | measured (`spec/RPC.md:50-61`, the API principle) |
+| 5 | Authorship without the key travelling | of the pledge, that whoever holds the key produced it (`spec/PAQUETE.md`, 2.10); **not** that only the holder of a key moves its account | measured **in the node**: in circuit (`C_PK_CHECK`), on every send, claim and burn; **without the node, only the pledge**. That the key does not travel: `spec/RPC.md` §«Principio que el API preserva» |
 | 6 | Cut-off and completeness | nothing stays in flight past its time; every operation the node receives ends applied, rejected with proof or declared, or a named red says it did not | measured (RFC-0010; `spec/PAQUETE.md`, 2.11; the empty box, RFC-0007 E4) |
 | 7 | Rejection with cause | a refusal carries the rule that produced it | measured (RFC-0007; `spec/PAQUETE.md`, 2.6) |
 
@@ -43,6 +44,28 @@ completeness envelope resolves them since §613 (RFC-0014). Row 7 proves that th
 commits; not that the rule is fair, and its binding to one received operation
 is the node's word in its error data (RFC-0010, D3).
 
+Rows 1 and 5 are proved, transition by transition, inside each payment: the
+send, claim and burn proofs carry that transition's balance and supply
+arithmetic and the key check (`C_PK_CHECK`), and the node verifies them before
+applying the transition. The log keeps only their digest
+(`crates/zk-ssl-verify/src/reverificacion.rs`), no method of the wire protocol
+serves them, and the checker compiles none of those circuits, nor the issuance
+and refund ones: it verifies five others —band, age, pending claim, payment in
+flight and pledge—, and only the pledge proves an authorization. The
+aggregate supply = balances + in flight is checked by the node's layer when it
+reopens the ledger, over balances in the clear. A third party receives the
+supply and the roots, signed; it does not receive the identity between them
+(`doc/ecst/ECST.md` §«6.3 No-garantías», which already said so).
+
+⚠️ **Corrected in §696**: until then row 1 said a third party learns
+«supply = balances + in flight; nothing created or lost between epochs»,
+«measured, in flight and on reopening»; row 5, «only the holder of a key moves
+its account; the operator cannot», «measured»; and the assertions below said
+«row 1 counts what is in flight», «rows 1 and 2: the conservation arithmetic
+and single use hold under the signed head, recomputed by the checker» and
+«row 5: only the key holder moves the account; the operator cannot».
+§379 and §387–§394 are checks by the node, not by a third party.
+
 ### The classical audit assertions, mapped (§589)
 
 For an auditor who thinks in assertions, the table above reads as follows.
@@ -51,11 +74,11 @@ what a row does not cover stays uncovered.
 
 | assertion | where it lands | what stays outside |
 |---|---|---|
-| Existence / occurrence | row 4: an entry is in the committed record, provable without the operator; row 1 counts what is in flight | that the unit or the event exists **outside** the ledger: the oracle limit (`SECURITY.md`) |
-| Accuracy | rows 1 and 2: the conservation arithmetic and single use hold under the signed head, recomputed by the checker | valuation: the proofs carry amounts, not worth |
+| Existence / occurrence | row 4: an entry is in the committed record, provable without the operator | that the unit or the event exists **outside** the ledger: the oracle limit (`SECURITY.md`); and the total in flight, which the head does not sign (row 1) |
+| Accuracy | row 2: single use holds under the signed head, recomputed by the checker; of row 1, the signed supply against its committed cap | valuation: the proofs carry amounts, not worth; and, without the node, the conservation arithmetic (row 1): the node checks it, the checker does not |
 | Cut-off | row 6, first half: the "empty box" proof that nothing in flight outlives its age (RFC-0007 E4) | — |
 | Completeness | row 6, second half: every operation the node evaluates on the holder's direct paths resolves in its window or a named red says it did not (RFC-0010) | what the node never receipted (D-H), and the batch and pledge paths (D-E): completeness of the receipted, never of the unreceipted |
-| Rights / authorization | row 5: only the key holder moves the account; the operator cannot | who is behind a key, and whether one person holds one account |
+| Rights / authorization | row 5, in part: the pledge proves, without the node, that the key holder produced it | who is behind a key, and whether one person holds one account; and, without the node, the authorization of a send, claim or burn: the node checks it, the checker does not |
 
 The classification and presentation assertions have no row: the ledger's
 categories are the operator's, and no proof here speaks of them.
@@ -68,6 +91,10 @@ data but not to prove conservation. Everything else shares the shape and has
 not been measured.
 
 **1. Conservation** — the unit is a liability the operator issues and retires.
+Proved in circuit, transition by transition, on every payment, and checked
+by the node, which also checks the aggregate on reopening; a third party,
+today, sees the signed supply, not that it equals balances plus in flight
+(row 1).
 - Deposit-return schemes: the deposit is the unit; the fraud is returning more
   than was sold, or twice. *Reviewed.*
 - Guarantees of origin and emission allowances: issued, transferred,
@@ -115,8 +142,11 @@ not been measured.
 
 **5. Authorship.**
 - Systems where the operator is the suspect: local currencies, time banks,
-  community savings. The operator sees everything and still cannot move an
-  account it does not control. Companion limitation, published: the operator
+  community savings. The operator sees everything; spending from an account
+  takes a proof made with its key, and the node checks that proof before
+  applying it.
+  A third party cannot check it without the node today (row 5): the log keeps
+  the proof's digest, not the proof. Companion limitation, published: the operator
   *can* fail to include a legitimate operation; since RFC-0010 a received one
   that it neither applies nor rejects in its window leaves a signed trace, and
   only an operator that issues no receipt leaves none (row 6).
@@ -162,6 +192,9 @@ surfaces in retail CBDC incidents (doi:10.5281/zenodo.22077991).
 
 ## What none of this claims
 
+- That a third party checks, without the node, the conservation or the
+  authorship of a payment: the node verifies those proofs and the log keeps
+  only their digest (rows 1 and 5).
 - Privacy against the operator: the operator sees everything (`SECURITY.md`).
 - That the ledger's units exist outside the ledger.
 - That an operation the node never acknowledged would be detected: an

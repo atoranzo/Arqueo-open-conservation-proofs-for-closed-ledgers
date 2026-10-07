@@ -12,8 +12,9 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 43 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
-recontadas en el §620 (la línea seguía con las del §597, 45 y 63), el §621 y el §622.
+**Estado**: 44 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
+recontadas en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622 y el
+§696, que abre la 115.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -974,6 +975,27 @@ instrumentacion) al grupo E.*
   clave que se va pudo firmar, quemando las de en medio, y la clave rotada
   no arranca sobre su diario. El (a) y el (b) siguen como están: sigue
   abierta.
+
+- [ ] **115. La conservación, comprobable por un tercero: el camino, o el título.**
+  Medido en el §696: la conservación de cada transición la imponen en circuito
+  las pruebas de envío, cobro y quema (`C_BALANCE`, `C_SUPPLY`), y el agregado
+  (suministro = saldos + en vuelo), la capa al reabrir
+  (`crates/zk-ssl/src/persistence.rs`, «CONSERVACION DEL DINERO»); la autoría,
+  `C_PK_CHECK`. Las dos las comprueba el nodo, al verificar cada prueba antes de
+  aplicarla. Un tercero no: el registro guarda el resumen de la prueba y no la
+  prueba, ningún método del cable la sirve, y el kit no compila ninguno de esos
+  circuitos, ni los de emisión y reembolso. De la conservación le llega el
+  `totalSupply` que firma la cabeza desde la v5; de la autoría, sólo la prenda.
+  El §696 sacó la conservación y la autoría de «lo que comprueba un tercero» en
+  los siete documentos que lo decían; el título, «pruebas abiertas de
+  conservación para libros cerrados», no lo tocó.
+  **Lo que pide, y lo decide el autor**: o reformular el título, o
+  comprometerse con un camino medido para que la conservación la compruebe un
+  tercero sin el nodo. Dos candidatos, sin medir: (a) conservar o publicar las
+  pruebas de transición, y que el kit verifique las de envío y cobro contra el
+  suministro firmado; (b) comprometer en la cabeza el total en vuelo, con su
+  coste de privacidad (el `pending` de `zkssl_supply`, §656). Cualquiera de
+  los dos, con su análisis medido antes y su RFC después.
 
 ## C. Solidez y verificacion: resueltas y en revision
 

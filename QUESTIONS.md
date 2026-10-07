@@ -14,9 +14,11 @@ uncomfortable, it is well written. Every claim in the present tense points to th
 A **closed-ledger engine that publishes open proofs**. An operator keeps a ledger — accounts,
 payments, issuances, retirements —; the people who depend on it cannot see it. Arqueo makes the
 ledger publish, every epoch, a **signed head** and **evidence packages** with which a third party
-checks, without the ledger, offline and without trusting the author, that the ledger did what its
-rules say: that money is conserved, that a label was consumed only once, that history was not
-rewritten, that an entry is inside, that only the holder moved their account.
+checks, without the ledger, offline and without trusting the author, part of what the ledger did
+under its rules: that a label was consumed only once, that history was not rewritten, that an
+entry is inside. That each payment conserves money and that only the holder moved their account
+travel inside the proof of each payment, and that proof is verified by the node, not by the third
+party (question 3).
 
 Underneath there is a settlement layer in Rust with two-phase payments proved with STARKs, and the
 comparative work that grounded its design: the same circuit in five proof systems
@@ -36,17 +38,29 @@ approximation, with a minimal, measured intermediary.
 
 ### 3. What does it guarantee?
 
-To a third party who does not see the ledger, today, measured: **conservation** (supply = balances
-+ in flight, also on reopening the ledger: `AUDITORIA.md` §379, §387–§394); **single use** of a
-label inside a ledger, published in its signed head, and **detection** of the same label in two
-ledgers ([`spec/rfc/0006-consumo-publicado.md`](./spec/rfc/0006-consumo-publicado.md));
-**unrewritable history** with an extension proof (`zkssl_consistencyProof`); **inclusion with a
-receipt** (`zkssl_inclusionReceipt`, `zkssl_ackPath`); **authorship without the key travelling**.
-The table, with a source per row, is [`doc/USE_CASES.md`](./doc/USE_CASES.md).
+To a third party who does not see the ledger, today, measured: **single use** of a label inside a
+ledger, published in its signed head, and **detection** of the same label in two ledgers
+([`spec/rfc/0006-consumo-publicado.md`](./spec/rfc/0006-consumo-publicado.md)); **unrewritable
+history** with an extension proof (`zkssl_consistencyProof`); **inclusion with a receipt**
+(`zkssl_inclusionReceipt`, `zkssl_ackPath`). The table, with a source per row, is
+[`doc/USE_CASES.md`](./doc/USE_CASES.md).
 
 And inside the ledger, in circuit: nobody creates money, nobody spends from someone else's account,
 nobody spends twice, a frozen account does not spend, a valid operation is not replayed, and no
 operation runs on a corrupt state. Each of those guarantees has a test that tries to break it.
+**Those, inside the ledger, are checked by the node** when it verifies the proof of each send,
+claim and burn before applying it, and the log keeps only its digest; of them, a third party
+checks without the node only the single use the head publishes (row 2 of that table). Each of
+those proofs carries the **conservation** of its transition —the balance changes by exactly the
+amount, and the supply moves only on a burn—; the aggregate (supply = balances + in flight) is
+checked by the layer on reopening the ledger (`AUDITORIA.md` §379; the roots, §387, §388, §391
+and §392), and a third party receives the supply the head signs, not that identity. And of
+**authorship** —the key does not travel—, a third party checks without the node only the
+pledge's.
+
+⚠️ **Corrected in §696**: until then this answer counted **conservation** and **authorship
+without the key travelling** among what a third party checks, and question 1, «that money is
+conserved» and «that only the holder moved their account».
 
 ### 4. What does it NOT guarantee?
 
@@ -276,7 +290,9 @@ more code; a **verified key custody**, not just a declared one (§244); and the 
 external anchor** (RFC-0012), which brings the anchor prior to the
 first encounter between witness and node. For the engine to answer everything it intends to,
 only the declared residue of row 6 is left —the operator that issues no receipt, and the batch
-and the pledge (RFC-0010, D-H and D-E)—; the empty box, rejection with cause and completeness
+and the pledge (RFC-0010, D-H and D-E)— and that a third party checks without the node the
+conservation and the authorship of a payment, which today only the node checks (rows 1 and 5;
+`BACKLOG.md`, entry 115); the empty box, rejection with cause and completeness
 already are code.
 Distributed consensus is another discipline and not this project's road: the road is provable
 accountability, and its pieces are built (question 7).

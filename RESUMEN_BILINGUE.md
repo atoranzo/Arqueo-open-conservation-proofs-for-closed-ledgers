@@ -10,19 +10,25 @@ published identifiers did not. Verified against `main` at `3294986`.*
 
 Un operador lleva un libro cerrado y quienes dependen de él no pueden verlo. Hoy ese conflicto lo
 resuelve un tercero que abre el libro, una vez al año y por muestreo. Arqueo sustituye la apertura
-del libro por una **prueba de que el libro hizo lo que sus reglas dicen**, que cualquiera comprueba
-**sin el libro, sin red y sin fiarse del autor**. Prueba conservación, no solvencia.
+del libro por **pruebas de que el libro hizo lo que sus reglas dicen**, y una parte la comprueba
+cualquiera **sin el libro, sin red y sin fiarse del autor**. Prueba conservación, no solvencia.
 
 ### Qué comprueba un tercero, medido
 
-Que el dinero se conserva (lo emitido = cuentas + en vuelo, también al reabrir). Que una unidad se
-usó una sola vez en el libro, y que la misma unidad en dos libros se detecta con las dos cabezas
-firmadas. Que la historia no se reescribió. Que una entrada está dentro, con recibo. Que sólo el
-titular movió su cuenta. Que una negativa lleva su causa y, para las causas que el sobre de
-rechazo cubre, que se sostiene sin el nodo. Que nada en vuelo es más viejo que una edad dada.
+Que una unidad se usó una sola vez en el libro, y que la misma unidad en dos libros se detecta con
+las dos cabezas firmadas. Que la historia no se reescribió. Que una entrada está dentro, con
+recibo. Que una negativa lleva su causa y, para las causas que el sobre de rechazo cubre, que se
+sostiene sin el nodo. Que nada en vuelo es más viejo que una edad dada.
 Y la completitud, medida desde el RFC-0010: lo que el nodo evalúa por las vías del titular deja
 un recibo bajo su cabeza firmada y acaba aplicado, rechazado con causa, o señalado con un rojo
 nombrado; sus residuos, declarados. ⚠️ Corregido en el §589: aquí decía «Falta la completitud».
+
+Que cada pago conserva el dinero y que sólo el titular movió su cuenta van dentro de la prueba de
+cada pago, y esa prueba la comprueba el nodo, no un tercero: el registro guarda su resumen y el kit
+no la vuelve a verificar. El agregado (lo emitido = cuentas + en vuelo) lo comprueba la capa del
+nodo al reabrir el libro. ⚠️ Corregido en el §696: las dos estaban en la lista de arriba, y «Qué
+es» decía «una prueba de que el libro hizo lo que sus reglas dicen, que cualquiera comprueba», sin
+excepción.
 
 ### Qué NO es
 
@@ -65,21 +71,26 @@ rastro; STARK sin ceremonia fue la única decisión tomada contra los números.
 
 An operator keeps a closed ledger and the people who depend on it cannot see it. Today that
 conflict is settled by a third party who opens the ledger, once a year and by sample. Arqueo
-replaces the opening of the ledger with a **proof that the ledger did what its rules say**, which
-anyone checks **without the ledger, offline and without trusting the author**. It proves
-conservation, not solvency.
+replaces the opening of the ledger with **proofs that the ledger did what its rules say**, and
+part of it anyone checks **without the ledger, offline and without trusting the author**. It
+proves conservation, not solvency.
 
 ### What a third party checks, measured
 
-That money is conserved (issued = balances + in flight, also on reopening). That a unit was used
-once inside the ledger, and that the same unit in two ledgers is detected from their two signed
-heads. That history was not rewritten. That an entry is inside, with a receipt. That only the
-holder moved their account. That a refusal carries its cause and, for the causes the rejection
-envelope covers, that it holds without the node. That nothing in flight is older than a given
-age. And completeness, measured since RFC-0010: what the node evaluates through the holder's
-direct paths leaves a receipt under its signed head and ends applied, rejected with a cause, or
-flagged by a named red; its residues, declared. ⚠️ Corrected in §589: this read "Missing:
-completeness".
+That a unit was used once inside the ledger, and that the same unit in two ledgers is detected
+from their two signed heads. That history was not rewritten. That an entry is inside, with a
+receipt. That a refusal carries its cause and, for the causes the rejection envelope covers, that
+it holds without the node. That nothing in flight is older than a given age. And completeness,
+measured since RFC-0010: what the node evaluates through the holder's direct paths leaves a
+receipt under its signed head and ends applied, rejected with a cause, or flagged by a named red;
+its residues, declared. ⚠️ Corrected in §589: this read "Missing: completeness".
+
+That each payment conserves money and that only the holder moved their account travel inside the
+proof of each payment, and that proof is checked by the node, not by a third party: the log keeps
+its digest and the kit does not verify it again. The aggregate (issued = balances + in flight) is
+checked by the node's layer on reopening the ledger. ⚠️ Corrected in §696: both were in the list
+above, and «What it is» said «a proof that the ledger did what its rules say, which anyone
+checks», with no exception.
 
 ### What it is NOT
 

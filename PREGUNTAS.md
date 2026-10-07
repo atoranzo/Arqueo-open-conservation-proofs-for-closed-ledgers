@@ -14,9 +14,10 @@ lo está contra `main` en el commit `9c64fd1`. En inglés: [`QUESTIONS.md`](./QU
 Un **motor de libro cerrado que publica pruebas abiertas**. Un operador lleva un libro —cuentas,
 pagos, emisiones, retiradas—; quienes dependen de él no pueden verlo. Arqueo hace que el libro
 publique, cada época, una **cabeza firmada** y **paquetes de evidencia** con los que un tercero
-comprueba, sin el libro, sin red y sin fiarse del autor, que el libro hizo lo que sus reglas dicen:
-que el dinero se conserva, que una etiqueta se consumió una sola vez, que la historia no se
-reescribió, que una entrada está dentro, que sólo el titular movió su cuenta.
+comprueba, sin el libro, sin red y sin fiarse del autor, parte de lo que el libro hizo según sus
+reglas: que una etiqueta se consumió una sola vez, que la historia no se reescribió, que una
+entrada está dentro. Que cada pago conserva el dinero y que sólo el titular movió su cuenta va
+dentro de la prueba de cada pago, y esa prueba la verifica el nodo, no el tercero (pregunta 3).
 
 Debajo hay una capa de liquidación en Rust con pagos en dos fases probados con STARK, y el trabajo
 comparativo que fundamentó su diseño: el mismo circuito en cinco sistemas de prueba
@@ -36,17 +37,28 @@ intermediario mínimo y medido.
 
 ### 3. ¿Qué garantiza?
 
-A un tercero que no ve el libro, hoy, medido: **conservación** (suministro = saldos + en vuelo,
-también al reabrir el libro: `AUDITORIA.md` §379, §387–§394); **uso único** de una etiqueta dentro
-de un libro, publicado en su cabeza firmada, y **detección** de la misma etiqueta en dos libros
+A un tercero que no ve el libro, hoy, medido: **uso único** de una etiqueta dentro de un libro,
+publicado en su cabeza firmada, y **detección** de la misma etiqueta en dos libros
 ([`spec/rfc/0006-consumo-publicado.md`](./spec/rfc/0006-consumo-publicado.md)); **historia no
 reescribible** con prueba de extensión (`zkssl_consistencyProof`); **inclusión con recibo**
-(`zkssl_inclusionReceipt`, `zkssl_ackPath`); **autoría sin que la clave viaje**. La tabla, con su
-fuente por fila, está en [`doc/USE_CASES.md`](./doc/USE_CASES.md).
+(`zkssl_inclusionReceipt`, `zkssl_ackPath`). La tabla, con su fuente por fila, está en
+[`doc/USE_CASES.md`](./doc/USE_CASES.md).
 
 Y dentro del libro, en circuito: nadie crea dinero, nadie gasta de una cuenta ajena, nadie gasta
 dos veces, una cuenta congelada no gasta, una operación válida no se reenvía, y no se opera sobre
-un estado corrupto. Cada una de esas garantías tiene un test que intenta romperla.
+un estado corrupto. Cada una de esas garantías tiene un test que intenta romperla. **Esas, dentro
+del libro, las comprueba el nodo** al verificar la prueba de cada envío, cobro y quema antes de
+aplicarlo, y el registro guarda sólo su resumen; de ellas, un tercero sólo comprueba sin el nodo el
+uso único que publica la cabeza (la fila 2 de esa tabla). Cada una de esas pruebas lleva la
+**conservación** de su transición —el saldo cambia exactamente en el importe, y el suministro sólo
+se mueve en la quema—; el agregado (suministro = saldos + en vuelo) lo comprueba la capa al
+reabrir el libro (`AUDITORIA.md` §379; las raíces, §387, §388, §391 y §392), y a un tercero le
+llega el suministro que firma la cabeza, no esa identidad. Y de la **autoría** —la clave no
+viaja—, un tercero comprueba sin el nodo sólo la de la prenda.
+
+⚠️ **Corregido en el §696**: hasta entonces esta respuesta contaba la **conservación** y la
+**autoría sin que la clave viaje** entre lo que comprueba un tercero, y la pregunta 1, «que el
+dinero se conserva» y «que sólo el titular movió su cuenta».
 
 ### 4. ¿Qué NO garantiza?
 
@@ -279,8 +291,9 @@ más código; una **custodia de clave comprobada**, no sólo declarada (§244); 
 ancla externa** (RFC-0012), que trae el ancla anterior
 al primer encuentro del testigo con el nodo. Para que el motor responda a todo lo que quiere
 responder sólo queda el residuo declarado de la fila 6 —el operador que no emite recibo, y el lote y
-la prenda (RFC-0010, D-H y D-E)—; la caja vacía, el rechazo con causa y la completitud ya son
-código. El consenso distribuido es
+la prenda (RFC-0010, D-H y D-E)— y que un tercero compruebe sin el nodo la conservación y la autoría
+de un pago, que hoy comprueba sólo el nodo (filas 1 y 5; `BACKLOG.md`, la 115); la caja vacía, el
+rechazo con causa y la completitud ya son código. El consenso distribuido es
 otra disciplina y no es el camino de este proyecto: el camino es la responsabilidad demostrable, y
 sus piezas están construidas (pregunta 7).
 

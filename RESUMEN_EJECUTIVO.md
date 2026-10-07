@@ -10,18 +10,16 @@ verificado contra `main` en el commit `3294986`.
 Un operador lleva un libro cerrado —cuentas, pagos, emisiones, retiradas— y quienes dependen de él
 no pueden verlo: socios, titulares, beneficiarios, contrapartes. Hoy ese conflicto lo resuelve un
 tercero que abre el libro: un auditor, un supervisor, un juzgado; una vez al año; por muestreo.
-Arqueo sustituye la apertura del libro por una **prueba de que el libro hizo lo que sus reglas
-dicen**, que cualquiera comprueba **sin el libro, sin red y sin fiarse del autor**.
+Arqueo sustituye la apertura del libro por **pruebas de que el libro hizo lo que sus reglas
+dicen**, y una parte la comprueba cualquiera **sin el libro, sin red y sin fiarse del autor**; la
+conservación del dinero y la autoría de cada pago, hoy, sólo el nodo.
 
 ## Qué puede comprobar hoy un tercero, medido
 
-- **Que el dinero se conserva**: lo emitido es igual a lo que hay en las cuentas más lo que está en
-  vuelo; nada se crea ni se pierde entre una época y la siguiente, tampoco al reabrir el libro.
 - **Que una unidad se usó una sola vez** dentro del libro, y que si dos libros distintos aceptaron
   la misma unidad, se **detecta** con las dos cabezas firmadas, sin que ningún nodo participe.
 - **Que la historia no se reescribió**: la cabeza de hoy extiende la de ayer sin borrar ni reordenar.
 - **Que una entrada está dentro**, con un recibo que no depende del operador.
-- **Que sólo el titular movió su cuenta**: el operador no puede, y la clave nunca viaja.
 - **Que una negativa tiene causa**: la regla viaja con el rechazo, y para las causas que el sobre
   de rechazo cubre, un tercero comprueba sin el nodo que se sostiene sobre lo que la cabeza firma.
 - **Que nada en vuelo es más viejo que una edad dada**: la caja vacía, probada sin el nodo.
@@ -35,6 +33,26 @@ dicen**, que cualquiera comprueba **sin el libro, sin red y sin fiarse del autor
 […] está listada como planeada, no como hecha», y en «Qué falta» pedía «la completitud de los
 acuses». La fila 6 se midió en el RFC-0010 (§556–§577) y los documentos grandes se corrigieron
 en el §581; este resumen se había quedado atrás.
+
+## Qué comprueba el nodo, y un tercero todavía no
+
+- **Que el dinero se conserva**: lo emitido es igual a lo que hay en las cuentas más lo que está en
+  vuelo. Cada pago prueba en circuito que su saldo cambia exactamente en el importe y que el
+  suministro no cambia, y el nodo comprueba esa prueba antes de aplicarlo; el agregado —emitido =
+  cuentas + en vuelo— lo comprueba la capa al reabrir el libro. A un tercero le llega el total
+  emitido que firma la cabeza, no la cuenta que lo cuadra.
+- **Que sólo el titular movió su cuenta**: también va dentro de la prueba de cada pago, y también
+  la comprueba el nodo. La clave nunca viaja. Sin el nodo, un tercero sólo comprueba la de la
+  prenda.
+
+El registro guarda el resumen de cada una de esas pruebas, no la prueba, y el kit del verificador
+no las vuelve a verificar, ni las de emisión y reembolso.
+
+⚠️ **Corregido en el §696**: hasta entonces estas dos estaban en la lista de arriba, la de lo que
+puede comprobar hoy un tercero —«Que el dinero se conserva […] tampoco al reabrir el libro» y «Que
+sólo el titular movió su cuenta: el operador no puede, y la clave nunca viaja»—, y «Qué es»
+decía «una prueba de que el libro hizo lo que sus reglas dicen, que cualquiera comprueba sin el
+libro, sin red y sin fiarse del autor», sin excepción.
 
 ## Qué NO es
 

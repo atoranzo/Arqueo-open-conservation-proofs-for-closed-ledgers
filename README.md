@@ -12,10 +12,15 @@ por cambio.
 Un operador lleva un libro cerrado. Quienes dependen de él —socios, titulares, beneficiarios,
 contrapartes— no pueden verlo, y las dos partes no se fían. Hoy ese conflicto lo resuelve un tercero
 que abre el libro: un auditor, un supervisor, un juzgado; una vez al año; por muestreo. Arqueo
-sustituye la apertura del libro por una **prueba de que el libro hizo lo que sus reglas dicen**, que
-cualquiera comprueba **sin el libro, sin red y sin fiarse del autor**. Encaja donde la unidad de
-cuenta **nace y muere dentro del libro**: la emite el operador, se mueve entre cuentas, la retira el
-operador. Prueba **conservación, no solvencia**: las pruebas hablan del libro, no del mundo.
+sustituye la apertura del libro por **pruebas de que el libro hizo lo que sus reglas dicen**. Una
+parte la comprueba cualquiera **sin el libro, sin red y sin fiarse del autor**: la historia, la
+inclusión con recibo, el uso único de una etiqueta, el corte y la completitud y, para las causas
+que cubre el sobre de rechazo, la causa de una negativa. Otra la comprueba hoy sólo el nodo: la
+**conservación** y la **autoría** de cada pago van dentro de su prueba, y esa prueba la verifica el
+nodo antes de aplicarlo, no el verificador del tercero (filas 1 y 5 de [«Qué garantiza y qué
+no»](#qué-garantiza-y-qué-no)). Encaja donde la unidad de cuenta **nace y muere dentro del libro**:
+la emite el operador, se mueve entre cuentas, la retira el operador. Prueba **conservación, no
+solvencia**: las pruebas hablan del libro, no del mundo.
 
 ---
 
@@ -25,11 +30,18 @@ operador. Prueba **conservación, no solvencia**: las pruebas hablan del libro, 
   la máquina del pagador —sin ceremonia de setup y sin curvas—; una **cabeza de época firmada** con
   una firma basada en hashes (XMSS) que el nodo publica; testigos que la **cofirman**; y un
   **paquete de evidencia** que un verificador independiente comprueba **con el nodo apagado**.
-- **Qué comprueba hoy un tercero, medido.** Conservación (suministro = saldos + en vuelo, también al
-  reabrir); uso único de una etiqueta dentro de un libro y **detección** de la misma etiqueta en dos
-  libros; historia no reescribible, con prueba de extensión; inclusión con recibo; autoría sin que
-  la clave viaje. La tabla de [«Qué garantiza y qué no»](#qué-garantiza-y-qué-no) da la fuente de
-  cada fila.
+- **Qué comprueba hoy un tercero, medido.** Uso único de una etiqueta dentro de un libro y
+  **detección** de la misma etiqueta en dos libros; historia no reescribible, con prueba de
+  extensión; inclusión con recibo. La tabla de [«Qué garantiza y qué no»](#qué-garantiza-y-qué-no)
+  da la fuente de cada fila.
+- **Qué comprueba el nodo, y un tercero todavía no.** La conservación de cada transición —en el
+  envío y el cobro, el saldo cambia exactamente en el importe y el suministro no cambia; en la
+  quema, los dos bajan en el importe— y la autoría —sólo quien tiene la clave mueve su cuenta— las
+  imponen en circuito las pruebas de envío, cobro y quema; el agregado (suministro = saldos + en
+  vuelo) lo comprueba la capa al reabrir el libro. El nodo verifica cada una de esas pruebas antes
+  de aplicar la transición, y el registro guarda sólo su resumen: el verificador del tercero no las
+  vuelve a verificar, ni las de emisión y reembolso. Del suministro, un tercero ve el que firma la
+  cabeza; de la autoría, la de la prenda.
 - **Qué no es.** No es una cadena: un nodo, un escritor, sin consenso distribuido ni token. **El
   operador ve todos los saldos** y puede omitir una operación: sin dejar rastro si no emite
   recibo; si lo emitió, el sobre de completitud lo nombra (RFC-0010). Entre libros **detecta, no
@@ -134,11 +146,11 @@ La misma tabla, en inglés y con los casos de uso, está en [`doc/USE_CASES.md`]
 
 | # | propiedad | lo que un tercero comprueba | estado |
 |---|---|---|---|
-| 1 | Conservación | suministro = saldos + en vuelo; nada se crea ni se pierde entre épocas | medida, en vuelo y al reabrir (`AUDITORIA.md` §387–§394) |
+| 1 | Conservación | el suministro que firma la cabeza (desde la v5) y, ante un rechazo por tope, que el suministro de la cabeza más el importe pasa el tope comprometido (`spec/PAQUETE.md`, 2.6); **no** que suministro = saldos + en vuelo | medida **en el nodo**: en circuito, en cada envío, cobro y quema, y el agregado en la capa al reabrir (`AUDITORIA.md` §379; las raíces, §387, §388, §391 y §392); **sin el nodo, no**: el kit no verifica pruebas de transición —tampoco las de emisión y reembolso—, y el registro no las guarda |
 | 2 | Uso único | una etiqueta se consume una vez en un libro y se publica en su cabeza firmada; la misma etiqueta en dos libros se detecta desde las dos | medida (RFC-0006; `doc/KIT.md`) |
 | 3 | Historia no reescribible, con prueba de extensión | la cabeza de hoy extiende la de ayer sin borrar ni reordenar | medida (`spec/RPC.md`, `zkssl_consistencyProof`) |
 | 4 | Inclusión con recibo | una entrada está en el libro, demostrable sin el operador | medida (`spec/RPC.md`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
-| 5 | Autoría sin que la clave viaje | sólo quien tiene la clave mueve su cuenta; el operador no puede | medida (`spec/RPC.md`, el principio de la API) |
+| 5 | Autoría sin que la clave viaje | de la prenda, que la produjo quien tiene la clave (`spec/PAQUETE.md`, 2.10); **no** que sólo quien tiene la clave mueva su cuenta | medida **en el nodo**: en circuito (`C_PK_CHECK`), en cada envío, cobro y quema; **sin el nodo, sólo la prenda**. Que la clave no viaje: `spec/RPC.md`, el principio de la API |
 | 6 | Corte y completitud | nada queda en vuelo pasado su plazo; toda operación que el nodo recibe acaba aplicada, rechazada con prueba o declarada, o un rojo nombrado dice que no | medida (RFC-0010; `spec/PAQUETE.md`, 2.11; la caja vacía, RFC-0007 E4) |
 | 7 | Rechazo con causa | una negativa lleva la regla que la produjo | medida (RFC-0007; qué causas se prueban sin el nodo: `spec/PAQUETE.md`, 2.6) |
 
@@ -151,6 +163,9 @@ la prenda lo llevan desde el §611, y el sobre de completitud los resuelve desde
 
 **Lo que nada de esto afirma:**
 
+- Que un tercero compruebe sin el nodo la conservación o la autoría de un pago: las pruebas de
+  envío, cobro y quema las verifica el nodo, el registro guarda sólo su resumen y ningún método del
+  cable las sirve (filas 1 y 5).
 - Privacidad frente al operador: el operador lo ve todo.
 - Que las unidades del libro existan fuera del libro.
 - Que se detecte una operación que el nodo nunca acusó: un operador que no emite recibo no deja
@@ -163,6 +178,16 @@ la prenda lo llevan desde el §611, y el sobre de completitud los resuelve desde
 
 ⚠️ **Corregido en el §581**: hasta entonces la fila 6 decía «en parte» y esta lista decía también
 «la censura no deja rastro» y «la fila 6 entera: la completitud de los acuses no existe todavía».
+
+⚠️ **Corregido en el §696**: hasta entonces la fila 1 decía que un tercero comprueba «suministro =
+saldos + en vuelo; nada se crea ni se pierde entre épocas», «medida, en vuelo y al reabrir»; la
+fila 5, «sólo quien tiene la clave mueve su cuenta; el operador no puede», «medida»; el párrafo de
+entrada, «una prueba de que el libro hizo lo que sus reglas dicen, que cualquiera comprueba sin el
+libro, sin red y sin fiarse del autor», sin excepción; y «Leer antes de nada» contaba la
+conservación y la autoría entre lo que comprueba hoy un tercero. Los §379 y §387–§394 son
+comprobaciones del nodo, no de un tercero. El título no cambia en ese asiento: si se reformula, o
+se construye el camino que haga comprobable por un tercero la conservación, lo decide el autor
+(`BACKLOG.md`, la 115).
 
 **Lo que falta, por orden de importancia:** consenso distribuido (sin él, el operador ve los saldos
 y puede censurar; la alternativa que este proyecto sí persigue —responsabilidad demostrable, al modo

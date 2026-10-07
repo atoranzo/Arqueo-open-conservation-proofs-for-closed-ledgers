@@ -48103,3 +48103,165 @@ las ocho imprimen hoy cuánto miran, y ninguna dice cero.
 el canon sobre un universo vacío.
 
 **Lo que NO cierra.** Nada más de la cola.
+
+## §696 — la conservación y la autoría salen de «lo que comprueba un tercero»: las comprueba el nodo, y el título queda para el autor
+
+El commit que lleva este asiento, sobre `1a9de32` (el §695). Un solo sello, sin código: siete
+documentos dejan de contar la conservación y la autoría entre lo que comprueba un tercero y dicen,
+donde lo decían, quién las comprueba —`README.md` y `README_EN.md` en su párrafo de entrada, en
+«Leer antes de nada», en las filas 1 y 5 de la tabla y en la lista de lo que no se afirma;
+`doc/USE_CASES.md` en sus filas 1 y 5, un párrafo bajo la tabla, tres filas del mapa de
+aserciones, los casos 1 y 5 y su lista de lo que no se afirma; `PREGUNTAS.md` y `QUESTIONS.md` en
+las preguntas 1, 3 y 22; y `RESUMEN_EJECUTIVO.md` y `RESUMEN_BILINGUE.md`—, cada uno con la frase
+vieja citada en su corrección; el `BACKLOG.md` abre la 115; y este asiento. Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El sello no toca el código de
+ningún crate, y en la sesión no se corrió el canon entero: sobre este mismo árbol se corrieron
+`check_tests`, `check_modulos`, `check_vectores` y las nueve herramientas del bucle «2 ter», y las
+doce salieron con 0.
+
+**De dónde sale.** El autor aprobó corregirlo. `README.md` decía en su primer párrafo que Arqueo
+sustituye la apertura del libro por «una prueba de que el libro hizo lo que sus reglas dicen, que
+cualquiera comprueba sin el libro, sin red y sin fiarse del autor»; ponía la conservación y la
+«autoría sin que la clave viaje» en «Qué comprueba hoy un tercero, medido»; y abría la tabla «Qué
+garantiza y qué no», cuya columna es «lo que un tercero comprueba», con «suministro = saldos + en
+vuelo; nada se crea ni se pierde entre épocas», «medida, en vuelo y al reabrir (`AUDITORIA.md`
+§387–§394)». La fila 5 decía «sólo quien tiene la clave mueve su cuenta; el operador no puede»,
+«medida (`spec/RPC.md`, el principio de la API)», y ese principio es que la clave de gasto no
+viaja, no que un tercero compruebe quién movió una cuenta. Los seis documentos que repiten esa
+tabla o esa lista lo decían igual. El árbol ya decía lo contrario en otros sitios, y no se había
+llevado aquí:
+
+- el §680: «El kit no verifica pruebas de envío, cobro ni quema, y `tools/segunda` tampoco»;
+- la cabecera de `crates/zk-ssl-verify/src/reverificacion.rs`: `Send`, `Claim`, `Burn`, `Refund` y
+  `Migration` asientan el resumen de una prueba, «y el registro no guarda la prueba»;
+- `doc/ecst/ECST.md` §«6.3 No-garantías»: «Que un tercero verifique la conservación: le llegan el
+  suministro y las raíces firmados; el agregado lo comprueba el operador»;
+- y `doc/ecst/VERIFICACION.md`, C4d: «No debe presentarse la fila 1 como una comprobación
+  independiente del agregado hecha por el tercero».
+
+Y los §387–§394 no son comprobaciones de un tercero: el §387, el §388, el §391 y el §392 guardan
+una raíz que la capa comprueba al abrir; el §393 y el §394 derivan del registro contadores
+custodiados; el §390 hace que descongelar sobreviva al reinicio; y el §389 es el que publicó
+`doc/USE_CASES.md`. La que comprueba la conservación al abrir es el §379, que la fila no citaba
+—las preguntas sí—, y tampoco es de un tercero: la capa suma los saldos en claro.
+
+**Lo que hace.**
+
+1. **Lo cierto, dicho donde estaba lo falso.** La conservación de cada transición la imponen en
+   circuito `C_BALANCE` y `C_SUPPLY`: en las pruebas de envío
+   (`crates/stark-experiment/src/circuit_send_v2.rs:901-903`) y de cobro
+   (`circuit_claim_v2.rs:853-855`), el saldo cambia exactamente en el importe y el suministro no
+   cambia; en la de quema (`circuit_burn.rs:800-803`), los dos bajan en el importe. Ninguna de esas
+   pruebas impone el agregado: suministro = saldos + en vuelo lo comprueba la capa al reabrir el
+   libro, que suma en u128 los saldos y los pendientes y los compara con el suministro
+   (`crates/zk-ssl/src/persistence.rs:659-690`, el §379). La autoría la impone `C_PK_CHECK`
+   (`circuit_send_v2.rs:897`, `circuit_claim_v2.rs:850`, `circuit_burn.rs:796`). Las dos las
+   comprueba el nodo: la capa verifica `SendV2Air` (`crates/zk-ssl/src/two_phase.rs:1045`),
+   `ClaimAirV2` (`:1376`) y `BurnAir` (`crates/zk-ssl/src/burn.rs:172`) antes de aplicar la
+   transición. Los documentos nombran esas tres; el nodo verifica también la prueba de la emisión
+   (`MintClimbAir`, `crates/zk-ssl/src/mint.rs:94`, con `C_SUPPLY` en circuito,
+   `circuit_mint_climb.rs:132`) y la del reembolso (`RefundAir`, `two_phase.rs:485`), y el kit
+   tampoco verifica ninguna de las dos: la fila 1, «Leer antes de nada», el párrafo de
+   `doc/USE_CASES.md`, `RESUMEN_EJECUTIVO.md` y la 115 lo dicen en una cláusula. A un tercero le
+   llega, de la conservación, el `totalSupply` que la cabeza firma desde la v5, y el kit lo juzga en
+   un solo sitio, el rechazo `SupplyCapExceeded` (`spec/PAQUETE.md`, 2.6); de la autoría, la prenda,
+   la única de sus pruebas STARK que prueba una autorización (`spec/PAQUETE.md`, 2.10). Eso dicen
+   ahora las filas 1 y 5, con «en el nodo» y «sin el nodo, no» en su estado; la fila 1 cita el §379
+   para el agregado y, para las raíces que la capa comprueba al abrir, el §387, el §388, el §391 y
+   el §392.
+2. **Los siete documentos.** `README.md` y `README_EN.md`: el párrafo de entrada dice qué parte
+   comprueba cualquiera sin el libro —la historia, la inclusión, el uso único, el corte y la
+   completitud y, para las causas que cubre el sobre de rechazo, la causa de una negativa— y qué
+   parte, hoy, sólo el nodo; «Leer antes de nada» gana un punto, «Qué comprueba el nodo, y un
+   tercero todavía no»; y la lista de lo que no se afirma, uno. `doc/USE_CASES.md`, además de las
+   dos filas: un párrafo bajo la tabla que dice qué compila el kit y qué no, con la cita de
+   `ECST.md`; el mapa de aserciones deja de apoyar en la fila 1 la existencia y la exactitud, y en
+   la fila 5 la autorización, salvo la de la prenda; los casos 1 y 5 dicen quién comprueba; y su
+   cabecera, que esas filas se corrigieron aquí contra `1a9de32`. La fila 5 citaba
+   `spec/RPC.md:50-61`, que hoy cae en la tabla de codificación; cita el encabezado, `spec/RPC.md`
+   §«Principio que el API preserva», y `verificar_citas` lo comprueba. `PREGUNTAS.md` y
+   `QUESTIONS.md`: la 1 y la 3 dejan de contarlas; la 3 dice quién comprueba las garantías en
+   circuito y que, de ellas, un tercero comprueba sin el nodo sólo el uso único que publica la
+   cabeza (fila 2); y la 22, que decía que para responder a todo lo que quiere responder «sólo
+   queda» el residuo de la fila 6, nombra también esto. `RESUMEN_EJECUTIVO.md` saca sus dos puntos
+   de la lista de lo que comprueba un tercero y los pone en una sección propia;
+   `RESUMEN_BILINGUE.md`, lo mismo en un párrafo por lengua.
+3. **La corrección, marcada y no borrada**, como en el §581 y el §589: cada documento cita lo que
+   decía, con «⚠️ Corregido en el §696» o «⚠️ Corrected in §696».
+4. **El título, sin tocar.** «Pruebas abiertas de conservación para libros cerrados» promete lo que
+   hoy no comprueba un tercero. Reformularlo, o comprometerse con un camino medido que lo haga
+   cierto, lo decide el autor. La 115 del `BACKLOG.md` lo deja escrito con dos candidatos sin
+   medir: conservar o publicar las pruebas de transición y que el kit verifique las de envío y
+   cobro contra el suministro firmado, o comprometer en la cabeza el total en vuelo, con su coste
+   de privacidad (§656). Los dos `README` lo dicen en su corrección.
+5. **Lo que corrigió su revisión.** La primera pasada decía en la pregunta 3 que las garantías en
+   circuito «las comprueba el nodo, no un tercero», y el uso único, que es una de ellas, lo
+   comprueba también un tercero (fila 2); apoyaba la fila 1 y las correcciones en los §387–§394,
+   sin el §379; dejaba la causa de un rechazo sin su matiz en el párrafo de entrada; decía, en los
+   resúmenes y en las preguntas, que la prueba de cada pago impone el agregado; y no nombraba la
+   emisión ni el reembolso. Los cinco van corregidos en este mismo sello.
+
+**Medido.** Sobre `1a9de32`:
+
+- `grep -rni conserv crates/zk-ssl-verify/src`: tres líneas, y ninguna habla del dinero —«se
+  conserva citada», «conserva el texto» y el nombre de un test—. `SendV2Air`, `ClaimAirV2`,
+  `SendAir`, `ClaimAir`, `BurnAir`, `RefundAir`, `RefundAirV2`, `MintClimbAir`,
+  `MintPendingClimbAir` y `CreditClimbAir` en `crates/zk-ssl-verify/`, con `grep -rw`: cero.
+- `cargo tree -p zk-ssl-verify --edges normal --offline --locked`: no están ni `stark-experiment`,
+  donde viven esas AIR, ni `zk-ssl`; de los crates de la casa, `zk-ssl-air`, `zk-ssl-hash` y
+  `zk-ssl-medio`, y el fork de `winter-air` y `winter-verifier`. El kit juzga cinco AIR, las de
+  `crates/zk-ssl-air/src` —banda, edad, cobro pendiente, pago en curso y prenda—, y la segunda
+  implementación, las mismas cinco (`tools/segunda/airs.py`).
+- `total_supply` en `crates/zk-ssl-verify/src/main.rs`, fuera de los tests: se lee de la cabeza
+  (`:140`, `:149`), entra en la recomposición del digest v5 y v6 (`:282`, `:286`, `:421`, `:426`,
+  `:571`, `:592`) y se compara una vez, en `SupplyCapExceeded` (`:1354`).
+- El cable: 32 métodos en `spec/openrpc.json`, y ninguno sirve una prueba de transición; el único
+  nombre con «proof» en el documento es el de `zkssl_consistencyProof`. `zkssl_logEntry` devuelve
+  la entrada con su `proofDigest`.
+- La afirmación, buscada como pide el §589 —dicha como sea, no la frase—, con `grep -i` y quince
+  formas: «saldos + en vuelo», «balances + in flight», «cuentas + en vuelo», «movió su cuenta»,
+  «moved their account», «mueve su cuenta», «moves its account» o «moves the account», «el
+  operador no puede mover», «cannot move an account», «dinero se conserva», «money is conserved»,
+  «cualquiera comprueba», «anyone checks», «tercero verifique la conservación» y «third party
+  verifies conservation», en todo `.md` del árbol menos `AUDITORIA.md`, `BACKLOG.md`,
+  `doc/preprints/`, `doc/historia/` y `spec/rfc/`. Sobre `1a9de32` aparecen en diez ficheros: los
+  siete de este sello, que la contaban como comprobación de un tercero, y `doc/ecst/ECST.md`,
+  `doc/ecst/ECST_EN.md` y `doc/ecst/VERIFICACION.md`, que decían lo contrario y se quedan como
+  están. Después de este sello aparecen en los mismos diez, y en los siete, sólo dentro de su
+  corrección o en la frase nueva que dice quién comprueba. Y se leyeron, en los mismos documentos
+  vivos, las líneas que dan `conservación`, `conservation`, `autoría` y `authorship`: fuera de
+  esos diez, ninguna cuenta la conservación o la autoría como algo que comprueba un tercero.
+- **Las compuertas**, como las corre el canon, desde la raíz y sobre el texto final de este
+  asiento: `check_tests`, 1839 declarados, ninguno anidado; `check_modulos`, 203 ficheros, todos
+  declarados; `check_vectores`, 477 vectores y 925 líneas con su huella; y las nueve del bucle «2
+  ter» —`check_cifras`, `check_figures`, `check_columns`, `check_constraint_layout`,
+  `verificar_citas`, `check_dominios`, `check_publicadas`, `check_nucleo` y `check_techo`—. Las
+  doce salen con 0. `verificar_citas` pasa de 41 a 46 encabezados citados, ninguno muerto: dos de
+  `doc/USE_CASES.md` y tres de este asiento.
+
+**Probado.** Ningún test nuevo: el sello no toca el código de ningún crate. Lo que afirma lo
+sostienen las líneas de código citadas arriba y las compuertas de documentos.
+
+**Contadores.** Ninguno de tests se mueve: `check_tests` sigue en 1839, el TOTAL DE SELLO en 1680
+y el TOTAL CON LARGOS en 1817, como los dejó el §694. El `BACKLOG.md` pasa de 43 abiertas y 73
+resueltas a 44 y 73: entra la 115, en el grupo B, y la línea de su estado lo dice.
+
+**Lo que NO hace.** No decide el título: `README.md`, `README_EN.md`, `CITATION.cff`, `NOTICE` y el
+nombre del repositorio siguen diciendo «open conservation proofs for closed ledgers». No construye
+ningún camino: ni conserva las pruebas de transición ni compromete nada nuevo en la cabeza, y los
+dos candidatos de la 115 están sin medir. No re-verifica la línea «verificado contra `main` en el
+commit …» de los `README` (`343d3b6`), las preguntas (`9c64fd1`) y los resúmenes (`3294986`):
+lo que cambia en ellos lo registra este asiento. No toca los documentos que cuentan la
+conservación como propiedad construida sin decir que la compruebe un tercero —`ARQUITECTURA.md`,
+`PRINCIPIOS.md`, `doc/APORTACION.md`, `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`—, ni los
+depósitos con DOI de `doc/preprints/`, que tienen su `ERRATA.md`. Las listas de lo que falta de los
+`README` («por orden de importancia») y de los dos resúmenes no ganan nada: su orden y su alcance
+son del autor; la pregunta 22 sí, porque decía «sólo queda». La fila 5 sigue describiendo
+la propiedad como «sólo quien tiene la clave mueve su cuenta»; los poderes declarados de los
+custodios sobre las cuentas (`doc/ecst/ECST.md` §«5.11 Poderes del operador») no se repasan aquí.
+No dice en los documentos qué prueban en circuito la emisión y el reembolso: sólo que el kit
+tampoco verifica esas pruebas. Y la tabla de la sección 3 de este fichero sigue nombrando
+`circuit_settlement` donde la capa verifica `circuit_send_v2` y `circuit_claim_v2`; no se toca.
+
+**Lo que NO cierra.** La 115, que abre.
