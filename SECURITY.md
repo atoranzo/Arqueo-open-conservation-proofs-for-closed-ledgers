@@ -579,18 +579,49 @@ dentro de un lote de Merkle no movían la raíz, así que la prueba verificaba c
 vigente era `arqueo-verify-v0.4.1` (§661); hoy es `arqueo-verify-v0.4.2` (§671), que corrige además los §662 a §664. `AUDITORIA.md` §637, §641,
 §650 a §656.
 
-### 3.10 Las claves de custodio y de gobernanza son de un elemento — ⚠️ DECLARADO (§670)
+### 3.10 Las claves de custodio y de gobernanza: de cuatro elementos en el cable, de uno en el libro de `dev` — ⚠️ CONSTRUIDO (§683, §684, §701) y DECLARADO
 
-La identidad de un custodio (`derive_custodian_id`, `circuit_threshold.rs`) y la de un
-miembro de la gobernanza (`derive_governor_id`, `circuit_governance.rs`) se derivan de
-una clave de **un solo** elemento de Goldilocks: unos 64 bits. La identidad es pública,
-así que agotar el espacio de una clave es un ataque fuera de línea de unas 2^63
-evaluaciones (ESTIMADO; con Grover, unas 2^32 iteraciones). La clave de gasto tiene ya
-su versión ancha, de cuatro elementos (entrada 15, §82: `derive_public_id_wide`); las
-de custodio y de gobernanza no. La emisión pide dos custodios (2-de-N), así que hacen
-falta dos claves. **No hay arreglo sin cambiar el formato**: claves de cuatro elementos
-en los dos circuitos, en el tren `zkssl/0.5`. Hasta entonces, las claves de custodio y
-de gobernanza valen lo que vale un elemento, y se dice aquí.
+Hasta el §684, la identidad de un custodio (`derive_custodian_id`, `circuit_threshold.rs`) y
+la de un miembro de la gobernanza (`derive_governor_id`, `circuit_governance.rs`) se
+derivaban de una clave de **un solo** elemento de Goldilocks: unos 64 bits. La identidad es
+pública, así que agotar el espacio de una clave es un ataque fuera de línea de unas 2^63
+evaluaciones (ESTIMADO; con Grover, unas 2^32 iteraciones). La emisión pide dos custodios
+(2-de-N), así que hacen falta dos claves. Lo declaró el §670, y el RFC-0018 E2 lo cierra en
+el formato, en tres piezas:
+
+- **Las derivaciones anchas** (§683): `derive_custodian_id_wide` y `derive_governor_id_wide`,
+  el molde de `derive_public_id_wide` de la clave de gasto (entrada 15, §82): el dominio y
+  una clave de cuatro elementos en el mismo `native_merge`.
+- **El umbral del cable** (§684): `circuit_threshold_single_nullifier`, el único circuito de
+  autoridad que verifica la capa —para los custodios y para la gobernanza—, lleva la clave en
+  cuatro columnas y ata los cuatro elementos a la identidad.
+- **La capa** (§701): un libro constituido con claves anchas emite, emite a un pendiente,
+  recupera, congela y rota sus custodios; y una clave de un solo elemento —lo único que
+  alcanza la búsqueda de 2^63; aquí, incluso con el primer elemento verdadero de la clave
+  ancha y el camino de su hoja— no autoriza, porque su identidad es otra
+  (`una_clave_de_un_solo_elemento_no_autoriza_sobre_un_conjunto_ancho`). Forzar una clave
+  ancha cuesta unas 2^255 evaluaciones (ESTIMADO, por el tamaño del `Digest`, como el
+  RFC-0018; con Grover, unas 2^128 iteraciones, por la misma cuenta que los 2^32 de arriba).
+
+Lo que sigue valiendo un elemento, y se dice aquí:
+
+- **Una clave estrecha sigue valiendo, rellenada con ceros**: da la misma identidad (§683).
+  Un libro constituido con claves de un elemento conserva sus raíces y sus 64 bits. Sus
+  custodios pueden rotar a claves anchas con la firma de su gobernanza
+  (`un_libro_de_claves_estrechas_rota_sus_custodios_a_claves_anchas`); su gobernanza no,
+  porque es inmutable: una gobernanza ancha la da sólo un libro nuevo (RFC-0018, D-B y D-C).
+- **El nodo no constituye libros.** Con la feature `dev`, la de la compilación por defecto,
+  abre la capa con las raíces de la suite, de claves de un elemento escritas en
+  `crates/zk-ssl/src/tests_support.rs`; sin ella no arranca. `--custodian-root` y
+  `--governance-root` siguen pendientes.
+- **El cable sigue diciendo `zkssl/0.4`** hasta el corte del tren (RFC-0018; `spec/RPC.md`,
+  §699). Los vectores de rechazo llevan la raíz de custodios de la suite, y los publicados no
+  se reescriben.
+- **Los otros siete circuitos que llevan una clave de autoridad** —`ThresholdAir`,
+  `SingleThresholdAir`, `GovernanceAir` y los de emisión, emisión a pendiente, congelación y
+  recuperación de la vía antigua— siguen con un elemento. No van por el cable: ni la capa ni
+  el kit los verifican (el censo del RFC-0009), y no prueban la pertenencia a un conjunto
+  ancho.
 
 ### 3.11 El nivel de las pruebas, y el azar del sistema — ⚠️ MEDIDO y DECLARADO (§697, §698)
 

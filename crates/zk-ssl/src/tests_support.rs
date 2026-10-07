@@ -588,3 +588,102 @@ pub fn mint_to_pending_delegated(
         .expect("la emision delegada a pendiente debe aplicarse");
 }
 
+// ============================================================================
+// Las claves anchas de custodios y de gobernanza (RFC-0018 E2, §701).
+//
+// La capa solo recibe las dos raíces: con qué claves se constituyó un conjunto
+// no lo sabe, y no tiene por qué. Estos ayudantes constituyen los dos conjuntos
+// con claves de cuatro elementos NO NULOS y firman con ellas, para ejercitar los
+// 256 bits que el umbral del cable ata desde el §684. Los de arriba —claves de
+// un elemento, rellenadas con ceros— dan la misma identidad que antes (§683) y
+// no ejercitan nada nuevo.
+// ============================================================================
+
+/// Las claves anchas de los cinco custodios: las de [`custodian_keys`], abiertas
+/// a cuatro elementos con [`wide_key`].
+pub fn custodian_keys_wide() -> Vec<Digest> {
+    custodian_keys().iter().map(|k| wide_key(k.as_int())).collect()
+}
+
+/// Las claves anchas de los cuatro miembros de la gobernanza, por el mismo molde.
+pub fn governance_keys_wide() -> Vec<Digest> {
+    governance_keys().iter().map(|k| wide_key(k.as_int())).collect()
+}
+
+/// La raíz del conjunto de custodios constituido con [`custodian_keys_wide`].
+pub fn custodian_root_wide() -> Digest {
+    stark_experiment::circuit_threshold::build_custodian_set_wide(&custodian_keys_wide()).0
+}
+
+/// La raíz del conjunto de gobernanza constituido con [`governance_keys_wide`].
+pub fn governance_root_wide() -> Digest {
+    stark_experiment::circuit_governance::build_governance_set_wide(&governance_keys_wide()).0
+}
+
+/// Una capa constituida con los dos conjuntos anchos y los topes de la suite.
+pub fn new_layer_wide() -> SovereignLayer {
+    SovereignLayer::new(
+        custodian_root_wide(),
+        governance_root_wide(),
+        LIMIT,
+        MAX_SUPPLY,
+        MAX_ACCOUNTS,
+    )
+}
+
+/// Una autorización de umbral con una clave de cuatro elementos (§684), sobre el
+/// camino que se le dé: la prueba y sus entradas públicas. La clave y el camino
+/// van sueltos a propósito, para que un falsador pueda firmar con una clave que no
+/// es la de la hoja.
+pub fn autorizacion_ancha(
+    dominio: u64,
+    key: Digest,
+    path: &stark_experiment::circuit_threshold::CustodianPath,
+    op: Digest,
+) -> (winterfell::Proof, auth::NullifierThresholdPublicInputs) {
+    let prover = auth::NullifierThresholdProver::new(proof_options());
+    let traza = auth::build_trace_wide(BaseElement::new(dominio), key, path, op);
+    let entradas = prover.get_pub_inputs(&traza);
+    (prover.prove(traza).expect("autorizacion con clave ancha"), entradas)
+}
+
+/// El par de custodios `a` y `b` de un conjunto de claves ANCHAS: el gemelo de
+/// [`custodian_pair_with`].
+pub fn custodian_pair_wide_with(
+    keys: &[Digest],
+    op: Digest,
+    a: usize,
+    b: usize,
+) -> (
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+) {
+    assert!(a < b, "§51: index_a < index_b, estricto");
+    let (_, cp) = stark_experiment::circuit_threshold::build_custodian_set_wide(keys);
+    let (pa, ia) = autorizacion_ancha(CUSTODIAN_DOMAIN, keys[a], &cp[a], op);
+    let (pb, ib) = autorizacion_ancha(CUSTODIAN_DOMAIN, keys[b], &cp[b], op);
+    (pa, ia, pb, ib)
+}
+
+/// El par de miembros `a` y `b` de una gobernanza de claves ANCHAS: el gemelo de
+/// [`governance_pair`].
+pub fn governance_pair_wide_with(
+    keys: &[Digest],
+    op: Digest,
+    a: usize,
+    b: usize,
+) -> (
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+) {
+    use stark_experiment::circuit_governance::{build_governance_set_wide, GOVERNANCE_DOMAIN};
+    assert!(a < b, "§51: index_a < index_b, estricto");
+    let (_, gp) = build_governance_set_wide(keys);
+    let (pa, ia) = autorizacion_ancha(GOVERNANCE_DOMAIN, keys[a], &gp[a], op);
+    let (pb, ib) = autorizacion_ancha(GOVERNANCE_DOMAIN, keys[b], &gp[b], op);
+    (pa, ia, pb, ib)
+}

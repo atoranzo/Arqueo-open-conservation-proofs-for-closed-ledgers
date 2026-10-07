@@ -3407,3 +3407,209 @@ fn un_tope_de_suministro_por_encima_de_2_a_la_62_no_abre() {
     assert!(ok.is_ok(), "el tope maximo si abre");
     let _ = std::fs::remove_dir_all(&ruta);
 }
+
+// -----------------------------------------------------------------
+// Claves anchas de custodios y de gobernanza (RFC-0018 E2, §701)
+// -----------------------------------------------------------------
+
+/// **Un libro constituido con claves de cuatro elementos ejerce las cinco
+/// autoridades** (RFC-0018 E2, §701): emitir, emitir a un pendiente,
+/// recuperar, congelar y, con la gobernanza, rotar los custodios a otro
+/// conjunto ancho, desde el que emiten los entrantes. Cada clave tiene sus
+/// cuatro elementos no nulos: con [`custodian_keys`] el camino es el mismo y
+/// no ejercita los 256 bits.
+#[test]
+fn un_libro_de_claves_anchas_ejerce_las_cinco_autoridades() {
+    let ck = custodian_keys_wide();
+    let gk = governance_keys_wide();
+    let mut layer = new_layer_wide();
+    assert_ne!(layer.custodian_set_root(), custodian_root(), "otro conjunto de custodios");
+    assert_ne!(layer.governance_set_root(), governance_root(), "otra gobernanza");
+    let alice = layer.open_account(BaseElement::new(SK_ALICE));
+    let bob = layer.open_account(BaseElement::new(SK_BOB));
+
+    // 1. Emitir.
+    let op = mint_commitment(&layer, alice, 1000);
+    let subida = mint_climb_proof(&layer, alice, 1000);
+    let (pa, ia, pb, ib) = custodian_pair_wide_with(&ck, op, 1, 3);
+    layer
+        .apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1000)
+        .expect("dos custodios de clave ancha emiten");
+    assert_eq!(layer.balance_of(alice), Some(1000));
+
+    // 2. Emitir a un pendiente de Bob.
+    let id_bob = layer.public_id_of(bob).expect("cuenta");
+    let op = mint_pending_commitment(&layer, id_bob, salt_de(0x701), 500);
+    let subida = mint_pending_climb_proof(&layer, id_bob, salt_de(0x701), 500);
+    let (pa, ia, pb, ib) = custodian_pair_wide_with(&ck, op, 0, 4);
+    layer
+        .apply_mint_pending_delegated(subida, pa, ia, pb, ib, id_bob, salt_de(0x701), 500)
+        .expect("y emiten a un pendiente");
+    assert_eq!(layer.total_supply(), 1500);
+
+    // 3. Recuperar la cuenta de Alice hacia una identidad nueva.
+    let nueva_id = derive_public_id_wide(wide_key(0xA11CE_2));
+    let op = recovery_commitment(&layer, alice, nueva_id);
+    let subida = recovery_climb_proof(&layer, alice, nueva_id);
+    let (pa, ia, pb, ib) = custodian_pair_wide_with(&ck, op, 2, 4);
+    layer
+        .apply_recovery_delegated(subida, pa, ia, pb, ib, alice, nueva_id)
+        .expect("y recuperan");
+    assert_eq!(layer.public_id_of(alice), Some(nueva_id));
+    assert_eq!(layer.balance_of(alice), Some(1000), "la recuperacion no mueve dinero");
+
+    // 4. Congelar a Bob.
+    let op = freeze_commitment(&layer, bob, true);
+    let subida = freeze_climb_proof(&layer, bob, true);
+    let (pa, ia, pb, ib) = custodian_pair_wide_with(&ck, op, 0, 1);
+    layer
+        .apply_freeze_delegated(subida, pa, ia, pb, ib, bob, true)
+        .expect("y congelan");
+    assert!(layer.is_frozen(bob));
+
+    // 5. La gobernanza ancha rota los custodios a otro conjunto ancho...
+    let entrantes: Vec<Digest> = (0..5).map(|i| wide_key(0xD0_0D_00 + i)).collect();
+    let raiz_entrante =
+        stark_experiment::circuit_threshold::build_custodian_set_wide(&entrantes).0;
+    let op = governance_commitment(&layer, raiz_entrante);
+    let (pa, ia, pb, ib) = governance_pair_wide_with(&gk, op, 0, 2);
+    layer
+        .apply_governance_delegated(pa, ia, pb, ib, raiz_entrante)
+        .expect("dos miembros de clave ancha rotan los custodios");
+    assert_eq!(layer.custodian_set_root(), raiz_entrante);
+
+    // ...y los entrantes emiten.
+    let op = mint_commitment(&layer, alice, 2000);
+    let subida = mint_climb_proof(&layer, alice, 2000);
+    let (pa, ia, pb, ib) = custodian_pair_wide_with(&entrantes, op, 1, 3);
+    layer
+        .apply_mint_delegated(subida, pa, ia, pb, ib, alice, 2000)
+        .expect("los custodios entrantes emiten");
+    assert_eq!(layer.balance_of(alice), Some(3000));
+    assert_eq!(layer.total_supply(), 3500);
+}
+
+/// ⚠️ **FALSADOR: sobre un conjunto ancho, una clave de un solo elemento no
+/// autoriza** (RFC-0018 E2, §701; `SECURITY.md` 3.10). Es el ataque que esa
+/// sección declaraba: agotar los 64 bits de un elemento contra la identidad
+/// pública. Una clave de un solo elemento es lo único que alcanza esa
+/// búsqueda; aquí el atacante tiene incluso más: el primer elemento verdadero
+/// de las claves de dos custodios y el camino de cada uno en el conjunto. Con
+/// los otros tres a cero la identidad es otra y la subida no
+/// llega a la raíz de la capa (`NotTheIssuer`); con la raíz de la capa puesta
+/// a mano en las entradas, la prueba no verifica. Lo mismo en la gobernanza.
+/// Con las claves enteras, las dos operaciones se aplican: el rechazo es por
+/// la clave y no por el montaje.
+#[test]
+fn una_clave_de_un_solo_elemento_no_autoriza_sobre_un_conjunto_ancho() {
+    use stark_experiment::circuit_governance::{build_governance_set_wide, GOVERNANCE_DOMAIN};
+    use stark_experiment::circuit_threshold::{build_custodian_set_wide, CUSTODIAN_DOMAIN};
+    let z = BaseElement::ZERO;
+    let solo_el_primero = |k: &Digest| -> Digest { [k[0], z, z, z] };
+
+    let ck = custodian_keys_wide();
+    let gk = governance_keys_wide();
+    let (_, cp) = build_custodian_set_wide(&ck);
+    let (_, gp) = build_governance_set_wide(&gk);
+    let mut layer = new_layer_wide();
+    let alice = layer.open_account(BaseElement::new(SK_ALICE));
+
+    // --- Custodios: emitir con el primer elemento de dos claves.
+    let op = mint_commitment(&layer, alice, 1000);
+    let subida = mint_climb_proof(&layer, alice, 1000);
+    let (pa, ia) = autorizacion_ancha(CUSTODIAN_DOMAIN, solo_el_primero(&ck[1]), &cp[1], op);
+    let (pb, ib) = autorizacion_ancha(CUSTODIAN_DOMAIN, solo_el_primero(&ck[3]), &cp[3], op);
+    assert_ne!(ia.custodian_set_root, layer.custodian_set_root(), "la subida va a otra raiz");
+    let r = layer.apply_mint_delegated(
+        subida.clone(), pa.clone(), ia.clone(), pb.clone(), ib.clone(), alice, 1000,
+    );
+    assert!(
+        matches!(r, Err(LayerError::NotTheIssuer)),
+        "CRITICO: un elemento de la clave de un custodio ancho emite: {r:?}"
+    );
+    let (mut ia2, mut ib2) = (ia, ib);
+    ia2.custodian_set_root = layer.custodian_set_root();
+    ib2.custodian_set_root = layer.custodian_set_root();
+    let r = layer.apply_mint_delegated(subida.clone(), pa, ia2, pb, ib2, alice, 1000);
+    assert!(
+        matches!(r, Err(LayerError::VerificationFailed(_))),
+        "CRITICO: con la raiz de la capa puesta a mano, la prueba verifica: {r:?}"
+    );
+    assert_eq!(layer.total_supply(), 0, "no se emitio nada");
+
+    // La clave entera, con los mismos materiales: emite.
+    let (pa, ia, pb, ib) = custodian_pair_wide_with(&ck, op, 1, 3);
+    layer
+        .apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1000)
+        .expect("con la clave entera, los mismos custodios emiten");
+    assert_eq!(layer.total_supply(), 1000);
+
+    // --- Gobernanza: rotar los custodios con el primer elemento de dos claves.
+    let entrantes: Vec<Digest> = (0..5).map(|i| wide_key(0xD0_0D_00 + i)).collect();
+    let raiz_entrante = build_custodian_set_wide(&entrantes).0;
+    let saliente = layer.custodian_set_root();
+    let op = governance_commitment(&layer, raiz_entrante);
+    let (pa, ia) = autorizacion_ancha(GOVERNANCE_DOMAIN, solo_el_primero(&gk[0]), &gp[0], op);
+    let (pb, ib) = autorizacion_ancha(GOVERNANCE_DOMAIN, solo_el_primero(&gk[2]), &gp[2], op);
+    let r = layer.apply_governance_delegated(
+        pa.clone(), ia.clone(), pb.clone(), ib.clone(), raiz_entrante,
+    );
+    assert!(
+        matches!(r, Err(LayerError::NotTheIssuer)),
+        "CRITICO: un elemento de la clave de un gobernador ancho rota los custodios: {r:?}"
+    );
+    let (mut ia2, mut ib2) = (ia, ib);
+    ia2.custodian_set_root = layer.governance_set_root();
+    ib2.custodian_set_root = layer.governance_set_root();
+    let r = layer.apply_governance_delegated(pa, ia2, pb, ib2, raiz_entrante);
+    assert!(
+        matches!(r, Err(LayerError::VerificationFailed(_))),
+        "CRITICO: con la raiz de la gobernanza puesta a mano, la prueba verifica: {r:?}"
+    );
+    assert_eq!(layer.custodian_set_root(), saliente, "los custodios no cambiaron");
+    assert_eq!(layer.governance_change_count(), 0);
+
+    // La clave entera: rota.
+    let (pa, ia, pb, ib) = governance_pair_wide_with(&gk, op, 0, 2);
+    layer
+        .apply_governance_delegated(pa, ia, pb, ib, raiz_entrante)
+        .expect("con la clave entera, la gobernanza rota");
+    assert_eq!(layer.custodian_set_root(), raiz_entrante);
+}
+
+/// **Un libro de claves estrechas rota sus custodios a claves anchas**
+/// (RFC-0018, la corrección del §683, en la capa: §701). La gobernanza es
+/// inmutable y sigue siendo la de un elemento: firma con su clave rellenada y
+/// lleva el conjunto de custodios a uno de claves anchas. Desde ahí emiten los
+/// entrantes, con la clave entera, y no los salientes. Lo que sólo da un libro
+/// nuevo es la gobernanza ancha.
+#[test]
+fn un_libro_de_claves_estrechas_rota_sus_custodios_a_claves_anchas() {
+    let mut layer = new_layer();
+    let alice = open_and_fund(&mut layer, SK_ALICE, 1000);
+    let gobernanza = layer.governance_set_root();
+    assert_eq!(gobernanza, governance_root(), "la gobernanza de la suite, estrecha");
+
+    // La gobernanza estrecha, por la delegada, lleva los custodios a claves anchas.
+    let entrantes = custodian_keys_wide();
+    update_custodians_delegated(&mut layer, custodian_root_wide());
+    assert_eq!(layer.custodian_set_root(), custodian_root_wide());
+    assert_eq!(layer.governance_set_root(), gobernanza, "la gobernanza no cambia");
+
+    // Los salientes, de un elemento, ya no emiten.
+    let op = mint_commitment(&layer, alice, 1000);
+    let subida = mint_climb_proof(&layer, alice, 1000);
+    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    let r = layer.apply_mint_delegated(subida.clone(), pa, ia, pb, ib, alice, 1000);
+    assert!(
+        matches!(r, Err(LayerError::NotTheIssuer)),
+        "CRITICO: los custodios salientes emiten tras la rotacion: {r:?}"
+    );
+
+    // Los entrantes, con la clave entera, sí.
+    let (pa, ia, pb, ib) = custodian_pair_wide_with(&entrantes, op, 1, 3);
+    layer
+        .apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1000)
+        .expect("los custodios de clave ancha emiten en un libro de gobernanza estrecha");
+    assert_eq!(layer.balance_of(alice), Some(2000));
+}

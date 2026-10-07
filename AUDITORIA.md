@@ -49023,3 +49023,155 @@ saldrán así: la cuenta llega al §699.
 
 **Lo que NO cierra.** Nada de la cola. El atado que el §564 dejó nombrado —que cada RFC lleve su
 viñeta de autor y la de asistencia— sigue sin hacer.
+
+## §701 — RFC-0018 E2, tercera pieza: la capa con claves anchas de custodios y de gobernanza, y una clave de un elemento que no autoriza
+
+El commit que lleva este asiento, sobre `8b8b9e9` (el §700). Un solo sello:
+`crates/zk-ssl/src/tests_support.rs` gana los ayudantes de los conjuntos anchos y
+`crates/zk-ssl/src/tests.rs` tres tests; `SECURITY.md` 3.10 se reescribe en su sitio, con lo
+construido y lo que sigue valiendo un elemento; el RFC-0018 gana la tercera pieza de E2, su estado,
+los asientos de su cabecera y una corrección en «Compatibilidad»; la fila del RFC-0018 en
+`spec/README.md`; los contadores; y este asiento. Lo escribe y lo comprueba una sesión de Claude
+Code, y lo commitea la sesión que la lanzó, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre: la rama llega al §700, y
+ninguna de las seis ramas del repositorio en `origin` (`git ls-remote`, corrido otra vez justo antes
+del commit) lleva un §701: las más altas, `main` y esta, llegan al §693, y las otras cuatro al §685,
+§658, §641 y §627. El sello no cambia ningún AIR, ningún vector, ni lo que acepta la capa, el nodo
+o el kit, y el cable sigue en `zkssl/0.4`. El canon entero
+no se corrió: sí la suite del crate que toca y las compuertas rápidas (en «Medido»).
+
+**De dónde sale.** `SECURITY.md` 3.10 (§670) declaraba que las claves de custodio y de gobernanza
+son de un elemento —unos 64 bits, y una búsqueda fuera de línea de unas 2^63 evaluaciones contra una
+identidad pública; con Grover, unas 2^32 iteraciones— y que no había arreglo sin cambiar el formato.
+El RFC-0018 E2 lo cambia, en el tren `zkssl/0.5`: el §683 construyó las derivaciones anchas, y el
+§684 el umbral del cable con la clave entera. La sección seguía diciendo «un elemento», y el §699 lo
+dejó dicho: «No pone al día `SECURITY.md` 3.10». El autor aprobó terminar E2, con un falsador de que
+una clave de un solo elemento no autoriza. Antes de escribir nada se leyó qué faltaba:
+
+- **En el cable, nada.** El único AIR de autoridad que verifica la capa es `NullifierThresholdAir`,
+  para los custodios y para la gobernanza, con su dominio: el censo del RFC-0009
+  (`el_censo_del_cable_da_fila_a_cada_air_verificada`) no tiene otro, y ningún `verify::<` de
+  `zk-ssl`, `zk-ssl-air`, `zk-ssl-node` ni `zk-ssl-verify` nombra los otros siete AIR que llevan una
+  clave de autoridad (`ThresholdAir`, `SingleThresholdAir`, `GovernanceAir`, `MintAir`, `FreezeAir`,
+  `RecoveryAir` y `MintPendingAir`). Ese AIR es el del §684.
+- **En la capa, ejercitarla.** La capa no ve claves: recibe las dos raíces y verifica cada par contra
+  ellas (`verify_threshold_pair`), así que no hay nada que cambiar en ella. Pero ningún test la
+  ejercitaba con claves anchas: los 433 de la capa constituyen con las claves de un elemento de la
+  suite.
+- **En el nodo, nada antes del corte.** El nodo en `dev` abre con las raíces de la suite, y los
+  vectores de rechazo publicados llevan su raíz de custodios (medido abajo). Ensanchar las claves de
+  la suite cambiaría lo que el nodo sirve frente a vectores que no se reescriben (§692).
+
+**Lo que hace.**
+
+1. **`tests_support.rs`**: `custodian_keys_wide` y `governance_keys_wide` —las claves de la suite,
+   abiertas a cuatro elementos no nulos con `wide_key`—, sus dos raíces, `new_layer_wide`,
+   `autorizacion_ancha` —una autorización con clave de cuatro elementos sobre el camino que se le
+   dé, suelta para que un falsador firme con una clave que no es la de su hoja— y los dos pares,
+   `custodian_pair_wide_with` y `governance_pair_wide_with`. Los de un elemento no cambian.
+2. **Tres tests en `tests.rs`**, en una sección nueva:
+   - `un_libro_de_claves_anchas_ejerce_las_cinco_autoridades`: un libro constituido con las dos
+     raíces anchas emite, emite a un pendiente, recupera, congela, y con su gobernanza ancha rota los
+     custodios a otro conjunto ancho, desde el que emiten los entrantes. Cada operación, por la vía
+     delegada, con dos custodios o dos miembros distintos.
+   - `una_clave_de_un_solo_elemento_no_autoriza_sobre_un_conjunto_ancho`, el falsador. Sobre ese
+     libro, una clave de un solo elemento —lo único que alcanza la búsqueda de 2^63—, aquí incluso
+     con el primer elemento verdadero de las claves de dos custodios y el camino de cada uno, sube a
+     otra raíz, y la emisión sale `NotTheIssuer`; con la raíz de la
+     capa puesta a mano en las entradas, `VerificationFailed`; el suministro sigue en 0. En la
+     gobernanza, igual: no rota, y el contador sigue en 0. Con las claves enteras, las dos operaciones
+     se aplican sobre los mismos materiales: el rechazo es por la clave, no por el montaje.
+   - `un_libro_de_claves_estrechas_rota_sus_custodios_a_claves_anchas`: la corrección del §683, en la
+     capa. La gobernanza de la suite, de un elemento, firma con su clave rellenada y lleva los
+     custodios a un conjunto ancho; la gobernanza no cambia; los salientes ya no emiten
+     (`NotTheIssuer`), y los entrantes, con la clave entera, sí.
+
+   Los ayudantes y la sección van al final de los dos ficheros, para que ninguna cita `path:línea`
+   de `doc/ecst/VERIFICACION.md` se mueva. En un primer borrador de esta sesión iban a mitad de
+   fichero, detrás de `update_custodians_delegated` y de la sección de gobernanza, y movían seis
+   citas que en `8b8b9e9` dan exactamente en su sitio: en `tests.rs`, la 2070
+   (`recovery_locks_out_the_compromised_key`), la 2109
+   (`recovery_preserves_the_balance_and_the_supply`) y la 2162 y la 2198 (dos llamadas a
+   `apply_recovery_delegated`); en `tests_support.rs`, la 504-518 (`recovery_climb_proof`) y la 527
+   (su llamada). También movían la 2706 y la 2987, que ya no dan en el test que nombran. Ahora las
+   3409 primeras líneas de `tests.rs` y las 590 primeras de `tests_support.rs` son las de `8b8b9e9`
+   (`cmp` contra `git show`), y ninguna cita del árbol a esos dos ficheros pasa de la 2987 ni de la
+   527 (`git grep`). C6f, en el mismo registro, dice que `apply_recovery_delegated` «sólo se llama
+   desde tests.rs:2162, 2198 y tests_support.rs:527»; el test de las cinco autoridades la llama una
+   vez más. Sigue valiendo lo que C6f afirma: en el árbol sólo la ejercitan los tests. La lista es
+   la de su árbol, 71c5aad, y C6f no se toca: el registro es generado, y de él los sellos sólo ponen
+   al día la cifra de la capa (en «Contadores»).
+3. **`SECURITY.md` 3.10**, reescrita en su sitio y con su número: lo que cierra E2 en sus tres
+   piezas, con la estimación del RFC-0018 para la clave ancha —unas 2^255 evaluaciones; con Grover,
+   unas 2^128 iteraciones, por la misma cuenta que los 2^32, las dos ESTIMADAS—, y lo que sigue
+   valiendo un elemento: un libro de claves estrechas y, en él, su gobernanza; el nodo, que no
+   constituye libros; el cable en `zkssl/0.4`; y los siete circuitos que no van por el cable.
+4. **El RFC-0018.** El «Estado» dice E2 construida en el cable, y que falta el corte; los asientos de
+   la cabecera ganan los de E1 y E2; la tercera pieza de E2 va detrás de la segunda; y en
+   «Compatibilidad», sin borrar la frase, un «⚠️ Corregido en el §701»: los AIR del cable que E1 y E2
+   tocan son seis, no siete —los cinco del §680 y `NullifierThresholdAir`, el único fichero de
+   circuito del §684 (`git show --stat` de los dos)—, y la cabeza firma raíces distintas sólo si el
+   libro se constituye con claves anchas.
+5. **`spec/README.md`**: la fila del RFC-0018, que decía «nothing built», dice E1 y E2 construidas,
+   con sus asientos, y el corte pendiente; y que las claves son de cuatro elementos en el cable
+   desde el §684, mientras el nodo en `dev` y los libros de claves estrechas siguen en uno
+   (`SECURITY.md` 3.10).
+
+**Medido.**
+
+- **La suite de la capa**, `cargo test -p zk-ssl --release --locked`: 436 pasan, 7 ignorados y
+  0 fallos, en 176,56 s; 0 warnings. Otra vez con la sección y los ayudantes ya al final de sus
+  ficheros: 436, 7 y 0, en 770,75 s; 0 warnings. La máquina estaba compartida: a mitad de la
+  corrida, `uptime` daba una carga de 17,89 en el último minuto, sobre cuatro CPU. Los tres tests
+  nuevos, solos, en 9,66 s y, tras el traslado, en 18,34 s, con una carga de 19,55.
+- **La raíz que sirve el nodo en `dev`**: el `zk-ssl-node` del `target` del clon, con `--dev`,
+  contesta a `zkssl_params` con `custodianRoot`
+  `0xe108874dc6ea1e2e4a881febe150a67eac6d1c5bc5ddcf854e8e1163f6b9e628`. Es la única que aparece en
+  los 27 vectores de `spec/vectors/rechazo/` que llevan ese campo (`grep` y `uniq -c`).
+- **Las compuertas**, desde la raíz y sobre el texto final de este asiento: `check_tests`, 1846
+  declarados, ninguno anidado; `check_modulos`, 204 ficheros, todos declarados; `check_vectores`,
+  477 vectores y 925 líneas con su huella, ninguno tocado; `check_cifras`, 26 cifras de tests y
+  ninguna contradice el canon; y las otras del bucle «2 ter» —`check_figures`, `check_columns`,
+  `check_constraint_layout`, `verificar_citas`, `check_dominios`, `check_publicadas`, `check_nucleo`
+  y `check_techo`—. Las doce salen con 0.
+
+**Probado.** Los tres tests. El falsador, ensayado contra dos mutaciones de `stark-experiment`,
+restauradas después con el mismo sha256:
+
+- `derive_custodian_id_wide` con sólo el primer elemento de la clave: el falsador cae en «la subida
+  va a otra raiz», porque el primer elemento sube ya a la raíz de la capa; y, con esa comprobación
+  previa quitada para el ensayo, en «CRITICO: un elemento de la clave de un custodio ancho emite:
+  Ok(())»: la capa emite.
+- `derive_governor_id_wide`, igual: cae en «CRITICO: un elemento de la clave de un gobernador ancho
+  rota los custodios: Ok(())».
+
+Con la primera caen también los otros dos: las claves anchas de la suite tienen por primer elemento
+la estrecha, así que el conjunto ancho mutado es el estrecho. Con la segunda cae el de las cinco
+autoridades, y el de la rotación, que no usa una gobernanza ancha, sigue verde. El ensayo se hizo con
+los tests a mitad de `tests.rs`; el traslado al final les quita cuatro espacios de sangría, y
+después sólo cambió una frase del comentario del falsador, no su código.
+
+**Contadores.** `zk-ssl` 433 -> 436. TOTAL DE SELLO 1684 -> 1687 y TOTAL CON LARGOS 1821 -> 1824, en
+los tres párrafos ancla —`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`—, con el desglose de la capa en
+436 en `PRINCIPIOS.md`. La cifra de la capa pasa de 433 a 436, como en el §697, también en
+`ARQUITECTURA.md` (dos líneas), otra línea de `PRINCIPIOS.md`, los bloques de reproducción de
+`PAPER.md` y `PAPER_EN.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y
+`doc/ecst/VERIFICACION.md`, cuya cita a `tools/canon.sh:109` sigue en su línea; y en la fila de
+`zk-ssl` del canon. La cuenta de `check_tests` pasa de 1843 a 1846. Las «1364 declaradas» y las «1349
+declared» no se tocan, como en los sellos anteriores (5.A-319). El `BACKLOG.md` sigue en 45 abiertas y
+73 resueltas: ninguna entrada llevaba esto.
+
+**Lo que NO hace.** No corta el tren: la versión sigue en `zkssl/0.4`, ninguna prueba cambia y
+ningún vector se toca; el corte lleva E1, E2 y el E3 del RFC-0019 juntos (D-D). No ensancha las
+claves de la suite ni las del nodo en `dev`, por la raíz que sirve el nodo (en «De dónde sale»). No
+da al nodo cómo constituir un libro con raíces propias (`--custodian-root` y `--governance-root`), ni
+escribe cómo se generan y se custodian esas claves: es otro sello, sobre éste. No ensancha los otros
+siete circuitos que llevan una clave de autoridad: no van por el cable y no limitan lo que garantiza
+la capa; si se ensanchan, se marcan o se retiran lo decide el autor. No hace que la capa rechace una
+clave estrecha: rellenada con ceros es la misma identidad, y lo decidido (D-B y D-C, con la
+corrección del §683) la conserva; un libro que quiera claves de 256 bits se constituye con claves
+anchas, y su gobernanza sólo así. No pasa el RFC-0018 a ACEPTADO. Y no publica un kit: el kit no
+verifica pruebas de autoridad.
+
+**Lo que NO cierra.** Nada de la cola: el `BACKLOG.md` no tenía entrada para esto. El corte del tren
+sigue pendiente.
