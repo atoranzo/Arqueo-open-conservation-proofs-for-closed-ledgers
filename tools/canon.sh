@@ -320,6 +320,14 @@ fi
 # de las propias herramientas —exclusiones que les faltaban y un patron que
 # tomaba una plantilla por cita—, no deuda de documentacion, y 269 los
 # arreglo ANTES de cablearlas.
+#
+# Y estar en el bucle no basta: hay que mirar algo (§695). `check_columns`
+# corria aqui sin argumentos, leia `.` -desde la raiz, CERO `.rs`- y decia
+# «0 circuitos», verde. Su universo y su prueba de vida viven ahora en la
+# herramienta (`UNIVERSO`): los circuitos de `stark-experiment` y las AIR del
+# kit, con su probador, y ROJO si cualquiera de los dos baja de su minimo de
+# ficheros o de columnas. La llamada sigue sin argumentos, como las demas:
+# asi la que se hace a mano, desde donde sea, mira lo mismo que esta.
 msg ""
 msg "== CANON · las herramientas de tools/ =="
 for H in check_cifras check_figures check_columns check_constraint_layout verificar_citas check_dominios check_publicadas check_nucleo check_techo; do

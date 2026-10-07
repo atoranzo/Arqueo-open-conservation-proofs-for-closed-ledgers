@@ -47947,3 +47947,159 @@ toolchain no se fija en ningún fichero. El lector de manifiestos no es un lecto
 que el árbol no usa, como renombrar un paquete con `clave.package`, no la ve.
 
 **Lo que NO cierra.** Nada de la cola.
+
+## §695 — `check_columns` vuelve a mirar: su universo y su prueba de vida, en la herramienta, y las AIR del kit con su probador
+
+El commit que lleva este asiento, sobre `bf7065e` (el §694). Un solo sello: `tools/check_columns.py`
+deja de leer `.` cuando se la llama sin argumentos y mira sus dos directorios,
+`crates/stark-experiment/src` y `crates/zk-ssl-air/src`, con una prueba de vida que la pone roja si
+cualquiera de los dos baja de su mínimo de ficheros o de columnas; lee las declaraciones con `pub`,
+reconoce el relleno con `fila`, `filas` y `TraceTable::set`, lo cuenta sólo fuera de los módulos de
+test, y busca el relleno de cada AIR del kit también en el fichero de su probador; el bloque «2 ter»
+del canon gana un párrafo; y este asiento.
+Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El sello no toca el
+código de ningún crate, y en la sesión no se corrió el canon entero: sobre este mismo árbol se
+corrieron las nueve herramientas de su bucle, `check_tests`, `check_modulos` y `check_vectores`, y
+las doce salieron con 0.
+
+**De dónde sale.** La herramienta nació con la sección 10 de este fichero, «Columnas declaradas que
+nunca se rellenan», con su directorio en la línea de uso y «11 circuitos» en la salida. El canon la
+corre en su bucle de herramientas sin argumentos —`python3 "tools/$H.py"`, desde la raíz—, y sin
+argumentos leía `.`. Medido sobre `bf7065e`: desde la raíz, «0 circuitos: todas las columnas
+declaradas se rellenan», y sale con 0. El §511 lo fichó (5.A-334) y lo esquivó corriéndola en su
+bloque con su directorio; el §556 lo fichó otra vez; el §438 la describió como si mirara
+`crates/stark-experiment/src`. Pasarle las dos rutas tampoco bastaba. Medido sobre `bf7065e`, con la
+herramienta de entonces:
+
+- en `crates/stark-experiment/src`, 42 ficheros y 259 columnas, todas rellenadas;
+- en `crates/zk-ssl-air/src`, 5 ficheros y CERO columnas. Sólo leía `const COL_…: usize` al
+  principio de la línea, y las AIR del kit declaran `pub const COL_…`: 37 columnas en `banda.rs`,
+  `cobro_pendiente.rs`, `pago_en_curso.rs` y `prenda.rs`. «5 circuitos», verde, sin mirar ninguna;
+- y en `crates/stark-experiment/src` se le escapaban once, también `pub`: `COL_IACC` y `COL_FACC`,
+  los acumuladores del §511, en `circuit_burn`, `circuit_claim`, `circuit_claim_v2`, `circuit_send`
+  y `circuit_send_v2`, y `COL_X` en `circuit_refund_v2`.
+
+Y leer el `pub` no basta. Las AIR del kit no rellenan su traza: la rellena su probador, en
+`crates/stark-experiment/src/circuit_<nombre>.rs`, con `fila[COL] = …` y `filas[…][COL] = …`; y los
+acumuladores se rellenan con `t.set(COL, …)`. Son tres formas que la herramienta no reconocía: con
+el `pub` y sin ellas, salen 47 falsos positivos, las 37 columnas del kit y los diez acumuladores.
+
+**Lo que hace.**
+
+1. **El universo, en la herramienta.** `UNIVERSO` declara los dos directorios, relativos a la raíz
+   del repositorio, que la herramienta deduce de su propia ruta, como `check_constraint_layout`
+   deduce su `RAIZ`. Sin argumentos mira eso, se la llame desde donde se la llame; con argumentos,
+   los directorios que se le den. El canon la sigue llamando sin argumentos, como a las otras ocho
+   del bucle, y no con las rutas en su línea: así la llamada a mano y la del canon miran lo mismo,
+   y la lista tiene un solo dueño.
+2. **La prueba de vida.** Cada directorio del universo lleva su mínimo de ficheros y de columnas:
+   42 y 270 en `stark-experiment`, 5 y 37 en `zk-ssl-air`, lo medido hoy. Por debajo de cualquiera
+   de los dos sale ROJO, con el directorio y lo que vio, aunque todas las columnas que vea se
+   rellenen. Es un suelo y no un pin: un circuito nuevo no obliga a tocarlo; uno que se va, sí, y
+   se baja a mano, con su asiento. Cuenta columnas y no sólo ficheros, porque lo que la dejó ciega
+   en el kit no fue un fichero de menos, sino una forma de declarar que no leía. Con argumentos no
+   hay mínimos, pero un directorio que no existe, sin `.rs` o sin columnas es ROJO: un universo
+   vacío no pasa.
+3. **Lo que lee.** Las declaraciones con `pub` o `pub(…)`, también sangradas; el relleno con `fila`
+   y `filas`, además de `row`, `rows` y `state`, y con `t.set(COL, …)`. Una comparación `==` ya no
+   cuenta como escritura; hoy no hay ninguna en los dos directorios. Recorre los subdirectorios, sin
+   `target` ni `.git`: con `os.listdir`, un circuito movido a un subdirectorio salía del universo
+   sin que nada lo dijera.
+4. **Lo que escribe un test no rellena.** Las escrituras se cuentan fuera de los módulos de test:
+   un `#[cfg(test)]` y un `mod <nombre> {` en la columna 0, hasta la primera `}` sola en la
+   columna 0. Lo que escribe un test cuenta como uso, como contaba la versión de antes. Es la
+   corrección de la revisión de este sello: su primera pasada contaba `.set(COL, …)` en cualquier
+   sitio, sea cual sea el receptor, y al medirlo salió que de las 26 llamadas `.set(COL_…` de los
+   dos directorios, 16 están en los tests. Son negativos que manipulan la traza con
+   `trace.set(COL, …)`, y con ellos la primera pasada daba verde donde la de `bf7065e` daba ROJO.
+5. **El probador del kit.** Una columna de `crates/zk-ssl-air/src/<nombre>.rs` se busca rellenada en
+   su fichero y en `crates/stark-experiment/src/circuit_<nombre>.rs`. El emparejamiento es por
+   nombre de fichero y se declara en la herramienta (`KIT`, `PROBADOR_DEL_KIT`). Los cuatro
+   `circuit_<nombre>.rs` reexportan las columnas de su AIR con `pub use zk_ssl_air::<nombre>::{…}`,
+   todas.
+6. **Lo que dice.** Una línea por directorio —ficheros, cuántos declaran columnas y cuántas
+   columnas— y una final con los totales. La de antes, «N circuitos», contaba ficheros: de los 42
+   de `stark-experiment`, 25 declaran columnas.
+7. **La prosa.** La cabecera de la herramienta cuenta cómo corrió sin mirar nada, qué reconoce y
+   qué no; el bloque «2 ter» del canon, que estar en el bucle no basta y dónde vive ahora el
+   universo.
+
+**Medido.** Sobre este árbol:
+
+- **Sin argumentos.** `crates/stark-experiment/src`: 42 ficheros, 25 con columnas y 270 columnas.
+  `crates/zk-ssl-air/src`: 5 ficheros, 4 con columnas y 37 columnas. «47 ficheros en 2
+  directorios, 307 columnas: todas las columnas declaradas se rellenan», y sale con 0; lo mismo
+  llamada desde `/tmp`. Con `.` como argumento, el árbol entero menos `target` y `.git`: 243
+  ficheros, 29 con columnas y 307 columnas, todas rellenadas. Fuera de los dos directorios no hay
+  una sola constante `COL_`, medido con `grep`.
+- **El recorte de los tests.** En los 47 ficheros hay 45 `#[cfg(test)]`, y los 45 abren un módulo
+  en línea con esa forma, en 44 ficheros; dentro de cada uno, las llaves cuadran. No hay otro
+  `cfg` con `test` en los dos directorios. Recortarlos quita 16 de las 316 escrituras que las
+  columnas tienen en su propio fichero: son las 16 `trace.set(COL_…` de los negativos, y no hay
+  ninguna otra. No quita ninguna declaración ni ninguna de las 37 escrituras del kit en sus
+  probadores. Las 307 columnas siguen rellenadas. Quedan diez `.set(COL_…`, todas `t.set` en
+  `rellena_acumuladores(t: &mut TraceTable<BaseElement>)`, la función de los acumuladores.
+- **Falsadores, sobre copias** de la herramienta y de los dos directorios, con la herramienta de
+  este sello sin argumentos y con la de `bf7065e` con las dos rutas:
+
+  | la copia | este sello | `bf7065e` con las rutas |
+  |---|---|---|
+  | sin `fila[COL_BAL] = c_bal;` en `circuit_banda.rs` | ROJO: `COL_BAL` de `banda.rs` | verde |
+  | sin `t.set(COL_IACC, r, iacc);` en `circuit_burn.rs` | ROJO: `COL_IACC` | verde |
+  | sin `fila[COL_SAL..COL_SAL + 4]` en `circuit_prenda.rs` | ROJO: `COL_SAL` de `prenda.rs` | verde |
+  | `fila[COL_BAL] == c_bal` en vez de la escritura | ROJO: `COL_BAL` | verde |
+  | sin `row[COL_MAX_SUPPLY] = …` en `circuit_mint_pending.rs` | ROJO | ROJO |
+  | sin `native.rs`, que no declara columnas | ROJO: 41 ficheros | verde |
+  | las columnas de `banda.rs` y de su probador con otro prefijo, `K_` | ROJO: 28 columnas | verde |
+  | los 26 `circuit_*.rs` movidos a un subdirectorio | ROJO: las 37 del kit, sin probador | verde: «16 circuitos» |
+  | sin `crates/zk-ssl-air/src` | ROJO: «no es un directorio» | ROJO: una traza de Python |
+  | sin `row[COL_R_ID..COL_R_ID + 4]` en `circuit_mint_pending.rs`, que un negativo escribe con `trace.set` | ROJO: `COL_R_ID` | ROJO |
+  | sin `state[COL_ACC] = …` en `solvency.rs`, que un negativo escribe con `trace.set` | ROJO: `COL_ACC` | ROJO |
+
+  Con la primera pasada de este sello, la de antes de su revisión, los nueve primeros dan lo mismo
+  que con la de ahora, y los dos últimos, verde.
+
+- **Lo que cuesta.** Cinco corridas alternadas de tres versiones sobre la misma copia, en una
+  máquina de 4 CPU compartida con otra compilación, con una carga media de 11 a 12 en el último
+  minuto. La de este sello, de 0,95 a 1,14 s de CPU y de 1,6 a 2,5 s de reloj. La de su primera
+  pasada, de 1,29 a 1,42 s de CPU: buscaba las escrituras en el fichero entero, y sin los tests
+  queda el 65 % de los bytes. La de `bf7065e` con las dos rutas, de 1,62 a 2,10 s de CPU. Con
+  esta carga, las cifras se mueven de una sesión a otra: la primera pasada se midió de 1,40 a
+  1,53 s, con carga 8, y su revisión la midió en 1,26 s. En el canon, hasta hoy, no costaba nada:
+  no leía ningún fichero.
+- **Las compuertas.** `check_tests`: 1839 declarados, ninguno anidado. `check_modulos`: 203
+  ficheros, todos declarados. `check_vectores` VERDE. Y las nueve del bucle «2 ter» —`check_cifras`,
+  `check_figures`, `check_columns`, `check_constraint_layout`, `verificar_citas`, `check_dominios`,
+  `check_publicadas`, `check_nucleo` y `check_techo`—, como las corre el canon, desde la raíz,
+  salen con 0 sobre el texto final de este asiento. `bash -n tools/canon.sh` pasa.
+
+**Probado.** Ningún test nuevo: el sello no toca el código de ningún crate. La herramienta se
+ensaya contra copias, como `check_vectores` en el §692 y el arnés en el §693; los once falsadores
+de arriba son la medida, y el guion que los arma no entra en el árbol.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1839, el TOTAL DE SELLO en 1680 y el TOTAL
+CON LARGOS en 1817, como los dejó el §694. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas:
+ninguna entrada llevaba esto.
+
+**Lo que NO hace.** De las cinco AIR del kit mira cuatro. La de la edad vive en
+`crates/zk-ssl-air/src/lib.rs`, que la herramienta salta por su nombre, como el `lib.rs` de
+cualquier crate; sus columnas se llaman `C_…`, y su probador, `circuit_edad.rs`, rellena por
+columnas, `col[C_…][fila]`, una forma que no reconoce. `sal.rs` es el quinto fichero del directorio
+y no declara columnas. El emparejamiento con el probador es por nombre: que `circuit_<nombre>.rs`
+sea de verdad el probador de esa AIR, lo da por hecho. Sigue sin comprobar que la columna se
+rellene con el valor correcto o en todas las filas donde hace falta; una forma de relleno nueva
+da falsos positivos; y el tramo `row[COL..]`, ahora también `fila[COL..]`, cuenta como escritura
+aunque se lea, como ya lo contaba la versión de antes. `.set(COL, …)` cuenta como escritura sea
+cual sea el receptor: no comprueba que sea una `TraceTable`. El recorte de los tests es por forma:
+un módulo de test sangrado o con otro `cfg`, o un fichero entero de test, como `kat_probador.rs`,
+que `lib.rs` declara bajo `#[cfg(test)]`, no se recorta, y lo que escribe cuenta como relleno. Hoy
+no hay ninguno de los dos primeros, y los dos ficheros enteros de test que `lib.rs` declara así no
+declaran columnas. Recortar de más sólo quita escrituras: da ROJO, no VERDE. El nombre sigue invitando a leerla como una puerta de ancho de documentos (§438), y
+renombrarla no se hace aquí. Las otras ocho herramientas del bucle no se revisan con esta pregunta:
+las ocho imprimen hoy cuánto miran, y ninguna dice cero.
+
+**Lo que cierra.** El 5.A-334, que fichó el §511 y repitió el §556: la herramienta corría verde en
+el canon sobre un universo vacío.
+
+**Lo que NO cierra.** Nada más de la cola.
