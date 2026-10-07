@@ -8,8 +8,9 @@ hasta esta correccion aqui decia <<que ningun probador de ARQUEO devuelve>>, cie
 `src/trace/mod.rs` (`Trace::comprobar`, S537: el probador oculto devuelve Err con un testigo
 malo) y, con una sola linea, `src/trace/trace_table.rs` (spike-b-p4r3, sesiones 166 a 172, y
 la 176); todo lo demas es upstream byte a byte. Entra por
-`[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`.
-Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.
+`[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
+y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream
+pide `0.13`. Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.
 
 ---
 

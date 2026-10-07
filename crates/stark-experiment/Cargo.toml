@@ -9,7 +9,9 @@ license.workspace = true
 # distinto tanto de Arkworks como de halo2/pasta_curves. Mismo criterio de
 # aislamiento que ya aplicamos con halo2-experiment.
 [dependencies]
-winterfell = "0.13"
+# §694: clavada con `=`, como todo `winter-*`; lo comprueba `las_fijaciones_son_exactas`,
+# en los tests de `zk-ssl-verify`.
+winterfell = "=0.13.1"
 # ⚠️ §254: `native_merge` se mudo aqui para que el VERIFICADOR no arrastre
 #    el PROBADOR. Este crate lo REEXPORTA; no hay dos implementaciones.
 zk-ssl-hash = { path = "../zk-ssl-hash" }

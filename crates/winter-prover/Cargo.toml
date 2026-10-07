@@ -2,9 +2,11 @@
 # que crates.io publico para `winter-prover` 0.13.1 (checksum del .crate
 # 84cc631ed56cd39b78ef932c1ec4060cc6a44d114474291216c32f56655b3048), con estos cambios y ninguno mas:
 # `publish = false`, la descripcion, el repositorio, sin `documentation` ni la metadata de
-# docs.rs y sin el bench de criterion. Mismo nombre y misma version que el registry: asi lo
-# exige el [patch.crates-io] del Cargo.toml raiz, que lo sustituye en todo el workspace, kit
-# incluido. Licencia MIT de winterfell en LICENSE; lo que difiere de upstream, en README.md.
+# docs.rs y sin el bench de criterion, y desde el §694 sus dependencias `winter-*`
+# clavadas con `=0.13.1` donde upstream pide `0.13`. Mismo nombre y misma version que el
+# registry: asi lo exige el [patch.crates-io] del Cargo.toml raiz, que lo sustituye en todo
+# el workspace, kit incluido. Licencia MIT de winterfell en LICENSE; lo que difiere de
+# upstream, en README.md.
 
 [package]
 edition = "2021"
@@ -58,27 +60,27 @@ path = "src/lib.rs"
 bench = false
 
 [dependencies.air]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-air"
 
 [dependencies.crypto]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-crypto"
 
 [dependencies.fri]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-fri"
 
 [dependencies.math]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-math"
 
 [dependencies.maybe_async]
-version = "0.13"
+version = "=0.13.1"
 package = "winter-maybe-async"
 
 [dependencies.tracing]
@@ -87,10 +89,10 @@ features = ["attributes"]
 default-features = false
 
 [dependencies.utils]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-utils"
 
 [dev-dependencies.rand-utils]
-version = "0.13"
+version = "=0.13.1"
 package = "winter-rand-utils"

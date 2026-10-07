@@ -40,7 +40,9 @@ zk-ssl-guardian = { path = "../zk-ssl-guardian" }
 # con `cargo tree` antes y despues, comparado entero.
 zk-ssl-air = { path = "../zk-ssl-air" }
 stark-experiment = { path = "../stark-experiment" }
-winterfell = "0.13"
+# §694: clavada con `=`, como todo `winter-*`; lo comprueba `las_fijaciones_son_exactas`,
+# en los tests de `zk-ssl-verify`.
+winterfell = "=0.13.1"
 # ⚠️ **0.1.0-pre.0, SIN auditoría independiente**, declarado por el propio
 # crate. Elegido en la entrada 53 (§127.1) y confirmado en §235 como la
 # única usable de CUATRO candidatas. La versión va FIJADA con `=`: es una

@@ -36,6 +36,13 @@ license.workspace = true
 # el cable. La guardan dos tests del lib: las dependencias por ruta, y la
 # clausura leida del `Cargo.lock`.
 #
+# ⚠️ §694: la clausura leida del `Cargo.lock` deja de prohibir dos nombres y
+# pasa a ser una LISTA CERRADA, con version y origen: un paquete que entre,
+# salga o cambie de version la pone roja, y un probador con otro nombre
+# tambien. Y un tercer test, `las_fijaciones_son_exactas`, exige en el lock y
+# en cada manifiesto del workspace `winter-*` y `winterfell` a `=0.13.1`,
+# `xmss` a `=0.1.0-pre.0` y `ml-dsa` a `=0.1.1`, y el fork por ruta.
+#
 # ⚠️ §633 (RFC-0013 E4a): entra `zk-ssl-medio`, y con el `ml-dsa` de
 # RustCrypto, SIN auditoria independiente (lo declara el propio crate). Es
 # lo que hace falta para VERIFICAR la nota del medio y la inclusion del
@@ -57,9 +64,11 @@ zk-ssl-hash = { path = "../zk-ssl-hash" }
 #    Trae `winter-air`, `winter-crypto`, `winter-math` y `winter-verifier`
 #    clavados a 0.13.1, la version de `zk-ssl-hash`; NO `winter-prover`.
 zk-ssl-air = { path = "../zk-ssl-air" }
-# ⚠️ Solo para nombrar `BaseElement` en los tests. Clavada a la MISMA
-#    version que `zk-ssl-hash`: dos `BaseElement` de versiones distintas
-#    NO son el mismo tipo.
+# ⚠️ Para nombrar `BaseElement`. Clavada a la MISMA version que
+#    `zk-ssl-hash`: dos `BaseElement` de versiones distintas NO son el
+#    mismo tipo. §694: aqui decia "Solo para nombrar `BaseElement` en los
+#    tests", y no lo es: la usan `src/reverificacion.rs`, que el lib compila
+#    siempre, y `src/main.rs`, el binario del kit.
 winter-math = "=0.13.1"
 # ⚠️ §633: el medio del ancla (RFC-0013): el arbol SHA-256 de RFC 6962 y la
 #    nota checkpoint firmada con ML-DSA-44 tipo 0x06. SIN `firmar`: el kit

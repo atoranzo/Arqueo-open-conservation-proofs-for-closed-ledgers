@@ -1258,46 +1258,548 @@ mod tests {
         );
     }
 
+    // ---------- §694: la clausura es una LISTA CERRADA, y las fijaciones se comprueban ----------
+    //
+    // Hasta aqui la puerta de la clausura prohibia DOS nombres, `winter-prover` y `winterfell`:
+    // un paquete nuevo cualquiera, o un probador con otro nombre, pasaba sin que nadie lo viera.
+    // Y los `=` de los manifiestos se sostenian por convencion: `winter-fri` y `winter-utils` no
+    // lo llevaban en ningun sitio. La 0.13.1 es la ultima version de winterfell en crates.io, del
+    // 19-07-2025, y el fork no esta auditado: un cambio de dependencias tiene que poner rojo el
+    // canon, no pasar en silencio.
+
+    /// El `source` de crates.io en el `Cargo.lock`.
+    const CRATES_IO: &str = "registry+https://github.com/rust-lang/crates.io-index";
+
+    /// Un paquete del `Cargo.lock`: nombre, version, `source` (vacio sin el: el workspace y el
+    /// fork) y sus aristas tal como el lock las escribe.
+    struct PaqueteDelLock {
+        nombre: String,
+        version: String,
+        source: String,
+        aristas: Vec<String>,
+    }
+
+    impl PaqueteDelLock {
+        /// `nombre version origen`, la forma de la lista cerrada: `ruta` sin `source`, `crates.io`
+        /// del registry, y el `source` entero si viene de cualquier otro sitio.
+        fn id(&self) -> String {
+            let origen = match self.source.as_str() {
+                "" => "ruta",
+                CRATES_IO => "crates.io",
+                otro => otro,
+            };
+            format!("{} {} {}", self.nombre, self.version, origen)
+        }
+    }
+
+    fn paquetes_del_lock(lock: &str) -> Vec<PaqueteDelLock> {
+        let mut fuera = Vec::new();
+        for bloque in lock.split("[[package]]").skip(1) {
+            let mut p = PaqueteDelLock {
+                nombre: String::new(),
+                version: String::new(),
+                source: String::new(),
+                aristas: Vec::new(),
+            };
+            let mut dentro = false;
+            for linea in bloque.lines() {
+                let s = linea.trim();
+                if dentro {
+                    if s == "]" {
+                        dentro = false;
+                    } else {
+                        p.aristas.push(s.trim_end_matches(',').trim_matches('"').to_string());
+                    }
+                } else if let Some(v) = s.strip_prefix("name = ") {
+                    p.nombre = v.trim_matches('"').to_string();
+                } else if let Some(v) = s.strip_prefix("version = ") {
+                    p.version = v.trim_matches('"').to_string();
+                } else if let Some(v) = s.strip_prefix("source = ") {
+                    p.source = v.trim_matches('"').to_string();
+                } else if s == "dependencies = [" {
+                    dentro = true;
+                }
+            }
+            fuera.push(p);
+        }
+        fuera
+    }
+
+    /// La clausura de `raiz` en el lock, como `nombre version origen`. El lock escribe cada
+    /// arista como `nombre`, `nombre version` o `nombre version (source)`, lo justo para que sea
+    /// unica, y se resuelve al paquete, no al nombre: la puerta de antes juntaba las aristas de
+    /// todas las versiones de un nombre. Una arista que no casa con UN paquete hace fallar el
+    /// test: un caminante que pierde una arista es una puerta ciega.
+    fn clausura_del_lock(lock: &str, raiz: &str) -> std::collections::BTreeSet<String> {
+        let paquetes = paquetes_del_lock(lock);
+        let resolver = |arista: &str| -> usize {
+            let mut t = arista.splitn(3, ' ');
+            let (nombre, version, source) = (t.next().unwrap_or(""), t.next(), t.next());
+            let casan: Vec<usize> = paquetes
+                .iter()
+                .enumerate()
+                .filter(|(_, p)| {
+                    p.nombre == nombre
+                        && version.map_or(true, |v| p.version == v)
+                        && source.map_or(true, |s| {
+                            s.trim_start_matches('(').trim_end_matches(')') == p.source
+                        })
+                })
+                .map(|(i, _)| i)
+                .collect();
+            assert_eq!(casan.len(), 1, "la arista `{arista}` del lock casa con {casan:?}");
+            casan[0]
+        };
+        let mut vistos = std::collections::BTreeSet::new();
+        let mut cola = vec![resolver(raiz)];
+        while let Some(i) = cola.pop() {
+            if vistos.insert(i) {
+                cola.extend(paquetes[i].aristas.iter().map(|a| resolver(a)));
+            }
+        }
+        vistos.into_iter().map(|i| paquetes[i].id()).collect()
+    }
+
+    /// **§694: la clausura PERMITIDA del kit.** Leida del `Cargo.lock` desde `zk-ssl-verify`,
+    /// con las dev-dependencias de los crates del arbol (el lock no las separa: la lista es mas
+    /// estricta que la clausura normal, no mas laxa). Un paquete que entre, salga, cambie de
+    /// version o de origen la pone roja. Se edita a mano, en el mismo sello que mueve el lock, y
+    /// el asiento dice por que. `ruta` es el arbol: el kit, sus crates y el FORK (`winter-air`,
+    /// `winter-verifier`), que entra por el `[patch]` del `Cargo.toml` raiz.
+    const CLAUSURA_DEL_KIT: &str = "
+        arrayref 0.3.9 crates.io
+        arrayvec 0.7.8 crates.io
+        autocfg 1.5.1 crates.io
+        blake3 1.8.5 crates.io
+        block-buffer 0.10.4 crates.io
+        bumpalo 3.20.3 crates.io
+        cc 1.4.0 crates.io
+        cfg-if 1.0.4 crates.io
+        chacha20 0.10.1 crates.io
+        cmov 0.5.4 crates.io
+        constant_time_eq 0.4.2 crates.io
+        cpufeatures 0.2.17 crates.io
+        cpufeatures 0.3.0 crates.io
+        crossbeam-deque 0.8.7 crates.io
+        crossbeam-epoch 0.9.20 crates.io
+        crossbeam-utils 0.8.22 crates.io
+        crypto-common 0.1.7 crates.io
+        crypto-common 0.2.2 crates.io
+        ctutils 0.4.2 crates.io
+        digest 0.10.7 crates.io
+        digest 0.11.3 crates.io
+        either 1.17.0 crates.io
+        find-msvc-tools 0.1.9 crates.io
+        futures-core 0.3.33 crates.io
+        futures-task 0.3.33 crates.io
+        futures-util 0.3.33 crates.io
+        generic-array 0.14.7 crates.io
+        getrandom 0.2.17 crates.io
+        getrandom 0.3.4 crates.io
+        getrandom 0.4.3 crates.io
+        hybrid-array 0.2.3 crates.io
+        hybrid-array 0.4.15 crates.io
+        itoa 1.0.18 crates.io
+        js-sys 0.3.103 crates.io
+        keccak 0.1.6 crates.io
+        keccak 0.2.2 crates.io
+        libc 0.2.189 crates.io
+        libm 0.2.16 crates.io
+        memchr 2.8.3 crates.io
+        ml-dsa 0.1.1 crates.io
+        module-lattice 0.2.3 crates.io
+        num-traits 0.2.19 crates.io
+        once_cell 1.21.4 crates.io
+        pin-project-lite 0.2.17 crates.io
+        ppv-lite86 0.2.21 crates.io
+        proc-macro2 1.0.107 crates.io
+        quote 1.0.47 crates.io
+        r-efi 5.3.0 crates.io
+        r-efi 6.0.0 crates.io
+        rand 0.10.2 crates.io
+        rand 0.9.5 crates.io
+        rand_chacha 0.9.0 crates.io
+        rand_core 0.10.1 crates.io
+        rand_core 0.6.4 crates.io
+        rand_core 0.9.5 crates.io
+        rayon 1.12.0 crates.io
+        rayon-core 1.13.0 crates.io
+        rustversion 1.0.23 crates.io
+        serde 1.0.229 crates.io
+        serde_core 1.0.229 crates.io
+        serde_derive 1.0.229 crates.io
+        serde_json 1.0.151 crates.io
+        sha2 0.10.9 crates.io
+        sha3 0.10.9 crates.io
+        shake 0.1.0 crates.io
+        shlex 2.0.1 crates.io
+        signature 2.2.0 crates.io
+        signature 3.0.0 crates.io
+        slab 0.4.12 crates.io
+        sponge-cursor 0.1.0 crates.io
+        subtle 2.6.1 crates.io
+        syn 2.0.119 crates.io
+        syn 3.0.3 crates.io
+        thiserror 2.0.19 crates.io
+        thiserror-impl 2.0.19 crates.io
+        typenum 1.20.1 crates.io
+        unicode-ident 1.0.24 crates.io
+        version_check 0.9.5 crates.io
+        wasi 0.11.1+wasi-snapshot-preview1 crates.io
+        wasip2 1.0.4+wasi-0.2.12 crates.io
+        wasm-bindgen 0.2.126 crates.io
+        wasm-bindgen-macro 0.2.126 crates.io
+        wasm-bindgen-macro-support 0.2.126 crates.io
+        wasm-bindgen-shared 0.2.126 crates.io
+        winter-air 0.13.1 ruta
+        winter-crypto 0.13.1 crates.io
+        winter-fri 0.13.1 crates.io
+        winter-math 0.13.1 crates.io
+        winter-rand-utils 0.13.1 crates.io
+        winter-utils 0.13.1 crates.io
+        winter-verifier 0.13.1 ruta
+        wit-bindgen 0.57.1 crates.io
+        xmss 0.1.0-pre.0 crates.io
+        zerocopy 0.8.55 crates.io
+        zerocopy-derive 0.8.55 crates.io
+        zeroize 1.9.0 crates.io
+        zeroize_derive 1.5.0 crates.io
+        zk-ssl-air 0.1.0 ruta
+        zk-ssl-guardian 0.1.0 ruta
+        zk-ssl-hash 0.1.0 ruta
+        zk-ssl-medio 0.1.0 ruta
+        zk-ssl-verify 0.4.2 ruta
+        zmij 1.0.23 crates.io
+    ";
+
     /// **S465 (RFC-0007 E4b-2): el kit verifica STARK y NO compila al probador.** Desde que
     /// `zk-ssl-air` entra, la propiedad de S243 es esa, y se lee del `Cargo.lock` que el
-    /// repositorio versiona: la clausura de este crate CON sus dev-dependencias (el lock no las
-    /// separa: la puerta es mas estricta, no mas laxa) no lleva `winter-prover` ni el paraguas
-    /// `winterfell`, y SI lleva `zk-ssl-air` y `winter-verifier`: una puerta de ausencia que no
-    /// ve lo presente no mide nada.
+    /// repositorio versiona.
+    ///
+    /// §694: hasta aqui prohibia `winter-prover` y `winterfell` por nombre y exigia ver cuatro
+    /// paquetes. Ahora la clausura tiene que ser EXACTAMENTE `CLAUSURA_DEL_KIT`, con version y
+    /// origen; y la lista, que se edita, no puede llevar al probador, ni la capa, el nodo, el
+    /// cable o sus clientes: la propiedad no se edita con ella.
     #[test]
     fn la_clausura_del_kit_no_lleva_el_probador() {
         let lock = include_str!("../../../Cargo.lock");
-        let mut deps: std::collections::BTreeMap<String, Vec<String>> = Default::default();
-        for bloque in lock.split("[[package]]").skip(1) {
-            let (mut nombre, mut lista, mut dentro) = (String::new(), Vec::new(), false);
-            for linea in bloque.lines() {
-                let s = linea.trim();
-                if let Some(v) = s.strip_prefix("name = ") {
-                    nombre = v.trim_matches('"').to_string();
-                } else if s == "dependencies = [" {
-                    dentro = true;
-                } else if dentro && s == "]" {
-                    dentro = false;
-                } else if dentro {
-                    let d = s.trim_end_matches(',').trim_matches('"');
-                    lista.push(d.split(' ').next().unwrap_or("").to_string());
+        let permitida: std::collections::BTreeSet<String> = CLAUSURA_DEL_KIT
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.is_empty())
+            .map(str::to_string)
+            .collect();
+        for prohibido in [
+            "winter-prover",
+            "winterfell",
+            "stark-experiment",
+            "zk-ssl",
+            "zk-ssl-node",
+            "zk-ssl-wire",
+            "zk-ssl-cli",
+            "zk-ssl-sdk",
+        ] {
+            assert!(
+                !permitida.iter().any(|p| p.split(' ').next() == Some(prohibido)),
+                "la lista cerrada del kit lleva {prohibido}: la propiedad de S243 no se edita"
+            );
+        }
+        let vista = clausura_del_lock(lock, "zk-ssl-verify");
+        let entran: Vec<_> = vista.difference(&permitida).collect();
+        let salen: Vec<_> = permitida.difference(&vista).collect();
+        assert!(
+            entran.is_empty() && salen.is_empty(),
+            "la clausura del kit no es la lista cerrada (§694)\n  entran: {entran:?}\n  \
+             salen: {salen:?}"
+        );
+
+        // Prueba de vida, sobre el lock de verdad: una puerta que no ve lo que entra no mide nada.
+        // (1) un crate del arbol que lleva al probador con OTRO nombre, colgado del verificador;
+        let bloque = "name = \"winter-verifier\"\nversion = \"0.13.1\"\ndependencies = [\n";
+        let con_probador = lock.replacen(bloque, &format!("{bloque} \"stark-experiment\",\n"), 1);
+        assert_ne!(con_probador, lock, "el falsador no encontro winter-verifier en el lock");
+        let c = clausura_del_lock(&con_probador, "zk-ssl-verify");
+        assert!(c.contains("stark-experiment 0.1.0 ruta"));
+        assert!(c.contains("winter-prover 0.13.1 ruta"));
+        // (2) el fork que deja de entrar por ruta;
+        let fork_de_fuera = lock.replacen(
+            "name = \"winter-air\"\nversion = \"0.13.1\"\n",
+            &format!("name = \"winter-air\"\nversion = \"0.13.1\"\nsource = \"{CRATES_IO}\"\n"),
+            1,
+        );
+        assert_ne!(fork_de_fuera, lock, "el falsador no encontro winter-air en el lock");
+        let c = clausura_del_lock(&fork_de_fuera, "zk-ssl-verify");
+        assert!(c.contains("winter-air 0.13.1 crates.io"));
+        // (3) y una version que se mueve sin que nadie la pida.
+        let movida = lock.replacen(
+            "name = \"winter-fri\"\nversion = \"0.13.1\"\n",
+            "name = \"winter-fri\"\nversion = \"0.13.2\"\n",
+            1,
+        );
+        assert_ne!(movida, lock, "el falsador no encontro winter-fri en el lock");
+        let c = clausura_del_lock(&movida, "zk-ssl-verify");
+        assert!(c.contains("winter-fri 0.13.2 crates.io"));
+    }
+
+    /// **Las fijaciones (§694).** La version EXACTA que el lock tiene que llevar y que cada
+    /// manifiesto tiene que pedir con `=`: la familia de winterfell entera -el paraguas y todo
+    /// `winter-*`, el fork incluido- a 0.13.1, `xmss` a 0.1.0-pre.0 y `ml-dsa` a 0.1.1. Son la
+    /// criptografia del kit: `xmss` y `ml-dsa` declaran ellas mismas que no tienen auditoria
+    /// independiente, y el fork no esta auditado (RFC-0009, H7).
+    fn fijacion(paquete: &str) -> Option<&'static str> {
+        match paquete {
+            "winterfell" => Some("0.13.1"),
+            p if p.starts_with("winter-") => Some("0.13.1"),
+            "xmss" => Some("0.1.0-pre.0"),
+            "ml-dsa" => Some("0.1.1"),
+            _ => None,
+        }
+    }
+
+    /// Los tres crates del FORK (RFC-0009 E3a-1, §533): entran por `[patch]`, por ruta.
+    const FORK: [&str; 3] = ["winter-air", "winter-prover", "winter-verifier"];
+
+    /// El valor de `campo = "..."` en una linea de TOML: una tabla en linea o una linea de una
+    /// tabla. Solo como clave entera: `rust-version` no es `version`.
+    fn campo_toml(s: &str, campo: &str) -> Option<String> {
+        let mut desde = 0;
+        while let Some(i) = s[desde..].find(campo).map(|i| i + desde) {
+            let antes = s[..i].chars().next_back();
+            let tras = s[i + campo.len()..].trim_start();
+            if !antes.is_some_and(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+                if let Some(v) = tras.strip_prefix('=').map(str::trim_start) {
+                    if let Some(v) = v.strip_prefix('"') {
+                        return v.split('"').next().map(str::to_string);
+                    }
                 }
             }
-            deps.entry(nombre).or_default().extend(lista);
+            desde = i + campo.len();
         }
-        let mut vistos = std::collections::BTreeSet::new();
-        let mut cola = vec!["zk-ssl-verify".to_string()];
-        while let Some(n) = cola.pop() {
-            if vistos.insert(n.clone()) {
-                cola.extend(deps.get(&n).cloned().unwrap_or_default());
+        None
+    }
+
+    /// Una dependencia declarada: (seccion, clave, paquete, requisito).
+    type Declarada = (String, String, String, Option<String>);
+
+    /// El contenido de una cadena de TOML al principio de `s`, sin las comillas.
+    fn cadena_toml(s: &str) -> Option<String> {
+        s.strip_prefix('"').and_then(|r| r.split('"').next()).map(str::to_string)
+    }
+
+    /// Cada dependencia que declara un manifiesto. Lee las formas que usa el arbol: `clave =
+    /// "req"` y `clave = { version = "req", package = ".." }` bajo una seccion que acaba en
+    /// `dependencies` -tambien la de `target.'cfg(..)'` y la de `[workspace]`-, y la tabla
+    /// `[dependencies.clave]` del fork, con su `version` y su `package` en lineas propias. Sin
+    /// `version`, el requisito es `None`; una clave con punto (`x.workspace = true`) cuenta como
+    /// `x`, con requisito solo si es `x.version`: falla cerrada.
+    fn dependencias_del_manifiesto(toml: &str) -> Vec<Declarada> {
+        type Abierta = (String, String, Option<String>, Option<String>);
+        fn cerrar(tabla: Option<Abierta>, fuera: &mut Vec<Declarada>) {
+            if let Some((seccion, clave, paquete, req)) = tabla {
+                let paquete = paquete.unwrap_or_else(|| clave.clone());
+                fuera.push((seccion, clave, paquete, req));
             }
         }
-        for vivo in ["zk-ssl-air", "winter-verifier", "zk-ssl-medio", "ml-dsa"] {
-            assert!(vistos.contains(vivo), "prueba de vida: la clausura no ve {vivo}");
+        let mut fuera = Vec::new();
+        let mut seccion = String::new();
+        // La tabla de una dependencia, abierta: (seccion, clave, paquete, requisito).
+        let mut tabla: Option<Abierta> = None;
+        for linea in toml.lines() {
+            let s = linea.trim();
+            if s.is_empty() || s.starts_with('#') {
+                continue;
+            }
+            if s.starts_with('[') && s.ends_with(']') {
+                cerrar(tabla.take(), &mut fuera);
+                seccion = s[1..s.len() - 1].to_string();
+                if let Some((antes, clave)) = seccion.rsplit_once('.') {
+                    if antes.ends_with("dependencies") {
+                        tabla = Some((antes.to_string(), clave.to_string(), None, None));
+                    }
+                }
+                continue;
+            }
+            if let Some((_, _, paquete, req)) = tabla.as_mut() {
+                if s.starts_with("version") {
+                    *req = campo_toml(s, "version");
+                } else if s.starts_with("package") {
+                    *paquete = campo_toml(s, "package");
+                }
+            } else if seccion.ends_with("dependencies") {
+                let Some((clave, valor)) = s.split_once('=') else { continue };
+                let (clave, valor) = (clave.trim().trim_matches('"'), valor.trim());
+                let (clave, req, paquete) = match clave.split_once('.') {
+                    Some((base, "version")) => (base, cadena_toml(valor), None),
+                    Some((base, _)) => (base, None, None),
+                    None if valor.starts_with('"') => (clave, cadena_toml(valor), None),
+                    None => (clave, campo_toml(valor, "version"), campo_toml(valor, "package")),
+                };
+                let paquete = paquete.unwrap_or_else(|| clave.to_string());
+                fuera.push((seccion.clone(), clave.to_string(), paquete, req));
+            }
         }
-        for prohibido in ["winter-prover", "winterfell"] {
-            assert!(!vistos.contains(prohibido), "el kit arrastra {prohibido}: {vistos:?}");
+        cerrar(tabla.take(), &mut fuera);
+        fuera
+    }
+
+    /// Los miembros del workspace, leidos del `Cargo.toml` raiz como los lee el canon.
+    fn miembros_del_workspace(toml: &str) -> Vec<String> {
+        let mut dentro = false;
+        let mut fuera = Vec::new();
+        for linea in toml.lines() {
+            let s = linea.trim();
+            if s.starts_with('[') {
+                dentro = s == "[workspace]";
+            } else if dentro && s.starts_with("\"crates/") {
+                fuera.push(s.trim_end_matches(',').trim_matches('"').to_string());
+            }
         }
+        fuera
+    }
+
+    /// Los fallos de fijacion del lock y de los manifiestos, cada uno con su fichero. Vacio es
+    /// VERDE. En el lock: cada paquete de una familia fijada lleva su version, el fork viene por
+    /// ruta y lo demas de crates.io, y algun manifiesto lo clava. En los manifiestos: cada
+    /// declaracion de una familia fijada pide `=` y la version, sin excepcion.
+    fn fallos_de_fijacion(lock: &str, manifiestos: &[(String, String)]) -> Vec<String> {
+        let mut fallos = Vec::new();
+        let mut clavados = std::collections::BTreeSet::new();
+        for (ruta, toml) in manifiestos {
+            for (seccion, clave, paquete, req) in dependencias_del_manifiesto(toml) {
+                let Some(v) = fijacion(&paquete) else { continue };
+                if req.as_deref() == Some(format!("={v}").as_str()) {
+                    clavados.insert(paquete);
+                } else {
+                    fallos.push(format!(
+                        "{ruta}: [{seccion}] {clave} ({paquete}) pide {req:?}; \
+                         la fijacion es \"={v}\""
+                    ));
+                }
+            }
+        }
+        for p in paquetes_del_lock(lock) {
+            let Some(v) = fijacion(&p.nombre) else { continue };
+            if p.version != v {
+                fallos.push(format!("Cargo.lock: {} {}; la fijacion es {v}", p.nombre, p.version));
+            }
+            let del_fork = FORK.contains(&p.nombre.as_str());
+            if del_fork && !p.source.is_empty() {
+                fallos.push(format!(
+                    "Cargo.lock: {} no entra por el fork del arbol: {}",
+                    p.id(),
+                    p.source
+                ));
+            }
+            if !del_fork && p.source != CRATES_IO {
+                fallos.push(format!("Cargo.lock: {} no viene de crates.io", p.id()));
+            }
+            if !clavados.contains(&p.nombre) {
+                fallos.push(format!(
+                    "Cargo.lock: {} esta en el lock y ningun manifiesto lo clava con `=`",
+                    p.id()
+                ));
+            }
+        }
+        fallos
+    }
+
+    /// **§694: las fijaciones se comprueban, no se recuerdan.** Lee el `Cargo.lock` y el
+    /// `Cargo.toml` de la raiz y de cada miembro del workspace, y exige lo que dice `fijacion`.
+    /// Hasta aqui los `=` se sostenian por convencion: sobre el arbol de antes, este test da 23
+    /// declaraciones sin `=` (`winterfell` en seis crates y diecisiete en los manifiestos del
+    /// fork) y cinco paquetes del lock que no clavaba nadie -`winter-fri`, `winter-utils`,
+    /// `winter-maybe-async`, `winter-rand-utils` y `winterfell`-: el dia que hubiera una 0.13.2,
+    /// un `cargo update` los moveria sin que ninguna puerta lo viera.
+    #[test]
+    fn las_fijaciones_son_exactas() {
+        let raiz = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
+        let toml_raiz = include_str!("../../../Cargo.toml");
+        let miembros = miembros_del_workspace(toml_raiz);
+        assert!(
+            miembros.iter().any(|m| m == "crates/zk-ssl-verify")
+                && FORK.iter().all(|f| miembros.contains(&format!("crates/{f}"))),
+            "prueba de vida: el lector de miembros no ve el kit o el fork: {miembros:?}"
+        );
+        let mut manifiestos = vec![("Cargo.toml".to_string(), toml_raiz.to_string())];
+        for m in &miembros {
+            let ruta = format!("{m}/Cargo.toml");
+            let texto = std::fs::read_to_string(format!("{raiz}/{ruta}"))
+                .unwrap_or_else(|e| panic!("{ruta}: {e}"));
+            manifiestos.push((ruta, texto));
+        }
+        let lock = include_str!("../../../Cargo.lock");
+        let fallos = fallos_de_fijacion(lock, &manifiestos);
+        assert!(fallos.is_empty(), "fijaciones rotas (§694):\n{}", fallos.join("\n"));
+
+        // Prueba de vida: la puerta ve cada familia en el lock, y los dos que nadie clavaba.
+        let fijados: std::collections::BTreeSet<String> = paquetes_del_lock(lock)
+            .into_iter()
+            .filter(|p| fijacion(&p.nombre).is_some())
+            .map(|p| p.nombre)
+            .collect();
+        for vivo in ["winter-fri", "winter-utils", "winterfell", "xmss", "ml-dsa"] {
+            assert!(fijados.contains(vivo), "prueba de vida: el lock no tiene {vivo}");
+        }
+
+        // Y los falsadores, sobre los ficheros de verdad: cada uno tiene que salir con su nombre.
+        let ve = |lock: &str, manifiestos: &[(String, String)], que: &str| {
+            let f = fallos_de_fijacion(lock, manifiestos);
+            assert!(f.iter().any(|l| l.contains(que)), "la puerta no ve {que}: {f:?}");
+        };
+        let mutado = |ruta: &str, de: &str, a: &str| {
+            let mut m = manifiestos.clone();
+            let t = &mut m.iter_mut().find(|(r, _)| r == ruta).expect(ruta).1;
+            let nuevo = t.replacen(de, a, 1);
+            assert!(nuevo != *t, "el falsador no encontro `{de}` en {ruta}");
+            *t = nuevo;
+            m
+        };
+        // (1) el lock mueve `winter-fri`;
+        let movido = lock.replacen(
+            "name = \"winter-fri\"\nversion = \"0.13.1\"\n",
+            "name = \"winter-fri\"\nversion = \"0.13.2\"\n",
+            1,
+        );
+        assert_ne!(movido, lock);
+        ve(&movido, &manifiestos, "winter-fri 0.13.2");
+        // (2) el fork deja de entrar por ruta;
+        let bloque = "name = \"winter-verifier\"\nversion = \"0.13.1\"\n";
+        let de_fuera = lock.replacen(bloque, &format!("{bloque}source = \"{CRATES_IO}\"\n"), 1);
+        assert_ne!(de_fuera, lock);
+        ve(&de_fuera, &manifiestos, "no entra por el fork");
+        // (3) un `winter-*` nuevo en el lock, que no clava nadie;
+        let nuevo = format!(
+            "{lock}\n[[package]]\nname = \"winter-nuevo\"\nversion = \"0.13.1\"\nsource = \"{CRATES_IO}\"\n"
+        );
+        ve(&nuevo, &manifiestos, "winter-nuevo 0.13.1 crates.io esta en el lock y ningun");
+        // (4) un manifiesto que vuelve al caret: en tabla, en linea y con `package`;
+        let m = mutado(
+            "crates/winter-air/Cargo.toml",
+            "[dependencies.fri]\nversion = \"=0.13.1\"",
+            "[dependencies.fri]\nversion = \"0.13\"",
+        );
+        ve(lock, &m, "winter-air/Cargo.toml: [dependencies] fri (winter-fri) pide Some(\"0.13\")");
+        let m = mutado("crates/zk-ssl/Cargo.toml", "winterfell = \"=0.13.1\"", "winterfell = \"0.13\"");
+        ve(lock, &m, "crates/zk-ssl/Cargo.toml: [dependencies] winterfell");
+        let m = mutado(
+            "crates/zk-ssl-verify/Cargo.toml",
+            "\n[dev-dependencies]\n",
+            "\n[dev-dependencies]\nutils = { package = \"winter-utils\", version = \"0.13\" }\n",
+        );
+        ve(lock, &m, "[dev-dependencies] utils (winter-utils)");
+        // (5) y las otras dos familias: `xmss` sin `=`, y `ml-dsa` heredado sin version.
+        let m = mutado(
+            "crates/zk-ssl-verify/Cargo.toml",
+            "xmss = \"=0.1.0-pre.0\"",
+            "xmss = \"0.1.0-pre.0\"",
+        );
+        ve(lock, &m, "crates/zk-ssl-verify/Cargo.toml: [dependencies] xmss");
+        let m = mutado(
+            "crates/zk-ssl-medio/Cargo.toml",
+            "ml-dsa = { version = \"=0.1.1\", default-features = false }",
+            "ml-dsa.workspace = true",
+        );
+        ve(lock, &m, "(ml-dsa) pide None");
     }
 
     /// **§633 (RFC-0013 E4a): el kit VERIFICA la nota del medio y no firma ninguna.** La

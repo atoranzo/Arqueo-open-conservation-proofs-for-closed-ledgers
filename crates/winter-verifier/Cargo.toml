@@ -2,7 +2,8 @@
 # que crates.io publico para `winter-verifier` 0.13.1 (checksum del .crate
 # 0425ea81f8f703a1021810216da12003175c7974a584660856224df04b2e2fdb), con estos cambios y ninguno mas:
 # `publish = false`, la descripcion, el repositorio, sin `documentation` ni la metadata de
-# docs.rs. Mismo nombre y misma version que el registry: asi lo
+# docs.rs, y desde el §694 sus dependencias `winter-*` clavadas con `=0.13.1`
+# donde upstream pide `0.13`. Mismo nombre y misma version que el registry: asi lo
 # exige el [patch.crates-io] del Cargo.toml raiz, que lo sustituye en todo el workspace, kit
 # incluido. Licencia MIT de winterfell en LICENSE; lo que difiere de upstream, en README.md.
 
@@ -50,26 +51,26 @@ path = "src/lib.rs"
 bench = false
 
 [dependencies.air]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-air"
 
 [dependencies.crypto]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-crypto"
 
 [dependencies.fri]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-fri"
 
 [dependencies.math]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-math"
 
 [dependencies.utils]
-version = "0.13"
+version = "=0.13.1"
 default-features = false
 package = "winter-utils"

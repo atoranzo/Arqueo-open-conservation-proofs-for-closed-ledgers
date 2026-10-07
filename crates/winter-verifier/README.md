@@ -5,8 +5,9 @@ Este directorio es `winter-verifier` 0.13.1 tal como lo publico crates.io (el ch
 `Prover::ocultacion`: `None` de serie, y `Some` en los 23 probadores con fila de ARQUEO desde el S538;
 hasta esta correccion aqui decia <<que ningun probador de ARQUEO devuelve>>, cierto solo hasta el S537): lo que difiere de upstream es
 `src/lib.rs` (spike-b-p4r3, sesiones 166 a 172); todo lo demas es upstream byte a byte. Entra por
-`[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`.
-Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.
+`[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
+y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream
+pide `0.13`. Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.
 
 ---
 

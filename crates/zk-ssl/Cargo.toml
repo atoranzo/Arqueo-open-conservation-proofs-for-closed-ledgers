@@ -26,7 +26,9 @@ stark-experiment = { path = "../stark-experiment" }
 # §651 (D3-META): `comprobar_marca`, la marca como parte de la forma. Ya estaba en la clausura
 # por `stark-experiment`; la dependencia directa no suma ningun nodo al grafo.
 zk-ssl-air = { path = "../zk-ssl-air" }
-winterfell = "0.13"
+# §694: clavada con `=`, como todo `winter-*`; lo comprueba `las_fijaciones_son_exactas`,
+# en los tests de `zk-ssl-verify`.
+winterfell = "=0.13.1"
 # Persistencia del ledger. Sin esto, reiniciar el nodo pierde el estado.
 sled = "0.34"
 # Cifrado autenticado en reposo. De RustCrypto: escribir criptografia

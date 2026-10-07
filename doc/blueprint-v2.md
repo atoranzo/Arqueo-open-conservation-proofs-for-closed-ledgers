@@ -397,7 +397,8 @@ en cada sitio de llamada; el formato nuevo que el corte zkssl/0.5 trae de todos 
 un identificador de familia y de versión de motor que entre en el transcript y que el juez compare
 con el suyo); y *una puerta de clausura de producción* (sin curvas en ninguna raíz; sin
 probador en quien juzga; el fork obligatorio, cada regla con su prueba de vida), generalizando
-`la_clausura_del_kit_no_lleva_el_probador` (`crates/zk-ssl-verify/src/lib.rs:1235`).
+`la_clausura_del_kit_no_lleva_el_probador` (`crates/zk-ssl-verify/src/lib.rs:1235` en `f7aad05`;
+desde el §694 compara la clausura del kit con una lista cerrada, y está en la línea 1484).
 
 ### 4.4 D4 — Rendimiento y Arquitectura cuestionan a Criptografía
 

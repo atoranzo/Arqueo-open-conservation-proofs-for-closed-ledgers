@@ -14,8 +14,13 @@ members = [
     "crates/zk-ssl-wire",
     "crates/zk-ssl-node",
     "crates/zk-ssl-sdk",
-    # ⚠️ El verificador INDEPENDIENTE (§243): solo depende de `xmss`, para
-    # que un tercero no tenga que compilar el nodo para verificar.
+    # ⚠️ El verificador INDEPENDIENTE (§243): no depende de la capa, ni del
+    # nodo, ni del cable, para que un tercero no tenga que compilar el nodo
+    # para verificar. Decia "solo depende de `xmss`": es la misma frase que el
+    # §324 corrigio en el doc de la constante y el §326 en el manifiesto del
+    # kit, y aqui seguia viva. Depende tambien de `serde_json`, `zk-ssl-hash`,
+    # `zk-ssl-air`, `zk-ssl-medio` y `winter-math`; su clausura la fija una
+    # lista cerrada en sus tests (§694), no esta frase.
     "crates/zk-ssl-verify",
     # ⚠️ El HASH, fuera del probador (§254). Misma regla un nivel mas
     # abajo: un verificador tampoco compila el PROBADOR. Solo depende de
@@ -72,6 +77,9 @@ rand_chacha = "0.3"
 # TODO el workspace, kit incluido; `winter-fri`, `-math`, `-crypto` y `-utils`
 # siguen siendo los de crates.io. Un [patch] exige el mismo nombre y la misma
 # version que el registry; los tres llevan `publish = false`.
+# §694: todo `winter-*` y `winterfell` se declaran con `=0.13.1` en cada
+# manifiesto, y que el fork entre por aqui y no de crates.io lo comprueba
+# `las_fijaciones_son_exactas` en los tests de `zk-ssl-verify`.
 [patch.crates-io]
 winter-air = { path = "crates/winter-air" }
 winter-prover = { path = "crates/winter-prover" }

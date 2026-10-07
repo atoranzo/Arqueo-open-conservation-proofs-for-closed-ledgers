@@ -37,7 +37,8 @@ speak of the ledger, not of the world.
   **detects, it does not prevent**.
 - **Not audited by third parties.** No amount of the author's own tests replaces that. Two
   cryptographic dependencies without an independent audit —`xmss`, a pre-release, and `ml-dsa`,
-  in the kit since §633— are pinned with `=` and declared. All of it in
+  in the kit since §633— are pinned with `=` and declared, and since §694 the canon checks it,
+  together with winterfell's pins and the kit's closure as a closed list. All of it in
   [`SECURITY.md`](./SECURITY.md).
 - **The six deposits with a DOI predate corrections in the tree.** What was corrected is marked,
   not erased: [`doc/preprints/ERRATA.md`](./doc/preprints/ERRATA.md).

@@ -23,7 +23,9 @@ zk-ssl-wire = { path = "../zk-ssl-wire" }
 # `semilla::comprobar_permisos`. El guardian no arrastra nada: solo `std`.
 zk-ssl-guardian = { path = "../zk-ssl-guardian" }
 stark-experiment = { path = "../stark-experiment" }
-winterfell = "0.13"
+# §694: clavada con `=`, como todo `winter-*`; lo comprueba `las_fijaciones_son_exactas`,
+# en los tests de `zk-ssl-verify`.
+winterfell = "=0.13.1"
 
 ureq = { version = "2.10", features = ["json"] }
 serde = { version = "1", features = ["derive"] }

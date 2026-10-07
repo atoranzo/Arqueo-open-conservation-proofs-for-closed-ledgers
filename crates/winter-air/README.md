@@ -8,8 +8,9 @@ hasta esta correccion aqui decia <<que ningun probador de ARQUEO devuelve>>, cie
 `src/lib.rs` (spike-b-p4r3, sesiones 166 a 172), y desde el §575 `src/proof/mod.rs` -`from_bytes`
 lee con el lector acotado, para que una prueba malformada no aborte el proceso- y
 `src/proof/acotado.rs` (nuevo); todo lo demas es upstream byte a byte. Entra por
-`[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`.
-Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.
+`[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
+y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream
+pide `0.13`. Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.
 
 ---
 

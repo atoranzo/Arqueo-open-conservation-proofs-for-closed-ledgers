@@ -47787,3 +47787,163 @@ depende del nombre que `winter-verifier` 0.13.1 da a sus variantes. El verificad
 se ha corrido: necesita `wasmtime`, que este entorno no tiene.
 
 **Lo que NO cierra.** Nada de la cola.
+
+## §694 — las dependencias se fijan y se comprueban: `--locked` en el canon, `=` en cada manifiesto y la clausura del kit como lista cerrada
+
+El commit que lleva este asiento, sobre `5e28605` (el §693). Un solo sello: el canon corre cada
+`cargo` con `--locked`; `winterfell` y todo `winter-*` se declaran con `=0.13.1` en cada
+manifiesto del workspace, el fork incluido; un test nuevo del kit, `las_fijaciones_son_exactas`,
+comprueba en el `Cargo.lock` y en cada `Cargo.toml` las fijaciones de winterfell, `xmss` y
+`ml-dsa`; la puerta de la clausura del kit deja de prohibir dos nombres y compara con una lista
+cerrada; dos frases de los manifiestos que no eran ciertas se corrigen; la fila del canon, los
+tres párrafos ancla, los dos README, los tres README del fork y una cita de `doc/blueprint-v2.md`
+se ponen al día; y este asiento. Lo escribe y lo comprueba una sesión de Claude Code, y lo
+commitea la sesión que la lanzó, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. En la sesión, sobre este mismo árbol —todo este sello menos la redacción final
+de este asiento—, el canon `--sello` salió VERDE, en 716 s de tests, con `zk-ssl-verify` en 182 de
+182, `check_tests` en 1839, la puerta de los vectores en 477 vectores y 925 líneas, las doce
+familias del binario en 399 de 399, las cinco de la segunda implementación en 170 de 170, sus
+pares STARK en 28 de 28 y el artefacto reproducible, con la huella `aa94dc578ecfd88a`.
+
+**De dónde sale.** La 0.13.1 es la última versión en crates.io de `winterfell` y de los nueve
+`winter-*`, publicada el 19-07-2025 —medido hoy en la API de crates.io, como que `xmss`
+0.1.0-pre.0 y `ml-dsa` 0.1.1 son también las últimas de las suyas—, y winterfell no tiene un
+commit en `main` desde ese día (`doc/integracion-vertical-evaluacion.md`, medido el 01-10-2026).
+El fork no está auditado (RFC-0009, H7). Con un upstream parado y un fork sin auditar, un cambio
+de dependencias tiene que poner rojo el canon, y no lo hacía por tres lados:
+
+- **Los `=` se sostenían por convención.** Ninguna puerta los miraba. Sobre los manifiestos de
+  `HEAD`, el test de este sello da 28 fallos: 23 declaraciones sin `=` —`winterfell = "0.13"` en
+  seis crates y las diecisiete tablas `winter-*` de los manifiestos del fork, con el `0.13` de
+  upstream— y cinco paquetes del lock que no clavaba ningún manifiesto: `winter-fri`,
+  `winter-utils`, `winter-maybe-async`, `winter-rand-utils` y `winterfell`. El lock los fijaba,
+  y el día que hubiera una 0.13.2 un `cargo update` los movería sin que nada lo viera.
+- **El canon no corría con `--locked`.** `grep locked tools/canon.sh` daba 0, en siete
+  invocaciones de `cargo`. Sin `--locked`, un `Cargo.toml` que pide algo que el lock no tiene lo
+  reescribe en silencio. Medido en una copia del workspace: con `hex = "0.4"` añadido al kit,
+  `cargo metadata --offline` sale con 0 y el lock gana una línea (` "hex",`); con `--locked`,
+  sale con 101, «cannot update the lock file … because --locked was passed», y el lock queda con
+  su sha256.
+- **La puerta de la clausura comparaba nombres.** `la_clausura_del_kit_no_lleva_el_probador`
+  recorría el lock juntando las aristas de todas las versiones de un nombre —92 nombres—, exigía
+  ver cuatro y prohibía dos, `winter-prover` y `winterfell`. Con una réplica en Python de esa
+  puerta, sobre cuatro copias del lock, las cuatro pasan: una copia del probador con otro nombre
+  colgada de `winter-verifier` (99 nombres), `tokio` colgado de `winter-verifier` (107),
+  `winter-air` servido por crates.io en vez del fork, y `winter-fri` en 0.13.2.
+
+Y dos frases de los manifiestos no eran ciertas: el `Cargo.toml` raíz decía del kit «solo depende
+de `xmss`» —la misma frase que el §324 corrigió en el doc de la constante y el §326 en el manifiesto
+del kit—, y el del kit decía de `winter-math` «Solo para nombrar `BaseElement` en los tests»,
+cuando la usan `src/reverificacion.rs:58`, que el lib compila siempre, y `src/main.rs:61-62`, el
+binario. El ARQ-11 de `doc/blueprint-v2.md` proponía ya `winterfell = "=0.13.1"` en los seis crates
+y que el fork no tuviera `source`; este sello hace esas dos piezas, la segunda en todo el lock y en
+la clausura del kit.
+
+**Lo que hace.**
+
+1. **El canon, con `--locked`** (`tools/canon.sh`): los tests de cada fila, las cuatro
+   conformidades de `spec/vectors/zkssl-0.*.json` y las dos compilaciones del bloque «3 bis». La
+   cabecera gana el punto 9, «El lock no se mueve», que nombra los dos tests del kit que dicen qué
+   lleva el lock y se ciñe a lo que es: los niveles `--sello`, `--largo` y `--completo`, y
+   `tools/artefacto.sh`, que ya llevaba `--locked`; los bancos de `--bancos` todavía no.
+2. **Los `=`.** `winterfell = "=0.13.1"` en `stark-experiment`, `zk-ssl`, `zk-ssl-cli`,
+   `zk-ssl-node`, `zk-ssl-sdk` y `zk-ssl-wire`, con una línea de comentario; y las diecisiete
+   tablas `winter-*` del fork —cinco en `winter-air`, siete en `winter-prover`, cinco en
+   `winter-verifier`— de `"0.13"` a `"=0.13.1"`. La cabecera de cada manifiesto del fork lo
+   declara entre sus cambios, y el README de cada crate del fork, que es adonde esa cabecera
+   remite para lo que difiere de upstream, también: comparado con el manifiesto que publicó
+   crates.io, esas líneas son la única diferencia nueva. El `Cargo.lock` no cambia ni un byte:
+   `cargo metadata --locked --offline` pasa y `git diff Cargo.lock` sale vacío.
+3. **`las_fijaciones_son_exactas`**, test nuevo del kit. Lee el `Cargo.lock` y el `Cargo.toml` de
+   la raíz y de los 22 miembros, que lee del `[workspace]` como el canon, y exige: cada paquete de
+   la familia de winterfell —el paraguas y todo `winter-*`— en 0.13.1, `xmss` en 0.1.0-pre.0 y
+   `ml-dsa` en 0.1.1; `winter-air`, `winter-prover` y `winter-verifier` sin `source`, que es entrar
+   por el `[patch]` del fork, y los demás de crates.io; cada uno clavado con `=` por algún
+   manifiesto; y cada declaración de esas familias, en cualquier sección de dependencias, con `=`
+   y su versión. Lee las formas de TOML que usa el árbol —`clave = "req"`, la tabla en línea con
+   `version` y `package`, y la tabla `[dependencies.clave]` del fork— y una clave con punto cuenta
+   sin requisito: falla cerrada. Cada fallo dice su fichero, su sección y lo que pide.
+4. **La clausura del kit, una lista cerrada.** El test conserva su nombre —lo citan
+   `crates/zk-ssl-cli/src/prenda.rs` y `doc/blueprint-v2.md`— y ahora resuelve cada arista del
+   lock a su paquete —`nombre`, `nombre version` o `nombre version (source)`, y una que no casa con
+   uno solo hace fallar el test— y compara la clausura, como `nombre version origen`, con
+   `CLAUSURA_DEL_KIT`: 103 paquetes, cinco del árbol (`ruta`) y dos del fork, con lo que entra y lo
+   que sale si no casan. La lista se edita a mano, en el sello que mueve el lock; la propiedad no:
+   la lista no puede llevar `winter-prover`, `winterfell`, `stark-experiment`, `zk-ssl`,
+   `zk-ssl-node`, `zk-ssl-wire`, `zk-ssl-cli` ni `zk-ssl-sdk`.
+5. **La prosa.** El `Cargo.toml` raíz dice qué no puede entrar en el kit y de qué depende, y que su
+   clausura la fija la lista; el del kit, para qué es `winter-math` y qué guardan sus tests; los
+   dos README, que el canon comprueba los `=` y la clausura. `doc/blueprint-v2.md` citaba el test
+   de la clausura en `lib.rs:1235`, la línea que tenía en `f7aad05`, el commit sobre el que el
+   documento dice que se comprobó; la cita se queda, y gana que desde este sello el test compara
+   con una lista cerrada y está en la línea 1484.
+
+**Medido.**
+
+- **Los dos tests, en rojo.** El de las fijaciones, con el binario de este sello y
+  los manifiestos de `HEAD` en su sitio, da los 28 fallos de arriba, cada uno con su fichero; con
+  los de este sello, ninguno. La lista cerrada, con un paquete de menos —`zmij`—, sale roja con
+  «entran: ["zmij 1.0.23 crates.io"]»; con `winterfell` añadido, con «la lista cerrada del kit
+  lleva winterfell».
+- **La puerta nueva contra las cuatro copias** que la vieja dejaba pasar: el probador con otro
+  nombre, siete paquetes que entran, `mi-probador 0.13.1 ruta` entre ellos; `tokio`, seis; el fork
+  servido por crates.io, `winter-air 0.13.1 crates.io`; `winter-fri` movido, `winter-fri 0.13.2
+  crates.io`. Las dos últimas, y un crate del árbol que lleva al probador colgado del verificador,
+  son los falsadores del propio test; los del test de las fijaciones son ocho, sobre el lock y los
+  manifiestos de verdad: `winter-fri` en 0.13.2, `winter-verifier` con `source`, un `winter-nuevo`
+  que no clava nadie, el `fri` del fork en `0.13`, `winterfell` en `0.13`, una dev-dependencia
+  `utils = { package = "winter-utils", version = "0.13" }`, `xmss` sin `=` y `ml-dsa.workspace =
+  true`. Cada uno tiene que salir con su nombre.
+- **Las dos clausuras.** La del lock desde el kit, con las dev-dependencias de los crates del árbol:
+  103 paquetes y 90 nombres. La normal, `cargo tree -p zk-ssl-verify -e normal --locked
+  --offline`: 61 paquetes y 53 nombres.
+- **Los tests, con `--locked`.** `zk-ssl-verify` en release: 182 de 182, sin warnings. `winter-air`
+  49, `winter-prover` 6 y `winter-verifier` 0, como sus filas, sin warnings. Los nueve crates
+  cuyas dependencias declaradas cambian compilan en release con `--locked`.
+- **El binario del kit cambia de huella, y no por los manifiestos.** Compilado con las banderas de
+  `tools/artefacto.sh`: `6d55bdc8d530750b` en `HEAD`, tres veces, desde dos raíces y con tres
+  `target`; `aa94dc578ecfd88a` con este sello, dos veces, una de ellas desde un `target` vacío.
+  Con los manifiestos de este sello y el `lib.rs` de `HEAD`, la de `HEAD`; y una línea de
+  comentario al final del `lib.rs` de `HEAD` también la mueve (`e0b3d0d5abbfc939`). La huella
+  depende de los bytes de los fuentes, tests incluidos. Lo que mide `artefacto.sh --check` —dos
+  compilaciones del mismo árbol, la misma huella— se sostiene en las dos versiones; dentro del
+  canon de este sello, `--check` da `aa94dc578ecfd88a` reproducible entre rutas y el tarball
+  `7d829167b066f634`.
+- **El canon `--sello`**, VERDE con todo `cargo` en `--locked`: las 19 filas del nivel en su
+  pin —la de `zk-ssl` es la más larga, 342 s—, las cuatro conformidades de
+  `spec/vectors/zkssl-0.*.json`, el cable, las doce familias del binario, la segunda
+  implementación y el artefacto.
+- **Las compuertas.** `check_tests`: 1839 declarados, ninguno anidado. `check_modulos`,
+  `verificar_citas`, `check_cifras`, `check_vectores` —477 vectores y 925 líneas—,
+  `check_figures`, `check_columns`, `check_constraint_layout`, `check_dominios`,
+  `check_publicadas`, `check_nucleo` y `check_techo` salen con 0, dentro del canon y otra vez
+  sobre el texto final de este asiento.
+
+**Probado.** Un test nuevo, `las_fijaciones_son_exactas`, y uno reescrito,
+`la_clausura_del_kit_no_lleva_el_probador`, los dos con sus falsadores dentro. Con los manifiestos
+de antes, el primero cae con los 28 fallos de arriba; el segundo no tiene versión anterior con la
+que comparar su lista, y su medida es la de las cuatro copias.
+
+**Contadores.** `zk-ssl-verify` 181 -> 182. TOTAL DE SELLO 1679 -> 1680 y TOTAL CON LARGOS
+1816 -> 1817, en los tres párrafos ancla, con el desglose del verificador en 182. La cuenta de
+`check_tests` pasa de 1838 a 1839. Las «1364 declaradas» y las «1349 declared» no se tocan, como en
+los sellos anteriores (5.A-319). El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas: ninguna
+entrada llevaba esto.
+
+**Lo que NO hace.** Los 23 bancos de `tools/banco_*.sh` siguen llamando a `cargo` sin `--locked`
+—51 llamadas a `cargo test`, `build` o `run`—, y el punto 9 de la cabecera del canon lo dice;
+`tools/artefacto.sh` ya lo llevaba. Subir la versión del kit, o la de cualquier crate del árbol que
+esté en la lista, mueve el lock y exige editar `CLAUSURA_DEL_KIT` en el mismo sello: la próxima
+release del kit tendrá que hacerlo, y el test lo pondrá rojo si no. La lista cerrada es la del lock
+con las dev-dependencias de los crates del árbol, no la clausura normal: es más estricta, y una
+dev-dependencia nueva del kit o del fork también la pone roja; y como el lock lleva las
+dependencias de todas las plataformas, también las lleva la lista. La puerta de clausura de
+producción que propone el corte 2 de `doc/blueprint-v2.md` —sin curvas por raíz, sin probador en
+quien juzga— no se hace: las listas cerradas siguen siendo la del kit y, de los crates del árbol,
+la del cli. Las demás dependencias de crates.io del workspace no se clavan con `=`: las fija el
+lock, y el canon ya no lo mueve. Ni los checksums ni el contenido de los paquetes se miran aquí
+—los checksums los comprueba `cargo` contra el lock—, no hay `cargo vet` ni `cargo deny`, y el
+toolchain no se fija en ningún fichero. El lector de manifiestos no es un lector de TOML: una forma
+que el árbol no usa, como renombrar un paquete con `clave.package`, no la ve.
+
+**Lo que NO cierra.** Nada de la cola.
