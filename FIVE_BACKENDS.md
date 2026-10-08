@@ -153,17 +153,18 @@ suele citar el ecosistema conviven con 29 (UDR) y 63 (LDR) demostrables.
 Cerrar la brecha cuesta 125,6 KB en vez de 36,7 — y aun así sigue siendo el
 generador más rápido.
 
-⚠️ **No son las cifras de producción.** Las opciones de la capa —42
-queries, blowup 16, grinding 21 y extensión cuadrática— dan, sobre sus
-pruebas ocultas, 127 bits conjeturados y, demostrables, 59 en UDR y 80-88 en
-LDR según la longitud del circuito, menos en la prueba de edad cuanto mayor
-es su `m`. Lo fijan tests desde el §697, y la tabla por circuito y por `m`
-está en [`SECURITY.md`](./SECURITY.md) §3.11. Lo que costaría llevar esas
-pruebas a 128 bits demostrables no está medido, y su nivel frente a un
-adversario cuántico tampoco. ⚠️ **Corregido en el §698**: hasta entonces el
-párrafo de la tabla decía «Los 127 bits conjeturados que suele citar el
-ecosistema conviven con 29-63 demostrables», sin decir con qué opciones, y
-otros documentos lo citaban como si fuera la capa.
+⚠️ **No son las cifras de producción.** Las opciones de la capa —42 queries,
+blowup 16, grinding 21 y extensión cuadrática— dan, sobre sus pruebas
+ocultas, 127 bits conjeturados —112,8-116,8 según la longitud con el término
+DEEP, que la fórmula de la conjeturada no descuenta (§708)— y, demostrables,
+59 en UDR y 80-88 en LDR según la longitud del circuito, menos en la prueba
+de edad cuanto mayor es su `m`. Lo fijan tests desde el §697, y la tabla por
+circuito y por `m` está en [`SECURITY.md`](./SECURITY.md) §3.11. Lo que
+costaría llevar esas pruebas a 128 bits demostrables no está medido, y su
+nivel frente a un adversario cuántico tampoco. ⚠️ **Corregido en el §698**:
+hasta entonces el párrafo de la tabla decía «Los 127 bits conjeturados que
+suele citar el ecosistema conviven con 29-63 demostrables», sin decir con
+qué opciones, y otros documentos lo citaban como si fuera la capa.
 
 Remedido el 2026-10-07 (§698) con el mismo test
 (`real_proof_end_to_end_with_metrics`): los mismos bits en las cuatro filas,

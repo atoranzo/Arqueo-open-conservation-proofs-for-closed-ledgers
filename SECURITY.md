@@ -623,21 +623,22 @@ Lo que sigue valiendo un elemento, y se dice aquí:
   el kit los verifican (el censo del RFC-0009), y no prueban la pertenencia a un conjunto
   ancho.
 
-### 3.11 El nivel de las pruebas, y el azar del sistema — ⚠️ MEDIDO y DECLARADO (§697, §698)
+### 3.11 El nivel de las pruebas, y el azar del sistema — ⚠️ MEDIDO y DECLARADO (§697, §698, §708)
 
 **Lo medido es clásico.** Las opciones de producción, las de la capa y las del kit, son 42
 consultas, blowup 16, molienda de 21 bits y extensión cuadrática (`proof_options()` en
 `crates/zk-ssl/src/lib.rs`; la edad usa las mismas, y un test lo exige). Sobre la forma oculta
 de cada prueba, la función de `winter-air` (`proof/security.rs`, la de upstream) da **127 bits
-conjeturados** y, demostrables, **59 en UDR** (decodificación única) en todas, y en LDR
-(decodificación en lista) lo que dé la longitud de la traza:
+conjeturados** —de 112,8 a 116,8 según la longitud con el término DEEP, que su fórmula no
+descuenta (abajo)— y, demostrables, **59 en UDR** (decodificación única) en todas, y en
+LDR (decodificación en lista) lo que dé la longitud de la traza:
 
-| traza oculta | LDR | pruebas |
-|---|---|---|
-| 128 filas | **88** | las dos aperturas del reembolso y el umbral (T = 64) |
-| 512 filas | **84** | la subida de congelados (T = 256) |
-| 1.024 filas | **82** | el crédito, las subidas de emisión, de emisión a pendiente y de recuperación, la auditoría y las cuatro del kit de longitud fija (T = 512) |
-| 2.048 filas | **80** | envío, cobro y quema (T = 1.024) |
+| traza oculta | LDR | conjeturada, con el DEEP | pruebas |
+|---|---|---|---|
+| 128 filas | **88** | 116,8 | las dos aperturas del reembolso y el umbral (T = 64) |
+| 512 filas | **84** | 114,8 | la subida de congelados (T = 256) |
+| 1.024 filas | **82** | 113,8 | el crédito, las subidas de emisión, de emisión a pendiente y de recuperación, la auditoría y las cuatro del kit de longitud fija (T = 512) |
+| 2.048 filas | **80** | 112,8 | envío, cobro y quema (T = 1.024) |
 
 **La edad baja con `m`.** Su traza oculta tiene 2^(m+4) filas, con `m` el logaritmo del número
 de pendientes que cubre, y pierde dos bits de LDR cada vez que la traza se dobla:
@@ -645,13 +646,15 @@ de pendientes que cubre, y pierde dos bits de LDR cada vez que la traza se dobla
 | `m` | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | LDR | 88 | 86 | 84 | 82 | 80 | 78 | 76 | 74 | 72 | 70 | 68 |
+| con el DEEP | 116,8 | 115,8 | 114,8 | 113,8 | 112,8 | 111,8 | 110,8 | 109,8 | 108,8 | 107,8 | 106,8 |
 
 | `m` | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | LDR | 66 | 64 | 62 | 60 | 58 | 56 | 54 | 52 | 50 | 48 | — |
+| con el DEEP | 105,8 | 104,8 | 103,8 | 102,8 | 101,8 | 100,8 | 99,8 | 98,8 | 97,8 | 96,8 | — |
 
-Conjeturada 127 y UDR 59 en todas. Con `m = 24`, que el enunciado admite, la prueba no se puede
-generar hoy.
+Conjeturada 127 y UDR 59 en todas; la fila «con el DEEP» es la conjeturada contando el término
+DEEP (abajo). Con `m = 24`, que el enunciado admite, la prueba no se puede generar hoy.
 
 Lo fijan tests desde el §697: en las familias de longitud fija, conjeturada ≥ 127, LDR ≥ 80 y
 UDR = 59 sobre pruebas ocultas reales; en la edad, el piso de cada `m`. **El nivel que se
@@ -660,6 +663,24 @@ declara —el piso de LDR, el umbral de UDR y el rango de `m`— lo decide el au
 apoya en conjeturas sobre la proximidad a códigos Reed-Solomon que no están demostradas; la
 demostrable, no. Las dos son lo que devuelve la función de upstream sobre la forma de la
 prueba, y nadie ajeno al proyecto las ha contrastado con la construcción oculta del fork (H7).
+
+**La conjeturada no descuenta el término DEEP (§708).** Su fórmula, la de `winter-air`, es
+min(bits del campo, consultas · log2(blowup) + molienda) − 1, con el tope de 128 que pone el hash:
+pone como término de campo el campo entero, 128 bits con la extensión cuadrática, y ningún término
+que crezca con la longitud L de la traza oculta. La demostrable sí cuenta uno, y no es de
+proximidad —de lo que tratan las conjeturas— sino de grado: el del punto fuera del dominio (DEEP),
+un error de ((blowup + 1) · (L + 1) + L − 1)/|E|, con |E| el tamaño de la extensión, que la función
+cuenta como 2^128, el grado de las restricciones acotado por el blowup, y en decodificación única,
+sin el tamaño de lista de la LDR. Vale 116,8 bits con 128 filas y casi uno menos cada vez que L se
+dobla —112,8 con 2.048, y 96,8 en la edad con `m = 23`—, y, puesto en lugar del campo, es el menor
+de los términos de la fórmula: las consultas dan 189 bits y el hash pone 128. Con él, la
+conjeturada no pasa de ese término, y esa es la cifra «con el DEEP» de las tablas: el término
+mismo, sin el −1 con que la fórmula resta un bit a su mínimo (sus 127 son 128 − 1); con ese −1,
+sería un bit menos. El otro término de campo, el de ALI, no cambia con L: con el lote lineal de
+producción es 1/|E|. Esas cifras son una derivación, no lo que devuelve la función; las fija un
+test (`tests_nivel` en `crates/zk-ssl-air/src/lib.rs`), que contrasta su réplica de la fórmula y
+del término con la función real y con su fuente. Los 127 son lo que la función devuelve, y lo que
+siguen exigiendo los tests del §697.
 
 Los «127 conjeturados frente a 29-63 demostrables» y los «36,7 KB frente a 125,6 KB» que
 publicaban varios documentos hasta el §698 son del circuito de comparación de
@@ -786,15 +807,16 @@ y también trae dos defensas que antes no existían.
 ⚠️ **La reserva que toca hacerse**: «post-cuántico» aquí significa *sin
 supuestos de curva*, no *invulnerable*, y el nivel frente a un adversario
 cuántico **no está medido** (§3.11). Lo medido es clásico: 127 bits
-conjeturados y, demostrables, 59 en UDR y 80-88 en LDR según el circuito,
-menos en la edad con `m` alta (§3.11). El techo de **63 bits de solidez**
-que este proyecto midió y publicó (hallazgo 3) es el de una configuración
-sin extensión de campo; la de producción usa la cuadrática. Un sistema con
-miles de validadores y años de producción sigue siendo, hoy, **más seguro
-en la práctica** que uno sin auditar. ⚠️ **Corregido en el §698**: hasta
-entonces este párrafo decía que «su configuración por defecto tiene techo de
-63 bits de solidez sin extensión de campo», y no decía que el nivel cuántico
-no está medido.
+conjeturados —112,8-116,8 según el circuito con el término DEEP, que la
+fórmula no descuenta, y menos en la edad— y, demostrables, 59 en UDR y
+80-88 en LDR según el circuito, menos en la edad con `m` alta (§3.11). El
+techo de **63 bits de solidez** que este proyecto midió y publicó
+(hallazgo 3) es el de una configuración sin extensión de campo; la de
+producción usa la cuadrática. Un sistema con miles de validadores y años
+de producción sigue siendo, hoy, **más seguro en la práctica** que uno sin
+auditar. ⚠️ **Corregido en el §698**: hasta entonces este párrafo decía
+que «su configuración por defecto tiene techo de 63 bits de solidez sin
+extensión de campo», y no decía que el nivel cuántico no está medido.
 
 **2. Sin ceremonia de confianza — y sin haberla tenido nunca.** Zcash la
 eliminó con Halo 2 en Orchard (mayo 2022), pero Sprout y Sapling nacieron

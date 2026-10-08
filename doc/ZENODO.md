@@ -122,7 +122,7 @@ construction. **This finding applies to anyone building on STARK.**
 |---|---|
 | **Goldilocks is too narrow for identities** | 64 bits means collision in 2³². An attacker could find an identity colliding with an innocent person's |
 | **63-bit soundness ceiling** | Without field extension, over Goldilocks. Correcting it costs **1.2× in time and 1.7× in size** — measured |
-| **127 conjectured vs 29-63 provable bits** | Coexisting in the comparison circuit's configuration (32 queries, no grinding). The production options over the hidden proofs give 127 conjectured, 59 (UDR) and 80-88 (LDR) provable by circuit, less in the age proof as `m` grows; tests bind them, and the level against a quantum adversary is not measured (`SECURITY.md` §3.11) |
+| **127 conjectured vs 29-63 provable bits** | Coexisting in the comparison circuit's configuration (32 queries, no grinding). The production options over the hidden proofs give 127 conjectured (112.8-116.8 by circuit with the DEEP term, which the conjectured formula does not discount), 59 (UDR) and 80-88 (LDR) provable by circuit, less in the age proof as `m` grows; tests bind them, and the level against a quantum adversary is not measured (`SECURITY.md` §3.11) |
 | **PLONK/KZG was the slowest prover** | 16-22× slower than Groth16 among curve-based systems. Implementation may account for part of it; the data cannot separate the two |
 | **Only two of six libraries** | Prevent unsafe setup in code. The rest let it pass silently |
 | **The PLONK/KZG Rust ecosystem is vertically fragmented** | Components that should compose, do not |

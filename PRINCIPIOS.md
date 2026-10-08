@@ -325,14 +325,16 @@ bits de los otros; la capa usa la extensión cuadrática.
 comparación, con 32 consultas y sin molienda, 127 bits conjeturados
 conviven con 29 (UDR) y 63 (LDR) demostrables, y cerrarla cuesta 125,6 KB
 en vez de 36,7. Con las opciones de producción —42 consultas, blowup 16,
-molienda 21— y sobre las pruebas ocultas: 127 conjeturados, 59 en UDR y
-80-88 en LDR según el circuito, menos en la edad con `m` alta; lo fijan
-tests (§697) y la tabla está en `SECURITY.md` §3.11. Frente a un adversario
-cuántico, el nivel no está medido. ⚠️ **Corregido en el §698**: hasta entonces
-decía «127 bits conviven con 29-63», sin decir de qué circuito ni con qué
-opciones; el 3, que la configuración sin extensión era «la configuración por
-defecto»; y el apartado 5, que Groth16 tenía pruebas «320 veces más pequeñas»
-(192 bytes frente a ~65 KB, §130), con los tamaños de antes de ocultar.
+molienda 21— y sobre las pruebas ocultas: 127 conjeturados (112,8-116,8
+según el circuito con el término DEEP, que la fórmula no descuenta, §708),
+59 en UDR y 80-88 en LDR según el circuito, menos en la edad con `m` alta;
+lo fijan tests (§697) y la tabla está en `SECURITY.md` §3.11. Frente a un
+adversario cuántico, el nivel no está medido. ⚠️ **Corregido en el §698**:
+hasta entonces decía «127 bits conviven con 29-63», sin decir de qué
+circuito ni con qué opciones; el 3, que la configuración sin extensión era
+«la configuración por defecto»; y el apartado 5, que Groth16 tenía pruebas
+«320 veces más pequeñas» (192 bytes frente a ~65 KB, §130), con los
+tamaños de antes de ocultar.
 
 **5. PLONK-KZG resultó el generador más lento** de los cuatro, 16-22
 veces más lento que Groth16. *Matiz: parte puede deberse a la
@@ -365,11 +367,11 @@ sería faltar al principio de transparencia.
 - Cinco paradigmas implementados y medidos.
 - Capa de liquidación con ciclo monetario completo, persistencia,
   auditoría y verificación de integridad.
-- **1703 tests en la compuerta de sello** —447 de la capa, 423 de
+- **1704 tests en la compuerta de sello** —447 de la capa, 423 de
   circuitos, **195 del nodo**, 34 de la ceremonia, 17 de liquidación, **182
   del verificador independiente**, **139 del testigo**, y los del SDK, el
   cable, el puente ISO, el árbol del medio y el fork de winterfell—,
-  **1840 contando los pines de `--largo` y `--completo`**, y **1364 declarados**.
+  **1841 contando los pines de `--largo` y `--completo`**, y **1364 declarados**.
   0 fallos y 24 warnings **pinchados** (no crecen). Cada propiedad de
   seguridad con test discriminante.
 

@@ -1154,6 +1154,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   §3.11, y lo repiten el comentario de `proof_options`, `PRINCIPIOS.md`, `FIVE_BACKENDS.md`,
   `PAPER.md`, `PAPER_EN.md`, `doc/ZENODO.md` y los dos institucionales; el nivel cuántico se
   declara no medido. Lo que se decida aquí mueve también esos textos, en el mismo sello.
+  **La conjeturada, con el término DEEP (§708)**: su fórmula pone el campo entero y no descuenta el
+  término DEEP de la demostrable, que crece con la longitud de la traza. Con él, no pasa de 116,8
+  con 128 filas ni de 112,8 con 2.048, y en la edad, de 116,8 con `m = 3` a 96,8 con `m = 23`.
+  Lo fija un test de `tests_nivel` en `zk-ssl-air`, y `SECURITY.md` §3.11 y los textos de arriba lo
+  dan junto a los 127. Lo que se decida aquí mueve también esa cifra.
 
 - [ ] **117. El juez único de verificación, antes del corte zkssl/0.5: lo adopta el autor (§705),
   en la aceptación en bloque.** Es el ARQ-01 de `doc/blueprint-v2.md`. Hoy cada familia se

@@ -50393,3 +50393,236 @@ compartida con otras tareas.
 **Lo que NO cierra.** La E3 y, con ella, la 118. La 116 y la 117. El RFC de la capa 2. Y que la D-G
 pase de propuesta a construida, que pide su asiento, con su réplica y sus vectores, en el sello del
 corte.
+
+## §708 — la conjeturada no descuenta el término DEEP: con él, de 116,8 a 112,8 en las familias de longitud fija y hasta 96,8 en la edad, derivado por un test contrastado con la función y publicado junto a los 127
+
+El commit que lleva este asiento, sobre `c85d553` (el §707). Un solo sello: un test nuevo en
+`zk-ssl-air`, `tests_nivel::la_conjeturada_con_el_termino_deep_para_cada_m`, con su fila del canon;
+la cifra que deriva, junto a los 127 conjeturados, en `SECURITY.md` —la tabla y un párrafo de la
+§3.11 y la reserva de la §3.ter—, en el comentario de `proof_options`, en `PRINCIPIOS.md`,
+`FIVE_BACKENDS.md`, `PAPER.md`, `PAPER_EN.md`, `doc/ZENODO.md` y los apartados 1 y 8 de los dos
+institucionales; una nota en `doc/blueprint-v2.md` y una celda de
+`doc/integracion-vertical-evaluacion.md`; cinco líneas en la entrada 116 del `BACKLOG.md`, con las
+tres celdas de los bloques «Correcciones (§705)» que citan por línea lo que esas cinco mueven; los
+contadores; y este asiento. La decisión es del autor, del 07-10-2026, y la cifra que se publica es
+la que aceptó («Lo que decide el autor»). Lo escribe y lo comprueba una sesión de Claude Code, y lo
+commitea la sesión que la lanzó, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. Después, una revisión, también de Claude Code, pidió una corrección importante y
+cuatro menores, y se aplicaron antes del commit:
+
+- **La cifra.** La primera versión publicaba la fórmula de la conjeturada con el término DEEP en
+  lugar del campo y con su −1: un bit por debajo, en cada cifra, de lo que el autor aceptó, por una
+  convención que eligió la sesión y no él. La revisión ofrecía dos salidas: señalarle la convención
+  y escribir que regía hasta que dijera otra cosa, o publicar lo aceptado. Se publica lo aceptado,
+  el término mismo, de 116,8 a 112,8, porque es lo que el autor aceptó y la otra salida pedía una
+  respuesta suya antes del commit. `SECURITY.md` §3.11 dice que con el −1 sería un bit menos, y el
+  test lo fija.
+- **La base de la decisión.** «Lo que decide el autor» se apoyaba en el análisis, que propone
+  opciones y no decide; ahora se apoya en la propuesta que el autor aceptó.
+- **El contraste.** Con el blowup de producción, el contraste entero del término con la función no
+  lo separaba de las capas de FRI, que quedan sólo 0,17-0,18 bits por encima. El test gana un
+  segundo contraste, con blowup 2, donde el DEEP queda un bit por debajo y la parte entera los
+  separa, y su doc y este asiento lo dicen («Lo que hace», «Probado»).
+- **Los institucionales.** Su apartado 1 dice ahora que la fórmula no descuenta el término, en las
+  mismas cinco líneas.
+- **La reserva de la §3.ter**, reajustada al ancho de su párrafo.
+
+El número es el siguiente libre: la rama llega al §707, y ninguna de las seis ramas del repositorio
+en `origin` (`git ls-remote`, y el `AUDITORIA.md` de cada una) lleva un §708: la propia rama en
+`origin` llega al §702, `main` al §693, y las otras cuatro al §685, §658, §641 y §627. El sello no
+toca la generación de pruebas, ni las opciones, ni ningún verificador: el kit, la capa y el nodo
+aceptan y rechazan lo mismo que antes, y la función de `winter-air` devuelve lo mismo. En la sesión
+no se corrió el canon entero: sí las suites de los dos crates que toca, con la orden de su fila, y
+las doce compuertas rápidas (en «Medido»).
+
+**De dónde sale.** El §697 fijó con tests lo que la función de `winter-air` devuelve sobre la forma
+oculta de cada prueba de producción, y el §698 lo publicó: 127 bits conjeturados en todas. Esa
+cifra sale de `ConjecturedSecurity::compute` (`crates/winter-air/src/proof/security.rs:30-48`):
+min(bits del campo, consultas · log2(blowup) + molienda) − 1, con el tope de 128 del hash. Su
+término de campo es el campo entero, 128 bits con la extensión cuadrática, y ninguno de sus
+términos crece con la longitud L de la traza oculta. La demostrable, en cambio, cuenta en
+decodificación única el error del punto fuera del dominio, el término DEEP (`:255-257`), que es de
+grado sobre el tamaño del campo y no de proximidad, y que con las 2.048 filas del envío vale 112,8
+bits: por debajo de los 128 que la conjeturada le da al campo. Lo publicado daba los 127 sin decir
+que su fórmula no lo descuenta.
+
+**Lo que decide el autor.** El 07-10-2026 el autor aceptó en bloque las propuestas de decisión que
+una sesión de Claude Code le había preparado, como cuentan el §705, el §706 y el §707. Una de
+ellas, sobre el nivel que se declara, da para las opciones de hoy los 127 conjeturados por la
+fórmula de winterfell y, con el término DEEP descontado, lo que darían: el propio término. El
+análisis término a término que la alimenta, que propone opciones y no decide, proponía declararlo
+ya. Al aceptar la propuesta, el autor acepta esa cifra para las opciones de hoy, y que lo publicado
+la dé junto a los 127. Lo demás de esa propuesta no entra en este sello: el nivel y las opciones
+del corte zkssl/0.5 entran con su propio asiento, y hasta entonces son la entrada 116. Y una
+respuesta que la sesión propuso después de esa aceptación, que rige por ella hasta que el autor
+diga otra cosa y que se le señaló en la sesión, como las del §705, el §706 y el §707: ninguna cifra
+frente a un adversario cuántico. Ese nivel sigue «no medido», como lo dejó el §698.
+
+**Lo que la sesión pone al día.** El análisis y la propuesta se escribieron sobre `161a233`, con una
+réplica de `security.rs` fuera del árbol, y daban el término redondeado: el análisis, «113-117». Al
+pasarlo al árbol sobre `c85d553`:
+
+- **La cifra, en décimas.** El término DEEP, de 116,8 con 128 filas a 112,8 con 2.048: la
+  conjeturada, contándolo, no pasa de él. Es el término mismo, sin el −1 con que la fórmula resta un
+  bit a su mínimo, como lo aceptado; `SECURITY.md` §3.11 dice que con ese −1 sería un bit menos.
+- **La derivación es un test del árbol**, no una réplica de fuera: contrastada con la función real
+  y con su fuente («Lo que hace»).
+- **La edad, para cada `m`.** El test recorre las `m` que el enunciado admite y tienen piso, de 3 a
+  23, como el del §697; `m = 24`, que el enunciado admite y cuya prueba no se puede generar hoy,
+  sigue sin cifra.
+
+**Lo que hace.**
+
+1. **El test** (`tests_nivel::la_conjeturada_con_el_termino_deep_para_cada_m`, al final de
+   `crates/zk-ssl-air/src/lib.rs`, junto al del §697). Tres réplicas: `bits_deep`, el término DEEP
+   de la demostrable en decodificación única, ((blowup + 1) · (L + 1) + L − 1)/|E| en bits;
+   `bits_consultas`, el de las consultas en la fórmula de la conjeturada, consultas · log2(blowup)
+   más la molienda; y `conjeturada_con`, esa fórmula con el término de campo que se le dé,
+   min(campo, consultas) − 1 con el tope del hash. Antes de usarlas, tres contrastes. La fórmula,
+   con el campo entero, da la conjeturada que devuelve la función, 127, para cada `m`. El término,
+   con dos juegos de opciones en los que el DEEP es el más bajo de los términos de la UDR —las de
+   producción con plegado 2, 255 consultas y molienda 32, y esas mismas con blowup 2—, da la UDR que
+   devuelve la función, que es entera: su parte entera. Con blowup 16 el DEEP queda sólo 0,17-0,18
+   bits por debajo de las capas de FRI, y la parte entera de los dos coincide: ese contraste no los
+   separa. Con blowup 2 queda un bit por debajo de las capas y del compromiso, y la parte entera sí
+   los separa: es el contraste que ve una réplica que calculara otro término. Y el fuente del fork
+   dice, letra a letra y las veces que debe, las tres líneas que la réplica copia —el grado acotado
+   por el blowup y las dos aperturas, en los dos regímenes, y el término de la UDR—, para ver
+   también un cambio de décimas, que ningún contraste entero ve. Después, para cada `m`, toma el
+   menor de los términos de la fórmula con el DEEP en lugar del campo, exige que sea el DEEP y que
+   con el −1 la fórmula dé un bit menos, y exige la cifra declarada, en décimas, de una tabla de 21
+   entradas. Como el del §697, cae si el enunciado admite una `m` sin cifra o si una cifra nombra
+   una `m` que el enunciado no admite; y, además, si nombra una que se declara sin piso. Construye
+   el `Context` de la forma oculta de la edad sobre `Proof::new_dummy()`, como el del §697, sin
+   generar ninguna prueba, y exige antes el batching lineal, con el que el término de ALI es 1/|E| y
+   no depende de L. Las familias de longitud fija tienen las longitudes de la edad con `m` = 3, 5, 6
+   y 7 —128, 512, 1.024 y 2.048 filas—, y con batching lineal la función sólo depende de las
+   opciones y de la longitud (§697): la misma tabla las cubre. La doc del módulo nombra el test
+   nuevo.
+2. **`SECURITY.md`.** La §3.11 gana en su encabezado este asiento, la cifra junto a los 127 en su
+   primer párrafo, una columna «conjeturada, con el DEEP» en la tabla de longitudes, una fila «con
+   el DEEP» en las dos de la edad y un párrafo que dice qué es, de dónde sale, que es el término
+   mismo y que con el −1 de la fórmula sería un bit menos, que es una derivación y no lo que
+   devuelve la función, y qué test la fija. La reserva de la §3.ter da la cifra junto a los 127. El
+   nivel cuántico sigue «no medido», y el párrafo que lo dice no se toca.
+3. **Los demás textos que dan los 127 de producción**: el comentario de `proof_options`, en las
+   mismas cuatro líneas, porque otros documentos citan `crates/zk-ssl/src/lib.rs:216-227`;
+   `PRINCIPIOS.md` §7.4, sin mover sus líneas 324-325, que cita el plano; `FIVE_BACKENDS.md` §4;
+   `PAPER.md` y `PAPER_EN.md` §8.4; la fila de `doc/ZENODO.md`; y los apartados 1 y 8 de los dos
+   institucionales, el 1 en las mismas cinco líneas, porque el RFC-0006 cita sus líneas 271 y 282,
+   y diciendo los dos que la fórmula no descuenta el término. Cada uno da 112,8-116,8 según el
+   circuito, y los que hablan de la edad, hasta 96,8.
+4. **El plano y la evaluación.** `doc/blueprint-v2.md` gana en su §3.2, junto a las notas del §697
+   y del §698, una nota fechada: «el tope lo pone el campo de 128 bits» es lo que dice la fórmula, y
+   lo que da con el término DEEP. La celda E7 del bloque «Correcciones (§705)» de
+   `doc/integracion-vertical-evaluacion.md`, que da los 127 de producción, gana la cifra «desde el
+   §708».
+5. **El `BACKLOG.md`.** La entrada 116 gana cinco líneas: la cifra, el test que la fija y que lo
+   que el autor decida la mueve también. Esas cinco bajan lo que va detrás, y tres celdas de los
+   bloques «Correcciones (§705)» citan por línea algo de eso; cada una dice ahora también la línea
+   desde el §708, como hicieron el §706 y el §707: la entrada 15, `:1430-1437`, en el plano y en la
+   evaluación; y la 22, `:2048`, `:2094` y `:2121`, en la evaluación, donde la 92 sigue en `:961`.
+6. **La fila de `zk-ssl-air`** en `tools/canon.sh`, de 43 a 44, con su crónica.
+
+**Medido.** Sobre `c85d553` con este sello, en release, con la máquina de 4 CPU compartida con
+otras tareas.
+
+- **Lo que imprime el test** (`cargo test -p zk-ssl-air --release --locked --lib tests_nivel --
+  --nocapture`): el término DEEP vale 116,82 bits con `m = 3` (128 filas), 115,83 con 256, 114,83
+  con 512, 113,83 con 1.024 y 112,83 con 2.048, y desde ahí uno menos cada vez que la traza se
+  dobla, hasta 96,83 con `m = 23` (2^27 filas). En décimas, la cifra declarada: 116,8, 115,8,
+  114,8, 113,8 y 112,8, y de ahí hasta 96,8; con el −1 de la fórmula, un bit menos en cada `m`, de
+  115,8 a 95,8. La función real da conjeturada 127 en las 21 `m` y, con los dos juegos del
+  contraste, UDR de 116 a 96 con blowup 16 y de 118 a 98 con blowup 2: la parte entera del término
+  en las 21. Las UDR del contraste se leyeron con una línea de impresión añadida y quitada después,
+  con el guion de «Probado».
+- **El fuente.** `crates/winter-air/src/proof/security.rs` es byte a byte el de `winter-air` 0.13.1
+  de crates.io (`cmp` contra la copia del registro de cargo). La conjeturada, `:30-48`; el término
+  DEEP de la UDR, `:255-257`, con `max_deg` en `:238` y `num_openings` en `:234`; el de la LDR,
+  `:191-193`, con el cuadrado del tamaño de lista. El de ALI, `:249` en la UDR y `:185` en la LDR,
+  con factor 1 en el lote lineal (`:246` y `:182`): 128 bits en la UDR para toda L.
+- **Los términos de FRI**, con sus expresiones (`:268` y `:272-276`) calculadas a mano y, aparte,
+  en Python, con las mismas cifras del test para el DEEP. En la UDR con las opciones de producción,
+  el compromiso da 113,0 bits con 2.048 filas, y las capas del plegado 8, 110,2: también crecen con
+  L, y no se descuentan aquí («Lo que NO hace»). Con las opciones del contraste, el plegado 2 pone
+  las capas en 128 − log2(16L + 1) con blowup 16, de 117,0 con 128 filas a 97,0 con `m = 23`, de
+  0,17 a 0,18 bits por encima del DEEP y con su misma parte entera; y con blowup 2, en
+  128 − log2(2L + 1), de 120,0 a 100,0, un bit por encima del DEEP, con el compromiso un poco más
+  arriba.
+- **Las suites**, con la orden de su fila. `zk-ssl-air` (`cargo test -p zk-ssl-air --release
+  --locked`), sobre el árbol final: 44 pasan, 0 fallan, 0 warnings, en 25 s con su compilación.
+  `zk-ssl`, cuyo único cambio es el comentario de `proof_options`: 447 pasan y 7 ignorados, 0
+  fallan y 0 warnings, en 206 s de tests y 6 min 12 s con su compilación, con una carga media en
+  torno a 8 en las 4 CPU. Corrió antes de dos retoques de redacción en la doc del test nuevo, que
+  está en un módulo `#[cfg(test)]` de `zk-ssl-air` y no entra en lo que `zk-ssl` compila. Son los
+  pines del canon: 44, y 447 con 7 ignorados.
+- **Lo que queda con los 127 a secas**, con `grep` de «127» junto a «bits», «conjeturados» o
+  «conjectured», y de «conjeturada ≥ 127», en los `.md` y los `.rs` del árbol fuera de los
+  registros —`AUDITORIA.md`, `doc/ecst/`, `doc/comparativa/`, `doc/historia/` y `doc/preprints/`—,
+  mirando cada acierto: los del circuito de comparación —`FIVE_BACKENDS.md` §4 y su tabla de RISC
+  Zero, `PRINCIPIOS.md` §7.4, `PAPER.md` y `PAPER_EN.md` §8.4, `SECURITY.md` §3.11 y
+  `ARQUITECTURA.md`—; los umbrales de los tests —`SECURITY.md` §3.11, la entrada 116, los dos
+  módulos de test y la puerta que propone el plano—; las medidas fechadas del plano, en su §2.3, su
+  §3.2, con la nota de este sello, y su §5.1, y el texto original de la evaluación; la línea de la
+  entrada 116 que da lo medido en el §697, con las cinco nuevas detrás; y la línea tachada de la
+  entrada 10 del `BACKLOG.md`. Ninguno da el nivel de producción sin la cifra al lado o sin remitir
+  a la §3.11.
+- **Coherencia con el §697 y el §698.** Los 127, la UDR de 59, la LDR de cada longitud y de cada
+  `m` y sus tests no se mueven; la §3.11 sigue diciendo que la conjeturada y la demostrable son lo
+  que devuelve la función, y dice de la cifra nueva que no lo es. Ninguna cifra cuántica.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio, después de todos los arreglos de
+  la revisión: `check_tests`, 1863 declarados, ninguno anidado; `check_modulos`, 204 ficheros, todos
+  declarados; `check_vectores`, 483 vectores y 958 líneas con su huella, ninguno tocado;
+  `check_cifras`, 26 cifras de tests y ninguna contradice el canon, con las 11 filas que cuentan su
+  crónica acabando en su pin; y las otras del bucle «2 ter»: `verificar_citas`, `check_figures`,
+  `check_columns`, `check_constraint_layout`, `check_dominios`, `check_publicadas`, `check_nucleo`
+  y `check_techo`. Las doce salen con 0. `verificar_citas` sigue en 69 encabezados citados, 0
+  muertos: el test y los textos citan `SECURITY.md` §3.11 por número. Las líneas que citan otros
+  documentos no se mueven: `crates/zk-ssl/src/lib.rs:216-227`, `PRINCIPIOS.md:324-325` y las 271 y
+  282 de los dos institucionales.
+- **El binario del kit cambia de huella**: el sello toca `crates/zk-ssl-air/src/lib.rs`, que el kit
+  compila, y desde el §694 la huella depende de los bytes de los fuentes, tests incluidos. No se
+  midió aquí.
+
+**Probado.** El test nuevo, con nueve cambios, cada uno sobre el árbol de este sello y deshecho
+después:
+
+| el cambio | lo que dice el test |
+|---|---|
+| la cifra de `m = 7`, de 112,8 a 113,8 | ROJO: «con el DEEP da 112.83, y la cifra declarada es 113.8» |
+| la cifra de `m = 23`, puesta en `m = 24` | ROJO: «m = 24 se declara sin piso y tiene cifra; m = 23: el enunciado la admite y no tiene cifra declarada» |
+| `bits_deep` con el grado igual al blowup, sin el +1 | ROJO por el contraste con blowup 2 y por la tabla, de 116,90 a 96,91, en las 21 `m`; el contraste con blowup 16 no lo ve |
+| `conjeturada_con` sin el −1 | ROJO: la réplica no da los 127 de la función, y con el −1 no da un bit menos, en las 21 `m` |
+| las opciones del contraste con plegado 8 | ROJO con los dos blowups: la UDR de la función la limitan las capas de FRI y no el DEEP |
+| `opciones()` de la edad con blowup 8 | ROJO, y también el del §697: UDR 55, y la LDR bajo su piso |
+| `bits_deep` cambiado por el término de las capas de FRI con plegado 2 | ROJO por el contraste con blowup 2 y por la tabla, en las 21 `m`; el contraste con blowup 16 no lo ve |
+| el fork con `num_openings = 3.0` en la UDR | ROJO sólo por el fuente: ningún contraste entero lo ve |
+| el fork con `+ (trace_domain_size + 1.0)` en el término de la UDR | ROJO sólo por el fuente |
+
+El guion que los aplica no entra en el árbol. Restaura cada fichero desde una copia que conserva su
+fecha (`cmp` con la copia de antes de cada cambio), y por eso cargo no ve que el fichero ha vuelto:
+la primera suite después de los cambios salió en rojo, con la lectura del fuente compilada sobre el
+fork del último cambio. Con `touch` sobre los dos ficheros restaurados, cargo los recompiló y la
+suite salió en verde, la de «Medido».
+
+**Contadores.** `zk-ssl-air` 43 -> 44. TOTAL DE SELLO 1703 -> 1704 y TOTAL CON LARGOS 1840 -> 1841,
+en los tres párrafos ancla, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`. `check_tests`, de 1862
+a 1863. Las «1364 declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores
+(5.A-319). `check_vectores`, en 483 vectores y 958 líneas. El `BACKLOG.md` sigue con 47 abiertas y
+73 resueltas: la 116 gana cinco líneas y no se cierra. `verificar_citas`, en 69 encabezados
+citados.
+
+**Lo que NO hace.** No cambia la función de `winter-air` ni lo que devuelve: los 127 siguen siendo
+su cifra, y los tests del §697 siguen exigiendo conjeturada ≥ 127. No decide el nivel ni las
+opciones del corte zkssl/0.5, ni el rango de `m`: es la 116. No descuenta los términos de FRI —el
+compromiso y las capas del plegado—, que también crecen con L pero son de proximidad, de lo que
+tratan las conjeturas; ni usa el término DEEP de la LDR, con el cuadrado del tamaño de lista, que
+descontaría más: el de la UDR es el más favorable de los dos. No dice que un ataque alcance el
+término DEEP: la cifra es el tope que el término pone a la fórmula, no una cota del coste de un
+ataque. No publica ninguna cifra frente a un adversario cuántico. No toca las tablas comparativas
+—`FIVE_BACKENDS.md` §4 y su tabla de RISC Zero, `doc/comparativa/`—, cuyos 127 son de otras
+configuraciones y se comparan con la misma fórmula; ni los registros; ni las medidas fechadas del
+plano, que cubre su nota. No mide `m = 24`. No corre el canon entero ni el artefacto, y no publica
+un kit.
+
+**Lo que NO cierra.** La 116.

@@ -209,10 +209,10 @@ pub type AccountIndex = u64;
 
 /// Opciones de prueba del sistema: 42 consultas, blowup 16, molienda 21 y extensión cuadrática.
 ///
-/// Sobre las pruebas ocultas dan **127 bits conjeturados** y, demostrables, UDR 59 y LDR 80-88
-/// según la longitud de la traza (80 en envío, cobro y quema; la edad baja con `m`): lo fijan los
-/// tests del §697. Los 36,7 y 125,6 KB de `FIVE_BACKENDS.md` §4 son del circuito de comparación,
-/// con 32 y 120 consultas y sin ocultar. Frente a un adversario cuántico el nivel no está medido.
+/// Sobre las pruebas ocultas dan **127 bits conjeturados** (112,8-116,8 con el término DEEP) y,
+/// demostrables, UDR 59 y LDR 80-88 según la traza (80 en envío, cobro y quema; la edad baja con
+/// `m`): lo fijan los tests del §697. Los 36,7 y 125,6 KB de `FIVE_BACKENDS.md` §4 son del circuito
+/// de comparación, con 32 y 120 consultas y sin ocultar. El nivel cuántico no está medido.
 pub fn proof_options() -> ProofOptions {
     ProofOptions::new(
         42,

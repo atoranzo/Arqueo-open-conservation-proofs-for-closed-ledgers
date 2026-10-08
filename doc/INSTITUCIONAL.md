@@ -67,11 +67,11 @@ Es relevante para un horizonte de despliegue de infraestructura
 financiera, donde el sistema debe seguir siendo seguro décadas después de
 su puesta en marcha.
 
-**Matiz técnico que conviene conocer**: los 127 bits declarados son **conjeturados**. Los
-*demostrables*, con las opciones de producción y sobre las pruebas ocultas, son 59 (UDR) y 80-88
-(LDR) según el circuito, y menos en la prueba de edad con `m` alta (`SECURITY.md` §3.11); frente a
-un adversario cuántico, el nivel no está medido. Esa distinción rara vez se explicita, y es
-directamente relevante para elegir parámetros bajo criterios regulatorios.
+**Matiz técnico que conviene conocer**: los 127 bits declarados son **conjeturados** (112,8-116,8
+con el término DEEP, que su fórmula no descuenta). Los *demostrables*, sobre las pruebas ocultas de
+producción, son 59 (UDR) y 80-88 (LDR) según el circuito, y menos en la prueba de edad con `m` alta
+(`SECURITY.md` §3.11); frente a un adversario cuántico, el nivel no está medido. Esa distinción rara
+vez se explicita, y es directamente relevante para elegir parámetros bajo criterios regulatorios.
 
 ### Identidad soberana — **parcialmente**
 
@@ -457,8 +457,10 @@ nivel no está medido**, y ningún parámetro se eligió pensando en él
 La resistencia cuántica del sistema de prueba es una propiedad de la
 construcción —no usa curvas—, no una promesa ni un nivel medido. Y
 conviene recordar el matiz del apartado 1: **los 127 bits declarados son
-conjeturados**; los demostrables, con las opciones de producción, son 59
-(UDR) y 80-88 (LDR) según el circuito, menos en la prueba de edad.
+conjeturados**, y la fórmula que los da no descuenta el término DEEP (con
+él, 112,8-116,8 según el circuito, `SECURITY.md` §3.11); los demostrables,
+con las opciones de producción, son 59 (UDR) y 80-88 (LDR) según el
+circuito, menos en la prueba de edad.
 
 Para un despliegue bajo criterios regulatorios, esa distinción debería
 resolverse explícitamente al elegir parámetros. El coste de 128 bits

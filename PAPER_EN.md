@@ -30,9 +30,9 @@ identical conditions, and we document a methodological error of our own —
 mixing debug and release build figures — that was detected and corrected
 during the work.
 
-The reference implementation comprises **1703 executable tests in the seal
+The reference implementation comprises **1704 executable tests in the seal
 gate** (55 of them are winterfell 0.13.1's own, brought in by the fork of
-§533) —1840 counting the pins of the long and complete levels, and 1349
+§533) —1841 counting the pins of the long and complete levels, and 1349
 declared—, with 18 ignored and declared, and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
@@ -557,8 +557,11 @@ quadratic extension — give, over its hidden proofs, 127 conjectured bits
 and, provable, 59 under UDR and 80 to 88 under LDR depending on the
 circuit; the age proof drops with its `m`, down to 48 with `m = 23`.
 Tests bind these figures (§697), and the table is in `SECURITY.md`
-§3.11. What it would cost to bring them to 128 provable bits is not
-measured, and neither is their level against a quantum adversary.
+§3.11. The conjectured formula does not discount the DEEP term, which
+grows with the trace length: with it, the conjectured level is 112.8 to
+116.8 depending on the circuit, and drops to 96.8 in the age proof with
+`m = 23` (§708). What it would cost to bring them to 128 provable bits
+is not measured, and neither is their level against a quantum adversary.
 
 ⚠️ **Corrected in §698**: until then this section said «In the
 configurations evaluated», without saying they were the comparison

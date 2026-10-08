@@ -67,11 +67,11 @@ curves or pairings on the critical path.
 This matters for a financial infrastructure deployment horizon, where the
 system must remain secure decades after going live.
 
-**A technical caveat worth knowing**: the declared 127 bits are **conjectured**. The *provable*
-ones, with the production options and over the hidden proofs, are 59 (UDR) and 80-88 (LDR) by
-circuit, and fewer in the age proof as `m` grows (`SECURITY.md` §3.11); against a quantum
-adversary the level is not measured. That distinction is rarely made explicit, and is directly
-relevant to parameter selection under regulatory criteria.
+**A technical caveat worth knowing**: the declared 127 bits are **conjectured** (112.8-116.8 with
+the DEEP term, which their formula does not discount). The *provable* ones, over the production
+hidden proofs, are 59 (UDR) and 80-88 (LDR) by circuit, and fewer in the age proof as `m` grows
+(`SECURITY.md` §3.11); against a quantum adversary the level is not measured. That distinction is
+rarely made explicit, and is directly relevant to parameter selection under regulatory criteria.
 
 ### Sovereign identity — **partially**
 
@@ -440,8 +440,10 @@ level is not measured**, and no parameter was chosen with one in mind
 The quantum resistance of the proof system is a property of the
 construction — it uses no curves — not a promise nor a measured level. And
 the caveat from §1 bears repeating: **the declared 127 bits are
-conjectured**; the provable ones, with the production options, are 59 (UDR)
-and 80-88 (LDR) by circuit, fewer in the age proof.
+conjectured**, and the formula that gives them does not discount the DEEP
+term (with it, 112.8-116.8 by circuit, `SECURITY.md` §3.11); the provable
+ones, with the production options, are 59 (UDR) and 80-88 (LDR) by
+circuit, fewer in the age proof.
 
 For a deployment under regulatory criteria, that distinction should be
 resolved explicitly during parameter selection. The cost of 128 provable

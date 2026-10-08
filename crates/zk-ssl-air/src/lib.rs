@@ -929,10 +929,14 @@ mod tests_sal {
 /// nivel declarado de produccion (BACKLOG 116). Mientras tanto, el test falla si alguna `m` admitida
 /// baja de su piso, si el enunciado admite una `m` sin piso declarado o si un piso nombra una `m`
 /// que el enunciado ya no admite.
+///
+/// **§708**: el segundo test fija, para cada `m`, el tope que el termino DEEP pone a la
+/// conjeturada, la cifra que `SECURITY.md` §3.11 publica junto a los 127.
 #[cfg(test)]
 mod tests_nivel {
     use super::*;
     use winter_air::proof::Context;
+    use winter_crypto::Hasher;
 
     const CONJETURADA_MINIMA: u32 = 127;
     /// La UDR de hoy, fijada como valor, la misma que en la capa: solo cambia con un asiento.
@@ -1043,5 +1047,198 @@ mod tests_nivel {
         println!("[§697] LDR de la edad, traza oculta de 2^(m+4) filas: {}", medidas.join(", "));
         assert!(medidas.len() >= PISO_LDR.len(), "solo {} m medidas", medidas.len());
         assert!(mal.is_empty(), "el piso de la edad: {}", mal.join("; "));
+    }
+
+    /// La conjeturada con el termino DEEP (§708), en decimas de bit, para cada `m`: el tope que
+    /// ese termino pone a la conjeturada, la cifra que `SECURITY.md` §3.11 publica junto a los 127
+    /// que devuelve la funcion. Las familias de longitud fija tienen las longitudes de `m` = 3, 5,
+    /// 6 y 7: 128, 512, 1024 y 2048 filas de traza oculta.
+    const CONJETURADA_CON_DEEP: [(u32, u32); 21] = [
+        (3, 1168),
+        (4, 1158),
+        (5, 1148),
+        (6, 1138),
+        (7, 1128),
+        (8, 1118),
+        (9, 1108),
+        (10, 1098),
+        (11, 1088),
+        (12, 1078),
+        (13, 1068),
+        (14, 1058),
+        (15, 1048),
+        (16, 1038),
+        (17, 1028),
+        (18, 1018),
+        (19, 1008),
+        (20, 998),
+        (21, 988),
+        (22, 978),
+        (23, 968),
+    ];
+
+    /// El termino DEEP de la demostrable en decodificacion unica, en bits: la expresion de
+    /// `proven_security_protocol_unique_decoding` (`crates/winter-air/src/proof/security.rs`), que
+    /// el fork no exporta. El grado de las restricciones lo acota el blowup, como alli, y las dos
+    /// aperturas dan `L + 1`. Es un error de grado sobre el tamano del campo, no de proximidad.
+    fn bits_deep(o: &ProofOptions, bits_base: u32, filas: usize) -> f64 {
+        let campo = (bits_base * o.field_extension().degree()) as f64;
+        let grado = o.blowup_factor() as f64 + 1.0;
+        let l = filas as f64;
+        -(grado * (l + 2.0 - 1.0) + (l - 1.0)).log2() + campo
+    }
+
+    /// El termino de las consultas en la formula de la conjeturada (`ConjecturedSecurity::compute`,
+    /// en el mismo fichero): consultas * log2(blowup), y la molienda solo si dan 80 bits o mas.
+    fn bits_consultas(o: &ProofOptions) -> f64 {
+        let mut consultas = (o.blowup_factor().ilog2() * o.num_queries() as u32) as f64;
+        if consultas >= 80.0 {
+            consultas += o.grinding_factor() as f64;
+        }
+        consultas
+    }
+
+    /// La formula de la conjeturada con `campo` como su termino de campo:
+    /// min(campo, consultas) - 1, con el tope del hash. Con el campo entero es la de `winter-air`.
+    fn conjeturada_con(o: &ProofOptions, campo: f64, hash: u32) -> f64 {
+        (campo.min(bits_consultas(o)) - 1.0).min(hash as f64)
+    }
+
+    /// **§708: la conjeturada no descuenta el termino DEEP; con el, para cada `m`.** La
+    /// conjeturada de `winter-air` pone como termino de campo el campo entero, 128 bits con la
+    /// extension cuadratica, y ningun termino que crezca con la longitud `L` de la traza oculta. La
+    /// demostrable cuenta uno de campo que no es de proximidad, de lo que trata la conjetura, sino
+    /// de grado: el del punto fuera del dominio, ((blowup + 1) * (L + 1) + L - 1) / |E| en
+    /// decodificacion unica. Con las opciones de produccion es el menor de los terminos de la
+    /// formula -las consultas dan 189 bits y el hash pone 128-, y la conjeturada no pasa de el. El
+    /// test fija, en decimas y para cada `m` que el enunciado admite con piso, ese tope: el termino
+    /// mismo, sin el -1 con que la formula resta un bit a su minimo; y exige que con ese -1 la
+    /// formula de un bit menos.
+    ///
+    /// Antes contrasta las replicas con la funcion real. La formula, con el campo entero, da la
+    /// conjeturada de la funcion. El termino DEEP da la UDR de la funcion, que es su parte entera,
+    /// con dos juegos de opciones en los que el DEEP la limita: los de produccion con plegado 2,
+    /// 255 consultas y molienda 32, y esos mismos con blowup 2. Con blowup 16 el DEEP queda solo
+    /// 0,17-0,18 bits por debajo de las capas de FRI, y la parte entera no separa los dos
+    /// terminos; con blowup 2 queda un bit por debajo de las capas y del compromiso, y la parte
+    /// entera si los separa. Un cambio de decimas en el fork lo ve la lectura de su fuente, no el
+    /// contraste. El termino de ALI no se descuenta: con el batching lineal es 1/|E|, sin `L`.
+    #[test]
+    fn la_conjeturada_con_el_termino_deep_para_cada_m() {
+        let o = opciones();
+        assert_eq!(
+            (o.constraint_batching_method(), o.deep_poly_batching_method()),
+            (BatchingMethod::Linear, BatchingMethod::Linear),
+            "con otro batching el ALI depende de las restricciones: el test tendria que contarlas"
+        );
+        // Los dos juegos del contraste: el blowup de produccion, y 2.
+        let variantes = [o.blowup_factor(), 2].map(|blowup| {
+            ProofOptions::new(
+                255,
+                blowup,
+                32,
+                o.field_extension(),
+                2,
+                31,
+                BatchingMethod::Linear,
+                BatchingMethod::Linear,
+            )
+        });
+        let hash = <Blake3 as Hasher>::COLLISION_RESISTANCE;
+        let admitidas = admitidas();
+        let mut mal = Vec::new();
+        // La replica de `bits_deep` es la expresion del fichero, letra a letra: el grado acotado
+        // por el blowup y las dos aperturas, en los dos regimenes, y el termino de la UDR. El
+        // contraste de abajo es entero; esto ve tambien un cambio de decimas en el fork.
+        let fuente = include_str!("../../winter-air/src/proof/security.rs");
+        for (linea, veces) in [
+            ("let max_deg = options.blowup_factor() as f64 + 1.0;", 2),
+            ("let num_openings = 2.0;", 2),
+            (
+                concat!(
+                    "-log2(max_deg * (trace_domain_size + num_openings - 1.0) ",
+                    "+ (trace_domain_size - 1.0))"
+                ),
+                1,
+            ),
+        ] {
+            let hay = fuente.matches(linea).count();
+            if hay != veces {
+                mal.push(format!("security.rs dice {hay} veces, no {veces}, `{linea}`"));
+            }
+        }
+        for (m, _) in CONJETURADA_CON_DEEP {
+            if !admitidas.contains(&m) {
+                mal.push(format!("m = {m} tiene cifra y el enunciado ya no la admite"));
+            }
+            if SIN_PISO.contains(&m) {
+                mal.push(format!("m = {m} se declara sin piso y tiene cifra"));
+            }
+        }
+        let mut medidas = Vec::new();
+        for &m in &admitidas {
+            if SIN_PISO.contains(&m) {
+                continue;
+            }
+            let Some(&(_, decimas)) = CONJETURADA_CON_DEEP.iter().find(|(x, _)| *x == m) else {
+                mal.push(format!("m = {m}: el enunciado la admite y no tiene cifra declarada"));
+                continue;
+            };
+            let filas = 2 * (CICLO << m);
+            let contexto = |opc: &ProofOptions| {
+                let info =
+                    TraceInfo::new_multi_segment(ANCHO + 1, ANCHO_AUX, ALEATORIOS, filas, vec![]);
+                let mut p = Proof::new_dummy();
+                let restricciones = PRINCIPALES + AUXILIARES;
+                p.context = Context::new::<BaseElement>(info, opc.clone(), restricciones);
+                p
+            };
+            let p = contexto(&o);
+            let bits_base = p.context.num_modulus_bits();
+            let campo = (bits_base * o.field_extension().degree()) as f64;
+            let deep = bits_deep(&o, bits_base, filas);
+            // La replica de la formula, con el campo entero, es la de la funcion.
+            let real = p.conjectured_security::<Blake3>().bits();
+            if conjeturada_con(&o, campo, hash) as u32 != real {
+                mal.push(format!("m = {m}: la replica de la formula no da la conjeturada, {real}"));
+            }
+            // La replica del termino DEEP es la de la funcion: con cada variante, el limita la UDR.
+            for v in &variantes {
+                let udr = contexto(v).proven_security::<Blake3>().udr_bits();
+                let deep_v = bits_deep(v, bits_base, filas);
+                if deep_v.floor() as u32 != udr {
+                    mal.push(format!(
+                        "m = {m}, blowup {}: DEEP {deep_v:.2}, y la UDR de la variante es {udr}",
+                        v.blowup_factor()
+                    ));
+                }
+            }
+            // El tope que el DEEP pone a la conjeturada: el menor de los terminos de la formula
+            // con el en lugar del campo, sin el -1. Tiene que ser el mismo, y con el -1, uno menos.
+            let tope = deep.min(bits_consultas(&o)).min(hash as f64);
+            let con_menos_uno = conjeturada_con(&o, deep, hash);
+            if tope != deep || con_menos_uno != tope - 1.0 {
+                mal.push(format!(
+                    "m = {m}: el tope es {tope:.2} y el DEEP {deep:.2}; con el -1, {:.2}",
+                    con_menos_uno
+                ));
+            }
+            medidas.push(format!(
+                "m={m} ({filas} filas): DEEP {deep:.2}, con el -1 {con_menos_uno:.1}"
+            ));
+            if (tope * 10.0).round() as u32 != decimas {
+                mal.push(format!(
+                    "m = {m}: con el DEEP da {tope:.2}, y la cifra declarada es {}.{}",
+                    decimas / 10,
+                    decimas % 10
+                ));
+            }
+        }
+        println!(
+            "[§708] la conjeturada con el termino DEEP, traza oculta de 2^(m+4) filas: {}",
+            medidas.join(", ")
+        );
+        assert!(mal.is_empty(), "la conjeturada con el DEEP: {}", mal.join("; "));
+        assert!(medidas.len() >= CONJETURADA_CON_DEEP.len(), "solo {} m medidas", medidas.len());
     }
 }

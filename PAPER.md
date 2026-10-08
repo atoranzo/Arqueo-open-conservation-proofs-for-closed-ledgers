@@ -33,9 +33,9 @@ obtenidas en condiciones idénticas, y documentamos un error metodológico
 propio —mezcla de compilaciones de depuración y optimizadas— detectado y
 corregido durante el trabajo.
 
-La implementación de referencia consta de **1703 pruebas ejecutables en la
+La implementación de referencia consta de **1704 pruebas ejecutables en la
 compuerta de sello** (55 son las de winterfell 0.13.1, que el fork del §533
-trae consigo) —1840 contando los pines de los niveles largo y completo, y
+trae consigo) —1841 contando los pines de los niveles largo y completo, y
 1364 declaradas—, con 18 ignoradas y declaradas, y
 está disponible públicamente. **No ha sido auditada por terceros y no
 implementa consenso distribuido**; discutimos en detalle las implicaciones
@@ -591,7 +591,10 @@ Las opciones de producción de la capa —42 consultas, blowup 16, molienda
 21 y extensión cuadrática— dan, sobre sus pruebas ocultas, 127 bits
 conjeturados y, demostrables, 59 en UDR y de 80 a 88 en LDR según el
 circuito; la prueba de edad baja con su `m`, hasta 48 con `m = 23`. Lo
-fijan tests (§697), y la tabla está en `SECURITY.md` §3.11. Lo que
+fijan tests (§697), y la tabla está en `SECURITY.md` §3.11. La fórmula
+de la conjeturada no descuenta el término DEEP, que crece con la
+longitud de la traza: con él, la conjeturada es de 112,8 a 116,8 según
+el circuito, y baja hasta 96,8 en la edad con `m = 23` (§708). Lo que
 costaría llevarlas a 128 bits demostrables no está medido, y su nivel
 frente a un adversario cuántico tampoco.
 
