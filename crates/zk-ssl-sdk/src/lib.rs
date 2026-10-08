@@ -319,10 +319,13 @@ impl Constancia {
     /// transformar nada: lo que falta queda en `None`, a la vista.
     pub fn de_respuesta(respuesta: Value) -> Self {
         let campo = |k: &str| respuesta.get(k).filter(|v| !v.is_null()).cloned();
+        // §775: el `logSeq`, solo en forma canonica (RFC-0016, D-B), como lo lee el kit: lo que
+        // no lo es queda en `None`, y la respuesta entera sigue en `respuesta`.
         let log_seq = respuesta
             .get("logSeq")
             .and_then(|v| v.as_str())
-            .and_then(|s| u64::from_str_radix(s.trim_start_matches("0x"), 16).ok());
+            .and_then(|s| zk_ssl_hash::cantidad_canonica(s).ok())
+            .and_then(|x| zk_ssl_hash::u64_canonico(x).ok());
         Self { recepcion: campo("recepcion"), acuse: campo("acuse"), log_seq, respuesta }
     }
 }
@@ -514,5 +517,18 @@ mod tests {
         assert!(c.recepcion.is_none(), "sin recibo no hay objeto que oponer, y se ve");
         assert!(c.acuse.is_none());
         assert_eq!(c.log_seq, Some(3));
+    }
+
+    /// ⚠️ §775 · **El `logSeq` se lee en forma canonica.** Falsador: con `from_str_radix`,
+    /// `0x+3`, `0x03` y `3 + p` daban un numero, y `3 + p` no es la entrada que el nodo anoto.
+    #[test]
+    fn el_logseq_no_canonico_queda_en_none() {
+        let p: u64 = 0xFFFF_FFFF_0000_0001;
+        let lee = |s: &str| Constancia::de_respuesta(serde_json::json!({ "logSeq": s })).log_seq;
+        assert_eq!(lee("0x3"), Some(3));
+        let n_mas_p = format!("{:#x}", 3 + p);
+        for mal in ["0x+3", "0x03", "0xA", "3", n_mas_p.as_str()] {
+            assert_eq!(lee(mal), None, "{mal} no es un logSeq canonico");
+        }
     }
 }

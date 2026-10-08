@@ -51691,3 +51691,79 @@ resueltas: ninguno de los dos restos tenía entrada.
 barre fuera de Linux, ni ve a un escritor vivo en OTRO espacio de pids que comparta el directorio: si
 le quita el temporal, su `rename` falla y su escritura da error, y el keystore sigue entero, el
 anterior. Ese caso queda dicho en el doc de `barrer_huerfanos`. No toca el texto histórico del §702.
+
+## §775 — el testigo y el SDK leen los `u64` del nodo en forma canónica, como el kit: la escritura mínima y la cota `< p` (lo que el §662 dejó fuera)
+
+El commit que lleva este asiento, sobre `c87d7d6` (el §774). Un solo sello: en `crates/zk-ssl-cli`,
+`leer_q` y el lector del índice de `--ausentes` en `witness.rs`, con dos tests nuevos; en
+`crates/zk-ssl-sdk`, el lector del `logSeq` de `Constancia::de_respuesta`, con un test nuevo; una
+celda de la tabla 3.9 de `SECURITY.md`; una nota en «Lo que NO cierra» del RFC-0016; los pines de los
+dos crates en `tools/canon.sh`; las cifras de tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y
+este asiento. Del autor es elegir esta tarea y su orden; lo demás lo propuso la sesión («Quién lo
+decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del
+rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian`. En la sesión se corrió el
+canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El §662 llevó la regla de la escritura única a los `u64` del kit y del cable: la
+escritura mínima (`zk_ssl_hash::cantidad_canonica`) y, en el kit, la cota `< p`
+(`u64_canonico`). En su «Lo que NO hace» dejó fuera los lectores de `u64` de la CLI —`witness.rs`,
+`cobro.rs`— y del SDK, y el RFC-0016, en «Lo que NO cierra», nombra el del testigo.
+
+**El defecto.** El testigo leía las cantidades del nodo con `u64::from_str_radix` tras quitar el
+`0x`: aceptaba `0x+2`, `0x02` y `0xA`, y un `n + p`, que recompone el mismo digest que `n`. El SDK
+leía igual el `logSeq` de la respuesta de `applySend` y `applyClaim`. Lo que el testigo firma y
+compara es el digest, no el entero, así que ningún veredicto de un tercero cambiaba por esto; pero
+una misma cabeza tenía varias escrituras que el testigo daba por buenas, y el kit no.
+
+**Quién lo decide.** El autor eligió la tarea. Dejar fuera `cobro.rs` lo propuso la sesión: su
+`q_de` lee el `--index` que escribe el usuario en la línea de órdenes, no algo que sirva el nodo, y
+acepta decimal a propósito. Y también aplicar la regla a las dos columnas de `--ausentes`, el diario
+del testigo y el del nodo: un lector, no dos.
+
+**Por qué no lleva aviso de seguridad.** No hay un veredicto que cambie: es la misma regla del §662,
+llevada a los dos lectores que quedaban.
+
+**Lo que hace.**
+
+1. **`leer_q`, canónico.** Lee con `zk_ssl_hash::cantidad_canonica` y después `u64_canonico`, como
+   `u64_de` en el kit; el error nombra la cadena. Todos sus llamadores —la versión de la cabeza, el
+   índice, `seq`, `n`, el tamaño del MMR, los contadores, el total— pasan por él.
+2. **El índice de `--ausentes`, con el mismo lector.** `ausentes` lo leía con su propio
+   `from_str_radix`; ahora llama a `leer_q`. Una línea cuyo índice no es canónico no cuenta: si es
+   del nodo, la cabeza del testigo que decía cubrir sale como ausente.
+3. **El `logSeq` del SDK, canónico.** `Constancia::de_respuesta` lo lee con las mismas dos funciones;
+   lo que no es canónico queda en `None`, a la vista, y la respuesta entera sigue en `respuesta`.
+4. **Atado, con falsadores.** `leer_q_solo_acepta_la_escritura_canonica` (testigo): `0x0`, `0x2` y
+   `p - 1` se leen; `0x+2`, `0x02`, `0xA`, `0x`, `2` y `2 + p` no.
+   `ausentes_no_cuenta_un_indice_no_canonico_del_nodo` (testigo): el nodo sirve `0x05` donde el
+   testigo tiene `0x5`, y la 5 sale ausente. `el_logseq_no_canonico_queda_en_none` (SDK): `0x3` da
+   3; `0x+3`, `0x03`, `0xA`, `3` y `3 + p` dan `None`.
+
+**Medido.**
+
+- **Los mutantes, sitio a sitio.** Con el `from_str_radix` de antes en `leer_q`, cae
+  `leer_q_solo_acepta_la_escritura_canonica` (y con él el de `--ausentes`, que ahora lo usa); con
+  `leer_q` canónico pero el lector propio de antes en `ausentes`, cae solo
+  `ausentes_no_cuenta_un_indice_no_canonico_del_nodo`; con el de antes en el SDK, cae
+  `el_logseq_no_canonico_queda_en_none`. En release, en esta sesión.
+- **Los dos crates enteros**: `zk-ssl-cli` 147 de 147 y `zk-ssl-sdk` 22 de 22, en release, sin un
+  warning. Los tests que recomponen cabezas, los de la rotación, los de `--auditar` y los de
+  `--ausentes` siguen verdes: el nodo de la casa escribe con `{:#x}`, que es la forma canónica.
+- **rustfmt**: `witness.rs` queda con los mismos trozos sin formatear que en la base (181), y el
+  `lib.rs` del SDK con ninguno.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** `zk-ssl-cli` 145 -> 147 y `zk-ssl-sdk` 21 -> 22, en sus filas de `tools/canon.sh`,
+con su crónica. TOTAL DE SELLO 1733 -> 1736 y TOTAL CON LARGOS 1870 -> 1873, en los tres párrafos
+ancla, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; el desglose de `PRINCIPIOS.md`, 147 del
+testigo. `check_tests`, de 1892 a 1895. Las «1364 declaradas» y las «1349 declared» no se tocan, como
+en los sellos anteriores (5.A-319). Los vectores no se mueven. El `BACKLOG.md` sigue con 46 abiertas
+y 74 resueltas.
+
+**Lo que NO hace.** No toca `cobro.rs` (arriba). No toca el deserializador de `Q` de `zk-ssl-wire`,
+que desde el §662 exige la escritura mínima y deja la cota `< p` a quien lo usa; el RFC-0016 lo deja
+dicho. Una línea del PROPIO diario del testigo con un índice no canónico tampoco cuenta ya en
+`--ausentes`: solo pudo entrar antes de este sello, copiada de un nodo que la sirvió así, y desde
+este sello el testigo no acepta esa cabeza. No añade vectores, y la segunda implementación no se
+toca: no hay sobre nuevo que rechazar.

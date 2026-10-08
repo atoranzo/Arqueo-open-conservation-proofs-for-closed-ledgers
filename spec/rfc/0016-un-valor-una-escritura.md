@@ -126,7 +126,10 @@ publicado discrepan exactamente en estos cuatro vectores, y en ninguno más.
 - **El cable y el testigo leen `u64` sin la regla.** El lector de `QUANTITY` de `zk-ssl-wire` y el
   recompositor del testigo aceptan `n + p` y recomponen el mismo digest. Lo que firman y comparan
   es el digest, no el entero, así que ningún veredicto de un tercero cambia por ellos; queda
-  nombrado, sin etapa.
+  nombrado, sin etapa. ⚠️ §775: el testigo ya lee con la regla —la escritura mínima y la cota
+  `< p`—, y el SDK también, en el `logSeq` de la constancia. Queda el deserializador de `Q` de
+  `zk-ssl-wire`, que desde el §662 exige la escritura mínima y deja la cota a quien lo usa
+  (`zk_ssl_wire::cantidad_canonica`).
 - **`verificar_inclusion` y sus hermanas v2 a v6** no fijan la profundidad del árbol de cuentas
   ni cruzan el camino con el `indice` que el recibo lleva, que hoy no se usa. Ningún consumidor del
   árbol las llama; la regla que sí se aplica en el mando vive en el módulo `cuentas`. Queda nombrado.

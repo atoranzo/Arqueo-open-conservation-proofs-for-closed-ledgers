@@ -1135,9 +1135,16 @@ fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
 }
 
 /// ⚠️ El cable usa cantidades **hexadecimales** (`{:#x}`), no decimales.
+///
+/// ⚠️ §775 · Y solo en su forma CANONICA (RFC-0016, D-B), como el kit desde el
+/// §662: la escritura minima (`zk_ssl_hash::cantidad_canonica`: con `0x`, sin
+/// `+`, sin mayusculas, sin ceros a la izquierda) y menor que `p`
+/// (`u64_canonico`). Hasta el §775 bastaba `from_str_radix`: `0x+2` y `0x02`
+/// pasaban, y un `n + p` recomponia el mismo digest que `n`.
 fn leer_q(v: &Value) -> Result<u64, String> {
     let s = v.as_str().ok_or("QUANTITY no es cadena")?;
-    u64::from_str_radix(s.trim_start_matches("0x"), 16).map_err(|e| e.to_string())
+    let x = zk_ssl_hash::cantidad_canonica(s).map_err(|e| format!("QUANTITY {s:?}: {e}"))?;
+    zk_ssl_hash::u64_canonico(x).map_err(|e| format!("QUANTITY {s:?}: {e}"))
 }
 
 fn leer_hex(v: &Value) -> Result<Vec<u8>, String> {
@@ -1587,10 +1594,9 @@ pub fn ausentes(testigo: &[String], nodo: &[String]) -> Vec<u64> {
             if v["signature"].is_null() {
                 continue;
             }
-            if let Some(t) = v["index"].as_str() {
-                if let Ok(i) = u64::from_str_radix(t.trim_start_matches("0x"), 16) {
-                    s.insert(i);
-                }
+            // §775: el indice, con el mismo lector canonico que el resto.
+            if let Ok(i) = leer_q(&v["index"]) {
+                s.insert(i);
             }
         }
         s
@@ -4112,6 +4118,31 @@ mod tests {
         // sin firma la linea se salta y el test pasaria VACIO (§250).
         let testigo = vec![dia("0x1", "0xaa", "0xdead"), dia("0x5", "0xbb", "0xdead")];
         let nodo = vec![dia("0x1", "0xaa", "0xdead")];
+        assert_eq!(ausentes(&testigo, &nodo), vec![5]);
+    }
+
+    /// ⚠️ §775 · **El testigo lee los `u64` del nodo en forma canonica.**
+    /// Falsador: con `from_str_radix`, `0x+2`, `0x02` y `0xA` se aceptaban, y
+    /// `2 + p` daba un entero que recompone el mismo digest que `2`.
+    #[test]
+    fn leer_q_solo_acepta_la_escritura_canonica() {
+        const P: u64 = 0xFFFF_FFFF_0000_0001;
+        let q = |s: &str| leer_q(&json!(s));
+        assert_eq!(q("0x0"), Ok(0));
+        assert_eq!(q("0x2"), Ok(2));
+        assert_eq!(q(&format!("{:#x}", P - 1)), Ok(P - 1));
+        let n_mas_p = format!("{:#x}", 2 + P);
+        for mal in ["0x+2", "0x02", "0xA", "0x", "2", n_mas_p.as_str()] {
+            assert!(q(mal).is_err(), "{mal} no es un u64 canonico");
+        }
+    }
+
+    /// ⚠️ §775 · Un indice del nodo que no es canonico no cubre el del testigo:
+    /// `0x05` no es la cabeza `5`, y su ausencia se ve.
+    #[test]
+    fn ausentes_no_cuenta_un_indice_no_canonico_del_nodo() {
+        let testigo = vec![dia("0x1", "0xaa", "0xdead"), dia("0x5", "0xbb", "0xdead")];
+        let nodo = vec![dia("0x1", "0xaa", "0xdead"), dia("0x05", "0xbb", "0xdead")];
         assert_eq!(ausentes(&testigo, &nodo), vec![5]);
     }
 

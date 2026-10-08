@@ -565,7 +565,7 @@ reprodujeron con tests antes del arreglo; cada arreglo lleva falsadores que caen
 
 | hallazgo | qué rompía | prioridad | cerrado en |
 |---|---|---|---|
-| El hexadecimal del cable y del kit se troceaba por bytes de un `&str` | una sola petición sin credencial con un carácter multibyte paraba el nodo (PARADA); el kit salía con 101 en vez de ROJO; `+` y mayúsculas se aceptaban | P0 | §650; ⚠️ en los `u64` (QUANTITY), el §662 |
+| El hexadecimal del cable y del kit se troceaba por bytes de un `&str` | una sola petición sin credencial con un carácter multibyte paraba el nodo (PARADA); el kit salía con 101 en vez de ROJO; `+` y mayúsculas se aceptaban | P0 | §650; ⚠️ en los `u64` (QUANTITY), el §662; en el testigo y el SDK, el §775 |
 | La guarda de forma no miraba la marca del meta | una prueba oculta con el meta vaciado hacía entrar en pánico a la capa (con el candado del nodo tomado) y al kit | P0 | §651 |
 | Las semillas de la ocultación eran de 64 bits | quien ve una prueba despejaba cualquier columna constante del testigo —la clave de gasto, la de un custodio— con unas 2^74 compresiones Blake3 (ESTIMADO) | P0 | §652 |
 | `applySend` y `applyClaim` guardaban el importe y el saldo que mandaba el cliente | un titular rompía la conservación en la contabilidad `u64` y el libro no volvía a abrir | P0 | §641 (RFC-0017) |
