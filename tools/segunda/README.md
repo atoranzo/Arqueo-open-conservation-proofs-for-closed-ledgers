@@ -31,8 +31,8 @@ python3 tools/segunda/kat_xmss/juez_xmss.py
 # 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 170 de 170 (§693)
 for m in paquete consumo conflicto ancla rotacion; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
-# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 23 de 23
-python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices
+# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 34 de 34 (§706)
+python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca
 python3 tools/segunda/juez_stark.py
 
 # 2 · el verificador a WebAssembly, y los diez manifiestos bajo wasmtime
@@ -119,6 +119,18 @@ entradas públicas**, de modo que un enunciado mal compuesto no llega ni a la au
 que las aserciones de «última fila» de una AIR oculta usan la longitud **interna** T; que las
 columnas periódicas de Banda, Prenda, Cobro y Pago miden la traza interna entera (512) y se evalúan
 en `z²`; y que `check_leading_zeros` de la moneda cuenta los ceros **finales** de la primera palabra.
+
+**La marca, como el kit (§706).** Hasta el §706 `stark.py` leía la marca de la ocultación detrás de
+las opciones, devolvía la m que trajera y juzgaba un meta vacío como prueba sin ocultar; el kit
+mira la forma, después la marca, que tiene que ser la de la casa con m = 64 (`comprobar_marca`,
+§651), y después las opciones. Una prueba de edad honesta con m = 32 en la marca era ROJO en el kit
+y VERDE aquí, y los negativos de marca caían aquí por otra causa. Desde el §706 la segunda exige lo
+mismo, en el mismo orden y con el mismo texto, `marca de la ocultacion {lectura}; el enunciado pide
+m = 64`, y el autotest comprueba la de la casa y las cuatro lecturas que rechaza. Lo fijan seis
+negativos de la edad y el pago (`neg-marca-m32`, `neg-meta-vacio` y `neg-marca-m32-y-opciones`):
+con el `stark.py` anterior el juez da 28 de 34 pares; con este, 34 de 34, 48 pruebas juzgadas, 35
+vectores que caen antes del juez y 33 de 33 falsadores callados. La comprobación se leyó del kit,
+como las AIR; su texto y sus cuatro lecturas los da también `spec/PAQUETE.md` §5.
 
 **El verificador bajo wasmtime** (`wasmtime` 49.0.0 de PyPI; `rustc` 1.97.0):
 

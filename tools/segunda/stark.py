@@ -205,7 +205,9 @@ def bytes_e2(xs):
 
 OPCIONES_KIT = bytes([42, 16, 21, 2, 8, 31, 0, 0, 1, 1])  # zk-ssl-air lib.rs `opciones()`
 MODULO = (P).to_bytes(8, "little")
-PREFIJO_MARCA = b"arqueo:oculta:1"
+PREFIJO_MARCA = b"arqueo:oculta:1"            # winter-air marca.rs `PREFIJO`
+LARGO_MARCA = len(PREFIJO_MARCA) + 4          # `LARGO`: el prefijo y los cuatro bytes de m
+M_OCULTACION = 64                             # zk-ssl-air lib.rs `M_OCULTACION` (§651)
 
 
 class Prueba:
@@ -246,13 +248,38 @@ def leer_prueba(b):
     return p
 
 
-def marca_de(meta):
-    """`Marca::leer`: vacio -> sin marca; el prefijo y 19 bytes -> m; otra cosa -> error."""
+def lectura_de_marca(meta):
+    """`Marca::leer` del fork, un solo lector: devuelve lo que lee escrito como lo escribe su
+    `Debug` -el texto que el kit pone en su rechazo- y la m, si la hay. Vacio: `Ok(None)`; sin el
+    prefijo: `Err(Desconocida)`; con el prefijo y otra longitud que 19: `Err(Largo)`; si no,
+    `Ok(Some(Marca { m: .. }))`."""
     if not meta:
-        return None
-    if not meta.startswith(PREFIJO_MARCA) or len(meta) != 19:
+        return "Ok(None)", None
+    if not meta.startswith(PREFIJO_MARCA):
+        return "Err(Desconocida)", None
+    if len(meta) != LARGO_MARCA:
+        return "Err(Largo)", None
+    m = int.from_bytes(meta[len(PREFIJO_MARCA):], "little")
+    return f"Ok(Some(Marca {{ m: {m} }}))", m
+
+
+def comprobar_marca(meta):
+    """`zk_ssl_air::comprobar_marca` (§651, §706): la marca es parte de la FORMA, y solo la de la
+    casa, con m = M_OCULTACION, es una prueba que se juzga. Un meta vacio no es una prueba sin
+    ocultar: es un rechazo. El texto es el del kit, letra por letra, para que las dos
+    implementaciones fallen por la misma causa (spec/PAQUETE.md, seccion 6.1)."""
+    lectura, m = lectura_de_marca(meta)
+    if m != M_OCULTACION:
+        raise Rechazo(f"marca de la ocultacion {lectura}; el enunciado pide m = {M_OCULTACION}")
+
+
+def marca_de(meta):
+    """El despacho de `winter-verifier` por `Marca::leer`: vacio -> sin marca; la marca -> su m;
+    otra cosa -> error. Detras de `comprobar_marca` solo le llega la de la casa."""
+    lectura, m = lectura_de_marca(meta)
+    if lectura.startswith("Err"):
         raise deser("meta de traza desconocido")
-    return int.from_bytes(meta[15:], "little")
+    return m
 
 
 # ─── la semilla de Fiat-Shamir (Context::to_elements ++ pub_inputs.to_elements) ───────────────
@@ -559,12 +586,16 @@ def verificar(prueba, air, opciones_aceptadas=OPCIONES_KIT):
     `Rechazo` con el nombre del error que daria `winter-verifier`."""
     air.enunciado()
     p = leer_prueba(prueba)
-    # forma que el juez de la AIR exige antes de construirla (p. ej. banda::verificar)
+    # el orden del juez de la AIR en el kit (p. ej. banda::verificar), antes de construirla: la
+    # forma de traza, la marca (§651) y solo entonces `verify`, que valida antes que nada las
+    # opciones. Hasta el §706 aqui iban la forma, las opciones y la marca, sin exigir su m.
     air.forma(p)
+    comprobar_marca(p.meta)
     if p.opciones != opciones_aceptadas:
         raise Rechazo("UnacceptableProofOptions")
     semilla = elementos_del_contexto(p) + air.entradas()
     m = marca_de(p.meta)
+    # detras de comprobar_marca, m es M_OCULTACION; la guarda queda como la del despacho del fork
     if m is not None and (p.L < 16 or p.ancho < 2 or m >= p.L):
         raise deser("traza oculta mal formada")
     ctx = Contexto(air, p, m)
@@ -867,9 +898,22 @@ def autotest():
     # la raiz de la unidad tiene el orden que dice
     w = raiz_unidad(10)
     assert pow(w, 1024, P) == 1 and pow(w, 512, P) != 1
+    # la marca (§706): la de la casa pasa; cualquier otra cae con el texto del kit, que escribe lo
+    # leido con el `Debug` de `Result<Option<Marca>, MarcaError>`
+    casa = PREFIJO_MARCA + M_OCULTACION.to_bytes(4, "little")
+    assert comprobar_marca(casa) is None and marca_de(casa) == M_OCULTACION
+    for meta, lectura in ((b"", "Ok(None)"),
+                          (PREFIJO_MARCA + (32).to_bytes(4, "little"), "Ok(Some(Marca { m: 32 }))"),
+                          (b"arqueo:oculta:2" + casa[15:], "Err(Desconocida)"),
+                          (casa + b"\x00", "Err(Largo)")):
+        try:
+            comprobar_marca(meta)
+            raise AssertionError(f"la marca {meta!r} pasa")
+        except Rechazo as e:
+            assert str(e) == f"marca de la ocultacion {lectura}; el enunciado pide m = 64", str(e)
     return True
 
 
 if __name__ == "__main__":
     autotest()
-    print("stark.py: autotest OK (extension, INV_MDS calculada = tabla de winter-crypto, raices)")
+    print("stark.py: autotest OK (extension, INV_MDS calculada = tabla de winter-crypto, raices, marca)")

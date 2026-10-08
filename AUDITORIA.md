@@ -49949,3 +49949,225 @@ manifiestos bajo wasmtime, ni vuelve a medir los 3,98-4,93 ms de verificar.
 que diga que D-F no pesó el PR 293. La línea de `getrandom` y WASM en el issue a RustCrypto. El
 juez único, la 117, y el paso (2) del ZK-1, la 116. SEC-1, ARQ-02 y los cortes del plano. La E3
 del RFC-0013. Y la marca de `PRINCIPIOS.md` §7.
+
+## §706 — la segunda implementación juzga la marca de la ocultación como el kit: la m de la casa, el meta vacío y el orden, con la misma causa, y seis negativos que lo fijan
+
+El commit que lleva este asiento, sobre `c5f5eae` (el §705). Un solo sello, que va por el RFC-0005
+E4, porque los cambios en los vectores entran por RFC (`spec/rfc/PROCESO.md`):
+`tools/segunda/stark.py` juzga la marca de la ocultación como `zk_ssl_air::comprobar_marca`, en el
+mismo paso del orden y con el mismo texto, y su autotest lo comprueba; la edad y el pago ganan tres
+negativos cada uno, con su línea de manifiesto y su huella; `spec/PAQUETE.md` gana el texto de la
+marca en el catálogo de su sección 5 y en la clase «prueba mal formada» de la 6.1, un párrafo en la
+9 y una línea en la 10, y pone al día el rango de m de la edad; `spec/rfc/0005-nucleo-congelado.md`
+nombra este asiento en su cabecera y en su E4; el README de `tools/segunda/`, la cuenta de
+`spec/vectors/` en `README.md` y `README_EN.md`, la entrada 85 del `BACKLOG.md` y cinco celdas de
+los bloques «Correcciones (§705)» —tres que citan ese fichero por línea y dos que cuentan los
+vectores— se ponen al día; y este asiento. La decisión es del autor, del 07-10-2026: aceptó en
+bloque la propuesta que pedía igualar la segunda con el kit; el cuándo, ya y en 0.4, lo propuso la
+sesión después, y rige por esa aceptación hasta que diga otra cosa («Lo que decide el autor»). Lo
+escribe y lo comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión retomó el trabajo
+sin commitear de una pasada anterior, que un reinicio del contenedor cortó: lo revisó, lo corrigió
+donde hizo falta y lo volvió a medir entero. Después, una revisión, también de Claude Code, pidió
+correcciones, ninguna bloqueante, y se aplicaron antes del commit: el doble hilo con el RFC-0005,
+la cuenta de los vectores en los dos documentos del §705, la caducidad de las líneas nuevas, la
+declaración sobre E5, la redacción de `spec/PAQUETE.md` y una línea de comentario en `stark.py`. El
+número es el siguiente libre: la rama llega al §705, y ninguna de las seis ramas del repositorio en
+`origin` (`git ls-remote`, y el `AUDITORIA.md` de cada una) lleva un §706: la propia rama en
+`origin` llega al §702, `main` al §693, y las otras cuatro al §685, §658, §641 y §627. El sello no
+toca ningún crate: el kit, la capa y el nodo aceptan y rechazan lo mismo que antes, y el cable sigue
+en `zkssl/0.4`. En la sesión no se corrió el canon entero: sí, como los corre él, la conformidad del
+binario de referencia en las doce familias, el artefacto (la fila «3 ter»), el bloque «3 duodecies»
+entero, el de la segunda implementación, y las doce compuertas rápidas con la puerta de los vectores
+(en «Medido»). No se corrieron las filas de los crates, que el sello no toca.
+
+**De dónde sale.** Desde el §651 la marca es parte de la forma: los cinco jueces de
+`crates/zk-ssl-air` miran la forma de la traza, después llaman a `comprobar_marca`, que sólo acepta
+la marca de la casa con `m = M_OCULTACION = 64` (`crates/zk-ssl-air/src/lib.rs:151-165`), y sólo
+entonces llaman a `verify`, que valida antes que nada las opciones
+(`crates/winter-verifier/src/lib.rs:95`). El verificador STARK de la segunda implementación, del
+§626, no lo hacía igual: `marca_de` sólo miraba el prefijo y que el meta midiera 19 bytes, devolvía
+la m que trajera y tomaba un meta vacío por una prueba sin ocultar; ni `stark.py` ni `airs.py`
+exigían m = 64; y el orden era forma, opciones y marca. Medido sobre `c5f5eae`: una prueba de edad
+honesta con m = 32 en la marca es ROJO en el kit y VERDE en esa segunda («Medido»). Y donde los dos
+rechazaban, lo hacían por causas distintas. Es una divergencia de conformidad: el criterio de H3 es
+una segunda implementación que «pase y falle igual» (RFC-0005, E5), y fallar igual es fallar por la
+misma causa (`spec/PAQUETE.md` §«6.1 La causa del rechazo»). No es un fallo de seguridad del
+nodo ni del kit: los dos juzgan con los jueces de `zk-ssl-air`, que ya exigían la marca de la casa.
+Ningún vector la cubría: antes de este sello, `grep` de «marca de la ocultacion» en los manifiestos
+da 0, y el catálogo de `spec/PAQUETE.md` no tenía ese texto, aunque los cinco jueces lo imprimen
+desde el §651. Los tests del kit que vacían el meta en las cinco familias (el módulo
+`tests_marca_651` de `crates/zk-ssl-verify/src/main.rs`) exigen ROJO y salida 1, no la causa, y
+viven en el crate, no en los vectores que corre un tercero. La divergencia la encontró una sesión
+de Claude Code al preparar, sobre `161a233`, una propuesta de decisión sobre cómo se identifica una
+prueba, y la midió entonces con el probador de edad parcheado; aquí se volvió a medir sobre el
+árbol del sello.
+
+**Lo que decide el autor.** El 07-10-2026 el autor aceptó por escrito, en bloque, las propuestas
+de decisión de esa sesión. La de cómo se identifica una prueba ya pedía que la segunda
+implementación exigiera la m de la casa, rechazara el meta vacío y siguiera el orden del kit, y
+dejaba una pregunta: si eso se hace ya, en el cable 0.4, o con el corte zkssl/0.5. La respuesta la
+propuso la sesión después de esa aceptación, y rige por ella hasta que el autor diga otra cosa; se
+le señaló en la sesión, como las dos últimas del §705. Lo decidido: **la segunda se iguala con el
+kit ya, en público, con vectores negativos que nombran su causa**: la m de la casa, el meta vacío
+rechazado donde el kit lo rechaza y el mismo orden, con el mismo texto.
+
+**Lo que hace.**
+
+1. **`tools/segunda/stark.py`.** `lectura_de_marca` es un solo lector, como `Marca::leer` del fork
+   (`crates/winter-air/src/marca.rs`): devuelve lo que lee escrito como lo escribe su `Debug`
+   —`Ok(None)` con el meta vacío, `Err(Desconocida)` sin el prefijo, `Err(Largo)` con otra longitud
+   y `Ok(Some(Marca { m: .. }))`— y la m, si la hay. `comprobar_marca` es la del kit: con cualquier
+   cosa que no sea la marca de la casa con m = 64, `Rechazo` con «marca de la ocultacion {lo
+   leído}; el enunciado pide m = 64», el texto de `zk_ssl_air::comprobar_marca` letra por letra.
+   `verificar` la llama detrás de `air.forma` y antes de comparar las opciones, en el orden del kit;
+   `marca_de` sigue siendo el despacho del verificador del fork, que con un meta que no es marca da
+   «meta de traza desconocido», y detrás de `comprobar_marca` sólo le llega la de la casa. Las
+   constantes `LARGO_MARCA` y `M_OCULTACION` dicen de dónde salen. El autotest comprueba que la
+   marca de la casa pasa y que las cuatro lecturas que no lo son caen con el texto del kit. Las
+   líneas 206 y 208, que el plano v2.0 cita, no se mueven. Una línea de comentario, sobre la guarda
+   de la traza oculta en `verificar`, dice que detrás de `comprobar_marca` la m es la de la casa, y
+   que la guarda queda como la del despacho del fork.
+2. **Seis negativos**, tres en `spec/vectors/edad/` y tres en `spec/vectors/pago/`, de la clave
+   `prueba` del positivo del que salen los demás de su familia, `edad-todos.json` y
+   `pago-t-frontera.json`: `neg-marca-m32`, con los cuatro bytes de m de la marca —los 21 a 24 de
+   la prueba— de 64 a 32; `neg-meta-vacio`, con la longitud del meta —los bytes 4 y 5— de 19 a 0 y
+   los 19 bytes de la marca fuera; y `neg-marca-m32-y-opciones`, una ESCENA, y se declara: la m a
+   32 y el primer byte de las opciones —el 34, las consultas— de 42 a 43, porque con un solo defecto
+   no se ve en qué orden mira el juez. Van escritos como los demás negativos de su familia, con
+   `json.dumps` de claves ordenadas. Cada manifiesto gana su comentario `§706` y una línea por
+   vector, que pina la causa entera: `edad: marca de la ocultacion Ok(Some(Marca { m: 32 })); el
+   enunciado pide m = 64` en los dos de m, y `… Ok(None) …` en el del meta vacío; en el pago, lo
+   mismo con `pago:`. El comentario dice también cuándo caducan, como el de `neg-cota-movida`: valen
+   para el cable `zkssl/0.4` y su marca v1, y si la marca o su texto cambian de versión, las líneas
+   se mueven a su versión con sus vectores; no se reescriben. `check_vectores --registrar` los fija:
+   6 ficheros y 33 líneas de manifiesto, 39 huellas nuevas, ninguna movida ni borrada.
+3. **`spec/PAQUETE.md`.** En la sección 5, el texto de la marca entra en el catálogo de la edad, con
+   lo que puede seguir a «marca de la ocultacion», y en los del cobro, la prenda y la banda, que lo
+   imprimen igual. En la 6.1, en la clase «prueba mal formada», porque la marca es parte de la forma
+   desde el §651. En la 9, el párrafo de los seis negativos, que dice que los párrafos de la edad y
+   del pago de arriba, con sus nueve y siete negativos, cuentan cómo era hasta entonces. Y en la 10,
+   una línea, que nombra el RFC-0005 E4. De paso, el rango de m de la edad en el catálogo decía `1..=24`, rancio desde el §538,
+   cuando el D-AG del RFC-0009 subió el suelo a 3: dice `3..=24`, como el kit
+   (`crates/zk-ssl-air/src/lib.rs:226`), `airs.py` y `juez_stark.py`, con la marca `⚠️ §706`.
+4. **El RFC-0005**, el doble hilo de la regla 5 de `spec/rfc/PROCESO.md`, como hizo el §693 con
+   E4: su cabecera nombra este asiento, y la celda de E4 en la tabla de etapas y el párrafo de E4
+   dicen lo que suma: la marca de la ocultación, con su texto, en la clase «prueba mal formada», y
+   seis negativos nuevos en edad y pago, sin romper el cable ni reescribir ningún vector. Las
+   líneas del RFC que se citan por número desde otros ficheros, hasta la 26, no se mueven.
+5. **El README de `tools/segunda/`**: el párrafo «La marca, como el kit (§706)», que dice también
+   que la comprobación se leyó del kit, y el bloque de reproducción del juez del STARK, que decía
+   23 de 23, dice 34 de 34.
+6. **`README.md` y `README_EN.md`**: `spec/vectors/` pasa de 496 a 502 ficheros, que es lo que
+   cuenta `check_publicadas`.
+7. **El `BACKLOG.md`**: una nota `(§706)` en la 85, que está cerrada. La nota baja cinco líneas todo
+   lo que viene detrás, y los bloques «Correcciones (§705)» citan por línea cinco sitios de ahí: la
+   entrada 15 (`1401-1408`), en el plano y en la evaluación, y en la evaluación la 22 (`2019`,
+   `2065` y `2092`) y la 92 (`956`). Cada cita dice la línea hasta el §705 y la de desde el §706,
+   como el §705 hizo con las del plano a la evaluación. Y las dos celdas que cuentan los vectores
+   de los doce manifiestos de `FAMILIAS` (`tools/artefacto.sh:31`), la del plano y la de la
+   evaluación, que decían 384, dicen 384 hasta el §705 y 390 desde el §706: re-medido, 384
+   entradas distintas en `c5f5eae` y 390 con este sello, en 399 y 405 líneas.
+
+**Medido.** Sobre `c5f5eae` con este sello, desde la raíz, con la máquina compartida con otras
+tareas (carga de 4 sobre cuatro núcleos en la pasada, y de 6,6 a 7 después de la revisión).
+
+- **El kit.** `zk-ssl-verify` de release, `4baf0ea630fa95b2`, que `cargo build --release --locked
+  -p zk-ssl-verify` da por fresco para este árbol. Con `tools/conformidad.sh`, las doce familias
+  del canon dan 405 de 405 y salen con 0: la edad 15 de 15 y el pago 13 de 13, frente a los 12 y 10
+  de sus manifiestos de `c5f5eae`, y las otras diez como estaban. Cada negativo nuevo sale con 1 y
+  con la línea que pina su manifiesto, por ejemplo `ROJO: pago: marca de la ocultacion Ok(None); el
+  enunciado pide m = 64`. La escena da la marca, no las opciones.
+- **El artefacto**, después de la revisión: `tools/artefacto.sh --check`, la fila «3 ter» del
+  canon, sale con 0 en 34 s. El binario con remap, `5014e6e8c7a55759`, que cargo da por fresco, es
+  el mismo en los dos `target` y no lleva rutas de la máquina; las doce familias dan lo mismo desde
+  el árbol y desde dentro del tarball, donde entran los seis vectores nuevos: 405 entradas, la edad
+  15 de 15 y el pago 13 de 13; y el tarball, `f58780f6f79ded78`, es reproducible.
+- **Los seis vectores, rehechos.** Un guion los deriva otra vez de los dos positivos y salen iguales
+  byte a byte (`cmp`); cada uno difiere de su positivo sólo en `prueba`, y sólo en los bytes que dice
+  su comentario. La prueba de la edad pesa 75.947 B, y 75.928 sin la marca; la del pago, 68.422 y
+  68.403.
+- **La segunda implementación, antes y después.** `juez_stark.py` con el `stark.py` de `c5f5eae`
+  sobre los manifiestos de `c5f5eae`: 28 de 28 pares, 42 pruebas juzgadas, 35 vectores que caen
+  antes del juez y 33 de 33 falsadores callados. El mismo `stark.py` con los manifiestos de este
+  sello: 28 de 34, sale con 1, y falla en los seis nuevos, cada uno por otra causa:
+  `ProofDeserializationError("queries")` en los dos de m y del meta vacío de la edad y en el del
+  meta vacío del pago, `InconsistentOodConstraintEvaluations` en el de m del pago y
+  `UnacceptableProofOptions` en las dos escenas. Con el `stark.py` de este sello: 34 de 34, 48
+  pruebas juzgadas, 35 que caen antes, 33 de 33 falsadores y salida 0, en 10 s.
+- **La prueba honesta con m = 32.** En una copia del árbol, con `ocultacion_encendida()` de
+  `crates/stark-experiment/src/lib.rs` cambiada en una línea para leer la m de la marca de una
+  variable de entorno, y un ejemplo que prueba con `circuit_edad::probar` una edad de dos hojas: con
+  m = 32, `zk_ssl_air::verificar` da `Err("marca de la ocultacion Ok(Some(Marca { m: 32 })); el
+  enunciado pide m = 64")`, el `stark.py` de `c5f5eae` da VERDE y el de este sello ROJO con el mismo
+  texto que el kit. Con m = 64, de control, los tres VERDE. La m de la marca no es la del
+  enunciado de la edad, que en ese ejemplo es 3. Ni el cambio ni el ejemplo entran en el árbol.
+- **Las otras dos lecturas.** Con la marca de `edad-todos.json` con un byte de más, o con el prefijo
+  `arqueo:oculta:2`, en ficheros fuera del árbol: el kit da `marca de la ocultacion Err(Largo)` y
+  `Err(Desconocida)`; el `stark.py` de `c5f5eae`, `ProofDeserializationError("meta de traza
+  desconocido")` en los dos; el de este sello, lo mismo que el kit.
+- **El resto del bloque «3 duodecies»**, con este sello: `juez_nucleo`, 29 de 29; `juez_cabezas`,
+  472 de 522 cabezas y 10 de 14 cofirmas verifican, y de los 54 ficheros con alguna que no, ninguno
+  es positivo según su `MANIFIESTO`: las seis más son las cabezas, válidas, de los seis negativos;
+  `kat_xmss`, 8 de 8 firmas, y los tres falsadores callan; y el segundo verificador, en las cinco
+  familias que lee, 170 de 170, como estaba. Sobre la edad, que no lee, da 0 de 15 con las 15 `NO
+  SOPORTADO`: no la juzga, y lo dice. Todos salen con 0, y el bloque entero tarda 55 s.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 1862 declarados;
+  `check_modulos`, 204 ficheros, todos declarados; `check_vectores`, 483 vectores y 958 líneas con
+  su huella, frente a 477 y 925, ninguno movido, y lo mismo `--desde` la base en `origin/main`;
+  `check_cifras`, 26 cifras de tests y ninguna contradice el canon; y las otras del bucle «2 ter»:
+  `verificar_citas`, `check_figures`, `check_columns`, `check_constraint_layout`, `check_dominios`,
+  `check_publicadas`, `check_nucleo` y `check_techo`. Las doce salen con 0. `check_publicadas`
+  salía con 1 antes de poner al día los dos README: «dice 496 y spec/vectors/ tiene 502 ficheros».
+  `verificar_citas` pasa de 57 a 58 encabezados citados, 0 muertos: la cita nueva es la de la 6.1
+  de `spec/PAQUETE.md` en este asiento.
+- **Después de la revisión**, con el texto final y otra vez desde la raíz: el autotest de
+  `stark.py`; las doce compuertas y la puerta de los vectores, `--desde` la base incluida, con las
+  cifras de arriba —`check_vectores` ya con las cuatro líneas del comentario de caducidad— y
+  `verificar_citas` en 58 encabezados, 0 muertos; la conformidad del binario de referencia en las
+  doce familias, 405 de 405; y el bloque «3 duodecies» entero, con las cifras de arriba, en 55 s.
+  Todo sale con 0. Los cinco mutantes de «Probado» son de la pasada; la revisión sólo añade a
+  `stark.py` una línea de comentario.
+
+**Probado.** Ningún test de Rust nuevo: el sello no toca ningún crate. El autotest de `stark.py`
+crece con la marca, y los vectores y el autotest se probaron con cinco mutantes de `stark.py`, cada
+uno en una copia de `tools/segunda/` y con el mismo `spec/`:
+
+- sin la llamada a `comprobar_marca`: el autotest pasa, porque prueba la función y no su sitio, y
+  el juez cae, 28 de 34, en los seis nuevos;
+- con las opciones antes que la marca, el orden de antes: el autotest pasa y el juez cae, 32 de 34,
+  en las dos escenas;
+- con `M_OCULTACION` en 32, con un meta vacío que pasa, y con la lectura del meta vacío escrita
+  `None` en vez de `Ok(None)`: cae el autotest, que `juez_stark.py` corre antes de juzgar, y el juez
+  sale con 1 sin juzgar. Con el autotest anulado, el juez cae igual: 11 de 34 con la m en 32, que
+  rechaza todos los positivos, y 32 de 34 en los otros dos, en los dos `neg-meta-vacio`.
+
+**Contadores.** `check_vectores`: 477 a 483 vectores y 925 a 958 líneas de manifiesto. `spec/vectors/`
+pasa de 496 a 502 ficheros en los dos README de la raíz. La conformidad del binario de referencia,
+de 399 a 405 entradas en las doce familias del canon: la edad de 12 a 15, el pago de 10 a 13. El
+juez del STARK, de 28 a 34 pares y de 42 a 48 pruebas juzgadas. `juez_cabezas`, de 466 de 516 a 472
+de 522 cabezas. Ningún test ni pin se mueve: `check_tests` sigue en 1862, el TOTAL DE SELLO en 1703
+y el TOTAL CON LARGOS en 1840. El `BACKLOG.md` sigue en 46 abiertas y 73 resueltas.
+
+**Lo que NO hace.** No cambia lo que acepta ni lo que imprime el kit: el texto de la marca está en
+sus cinco jueces desde el §651, y aquí sólo entra en el catálogo y en los vectores. No cambia la
+marca, ni su versión, ni lo que identifica: cómo se identifica una prueba es otra decisión, para el
+corte zkssl/0.5. La banda, el cobro y la prenda no ganan vector de marca: en la segunda el juez es
+uno para las seis familias, `verificar` de `stark.py`, y la edad y el pago lo ejercen; en el kit
+cada familia tiene su guarda, y `tests_marca_651` cubre las cinco con el meta vaciado. Las lecturas
+`Err(Largo)` y `Err(Desconocida)` no ganan vector: las cubren el autotest y la medida de arriba. No
+iguala lo que la segunda dice antes de la marca: el texto de una prueba que no se deserializa sigue
+siendo el suyo, no el del kit. No escribe en la sección 5 de `spec/PAQUETE.md` el bloque del pago
+en curso, que falta desde el §509 aunque el binario imprime `pago: {e}`
+(`crates/zk-ssl-verify/src/main.rs:1583`): el texto de la marca que pina su manifiesto es el de la
+edad, del mismo productor, `zk_ssl_air::comprobar_marca`. No compone en el segundo código el mando
+de las formas con STARK: el juez sigue juzgando el par. No acepta `tools/segunda/`, que sigue
+pendiente (§705). No corre el canon entero ni las filas de los crates: la máquina, compartida con
+otras tareas que miden tiempos, estaba en una carga de 6,6 a 7 sobre cuatro núcleos.
+
+**Lo que NO cierra.** Lo demás de la entrada 85: las AIR transcritas del `.rs` y el mando de las
+formas con STARK en el segundo código. La identidad de una prueba para el corte zkssl/0.5. El
+bloque del pago en curso en el catálogo de rechazos. Y el criterio de E5 del RFC-0005, una segunda
+implementación «escrita desde la spec sin leer el código de referencia», en lo que toca a la marca:
+la comprobación de la marca se leyó del kit, como las AIR; desde el §706 su texto y sus cuatro
+lecturas los da también `spec/PAQUETE.md` §5, de donde un tercero los toma sin leer el código.

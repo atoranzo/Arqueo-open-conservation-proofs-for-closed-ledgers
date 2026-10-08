@@ -116,9 +116,9 @@ nivel demostrable, que ya entonces dependía del circuito.
 | dónde | dice | corrección | evidencia |
 |---|---|---|---|
 | §3.3, la entrada; §6, filas «Bulletproofs» y «Circle STARK» | rango de 63 bits | **62 bits** desde el §641 (RFC-0017) | `crates/stark-experiment/src/range_check.rs:8-15`, `:76` |
-| §6, fila «Circle STARK» | «con 31 bits la colisión de identidades baja a 2^15», citando la evaluación | hereda el E4 de la evaluación: esa colisión ya estaba tachada como corregida | `BACKLOG.md:1401-1408`, en la entrada 15; `doc/integracion-vertical-evaluacion.md` §«Correcciones (§705)» |
+| §6, fila «Circle STARK» | «con 31 bits la colisión de identidades baja a 2^15», citando la evaluación | hereda el E4 de la evaluación: esa colisión ya estaba tachada como corregida | `BACKLOG.md:1401-1408` hasta el §705; desde el §706, `:1406-1413`, en la entrada 15; `doc/integracion-vertical-evaluacion.md` §«Correcciones (§705)» |
 | §6, filas «Recursión» y «Dos rondas de Rescue» | «35 AIR» | es el censo de RFC-0009, no una cuenta: fuera del fork hay 38 `impl Air for`, y el kit verifica 5 | `git grep` de `impl … Air for` fuera de `crates/winter-*` |
-| §3.4 y §4.3, ARQ-06 | «los 316 vectores» | **384 vectores en 12 manifiestos**, los de `FAMILIAS` en `tools/artefacto.sh:31`; el corte 3 ya dice «todos los vectores de los manifiestos del kit» | los `MANIFIESTO.txt` |
+| §3.4 y §4.3, ARQ-06 | «los 316 vectores» | **384 vectores en 12 manifiestos** hasta el §705; desde el §706, 390, los de `FAMILIAS` en `tools/artefacto.sh:31`; el corte 3 ya dice «todos los vectores de los manifiestos del kit» | los `MANIFIESTO.txt` |
 | §2.3, §3.2, §5.1 («seguridad demostrable») y §7.3 | «LDR 80, UDR 59» como el nivel demostrable de producción | es el de las familias de longitud fija más largas, envío, cobro y quema. La LDR depende de la longitud de la traza: 80-88 en las de longitud fija y menos en la edad con `m` alta. El nivel que se declare tiene que nombrar el circuito y la longitud | los tests del §697; `SECURITY.md` §3.11; la entrada 116 |
 | §3.3 y §4.5, SEC-2; §5.3, el corte 2 y la tabla de crates | `canon63` y «`max_supply` ≥ 2^63 deja de abrir» | lo hizo el §668, con 2^62 − 1 | la fila de SEC-2 de arriba |
 

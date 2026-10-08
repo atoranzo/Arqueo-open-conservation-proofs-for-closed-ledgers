@@ -41,3 +41,20 @@ neg-importe-mentido.json|1|pago:
 # el del Cargo.lock, como ya hace `rechazo/`. Caduca con la dependencia, y se declara: si la
 # renombra, la linea se mueve a su version con su vector; no se reescribe.
 neg-importe-mentido.json|1|pago: InconsistentOodConstraintEvaluations
+# §706 (spec/PAQUETE.md, seccion 6.1): la MARCA de la ocultacion, que es parte de la forma (§651),
+# y el ORDEN en que el juez la mira. Tres negativos de la clave `prueba` de `pago-t-frontera.json`,
+# la de los siete de arriba: en `neg-marca-m32` los cuatro bytes de m de la marca -los bytes 21 a 24
+# de la prueba- pasan de 64 a 32; en `neg-meta-vacio` la longitud del meta -los bytes 4 y 5- pasa de
+# 19 a 0, y los 19 de la marca salen; y `neg-marca-m32-y-opciones` es una ESCENA, y se declara: la m
+# de la marca a 32 y, ademas, el primer byte de las opciones -el 34, las consultas- de 42 a 43,
+# porque con un solo defecto el orden no se ve. El juez mira la forma, despues la marca y despues
+# las opciones, y nombra la marca con el texto de `zk_ssl_air::comprobar_marca`, que gobierna la
+# casa: lo que sigue a `marca de la ocultacion` es el `Debug` de lo que lee `Marca::leer`, el lector
+# del fork. Fijan que la segunda implementacion falla igual: hasta el §706 daba otra causa en los
+# tres, `InconsistentOodConstraintEvaluations` en el primero, `ProofDeserializationError("queries")`
+# en el segundo y `UnacceptableProofOptions` en el tercero.
+# Vale para el cable zkssl/0.4 y su marca v1: si la marca o su texto cambian de version, las lineas
+# se mueven a su version con sus vectores; no se reescriben.
+neg-marca-m32.json|1|pago: marca de la ocultacion Ok(Some(Marca { m: 32 })); el enunciado pide m = 64
+neg-meta-vacio.json|1|pago: marca de la ocultacion Ok(None); el enunciado pide m = 64
+neg-marca-m32-y-opciones.json|1|pago: marca de la ocultacion Ok(Some(Marca { m: 32 })); el enunciado pide m = 64

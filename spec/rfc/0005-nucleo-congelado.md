@@ -5,7 +5,7 @@
 - **Asistencia GenAI:** Claude (sesiones 96-97) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-05
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad)
-- **Asiento(s) de AUDITORIA:** §236, §243, §290, §395, §397, §398, §404 (el primer sello de H3), y el §405, que lo sella; el §693 endurece E4
+- **Asiento(s) de AUDITORIA:** §236, §243, §290, §395, §397, §398, §404 (el primer sello de H3), y el §405, que lo sella; el §693 endurece E4; el §706 suma la marca de la ocultación a la clase «prueba mal formada» y seis negativos con causa
 
 ## Estado de las etapas
 
@@ -14,7 +14,7 @@
 | E1 — el núcleo, escrito | un documento normativo bajo `spec/` que enumera QUÉ no cambia y POR QUÉ, con cada pieza atada por cita a la línea del código que la produce; el censo se re-deriva al sellar | NO | sellada — §407 (`spec/NUCLEO.md`, `tools/check_nucleo.py`) |
 | E2 — la regla de extensión, escrita y ejercida | la regla en el mismo documento, y el atado que la ejerce: un verificador acepta un conjunto EXPLÍCITO de versiones y rechaza lo demás (§404 es el primer caso) | NO | sellada — §406 |
 | E3 — los rechazos del cable, con vector | vectores negativos de lo que un consumidor del cable tiene que rechazar, bajo su propio directorio, con su puerta en `tools/canon.sh`; qué rechaza hoy el consumidor se MIDE antes de escribir un vector | NO | sellada — §409 (`spec/vectors/cable/`, `witness --respuesta`, `tools/cable_respuesta.sh`) |
-| E4 — el arnés de conformidad | una herramienta que corre el catálogo de vectores contra CUALQUIER binario que se le pase y dice si pasa y falla igual que la referencia | NO | sellada — §408 (`tools/conformidad.sh`, dentro del tarball); endurecida — §693 (la causa con nombre, `NO SOPORTADO`, `PAQUETE.md` 6.1) |
+| E4 — el arnés de conformidad | una herramienta que corre el catálogo de vectores contra CUALQUIER binario que se le pase y dice si pasa y falla igual que la referencia | NO | sellada — §408 (`tools/conformidad.sh`, dentro del tarball); endurecida — §693 (la causa con nombre, `NO SOPORTADO`, `PAQUETE.md` 6.1); §706: la marca de la ocultación, con su texto, en la clase «prueba mal formada»; seis negativos nuevos en edad y pago, sin romper el cable ni reescribir ningún vector |
 | E5 — el criterio | una segunda implementación, escrita desde la spec sin leer el código de referencia, que pase y falle igual. No está en la mano del autor; E4 es lo que lo hace comprobable el día que exista | NO | fuera del árbol; lo que estaba en la mano del autor, sellado — §411 (`spec/vectors/nucleo/`, `NUCLEO.md` sección 6) |
 
 Todas las medidas de este documento se tomaron sobre `9ae055c` y `2080e5a` (§404), en
@@ -198,6 +198,8 @@ de un negativo tiene que estar en la única línea con `ROJO:`; un vector cuyas 
 el sujeto sale `SIN CAUSA`; y el binario corre con la entrada estándar vacía. La tabla de las causas
 vive en `PAQUETE.md` §«6.1 La causa del rechazo». No rompe el cable ni reescribe un vector:
 dieciocho líneas nuevas en ocho manifiestos, tres de ellos de `0.3/`, medidas con su kit.
+§706: la marca de la ocultación, con su texto, en la clase «prueba mal formada»; seis negativos
+nuevos en edad y pago, sin romper el cable ni reescribir ningún vector.
 
 ### E5 — El criterio, y lo que le faltaba
 

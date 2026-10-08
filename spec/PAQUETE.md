@@ -881,7 +881,7 @@ los **mismos productores** de arriba, con su hueco relleno distinto.
 - `la causa NO se sostiene: el suministro resultante ({seria}) no supera el tope ({tope})`
 - `data: esta causa no publica el saldo: la banda lo prueba sin el` · `falta banda (la prueba de la desigualdad)`
 - `data: el importe que el nodo dice no es el que la prueba acota` · `la causa NO se sostiene: pedir 0 no puede pasar de ningun saldo`
-- `banda: falta prueba o no es cadena 0x` · `banda: {e}`, donde `{e}` es el rojo de `zk_ssl_air::banda::verificar`: `los limites {l} y {u} pasan del techo {MAX_VALOR}`, `banda vacia: inferior {l} sobre superior {u}`, `la prueba no se deserializa: …`, `forma de traza …`, o el que escribe winterfell (§478)
+- `banda: falta prueba o no es cadena 0x` · `banda: {e}`, donde `{e}` es el rojo de `zk_ssl_air::banda::verificar`: `los limites {l} y {u} pasan del techo {MAX_VALOR}`, `banda vacia: inferior {l} sobre superior {u}`, `la prueba no se deserializa: …`, `forma de traza …`, `marca de la ocultacion …` (el de la edad), o el que escribe winterfell (§478)
 
 **La edad** (§465; `{e}` sale de `zk_ssl_air::verificar_contra_cabeza`)
 
@@ -893,8 +893,9 @@ firma y la familia de v5— salen de los **mismos productores** de arriba.
 - `edad: {e}`, con `{e}` uno de estos:
   - `la subraiz de pendientes, subida a 32 niveles, no es el pendingRoot de la cabeza`
   - `la subraiz de meta, subida a 32 niveles, no es el pmetaRoot de la cabeza`
-  - los del enunciado: `m = {} fuera de 1..=24` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}`
+  - los del enunciado: `m = {} fuera de 3..=24` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}` — ⚠️ §706: hasta el §706 decía `1..=24`, rancio desde el §538, cuando el D-AG del RFC-0009 subió el suelo de m a 3.
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
+  - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64` — desde el §651 la marca es parte de la forma: el juez la mira después de la forma de traza y antes de las opciones, y sólo acepta la de la casa con su m. `{lectura}` es lo que lee `Marca::leer`: `Ok(None)` con el meta vacío, `Ok(Some(Marca { m: {m} }))` con otra m, `Err(Desconocida)` sin el prefijo y `Err(Largo)` con otra longitud. Lo emiten los cinco jueces del kit; hasta el §706 no estaba en este catálogo.
 
 **El cobro pendiente** (§495; `{e}` sale de `zk_ssl_air::cobro_pendiente`)
 
@@ -907,6 +908,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
   - `nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza que la firma`
   - los del enunciado: `las cotas {l} y {u} pasan del techo {MAX_VALOR}` · `banda vacia: inferior {l} sobre superior {u}`
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
+  - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el de la edad
 
 **La prenda** (§520; `{e}` sale de `zk_ssl_air::prenda`)
 
@@ -914,6 +916,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
 - `prenda: {e}`, con `{e}` uno de estos:
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` ·
     `{e:?}`, el error de `winter-verifier`
+  - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el de la edad
 
 `falta enunciado`, `falta prueba o no es cadena 0x` y `falta cabeza` son los de la edad, letra
 por letra. **No hay rechazo por marca no publicada**: este brazo no lo comprueba, y el VERDE lo
@@ -1055,7 +1058,7 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
 | **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
 | **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` |
-| **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` |
+| **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
 | **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido | `InconsistentOodConstraintEvaluations` |
 | **consulta que no casa con el compromiso** | `TraceQueryDoesNotMatchCommitment` · `ConstraintQueryDoesNotMatchCommitment` |
@@ -1357,6 +1360,17 @@ pinan lo que imprime su kit, el `zk-ssl-verify` del árbol en `0eda58c` compilad
 medido en el §693: con él y el arnés de ahora, los cuatro manifiestos de `0.3/` dan 41 de 41 y
 salen con 0, como sus 38 de 38 del §620 con el arnés de entonces.
 
+**Desde el §706 la marca de la ocultación tiene vector.** La edad y el pago ganan tres negativos
+cada uno, de la clave `prueba` del positivo del que salen los demás de su familia —`edad-todos.json`
+y `pago-t-frontera.json`—: `neg-marca-m32`, con la m de la marca a 32; `neg-meta-vacio`, sin marca;
+y `neg-marca-m32-y-opciones`, una ESCENA, y se declara: la m a 32 y otras opciones a la vez, porque
+con un solo defecto no se ve en qué orden mira el juez. El manifiesto pina la causa entera, `marca
+de la ocultacion …` (sección 5, la edad), que gobierna la casa. Los seis fijan que la segunda
+implementación juzga la marca como el kit, con la misma m, la misma causa y en el mismo orden:
+hasta el §706 la segunda rechazaba los seis por otra causa, y daba VERDE a una prueba honesta con
+m = 32. Los párrafos de la edad y del pago de arriba, con sus nueve y siete negativos, cuentan cómo
+era hasta entonces.
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1447,6 +1461,9 @@ salen con 0, como sus 38 de 38 del §620 con el arnés de entonces.
   reservado `NO SOPORTADO` para lo que una implementación no lee, y el arnés que exige la causa en
   la línea del ROJO; dieciocho líneas nuevas en ocho manifiestos, tres de ellos de `0.3/`, ninguna
   reescrita (sección 9).
+- §706 — la marca de la ocultación, con nombre (RFC-0005 E4): su texto entra en el catálogo de la
+  edad, el cobro, la prenda y la banda, y en la clase «prueba mal formada» de la 6.1; seis negativos
+  nuevos en la edad y el pago (sección 9), y el rango de m de la edad, al día.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

@@ -726,6 +726,11 @@ instrumentacion) al grupo E.*
   Queda, y va dicho: las cinco AIR están transcritas del `.rs` (no hay otra fuente), los 34 vectores
   `0.3/` sin ocultar quedan fuera, y el mando de las formas con STARK no se compone aún en el
   segundo código. El cuerpo original, abajo.
+  ⚠️ **(§706) La marca de la ocultación, juzgada como el kit.** El juez STARK no exigía la m de la
+  casa, 64, tomaba un meta vacío por una prueba sin ocultar y miraba las opciones antes que la
+  marca: una prueba de edad honesta con m = 32 en la marca era ROJO en el kit y VERDE aquí, contra
+  «fallar igual» (H3). Desde el §706 exige lo mismo, en el mismo orden y con el mismo texto, y lo
+  fijan seis negativos de la edad y el pago: 34 de 34 pares.
 
 - [ ] **85 (original). Una SEGUNDA implementación que pase los vectores.** Lo caro
   ya está hecho: vectores de conformidad versionados (`0.2` idéntico,
