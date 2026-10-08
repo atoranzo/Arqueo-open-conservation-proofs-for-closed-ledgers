@@ -17,3 +17,14 @@ rechazo-cons-camino-63-niveles.json|1|no tiene los 63 niveles del arbol de consu
 rechazo-cons-presencia-no-sube.json|1|presencia: el camino NO sube al consRoot de la nueva
 rechazo-cons-ausencia-ya-estaba.json|1|el consumo YA estaba
 rechazo-cons-no-extiende.json|1|NO extiende a la vieja
+# ── §771 (RFC-0015 E5b, lo que el §649 dejo): la ROTACION en el sobre de consumo ──
+# TRES sobres COPIADOS de UNA corrida de `bash tools/banco_rotacion.sh --guardar <dir>` (§771), contra UN
+# nodo REAL que rota de A ('41' x 96, hoja 3) a B ('42', con la firma de A, desde la hoja 8): el consumo se
+# PUBLICA con B en curso, en el logSeq 1, con un segundo detras para que los caminos no sean el mismo; la
+# AUSENCIA va bajo el seq 0 de la cabeza de A y la PRESENCIA bajo el seq 2 de la de B, y `actas` es la
+# cadena de zkssl_keyActs tal cual. El positivo dice que las actas unen las dos claves; los dos negativos
+# salen de el por UNA mutacion: sin `actas`, el rechazo de siempre; con la cadena cortada en la genesis,
+# la clave que llega no esta. Dos corridas no dan los mismos bytes: se COPIAN.
+consumo-rotado.json|0|2/5 claves distintas que las actas unen (1 eslabon(es), la posterior desde la hoja 8), y las dos cabezas llevan consRoot
+rechazo-cons-rotado-sin-actas.json|1|las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante
+rechazo-cons-rotado-cadena-corta.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: la clave que llega no esta en la cadena: nadie la comprometio

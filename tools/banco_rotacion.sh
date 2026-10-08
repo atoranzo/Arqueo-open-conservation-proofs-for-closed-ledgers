@@ -16,6 +16,11 @@
 # un TESTIGO de verdad sobre otro diario: ve la rotacion de A a B, sigue, ve a B firmar por debajo
 # de su acta con un contador fresco y se detiene; `--auditar --sobres` arma el sobre del solapamiento
 # desde su diario, y el mando lo juzga sin el nodo ni el testigo.
+# Y desde el §771, la rotacion en los sobres de CONSUMO y de COMPLETITUD, del mismo nodo: con A en
+# curso, un envio de ceros que la capa rechaza deja su recibo y una cabeza de A cierra su era; con B
+# ya rotada, dos consumos se publican antes de la cabeza emparejada, y la ausencia se pide bajo la
+# cabeza de A y la presencia bajo la de B. El consumo entre las dos claves, y la completitud con la
+# vigente de B, se juzgan con la cadena, sin ella y con ella cortada.
 #
 # FUERA del canon: levanta procesos y espera latidos. NO ESCRIBE EN EL ARBOL: todo vive en un
 # temporal bajo $HOME, que borra al salir, y lo comprueba al final por `git status --porcelain`.
@@ -23,7 +28,9 @@
 #   bash tools/banco_rotacion.sh [--guardar <dir>]
 #
 # --guardar  copia los sobres a <dir>, con `entradas.txt` -fichero|codigo|texto, las lineas del
-#            manifiesto-: de ahi sale el catalogo, COPIADO.
+#            manifiesto-: de ahi sale el catalogo, COPIADO. Desde el §771, los de consumo y los de
+#            completitud van a <dir>/consumo/ y <dir>/completitud/, con `entradas-consumo.txt` y
+#            `entradas-completitud.txt` en <dir>: cada uno a su familia.
 set -u
 msg(){ echo "BANCO-ROTACION| $*" >&2; }
 fallo(){ msg "ROJO: $*"; exit 1; }
@@ -108,25 +115,106 @@ def emparejado(old, que):
     return ack, cabeza(lambda r: r['mmrSize'] == ack['mmrSize'], '%s, mmrSize %s' % (que, ack['mmrSize']))
 HB, HC, HD = huella('B'), huella('C'), huella('D')
 op = DIR + '/op'
+# ── §771 · lo que hace falta para el consumo y la completitud, calcado de sus bancos. Las cabezas
+#    por su indice declarado: la que cierra la era del recibo es la de `zkssl_recepPath`, no la
+#    ultima, y hay que haberla visto (banco_completitud.sh).
+cabezas = {}
+def recoger():
+    try:
+        r = rpc('zkssl_signedEpochHead', {}).get('result', {})
+        if r.get('available'):
+            cabezas[int(r['index'], 16)] = r
+    except Exception:
+        pass
+# El envio de CEROS: la forma del cable acepta sus bytes y la capa lo rechaza, y su recibo viaja
+# en el error (banco_completitud.sh, el `envio_de_ceros` del nodo).
+Z = '0x' + '00' * 32
+cero_pi = {'rootOld': Z, 'rootNew': Z, 'frozenRoot': Z, 'pendingRootOld': Z, 'pendingRootNew': Z,
+           'amount': '0x5', 'regulatoryLimit': '0x3e8', 'supplyOld': '0x0', 'supplyNew': '0x0'}
+envio = {'receipt': {'proof': '0x' + '00' * 32, 'publicInputs': cero_pi, 'commitment': Z,
+                     'notice': {'position': '0x0', 'salt': Z, 'amount': '0x5'}},
+         'sender': '0x0', 'senderState': {'publicId': Z, 'balance': '0x5', 'nonce': '0x0'}, 'amount': '0x5'}
+def digest_canonico(bytes_):
+    # UN byte no nulo en el offset 3 de cada grupo de ocho: canonico en el campo leido en LE o en
+    # BE (banco_consumo.sh).
+    b = bytearray(32)
+    for i, v in zip((3, 11, 19, 27), bytes_):
+        b[i] = v
+    return '0x' + b.hex()
+CONSUMO = digest_canonico((0x52, 0x6F, 0x74, 0x41))
+SEGUNDO = digest_canonico((0x2C, 0x9A, 0x37, 0xE1))
+def camino_de_consumo(seq, que):
+    r = rpc('zkssl_consumoPath', {'consumo': CONSUMO, 'seq': seq}).get('result', {})
+    if not r.get('available'):
+        rojo('zkssl_consumoPath (%s) no dio camino: %s' % (que, json.dumps(r)[:300]))
+    return r
 
 # ── A: la genesis, comprometiendo a B. Unas cabezas mas tras la custodiada, para que el acta de
 #    B quede lejos de ella.
 nodo = levantar('A', op, '--siguiente', HB)
 try:
     h_a = cabeza(lambda r: int(r['mmrSize'], 16) >= 2, 'A, mmrSize >= 2')
+    cabezas[int(h_a['index'], 16)] = h_a
+    # §771 · el envio de ceros, con A en curso: su recibo, y la cabeza de A que cierra su era.
+    r = rpc('zkssl_applySend', envio)
+    if 'error' not in r or 'recepcion' not in r['error'].get('data', {}):
+        rojo('el envio de ceros no dejo recibo en el error: %s' % json.dumps(r)[:300])
+    rec = r['error']['data']['recepcion']
+    camino_rx = None
+    for _ in range(300):
+        recoger()
+        v = rpc('zkssl_recepPath', {'rx': rec['rx']}).get('result', {})
+        if v.get('available'):
+            camino_rx = v; break
+        time.sleep(0.1)
+    if camino_rx is None:
+        rojo('zkssl_recepPath no dio el camino en 30 s')
+    idx = int(camino_rx['index'], 16)
+    for _ in range(50):
+        if idx in cabezas:
+            break
+        time.sleep(0.05); recoger()
+    if idx not in cabezas:
+        rojo('la cabeza de indice %d, la que cierra la era del recibo, no se vio' % idx)
+    cierre = cabezas[idx]
+    ant = [i for i in cabezas if i < idx]
+    q = int(cabezas[max(ant)]['recepCount'], 16) if ant else 0
     time.sleep(3)
 finally:
     parar(nodo)
 msg('A: cabeza custodiada de mmrSize %s, indice embebido %d' % (h_a['mmrSize'], embebido(h_a)))
+msg('A: el envio de ceros se RECHAZA y deja su recibo (rx %s); la cabeza de A de indice embebido %d '
+    'cierra su era (Q %d)' % (rec['rx'], embebido(cierre), q))
 # ── B: la rotacion, con la firma de A.
 nodo = levantar('B', op, '--siguiente', HC, '--clave-anterior-fichero', CLAVES['A'])
 try:
     time.sleep(2)
+    # §771 · el consumo se PUBLICA con B en curso, ANTES de la cabeza emparejada: la ausencia queda
+    #    bajo la custodiada de A y la presencia bajo la de B. El segundo, a proposito: con uno solo
+    #    los dos caminos son el mismo (banco_consumo.sh). La aritmetica de los seq se EXIGE. Antes,
+    #    la primera cabeza de B: el nodo ya escucha, y el consumo entra con B en curso.
+    cabeza(lambda r: r['publicKey'] != h_a['publicKey'], 'B en curso, antes del consumo')
+    pub = rpc('zkssl_publishConsumo', {'consumo': CONSUMO}).get('result', {})
+    if not pub.get('accepted'):
+        rojo('publishConsumo no acepto el consumo: %s' % json.dumps(pub)[:300])
+    log_seq = int(pub['logSeq'], 16)
+    if not int(h_a['seq'], 16) < log_seq:
+        rojo('el seq de la cabeza de A (%d) no queda por debajo del logSeq del consumo (%d)'
+             % (int(h_a['seq'], 16), log_seq))
+    if not rpc('zkssl_publishConsumo', {'consumo': SEGUNDO}).get('result', {}).get('accepted'):
+        rojo('el segundo consumo no se acepto')
     ack_ab, h_b = emparejado(h_a['mmrSize'], 'B')
+    if not int(h_b['seq'], 16) >= log_seq:
+        rojo('el seq de la cabeza de B (%d) no alcanza el logSeq del consumo (%d)'
+             % (int(h_b['seq'], 16), log_seq))
+    ausencia = camino_de_consumo(h_a['seq'], 'ausencia bajo A')
+    presencia = camino_de_consumo(h_b['seq'], 'presencia bajo B')
     time.sleep(2)
 finally:
     parar(nodo)
 msg('B: cabeza de mmrSize %s, indice embebido %d' % (h_b['mmrSize'], embebido(h_b)))
+msg('B: consumo publicado en el logSeq %d, entre el seq %d de A y el %d de B'
+    % (log_seq, int(h_a['seq'], 16), int(h_b['seq'], 16)))
 # ── C: la rotacion SIN la firma de B: el acta la declara quemada.
 nodo = levantar('C', op, '--siguiente', HD)
 try:
@@ -170,8 +258,8 @@ if not embebido(h_z) >= d_b or not embebido(h_a) < embebido(h_f) <= d_b:
     rojo('las conductas sembradas no son las que el banco quiere medir')
 
 fallos = 0
-entradas = []
-def mando(nombre, sobre, codigo, texto):
+entradas = {}
+def mando(nombre, sobre, codigo, texto, familia='rotacion'):
     global fallos
     ruta = '%s/%s.json' % (DIR, nombre)
     json.dump(sobre, open(ruta, 'w'), indent=1, sort_keys=True)
@@ -182,9 +270,12 @@ def mando(nombre, sobre, codigo, texto):
     msg('%s %-36s exit %d (se esperaba %d: %s)' % ('OK  ' if ok else 'ROJO', nombre, p.returncode, codigo, texto))
     if not ok:
         msg('     ' + out.strip().replace('\n', '\n     '))
-    entradas.append('%s.json|%d|%s' % (nombre, codigo, texto))
+    entradas.setdefault(familia, []).append('%s.json|%d|%s' % (nombre, codigo, texto))
     if GUARDAR:
-        shutil.copy(ruta, GUARDAR)
+        # §771: la rotacion, plana en <dir> como desde el §649; las otras familias, en la suya.
+        destino = GUARDAR if familia == 'rotacion' else os.path.join(GUARDAR, familia)
+        os.makedirs(destino, exist_ok=True)
+        shutil.copy(ruta, destino)
 def con(sobre, f):
     s = copy.deepcopy(sobre); f(s); return s
 def nibble(hexs, en):
@@ -276,6 +367,29 @@ mando('neg-solap-sin-cabeza', con(solap(h_a), lambda s: s.pop('cabeza')), 1,
       'falta cabeza (la firmada que se juzga contra su tramo)')
 mando('neg-solap-cabeza-v2', solap(dict(h_a, formatVersion='0x2')), 1,
       'cabeza: formatVersion 2: el sobre del solapamiento lee cabezas v3, v4, v5 o v6: las que firma un nodo con actas')
+# ── §771 · el CONSUMO entre las dos claves: la vieja de A, la nueva de B, la cadena que las une.
+consumo = {'v': 1, 'tipo': 'consumo', 'vieja': h_a, 'nueva': h_b, 'camino': ack_ab['camino'],
+           'consumo': CONSUMO, 'ausencia': ausencia['camino'], 'presencia': presencia['camino'],
+           'actas': actas}
+mando('consumo-rotado', consumo, 0,
+      '2/5 claves distintas que las actas unen (1 eslabon(es), la posterior desde la hoja %d), y las '
+      'dos cabezas llevan consRoot' % d_b, 'consumo')
+mando('rechazo-cons-rotado-sin-actas', con(consumo, lambda s: s.pop('actas')), 1,
+      'las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante', 'consumo')
+mando('rechazo-cons-rotado-cadena-corta', con(consumo, lambda s: s.update(actas=actas[:1])), 1,
+      pre + 'la clave que llega no esta en la cadena: nadie la comprometio', 'consumo')
+# ── §771 · la COMPLETITUD: el cierre de A, la vigente de B. La ventana se mide en la cuenta UNICA
+#    de indices del operador (RFC-0015 D-A): con B dentro de ella el sobre es prematuro.
+completitud = {'v': 1, 'tipo': 'completitud', 'cierre': cierre, 'recepcion': rec,
+               'limiteAnterior': '0x%x' % q, 'camino': camino_rx['camino'], 'vigente': h_b,
+               'actas': actas}
+mando('rotada-ventana-abierta', completitud, 1,
+      'ventana ABIERTA: la cabeza vigente tiene indice acreditado %d y la ventana empieza en %d'
+      % (embebido(h_b) + 1, embebido(cierre)), 'completitud')
+mando('neg-rotada-vigente-sin-actas', con(completitud, lambda s: s.pop('actas')), 1,
+      'las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante', 'completitud')
+mando('neg-rotada-vigente-cadena-corta', con(completitud, lambda s: s.update(actas=actas[:1])), 1,
+      pre + 'la clave que llega no esta en la cadena: nadie la comprometio', 'completitud')
 # ── §687 · el TESTIGO, de verdad, sobre otro diario: la rotacion de A a B la explica la cadena y
 #    sigue; B con un contador fresco firma por debajo de su acta y se detiene. Del diario sale el
 #    sobre, y el mando lo juzga sin el nodo ni el testigo.
@@ -323,7 +437,9 @@ msg('%s el sobre que arma el testigo desde su diario: exit %d (se esperaba 0: VE
 if not ok:
     msg('     ' + (q.stdout + q.stderr).strip().replace('\n', '\n     '))
 if GUARDAR:
-    open(GUARDAR + '/entradas.txt', 'w').write('\n'.join(entradas) + '\n')
+    open(GUARDAR + '/entradas.txt', 'w').write('\n'.join(entradas['rotacion']) + '\n')
+    for familia in ('consumo', 'completitud'):
+        open('%s/entradas-%s.txt' % (GUARDAR, familia), 'w').write('\n'.join(entradas[familia]) + '\n')
 sys.exit(1 if fallos else 0)
 PY
 RC=$?

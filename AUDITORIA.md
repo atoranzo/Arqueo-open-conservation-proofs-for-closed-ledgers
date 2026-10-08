@@ -51368,3 +51368,77 @@ Y no cuenta lo que no verifica: una línea sin los campos de la cabeza no recomp
 
 **Lo que NO cierra.** La 92 sigue abierta por su (a) y su (b), y la 84 por el medio (E6), que
 espera a la E3 del RFC-0013.
+
+## §771 — la rotación en los sobres de consumo y de completitud: seis vectores de un nodo que rota, con la cadena, sin ella y con ella cortada (lo que la E5b del RFC-0015 dejó)
+
+El commit que lleva este asiento, sobre `9fe04a7` (el §770). Un solo sello: en
+`tools/banco_rotacion.sh`, dos fases nuevas contra el mismo nodo que rota —un envío de ceros con la
+clave vieja en curso y dos consumos publicados con la nueva— y seis sobres juzgados; esos seis,
+COPIADOS de una corrida, en `spec/vectors/consumo/` y `spec/vectors/completitud/`, con un bloque al
+final de cada manifiesto y sus huellas; el test del kit que lee `actas` los juzga también; las cifras
+de vectores de los dos README; la tabla y la salida esperada de `tools/segunda/README.md`; las
+cifras de foto de `doc/integracion-vertical-evaluacion.md`; las secciones 2.3, 9 y 10 de
+`spec/PAQUETE.md`; la fila E5b y un párrafo del RFC-0015; una nota en la 84 del `BACKLOG.md`; y este
+asiento. Del autor es elegir esta tarea y su orden; lo demás lo propuso la sesión. Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión
+(§770 a §799). En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento
+en su sitio, y salió VERDE; y el banco de la rotación, VERDE.
+
+**De dónde sale.** El §649 hizo el catálogo de la rotación sobre el sobre de extensión y dejó dicho
+en su «Lo que NO hace» que no había vector de la rotación en el consumo ni en la completitud: el kit
+leía `actas` en los ocho sitios que exigen la continuidad de un firmante desde el §648, y los tests
+lo probaban con claves que NO son de un operador, pero ningún sobre de esas dos familias venía de un
+nodo que rota.
+
+**Lo que hace.**
+
+1. **El banco, dos fases más, en el mismo nodo.** Con A en curso, un envío de ceros que la capa
+   rechaza deja su recibo en el error del cable; el banco recoge las cabezas por su índice hasta que
+   `zkssl_recepPath` da el camino, y la cabeza de A que cierra la era del recibo es el cierre de la
+   completitud. Con B ya rotada —después de su primera cabeza, para que el nodo escuche— se publican
+   dos consumos antes de la cabeza emparejada: el segundo, a propósito, para que la ausencia y la
+   presencia no sean el mismo camino, como en `tools/banco_consumo.sh`. La aritmética de los `seq` se
+   exige —el de A por debajo del `logSeq` del consumo, el de B por encima o igual—, y la ausencia se
+   pide bajo la cabeza de A y la presencia bajo la de B. `--guardar` deja la rotación donde estaba y
+   las dos familias nuevas en su subdirectorio, cada una con sus entradas.
+2. **Los seis sobres.** En el consumo, el positivo con la cadena —`2/5 claves distintas que las
+   actas unen (1 eslabon(es), la posterior desde la hoja 8)`, y VERDE—, y dos negativos por una
+   mutación: sin `actas`, el rechazo de siempre; con la cadena cortada en la génesis, «la clave que
+   llega no esta en la cadena». En la completitud, el cierre de A y la vigente de B: con la cadena,
+   la ventana se mide en la cuenta única de índices del operador (RFC-0015 D-A) y el sobre es
+   prematuro —`ventana ABIERTA: la cabeza vigente tiene indice acreditado 11 y la ventana empieza en
+   4`—; sin ella, o cortada, las claves son DISTINTAS.
+3. **El catálogo, copiado y registrado.** Los seis `.json` de la corrida, tal cual; un bloque
+   `# ── §771` al final de cada manifiesto, que dice de dónde salen, con las hojas de la corrida;
+   ninguna línea existente reescrita; y `python3 tools/check_vectores.py --registrar`, que añadió 6
+   vectores y 23 líneas a `spec/vectors/HUELLAS.sha256` sin mover nada.
+4. **El test del kit.** `con_claves_distintas_las_actas_se_leen_y_se_juzgan` juzga también el
+   consumo rotado —VERDE— y la completitud rotada —«ventana ABIERTA»—, y los dos sin `actas` —el rojo
+   de siempre—. Es el mismo test: ningún pin se mueve.
+
+**Medido.**
+
+- **El banco**, `bash tools/banco_rotacion.sh --guardar <dir>`: VERDE, con los 34 sobres de antes,
+  los 6 nuevos y el testigo. En la corrida, A firma en las hojas 3 y 4 y la de la 4 cierra la era del
+  recibo; B entra desde la hoja 8 y su cabeza emparejada firma en la 10; el consumo cae en el `logSeq`
+  1, entre el `seq` 0 de A y el 2 de B; la ventana es de 1440 cabezas. Los dos caminos del consumo
+  miden 63 niveles y difieren en uno.
+- **La conformidad**: el kit, 17 de 17 en el consumo y 78 de 78 en la completitud; la segunda
+  implementación, 17 de 17 en el consumo, con la misma línea 2/5. La completitud no la lee la
+  segunda, como antes.
+- **Las cabezas**: `tools/segunda/juez_cabezas.py` da 484 de 534; las doce de los seis sobres
+  nuevos son de A y de B, firmadas de verdad, y ningún positivo trae una que no verifique.
+
+**Contadores.** Ningún pin se mueve: ni tests ni `check_tests`, que sigue en 1882. Los vectores, de
+483 a 489 ficheros `.json` y de 958 a 981 líneas de manifiesto; los ficheros de `spec/vectors/`, de
+502 a 508, en `README.md` y `README_EN.md`. Las familias siguen siendo doce. El `BACKLOG.md` sigue
+con 47 abiertas y 73 resueltas: la 84 gana una nota y no se cierra.
+
+**Lo que NO hace.** Ningún veredicto 0 de completitud cruza una rotación: el acuse, el lote y la
+prenda piden una prueba STARK de verdad que este banco no produce, y el rechazo que no se prueba es
+la salida 3. Tampoco la ventana que se cierra sin resolver: pediría más de mil cuatrocientas cabezas
+de la clave nueva. Y los sobres de la rotación de antes no se re-derivan: una corrida nueva da otros
+bytes, y el catálogo se copia una vez.
+
+**Lo que NO cierra.** La 84 sigue abierta por el medio (E6), que espera a la E3 del RFC-0013.

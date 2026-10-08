@@ -141,3 +141,15 @@ neg-prenda-tipo-desconocido.json|1|desconocido: se lee acuse, rechazo o declarad
 # hoja; antes el veredicto pasaba de NO RESUELTA EN LA VENTANA a ventana ABIERTA, y el operador
 # nombrado salia del rojo. Ahora la n no canonica se rechaza antes de la firma.
 neg-n-no-canonico.json|1|n: 0xffffffff000005a1 no es canonico
+# ── §771 (RFC-0015 E5b, lo que el §649 dejo): la ROTACION en el sobre de completitud ──
+# TRES sobres COPIADOS de la MISMA corrida de `bash tools/banco_rotacion.sh --guardar <dir>` (§771): con A
+# en curso, un envio de CEROS que la capa RECHAZA deja su recibo en el error del cable, y la cabeza v6 de A
+# de hoja 4 cierra su era; `vigente` es la cabeza de B de hoja 10, la clave que entra con la firma de A, y
+# `actas` la cadena de zkssl_keyActs. La ventana se mide en la cuenta UNICA de indices del operador
+# (RFC-0015 D-A, PAQUETE.md 2.11): con B dentro de ella el sobre es prematuro, y lo dice con el indice de B
+# y el inicio en A; sin `actas`, o con la cadena cortada en la genesis, las claves son DISTINTAS. Un
+# veredicto 0 a traves de una rotacion pide una prueba STARK real -acuse, lote o prenda- y no se produce
+# aqui: se declara.
+rotada-ventana-abierta.json|1|ventana ABIERTA: la cabeza vigente tiene indice acreditado 11 y la ventana empieza en 4
+neg-rotada-vigente-sin-actas.json|1|las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante
+neg-rotada-vigente-cadena-corta.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: la clave que llega no esta en la cadena: nadie la comprometio

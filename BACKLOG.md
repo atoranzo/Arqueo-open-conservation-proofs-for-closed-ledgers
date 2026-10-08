@@ -707,6 +707,9 @@ instrumentacion) al grupo E.*
   conductas que la cadena delata sembradas con sus claves, y la segunda
   implementación que lee `actas`. QUEDA el medio (E6), tras la E3 del
   RFC-0013: sigue abierta.
+  ✅ a medias (§771): lo que la E5b dejó, la rotación en los sobres de
+  consumo y de completitud, con vectores del mismo nodo que rota. QUEDA el
+  medio (E6): sigue abierta.
   ✅ a medias (§686): la E5c, el sobre del solapamiento —una cabeza fuera
   de los tramos de su clave es detección portable, sin el testigo—, y la
   refutación del conflicto entre dos claves de un operador, escrita. QUEDA

@@ -104,7 +104,8 @@ donde el valor es una respuesta del cable sin reescribir.
   `zk_ssl_verify::actas::juzgar_continuidad`, y es el mismo en los ocho sitios que exigen
   continuidad: aquí, en el consumo (2.4) y en las seis cabezas que el sobre de completitud
   compara con su cierre (2.11). Su catálogo, desde el §649, es `spec/vectors/rotacion/`, de un
-  nodo real que rota (sección 9).
+  nodo real que rota (sección 9); y desde el §771, tres sobres en `consumo/` y tres en
+  `completitud/`, del mismo nodo.
 
 ### 2.4 El paquete de consumo (§419)
 
@@ -1347,6 +1348,17 @@ sobre del SOLAPAMIENTO** (2.14): once sobres derivados de los de arriba sin otra
 la cadena tal cual—: las dos conductas sembradas, ahora como detección con salida 0, y nueve
 negativos, las tres claves dentro de su tramo entre ellos.
 
+**Desde §771 la rotación está también en el consumo y en la completitud**, con sobres del mismo
+nodo que rota y del mismo productor. En `consumo/`, el consumo se publica con la clave nueva en
+curso, entre una cabeza de la vieja y una de la nueva: con la cadena sale VERDE y dice que las
+actas unen las dos claves; sin ella, o cortada en la génesis, las claves son DISTINTAS. En
+`completitud/`, un envío de ceros con la vieja en curso deja su recibo y una cabeza de la vieja
+cierra la era; la vigente es una cabeza de la nueva, y la ventana se mide en la cuenta única de
+índices del operador: con la nueva dentro, el sobre es prematuro (`ventana ABIERTA`); sin la cadena,
+o cortada, las claves son DISTINTAS. Ningún veredicto 0 de completitud cruza una rotación: pide una
+prueba STARK de verdad —acuse, lote o prenda— que este productor no tiene, y se declara. La segunda
+implementación pasa los tres de consumo; la completitud no la lee (sección 9, `tools/segunda/`).
+
 **Desde §693 cada negativo nombra su causa** (sección 6.1). Quince vectores de cinco familias
 tenían por único oráculo el sujeto: el `edad:`, el `pago:`, el `cobro:` y los dos `prenda:` de
 arriba, y diez del paquete —`seq: `, `sin 0x: `, `hex: `, dos `cabeza: `, dos `acuse: `, dos
@@ -1464,6 +1476,8 @@ era hasta entonces.
 - §706 — la marca de la ocultación, con nombre (RFC-0005 E4): su texto entra en el catálogo de la
   edad, el cobro, la prenda y la banda, y en la clase «prueba mal formada» de la 6.1; seis negativos
   nuevos en la edad y el pago (sección 9), y el rango de m de la edad, al día.
+- §771 — la rotación en el consumo y en la completitud (RFC-0015, lo que la E5b dejó): tres sobres
+  en cada familia, del mismo nodo que rota, con `actas` y sin ellas (sección 9).
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

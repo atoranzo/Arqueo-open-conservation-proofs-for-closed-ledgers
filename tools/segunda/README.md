@@ -28,7 +28,7 @@ python3 tools/segunda/juez_cabezas.py
 # 1 ter · el corpus KAT de XMSS^MT: dos implementaciones, los mismos bytes       -> 8 de 8
 python3 tools/segunda/kat_xmss/juez_xmss.py
 
-# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 170 de 170 (§693)
+# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 173 de 173 (§771)
 for m in paquete consumo conflicto ancla rotacion; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
 # 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 34 de 34 (§706)
@@ -82,7 +82,7 @@ que el binario de referencia, las cuatro familias que no exigen STARK:
 | familia | entradas | segundo verificador |
 |---|---|---|
 | `paquete` (posición v1 y v2, extensión) | 72 | 72 de 72 |
-| `consumo` | 14 | 14 de 14 |
+| `consumo` (desde el §771, también entre dos claves con `actas`) | 17 | 17 de 17 |
 | `conflicto` | 16 | 16 de 16 |
 | `ancla` | 22 | 22 de 22 |
 | `rotacion` (la extensión entre dos claves, con `actas`; §649; y el sobre del solapamiento, §686) | 34 | 34 de 34 |

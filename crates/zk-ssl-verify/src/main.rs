@@ -3454,6 +3454,27 @@ mod tests {
         ));
         vista["actas"] = json!([]);
         assert_eq!(verificar_paquete(&vista), Err(claves_distintas()));
+
+        // ⚠️ §771 · y con claves que SÍ son de un operador: los sobres de un nodo que rota de A a
+        // B. Con la cadena, el consumo entre las dos sale VERDE y la completitud con la vigente
+        // de B mide su ventana —abierta: el sobre es prematuro—; sin ella, el rojo de siempre.
+        let consumo = leer(include_str!(
+            "../../../spec/vectors/consumo/consumo-rotado.json"
+        ));
+        assert!(verificar_paquete(&consumo).is_ok(), "consumo rotado");
+        let completitud = leer(include_str!(
+            "../../../spec/vectors/completitud/rotada-ventana-abierta.json"
+        ));
+        let e = verificar_paquete(&completitud).unwrap_err();
+        assert!(e.starts_with("ventana ABIERTA"), "{e}");
+        for (nombre, mut sobre) in [("consumo", consumo), ("vigente", completitud)] {
+            sobre.as_object_mut().unwrap().remove("actas");
+            assert_eq!(
+                verificar_paquete(&sobre),
+                Err(claves_distintas()),
+                "{nombre} rotado sin actas"
+            );
+        }
     }
 
     /// ⚠️ §686 · RFC-0015 E5c · **el sobre del solapamiento delata, y solo fuera de los tramos.**
