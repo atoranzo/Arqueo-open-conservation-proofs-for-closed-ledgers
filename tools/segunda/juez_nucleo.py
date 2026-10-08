@@ -11,9 +11,10 @@ las lecturas que NUCLEO.md seccion 6 deja abiertas y el KAT cierra; al final
 Exit 0 solo si todos; 1 si alguno falla; 2 uso; 3 si el autotest de las primitivas falla, porque
 entonces ningun veredicto vale.
 
-Lo que el formato de los KAT no dice y este juez tiene que saber (NOTA al final): que `embeber.x`
-y `balance`/`nonce` de `native_leaf*` son un u64 en OCHO BYTES little-endian, mientras `seq`, `n`,
-`t`, los contadores y `x` de `as_digest` son el u64 como numero hex. Son dos codificaciones del
+Lo que el formato de los KAT no dice y este juez tiene que saber (NOTA al final): que `embeber.x`,
+`balance`/`nonce` de `native_leaf*` y cada una de las `entradas_publicas` de `digest_pi` (S773) son
+un u64 en OCHO BYTES little-endian, mientras `seq`, `n`, `t`, los contadores, `x` de `as_digest` y
+`familia`/`version_air` de `digest_pi` son el u64 como numero hex. Son dos codificaciones del
 mismo tipo en el mismo catalogo.
 """
 import hashlib
@@ -33,6 +34,7 @@ ESQUEMA = {
     "as_digest": {"x": U},
     "cima": {"hojas": "digests"},
     "digest_from_bytes": {"bytes": B},
+    "digest_pi": {"familia": U, "version_air": U, "entradas_publicas": "u64les"},
     "digest_to_bytes": {"d": "sym", "x": U},
     "embeber": {"x": ULE},
     "epoch_digest": CABEZA,
@@ -59,6 +61,7 @@ ESQUEMA = {
     "preambulo_acta": {"version": I, "acta_digest": D},
     "preambulo_cofirma": {"version": I, "epoch_digest": D, "clave_del_operador": B},
     "recibo_digest": {"hash_prueba": D, "era": U, "n": U},
+    "recibo_digest_v2": {"hash_prueba": D, "digest_pi": D, "era": U, "n": U},
 }
 
 
@@ -82,6 +85,8 @@ def leer(valor, tipo):
         return int(valor)
     if tipo == "digests":
         return [N.digest_from_bytes(hexbytes(v)) for v in valor]
+    if tipo == "u64les":
+        return [leer(v, ULE) for v in valor]
     if tipo == "bools":
         return [bool(v) for v in valor]
     if tipo == "ops":
@@ -121,6 +126,8 @@ def calcular(fn, e, notas):
         return dig(N.cima(e["hojas"], con_hoja=True))
     if fn == "digest_from_bytes":
         return dig(N.digest_from_bytes(e["bytes"]))
+    if fn == "digest_pi":
+        return hx(N.digest_pi(e["familia"], e["version_air"], e["entradas_publicas"]))
     if fn == "digest_to_bytes":
         assert e["d"] == "as_digest(x)", "el KAT nombra d simbolicamente como as_digest(x)"
         return hx(N.digest_to_bytes(N.as_digest(e["x"])))
@@ -168,6 +175,8 @@ def calcular(fn, e, notas):
         return hx(N.preambulo_cofirma(e["version"], e["epoch_digest"], e["clave_del_operador"]))
     if fn == "recibo_digest":
         return dig(N.recibo_digest(e["hash_prueba"], e["era"], e["n"]))
+    if fn == "recibo_digest_v2":
+        return dig(N.recibo_digest_v2(e["hash_prueba"], e["digest_pi"], e["era"], e["n"]))
     raise KeyError(fn)
 
 
@@ -219,7 +228,7 @@ def main(argv):
         return 3
     print("autotest de las primitivas (BLAKE3 contra blake3 1.8.5; Rescue contra el vector Sage de winter-crypto): VERDE")
     ok, n, notas, verde = juzgar(directorio)
-    notas.append("formato: embeber.x y balance/nonce de native_leaf* van como u64 en ocho bytes LE; "
+    notas.append("formato: embeber.x, balance/nonce de native_leaf* y las entradas_publicas de digest_pi van como u64 en ocho bytes LE; "
                  "seq, n, t, los contadores y as_digest.x como numero hex (dos codificaciones, un catalogo)")
     notas.append("hoja_de_acuse: RPC.md (zkssl_ackPath) la da como acuse_digest(hashPrueba, epoca, n) y RPC.md (El acuse "
                  "en la respuesta) dice epoca = logSeq + 1; NUCLEO.md seccion 6 lo escribe desde el S622; "

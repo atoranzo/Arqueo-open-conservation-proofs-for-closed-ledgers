@@ -32,10 +32,10 @@ use std::path::PathBuf;
 
 use serde_json::{json, Value};
 use zk_ssl_hash::{
-    acta_digest, acuse_digest, ancla_digest, as_digest, digest_from_bytes, digest_to_bytes, element_from_bytes,
+    acta_digest, acuse_digest, ancla_digest, as_digest, digest_from_bytes, digest_pi, digest_to_bytes, element_from_bytes,
     embeber, epoch_digest, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5,
     epoch_digest_v6, hash_del_lote, huella_de_clave, mmr_hoja, mmr_nodo, native_leaf, native_leaf_salted,
-    native_merge, params_digest, path_root, recibo_digest, Digest,
+    native_merge, params_digest, path_root, recibo_digest, recibo_digest_v2, Digest,
 };
 use zk_ssl_verify::{
     actas::preambulo_acta, acuses::hoja_de_acuse, mmr::cima, preambulo, preambulo_cofirma,
@@ -155,6 +155,9 @@ fn casos() -> Vec<(&'static str, Value)> {
         ("recibo_digest", json!({"fn": "recibo_digest",
             "entradas": {"hash_prueba": dg(&a), "era": q(2), "n": q(3)},
             "salida": dg(&recibo_digest(a, 2, 3))})),
+        ("recibo_digest_v2", json!({"fn": "recibo_digest_v2",
+            "entradas": {"hash_prueba": dg(&a), "digest_pi": dg(&b), "era": q(2), "n": q(3)},
+            "salida": dg(&recibo_digest_v2(a, b, 2, 3))})),
         ("ancla_digest", json!({"fn": "ancla_digest",
             "entradas": {"huella_clave": dg(&a), "indice": q(7), "epoch_digest": dg(&b),
                          "mmr_root": dg(&c), "mmr_size": q(9)},
@@ -177,6 +180,10 @@ fn casos() -> Vec<(&'static str, Value)> {
                 {"hash_prueba": dg(&a), "cuenta": q(1), "posicion": q(2)},
                 {"hash_prueba": dg(&b), "cuenta": q(3), "posicion": q(4)}]},
             "salida": dg(&hash_del_lote(&[(a, 1, 2), (b, 3, 4)]))})),
+        ("digest_pi", json!({"fn": "digest_pi",
+            "entradas": {"familia": q(1), "version_air": q(1),
+                         "entradas_publicas": [hx(&5u64.to_le_bytes()), hx(&9u64.to_le_bytes())]},
+            "salida": dg(&digest_pi(1, 1, &[saldo, nonce]))})),
         ("hoja_de_acuse", json!({"fn": "hoja_de_acuse",
             "entradas": {"hash_prueba": dg(&a), "seq": q(0x2b), "n": q(3)},
             "salida": dg(&hoja_de_acuse(a, 0x2b, 3))})),

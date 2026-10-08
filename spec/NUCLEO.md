@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 101 elementos alcanzables en `zk-ssl-verify` y 60 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 128, REFERENCIA 13, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 101 elementos alcanzables en `zk-ssl-verify` y 63 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 131, REFERENCIA 13, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`, `actas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -138,6 +138,8 @@ real de sus llaves, no por la primera marca.
 | `acuse_digest` | `hash/lib.rs` | NÚCLEO | ACUSES | `fn` |
 | `DOMINIO_RECEP` | `hash/lib.rs` | NÚCLEO | ACUSES | `const` |
 | `recibo_digest` | `hash/lib.rs` | NÚCLEO | ACUSES | `fn` |
+| `DOMINIO_RECEP_V2` | `hash/lib.rs` | NÚCLEO | ACUSES | `const` |
+| `recibo_digest_v2` | `hash/lib.rs` | NÚCLEO | ACUSES | `fn` |
 | `epoca_de_acuse` | `verify/acuses.rs` | NÚCLEO | ACUSES | `fn` |
 | `hoja_de_acuse` | `verify/acuses.rs` | NÚCLEO | ACUSES | `fn` |
 | `indice_de_hoja` | `verify/acuses.rs` | NÚCLEO | ACUSES | `fn` |
@@ -179,6 +181,7 @@ real de sus llaves, no por la primera marca.
 | `pertenece_a_era` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `raiz_de_camino_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `hash_del_lote` | `hash/lib.rs` | NÚCLEO | RECIBOS | `fn` |
+| `digest_pi` | `hash/lib.rs` | NÚCLEO | RECIBOS | `fn` |
 | `DOMINIO_ANCLA` | `hash/lib.rs` | NÚCLEO | ANCLA | `const` |
 | `ancla_digest` | `hash/lib.rs` | NÚCLEO | ANCLA | `fn` |
 | `huella_de_clave` | `hash/lib.rs` | NÚCLEO | ANCLA | `fn` |
@@ -343,6 +346,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   del árbol de recibos vacío y `recep_count = 0`;
   `recibo_digest = merge(as_digest(RECEP_V1), merge(hash_prueba, merge(as_digest(era),
   as_digest(n))))`, el molde de `acuse_digest` con el séptimo dominio;
+  `recibo_digest_v2 = merge(as_digest(RECEP_V2), merge(hash_prueba, merge(digest_pi,
+  merge(as_digest(era), as_digest(n)))))` (RFC-0019 E3, §773), la hoja v1 con `digest_pi` detrás
+  de `hash_prueba` y el décimo dominio, `RECEP_V2`; nada la consume hasta el corte `zkssl/0.5`;
   `ancla_digest = merge(as_digest(ANCLA_V1), merge(huella_clave, merge(as_digest(indice),
   merge(epoch_digest, merge(mmr_root, as_digest(mmr_size))))))` (RFC-0012, §591), con el octavo
   dominio y el índice EMBEBIDO en la firma;
@@ -363,6 +369,11 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   `hash_prueba` en el `recibo_digest` de un lote. ⚠️ **Corregido por la segunda implementación**
   (`tools/segunda/`, entrada 85): hasta entonces aquí decía «`k` en la longitud», y con `len = k`
   el KAT no reproduce (medido); el error se registra en vez de borrarse;
+  `digest_pi = Blake3(b"ZK-SSL-public-inputs-v1" ‖ len(u64 LE) ‖ familia(u16 LE) ‖
+  version_air(u16 LE) ‖ e_0 ‖ … ‖ e_{k-1})` (RFC-0019 E3, §773), el mismo molde, con la familia y
+  la versión de la AIR de la prueba recibida en los bytes que les da la marca v2 del RFC-0018, y los
+  elementos de sus entradas públicas en el orden de `to_elements()`, ocho bytes LE cada uno; `len`
+  son los bytes, `4 + 8·k`, y `k` queda implícito en ella; ata la familia y la versión, no el perfil;
   `params_digest = merge(as_digest(PARAM_V1),
   merge(merge(as_digest(regulatory_limit), as_digest(max_supply)),
   merge(merge(as_digest(max_accounts), custodian_set_root), merge(governance_set_root,
@@ -393,6 +404,11 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §773 — `DOMINIO_RECEP_V2`, `recibo_digest_v2` y `digest_pi` en `zk-ssl-hash` (RFC-0019 E3, primera
+  pieza): la hoja del recibo de recepción con el digest de las entradas públicas, que ata también la
+  familia y la versión de la AIR (RFC-0018 D-G), con dos KAT que la segunda implementación
+  reproduce. Tres filas nuevas, en ACUSES y RECIBOS. Nada la consume todavía: el nodo, el cable y el
+  kit siguen con la v1 hasta el corte `zkssl/0.5`.
 - §686 — `Tramo`, con `contiene`, y `tramos_de` en el módulo `actas`: los tramos de una clave en la
   cadena, uno por cada vez que entra, con la génesis sin juzgar lo firmado antes de optar; el juez
   del sobre del solapamiento (RFC-0015, E5c). Tres filas nuevas, familia ACTA.

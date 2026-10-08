@@ -1,7 +1,7 @@
 # RFC-0019 — La completitud que no se esquiva: la ventana con el índice acreditado, y el `StaleState` que no resuelve solo
 
-- **Estado:** PROPUESTO (§675), con sus cuatro decisiones tomadas (§679, §681) y E1 y E2 construidas
-  (§681, §682).
+- **Estado:** PROPUESTO (§675), con sus cuatro decisiones tomadas (§679, §681), E1 y E2 construidas
+  (§681, §682) y la primera pieza de E3, el núcleo, construida (§773).
   Enmienda el RFC-0010 (ACEPTADO); el paso a ACEPTADO exige decidirlas y construir sus etapas (regla 4
   del PROCESO).
 - **Autor:** Ángel José Toranzo Portela
@@ -10,9 +10,10 @@
   `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-10-02
 - **Versión del protocolo afectada:** `zkssl/0.4`. E1 no cambia el cable; cambia un veredicto del kit.
-  E2 cambia el veredicto de un vector publicado. E3, la hoja del recibo, sí cambia el cable.
+  E2 cambia el veredicto de un vector publicado. E3, la hoja del recibo, sí cambia el cable (su
+  núcleo entra en el §773 sin cambiarlo).
 - **Asiento(s) de AUDITORIA:** §675 (este borrador), §679 (las decisiones), §681 (la D-A y E1), §682
-  (E2), §707 (lo que ata `digest_pi`, por la D-G del RFC-0018).
+  (E2), §707 (lo que ata `digest_pi`, por la D-G del RFC-0018), §773 (E3, primera pieza: el núcleo).
 
 ## Motivación
 
@@ -62,6 +63,16 @@ atadura sea verificable. Cambia la hoja del recibo, así que va al tren `zkssl/0
 (§707: `digest_pi` ata también la familia y la versión de la AIR de la prueba recibida, para que un
 recibo diga de qué prueba es; lo trae la D-G del RFC-0018, en estado de propuesta, y la forma exacta
 la fija esta etapa.)
+
+**E3, primera pieza (§773): el núcleo.** `digest_pi(familia, version_air, entradas)` es
+Blake3(`ZK-SSL-public-inputs-v1` ‖ longitud ‖ familia u16 LE ‖ versión de la AIR u16 LE ‖ los
+elementos de las entradas públicas, en el orden de `to_elements()` y ocho bytes LE cada uno), reducido
+limbo a limbo, el molde del lote; y `recibo_digest_v2(hash_prueba, digest_pi, era, n)` es la hoja v1
+con `digest_pi` detrás de `hash_prueba`, bajo su propio dominio, `RECEP_V2`. Las dos tienen KAT, y la
+segunda implementación las reproduce (`spec/NUCLEO.md`, sección 6). Nada las consume todavía: el nodo
+anotando la v2, el cable, el kit en 2.11 y la segunda en su verificador van con el corte, y los
+números de familia y versión los da el registro de la D-G del RFC-0018. Cambiar esta forma, una vez
+publicada, es otra versión de la hoja, no reescribirla.
 
 ## Compatibilidad
 

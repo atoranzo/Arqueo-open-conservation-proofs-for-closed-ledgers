@@ -1,0 +1,12 @@
+{
+  "entradas": {
+    "entradas_publicas": [
+      "0x0500000000000000",
+      "0x0900000000000000"
+    ],
+    "familia": "0x1",
+    "version_air": "0x1"
+  },
+  "fn": "digest_pi",
+  "salida": "0x703335d23c8ec544ccbd87cefd91fac1610013502f660fcb4bffd76b6b15feba"
+}

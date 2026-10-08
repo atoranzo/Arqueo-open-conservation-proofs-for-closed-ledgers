@@ -210,6 +210,7 @@ def dominio(ascii8):
 
 ACUSE_V1 = dominio(b"ACUSE_V1")
 RECEP_V1 = dominio(b"RECEP_V1")
+RECEP_V2 = dominio(b"RECEP_V2")
 MMRHOJA1 = dominio(b"MMRHOJA1")
 MMRNODO1 = dominio(b"MMRNODO1")
 PARAM_V1 = dominio(b"PARAM_V1")
@@ -220,6 +221,7 @@ DOMINIO_EPOCH_HEAD = b"ZK-SSL-epoch-head"
 DOMINIO_COFIRMA = b"ZK-SSL-witness-cosign"
 DOMINIO_ANCLA_CLAVE = b"ZK-SSL-anchor-key-v1"
 DOMINIO_LOTE = b"ZK-SSL-batch-v1"
+DOMINIO_PI = b"ZK-SSL-public-inputs-v1"
 
 
 # ─── las composiciones, en el orden exacto de los merges (NUCLEO.md seccion 6) ───────────────
@@ -270,6 +272,11 @@ def acuse_digest(hash_prueba, epoca, n):
 
 def recibo_digest(hash_prueba, era, n):
     return merge(as_digest(RECEP_V1), merge(hash_prueba, merge(as_digest(era), as_digest(n))))
+
+
+def recibo_digest_v2(hash_prueba, digest_pi, era, n):
+    """RFC-0019 E3 (S773): la hoja v1 con digest_pi detras de hash_prueba, bajo RECEP_V2."""
+    return merge(as_digest(RECEP_V2), merge(hash_prueba, merge(digest_pi, merge(as_digest(era), as_digest(n)))))
 
 
 def ancla_digest(huella_clave, indice, epoch_dig, mmr_root, mmr_size):
@@ -355,6 +362,14 @@ def hash_del_lote(operaciones):
     NUCLEO.md seccion 6 y de RFC-0014 E2 hay que leerla como <<k queda implicito en la longitud>>."""
     cuerpo = b"".join(bytes(h) + c.to_bytes(8, "little") + p.to_bytes(8, "little") for h, c, p in operaciones)
     return limbos_reducidos(blake3(DOMINIO_LOTE + len(cuerpo).to_bytes(8, "little") + cuerpo))
+
+
+def digest_pi(familia, version_air, elementos):
+    """RFC-0019 E3 (S773): la familia y la version de la AIR en u16 LE y cada elemento de las entradas
+    publicas en ocho bytes LE; la longitud codificada es la de los BYTES (4 + 8k), como en el lote."""
+    cuerpo = (familia.to_bytes(2, "little") + version_air.to_bytes(2, "little")
+              + b"".join(e.to_bytes(8, "little") for e in elementos))
+    return limbos_reducidos(blake3(DOMINIO_PI + len(cuerpo).to_bytes(8, "little") + cuerpo))
 
 
 def preambulo(version, epoch_dig):

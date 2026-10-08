@@ -51522,3 +51522,94 @@ borrador del issue de `xmss` (§710) es el sitio para pedirlo. No toca el `firma
 del kit (`crates/zk-ssl-verify/src/actas.rs`) ni el del testigo, que hacen la misma secuencia con
 claves de prueba y no cuentan para la 102. Y `Zeroizing` no protege lo que ya está en registros o
 en la pila de una llamada que el compilador copió: promete lo que el crate `zeroize` promete.
+
+## §773 — RFC-0019 E3, primera pieza: el núcleo compone `digest_pi` —las entradas públicas de la prueba recibida, con la familia y la versión de su AIR— y la hoja v2 del recibo, `RECEP_V2`, con sus KAT y su réplica en la segunda implementación
+
+El commit que lleva este asiento, sobre `257619d` (el §772). Un solo sello: en `crates/zk-ssl-hash`,
+`DOMINIO_RECEP_V2`, `recibo_digest_v2`, `digest_pi` y su dominio de bytes, sus dos filas en el
+REGISTRO y cuatro tests; dos casos nuevos en `crates/zk-ssl-cli/src/nucleo_kat.rs` y sus dos KAT en
+`spec/vectors/nucleo/`, con sus huellas; la réplica en `tools/segunda/nucleo.py` y su juez; el censo,
+tres filas, las dos fórmulas y la historia de `spec/NUCLEO.md`; el pin del núcleo en
+`tools/canon.sh`; las cifras de tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; las cifras de
+ficheros de los dos README, las de `tools/segunda/README.md` y la de los KAT en
+`doc/integracion-vertical-evaluacion.md`; el estado, los asientos y un párrafo
+del RFC-0019, una frase del RFC-0018 y la fila del RFC-0019 en `spec/README.md`; y este asiento. Del
+autor es elegir esta tarea y su orden; la forma la propuso la sesión («Quién lo decide»). Lo escribe y
+lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera
+del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión
+(§770 a §799). En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento
+en su sitio, y salió VERDE.
+
+**De dónde sale.** El RFC-0019 dejó su E3 escrita y sin construir: el recibo de recepción gana
+`digest_pi`, el digest de las entradas públicas de la prueba recibida, bajo la firma, para que un
+`StaleState` quede atado por la firma y no por el `data`. Cambia la hoja, así que va al tren
+`zkssl/0.5` del RFC-0018 (su D-D); y el §707 añadió que `digest_pi` ata también la familia y la
+versión de la AIR, con una frase que este sello cumple: «la forma exacta la fija esta etapa». El
+RFC-0018 deja entrar antes, apagado, lo que no cambia ningún byte que viaje ni lo que se acepta.
+Esta es esa parte: el núcleo, sin consumidor, como entró `epoch_digest_v6` en el §557.
+
+**Quién lo decide.** El autor eligió la tarea. La forma la propuso la sesión, siguiendo los moldes
+del árbol, y queda escrita en el RFC-0019 y en `NUCLEO.md`:
+
+- **La familia de dominio de `digest_pi`: bytes, Blake3 con la longitud codificada**, el molde del
+  lote (§610). Cada familia de prueba tiene sus entradas públicas y de longitud distinta, y en Rescue
+  cada dominio supone una longitud fija.
+- **Lo que entra:** la familia y la versión de la AIR en `u16` LE —los bytes que les da la marca v2
+  del RFC-0018— y los elementos de las entradas públicas en el orden de `to_elements()`, que es lo
+  que entra en la semilla de Fiat-Shamir, ocho bytes LE cada uno. No entra el perfil: el §707 ata la
+  familia y la versión.
+- **La hoja v2:** la v1 con `digest_pi` detrás de `hash_prueba`, bajo el décimo dominio u64,
+  `RECEP_V2`. La hoja no es una prueba y lleva su propia versión, no la de la marca.
+
+Publicado el KAT, cambiar esta forma no es reescribirla: sería otra versión de la hoja.
+
+**Lo que hace.**
+
+1. **El núcleo.** `DOMINIO_RECEP_V2` (`RECEP_V2` como `u64`, con su fila en el REGISTRO),
+   `recibo_digest_v2(hash_prueba, digest_pi, era, n)` y `digest_pi(familia, version_air, entradas)`
+   sobre `resumen_con_dominio`, con su dominio de bytes privado `ZK-SSL-public-inputs-v1`, como el del
+   lote, y su fila en el REGISTRO. Nada las llama fuera de los tests.
+2. **Cuatro tests** en el `mod acuse` del núcleo: la hoja v2 no es la v1 ni con un `digest_pi` a
+   cero, y su dominio está pinchado; cada campo de la v2 la mueve, y cambiar de sitio `hash_prueba`
+   y `digest_pi` también; cada campo de `digest_pi` lo mueve —la familia, la versión, un elemento, el
+   orden, uno de menos— y los mismos bytes bajo el dominio de la prueba dan otra cosa; y la longitud
+   va codificada: una lista vacía no es la de un cero, ni la de un cero la de dos.
+3. **Los KAT.** `spec/vectors/nucleo/recibo_digest_v2.json` y `digest_pi.json`, emitidos por
+   `ZKSSL_KAT_EMITIR=1`, que escribió solo los dos que faltaban, y registrados con
+   `check_vectores.py --registrar`: dos huellas nuevas, nada movido.
+4. **La segunda implementación.** `tools/segunda/nucleo.py` gana `RECEP_V2`, `recibo_digest_v2` y
+   `digest_pi`, escritas desde la sección 6 de `NUCLEO.md` y no desde el `.rs`; el juez lee las
+   `entradas_publicas` como `u64` en ocho bytes LE y lo dice en su docstring y en su nota de formato.
+5. **El censo.** `NUCLEO.md` pasa a 63 `pub` en `zk-ssl-hash` y NÚCLEO 131, con tres filas —la
+   constante y la hoja en ACUSES, `digest_pi` en RECIBOS—, las dos fórmulas en la sección 6 y la
+   línea del §773 en la historia.
+
+**Medido.**
+
+- `cargo test --release --locked -p zk-ssl-hash`: 56 de 56. `-p zk-ssl-cli`: 145 de 145, con el
+  test de los KAT: los 31 ficheros son los 31 casos, y los publicados son lo que el emisor escribe
+  hoy.
+- `python3 tools/segunda/juez_nucleo.py`: `nucleo: 31 de 31 vectores reproducidos byte a byte`.
+- `check_nucleo`: 101 elementos de verify + 63 de hash = 164 filas (LIBRO 5, NÚCLEO 131,
+  REFERENCIA 13, REGISTRO 15). `check_dominios`: el censo y el registro dicen lo mismo, sin
+  literales sueltos ni derivas. `check_vectores`: 491 ficheros `.json` y 981 líneas de manifiesto,
+  cada uno con su huella.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** `zk-ssl-hash` 52 -> 56, en su fila de `tools/canon.sh`, con su crónica. TOTAL DE
+SELLO 1727 -> 1731 y TOTAL CON LARGOS 1864 -> 1868, en los tres párrafos ancla, en `PRINCIPIOS.md`,
+`PAPER.md` y `PAPER_EN.md`. `check_tests`, de 1886 a 1890. Las «1364 declaradas» y las «1349
+declared» no se tocan, como en los sellos anteriores (5.A-319). Los vectores, de 489 a 491 `.json`;
+los ficheros de `spec/vectors/`, de 508 a 510, en los dos README; los KAT del núcleo, de 29 a 31. El
+`BACKLOG.md` sigue con 46 abiertas y 74 resueltas.
+
+**Lo que NO hace.** Nadie consume la hoja v2 todavía: el nodo sigue anotando la v1, el cable sigue en
+`zkssl/0.4` con `recepcion: {rx, era, n, hashPrueba}`, y el kit en la sección 2.11 sigue comprobando
+la v1. Por eso la E2 sigue dando «DECLARADA, NO PROBADA» a un `StaleState`, y la segunda
+implementación, en su verificador, tampoco lee la v2. No hay registro de familias ni de versiones de
+AIR: lo trae la D-G del RFC-0018, y hasta entonces `digest_pi` los toma como datos —el KAT usa la 1 y
+la 1, porque el cero no se asigna—. Tampoco se toca `zk-ssl-verify`: una `hoja_de_recibo_v2` allí
+movería su censo y su pin, y es la pieza del kit.
+
+**Lo que NO cierra.** El resto de la E3 —el nodo, el cable, el kit, la segunda y los vectores de la
+0.5— va con el corte `zkssl/0.5` del RFC-0018. El RFC-0019 sigue PROPUESTO.

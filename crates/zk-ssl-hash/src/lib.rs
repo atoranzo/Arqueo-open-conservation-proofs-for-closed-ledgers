@@ -769,6 +769,31 @@ pub fn recibo_digest(hash_prueba: Digest, era: u64, n: u64) -> Digest {
     native_merge(as_digest(DOMINIO_RECEP), native_merge(hash_prueba, par))
 }
 
+/// **Dominio del recibo de recepcion v2** (RFC-0019, E3; §773): los ocho bytes
+/// ASCII de `RECEP_V2` leidos como `u64`, con su fila en el REGISTRO.
+///
+/// ⚠️ **Decimo dominio, y separado A PROPOSITO de `RECEP_V1`.** La hoja v2
+/// lleva un campo mas; con el mismo dominio, una hoja v1 y una v2 de entradas
+/// elegidas podrian confundirse en el mismo arbol. La hoja del recibo no es una
+/// prueba: lleva su propia version, no la de la marca (RFC-0018, D-G).
+pub const DOMINIO_RECEP_V2: u64 = u64::from_be_bytes(*b"RECEP_V2");
+
+/// **Recibo de recepcion v2** (RFC-0019, E3; §773): la hoja v1 con
+/// [`digest_pi`] detras de `hash_prueba`, bajo [`DOMINIO_RECEP_V2`]. Lo que la
+/// v1 no ataba bajo la firma -que la prueba recibida es la de ESTAS entradas
+/// publicas- entra en la hoja.
+///
+/// ⚠️ **Nadie la consume todavia.** El nodo, el cable y el kit siguen con la v1
+/// ([`recibo_digest`]) hasta el corte `zkssl/0.5` del RFC-0018: la composicion
+/// entra antes, apagada, y su KAT la fija.
+pub fn recibo_digest_v2(hash_prueba: Digest, digest_pi: Digest, era: u64, n: u64) -> Digest {
+    let par = native_merge(as_digest(era), as_digest(n));
+    native_merge(
+        as_digest(DOMINIO_RECEP_V2),
+        native_merge(hash_prueba, native_merge(digest_pi, par)),
+    )
+}
+
 /// **Dominio del ancla de cabezas** (RFC-0012, D-A; §591), con version en el
 /// propio valor: los ocho bytes ASCII de `ANCLA_V1` leidos como `u64`,
 /// hermano de `ACUSE_V1`, `PARAM_V1` y `RECEP_V1`, con su fila en el REGISTRO.
@@ -1392,6 +1417,73 @@ mod acuse {
     }
 
     #[test]
+    fn la_hoja_v2_no_es_la_v1_y_pincha_su_dominio() {
+        // §773 (RFC-0019 E3): otro dominio. Ni con un digest_pi a cero la v2 da
+        // la v1: una hoja de una version no pasa por la de la otra.
+        let hp = as_digest(0xA11CE);
+        assert_ne!(
+            recibo_digest_v2(hp, as_digest(0), 100, 1_440),
+            recibo_digest(hp, 100, 1_440)
+        );
+        assert_eq!(
+            DOMINIO_RECEP_V2,
+            u64::from_be_bytes(*b"RECEP_V2"),
+            "el dominio, con version"
+        );
+        assert_ne!(DOMINIO_RECEP_V2, DOMINIO_RECEP);
+    }
+
+    #[test]
+    fn cada_campo_de_la_hoja_v2_la_mueve_y_el_orden_cuenta() {
+        let (hp, pi) = (as_digest(0xA11CE), as_digest(0xB0B));
+        let base = recibo_digest_v2(hp, pi, 100, 1_440);
+        assert_ne!(base, recibo_digest_v2(as_digest(0xA11CF), pi, 100, 1_440));
+        assert_ne!(base, recibo_digest_v2(hp, as_digest(0xB0C), 100, 1_440));
+        assert_ne!(base, recibo_digest_v2(hp, pi, 101, 1_440));
+        assert_ne!(base, recibo_digest_v2(hp, pi, 100, 1_441));
+        assert_ne!(
+            base,
+            recibo_digest_v2(pi, hp, 100, 1_440),
+            "hash_prueba y digest_pi cambiados de sitio"
+        );
+    }
+
+    #[test]
+    fn cada_campo_de_digest_pi_lo_mueve_y_su_dominio_es_suyo() {
+        let e = [BaseElement::new(5), BaseElement::new(9)];
+        let base = digest_pi(1, 1, &e);
+        assert_ne!(base, digest_pi(2, 1, &e), "la familia");
+        assert_ne!(base, digest_pi(1, 2, &e), "la version de la AIR");
+        assert_ne!(
+            base,
+            digest_pi(1, 1, &[BaseElement::new(5), BaseElement::new(8)])
+        );
+        assert_ne!(
+            base,
+            digest_pi(1, 1, &[BaseElement::new(9), BaseElement::new(5)]),
+            "el orden"
+        );
+        assert_ne!(base, digest_pi(1, 1, &e[..1]), "un elemento menos");
+        // Los mismos bytes bajo otro dominio de la familia bytes dan otra cosa.
+        let mut bytes = vec![1, 0, 1, 0];
+        for x in &e {
+            bytes.extend_from_slice(&element_to_bytes(*x));
+        }
+        assert_ne!(base, digest_of_proof(&bytes));
+    }
+
+    #[test]
+    fn digest_pi_codifica_la_longitud() {
+        // Sin la longitud, una lista vacia y una con un cero darian los mismos
+        // bytes salvo por ceros finales: el molde del §116 los separa.
+        assert_ne!(digest_pi(1, 1, &[]), digest_pi(1, 1, &[BaseElement::ZERO]));
+        assert_ne!(
+            digest_pi(1, 1, &[BaseElement::ZERO]),
+            digest_pi(1, 1, &[BaseElement::ZERO, BaseElement::ZERO])
+        );
+    }
+
+    #[test]
     fn el_tag_separa_el_ancla_y_pincha_su_valor() {
         // D-A del RFC-0012: el dominio por delante, como el acuse y el
         // recibo. Sin el, la huella del ancla seria el merge pelado de sus
@@ -1629,6 +1721,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: u64 produccion DOMINIO_RECEP 0x52454345505F5631
 // REGISTRO: u64 produccion DOMINIO_ANCLA 0x414E434C415F5631
 // REGISTRO: u64 produccion DOMINIO_ACTA 0x41435441535F5631
+// REGISTRO: u64 produccion DOMINIO_RECEP_V2 0x52454345505F5632
 // REGISTRO: bytes ZK-SSL-ledger-key-v1
 // REGISTRO: bytes ZK-SSL-epoch-head
 // REGISTRO: bytes ZK-SSL-keystore-v1
@@ -1641,6 +1734,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: bytes ZK-SSL-key-act
 // REGISTRO: bytes ZK-SSL-ledger-key-v2
 // REGISTRO: bytes ZK-SSL-keystore-v2
+// REGISTRO: bytes ZK-SSL-public-inputs-v1
 
 /// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
 /// congelacion no pueda reutilizarse como autorizacion de emision.
@@ -1698,6 +1792,11 @@ const DOMINIO_CLAVE_ANCLA: &[u8] = b"ZK-SSL-anchor-key-v1";
 /// y el molde del §116 la codifica; en Rescue, `commit_operation` supone
 /// longitud fija por dominio.
 const DOMINIO_LOTE: &[u8] = b"ZK-SSL-batch-v1";
+
+/// **Dominio del digest de las entradas publicas** (RFC-0019, E3; §773): la
+/// familia bytes, por la razon del lote: cada familia de prueba tiene sus
+/// entradas, y de longitud distinta.
+const DOMINIO_PI: &[u8] = b"ZK-SSL-public-inputs-v1";
 
 /// El molde compartido de los resumenes de bytes: dominio y **longitud
 /// codificada** por delante (§116: dos entradas que difieran en ceros
@@ -1768,6 +1867,27 @@ pub fn hash_del_lote(operaciones: &[(Digest, u64, u64)]) -> Digest {
         datos.extend_from_slice(&posicion.to_le_bytes());
     }
     resumen_con_dominio(DOMINIO_LOTE, &datos)
+}
+
+/// **`digest_pi`, el digest de las entradas publicas** de una prueba recibida
+/// (RFC-0019, E3; §773): la familia y la version de su AIR, en `u16` LE -los
+/// bytes que la marca v2 del RFC-0018 les da-, y los elementos de sus entradas
+/// publicas en el orden de `to_elements()` -los que entran en la semilla de
+/// Fiat-Shamir-, ocho bytes LE cada uno. `k` no se escribe: va en la longitud
+/// que el molde codifica (4 + 8 · k).
+///
+/// ⚠️ **Ata la familia y la version, no el perfil** (§707): dos pruebas de
+/// familias distintas con las mismas entradas no dan el mismo `digest_pi`.
+/// Los numeros los asigna el registro de la D-G del RFC-0018; aqui son datos,
+/// y el cero no se valida: un PRODUCTOR no rechaza.
+pub fn digest_pi(familia: u16, version_air: u16, entradas: &[BaseElement]) -> Digest {
+    let mut datos = Vec::with_capacity(4 + entradas.len() * 8);
+    datos.extend_from_slice(&familia.to_le_bytes());
+    datos.extend_from_slice(&version_air.to_le_bytes());
+    for e in entradas {
+        datos.extend_from_slice(&element_to_bytes(*e));
+    }
+    resumen_con_dominio(DOMINIO_PI, &datos)
 }
 
 /// **Sello de autorizacion** (§278): lo que una via delegada asienta en
