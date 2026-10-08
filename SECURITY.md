@@ -729,6 +729,26 @@ gasto se puede adivinar, los nonces pueden repetirse y dos ficheros cifrados pue
 sal. Ningún test lo comprueba, ni puede. Fiat-Shamir no usa azar: la moneda sale de lo que la
 prueba compromete.
 
+### 3.12 El guardián del índice arrancaba a veces en tmpfs — ⚠️ MEDIDO, cerrado en Linux (§740)
+
+El guardián del índice XMSS se niega a arrancar donde `fsync` no persiste, porque un contador que
+se pierde al apagar reabre en 0, y con él las hojas ya gastadas vuelven a parecer libres. Hasta el
+§740 lo decidía sólo por tiempos, con la media de veinte escrituras, y fallaba abierto: una sola
+escritura lenta bastaba. Medido en el contenedor de una sesión (`AUDITORIA.md` §740): de 2 a 11
+aperturas de cada 2000 arrancaban en `/dev/shm`, en reposo como con carga, y el canon del autor
+salió ROJO el 08-10-2026 porque el cofirmante del testigo arrancó allí una vez. El único test que
+debía ejercitar la negativa en el guardián se saltaba siempre con el `df` de GNU.
+
+**Cerrado en Linux** en el §740: el guardián lee el tipo del sistema de ficheros del descriptor en
+`/proc/self/mountinfo` y se niega en `tmpfs`, `ramfs`, `devtmpfs` y `rootfs` sin medir nada, en la
+carpeta y en el fichero del contador; y la medida de `fsync` queda como segunda red, con la mediana.
+Medido: 8000 de 8000 aperturas en `/dev/shm` negadas por el tipo, y ninguna de 538 000 arrancó con
+la mediana sola. **Residuo**: fuera de Linux sigue habiendo sólo la medida; en Linux, un sistema que
+no se llama como los de la lista y no persiste sólo lo coge la medida si `fsync` cuesta lo mismo que
+no hacerlo, y la medida mira la carpeta, no un contador que sea un montaje propio. Y nada de esto
+protege de un disco que confirma escrituras que siguen en una caché volátil, ni de un corte de
+corriente, que no se ha medido. El guardián no está en el kit publicado: no lleva aviso ni release.
+
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
 Desde agosto de 2026 esto no es solo una capa: hay cable, nodo, SDK y un

@@ -53,14 +53,50 @@
 //! Y `/tmp` es un sitio perfectamente plausible para un fichero que
 //! alguien considere auxiliar.
 //!
-//! Por eso [`GuardianIndice::abrir`] **mide su propio `fsync` al arrancar
-//! y se niega a operar** si el coste es indistinguible de no persistir. Es
-//! la única señal disponible desde dentro del proceso.
+//! Por eso [`GuardianIndice::abrir`] **se niega a operar** donde ve que
+//! `fsync` no persiste, con dos redes (§740):
 //!
-//! ⚠️ **Los umbrales salen de UNA máquina** —WSL2 sobre un i5-1135G7— y
-//! están declarados, no derivados. Un NVMe rápido puede dar `fsync` de
-//! ~100 µs legítimos; por eso el discriminante principal es la **razón**
-//! contra no persistir, no el valor absoluto.
+//! 1. **En Linux, el tipo del sistema de ficheros**, el que da
+//!    `/proc/self/mountinfo` para el montaje del descriptor: `tmpfs`, `ramfs`,
+//!    `devtmpfs` y `rootfs` viven en memoria, y se rechazan sin medir nada
+//!    ([`GuardianError::SistemaEnMemoria`]). Se mira dos veces: en la carpeta,
+//!    con el fichero de prueba, y en el fichero del contador ya abierto, que
+//!    puede ser un montaje propio (`mount --bind` de un fichero).
+//! 2. **El coste de `fsync`**, medido al arrancar en la carpeta: la mediana por
+//!    escritura con `fsync` frente a sin él ([`GuardianError::PersistenciaFalsa`]).
+//!    Cubre lo que la primera no alcanza: fuera de Linux o sin `/proc`, y un
+//!    sistema que no se llama como los de la lista y donde `fsync` cuesta lo
+//!    mismo que no hacerlo (un `overlay` con la capa de arriba en `tmpfs`: 22 000
+//!    de 22 000 aperturas negadas en el contenedor de §740).
+//!
+//! Lo que ninguna de las dos ve —derivado, no medido—: fuera de Linux o sin
+//! `/proc`, un contador que sea un montaje propio en memoria, porque la segunda
+//! mide la carpeta y no el fichero; en Linux, ese montaje propio si su sistema
+//! no se llama como los de la lista; y un sistema de red o de paso —NFS, 9p,
+//! `virtiofs`, FUSE— cuyo otro lado viva en memoria, donde `fsync` cuesta un
+//! viaje y pasa el suelo.
+//!
+//! ⚠️ **Hasta §740 sólo existía la segunda, y con la media de veinte
+//! escrituras**, y fallaba ABIERTA, en reposo y con carga: para negarse hacían
+//! falta la razón bajo el mínimo **y** el coste bajo el suelo, y una sola
+//! escritura lenta sacaba la media de uno de los dos (con las cifras de
+//! `/dev/shm`, bastaba una de 200 µs). Medido con `GuardianIndice::abrir` en el
+//! contenedor de §740 (Linux, 4 CPU, `/dev/shm` en tmpfs): de 2 a 11 aperturas
+//! de cada 2000 arrancaban, en reposo como con cuatro bucles ocupando las CPU,
+//! y 265 de 76 000 mientras corría la suite de `zk-ssl-cli`; la escritura más
+//! lenta fue de 995 µs, y en 2000 rondas la media llegó a 51,2 µs y la mediana
+//! no pasó de 3,1 µs. Por qué hay escrituras lentas no está medido. Con §740,
+//! esas aperturas se niegan por el tipo, 8000 de 8000; y la mediana sola, con
+//! el tipo apagado en una copia, no dejó arrancar ninguna de 538 000.
+//!
+//! ⚠️ **Los umbrales salen de UNA máquina** —WSL2 sobre un i5-1135G7—, con
+//! medias, y están declarados, no derivados; con medianas sólo se han medido en
+//! el contenedor de §740. Un NVMe rápido puede dar `fsync` de ~100 µs
+//! legítimos; por eso el discriminante principal es la **razón** contra no
+//! persistir, no el valor absoluto. Con la mediana, un disco con `fsync` de 10
+//! a 20 µs queda más cerca de los dos umbrales que con la media, que arrastraba
+//! sus escrituras lentas: si se niega, se niega de más, que es el lado seguro.
+//! No se ha medido.
 //!
 //! ## ⚠️ Lo que esto NO garantiza
 //!
@@ -132,17 +168,28 @@ const fn ancho_indice() -> usize {
 
 /// Cuántas escrituras usa la autocomprobación de arranque.
 const MUESTRAS_AUTOCOMPROBACION: u32 = 20;
+// La mediana de una muestra vacía no existe: que no compile.
+const _: () = assert!(MUESTRAS_AUTOCOMPROBACION > 0);
 
 /// ⚠️ **Umbral DECLARADO, no derivado.** `fsync` tiene que costar al menos
 /// esta razón frente a escribir sin persistir. Medido en K.1: ext4 dio
-/// **382×** y tmpfs **1×**, así que 10 separa los dos casos con dos
-/// órdenes de margen por el lado bueno.
+/// **382×** y tmpfs **1×**, así que 10 separa los dos casos con 38 veces de
+/// margen por el lado bueno (decía «dos órdenes»; corregido en el §740).
 const RAZON_MINIMA: f64 = 10.0;
 
-/// Suelo absoluto, como segunda red. Un NVMe rápido hace `fsync` en
+/// Suelo absoluto de la segunda red: sólo se niega si, además de la razón, la
+/// mediana con `fsync` queda por debajo. Un NVMe rápido hace `fsync` en
 /// ~100 µs legítimos, así que esto se queda muy por debajo: solo caza el
 /// caso «no hay disco».
 const SUELO_MICROS: f64 = 20.0;
+
+/// ⚠️ §740 · Los sistemas de ficheros que viven en memoria: `fsync` devuelve
+/// éxito en ellos y nada sobrevive a un apagado. `devtmpfs` es el `tmpfs` de
+/// `/dev`, y `rootfs`, el del arranque (el initramfs), que es `ramfs` o
+/// `tmpfs`. La lista es declarada, no exhaustiva: un `overlay` cuya capa de
+/// arriba esté en memoria no se llama así, y ése lo coge, si lo coge, la medida
+/// de `fsync` (22 000 de 22 000 en el contenedor de §740).
+const SISTEMAS_EN_MEMORIA: [&str; 4] = ["tmpfs", "ramfs", "devtmpfs", "rootfs"];
 
 /// Lee el índice del SK: bytes `[4, 9)` en **big-endian**.
 ///
@@ -267,9 +314,21 @@ pub enum GuardianError {
     IndiceFueraDeCampo { indice: u64, ancho: usize },
     /// El fichero existe pero no tiene ocho bytes.
     Corrupto { bytes: usize },
-    /// ⚠️ `fsync` no cuesta nada: casi seguro `tmpfs` o un montaje sin
-    /// persistencia real. **Operar aquí pondría la clave en riesgo.**
+    /// ⚠️ `fsync` no cuesta nada: un montaje sin persistencia real. **Operar
+    /// aquí pondría la clave en riesgo.** En Linux, `tmpfs` y los demás de
+    /// [`SISTEMAS_EN_MEMORIA`] se rechazan antes por su nombre
+    /// ([`Self::SistemaEnMemoria`]); aquí llega lo que no se llama así —un
+    /// `overlay` con la capa de arriba en memoria— y, fuera de Linux o sin
+    /// `/proc`, el propio `tmpfs`. Los dos tiempos son MEDIANAS por escritura
+    /// desde §740; hasta entonces, medias. Si la mediana sin `fsync` es 0, la
+    /// razón es infinita y decide el suelo.
     PersistenciaFalsa { con_fsync_us: f64, sin_fsync_us: f64, razon: f64 },
+    /// ⚠️ §740 · El fichero vive en un sistema de ficheros **en memoria**
+    /// ([`SISTEMAS_EN_MEMORIA`]), según `/proc/self/mountinfo`: `fsync`
+    /// devuelve éxito sin persistir nada, y el contador se pierde al apagar.
+    /// Sólo en Linux, y sin medir nada. `ruta` es lo que se miró: la carpeta,
+    /// o el fichero del contador si es él el que está en memoria.
+    SistemaEnMemoria { ruta: String, tipo: String },
     /// ⚠️ **El SK no tiene la forma esperada: la serialización de upstream
     /// cambió.** Vive aquí desde §298, con [`indice_de_sk`]: quien custodia
     /// el índice es quien tiene que saber leerlo.
@@ -318,13 +377,39 @@ impl std::fmt::Display for GuardianError {
                 f,
                 "guardián del índice: el fichero del contador tiene {bytes} bytes, no 8"
             ),
-            GuardianError::PersistenciaFalsa { con_fsync_us, sin_fsync_us, razon } => write!(
+            GuardianError::PersistenciaFalsa { con_fsync_us, sin_fsync_us, razon } => {
+                write!(
+                    f,
+                    "guardián del índice: `fsync` no persiste nada aquí \
+                     ({con_fsync_us:.1} µs con fsync frente a {sin_fsync_us:.1} µs sin él, \
+                     mediana por escritura, "
+                )?;
+                if razon.is_finite() {
+                    write!(
+                        f,
+                        "razón {razon:.1}×, mínimo {RAZON_MINIMA:.0}×, y suelo \
+                         {SUELO_MICROS:.0} µs"
+                    )?;
+                } else {
+                    write!(
+                        f,
+                        "sin razón: el reloj no midió la escritura sin fsync, y decide \
+                         el suelo de {SUELO_MICROS:.0} µs"
+                    )?;
+                }
+                write!(
+                    f,
+                    "). Casi seguro es memoria —tmpfs, o un overlay \
+                     con la capa de arriba en tmpfs— o un montaje sin disco. \
+                     Reusar un índice XMSS filtra la clave: el nodo NO arranca así."
+                )
+            }
+            GuardianError::SistemaEnMemoria { ruta, tipo } => write!(
                 f,
-                "guardián del índice: `fsync` no persiste nada aquí \
-                 ({con_fsync_us:.1} µs con fsync frente a {sin_fsync_us:.1} µs sin él, \
-                 razón {razon:.1}×, mínimo {RAZON_MINIMA:.0}×). \
-                 Casi seguro es tmpfs o un montaje sin disco. \
-                 Reusar un índice XMSS filtra la clave: el nodo NO arranca así."
+                "guardián del índice: {ruta} está en un sistema de ficheros `{tipo}`, \
+                 que vive en memoria: `fsync` devuelve éxito sin persistir nada, y el \
+                 contador se pierde al apagar. Reusar un índice XMSS filtra la clave: \
+                 el nodo NO arranca así. Pon el contador en un disco"
             ),
             GuardianError::PermisosAbiertos { ruta, modo } => write!(
                 f,
@@ -595,10 +680,11 @@ impl GuardianIndice {
     /// verdad** en ese sistema de ficheros.
     ///
     /// ⚠️ §709, en este orden: se rechaza un enlace simbólico; la autocomprobación
-    /// mide la carpeta CANÓNICA, la del fichero de verdad; se toma el cerrojo; y
-    /// sólo entonces se lee y se reescribe el valor. Un contador recién creado se
-    /// persiste con `fsync` del fichero y de su carpeta, para que su NOMBRE
-    /// también sobreviva a un corte.
+    /// mide la carpeta CANÓNICA, la del fichero de verdad; se abre el contador y se
+    /// mira su sistema de ficheros (§740); se toma el cerrojo; y sólo entonces se
+    /// lee y se reescribe el valor. Un contador recién creado se persiste con
+    /// `fsync` del fichero y de su carpeta, para que su NOMBRE también sobreviva a
+    /// un corte.
     pub fn abrir(ruta: impl AsRef<Path>) -> Result<Self, GuardianError> {
         let io = |e: std::io::Error| GuardianError::Io(e.to_string());
         let pedida = ruta.as_ref();
@@ -657,6 +743,11 @@ impl GuardianIndice {
                 )),
             });
         }
+        // ⚠️ §740 · Y el sistema de ficheros, otra vez y sobre lo ABIERTO: la
+        //    autocomprobación miró la carpeta, y el contador puede ser un montaje
+        //    propio (`mount --bind` de un fichero de `/dev/shm`), que no es un enlace
+        //    y que nada de lo de arriba ve.
+        rechazar_si_en_memoria(&cerrojo, &ruta)?;
         match cerrojo.try_lock() {
             Ok(()) => {}
             Err(TryLockError::WouldBlock) => {
@@ -781,40 +872,122 @@ impl GuardianIndice {
         Ok(())
     }
 
-    /// Mide `fsync` contra no-`fsync` y decide si este sitio persiste.
+    /// Decide si este sitio persiste, con las dos redes de la doc del crate
+    /// (§740): primero el sistema de ficheros de un fichero de prueba en la
+    /// carpeta, y sólo si no lo descarta, el coste de `fsync` en él.
     fn comprobar_persistencia(carpeta: &Path) -> Result<(), GuardianError> {
-        let prueba = carpeta.join(".guardian-autocomprobacion");
-        let medir = |con_fsync: bool| -> Result<f64, GuardianError> {
-            let mut f = OpenOptions::new()
-                .create(true)
-                .write(true)
-                .truncate(true)
-                .open(&prueba)
-                .map_err(|e| GuardianError::Io(e.to_string()))?;
-            let t0 = Instant::now();
-            for n in 0..MUESTRAS_AUTOCOMPROBACION {
-                f.seek(SeekFrom::Start(0)).map_err(|e| GuardianError::Io(e.to_string()))?;
-                f.write_all(&(n as u64).to_le_bytes())
-                    .map_err(|e| GuardianError::Io(e.to_string()))?;
-                if con_fsync {
-                    f.sync_all().map_err(|e| GuardianError::Io(e.to_string()))?;
-                }
-            }
-            Ok(t0.elapsed().as_secs_f64() * 1e6 / MUESTRAS_AUTOCOMPROBACION as f64)
-        };
-        let sin = medir(false)?;
-        let con = medir(true)?;
-        let _ = std::fs::remove_file(&prueba);
+        comprobar_persistencia_con(carpeta, medir)
+    }
+}
 
-        let razon = if sin > 0.0 { con / sin } else { f64::INFINITY };
-        if razon < RAZON_MINIMA && con < SUELO_MICROS {
-            return Err(GuardianError::PersistenciaFalsa {
-                con_fsync_us: con,
-                sin_fsync_us: sin,
-                razon,
-            });
+/// ⚠️ §740 · [`GuardianIndice::comprobar_persistencia`] con la medida como
+/// argumento, para que un test pueda darle tiempos de `tmpfs` en un disco y ver
+/// que la segunda red, cableada, se niega: sin eso, cambiar la llamada a
+/// [`decidir`] por un `Ok` no lo cazaba ningún test, porque en Linux la primera
+/// red llega antes.
+///
+/// ⚠️ El fichero de prueba lleva un nombre propio —el PID, la hora en ns y una
+/// serie— y se crea con `create_new` (`O_CREAT|O_EXCL`), que no sigue un enlace
+/// simbólico ni abre lo que ya existe. Hasta §740 se llamaba siempre
+/// `.guardian-autocomprobacion` y se abría con `create` y `truncate`: un enlace
+/// puesto ahí por quien pudiera escribir en la carpeta se seguía —se medía otro
+/// sitio, y se truncaba el fichero al que apuntara—, y dos guardianes que se
+/// comprobaran a la vez en la misma carpeta compartían el fichero. Se borra en
+/// todos los casos; si el proceso muere en medio, queda uno, con su nombre.
+fn comprobar_persistencia_con(
+    carpeta: &Path,
+    mut medir: impl FnMut(&mut File, bool) -> Result<Vec<f64>, GuardianError>,
+) -> Result<(), GuardianError> {
+    static SERIE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let ns = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos());
+    let serie = SERIE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let prueba =
+        carpeta.join(format!(".guardian-autocomprobacion-{}-{ns}-{serie}", std::process::id()));
+    let mut f = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&prueba)
+        .map_err(|e| GuardianError::Io(format!("{}: {e}", prueba.display())))?;
+    let veredicto = rechazar_si_en_memoria(&f, carpeta).and_then(|()| {
+        let sin = medir(&mut f, false)?;
+        let con = medir(&mut f, true)?;
+        decidir(&con, &sin)
+    });
+    drop(f);
+    let _ = std::fs::remove_file(&prueba);
+    veredicto
+}
+
+/// ⚠️ §740 · **La primera red**: si el descriptor está en un sistema de ficheros
+/// en memoria, según `/proc/self/mountinfo`, se rechaza, y el error nombra
+/// `ruta`. Si el sistema no lo dice —fuera de Linux, sin `/proc`, un núcleo sin
+/// `mnt_id` en `fdinfo`—, no rechaza. En la carpeta decide después la segunda
+/// red; en el fichero del contador no hay otra, y un montaje propio en memoria
+/// pasa.
+fn rechazar_si_en_memoria(f: &File, ruta: &Path) -> Result<(), GuardianError> {
+    match sistema_de_ficheros(f) {
+        Some(tipo) if SISTEMAS_EN_MEMORIA.contains(&tipo.as_str()) => {
+            Err(GuardianError::SistemaEnMemoria { ruta: ruta.display().to_string(), tipo })
         }
-        Ok(())
+        _ => Ok(()),
+    }
+}
+
+/// ⚠️ §740 · Lo que tarda cada una de las [`MUESTRAS_AUTOCOMPROBACION`]
+/// escrituras de ocho bytes, en µs, con `fsync` detrás de cada una o sin él.
+/// Una cifra por escritura, y no el total, porque lo que se compara es la
+/// mediana.
+fn medir(f: &mut File, con_fsync: bool) -> Result<Vec<f64>, GuardianError> {
+    let io = |e: std::io::Error| GuardianError::Io(e.to_string());
+    let mut tiempos = Vec::with_capacity(MUESTRAS_AUTOCOMPROBACION as usize);
+    for n in 0..MUESTRAS_AUTOCOMPROBACION {
+        let t0 = Instant::now();
+        f.seek(SeekFrom::Start(0)).map_err(io)?;
+        f.write_all(&(n as u64).to_le_bytes()).map_err(io)?;
+        if con_fsync {
+            f.sync_all().map_err(io)?;
+        }
+        tiempos.push(t0.elapsed().as_secs_f64() * 1e6);
+    }
+    Ok(tiempos)
+}
+
+/// ⚠️ §740 · **La segunda red**, sin reloj para poder probarla: se niega si la
+/// mediana con `fsync` cuesta menos de [`RAZON_MINIMA`] veces la mediana sin él
+/// **y** menos de [`SUELO_MICROS`] µs. Los umbrales son los de siempre; lo que
+/// cambia en §740 es la mediana en lugar de la media. Con la media, una sola
+/// escritura lenta bastaba para arrancar en `tmpfs`. La mediana de veinte es la
+/// media de la décima y la undécima: mientras once sean rápidas sale de ellas, y
+/// nueve lentas no la mueven; con diez, arranca si son lo bastante lentas.
+///
+/// ⚠️ Si la mediana sin `fsync` es 0 —un reloj más grueso que una escritura, que
+/// es más probable ahora que se mide cada una—, la razón no dice nada y decide el
+/// suelo solo. Con la razón infinita, eso arrancaba.
+fn decidir(con: &[f64], sin: &[f64]) -> Result<(), GuardianError> {
+    let (con, sin) = (mediana(con), mediana(sin));
+    let razon = if sin > 0.0 { con / sin } else { f64::INFINITY };
+    if con < SUELO_MICROS && (sin <= 0.0 || razon < RAZON_MINIMA) {
+        return Err(GuardianError::PersistenciaFalsa {
+            con_fsync_us: con,
+            sin_fsync_us: sin,
+            razon,
+        });
+    }
+    Ok(())
+}
+
+/// La mediana de una muestra no vacía: con un número par de valores, la media de
+/// los dos de en medio.
+fn mediana(muestra: &[f64]) -> f64 {
+    let mut v = muestra.to_vec();
+    v.sort_by(f64::total_cmp);
+    let m = v.len() / 2;
+    if v.len().is_multiple_of(2) {
+        (v[m - 1] + v[m]) / 2.0
+    } else {
+        v[m]
     }
 }
 
@@ -890,10 +1063,8 @@ fn quien_lo_tiene(f: &File) -> (Option<u32>, Option<String>) {
 /// tercer campo, en decimal). `None` si el sistema no lo dice.
 #[cfg(target_os = "linux")]
 fn dispositivo_del_montaje(f: &File) -> Option<(u64, u64)> {
-    use std::os::fd::AsRawFd;
-    let info = std::fs::read_to_string(format!("/proc/self/fdinfo/{}", f.as_raw_fd())).ok()?;
-    let montaje = info.lines().find_map(|l| l.strip_prefix("mnt_id:"))?.trim().to_string();
-    let montajes = std::fs::read_to_string("/proc/self/mountinfo").ok()?;
+    let montaje = montaje_del_descriptor(f)?;
+    let montajes = leer_mountinfo()?;
     montajes.lines().find_map(|l| {
         let mut campos = l.split_whitespace();
         if campos.next()? != montaje {
@@ -901,6 +1072,66 @@ fn dispositivo_del_montaje(f: &File) -> Option<(u64, u64)> {
         }
         let (mayor, menor) = campos.nth(1)?.split_once(':')?;
         Some((mayor.parse().ok()?, menor.parse().ok()?))
+    })
+}
+
+/// ⚠️ §740 · `/proc/self/mountinfo` entero, con `from_utf8_lossy` y no con
+/// `read_to_string`: el núcleo sólo escapa el espacio, el tabulador, el salto de
+/// línea y la barra invertida, y cualquier otro byte de una ruta sale tal cual.
+/// Un solo byte que no fuera UTF-8, en cualquier montaje, hacía fallar la
+/// lectura entera, y con ella la primera red. Los campos que se leen —el id, el
+/// dispositivo y el tipo— son ASCII.
+#[cfg(target_os = "linux")]
+fn leer_mountinfo() -> Option<String> {
+    let bytes = std::fs::read("/proc/self/mountinfo").ok()?;
+    Some(String::from_utf8_lossy(&bytes).into_owned())
+}
+
+/// El `mnt_id` del montaje de un descriptor, de `/proc/self/fdinfo/FD` (desde
+/// Linux 3.15). `None` si el sistema no lo dice.
+#[cfg(target_os = "linux")]
+fn montaje_del_descriptor(f: &File) -> Option<String> {
+    use std::os::fd::AsRawFd;
+    let info = std::fs::read_to_string(format!("/proc/self/fdinfo/{}", f.as_raw_fd())).ok()?;
+    Some(info.lines().find_map(|l| l.strip_prefix("mnt_id:"))?.trim().to_string())
+}
+
+/// ⚠️ §740 · El tipo del sistema de ficheros de un descriptor: el de su montaje
+/// en `/proc/self/mountinfo`. Por el montaje del descriptor, y no por la ruta,
+/// porque en una ruta puede haber montajes apilados —en el contenedor donde se
+/// escribió §740, `/dev/shm` tenía dos— y un fichero puede ser un montaje
+/// propio. `None` si el sistema no lo dice.
+#[cfg(target_os = "linux")]
+fn sistema_de_ficheros(f: &File) -> Option<String> {
+    let montaje = montaje_del_descriptor(f)?;
+    let montajes = leer_mountinfo()?;
+    tipo_en_mountinfo(&montajes, &montaje).map(str::to_string)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn sistema_de_ficheros(_: &File) -> Option<String> {
+    None
+}
+
+/// ⚠️ §740 · El tipo del montaje `montaje` en un texto de `/proc/self/mountinfo`.
+/// Cada línea es `ID PADRE MAYOR:MENOR RAÍZ PUNTO OPCIONES [OPCIONALES...] - TIPO
+/// ORIGEN SUPEROPCIONES` (`proc_pid_mountinfo(5)`). Los campos opcionales son
+/// cero o más, así que el tipo no está en una columna fija, sino detrás del campo
+/// `-`, que ningún otro puede ser: un opcional es `etiqueta[:valor]`, y un
+/// espacio en una ruta va escapado como `\040`.
+///
+/// ⚠️ Los campos se separan por UN espacio ASCII, y sólo por él. Con
+/// `split_whitespace` se partía también por los espacios de Unicode —U+00A0, por
+/// ejemplo—, que el núcleo no escapa: un punto de montaje con `\u{a0}-` sacaba un
+/// campo `-` falso, y el tipo leído eran las opciones.
+#[cfg(any(target_os = "linux", test))]
+fn tipo_en_mountinfo<'a>(mountinfo: &'a str, montaje: &str) -> Option<&'a str> {
+    mountinfo.lines().find_map(|l| {
+        let mut campos = l.split(' ');
+        if campos.next()? != montaje {
+            return None;
+        }
+        campos.skip_while(|c| *c != "-").nth(1)
     })
 }
 
@@ -1165,53 +1396,93 @@ mod tests {
         }
     }
 
+    /// El tipo del sistema de ficheros de `ruta` segun `/proc/self/mounts`: el del
+    /// punto de montaje mas largo que la contiene, y entre iguales el ultimo, que es
+    /// el de arriba. Otro camino que el del guardian —la ruta y no el `mnt_id` del
+    /// descriptor—, a proposito. `None` fuera de Linux o si no se puede leer.
+    fn tipo_segun_mounts(ruta: &Path) -> Option<String> {
+        let ruta = std::fs::canonicalize(ruta).ok()?;
+        let texto = String::from_utf8_lossy(&std::fs::read("/proc/self/mounts").ok()?).into_owned();
+        let mut mejor: Option<(usize, String)> = None;
+        for linea in texto.lines() {
+            let campos: Vec<&str> = linea.split(' ').collect();
+            let (Some(punto), Some(tipo)) = (campos.get(1), campos.get(2)) else { continue };
+            let largo = punto.len();
+            if ruta.starts_with(punto) && mejor.as_ref().is_none_or(|(n, _)| largo >= *n) {
+                mejor = Some((largo, tipo.to_string()));
+            }
+        }
+        mejor.map(|(_, t)| t)
+    }
+
+    /// ¿Da este sistema el `mnt_id` de un descriptor abierto en `ruta`? Es lo que
+    /// necesita la primera red (Linux desde 3.15). Se lee `fdinfo` aqui mismo, sin
+    /// pasar por el guardian: si su lector se rompiera, este test no debe creer que
+    /// el sistema no lo da.
+    #[cfg(target_os = "linux")]
+    fn da_mnt_id(ruta: &Path) -> bool {
+        use std::os::fd::AsRawFd;
+        let Ok(d) = File::open(ruta) else { return false };
+        std::fs::read_to_string(format!("/proc/self/fdinfo/{}", d.as_raw_fd()))
+            .is_ok_and(|info| info.lines().any(|l| l.starts_with("mnt_id:")))
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    fn da_mnt_id(_: &Path) -> bool {
+        false
+    }
+
     #[test]
     fn en_tmpfs_se_niega_a_operar() {
         // ⚠️ EL TEST QUE JUSTIFICA LA AUTOCOMPROBACION. K.1 midio que en
         // tmpfs `fsync` cuesta lo MISMO que no hacerlo (razon 1x, frente a
         // 382x en ext4): devuelve exito sin persistir nada.
         //
-        // Si la maquina de pruebas no tiene /dev/shm ni un temp_dir en
-        // tmpfs, el test se salta EN VOZ ALTA en vez de fingir que paso.
+        // ⚠️⚠️ §740 · Hasta §740 buscaba el tmpfs con `df -T --output=fstype`, y en
+        //    el `df` de GNU `-T` y `--output` no van juntos: salia con error, sin
+        //    nada en la salida, y el test se saltaba SIEMPRE, con un aviso por
+        //    stderr que el arnes solo enseña con `--nocapture`. Decia saltarse «EN
+        //    VOZ ALTA», y en Linux no probaba nada. Ahora el tipo lo dice
+        //    `/proc/self/mounts`, sin herramientas de fuera; y en Linux no
+        //    encontrar ningun tmpfs es un fallo, no un salto. Fuera de Linux se
+        //    salta, con el aviso.
         let candidatos = [PathBuf::from("/dev/shm"), std::env::temp_dir()];
-        let mut probado = false;
-        for base in candidatos {
-            if !base.is_dir() {
-                continue;
+        let base = candidatos
+            .into_iter()
+            .find(|b| b.is_dir() && tipo_segun_mounts(b).as_deref() == Some("tmpfs"));
+        let Some(base) = base else {
+            if cfg!(target_os = "linux") {
+                panic!(
+                    "en Linux tiene que haber un tmpfs donde probar el rechazo, y segun \
+                     /proc/self/mounts no lo son ni /dev/shm ni el temp_dir"
+                );
             }
-            let salida = std::process::Command::new("df")
-                .args(["-T", "--output=fstype"])
-                .arg(&base)
-                .output();
-            let es_tmpfs = match salida {
-                Ok(o) => String::from_utf8_lossy(&o.stdout).contains("tmpfs"),
-                Err(_) => false,
-            };
-            if !es_tmpfs {
-                continue;
-            }
-            probado = true;
-            let d = base.join(format!("guardian_tmpfs_{}", std::process::id()));
-            let _ = std::fs::remove_dir_all(&d);
-            std::fs::create_dir_all(&d).expect("crear");
-            let r = GuardianIndice::abrir(d.join("indice.bin"));
-            let _ = std::fs::remove_dir_all(&d);
-            match r {
-                Err(GuardianError::PersistenciaFalsa { razon, .. }) => {
-                    assert!(razon < RAZON_MINIMA, "razon {razon} deberia estar bajo el minimo");
-                }
-                otro => panic!(
-                    "en {} —que es tmpfs— el guardian DEBE negarse, y dio: {otro:?}",
-                    base.display()
-                ),
-            }
-            break;
-        }
-        if !probado {
             eprintln!(
                 "AVISO: no se encontro ningun tmpfs donde probar el rechazo. \
                  La autocomprobacion NO se ha ejercitado en este entorno."
             );
+            return;
+        };
+        let d = base.join(format!("guardian_tmpfs_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let r = GuardianIndice::abrir(d.join("indice.bin"));
+        let _ = std::fs::remove_dir_all(&d);
+        // ⚠️ §740 · Donde el sistema da el `mnt_id` del descriptor, lo dice el tipo,
+        //    sin medir, y el resultado es siempre el mismo; donde no, la medida de
+        //    `fsync`. Hasta §740 era siempre la medida, que en tmpfs arrancaba de 2 a
+        //    11 veces de cada 2000, tambien en reposo.
+        let con_mnt_id = da_mnt_id(&base);
+        match r {
+            Err(GuardianError::SistemaEnMemoria { tipo, .. }) if con_mnt_id => {
+                assert_eq!(tipo, "tmpfs")
+            }
+            Err(GuardianError::PersistenciaFalsa { .. }) if !con_mnt_id => {}
+            otro => panic!(
+                "en {} —que es tmpfs— el guardian DEBE negarse (y por el tipo si hay \
+                 mnt_id: {con_mnt_id}), y dio: {otro:?}",
+                base.display()
+            ),
         }
     }
 
@@ -1220,6 +1491,125 @@ mod tests {
         // La otra mitad: donde `fsync` cuesta, el guardian arranca.
         let p = en_disco("disco_real");
         GuardianIndice::abrir(&p).expect("en disco real el guardian debe arrancar");
+    }
+
+    /// ⚠️⚠️ §740 · EL FALSADOR DE LA MEDIANA. Diecinueve escrituras con `fsync` de
+    /// tmpfs (1,2 µs) y una lenta, de 5 ms, que es una cifra de ejemplo: la media es
+    /// 251 µs, y con ella el guardian ARRANCABA (con estas cifras bastan unos
+    /// 180 µs). Es la forma que midio la sonda de §740: la escritura mas lenta, de
+    /// 995 µs, y medias de ronda de hasta 51,2 µs con ninguna mediana por encima de
+    /// 3,1 µs. Con la mediana, 1,2 µs: se niega, y sigue negandose con nueve lentas
+    /// de veinte. Con diez, la mediana ya sale de las lentas, y se dice.
+    #[test]
+    fn unas_escrituras_lentas_no_hacen_persistente_un_tmpfs() {
+        let sin = [1.0; 20];
+        let mut con = [1.2; 20];
+        con[7] = 5000.0;
+        let media = con.iter().sum::<f64>() / 20.0;
+        assert!(
+            media / sin[0] >= RAZON_MINIMA || media >= SUELO_MICROS,
+            "con la media de antes, esto arrancaba: {media} µs"
+        );
+        match decidir(&con, &sin) {
+            Err(GuardianError::PersistenciaFalsa { con_fsync_us, razon, .. }) => {
+                assert_eq!(con_fsync_us, 1.2, "el error da la mediana, no la media");
+                assert!(razon < RAZON_MINIMA, "razon {razon}");
+            }
+            otro => panic!("una escritura lenta NO hace persistente un tmpfs: {otro:?}"),
+        }
+        for c in con.iter_mut().take(9) {
+            *c = 5000.0;
+        }
+        assert!(decidir(&con, &sin).is_err(), "nueve lentas de veinte tampoco");
+        con[9] = 5000.0;
+        assert!(mediana(&con) > SUELO_MICROS, "con diez, la mediana sale de las lentas");
+    }
+
+    /// §740 · La otra cara: la mediana no rechaza un disco. Las cifras son las del
+    /// contenedor donde se escribio §740 (ext4): en 200 rondas, la mediana con
+    /// `fsync` mas baja fue de 114 µs, y sin el, de 0,80 a 2,19 µs. Con 114 µs pasa
+    /// por el suelo, sea cual sea la razon. Y unas pocas escrituras con `fsync`
+    /// rapidas, que la media diluia, tampoco lo tumban.
+    #[test]
+    fn la_mediana_no_rechaza_un_disco() {
+        let sin = [1.0; 20];
+        let mut con = [114.0; 20];
+        assert!(decidir(&con, &sin).is_ok(), "ext4 medido");
+        for c in con.iter_mut().take(9) {
+            *c = 1.0;
+        }
+        assert!(decidir(&con, &sin).is_ok(), "nueve rapidas de veinte no lo tumban");
+    }
+
+    /// ⚠️ §740 · Un reloj mas grueso que una escritura da una mediana sin `fsync` de
+    /// 0, y la razon sale infinita. Con ella el guardian arrancaba aunque `fsync`
+    /// tampoco costara nada; ahora decide el suelo solo.
+    #[test]
+    fn un_reloj_que_no_mide_la_escritura_no_abre_la_puerta() {
+        let sin = [0.0; 20];
+        match decidir(&[0.0; 20], &sin) {
+            Err(e @ GuardianError::PersistenciaFalsa { .. }) => {
+                assert!(e.to_string().contains("el reloj no midió"), "y lo dice: {e}")
+            }
+            otro => panic!("sin nada medido, no se arranca: {otro:?}"),
+        }
+        assert!(decidir(&[5.0; 20], &sin).is_err(), "5 µs con fsync, bajo el suelo");
+        assert!(decidir(&[114.0; 20], &sin).is_ok(), "114 µs, por encima: un disco");
+    }
+
+    /// ⚠️⚠️ §740 · La segunda red, CABLEADA. Con tiempos de tmpfs inyectados en una
+    /// carpeta de disco, la comprobacion se niega por `PersistenciaFalsa`; con los de
+    /// ext4, pasa; y el fichero de prueba no queda. Sin este test, cambiar la llamada
+    /// a `decidir` por un `Ok` no lo cazaba ninguno: en Linux la primera red llega
+    /// antes, y los demas tests de `decidir` lo llaman directamente.
+    #[test]
+    fn la_segunda_red_se_niega_con_tiempos_de_tmpfs() {
+        let carpeta = en_disco("segunda_red").parent().expect("carpeta").to_path_buf();
+        let tmpfs = |_: &mut File, con: bool| Ok(vec![if con { 1.2 } else { 1.0 }; 20]);
+        match comprobar_persistencia_con(&carpeta, tmpfs) {
+            Err(GuardianError::PersistenciaFalsa { con_fsync_us, .. }) => {
+                assert_eq!(con_fsync_us, 1.2)
+            }
+            otro => panic!("con tiempos de tmpfs, la segunda red se niega: {otro:?}"),
+        }
+        let ext4 = |_: &mut File, con: bool| Ok(vec![if con { 114.0 } else { 1.0 }; 20]);
+        comprobar_persistencia_con(&carpeta, ext4).expect("con tiempos de ext4, pasa");
+        let restos: Vec<_> =
+            std::fs::read_dir(&carpeta).expect("leer").filter_map(|e| e.ok()).collect();
+        assert!(restos.is_empty(), "el fichero de prueba no queda: {restos:?}");
+    }
+
+    /// ⚠️ §740 · El lector de `/proc/self/mountinfo`: el tipo esta detras del campo
+    /// `-`, haya campos opcionales o no, y el montaje se casa por su id ENTERO.
+    #[test]
+    fn el_tipo_del_montaje_se_lee_detras_del_separador() {
+        let texto = "\
+23 28 0:22 / /proc rw,relatime - proc proc rw
+26 25 0:24 / /dev/shm rw,relatime - tmpfs tmpfs rw,size=16480952k
+28 1 254:0 / / rw,relatime shared:1 master:2 - ext4 /dev/vda rw,discard
+36 26 0:28 / /dev/shm rw,relatime - tmpfs tmpfs rw
+260 28 0:50 / /mnt/con\\040espacio rw - ramfs none rw
+2 1 0:2 / / rw - rootfs rootfs rw
+29 28 254:16 / /roto rw sin-separador ext4
+61 28 0:52 / /srv/x\u{a0}- rw,relatime - tmpfs tmpfs rw
+";
+        assert_eq!(tipo_en_mountinfo(texto, "36"), Some("tmpfs"));
+        assert_eq!(tipo_en_mountinfo(texto, "28"), Some("ext4"), "con campos opcionales");
+        assert_eq!(tipo_en_mountinfo(texto, "260"), Some("ramfs"), "con un espacio escapado");
+        assert_eq!(tipo_en_mountinfo(texto, "2"), Some("rootfs"), "el id entero, no un prefijo");
+        assert_eq!(tipo_en_mountinfo(texto, "29"), None, "sin `-` no hay tipo");
+        assert_eq!(tipo_en_mountinfo(texto, "99"), None, "un montaje que no esta");
+        assert_eq!(
+            tipo_en_mountinfo(texto, "61"),
+            Some("tmpfs"),
+            "un espacio de Unicode en la ruta no parte un campo: el nucleo no lo escapa"
+        );
+        for tipo in ["tmpfs", "ramfs", "devtmpfs", "rootfs"] {
+            assert!(SISTEMAS_EN_MEMORIA.contains(&tipo), "{tipo} vive en memoria");
+        }
+        for tipo in ["ext4", "xfs", "btrfs", "overlay", "9p", "proc"] {
+            assert!(!SISTEMAS_EN_MEMORIA.contains(&tipo), "{tipo} no se rechaza por nombre");
+        }
     }
 
     /// ⚠️⚠️ §709 · SEC-1, EL FALSADOR: dos guardianes sobre la misma ruta, y el

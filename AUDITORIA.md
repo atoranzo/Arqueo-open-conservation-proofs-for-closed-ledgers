@@ -51057,3 +51057,233 @@ los ocho»: la corrección es este asiento. No toca `hbs-state`, que es otro rep
 del «21 de los 56» que cita el ECST. La sonda mide claves sintéticas en los 56 conjuntos y una de
 verdad sólo en el de Arqueo, y sólo en `xmss` 0.1.0-pre.0, la versión fijada, no en el `master` de
 RustCrypto. No corre el canon entero, el artefacto ni los bancos.
+
+## §740 — el guardián se niega en tmpfs por el tipo del sistema de ficheros, no por el reloj, y su medida de `fsync` va con la mediana: el canon del autor salió ROJO en `1155b7a` porque un cofirmante arrancó en `/dev/shm`
+ El commit que lleva este asiento, sobre `8beaf8d` (el §710), que es `main`: el autor fusionó allí
+el bloque de la otra sesión mientras este sello se preparaba («El número»). Un solo sello: en
+`crates/zk-ssl-guardian`, la negativa por el tipo del sistema de ficheros
+(`GuardianError::SistemaEnMemoria`), la mediana en la medida de `fsync`, el fichero de prueba con
+nombre propio, el test de tmpfs que no probaba nada y cinco tests nuevos; en `crates/zk-ssl-cli`, el
+test del cofirmante en tmpfs; el pin del guardián en `tools/canon.sh`, de 35 a 40; las cifras de
+tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; una entrada 3.12 en `SECURITY.md`; y este
+asiento. Del autor es pedir el arreglo y su forma principal; lo demás lo propuso la sesión («Quién
+lo decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. Antes del commit, una
+revisión, también de Claude Code, pidió correcciones, y se aplicaron casi todas (punto 7 de «Lo que
+hace»). El sello no toca la capa, el cable, el kit ni ningún vector: lo que cambia es dónde arrancan
+el nodo y el testigo. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este
+asiento en su sitio (en «Medido»).
+
+**El número.** Es el §740 y no el §711 por un reparto con la otra sesión de Claude Code que trabaja
+en Arqueo. El 08-10-2026 esa sesión rehízo encima de `main` (`1155b7a`) su bloque de la rama
+`claude/cool-brown-4g0hr5`, que había subido como §703 a §709 sobre `2ac6db4` y chocaba con el §703
+de `main`, y lo renumeró §704 a §710. Propuso, y esta sesión aceptó, rangos para no volver a chocar:
+§711 a §739 para ella y §740 a §769 para esta. Según esa sesión, la coordinación la pidió el autor;
+el reparto lo propuso ella, y no consta que el autor lo haya confirmado. Los números de en medio
+pueden entrar en `main` después de este. Ninguna de las siete ramas de `origin` (el `AUDITORIA.md`
+de cada una) lleva un §740, ni ningún asiento por encima del §710: `main` y
+`claude/cool-brown-4g0hr5` llegan al §710, la propia rama en `origin` al §703, y las otras cuatro al
+§685, §658, §642 y §627.
+
+**De dónde sale.** Del canon del autor sobre `1155b7a` (el anexo del §703), corrido en su máquina el
+08-10-2026 después de fusionarlo: ROJO, con un solo fallo, la fila `zk-ssl-cli`, exit 101, 138 de
+139. El test que falló es `witness::tests::el_cofirmante_hereda_la_negativa_en_tmpfs`, que abre el
+     cofirmante del testigo con su contador en `/dev/shm` y exige que no arranque: arrancó («en
+     tmpfs NO debe arrancar: fsync no persiste nada ahi», `witness.rs:5065`). En su máquina
+     `/dev/shm` es tmpfs, y la suite de `zk-ssl-cli`, corrida después cinco veces en debug, salió
+     verde las cinco (de 107 a 116 s). La sesión le pidió además repetir ese test cincuenta veces, y
+     la orden que le dio no corría ninguno: el nombre que pasaba con `--exact` no era el completo, y
+     salió «0 passed; 139 filtered out» las cincuenta. Esa repetición no midió nada.
+
+**El defecto.** El cofirmante abre el mismo guardián que el nodo (§296), y el guardián decidía si un
+sitio persiste sólo por tiempos: veinte escrituras de ocho bytes sin `fsync` y veinte con él, la
+MEDIA de cada tanda, y la negativa si `fsync` costaba menos de 10 veces no hacerlo **y** menos de 20
+µs. En tmpfs cada escritura con `fsync` cuesta lo mismo que sin él, en torno a 1 µs; pero basta UNA
+escritura lenta de las veinte para sacar la media de uno de los dos umbrales —con las cifras de
+`/dev/shm`, una de 200 µs—, y el guardián arranca. Falla abierto, con una frecuencia que sólo se ve
+contando miles de aperturas. Medido con una sonda de usar y tirar, fuera del árbol: un crate que
+depende del guardián por ruta y abre `GuardianIndice::abrir` N veces en `/dev/shm`, contando cómo
+acaba cada apertura. Con el guardián de `1155b7a`: 2 de 2000 arrancaban en reposo, 11 de 2000 con
+bucles ocupando las cuatro CPU y 6 de 2000 con una suite de tests al lado. Con el de `27eea72` (el
+§709 de la otra sesión antes de renumerar, con el mismo código del guardián que esta base): 7 y 3 de
+2000 en reposo, 11 y 2 de 2000 con cuatro bucles, y 265 de 76 000 (un 0,35 %) mientras corría la
+suite de `zk-ssl-cli`, que es la carga del canon. La carga no cambia la tasa, y por qué hay
+escrituras lentas no está medido. Por rondas, con un programa que copia la medida: en 2000 rondas en
+`/dev/shm`, la escritura con `fsync` más lenta tardó 995 µs, la media de una ronda llegó a 51,2 µs y
+su mediana no pasó de 3,1 µs.
+
+Un contador en tmpfs se pierde al apagar, y reabre en 0: es el caso del §594 (ECST §8.1), que el
+guardián no ve y que tiene que cazar la política del arranque con el segundo testigo. El fallo
+abierto no reusaba una hoja por sí solo, pero quitaba la red que existe para que ese caso no llegue
+a darse.
+
+Al falsear el arreglo salió algo más: **el test del guardián en tmpfs no probaba nada**.
+`en_tmpfs_se_niega_a_operar` buscaba un tmpfs preguntando a `df -T --output=fstype`, y en el `df` de
+GNU `-T` y `--output` no van juntos: sale con «options -T and --output are mutually exclusive» y
+nada en la salida estándar. El test lo leía como «no es tmpfs», no encontraba ningún candidato y se
+saltaba con un aviso por `eprintln!`, que el arnés sólo enseña con `--nocapture`. Pasaba siempre,
+sin ejercitar nada, en este contenedor (coreutils 9.4) y en cualquier máquina con el `df` de GNU,
+como el Ubuntu de WSL. Está así desde el primer commit de la historia pública (`cba5db9`). La
+entrada 234 dice de él que «avisa en voz alta si no encuentra un tmpfs», y el registro del ECST ya
+lo anotó como «si no encuentra tmpfs, imprime AVISO y pasa» (`doc/ecst/borrador/final.json`, en la
+lista de `verificacion-guardian`); `doc/ecst/borrador/REPRODUCCION.md` lo da por pasado entre los 26
+del guardián, en una máquina con `/dev/shm` en tmpfs. El único test que ejercitaba la negativa en un
+tmpfs de verdad era el del cofirmante, y es el que se puso rojo.
+
+**Quién lo decide.** Del autor es esto: el 08-10-2026, en la sesión, eligió entre las opciones que
+la sesión le propuso «Asiento + arreglo»: un asiento que registre su ROJO y la sonda, y el arreglo
+en `zk-ssl-guardian`, sin dependencias nuevas, con un rechazo duro si `/proc/self/mountinfo` dice
+tmpfs o ramfs y la medida de tiempos como segunda red, con la mediana por escritura en vez de la
+media; con tests, falseo y la sonda antes y después; en una rama, para que él lo pruebe y lo
+fusione. Y eligió «Encima de su rama»: prepararlo encima de la rama de la otra sesión, y entregarlo
+cuando la haya fusionado en `main`, como ya ha hecho. Lo demás lo propuso la misma sesión, aplicando
+los principios del proyecto, y parte de ello salió de la revisión: rechazar también `devtmpfs` y
+`rootfs`, que viven en memoria igual; mirar el tipo una segunda vez sobre el fichero del contador ya
+abierto; arreglar el test que se saltaba y que en Linux no encontrar un tmpfs sea un fallo; el
+nombre propio y `create_new` del fichero de prueba; que la mediana sin `fsync` en 0 no deje
+arrancar; la entrada 3.12 de `SECURITY.md`; el número, según el reparto de arriba; y los pines. No
+consta que el autor lo haya confirmado: rige hasta que diga otra cosa.
+
+**Por qué no lleva aviso de seguridad.** Por lo mismo que el §709 (antes §708) explica para SEC-1:
+`SECURITY.md` §5 saca un aviso con cada fallo arreglado en el kit publicado, y el guardián no está
+en el kit; el nodo y el testigo no salen en ninguna release. Lo dice la entrada 3.12.
+
+**Lo que hace.**
+
+1. **La primera red: el tipo del sistema de ficheros.** En Linux, `rechazar_si_en_memoria` lee el
+   `mnt_id` del descriptor en `/proc/self/fdinfo/FD` y, con él, el tipo de su montaje en
+   `/proc/self/mountinfo`; si es `tmpfs`, `ramfs`, `devtmpfs` o `rootfs` (`SISTEMAS_EN_MEMORIA`, una
+   lista declarada), devuelve `GuardianError::SistemaEnMemoria`, con la ruta y el tipo, sin medir
+   nada. Por el montaje del descriptor y no por la ruta: en este contenedor `/dev/shm` tiene dos
+   montajes apilados, y `mnt_id` da el de arriba. El tipo se lee detrás del campo `-` de la línea,
+   porque los campos opcionales son cero o más (`tipo_en_mountinfo`, pura y probada), partiendo sólo
+   por el espacio ASCII, y `mountinfo` se lee como bytes, con `from_utf8_lossy`. Se mira dos veces:
+   en `comprobar_persistencia`, sobre el fichero de prueba de la carpeta, antes de medir; y en
+   `abrir`, sobre el fichero del contador ya abierto y antes del cerrojo, porque un fichero de
+   `/dev/shm` montado con `mount --bind` encima del contador no es un enlace, y ni el rechazo del
+   enlace del §709 ni la medida en la carpeta lo ven. Si el sistema no lo dice —fuera de Linux, sin
+   `/proc`, un núcleo sin `mnt_id`—, no rechaza: en la carpeta decide la segunda red, y en el
+   fichero del contador no hay otra. El lector de `mnt_id` de `dispositivo_del_montaje` (§709) pasa
+   a `montaje_del_descriptor`, y su lectura de `mountinfo` a `leer_mountinfo`, que comparten los
+   dos.
+2. **La segunda red, con la mediana.** `medir` devuelve el tiempo de cada escritura, y `decidir`,
+   pura, compara las medianas con los umbrales de siempre (10× y 20 µs). La mediana de veinte es la
+   media de la décima y la undécima: nueve escrituras lentas no la mueven, y con diez, arranca si
+   son lo bastante lentas. Si la mediana sin `fsync` sale 0 —un reloj más grueso que una escritura—,
+   la razón no dice nada y decide el suelo solo; con la razón infinita, eso arrancaba.
+   `PersistenciaFalsa` da desde ahora medianas, y su mensaje lo dice, y dice que en Linux llega lo
+   que no se llama como los de la lista.
+3. **El fichero de prueba**, con un nombre propio —el PID, la hora en ns y una serie— y `create_new`
+   (`O_CREAT|O_EXCL`). Se llamaba siempre `.guardian-autocomprobacion` y se abría con `create` y
+   `truncate`: un enlace simbólico puesto ahí por quien pudiera escribir en la carpeta se seguía —se
+   medía otro sitio, y se truncaba el fichero al que apuntara—, y dos guardianes que se comprobaran
+   a la vez en la misma carpeta compartían el fichero. Se borra en todos los casos, también si falla
+   una escritura de la medida, que antes lo dejaba. La medida entra como argumento
+   (`comprobar_persistencia_con`), para que un test pruebe la segunda red cableada.
+4. **El test que no probaba nada.** `en_tmpfs_se_niega_a_operar` saca el tipo de `/proc/self/mounts`
+   —el punto de montaje más largo que contiene la ruta—, sin `df` y por otro camino que el del
+   guardián; en Linux, no encontrar ningún tmpfs es un fallo. Exige `SistemaEnMemoria` con tipo
+   `tmpfs` donde el sistema da el `mnt_id` de un descriptor, lo que mira leyendo `fdinfo` por su
+   cuenta, y `PersistenciaFalsa` donde no.
+5. **El cofirmante.** `el_cofirmante_hereda_la_negativa_en_tmpfs` acepta cualquiera de las dos
+   negativas: lo que prueba es que el testigo la hereda; cuál toca, lo fija el test del guardián.
+6. **Cinco tests nuevos** en el guardián: `unas_escrituras_lentas_no_hacen_persistente_un_tmpfs`, el
+   falsador de la mediana (diecinueve escrituras de 1,2 µs y una de 5 ms: la media, 251 µs, pasaba;
+   la mediana se niega, también con nueve lentas; con diez, la mediana sale de las lentas);
+   `la_mediana_no_rechaza_un_disco`, con las cifras de ext4 medidas aquí;
+   `un_reloj_que_no_mide_la_escritura_no_abre_la_puerta`;
+   `la_segunda_red_se_niega_con_tiempos_de_tmpfs`, la segunda red cableada, con tiempos inyectados
+   en una carpeta de disco, y sin dejar el fichero de prueba; y
+   `el_tipo_del_montaje_se_lee_detras_del_separador`, el lector de `mountinfo`, con un espacio de
+   Unicode en una ruta. El pin del guardián, de 35 a 40, con su nota.
+7. **Lo que corrigió la revisión.** Tres revisores de la misma sesión, de sólo lectura —el código,
+   los tests y la doc—, sobre el cambio sin commitear. Ninguno bloqueaba el código; uno bloqueaba el
+   canon: el pin nuevo movía los totales, y `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` seguían
+   diciendo 1716 y 1853, y `check_cifras` habría salido rojo. Se aplicó: leer `mountinfo` como
+   bytes, porque un solo byte que no fuera UTF-8 en cualquier montaje apagaba la primera red; partir
+   sólo por el espacio ASCII, porque con `split_whitespace` un punto de montaje con un U+00A0
+   seguido de `-` engañaba al lector; el fichero de prueba del punto 3; la mediana sin `fsync` en 0;
+   la segunda red cableada, que ningún test cazaba si se quitaba; que `en_tmpfs_se_niega_a_operar`
+   no dependa de `df`, que en busybox no tiene `--output`, ni falle donde el núcleo no da `mnt_id`;
+   que el falsador no exija arrancar con diez lentas; la doc del crate, que decía que fallaba «con
+   la máquina cargada» —falla igual en reposo— y por «el planificador», que nadie midió, y que leía
+   «la única señal» y «dos órdenes de margen» (de 382× a 10× van 38); los mensajes, que decían «casi
+   seguro tmpfs» donde en Linux ya no llega tmpfs; y la entrada 3.12 de `SECURITY.md`. No se aplicó:
+   medir también el contador cuando su montaje no es el de la carpeta, que es un cambio mayor en
+   `abrir`; mirar la capa de arriba de un `overlay` o el origen de un `zram`; ni un test del montaje
+   aparte, que pide montar («Lo que NO hace»).
+
+**Medido.** En el contenedor de la sesión: 4 CPU, ext4 sobre `/dev/vda` (virtio), `/dev/shm` tmpfs,
+el `df` de GNU coreutils 9.4. Todo en release.
+
+- **La sonda, antes y después.** Antes, el guardián de `27eea72`: lo de «El defecto». Después, con
+  el código de la primera pasada: 8000 de 8000 aperturas en `/dev/shm` se niegan con
+  `SistemaEnMemoria` (4000 en reposo y 4000 con cuatro bucles), y 1000 de 1000 arrancan en el disco
+  del proyecto. Con el código final: 2000 de 2000 en `/dev/shm`, y 500 de 500 en el disco, sin dejar
+  ningún fichero de prueba.
+- **La segunda red sola.** Una copia de la primera pasada con la primera red quitada, fuera del
+  árbol: 538 000 aperturas en `/dev/shm`, ninguna arranca, todas `PersistenciaFalsa` —222 000 en
+  reposo, 20 000 con cuatro bucles, 220 000 con ocho y 76 000 mientras corría la suite de
+  `zk-ssl-cli`, la misma carga en la que la media arrancó 265 veces—.
+- **Por escritura**, con un programa que copia la medida (2000 rondas en `/dev/shm`, 200 en ext4):
+  en tmpfs, cada escritura con `fsync` da una mediana de 1,0 µs, un percentil 99 de 2,3 µs y un
+  máximo de 995 µs; la mediana de una ronda, 3,1 µs como mucho, y su media, hasta 51,2 µs. En ext4,
+  cada escritura con `fsync` da un percentil 1 de 110,9 µs y una mediana de 170,3 µs, y la mediana
+  de una ronda, entre 114,2 y 283,1 µs. Sin `fsync`, la mediana de una ronda va de 0,73 a 1,77 µs en
+  tmpfs y de 0,80 a 2,19 µs en ext4. El suelo de 20 µs queda lejos de los dos.
+- **Un contador montado aparte.** Un fichero de `/dev/shm` con el valor 5, montado con `mount
+  --bind` encima de un contador en ext4: el guardián de `27eea72` arranca y lee 5; la primera pasada
+  sin la segunda mirada, también; con ella, y con el código final, `SistemaEnMemoria` con la ruta
+  del contador. Como root, a mano: no tiene test.
+- **Un byte que no es UTF-8.** Con un tmpfs montado en `/tmp/raro-\xff`, la primera red leyendo
+  `mountinfo` con `read_to_string` se apaga: 2000 de 2000 aperturas en `/dev/shm` caen a la medida
+  (`PersistenciaFalsa`). Con la lectura final, 2000 de 2000 `SistemaEnMemoria`. A mano, sin test.
+- **Un `overlay` con la capa de arriba en tmpfs** (la de abajo en ext4): su tipo es `overlay`, la
+  primera red no lo ve, y la segunda se niega en 22 000 de 22 000 aperturas.
+- **Falsado**, cada vez restaurado, sobre el código final: sin la primera red, falla
+  `en_tmpfs_se_niega_a_operar`; con la media en vez de la mediana, el falsador de la mediana y el de
+  la segunda red cableada; casando el montaje por prefijo del id, leyendo el tipo en una columna
+  fija o volviendo a `split_whitespace`, el del lector; con `decidir` cambiado por un `Ok`, el de la
+  segunda red cableada; y sin la regla del 0, el del reloj. Antes, en la primera pasada: con `-T`
+  otra vez en el `df` del test, fallaba el de tmpfs; y la falsación de la primera red, hecha primero
+  con el test sin arreglar, pasó: así salió que no probaba nada.
+- **Las filas**, con la orden de su fila (`cargo test -p <crate> --release --locked`), sobre el
+  árbol final: `zk-ssl-guardian`, 40 pasan, 0 fallan; `zk-ssl-cli`, 141 pasan, 0 fallan. `cargo
+  clippy` del guardián da el mismo aviso que en la base, en un test que no es de este sello.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol —`8beaf8d` con este sello y este
+  asiento en su sitio—: **VERDE**, en 1246 s. Las diecinueve filas de `--sello` con su pin
+  —`zk-ssl-guardian` 40 de 40, `zk-ssl-cli` 141 de 141, `zk-ssl-node` 199 de 199— y ningún warning
+  fuera de los 11 pinchados de la ceremonia; `check_tests`, 1880 declarados; las nueve herramientas
+  de `tools/`; los vectores, 483 y 958 líneas, sin moverse; la conformidad de las doce familias y
+  del cable; la segunda implementación; y el artefacto, reproducible (binario `9d5e22a9b8493ac9`).
+  Antes hubo dos. Uno, sobre `27eea72` con la primera pasada, se paró a medias: la sesión hizo `git
+  stash` con él corriendo, el árbol cambió bajo sus filas, y no cuenta. Otro, sobre `27eea72` con el
+  cambio ya revisado y sin este asiento, salió VERDE en 722 s.
+
+**Contadores.** El pin del guardián, de 35 a 40. TOTAL DE SELLO de 1716 a 1721 y TOTAL CON LARGOS de
+1853 a 1858, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests`, de 1875 a 1880. Las
+«1364 declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores (5.A-319).
+
+**Lo que NO hace.** No toca `hbs-state`, otro repositorio, cuya `check_persistence` es la misma
+comprobación con medias y cuyo test usa el mismo `df -T --output=fstype`, según
+`doc/ecst/VERIFICACION.md` y `doc/ecst/borrador/final.json`: falla abierta igual y su test se salta
+igual; arreglarlo es del autor. La segunda red mide la carpeta, no el fichero: un contador que sea
+un montaje propio en memoria, fuera de Linux o con un tipo que no esté en la lista, pasa. Fuera de
+Linux sigue habiendo sólo la segunda red; en Linux, un sistema que no se llama como los de la lista
+y no persiste —un `overlay` sobre tmpfs, un `fuse`, un ext4 sobre `zram`— sólo lo coge si `fsync`
+cuesta lo mismo que no hacerlo, y un sistema de red cuyo otro lado viva en memoria pasa el suelo. La
+mediana tiene su límite, diez escrituras lentas de veinte. No cubre un disco que confirma escrituras
+que siguen en una caché volátil, ni un corte de corriente: eso no cambia. La mirada sobre el
+contador montado aparte y la lectura de `mountinfo` como bytes no tienen test. No reescribe la
+entrada 234, que dice que el `fsync` propio es «la única señal disponible desde dentro del proceso»
+y que el test de tmpfs «avisa en voz alta»: la corrección es este asiento. No toca
+`doc/ecst/VERIFICACION.md`, que describe la comprobación con medias y la da por igual a la de
+`hbs-state`, ni `doc/ecst/borrador/`: son el registro de su informe, y no se reescriben. No toca la
+cabecera de `doc/CONFIANZA_RESIDUAL.md` ni `PRINCIPIOS.md`, cuya frase sobre el guardián sigue
+siendo cierta. No corre `--bancos` ni el nivel completo.
+
+**Lección.** Un test que se salta en voz baja no protege nada. `en_tmpfs_se_niega_a_operar` decía de
+sí mismo que se saltaba «EN VOZ ALTA», y se saltaba siempre, porque la voz era un `eprintln!` que el
+arnés se traga; no lo vio leerlo, lo vio falsear lo que debía cazar. Y una comprobación por tiempos
+falla abierta con una frecuencia que sólo se ve contando miles de veces: el canon del autor la vio
+una vez, en un test que no la buscaba.

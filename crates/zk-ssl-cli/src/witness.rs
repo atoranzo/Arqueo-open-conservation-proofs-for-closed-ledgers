@@ -5082,10 +5082,20 @@ mod tests {
         }
         let _ = std::fs::remove_file(&p);
         match Cofirmante::desde_semilla(&semilla_testigo(), &p) {
-            Err(CofirmaError::Guardian(GuardianError::PersistenciaFalsa { .. })) => {}
+            // ⚠️ §740 · Donde el sistema da el `mnt_id` de un descriptor (Linux desde
+            //    3.15) se niega por el tipo del sistema de ficheros, sin medir; donde
+            //    no, por la medida de `fsync`. Hasta §740 era siempre la medida, que en
+            //    tmpfs arrancaba de 2 a 11 veces de cada 2000, tambien en reposo: el
+            //    canon del autor sobre 1155b7a, en su maquina, salio ROJO porque este
+            //    test arranco una vez. Aqui vale cualquiera de las dos negativas: lo
+            //    que se prueba es que el testigo la hereda; cual toca, lo fija
+            //    `en_tmpfs_se_niega_a_operar` en el guardian.
+            Err(CofirmaError::Guardian(
+                GuardianError::SistemaEnMemoria { .. } | GuardianError::PersistenciaFalsa { .. },
+            )) => {}
             // ⚠️ Los dos modos de fallo, separados. Y el `Ok` NO se formatea:
             //    `Cofirmante` no implementa `Debug` A PROPOSITO (ver su doc).
-            Err(otro) => panic!("en tmpfs debe negarse por PersistenciaFalsa, y dio: {otro:?}"),
+            Err(otro) => panic!("en tmpfs debe negarse, y dio: {otro:?}"),
             Ok(_) => panic!("en tmpfs NO debe arrancar: fsync no persiste nada ahi"),
         }
     }
