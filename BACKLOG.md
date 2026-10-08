@@ -716,6 +716,9 @@ instrumentacion) al grupo E.*
   un testigo de verdad. QUEDA el medio (E6): sigue abierta.
   ✅ a medias (§690): el paso 3 de la D-G, `--desde-minimo`, para rotar
   con un índice indeterminado. QUEDA el medio (E6): sigue abierta.
+  ✅ a medias (§770): el testigo da el dato del paso 3 de la D-G: `--auditar`
+  imprime la hoja embebida más alta de cada clave. QUEDA el medio (E6): sigue
+  abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con
@@ -993,6 +996,10 @@ instrumentacion) al grupo E.*
   no cubre —un sistema de ficheros de red, otra máquina, la misma semilla con
   otro contador— lo dicen `SECURITY.md` §2 y `doc/CONFIANZA_RESIDUAL.md`. El
   (a) y el (b) siguen como están: sigue abierta.
+  ✅ a medias (§770): la otra pieza del (c), la del testigo: `--auditar` da,
+  por clave, la hoja embebida más alta entre las cabezas que reverifican, el
+  número que `--desde-minimo` pide. El (a) y el (b) siguen como están: sigue
+  abierta.
 
 - [ ] **115. La conservación, comprobable por un tercero: el camino, o el título.**
   Medido en el §696: la conservación de cada transición la imponen en circuito

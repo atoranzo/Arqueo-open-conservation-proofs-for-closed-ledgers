@@ -51287,3 +51287,84 @@ sí mismo que se saltaba «EN VOZ ALTA», y se saltaba siempre, porque la voz er
 arnés se traga; no lo vio leerlo, lo vio falsear lo que debía cazar. Y una comprobación por tiempos
 falla abierta con una frecuencia que sólo se ve contando miles de veces: el canon del autor la vio
 una vez, en un test que no la buscaba.
+
+## §770 — `witness --auditar` da, por clave, la hoja embebida más alta: el número que pide `--desde-minimo` en la D-G del RFC-0015 (la 92 c)
+
+El commit que lleva este asiento, sobre `e4eb764` (el §740), que es `main`. Un solo sello: en
+`crates/zk-ssl-cli`, el campo `hoja_mas_alta` de `Auditoria`, su cálculo en `auditar_lineas`, una
+línea por clave en la salida de `--auditar`, la ayuda de la bandera y dos tests; en
+`crates/zk-ssl-node`, una cláusula en la ayuda de `--desde-minimo`; el pin del testigo en
+`tools/canon.sh`, de 141 a 143; las cifras de tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`;
+un párrafo en la D-G del RFC-0015; una nota en la 92 y otra en la 84 del `BACKLOG.md`; y este
+asiento. Del autor es elegir esta tarea y su orden; lo demás lo propuso la sesión («Quién lo
+decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número sale del acuerdo
+entre las sesiones que escriben a la vez en este árbol, para que dos no escriban el mismo: §711 a
+§739 la de la migración, §741 a §769 la del medio, §770 a §799 esta. El sello no toca el kit, el
+cable, el guardián ni ningún vector. Antes de entregarlo, una revisión, también de Claude Code,
+encontró que la primera mitad de uno de sus dos tests no discriminaba —usaba una línea cuya firma no
+trae índice—, y se rehízo con una firma de verdad alterada («Medido»). En la sesión se corrió el
+canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El §690 dio bandera al paso 3 de la D-G: `--desde-minimo HOJA` es «la hoja más
+alta que la clave que se va pudo firmar según lo que el operador sabe de fuera —los diarios de los
+testigos, el medio, un respaldo—». Y su «Lo que NO hace» lo dejó dicho: el nodo no busca solo esa
+hoja en los diarios de los testigos ni en el medio, la da el operador. Pero el testigo no la daba:
+`auditar_lineas` ya calculaba el índice embebido de cada cabeza que reverifica, y solo lo usaba para
+el tramo de la clave fijada (`cumbre`), que se vacía al rotar y deja fuera la cabeza que cruza su
+tramo, justo la que el operador tiene que saltar. El operador que quisiera el número tenía que
+leer las firmas a mano.
+
+**Quién lo decide.** El autor eligió esta tarea, la primera de cuatro, de una lista de sesenta y
+tres que la sesión le dio; la lista salió de leer el `BACKLOG.md`, las tablas de etapas de los RFC,
+los asientos del §680 al §710 y las herramientas, y de que un verificador intentara refutar cada
+candidata contra el árbol. La forma la propuso la sesión: qué cabezas cuentan, dónde se imprime y
+cómo se nombra la clave.
+
+**Lo que hace.**
+
+1. **La hoja, por clave.** `Auditoria` gana `hoja_mas_alta: BTreeMap<String, u64>`: por cada
+   `publicKey`, tal como va en la línea, el mayor índice embebido entre las cabezas que
+   `verificar` acepta. Se toma antes del filtro de la clave fijada, así que cuentan también la
+   cabeza de otra clave (`cambio-de-clave`) y la que cae fuera de su tramo (`solapamiento`): son
+   hojas que esa clave firmó. Una firma que no verifica no da hoja: la fabrica cualquiera.
+2. **La salida.** Con `--auditar`, entre el resumen y los hallazgos, una línea por clave:
+   `  hoja embebida mas alta de la clave <0x y 16 hex>: <hoja> (lo que --desde-minimo pide al rotar)`.
+   Va antes de los hallazgos porque el diario del caso que la D-G describe los trae y sale con 1.
+   La hoja va tal cual y en decimal: el nodo entra en la siguiente (§690), y la bandera lee un
+   `u64`. Si hay líneas con firma y ninguna reverifica, lo dice:
+   `  ninguna cabeza reverifica: no hay hoja que dar a --desde-minimo`. La clave se nombra por sus
+   18 primeros caracteres, como el modo vivo. Ninguna de las dos líneas imita el molde
+   `⚠️ <clase> ·` que leen los bancos, ni toca `sin hallazgos` ni la salida de error.
+3. **Lo dicho donde se busca.** La ayuda de `--auditar` lo dice; la de `--desde-minimo` del nodo
+   nombra a `witness --auditar` como la fuente de los diarios de los testigos; la D-G del RFC-0015
+   gana un párrafo, «Desde el §770 el testigo da esa hoja»; la 92 y la 84 ganan su nota.
+
+**Medido.**
+
+- **`el_auditor_da_la_hoja_mas_alta_de_cada_clave`**, con las cabezas de verdad de
+  `spec/vectors/rotacion/`: la A firma en la 3 y en la 14, la B en la 8 y después en la 4, la C en
+  la 15. Las cuatro primeras reverifican, y el mapa da A 14 —la del solapamiento cuenta—, B 8 —la 4
+  no la baja— y nada más; con la A en la 14 y la C con su cadena, A 14 y C 15.
+- **`la_hoja_sale_de_lo_que_verifica_y_es_una_por_clave`**: la cabeza de verdad de la vista
+  dividida de `spec/vectors/ancla/` con un nibble de su firma cambiado lejos del índice —la hoja
+  embebida, la 1, se sigue leyendo— no reverifica y no da hoja; las dos cabezas de esa vista,
+  misma clave y misma hoja, dan una sola entrada, la 1. Discrimina: con el mutante que apunta la
+  hoja de toda línea con firma, antes de `verificar`, el test cae (medido en la sesión).
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE, con `zk-ssl-cli` en 143 de
+  143.
+
+**Contadores.** `zk-ssl-cli` 141 -> 143, en su fila de `tools/canon.sh`, con su crónica. TOTAL DE
+SELLO 1721 -> 1723 y TOTAL CON LARGOS 1858 -> 1860, en los tres párrafos ancla, en `PRINCIPIOS.md`,
+`PAPER.md` y `PAPER_EN.md`; el desglose de `PRINCIPIOS.md`, 143 del testigo. `check_tests`, de 1880
+a 1882. Las «1364 declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores
+(5.A-319). Los vectores no se mueven. El `BACKLOG.md` sigue con 47 abiertas y 73 resueltas: la 92 y
+la 84 ganan una nota y no se cierran.
+
+**Lo que NO hace.** No lee el medio ni un respaldo: la hoja que da es la de un diario, y un testigo
+ve lo que el nodo le sirvió. Si el operador tiene varios diarios, la hoja de `--desde-minimo` es la
+mayor de todas, y esa cuenta la hace él. No decide si la clave está quemada ni rota: da el número.
+Y no cuenta lo que no verifica: una línea sin los campos de la cabeza no recompone, y no da hoja.
+
+**Lo que NO cierra.** La 92 sigue abierta por su (a) y su (b), y la 84 por el medio (E6), que
+espera a la E3 del RFC-0013.

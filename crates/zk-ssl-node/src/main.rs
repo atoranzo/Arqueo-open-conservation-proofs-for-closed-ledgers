@@ -204,7 +204,8 @@ struct Args {
     clave_anterior_fichero: Option<String>,
 
     /// **La hoja más alta que la clave que se va pudo firmar**, en una rotación (RFC-0015, D-G,
-    /// paso 3; §690): la de los diarios de los testigos, el medio, o un respaldo. La sucesora
+    /// paso 3; §690): la de los diarios de los testigos -`witness --auditar` la imprime por clave
+    /// desde el §770-, el medio, o un respaldo. La sucesora
     /// entra por encima: el contador salta y las hojas de en medio quedan QUEMADAS, sin firma. Es
     /// el procedimiento del índice indeterminado: con un contador restaurado por detrás de lo que
     /// la vieja firmó, rotar desde él dejaría sus cabezas reales en el tramo de la nueva. Fuera de

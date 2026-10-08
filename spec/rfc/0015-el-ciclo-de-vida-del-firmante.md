@@ -287,6 +287,12 @@ tramo de la nueva, un solapamiento contra un operador que solo perdió su estado
 arrancar con la clave quemada» lo hace ya la cadena: con el diario rotado, la clave que se fue no es
 la del acta en vigor ni la comprometida, y el nodo no arranca ni gasta (medido en el §690).
 
+**Desde el §770 el testigo da esa hoja.** `witness --auditar DIARIO` imprime, por clave, la hoja
+embebida más alta entre las cabezas del diario que reverifican sin el nodo, también las de otra clave
+y las que caen fuera de su tramo, que son hojas que esa clave firmó. Esa cifra, tal cual, es la de
+`--desde-minimo`: el nodo entra en la siguiente. El medio y el respaldo siguen siendo cosa del
+operador, y una firma que no verifica no da hoja.
+
 ### D-H — La custodia, declarada como hoy
 
 La clave siguiente es fría por diseño (D-B). Dónde vive la en curso sigue siendo una afirmación

@@ -1245,6 +1245,11 @@ pub struct Auditoria {
     /// del hallazgo: la cabeza fuera de su tramo y la cadena que fijo el tramo. Y desde el §688, uno
     /// de la vista dividida -el modo 4 del ancla- por cada vista que el kit pueda juzgar.
     pub sobres: Vec<(usize, Value)>,
+    /// ⚠️ §770: por clave -el hex de su `publicKey`, como va en la linea-, la hoja embebida mas
+    /// alta entre las cabezas que REVERIFICAN. Es el `--desde-minimo` del nodo (RFC-0015 D-G, paso
+    /// 3): cuentan tambien la cabeza de otra clave y la que cae fuera de su tramo, que son hojas
+    /// que esa clave firmo; una firma que no verifica no da hoja.
+    pub hoja_mas_alta: BTreeMap<String, u64>,
 }
 
 /// **Relee un diario y lo reverifica SIN EL NODO.**
@@ -1382,6 +1387,7 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
         // ⚠️ El tramo es de la clave fijada: la cabeza de OTRA clave ya es `cambio-de-clave`, y
         //    medirla contra un tramo que no es el suyo inventaria un solapamiento.
         let de_la_fijada = clave.as_deref().map_or(true, |f| f == k);
+        let de_quien = k.clone();
         match &clave {
             None => clave = Some(k),
             Some(f) if *f == k => {}
@@ -1402,6 +1408,12 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
                 let embebido = leer_hex(&v["signature"])
                     .ok()
                     .and_then(|f| indice_de_firma(&f).ok());
+                // ⚠️ §770: la hoja de toda cabeza que verifica, de la clave que sea y caiga donde
+                //    caiga: lo que la clave firmo es lo que --desde-minimo tiene que saltar.
+                if let Some(e) = embebido {
+                    let h = a.hoja_mas_alta.entry(de_quien).or_insert(e);
+                    *h = (*h).max(e);
+                }
                 if let Some(e) = embebido.filter(|_| de_la_fijada) {
                     match m.en_su_tramo(e) {
                         Some(Veredicto::Solapamiento { indice, desde }) => {
@@ -1612,6 +1624,10 @@ pub struct WitnessArgs {
     ///
     /// ⚠️ Es lo que convierte el criterio de §248 —*lo suficiente para
     /// que un tercero reverifique sin el nodo*— en algo **ejecutable**.
+    ///
+    /// §770 · Y da, por clave, la hoja embebida más alta entre las cabezas
+    /// que reverifican: el `--desde-minimo` del nodo al rotar con el índice
+    /// indeterminado (RFC-0015 D-G, paso 3).
     #[arg(long, value_name = "DIARIO", conflicts_with = "comparar")]
     auditar: Option<PathBuf>,
 
@@ -2456,6 +2472,18 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         let r = auditar_lineas(&leer(p)?);
         println!("{}: {} lineas · {} con firma · {} REVERIFICADAS sin el nodo",
                  p.display(), r.lineas, r.con_firma, r.reverificadas);
+        // ⚠️ §770: el dato del paso 3 de la D-G del RFC-0015, ANTES de los hallazgos: el diario de
+        //    una clave con el indice indeterminado puede traerlos, y sale con 1. La hoja va tal cual
+        //    y en decimal: el nodo entra en la siguiente, y `--desde-minimo` lee un u64.
+        for (k, h) in &r.hoja_mas_alta {
+            println!(
+                "  hoja embebida mas alta de la clave {}: {h} (lo que --desde-minimo pide al rotar)",
+                &k[..18.min(k.len())]
+            );
+        }
+        if r.con_firma > 0 && r.hoja_mas_alta.is_empty() {
+            println!("  ninguna cabeza reverifica: no hay hoja que dar a --desde-minimo");
+        }
         for h in &r.hallazgos {
             println!("  ⚠️ {} · {h:?}", h.clase());
         }
@@ -4718,6 +4746,117 @@ mod tests {
         ]);
         assert!(r.sobres.is_empty(), "{:?}", r.hallazgos);
         assert!(r.hallazgos.is_empty(), "{:?}", r.hallazgos);
+    }
+
+    /// ⚠️ §770 · **el auditor da, por clave, la hoja que `--desde-minimo` pide** (RFC-0015 D-G,
+    /// paso 3). Con las cabezas de verdad de `spec/vectors/rotacion/`: la A firma en la 3 y, ya
+    /// rotada, en la 14 —un solapamiento, y AUN ASÍ una hoja que la A firmó—; la B en la 8 y después
+    /// en la 4; la C en la 15. Cuenta la más alta de cada una, sea de la clave fijada o no, caiga en
+    /// su tramo o fuera: lo que el operador tiene que saltar es todo lo que la clave firmó.
+    #[test]
+    fn el_auditor_da_la_hoja_mas_alta_de_cada_clave() {
+        let leer = |t: &str| -> Value { serde_json::from_str(t).expect("vector") };
+        let linea = |c: &Value, clase: &str, actas: Option<&Value>| -> String {
+            let nueva = Veredicto::Nueva {
+                indice: 0,
+                digest: String::new(),
+            };
+            let mut l = linea_de_diario(&nueva, c, 0);
+            l["clase"] = json!(clase);
+            if let Some(x) = actas {
+                l["actas"] = x.clone();
+            }
+            l.to_string()
+        };
+        let clave = |c: &Value| c["publicKey"].as_str().expect("publicKey").to_string();
+        let un = leer(include_str!(
+            "../../../spec/vectors/rotacion/rotacion-un-eslabon.json"
+        ));
+        let antes = leer(include_str!(
+            "../../../spec/vectors/rotacion/neg-solapamiento-la-nueva-firma-antes.json"
+        ));
+        let despues = leer(include_str!(
+            "../../../spec/vectors/rotacion/neg-solapamiento-la-vieja-firma-despues.json"
+        ));
+        let (a, b) = (clave(&un["vieja"]), clave(&un["nueva"]));
+        assert_eq!(
+            clave(&despues["vieja"]),
+            a,
+            "la A de los dos vectores es la misma"
+        );
+        let r = auditar_lineas(&[
+            linea(&un["vieja"], "nueva", None),
+            linea(&un["nueva"], "rotada", Some(&un["actas"])),
+            linea(&antes["nueva"], "nueva", None),
+            linea(&despues["vieja"], "nueva", None),
+        ]);
+        assert_eq!(r.reverificadas, 4, "{:?}", r.hallazgos);
+        assert_eq!(
+            r.hoja_mas_alta.get(&a),
+            Some(&14),
+            "la del solapamiento cuenta"
+        );
+        assert_eq!(r.hoja_mas_alta.get(&b), Some(&8), "la 4 no baja la 8");
+        assert_eq!(r.hoja_mas_alta.len(), 2);
+
+        let r = auditar_lineas(&[
+            linea(&despues["vieja"], "nueva", None),
+            linea(&despues["nueva"], "solapamiento", Some(&despues["actas"])),
+        ]);
+        assert_eq!(r.hoja_mas_alta.get(&a), Some(&14));
+        assert_eq!(r.hoja_mas_alta.get(&clave(&despues["nueva"])), Some(&15));
+    }
+
+    /// ⚠️ §770 · **la hoja sale de lo que verifica, y es una por clave.** Una firma que no verifica
+    /// la fabrica cualquiera: no da hoja. La prueba es DISCRIMINANTE: la cabeza de verdad de
+    /// `spec/vectors/ancla/vista-dividida.json` con un nibble de su firma cambiado lejos del índice
+    /// —la hoja embebida, la 1, se sigue leyendo— no reverifica y no deja entrada; un auditor que
+    /// contara toda línea con firma la dejaría. Y la vista dividida -dos cabezas de la misma clave en
+    /// la misma hoja- da UNA entrada.
+    #[test]
+    fn la_hoja_sale_de_lo_que_verifica_y_es_una_por_clave() {
+        let par: Value = serde_json::from_str(include_str!(
+            "../../../spec/vectors/ancla/vista-dividida.json"
+        ))
+        .expect("vector");
+        let linea = |c: &Value| -> String {
+            let nueva = Veredicto::Nueva {
+                indice: 0,
+                digest: String::new(),
+            };
+            linea_de_diario(&nueva, c, 0).to_string()
+        };
+        let mut falsa = par["cabeza"].clone();
+        let firma = falsa["signature"].as_str().expect("signature").to_string();
+        let mitad = firma.len() / 2;
+        let otro = if &firma[mitad..mitad + 1] == "0" {
+            "1"
+        } else {
+            "0"
+        };
+        falsa["signature"] = json!(format!(
+            "{}{}{}",
+            &firma[..mitad],
+            otro,
+            &firma[mitad + 1..]
+        ));
+        assert_eq!(
+            leer_hex(&falsa["signature"])
+                .ok()
+                .and_then(|f| indice_de_firma(&f).ok()),
+            Some(1),
+            "la hoja embebida se sigue leyendo"
+        );
+        let r = auditar_lineas(&[linea(&falsa)]);
+        assert_eq!(r.con_firma, 1);
+        assert_eq!(r.reverificadas, 0, "{:?}", r.hallazgos);
+        assert!(r.hoja_mas_alta.is_empty(), "{:?}", r.hoja_mas_alta);
+
+        let r = auditar_lineas(&[linea(&par["cabeza"]), linea(&par["contraria"])]);
+        assert_eq!(r.reverificadas, 2, "{:?}", r.hallazgos);
+        assert_eq!(r.hoja_mas_alta.len(), 1, "{:?}", r.hoja_mas_alta);
+        let clave = par["cabeza"]["publicKey"].as_str().expect("publicKey");
+        assert_eq!(r.hoja_mas_alta.get(clave), Some(&1));
     }
 
     /// ⚠️ §688 · **la vista dividida del diario sale como el sobre del ancla, modo 4.** Con las dos
