@@ -22,11 +22,12 @@
   dividida servida por un nodo real: cada testigo solo no la ve), §603 (la integración), §631
   (la E2a: el árbol del medio, y la D-G decidida), §632 (la E2b: la nota, contrastada con
   torchwood), §633 (la E4a: el sobre en el kit, y la D-D corregida), §634 (la E4b: el catálogo y
-  el banco), §635 (el juez del umbral en el cli) y §703 (la motivación al día: el #341, cerrado
-  por el #355); y, en mtc-core, sus asientos §14 y §15 (la interoperabilidad medida contra la
-  implementación de referencia del IETF, en las dos direcciones, y el checkpoint de esa
-  herramienta reconstruido desde sus tejas) y §26 y §27 (el #355 fusionado, y la herramienta de
-  referencia medida después: su checkpoint, ya una cofirma `tlog-cosignature`).
+  el banco), §635 (el juez del umbral en el cli), §703 (la motivación al día: el #341, cerrado
+  por el #355) y §705 (el §106, enmendado: la firma de D-C es su excepción declarada, y el
+  puente Ed25519 no se construye); y, en mtc-core, sus asientos §14 y §15 (la interoperabilidad
+  medida contra la implementación de referencia del IETF, en las dos direcciones, y el checkpoint
+  de esa herramienta reconstruido desde sus tejas) y §26 y §27 (el #355 fusionado, y la
+  herramienta de referencia medida después: su checkpoint, ya una cofirma `tlog-cosignature`).
 - **Backlog:** la 86 (elegir y medir el medio), que este RFC cierra en diseño y deja abierta en
   despliegue; la pregunta abierta de la 83 —«el diseño de referencia usa Ed25519 y ZK-SSL firma
   con XMSS con estado (…) hay que medir si cada testigo firma con su propia clave XMSS o si ahí
@@ -138,6 +139,14 @@ guardián**: es el primer canal firmado de esta casa que un contador borrado no 
 ignoran lo que no entienden, así que las dos líneas conviven. Lo que ese puente vale y lo que
 cuesta va en Seguridad.
 
+> ⚠️ **Decidido por el autor en el §705: el puente no se construye mientras rija el §106**
+> (adoptado en la aceptación en bloque; reversible, como D-A a D-H). La firma ML-DSA-44 de esta
+> nota es la excepción que el §705 declara al §106: enmienda, para el medio del ancla, su mitad
+> «una sola familia de supuestos», sin revocarla. Una línea Ed25519 chocaría con la otra mitad,
+> «todo el camino de producción es poscuántico», que sigue sin excepción. El párrafo de arriba se
+> deja como estaba y se corrige aquí; lo mismo vale para el (1) de D-H y para el puente en
+> Seguridad.
+
 ### D-D — Los testigos son ajenos, genéricos y de umbral, y el protocolo es `tlog-witness`
 
 El publicador envía a cada testigo `add-checkpoint`: `old <size anterior>`, hasta 63 líneas de
@@ -242,6 +251,10 @@ está auditado, lo dice su propio crate —desde el §632 entra clavado con `=`,
 es el contraste byte a byte con el `crypto/mldsa` de Go, no una auditoría—; (3) la clave ML-DSA-44 del publicador es una clave más
 que custodiar, sin estado pero con custodia.
 
+> ⚠️ **Corregido (§705).** Sin el puente de D-C, E3 no se mide contra un testigo público mientras
+> ninguno acepte `0x06`: se mide con `0x06` contra el verificador de mtc-core, y contra testigos
+> públicos cuando los haya.
+
 ## Lo que se DESCARTÓ al medir
 
 - **Un tipo de nota para XMSS.** `signed-note` no lo define, `0x03` está reservado, y un testigo
@@ -280,6 +293,11 @@ porque contesta una pregunta que el BACKLOG tenía marcada como «antes de dise�
 
 - **El principio del API se conserva**: la clave de gasto no viaja. La nota lleva una raíz, dos
   números y firmas de claves públicas; ninguna clave privada de nada se acerca.
+- **El §106, enmendado en el §705.** La firma ML-DSA-44 del publicador es la excepción declarada
+  a la «una sola familia de supuestos» del §106: el veredicto del kit sobre el sobre
+  `ancla-cofirmada` descansa en la más débil de dos familias, la resistencia del hash y los
+  retículos, y además en `ml-dsa =0.1.1`, sin auditar (D-H). La conservación, las cabezas y su
+  firma XMSS no dependen de ella.
 - **La firma oponible sigue siendo XMSS.** La clave ML-DSA-44 solo firma notas del medio. Una
   clave de nota robada permite hacer cofirmar a testigos una secuencia de anclas falsa; **no
   permite fabricar cabezas**, y una ancla que no corresponda a una cabeza firmada por XMSS es
@@ -287,6 +305,8 @@ porque contesta una pregunta que el BACKLOG tenía marcada como «antes de dise�
 - **El puente Ed25519 no es poscuántico**, y se dice: mientras esté, la admisión en los testigos
   de hoy descansa en una clave clásica. Lo que un adversario cuántico gana con ella es lo del
   punto anterior, no más. Se retira cuando haya testigos con `0x06`.
+  ⚠️ **Decidido (§705):** no se construye mientras rija el §106 (D-C), así que este punto describe
+  un puente que no existe.
 - **La propiedad es de umbral.** Un adversario que controle más de `k` testigos la rompe; `k` y
   los nombres los pone el cliente, y la 83 lo tiene declarado.
 - **Lo que este medio cierra de la 103**: un directorio restaurado presenta un `size` menor que el

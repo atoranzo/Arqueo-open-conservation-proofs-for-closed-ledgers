@@ -12,9 +12,9 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 45 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
+**Estado**: 46 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
 recontadas en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el
-§696, que abre la 115, y el §697, que abre la 116.
+§696, que abre la 115, el §697, que abre la 116, y el §705, que abre la 117.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1149,6 +1149,23 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   §3.11, y lo repiten el comentario de `proof_options`, `PRINCIPIOS.md`, `FIVE_BACKENDS.md`,
   `PAPER.md`, `PAPER_EN.md`, `doc/ZENODO.md` y los dos institucionales; el nivel cuántico se
   declara no medido. Lo que se decida aquí mueve también esos textos, en el mismo sello.
+
+- [ ] **117. El juez único de verificación, antes del corte zkssl/0.5: lo adopta el autor (§705),
+  en la aceptación en bloque.** Es el ARQ-01 de `doc/blueprint-v2.md`. Hoy cada familia se
+  verifica con su propia llamada y sus opciones: los 15 `verify::<…>` de la capa, que cuenta
+  `toda_verificacion_viva_de_la_capa_lee_con_sal` (`crates/zk-ssl/src/lib.rs:1237`, §578), la
+  pareja umbral (`verify_threshold_pair`) y las cinco `verificar` del kit en `crates/zk-ssl-air/src`.
+  Son 21 sitios, y nada obliga a que todos acepten con la misma política. El autor lo adopta el
+  07-10-2026, en el §705, con la aceptación en bloque y de forma reversible: **un solo juez**, por
+  el que pasa toda verificación de producción, con **la política de aceptación del juez,
+  constante**, y no de cada familia; y se construye **antes** del corte de cable zkssl/0.5, como
+  pide la regla (3) de `doc/blueprint-v2.md` §4.6, para que el cambio de opciones de ese corte
+  toque un sitio y no 21.
+  **Lo que pide**: la forma —la del boceto 1 del plano, `juzgar::<J: Juez>` en
+  `crates/zk-ssl-air/src/juez.rs`, u otra—, con su asiento; la puerta que la ata, ningún
+  `verify::<` vivo fuera del juez, con las excepciones que declare, como la acotó el verificador del
+  ARQ-01; y la versión del kit que la lleve. Medido sobre `c990868`: no hay
+  `crates/zk-ssl-air/src/juez.rs`.
 
 ## D. Declaradas, acotadas, sin urgencia
 
@@ -2768,6 +2785,13 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   nueve ficheros `.rs`.
   ⚠️ **Lo que de XMSS sí queda no desaparece**: KAT, el issue upstream y ARM
   pasan a la **nota 77**, cada uno con su medida.
+  ⚠️ **(§705) El §106, enmendado, no revocado.** Desde el §632 la nota del
+  medio del ancla se firma con ML-DSA-44, y desde el §633 el kit la
+  verifica: el §705 la declara como la excepción a «una sola familia de
+  supuestos», con su coste, y deja sin excepción «todo el camino de
+  produccion es post-cuantico», así que el puente Ed25519 del RFC-0013 no
+  se construye (lo adopta la aceptación en bloque, reversible). Las
+  cabezas y su firma XMSS no cambian.
 - [ ] **55. ⚠️ B12.1: el formato de especificacion del AIR, probado en un
   circuito.** `doc/air/circuit_burn.md`, escrito el 01-08-2026 (§105).
   ✅ **El formato funciona**: la seccion «que NO se restringe» es la unica que

@@ -99,10 +99,11 @@ especificación**. Lo que entra en `main` pasa por el método de arriba, y entra
 es la aceptación del autor. Hay una excepción, declarada donde ocurre: lo que el
 asistente redactó en una sesión y entró con la aceptación pendiente lo dice el
 propio documento, casi siempre con las palabras «integrar no es aceptar», y no
-cuenta como decisión del autor hasta que un asiento suyo lo acepte. A 7 de
-octubre de 2026 lo dicen `doc/ecst/`, `doc/blueprint-v2.md`,
-`doc/firma-corta-evaluacion.md`, `doc/integracion-vertical-evaluacion.md` y
-`tools/segunda/`.
+cuenta como decisión del autor hasta que un asiento suyo lo acepte. A 8 de
+octubre de 2026 lo dicen `doc/ecst/`, `doc/firma-corta-evaluacion.md` y
+`tools/segunda/`. `doc/integracion-vertical-evaluacion.md` y
+`doc/blueprint-v2.md` lo decían hasta el §705, en el que el autor acepta el
+primero con correcciones y el segundo en parte.
 
 ## Autoría y responsabilidad
 
@@ -222,9 +223,11 @@ getting in is the author's acceptance. There is one exception, declared where it
 happens: what the assistant drafted in a session and got in with acceptance
 pending says so in the document itself, almost always in the words "integrar
 no es aceptar" (integrating is not accepting), and does not count as the
-author's decision until an entry of his accepts it. As of 7 October 2026,
-`doc/ecst/`, `doc/blueprint-v2.md`, `doc/firma-corta-evaluacion.md`,
-`doc/integracion-vertical-evaluacion.md` and `tools/segunda/` say so.
+author's decision until an entry of his accepts it. As of 8 October 2026,
+`doc/ecst/`, `doc/firma-corta-evaluacion.md` and `tools/segunda/` say so.
+`doc/integracion-vertical-evaluacion.md` and `doc/blueprint-v2.md` said so
+until §705, in which the author accepts the first with corrections and the
+second in part.
 
 ## Authorship and accountability
 

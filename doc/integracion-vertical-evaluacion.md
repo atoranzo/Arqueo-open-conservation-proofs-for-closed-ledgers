@@ -22,21 +22,117 @@ Python, desde la spec—, el verificador en WebAssembly —que **verifica hoy** 
 diez manifiestos bajo wasmtime, con el mismo veredicto que el nativo— y la decisión de capa 2 por
 RFC con las cifras nuevas.
 
-**Estado**: evaluada, y los dos spikes de §5.2 y §5.3 **ejecutados en la misma sesión** con su
-resultado dentro (`tools/segunda/`). Sin código nuevo en `crates/`. Medido sobre `e8ac246` (S615) en
-la máquina de la sesión, rustc 1.97.0.
+**Estado**: **ACEPTADA CON CORRECCIONES** por el autor el 07-10-2026, en el §705 de
+[`AUDITORIA.md`](../AUDITORIA.md). Las correcciones van en el bloque de abajo, «Correcciones
+(§705)», y mandan donde discrepen del texto. Al escribirse: evaluada, y los dos spikes de §5.2 y
+§5.3 **ejecutados en la misma sesión** con su resultado dentro (`tools/segunda/`). Sin código nuevo
+en `crates/`. Medido sobre `e8ac246` (S615) en la máquina de la sesión, rustc 1.97.0.
 
 **Procedencia**: escrita en una sesión de trabajo con asistencia de IA generativa, en una rama que no
 se ha fusionado (`claude/nice-planck-ax35zl`), sobre un borrador que también salió de un modelo y
 que el autor pegó para contrastarlo, como los de `doc/ecst/`. Integrar no es aceptar: la aceptación
-que describe [`GENAI.md`](../GENAI.md) queda pendiente. No toca `BACKLOG.md`, `AUDITORIA.md` ni
-`NOTICE`: eso es del autor.
+que describe [`GENAI.md`](../GENAI.md) quedó pendiente hasta el §705, que la da con correcciones. No
+toca `BACKLOG.md`, `AUDITORIA.md` ni `NOTICE`: eso es del autor.
 
 **Convención**: ✅ medido en este árbol, con el comando al lado · 📐 derivado con una aritmética que
 se reproduce · 📖 leído en la fuente primaria, con cita; cuando la fuente es GitHub o crates.io, con
 la fecha de lectura (01-10-2026) · ⚠️ matiz · **CONFIRMADA / PARCIAL / FALSA / SIN FUENTE /
 CONTRADICE LO MEDIDO**, los veredictos de `doc/ecst/VERIFICACION.md`, más uno propio, **YA HECHO**,
 para lo que el borrador propone como futuro y el árbol lleva sellado.
+
+---
+
+## Correcciones (§705)
+
+**Aceptada con correcciones.** El autor la acepta el 07-10-2026, en el §705 de
+[`AUDITORIA.md`](../AUDITORIA.md), con alcance «en este repositorio y en el proyecto NLnet»: el
+árbol de este repositorio y los hitos de la propuesta 2026-11-009 a NLnet
+(`spec/rfc/0005-nucleo-congelado.md:26`). El cuerpo no se reescribe: este bloque manda donde
+discrepen. Separa los errores, que ya lo eran en `e8ac246`, de las cifras de foto, ciertas entonces
+y envejecidas después. Lo de hoy se midió sobre `c990868`, el commit anterior al §705. Las
+secciones y filas son las de este documento.
+
+**Lo que se acepta**, con el fundamento corregido de abajo:
+
+- las capas 4 y 3 y el lado del verificador ya son de la casa, y el estándar está en lo que un
+  tercero reproduce (§4);
+- la capa 2 no se decide aquí: antes, un spike y un RFC (§4 y §5.4), todavía pendientes;
+- capa 1, no (§4 y §6);
+- el borrador no es base de nada (§3 y §6);
+- el módulo se nombra con un mapa, sin crate (§5.1), y de las piezas solo sale `kat_xmss` (§5.5).
+
+El alcance cubre, por su nombre, tres veredictos de §6: «Capa 1: no», «Capa 2: decidir por RFC» y
+«un módulo criptográfico nuevo: no; nombrar el que existe».
+
+### Errores, que ya lo eran en `e8ac246`
+
+| # | dónde | dice | corrección | evidencia |
+|---|---|---|---|---|
+| E1 | §1, fila «1 · Primitivas»; §2, fila 1 | 68 ficheros usan `fields::f64` | **89**, y ninguna de las variantes probadas del grep —con el fork, en todo el árbol, por líneas o solo en `src/`— da 68; hoy, 90. `fields::f128`, 3 | `git grep -l 'fields::f64' <rev> -- crates/ ':!crates/winter-*' \| wc -l`: 89 en `e8ac246`, 90 en `c990868` |
+| E2 | respuesta corta; §1, fila «2 · Protocolo»; §6 | el fork son «350 líneas», «tocadas en el probador y el verificador» | el 350 es la **estimación** del spike de RFC-0009 D-F («488 líneas —350 en el fork y 138 propias», `spec/rfc/0009-lo-que-revela-una-prueba.md:212-213`), no una medida. Medido: +813/−6 en `e8ac246`; hoy **+829/−6** en 14 ficheros, 11 tocados y 3 nuevos, y **617** sin blancos ni comentarios. El probador y el verificador solos, +500 brutas y 399 netas. Sigue por debajo del umbral de 1.784 con el que D-F se revierte (`:217-219`) | `git diff --no-index --numstat` de `src/` contra los `.crate` 0.13.1 de crates.io, con el sha256 de la línea 3 de `crates/winter-*/Cargo.toml`: `winter-air`, 7 ficheros, +329/−3; `winter-prover`, 6, +427/−2; `winter-verifier`, 1, +73/−1. `NOTICE:39-40` |
+| E3 | §2, fila 9; Fuentes | «BACKLOG 92» para la GPU suspendida | es la **entrada 22**; la 92 es la custodia de la clave | `BACKLOG.md:2019` (22, SUSPENDIDA), `:2065` (RTX 5090), `:2092` (12,4 GiB); `:956` (92) |
+| E4 | respuesta corta; §2, fila 2; §4, «Capa 1»; §7 | el campo de 31 bits «agrava un hallazgo medido»: la colisión de identidades en 2³² | ese hallazgo **ya estaba tachado** como corregido: la identidad es un digest de 256 bits. Lo vivo es el espacio de claves, 2⁶⁴ (§82) | `BACKLOG.md:1401-1408`, en la entrada 15 |
+| E5 | §2, fila 4; §4, «Capa 1» | la única decisión de capa 1 con número es `digest_of_proof` con Rescue (30,99 ms, techo del nodo) | está **hecha desde el §209** (`zkssl/0.2`): `digest_of_proof` es Blake3. Los 30,99 ms son del §204, anterior | `crates/zk-ssl-hash/src/lib.rs:1716`, `:1724` y `:1737-1739` |
+| E6 | §1, tras la tabla; §4, «Capa 1» | «una regla escrita en la capa 1»: «escribir criptografía propia aquí sería un error grave» | es un **comentario local** que justifica una dependencia, `chacha20poly1305`, la del cifrado en reposo; no es una regla del proyecto. El criterio general escrito es el de `CONTRIBUTING.md:149-157`: no apilar superficie sin un problema presente y medido | `crates/zk-ssl/Cargo.toml:35-37` |
+| E7 | §2, fila 11 | la casa declara 127 conjeturados, y 128 demostrables costarían «125,6 KB en vez de 36,7» | esas cifras, como los «29-63» demostrables, son del circuito de comparación, con 32 consultas y sin molienda, no de producción; la casa las atribuía a producción hasta el §698. Producción —42 consultas, blowup 16, molienda 21, extensión cuadrática— da sobre las pruebas ocultas 127 conjeturados, UDR 59 y LDR 80-88 según el circuito, menos en la edad con `m` alta | `crates/stark-experiment/src/compliance_real_proof.rs:211-220`; los tests del §697; `SECURITY.md` §3.11 |
+| E8 | §2, fila 17 | «el tamaño [del WASM] no se ha medido» | se contradice con §5.3, que lo mide: 1.587.916 B | §5.3, el bloque de órdenes y la tabla |
+| E9 | §2, filas 16 y 19; §4, «Capa 1»; §5.4 | `VISION.md` (P4, P6, P8 y §5) como criterio vigente | `VISION.md` se declara **histórico**: la posición vigente está en `README.md` y `doc/USE_CASES.md`. Se cita como antecedente, no como regla | `doc/historia/VISION.md:1-4` |
+| E10 | §5.1; §6 | «§580: la casa no cría código sin llamador» | el §580 hace lo contrario: declara `podar` **sin llamador** y la conserva por decisión del autor. La frase es de `spec/rfc/0012-el-ancla-de-cabezas.md:25` y `:121`, y vale como criterio de ese RFC, no como regla del §580 | `AUDITORIA.md` §580 |
+
+Dos matices, sin rango de error:
+
+- **«35 AIR»** (§1, §2 fila 14, §4 y §5.4) es el censo heredado de RFC-0009 D-F (`:211`, `:216`).
+  El árbol no tiene un censo único: fuera del fork hay **38** `impl Air for`, 32 en
+  `stark-experiment`, con falsadores y experimentos dentro, 5 en `zk-ssl-air`, que son las del kit,
+  y 1 en `crates/zk-ssl/src/instrumento_edad.rs`. Se cita como «el censo de RFC-0009».
+- **«Verificar cuesta 1,5 a 4 ms»** (§2, fila 8) es anterior a la ocultación del §538. El plano v2.0
+  midió 3,98-4,93 ms (`doc/blueprint-v2.md` §1); aquí no se ha vuelto a medir.
+
+### Cifras de foto: ciertas en `e8ac246`, envejecidas después
+
+| dónde | en `e8ac246` | hoy | evidencia |
+|---|---|---|---|
+| respuesta corta; §5.2; §6 | 26 de 26 KAT del núcleo | **29 de 29** | `git ls-tree` de `spec/vectors/nucleo`; `python3 -B tools/segunda/juez_nucleo.py` |
+| §1 | el kit `arqueo-verify-v0.2.0`; la clausura de `zk-ssl-verify`, 48 paquetes, y la de `zk-ssl`, 65 | **v0.4.2**; **61** y **68**: los tres de más en la capa son `argon2`, `base64ct` y `blake2`, que solo entran por el `argon2` del §702. Los otros tres crates, 17, 25 y 52, igual | `doc/KIT.md:19`; el método de §1, `cargo tree -p <crate> -e normal --prefix none --locked`; `cargo tree -i` |
+| respuesta corta; §5.3; §7 | 316 vectores de diez manifiestos | **384 vectores en 12 manifiestos**: entran `ancla-cofirmada` (27) y `rotacion` (34), y crecen `paquete` (73), `conflicto` (17), `ancla` (22) y `completitud` (75). Son 399 líneas: las 15 que suma el §693 nombran la causa de vectores que ya estaban. Que el WASM los pase hoy no se ha medido | los `MANIFIESTO.txt` de `FAMILIAS` (`tools/artefacto.sh:31`) |
+| §5.2, tercer hito | `paquete` 70, `consumo` 14, `conflicto` 16 y `ancla` 21 | el segundo verificador pasa hoy `paquete` en sus 83 líneas, `consumo` 14, `conflicto` 17 y `ancla` 22, y además `rotacion` 34 | `tools/conformidad.sh tools/segunda/verificador.py`, como el bloque «3 duodecies» del canon |
+| §2, fila 2; §3 | rango de 63 bits | **62 bits** desde el §641 (RFC-0017) | `crates/stark-experiment/src/range_check.rs:8-15`, `:76` |
+| §5.3 | el `.wasm`, 1.587.916 B | no se ha vuelto a compilar | — |
+| procedencia | «una rama que no se ha fusionado» | fusionada: `71de3d3` y `808e9b9` están en `origin/main` | `git merge-base --is-ancestor` |
+| §1 | 14 RFC; `zk-ssl-verify`, 7.443 líneas; `zk-ssl`, 25.970 | eran 13 RFC más la plantilla `0000`; hoy, 19 (0001-0019) más la plantilla; y 10.054 y 28.040 líneas | `git ls-tree spec/rfc`; `wc -l` de los `.rs` de `src/` |
+
+### «Capa 1: no», con el fundamento corregido
+
+El veredicto se sostiene, pero no por las razones de §4 —«por decisión escrita y por tres
+medidas»— ni por las «tres decisiones medidas» de la respuesta corta. La decisión escrita es un
+comentario (E6) y `VISION.md` es histórico (E9). De los tres hallazgos de `PRINCIPIOS.md` §7, el de
+las identidades estaba tachado (E4), el techo de 63 bits es de la configuración sin extensión, que
+producción no usa (`crates/zk-ssl/src/lib.rs:221`), y las cifras de demostrable eran de otra
+configuración (E7). El fundamento, todo vigente:
+
+1. **El núcleo congelado.** Goldilocks, `Rp64_256` y la firma XMSS no cambian sin versión nueva del
+   preámbulo, vectores nuevos y RFC (`spec/NUCLEO.md` §2 y §5; RFC-0005).
+2. **El criterio de `CONTRIBUTING.md:149-157`.** No se apila superficie sin un problema presente y
+   medido, y «no hay auditoría».
+3. **Ningún cuello de capa 1 medido contra el objetivo.** El de `digest_of_proof` se cerró en el
+   §209 (E5). El techo que el árbol estima para una cadena de raíces Rescue, ≈1.300 op/s
+   (`doc/blueprint-v2.md` §1, ESTIMADO), queda por encima del objetivo RTGS de 21-105 op/s. Y
+   cambiar Rescue en los árboles es núcleo (`doc/blueprint-v2.md` §6).
+
+### Lo que dejaron §5 y §8, a `c990868`
+
+| punto | estado | evidencia |
+|---|---|---|
+| §5.2 y §8.1, la segunda implementación | hecha, en cuatro hitos | la entrada 85 (`BACKLOG.md:720`); §623 y §626 |
+| §5.5, `kat_xmss` | hecho | §623 |
+| §5.6, el reporte del §575 | enviado | §625 |
+| §5.6, `NOTICE`: de ocho y dos a once y tres | corregido | `NOTICE:39-40` |
+| §5.6, el asiento que diga que D-F no pesó el PR 293 | pendiente | ningún asiento hasta el §704, ni `BACKLOG.md` ni RFC-0009, lo nombra |
+| §5.1 y §8.5, el mapa de una página del módulo | pendiente | solo lo nombra este documento |
+| §5.4 y §8.3, el spike y el RFC de capa 2 | pendientes | ninguno de los RFC 0001 a 0019 vuelve a pesar la D-F de RFC-0009 |
+| §5.3 y §8.4, `getrandom` y WASM en el issue a RustCrypto | pendiente | `doc/issue-rustcrypto.md` no nombra ninguno de los dos |
+| §8.2, la aceptación de `tools/segunda/` | pendiente: el §705 no la cubre | `tools/segunda/README.md` |
+| §8.6, «ocho herramientas» | corregido en el §700 | `GENAI.md` §«Cómo se usa, exactamente» |
 
 ---
 

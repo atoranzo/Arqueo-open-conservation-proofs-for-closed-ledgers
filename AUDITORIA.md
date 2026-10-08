@@ -49716,3 +49716,236 @@ midiendo reloj. No corre el canon entero, y por eso no dice que salga VERDE: dic
 un núcleo, ya cabe en sus tests y en su recompilación.
 
 **Lo que NO cierra.** Nada de la cola: el `BACKLOG.md` no tenía entrada para esto.
+
+## §705 — la evaluación del 01-10, aceptada con correcciones, y el plano v2.0, en parte; el §106, enmendado: ML-DSA-44 en el medio del ancla, declarada, y el puente Ed25519, sin construir
+
+El commit que lleva este asiento, sobre `c990868` (el §704). Un solo sello de documentos, sin
+código: `doc/integracion-vertical-evaluacion.md` y `doc/blueprint-v2.md` ganan su bloque
+«Correcciones (§705)» y su estado, y el plano pone al día las dos líneas de la evaluación que cita;
+`spec/rfc/0013-el-medio-del-ancla.md` cita el §106 y este asiento en D-C, en D-H y en «Seguridad»,
+y lo nombra en su cabecera; `doc/firma-corta-evaluacion.md` nombra la excepción en su respuesta
+corta; `spec/README.md`, en la fila del RFC-0013; `GENAI.md` pone al día «Alcance» en sus dos
+mitades; el `BACKLOG.md` abre la 117 y anota la 56; y este asiento. Las decisiones son del autor,
+tomadas el 07-10-2026; las dos últimas, la 5 y la 6, las propuso la sesión después de su
+aceptación en bloque, y rigen por ella hasta que diga otra cosa («De dónde sale»). Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre:
+la rama llega al §704, y ninguna de las seis ramas del repositorio en `origin` (`git ls-remote`,
+y el `AUDITORIA.md` de cada una) lleva un §705: la propia rama en `origin` llega al §702, `main`
+al §693, y las otras cuatro al §685, §658, §641 y §627. El sello no toca ningún crate ni ningún
+vector, y ningún test lee los ficheros que toca. En la sesión no se corrió el canon entero: sí,
+como los corre él, sus bloques 2 a 2 quater —las doce compuertas rápidas— y el «3 duodecies»
+entero, la segunda implementación, todos con 0 (en «Medido»). No se corrieron las filas de los
+crates, la conformidad con el binario de referencia ni el artefacto: la máquina, compartida con
+otras tareas, estaba en una carga de 10,4 sobre cuatro núcleos.
+
+**De dónde sale.** Dos documentos redactados con IA esperaban la aceptación que describe
+`GENAI.md`: la evaluación del 01-10, desde que el §623 la integró («integrar no es aceptar», en su
+«Procedencia»), y el plano v2.0, desde el §637, en su «Estado» y en «Cómo se hizo». `GENAI.md`
+§«Alcance» los cuenta, desde el §700, entre los cinco sitios con la aceptación pendiente. Sin ella
+no cuentan como decisión del autor, y el RFC de capa 2 que pide la evaluación tiene que apoyarse en
+una base corregida. Y el §106 —«todo el camino de producción es poscuántico» y «una sola familia
+de supuestos», la resistencia del hash— convive desde el §632 y el §633 con ML-DSA-44, de
+retículos, en la nota del medio del ancla y en el kit, sin que ningún texto los concilie: el
+RFC-0013 no cita el §106, ni los asientos del §632 al §634, y `doc/firma-corta-evaluacion.md` lo
+daba por vigente sin excepción. Una sesión de Claude Code preparó la propuesta de decisión sobre
+`161a233`: midió cada corrección con su orden y separó lo que ya era un error al escribirse de lo
+que el árbol movió después. El autor la aceptó por escrito el 07-10-2026, en bloque, con otras
+propuestas de la misma sesión. Dos preguntas quedaban sin respuesta propuesta: el puente Ed25519,
+que esta propuesta dejaba en (a) o (b) sin recomendar ninguna, y si se adopta ARQ-01 y cuándo se
+construye el juez único, que salía de otra. La sesión propuso después (b) y adoptarlo antes del
+corte zkssl/0.5; quedan adoptadas por esa aceptación en bloque hasta que el autor diga otra cosa,
+y se le señalaron una a una. Para este sello todo se volvió a medir sobre `c990868`, y las citas
+`fichero:línea`, que el bloque del §694 al §704 había movido, se pusieron al día.
+
+**Lo que decide el autor.**
+
+1. **La evaluación del 01-10, ACEPTADA CON CORRECCIONES.** Su veredicto se mantiene: las capas 4
+   y 3 y el lado del verificador ya son de la casa; la capa 2 se decide por RFC tras un spike,
+   todavía pendiente; capa 1, no; y el borrador no es base. «Capa 1: no» queda fundado en el núcleo
+   congelado (`spec/NUCLEO.md` §2 y §5), en `CONTRIBUTING.md:149-157` y en que no hay un cuello de
+   capa 1 medido contra el objetivo; no en un comentario de `Cargo.toml` ni en `VISION.md`, que es
+   histórico. Las correcciones, en `doc/integracion-vertical-evaluacion.md` §«Correcciones (§705)».
+2. **El plano v2.0, ACEPTADO EN PARTE.** Se aceptan la línea base como registro, el diagnóstico
+   —los hallazgos y el veredicto de su verificador—, las cinco reglas de orden de su §4.6 y los
+   descartes de su §6. Ya aplicados: el corte 0 (§641 y del §650 al §655, descrito en el §656), el
+   problema de REND-01 y REND-02 por otra vía (§672 a §674, §676 y §677), SEC-2 por el §668, el
+   corte de cable único en el RFC-0018, el P1 de ARQ-11 en el §694, el paso (1) del ZK-1 en el §697
+   y el ZK-2, en la prosa, en el §698. Los cortes 1-8, los bocetos y las columnas de propuesta no
+   se aprueban como plan: cada uno entra, si entra, con su asiento o su RFC. El paso (2) del ZK-1,
+   la elección de q y de la molienda para el corte zkssl/0.5, queda fuera: es la entrada 116. Las
+   correcciones, en `doc/blueprint-v2.md` §«Correcciones (§705)».
+3. **Alcance: en este repositorio y en el proyecto NLnet.** El árbol de este repositorio y los
+   hitos de la propuesta 2026-11-009 (`spec/rfc/0005-nucleo-congelado.md:26`). Vale para las dos
+   aceptaciones y, por su nombre, para tres veredictos de la evaluación: «Capa 1: no», «Capa 2:
+   decidir por RFC» y «un módulo criptográfico nuevo: no; nombrar el que existe».
+4. **El §106, enmendado, no revocado.** Los asientos no se reescriben (`AUDITORIA.md:16076-16077`,
+   `:17187`): el §106 queda como está, y la enmienda es esta.
+
+   > **El §106 sigue en vigor para lo que protege**: que la validez del dinero y la firma oponible
+   > descansen en una sola familia de supuestos, la resistencia del hash. STARK/FRI, Rescue, Blake3,
+   > los árboles de Merkle y XMSS, que firma la cabeza, no cambian.
+   >
+   > **Excepción declarada: ML-DSA-44 en el medio del ancla (RFC-0013 D-C).** Desde el §632 el
+   > publicador firma la nota del medio con ML-DSA-44 (FIPS 204), tipo `0x06` de
+   > `tlog-cosignature`, y desde el §633 el kit la verifica. El motivo:
+   >
+   > 1. La nota tiene que verificarla un testigo ajeno y genérico. `signed-note` no tiene tipo
+   >    para XMSS, y el único tipo poscuántico que define ese ecosistema es `0x06`
+   >    (`spec/rfc/0013-el-medio-del-ancla.md:55-72`, `:120-126` y `:258-259`).
+   > 2. Esos testigos evitan las claves con estado, y una clave sin índice no la puede comprometer
+   >    un contador borrado (`:67-72`, `:125-126`). Es lo que pide la 103.
+   > 3. El daño está acotado. La firma oponible sigue siendo XMSS: una clave de nota robada permite
+   >    confusión y denegación, no fabricar cabezas (`:292-295`).
+   >
+   > **Lo que cuesta, dicho con la regla del propio §106.3**: la propiedad del ancla cofirmada
+   > descansa en la más débil de dos familias, la del hash y la de los retículos; y el veredicto
+   > del kit sobre la familia `ancla-cofirmada` depende además de `ml-dsa =0.1.1`, sin auditar
+   > (`README.md:49-51`; RFC-0013 D-H, `:240-242`). La conservación, las cabezas y su firma, no.
+   >
+   > **Lo que la excepción no cubre: ninguna firma clásica.** «Todo el camino de producción es
+   > poscuántico» sigue sin excepción.
+5. **El puente Ed25519 de RFC-0013 D-C no se construye mientras rija el §106.** Sería una firma
+   clásica en el camino del ancla, contra la mitad del §106 que no se enmienda. Así la puerta
+   anti-curvas que propone el ARQ-08 del plano, con `*25519*` en su lista, no necesita ninguna
+   excepción para la raíz del publicador. Sin puente, E3 se mide con `0x06` contra el verificador
+   de mtc-core, y contra testigos públicos cuando acepten `0x06`; el RFC-0013 D-H decía el
+   30-09-2026 que ninguno lo aceptaba, y aquí no se ha vuelto a mirar. La respuesta queda
+   adoptada con la aceptación en bloque, y es reversible, como las decisiones delegadas del
+   RFC-0013.
+6. **ARQ-01, adoptado.** Un solo juez de verificación, con la política de aceptación del juez y
+   constante, no de cada familia; y se construye antes del corte zkssl/0.5, como pide la regla (3)
+   del §4.6 del plano, para que el cambio de opciones de ese corte toque un sitio y no 21. No se
+   construye aquí: es la entrada 117, nueva. La respuesta queda adoptada con la aceptación en
+   bloque, y es reversible, como las decisiones delegadas del RFC-0013.
+
+**Lo que hace.**
+
+1. **`doc/integracion-vertical-evaluacion.md`.** «Estado» y «Procedencia» dicen la aceptación, y
+   entre la cabecera y su §1 nace «Correcciones (§705)»: lo que se acepta y el alcance; los diez
+   errores, E1 a E10, con su sitio por sección y fila, su corrección y su evidencia, y dos matices;
+   las ocho cifras de foto; el fundamento corregido de «Capa 1: no»; y el estado de lo que dejaron
+   su §5 y su §8. El cuerpo no cambia en ninguna línea: baja 96.
+2. **`doc/blueprint-v2.md`.** «Estado» y la frase de la aceptación de «Cómo se hizo» dicen la
+   aceptación en parte, y entre la cabecera y su §1 nace su «Correcciones (§705)»: lo que se
+   acepta, ARQ-01 dentro; lo que no se acepta como plan; lo ya aplicado; lo que sigue sin hacer; y
+   seis correcciones. El cuerpo baja 60, y solo cambian en él las dos citas por línea a la
+   evaluación, en la fila de ARQ-06 de su §3.4 y en la de «Circle STARK» de su §6: cada una dice
+   la línea hasta el §704 y la de desde el §705, como hizo el §694 con la de
+   `crates/zk-ssl-verify/src/lib.rs`.
+3. **`spec/rfc/0013-el-medio-del-ancla.md`.** La cabecera nombra este asiento; D-C gana la nota
+   «Decidido por el autor en el §705», que dice que lo adopta la aceptación en bloque y que es
+   reversible, como D-A a D-H; D-H, un «Corregido (§705)» sobre cómo se mide E3 sin puente; y
+   «Seguridad», un punto nuevo, «El §106, enmendado en el §705», y una línea en el del puente. Como hicieron el §631 y el §633 con este RFC, lo de antes se deja y se corrige con una
+   nota. El RFC sigue PROPUESTO.
+4. **`doc/firma-corta-evaluacion.md`**, en su respuesta corta: «que la casa rechazó en
+   `AUDITORIA.md` §106 (con la excepción del §705 para el medio del ancla, ML-DSA-44, que es de
+   retículos y no de esa familia)». La familia de la que habla es la multivariante, la de `uov-Is`.
+   Su aceptación sigue pendiente, y no se toca nada más.
+5. **`spec/README.md`**, en la fila del RFC-0013: donde declaraba el puente, la excepción y el
+   puente sin construir, con la misma reserva.
+6. **`GENAI.md` §«Alcance»**, en sus dos mitades: a 8 de octubre lo dicen tres sitios, y los dos
+   documentos aceptados lo decían hasta este asiento.
+7. **`BACKLOG.md`**: la 117, nueva, en el grupo C detrás de la 116; una nota en la 56, la del §106;
+   y la cabecera.
+
+**Medido.** Sobre `c990868`, desde la raíz, salvo donde se dice otra cosa.
+
+- **El fork**, con `git diff --no-index --numstat` del `src/` de cada crate contra el `.crate`
+  0.13.1 de crates.io, sacado de la caché del registro y con el sha256 que da la línea 3 de su
+  `Cargo.toml` (`ef01227f…`, `84cc631e…` y `0425ea81…`): `winter-air`, 7 ficheros, +329/−3;
+  `winter-prover`, 6, +427/−2; `winter-verifier`, 1, +73/−1. Son +829/−6 en 14 ficheros. Sin
+  líneas en blanco ni las que empiezan por `//`, las añadidas son 218, 335 y 64: 617, y 399 sin el
+  AIR. En `e8ac246`, con `git archive` de los tres `src/`: +320/−3, +420/−2 y +73/−1, +813/−6.
+- **`fields::f64`**, con `git grep -l 'fields::f64' <rev> -- crates/ ':!crates/winter-*'`: 89 en
+  `e8ac246` y en `161a233`, y 90 en `c990868`, por `crates/zk-ssl/src/nivel_de_produccion.rs`
+  (§697). `fields::f128`, 3 en los tres. Ninguna de las variantes probadas da 68 en `e8ac246`: con
+  el fork, 96 ficheros; en todo el árbol, 97; por líneas, 109; solo en los `src/*.rs` de primer
+  nivel, 79.
+- **Los KAT del núcleo**: `python3 -B tools/segunda/juez_nucleo.py`, «29 de 29 vectores
+  reproducidos byte a byte»; `git ls-tree` de `spec/vectors/nucleo/`, 26 en `e8ac246` y 29 en
+  `161a233` y en `c990868`.
+- **Las clausuras**, con el método de la evaluación (`cargo tree -p <crate> -e normal --prefix
+  none --locked --offline | sed 's/ (.*//' | sort -u | wc -l`): `zk-ssl-hash` 17, `zk-ssl-air` 25,
+  `zk-ssl-verify` 61, `stark-experiment` 52 y `zk-ssl` 68. En la capa, `cargo tree -i` da
+  `argon2`, `base64ct` y `blake2` solo por el `argon2` que añadió el §702.
+- **Los manifiestos** de `FAMILIAS` (`tools/artefacto.sh:31`), por nombres distintos de vector en
+  las líneas no comentadas: 316 en `e8ac246`, con las diez familias de entonces, y 384 en
+  `161a233` y en `c990868`, con doce. En líneas, 384 y 399: las 15 de más son las que añadió el
+  §693 para nombrar la causa de vectores que ya estaban.
+- **La segunda implementación**, el bloque «3 duodecies» del canon entero, con este asiento en su
+  sitio: `juez_nucleo`, 29 de 29; `juez_cabezas`, 466 de 516 cabezas y 10 de 14 cofirmas
+  verifican, y de los 54 ficheros con alguna que no, ninguno es positivo según su `MANIFIESTO`;
+  `kat_xmss`, 8 de 8 firmas, y los tres falsadores callan; el segundo verificador, con
+  `bash tools/conformidad.sh tools/segunda/verificador.py` sobre los manifiestos de `paquete`,
+  `consumo`, `conflicto`, `ancla` y `rotacion`, 83 de 83 entradas, 14, 17, 22 y 34; y
+  `juez_stark`, 28 de 28 pares, y sus 33 falsadores callan. Todos salen con 0, en 67 s.
+- **El censo de AIR**, con `git grep -E 'impl(<[^>]*>)? +Air +for'` fuera de `crates/winter-*`: 38
+  en `161a233` y en `c990868`, 32 en `stark-experiment`, 5 en `zk-ssl-air` y 1 en `zk-ssl`.
+- **Las líneas de los dos crates**, `wc -l` de los `.rs` de `src/`: `zk-ssl-verify` 7.443 y `zk-ssl`
+  25.970 en `e8ac246`; 9.552 y 26.499 en `161a233`; 10.054 y 28.040 en `c990868`. Los RFC, con
+  `git ls-tree spec/rfc`: la plantilla y del 0002 al 0014 en `e8ac246`; la plantilla y del 0001 al
+  0019 en `c990868`.
+- **La rama de la evaluación**: `71de3d3` y `808e9b9` son antecesores de `origin/main`
+  (`git merge-base --is-ancestor`).
+- **El §106 y el puente.** `grep` de «106» en el RFC-0013: 0; en el texto del §632 al §634: 0.
+  `git grep -i ed25519` en los `Cargo.toml` y en `Cargo.lock`: 0. En todo el árbol fuera de los
+  asientos lo nombran el RFC-0013 (seis líneas, cuatro del puente), la fila del RFC-0013 de
+  `spec/README.md`, la pregunta de la 83 en el `BACKLOG.md`, la fila de Solana de `SECURITY.md` y
+  un comentario de `crates/zk-ssl/src/log.rs`. «Una sola familia de supuestos», fuera de los
+  asientos y de `doc/ecst/`: la 56 y `doc/firma-corta-evaluacion.md`.
+- **Lo que el plano deja sin hacer**: `git grep 'try_lock\|_cerrojo' crates/zk-ssl-guardian/src`,
+  0 (SEC-1); no hay `crates/zk-ssl-air/src/juez.rs` (ARQ-01); `crates/zk-ssl-node/Cargo.toml:21`
+  sigue con `default = ["dev"]` (ARQ-02). Los seis `winterfell` de los `Cargo.toml` llevan
+  `=0.13.1` (ARQ-11, P1, hecho en el §694). Las 21 verificaciones de la regla (3): las 15 de la
+  capa que cuenta `toda_verificacion_viva_de_la_capa_lee_con_sal`
+  (`crates/zk-ssl/src/lib.rs:1237`), `verify_threshold_pair` y una `verify::<` en cada uno de los
+  cinco ficheros de AIR de `crates/zk-ssl-air/src`.
+- **Lo que la evaluación deja**: «PR 293» en `AUDITORIA.md`, `BACKLOG.md` y RFC-0009, 0; «mapa de
+  una p», solo en la evaluación; `getrandom` o `wasm` en `doc/issue-rustcrypto.md`, 0; «ocho
+  herramientas», solo en el punto 6 de su §8, que el §700 ya cerró.
+- **Las citas por línea** a los dos documentos, con `git grep` de su nombre seguido de `:` y un
+  número: dos, las del plano a la evaluación, que este sello pone al día. Al plano no lo cita nadie
+  por línea. Las de los dos bloques y de este asiento se leyeron sobre el árbol final: las del
+  `BACKLOG.md` ya con la 117 dentro, y las del RFC-0013 con sus notas.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 1862 declarados,
+  ninguno anidado; `check_modulos`, 204 ficheros, todos declarados; `check_vectores`, 477 vectores
+  y 925 líneas con su huella, ninguno tocado, y lo mismo `--desde` la base en `origin/main`;
+  `check_cifras`, 26 cifras de tests y ninguna contradice el canon; y las otras del bucle «2
+  ter»: `verificar_citas`, `check_figures`, `check_columns`, `check_constraint_layout`,
+  `check_dominios`, `check_publicadas`, `check_nucleo` y `check_techo`. Las doce salen con 0.
+  `verificar_citas` pasa de 51 a 57 encabezados citados, 0 muertos. Los seis nuevos: el bloque de
+  la evaluación, citado desde el plano y desde este asiento; el del plano, desde este asiento; y dos
+  de `GENAI.md`: «Cómo se usa, exactamente», desde el bloque de la evaluación, y «Alcance», dos
+  veces desde este asiento. Ningún vector se toca, así que `tools/conformidad.sh` solo se corrió
+  con el segundo verificador, arriba.
+- **Lo que leen los tests**: `git grep` en `crates/` de los nombres de los ocho ficheros del sello,
+  y de `include_str!`, `read_to_string` y `CARGO_MANIFEST_DIR` con un `.md`: el único documento que
+  lee un test es `spec/RPC.md`, que el sello no toca.
+
+**Probado.** Ningún test nuevo: el sello no toca código. Los dos bloques quedan citados por su
+encabezado, y `verificar_citas` los vigila: en una copia de los `.md` y los `.rs` del árbol con el
+encabezado de la evaluación renombrado, sale con 1 y nombra sus dos citas, la del plano y la de
+este asiento, «ENCABEZADO MUERTO», con 57 citados y 2 muertos; con el encabezado restaurado, igual
+byte a byte que el del árbol (`cmp`), 57 y 0, y sale con 0.
+
+**Contadores.** Ningún test ni pin se mueve: `check_tests` sigue en 1862, el TOTAL DE SELLO en
+1703 y el TOTAL CON LARGOS en 1840, como los dejó el §704. El `BACKLOG.md` pasa de 45 a 46
+abiertas, con la 117, y sigue en 73 resueltas.
+
+**Lo que NO hace.** No decide la capa 2, no elige los parámetros del corte zkssl/0.5 y no construye
+ningún corte ni el juez. No reescribe el §106 ni el cuerpo de los dos documentos: los corrige en
+bloque, como el §626 corrigió la evaluación y el §631 y el §633 el RFC-0013. No cambia el estado del
+RFC-0013, que sigue PROPUESTO con sus decisiones delegadas: decide el puente de D-C, reversible como
+ellas. No acepta
+`tools/segunda/`, que el punto 2 del §8 de la evaluación deja al autor, ni
+`doc/firma-corta-evaluacion.md`, ni `doc/ecst/`, cuyas citas del §106 son fuentes fechadas. No
+añade a `SECURITY.md` una fila de ML-DSA-44: lo que cuesta la excepción lo dicen la «Seguridad» del
+RFC-0013 y este asiento. No toca `PRINCIPIOS.md`, cuyo §7, punto 2, sigue diciendo «colisión en
+2³²» sin la marca de la entrada 15 (el E4). No vuelve a compilar el `.wasm` ni lo pasa por los
+manifiestos bajo wasmtime, ni vuelve a medir los 3,98-4,93 ms de verificar.
+
+**Lo que NO cierra.** El spike y el RFC de capa 2. El mapa de una página del módulo. El asiento
+que diga que D-F no pesó el PR 293. La línea de `getrandom` y WASM en el issue a RustCrypto. El
+juez único, la 117, y el paso (2) del ZK-1, la 116. SEC-1, ARQ-02 y los cortes del plano. La E3
+del RFC-0013. Y la marca de `PRINCIPIOS.md` §7.

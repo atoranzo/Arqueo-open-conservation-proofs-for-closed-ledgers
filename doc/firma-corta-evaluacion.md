@@ -8,8 +8,9 @@ seguridad y sin árboles de estado**?
 
 **Respuesta corta: no.** Las tres condiciones juntas chocan con una aritmética que este árbol ya
 tiene escrita en un test, y todo lo que hoy baja de 100 bytes descansa en una familia de supuestos
-que la casa rechazó en `AUDITORIA.md` §106. Lo que sí sale de las piezas de la casa es otra cosa,
-más pequeña y medible, y se dice por su nombre en §6.
+que la casa rechazó en `AUDITORIA.md` §106 (con la excepción del §705 para el medio del ancla,
+ML-DSA-44, que es de retículos y no de esa familia). Lo que sí sale de las piezas de la casa es
+otra cosa, más pequeña y medible, y se dice por su nombre en §6.
 
 **Estado**: evaluada, sin código. Medido sobre `da6a768` (S588) en la máquina de la sesión.
 

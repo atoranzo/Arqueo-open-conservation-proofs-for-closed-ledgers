@@ -10,7 +10,11 @@ con qué números**
 > target the repository sets is 21-105 operations/s. It proposes an ordered refactoring in cuts,
 > the first of which closes eight findings under embargo that this document does not describe.
 
-**Estado**: PROPUESTA. Nada de lo que aquí se propone está construido en el árbol ni medido como
+**Estado**: **ACEPTADO EN PARTE** por el autor el 07-10-2026, en el §705 de
+[`AUDITORIA.md`](../AUDITORIA.md): el diagnóstico, los descartes y las reglas de orden, sí; los
+cortes 1-8 y los bocetos siguen siendo candidatos. Lo que acepta, lo que no y lo que corrige va en
+el bloque de abajo, «Correcciones (§705)», que manda donde discrepe del texto. Al escribirse era una
+PROPUESTA: nada de lo que aquí se propone estaba construido en el árbol ni medido como
 sistema: los bocetos solo se compilaron, y dos se ejecutaron, en una copia desechable (§5.4).
 Discutirlo y decidir es del autor: pasos 2 y 3 de [`GENAI.md`](../GENAI.md). Cada
 corte del §5.3 es un candidato a bloque, no un bloque.
@@ -41,8 +45,8 @@ público del enjambre (el expediente sin lo embargado) y del árbol. Después lo
 agentes más de la misma sesión (citas, cifras, embargo, bocetos y completitud), un corrector
 aplicó sus correcciones y los bocetos se compilaron en una copia desechable de `e69fadd` (§5.4).
 Ninguna persona lo revisó antes de escribirse. La aceptación que describe
-[`GENAI.md`](../GENAI.md) queda pendiente, como en
-[`firma-corta-evaluacion.md`](firma-corta-evaluacion.md).
+[`GENAI.md`](../GENAI.md) quedó pendiente hasta el §705, que la da en parte; la de
+[`firma-corta-evaluacion.md`](firma-corta-evaluacion.md) sigue pendiente.
 
 **Embargo** ([`SECURITY.md`](../SECURITY.md) §5: los fallos de solidez se reportan en privado
 antes de divulgarse). **Ocho hallazgos están en embargo: cuatro P0, tres P1 y un P2.** Se entregaron
@@ -61,6 +65,62 @@ esas cifras ya no son la base vigente, aunque sigan siendo correctas como regist
 **Identificadores**: REND-n (rendimiento), ZK-n (criptografía), SEC-n (seguridad) y ARQ-n
 (arquitectura) son los de este documento. La correspondencia con el expediente del enjambre la
 tiene el autor.
+
+---
+
+## Correcciones (§705)
+
+**Aceptado en parte.** El autor lo acepta el 07-10-2026, en el §705 de
+[`AUDITORIA.md`](../AUDITORIA.md), con alcance «en este repositorio y en el proyecto NLnet». El
+cuerpo no se reescribe: este bloque manda donde discrepen. Lo de hoy se midió sobre `c990868`, el
+commit anterior al §705.
+
+**Lo que se acepta.**
+
+- §2, la línea base, como registro, con sus etiquetas: MEDIDO, ESTIMADO, SUPUESTO y pre-§538.
+- §3, el diagnóstico: los hallazgos y el veredicto de su verificador. El ZK-1 y el ZK-2 eran
+  ciertos cuando se escribieron; después, el §697 construyó el paso (1) del ZK-1 y el §698 hizo el
+  ZK-2 en la prosa (las dos notas de §3.2).
+- §4.6, las cinco reglas de orden.
+- §6, los descartes.
+- **ARQ-01**, que el autor adopta con la aceptación en bloque, y de forma reversible: un solo juez
+  de verificación, con la política de aceptación del juez y constante, no de cada familia,
+  construido **antes** del corte de cable zkssl/0.5, como pide la regla (3) de §4.6. Es la entrada
+  117 de [`BACKLOG.md`](../BACKLOG.md). Su forma —la del boceto 1 u otra— entra con su asiento.
+
+**Lo que no se acepta como plan.** §5.3, los cortes 1-8, y §5.4, los bocetos, siguen siendo
+candidatos a bloque, y la columna de propuesta de las tablas de §3, §4 y §5.1 también: cada uno
+entra, si entra, con su asiento o su RFC. Fuera de esta decisión queda el paso (2) del ZK-1, la
+elección de q y de la molienda para el corte zkssl/0.5: es la entrada 116.
+
+**Lo ya aplicado, por esta vía o por otra.**
+
+| propuesta | estado | dónde |
+|---|---|---|
+| el corte 0 | hecho | §641 y del §650 al §655; descrito en el §656 y en [`SECURITY.md`](../SECURITY.md) §3.9 |
+| REND-01 y REND-02, el trabajo que crece con la historia bajo el candado | el mismo problema, resuelto por otra vía: `rebuild_from` y cimas al día, no `FronteraDensa`. Que es el mismo sale de leer los asientos, no de una medida | §672, §673, §674, §676 y §677 |
+| SEC-2, el tope de `max_supply` | por otra vía: `MAX_SUMINISTRO` = 2^62 − 1 en `new` y en `open`, no `canon63` con 2^63 | §668; `crates/zk-ssl/src/lib.rs:1058`, `:1074`; `crates/zk-ssl/src/persistence.rs:59-60` |
+| un solo corte de cable, zkssl/0.5 | adoptado como principio en un RFC propuesto | `spec/rfc/0018-el-tren-0-5.md:19` |
+| ARQ-11, P1: `winterfell = "=0.13.1"` en los seis crates | hecho | §694 |
+| ZK-1, paso (1) | hecho | §697 |
+| ZK-2 | hecho en la prosa | §698 |
+
+Sin hacer, a `c990868`: SEC-1 (`git grep 'try_lock\|_cerrojo' crates/zk-ssl-guardian/src`, 0),
+ARQ-01 (no hay `crates/zk-ssl-air/src/juez.rs`) y ARQ-02 (`crates/zk-ssl-node/Cargo.toml:21`
+sigue con `default = ["dev"]`).
+
+**Correcciones.** Casi todas son cifras que el árbol movió después de `e69fadd` (§632), sobre el
+que se escribió el plano. Dos son de otra clase: la colisión, que hereda de la evaluación, y el
+nivel demostrable, que ya entonces dependía del circuito.
+
+| dónde | dice | corrección | evidencia |
+|---|---|---|---|
+| §3.3, la entrada; §6, filas «Bulletproofs» y «Circle STARK» | rango de 63 bits | **62 bits** desde el §641 (RFC-0017) | `crates/stark-experiment/src/range_check.rs:8-15`, `:76` |
+| §6, fila «Circle STARK» | «con 31 bits la colisión de identidades baja a 2^15», citando la evaluación | hereda el E4 de la evaluación: esa colisión ya estaba tachada como corregida | `BACKLOG.md:1401-1408`, en la entrada 15; `doc/integracion-vertical-evaluacion.md` §«Correcciones (§705)» |
+| §6, filas «Recursión» y «Dos rondas de Rescue» | «35 AIR» | es el censo de RFC-0009, no una cuenta: fuera del fork hay 38 `impl Air for`, y el kit verifica 5 | `git grep` de `impl … Air for` fuera de `crates/winter-*` |
+| §3.4 y §4.3, ARQ-06 | «los 316 vectores» | **384 vectores en 12 manifiestos**, los de `FAMILIAS` en `tools/artefacto.sh:31`; el corte 3 ya dice «todos los vectores de los manifiestos del kit» | los `MANIFIESTO.txt` |
+| §2.3, §3.2, §5.1 («seguridad demostrable») y §7.3 | «LDR 80, UDR 59» como el nivel demostrable de producción | es el de las familias de longitud fija más largas, envío, cobro y quema. La LDR depende de la longitud de la traza: 80-88 en las de longitud fija y menos en la edad con `m` alta. El nivel que se declare tiene que nombrar el circuito y la longitud | los tests del §697; `SECURITY.md` §3.11; la entrada 116 |
+| §3.3 y §4.5, SEC-2; §5.3, el corte 2 y la tabla de crates | `canon63` y «`max_supply` ≥ 2^63 deja de abrir» | lo hizo el §668, con 2^62 − 1 | la fila de SEC-2 de arriba |
 
 ---
 
@@ -321,7 +381,7 @@ tocan.
 | ARQ-03 | El SDK convierte todo rechazo en texto | P1 | MATIZADO (los campos siguen dentro de la cadena; se pierde el tipo, no el dato) | `ErrorNodo` tipado y `Rpc::call_tipado`. La recepción del rechazo viaja como `Constancia` cruda (el tipo del §606), documentada como **afirmación del nodo**: no es evidencia hasta que el kit la juzga contra la cabeza firmada. El SDK no la verifica ni la reescribe (la réplica DEFIENDE esto en parte: verificarla en el SDK duplicaría lógica del kit y metería `zk-ssl-verify` en su clausura), no reintenta ni regenera por su cuenta, y su documentación prohíbe regenerar tras un error de transporte sin consultar si la operación se aplicó. `es_estado_viejo()` no se publica sin la consulta de ARQ-07: regenerar tras un timeout sin consultar puede pagar dos veces. `anyhow` queda solo en los ejemplos | `crates/zk-ssl-sdk/src/lib.rs:59-82` |
 | ARQ-04 | `zk-ssl-wire` arrastra la capa, sled y el probador a todo consumidor de los DTO, testigo incluido | P1 | MATIZADO (el coste ya estaba medido y aceptado en §312 y §543; lo nuevo es endurecer la regla) | Partir el cable en un crate ligero (serde, `zk-ssl-hash`, `zk-ssl-verify`) y mover las conversiones a `zk_ssl::cable`; el testigo, a su propio binario con una puerta de clausura sin `winter-prover`, `winterfell`, `zk-ssl`, `stark-experiment` ni `sled`, y con prueba de vida (`xmss`, `zk-ssl-verify`). Crates, no features (RFC-0011 D-A). Se declara como decisión nueva | `crates/zk-ssl-wire/Cargo.toml:20-28`; `crates/zk-ssl-cli/src/prenda.rs:293-338` |
 | ARQ-05 | `SovereignLayer` es un objeto-dios, y el puente ISO entra por la vía con la clave en la capa | P2 | MATIZADO (18 ficheros; un `Almacen` en memoria «para tener dos llamadores» es un llamador artificial: el §580 deja `podar` sin conectar hasta que haya un operador real) | Partir por rol sin cambiar semántica: los métodos que reciben clave (`send`, `claim`, `refund`, `deissue`) pasan a `tests_support`; el puente ISO se rehace sobre materiales. El trait `Almacen` solo con un integrador concreto y con su contrato escrito: lote atómico y durable al volver de `flush`; sellado por encima del trait; la puerta de integridad del arranque en la capa; un falsador con un almacén que falla a mitad de lote | `crates/zk-ssl/src/two_phase.rs:791`, `:866-867`; `crates/zk-ssl/src/iso.rs:425-487` |
-| ARQ-06 | El verificador independiente solo se puede usar como proceso | P2 | MATIZADO (el bloqueo de wasm-bindgen es getrandom vía xmss, `doc/integracion-vertical-evaluacion.md:321`) | `zk-ssl-verify/src/sobre.rs` con `pub fn verificar_sobre(&Value) -> Veredicto` (sin `Default`, con `DeclaradaNoProbada` separado de `Verde` en el tipo); `main.rs` queda como envoltorio. Como biblioteca, `verificar_sobre` tiene que ser una función total: toda entrada, bien formada o no, da un `Veredicto`. En el mismo corte, un test que recorra los 316 vectores con una mutación por campo y exija un `Veredicto` Rojo. FFI y WASM solo con un llamador real | `crates/zk-ssl-verify/src/main.rs:1647-1659` |
+| ARQ-06 | El verificador independiente solo se puede usar como proceso | P2 | MATIZADO (el bloqueo de wasm-bindgen es getrandom vía xmss, `doc/integracion-vertical-evaluacion.md:321` hasta el §704; desde el §705, `:417`) | `zk-ssl-verify/src/sobre.rs` con `pub fn verificar_sobre(&Value) -> Veredicto` (sin `Default`, con `DeclaradaNoProbada` separado de `Verde` en el tipo); `main.rs` queda como envoltorio. Como biblioteca, `verificar_sobre` tiene que ser una función total: toda entrada, bien formada o no, da un `Veredicto`. En el mismo corte, un test que recorra los 316 vectores con una mutación por campo y exija un `Veredicto` Rojo. FFI y WASM solo con un llamador real | `crates/zk-ssl-verify/src/main.rs:1647-1659` |
 | ARQ-07 | Integración con un libro mayor existente: sin consulta de idempotencia ni adaptador de identidades | P2 | MATIZADO (el cursor de eventos ya existe: `zkssl_logEntries {fromSeq, limit}`, `spec/RPC.md:88`) | Se quita la propuesta del cursor. Queda `zkssl_estadoDePrueba` (índice proofDigest → logSeq, O(1) frente a recorrer `logEntries` desde un seq), que devuelve solo aplicada o no y el logSeq, más la deduplicación ISO por (MsgId, EndToEndId) en el adaptador, no en la capa | `spec/RPC.md:88`, `:101`; `crates/zk-ssl/src/iso.rs:284-306` |
 | ARQ-08 | Lo comparativo vive en el workspace de producción: 104 de 329 nombres del lock en `7d13f26` (102 de 335 en `e69fadd`), todas las curvas y el 92 % del `--completo` | P1 / P2 / P3 | MATIZADO (`sled` no sale de la capa; el precedente de MTC favorece extraer, no un segundo workspace) | P1, ya: un test de clausura sobre `Cargo.lock` por cada raíz de producción que prohíba `ark-*`, `halo2*`, `pasta_curves`, `dusk-*`, `nova-snark`, `pairing`, `group`, `ff`, `bls12_381`, `blst`, `*25519*`, `k256` y `p256`, con prueba de vida. P2: los 11 módulos sin llamador de `stark-experiment` se mudan a los comparativos, sin borrar nada (BACKLOG 56). P3, opcional: extraer o segundo workspace, declarando que se aparta de `doc/integracion-vertical-evaluacion.md` §5.5 y de `doc/MTC.md` | `Cargo.toml` (miembros); `crates/stark-experiment/src/lib.rs:1-8` |
 | ARQ-09 | Ficheros monolito: qué mezclan y cómo partirlos sin reabrir la decisión del §598 | P2 | MATIZADO (la decisión es la del §598, RFC-0011, no la del §589) | Después del corte 0 y en sellos de mudanza pura (mover sin editar): `main.rs` del nodo en módulos del mismo binario (`args`, `app`, `arranque`, `modos`, `rpc/…`), sin biblioteca del nodo; `two_phase.rs` en pendientes, envío, cobro, lote, caducidad y emisión pendiente; `witness.rs` coordinado con ARQ-04; `crates/zk-ssl/src/tests.rs` (3.353 líneas) en submódulos por dominio. El enrutador recibe parámetros ya deserializados fuera del candado (REND-10) | `crates/zk-ssl-node/src/main.rs:1813`; [`AUDITORIA.md`](../AUDITORIA.md) §598 |
@@ -1156,7 +1216,7 @@ impl Rpc {
 | «Zero-sum proofs» sobre compromisos homomórficos | Necesitan Pedersen. En un libro de un solo escritor la suma cero ya es una restricción del AIR de cada operación; agregarla por época no añade solidez y añade un circuito | encargo genérico |
 | Recursión o agregación (RISC Zero, Plonky3, Miden) | RISC Zero medido: recibo de 223.234 B constante con 40,9 s de prueba y 23,8 s de compresión en GPU (§306). Miden descartada por zkVM; Plonky3 sería migrar los AIR: 28 circuitos al escribirse [`DIAGNOSTICO_ESCALADO.md`](DIAGNOSTICO_ESCALADO.md) §6.4.bis, y hoy 35 (censo de RFC-0009 D-G). Solo encaja el cobro agregado de un mismo titular (ZK-7) | encargo genérico |
 | Delegar la generación a GPUs, optimizar MSM, agregar con Nova o Halo2 | Prueba el cliente y el testigo lleva material de la clave de gasto (DIAGNOSTICO §2.2); no hay MSM en producción (DIAGNOSTICO §2.1); curvas | encargo genérico |
-| Circle STARK, Stwo, campos de 31 bits (M31, BabyBear) | QM31 da ≈124 bits (ESTIMADO: 4 × 31), por debajo de los 127 declarados; cambiar el campo cambia Rescue-Prime sobre Goldilocks, que es núcleo (`spec/NUCLEO.md:248`, §6); y con 31 bits la colisión de identidades baja a 2^15 y el rango de 63 bits quedaría en 30 (`doc/integracion-vertical-evaluacion.md:79`) | encargo genérico |
+| Circle STARK, Stwo, campos de 31 bits (M31, BabyBear) | QM31 da ≈124 bits (ESTIMADO: 4 × 31), por debajo de los 127 declarados; cambiar el campo cambia Rescue-Prime sobre Goldilocks, que es núcleo (`spec/NUCLEO.md:248`, §6); y con 31 bits la colisión de identidades baja a 2^15 y el rango de 63 bits quedaría en 30 (`doc/integracion-vertical-evaluacion.md:79` hasta el §704; desde el §705, `:175`) | encargo genérico |
 | Otro hash en el circuito (RPO, Poseidon2, Griffin, Anemoi); Rescue en FRI y Fiat–Shamir; Blake3-192 en el vector commitment | Rescue es núcleo congelado (`spec/NUCLEO.md` §2 y §6): cambiarlo es versión nueva del preámbulo y unos 380 vectores, sin ganancia en el AIR. Rescue en FRI solo sirve para la recursión, descartada, y multiplicaría el coste de Merkle en nativo. Blake3-192 da 96 bits de resistencia a colisiones, por debajo del nivel declarado | encargo genérico (otro hash, Rescue en FRI); especialista de criptografía |
 | Plegado FRI 16 o 4; un solo árbol de Merkle para traza y composición, o caps; LogUp o batching algebraico | El modelo da más bytes con 16 o 4 que con 8 en este dominio (≈84,0 y ≈85,5 KB frente a ≈78,9, ESTIMADO). La composición depende de desafíos que se sacan después de comprometer la traza, y `BatchMerkleProof` ya poda los niveles altos. Los rangos no alargan la traza, y el batching algebraico resta bits demostrables | encargo genérico (plegado FRI); especialista de criptografía |
 | Dos rondas de Rescue por fila (T = 512), o quitar la subida de congelados | La primera suma 24 columnas, sube la prueba ≈10 KB (ESTIMADO) y obliga a rehacer los 35 AIR y su FV: peor que ZK-3. La segunda deja 560 filas, que siguen en 1024, y el arreglo B quiere atarla, no retirarla | especialista de criptografía |
