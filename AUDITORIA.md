@@ -49481,8 +49481,16 @@ los cortó. Todo lo demás salió verde: las otras dieciocho filas del nivel con
 conformidad 0.1 a 0.4, los once manifiestos del kit, los rechazos del cable y la rotación, la segunda
 implementación y el artefacto reproducible. El cambio no toca ningún fichero que un test de Rust
 compile o lea: el único `.md` que lee un test es `spec/RPC.md`. Las nueve herramientas de `tools/` se
-corrieron otra vez sobre el texto final de este asiento: verdes. El autor puede volver a correr el
-canon en su máquina, donde la fila cabe en su tiempo, antes de llevarlo a `main`.
+corrieron otra vez sobre el texto final de este asiento: verdes.
+
+**Anexo: el canon en la máquina del autor.** El autor corrió el canon `--sello` en su máquina antes de
+llevar este cambio a `main`, y salió VERDE: `zk-ssl-cli` con 139 de 139 en 66 s, dentro de sus
+120, y las otras dieciocho filas con sus pines, 744 s de tests. Lo corrió sobre `2ac6db4`, el padre
+de este commit, y no sobre él: los comandos que la sesión le dio lo ponían después de `git pull` en
+`main` y antes del `merge`. Mide, por tanto, lo que el ROJO del contenedor dejaba en duda —que la
+fila de `zk-ssl-cli` cabe en su tiempo en esa máquina—, y no el texto de este asiento ni el del
+RFC: esos los leyeron en el contenedor las nueve herramientas de `tools/`, verdes, y ningún test de
+Rust lee ninguno de los dos. El canon que mide un cambio va después del `merge`, o sobre la rama.
 
 **Lo que NO hace.** No mueve el estado del RFC-0013, que sigue PROPUESTO, ni sus decisiones D-A a
 D-H, ni la E3, que sigue sin construir. No toca `doc/MTC.md`, que cuenta la extracción y no fija un
