@@ -50626,3 +50626,283 @@ plano, que cubre su nota. No mide `m = 24`. No corre el canon entero ni el artef
 un kit.
 
 **Lo que NO cierra.** La 116.
+
+## §709 — un solo proceso por contador: el guardián toma un cerrojo sobre su fichero, y al firmar los contadores van con ruta absoluta y sin valor por defecto; lo que el cerrojo no cubre, dicho
+
+El commit que lleva este asiento, sobre `54fe931` (el §708). Un solo sello: el cerrojo de
+`GuardianIndice::abrir` en `crates/zk-ssl-guardian`, con la carpeta canónica, el rechazo de un
+enlace simbólico, el `fsync` de la carpeta al crear el contador y la regla de las rutas al firmar,
+`exigir_ruta_absoluta`; esa regla en las banderas del nodo (`--indice-firma`,
+`--contador-recepcion`) y del testigo (`--indice-cofirma`); `rust-version = "1.89"` en el guardián,
+el nodo, el cli y el sdk; doce tests en los tres crates y un banco nuevo,
+`tools/banco_un_proceso.sh`; lo que el cerrojo no cubre, en `SECURITY.md` §2, en la cabecera de
+`doc/CONFIANZA_RESIDUAL.md`, en la doc del guardián y en `PRINCIPIOS.md`; una nota en la 92 del
+`BACKLOG.md`, con las tres celdas de los bloques «Correcciones (§705)» que citan por línea lo que
+esa nota mueve; la fila de SEC-1 en la tabla de lo ya aplicado de `doc/blueprint-v2.md`; los
+contadores; y este asiento. Lo propuso el 07-10-2026 una sesión de Claude Code, a petición del autor
+y aplicando los principios del proyecto; no consta que el autor haya confirmado la propuesta, y rige
+hasta que diga otra cosa («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code, y
+lo commitea la sesión que la lanzó, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. Después, una revisión, también de Claude Code, pidió correcciones, y se aplicaron
+antes del commit. Una era bloqueante: este asiento daba la propuesta por aceptada y decidida por el
+autor el 07-10-2026, y ningún registro suyo lo recoge; ahora dice quién propuso qué. Las otras: que
+el PID del error se encuentre también donde `fstat` y `/proc/locks` no dan el mismo dispositivo, y
+que los tests no exijan el PID sino que, si lo hay, sea el propio; que cada reserva escriba por el
+descriptor que tiene el cerrojo y no reserve si la ruta ya no es ese fichero; que el rechazo del
+enlace simbólico se compruebe también sobre lo abierto; y decir que `doc/ecst/VERIFICACION.md`
+conserva la frase de K.1 que el sello corrige en el guardián. El número es el siguiente libre: la
+rama llega al §708, y ninguna de las seis ramas de `origin` que conoce el clon (el `AUDITORIA.md` de
+cada una) lleva un §709: la propia rama en `origin` llega al §702, `main` al §693, y las otras
+cuatro al §685, §658, §641 y §627. El sello no toca la capa, el cable, el kit ni ningún vector: lo
+que cambia es cuándo arrancan el nodo y el testigo. En la sesión no se corrió el canon entero: sí
+las filas de los crates que toca y la del kit, que compila el guardián en sus tests, con la orden de
+su fila; el banco nuevo, sobre este árbol y sobre `54fe931`; los veinticuatro bancos con
+`tools/bancos.sh`; y las doce compuertas rápidas (en «Medido»).
+
+**De dónde sale.** De SEC-1, en `doc/blueprint-v2.md` desde el §637: «El guardián del índice XMSS no
+excluye a un segundo proceso sobre el mismo fichero de contador». Su arreglo estaba escrito: un
+campo `_cerrojo: File` bloqueado con `try_lock` en `GuardianIndice::abrir`, vivo mientras viva la
+estructura, que «cubre a la vez firma de cabeza, recepción y testigo»; `rust-version = "1.89"`; el
+falsador de los dos guardianes sobre la misma ruta; y declarar lo que no cubre. El plano lo ponía en
+su corte 2, y el §705 aceptó el plano en parte: sus cortes siguen siendo candidatos, y cada uno
+entra con su asiento. Este sello lo saca del corte 2 en un sello propio, como el §694 sacó el
+ARQ-11.
+
+**Lo nuevo, contado en el commit que lo cierra.** Al bajar SEC-1 al código salen dos cosas que el
+plano no decía; las dos salen de leerlo, y el banco nuevo las mide sobre `54fe931` («Probado»). Una:
+**bastaban los valores por defecto**. `--indice-firma` valía `zkssl-indice-firma.bin` y
+`--contador-recepcion`, `recepcion.bin`, los dos relativos al directorio de trabajo, así que dos
+nodos lanzados desde el mismo sitio sin esas banderas compartían contador sin un solo error, y, por
+la misma ruta relativa, uno lanzado desde otro sitio abría otro, en 0. Dos: **el cofirmante del
+testigo tenía el mismo hueco**. `Cofirmante::desde_semilla` abre el mismo guardián, y dos testigos
+sobre el mismo `--indice-cofirma` arrancaban los dos: con semillas distintas lo mide el banco, y con
+la misma nada lo impedía; SEC-1 sólo lo nombraba como algo que el cerrojo cubriría. Las dos cosas se
+cuentan aquí, en el mismo commit que las cierra.
+
+**Quién lo decide.** Del autor es lo que recoge el §705: el 07-10-2026 aceptó el plano en parte —su
+diagnóstico, y sus cortes como candidatos—, y SEC-1 está en ese diagnóstico, con su arreglo en el
+corte 2. Lo demás lo propuso ese mismo día, después de aquella aceptación, una sesión de Claude
+Code, a petición del autor y aplicando los principios del proyecto: que SEC-1 entrara ya, en un
+sello propio, con tres falsadores —dos guardianes sobre la misma ruta, dos nodos desde el mismo
+directorio y dos cofirmantes sobre el mismo contador—, el cerrojo tomado antes de leer y de
+reescribir el contador, y lo que no cubre dicho en `SECURITY.md` y en `doc/CONFIANZA_RESIDUAL.md`;
+que, al firmar, `--indice-firma` sea obligatoria, sin valor por defecto y con ruta absoluta, y lo
+mismo `--contador-recepcion` cuando el nodo firma y `--indice-cofirma` al cofirmar, con un único
+predicado en el guardián; la `rust-version` 1.89 en el guardián, el nodo, el cli y el sdk; y, con
+ello, la rotura de uso: un nodo que hoy firma sin `--indice-firma`, o con una ruta relativa, deja de
+arrancar, y el mensaje dice qué pasar. Es la forma del §285: imposible por construcción, no
+disciplina. No consta que el autor haya confirmado esa propuesta, ni la `rust-version` ni la rotura
+de uso: lo propone una sesión de Claude Code y queda adoptado hasta que el autor diga otra cosa. Lo
+que la propuesta dejaba para él sigue sin decidir («Lo que NO hace»).
+
+**Por qué no lleva aviso de seguridad.** `SECURITY.md` §5 pide reportar en privado los fallos de
+solidez —crear saldo, gastar sin autorización, o hacer que el verificador acepte una transición
+inválida— y saca un aviso con «cada fallo arreglado en el kit publicado», las releases
+`arqueo-verify-v*`. El guardián no está en el kit: es una dev-dependency de `zk-ssl-verify`
+(`crates/zk-ssl-verify/Cargo.toml:83-84`), y el kit que se publica verifica sin él; el nodo y el
+testigo no salen en ninguna release. SEC-1, además, es público desde el §637 con su arreglo
+descrito. Por eso este sello no lleva aviso ni release del kit, y no se arregla en privado: lo nuevo
+sale con su arreglo. Se escribe para que la próxima vez no haya que deducirlo; §5 no dice qué se
+publica cuando el fallo arreglado está fuera del kit, y este asiento no crea esa regla.
+
+**Lo que hace.**
+
+1. **El cerrojo** (`crates/zk-ssl-guardian/src/lib.rs`). `GuardianIndice` gana `_cerrojo: File`, y
+   `abrir` hace, en este orden: si el fichero del contador es un enlace simbólico, lo rechaza
+   (`GuardianError::EnlaceSimbolico`, que dice a dónde apunta); canonicaliza la carpeta y hace allí
+   la autocomprobación de `fsync`, de modo que mide la carpeta de verdad del fichero; abre el
+   fichero; en unix, comprueba sobre lo abierto que la ruta, sin seguir un enlace, tiene el
+   dispositivo y el inodo del descriptor, porque `open` sigue los enlaces y entre la primera
+   comprobación y él alguien con permiso en la carpeta pudo poner uno; toma `File::try_lock`; si lo
+   tiene otro, `GuardianError::ContadorOcupado`, con la ruta canónica y, en Linux, el PID y el
+   nombre del proceso que lo tiene, leídos de `/proc/locks` y de `/proc/PID/comm` —el nombre y nunca
+   la línea de órdenes, que en el nodo puede llevar la semilla—; y sólo entonces lee el valor, por
+   el mismo descriptor, y lo reescribe. En `/proc/locks` el fichero se busca por su inodo y por dos
+   dispositivos, el de `fstat` y el de su montaje (`mnt_id` en `/proc/self/fdinfo`, y su
+   `MAYOR:MENOR` en `/proc/self/mountinfo`), porque `/proc/locks` da el del superbloque y `fstat` no
+   siempre: en un overlay con capas en sistemas distintos da el de la capa, medido, y en btrfs, el
+   del subvolumen, derivado. Si casa más de un proceso, no se da ninguno. Un fichero que acaba de
+   crear ese `open` vale 0; uno que ya existía con otro tamaño sigue siendo `Corrupto`. El cerrojo
+   se suelta al soltar el guardián o al morir el proceso. Cada reserva escribe y sincroniza por el
+   descriptor que tiene el cerrojo, sin abrir otro: así el cerrojo no depende de lo que el sistema
+   haga con otro descriptor del mismo fichero —donde es obligatorio, como el de `LockFileEx` en
+   Windows, escribir por otro chocaría con él; documentado, no medido—, y una reserva cuesta un
+   `open` menos. Y antes de escribir comprueba lo mismo que tras abrir: si la ruta se borró, se
+   movió o se cambió por otro fichero, no reserva, porque escribir en un fichero sin nombre es
+   perder la cuenta al reiniciar, y abrir otro por la ruta sería un contador sin cerrojo. Fuera de
+   unix esa comprobación no se hace: `std` estable no da allí la identidad de un fichero abierto.
+2. **El `fsync` de la carpeta.** Al crear el contador, después de escribir y sincronizar sus ocho
+   bytes, `abrir` sincroniza también la carpeta, con el molde de `RegistroRecepcion::anotar`: sin
+   eso, un corte puede dejar los ocho bytes en disco y el nombre no.
+3. **La regla de las rutas al firmar**, `exigir_ruta_absoluta`, en el guardián y no en cada binario,
+   por la razón del §296: dos copias de la misma regla pueden discrepar. Va en la frontera de la
+   línea de órdenes y no en `abrir`, porque los nodos que no firman y los tests abren sus contadores
+   con rutas relativas. Sin bandera o con una ruta relativa, `GuardianError::RutaDeEstado`, que
+   nombra la bandera y, si era relativa, la absoluta que nombraba desde el directorio de trabajo:
+   quien la venía usando pasa ésa, y no una nueva, que empezaría en 0.
+4. **El nodo** (`crates/zk-ssl-node/src/main.rs`). `--indice-firma` y `--contador-recepcion` pierden
+   su `default_value`. `rutas_de_estado`, pura y con el molde de `firma_sin_diario`, decide antes de
+   abrir nada: con clave, las dos obligatorias y absolutas; sin clave, la recepción conserva
+   `recepcion.bin`, y un `--indice-firma` sin clave se ignora, como antes. El arranque la llama
+   justo después de «quien firma, anota», y su error añade cuáles eran los dos ficheros por defecto.
+   Las ayudas de las dos banderas lo dicen, y la de `--diario` acota su «el nodo no escribe en disco
+   por su cuenta», que sólo es cierto del nodo que firma.
+5. **El testigo** (`crates/zk-ssl-cli/src/witness.rs`). `contador_del_cofirmante` aplica la misma
+   regla a `--indice-cofirma` cuando se cofirma, antes de abrir el diario, y su ayuda lo dice.
+6. **`rust-version = "1.89"`** en los `Cargo.toml` del guardián, el nodo, el cli y el sdk:
+   `File::try_lock` es estable desde 1.89. El kit no la declara, porque sólo compila el guardián en
+   sus tests («Medido»).
+7. **Doce tests.** En el guardián, seis: `dos_guardianes_sobre_la_misma_ruta_el_segundo_no_abre`, el
+   falsador de SEC-1 —el segundo no abre, si el error da un PID es el de este mismo proceso, el
+   primero sigue reservando y, suelto, un tercero lee su valor—;
+   `el_cerrojo_es_del_fichero_y_dos_ficheros_son_dos_cerrojos`, que ata lo que el cerrojo cubre y lo
+   que no —un enlace duro al mismo fichero no abre; otro fichero, sí— y que el guardián escribe por
+   el fichero y no por el nombre: borrado el nombre, o puesto otro fichero en su lugar, no reserva,
+   la cuenta no se mueve, y el otro fichero queda como estaba; `un_enlace_simbolico_no_se_sigue`; y
+   los tres de `ruta_al_firmar`. En el nodo, cuatro:
+   `al_firmar_los_dos_contadores_son_obligatorios_y_absolutos`,
+   `sin_clave_la_recepcion_conserva_su_valor_por_defecto`,
+   `las_banderas_de_los_contadores_no_tienen_valor_por_defecto`, que pasa por clap para que ningún
+   `default_value` vuelva a colarse, y
+   `dos_arranques_sobre_los_mismos_contadores_el_segundo_no_abre`, que resuelve las rutas de dos
+   arranques sin banderas, ve que son el mismo fichero, y no abre el segundo, ni el de recepción ni
+   el de un segundo firmante. En el testigo, dos:
+   `dos_cofirmantes_sobre_el_mismo_contador_el_segundo_no_arranca`, con la misma semilla y con otra,
+   y `el_contador_del_cofirmante_va_con_su_ruta_absoluta`, por clap. El cerrojo es de la descripción
+   de fichero, así que dos aperturas en un proceso se excluyen como en dos: por eso los tests caben
+   en un proceso, y el banco hace lo que ellos no pueden, lanzar los binarios dos veces. Los tests
+   no exigen que el error dé el PID, sólo que, si lo da, sea el propio: que lo dé depende de lo que
+   el sistema enseñe en `/proc`. Lo exige el banco.
+8. **El banco** `tools/banco_un_proceso.sh`, con los binarios en release y cinco tramos.
+   SIN-BANDERAS: dos nodos sin clave desde el mismo directorio; el segundo sale con error y dice el
+   PID del primero, que sigue respondiendo. KILL-9: muerto el primero con `kill -9`, un tercero
+   arranca sobre el mismo contador. FIRMANTES: dos nodos con la misma semilla y el mismo
+   `--indice-firma`, cada uno con su diario y su recepción; el segundo no arranca, y el primero
+   sigue firmando. RUTAS: con clave, sin `--indice-firma`, con una relativa y sin
+   `--contador-recepcion`, el nodo no arranca, y no queda ningún fichero en su directorio ni en las
+   rutas que se le dieron. COFIRMANTES: dos testigos que cofirman, con semillas distintas, sobre el
+   mismo contador; el segundo no arranca ni escribe una cofirma, y con una ruta relativa tampoco. Un
+   proceso que no tiene que arrancar se lanza con `timeout 60`: si sigue vivo, el tramo sale ROJO.
+   Exige que el error dé el PID del primero: donde el sistema no lo da, sale ROJO por eso y no por
+   el cerrojo, y su cabecera lo dice. `tools/bancos.sh` lo recoge solo, porque lee
+   `tools/banco_*.sh`.
+9. **La prosa.** La doc del guardián gana la sección «Un solo proceso por contador», con lo que el
+   cerrojo no cubre, y corrige su «K.1 midió durabilidad frente a muerte del proceso»: K.1 midió el
+   orden, no la durabilidad, porque lo escrito sin `fsync` también sobrevive a la muerte del proceso
+   —queda en la caché del núcleo, no en la del proceso—, y eso es una derivación, no una medida de
+   este sello. La corrección se limita a esa doc: `doc/ecst/VERIFICACION.md`, el registro que sale
+   de `doc/ecst/borrador/final.json` con sus rutas de `71c5aad`, sigue diciendo en su M5b que K.1
+   «probó durabilidad frente a la muerte del proceso», y su H20 lo cita del README de `hbs-state`;
+   el sello no toca sus veredictos. `SECURITY.md` §2 gana un punto: qué hace el cerrojo, qué
+   banderas son obligatorias al firmar, lo nuevo, y lo que el cerrojo no cubre. La cabecera de
+   `doc/CONFIANZA_RESIDUAL.md`, una entrada en su mapa, junto a la del §335, con lo mismo; el
+   cuerpo, verbatim, no se toca. `PRINCIPIOS.md`, en «Lo hecho», añade al guardián que tampoco
+   arranca si otro proceso tiene su contador, y remite a `SECURITY.md` §2. La 92 del `BACKLOG.md`
+   gana siete líneas: el hueco, de su familia, que no nombraba, y que sigue abierta. Esas siete
+   bajan lo que va detrás, y tres celdas de los bloques «Correcciones (§705)» citan por línea algo
+   de eso; cada una dice ahora también la línea desde el §709, como hicieron el §706, el §707 y el
+   §708: la entrada 15, `:1437-1444`, en el plano y en la evaluación; y la 22, `:2055`, `:2101` y
+   `:2128`, en la evaluación, donde la 92 sigue en `:961`. `doc/blueprint-v2.md` gana una fila en su
+   tabla de lo ya aplicado y una frase tras la lista de lo que estaba sin hacer a `c990868`, que
+   sigue diciendo lo que decía.
+
+**Medido.** Sobre `54fe931` con este sello, en release, con la máquina de 4 CPU compartida con otras
+tareas, y una carga media entre 4 y 13.
+
+- **Las filas**, con la orden de su fila (`cargo test -p <crate> --release --locked`), sobre el
+  árbol final, con los arreglos de la revisión. `zk-ssl-guardian`: 35 pasan, 0 fallan, 0 warnings,
+  en 0,56 s de tests. `zk-ssl-node`: 199 pasan, 0 fallan, 0 warnings, en 68 s de tests y 84 s con su
+  compilación. `zk-ssl-cli`: 141 pasan, 0 fallan, 0 warnings, en 9,6 s de tests y 25 s con su
+  compilación. `zk-ssl-sdk`, cuyo único cambio es su `rust-version`: 20 pasan, como su pin.
+  `zk-ssl-verify`, que compila el guardián como dev-dependency: 182 pasan, como su pin, 0 warnings,
+  en 14 s con su compilación. La primera vez que se compiló el código nuevo, antes de la revisión,
+  el nodo tardó 4 min 5 s y el cli 2 min 50 s.
+- **La `rust-version` y el kit.** Con la del guardián puesta, sólo para medirlo, por encima del
+  toolchain de la sesión (1.97.0), `cargo build --release --locked -p zk-ssl-verify` compila el kit,
+  y `cargo test --release --locked -p zk-ssl-verify --no-run` se niega: «zk-ssl-guardian@0.1.0
+  requires rustc». Con 1.89, por tanto, compilar los tests del kit pide 1.89 y compilar el kit no.
+  Después, el `Cargo.toml` vuelve a 1.89.
+- **El banco nuevo, sobre este árbol**: VERDE en 42 s, con la compilación. El segundo nodo dice
+  «recepcion.bin ya lo tiene abierto el proceso 23083», el PID del primero; el segundo firmante, lo
+  mismo de `indice-firma.bin`, mientras el primero pasa del índice 1 al 3; el segundo testigo, lo
+  mismo de su `contador.bin`; y RUTAS, «--indice-firma es obligatoria», «`indice.bin` es relativa» y
+  «--contador-recepcion es obligatoria». El mensaje entero, de un segundo nodo lanzado a mano en el
+  mismo directorio que otro: «guardián del índice: el contador …/recepcion.bin ya lo tiene abierto
+  el proceso 16286 (zk-ssl-node). Dos procesos sobre un mismo contador reparten los mismos números:
+  en el índice de firma, la misma hoja XMSS para dos mensajes, y eso compromete la clave. NO se
+  arranca. …», y sigue con qué hacer y con lo que el cerrojo no ve.
+- **El PID del error, en tres sistemas de ficheros**, con una sonda de usar y tirar, fuera del
+  árbol, que abre dos guardianes sobre la misma ruta y compara el PID del error con el suyo. En ext4
+  y en un overlay con sus dos capas en ese mismo ext4, el PID salía ya antes de la revisión. En un
+  overlay con la capa baja en tmpfs y la alta en ext4, salía `None`: `fstat` daba `0:2a` y
+  `/proc/locks`, `00:29`, que es el del montaje (`0:41` en `/proc/self/mountinfo`, en decimal). Con
+  el arreglo, sale el PID propio en los tres. En btrfs no se ha podido medir, porque este núcleo no
+  lo trae: que allí `fstat` dé el dispositivo del subvolumen y `/proc/locks` el del superbloque, que
+  es el del montaje, es una derivación.
+- **Los veinticuatro bancos**, los veintitrés de antes y el nuevo, con `tools/bancos.sh`. Como se
+  niega con el árbol sin commitear, y algún banco también, corrió sobre una copia de este árbol, con
+  los arreglos de la revisión e idéntica salvo este asiento y las palabras «en unix» de una frase de
+  la doc del guardián, hecha repositorio de usar y tirar con un solo commit y con su propio
+  directorio de compilación: VERDE, 24 de 24, en 1.891 s con las compilaciones; `un_proceso`, 11 s.
+  Antes de la revisión, sobre otra copia como ésa, también VERDE, 24 de 24, en 1.561 s de bancos y
+  26 min con las compilaciones. Los de antes pasan ya `--indice-firma`, `--contador-recepcion` e
+  `--indice-cofirma` con rutas bajo su `mktemp -d "$HOME/…"`, y ninguno se cambia.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 1875 declarados,
+  ninguno anidado; `check_modulos`, 204 ficheros, todos declarados; `check_vectores`, 483 vectores y
+  958 líneas con su huella, ninguno tocado; `check_cifras`, 26 cifras de tests y ninguna contradice
+  el canon, con las 11 filas que cuentan su crónica acabando en su pin; y las otras del bucle «2
+  ter»: `verificar_citas`, `check_figures`, `check_columns`, `check_constraint_layout`,
+  `check_dominios`, `check_publicadas`, `check_nucleo` y `check_techo`. Las doce salen con 0.
+  `verificar_citas` sigue en 69 encabezados citados, 0 muertos.
+
+**Probado.** Contra el árbol de antes, `54fe931`:
+
+| el falsador | sobre `54fe931` | con el sello |
+|---|---|---|
+| dos guardianes sobre la misma ruta (el test, en su forma `is_err`, puesto un momento en el árbol de antes) | ROJO: «el segundo guardian abre el mismo contador y lee Ok(1)» | VERDE: `ContadorOcupado`, con el PID de este proceso |
+| un contador enlazado a un fichero de `/dev/shm` (lo mismo, con `is_err`; el test del sello enlaza a un fichero en disco) | ROJO: abre, y el fichero de verdad queda en tmpfs | VERDE: `EnlaceSimbolico` |
+| el banco, tal cual | ROJO en su primer tramo, SIN-BANDERAS: «ARRANCO, y seguia vivo a los 60 s» | VERDE, en 60 s |
+| SIN-BANDERAS, en la copia que no para | ROJO: el segundo nodo arranca y sigue vivo a los 60 s | VERDE: sale con 1 y da el PID del primero |
+| KILL-9 | pasa, y tiene que pasar: no prueba el arreglo sino que no estorbe | VERDE: el cerrojo se va con el proceso, y un tercero arranca |
+| FIRMANTES | ROJO: el segundo firmante, con la misma semilla y el mismo índice, arranca | VERDE: no arranca, y el primero sigue firmando |
+| RUTAS | ROJO: sin `--indice-firma` arranca, con `zkssl-indice-firma.bin` en el directorio de trabajo; con una ruta relativa y sin `--contador-recepcion` no arrancan, pero por otra causa, y dejan creados `indice.bin` y los contadores que se les dieron | VERDE: no arranca ninguno, cada uno nombra su bandera, y no queda ningún fichero |
+| COFIRMANTES | ROJO: el segundo testigo arranca sobre el contador del primero y escribe cofirmas; con la ruta relativa, también arranca | VERDE: no arranca ninguno, y el segundo no escribe nada |
+
+Los binarios de `54fe931` salen de `git archive 54fe931`, compilados fuera del clon con su propio
+directorio de compilación, y el banco corre sobre ellos copiado en ese árbol. Para ver todos los
+tramos tras el primer ROJO, una copia del banco con su `fallo` cambiado para contar en vez de salir,
+que no entra en el árbol: 17 líneas ROJO, en cuatro de los cinco tramos, en 5 min 10 s. Los dos
+tests del guardián de la tabla no entran tal cual: los del sello exigen además la variante del
+error.
+
+Y contra el sello antes de los arreglos de la revisión: con el `persistir` de entonces puesto un
+momento, el test del fichero y no del nombre sale ROJO en «sin su nombre, NO reserva», porque aquel
+`persistir` abría la ruta en cada reserva y creaba un contador nuevo, sin cerrojo, con el valor del
+guardián; con el de ahora, VERDE. Y la sonda del PID, en el overlay con la capa baja en tmpfs:
+`None` antes y el PID propio después («Medido»).
+
+**Contadores.** `zk-ssl-guardian` 29 -> 35, `zk-ssl-node` 195 -> 199 y `zk-ssl-cli` 139 -> 141, en
+sus filas de `tools/canon.sh`, con su crónica. TOTAL DE SELLO 1704 -> 1716 y TOTAL CON LARGOS 1841
+-> 1853, en los tres párrafos ancla, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; el desglose de
+`PRINCIPIOS.md`, 199 del nodo y 141 del testigo. `check_tests`, de 1863 a 1875. Las «1364
+declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores (5.A-319).
+`check_vectores`, en 483 vectores y 958 líneas. El `BACKLOG.md` sigue con 47 abiertas y 73
+resueltas: la 92 gana siete líneas y no se cierra. `verificar_citas`, en 69 encabezados citados. Los
+bancos, de 23 a 24.
+
+**Lo que NO hace.** El cerrojo no cubre lo que un cerrojo de aviso no ve: un sistema de ficheros de
+red, donde puede no cruzar de una máquina a otra; otra máquina o una copia del contador; la misma
+semilla con otro contador, que son dos ficheros y dos cerrojos —el test lo ata—; y un proceso que
+abra el fichero sin pedir el cerrojo. No hace nada frente a un contador que vuelve atrás, o que se
+pierde con el proceso parado —con él en marcha, deja de reservar—, ni cambia su formato: siguen
+siendo ocho bytes, sin versión ni suma. No mide el coste del `fsync` de la carpeta, que es una vez
+por contador nuevo. No pasa a absolutas las demás rutas del nodo, `--diario` entre ellas, ni la
+recepción del nodo sin clave: si pasan también es del autor, y no está decidido. Fuera de unix no
+comprueba que la ruta siga siendo el fichero abierto, y no se ha probado en Windows ni en macOS. El
+PID del error se ha medido en ext4 y en dos overlay; en btrfs es una derivación, no una medida. El
+rechazo del enlace sobre lo abierto no se prueba con una carrera de verdad: la comparación que lo
+hace es la misma de cada reserva, y ésa sí la prueba un test. No cambia el cable, la capa, el kit ni
+ningún vector, y no publica un kit. No corre el canon entero ni el artefacto.
+
+**Lo que NO cierra.** La 92: el (a) y el (b) siguen como estaban. Lo que el cerrojo no cubre, que
+queda declarado en `SECURITY.md` §2 y en `doc/CONFIANZA_RESIDUAL.md`.

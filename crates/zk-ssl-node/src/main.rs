@@ -114,7 +114,11 @@ struct Args {
     /// **Dónde anota el nodo lo que firma** (una línea JSON por latido).
     ///
     /// ⚠️ Explícita, como `--clave`: el nodo no escribe en disco por su
-    /// cuenta. Y desde §285 **un nodo con clave NO ARRANCA sin esto**
+    /// cuenta. ⚠️ (§709) Eso es cierto de un nodo que FIRMA: el diario, el
+    /// contador del índice y el de recepción se nombran todos, los dos
+    /// contadores con su ruta absoluta. Sin clave, el de recepción sigue yendo,
+    /// si no se da, a `recepcion.bin` del directorio de trabajo.
+    /// Y desde §285 **un nodo con clave NO ARRANCA sin esto**
     /// (quien firma, anota, nota 80): firmar sin poder reconocer la
     /// propia firma era justo lo que §272 vino a arreglar. Ver la nota 80 del BACKLOG.
     ///
@@ -144,8 +148,13 @@ struct Args {
     /// medio no persiste** (K.1, §234): un contador que vuelve a cero da
     /// **dos operaciones distintas con el mismo número**, y eso es **peor
     /// que no tener contador**.
-    #[arg(long, value_name = "RUTA", default_value = "recepcion.bin")]
-    contador_recepcion: String,
+    ///
+    /// ⚠️ §709 · **Con clave, obligatoria y ABSOLUTA**: su cuenta viaja en la
+    /// cabeza firmada. Sin clave, si no se da, es `recepcion.bin` del
+    /// directorio de trabajo. Y un solo proceso por fichero: un segundo nodo
+    /// sobre el mismo contador NO arranca (el cerrojo del guardián, SEC-1).
+    #[arg(long, value_name = "RUTA")]
+    contador_recepcion: Option<String>,
 
     /// Directorio del **registro de recepción** (RFC-0010, E2c; §565, §569):
     /// por cada número reservado, la era que declaró y el digest de su prueba.
@@ -163,8 +172,16 @@ struct Args {
     ///
     /// ⚠️ El guardián **se niega a arrancar si su `fsync` no persiste**:
     /// en `tmpfs` cuesta lo mismo que no hacerlo (K.1: 382× frente a 1×).
-    #[arg(long, default_value = "zkssl-indice-firma.bin")]
-    indice_firma: String,
+    ///
+    /// ⚠️⚠️ §709 · **Con clave, obligatoria, sin valor por defecto y con su
+    /// ruta ABSOLUTA.** Hasta el §709 valía `zkssl-indice-firma.bin` del
+    /// directorio de trabajo: dos nodos lanzados desde el mismo sitio
+    /// compartían contador, y uno lanzado desde otro abría uno nuevo, en 0.
+    /// Y un solo proceso por fichero: un segundo firmante sobre el mismo
+    /// contador NO arranca (el cerrojo del guardián, SEC-1). Lo que eso no
+    /// cubre —la misma semilla con OTRO contador— lo dice `SECURITY.md` §2.
+    #[arg(long, value_name = "RUTA")]
+    indice_firma: Option<String>,
 
     /// **La huella de la clave que sucederá a esta** (RFC-0015, pre-rotación; §644), en hex de
     /// 32 bytes, como la imprime `--huella-de-clave-fichero`.
@@ -878,6 +895,34 @@ fn firma_sin_diario(firmara: bool, con_diario: bool) -> bool {
     firmara && !con_diario
 }
 
+/// Lo que da `--contador-recepcion` a un nodo que no firma y no lo nombra.
+const RECEPCION_POR_DEFECTO: &str = "recepcion.bin";
+
+/// ⚠️⚠️ §709 · **Las rutas de los dos contadores, decididas antes de abrir nada**, con
+/// el molde de [`firma_sin_diario`]: PURA, para probarse en frio.
+///
+/// Al firmar, `--indice-firma` y `--contador-recepcion` son obligatorias y absolutas
+/// (la regla es del guardian, [`zk_ssl_guardian::exigir_ruta_absoluta`], la misma
+/// que el cofirmante del testigo aplica a `--indice-cofirma`). Sin clave no hay
+/// indice que abrir, y la recepcion conserva su valor por defecto: sin cabeza
+/// firmada no hay cuenta firmada que contradecir, y el modo sin banderas sigue
+/// arrancando. Un `--indice-firma` sin clave se ignora, como antes.
+fn rutas_de_estado(
+    firmara: bool,
+    indice_firma: Option<&str>,
+    contador_recepcion: Option<&str>,
+) -> Result<(Option<std::path::PathBuf>, std::path::PathBuf), zk_ssl_guardian::GuardianError> {
+    use std::path::{Path, PathBuf};
+    use zk_ssl_guardian::exigir_ruta_absoluta;
+    if !firmara {
+        let recepcion = contador_recepcion.unwrap_or(RECEPCION_POR_DEFECTO);
+        return Ok((None, PathBuf::from(recepcion)));
+    }
+    let indice = exigir_ruta_absoluta("--indice-firma", indice_firma.map(Path::new))?;
+    let recepcion = exigir_ruta_absoluta("--contador-recepcion", contador_recepcion.map(Path::new))?;
+    Ok((Some(indice), recepcion))
+}
+
 /// Que hace el ARRANQUE con lo que el guardian encuentra al reconciliar.
 ///
 /// ⚠️ Vive aqui y no en `firma_cabeza`: es POLITICA del nodo, no invariante
@@ -1050,10 +1095,13 @@ fn politica_del_registro(r: &zk_ssl_guardian::Reconciliacion) -> DecisionDeArran
 }
 
 /// Donde vive el registro: el que se pase, o JUNTO al contador (§569).
-fn ruta_del_registro(contador: &str, explicito: Option<&str>) -> std::path::PathBuf {
+fn ruta_del_registro(
+    contador: impl AsRef<std::path::Path>,
+    explicito: Option<&str>,
+) -> std::path::PathBuf {
     match explicito {
         Some(d) => std::path::PathBuf::from(d),
-        None => std::path::Path::new(contador).with_extension("registro"),
+        None => contador.as_ref().with_extension("registro"),
     }
 }
 
@@ -1743,12 +1791,27 @@ async fn main() -> anyhow::Result<()> {
              Un nodo que firma sin diario no puede reconocer su propia firma"
         );
     }
+    // ── §709 · al firmar, los dos contadores se nombran enteros (SEC-1) ──
+    // ⚠️ ANTES de abrir nada: un nodo que no arranca por esto no deja ningun
+    //    contador nuevo en el directorio de trabajo.
+    let (ruta_indice, ruta_recepcion) = rutas_de_estado(
+        semilla_hex.is_some(),
+        args.indice_firma.as_deref(),
+        args.contador_recepcion.as_deref(),
+    )
+    .map_err(|e| {
+        anyhow::anyhow!(
+            "{e}. (Hasta el §709, sin las banderas, eran `zkssl-indice-firma.bin` y \
+             `{RECEPCION_POR_DEFECTO}` del directorio de trabajo.)"
+        )
+    })?;
     // ⚠️ §646: la cadena de actas que el cable sirve; vacia sin clave o sin actas (D-I).
     let mut actas_de_clave: Vec<Value> = Vec::new();
     let firmante = match &semilla_hex {
         Some(hex) => {
             let semilla = descodificar_semilla(hex)?;
-            let mut f = firma_cabeza::FirmanteCabeza::desde_semilla(&semilla, &args.indice_firma)
+            let ruta_indice = ruta_indice.as_ref().expect("rutas_de_estado: con clave hay indice");
+            let mut f = firma_cabeza::FirmanteCabeza::desde_semilla(&semilla, ruta_indice)
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
             if custodia_comprobada {
                 tracing::info!(custodia = args.custodia, "custodia COMPROBADA por el nodo");
@@ -1853,10 +1916,9 @@ async fn main() -> anyhow::Result<()> {
     // §569 · RFC-0010 E2c-2 — EL REGISTRO SE RECONCILIA CON SU CONTADOR AL
     // ARRANCAR, y la decision es de `politica_del_registro`. El contador se
     // abre AQUI y no dentro de `App` para poder preguntarle antes de servir.
-    let recepcion = recepcion::ContadorRecepcion::abrir(&args.contador_recepcion)
+    let recepcion = recepcion::ContadorRecepcion::abrir(&ruta_recepcion)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
-    let dir_registro =
-        ruta_del_registro(&args.contador_recepcion, args.registro_recepcion.as_deref());
+    let dir_registro = ruta_del_registro(&ruta_recepcion, args.registro_recepcion.as_deref());
     let registro = registro_recepcion::RegistroRecepcion::abrir(&dir_registro)
         .map_err(|e| anyhow::anyhow!("{e}"))?;
     let mayor_anotado = registro.mayor_anotado().map_err(|e| anyhow::anyhow!("{e}"))?;
@@ -6337,6 +6399,97 @@ mod tests {
         assert!(!firma_sin_diario(true, true));
         assert!(!firma_sin_diario(false, true));
         assert!(!firma_sin_diario(false, false));
+    }
+
+    // ── §709 · SEC-1: al firmar, los dos contadores se nombran enteros ──
+
+    /// ⚠️⚠️ La decision, en frio: con clave, sin bandera o con una ruta relativa, NO
+    /// arranca, y el error nombra la bandera. Las dos absolutas, si.
+    #[test]
+    fn al_firmar_los_dos_contadores_son_obligatorios_y_absolutos() {
+        use zk_ssl_guardian::GuardianError::RutaDeEstado;
+        let falla = |i: Option<&str>, r: Option<&str>| match rutas_de_estado(true, i, r) {
+            Err(RutaDeEstado { bandera, ruta, .. }) => (bandera, ruta),
+            otro => panic!("con clave, {i:?} y {r:?} NO pueden arrancar: {otro:?}"),
+        };
+        assert_eq!(falla(None, Some("/v/recepcion.bin")), ("--indice-firma".into(), None));
+        assert_eq!(
+            falla(Some("indice.bin"), Some("/v/recepcion.bin")),
+            ("--indice-firma".into(), Some("indice.bin".into()))
+        );
+        assert_eq!(falla(Some("/v/indice.bin"), None), ("--contador-recepcion".into(), None));
+        assert_eq!(
+            falla(Some("/v/indice.bin"), Some("./recepcion.bin")),
+            ("--contador-recepcion".into(), Some("./recepcion.bin".into()))
+        );
+        let (i, r) = rutas_de_estado(true, Some("/v/indice.bin"), Some("/v/recepcion.bin"))
+            .expect("las dos absolutas arrancan");
+        assert_eq!(i.as_deref(), Some(std::path::Path::new("/v/indice.bin")));
+        assert_eq!(r, std::path::Path::new("/v/recepcion.bin"));
+    }
+
+    /// Sin clave nada cambia: la recepcion conserva su valor por defecto, relativo, y un
+    /// `--indice-firma` sin clave no abre nada.
+    #[test]
+    fn sin_clave_la_recepcion_conserva_su_valor_por_defecto() {
+        let (i, r) = rutas_de_estado(false, None, None).expect("sin clave arranca");
+        assert_eq!((i, r), (None, std::path::PathBuf::from(RECEPCION_POR_DEFECTO)));
+        let (i, r) = rutas_de_estado(false, Some("x.bin"), Some("otra.bin")).expect("arranca");
+        assert_eq!((i, r), (None, std::path::PathBuf::from("otra.bin")));
+    }
+
+    /// ⚠️⚠️ §709 · SEC-1, EL FALSADOR DEL NODO, en un proceso: dos arranques sin banderas
+    /// desde el mismo directorio resuelven el MISMO `recepcion.bin`, y el segundo no lo
+    /// abre; dos firmantes con el mismo `--indice-firma`, tampoco. El cerrojo es del
+    /// descriptor, y dos aperturas en un proceso se excluyen como en dos. Con procesos de
+    /// verdad —el binario lanzado dos veces, y `kill -9`— lo mide `tools/banco_un_proceso.sh`.
+    #[test]
+    fn dos_arranques_sobre_los_mismos_contadores_el_segundo_no_abre() {
+        use clap::Parser;
+        use zk_ssl_guardian::GuardianError::ContadorOcupado;
+        let dir = tests_dir("un_proceso_por_contador");
+        let recepcion_de = |a: &Args| {
+            let (_, r) = rutas_de_estado(false, a.indice_firma.as_deref(), a.contador_recepcion.as_deref())
+                .expect("sin clave arranca");
+            dir.join(r)
+        };
+        let a1 = Args::try_parse_from(["zk-ssl-node"]).expect("primero");
+        let a2 = Args::try_parse_from(["zk-ssl-node", "--listen", "127.0.0.1:8546"]).expect("segundo");
+        assert_eq!(recepcion_de(&a1), recepcion_de(&a2), "sin banderas, el MISMO fichero");
+        let _primero = recepcion::ContadorRecepcion::abrir(recepcion_de(&a1)).expect("el primero");
+        match recepcion::ContadorRecepcion::abrir(recepcion_de(&a2)) {
+            Err(ContadorOcupado { .. }) => {}
+            otro => panic!(
+                "CRITICO: el segundo arranque abrio el mismo contador de recepcion: {:?}",
+                otro.map(|c| c.actual())
+            ),
+        }
+        let semilla = [0x5bu8; 96];
+        let indice = dir.join("indice-firma.bin");
+        let _firmante = firma_cabeza::FirmanteCabeza::desde_semilla(&semilla, &indice).expect("el primero");
+        match firma_cabeza::FirmanteCabeza::desde_semilla(&semilla, &indice) {
+            Err(firma_cabeza::FirmaError::Guardian(ContadorOcupado { .. })) => {}
+            Err(e) => panic!("tenia que pararlo el cerrojo del indice, y dio: {e}"),
+            Ok(_) => panic!("CRITICO: dos firmantes con la misma semilla sobre el mismo indice"),
+        }
+    }
+
+    /// ⚠️ El CABLEADO de las banderas: que ningun `default_value` vuelva a colarse en
+    /// `--indice-firma` ni en `--contador-recepcion`. Es lo que el §709 quita, y la
+    /// decision pura de arriba no lo ve: con un valor por defecto, `rutas_de_estado`
+    /// recibiria `Some` y el nodo firmaria con un contador que nadie nombro.
+    #[test]
+    fn las_banderas_de_los_contadores_no_tienen_valor_por_defecto() {
+        use clap::Parser;
+        let a = Args::try_parse_from(["zk-ssl-node"]).expect("sin banderas");
+        assert_eq!(a.indice_firma, None, "--indice-firma no tiene valor por defecto");
+        assert_eq!(a.contador_recepcion, None, "--contador-recepcion tampoco");
+        let clave = "5b".repeat(96);
+        let a = Args::try_parse_from(["zk-ssl-node", "--clave", &clave, "--diario", "/v/d.jsonl"])
+            .expect("con clave y diario");
+        let e = rutas_de_estado(a.clave.is_some(), a.indice_firma.as_deref(), a.contador_recepcion.as_deref())
+            .expect_err("con clave y sin --indice-firma NO arranca");
+        assert!(e.to_string().contains("--indice-firma"), "{e}");
     }
 }
 

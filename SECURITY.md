@@ -185,6 +185,24 @@ atado al importe (§74). Ambas corregidas y medidas.
   `zkssl_signedEpochHead`. ⚠️ **Solo `fichero` se comprueba**; el resto son
   afirmaciones suyas. El valor no está en que sean ciertas, **sino en que
   mentir en ellas es oponible**.
+- ⚠️ **El índice de la clave de firma: un solo proceso por contador, y lo que
+  eso no cubre** (§709). XMSS tiene estado: cada firma gasta una hoja, y dos
+  mensajes firmados con la misma hoja comprometen la clave. El guardián del
+  índice persiste su contador con `fsync` antes de cada firma y, desde el §709,
+  toma además un cerrojo exclusivo sobre el fichero: un segundo proceso sobre el
+  mismo contador —otro nodo, otro cofirmante del testigo— **no arranca**, y el
+  error dice qué proceso lo tiene, si el sistema lo enseña. Al firmar,
+  `--indice-firma` y `--contador-recepcion` del nodo y `--indice-cofirma` del
+  testigo son obligatorias y van con su ruta absoluta. Hasta el §709 las dos del
+  nodo tenían un valor por defecto relativo al directorio de trabajo, y bastaba
+  lanzar dos nodos desde el mismo sitio para que compartieran contador; el
+  cofirmante del testigo no excluía a un segundo sobre el suyo.
+  **Lo que el cerrojo NO cubre**: un sistema de ficheros de red, donde el
+  cerrojo puede no cruzar de una máquina a otra; otra máquina, o una copia del
+  contador; **la misma semilla con otro contador**, porque dos ficheros son dos
+  cerrojos; y un proceso que abra el fichero sin pedir el cerrojo, que en unix
+  es de aviso y no obligatorio. Tampoco hace nada frente a un contador que
+  vuelve atrás o se pierde: eso lo declara `doc/CONFIANZA_RESIDUAL.md`.
 - ⚠️ **El operador puede cambiar el verificador, y hoy eso es invisible.**
   Es **el poder mayor de todos** y no estaba en esta lista: quien puede
   actualizar el verificador **cambia qué es una transición válida** —más

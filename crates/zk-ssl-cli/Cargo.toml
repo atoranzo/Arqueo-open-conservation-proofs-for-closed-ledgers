@@ -3,6 +3,8 @@ name = "zk-ssl-cli"
 version = "0.1.0"
 edition = "2021"
 license.workspace = true
+# §709: la de `zk-ssl-guardian`, que usa `File::try_lock` (Rust 1.89) para su cerrojo.
+rust-version = "1.89"
 
 # Sandbox + trazador de la ZK-Sovereign Settlement Layer desde la terminal.
 #

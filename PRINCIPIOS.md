@@ -367,11 +367,11 @@ sería faltar al principio de transparencia.
 - Cinco paradigmas implementados y medidos.
 - Capa de liquidación con ciclo monetario completo, persistencia,
   auditoría y verificación de integridad.
-- **1704 tests en la compuerta de sello** —447 de la capa, 423 de
-  circuitos, **195 del nodo**, 34 de la ceremonia, 17 de liquidación, **182
-  del verificador independiente**, **139 del testigo**, y los del SDK, el
+- **1716 tests en la compuerta de sello** —447 de la capa, 423 de
+  circuitos, **199 del nodo**, 34 de la ceremonia, 17 de liquidación, **182
+  del verificador independiente**, **141 del testigo**, y los del SDK, el
   cable, el puente ISO, el árbol del medio y el fork de winterfell—,
-  **1841 contando los pines de `--largo` y `--completo`**, y **1364 declarados**.
+  **1853 contando los pines de `--largo` y `--completo`**, y **1364 declarados**.
   0 fallos y 24 warnings **pinchados** (no crecen). Cada propiedad de
   seguridad con test discriminante.
 
@@ -387,8 +387,10 @@ sería faltar al principio de transparencia.
 
 - **Primer eslabón de la oponibilidad** (§234-§236): guardián del índice
   de firma —contador con `fsync` antes de firmar, que **se niega a
-  arrancar si su `fsync` no persiste**— y firmante de cabezas de época
-  con XMSS, dominio propio y versión de formato explícita.
+  arrancar si su `fsync` no persiste** y, desde el §709, si otro proceso
+  tiene su contador; lo que ese cerrojo no cubre, en `SECURITY.md` §2— y
+  firmante de cabezas de época con XMSS, dominio propio y versión de
+  formato explícita.
 
   ⚠️ **Y con ello, la primera dependencia criptográfica del árbol**:
   `xmss 0.1.0-pre.0`, pre-release **sin auditoría independiente** por

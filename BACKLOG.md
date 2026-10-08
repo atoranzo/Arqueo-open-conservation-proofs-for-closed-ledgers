@@ -986,6 +986,13 @@ instrumentacion) al grupo E.*
   clave que se va pudo firmar, quemando las de en medio, y la clave rotada
   no arranca sobre su diario. El (a) y el (b) siguen como están: sigue
   abierta.
+  ✅ (§709) Un hueco de la misma familia que esta entrada no nombraba, el
+  SEC-1 de `doc/blueprint-v2.md`: dos procesos sobre el mismo contador. Desde
+  el §709 el guardián toma un cerrojo sobre su fichero, y al firmar los
+  contadores van con ruta absoluta y sin valor por defecto. Lo que el cerrojo
+  no cubre —un sistema de ficheros de red, otra máquina, la misma semilla con
+  otro contador— lo dicen `SECURITY.md` §2 y `doc/CONFIANZA_RESIDUAL.md`. El
+  (a) y el (b) siguen como están: sigue abierta.
 
 - [ ] **115. La conservación, comprobable por un tercero: el camino, o el título.**
   Medido en el §696: la conservación de cada transición la imponen en circuito

@@ -66,9 +66,47 @@
 //!
 //! **Nada frente a un corte de corriente.** *«`fsync` puede mentir»* habla
 //! de discos que confirman escrituras que siguen en caché volátil. K.1
-//! midió durabilidad frente a **muerte del proceso** —25 de 25 sin una
-//! sola firma por delante—, y eso **no es lo mismo**. Medirlo exige cortar
-//! la corriente de verdad, y no se ha hecho.
+//! midió el **orden** frente a la **muerte del proceso** —25 de 25 sin una
+//! sola firma por delante—, y eso **no es durabilidad**: lo escrito sin
+//! `fsync` también sobrevive a la muerte del proceso, porque queda en la
+//! caché del núcleo y no en la del proceso (§709 corrige aquí «midió
+//! durabilidad»). Medir la durabilidad exige cortar la corriente de verdad,
+//! y no se ha hecho.
+//!
+//! ## ⚠️ Un solo proceso por contador (§709, SEC-1)
+//!
+//! [`GuardianIndice::abrir`] toma un **cerrojo exclusivo** sobre el fichero
+//! del contador ([`File::try_lock`], Rust 1.89) **antes** de leerlo y de
+//! reescribirlo, y lo guarda en un campo mientras viva el guardián. Un
+//! segundo guardián sobre el mismo fichero —en otro proceso o en este— **no
+//! abre**, y el error dice qué proceso lo tiene, si el sistema lo dice. Cubre
+//! a la vez la firma de cabeza, la recepción y el cofirmante del testigo,
+//! porque los tres abren aquí. El cerrojo muere con el proceso, también con
+//! `kill -9`. Cada reserva escribe y sincroniza **por ese mismo descriptor**,
+//! sin abrir otro, y antes, en unix, comprueba que la ruta sigue siendo ese
+//! fichero: si se borró, se movió o se cambió por otro, **no reserva**.
+//!
+//! **Lo que el cerrojo NO cubre**, y no es un descuido sino lo que un cerrojo
+//! de aviso puede ver:
+//!
+//! - un sistema de ficheros de red (NFS y parecidos), donde el cerrojo puede
+//!   no llegar de una máquina a otra;
+//! - otra máquina, o una copia del contador en otro disco;
+//! - **la misma semilla con otro contador**: dos ficheros distintos son dos
+//!   cerrojos distintos, y los dos firmantes reutilizan hojas igual;
+//! - un proceso que abra el fichero sin pedir el cerrojo: en unix es de
+//!   aviso, no obligatorio.
+//!
+//! Y si el fichero del contador es un **enlace simbólico**, no se sigue: se
+//! rechaza ([`GuardianError::EnlaceSimbolico`]). La carpeta sí se
+//! canonicaliza, y la comprobación de `fsync` se hace en la de verdad. Un
+//! enlace en el fichero podría llevar los ocho bytes a un sitio que no
+//! persiste mientras la carpeta del enlace, que es la que se medía, sí. En
+//! unix el rechazo se comprueba dos veces: antes de abrir, y después, sobre
+//! lo abierto —el dispositivo y el inodo de la ruta, sin seguir el enlace,
+//! tienen que ser los del descriptor—, porque `open` sigue los enlaces y
+//! entre las dos cosas alguien con permiso en la carpeta podría poner uno.
+//! Fuera de unix, sólo antes.
 //!
 //! ## ⚠️ Y esta pieza NO tiene consumidor todavía
 //!
@@ -78,7 +116,7 @@
 //! retroadaptar. **El riesgo está declarado**: se diseña una API sin su
 //! consumidor.
 
-use std::fs::{File, OpenOptions};
+use std::fs::{File, OpenOptions, TryLockError};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -248,6 +286,22 @@ pub enum GuardianError {
     /// La semilla en HEX trae algo que no es un digito hexadecimal.
     SemillaNoHex { detalle: String },
     LayoutInesperado { sk_len: usize, esperado: usize },
+    /// ⚠️ §709 · SEC-1: **otro guardián tiene ya este contador**, en otro
+    /// proceso o en este. Dos procesos sobre un mismo contador reparten los
+    /// mismos números: en el índice de firma, la misma hoja XMSS para dos
+    /// mensajes, y eso compromete la clave. `pid` y `nombre` dicen quién lo
+    /// tiene cuando el sistema lo dice (en Linux, `/proc/locks`); `None` si no.
+    ContadorOcupado { ruta: String, pid: Option<u32>, nombre: Option<String> },
+    /// ⚠️ §709 · La ruta del contador es un **enlace simbólico**. No se sigue:
+    /// el cerrojo, la comprobación de `fsync` y el nombre tienen que ser los
+    /// del fichero de verdad, y un enlace puede llevarlo a un sitio que no
+    /// persiste mientras la carpeta del enlace sí lo hace.
+    EnlaceSimbolico { ruta: String, destino: String },
+    /// ⚠️ §709 · **Al firmar**, la ruta de un fichero de estado falta o es
+    /// relativa. Sin bandera, el fichero lo elegía el directorio desde el que
+    /// se lanzaba el proceso; con una ruta relativa, también. `sugerida` es la
+    /// absoluta que la relativa nombra desde aquí, si se puede saber.
+    RutaDeEstado { bandera: String, ruta: Option<String>, sugerida: Option<String> },
 }
 
 impl std::fmt::Display for GuardianError {
@@ -306,6 +360,50 @@ impl std::fmt::Display for GuardianError {
                  {esperado}. La serialización de `xmss` cambió: NO se lee el \
                  índice a ciegas."
             ),
+            GuardianError::ContadorOcupado { ruta, pid, nombre } => {
+                write!(f, "guardián del índice: el contador {ruta} ya lo tiene abierto ")?;
+                match (pid, nombre.as_deref()) {
+                    (Some(p), Some(n)) if !n.is_empty() => write!(f, "el proceso {p} ({n})")?,
+                    (Some(p), _) => write!(f, "el proceso {p}")?,
+                    (None, _) => write!(f, "otro proceso (este sistema no dice cuál)")?,
+                }
+                write!(
+                    f,
+                    ". Dos procesos sobre un mismo contador reparten los mismos números: \
+                     en el índice de firma, la misma hoja XMSS para dos mensajes, y eso \
+                     compromete la clave. NO se arranca. Si es un proceso anterior que \
+                     sigue vivo, páralo antes; si es otro firmante, necesita su propio \
+                     contador y su propia semilla: la misma semilla con otro contador \
+                     también reutiliza hojas, y eso el cerrojo no lo ve"
+                )
+            }
+            GuardianError::EnlaceSimbolico { ruta, destino } => write!(
+                f,
+                "guardián del índice: {ruta} es un enlace simbólico (a {destino}), y el \
+                 contador no se sigue por un enlace: el cerrojo y la comprobación de \
+                 `fsync` tienen que ser los del fichero de verdad. Pasa la ruta del destino"
+            ),
+            GuardianError::RutaDeEstado { bandera, ruta: None, .. } => write!(
+                f,
+                "al firmar, {bandera} es obligatoria y no tiene valor por defecto: nombra \
+                 con su ruta ABSOLUTA el fichero de este contador. Si ya firmabas sin \
+                 ella, el contador está en el directorio desde el que lanzabas el \
+                 proceso: pasa ESE fichero, no uno nuevo, porque un contador nuevo \
+                 empieza en 0"
+            ),
+            GuardianError::RutaDeEstado { bandera, ruta: Some(r), sugerida } => {
+                write!(
+                    f,
+                    "al firmar, {bandera} tiene que ser una ruta ABSOLUTA, y `{r}` es \
+                     relativa: el fichero dependería del directorio desde el que se lance \
+                     el proceso, y lanzado desde otro, el mismo firmante abriría otro \
+                     contador, que empieza en 0"
+                )?;
+                if let Some(s) = sugerida {
+                    write!(f, ". Desde aquí es `{s}`: si es el que venías usando, pásalo así")?;
+                }
+                Ok(())
+            }
         }
     }
 }
@@ -315,6 +413,78 @@ impl std::fmt::Display for GuardianError {
 /// tercero, y no había fallado todavía solo porque nadie lo había usado
 /// con `?` sobre `anyhow` (§241).
 impl std::error::Error for GuardianError {}
+
+/// ⚠️ §709 · **Al firmar, el fichero de un contador se nombra entero.** La regla
+/// que comparten el nodo (`--indice-firma`, `--contador-recepcion`) y el
+/// cofirmante del testigo (`--indice-cofirma`): la bandera es obligatoria, sin
+/// valor por defecto, y su ruta tiene que ser absoluta.
+///
+/// ⚠️ Vive aquí y no en cada binario por la razón del §296: dos copias de la
+/// misma regla pueden discrepar, y aquí discrepar es que un firmante la cumpla y
+/// el otro no. Y va en la FRONTERA de la línea de órdenes, no dentro de
+/// [`GuardianIndice::abrir`]: los nodos que no firman, y los tests, abren sus
+/// contadores con rutas relativas, y eso no compromete ninguna clave.
+///
+/// ⚠️ Lo que cierra es el accidente: dos procesos lanzados desde el mismo
+/// directorio con el valor por defecto comparten contador, y uno lanzado desde
+/// otro abre un contador nuevo, en 0. **No cierra** la misma semilla con dos
+/// rutas absolutas distintas: eso es otro fichero, y otro cerrojo.
+pub fn exigir_ruta_absoluta(bandera: &str, ruta: Option<&Path>) -> Result<PathBuf, GuardianError> {
+    match ruta {
+        None => Err(GuardianError::RutaDeEstado {
+            bandera: bandera.to_string(),
+            ruta: None,
+            sugerida: None,
+        }),
+        Some(r) if r.is_absolute() => Ok(r.to_path_buf()),
+        Some(r) => Err(GuardianError::RutaDeEstado {
+            bandera: bandera.to_string(),
+            ruta: Some(r.display().to_string()),
+            sugerida: std::env::current_dir().ok().map(|d| d.join(r).display().to_string()),
+        }),
+    }
+}
+
+#[cfg(test)]
+mod ruta_al_firmar {
+    use super::*;
+
+    #[test]
+    fn sin_bandera_no_hay_valor_por_defecto() {
+        match exigir_ruta_absoluta("--indice-firma", None) {
+            Err(e @ GuardianError::RutaDeEstado { ruta: None, .. }) => {
+                let m = e.to_string();
+                assert!(m.contains("--indice-firma"), "nombra la bandera: {m}");
+                assert!(m.contains("obligatoria"), "dice que es obligatoria: {m}");
+            }
+            otro => panic!("sin bandera, al firmar, no hay contador por defecto: {otro:?}"),
+        }
+    }
+
+    /// ⚠️ La relativa se rechaza aunque el fichero exista, y el error da la absoluta que
+    /// nombraba desde aquí: el operador que la venía usando pasa ESA, no una nueva.
+    #[test]
+    fn una_ruta_relativa_se_rechaza_y_se_dice_cual_era() {
+        for r in ["recepcion.bin", "./contador.bin", "../x/indice.bin", ""] {
+            match exigir_ruta_absoluta("--contador-recepcion", Some(Path::new(r))) {
+                Err(e @ GuardianError::RutaDeEstado { ruta: Some(_), .. }) => {
+                    let m = e.to_string();
+                    assert!(m.contains("relativa"), "{r}: {m}");
+                    if let GuardianError::RutaDeEstado { sugerida: Some(s), .. } = &e {
+                        assert!(Path::new(s).is_absolute(), "{r}: la sugerida es absoluta: {s}");
+                    }
+                }
+                otro => panic!("{r:?} es relativa y se acepto: {otro:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn una_ruta_absoluta_pasa_tal_cual() {
+        let r = Path::new("/var/lib/arqueo/indice-firma.bin");
+        assert_eq!(exigir_ruta_absoluta("--indice-cofirma", Some(r)).expect("absoluta"), r);
+    }
+}
 
 /// **La semilla del firmante, leida y comprobada en un solo sitio** (§330).
 pub mod semilla;
@@ -411,35 +581,115 @@ mod invariante_del_arranque {
 pub struct GuardianIndice {
     ruta: PathBuf,
     actual: u64,
+    /// ⚠️ §709 · SEC-1 — **EL CERROJO**: el fichero del contador, abierto y
+    /// bloqueado en exclusiva con [`File::try_lock`] en [`Self::abrir`], antes de
+    /// leer el valor y de reescribirlo. Vive en un campo porque el cerrojo dura
+    /// lo que dura su `File`. Se lee y se escribe por él: [`Self::persistir`] no
+    /// abre otro descriptor. Se suelta al soltar el guardián, o cuando muere el
+    /// proceso. (El nombre, con `_`, es el de SEC-1 en `doc/blueprint-v2.md`.)
+    _cerrojo: File,
 }
 
 impl GuardianIndice {
     /// Abre —o crea— el contador, **y comprueba que `fsync` persiste de
     /// verdad** en ese sistema de ficheros.
+    ///
+    /// ⚠️ §709, en este orden: se rechaza un enlace simbólico; la autocomprobación
+    /// mide la carpeta CANÓNICA, la del fichero de verdad; se toma el cerrojo; y
+    /// sólo entonces se lee y se reescribe el valor. Un contador recién creado se
+    /// persiste con `fsync` del fichero y de su carpeta, para que su NOMBRE
+    /// también sobreviva a un corte.
     pub fn abrir(ruta: impl AsRef<Path>) -> Result<Self, GuardianError> {
-        let ruta = ruta.as_ref().to_path_buf();
-        let carpeta = ruta.parent().unwrap_or(Path::new(".")).to_path_buf();
-        std::fs::create_dir_all(&carpeta).map_err(|e| GuardianError::Io(e.to_string()))?;
+        let io = |e: std::io::Error| GuardianError::Io(e.to_string());
+        let pedida = ruta.as_ref();
+        let nombre = pedida.file_name().ok_or_else(|| {
+            GuardianError::Io(format!("{} no nombra un fichero", pedida.display()))
+        })?;
+        // ⚠️ `Path::new("recepcion.bin").parent()` es `Some("")`, no `None`.
+        let carpeta = match pedida.parent() {
+            Some(c) if !c.as_os_str().is_empty() => c,
+            _ => Path::new("."),
+        };
+        std::fs::create_dir_all(carpeta).map_err(io)?;
+
+        // ── §709 (3) · un enlace simbólico NO se sigue ──
+        let existia = match std::fs::symlink_metadata(pedida) {
+            Ok(m) if m.file_type().is_symlink() => {
+                return Err(GuardianError::EnlaceSimbolico {
+                    ruta: pedida.display().to_string(),
+                    destino: std::fs::read_link(pedida)
+                        .map(|d| d.display().to_string())
+                        .unwrap_or_else(|e| format!("ilegible: {e}")),
+                });
+            }
+            Ok(_) => true,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
+            Err(e) => return Err(io(e)),
+        };
+        // ⚠️ La carpeta CANÓNICA: la autocomprobación se hace donde vive de verdad
+        //    el fichero, y los mensajes dicen esa ruta.
+        let carpeta = std::fs::canonicalize(carpeta).map_err(io)?;
+        let ruta = carpeta.join(nombre);
 
         Self::comprobar_persistencia(&carpeta)?;
 
-        let actual = if ruta.exists() {
-            let mut buf = Vec::new();
-            File::open(&ruta)
-                .and_then(|mut f| f.read_to_end(&mut buf))
-                .map_err(|e| GuardianError::Io(e.to_string()))?;
-            if buf.len() != 8 {
-                return Err(GuardianError::Corrupto { bytes: buf.len() });
+        // ── §709 (1) · EL CERROJO, antes de leer y de reescribir ──
+        let cerrojo = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(&ruta)
+            .map_err(io)?;
+        // ⚠️ El rechazo del enlace, otra vez y sobre lo que se ABRIÓ: `open` sigue los
+        //    enlaces, y entre el `symlink_metadata` de arriba y él alguien con permiso
+        //    en la carpeta pudo poner uno. (Si apuntaba a un fichero que no existía,
+        //    este `open` lo ha creado vacío; se rechaza igual, y no se usa.)
+        if !sigue_siendo_el_mismo(&ruta, &cerrojo).map_err(io)? {
+            return Err(match std::fs::read_link(&ruta) {
+                Ok(d) => GuardianError::EnlaceSimbolico {
+                    ruta: ruta.display().to_string(),
+                    destino: d.display().to_string(),
+                },
+                Err(_) => GuardianError::Io(format!(
+                    "{} cambió de fichero mientras se abría: no se usa",
+                    ruta.display()
+                )),
+            });
+        }
+        match cerrojo.try_lock() {
+            Ok(()) => {}
+            Err(TryLockError::WouldBlock) => {
+                let (pid, nombre) = quien_lo_tiene(&cerrojo);
+                return Err(GuardianError::ContadorOcupado {
+                    ruta: ruta.display().to_string(),
+                    pid,
+                    nombre,
+                });
             }
-            u64::from_le_bytes(buf.try_into().expect("8 bytes"))
-        } else {
-            0
+            Err(TryLockError::Error(e)) => return Err(io(e)),
+        }
+
+        // Se lee por el MISMO descriptor que tiene el cerrojo.
+        let mut buf = Vec::new();
+        (&cerrojo).read_to_end(&mut buf).map_err(io)?;
+        let actual = match buf.len() {
+            8 => u64::from_le_bytes(buf.try_into().expect("8 bytes")),
+            // Lo acaba de crear este `open`: un contador nuevo empieza en 0.
+            0 if !existia => 0,
+            n => return Err(GuardianError::Corrupto { bytes: n }),
         };
 
-        let g = GuardianIndice { ruta, actual };
+        let g = GuardianIndice { ruta, actual, _cerrojo: cerrojo };
         // Se escribe el valor de arranque para que el fichero exista y
         // quede sincronizado, incluso si es 0.
         g.persistir(actual)?;
+        // ── §709 (4) · el NOMBRE del fichero nuevo, persistido ──
+        // ⚠️ El molde de `registro_recepcion.rs` (`anotar`): sin el `fsync` de la
+        //    carpeta, un corte puede dejar los ocho bytes en disco y el nombre no.
+        if !existia {
+            File::open(&carpeta).and_then(|d| d.sync_all()).map_err(io)?;
+        }
         Ok(g)
     }
 
@@ -504,17 +754,30 @@ impl GuardianIndice {
         }
     }
 
+    /// ⚠️ §709 · Escribe **por el descriptor que tiene el cerrojo**, sin abrir la
+    /// ruta otra vez: así el cerrojo no depende de lo que el sistema haga con otro
+    /// descriptor del mismo fichero —donde el cerrojo es obligatorio, como el de
+    /// `LockFileEx` en Windows, escribir por otro chocaría con él—, y una reserva
+    /// cuesta un `open` menos.
+    ///
+    /// ⚠️ Y antes comprueba que la ruta **sigue siendo ese fichero**. Si se borró,
+    /// se movió o se cambió por otro, NO reserva: escribir en un fichero que ya no
+    /// tiene nombre es perder la cuenta al reiniciar, y abrir otro por la ruta
+    /// sería un contador sin cerrojo.
     fn persistir(&self, valor: u64) -> Result<(), GuardianError> {
-        let mut f = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(false)
-            .open(&self.ruta)
-            .map_err(|e| GuardianError::Io(e.to_string()))?;
-        f.seek(SeekFrom::Start(0)).map_err(|e| GuardianError::Io(e.to_string()))?;
-        f.write_all(&valor.to_le_bytes()).map_err(|e| GuardianError::Io(e.to_string()))?;
+        let io = |e: std::io::Error| GuardianError::Io(e.to_string());
+        if !sigue_siendo_el_mismo(&self.ruta, &self._cerrojo).map_err(io)? {
+            return Err(GuardianError::Io(format!(
+                "el contador {} ya no es el fichero que este guardián tiene abierto y \
+                 bloqueado: se borró, se movió o se cambió por otro. NO se reserva",
+                self.ruta.display()
+            )));
+        }
+        let mut f = &self._cerrojo;
+        f.seek(SeekFrom::Start(0)).map_err(io)?;
+        f.write_all(&valor.to_le_bytes()).map_err(io)?;
         // `sync_all` es `fsync(2)`: datos Y metadatos. Es lo que K.1 midió.
-        f.sync_all().map_err(|e| GuardianError::Io(e.to_string()))?;
+        f.sync_all().map_err(io)?;
         Ok(())
     }
 
@@ -553,6 +816,123 @@ impl GuardianIndice {
         }
         Ok(())
     }
+}
+
+/// ⚠️ §709 · **Quién tiene el cerrojo**: el proceso y su nombre, si el sistema lo
+/// dice. En Linux, `/proc/locks` da una línea por cerrojo, con el PID de quien lo
+/// tomó y el fichero como `MAYOR:MENOR:INODO` (los dos primeros en hexadecimal):
+/// `1: FLOCK  ADVISORY  WRITE 2051 fe:00:624583 0 EOF`. Las líneas con `->` son
+/// procesos que esperan, no el que lo tiene.
+///
+/// ⚠️ Del proceso se da el NOMBRE (`/proc/PID/comm`), nunca la línea de órdenes:
+/// la del nodo puede llevar la semilla (`--clave`), y esto acaba en un log.
+///
+/// ⚠️ El `MAYOR:MENOR` de `/proc/locks` es el del SUPERBLOQUE del sistema de
+/// ficheros, y el `st_dev` de `fstat` no siempre lo es: en btrfs es el del
+/// subvolumen, y en un overlay cuyas capas están en sistemas distintos, el de la
+/// capa. Por eso el fichero se busca con los dos: el de `fstat` y el del montaje
+/// del descriptor (su `mnt_id` en `/proc/self/fdinfo`, y el `MAYOR:MENOR` de ese
+/// montaje en `/proc/self/mountinfo`, que es el del superbloque). Si casa más de
+/// un proceso —en btrfs, dos subvolúmenes comparten superbloque y pueden repetir
+/// inodo—, no se da ninguno.
+///
+/// ⚠️ Es la mejor información disponible, no una prueba: entre el `WouldBlock` y
+/// esta lectura el cerrojo puede cambiar de manos, y en otro espacio de PID el
+/// número puede no ser visible (sale 0, y se da como desconocido).
+#[cfg(target_os = "linux")]
+fn quien_lo_tiene(f: &File) -> (Option<u32>, Option<String>) {
+    use std::os::unix::fs::MetadataExt;
+    let Ok(m) = f.metadata() else { return (None, None) };
+    let (dev, ino) = (m.dev(), m.ino());
+    // La codificación de `dev_t` de glibc (`gnu_dev_major`, `gnu_dev_minor`).
+    let mut dispositivos = vec![(
+        ((dev >> 8) & 0xfff) | ((dev >> 32) & 0xffff_f000),
+        (dev & 0xff) | ((dev >> 12) & 0xffff_ff00),
+    )];
+    dispositivos.extend(dispositivo_del_montaje(f));
+    let Ok(cerrojos) = std::fs::read_to_string("/proc/locks") else { return (None, None) };
+    let mut quienes: Vec<u32> = Vec::new();
+    for linea in cerrojos.lines() {
+        let campos: Vec<&str> = linea.split_whitespace().collect();
+        if campos.contains(&"->") || campos.get(1) != Some(&"FLOCK") {
+            continue;
+        }
+        let Some(pos) = campos.iter().position(|c| c.matches(':').count() == 2) else {
+            continue;
+        };
+        let mut partes = campos[pos].split(':');
+        let (Some(ma), Some(me), Some(i)) = (partes.next(), partes.next(), partes.next()) else {
+            continue;
+        };
+        let es_este = match (u64::from_str_radix(ma, 16), u64::from_str_radix(me, 16)) {
+            (Ok(a), Ok(b)) => dispositivos.contains(&(a, b)) && i.parse::<u64>().ok() == Some(ino),
+            _ => false,
+        };
+        if !es_este {
+            continue;
+        }
+        match pos.checked_sub(1).and_then(|p| campos[p].parse::<u32>().ok()) {
+            Some(p) if !quienes.contains(&p) => quienes.push(p),
+            Some(_) => {}
+            None => return (None, None),
+        }
+    }
+    let pid = match quienes[..] {
+        [p] if p != 0 => p,
+        _ => return (None, None),
+    };
+    let nombre = std::fs::read_to_string(format!("/proc/{pid}/comm")).ok();
+    (Some(pid), nombre.map(|n| n.trim().to_string()))
+}
+
+/// El `MAYOR:MENOR` del montaje de un descriptor, que es el de su superbloque: el
+/// `mnt_id` de `/proc/self/fdinfo/FD`, buscado en `/proc/self/mountinfo` (el
+/// tercer campo, en decimal). `None` si el sistema no lo dice.
+#[cfg(target_os = "linux")]
+fn dispositivo_del_montaje(f: &File) -> Option<(u64, u64)> {
+    use std::os::fd::AsRawFd;
+    let info = std::fs::read_to_string(format!("/proc/self/fdinfo/{}", f.as_raw_fd())).ok()?;
+    let montaje = info.lines().find_map(|l| l.strip_prefix("mnt_id:"))?.trim().to_string();
+    let montajes = std::fs::read_to_string("/proc/self/mountinfo").ok()?;
+    montajes.lines().find_map(|l| {
+        let mut campos = l.split_whitespace();
+        if campos.next()? != montaje {
+            return None;
+        }
+        let (mayor, menor) = campos.nth(1)?.split_once(':')?;
+        Some((mayor.parse().ok()?, menor.parse().ok()?))
+    })
+}
+
+/// ⚠️ §709 · **¿La ruta sigue nombrando el fichero de este descriptor?** El
+/// dispositivo y el inodo de la ruta, sin seguir un enlace en su último
+/// componente, tienen que ser los del descriptor; una ruta que ya no existe, o que
+/// es un enlace, no lo es. Lo usan [`GuardianIndice::abrir`], justo después de
+/// abrir, y [`GuardianIndice::persistir`], antes de cada escritura.
+#[cfg(unix)]
+fn sigue_siendo_el_mismo(ruta: &Path, f: &File) -> std::io::Result<bool> {
+    use std::os::unix::fs::MetadataExt;
+    let en_la_ruta = match std::fs::symlink_metadata(ruta) {
+        Ok(m) => m,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(e) => return Err(e),
+    };
+    let abierto = f.metadata()?;
+    Ok(!en_la_ruta.file_type().is_symlink()
+        && en_la_ruta.dev() == abierto.dev()
+        && en_la_ruta.ino() == abierto.ino())
+}
+
+/// Fuera de unix, `std` estable no da la identidad de un fichero abierto: no se
+/// comprueba, y se dice en la doc del crate.
+#[cfg(not(unix))]
+fn sigue_siendo_el_mismo(_: &Path, _: &File) -> std::io::Result<bool> {
+    Ok(true)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn quien_lo_tiene(_: &File) -> (Option<u32>, Option<String>) {
+    (None, None)
 }
 
 #[cfg(test)]
@@ -840,5 +1220,87 @@ mod tests {
         // La otra mitad: donde `fsync` cuesta, el guardian arranca.
         let p = en_disco("disco_real");
         GuardianIndice::abrir(&p).expect("en disco real el guardian debe arrancar");
+    }
+
+    /// ⚠️⚠️ §709 · SEC-1, EL FALSADOR: dos guardianes sobre la misma ruta, y el
+    /// segundo NO abre. Sobre `54fe931` abria y leia el contador del primero
+    /// (`Ok(1)`): los dos habrian repartido los mismos numeros. El cerrojo es del
+    /// descriptor, asi que dos guardianes en el MISMO proceso se excluyen igual que
+    /// en dos: por eso basta un test, y el de dos procesos de verdad es el del nodo.
+    #[test]
+    fn dos_guardianes_sobre_la_misma_ruta_el_segundo_no_abre() {
+        let p = en_disco("dos_guardianes");
+        let mut primero = GuardianIndice::abrir(&p).expect("el primero abre");
+        primero.reservar().expect("reservar");
+        match GuardianIndice::abrir(&p) {
+            Err(e @ GuardianError::ContadorOcupado { .. }) => {
+                let GuardianError::ContadorOcupado { ref ruta, pid, .. } = e else { unreachable!() };
+                assert!(Path::new(ruta).is_absolute(), "nombra la ruta canonica: {ruta}");
+                // ⚠️ Quien lo tiene es ESTE proceso: si el error da un PID, es el
+                //    propio, nunca otro. Que lo dé no se exige aquí, porque depende
+                //    de lo que el sistema enseñe en `/proc` (otro espacio de PID, un
+                //    `/proc` recortado); lo exige `tools/banco_un_proceso.sh`, con
+                //    dos procesos de verdad.
+                assert!(
+                    pid.map_or(true, |p| p == std::process::id()),
+                    "si dice quien lo tiene, es este proceso: {e}"
+                );
+                assert!(e.to_string().contains("NO se arranca"), "{e}");
+            }
+            otro => panic!("CRITICO: un segundo guardian abrio el mismo contador: {otro:?}"),
+        }
+        assert_eq!(primero.reservar().expect("el primero sigue"), 2, "el segundo no lo toco");
+        drop(primero);
+        let tercero = GuardianIndice::abrir(&p).expect("suelto el primero, el cerrojo se va con el");
+        assert_eq!(tercero.actual(), 2, "y el valor es el que dejo el primero");
+    }
+
+    /// ⚠️ §709 · Lo que el cerrojo CUBRE y lo que NO, atado. Es del FICHERO, no del
+    /// nombre: un enlace duro es el mismo fichero y no abre. Y dos ficheros son dos
+    /// cerrojos: la misma semilla con otro contador abre los dos, y eso el cerrojo no
+    /// lo ve —es lo que `SECURITY.md` §2 y `doc/CONFIANZA_RESIDUAL.md` declaran—.
+    /// Y como es del fichero, el guardián escribe por él y no por el nombre: si el
+    /// nombre deja de ser ese fichero —borrado, o cambiado por otro—, NO reserva.
+    /// Antes del arreglo de la revisión, `persistir` abría la ruta en cada reserva y
+    /// habría creado un contador nuevo, sin cerrojo, con el valor de este.
+    #[test]
+    fn el_cerrojo_es_del_fichero_y_dos_ficheros_son_dos_cerrojos() {
+        let p = en_disco("cerrojo_del_fichero");
+        let mut g = GuardianIndice::abrir(&p).expect("abrir");
+        let duro = p.with_file_name("enlace_duro.bin");
+        std::fs::hard_link(&p, &duro).expect("enlace duro");
+        assert!(
+            matches!(GuardianIndice::abrir(&duro), Err(GuardianError::ContadorOcupado { .. })),
+            "un enlace duro es el mismo fichero: el mismo cerrojo"
+        );
+        let otro = p.with_file_name("otro_contador.bin");
+        GuardianIndice::abrir(&otro).expect("otro fichero es otro cerrojo: NO lo cubre");
+
+        assert_eq!(g.reservar().expect("con su nombre, reserva"), 1);
+        std::fs::remove_file(&p).expect("borrar el nombre");
+        assert!(g.reservar().is_err(), "sin su nombre, NO reserva");
+        std::fs::write(&p, 7u64.to_le_bytes()).expect("otro fichero con el mismo nombre");
+        assert!(g.reservar().is_err(), "con el nombre de otro fichero, tampoco");
+        assert_eq!(g.actual(), 1, "y la cuenta no se mueve");
+        assert_eq!(std::fs::read(&p).expect("leer"), 7u64.to_le_bytes(), "ni toca el otro");
+        assert_eq!(std::fs::read(&duro).expect("leer"), 1u64.to_le_bytes(), "lo suyo sigue");
+    }
+
+    /// ⚠️ §709 · Un contador que es un ENLACE SIMBOLICO no se sigue. Sobre `54fe931`,
+    /// el enlace a un fichero de `/dev/shm` abria —la autocomprobacion medía la
+    /// carpeta del enlace, en disco— y los ocho bytes vivian en tmpfs.
+    #[cfg(unix)]
+    #[test]
+    fn un_enlace_simbolico_no_se_sigue() {
+        let p = en_disco("enlace_simbolico");
+        let destino = p.with_file_name("destino_de_verdad.bin");
+        std::os::unix::fs::symlink(&destino, &p).expect("enlace");
+        match GuardianIndice::abrir(&p) {
+            Err(GuardianError::EnlaceSimbolico { destino: d, .. }) => {
+                assert!(d.contains("destino_de_verdad.bin"), "dice a donde apunta: {d}");
+            }
+            otro => panic!("un enlace simbolico no se sigue: {otro:?}"),
+        }
+        assert!(!destino.exists(), "y no se crea nada al otro lado");
     }
 }

@@ -3,6 +3,10 @@ name = "zk-ssl-guardian"
 version = "0.1.0"
 edition = "2021"
 license.workspace = true
+# ⚠️ §709: `File::try_lock`, el cerrojo de `GuardianIndice::abrir` (SEC-1), es estable
+#    desde Rust 1.89. Quien depende de este crate la declara tambien: el nodo, el cli
+#    y el sdk; el kit lo compila solo en sus tests, como dev-dependency.
+rust-version = "1.89"
 
 # **El guardián del índice de firma.** Un contador monótono persistido con
 # `fsync`, con una autocomprobación que se niega a operar donde `fsync` no

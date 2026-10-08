@@ -83,6 +83,21 @@ decidido, y dónde):
   ⚠️ El borrado del buffer temporal del SK es **best-effort** y la fuga de
   `KeyPair::from_seed` es de un crate ajeno: backlog 102. El cuerpo de este
   documento no se toca —sigue siendo texto de sesion verbatim—.
+· B10.1 / guardián del índice — UN SOLO PROCESO POR CONTADOR (§709,
+  2026-10-08; SEC-1 de `doc/blueprint-v2.md`): `GuardianIndice::abrir` toma un
+  cerrojo exclusivo (`File::try_lock`) sobre el fichero del contador antes de
+  leerlo y de reescribirlo, y lo guarda mientras vive. Un segundo proceso sobre
+  el mismo contador —el nodo que firma, el que sólo recibe, el cofirmante del
+  testigo— NO arranca, y el error dice qué proceso lo tiene si el sistema lo
+  enseña. Al firmar, los contadores se nombran con su ruta absoluta y sin valor
+  por defecto. Hasta el §709 bastaba lanzar dos nodos desde el mismo directorio
+  para que compartieran `zkssl-indice-firma.bin` y `recepcion.bin`, y el
+  cofirmante del testigo tenía el mismo hueco con el suyo.
+  ⚠️ **Lo que el cerrojo NO cubre**: un sistema de ficheros de red (NFS), otra
+  máquina o una copia del contador, **la misma semilla con otro contador** —dos
+  ficheros son dos cerrojos—, y quien abra el fichero sin pedir el cerrojo, que
+  en unix es de aviso. El cerrojo excluye procesos: no hace nada frente a un
+  contador que vuelve atrás o se pierde. El cuerpo de este documento no se toca.
 · B10.3 y §10.2 (el plazo N)  → DECIDIDOS en §121: el «acuse» (nombre
   reservado en §120: ya hay dos `*Receipt` de otra especie) compromete
   su propio N bajo N_max = 1.440 cabezas firmadas (24 h, precedente MMD

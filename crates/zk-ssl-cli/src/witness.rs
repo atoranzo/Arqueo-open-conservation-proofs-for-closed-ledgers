@@ -1663,6 +1663,11 @@ pub struct WitnessArgs {
     ///
     /// ⚠️ NO se comparte con el del nodo: son dos claves distintas y dos
     /// series distintas. Compartirlo seria reusar indices entre firmantes.
+    ///
+    /// ⚠️ §709 · **Con su ruta ABSOLUTA**, como `--indice-firma` del nodo: la
+    /// regla es del guardian (`exigir_ruta_absoluta`). Y un solo proceso por
+    /// fichero: un segundo cofirmante sobre el mismo contador NO arranca (el
+    /// cerrojo del guardian, SEC-1).
     #[arg(long, value_name = "CONTADOR")]
     indice_cofirma: Option<PathBuf>,
 
@@ -2424,6 +2429,21 @@ fn texto_del_veredicto(v: &Veredicto) -> String {
     }
 }
 
+/// ⚠️ §709 · **El contador del cofirmante, nombrado entero**: con `--cofirmar`,
+/// `--indice-cofirma` es obligatoria (clap ya lo exige) y su ruta tiene que ser
+/// absoluta. Es la regla del nodo para `--indice-firma`, y vive en el guardian,
+/// que comparten (§296): dos firmantes del mismo invariante con reglas distintas
+/// era justo la divergencia que la mudanza del guardian vino a quitar.
+fn contador_del_cofirmante(a: &WitnessArgs) -> Result<Option<PathBuf>, GuardianError> {
+    match a.cofirmar {
+        None => Ok(None),
+        Some(_) => {
+            zk_ssl_guardian::exigir_ruta_absoluta("--indice-cofirma", a.indice_cofirma.as_deref())
+                .map(Some)
+        }
+    }
+}
+
 pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
     // §689: `--sobres` arma la evidencia de lo que LEE `--auditar` o `--comparar`, y de nada mas.
     if a.sobres.is_some() && a.auditar.is_none() && a.comparar.is_none() {
@@ -2699,6 +2719,10 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
     }
 
 
+    // ── §709 · el contador del cofirmante, con su ruta absoluta (SEC-1) ──
+    // ⚠️ ANTES de abrir el diario: un testigo que no arranca por esto no crea nada.
+    let contador_cofirma = contador_del_cofirmante(&a).map_err(|e| anyhow::anyhow!("{e}"))?;
+
     let mut m = Memoria::nueva();
     let agente = ureq::AgentBuilder::new().timeout(Duration::from_secs(10)).build();
     let mut diario = a
@@ -2716,7 +2740,7 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         Some(p) => {
             let semilla = zk_ssl_guardian::semilla::leer_cruda(p)
                     .map_err(|e| anyhow::anyhow!("{e}"))?;
-            let ruta = a.indice_cofirma.as_ref().expect("clap lo exige");
+            let ruta = contador_cofirma.as_ref().expect("contador_del_cofirmante: con --cofirmar hay contador");
             let mut c = Cofirmante::desde_semilla(&semilla, ruta)
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("⚠️ COFIRMANDO: el testigo pasa a ser PARTE INTERESADA y hereda");
@@ -5064,6 +5088,80 @@ mod tests {
             Err(otro) => panic!("en tmpfs debe negarse por PersistenciaFalsa, y dio: {otro:?}"),
             Ok(_) => panic!("en tmpfs NO debe arrancar: fsync no persiste nada ahi"),
         }
+    }
+
+    /// ⚠️⚠️ §709 · SEC-1, EL FALSADOR DEL COFIRMANTE: dos cofirmantes sobre el mismo
+    /// contador, y el segundo NO arranca. Hereda el cerrojo entero, porque abre el
+    /// mismo guardian que el nodo (§296). Sin el, con la MISMA semilla, cada uno
+    /// llevaba su cuenta en memoria desde el mismo valor del fichero, y los dos podian
+    /// firmar con la misma hoja. Con OTRA semilla tambien se rechaza: el cerrojo es del
+    /// contador, no de la clave.
+    #[test]
+    fn dos_cofirmantes_sobre_el_mismo_contador_el_segundo_no_arranca() {
+        let p = en_disco("dos_cofirmantes");
+        let op = clave_operador();
+        let mut primero = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("el primero");
+        primero.cofirmar(&[1u8; 32], &op).expect("cofirmar");
+        let mut otra = semilla_testigo();
+        otra[0] ^= 0xff;
+        for (semilla, que) in [(semilla_testigo(), "la misma semilla"), (otra, "otra semilla")] {
+            match Cofirmante::desde_semilla(&semilla, &p) {
+                Err(CofirmaError::Guardian(GuardianError::ContadorOcupado { pid, .. })) => {
+                    // ⚠️ Si dice quien lo tiene, es este proceso; que lo diga lo exige
+                    //    `tools/banco_un_proceso.sh`, con dos procesos de verdad.
+                    assert!(
+                        pid.map_or(true, |p| p == std::process::id()),
+                        "{que}: si dice quien lo tiene, es este proceso ({pid:?})"
+                    );
+                }
+                Err(e) => panic!("{que}: tenia que pararlo el cerrojo, y dio: {e:?}"),
+                // ⚠️ El `Ok` no se formatea: `Cofirmante` no implementa `Debug`.
+                Ok(_) => panic!("CRITICO, {que}: un segundo cofirmante abrio el mismo contador"),
+            }
+        }
+        assert_eq!(primero.reconciliar().expect("reconciliar"), Reconciliacion::Coincide { indice: 1 });
+        drop(primero);
+        Cofirmante::desde_semilla(&semilla_testigo(), &p)
+            .map(|_| ())
+            .expect("suelto el primero, el contador se abre: el cerrojo se fue con el");
+    }
+
+    /// ⚠️ §709 · El CABLEADO de `--indice-cofirma`: con `--cofirmar`, una ruta relativa
+    /// no arranca; absoluta, si; y sin `--cofirmar` no se mira. Se pasa por clap, como
+    /// la linea de ordenes de verdad.
+    #[test]
+    fn el_contador_del_cofirmante_va_con_su_ruta_absoluta() {
+        use clap::Parser;
+        #[derive(Parser)]
+        struct Mando {
+            #[command(flatten)]
+            a: WitnessArgs,
+        }
+        let con = |indice: &str| {
+            Mando::try_parse_from([
+                "witness",
+                "--cofirmar",
+                "/s/semilla.bin",
+                "--indice-cofirma",
+                indice,
+                "--cofirmas",
+                "/s/cofirmas.jsonl",
+            ])
+            .expect("clap")
+            .a
+        };
+        match contador_del_cofirmante(&con("contador.bin")) {
+            Err(GuardianError::RutaDeEstado { bandera, ruta: Some(r), .. }) => {
+                assert_eq!((bandera.as_str(), r.as_str()), ("--indice-cofirma", "contador.bin"));
+            }
+            otro => panic!("una ruta relativa al cofirmar no arranca: {otro:?}"),
+        }
+        assert_eq!(
+            contador_del_cofirmante(&con("/s/contador.bin")).expect("absoluta"),
+            Some(PathBuf::from("/s/contador.bin"))
+        );
+        let sin = Mando::try_parse_from(["witness", "--auditar", "d.jsonl"]).expect("clap").a;
+        assert_eq!(contador_del_cofirmante(&sin).expect("sin cofirmar"), None);
     }
 
     /// Un fichero de cofirmas de verdad, con `n` lineas.
