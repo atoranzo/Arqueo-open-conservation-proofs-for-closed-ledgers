@@ -100,7 +100,7 @@ elección de q y de la molienda para el corte zkssl/0.5: es la entrada 116.
 | el corte 0 | hecho | §641 y del §650 al §655; descrito en el §656 y en [`SECURITY.md`](../SECURITY.md) §3.9 |
 | REND-01 y REND-02, el trabajo que crece con la historia bajo el candado | el mismo problema, resuelto por otra vía: `rebuild_from` y cimas al día, no `FronteraDensa`. Que es el mismo sale de leer los asientos, no de una medida | §672, §673, §674, §676 y §677 |
 | SEC-2, el tope de `max_supply` | por otra vía: `MAX_SUMINISTRO` = 2^62 − 1 en `new` y en `open`, no `canon63` con 2^63 | §668; `crates/zk-ssl/src/lib.rs:1058`, `:1074`; `crates/zk-ssl/src/persistence.rs:59-60` |
-| un solo corte de cable, zkssl/0.5 | adoptado como principio en un RFC propuesto | `spec/rfc/0018-el-tren-0-5.md:19` |
+| un solo corte de cable, zkssl/0.5 | adoptado como principio en un RFC propuesto | `spec/rfc/0018-el-tren-0-5.md:19` hasta el §706; desde el §707, `:22` |
 | ARQ-11, P1: `winterfell = "=0.13.1"` en los seis crates | hecho | §694 |
 | ZK-1, paso (1) | hecho | §697 |
 | ZK-2 | hecho en la prosa | §698 |
@@ -116,7 +116,7 @@ nivel demostrable, que ya entonces dependía del circuito.
 | dónde | dice | corrección | evidencia |
 |---|---|---|---|
 | §3.3, la entrada; §6, filas «Bulletproofs» y «Circle STARK» | rango de 63 bits | **62 bits** desde el §641 (RFC-0017) | `crates/stark-experiment/src/range_check.rs:8-15`, `:76` |
-| §6, fila «Circle STARK» | «con 31 bits la colisión de identidades baja a 2^15», citando la evaluación | hereda el E4 de la evaluación: esa colisión ya estaba tachada como corregida | `BACKLOG.md:1401-1408` hasta el §705; desde el §706, `:1406-1413`, en la entrada 15; `doc/integracion-vertical-evaluacion.md` §«Correcciones (§705)» |
+| §6, fila «Circle STARK» | «con 31 bits la colisión de identidades baja a 2^15», citando la evaluación | hereda el E4 de la evaluación: esa colisión ya estaba tachada como corregida | `BACKLOG.md:1401-1408` hasta el §705; desde el §706, `:1406-1413`; desde el §707, `:1425-1432`, en la entrada 15; `doc/integracion-vertical-evaluacion.md` §«Correcciones (§705)» |
 | §6, filas «Recursión» y «Dos rondas de Rescue» | «35 AIR» | es el censo de RFC-0009, no una cuenta: fuera del fork hay 38 `impl Air for`, y el kit verifica 5 | `git grep` de `impl … Air for` fuera de `crates/winter-*` |
 | §3.4 y §4.3, ARQ-06 | «los 316 vectores» | **384 vectores en 12 manifiestos** hasta el §705; desde el §706, 390, los de `FAMILIAS` en `tools/artefacto.sh:31`; el corte 3 ya dice «todos los vectores de los manifiestos del kit» | los `MANIFIESTO.txt` |
 | §2.3, §3.2, §5.1 («seguridad demostrable») y §7.3 | «LDR 80, UDR 59» como el nivel demostrable de producción | es el de las familias de longitud fija más largas, envío, cobro y quema. La LDR depende de la longitud de la traza: 80-88 en las de longitud fija y menos en la edad con `m` alta. El nivel que se declare tiene que nombrar el circuito y la longitud | los tests del §697; `SECURITY.md` §3.11; la entrada 116 |

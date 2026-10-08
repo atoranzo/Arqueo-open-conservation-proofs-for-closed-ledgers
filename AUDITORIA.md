@@ -50171,3 +50171,225 @@ bloque del pago en curso en el catálogo de rechazos. Y el criterio de E5 del RF
 implementación «escrita desde la spec sin leer el código de referencia», en lo que toca a la marca:
 la comprobación de la marca se leyó del kit, como las AIR; desde el §706 su texto y sus cuatro
 lecturas los da también `spec/PAQUETE.md` §5, de donde un tercero los toma sin leer el código.
+
+## §707 — RFC-0018 D-G, en estado de propuesta: una prueba dice qué es, con la marca v2 de 24 bytes —su familia, la versión de su AIR y su perfil— que el juez lee antes que nada, para el corte zkssl/0.5
+
+El commit que lleva este asiento, sobre `679a035` (el §706). Un solo sello de documentos, sin
+código: `spec/rfc/0018-el-tren-0-5.md` gana la D-G en estado de propuesta, con su sección, su etapa
+—E3, sin construir— y la D-F reservada, y lo dicen su cabecera, su motivación, su diseño, su
+compatibilidad, su seguridad y sus referencias; `spec/rfc/0019-la-completitud-que-no-se-esquiva.md`
+gana una nota en su E3 y este asiento en su cabecera; `spec/README.md` pone al día las filas de los
+dos RFC; el `BACKLOG.md` abre la 118; los bloques «Correcciones (§705)» de `doc/blueprint-v2.md` y
+de `doc/integracion-vertical-evaluacion.md` ponen al día cuatro celdas que citan por línea lo que el
+sello mueve; y este asiento. La decisión es del autor, del 07-10-2026: aceptó en bloque la
+propuesta de decisión sobre cómo se identifica una prueba, con la opción que recomendaba; cinco
+respuestas a preguntas que esa propuesta dejaba abiertas las propuso la sesión después, y rigen por
+esa aceptación hasta que el autor diga otra cosa («Lo que decide el autor»). Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. Después, una revisión, también de
+Claude Code, pidió correcciones, ninguna bloqueante, y se aplicaron antes del commit: la 118 del
+`BACKLOG.md` le atribuía al autor lo que añadió la sesión, y ahora separa las dos cosas, como el
+RFC y este asiento; la nota fechada que pide el RFC-0009 va también en su D-H, no sólo en su D-S;
+la marca v1 de otro largo tiene fila en la tabla del juez, la 1d, y un vector previsto; la fecha
+del último commit de winterfell dice que es del upstream y de cuándo es la medida; y el estado de
+la D-G dice que la decisión está tomada y la etapa, en propuesta. El número es el siguiente libre:
+la rama llega al §706, y ninguna de las seis ramas del repositorio en `origin` (`git ls-remote`, y el
+`AUDITORIA.md` de cada una) lleva un §707: la propia rama en `origin` llega al §702, `main` al §693,
+y las otras cuatro al §685, §658, §641 y §627. El sello no toca ningún crate ni ningún vector: el
+kit, la capa y el nodo aceptan y rechazan lo mismo que antes, y el cable sigue en `zkssl/0.4`.
+Ningún test lee los ficheros que toca. En la sesión no se corrió el canon entero: sí, como los corre
+él, las doce compuertas rápidas con la puerta de los vectores (en «Medido»). No se corrieron las
+filas de los crates, la conformidad, el artefacto ni la segunda implementación, porque el sello no
+toca código ni vectores.
+
+**De dónde sale.** Desde el §699 `spec/RPC.md` dice que `zkssl/0.4` no identifica qué pruebas acepta
+un nodo: dentro de esa versión el AIR de las pruebas que viajan cambió tres veces, y entre dos
+construcciones que dicen las dos `zkssl/0.4` un envío cae con `InconsistentOodConstraintEvaluations`,
+sin decir que es de otra versión. El corte zkssl/0.5 cambia los bytes de la prueba por varios lados
+a la vez, y la D-E del RFC-0018 cierra la vía de aceptar las dos versiones. El plano v2.0 lo había
+señalado en su D3 (`doc/blueprint-v2.md` §«4.3 D3»): la semilla de Fiat-Shamir no lleva
+identificador de familia. Y el §706, al igualar la segunda implementación con el kit en la marca
+v1, dejó dicho que cómo se identifica una prueba es otra decisión, para el corte. Una sesión de
+Claude Code preparó sobre `161a233` la propuesta de decisión: comparó llevar la identidad en la
+marca del meta de la traza, comprometer las opciones y la AIR en la cabeza, poner la familia sólo
+en las entradas públicas, y sus mezclas, y recomendó la marca v2 con perfil. El autor la aceptó por
+escrito el 07-10-2026, en bloque, con otras propuestas de la misma sesión. La propuesta no está en
+el árbol: lo que de ella decide el autor está en la D-G, y para este sello todo se volvió a medir
+sobre `679a035`.
+
+**Lo que decide el autor.** Al aceptar la propuesta, el 07-10-2026:
+
+1. **La marca v2, de 24 bytes fijos y con perfil, en el corte zkssl/0.5.** Comprometer las opciones
+   y la AIR en la cabeza queda fuera mientras no haya perfiles que elija el operador.
+2. **La forma**: la decisión entra en el RFC-0018 como D-G. La D-F queda reservada para los
+   parámetros del corte que pide la entrada 116, y el RFC lo dice.
+3. **El alcance**: se versionan todas las AIR, también las que sólo juzga el nodo, porque el nodo
+   también es un juez.
+4. **El paso 0**: el juez de la edad lee la marca antes de componer el enunciado con la cabeza y de
+   subir las subraíces.
+
+Y cinco respuestas a preguntas que la propuesta dejaba abiertas, que la sesión propuso después de
+esa aceptación. Rigen por ella hasta que el autor diga otra cosa, y se le señalaron una a una en la
+sesión, como las dos últimas del §705 y la del §706:
+
+5. **El prefijo** sigue diciendo `oculta`: `arqueo:oculta:` con la versión 2. Toda prueba de
+   producción va oculta, el kit ya lee ese prefijo, y la longitud fija no cambia por ello.
+6. **El registro** de familias, versiones de AIR y perfiles va a `spec/NUCLEO.md`, que es
+   normativo: la identidad de una prueba es núcleo, no paquete.
+7. **Otro motor.** Cómo se identifica una prueba que no tiene el formato de winterfell lo decide el
+   RFC de la capa 2, y la D-G le deja reservado un valor de perfil.
+8. **`digest_pi`**, el de la E3 del RFC-0019, ata también la familia y la versión de la AIR, para
+   que un recibo diga de qué prueba es: separa dominios por un coste despreciable.
+9. **El momento.** La D-G entra ya en el árbol, en estado de propuesta, sin esperar a los
+   parámetros del corte: de ellos sólo depende el número de perfiles.
+
+**Lo que la sesión pone al día, y lo que añade.** La propuesta se escribió sobre `161a233`, antes
+del §706. Al pasarla al RFC sobre `679a035`:
+
+- **La segunda implementación.** La propuesta decía que iba forma, opciones y marca, sin exigir m
+  ni rechazar el meta vacío. Desde el §706 va como el kit, y la D-G parte de ahí.
+- **El paso 0, en las cinco familias del kit.** La propuesta daba por hecho que en los otros
+  jueces la prueba es lo primero que se lee. Medido: en cuatro de los cinco, `verificar` comprueba
+  antes el enunciado —`comprobar_enunciado`, en `crates/zk-ssl-air/src/lib.rs:613`, `banda.rs:432`,
+  `cobro_pendiente.rs:486` y `pago_en_curso.rs:510`; la prenda deserializa primero, `prenda.rs:461`—,
+  y en el cobro y el pago `verificar_contra_cabeza` compara antes `nacido` con la cabeza
+  (`cobro_pendiente.rs:544`, `pago_en_curso.rs:569`). La D-G pone la marca la primera en las cinco,
+  lo que incluye el paso 0 que el autor decidió para la edad. La extensión es de la sesión, y el
+  autor puede dejarla en la edad.
+- **El orden dentro de la marca.** La propuesta comprobaba el perfil y las opciones antes que m. La
+  D-G juzga primero todo lo que está en la marca, m incluida, sobre la cabeza de la prueba y sin
+  deserializar el resto; después, el enunciado; y después, las opciones y la forma.
+- **Las clases.** El §706 puso «marca de la ocultacion» en «prueba mal formada». La D-G deja ahí la
+  m y la cabeza que no se lee, y lleva a «fuera del contrato» la versión, la familia y la AIR, como
+  decía la propuesta. Los textos son nuevos y son propuesta: en ASCII, como los de hoy, y todos los
+  de la marca empiezan por `marca`, para que un manifiesto pine la causa y no sólo el sujeto.
+- **Tres detalles**, para la E3 y reversibles con ella: el cero no se asigna en la familia, en la
+  versión ni en el perfil, para que un probador que no declare lo suyo no escriba una marca válida;
+  la versión de cada AIR empieza en 1 con el corte; y el perfil reservado para otro motor es el 255.
+- **Los nombres de los vectores previstos** empiezan por `neg-v2-`: los del §706 (`neg-marca-m32`,
+  `neg-meta-vacio` y `neg-marca-m32-y-opciones`) se mudarán a `spec/vectors/0.4/` con el corte, y su
+  ruta vieja no se reutiliza (regla 2 de `spec/rfc/PROCESO.md`).
+- **La compatibilidad hacia delante.** La propuesta decía que la segunda 0.4 miraba las opciones
+  antes que la marca; desde el §706 no. La D-G dice que el kit 0.4.x, como la segunda, mira la forma
+  antes que la marca, y que según lo que cambie el corte una prueba 0.5 cae por su forma, por su
+  marca o, en la edad, por el enunciado que se compone con la cabeza.
+
+**Lo que hace.**
+
+1. **`spec/rfc/0018-el-tren-0-5.md`.** La cabecera dice el estado de la D-G, quién la redactó, la
+   fecha, que la E3 cambiaría los bytes de todas las pruebas, y este asiento. La motivación gana un
+   párrafo que la presenta; el diseño, la E3 en un párrafo que remite a su sección; la
+   compatibilidad, una nota fechada; las decisiones, la D-F reservada y la D-G en una línea; y
+   «Cómo se construye», que la E3 va en el sello del corte y no antes. La sección nueva, «D-G — Una
+   prueba dice qué es», lleva: el estado; lo que hay hoy; la decisión; la marca byte a byte, con el
+   registro; lo que entra en la semilla de Fiat-Shamir y por qué basta; lo que hace el juez, en tres
+   pasos y una tabla de trece rechazos con su texto propuesto y su clase de `spec/PAQUETE.md`
+   §«6.1 La causa del rechazo»; la segunda implementación; la regla de extensión; por qué en la
+   marca y no en la cabeza; la compatibilidad; el coste; por qué ahora; la E3; los vectores
+   previstos, catorce nombres en doce filas, sin crear; lo que toca fuera del RFC; y lo que no
+   decide. «Seguridad» gana una frase, y las referencias, una línea. Nada de lo que había se borra,
+   y el RFC sigue PROPUESTO: el estado de cada etapa vive en su sitio, como en el RFC-0005 y el
+   RFC-0008.
+2. **`spec/rfc/0019-la-completitud-que-no-se-esquiva.md`**, el doble hilo de la regla 5 del PROCESO:
+   su E3 dice que `digest_pi` ata también la familia y la versión de la AIR, por la D-G, y que la
+   forma exacta la fija esa etapa; su cabecera nombra este asiento.
+3. **`spec/README.md`.** La fila del RFC-0018 gana la D-G. La del RFC-0019 decía «four decisions for
+   the author; nothing built», rancia desde el §679, que tomó las decisiones, y el §681, que
+   construyó la E1, cuando su cabecera ya decía las cuatro decisiones tomadas y E1 y E2
+   construidas: dice eso, la E3 pendiente y lo que ata su digest desde este asiento.
+4. **El `BACKLOG.md`**: la 118, nueva, en el grupo C detrás de la 117, que dice primero lo que
+   decide el autor y después lo que propuso la sesión; y la cabecera, de 46 a 47 abiertas, en las
+   mismas tres líneas, para no mover lo que va antes de la 118.
+5. **Los bloques «Correcciones (§705)».** La 118 baja 19 líneas todo lo que viene detrás de ella en
+   el `BACKLOG.md`, y la cabecera del RFC-0018 baja tres el resto del RFC. Cuatro celdas citan por
+   línea algo de eso, y cada una dice ahora también la línea desde el §707, como hicieron el §705 y
+   el §706: la entrada 15, `:1425-1432`, en el plano y en la evaluación; la 22, `:2043`, `:2089` y
+   `:2116`, en la evaluación, donde la 92 sigue en `:961`; y en el plano, la línea del RFC-0018 que
+   adopta el corte único, `:22`.
+
+**Medido.** Sobre `679a035` con este sello, desde la raíz, con la máquina compartida con otras
+tareas.
+
+- **Las pruebas de los vectores.** Un guion fuera del árbol recorre `spec/vectors/` y lee la cabeza
+  de cada cadena hexadecimal que es una prueba —la que lleva el módulo de Goldilocks detrás del
+  meta—: 121 pruebas. Fuera de `0.3/`, 62 llevan la marca v1, 58 con m = 64 y las cuatro de m = 32
+  de los negativos del §706; y 25 el meta vacío, las 23 de los recibos de los lotes de rechazo y los
+  dos `neg-meta-vacio` del §706. Las 34 de `0.3/`, el meta vacío. Con el meta de 19 bytes las
+  opciones empiezan en el byte 34, y con el vacío en el 15; su primer byte es 42, salvo en las dos
+  escenas del §706, 43.
+- **La semilla.** Con `leer_prueba` y `elementos_del_contexto` de `tools/segunda/stark.py`, sobre la
+  prueba de `spec/vectors/edad/edad-todos.json`, de 75.947 bytes: el contexto da 11 elementos con el
+  meta de 19 bytes, y 12 con una cabeza v2 de 24 bytes armada fuera del árbol, en la que las
+  opciones pasan del byte 34 al 39.
+- **Lo que lee el código.** La semilla, `crates/winter-verifier/src/lib.rs:100-101`; el despacho por
+  la marca, `:107-114`, con «meta de traza desconocido»; el contexto, con el `TraceInfo` delante,
+  `crates/winter-air/src/proof/context.rs:119-136`; el meta en trozos de `ELEMENT_BYTES - 1` bytes,
+  sin su largo, `crates/winter-air/src/air/trace_info.rs:227-234`, dentro de `to_elements`
+  (`:209-238`); su serialización, `:240-264`; el largo exacto de la v1, `marca.rs:52-54`. La marca la
+  escribe `crates/winter-prover/src/lib.rs:621`, a partir de `Ocultacion` (`:739`), que sólo lleva m
+  y las dos semillas; la leen además `Marca::m_de` en `crates/winter-air/src/air/context.rs:281`, en
+  `crates/winter-prover/src/domain.rs:61` y en `crates/winter-verifier/src/lib.rs:301`. Fijan la
+  lectura de hoy `crates/stark-experiment/src/falsadores_oculta.rs:250`, que da `arqueo:oculta:2`
+  por `Err(Desconocida)`, el autotest de `tools/segunda/stark.py:907`, que también,
+  `crates/stark-experiment/src/circuit_threshold_single_nullifier.rs:1104`, que exige
+  `marca::LARGO`, y el ayudante de `crates/zk-ssl/src/lib.rs:1119-1123`, que escribe la v1 a mano.
+  La comprobación del kit es `comprobar_marca`, `crates/zk-ssl-air/src/lib.rs:158-165`; el juez de
+  la edad contra la cabeza, `:716-744`; la guarda de forma de la capa,
+  `crates/zk-ssl/src/lib.rs:241-265`.
+- **Los probadores y los jueces.** `git grep -l 'ocultacion_encendida()' crates/` da 24 ficheros: los
+  23 probadores con fila de `crates/stark-experiment/src` y la definición, en su `lib.rs:93`. De sus
+  23 AIR, las cinco del kit las juzgan sus cinco `verificar` de `crates/zk-ssl-air/src`; catorce, la
+  capa: trece en los 15 `verify::<` vivos de `crates/zk-ssl/src` (dos AIR, las del reembolso, en dos
+  sitios cada una) y `NullifierThresholdAir` en `verify_threshold_pair`
+  (`crates/stark-experiment/src/circuit_threshold_single_nullifier.rs:701`), al que llama la capa
+  (`crates/zk-ssl/src/freeze.rs:128`); y las cuatro de `circuit_threshold`, `double_entry`, `merkle`
+  y `solvency` sólo las verifican sus tests, dentro de su `#[cfg(test)]`.
+- **Los kits 0.4.x publicados.** El `AUDITORIA.md` de cada etiqueta acaba en el §657
+  (`arqueo-verify-v0.4.0`), en el §660 (`v0.4.1`) y en el §670 (`v0.4.2`): los tres son posteriores
+  al §651, y exigen la marca v1 con m = 64.
+- **Las cuentas de RFC.** `check_publicadas` lee como una cuenta toda línea con una palabra de
+  estado —«propuesta» lo es— y tres números de RFC, y exige que lleve todos. Sigue contando 5
+  cuentas en 4 sitios, como en `679a035`: ninguna línea nueva de los dos RFC lo es.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 1862 declarados,
+  ninguno anidado; `check_modulos`, 204 ficheros, todos declarados; `check_vectores`, 483 vectores y
+  958 líneas con su huella, ninguno tocado, y lo mismo `--desde` la base en `origin/main`;
+  `check_cifras`, 26 cifras de tests y ninguna contradice el canon; y las otras del bucle «2 ter»:
+  `verificar_citas`, `check_figures`, `check_columns`, `check_constraint_layout`, `check_dominios`,
+  `check_publicadas`, `check_nucleo` y `check_techo`. Las doce salen con 0. `verificar_citas` pasa de
+  58 a 69 encabezados citados, 0 muertos: ocho citas en el RFC-0018 —«Notas operativas» de
+  `spec/RPC.md`, «4.3 D3» del plano dos veces, «6.1 La causa del rechazo» de `spec/PAQUETE.md` tres,
+  «3. La regla de extensión, ejercida» de `spec/NUCLEO.md` y «4. Integración vertical» de la
+  evaluación, la de la revisión— y tres en este asiento: «4.3 D3», «6.1 La causa del rechazo» y la
+  D-G por su encabezado, `spec/rfc/0018-el-tren-0-5.md` §«D-G — Una prueba dice qué es». Se
+  corrieron otra vez después de la revisión, con el texto final, y dan esto; `check_figures` da la
+  misma salida que sobre `679a035`, y la 118 sigue ocupando 19 líneas, así que las cuatro celdas de
+  los bloques «Correcciones (§705)» caen en su sitio.
+- **Lo que leen los tests**: `git grep` en `crates/` de `include_str!`, `read_to_string` y
+  `CARGO_MANIFEST_DIR` con un `.md`: el único documento que lee un test es `spec/RPC.md`, que el
+  sello no toca.
+
+**Probado.** Ningún test nuevo: el sello no toca código. Los encabezados nuevos que se citan los
+vigila `verificar_citas`: en una copia de los `.md` y los `.rs` del árbol con el encabezado de la
+D-G renombrado, sale con 1 y nombra la cita de este asiento, «ENCABEZADO MUERTO», con 69 citados y
+1 muerto; con el encabezado restaurado, igual byte a byte que el del árbol (`cmp`), 69 y 0, y sale
+con 0. Se repitió después de la revisión, con el texto final.
+
+**Contadores.** Ningún test ni pin se mueve: `check_tests` sigue en 1862, el TOTAL DE SELLO en 1703
+y el TOTAL CON LARGOS en 1840. `check_vectores`, en 483 vectores y 958 líneas. El `BACKLOG.md` pasa
+de 46 a 47 abiertas, con la 118, y sigue en 73 resueltas. `verificar_citas`, de 58 a 69 encabezados
+citados.
+
+**Lo que NO hace.** No construye la marca v2 ni nada de la E3: ni el fork, ni los probadores, ni los
+jueces, ni `tools/segunda`. No crea ningún vector: los de la D-G son previstos, y nacen con la E3.
+No numera las familias ni los perfiles: los da el registro, con la E3. No toca `spec/NUCLEO.md`,
+`spec/PAQUETE.md` ni `spec/RPC.md`: la nota del §699 sobre lo que `zkssl/0.4` no identifica sigue
+como está. No pone las notas fechadas que la D-G pide para cuando se construya la E3: en la D-H y la
+D-S del RFC-0009, porque la marca pasa de anunciar la ocultación a identificar la prueba —la D-H no
+se revierte, porque el meta sigue sin ser de ningún AIR—, y en la D-B del RFC-0005. No cambia el
+estado de ningún RFC. No decide los parámetros del corte (la D-F, la 116), ni la capa 2, ni la forma
+del juez único (la 117). No corre el canon entero: el sello no toca código, y la máquina estaba
+compartida con otras tareas.
+
+**Lo que NO cierra.** La E3 y, con ella, la 118. La 116 y la 117. El RFC de la capa 2. Y que la D-G
+pase de propuesta a construida, que pide su asiento, con su réplica y sus vectores, en el sello del
+corte.

@@ -12,7 +12,7 @@
 - **Versión del protocolo afectada:** `zkssl/0.4`. E1 no cambia el cable; cambia un veredicto del kit.
   E2 cambia el veredicto de un vector publicado. E3, la hoja del recibo, sí cambia el cable.
 - **Asiento(s) de AUDITORIA:** §675 (este borrador), §679 (las decisiones), §681 (la D-A y E1), §682
-  (E2).
+  (E2), §707 (lo que ata `digest_pi`, por la D-G del RFC-0018).
 
 ## Motivación
 
@@ -59,6 +59,9 @@ los mismos bytes viven en `completitud/` como `rechazo-stale-declarada.json` y
 `digest_pi`, el digest de las entradas públicas de la prueba recibida, bajo la firma. Un rechazo
 `StaleState` se ata entonces por la firma y no por el `data`, y E2 puede volver a dar VERDE cuando la
 atadura sea verificable. Cambia la hoja del recibo, así que va al tren `zkssl/0.5` (RFC-0018).
+(§707: `digest_pi` ata también la familia y la versión de la AIR de la prueba recibida, para que un
+recibo diga de qué prueba es; lo trae la D-G del RFC-0018, en estado de propuesta, y la forma exacta
+la fija esta etapa.)
 
 ## Compatibilidad
 

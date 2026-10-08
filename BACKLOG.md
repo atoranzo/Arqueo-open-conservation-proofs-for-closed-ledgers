@@ -12,9 +12,9 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 46 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
-recontadas en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el
-§696, que abre la 115, el §697, que abre la 116, y el §705, que abre la 117.
+**Estado**: 47 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
+115, el §697, que abre la 116, el §705, que abre la 117, y el §707, que abre la 118.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1171,6 +1171,25 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `verify::<` vivo fuera del juez, con las excepciones que declare, como la acotó el verificador del
   ARQ-01; y la versión del kit que la lleve. Medido sobre `c990868`: no hay
   `crates/zk-ssl-air/src/juez.rs`.
+
+- [ ] **118. Cómo se identifica una prueba: la marca v2 del RFC-0018, la D-G, en estado de
+  propuesta (§707).** Hoy una prueba STARK de la casa sólo lleva la marca de la ocultación,
+  `arqueo:oculta:1` y m, 19 bytes en el meta de su traza; la familia la elige quien llama, y una
+  prueba de otra versión de su AIR cae con un error de winterfell y no con su nombre (§699). El
+  autor decide el 07-10-2026 la marca v2, de 24 bytes fijos con la familia, la versión de la AIR y
+  el perfil, atada por la semilla de Fiat-Shamir, en el corte zkssl/0.5 y no antes, para todas las
+  AIR con probador oculto, también las que sólo juzga el nodo; y que en la edad el juez la lea antes
+  del enunciado. La sesión propuso, y rige hasta que el autor diga otra cosa (§707): la marca, la
+  primera en todos los jueces y en ese orden también en la capa y en `tools/segunda`; el registro,
+  en `spec/NUCLEO.md`; el perfil 255, reservado para otro motor; y `digest_pi`, el de la E3 del
+  RFC-0019, atando también la familia y la versión.
+  **Lo que pide**: la E3 del RFC-0018 en ese sello —el fork en sus dos orillas, los 23 probadores
+  con fila, los jueces (o el juez único de la 117, si va antes), `tools/segunda`, el registro con su
+  KAT, los textos en `spec/PAQUETE.md` y los vectores que lista la D-G, más un test del fork que
+  mida la atadura a la semilla—; y las notas fechadas que la D-G pide en el RFC-0009 (D-H y D-S) y
+  en el RFC-0005 (D-B). Medido sobre `679a035`, en las pruebas de `spec/vectors/`: fuera de `0.3/`,
+  62 llevan la v1 (58 con m = 64, y las cuatro de m = 32 del §706) y 25 el meta vacío (las de los
+  recibos de los lotes de rechazo y los dos negativos del §706); las 34 de `0.3/`, el meta vacío.
 
 ## D. Declaradas, acotadas, sin urgencia
 
