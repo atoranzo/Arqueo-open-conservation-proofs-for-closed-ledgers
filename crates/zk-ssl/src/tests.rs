@@ -3774,3 +3774,44 @@ fn cada_libro_cifrado_lleva_su_cabecera_y_su_sal() {
     let _ = std::fs::remove_dir_all(&a);
     let _ = std::fs::remove_dir_all(&b);
 }
+
+/// **§704: el montaje comparte sus pruebas, y nada más.** Dentro de `de_montaje`, la misma subida
+/// sobre el mismo libro sale con los mismos bytes, y otra subida —otro importe— con otra prueba;
+/// la compartida la aplica la capa, que la verifica entera, en dos libros distintos. Fuera, el
+/// mismo ayudante prueba de nuevo, y dos pruebas del mismo enunciado no comparten bytes: es lo
+/// que necesitan los tests que llaman a los ayudantes a mano para medir o para repetir una prueba.
+/// Y el hilo sale del montaje también cuando dentro hay un pánico.
+#[test]
+fn el_montaje_comparte_sus_pruebas_y_nada_mas() {
+    const SK: u64 = 0x703_0001;
+    const IMPORTE: u64 = 1_703;
+    let mut l = new_layer();
+    let a = open_and_fund(&mut l, SK, 0);
+
+    let dentro = de_montaje(|| mint_climb_proof(&l, a, IMPORTE)).to_bytes();
+    let otra_vez = de_montaje(|| mint_climb_proof(&l, a, IMPORTE)).to_bytes();
+    assert_eq!(dentro, otra_vez, "dentro del montaje, el mismo enunciado se probo dos veces");
+    let otro_importe = de_montaje(|| mint_climb_proof(&l, a, IMPORTE + 1)).to_bytes();
+    assert_ne!(dentro, otro_importe, "dos enunciados distintos salieron con la misma prueba");
+
+    let fuera = mint_climb_proof(&l, a, IMPORTE).to_bytes();
+    let fuera_otra = mint_climb_proof(&l, a, IMPORTE).to_bytes();
+    assert_ne!(fuera, fuera_otra, "fuera del montaje se reutilizo una prueba");
+    assert_ne!(fuera, dentro, "fuera del montaje salio la prueba compartida");
+
+    let r = std::panic::catch_unwind(|| {
+        de_montaje(|| panic!("§704: un panico dentro del montaje, a proposito"))
+    });
+    assert!(r.is_err());
+    let tras_el_panico = mint_climb_proof(&l, a, IMPORTE).to_bytes();
+    assert_ne!(tras_el_panico, dentro, "tras un panico, el hilo siguio en el montaje");
+
+    // La compartida se aplica: `fund_delegated` pide esta misma subida dentro del montaje.
+    fund_delegated(&mut l, a, IMPORTE);
+    assert_eq!(l.balance_of(a), Some(IMPORTE));
+    let mut otro_libro = new_layer();
+    let b = open_and_fund(&mut otro_libro, SK, 0);
+    fund_delegated(&mut otro_libro, b, IMPORTE);
+    assert_eq!(otro_libro.balance_of(b), Some(IMPORTE));
+    assert_eq!(otro_libro.total_supply(), IMPORTE);
+}

@@ -795,23 +795,23 @@ mod tests {
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
-        println!("\n=== Coste por envio encadenado ===\n");
+        println!("\n=== Coste por envio encadenado, en {} ===\n", super::reloj_o_cpu());
         let mut times = Vec::with_capacity(N);
         for i in 0..N {
             let estado = state_of(&layer, alice);
             let receptor = layer.public_id_of(bob).expect("cuenta");
-            let t = Instant::now();
-            let s = layer
-                .send(
-                    BaseElement::new(SK_ALICE),
-                    alice,
-                    &estado,
-                    receptor,
-                    salt_de(0xE57A + i as u64),
-                    10_000,
-                )
-                .expect("envio");
-            let gen = t.elapsed();
+            // §704: el coste es la CPU del hilo, no el reloj, y el primero y el ultimo, que son
+            // los que se comparan, se generan dos veces y cuenta la menor. Por que, en
+            // `coste_de_un_envio`, al final del fichero.
+            let veces = if i == 0 || i == N - 1 { 2 } else { 1 };
+            let (gen, pared, s) = super::coste_de_un_envio(veces, || {
+                layer
+                    .send(
+                        BaseElement::new(SK_ALICE),
+                        alice, &estado, receptor, salt_de(0xE57A + i as u64), 10_000,
+                    )
+                    .expect("envio")
+            });
             layer.apply_send(&s, alice, &estado, 10_000).expect("aplicar");
             // El receptor cobra en el acto: lo que se mide es que el coste no
             // crezca con el numero de operaciones, y para eso hacen falta las
@@ -824,7 +824,7 @@ mod tests {
                 .apply_claim(&cr, bob, &estado_b, &s.notice)
                 .expect("aplicar cobro");
             times.push(gen);
-            println!("  envio {:>2}: {:>7.1} ms", i + 1, ms(gen));
+            println!("  envio {:>2}: {:>7.1} ms (reloj {:>7.1} ms)", i + 1, ms(gen), ms(pared));
         }
 
         let first = times[0].as_secs_f64();
@@ -1079,5 +1079,53 @@ mod remedicion_89_1 {
             "MUESTRA claim gen={gen_c:7.1}ms apply={ap_c:6.1}ms proof={} B",
             cobro.proof.len()
         );
+    }
+}
+
+/// **§704: lo que cuesta generar un envio, para `cost_per_transfer_stays_stable`.** El coste es la
+/// CPU del hilo que prueba, no el reloj. El probador es de un hilo (winterfell sin `concurrent`),
+/// asi que la CPU de este hilo es el trabajo de generar la prueba; el reloj suma ademas lo que el
+/// hilo espera a que otras tareas le dejen un nucleo, y por eso aquel test caia con la maquina
+/// cargada (§656, §698). Con `veces` > 1 se genera otra vez y cuenta la menor: con la maquina muy
+/// cargada, la CPU de un envio suelto tambien llego a doblarse (§704, «Medido»). `send` toma la
+/// capa como `&self`, asi que generar dos veces no mueve nada; se devuelve el primero. Donde no
+/// hay `/proc/thread-self/schedstat` -fuera de Linux- cuenta el reloj, como antes.
+#[cfg(test)]
+fn coste_de_un_envio<T>(
+    veces: usize,
+    mut genera: impl FnMut() -> T,
+) -> (std::time::Duration, std::time::Duration, T) {
+    use std::time::{Duration, Instant};
+    let (mut cpu, mut reloj, mut primero) = (Duration::MAX, Duration::MAX, None);
+    for _ in 0..veces.max(1) {
+        let (t, c) = (Instant::now(), cpu_del_hilo());
+        let r = genera();
+        let p = t.elapsed();
+        let g = match (c, cpu_del_hilo()) {
+            (Some(antes), Some(despues)) => despues.saturating_sub(antes),
+            _ => p,
+        };
+        (cpu, reloj) = (cpu.min(g), reloj.min(p));
+        primero.get_or_insert(r);
+    }
+    (cpu, reloj, primero.expect("al menos una generacion"))
+}
+
+/// La CPU que lleva gastada este hilo, de `/proc/thread-self/schedstat` (su primer campo, en
+/// nanosegundos). `None` donde no existe.
+#[cfg(test)]
+fn cpu_del_hilo() -> Option<std::time::Duration> {
+    let s = std::fs::read_to_string("/proc/thread-self/schedstat").ok()?;
+    let ns: u64 = s.split_whitespace().next()?.parse().ok()?;
+    Some(std::time::Duration::from_nanos(ns))
+}
+
+/// En que se mide `cost_per_transfer_stays_stable`, para su cabecera.
+#[cfg(test)]
+fn reloj_o_cpu() -> &'static str {
+    if cpu_del_hilo().is_some() {
+        "CPU del hilo"
+    } else {
+        "reloj (sin CPU del hilo)"
     }
 }

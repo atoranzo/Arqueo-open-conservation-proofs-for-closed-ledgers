@@ -337,10 +337,10 @@ pub fn delegated_pair(
     let prover = auth::NullifierThresholdProver::new(proof_options());
     let ta = auth::build_trace(d, ck[a], &cp[a], op);
     let ia = prover.get_pub_inputs(&ta);
-    let pa = prover.prove(ta).expect("autorizacion A");
+    let pa = prover.probar(ta).expect("autorizacion A");
     let tb = auth::build_trace(d, ck[b], &cp[b], op);
     let ib = prover.get_pub_inputs(&tb);
-    let pb = prover.prove(tb).expect("autorizacion B");
+    let pb = prover.probar(tb).expect("autorizacion B");
     (pa, ia, pb, ib)
 }
 
@@ -387,7 +387,7 @@ pub fn mint_climb_proof(
         layer.max_supply(),
     );
     climb::MintClimbProver::new(proof_options())
-        .prove(trace)
+        .probar(trace)
         .expect("subida")
 }
 
@@ -395,8 +395,8 @@ pub fn mint_climb_proof(
 /// autorizan con sus pruebas, que hasta el §538 publicaban sus claves (§523).
 pub fn fund_delegated(layer: &mut SovereignLayer, idx: AccountIndex, amount: u64) {
     let op = mint_commitment(layer, idx, amount);
-    let subida = mint_climb_proof(layer, idx, amount);
-    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    let subida = de_montaje(|| mint_climb_proof(layer, idx, amount));
+    let (pa, ia, pb, ib) = de_montaje(|| delegated_pair(op, 1, 3));
     layer
         .apply_mint_delegated(subida, pa, ia, pb, ib, idx, amount)
         .expect("la emision delegada legitima debe aplicarse");
@@ -425,15 +425,15 @@ pub fn freeze_climb_proof(
     let path = layer.frozen.path_for(idx);
     let trace = climb_frozen::build_trace(frozen_leaf(!frozen), frozen_leaf(frozen), &path);
     climb_frozen::FrozenClimbProver::new(proof_options())
-        .prove(trace)
+        .probar(trace)
         .expect("subida de congelacion")
 }
 
 /// Congela o descongela `idx` por la VÍA DELEGADA: custodios 1 y 3.
 pub fn set_frozen_delegated(layer: &mut SovereignLayer, idx: AccountIndex, frozen: bool) {
     let op = freeze_commitment(layer, idx, frozen);
-    let subida = freeze_climb_proof(layer, idx, frozen);
-    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    let subida = de_montaje(|| freeze_climb_proof(layer, idx, frozen));
+    let (pa, ia, pb, ib) = de_montaje(|| delegated_pair(op, 1, 3));
     layer
         .apply_freeze_delegated(subida, pa, ia, pb, ib, idx, frozen)
         .expect("la congelacion delegada legitima debe aplicarse");
@@ -468,17 +468,17 @@ pub fn governance_pair(
     let prover = auth::NullifierThresholdProver::new(proof_options());
     let ta = auth::build_trace(d, gk[a], &gp[a], op);
     let ia = prover.get_pub_inputs(&ta);
-    let pa = prover.prove(ta).expect("autorizacion A");
+    let pa = prover.probar(ta).expect("autorizacion A");
     let tb = auth::build_trace(d, gk[b], &gp[b], op);
     let ib = prover.get_pub_inputs(&tb);
-    let pb = prover.prove(tb).expect("autorizacion B");
+    let pb = prover.probar(tb).expect("autorizacion B");
     (pa, ia, pb, ib)
 }
 
 /// Cambia el conjunto de custodios por la VÍA DELEGADA: miembros 1 y 3.
 pub fn update_custodians_delegated(layer: &mut SovereignLayer, nueva: Digest) {
     let op = governance_commitment(layer, nueva);
-    let (pa, ia, pb, ib) = governance_pair(op, 1, 3);
+    let (pa, ia, pb, ib) = de_montaje(|| governance_pair(op, 1, 3));
     layer
         .apply_governance_delegated(pa, ia, pb, ib, nueva)
         .expect("el cambio delegado legitimo debe aplicarse")
@@ -514,15 +514,15 @@ pub fn recovery_climb_proof(
         layer.recovery_count(), 1,
     );
     climb_recovery::RecoveryClimbProver::new(proof_options())
-        .prove(trace)
+        .probar(trace)
         .expect("subida de recuperacion")
 }
 
 /// Recupera `idx` hacia la identidad `nueva` por la VÍA DELEGADA.
 pub fn recover_delegated(layer: &mut SovereignLayer, idx: AccountIndex, nueva: Digest) {
     let op = recovery_commitment(layer, idx, nueva);
-    let subida = recovery_climb_proof(layer, idx, nueva);
-    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    let subida = de_montaje(|| recovery_climb_proof(layer, idx, nueva));
+    let (pa, ia, pb, ib) = de_montaje(|| delegated_pair(op, 1, 3));
     layer
         .apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva)
         .expect("la recuperacion delegada legitima debe aplicarse");
@@ -569,7 +569,7 @@ pub fn mint_pending_climb_proof(
         &path,
     );
     climb_pending::MintPendingClimbProver::new(proof_options())
-        .prove(trace)
+        .probar(trace)
         .expect("subida a pendiente")
 }
 
@@ -581,8 +581,8 @@ pub fn mint_to_pending_delegated(
     amount: u64,
 ) {
     let op = mint_pending_commitment(layer, receiver_id, salt, amount);
-    let subida = mint_pending_climb_proof(layer, receiver_id, salt, amount);
-    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    let subida = de_montaje(|| mint_pending_climb_proof(layer, receiver_id, salt, amount));
+    let (pa, ia, pb, ib) = de_montaje(|| delegated_pair(op, 1, 3));
     let _ = layer
         .apply_mint_pending_delegated(subida, pa, ia, pb, ib, receiver_id, salt, amount)
         .expect("la emision delegada a pendiente debe aplicarse");
@@ -687,3 +687,140 @@ pub fn governance_pair_wide_with(
     let (pb, ib) = autorizacion_ancha(GOVERNANCE_DOMAIN, keys[b], &gp[b], op);
     (pa, ia, pb, ib)
 }
+
+// ============================================================================
+// §704: las pruebas del montaje, generadas una vez y compartidas.
+//
+// Con la máquina cargada, la fila de la capa del canon no cabía en los 600 s de su timeout (§704,
+// «Medido»), y una parte de su CPU era montaje repetido: en los fuentes de `2ac6db4`, 78 de las
+// 194 llamadas a `new_layer()` llevan en la línea siguiente el fondeo
+// `open_and_fund(&mut <capa>, SK_ALICE, 1_000_000)` de una capa recién creada, que es el MISMO
+// enunciado en todas (la orden que lo cuenta, en el §704), y cada uno volvía a probar su subida y
+// sus dos autorizaciones de custodio.
+//
+// Los cinco montajes delegados —`fund_delegated`, `set_frozen_delegated`,
+// `update_custodians_delegated`, `recover_delegated` y `mint_to_pending_delegated`— piden sus
+// pruebas dentro de [`de_montaje`], y ahí [`ProbarDeMontaje::probar`] las guarda por proceso
+// con la huella de lo que se prueba: el tipo del probador, sus opciones y la traza entera,
+// celda a celda, con su meta. La misma huella es el mismo enunciado con el mismo testigo, así que
+// la prueba guardada es una prueba válida de lo que se pide, y la capa la verifica entera en
+// cada test, como antes. Lo que se comparte es la generación, no la comprobación.
+//
+// Fuera de `de_montaje` nada cambia: los ayudantes públicos (`mint_climb_proof`,
+// `delegated_pair`, ...) prueban de nuevo en cada llamada, que es lo que necesitan los tests que
+// los llaman a mano —los que miden, los que repiten una prueba a propósito y los que fabrican una
+// mala—. Y sólo en los tests de esta capa (`cfg(test)`): con la feature `sandbox`, que es como
+// usan este módulo el nodo, el cli y los bancos, `probar` es `prove` y `de_montaje` no hace nada.
+// Lo vigila `el_montaje_comparte_sus_pruebas_y_nada_mas`, en `tests.rs`.
+// ============================================================================
+
+#[cfg(test)]
+thread_local! {
+    static EN_MONTAJE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Corre `f` con las pruebas de montaje compartidas (ver la cabecera de esta sección). Al salir,
+/// aunque `f` entre en pánico, el hilo vuelve a como estaba.
+pub fn de_montaje<T>(f: impl FnOnce() -> T) -> T {
+    #[cfg(test)]
+    {
+        struct Vuelve(bool);
+        impl Drop for Vuelve {
+            fn drop(&mut self) {
+                EN_MONTAJE.with(|m| m.set(self.0));
+            }
+        }
+        let _vuelve = Vuelve(EN_MONTAJE.with(|m| m.replace(true)));
+        f()
+    }
+    #[cfg(not(test))]
+    {
+        f()
+    }
+}
+
+/// La huella de lo que se prueba: el tipo del probador, sus opciones y la traza entera, con sus
+/// dimensiones y su meta, bajo BLAKE3.
+#[cfg(test)]
+fn huella_de_montaje<P>(probador: &P, traza: &winterfell::TraceTable<BaseElement>) -> [u8; 32]
+where
+    P: Prover<BaseField = BaseElement, Trace = winterfell::TraceTable<BaseElement>>,
+{
+    use winterfell::crypto::{Digest as _, Hasher};
+    use winterfell::Trace;
+    let mut b: Vec<u8> = Vec::new();
+    for parte in [std::any::type_name::<P>().to_string(), format!("{:?}", probador.options())] {
+        b.extend_from_slice(&(parte.len() as u64).to_le_bytes());
+        b.extend_from_slice(parte.as_bytes());
+    }
+    let meta = traza.info().meta();
+    b.extend_from_slice(&(meta.len() as u64).to_le_bytes());
+    b.extend_from_slice(meta);
+    b.extend_from_slice(&(traza.width() as u64).to_le_bytes());
+    b.extend_from_slice(&(traza.length() as u64).to_le_bytes());
+    for c in 0..traza.width() {
+        for e in traza.get_column(c) {
+            b.extend_from_slice(&e.as_int().to_le_bytes());
+        }
+    }
+    Blake3::hash(&b).as_bytes()
+}
+
+/// `prove`, y dentro de [`de_montaje`] una sola vez por proceso para cada huella.
+///
+/// La huella lee del probador su tipo y sus opciones, y nada más: sólo vale para un probador cuyo
+/// único estado son sus `ProofOptions`. Por eso se implementa para los cinco del montaje, que sólo
+/// llevan `options`, y no para cualquier `Prover`; y la constante de debajo deja de compilar si a
+/// alguno le crece otro campo. Un probador con más estado, que moviera sus entradas públicas o su
+/// prueba, recibiría dentro del montaje la prueba guardada de otro enunciado.
+pub trait ProbarDeMontaje:
+    Prover<BaseField = BaseElement, Trace = winterfell::TraceTable<BaseElement>> + Sized
+{
+    /// La prueba de `traza`. Fuera del montaje, o fuera de los tests de la capa, es `prove`.
+    fn probar(
+        &self,
+        traza: winterfell::TraceTable<BaseElement>,
+    ) -> Result<winterfell::Proof, winterfell::ProverError>
+    where
+        <Self::Air as winterfell::Air>::PublicInputs: Send,
+    {
+        #[cfg(test)]
+        {
+            use std::collections::HashMap;
+            use std::sync::{Mutex, OnceLock};
+            static GUARDADAS: OnceLock<Mutex<HashMap<[u8; 32], winterfell::Proof>>> =
+                OnceLock::new();
+            if EN_MONTAJE.with(|m| m.get()) {
+                let huella = huella_de_montaje(self, &traza);
+                let guardadas = GUARDADAS.get_or_init(Default::default);
+                if let Some(p) = guardadas.lock().expect("montaje").get(&huella) {
+                    return Ok(p.clone());
+                }
+                let p = self.prove(traza)?;
+                guardadas.lock().expect("montaje").insert(huella, p.clone());
+                return Ok(p);
+            }
+        }
+        self.prove(traza)
+    }
+}
+
+impl ProbarDeMontaje for auth::NullifierThresholdProver {}
+impl ProbarDeMontaje for climb::MintClimbProver {}
+impl ProbarDeMontaje for climb_frozen::FrozenClimbProver {}
+impl ProbarDeMontaje for climb_recovery::RecoveryClimbProver {}
+impl ProbarDeMontaje for climb_pending::MintPendingClimbProver {}
+
+// Los cinco no llevan más estado que sus opciones: si a uno le crece un campo, esto no compila.
+const _: () = {
+    use std::mem::size_of;
+    let o = size_of::<ProofOptions>();
+    assert!(
+        size_of::<auth::NullifierThresholdProver>() == o
+            && size_of::<climb::MintClimbProver>() == o
+            && size_of::<climb_frozen::FrozenClimbProver>() == o
+            && size_of::<climb_recovery::RecoveryClimbProver>() == o
+            && size_of::<climb_pending::MintPendingClimbProver>() == o,
+        "un probador del montaje lleva mas estado que sus ProofOptions"
+    );
+};

@@ -49501,3 +49501,218 @@ principal por su cuenta, con las huellas al día en `bc93fb6`.
 **Lección.** Un párrafo que se apoya en un fallo ajeno abierto caduca el día que el fallo se cierra,
 y nada en el árbol lo avisa: ninguna compuerta lee el estado de un issue de otro repositorio. El
 sitio de decirlo es el mismo párrafo, con el cierre, quién lo cerró y lo que se midió después.
+
+## §704 — la fila de la capa vuelve a caber en el sello: el montaje prueba una vez cada traza, el test de tiempos mide CPU y el timeout de la fila pasa de 600 a 900 s, medido
+
+El commit que lleva este asiento, sobre `1155b7a` (el §703, con su anexo). Un solo sello:
+`crates/zk-ssl/src/tests_support.rs` gana el montaje compartido —`de_montaje` y
+`ProbarDeMontaje`—, que usan los cinco montajes delegados; `crates/zk-ssl/src/metrics.rs` mide
+`cost_per_transfer_stays_stable` en CPU del hilo; `crates/zk-ssl/src/tests.rs` gana un test; la
+fila de `zk-ssl` en `tools/canon.sh` cambia su pin y su timeout; los contadores; y este asiento. Lo
+escribe y lo comprueba una sesión de Claude Code, y lo commitea la sesión que la lanzó, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente
+libre: la rama llega al §702, y ninguna de las seis ramas del repositorio en `origin`
+(`git ls-remote`, y `git show` del `AUDITORIA.md` de cada una) lleva un §704: la propia rama en
+`origin` (`claude/cool-brown-4g0hr5`) llega al §702, `main` al §693, y las otras cuatro al §685,
+§658, §641 y §627. El sello no cambia ningún AIR, ningún vector ni lo que aceptan la capa, el nodo o
+el kit, y el cable sigue en `zkssl/0.4`: cambian tests, sus ayudantes y una fila del canon. El
+canon entero no se corrió: sí la suite de la capa, la comprobación de que el módulo de ayudantes
+compila sin tests, con `sandbox`, y las compuertas rápidas (en «Medido»).
+
+**Número.** Este asiento y los seis siguientes se escribieron como §703-§709 en la rama de trabajo;
+al ponerlos sobre `main`, que ya llevaba su propio §703 (RFC-0013, el #341, con su anexo), pasaron a
+ser §704-§710. Los commits que citan como base de una medida se citan por su hash nuevo: son el
+mismo árbol en lo medido, porque lo único que cambia es el número de estos asientos y el texto del
+§703 de `main`.
+
+**De dónde sale.** Desde el bloque del §694 al §702, con la máquina cargada, la fila de `zk-ssl`
+no cabe en el sello. El §698 lo dejó dicho («No sube el timeout de la fila de `zk-ssl` ni toca el
+test de tiempos: el canon VERDE, con la máquina sin otras tareas, queda por correr»), y el §702
+también («su fila del canon tiene un timeout de 600 s que este sello no ha medido en una máquina
+libre»). En la sesión, sobre el árbol del §702 y con la máquina compartida con otras tareas, tres
+canon `--sello`: dos salieron ROJOS con la fila en 124 a los 600 s, y uno VERDE con la fila en
+482 s. Corrida aparte, la fila pasó entera en 674,07 s de tests; otra vez, suelta, terminó en
+490,26 s con 445 verdes y `cost_per_transfer_stays_stable` caído («ultima / primera: 2.01x»). En el
+canon del §693 (`5e28605`), la misma fila, con 431 tests, tardó 168,65 s. Antes de tocar nada se
+midió qué se llevaba el tiempo, y la respuesta no era la que el bloque hacía esperar.
+
+**Lo que hace.**
+
+1. **El montaje prueba una vez cada traza** (`tests_support.rs`). Los cinco montajes delegados
+   —`fund_delegated`, que es el de `open_and_fund`, `set_frozen_delegated`,
+   `update_custodians_delegated`, `recover_delegated` y `mint_to_pending_delegated`— piden su
+   subida y sus dos autorizaciones dentro de `de_montaje`. Ahí `ProbarDeMontaje::probar` guarda
+   cada prueba por proceso con su huella: BLAKE3 del tipo del probador, sus opciones, las
+   dimensiones y la meta de la traza, y la traza entera, celda a celda. La misma huella es el mismo
+   enunciado con el mismo testigo, así que la prueba guardada es una prueba válida de lo que se
+   pide; la capa la verifica entera en cada test, como antes. Lo que se comparte es la generación,
+   no la comprobación. La huella lee del probador su tipo y sus opciones, y nada más, así que sólo
+   vale para un probador sin otro estado: `ProbarDeMontaje` se implementa para los cinco del
+   montaje —el umbral con nulificador y las cuatro subidas, que sólo llevan `options`— y no para
+   cualquier `Prover`, y una constante deja de compilar si el tamaño de uno de ellos deja de ser el
+   de `ProofOptions`, que es lo que pasa si le crece un campo que lleve datos. Fuera de
+   `de_montaje`, los ayudantes públicos (`mint_climb_proof`, `delegated_pair`, `governance_pair` y
+   las otras tres subidas) prueban de nuevo en cada llamada: los llaman a mano los tests que miden,
+   los que repiten una prueba a propósito y los que fabrican una mala. Y sólo en los tests de la
+   capa (`cfg(test)`): con la feature `sandbox`, que es como usan el módulo el nodo, el cli y los
+   bancos, `probar` es `prove` y `de_montaje` no hace nada. El código nuevo va al final del
+   fichero, y lo de arriba cambia en su sitio, una línea por cada cambio: `.prove(` pasa a
+   `.probar(` en seis ayudantes, y las nueve llamadas de los cinco montajes van dentro de
+   `de_montaje`. Ninguna línea se mueve, así que las citas
+   `tests_support.rs:línea` de `doc/ecst/VERIFICACION.md` dan en la misma línea que en `2ac6db4`.
+2. **El test de tiempos mide CPU** (`metrics.rs`). `cost_per_transfer_stays_stable` sigue exigiendo
+   que el quinto envío encadenado no cueste el doble que el primero, y que el receptor acabe con
+   50.000. El coste de cada envío lo da ahora `coste_de_un_envio`: la CPU del hilo que lo prueba
+   (`/proc/thread-self/schedstat`, en nanosegundos). El probador es de un hilo —winterfell sin
+   `concurrent`, comprobado con `cargo tree -e features`—, así que esa CPU es el trabajo de generar
+   la prueba, y el reloj suma lo que el hilo espera a que la máquina le deje un núcleo. El primero
+   y el último, que son los que se comparan, se generan dos veces y cuenta la menor; `send` toma la
+   capa como `&self`, así que generar dos veces no mueve nada. El test imprime también el reloj.
+   Donde no hay `/proc/thread-self/schedstat`, fuera de Linux, cuenta el reloj, como antes. El test
+   cambia en su sitio y con sus mismas 50 líneas, y las tres ayudas nuevas van al final del
+   fichero: ninguna línea se mueve, y la 1046 que cita `doc/blueprint-v2.md`, la de
+   `remedicion_89_1::muestra`, sigue siendo la misma.
+3. **Un test**, `el_montaje_comparte_sus_pruebas_y_nada_mas`, al final de `tests.rs`: dentro de
+   `de_montaje`, la misma subida sobre el mismo libro sale con los mismos bytes, y la de otro
+   importe con otra prueba; fuera, dos subidas del mismo enunciado no comparten bytes y no son la
+   compartida; tras un pánico dentro del montaje el hilo vuelve a probar de nuevo; y la compartida
+   la aplica la capa en dos libros distintos.
+4. **La fila del canon**: pin 446 -> 447 y timeout 600 -> 900, con su número medido en la nota de
+   la fila.
+
+**Medido.** Con el binario de tests de la capa en release (`cargo test -p zk-ssl --release
+--locked --no-run`, y el ejecutable que da), salvo donde se dice otra cosa.
+
+- **Los quince tests del bloque** (`git diff 5e28605 2ac6db4 -- crates/zk-ssl/src`, los
+  `#[test]` añadidos): uno a uno, con `--exact` y `--test-threads=1`, y una carga de 0,97 en el
+  último minuto, tardan entre los quince 18,8 s. Los que más,
+  `un_libro_de_claves_anchas_ejerce_las_cinco_autoridades` (3,45 s),
+  `un_libro_de_claves_estrechas_rota_sus_custodios_a_claves_anchas` (3,05 s) y
+  `el_nivel_de_las_familias_de_longitud_fija` (2,41 s); los cinco de `crypto.rs`, 0,64 s entre
+  todos. No son ellos.
+- **La fila apenas creció: lo que cambió fue la carga de la máquina.** En `2ac6db4`, con las
+  otras tareas paradas y una carga de 0,52 al empezar, la suite entera con sus cuatro hilos: 446
+  pasan en 171,4 s de reloj, con 620,8 s de CPU de usuario y 13,1 de sistema. En el §693,
+  168,65 s. La fila pide unos 634 s de CPU, y el reloj depende de cuántos núcleos le deje la
+  máquina. Lo dicen dos corridas con sus cuatro hilos, sin `taskset` y con la máquina cargada. La
+  primera, sobre `2ac6db4`, es la orden de la fila suelta de «De dónde sale», la de 490,26 s:
+  635,9 s de CPU de usuario en 490 s de tests, 1,3 núcleos. La segunda, sobre el árbol de este
+  sello antes del doble muestreo del test de tiempos y con una carga de 9,6 a 12,8: 442,8 s de CPU
+  en 432,1 s de reloj, 1,0 núcleos. Ésa no es la de un núcleo de «Después» (433,1 s, con
+  `taskset -c 3`): sus relojes se parecen, pero son dos corridas distintas sobre el mismo árbol.
+- **Con un núcleo** (`taskset -c 3`; libtest lee la afinidad y corre entonces con un hilo, así que
+  cada test se mide solo: la suma de sus tiempos, 656,2 s, es el reloj), `2ac6db4`, con una carga
+  de 1,7 a 6,0: 656,3 s de reloj, 627,6 s de CPU de usuario y 15,5 de sistema. Sin compilar nada,
+  la fila ya no cabía en 600 s.
+- **Dónde se va**, por módulo y con un núcleo, en `2ac6db4`: `tests`, 178,0 s (99 tests);
+  `two_phase::tests_verificacion`, 94,4 (51); `metrics::tests`, 66,5 (5); `instrumento_revela`,
+  43,4 (22); `iso::tests`, 38,4 (16); `snapshot::tests`, 25,6 (22); y una cola larga. Los cuatro
+  tests más caros son los que miden tamaños, tiempos o la contención del anclaje
+  —`proof_size_does_not_correlate_with_amount`, 31,6 s; `t5b_constantes_y_coste_efectivo`, 16,0;
+  `cost_per_transfer_stays_stable`, 12,3; y `los_dos_lados_del_pago_atan_la_banda`, 11,9—, 71,8 s
+  entre los cuatro. Y una parte de lo demás es montaje repetido. En los fuentes de `2ac6db4`, de
+  las 194 líneas que llaman a `new_layer()` fuera de un comentario, 78 llevan en la línea siguiente
+  el fondeo `open_and_fund(&mut <capa>, SK_ALICE, 1_000_000)` de una capa recién creada: el mismo
+  enunciado en todas, y cada fondeo son tres pruebas. Con esos argumentos hay 107 fondeos en
+  total, no todos sobre una capa recién creada. Lo cuentan, desde la raíz, estas órdenes:
+
+  ```text
+  git archive 2ac6db4 crates/zk-ssl/src | tar -xO | grep -E '^\s*[^/ ]' |
+    grep 'new_layer()' | grep -vc 'fn new_layer'                       # 194
+  git archive 2ac6db4 crates/zk-ssl/src | tar -xO |
+    grep -A1 -E 'let (mut )?\w+ = (\w+::)?new_layer\(\);' |
+    grep -cE 'open_and_fund\(&mut \w+, SK_ALICE, 1_000_000\)'          # 78
+  git archive 2ac6db4 crates/zk-ssl/src | tar -xO |
+    grep -cE 'open_and_fund\(&mut \w+, SK_ALICE, 1_000_000\)'          # 107
+  ```
+
+  Los 78 son una cota por abajo, porque no cuentan un fondeo con otra línea en medio. Un borrador
+  de este asiento decía «91 de las 166», sin la orden que lo contó. La revisión no lo reprodujo con
+  ninguna forma de contar, y la cifra se volvió a contar con estas órdenes.
+- **Después**, con un núcleo y sobre este árbol antes del doble muestreo del test de tiempos, que
+  le añade dos generaciones de un envío, y con una carga de 6,0 a 9,7: 447 pasan en 433,1 s de
+  reloj, con 399,7 s de CPU de usuario y 10,1 de sistema, un 36 % menos de CPU que los 643,1 de
+  `2ac6db4`. Por módulo:
+  `tests`, 178,0 -> 107,5 s; `two_phase::tests_verificacion`, 94,4 -> 56,4; `iso::tests`,
+  38,4 -> 11,3; `snapshot::tests`, 25,6 -> 13,2; `metrics::tests`, 66,5 -> 58,8. El test nuevo,
+  2,98 s. Los quince del bloque, 16,7 s entre todos.
+- **Por qué el timeout, y por qué 900.** Con un núcleo y sobre el mismo árbol, recompilar la capa
+  tras un cambio en ella (`touch crates/zk-ssl/src/lib.rs` y la orden de arriba con
+  `taskset -c 3`, con una carga de 11) tarda 254,4 s de reloj, con 228,0 s de CPU de usuario; y
+  sus tests, 433,1 s. Son 687 s: un canon que llegue a la fila con la capa cambiada y un núcleo no
+  cabe en 600. Pasar al nivel largo los cuatro tests que miden tampoco bastaba: después del arreglo
+  suman 65,8 s, y sin ellos quedan 621 s. Por eso no se mueven, y siguen en el sello con lo que
+  comprueban. 900 s deja un 31 % sobre los 687. No cubre cualquier carga: con una de 31 y el mismo
+  núcleo compartido, la recompilación de este árbol tardó 867,2 s de reloj para 256,1 s de CPU, y
+  con esa carga la fila no cabe ni en 900. Un cambio en `stark-experiment` o en `winter-*`
+  recompila más dentro de la misma fila, y eso no se midió.
+- **El test de tiempos, con la máquina cargada.** Con ocho bucles ocupados que arrancan a los 4 s
+  del test (`carga.sh`, un guion de la sesión que no entra en el sello): el de `2ac6db4`, que mide
+  reloj, cae con «ultima / primera: 10.12x» (1,52 s y 15,40 s), sobre una carga de 10; el de este
+  sello pasa tres de tres, con 1,34x, 1,03x y 1,10x en CPU, sobre una carga de 9 a 15, mientras el
+  reloj de cada envío pasaba de 0,8-1,0 s en el primero a 6,6-15,2 s en los demás; y otras tres
+  corridas, con la misma lógica escrita dentro del test y una carga de 15 a 22, dieron 0,94x, 0,83x
+  y 0,97x. La CPU tampoco es inmune: en la primera de las tres de este sello, la de un envío
+  intermedio llegó a 1,69 s frente a 0,86 s del primero, 1,96x; y en una corrida anterior, con una
+  sola muestra por envío, a 2,05x. Por eso el primero y el último se miden dos veces.
+- **La suite**, con la orden del canon (`cargo test -p zk-ssl --release --locked`) sobre el árbol
+  de este sello, con la capa recompilándose dentro y una carga de 13 a 10: 447 pasan, 7 ignorados y
+  0 avisos, con salida 0, que es lo que pide la fila, y `cost_per_transfer_stays_stable` dentro.
+  735,8 s de reloj —5 min 7 s de compilar y 428,46 s de tests—, con 665,6 s de CPU de usuario y
+  15,0 de sistema: fuera de los 600 de antes, dentro de los 900. La misma orden sobre el árbol
+  anterior a la forma final del test de tiempos —la misma lógica, escrita dentro del test—, con una
+  carga de 31 a 23, dio lo mismo en 2020 s: 14 min 55 s de compilar y 1124,05 s de tests, con
+  unos 0,35 núcleos. Después de la revisión, sobre el árbol de este commit, la misma orden con la
+  capa ya compilada —`--no-run` antes, 165,9 s de reloj con una carga de 7 a 9— y una carga de 9,0
+  a 11,0: 447 pasan, 7 ignorados y 0 avisos, con salida 0, en 440,2 s, de ellos 439,72 de tests,
+  con 415,0 s de CPU de usuario y 12,2 de sistema.
+- **Con `sandbox`**: `cargo check -p zk-ssl --features sandbox --release --locked`, sin un aviso:
+  el módulo de ayudantes compila sin `cfg(test)`, como lo usan el nodo y el cli. Después de la
+  revisión, otra vez, y la misma orden con `--tests` en vez de `--features sandbox`: sin un aviso.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 1862
+  declarados, ninguno anidado; `check_modulos`, 204 ficheros, todos declarados; `check_vectores`,
+  477 vectores y 925 líneas con su huella, ninguno tocado, y lo mismo `--desde` la base en
+  `origin/main`; `check_cifras`, 26 cifras de tests y ninguna contradice el canon, con el pin
+  nuevo leído de la fila; y las otras del bucle «2 ter» —`verificar_citas`, `check_figures`,
+  `check_columns`, `check_constraint_layout`, `check_dominios`, `check_publicadas`,
+  `check_nucleo` y `check_techo`—. Las doce salen con 0. Ningún vector se toca, así que
+  `tools/conformidad.sh` no se corrió. Después de la revisión, sobre el texto final, otra vez las
+  doce, `check_vectores --desde` la base en `origin/main` y `tools/canon.sh --lista`: salen con 0 y
+  las mismas cuentas.
+
+**Probado.** El test nuevo, y tres sondas con el código mutado y restaurado después con el mismo
+sha256. Con `probar` guardando también fuera del montaje, cae
+`el_montaje_comparte_sus_pruebas_y_nada_mas` («fuera del montaje se reutilizo una prueba»). Con una
+huella que no lee las celdas de la traza, caen 251 de los 447 tests: los que fondean una cuenta,
+en `fund_delegated` («la emision delegada legitima debe aplicarse»), porque la capa rechaza la
+prueba de otro enunciado, y el test nuevo («dos enunciados distintos salieron con la misma
+prueba»). Y con un `send` que, desde su sexta llamada en el proceso, gasta además dos mil millones
+de vueltas de un bucle, `cost_per_transfer_stays_stable` cae medido en CPU: 0,89 s el primer envío
+y 3,81 s el último, «ultima / primera: 4.29x», en la misma línea 834 del `assert` que en `2ac6db4`.
+Después de la revisión, una cuarta, sobre la constante que guarda los cinco probadores: con
+`size_of::<ProofOptions>() + 1` como tamaño esperado, que es lo que vería si a uno le creciera un
+campo, `cargo check -p zk-ssl --release --locked` no compila, con `--features sandbox` ni con
+`--tests` («error[E0080]: evaluation panicked: un probador del montaje lleva mas estado que sus
+ProofOptions»). Restaurada con el mismo sha256, compila sin un aviso.
+
+**Contadores.** `zk-ssl` 446 -> 447, y su timeout 600 -> 900. TOTAL DE SELLO 1702 -> 1703 y TOTAL
+CON LARGOS 1839 -> 1840, en los tres párrafos ancla —`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`—,
+con el desglose de la capa en 447 en `PRINCIPIOS.md`. La cifra de la capa pasa de 446 a 447 también
+en `ARQUITECTURA.md` (dos líneas), otra línea de `PRINCIPIOS.md`, los bloques de reproducción de
+`PAPER.md` y `PAPER_EN.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y
+`doc/ecst/VERIFICACION.md`. La cuenta de `check_tests` pasa de 1861 a 1862. Las «1364 declaradas»
+y las «1349 declared» no se tocan, como en los sellos anteriores (5.A-319). El `BACKLOG.md` sigue
+en 45 abiertas y 73 resueltas: ninguna entrada llevaba esto.
+
+**Lo que NO hace.** No pasa ningún test al nivel largo, ni quita casos a los de medida: no evitaba
+subir el timeout (en «Medido»), y lo que comprueban sigue en el sello. No comparte las pruebas que
+genera la capa (`send`, `claim` y las demás vías de `SovereignLayer`), que son lo que los tests
+ejercitan, ni las que un test pide a mano a un ayudante. No cambia nada fuera de los tests de la
+capa: los del nodo, el cli y los bancos, que usan los ayudantes con `sandbox`, prueban como antes.
+No toca las otras filas: en el más cargado de los tres canon de la sesión, `settlement-layer`
+salió también con 124 a sus 300 s, y en los otros dos tardó 57 y 78 s. No mide cuánto añade dentro
+de la fila recompilar `stark-experiment` o el fork. Fuera de Linux, el test de tiempos sigue
+midiendo reloj. No corre el canon entero, y por eso no dice que salga VERDE: dice que la fila, con
+un núcleo, ya cabe en sus tests y en su recompilación.
+
+**Lo que NO cierra.** Nada de la cola: el `BACKLOG.md` no tenía entrada para esto.
