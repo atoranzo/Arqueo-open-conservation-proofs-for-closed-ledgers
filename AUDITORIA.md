@@ -51613,3 +51613,81 @@ movería su censo y su pin, y es la pieza del kit.
 
 **Lo que NO cierra.** El resto de la E3 —el nodo, el cable, el kit, la segunda y los vectores de la
 0.5— va con el corte `zkssl/0.5` del RFC-0018. El RFC-0019 sigue PROPUESTO.
+
+## §774 — los dos restos en disco del §702: la instantánea cifrada se importa desde memoria, sin escribir el claro al lado, y guardar un keystore barre el temporal que dejó un proceso muerto
+
+El commit que lleva este asiento, sobre `c74fb89` (el §773). Un solo sello: en `crates/zk-ssl`,
+`import_snapshot_with_key` deja de escribir el temporal en claro, con una función de parseo que
+comparten las dos importaciones y un test nuevo; en `crates/zk-ssl-sdk`, `barrer_huerfanos` en el
+escritor del keystore, su doc y un test nuevo; una frase del RFC-0001; los pines de los dos crates en
+`tools/canon.sh`; las cifras de tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, y las ocho
+citas de la cifra de la capa en ellos, en `ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`,
+`doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`; y este asiento. Del autor es elegir esta tarea
+y su orden; lo demás lo propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión
+de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian`. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con
+este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El §702 dejó dos restos en disco, y los dos los declaró. En «Lo que NO hace»:
+`import_snapshot_with_key` escribía el cuerpo descifrado en `{path}.tmp-descifrada`, al lado de la
+instantánea, lo importaba desde ahí y lo borraba. Y en el doc de `escribir_entero` y en el RFC-0001:
+un proceso que muere entre crear `<keystore>.escribiendo-<pid>` y renombrarlo lo deja en disco, y
+solo lo quitaba otra escritura con el mismo pid.
+
+**El defecto.** El primero es una fuga: el estado entero del libro, en claro, en el disco, mientras
+dura la importación, y para siempre si el proceso muere entre medias; la instantánea va cifrada
+justo porque es la que se copia fuera del nodo. El segundo no lo es: el huérfano lleva la clave de
+gasto CIFRADA, con 0600, como el keystore nuevo. Es basura que se acumula, no un secreto a la vista.
+
+**Quién lo decide.** El autor eligió la tarea. Cómo quitar cada resto lo propuso la sesión: el
+primero, no escribiendo; el segundo, barriendo solo los huérfanos cuyo proceso consta muerto, y solo
+donde eso se puede saber.
+
+**Por qué no lleva aviso de seguridad.** Los dos estaban declarados en el §702, y ninguno es un
+hallazgo medido en vivo.
+
+**Lo que hace.**
+
+1. **La instantánea cifrada se importa desde memoria.** El parseo que vivía en `import_snapshot`
+   pasa, tal cual, a `desde_instantanea_en_claro(buf)`, que no lee ni escribe nada; `import_snapshot`
+   la llama después de quitar la marca, e `import_snapshot_with_key` la llama con el texto descifrado.
+   UN productor para las dos, y el temporal ya no existe. Ningún formato cambia.
+2. **Guardar barre los huérfanos de un proceso muerto.** Después de un rename que acaba bien,
+   `barrer_huerfanos` recorre el directorio del keystore y borra los `<nombre>.escribiendo-<pid>` cuyo
+   pid es un número decimal, no es el propio y no tiene `/proc/<pid>`. Solo en Linux, y solo si
+   `/proc/self` existe; en otros sistemas no borra nada. Cualquier error se calla: es limpieza, y la
+   escritura ya acabó. Deja, a propósito, los de un pid vivo —otra escritura en curso, o un pid
+   reutilizado: queda basura, no se pisa a nadie—, los de sufijo no numérico y los de otro keystore.
+3. **Atado, con dos tests que caen con el código de antes.**
+   `una_instantanea_cifrada_se_importa_sin_escribir_el_claro_en_disco` (capa) pone un DIRECTORIO en
+   `{file}.tmp-descifrada`: escribir ahí falla también como root, y la importación tiene que salir con
+   la misma raíz y el directorio vacío. `guardar_barre_el_temporal_de_un_proceso_muerto` (sdk, solo
+   Linux) siembra cuatro hermanos: el del pid 4294967295, que no vive en Linux (su tope es 2^22), el
+   del pid 1, que vive siempre, uno de sufijo no numérico y uno de otro keystore. Tras `save`, solo
+   falta el primero.
+
+**Medido.**
+
+- **Los mutantes.** Con la importación de antes, el test de la capa cae (la importación da error en
+  el directorio); sin la llamada a `barrer_huerfanos`, el del sdk cae (el huérfano del pid muerto
+  sigue en disco). Los dos, en release, en esta sesión.
+- **Los dos crates enteros**: `zk-ssl` 448 pasan con 7 ignorados, y `zk-ssl-sdk` 21 de 21, en
+  release. `an_encrypted_snapshot_restores_with_the_key` y los tests del keystore v2 siguen verdes.
+- **rustfmt**: los dos ficheros quedan con los mismos trozos sin formatear que en la base (16 y 21);
+  lo nuevo está formateado.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** `zk-ssl` 447 -> 448 y `zk-ssl-sdk` 20 -> 21, en sus filas de `tools/canon.sh`, con su
+crónica. TOTAL DE SELLO 1731 -> 1733 y TOTAL CON LARGOS 1868 -> 1870, en los tres párrafos ancla, en
+`PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; el desglose de `PRINCIPIOS.md`, 448 de la capa. Las
+ocho citas de «447 tests» de la capa pasan a 448: la primera pasada del canon salió ROJA solo por
+ellas, en `check_cifras`, y se corrigieron antes de este commit. `check_tests`, de 1890 a 1892. Las «1364 declaradas» y las «1349 declared» no se tocan, como en los
+sellos anteriores (5.A-319). Los vectores no se mueven. El `BACKLOG.md` sigue con 46 abiertas y 74
+resueltas: ninguno de los dos restos tenía entrada.
+
+**Lo que NO hace.** No borra el texto descifrado de la memoria: la importación lo suelta sin
+`zeroize`, como antes, y el estado que construye queda en memoria de todos modos, en la capa. No
+barre fuera de Linux, ni ve a un escritor vivo en OTRO espacio de pids que comparta el directorio: si
+le quita el temporal, su `rename` falla y su escritura da error, y el keystore sigue entero, el
+anterior. Ese caso queda dicho en el doc de `barrer_huerfanos`. No toca el texto histórico del §702.

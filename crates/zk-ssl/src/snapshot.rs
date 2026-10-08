@@ -181,13 +181,11 @@ impl SovereignLayer {
             }
         };
 
-        let tmp = format!("{path}.tmp-descifrada");
-        let mut con_marca = vec![SNAPSHOT_PLAIN];
-        con_marca.extend_from_slice(&plano);
-        std::fs::write(&tmp, &con_marca).map_err(io_err)?;
-        let r = Self::import_snapshot(&tmp);
-        let _ = std::fs::remove_file(&tmp);
-        r
+        // ⚠️ §774: el texto en claro se importa DESDE MEMORIA. Hasta el §774 se escribia en
+        //    `{path}.tmp-descifrada`, junto a la instantanea cifrada, y se borraba despues: el
+        //    estado entero en claro en disco durante la importacion, y para siempre si el proceso
+        //    moria entre medias.
+        Self::desde_instantanea_en_claro(plano)
     }
 
     /// Exporta el estado completo a un fichero.
@@ -318,7 +316,13 @@ impl SovereignLayer {
                 )))
             }
         };
+        Self::desde_instantanea_en_claro(buf)
+    }
 
+    /// ⚠️ §774 · **El parseo de una instantanea en claro, sin su marca, desde bytes.** UN
+    /// productor para las dos importaciones: la que lee el fichero en claro y la que lo descifra
+    /// en memoria; ninguna escribe nada.
+    fn desde_instantanea_en_claro(buf: Vec<u8>) -> Result<Self, LayerError> {
         let mut cursor = 0usize;
         let mut take = |n: usize, what: &str| -> Result<&[u8], LayerError> {
             if cursor + n > buf.len() {
@@ -1206,6 +1210,50 @@ mod tests {
         assert_eq!(restaurada.state_root(), raiz);
         let _ = std::fs::remove_file(&file);
         let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// ⚠️ §774 · **La instantanea cifrada se importa sin escribir el texto en claro en disco.**
+    /// Discrimina: donde la importacion de antes escribia `{file}.tmp-descifrada` hay un
+    /// DIRECTORIO, y escribir ahi falla tambien como root; la de hoy importa desde memoria, y el
+    /// directorio queda como estaba.
+    #[test]
+    fn una_instantanea_cifrada_se_importa_sin_escribir_el_claro_en_disco() {
+        let path = temp_path("snapclaro");
+        let file = temp_file("snapclaro");
+        let key = crypto::LedgerKey::from_passphrase("una contrasena larga de prueba");
+        let raiz;
+        {
+            let mut layer = open_encrypted_retry(
+                &path,
+                custodian_root(),
+                governance_root(),
+                LIMIT,
+                MAX_SUPPLY,
+                MAX_ACCOUNTS,
+                Some(key.clone()),
+            )
+            .expect("abrir");
+            open_and_fund(&mut layer, SK_ALICE, 1_000);
+            raiz = layer.state_root();
+            layer.export_snapshot(&file).expect("exportar");
+        }
+        let hueco = format!("{file}.tmp-descifrada");
+        let _ = std::fs::remove_dir_all(&hueco);
+        std::fs::create_dir(&hueco).expect("el directorio en el sitio del temporal");
+        let r = SovereignLayer::import_snapshot_with_key(&file, &key);
+        let vacio = std::fs::read_dir(&hueco).map(|mut d| d.next().is_none());
+        let _ = std::fs::remove_dir_all(&hueco);
+        let _ = std::fs::remove_file(&file);
+        let _ = std::fs::remove_dir_all(&path);
+        assert_eq!(
+            r.expect("importar sin pasar por el disco").state_root(),
+            raiz
+        );
+        assert_eq!(
+            vacio.ok(),
+            Some(true),
+            "nada se escribio junto a la instantanea"
+        );
     }
 
     /// **Y una clave incorrecta no la abre.**

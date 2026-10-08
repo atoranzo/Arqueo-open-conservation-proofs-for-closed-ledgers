@@ -543,7 +543,7 @@ Nada de este documento requiere confianza en su autor.
 ```bash
 git clone [repositorio]
 cd zk-ssl
-cargo test -p zk-ssl --release              # 447 tests (7 ignorados)
+cargo test -p zk-ssl --release              # 448 tests (7 ignorados)
 cargo test -p stark-experiment --release    # 423 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

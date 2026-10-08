@@ -154,8 +154,10 @@ fn fichero_v2(wallet: &Wallet, passphrase: &str) -> anyhow::Result<String> {
 ///
 /// Un proceso que muere entre crear el temporal y renombrarlo lo deja en
 /// disco: `<keystore>.escribiendo-<pid>`, con 0600 y el mismo contenido
-/// cifrado que el keystore nuevo. Se puede borrar a mano; aqui solo lo quita
-/// otra escritura del mismo fichero con el mismo pid.
+/// cifrado que el keystore nuevo (texto cifrado, no claro: basura, no fuga).
+/// ⚠️ §774: la siguiente escritura que acaba bien lo barre, si su pid ya no
+/// vive (ver [`barrer_huerfanos`]); hasta el §774 solo lo quitaba otra
+/// escritura con el mismo pid.
 fn escribir_entero(path: &Path, js: &str) -> anyhow::Result<()> {
     let nombre = path
         .file_name()
@@ -199,7 +201,60 @@ fn escribir_entero(path: &Path, js: &str) -> anyhow::Result<()> {
     if r.is_err() {
         let _ = std::fs::remove_file(&tmp);
     }
+    if r.is_ok() {
+        barrer_huerfanos(path, nombre);
+    }
     r
+}
+
+/// ⚠️ §774 · Quita los `<keystore>.escribiendo-<pid>` de este keystore que dejo
+/// un proceso muerto. Solo en Linux, y solo si `/proc` esta montado: alli un
+/// pid vive si existe `/proc/<pid>`. En otros sistemas no borra nada, y el
+/// huerfano sigue pudiendo borrarse a mano. Sin efectos si algo falla: es
+/// limpieza, no parte de la escritura, que ya acabo.
+///
+/// Lo que deja, a proposito: los de un pid vivo (otra escritura en curso, o
+/// un pid reutilizado: queda basura, nunca se pisa a nadie), el del propio
+/// proceso y los que no acaban en un numero decimal. Un escritor vivo en
+/// OTRO espacio de pids que comparta el directorio no se ve en `/proc`: si se
+/// le quita el temporal, su `rename` falla y su escritura da error; el
+/// keystore sigue entero, el anterior.
+fn barrer_huerfanos(path: &Path, nombre: &std::ffi::OsStr) {
+    #[cfg(target_os = "linux")]
+    {
+        if !Path::new("/proc/self").exists() {
+            return;
+        }
+        let Some(nombre) = nombre.to_str() else {
+            return;
+        };
+        let prefijo = format!("{nombre}.escribiendo-");
+        let dir = match path.parent() {
+            Some(d) if !d.as_os_str().is_empty() => d,
+            _ => Path::new("."),
+        };
+        let Ok(entradas) = std::fs::read_dir(dir) else {
+            return;
+        };
+        let propio = std::process::id();
+        for e in entradas.flatten() {
+            let n = e.file_name();
+            let Some(pid) = n.to_str().and_then(|n| n.strip_prefix(prefijo.as_str())) else {
+                continue;
+            };
+            if pid.is_empty() || !pid.bytes().all(|b| b.is_ascii_digit()) {
+                continue;
+            }
+            let Ok(pid) = pid.parse::<u32>() else {
+                continue;
+            };
+            if pid != propio && !Path::new(&format!("/proc/{pid}")).exists() {
+                let _ = std::fs::remove_file(e.path());
+            }
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = (path, nombre);
 }
 
 /// Guarda el wallet cifrado, en la version 2. En Unix, el fichero nace con
@@ -278,6 +333,41 @@ mod tests {
         assert_eq!(w.public_id(), w2.public_id());
         assert_eq!(w.view_id(), w2.view_id());
         let _ = std::fs::remove_file(&p);
+    }
+
+    /// ⚠️ §774 · **Guardar barre el temporal huerfano de un proceso muerto, y
+    /// solo ese.** El pid 4294967295 no vive en Linux (su tope es 2^22); el 1
+    /// vive siempre. Un sufijo que no es un numero, o de otro keystore, se queda.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn guardar_barre_el_temporal_de_un_proceso_muerto() {
+        let w = Wallet::random();
+        let p = tmp("huerfano");
+        let hermano = |sufijo: &str| {
+            let mut n = p.file_name().unwrap().to_os_string();
+            n.push(sufijo);
+            p.with_file_name(n)
+        };
+        let muerto = hermano(".escribiendo-4294967295");
+        let vivo = hermano(".escribiendo-1");
+        let raro = hermano(".escribiendo-x1");
+        let ajeno = tmp("otro_keystore").with_extension("json.escribiendo-4294967295");
+        for f in [&muerto, &vivo, &raro, &ajeno] {
+            std::fs::write(f, "{}").unwrap();
+        }
+        save(&p, &w, "clave").expect("guardar");
+        assert!(
+            !muerto.exists(),
+            "el temporal de un pid muerto sigue en disco"
+        );
+        assert!(vivo.exists(), "se borro el temporal de un pid vivo");
+        assert!(
+            raro.exists() && ajeno.exists(),
+            "se borro lo que no es suyo"
+        );
+        for f in [&p, &vivo, &raro, &ajeno] {
+            let _ = std::fs::remove_file(f);
+        }
     }
 
     /// **Con otra contrasena no se abre.**

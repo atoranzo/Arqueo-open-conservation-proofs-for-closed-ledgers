@@ -127,7 +127,8 @@ encima: un corte a mitad deja el keystore anterior, no uno truncado. En Unix, de
 sincroniza el directorio, para que el nombre nuevo sobreviva a un corte de corriente. Un proceso que
 muere entre crear el fichero de al lado y renombrarlo lo deja en disco,
 `<keystore>.escribiendo-<pid>`, con 0600 y la clave de gasto cifrada como en el keystore nuevo: se
-puede borrar. `keystore::load` lee las dos, y **un `zkssl-keystore/1` abierto con su frase se
+puede borrar, y desde el §774 lo quita la siguiente escritura que acaba bien, en Linux, si su pid ya
+no vive. `keystore::load` lee las dos, y **un `zkssl-keystore/1` abierto con su frase se
 reescribe en la 2** —misma frase, misma clave de gasto— antes de devolver el wallet; si no se puede
 reescribir, falla y lo dice (en «Compatibilidad», lo que eso cuesta). Con otra frase no se toca.
 El SDK ya no deriva nada por su cuenta: lo hace `zk_ssl::crypto::Kdf`, y `sha2` sale de su
