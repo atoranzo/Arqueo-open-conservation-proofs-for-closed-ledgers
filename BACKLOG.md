@@ -12,9 +12,10 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 47 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 46 abiertas, 74 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
-115, el §697, que abre la 116, el §705, que abre la 117, y el §707, que abre la 118.
+115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, y el §772, que
+cierra la 102.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -2327,7 +2328,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   publico es el NOMBRE DEL TIPO». Falso: el trait `XmssParameter` es publico, y con el
   sus constantes `NAME`, `SK_LEN`, `VK_LEN`, `SIG_LEN` y `SEED_LEN`.
 
-- [ ] **102. El borrado del buffer del SK es BEST-EFFORT, y upstream deja una
+- [x] **102. El borrado del buffer del SK es BEST-EFFORT, y upstream deja una
   copia sin borrar.** `resincronizar_a` saca los bytes del SK a un `Vec` para
   parchear el indice y lo borra con `zeroize` al terminar; el SK **viejo** si se
   zeroiza solo, porque `SigningKey` tiene `Drop`. Pero un `Vec` pudo REUBICARSE
@@ -2338,6 +2339,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   arranque. Leido en `xmss.rs:620-645`; `init_keypair_buffers` NO esta leida, asi
   que la lectura es parcial y se declara. No se arregla aqui —es de un crate
   ajeno, una herencia por corte—: se DECLARA.
+  ✅ **CERRADA EN EL §772.** Lo nuestro, arreglado: el buffer del SK es
+  `zeroize::Zeroizing` desde que nace en los dos `resincronizar_a`, el del nodo y
+  el del testigo, y en `firmar_con_la_anterior` del nodo, que tenía el mismo
+  defecto; se borra al soltarse por CUALQUIER salida, también por los `?` que
+  hasta el §772 lo soltaban sin borrar. Y no se reubica: dos tests atan que el
+  puntero, la capacidad y la longitud salen del parcheo como entraron, y otros
+  dos que una resincronización que no cabe falla cerrada sin mover la clave ni
+  el contador. Lo de upstream, leído entero y DECLARADO: `init_keypair_buffers`
+  (`params.rs:1168-1198`) solo reserva el `Vec` en ceros con el OID; el secreto
+  lo escribe `from_seed` y esa copia se suelta sin borrar en cada arranque. Es
+  de `xmss`, y sigue en `doc/CONFIANZA_RESIDUAL.md`.
 
 - [ ] **103. El gate del contador contra el diario se apaga quitando un
   fichero.** Con `--diario` ausente o vacio no hay segundo testigo y el arranque

@@ -51442,3 +51442,83 @@ de la clave nueva. Y los sobres de la rotación de antes no se re-derivan: una c
 bytes, y el catálogo se copia una vez.
 
 **Lo que NO cierra.** La 84 sigue abierta por el medio (E6), que espera a la E3 del RFC-0013.
+
+## §772 — el buffer del SK se borra por cualquier salida: `Zeroizing` en los dos `resincronizar_a` y en `firmar_con_la_anterior`, sin reubicarse (cierra la 102)
+
+El commit que lleva este asiento, sobre `60e5291` (el §771). Un solo sello: en `crates/zk-ssl-node`,
+`Zeroizing` en `FirmanteCabeza::resincronizar_a` y en `firmar_con_la_anterior`, su doc, el test del
+par que repite la secuencia y dos tests nuevos; en `crates/zk-ssl-cli`, `Zeroizing` en
+`Cofirmante::resincronizar_a`, su doc y dos tests nuevos; los comentarios de `zeroize` en los dos
+`Cargo.toml`; los pines del nodo y del testigo en `tools/canon.sh`; las cifras de tests de
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; el cierre de la 102 y la cuenta del `BACKLOG.md`; una
+línea en `doc/CONFIANZA_RESIDUAL.md`; y este asiento. Del autor es elegir esta tarea y su orden; lo
+demás lo propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code,
+y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). El sello no toca
+`crates/zk-ssl-guardian`, que otra sesión tiene reservado: `poner_indice_en_sk` ya recibía un
+`&mut [u8]`, y un `&mut Zeroizing<Vec<u8>>` llega a él solo. En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** La 102 nació en el §335: `resincronizar_a` sacaba el SK a un `Vec` para parchear
+el índice y lo borraba con `zeroize` al terminar, y su doc decía que el borrado era BEST-EFFORT
+porque el `Vec` pudo reubicarse. Era peor que eso: el borrado estaba al final del camino feliz, y
+los tres `?` de antes —el índice que no cabe, el apaño del OID, el `try_from`— soltaban el buffer
+SIN borrar. En el nodo y en el testigo, y también en `firmar_con_la_anterior` del nodo (§645), que
+la 102 no nombraba y hace lo mismo con la clave que se va.
+
+**El defecto.** Un error en cualquiera de esos tres pasos dejaba en el montón, sin borrar, una copia
+entera del SK —semilla y raíz de la clave XMSS—. Con un contador sano no hay hoy camino que los
+dispare —el índice que se pide sale de él—, pero la garantía no puede depender de eso.
+
+**Quién lo decide.** El autor eligió la tarea. Incluir `firmar_con_la_anterior`, que la tarea no
+nombraba, lo propuso la sesión: es el mismo defecto en el mismo fichero, y dejarlo fuera habría
+cerrado la 102 a medias. Cerrar la 102 con la copia de `xmss` declarada, también: la entrada ya
+decía que esa parte no se arregla aquí.
+
+**Por qué no lleva aviso de seguridad.** No hay un hallazgo medido en vivo: es un endurecimiento de
+un borrado que la casa ya declaraba best-effort.
+
+**Lo que hace.**
+
+1. **`Zeroizing` desde que nace.** En los tres sitios el buffer es
+   `Zeroizing::new(…signing_key().as_ref().to_vec())`, que lo borra entero al soltarse por cualquier
+   salida; donde estaba el borrado a mano hay un `drop(sk)`, para que siga ocurriendo antes de la
+   relectura que autocomprueba la clave. Ningún texto cambia, y `zeroize` ya era dependencia directa
+   de los dos crates: el `Cargo.lock` no se mueve.
+2. **Que no se reubica, atado.** `el_buffer_del_sk_no_se_reubica_al_parchearlo` en el nodo y
+   `el_buffer_del_sk_del_cofirmante_no_se_reubica` en el testigo: el puntero, la capacidad y la
+   longitud del buffer salen de `poner_indice_en_sk` y del apaño del OID como entraron —los dos
+   escriben en su sitio—, así que el borrado alcanza la única copia; en el nodo, la longitud es la
+   del SK medido, 137. Es lo que el viejo «un `Vec` pudo reubicarse» dejaba sin decir.
+3. **El camino de error, atado.** `resincronizar_fuera_del_campo_falla_cerrada_y_no_toca_nada` en el
+   nodo y `resincronizar_el_cofirmante_fuera_del_campo_falla_cerrada` en el testigo: el índice del
+   techo, 2^40, sale con `IndiceFueraDeCampo` antes de rehacer la clave, y la clave y el contador
+   siguen en 0. Que el buffer se borró en ese camino no se ve desde fuera sin leer memoria liberada:
+   lo hace el `Drop` de `Zeroizing`, por construcción, y se dice así.
+4. **Lo de upstream, leído entero.** La 102 dejaba sin leer `init_keypair_buffers`: está en
+   `params.rs:1168-1198` de `xmss 0.1.0-pre.0` y solo reserva el `Vec` en ceros con el OID. El secreto
+   lo escribe `KeyPair::from_seed` (`xmss.rs:620-645`), que copia ese `Vec` a su `Array` y lo suelta
+   sin borrar en cada arranque. Es de `xmss`, y queda declarado en la 102 y en
+   `doc/CONFIANZA_RESIDUAL.md`.
+
+**Medido.**
+
+- **Los dos crates enteros**: `zk-ssl-node` 201 de 201 y `zk-ssl-cli` 145 de 145, en release, sin un
+  warning, y `cargo build --release --locked -p zk-ssl-cli` sin ninguno: el `use zeroize::Zeroize`
+  de antes no queda huérfano. Los tests del camino feliz que recorren `resincronizar_a` y
+  `firmar_con_la_anterior` —la clave nueva con el contador de la vieja, la rotación firmada por las
+  dos, el salto de `--desde-minimo`— siguen verdes.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** `zk-ssl-node` 199 -> 201 y `zk-ssl-cli` 143 -> 145, en sus filas de
+`tools/canon.sh`, con su crónica. TOTAL DE SELLO 1723 -> 1727 y TOTAL CON LARGOS 1860 -> 1864, en los
+tres párrafos ancla, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; el desglose de `PRINCIPIOS.md`,
+201 del nodo y 145 del testigo. `check_tests`, de 1882 a 1886. Las «1364 declaradas» y las «1349
+declared» no se tocan, como en los sellos anteriores (5.A-319). Los vectores no se mueven. El
+`BACKLOG.md` pasa a 46 abiertas y 74 resueltas: el §772 cierra la 102.
+
+**Lo que NO hace.** No arregla la copia de `KeyPair::from_seed`: es de un crate ajeno, y el
+borrador del issue de `xmss` (§710) es el sitio para pedirlo. No toca el `firmar_en` de los tests
+del kit (`crates/zk-ssl-verify/src/actas.rs`) ni el del testigo, que hacen la misma secuencia con
+claves de prueba y no cuentan para la 102. Y `Zeroizing` no protege lo que ya está en registros o
+en la pila de una llamada que el compilador copió: promete lo que el crate `zeroize` promete.

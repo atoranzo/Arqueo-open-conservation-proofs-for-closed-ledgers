@@ -83,6 +83,10 @@ decidido, y dónde):
   ⚠️ El borrado del buffer temporal del SK es **best-effort** y la fuga de
   `KeyPair::from_seed` es de un crate ajeno: backlog 102. El cuerpo de este
   documento no se toca —sigue siendo texto de sesion verbatim—.
+  ✅ **El buffer del SK se borra por cualquier camino** (§772): `Zeroizing` en
+  los dos `resincronizar_a` y en `firmar_con_la_anterior`, sin reubicarse. Queda
+  la copia que `KeyPair::from_seed` suelta sin borrar en cada arranque: es de
+  `xmss`, y sigue declarada aquí.
 · B10.1 / guardián del índice — UN SOLO PROCESO POR CONTADOR (§709,
   2026-10-08; SEC-1 de `doc/blueprint-v2.md`): `GuardianIndice::abrir` toma un
   cerrojo exclusivo (`File::try_lock`) sobre el fichero del contador antes de

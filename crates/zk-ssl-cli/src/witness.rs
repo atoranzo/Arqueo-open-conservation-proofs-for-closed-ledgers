@@ -130,7 +130,7 @@ use zk_ssl_verify::{
     COFIRMA_V_MAX, COFIRMA_VERSION, Conjunto, VerificaError, VERSION_FORMATO,
 };
 use zk_ssl_wire::{CofirmaDto, SignedEpochHeadDto};
-use zeroize::Zeroize;
+use zeroize::Zeroizing;
 
 /// Lo que el testigo concluye de cada consulta.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -3433,18 +3433,20 @@ impl Cofirmante {
     /// DEL OID, que vive en `zk-ssl-verify` y se llama desde los dos.
     ///
     /// ⚠️ El SK viejo se zeroiza solo al asignar (`SigningKey` tiene
-    /// `Drop`). El buffer temporal se borra a mano y es **BEST-EFFORT**: un
-    /// `Vec` pudo reubicarse mientras se construia. Y `from_seed` de upstream
-    /// ya deja una copia sin borrar en cada arranque: eso es del crate ajeno y
-    /// va DECLARADO, no arreglado aqui.
+    /// `Drop`). ⚠️ §772: el buffer temporal es `Zeroizing` desde que nace, y se
+    /// borra al soltarse por CUALQUIER salida, tambien por los `?` de abajo;
+    /// hasta el §772 se borraba a mano y solo en el camino feliz. No se reubica
+    /// (lo ata `el_buffer_del_sk_del_cofirmante_no_se_reubica`). Y `from_seed`
+    /// de upstream ya deja una copia sin borrar en cada arranque: eso es del
+    /// crate ajeno y va DECLARADO, no arreglado aqui.
     pub fn resincronizar_a(&mut self, indice: u64) -> Result<(), CofirmaError> {
-        let mut sk = self.par.signing_key().as_ref().to_vec();
+        let mut sk = Zeroizing::new(self.par.signing_key().as_ref().to_vec());
         zk_ssl_guardian::poner_indice_en_sk(&mut sk, indice)?;
         zk_ssl_verify::aplicar_apano_del_oid(&mut sk)?;
         let nueva = SigningKey::<Conjunto>::try_from(sk.as_slice())
             .map_err(|e| CofirmaError::Xmss(format!("{e}")))?;
         *self.par.signing_key() = nueva;
-        sk.zeroize();
+        drop(sk);
         // ⚠️ Se AUTOCOMPRUEBA antes de devolver, como el firmar del §299:
         //    no se afirma que la clave esta donde se pidio sin releerlo.
         let leido = self.indice_de_la_clave()?;
@@ -5145,6 +5147,51 @@ mod tests {
         let f = c.cofirmar(&d, &op).expect("cofirmar tras resincronizar");
         let pk = c.clave_publica();
         verificar_cofirma(&pk, &d, &op, &f).expect("un tercero debe poder");
+    }
+
+    /// ⚠️ §772 · **el buffer del SK del cofirmante no se reubica al parchearlo**, como el del
+    /// nodo: los dos parcheadores escriben en su sitio, y el borrado de `Zeroizing` alcanza la
+    /// única copia. Sin guardián ni disco.
+    #[test]
+    fn el_buffer_del_sk_del_cofirmante_no_se_reubica() {
+        let mut par = KeyPair::<Conjunto>::from_seed(&semilla_testigo()).expect("keygen");
+        let mut sk = Zeroizing::new(par.signing_key().as_ref().to_vec());
+        let antes = (sk.as_ptr(), sk.capacity(), sk.len());
+        zk_ssl_guardian::poner_indice_en_sk(&mut sk, 5).expect("poner el indice");
+        zk_ssl_verify::aplicar_apano_del_oid(&mut sk).expect("el apano del OID");
+        assert_eq!(
+            (sk.as_ptr(), sk.capacity(), sk.len()),
+            antes,
+            "un parcheador reubico el buffer: el borrado no alcanzaria la copia vieja"
+        );
+    }
+
+    /// ⚠️ §772 · **una resincronización del cofirmante que no cabe falla cerrada y no toca
+    /// nada.** El índice del techo no cabe en el SK: sale con `IndiceFueraDeCampo` antes de
+    /// rehacer la clave, y la clave y el contador siguen en 0. El borrado del buffer en ese camino
+    /// lo hace el `Drop` de `Zeroizing`, por construcción.
+    #[test]
+    fn resincronizar_el_cofirmante_fuera_del_campo_falla_cerrada() {
+        let p = en_disco("resinc_fuera");
+        let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let techo = 1u64 << (8 * zk_ssl_verify::ANCHO_INDICE);
+        match c.resincronizar_a(techo) {
+            Err(CofirmaError::Guardian(GuardianError::IndiceFueraDeCampo { indice, ancho })) => {
+                assert_eq!(indice, techo);
+                assert_eq!(ancho, 5);
+            }
+            otra => panic!("se esperaba IndiceFueraDeCampo, y dio {otra:?}"),
+        }
+        assert_eq!(
+            c.indice_de_la_clave().expect("indice"),
+            0,
+            "la clave no se movio"
+        );
+        assert_eq!(
+            c.reconciliar().expect("reconciliar"),
+            Reconciliacion::Coincide { indice: 0 },
+            "el contador no se movio"
+        );
     }
 
     #[test]

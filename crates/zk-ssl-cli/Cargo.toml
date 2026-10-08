@@ -87,8 +87,8 @@ xmss = "=0.1.0-pre.0"
 
 # ⚠️⚠️ **S337** - para borrar el buffer temporal del SK al
 # resincronizar. El nodo ya la declara y hace la MISMA operacion; esta linea
-# se COPIO de `crates/zk-ssl-node/Cargo.toml`, no se tecleo. Es BEST-EFFORT y
-# va dicho en la doc de la funcion.
+# se COPIO de `crates/zk-ssl-node/Cargo.toml`, no se tecleo. Desde el §772 el
+# buffer es `Zeroizing` y se borra por cualquier salida, como en el nodo.
 zeroize = "1"
 
 # ⚠️ **§543 (RFC-0008 E3, D-BC).** La boca `prueba-prenda` abre la clave de

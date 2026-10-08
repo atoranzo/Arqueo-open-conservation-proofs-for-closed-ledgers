@@ -42,7 +42,7 @@
 use std::path::Path;
 
 use xmss::{KeyPair, SigningKey};
-use zeroize::Zeroize;
+use zeroize::Zeroizing;
 
 // ⚠️ §296: el guardian vive en su propio crate. El nodo y el TESTIGO
 // comparten LA MISMA implementacion — dos del mismo invariante pueden
@@ -79,12 +79,12 @@ mod el_par_sigue_atado {
         let mut par = KeyPair::<Conjunto>::from_seed(&semilla).expect("keygen");
         let pk_antes = par.verifying_key().as_ref().to_vec();
 
-        let mut sk = par.signing_key().as_ref().to_vec();
+        let mut sk = Zeroizing::new(par.signing_key().as_ref().to_vec());
         poner_indice_en_sk(&mut sk, 5).expect("poner el indice");
         aplicar_apano_del_oid(&mut sk).expect("el apano del OID");
         *par.signing_key() =
             SigningKey::<Conjunto>::try_from(sk.as_slice()).expect("rehacer el SK");
-        sk.zeroize();
+        drop(sk);
 
         assert_eq!(
             indice_de_sk(par.signing_key().as_ref()).expect("leer"),
@@ -109,6 +109,25 @@ mod el_par_sigue_atado {
             5,
             "la hoja gastada es la resincronizada, no otra"
         );
+    }
+
+    /// ⚠️ §772 · **el buffer del SK no se reubica al parchearlo.** `Zeroizing` borra el buffer
+    /// que suelta, y eso solo alcanza la única copia si ningún paso lo reubicó por el camino: los
+    /// dos parcheadores escriben en su sitio, y el puntero, la capacidad y la longitud salen como
+    /// entraron. La longitud es la del SK medido, 137.
+    #[test]
+    fn el_buffer_del_sk_no_se_reubica_al_parchearlo() {
+        let mut par = KeyPair::<Conjunto>::from_seed(&[7u8; 96]).expect("keygen");
+        let mut sk = Zeroizing::new(par.signing_key().as_ref().to_vec());
+        let antes = (sk.as_ptr(), sk.capacity(), sk.len());
+        poner_indice_en_sk(&mut sk, 5).expect("poner el indice");
+        aplicar_apano_del_oid(&mut sk).expect("el apano del OID");
+        assert_eq!(
+            (sk.as_ptr(), sk.capacity(), sk.len()),
+            antes,
+            "un parcheador reubico el buffer: el borrado no alcanzaria la copia vieja"
+        );
+        assert_eq!(antes.2, 137, "el SK mide lo que se midio");
     }
 }
 
@@ -288,12 +307,14 @@ impl FirmanteCabeza {
                 hoja + 1
             )));
         }
-        let mut sk = vieja.signing_key().as_ref().to_vec();
+        // ⚠️ §772: `Zeroizing`, como en `resincronizar_a`: se borra al soltarse, tambien si un `?`
+        //    de abajo sale antes.
+        let mut sk = Zeroizing::new(vieja.signing_key().as_ref().to_vec());
         poner_indice_en_sk(&mut sk, hoja)?;
         aplicar_apano_del_oid(&mut sk).map_err(|e| FirmaError::Xmss(format!("{e:?}")))?;
         *vieja.signing_key() = SigningKey::<Conjunto>::try_from(sk.as_slice())
             .map_err(|e| FirmaError::Xmss(format!("{e}")))?;
-        sk.zeroize();
+        drop(sk);
         self.guardian.reservar()?;
         let pre = preambulo_acta(ACTA_VERSION, &digest_to_wire(&acta.digest()).0);
         let sig = vieja
@@ -356,13 +377,16 @@ impl FirmanteCabeza {
     /// pide frente a dejarlas indeterminadas.
     ///
     /// ⚠️ El SK viejo se ZEROIZA solo al asignar: `SigningKey` tiene `Drop`.
-    /// El buffer temporal se borra a mano y es **BEST-EFFORT**: un `Vec` pudo
-    /// reubicarse mientras se construia, asi que borrar el ultimo puntero no
-    /// promete nada sobre copias intermedias. Y `KeyPair::from_seed` de upstream
-    /// ya deja una copia sin borrar en cada arranque: eso es del crate ajeno y
-    /// va DECLARADO, no arreglado aqui.
+    /// ⚠️ §772: el buffer temporal es `Zeroizing` desde que nace, y se borra al
+    /// soltarse por CUALQUIER salida, tambien por los `?` de abajo; hasta el
+    /// §772 se borraba a mano y solo en el camino feliz. No se reubica: `to_vec`
+    /// reserva lo justo y los dos parcheadores escriben en su sitio (lo ata
+    /// `el_buffer_del_sk_no_se_reubica_al_parchearlo`), asi que el borrado
+    /// alcanza la unica copia. Y `KeyPair::from_seed` de upstream ya deja una
+    /// copia sin borrar en cada arranque: eso es del crate ajeno y va DECLARADO,
+    /// no arreglado aqui.
     pub fn resincronizar_a(&mut self, indice: u64) -> Result<(), FirmaError> {
-        let mut sk = self.par.signing_key().as_ref().to_vec();
+        let mut sk = Zeroizing::new(self.par.signing_key().as_ref().to_vec());
         poner_indice_en_sk(&mut sk, indice)?;
         // ⚠️⚠️ EL APANO DEL OID, y es EL MISMO que usa el verificador.
         //    `xmss` prueba los OID de arbol unico ANTES que los de XMSS^MT, y
@@ -373,7 +397,7 @@ impl FirmanteCabeza {
         let nueva = SigningKey::<Conjunto>::try_from(sk.as_slice())
             .map_err(|e| FirmaError::Xmss(format!("{e}")))?;
         *self.par.signing_key() = nueva;
-        sk.zeroize();
+        drop(sk);
         // ⚠️ Se AUTOCOMPRUEBA antes de devolver, como el firmar del S299:
         //    no se afirma que la clave esta donde se pidio sin releerlo.
         let leido = self.indice_de_la_clave()?;
@@ -428,6 +452,29 @@ mod tests {
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(&d).expect("crear");
         d.join("indice.bin")
+    }
+
+    /// ⚠️ §772 · **una resincronización que no cabe falla cerrada y no toca nada.** El índice del
+    /// techo no cabe en el SK: el primer `?` de `resincronizar_a` sale con `IndiceFueraDeCampo`,
+    /// antes de rehacer la clave, y la clave y el contador siguen en 0. Que el buffer se borró en
+    /// ese camino no se ve desde fuera: lo hace el `Drop` de `Zeroizing`, por construcción.
+    #[test]
+    fn resincronizar_fuera_del_campo_falla_cerrada_y_no_toca_nada() {
+        let p = en_disco("resinc_fuera");
+        let mut f = FirmanteCabeza::desde_semilla(&semilla(), &p).expect("abrir");
+        match f.resincronizar_a(PRESUPUESTO_DE_LA_CLAVE) {
+            Err(FirmaError::Guardian(GuardianError::IndiceFueraDeCampo { indice, ancho })) => {
+                assert_eq!(indice, PRESUPUESTO_DE_LA_CLAVE);
+                assert_eq!(ancho, 5);
+            }
+            otra => panic!("se esperaba IndiceFueraDeCampo, y dio {otra:?}"),
+        }
+        assert_eq!(
+            f.indice_de_la_clave().expect("leer"),
+            0,
+            "la clave no se movio"
+        );
+        assert_eq!(f.indice_del_guardian(), 0, "el contador no se movio");
     }
 
     // ── el layout del SK: MEDIDO, y probado sin gastar 37 s ──
