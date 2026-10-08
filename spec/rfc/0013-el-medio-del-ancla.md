@@ -9,7 +9,8 @@
   REVERSIBLES: la aceptación es del autor.
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude (la sesión de mtc-core, que escribe el borrador entero sobre el
-  mapa de las piezas que midió antes; integrado a nombre del autor en el §603) — ver
+  mapa de las piezas que midió antes; integrado a nombre del autor en el §603; la misma sesión
+  pone al día la motivación en el §703) — ver
   [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no la mueve, y tampoco mueve la cabeza**:
@@ -21,9 +22,11 @@
   dividida servida por un nodo real: cada testigo solo no la ve), §603 (la integración), §631
   (la E2a: el árbol del medio, y la D-G decidida), §632 (la E2b: la nota, contrastada con
   torchwood), §633 (la E4a: el sobre en el kit, y la D-D corregida), §634 (la E4b: el catálogo y
-  el banco) y §635 (el juez del umbral en el cli); y, en mtc-core, sus asientos
-  §14 y §15 (la interoperabilidad medida contra la implementación de referencia del IETF, en las
-  dos direcciones, y el checkpoint de esa herramienta reconstruido desde sus tejas).
+  el banco), §635 (el juez del umbral en el cli) y §703 (la motivación al día: el #341, cerrado
+  por el #355); y, en mtc-core, sus asientos §14 y §15 (la interoperabilidad medida contra la
+  implementación de referencia del IETF, en las dos direcciones, y el checkpoint de esa
+  herramienta reconstruido desde sus tejas) y §26 y §27 (el #355 fusionado, y la herramienta de
+  referencia medida después: su checkpoint, ya una cofirma `tlog-cosignature`).
 - **Backlog:** la 86 (elegir y medir el medio), que este RFC cierra en diseño y deja abierta en
   despliegue; la pregunta abierta de la 83 —«el diseño de referencia usa Ed25519 y ZK-SSL firma
   con XMSS con estado (…) hay que medir si cada testigo firma con su propia clave XMSS o si ahí
@@ -58,10 +61,16 @@ el formato de cofirma que el grupo PLANTS del IETF alineó con el ecosistema de 
 implementa y que verificó byte a byte contra la implementación de referencia en Go: mismas claves
 desde la misma semilla, mismos veredictos en 26 de 26 y 9 de 9 certificados, y el checkpoint de
 esa herramienta reconstruido desde sus 2.122 entradas hasta la misma raíz (mtc-core, AUDIT §14 y
-§15). Por el camino apareció que la propia herramienta de referencia todavía no escribe su
-checkpoint como línea de `tlog-cosignature`, y su autor principal lo confirmó y aceptó el arreglo
-(`ietf-plants-wg/merkle-tree-certs` #341): el ecosistema está convergiendo en ese formato, y su
-utillaje es joven.
+§15). Por el camino apareció que la propia herramienta de referencia todavía no escribía su
+checkpoint como línea de `tlog-cosignature`, y su autor principal lo confirmó
+(`ietf-plants-wg/merkle-tree-certs` #341). El arreglo lo envió el autor de Arqueo (#355), y el
+autor principal lo aprobó y lo fusionó el 2026-10-07 (`26db9f2`, el día que se publicó el
+`draft-07`, poco después de su etiqueta), cerrando el #341: desde entonces la herramienta de
+referencia escribe la firma de la CA en su checkpoint como cofirma `tlog-cosignature` ML-DSA-44
+tipo `0x06`, con marca de tiempo —el tipo de cofirma que elige este RFC (D-C)—, y así la leen
+mtc-core contra el `demo/` de ese commit y `torchwood` (mtc-core, AUDIT §26; la medida de
+mtc-core, repetida por el autor en su máquina en el §27). El ecosistema converge en ese formato
+ya en su herramienta de referencia, y su utillaje sigue siendo joven.
 
 La respuesta a la 83, con esa medida: **en el medio no firma XMSS, ni la del operador ni una por
 testigo**. Las claves con estado son justo lo que ese ecosistema evita en sus testigos, que son
@@ -303,4 +312,5 @@ porque contesta una pregunta que el BACKLOG tenía marcada como «antes de dise�
 - `filippo.io/torchwood` v0.10.0 (`cosignature.go`, `checkpoint.go`) y `golang.org/x/mod/sumdb`
   v0.40.0 (`note`, `tlog`), sobre el `crypto/mldsa` de Go 1.27: el contraste de la E2b.
 - `ietf-plants-wg/merkle-tree-certs`, issue #341: el checkpoint de la herramienta de referencia
-  no es todavía una línea de `tlog-cosignature`; confirmado por su autor.
+  no era todavía una línea de `tlog-cosignature`; confirmado por su autor y cerrado por el pull
+  request #355 del autor de Arqueo (`bfb754f`), fusionado como `26db9f2` el 2026-10-07.

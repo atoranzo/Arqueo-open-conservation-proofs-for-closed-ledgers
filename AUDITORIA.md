@@ -49424,3 +49424,72 @@ RFC-0001 a ACEPTADO.
 
 **Lo que NO cierra.** Nada de la cola: el `BACKLOG.md` no tenía entrada para esto. El RFC-0001 sigue
 PROPUESTO: aceptarlo es del autor.
+
+## §703 — RFC-0013: el #341, cerrado por el arreglo del autor: la herramienta de referencia del IETF ya escribe su checkpoint como cofirma `tlog-cosignature`
+
+El commit que lleva este asiento, sobre `2ac6db4` (el §702). Toca
+`spec/rfc/0013-el-medio-del-ancla.md` —la motivación, una referencia y la cabecera— y este asiento;
+ningún código, vector, AIR ni test: el cable sigue en `zkssl/0.4`. Lo escribe y lo comprueba una
+sesión de Claude Code —la de mtc-core, la que escribió el borrador del RFC-0013 que entró en el
+§603—, y lo commitea ella, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente libre: la rama llega al §702, y ninguna de las seis ramas del
+repositorio en `origin` (`git ls-remote`, corrido otra vez justo antes del commit, y `git show` del
+`AUDITORIA.md` de cada una) lleva un §703: `main` y `claude/cool-brown-4g0hr5` llegan al §702, y las
+otras cuatro, al §685, §658, §642 y §627. La rama de la sesión,
+`claude/serene-einstein-cyj3fo`, ya estaba fusionada —el §603 entró en `main` como `639b5eb`— y no
+existía en `origin`: se rehace desde `main` en `2ac6db4`, y nada suyo quedaba sin fusionar.
+
+**De dónde sale.** La motivación del RFC-0013 decía que la propia herramienta de referencia del IETF
+—el `demo/` de `ietf-plants-wg/merkle-tree-certs`— «todavía no escribe su checkpoint como línea de
+`tlog-cosignature`», con el #341 confirmado por su autor principal, y de ahí sacaba que el ecosistema
+converge en ese formato y que su utillaje es joven. Ya no es así. El autor de Arqueo envió el arreglo
+como pull request #355 (`bfb754f`, sobre `bc93fb6`); David Benjamin lo aprobó y lo fusionó el
+2026-10-07 como `26db9f2`, el día en que se publicó el `draft-07` y poco después de su etiqueta, y
+cerró el #341 como completado por `bfb754f`. El autor pidió el 2026-10-08 poner el párrafo al día.
+
+**Lo que hace.**
+
+1. **La motivación.** El párrafo pasa a pasado y dice cómo se cerró: el arreglo, de quién, quién lo
+   fusionó y cuándo, y lo que escribe desde entonces la herramienta de referencia: la firma de la CA
+   en su checkpoint como cofirma `tlog-cosignature` ML-DSA-44 tipo `0x06`, con marca de tiempo, el
+   tipo de cofirma que elige la D-C de este mismo RFC. La conclusión se conserva, con el matiz que da
+   el cierre: el ecosistema converge en ese formato ya en su herramienta de referencia, y su
+   utillaje sigue siendo joven.
+2. **La referencia.** El #341 conserva lo que decía, en pasado, y gana su cierre: el #355
+   (`bfb754f`), fusionado como `26db9f2` el 2026-10-07.
+3. **La cabecera.** Este asiento entra en los de AUDITORIA, los §26 y §27 de mtc-core en los suyos,
+   y la línea de asistencia dice que la misma sesión pone al día la motivación aquí.
+
+**Comprobado.** Contra la copia del repositorio del borrador que la sesión tiene en su contenedor, en
+`26db9f2`: `git log` da `26db9f2` «Merge pull request #355 from atoranzo/checkpoint-tlog-cosignature»,
+de David Benjamin, 2026-10-07, con `bfb754f` del autor por debajo y `bc93fb6` antes. Lo medido sobre
+la herramienta lo registra mtc-core. Su §26: `interop/run.sh` contra `demo/` en `26db9f2`, construido
+por el propio script: 26 de 26 veredictos, 9 de 9 con las dos CA, el log de 2122 entradas
+reconstruido hasta la misma raíz, y la línea de la CA leída como «a timestamped tlog-cosignature
+(C2SP form)», con el identificador de clave que da `SHA-256(nombre ‖ \n ‖ 0x06 ‖ clave)[:4]`; y
+`torchwood` acepta ese checkpoint. Su §27: la misma medida repetida por el autor en su máquina,
+`failures: 0`.
+
+**Compuertas.** El canon `--sello` se corrió entero sobre el árbol de este cambio, en el contenedor
+de la sesión (1573 s), y salió ROJO con dos fallos de una misma fila: `zk-ssl-cli`, `exit 124`, y
+«pasan 0, el canon dice 139». El 124 es el de `timeout`: la fila le da 120 s, y en este contenedor sus
+tests piden más. Corridos aparte, sin ese límite (`cargo test --locked -p zk-ssl-cli`), pasan 139 de
+139, sin ningún fallo, en 173 s de tests; en el registro del canon iban todos `ok` cuando el límite
+los cortó. Todo lo demás salió verde: las otras dieciocho filas del nivel con sus pines (446, 423,
+34, 17, 3, 20, 27, 195, 182, 52, 29, 37, 43, 49, 6 y tres de cero), los tests que no protegen, los
+`.rs` sin declarar, las nueve herramientas de `tools/`, los vectores que no se reescriben, la
+conformidad 0.1 a 0.4, los once manifiestos del kit, los rechazos del cable y la rotación, la segunda
+implementación y el artefacto reproducible. El cambio no toca ningún fichero que un test de Rust
+compile o lea: el único `.md` que lee un test es `spec/RPC.md`. Las nueve herramientas de `tools/` se
+corrieron otra vez sobre el texto final de este asiento: verdes. El autor puede volver a correr el
+canon en su máquina, donde la fila cabe en su tiempo, antes de llevarlo a `main`.
+
+**Lo que NO hace.** No mueve el estado del RFC-0013, que sigue PROPUESTO, ni sus decisiones D-A a
+D-H, ni la E3, que sigue sin construir. No toca `doc/MTC.md`, que cuenta la extracción y no fija un
+commit de mtc-core en uso. No dice nada de la otra diferencia que mtc-core llevó al grupo de trabajo,
+la #342 (las huellas del `policy.txt` del `demo/`), porque el RFC-0013 no la cita; la cerró el autor
+principal por su cuenta, con las huellas al día en `bc93fb6`.
+
+**Lección.** Un párrafo que se apoya en un fallo ajeno abierto caduca el día que el fallo se cierra,
+y nada en el árbol lo avisa: ninguna compuerta lee el estado de un issue de otro repositorio. El
+sitio de decirlo es el mismo párrafo, con el cierre, quién lo cerró y lo que se midió después.
