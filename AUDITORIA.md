@@ -50906,3 +50906,154 @@ ningún vector, y no publica un kit. No corre el canon entero ni el artefacto.
 
 **Lo que NO cierra.** La 92: el (a) y el (b) siguen como estaban. Lo que el cerrojo no cubre, que
 queda declarado en `SECURITY.md` §2 y en `doc/CONFIANZA_RESIDUAL.md`.
+
+## §710 — el borrador del issue de `xmss`, corregido: el defecto del OID alcanza a 21 de los 56 conjuntos XMSS^MT, los ocho SHA2-256 entre ellos, y falla cerrado; esa parte ya está en RustCrypto/signatures#1442
+
+El commit que lleva este asiento, sobre `13577db` (el §709). Un sello corto de documentos, sin
+código: `doc/issue-rustcrypto.md` corrige su cifra y el título de su parte 2, con su marca, y gana
+una nota de estado, y las dos notas se declaran internas, para quitarlas antes de enviarlo; la 77
+del `BACKLOG.md` gana una nota; y este asiento. Del autor es que la cuenta que abrió #1442 no es la
+suya; lo demás lo propuso una sesión de Claude Code («Quién lo decide»). Los dos ECST no se tocan:
+corregir su §4.9 es del autor («Lo que NO hace»). Lo escribe y lo comprueba una sesión de Claude
+Code, y lo commitea la sesión que la lanzó, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. Después, una revisión, también de Claude Code, pidió
+correcciones, y se aplicaron (punto 3 de «Lo que hace»). El número es el siguiente libre: la rama
+llega al §709, y ninguna de las seis ramas de `origin` que conoce el clon (el `AUDITORIA.md` de cada
+una) lleva un §710: la propia rama en `origin` y `main` llegan al §702, y las otras cuatro al §685,
+§658, §641 y §627. El sello no toca ningún crate ni ningún vector, y ningún test lee los ficheros
+que toca. En la sesión no se corrió el canon entero: sí una sonda de usar y tirar sobre `xmss`
+0.1.0-pre.0, las filas de los tres crates que usan `xmss`, la conformidad del binario de referencia
+en las doce familias del kit y las compuertas rápidas (en «Medido»).
+
+**De dónde sale.** El borrador del issue, `doc/issue-rustcrypto.md`, decía que chocan «cinco de los
+ocho» conjuntos SHA2-256, con un paréntesis, «(1..8)», que nombra ocho OID, todos válidos de árbol
+único: chocan los ocho. Lo dicen también el §240 y el §335, que no se reescriben, y
+`doc/ecst/VERIFICACION.md` G10c lo anotó en su registro, que no corrige el borrador. El título de su
+parte 2 decía, sin acotar, que las claves XMSS^MT no se releen. Y el defecto está reportado aguas
+arriba en RustCrypto/signatures#1442, que G10c leyó el 28-09-2026: la abrió otra cuenta el
+10-09-2026, y nada en los repositorios acredita que sea del autor. Al medirlo salió además algo que
+no es del borrador: el §4.9 del ECST dice, desde que el directorio entró en el §594, que con `xmss`
+0.1.0-pre.0 «21 de los 56 conjuntos XMSS^MT cargan mal». «Cargar mal» se lee como que la biblioteca
+devuelve una clave equivocada, y no la devuelve: rechaza la lectura. Es la diferencia entre un fallo
+abierto y uno cerrado, y la frase deja leer el peor sin que nadie lo haya medido.
+
+**Quién lo decide.** Del autor es esto: el 07-10-2026 escribió en la sesión que la cuenta que abrió
+#1442 no es la suya. De esa respuesta sacó ese mismo día una sesión de Claude Code lo que aplica
+este sello: que el borrador sigue sin enviar, que su cifra pasa a 21 de los 56 y que, si se envía,
+su parte del OID va como comentario en #1442 y no como issue nuevo. No consta que el autor lo haya
+confirmado: rige hasta que diga otra cosa. La misma sesión, aplicando los principios del proyecto
+—lo falso se escribe como falso, lo corregido se marca y no se borra, y a Arqueo se le aplica la
+misma vara que a lo ajeno—, propuso también corregir y marcar el §4.9 de los dos ECST, y dejó esa
+decisión al autor. No consta que la haya tomado, y este sello no la aplica. Enviar el borrador o
+comentar en #1442 sigue siendo suyo («Lo que NO hace»).
+
+**Lo que hace.**
+
+1. **El borrador del issue.** La cifra: 21 de los 56 conjuntos XMSS^MT, los de OID 1 a 21 —los ocho
+   SHA2-256, los ocho SHA2-512 y los cinco primeros `XMSSMT-SHAKE_*_256`, que son SHAKE128 con
+   n = 32—, con la clave pública y la privada rechazadas con `InvalidOid`; los otros 35 se releen.
+   El título de su parte 2 decía, sin acotar, que las claves XMSS^MT no se releen, y ahora dice
+   cuáles. Las dos correcciones van marcadas, con lo que decían. Y una nota de estado: sigue sin
+   constar que se haya enviado; su parte 2 ya está en #1442; según lo que G10c leyó el 28-09-2026,
+   la abrió el 10-09-2026 otra cuenta y no trata las partes 1, 3 y 4; el autor no la abrió, como
+   dijo el 07-10-2026; y, si se envía, esa parte va como comentario allí, no como issue nuevo. Esa
+   nota y la de la corrección dicen que son internas: lo que se envía empieza en «**Title**» y va
+   sin ellas.
+2. **La 77 del `BACKLOG.md`**, en su cuerpo original, tras «El issue upstream es un BORRADOR»: nueve
+   líneas con lo mismo, con lo de #1442 fechado como lo leyó G10c, y con que el §4.9 de los dos ECST
+   sigue diciendo «cargan mal» y marcarlo es del autor. Caen donde no llega ninguna cita por línea:
+   fuera de `doc/ecst/` la más alta es `BACKLOG.md:2880`, y el registro de `doc/ecst/`, que cita
+   líneas de `71c5aad`, llega a `:3080`, con el rango `3076-3080`.
+3. **Lo que corrigió su revisión.** La primera pasada corregía también el §4.9 de `doc/ecst/ECST.md`
+   y `ECST_EN.md`, con dos marcas **[REPRODUCIDO, 2026-10-08: §710]** y una nota «Corregido en el
+   §710». La revisión pidió que lo confirmara antes el autor, porque es un informe suyo con base
+   declarada y la decisión estaba pendiente de él, y no consta que lo haya confirmado: esa
+   corrección sale del sello, y los dos ECST quedan como estaban en `13577db`. Con ella se van dos
+   reparos de la revisión a esas marcas: se salían de la leyenda del informe, que da [REPRODUCIDO]
+   por una re-ejecución del 28-09 o del 30-09, y medían `13577db`, no su base. La primera pasada
+   decía que en el `BACKLOG.md` la cita por línea más alta es `:2880`, y era falso: el registro de
+   `doc/ecst/` llega a `:3080`, y ahora lo dice el punto 2. Las notas del borrador remitían al §710
+   sin decir que no se envían: copiada tal cual como comentario en #1442, la parte 2 habría llevado
+   aguas arriba una referencia que allí no significa nada. Y lo que se dice de #1442 en el
+   `BACKLOG.md` no iba fechado: ahora va «según lo leído el 28-09-2026», porque la issue no se pudo
+   releer en bruto desde la sesión («Lo que NO hace»).
+
+**Medido.** Sobre `13577db` con este sello, en release, en la máquina de 4 CPU compartida con otras
+tareas, con una carga media entre 5 y 8.
+
+- **La sonda**, de usar y tirar, fuera del árbol: un crate con `xmss = "=0.1.0-pre.0"` y el
+  `Cargo.lock` del árbol, con la misma suma (`5715f4f2…`). Para cada uno de los 56 conjuntos XMSS^MT
+  y de los 21 de árbol único arma una clave pública y una privada sintéticas, con el OID de RFC 8391
+  y SP 800-208 en sus cuatro primeros bytes y su longitud exacta, y las relee con
+  `VerifyingKey::<P>::try_from` y `SigningKey::<P>::try_from`. La tabla de OID no se lee del crate:
+  sale de la regla de numeración de los dos documentos —las familias en orden y las alturas en
+  orden— y se coteja con el `NAME` de cada tipo, 77 de 77. Resultado: 21 de los 56 no se releen, ni
+  la pública ni la privada, y son exactamente los de OID 1 a 21: ocho SHA2_*_256, ocho SHA2_*_512 y
+  cinco SHAKE_*_256. Cada rechazo es `InvalidOid` con su propio OID; ninguno es un `Ok`. Los otros
+  35 se releen, las dos claves. Con el bit `0x00010000` del rodeo, 56 de 56; de árbol único, 21 de
+  21. Y una clave de verdad de XMSSMT-SHA2_40/8_256, el conjunto de Arqueo, sacada de una semilla,
+  lleva `00000005`, el OID del RFC, y ni su clave pública ni su privada se releen de sus propios
+  bytes: `InvalidOid(5)`; con el rodeo, las dos. La sonda compiló en 13 s y corrió en 0,05 s; vuelta
+  a correr tras la revisión, sin recompilar, da la misma salida, línea a línea, en 0,03 s.
+- **Lo que «falla cerrado» no dice.** La misma sonda pide la clave pública sintética de
+  XMSSMT-SHA2_20/2_256 (OID 1, 68 B) como `XMSS-SHA2_10_256` (OID 1 de árbol único, 68 B), y la lee:
+  `Ok`. No es este defecto: RFC 8391 numera desde 1 sus dos registros, y cuatro bytes no dicen de
+  cuál es una clave; lo dice el tipo que se pide. Arqueo pide siempre su `Conjunto`, que es fijo, y
+  no le alcanza. «Falla cerrado» es esto: pedida como su conjunto, la clave no se lee, y no sale la
+  de otro.
+- **La causa, leída** en el fuente del registro: `xmss-0.1.0-pre.0/src/xmss.rs:21`, el `or_else` que
+  no llega a correr; `params.rs:1206-1226`, los OID 1 a 21 de árbol único; y `params.rs:1078`, los
+  `0x11..=0x18` de XMSS^MT con SHAKE128.
+- **Las rutas de Arqueo**, con `git grep` de `VerifyingKey::<…>::try_from` y
+  `SigningKey::<…>::try_from` en `crates/` y `tools/`: ocho llamadas. Siete pasan justo antes por
+  `aplicar_apano_del_oid`. Cuatro son vivas: `clave_desde_bytes`
+  (`crates/zk-ssl-verify/src/lib.rs:637`), por donde entra todo lo publicado que lee el kit;
+  `FirmanteCabeza::resincronizar_a` (`crates/zk-ssl-node/src/firma_cabeza.rs:373`);
+  `firmar_con_la_anterior` (`:294`), que firma el acta de rotación con la clave que se va; y
+  `Cofirmante::resincronizar_a` (`crates/zk-ssl-cli/src/witness.rs:3416`). Tres son de tests
+  (`firma_cabeza.rs:86`, `crates/zk-ssl-verify/src/actas.rs:575` y `witness.rs:4465`). La octava es
+  el centinela (`lib.rs:955`), que esquiva el rodeo a propósito. El generador de
+  `tools/segunda/kat_xmss/` no relee claves de bytes. Y `cargo tree -e features -i xmss` da sólo la
+  característica `default` de `xmss`, que está vacía: las lecturas por serde y PKCS#8, que el
+  defecto también alcanza, no se compilan.
+- **Las filas de los tres crates que usan `xmss`**, con la orden de su fila
+  (`cargo test -p <crate> --release --locked`), sobre el sello final: `zk-ssl-verify`, 182 pasan
+  (119, 62 y 1), 0 fallan, en 5,3 s, con el centinela, los tres tests del rodeo y
+  `una_clave_con_el_oid_ya_apanado_no_se_lee`, el del §664, la única vez que el rodeo dio un verde
+  falso; `zk-ssl-node`, 199 pasan, 0 fallan, en 68,0 s, con las dos rotaciones que firman el acta
+  con la clave que se va (`crates/zk-ssl-node/src/main.rs:1560` y `:1659`); y `zk-ssl-cli`, 141
+  pasan, 0 fallan, en 15,8 s. Ningún warning. Son sus tres pines. Ya estaban compilados: con la
+  misma fuente, la primera pasada los compiló y corrió en 12, 65 y 31 s.
+- **La conformidad del binario de referencia**, `target/release/zk-ssl-verify` (`f3e8a98dccf7c760`),
+  con `tools/conformidad.sh` en las doce familias del kit: 405 de 405 entradas dicen lo que deben
+  —paquete 83, consumo 14, conflicto 17, rechazo 84, edad 15, pendiente 10, pago 13, prenda 11,
+  completitud 75, ancla 22, ancla cofirmada 27 y rotación 34—, entre ellas todas las que leen una
+  clave XMSS publicada.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 1875 declarados,
+  ninguno anidado; `check_modulos`, 204 ficheros, todos declarados; `check_vectores`, 483 vectores y
+  958 líneas con su huella, ninguno tocado, y lo mismo `--desde origin/main`; `check_cifras`, 26
+  cifras de tests y ninguna contradice el canon; y las otras del bucle «2 ter»: `verificar_citas`,
+  `check_figures`, `check_columns`, `check_constraint_layout`, `check_dominios`, `check_publicadas`,
+  `check_nucleo` y `check_techo`. Las doce salen con 0. `verificar_citas` sigue en 69 encabezados
+  citados, 0 muertos.
+
+**Contadores.** Ninguno se mueve: ni tests, ni pines, ni vectores. TOTAL DE SELLO 1716 y TOTAL CON
+LARGOS 1853; `check_tests`, 1875; `check_vectores`, 483 vectores y 958 líneas. El `BACKLOG.md` sigue
+con 47 abiertas y 73 resueltas: la 77 original gana nueve líneas y no se cierra.
+
+**Lo que NO hace.** No toca `doc/ecst/ECST.md` ni `ECST_EN.md`, cuyo §4.9 sigue diciendo que esos 21
+conjuntos «cargan mal» y no cita #1442: son un informe del autor sobre su árbol, `71c5aad`, con la
+aceptación pendiente, y, como en el §622, el §696 y el §702, no se reescriben ni se marcan sin él.
+Corregirlo, y cómo, queda pendiente de él; lo medido está en este asiento. No envía el borrador ni
+comenta en #1442: es del autor. No relee #1442: desde la sesión, GitHub no daba acceso a ese
+repositorio, ni por su API ni por la herramienta de la sesión, y la sesión no pidió que se lo
+dieran; lo que se dice de la issue —quién la abrió, cuándo y qué partes no trata— es lo que G10c
+leyó el 28-09-2026, y releerla en bruto antes de enviar nada sigue pendiente. No añade al borrador
+la línea de `getrandom` y WASM que pide la evaluación del 01-10, pendiente desde el §705. No migra a
+`pq-xmss`, ni retira el rodeo, ni toca su centinela. No toca `doc/ecst/VERIFICACION.md`, cuyo G10c
+cita la frase vieja del borrador, ni `doc/ecst/borrador/`: es el registro que sale de `final.json`,
+con sus rutas de `71c5aad`, y no se reescribe. No reescribe el §240 ni el §335, que dicen «cinco de
+los ocho»: la corrección es este asiento. No toca `hbs-state`, que es otro repositorio y la fuente
+del «21 de los 56» que cita el ECST. La sonda mide claves sintéticas en los 56 conjuntos y una de
+verdad sólo en el de Arqueo, y sólo en `xmss` 0.1.0-pre.0, la versión fijada, no en el `master` de
+RustCrypto. No corre el canon entero, el artefacto ni los bancos.

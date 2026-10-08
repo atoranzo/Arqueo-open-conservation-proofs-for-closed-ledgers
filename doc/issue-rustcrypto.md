@@ -1,5 +1,14 @@
 # Issue draft — RustCrypto/signatures
 
+> **Internal note — strip before sending** (§710 of `AUDITORIA.md`, 2026-10-08). Still a draft:
+> there is no record of it having been sent. Its part 2, the OID defect, is already reported upstream
+> in [RustCrypto/signatures#1442](https://github.com/RustCrypto/signatures/issues/1442). As read on
+> 2026-09-28 (`doc/ecst/VERIFICACION.md`, G10c), #1442 was opened on 2026-09-10 by another account
+> and does not mention parts 1, 3 and 4; this project's author did not open it, as he said on
+> 2026-10-07. If this draft is sent, part 2 goes as a comment on #1442, with the count corrected
+> below, and not as a new issue. What is sent starts at **Title**, without this note or the one
+> marked ⚠️ in part 2.
+
 **Title**: `xmss: expose signature index on SigningKey (index() / remaining()); BDS traversal state plans?`
 
 ---
@@ -32,8 +41,8 @@ parameter set, XMSS-SHA2_10_256) but it shows the accessor is practical.
 
 ---
 
-**2. XMSS^MT keys cannot be parsed back from their own bytes** (verifying
-**and signing**)
+**2. Keys of 21 of the 56 XMSS^MT sets cannot be parsed back from their own
+bytes** (verifying **and signing**)
 
 ```rust
 let kp = KeyPair::<XmssMtSha2_40_8_256>::from_seed(&seed)?;
@@ -56,9 +65,22 @@ let oid = XmssOid::try_from(raw).or_else(|_| XmssOid::from_xmssmt_raw_oid(raw))?
 (`XmssSha2_16_512`) — so the `or_else` branch never runs, the wrong variant
 comes back, and the equality check against `P::oid()` fails.
 
-**Five of the eight SHA2-256 XMSS^MT sets collide** with valid single-tree
-OIDs (1..8); their verifying keys are all unrecoverable. Signatures are
-unaffected: `Signature::try_from` does not parse an OID.
+**21 of the 56 XMSS^MT sets collide** with valid single-tree OIDs: every
+set whose raw OID is 1..21, that is, all eight SHA2-256 sets (1..8), all
+eight SHA2-512 sets (9..16) and the first five `XMSSMT-SHAKE_*_256` sets
+(SHAKE128, n = 32; 17..21). For each of the 21, both the verifying key and
+the signing key are rejected with `InvalidOid` when read back from their own
+bytes; the other 35 sets round-trip. The failure is closed: the read is
+rejected, it never yields a key of another set. Signatures are unaffected:
+`Signature::try_from` does not parse an OID.
+
+⚠️ **Corrected in §710** (internal; strip before sending): until then this
+paragraph said «Five of the eight SHA2-256 XMSS^MT sets collide with valid
+single-tree OIDs (1..8); their verifying keys are all unrecoverable», and the
+heading of this part said «XMSS^MT keys cannot be parsed back from their own
+bytes». All eight collide, since 1..8 are all valid single-tree OIDs, and 21
+of the 56 in all, signing keys included; the other 35 parse back. Measured on
+`xmss` 0.1.0-pre.0.
 
 The existing serde/postcard round-trip tests use `XmssSha2_10_256`, so the
 multi-tree case is not covered.

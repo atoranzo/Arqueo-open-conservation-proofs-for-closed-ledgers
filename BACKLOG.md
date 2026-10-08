@@ -3563,6 +3563,15 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   «Issue draft — RustCrypto/signatures» y pide dos cosas concretas: que
   `SigningKey` exponga su índice, y los planes de estado de travesía BDS. **No
   consta que se haya presentado**, y comprobarlo es de fuera del árbol.
+  ⚠️ **§710: su parte del OID ya está aguas arriba.** La reporta
+  RustCrypto/signatures#1442, que no abrió el autor: según lo leído el
+  28-09-2026 (`doc/ecst/VERIFICACION.md`, G10c), la abrió otra cuenta el
+  10-09-2026. El borrador lo dice en una nota interna, que se quita antes de
+  enviarlo, y corrige su cifra: no chocan cinco de los ocho conjuntos SHA2-256
+  sino los ocho, y 21 de los 56 XMSS^MT, que `xmss` rechaza con `InvalidOid`.
+  Si se envía, esa parte va como comentario en #1442, no como issue nuevo; del
+  resto sigue sin constar envío. El §4.9 de los dos ECST sigue diciendo que
+  esos 21 «cargan mal»: marcarlo es del autor.
   ⚠️ **ARM sin medir.** `doc/xmss-evaluacion.md` avisa de que los 0,62 ms por
   hoja son **de esa máquina** y deja las medidas en ARM pendientes junto a B9;
   `doc/ESCALADO.md` tiene B9 como medición pendiente. **Va con la 47.**
