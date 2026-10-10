@@ -51767,3 +51767,96 @@ dicho. Una línea del PROPIO diario del testigo con un índice no canónico tamp
 `--ausentes`: solo pudo entrar antes de este sello, copiada de un nodo que la sirvió así, y desde
 este sello el testigo no acepta esa cabeza. No añade vectores, y la segunda implementación no se
 toca: no hay sobre nuevo que rechazar.
+
+## §800 — el OSS Scanner de Anthropic: el `Dockerfile` y el modelo de amenazas con que el escáner construye y lee Arqueo, en `.oss-scanner/`; el `project.yaml` de la inscripción queda fuera del árbol, pendiente del autor
+
+El commit que lleva este asiento, sobre `a47249a` (el §775), que es `main`. Dos ficheros nuevos,
+`.oss-scanner/Dockerfile` y `.oss-scanner/threat_model.md`, y este asiento; no toca código, tests,
+vectores, pines ni cifras. Lo pidió el autor, con el anuncio del OSS Scanner y sus cuatro pasos de
+inscripción: «HACER esto». Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa
+sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número
+no es el §776: §770 a §799 es el rango de otra sesión, que puede seguir escribiendo, y este toma el
+primero libre después de los rangos que cuenta el §770. En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Anthropic inscribe proyectos en su OSS Scanner con un PR a
+`anthropics/oss-scanner` que añade `projects/<nombre>/`: un `project.yaml` —`repo` y
+`primary_contact`, obligatorios; `pgp`, `auto_ccs`, `homepage` y `disabled`, opcionales—, un
+`Dockerfile` que construye el proyecto y, recomendado, un `threat_model.md`. Los dos últimos pueden
+vivir en el repositorio del proyecto, en las rutas que dé el `project.yaml`, y es lo que su README
+prefiere: cambiarlos no pide otro PR allí. El escáner construye la imagen con red, en 16 núcleos y con
+45 minutos desde el clon; le quita la red, y un agente la analiza en `/src` con 2 núcleos y 8 GB. Los
+informes los genera un modelo, nadie los revisa antes, van por correo a `primary_contact` y no se
+publican. Leído el 10-10-2026 en su README, su `CONTRIBUTING.md`, `templates/` y `tools/`
+(`validate.py`, `check` y `check_build.py`).
+
+**Quién lo decide.** El autor eligió inscribir el proyecto. La sesión propuso los dos ficheros en
+este árbol y no en el repositorio del escáner; compilar el workspace entero, y no solo el kit, para
+que el agente no recompile con 2 núcleos; y la escala de gravedad del modelo de amenazas, cuyo grado
+crítico es el «fallo de solidez» de `SECURITY.md` §5 y cuyos grados de debajo son de la sesión, y el
+fichero lo dice: el autor los revisa antes de fusionar. Del autor son también, y siguen sin
+decidir, la dirección que se publica como `primary_contact` y si los informes van cifrados (abajo).
+
+**Lo que hace.**
+
+1. **`.oss-scanner/Dockerfile`.** `rust:1.97.0-bookworm`, el `rustc` del canon de hoy, con `git` y
+   `python3`; el clon en `/src`, que es el contrato del escáner; `cargo fetch --locked`; `cargo build
+   --release --locked --workspace` y `cargo test --release --locked --workspace --no-run`;
+   `CARGO_NET_OFFLINE=true`; y los tests de `zk-ssl-verify`, `zk-ssl-wire`, `zk-ssl-hash`,
+   `zk-ssl-air`, `zk-ssl-medio` y `zk-ssl-guardian`, que avisan y no paran la construcción si salen
+   rojos, como pide la plantilla. `CARGO_PROFILE_RELEASE_DEBUG=true` va en `ENV` y no en el `RUN`,
+   para que un `cargo test --release` del agente use lo compilado.
+2. **`.oss-scanner/threat_model.md`**, en inglés, porque el escáner informa en inglés: qué es Arqueo;
+   por dónde entra lo no confiable —el puerto JSON-RPC del nodo, el paquete del kit, los bytes de
+   prueba que lee el fork de winterfell, el cable, el estado en disco, el guardián, la CLI y el SDK—;
+   qué crates importan y cuáles son experimentos fuera de alcance (ninguno es dependencia del nodo,
+   la capa, el kit o la CLI, medido en sus `Cargo.toml`); cómo ejercitarlo; cómo se gradúa la
+   gravedad; y los límites ya declarados en `SECURITY.md`, que no son hallazgos. Dice al principio que
+   `SECURITY.md` manda si discrepan, y el código sobre los dos.
+3. **El `project.yaml` NO entra en el árbol**: va en el PR a `anthropics/oss-scanner`, como
+   `projects/arqueo/project.yaml`, con `repo` en `#main`, `dockerfile: .oss-scanner/Dockerfile` y
+   `threat_model: .oss-scanner/threat_model.md`. Esas dos rutas solo existen en `main` cuando este
+   commit entra.
+
+**Medido.**
+
+- **Los punteros de marco no compilan.** La plantilla del escáner pide información de depuración y
+  punteros de marco. La primera pasada llevaba `RUSTFLAGS="-C force-frame-pointers=yes"`, y
+  `halo2curves`, que entra por `nova-snark` en `nova-experiment`, no compiló: «inline assembly
+  requires more registers than available». El flag reserva `rbp` y ese ensamblador lo usa. Se
+  quitó, y el `Dockerfile` lo dice.
+- **La segunda pasada, sin el flag**, con los pasos del `Dockerfile` en su orden y
+  `CARGO_PROFILE_RELEASE_DEBUG=true`, desde un `target` vacío y con las dependencias ya bajadas: el
+  `build` del workspace, 182 s; el `test --no-run`, 262 s; los seis crates con
+  `CARGO_NET_OFFLINE=true`, verdes, con los números de sus filas del canon —`zk-ssl-verify` 182,
+  `zk-ssl-wire` 27, `zk-ssl-hash` 56, `zk-ssl-air` 44, `zk-ssl-medio` 37, `zk-ssl-guardian` 40—. En
+  total, 549 s y 9,3 GB de `target`, en 4 núcleos: dentro de los 45 minutos del escáner con margen.
+  Un `cargo test -p` de un solo crate recompila algo, porque las features se unifican distinto que
+  en el workspace (`zk-ssl-wire` tardó 65 s, y casi todo fue compilar).
+
+**Lo que NO se ha medido.** La imagen no se ha construido. El demonio de Docker del contenedor de la
+sesión estaba parado, y arrancarlo no se permitió; los pasos del `Dockerfile` se corrieron fuera de
+Docker, con el mismo `rustc`, en los 4 núcleos de la sesión y no en los 16 del escáner. Tampoco se
+corrieron `tools/check` ni el `tools/validate.py` del escáner: el `project.yaml` se comprobó a mano
+contra las reglas de `validate.py` (claves, la forma de `repo` y la de las rutas). Que
+`rust:1.97.0-bookworm` existe se comprobó en Docker Hub; que la capa del escáner se instala encima,
+no, aunque su `check_build.py` solo pide un gestor de paquetes, y la imagen trae `apt`. Antes de
+abrir el PR, el autor corre `tools/check arqueo` en su máquina.
+
+**Una discrepancia vista, y no tocada.** `SECURITY.md` §3.bis dice que los vectores de la 0.3 se
+conservan «bajo `spec/vectors/0.3/`»; están en `spec/vectors/zkssl-0.3.json`. El modelo de amenazas
+da la ruta real.
+
+**Lo que queda del autor.**
+
+- **`primary_contact`.** El escáner publica la dirección en su repositorio, y `SECURITY.md` §5 elige
+  a propósito no publicar ninguna: o una dirección para esto, o cambiar esa política.
+- **`pgp`**, opcional: con una clave pública, los informes van cifrados y solo a `primary_contact`.
+- **El PR, desde su cuenta.** El escáner solo inscribe proyectos a petición de sus mantenedores, y
+  pide firmar su CLA en el primer PR. Esta sesión no tiene acceso a `anthropics/oss-scanner`.
+- **Fusionar esta rama antes del PR**: el escáner lee las dos rutas en `main`.
+
+**Lo que NO hace.** No cambia `SECURITY.md`: un informe del escáner llega por correo, y no por el
+aviso privado de GitHub que pide su §5, pero decirlo en la política es del autor cuando decida la
+dirección. No añade una compuerta al canon: nada comprueba que el `Dockerfile` siga construyendo
+cuando cambie el workspace; si deja de hacerlo, el escáner avisa por correo a `primary_contact`.
