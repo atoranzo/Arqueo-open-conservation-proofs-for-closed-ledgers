@@ -47,10 +47,10 @@ done
 DIR=$(mktemp -d "$HOME/.banco_recibo_agregado.XXXXXX")
 trap 'rm -rf "$DIR"' EXIT INT TERM HUP QUIT
 msg "compilando cli, nodo, verificador y el ejemplo d2_lote_rpc en RELEASE (aqui se firma y se prueba de verdad)"
-{ cargo build --release -q -p zk-ssl-cli -p zk-ssl-node -p zk-ssl-verify \
-  && cargo build --release -q -p zk-ssl-sdk --example d2_lote_rpc; } 2>/dev/null \
-  || { cargo build --release -p zk-ssl-cli -p zk-ssl-node -p zk-ssl-verify \
-       && cargo build --release -p zk-ssl-sdk --example d2_lote_rpc; } || fallo "no compila"
+{ cargo build --locked --release -q -p zk-ssl-cli -p zk-ssl-node -p zk-ssl-verify \
+  && cargo build --locked --release -q -p zk-ssl-sdk --example d2_lote_rpc; } 2>/dev/null \
+  || { cargo build --locked --release -p zk-ssl-cli -p zk-ssl-node -p zk-ssl-verify \
+       && cargo build --locked --release -p zk-ssl-sdk --example d2_lote_rpc; } || fallo "no compila"
 
 python3 - "$DIR" "${GUARDAR:-}" <<'PY'
 import json, os, shutil, subprocess, sys, threading, time, urllib.request

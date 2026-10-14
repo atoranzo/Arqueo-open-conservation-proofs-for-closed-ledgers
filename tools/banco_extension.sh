@@ -26,8 +26,8 @@ limpiar(){
 trap limpiar EXIT
 
 msg "compilando nodo y verificador"
-cargo build -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
-  || cargo build -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
+cargo build --locked -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
+  || cargo build --locked -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
 NODO=target/debug/zk-ssl-node
 VER=target/debug/zk-ssl-verify
 python3 -c "print('37'*96, end='')" > "$DIR/semilla.hex"

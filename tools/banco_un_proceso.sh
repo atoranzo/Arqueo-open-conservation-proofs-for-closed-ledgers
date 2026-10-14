@@ -47,8 +47,8 @@ fallo(){ msg "ROJO: $*"; exit 1; }
 cd "$(dirname "$0")/.." || fallo "no encuentro la raiz"
 RAIZ=$(pwd)
 msg "compilando nodo y cli (release: aqui se firma)"
-cargo build --release -q -p zk-ssl-node -p zk-ssl-cli 2>/dev/null \
-  || cargo build --release -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
+cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli 2>/dev/null \
+  || cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
 NB="$RAIZ/target/release/zk-ssl-node"; CB="$RAIZ/target/release/zk-ssl-cli"
 [ -x "$NB" ] && [ -x "$CB" ] || fallo "faltan los binarios"
 

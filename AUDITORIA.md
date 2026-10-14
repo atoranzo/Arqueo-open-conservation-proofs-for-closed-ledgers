@@ -52473,3 +52473,52 @@ el desglose de `PRINCIPIOS.md`. Ni vectores, ni el `BACKLOG.md`: 43 abiertas y 7
 
 **Lo que NO hace.** No cambia el nodo ni el cable: `zkssl_cosigs` ya aceptaba el nombre. No hace que el
 nodo retenga más de una época. No recolecta varias épocas de una vez.
+
+## §786 — los bancos compilan con `--locked`, y una puerta del canon lo exige por llamada; y el corpus KAT de XMSS, por su huella (las tareas 27 y 28)
+
+El commit que lleva este asiento, sobre el §785. Toca las llamadas a `cargo` de los 25
+`tools/banco_*.sh` y `tools/canon.sh`, con dos comprobaciones nuevas; y este asiento. Ni código, ni
+tests, ni vectores. Del autor es elegir las tareas y su orden; lo demás lo propuso la sesión («Quién lo
+decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del
+rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la
+sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió
+VERDE.
+
+**De dónde sale.** Una cifra que publica un banco sale de un binario, y el canon compila con
+`--locked`: el árbol que mide es el del `Cargo.lock` del sello. Los bancos no: ninguna de sus 53
+llamadas a `cargo` lo llevaba, ni las dos del banco del reinicio (§783), y sin él `cargo` puede
+resolver otro `Cargo.lock` y el banco mediría otro árbol. Aparte, el corpus KAT de XMSS^MT
+(`tools/segunda/kat_xmss/vectores.json`, la 77) lo juzga el canon con la implementación de RFC 8391,
+que comprueba que las firmas verifican, no que sean ESAS: un corpus regenerado con otros bytes que
+también verificaran pasaba sin que nada lo dijera.
+
+**Quién lo decide.** El autor eligió las tareas. La sesión propuso que la puerta cuente por LLAMADA y
+no por línea —una línea con dos `cargo`, uno con `--locked` y otro sin él, no pasa— y que el corpus
+quede fijado como los vectores: uno nuevo entra con otro nombre y su huella, en el sello que lo diga.
+
+**Por qué no lleva aviso de seguridad.** Son herramientas de medida: ningún veredicto cambia.
+
+**Lo que hace.**
+
+1. **`--locked`** en las 55 llamadas a `cargo build`, `run`, `test` o `check` de los bancos.
+2. **La puerta «los bancos compilan con --locked»**: lee cada `tools/banco_*.sh`, salta los
+   comentarios, encuentra cada llamada y la exige con `--locked`; ROJO con `fichero:línea` de las que
+   no lo lleven, y también si no encuentra ninguna, que sería un instrumento ciego.
+3. **`HUELLA_KAT_XMSS`**, el sha256 del corpus, comprobado antes de juzgarlo.
+
+**Medido.**
+
+- **Sobre este árbol**: «55 llamadas a cargo en tools/banco_*.sh, todas con --locked» y «kat_xmss: el
+  corpus es el fijado».
+- **Que caen**: en una copia, con el `--locked` quitado de la PRIMERA de las dos llamadas de una
+  misma línea de `tools/banco_reinicio.sh` —la otra lo conserva—, la puerta da ROJO con
+  `tools/banco_reinicio.sh:26`; con una línea añadida al corpus, ROJO con las dos huellas.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas.
+
+**Lo que NO hace.** No corre los bancos: van con `--bancos`, como siempre. No exige `--locked` a lo
+que se compile fuera de `tools/banco_*.sh`. No fija los programas de `tools/segunda/`, sólo su único
+fichero de datos, el corpus.

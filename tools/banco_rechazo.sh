@@ -94,8 +94,8 @@ ESPERADO=$(printf '%s' "$FILA" | cut -d'|' -f3)
 msg "el VERDE que se exige, DERIVADO del MANIFIESTO: <<$ESPERADO>>"
 
 msg "compilando nodo y verificador en RELEASE (aqui se firma y se congela de verdad)"
-cargo build --release -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
-  || cargo build --release -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
+cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
+  || cargo build --locked --release -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
 NODO=target/release/zk-ssl-node
 VER=target/release/zk-ssl-verify
 python3 -c "print('41'*96, end='')" > "$DIR/semilla.hex"

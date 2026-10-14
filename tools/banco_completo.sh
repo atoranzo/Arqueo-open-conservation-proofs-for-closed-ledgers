@@ -81,8 +81,8 @@ command -v curl >/dev/null 2>&1 || fallo "curl no esta en el PATH"
 command -v python3 >/dev/null 2>&1 || fallo "python3 no esta en el PATH"
 
 msg "compilando nodo, cli y verificador (release: el testigo FIRMA)"
-cargo build --release -q -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify \
-  || cargo build --release -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify \
+cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify \
+  || cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify \
   || fallo "no compila"
 NB=target/release/zk-ssl-node
 CB=target/release/zk-ssl-cli

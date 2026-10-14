@@ -37,8 +37,8 @@ fallo(){ msg "ROJO: $*"; exit 1; }
 DIR=$(mktemp -d "$HOME/.banco_mentiroso_ausentes.XXXXXX")
 trap 'rm -rf "$DIR"' EXIT INT TERM HUP QUIT
 msg "compilando nodo y cli en RELEASE (aqui se firma de verdad)"
-cargo build --release -q -p zk-ssl-node -p zk-ssl-cli 2>/dev/null \
-  || cargo build --release -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
+cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli 2>/dev/null \
+  || cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
 
 python3 - "$DIR" <<'PY'
 import json, os, re, subprocess, sys, time, urllib.request

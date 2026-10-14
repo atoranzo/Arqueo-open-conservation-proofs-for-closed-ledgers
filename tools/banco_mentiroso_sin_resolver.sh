@@ -54,10 +54,10 @@ done
 DIR=$(mktemp -d "$HOME/.banco_mentiroso_sin_resolver.XXXXXX")
 trap 'rm -rf "$DIR"' EXIT INT TERM HUP QUIT
 msg "compilando nodo, cli, verificador y el ejemplo e2e del sdk en RELEASE (aqui se prueba y se firma de verdad)"
-{ cargo build --release -q -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify 2>/dev/null \
-    || cargo build --release -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify; } || fallo "no compila"
-{ cargo build --release -q -p zk-ssl-sdk --example e2e 2>/dev/null \
-    || cargo build --release -p zk-ssl-sdk --example e2e; } || fallo "no compila el e2e"
+{ cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify 2>/dev/null \
+    || cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify; } || fallo "no compila"
+{ cargo build --locked --release -q -p zk-ssl-sdk --example e2e 2>/dev/null \
+    || cargo build --locked --release -p zk-ssl-sdk --example e2e; } || fallo "no compila el e2e"
 
 python3 - "$DIR" "$LARGO" "${GUARDAR:-}" <<'PY'
 import json, os, re, shutil, subprocess, sys, threading, time, urllib.request

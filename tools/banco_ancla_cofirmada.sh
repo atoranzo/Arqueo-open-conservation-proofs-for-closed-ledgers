@@ -31,10 +31,10 @@ done
 DIR=$(mktemp -d "$HOME/.banco_ancla_cofirmada.XXXXXX")
 trap 'rm -rf "$DIR"' EXIT INT TERM HUP QUIT
 msg "compilando nodo, verificador y el medio del banco en RELEASE (aqui se firma de verdad)"
-{ cargo build --release -q -p zk-ssl-node -p zk-ssl-verify \
-    && cargo build --release -q -p zk-ssl-medio --example medio; } 2>/dev/null \
-  || { cargo build --release -p zk-ssl-node -p zk-ssl-verify \
-    && cargo build --release -p zk-ssl-medio --example medio; } || fallo "no compila"
+{ cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-verify \
+    && cargo build --locked --release -q -p zk-ssl-medio --example medio; } 2>/dev/null \
+  || { cargo build --locked --release -p zk-ssl-node -p zk-ssl-verify \
+    && cargo build --locked --release -p zk-ssl-medio --example medio; } || fallo "no compila"
 
 python3 - "$DIR" "${GUARDAR:-}" <<'PY'
 import json, os, shutil, subprocess, sys, time, urllib.request

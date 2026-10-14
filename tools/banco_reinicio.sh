@@ -23,7 +23,7 @@ trap limpiar EXIT
 
 cd "$(dirname "$0")/.." || fallo "no encuentro la raiz"
 msg "compilando el nodo (release)"
-cargo build --release -q -p zk-ssl-node || cargo build --release -p zk-ssl-node || fallo "no compila"
+cargo build --locked --release -q -p zk-ssl-node || cargo build --locked --release -p zk-ssl-node || fallo "no compila"
 NB=target/release/zk-ssl-node
 [ -x "$NB" ] || fallo "falta $NB"
 python3 -c "print('5b'*96, end='')" > "$DIR/semilla.hex" || fallo "semilla"

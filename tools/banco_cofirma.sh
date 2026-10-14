@@ -60,8 +60,8 @@ cd "$(dirname "$0")/.." || fallo "no encuentro la raiz"
 # ⚠️ RELEASE, no debug: aqui el TESTIGO firma, y una firma XMSS mide 144,5 ms
 #    en release (§292). En debug el banco tardaria minutos.
 msg "compilando nodo y cli (release: el testigo FIRMA)"
-cargo build --release -q -p zk-ssl-node -p zk-ssl-cli \
-  || cargo build --release -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
+cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli \
+  || cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
 NB=target/release/zk-ssl-node
 CB=target/release/zk-ssl-cli
 [ -x "$NB" ] || fallo "falta $NB"

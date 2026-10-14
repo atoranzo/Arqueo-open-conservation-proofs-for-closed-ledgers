@@ -410,6 +410,34 @@ if grep -q "OTRA version" "$OUT/c02.txt"; then msg "  OK  0.2 RECHAZADO (otra ve
 cargo run --release --locked -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.1.json > "$OUT/c01.txt" 2>&1
 if grep -q "OTRA version" "$OUT/c01.txt"; then msg "  OK  0.1 RECHAZADO (otra version)"; else falla "0.1 deberia rechazarse por version"; fi
 
+# ── §786 · los bancos compilan con --locked ──
+# Una cifra que publica un banco sale de un binario; sin --locked, cargo puede resolver otro
+# Cargo.lock que el del sello y el banco mediria otro arbol. Hasta el §786 ninguna de las 53
+# llamadas lo llevaba, ni las dos del banco del reinicio (§783). Esta puerta exige que ninguna lo olvide.
+msg ""
+msg "== CANON · los bancos compilan con --locked =="
+# Por LLAMADA, no por linea: una linea con dos cargo, uno con --locked y otro sin el, no pasa.
+CARGO_BANCOS=$(python3 - <<'PYEOF'
+import glob, re
+n, sin = 0, []
+for f in sorted(glob.glob('tools/banco_*.sh')):
+    for k, l in enumerate(open(f, encoding='utf-8'), 1):
+        if l.lstrip().startswith('#'):
+            continue
+        for m in re.finditer(r'cargo (?:build|run|test|check)\b[^|;&]*', l):
+            n += 1
+            if '--locked' not in m.group(0):
+                sin.append('%s:%d' % (f, k))
+print(n, ' '.join(sin))
+PYEOF
+)
+N_CARGO=${CARGO_BANCOS%% *}; SIN_LOCK=${CARGO_BANCOS#* }
+if [ -z "$SIN_LOCK" ] && [ "${N_CARGO:-0}" -gt 0 ]; then
+  msg "  OK  $N_CARGO llamadas a cargo en tools/banco_*.sh, todas con --locked"
+else
+  falla "llamadas a cargo SIN --locked en los bancos (${N_CARGO:-0} en total): $(echo "$SIN_LOCK" | cut -c1-200)"
+fi
+
 # ── §784 · ARQ-02 · el nodo SIN `dev` —el de produccion— se compila en cada sello ──
 # Hasta el §784 ese build no lo compilaba nadie (`default = ["dev"]`), y su unica rama sin `dev`
 # decia «pendiente de flags». Es `cargo check`: compila y tipa, sin generar el binario, para no
@@ -612,6 +640,17 @@ else
 fi
 # El corpus KAT de XMSS^MT (tools/segunda/kat_xmss, entrada 77): firmas del crate clavado, juzgadas
 # por la implementacion de RFC 8391. Si `xmss` cambia de version y de bytes, aqui se ve. ~1 s.
+# ⚠️ §786 · Y el corpus mismo, por su huella: el juez comprueba que las firmas verifican, no que
+#    sean ESTAS; un corpus regenerado con otros bytes que tambien verificaran pasaba en silencio.
+#    Como los vectores de spec/vectors/ (HUELLAS.sha256), un corpus publicado no se reescribe: uno
+#    nuevo entra con otro nombre y su huella, en el sello que lo diga.
+HUELLA_KAT_XMSS=259b8df2bb6633ffe5c40da91a1c4d2dc7697b375546b0fa3bd63e2a2a3c653a
+HK=$(sha256sum tools/segunda/kat_xmss/vectores.json 2>/dev/null | cut -c1-64)
+if [ "$HK" = "$HUELLA_KAT_XMSS" ]; then
+  msg "  OK  kat_xmss: el corpus es el fijado (sha256 ${HK:0:16}…)"
+else
+  falla "el corpus KAT de xmss NO es el fijado: tools/segunda/kat_xmss/vectores.json da ${HK:-<ilegible>} y el canon fija $HUELLA_KAT_XMSS"
+fi
 if python3 tools/segunda/kat_xmss/juez_xmss.py > "$OUT/segunda_kat_xmss.txt" 2>&1; then
   msg "  OK  $(tail -n 1 "$OUT/segunda_kat_xmss.txt" | sed 's/ - generador:.*//')"
 else

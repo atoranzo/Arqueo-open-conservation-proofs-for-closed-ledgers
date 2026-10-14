@@ -79,8 +79,8 @@ trap limpiar EXIT INT TERM HUP QUIT
 git status --porcelain | sort > "$DIR/porcelain_pre.txt"
 
 msg "compilando nodo y verificador en RELEASE (aqui se firma de verdad)"
-cargo build --release -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
-  || cargo build --release -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
+cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
+  || cargo build --locked --release -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
 NODO=target/release/zk-ssl-node
 VER=target/release/zk-ssl-verify
 
