@@ -13,7 +13,8 @@ codificación y su orden frente al cifrado del aviso es del autor (§8). No cier
 
 **Procedencia**: la escribió Claude en una sesión de Claude Code en la
 nube, sobre `8c02941` (§789), fuera del paso 4 de [`GENAI.md`](../GENAI.md); la lleva el §791 de
-`AUDITORIA.md`. Integrar no es aceptar: la aceptación queda pendiente.
+`AUDITORIA.md`. Integrar no es aceptar: la aceptación queda pendiente. ⚠️ §792: sus citas al
+`BACKLOG.md` por línea pasaron a citas por entrada, la regla v5 de `tools/verificar_citas.py`.
 
 **Convención**: ✅ medido en este árbol, con fichero:línea · 📐 derivado con una aritmética que se
 reproduce · 📖 leído fuera del árbol, con su fuente y su fecha · ⚠️ matiz · ❓ no medido.
@@ -38,7 +39,7 @@ por qué (`iso.rs:484-491` y `:528-530`), y `doc/historia/VISION.md:679-682` lo 
 
 `spec/RPC.md:132-134` dice lo mismo del cable: el aviso «viaja fuera de banda del pagador al
 receptor (ISO 20022 no lo transporta; AUDITORIA §21)». La 11 lo dejó como constatación de ausencia
-(`BACKLOG.md:1244-1250`), y el §268 la juntó con el B11.2 (`BACKLOG.md:1253-1257`). Esta nota hace
+(la entrada 11 del `BACKLOG.md`), y el §268 la juntó, en la misma entrada, con el B11.2. Esta nota hace
 lo que la 11 dejó para cuando hubiera canal que analizar: **medir qué campos del pacs.008 y del
 pacs.002 pueden llevar el aviso**, contra el esquema y no contra el recuerdo.
 

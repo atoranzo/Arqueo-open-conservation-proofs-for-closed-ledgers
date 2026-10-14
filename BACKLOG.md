@@ -3268,6 +3268,29 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   «el mismo» depende de **cual importe cada modulo**. Si una divergiera,
   **el salt y la identidad se computarian con hashes distintos**.
   **Arreglo**: re-export, o test que las compare sobre muestras.
+  ⚠️ §792: **las dos mitades, medidas; SIGUE ABIERTA por lo que el guardian no mira.**
+  La primera: `tools/verificar_citas.py` v4 mira las citas §n de `AUDITORIA.md` y de este
+  fichero —5.844 y 962 en `8c02941`— contra los encabezados `## n.` y `## §n` del registro,
+  y las «AUDITORIA §n» de fuera (394), y excluye por BLOQUE marcado
+  (`<!-- numeracion-vieja -->` y `<!-- /numeracion-vieja -->`), no por extension. Medido
+  antes de escribir la regla: ninguna cita muerta de verdad. Las que no nombran un
+  encabezado son 31 a numeros que el registro RESERVA para otras sesiones (630, de 711 a
+  739 y de 741 a 769) o al resto del rango de la que lo escribe (hasta 799), y dos al cero:
+  el de otro documento, sin nombrarlo, en el §235, y el numero provisional que narra el
+  §594, un cero con «-ECST» detras; todas en asientos, que no se reescriben: se toleran por
+  su asiento, declaradas en la herramienta, y en este fichero no hay tolerancia. Ninguna
+  cabecera-mapa necesita hoy la marca: existe, con su prueba de vida, y no va en ningun
+  sitio. Lo que NO mira: el `.m` de `§n.m` —de 620 en `AUDITORIA.md` sin otro documento
+  delante, 102 no abren ningun encabezado `n.m` del registro, muchas de otro documento con
+  su nombre detras o sin el—, los `§n` sueltos de los demas documentos, y la v2 sigue siendo
+  de `.rs`: sobre los `.md` daria, en `8c02941`, seis rojos que no son rot,
+  `PRINCIPIOS.md` §7.2 a §7.4, que nombran los puntos en negrita de su §7 y no encabezados.
+  ✅ **La segunda mitad esta resuelta desde el §254.** Hay una sola definicion,
+  `crates/zk-ssl-hash/src/lib.rs:100`, y `crates/stark-experiment/src/rescue_hash.rs:129` y
+  `crates/stark-experiment/src/merkle.rs:103` la reexportan con
+  `pub use zk_ssl_hash::native_merge;`: el §125 habia dejado un delegado, y el §254 lo
+  cambio por el `pub use` (`rescue_hash.rs:122-128` lo cuenta). `grep -rn 'fn native_merge'
+  crates` da una.
 
 - [x] **58. ✅ `digest_of_proof` INYECTIVO (§124).** Codificacion por limbs
   de **32 bits sin reduccion al campo** + bloque final de longitud.

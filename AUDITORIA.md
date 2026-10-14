@@ -52787,3 +52787,61 @@ códigos de motivo y no del canal (es el §39), el «No está implementado» de 
 `lib.rs:975-981` desplazado sobre `frozen`—: son del autor (D-6). No coteja contra el XSD original ni contra
 las reglas de uso de SEPA, CBPR+ o TARGET2, ni mide un KEM poscuántico. No añade las dos notas a la
 lista fechada de `GENAI.md:108-111`.
+
+## §792 — `verificar_citas` mira también las citas §n del registro (v4, la 66) y no acepta una cita por línea al `BACKLOG.md` en un documento vivo (v5); las cadenas «hasta el §705; desde el §706…» pasan a citar la entrada (las tareas 36 y 37)
+
+El commit que lleva este asiento, sobre el §791. Toca `tools/verificar_citas.py`, con dos reglas
+nuevas; las celdas «Correcciones (§705)» de `doc/integracion-vertical-evaluacion.md` y de
+`doc/blueprint-v2.md`, y tres citas por línea más de este último, con marca; las citas por línea al
+`BACKLOG.md` de las dos notas del §791, con marca; una nota en la entrada 66 del `BACKLOG.md`, que
+sigue abierta; y este asiento. Ni código, ni tests, ni vectores. Del autor es elegir las tareas; las
+reglas las propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code,
+y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Del §125.4 y de la 66: el ámbito «solo .rs» de la v2 dejaba sin mirar el tejido del
+registro —las citas §n de este documento y del `BACKLOG.md`—. Y `doc/blueprint-v2.md:120` y
+`doc/integracion-vertical-evaluacion.md:73-74` seguían el `BACKLOG.md` por línea con cadenas que crecían
+en cada sello («hasta el §705; desde el §706 …; desde el §709 …»); sobre el árbol del §789 ninguna de
+las líneas del §709 caía ya en su sitio.
+
+**Quién lo decide.** El autor eligió las tareas. La sesión propuso las dos reglas y lo que toleran; si
+la 66 se cierra con la ceguera del `.m` que queda, lo decide el autor.
+
+**Lo que hace.**
+
+1. **La v4**: cada «§n» de este documento y del `BACKLOG.md` —5.844 y 962 sobre el árbol del §789— y cada
+   «AUDITORIA §n» de fuera tiene que nombrar un encabezado que exista. Medido antes de escribirla:
+   ninguna muerta de verdad. Las 33 que no nombran encabezado están en asientos, que no se reescriben,
+   y se toleran de forma declarada y solo aquí: 31 a números RESERVADOS por el propio registro (el 630,
+   del §631; los 711 a 739 y 741 a 769 de las otras dos sesiones, del §740 y del §770; y lo que queda del
+   rango de esta), y dos con su razón. Se excluye por bloque marcado, `<!-- numeracion-vieja -->`, y hoy
+   no hace falta ninguno.
+2. **La v5**: ninguna cita «BACKLOG.md:<número>» —ni «BACKLOG:<número>»— en un `.md` o `.rs` vivo; se cita
+   la entrada. Fuera, declarados, este documento y el registro generado `doc/ecst/VERIFICACION.md`. Las
+   cuatro que había pasan a la entrada (la 15, la 22, la 92 y la 85), con su marca; y las seis que el §791
+   escribió en sus dos notas, también: con los dos sellos de este día ya no caían en su entrada.
+3. **Tres citas por línea a otros documentos** en `doc/blueprint-v2.md` (`:103`, `:392`, `:1227`) pasan
+   a citas por encabezado, con su marca.
+4. **La 66**, con una nota: su segunda mitad está resuelta desde el §254 —una sola `fn native_merge`
+   (`crates/zk-ssl-hash/src/lib.rs:100`), reexportada en `rescue_hash.rs:129` y `merkle.rs:103`—, y
+   sigue abierta por lo que la v4 no mira.
+
+**Medido.** Las dos reglas llevan autotest y mínimo de censo, y cada falsador se corrió y dio ROJO donde
+debía; el revisor amplió la v5 a la forma sin `.md`, que su falsador dejaba pasar, y corrigió una
+atribución de la cabecera («§3.11» es de `VISION.md`, no de `SECURITY.md`) y dos cifras que no se
+reproducían. Sobre este árbol, la v4 da 733 encabezados —con el de este asiento—, 6.859 citas miradas, 0
+muertas, 2 toleradas y 34 a números reservados; la v5, 0 en documentos vivos y 18 excluidas. Antes de este asiento, la v4 daba
+ROJO por la nota de la 66, que cita este número: un sello no puede citarse antes de existir. El canon,
+`bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas.
+
+**Lo que NO hace.** No mira el `.m` de «§n.m» (102 de 620 no caen en un subencabezado), ni las «§n»
+sueltas de los demás documentos, ni extiende la v2 a los `.md`, ni las citas por línea a otros ficheros.
+No toca el encabezado «### 131.5» pegado al final de una línea del §131: es un asiento. Desde aquí, un
+«§n» escrito con § en este documento que no sea un encabezado ni un número reservado es ROJO, también en
+un asiento.

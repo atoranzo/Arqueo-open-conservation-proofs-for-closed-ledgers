@@ -14,7 +14,8 @@ No cierra la 52 ni la 20.
 
 **Procedencia**: la escribió Claude en una sesión de Claude Code en la
 nube, sobre `8c02941` (§789), fuera del paso 4 de [`GENAI.md`](../GENAI.md); la lleva el §791 de
-`AUDITORIA.md`. Integrar no es aceptar: la aceptación queda pendiente.
+`AUDITORIA.md`. Integrar no es aceptar: la aceptación queda pendiente. ⚠️ §792: sus citas al
+`BACKLOG.md` por línea pasaron a citas por entrada, la regla v5 de `tools/verificar_citas.py`.
 
 **Convención**: ✅ medido en este árbol, con fichero:línea · 📐 derivado de la lectura del código, sin
 ejecutarlo · ⚠️ matiz · ❓ no medido.
@@ -28,7 +29,7 @@ rotación —el §117, «rotar la clave implica nueva hoja»; el §127.5, la cla
 sin rotar la de gasto»; y el B18.2, cuyo reclamo de migración «ES una rotación con hoja nueva»—, y
 la 20 tiene dos casos abiertos más. «O se unifican … en UN solo diseño de rotación, o la rotación se
 diseñará tres veces, incompatibles entre sí.» La 52 lo recoge con su alcance: unificar los dos de la
-20, el reclamo del B18.2 y los tres costes diferidos, en sesión propia (`BACKLOG.md:3757-3769`). La
+20, el reclamo del B18.2 y los tres costes diferidos, en sesión propia (la 52 del `BACKLOG.md`). La
 misma entrada pide leer antes dos cosas: cómo se acopla `recover` con los custodios y que la capa no
 tiene tiempo. Son el §1.2 y el §1.4.
 
@@ -99,8 +100,8 @@ ningún nodo lo alcanza:
   «exige solo la clave — exactamente la propiedad T2b» (`doc/CONFIANZA_RESIDUAL.md:143-146`), y en
   una cuenta recuperada esa propiedad ya no vale: la sal solo la re-deriva la clave vieja.
 - **c. La privacidad frente a la clave vieja.** Quien tenga la clave vieja tiene la sal, y con ella
-  la hoja vuelve a ser diccionariable desde un camino, como antes del salt (la medida de la 50,
-  `BACKLOG.md:3573-3581`).
+  la hoja vuelve a ser diccionariable desde un camino, como antes del salt (la medida de la 50 del
+  `BACKLOG.md`).
 - **d. Los pendientes en vuelo.** El compromiso ata la identidad del receptor
   (`crates/zk-ssl/src/two_phase.rs:925`) y el cobro exige que la clave derive la identidad de la
   cuenta (`two_phase.rs:1229-1231`). Un pendiente enviado a la identidad vieja antes de rotar no lo
@@ -163,8 +164,8 @@ aplica.
 | 1 | **hoja nueva** | §117 (`AUDITORIA.md:9569-9625`); «rotar clave implicará nueva hoja» (`native.rs:117-118`) | la segunda sal en la subida (`circuit_recovery_climb.rs:72-77`) |
 | 2 | **vista** | §127.5 (`AUDITORIA.md:10487-10499`); «solo rota rotando la clave» (`native.rs:143-146`) | traer el `view_id` nuevo con la rotación (`recovery.rs:93-102`), y decidir qué lo ata (§3, N3) |
 | 3 | **reclamo del B18.2** | `doc/CONFIANZA_RESIDUAL.md:471-477` y `:565` | todo: el circuito, la disponibilidad de datos del B18.1 (`:448-458`) y la declaración del B18.3 |
-| 4 | **gobernanza inmutable** | la 20 (`BACKLOG.md:2165-2172`) | por diseño, nada; el coste es que una clave de gobernanza comprometida lo está para siempre. Lo fija `the_governance_set_survives_restart` (`tests.rs:1176`), y la raíz va en `params_digest` de cada cabeza (`lib.rs:878-886`) |
-| 5 | **recifrado** | la 20 (`BACKLOG.md:2162-2164`) | ver abajo |
+| 4 | **gobernanza inmutable** | la 20 | por diseño, nada; el coste es que una clave de gobernanza comprometida lo está para siempre. Lo fija `the_governance_set_survives_restart` (`tests.rs:1176`), y la raíz va en `params_digest` de cada cabeza (`lib.rs:878-886`) |
+| 5 | **recifrado** | la 20 | ver abajo |
 | 6 | **la clave del aviso cifrado**, si el B11.2 sale | [`AVISO_EN_ISO20022.md`](AVISO_EN_ISO20022.md) §6.1 | hoy no existe: ninguna cuenta tiene una clave a la que cifrar (`lib.rs:740-755`; `spec/RPC.md:111`) |
 
 ✅ **El caso 5 medido, que ya no es el de la 20.** El grep de la 20 sigue vacío, pero desde el §702
@@ -269,7 +270,7 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
   local (`crates/zk-ssl/src/iso.rs:297-299`) y no se persiste
   (`crates/zk-ssl/src/migration.rs:46-47`), hay que reapuntarlo a mano.
 - **Coste**: **ningún fichero**. Lo operativo: dos pruebas por rotación, las de un pago; una plaza
-  del tope de cuentas (`lib.rs:1031-1042`), que abrir no autoriza (la 8, `BACKLOG.md:1219-1221`); el
+  del tope de cuentas (`lib.rs:1031-1042`), que abrir no autoriza (la 8 del `BACKLOG.md`); el
   enlace viejo → nuevo, a la vista de quien vea las dos mitades (`spec/RPC.md:344-347`) y del
   operador. Una cuenta congelada no puede: el envío lo comprueba (`two_phase.rs:859`).
 - **Tiempo y carrera**: sin ventana.
