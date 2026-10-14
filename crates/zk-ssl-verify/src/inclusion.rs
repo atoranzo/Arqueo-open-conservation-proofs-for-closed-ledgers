@@ -71,6 +71,13 @@ pub struct ReciboInclusion {
 pub enum InclusionError {
     /// `hermanos` y `derecha` no miden lo mismo.
     CaminoDescuadrado { hermanos: usize, derecha: usize },
+    /// ⚠️ §782 (RFC-0016 E6) · El camino no mide `ACCOUNTS_DEPTH`: la profundidad del árbol de
+    /// cuentas no la elige quien sirve el recibo. Hasta el §782 un camino más corto con su raíz
+    /// recompuesta pasaba.
+    ProfundidadDistinta { niveles: usize, esperados: usize },
+    /// ⚠️ §782 (RFC-0016 E6) · Las orientaciones del camino no son las del `indice` que el recibo
+    /// declara: es el camino de OTRA posición. Hasta el §782 el `indice` no se leía.
+    IndiceCruzado { indice: u64 },
     /// ⚠️ **La hoja no está en ese árbol**: subir el camino da otra raíz.
     RaizDistinta,
     /// ⚠️ **El recibo es de OTRA cabeza.** Los cinco campos componen un
@@ -89,6 +96,15 @@ impl core::fmt::Display for InclusionError {
                 f,
                 "camino descuadrado: {hermanos} hermanos y {derecha} orientaciones"
             ),
+            InclusionError::ProfundidadDistinta { niveles, esperados } => write!(
+                f,
+                "el camino mide {niveles} niveles y el arbol de cuentas tiene {esperados}"
+            ),
+            InclusionError::IndiceCruzado { indice } => write!(
+                f,
+                "las orientaciones del camino no son las de la posicion {indice} que el recibo \
+                 declara: es el camino de otra cuenta"
+            ),
             InclusionError::RaizDistinta => {
                 write!(f, "la hoja no esta en ese arbol: el camino da otra raiz")
             }
@@ -100,6 +116,32 @@ impl core::fmt::Display for InclusionError {
 }
 
 impl std::error::Error for InclusionError {}
+
+/// ⚠️ §782 (RFC-0016 E6) · **El camino es el de ESTA cuenta, entero.** Lo comprueban las seis
+/// `verificar_inclusion*` antes de subir la hoja: que el camino mida `ACCOUNTS_DEPTH` en sus dos
+/// lados y que sus orientaciones sean las del `indice` declarado. Las dos reglas son las del módulo
+/// `cuentas` (`cruza_indice`), que el mando ya aplica (§475): una sola definición. Va detrás del
+/// camino descuadrado, que se sigue diciendo con su nombre.
+fn exigir_camino_de_la_cuenta(recibo: &ReciboInclusion) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    if recibo.hermanos.len() != zk_ssl_hash::ACCOUNTS_DEPTH {
+        return Err(InclusionError::ProfundidadDistinta {
+            niveles: recibo.hermanos.len(),
+            esperados: zk_ssl_hash::ACCOUNTS_DEPTH,
+        });
+    }
+    if !crate::cuentas::cruza_indice(recibo.indice, &recibo.derecha) {
+        return Err(InclusionError::IndiceCruzado {
+            indice: recibo.indice,
+        });
+    }
+    Ok(())
+}
 
 /// **Comprueba una inclusión contra una cabeza firmada.**
 ///
@@ -115,12 +157,7 @@ pub fn verificar_inclusion(
     recibo: &ReciboInclusion,
     epoch_digest_firmado: Digest,
 ) -> Result<(), InclusionError> {
-    if recibo.hermanos.len() != recibo.derecha.len() {
-        return Err(InclusionError::CaminoDescuadrado {
-            hermanos: recibo.hermanos.len(),
-            derecha: recibo.derecha.len(),
-        });
-    }
+    exigir_camino_de_la_cuenta(recibo)?;
 
     // ── 1 · la hoja sube hasta la raiz que el recibo declara ──
     let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
@@ -144,6 +181,17 @@ pub fn verificar_inclusion(
     Ok(())
 }
 
+/// §782 · Para los tests: el camino de la cuenta `indice` entero, `ACCOUNTS_DEPTH` hermanos con las
+/// orientaciones de su índice (las de `cuentas::is_right_de_indice`).
+#[cfg(test)]
+fn camino_de_cuenta(indice: u64) -> (Vec<Digest>, Vec<bool>) {
+    use winter_math::fields::f64::BaseElement;
+    let hermanos = (0..zk_ssl_hash::ACCOUNTS_DEPTH as u64)
+        .map(|i| [BaseElement::new(200 + i); 4])
+        .collect();
+    (hermanos, crate::cuentas::is_right_de_indice(indice))
+}
+
 #[cfg(test)]
 mod tests_inclusion {
     use super::*;
@@ -162,8 +210,8 @@ mod tests_inclusion {
     /// Un recibo coherente: el camino sube de verdad, y la cabeza cuadra.
     fn recibo_bueno() -> (ReciboInclusion, Digest) {
         let hoja = d(100);
-        let hermanos = vec![d(200), d(300), d(400)];
-        let derecha = vec![false, true, false];
+        // §782: el camino entero de la cuenta 5 (`ACCOUNTS_DEPTH` niveles), no tres hermanos sueltos.
+        let (hermanos, derecha) = camino_de_cuenta(5);
         let accounts_root = path_root(hoja, &hermanos, &derecha);
         let (seq, pending_root, frozen_root, chain_digest) = (42, d(500), d(600), d(700));
         let firmado = epoch_digest(seq, accounts_root, pending_root, frozen_root, chain_digest);
@@ -203,7 +251,11 @@ mod tests_inclusion {
         // posicion, y el recibo no diria nada.
         let (mut r, firmado) = recibo_bueno();
         r.derecha[0] = !r.derecha[0];
-        assert_eq!(verificar_inclusion(&r, firmado), Err(InclusionError::RaizDistinta));
+        // §782: el camino ya no es el de la posicion 5, y se dice antes de subirlo.
+        assert_eq!(
+            verificar_inclusion(&r, firmado),
+            Err(InclusionError::IndiceCruzado { indice: 5 })
+        );
     }
 
     #[test]
@@ -218,7 +270,78 @@ mod tests_inclusion {
         let (mut r, firmado) = recibo_bueno();
         r.hermanos.pop();
         r.derecha.pop();
-        assert_eq!(verificar_inclusion(&r, firmado), Err(InclusionError::RaizDistinta));
+        // §782: se para en la profundidad, antes de subir la hoja.
+        assert_eq!(
+            verificar_inclusion(&r, firmado),
+            Err(InclusionError::ProfundidadDistinta {
+                niveles: 31,
+                esperados: 32
+            })
+        );
+    }
+
+    /// ⚠️ §782 (RFC-0016 E6) · **FALSADOR: un camino corto con su raíz y su cabeza recompuestas.**
+    /// Todo cuadra —la hoja sube, la raíz compone la cabeza firmada— salvo que el árbol de cuentas
+    /// tiene `ACCOUNTS_DEPTH` niveles y el camino tres. Hasta el §782 esto VERIFICABA.
+    #[test]
+    fn un_camino_corto_con_su_cabeza_recompuesta_no_verifica() {
+        let (hoja, hermanos, derecha) = (
+            d(100),
+            vec![d(200), d(300), d(400)],
+            vec![true, false, true],
+        );
+        let accounts_root = path_root(hoja, &hermanos, &derecha);
+        let firmado = epoch_digest(42, accounts_root, d(500), d(600), d(700));
+        let r = ReciboInclusion {
+            indice: 5,
+            hoja,
+            hermanos,
+            derecha,
+            seq: 42,
+            accounts_root,
+            pending_root: d(500),
+            frozen_root: d(600),
+            chain_digest: d(700),
+        };
+        assert_eq!(
+            verificar_inclusion(&r, firmado),
+            Err(InclusionError::ProfundidadDistinta {
+                niveles: 3,
+                esperados: 32
+            })
+        );
+    }
+
+    /// ⚠️ §782 (RFC-0016 E6) · **FALSADOR: el camino de OTRA cuenta, entero y con su cabeza.** El
+    /// recibo declara la posición 5 y trae el camino de la 6, con la raíz y la cabeza recompuestas
+    /// a partir de él. Hasta el §782 el `indice` no se leía y esto VERIFICABA.
+    #[test]
+    fn el_camino_de_otra_cuenta_con_su_cabeza_recompuesta_no_verifica() {
+        let hoja = d(100);
+        let (hermanos, derecha) = camino_de_cuenta(6);
+        let accounts_root = path_root(hoja, &hermanos, &derecha);
+        let firmado = epoch_digest(42, accounts_root, d(500), d(600), d(700));
+        let r = ReciboInclusion {
+            indice: 5,
+            hoja,
+            hermanos,
+            derecha,
+            seq: 42,
+            accounts_root,
+            pending_root: d(500),
+            frozen_root: d(600),
+            chain_digest: d(700),
+        };
+        assert_eq!(
+            verificar_inclusion(&r, firmado),
+            Err(InclusionError::IndiceCruzado { indice: 5 })
+        );
+        let mismo = ReciboInclusion { indice: 6, ..r };
+        assert_eq!(
+            verificar_inclusion(&mismo, firmado),
+            Ok(()),
+            "con su indice, verifica"
+        );
     }
 
     #[test]
@@ -227,7 +350,10 @@ mod tests_inclusion {
         r.derecha.pop();
         assert_eq!(
             verificar_inclusion(&r, firmado),
-            Err(InclusionError::CaminoDescuadrado { hermanos: 3, derecha: 2 })
+            Err(InclusionError::CaminoDescuadrado {
+                hermanos: 32,
+                derecha: 31
+            })
         );
     }
 
@@ -430,12 +556,7 @@ pub fn verificar_inclusion_v2(
     n: u64,
     epoch_digest_firmado: Digest,
 ) -> Result<(), InclusionError> {
-    if recibo.hermanos.len() != recibo.derecha.len() {
-        return Err(InclusionError::CaminoDescuadrado {
-            hermanos: recibo.hermanos.len(),
-            derecha: recibo.derecha.len(),
-        });
-    }
+    exigir_camino_de_la_cuenta(recibo)?;
     let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
     if raiz != recibo.accounts_root {
         return Err(InclusionError::RaizDistinta);
@@ -502,12 +623,7 @@ pub fn verificar_inclusion_v3(
     mmr_t: u64,
     epoch_digest_firmado: Digest,
 ) -> Result<(), InclusionError> {
-    if recibo.hermanos.len() != recibo.derecha.len() {
-        return Err(InclusionError::CaminoDescuadrado {
-            hermanos: recibo.hermanos.len(),
-            derecha: recibo.derecha.len(),
-        });
-    }
+    exigir_camino_de_la_cuenta(recibo)?;
     let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
     if raiz != recibo.accounts_root {
         return Err(InclusionError::RaizDistinta);
@@ -582,12 +698,7 @@ pub fn verificar_inclusion_v4(
     cons_count: u64,
     epoch_digest_firmado: Digest,
 ) -> Result<(), InclusionError> {
-    if recibo.hermanos.len() != recibo.derecha.len() {
-        return Err(InclusionError::CaminoDescuadrado {
-            hermanos: recibo.hermanos.len(),
-            derecha: recibo.derecha.len(),
-        });
-    }
+    exigir_camino_de_la_cuenta(recibo)?;
     let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
     if raiz != recibo.accounts_root {
         return Err(InclusionError::RaizDistinta);
@@ -680,12 +791,7 @@ pub fn verificar_inclusion_v5(
     total_supply: u64,
     epoch_digest_firmado: Digest,
 ) -> Result<(), InclusionError> {
-    if recibo.hermanos.len() != recibo.derecha.len() {
-        return Err(InclusionError::CaminoDescuadrado {
-            hermanos: recibo.hermanos.len(),
-            derecha: recibo.derecha.len(),
-        });
-    }
+    exigir_camino_de_la_cuenta(recibo)?;
     let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
     if raiz != recibo.accounts_root {
         return Err(InclusionError::RaizDistinta);
@@ -794,12 +900,7 @@ pub fn verificar_inclusion_v6(
     recep_count: u64,
     epoch_digest_firmado: Digest,
 ) -> Result<(), InclusionError> {
-    if recibo.hermanos.len() != recibo.derecha.len() {
-        return Err(InclusionError::CaminoDescuadrado {
-            hermanos: recibo.hermanos.len(),
-            derecha: recibo.derecha.len(),
-        });
-    }
+    exigir_camino_de_la_cuenta(recibo)?;
     let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
     if raiz != recibo.accounts_root {
         return Err(InclusionError::RaizDistinta);
@@ -879,20 +980,23 @@ mod tests_v3 {
     #[test]
     fn la_pareja_del_mmr_no_es_decorativa_en_la_inclusion_v3() {
         let hoja = d(70);
+        // §782: el camino entero de la cuenta 0, no uno vacío.
+        let (hermanos, derecha) = camino_de_cuenta(0);
+        let raiz = zk_ssl_hash::path_root(hoja, &hermanos, &derecha);
         let recibo = ReciboInclusion {
             indice: 0,
             hoja,
-            hermanos: Vec::new(),
-            derecha: Vec::new(),
+            hermanos,
+            derecha,
             seq: 3,
-            accounts_root: hoja,
+            accounts_root: raiz,
             pending_root: d(2),
             frozen_root: d(3),
             chain_digest: d(4),
         };
         let cima = d(80);
         let firmado = zk_ssl_hash::epoch_digest_v3(
-            3, hoja, d(2), d(3), d(4), d(5), 7, cima, 4,
+            3, raiz, d(2), d(3), d(4), d(5), 7, cima, 4,
         );
         verificar_inclusion_v3(&recibo, d(5), 7, cima, 4, firmado)
             .expect("v3 debe verificar");
@@ -954,20 +1058,23 @@ mod tests_v4 {
     #[test]
     fn la_raiz_y_la_cuenta_de_consumos_no_son_decorativas_en_la_inclusion_v4() {
         let hoja = d(70);
+        // §782: el camino entero de la cuenta 0, no uno vacío.
+        let (hermanos, derecha) = camino_de_cuenta(0);
+        let raiz = zk_ssl_hash::path_root(hoja, &hermanos, &derecha);
         let recibo = ReciboInclusion {
             indice: 0,
             hoja,
-            hermanos: Vec::new(),
-            derecha: Vec::new(),
+            hermanos,
+            derecha,
             seq: 3,
-            accounts_root: hoja,
+            accounts_root: raiz,
             pending_root: d(2),
             frozen_root: d(3),
             chain_digest: d(4),
         };
         let (cima, cons) = (d(80), d(90));
         let firmado = zk_ssl_hash::epoch_digest_v4(
-            3, hoja, d(2), d(3), d(4), d(5), 7, cima, 4, cons, 2,
+            3, raiz, d(2), d(3), d(4), d(5), 7, cima, 4, cons, 2,
         );
         verificar_inclusion_v4(&recibo, d(5), 7, cima, 4, cons, 2, firmado)
             .expect("v4 debe verificar");
@@ -1037,20 +1144,23 @@ mod tests_v5 {
     #[test]
     fn la_familia_de_v5_no_es_decorativa_en_la_inclusion_v5() {
         let hoja = d(70);
+        // §782: el camino entero de la cuenta 0, no uno vacío.
+        let (hermanos, derecha) = camino_de_cuenta(0);
+        let raiz = zk_ssl_hash::path_root(hoja, &hermanos, &derecha);
         let recibo = ReciboInclusion {
             indice: 0,
             hoja,
-            hermanos: Vec::new(),
-            derecha: Vec::new(),
+            hermanos,
+            derecha,
             seq: 3,
-            accounts_root: hoja,
+            accounts_root: raiz,
             pending_root: d(2),
             frozen_root: d(3),
             chain_digest: d(4),
         };
         let (cima, cons, params, meta) = (d(80), d(90), d(110), d(120));
         let firmado = zk_ssl_hash::epoch_digest_v5(
-            3, hoja, d(2), d(3), d(4), d(5), 7, cima, 4, cons, 2, params, meta, 7, 8, 9,
+            3, raiz, d(2), d(3), d(4), d(5), 7, cima, 4, cons, 2, params, meta, 7, 8, 9,
         );
         // La familia entera, con la cabeza de siempre delante: solo cambia la familia.
         let con = |p: Digest, m: Digest, np: u64, ni: u64, s: u64| {
@@ -1120,25 +1230,113 @@ mod tests_v6 {
         );
     }
 
+    /// ⚠️ §782 (RFC-0016 E6) · La v6 —la que firma el nodo de hoy— exige lo mismo: el camino de la
+    /// cuenta 0 declarado como el de la 1, con su cabeza recompuesta, no verifica; y uno corto, tampoco.
+    #[test]
+    fn la_inclusion_v6_exige_el_camino_entero_de_su_cuenta() {
+        let hoja = d(70);
+        let (hermanos, derecha) = camino_de_cuenta(0);
+        let raiz = zk_ssl_hash::path_root(hoja, &hermanos, &derecha);
+        let (cima, cons, params, meta, recep) = (d(80), d(90), d(110), d(120), d(130));
+        let firmado = |r: Digest| {
+            zk_ssl_hash::epoch_digest_v6(
+                3,
+                r,
+                d(2),
+                d(3),
+                d(4),
+                d(5),
+                7,
+                cima,
+                4,
+                cons,
+                2,
+                params,
+                meta,
+                7,
+                8,
+                9,
+                recep,
+                11,
+            )
+        };
+        let juzga = |recibo: &ReciboInclusion| {
+            verificar_inclusion_v6(
+                recibo,
+                d(5),
+                7,
+                cima,
+                4,
+                cons,
+                2,
+                params,
+                meta,
+                7,
+                8,
+                9,
+                recep,
+                11,
+                firmado(recibo.accounts_root),
+            )
+        };
+        let bueno = ReciboInclusion {
+            indice: 0,
+            hoja,
+            hermanos,
+            derecha,
+            seq: 3,
+            accounts_root: raiz,
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+        };
+        assert_eq!(juzga(&bueno), Ok(()));
+        let cruzado = ReciboInclusion {
+            indice: 1,
+            ..bueno.clone()
+        };
+        assert_eq!(
+            juzga(&cruzado),
+            Err(InclusionError::IndiceCruzado { indice: 1 })
+        );
+        let (h, dr) = (vec![d(200)], vec![false]);
+        let corto = ReciboInclusion {
+            accounts_root: zk_ssl_hash::path_root(hoja, &h, &dr),
+            hermanos: h,
+            derecha: dr,
+            ..bueno
+        };
+        assert_eq!(
+            juzga(&corto),
+            Err(InclusionError::ProfundidadDistinta {
+                niveles: 1,
+                esperados: 32
+            })
+        );
+    }
+
     /// La pareja de recepcion no es decorativa: con la cabeza de siempre
     /// delante, mover la raiz o la cuenta rompe la recomposicion.
     #[test]
     fn la_pareja_de_recepcion_no_es_decorativa_en_la_inclusion_v6() {
         let hoja = d(70);
+        // §782: el camino entero de la cuenta 0, no uno vacío.
+        let (hermanos, derecha) = camino_de_cuenta(0);
+        let raiz = zk_ssl_hash::path_root(hoja, &hermanos, &derecha);
         let recibo = ReciboInclusion {
             indice: 0,
             hoja,
-            hermanos: Vec::new(),
-            derecha: Vec::new(),
+            hermanos,
+            derecha,
             seq: 3,
-            accounts_root: hoja,
+            accounts_root: raiz,
             pending_root: d(2),
             frozen_root: d(3),
             chain_digest: d(4),
         };
         let (cima, cons, params, meta, recep) = (d(80), d(90), d(110), d(120), d(130));
         let firmado = zk_ssl_hash::epoch_digest_v6(
-            3, hoja, d(2), d(3), d(4), d(5), 7, cima, 4, cons, 2, params, meta, 7, 8, 9, recep, 11,
+            3, raiz, d(2), d(3), d(4), d(5), 7, cima, 4, cons, 2, params, meta, 7, 8, 9, recep, 11,
         );
         let con = |rr: Digest, rc: u64| {
             verificar_inclusion_v6(
@@ -1235,8 +1433,7 @@ mod tests_acuse {
         // Los cinco de siempre + (acuses_root, n): con la pareja firmada,
         // Ok; con otro n, CabezaDistinta. El recibo v1 no se toca.
         let hoja = d(500);
-        let hermanos = vec![d(600)];
-        let derecha = vec![false];
+        let (hermanos, derecha) = camino_de_cuenta(0);
         let accounts_root = path_root(hoja, &hermanos, &derecha);
         let r = ReciboInclusion {
             indice: 0,

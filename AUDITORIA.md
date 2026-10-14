@@ -52234,3 +52234,64 @@ el desglose de `PRINCIPIOS.md`. Ni vectores, ni el `BACKLOG.md`: 44 abiertas y 7
 **Lo que NO hace.** No impide escribir a mano, con `cp` o con un editor, encima de un vector: eso lo
 sigue viendo el canon (§692), que es la puerta. No mira el registro de otra raíz que la del camino.
 No protege los vectores sin registrar, que por definición aún no están publicados.
+
+## §782 — RFC-0016 E6: las seis `verificar_inclusion*` exigen el camino entero de la cuenta que el recibo declara —`ACCOUNTS_DEPTH` niveles y las orientaciones de su `indice`—, y un camino corto o el de otra cuenta, con su cabeza recompuesta, ya no verifica
+
+El commit que lleva este asiento, sobre el §781. Un solo sello: en `crates/zk-ssl-verify/src/inclusion.rs`,
+una función nueva, `exigir_camino_de_la_cuenta`, dos variantes nuevas de `InclusionError` y tres tests
+nuevos —los fixtures de los tests que ya había pasan a caminos enteros—; en
+`spec/rfc/0016-un-valor-una-escritura.md`, la fila de la E6 y la viñeta de «Lo que NO cierra» que la
+E6 cierra; el pin del crate en `tools/canon.sh`; las cifras de tests de `PAPER.md`, `PAPER_EN.md` y
+`PRINCIPIOS.md`; y este asiento. Del autor es elegir esta tarea y su orden; lo demás lo propuso la
+sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa
+sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es
+el siguiente del rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la zona de la
+migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en
+su sitio, y salió VERDE.
+
+**De dónde sale.** El RFC-0016 dejó nombrado en su «Lo que NO cierra» que `verificar_inclusion` y sus
+hermanas v2 a v6 no fijan la profundidad del árbol de cuentas ni leen el `indice` del recibo: la regla
+que sí se aplica vive en el módulo `cuentas` y la aplica el mando (§475). Son las funciones públicas
+de la biblioteca del kit para un tercero que quiera verificar un recibo de inclusión, y aceptaban dos
+cosas que el árbol no es.
+
+**El defecto.** Un camino de tres niveles, con su raíz recompuesta a partir de él y la cabeza
+recompuesta a partir de esa raíz, verificaba: la hoja subía, la raíz componía la cabeza, y nadie
+miraba que el árbol de cuentas tiene `ACCOUNTS_DEPTH` niveles. Y el camino de la cuenta 6, entero,
+presentado en un recibo que declara la 5, verificaba igual: el `indice` no se leía.
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso abrir la E6 en el RFC-0016, que sigue
+PROPUESTO —aceptarlo es del autor—, y que las dos reglas sean las del módulo `cuentas`, no una copia:
+una sola definición.
+
+**Por qué no lleva aviso de seguridad.** En el árbol ninguna de las seis tiene consumidor: el mando
+juzga con `cuentas` y el kit no las llama. La comprobación queda donde un tercero la buscaría, y
+cerrada.
+
+**Lo que hace.**
+
+1. **`exigir_camino_de_la_cuenta(recibo)`**, que las seis llaman antes de subir la hoja, detrás del
+   camino descuadrado, que se sigue diciendo con su nombre: un camino que no mide `ACCOUNTS_DEPTH` en
+   sus dos lados es `ProfundidadDistinta { niveles, esperados }`; unas orientaciones que no cruzan
+   con el `indice` declarado (`cuentas::cruza_indice`), `IndiceCruzado { indice }`.
+2. **Los fixtures** de los tests de `inclusion.rs` pasan a caminos enteros, con un ayudante de test,
+   `camino_de_cuenta(indice)`: los de antes, de tres hermanos o vacíos, ya no verifican.
+3. **Tres falsadores**: `un_camino_corto_con_su_cabeza_recompuesta_no_verifica`,
+   `el_camino_de_otra_cuenta_con_su_cabeza_recompuesta_no_verifica` y
+   `la_inclusion_v6_exige_el_camino_entero_de_su_cuenta`, sobre la v6, la que firma el nodo de hoy.
+4. **El RFC-0016**: la fila de la E6, sellada en el §782, y la viñeta de «Lo que NO cierra» tachada,
+   con su nota.
+
+**Medido.** Con las dos comprobaciones nuevas de `exigir_camino_de_la_cuenta` apagadas —la del
+camino descuadrado se queda, porque ya estaba—, en un árbol aparte, los tres falsadores dan `FAILED`;
+con este sello, `ok`, y los tests que ya había, con sus fixtures nuevos, también.
+`check_nucleo` sigue con 0: el censo de la tabla de `spec/NUCLEO.md` no gana elementos públicos. El
+canon, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** `zk-ssl-verify` 182 -> 185, en su fila de `tools/canon.sh`, con su crónica. TOTAL DE
+SELLO 1741 -> 1744 y TOTAL CON LARGOS 1878 -> 1881, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`, y
+el desglose de `PRINCIPIOS.md`. Ni vectores, ni el `BACKLOG.md`: 44 abiertas y 76 resueltas.
+
+**Lo que NO hace.** No acepta el RFC-0016. No cambia ningún veredicto del kit ni del mando. No toca el
+`Debug` de `InclusionError` que el kit imprime en `acuse: {e:?}`, más que por las dos variantes nuevas,
+que el catálogo trata como opaco (la puerta del §777 lo imprime como excluido).

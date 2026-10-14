@@ -22,6 +22,7 @@
 | E3 — la segunda implementación, con la misma regla | `tools/segunda/nucleo.py` (un productor, `u64_canonico`, y el mismo texto), `verificador.py` y `juez_cabezas.py` | NO | sellada — §640 |
 | E4 — los vectores | cuatro negativos, uno por defecto medido, en `paquete/`, `ancla/` y `completitud/`, con su entrada de manifiesto; la referencia y la segunda los rechazan con el mismo texto donde las dos leen | NO | sellada — §640 |
 | E5 — una definición en el probador | las siete copias privadas del embebido en `stark-experiment` pasan a ser `zk_ssl_hash::embeber`, y `SPEND_KEY_DOMAIN` se reexporta del núcleo | NO | sellada — §640 |
+| E6 — el camino de la cuenta, entero | las seis `verificar_inclusion*` exigen que el camino mida `ACCOUNTS_DEPTH` y que sus orientaciones sean las del `indice` del recibo, con las reglas del módulo `cuentas`; dos errores nuevos, `ProfundidadDistinta` e `IndiceCruzado` | NO | sellada — §782 |
 
 ## Motivación
 
@@ -130,9 +131,12 @@ publicado discrepan exactamente en estos cuatro vectores, y en ninguno más.
   `< p`—, y el SDK también, en el `logSeq` de la constancia. Queda el deserializador de `Q` de
   `zk-ssl-wire`, que desde el §662 exige la escritura mínima y deja la cota a quien lo usa
   (`zk_ssl_wire::cantidad_canonica`).
-- **`verificar_inclusion` y sus hermanas v2 a v6** no fijan la profundidad del árbol de cuentas
+- ~~**`verificar_inclusion` y sus hermanas v2 a v6** no fijan la profundidad del árbol de cuentas
   ni cruzan el camino con el `indice` que el recibo lleva, que hoy no se usa. Ningún consumidor del
-  árbol las llama; la regla que sí se aplica en el mando vive en el módulo `cuentas`. Queda nombrado.
+  árbol las llama; la regla que sí se aplica en el mando vive en el módulo `cuentas`. Queda nombrado.~~
+  ⚠️ §782: cerrado en la E6. Las seis las aplican antes de subir la hoja, con las reglas del módulo
+  `cuentas`; un camino corto o el de otra cuenta, con su raíz y su cabeza recompuestas, ya no
+  verifica. Siguen sin consumidor en el árbol: el mando juzga con `cuentas`, como antes.
 - **`as_digest` sigue reduciendo**, por D-C: un productor nuevo que componga un `u64` sin pasar por
   `u64_canonico` vuelve a abrir el hueco. Lo vigilan los tests que pinchan la no inyectividad, no
   una compuerta.
