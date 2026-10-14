@@ -23,7 +23,7 @@
 //! años sin depender de la versión de `sled` que la escribió.
 //!
 //! ```text
-//! formato v9 -- lo que escribe export_snapshot (§N; hasta el §N esta linea decia v7 y
+//! formato v9 -- lo que escribe export_snapshot (§802; hasta el §802 esta linea decia v7 y
 //!               describia la v8)
 //!
 //! fichero = marca (1 B) + cuerpo
@@ -64,12 +64,12 @@
 //!        ── registro ──     n_log x (2 B longitud u16, luego longitud B)
 //!                           longitud vale 137, o 169 si la entrada
 //!                           lleva compromiso
-//!        ── retiradas ──    n_retir 8 B, luego n_retir x 32 B (v9, §N):
+//!        ── retiradas ──    n_retir 8 B, luego n_retir x 32 B (v9, §802):
 //!                           las identidades que retiraron las
 //!                           recuperaciones, en su orden
 //! ```
 //!
-//! Esto es lo que `export_snapshot` **escribe**: v9 (⚠️ §N: hasta el §N, v8). Lo que se
+//! Esto es lo que `export_snapshot` **escribe**: v9 (⚠️ §802: hasta el §802, v8). Lo que se
 //! **lee** es v3..v9 — la tabla de mágicos, con lo que cambia en cada versión,
 //! vive pegada a las constantes `MAGIC`..`MAGIC_V9`, más abajo en este fichero. La cola
 //! de la v9 va DETRAS del registro: los desplazamientos de la cabecera no se mueven.
@@ -83,7 +83,7 @@
 //! - **Va cifrada si la capa tiene clave**, con el mismo cifrado
 //!   autenticado que el ledger y la cabecera de su KDF (§702). Sin clave va
 //!   en claro, y entonces quien tenga el fichero **ve todos los saldos**.
-//! - **⚠️ §N: en claro, las retiradas no van atadas a nada.** La cola de la
+//! - **⚠️ §802: en claro, las retiradas no van atadas a nada.** La cola de la
 //!   v9 no lleva raíz, y `SnapshotInfo` solo trae `state_root`, el
 //!   suministro y los recuentos: una cola cambiada importa, y la identidad
 //!   que una recuperación retiró vuelve a abrir (medido). El resto del cuerpo
@@ -134,7 +134,7 @@ const MAGIC_V7: &[u8; 8] = b"ZKSSL7\0\0";
 /// tras `frozen_root`, `n_cons` tras `n_frozen`, la seccion tras las
 /// congeladas—. v7 y anteriores se importan con el conjunto vacio.
 const MAGIC_V8: &[u8; 8] = b"ZKSSL8\0\0";
-/// v9 (§N): la v8 byte a byte, mas una COLA tras el registro: `n_retir` (8 B LE) y
+/// v9 (§802): la v8 byte a byte, mas una COLA tras el registro: `n_retir` (8 B LE) y
 /// `n_retir` x 32 B, las identidades que retiraron las recuperaciones, en su orden. Al
 /// importar se exige una por cada entrada Recovery del registro importado; v3..v8 no la
 /// traen, y por eso solo importan si su registro no tiene ninguna.
@@ -276,7 +276,7 @@ impl SovereignLayer {
             out.extend_from_slice(&(b.len() as u16).to_le_bytes());
             out.extend_from_slice(&b);
         }
-        // §N (v9): la cola de las identidades retiradas, en su orden. Va sin raiz: con
+        // §802 (v9): la cola de las identidades retiradas, en su orden. Va sin raiz: con
         // clave, el cuerpo entero es un sellado autenticado; en claro no la ata nada (ver la
         // doc del modulo).
         out.extend_from_slice(&(self.retiradas.len() as u64).to_le_bytes());
@@ -359,7 +359,7 @@ impl SovereignLayer {
         // Una copia v3 —anterior a la retirada del arbol de
         // nullificadores— sigue siendo importable: sus nullificadores se
         // verifican contra la raiz que declara y se descartan despues.
-        // ⚠️ §N: se ESCRIBE v9; se LEEN v3..v9. El reparto no se enumera aqui:
+        // ⚠️ §802: se ESCRIBE v9; se LEEN v3..v9. El reparto no se enumera aqui:
         // cada magico fija su quintupla (legacy_v3, rec_len, salted, con_cons, con_retir)
         // justo debajo, y esa es la unica lista que manda.
         let (legacy_v3, rec_len, salted, con_cons, con_retir) = {
@@ -379,7 +379,7 @@ impl SovereignLayer {
                 // v8 (RFC-0006 E1): como v7, mas el arbol de consumos.
                 (false, 112usize, true, true, false)
             } else if magic == MAGIC_V9 {
-                // v9 (§N): como v8, mas la cola de las identidades retiradas.
+                // v9 (§802): como v8, mas la cola de las identidades retiradas.
                 (false, 112usize, true, true, true)
             } else {
                 return Err(malformed(
@@ -549,7 +549,7 @@ impl SovereignLayer {
             }
         }
         layer.log = TransitionLog::from_entries(entradas);
-        // §N (v9): la cola de las identidades retiradas. Sin reservar con su cuenta: una
+        // §802 (v9): la cola de las identidades retiradas. Sin reservar con su cuenta: una
         // cuenta falsa no reserva memoria, se queda sin bytes.
         let mut retiradas: Vec<Digest> = Vec::new();
         if con_retir {
@@ -588,7 +588,7 @@ impl SovereignLayer {
         // abriria. Mismo productor que `load`: las dos no pueden divergir. El TOPE
         // sigue viniendo del defecto -es politica y no viaja-, y va declarado.
         layer.custodian_uses = layer.log.usos_custodiados();
-        // §N: una retirada por cada recuperacion del registro VERIFICADO -no de la cabecera,
+        // §802: una retirada por cada recuperacion del registro VERIFICADO -no de la cabecera,
         // que no se cruza-, y el indice de identidades. Una v3..v8 trae la lista vacia.
         let n_rec = layer
             .log
@@ -889,7 +889,7 @@ mod tests {
         // raiz de consumos, RFC-0006 E1, §413: este test cayo en el canon
         // antes de moverla). Un cambio de formato hay que contrastarlo con
         // todo test que codifique desplazamientos, no solo con los que
-        // nombran lo cambiado. ⚠️ §N: la v9 añade una cola DETRAS del
+        // nombran lo cambiado. ⚠️ §802: la v9 añade una cola DETRAS del
         // registro y la cabecera no se mueve: la constante sigue valiendo.
         const CABECERA: usize = 8 + 32 * 5 + 8 * 8 + 8 * 4; // 264
         let mut bytes = std::fs::read(&file).expect("leer");
@@ -917,7 +917,7 @@ mod tests {
     /// `state_root` y lo caza la puerta de cuentas; manipular el SUMINISTRO
     /// no mueve ninguna raiz, y hasta el §379 se importaba en silencio.
     ///
-    /// El formato v8 -y la v9, §N- NO transporta pendientes, asi que aqui la invariante se
+    /// El formato v8 -y la v9, §802- NO transporta pendientes, asi que aqui la invariante se
     /// reduce a sum(saldos) == suministro; es cierto porque el §359 hizo
     /// que `export_snapshot` rehuse con pagos en vuelo.
     #[test]
@@ -934,7 +934,7 @@ mod tests {
         // cuerpo): dos productores del mismo numero.
         //
         // El test vecino declara que una constante asi ya se quedo rancia DOS
-        // veces. Por eso esta se AUTOVERIFICA antes de usarse. ⚠️ §N: la v9 no
+        // veces. Por eso esta se AUTOVERIFICA antes de usarse. ⚠️ §802: la v9 no
         // la mueve; su cola va detras del registro.
         const OFF: usize = 1 + 8 + 32 * 5 + 8 * 3;
         let mut bytes = std::fs::read(&file).expect("leer");
@@ -1124,7 +1124,7 @@ mod tests {
             .expect("transferencia en dos fases");
         layer.export_snapshot(&file).expect("exportar");
 
-        // El registro esta al final del fichero. ⚠️ §N: desde la v9 le sigue
+        // El registro esta al final del fichero. ⚠️ §802: desde la v9 le sigue
         // la cola de las identidades retiradas, 8 B sin ninguna, como aqui: el
         // byte `len - 20` sigue cayendo en la ultima entrada del registro.
         let mut bytes = std::fs::read(&file).expect("leer");
@@ -1426,7 +1426,7 @@ mod tests {
     }
 
     // -----------------------------------------------------------------
-    // §N: la instantanea v9, con las identidades retiradas
+    // §802: la instantanea v9, con las identidades retiradas
     // -----------------------------------------------------------------
 
     /// Una capa con Alice recuperada de X hacia Y, exportada en claro; devuelve (X, Y).
@@ -1461,7 +1461,7 @@ mod tests {
         )
     }
 
-    /// **§N: la instantanea v9 lleva las retiradas.** Exportar tras X->Y escribe el magico de la
+    /// **§802: la instantanea v9 lleva las retiradas.** Exportar tras X->Y escribe el magico de la
     /// v9, e importarla deja la invariante en pie: ni X ni Y abren otra cuenta en la capa
     /// restaurada.
     #[test]
@@ -1481,7 +1481,7 @@ mod tests {
         let _ = std::fs::remove_file(&file);
     }
 
-    /// **§N: una v8 con recuperaciones no importa, y sin ellas si.** La v8 no trae las
+    /// **§802: una v8 con recuperaciones no importa, y sin ellas si.** La v8 no trae las
     /// retiradas: con una entrada Recovery en su registro, importarla vacia devolveria la
     /// identidad retirada; sin ninguna, no hay nada que perder, e importa con el indice rehecho
     /// de los registros.
@@ -1513,7 +1513,7 @@ mod tests {
         let _ = std::fs::remove_file(&file);
     }
 
-    /// **§N: una v9 con una retirada de menos no importa.** La cola dice cero sobre un registro
+    /// **§802: una v9 con una retirada de menos no importa.** La cola dice cero sobre un registro
     /// con una Recovery: la cuenta se cruza con el registro verificado, no con la cabecera.
     #[test]
     fn una_v9_con_una_retirada_de_menos_no_importa() {

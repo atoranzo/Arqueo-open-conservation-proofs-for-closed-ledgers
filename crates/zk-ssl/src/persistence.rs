@@ -645,7 +645,7 @@ impl SovereignLayer {
             }
             .into());
         }
-        // §N: las identidades retiradas, una por recuperacion del registro (al final del fichero).
+        // §802: las identidades retiradas, una por recuperacion del registro (al final del fichero).
         self.cargar_retiradas(&db, n_recovery)?;
 
         // --- CUOTA DE CUSTODIOS ---
@@ -858,7 +858,7 @@ impl SovereignLayer {
             key.extend_from_slice(&pos.to_le_bytes());
             batch.insert(key, self.seal(digest_to_bytes(c).to_vec())?);
         }
-        // §N: las identidades retiradas y su raiz, en el MISMO lote (al final del fichero).
+        // §802: las identidades retiradas y su raiz, en el MISMO lote (al final del fichero).
         self.retiradas_al_lote(&mut batch)?;
 
         // --- Cuentas congeladas ---
@@ -1057,7 +1057,7 @@ impl SovereignLayer {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// §N: LAS IDENTIDADES RETIRADAS, EN REPOSO. Va al final del fichero, como el §702,
+// §802: LAS IDENTIDADES RETIRADAS, EN REPOSO. Va al final del fichero, como el §702,
 // para que las citas `persistence.rs:linea` de los documentos no se muevan.
 //
 // `retir:{k u64 LE}` = la identidad que retiro la recuperacion de ordinal k, y
@@ -1084,14 +1084,14 @@ impl SovereignLayer {
     /// -`n_recovery` lo contaron los contadores del §393- y reindexa.
     ///
     /// - Sin `root:retir`, con ninguna recuperacion y ninguna `retir:`: un libro anterior
-    ///   al §N, que no tiene ninguna retirada. Abre, y su primer `commit` escribe la raiz.
+    ///   al §802, que no tiene ninguna retirada. Abre, y su primer `commit` escribe la raiz.
     /// - Sin `root:retir` en cualquier otro caso: no abre. Un libro con recuperaciones y
     ///   sin retiradas se ve igual que uno al que le han borrado las dos claves en reposo,
     ///   y abrirlo vacio devolveria a la vida las identidades retiradas.
     /// - Con `root:retir`: los ordinales exactamente `0..len`, `len == n_recovery` y la
     ///   cadena que cuadra con la raiz. Si no, no abre.
     ///
-    /// No rechaza dos cuentas con la misma identidad que entraran antes del §N: el indice
+    /// No rechaza dos cuentas con la misma identidad que entraran antes del §802: el indice
     /// las colapsa.
     fn cargar_retiradas(&mut self, db: &sled::Db, n_recovery: u64) -> Result<(), LayerError> {
         const WHAT: &str = "identidades retiradas";
@@ -1137,7 +1137,7 @@ impl SovereignLayer {
     }
 }
 
-/// §N: `cargar_retiradas`, por dentro.
+/// §802: `cargar_retiradas`, por dentro.
 #[cfg(test)]
 mod tests_retiradas {
     use super::*;

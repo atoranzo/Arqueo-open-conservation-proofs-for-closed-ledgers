@@ -166,7 +166,7 @@ decidido, y dónde):
   entero en `SplmtryData`, no en un campo de 140 caracteres. El cuerpo de este documento no se toca.
 · B18.2 (el reclamo de migración) → ES UNA ROTACIÓN, ESTUDIADA, SIN DECIDIR (§791): su ⚠️ está en
   «La errata del salt», arriba, y su análisis en `doc/ROTACION_DE_CUENTAS.md`. El cuerpo no se toca.
-· ⚠️ §N: B18.2 y B18.4 reconstruyen desde H*, y desde el §N el libro guarda un estado que NO va bajo
+· ⚠️ §802: B18.2 y B18.4 reconstruyen desde H*, y desde el §802 el libro guarda un estado que NO va bajo
   la cabeza: las identidades que retiraron las recuperaciones (`retir:` y `root:retir`; `SECURITY.md`
   §3.13). Una reconstrucción sin ellas dejaría abrir otra cuenta con una identidad retirada y cobrar
   ahí lo que esté en vuelo hacia ella. El sucesor tiene que llevarlas: la instantánea v9 las lleva; los

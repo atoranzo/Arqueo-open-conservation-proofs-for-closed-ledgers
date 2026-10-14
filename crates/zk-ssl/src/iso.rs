@@ -198,7 +198,7 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         LayerError::DuplicateAccountInBatch { .. } => ("AM05", err.to_string()),
         LayerError::DuplicatePendingInBatch { .. } => ("AM05", err.to_string()),
         // RFC-0006 (E1, §413): un consumo repetido o en colision es, para el
-        // mensaje, la misma duplicacion que las dos de arriba; §N: y la identidad con cuenta o retirada.
+        // mensaje, la misma duplicacion que las dos de arriba; §802: y la identidad con cuenta o retirada.
         LayerError::ConsumoRepetido { .. } => ("AM05", err.to_string()),
         LayerError::ConsumoColision { .. } | LayerError::IdentityUnavailable => ("AM05", err.to_string()),
         LayerError::AccountLimitReached { .. } => ("FF10", err.to_string()),

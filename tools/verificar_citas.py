@@ -80,10 +80,22 @@ v5 (§792): ninguna cita por LÍNEA al `BACKLOG.md` en un documento vivo.
   encabezado—. Y solo `.md` y `.rs`: `doc/ecst/borrador/*.json` tiene
   decenas, generadas.
 
+v6 (§805): el número que falta. Un sello escribe «§» y la letra N como marcador del número
+que aún no tiene, y lo numera al sellar; el §802 se publicó con 91 líneas sin numerar, en
+dieciocho ficheros —SECURITY.md, el código de la capa, la spec, el BACKLOG—, y ninguna regla
+lo vio: la v4 solo mira «§» con cifras.
+  R1  Todo marcador sin número en un `.md`, `.rs`, `.py`, `.sh`, `.js` o `.toml` del árbol es
+      ROJO, salvo los que hablan del marcador mismo, declarados uno a uno con su razón
+      (MARCADOR_LEGITIMO): una convención que se describe, no un número que falta. Uno
+      declarado que ya no se ve es ROJO.
+      Este fichero no se mira: es el que define el marcador.
+  R2  PRUEBA DE VIDA: el autotest siembra un marcador sin número, uno numerado y una palabra que
+      empieza por N tras el «§», y exige el veredicto de cada uno.
+
 Uso: python3 tools/verificar_citas.py [raíz] — sale con 1 si hay fantasmas,
 secciones muertas, encabezados muertos, citas del registro muertas, citas
-por línea al `BACKLOG.md` en un documento vivo, una marca rota o una prueba
-de vida que no ve.
+por línea al `BACKLOG.md` en un documento vivo, un marcador sin número (v6),
+una marca rota o una prueba de vida que no ve.
 """
 import re
 import sys
@@ -362,6 +374,66 @@ if not excluidas_vistas:
     reg_rojo.append("PRUEBA DE VIDA  v5: ninguna cita por línea en los ficheros excluidos: "
                     "el patrón está ciego")
 
+# ⚠️ v6 (§805): el marcador sin número. El patrón se compone para que este fichero no lo lleve.
+SIN_NUMERO = re.compile("\u00a7" + r"N\b")
+EXTENSIONES_V6 = ("md", "rs", "py", "sh", "js", "toml")
+# (fichero, un trozo de la línea que lo lleva): razón. Hablan del marcador; no les falta un número.
+MARCADOR_LEGITIMO = {
+    ("AUDITORIA.md", "cita de la forma «*fichero* `.md` \u00a7N» desde `.rs`"):
+        "un asiento describe la forma de una cita, la v2 de esta herramienta",
+    ("AUDITORIA.md", "por su encabezado `## \u00a7N`"):
+        "un asiento describe la forma del encabezado de un asiento",
+    ("AUDITORIA.md", "las cadenas «desde el \u00a7N» de"):
+        "un asiento describe la forma de una cadena de citas",
+    ("doc/blueprint-v2.md", "(la sesión, o el \u00a7N del registro)"):
+        "la convención del documento: de dónde sale una medida",
+    ("doc/ecst/ECST.md", "(`AUDITORIA.md` \u00a7N, o el README"):
+        "la convención del informe, fechado: de dónde sale una medida",
+    ("doc/ecst/ECST_EN.md", "(`AUDITORIA.md` \u00a7N, or"):
+        "la convención del informe, en inglés",
+    ("doc/ecst/borrador/flujo-verificacion.js", "entries are \"\u00a7N\""):
+        "el guion que generó el informe describe los asientos",
+    ("doc/ecst/borrador/flujo-verificacion.js", "\"AUDITORIA.md \u00a7N\", test names"):
+        "el guion que generó el informe describe una cita",
+}
+
+
+def sin_numero(texto):
+    """Las líneas (1-based) con un marcador sin número."""
+    return [(i, linea) for i, linea in enumerate(texto.split("\n"), 1) if SIN_NUMERO.search(linea)]
+
+
+def autotest_v6():
+    mal = []
+    for sembrado, esperado in (("\u00a7" + "N: hasta aquí decía", 1),
+                               ("el \u00a7802 abre la 119", 0),
+                               ("\u00a7" + "Nota aparte", 0), ("desde el \u00a7" + "N.", 1)):
+        if len(sin_numero(sembrado)) != esperado:
+            mal.append(f"v6: «{sembrado}» da {len(sin_numero(sembrado))}, se esperaba {esperado}")
+    return mal
+
+
+for v in autotest_v6():
+    reg_rojo.append(f"PRUEBA DE VIDA  {v}")
+legitimos_vistos, sin_numero_vivos = Counter(), 0
+for ext in EXTENSIONES_V6:
+    for p in ficheros(ext):
+        rel = p.relative_to(RAIZ).as_posix()
+        if rel == "tools/verificar_citas.py":
+            continue
+        for i, linea in sin_numero(p.read_text(encoding="utf-8", errors="replace")):
+            claves = [k for k in MARCADOR_LEGITIMO if k[0] == rel and k[1] in linea]
+            if claves:
+                legitimos_vistos[claves[0]] += 1
+            else:
+                reg_rojo.append(f"MARCADOR SIN NUMERO  {rel}:{i}: "
+                                "el sello que lo escribió no lo numeró")
+                sin_numero_vivos += 1
+for clave, razon in MARCADOR_LEGITIMO.items():
+    if clave not in legitimos_vistos:
+        reg_rojo.append(f"MARCADOR DECLARADO SIN USO  {clave[0]} ({razon}): "
+                        "se quita de MARCADOR_LEGITIMO")
+
 for r in reg_rojo:
     print(r)
 fallos += len(reg_rojo)
@@ -372,4 +444,6 @@ print(f"registro (v4): {len(secciones)} encabezados · {reg_cuenta['citas']} cit
       f"{reg_cuenta['bloques']} bloques de numeración vieja")
 print(f"línea al BACKLOG (v5): {en_vivos} en documentos vivos · "
       + ", ".join(f"{k} {v}" for k, v in sorted(excluidas_vistas.items())) + " (excluidos)")
+print(f"marcador sin número (v6): {sin_numero_vivos} en el árbol · "
+      f"{sum(legitimos_vistos.values())} que hablan del marcador, declarados")
 sys.exit(1 if fallos else 0)

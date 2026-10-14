@@ -81,7 +81,7 @@ impl SovereignLayer {
         if new_public_id == account.public_id {
             return Err(LayerError::RecoveryToSameIdentity);
         }
-        // §N: ni hacia una identidad con cuenta ni hacia una retirada -tampoco deshacer
+        // §802: ni hacia una identidad con cuenta ni hacia una retirada -tampoco deshacer
         // X->Y->X-. Tras la puerta de arriba, para que siga dando su variante, y antes de
         // verificar: no gasta cupo, contador ni nonce.
         self.identidad_libre(&new_public_id)?;
@@ -176,7 +176,7 @@ impl SovereignLayer {
         self.accounts = tentativo;
         self.records.insert(account_index, updated);
         self.recovery_count = count_new;
-        // §N: la identidad vieja queda retirada -en el mismo lote que la recuperacion, el
+        // §802: la identidad vieja queda retirada -en el mismo lote que la recuperacion, el
         // `commit` de abajo- y la nueva entra en el indice.
         self.retirar(account.public_id);
         self.identidades.insert(digest_to_bytes(&new_public_id));
@@ -473,7 +473,7 @@ mod tests_delegada {
     }
 
     // -----------------------------------------------------------------
-    // §N: una identidad, una cuenta. Al final del modulo, para no mover sus citas.
+    // §802: una identidad, una cuenta. Al final del modulo, para no mover sus citas.
     // -----------------------------------------------------------------
 
     /// La recuperacion delegada entera de `idx` hacia `nueva`, con materiales VALIDOS: la subida
@@ -500,7 +500,7 @@ mod tests_delegada {
         )
     }
 
-    /// **§N: recuperar hacia una identidad que ya tiene cuenta se rechaza ANTES de verificar**,
+    /// **§802: recuperar hacia una identidad que ya tiene cuenta se rechaza ANTES de verificar**,
     /// con una subida y una pareja de custodios VALIDAS: aplicarla dejaba dos cuentas con la
     /// identidad de Bob. No gasta contador, cupo ni nonce.
     #[test]
@@ -517,7 +517,7 @@ mod tests_delegada {
         assert_eq!(intactos(&layer, idx), antes, "el rechazo gasto o movio algo");
     }
 
-    /// **§N: recuperar hacia una identidad RETIRADA se rechaza**: tras X->Y, ni otra cuenta recibe
+    /// **§802: recuperar hacia una identidad RETIRADA se rechaza**: tras X->Y, ni otra cuenta recibe
     /// X ni Alice deshace X->Y->X, aunque los materiales sean validos.
     #[test]
     fn recuperar_hacia_una_identidad_retirada_se_rechaza() {

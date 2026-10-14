@@ -125,7 +125,7 @@ impl SovereignLayer {
     /// distintos**, no una clave.
     pub fn open_account(&mut self, spend_key: BaseElement) -> AccountIndex {
         self.open_account_checked(spend_key)
-            .expect("abrir la cuenta: el tope, la identidad no disponible (§N) o el disco")
+            .expect("abrir la cuenta: el tope, la identidad no disponible (§802) o el disco")
     }
 
     /// **Abre una cuenta con una clave de CUATRO elementos.**
@@ -163,10 +163,10 @@ impl SovereignLayer {
     /// del árbol: §132) y es trabajo mayor, no inmediato.
     pub fn open_account_wide(&mut self, spend_key: Digest) -> AccountIndex {
         self.open_account_wide_checked(spend_key)
-            .expect("abrir la cuenta: el tope, la identidad no disponible (§N) o el disco")
+            .expect("abrir la cuenta: el tope, la identidad no disponible (§802) o el disco")
     }
 
-    /// Igual que [`Self::open_account_wide`], con el error: el tope, la identidad no disponible (§N) o el disco.
+    /// Igual que [`Self::open_account_wide`], con el error: el tope, la identidad no disponible (§802) o el disco.
     pub fn open_account_wide_checked(
         &mut self,
         spend_key: Digest,
@@ -178,7 +178,7 @@ impl SovereignLayer {
         )
     }
 
-    /// Igual que `open_account`, pero devuelve el error: el tope, la identidad no disponible (§N) o el disco.
+    /// Igual que `open_account`, pero devuelve el error: el tope, la identidad no disponible (§802) o el disco.
     pub fn open_account_checked(
         &mut self,
         spend_key: BaseElement,
@@ -213,7 +213,7 @@ impl SovereignLayer {
                 limit: self.max_accounts,
             });
         }
-        // §N: tras el tope -con el libro lleno sigue ganando el tope- y antes de mutar nada.
+        // §802: tras el tope -con el libro lleno sigue ganando el tope- y antes de mutar nada.
         self.identidad_libre(&public_id)?;
         // Colocación del MUNDO NUEVO (F3): la MISMA política que la
         // migración (paso 1b) — `public_id[0] mod capacidad` con sondeo
@@ -442,9 +442,9 @@ mod tests_camino_cuentas {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// §N: UNA IDENTIDAD, UNA CUENTA, EN LA VIDA DEL LIBRO.
+// §802: UNA IDENTIDAD, UNA CUENTA, EN LA VIDA DEL LIBRO.
 //
-// Hasta el §N `open_with_id` no miraba si la identidad era nueva: solo sondeaba la
+// Hasta el §802 `open_with_id` no miraba si la identidad era nueva: solo sondeaba la
 // posicion `public_id[0] mod capacidad`. Un tercero sin la clave abria una segunda
 // cuenta con la identidad de otro, y tras una recuperacion quien conservara la clave
 // VIEJA abria otra cuenta con la identidad retirada y cobraba ahi un pendiente en
@@ -456,7 +456,7 @@ mod tests_camino_cuentas {
 // ─────────────────────────────────────────────────────────────────────────────
 
 impl SovereignLayer {
-    /// **El unico juez de la invariante del §N.** `IdentityUnavailable` si la identidad
+    /// **El unico juez de la invariante del §802.** `IdentityUnavailable` si la identidad
     /// ya tiene cuenta o una recuperacion la retiro. Compara el `Digest` ENTERO, no su
     /// primer elemento ni la posicion de sondeo: la recuperacion cambia la identidad sin
     /// mover la cuenta, que se queda en la cadena de sondeo de la vieja.
@@ -472,7 +472,7 @@ impl SovereignLayer {
 
     /// **El unico productor del indice al cargar y al importar.** Lo vacia y lo rellena
     /// con las identidades de todos los registros y con todas las retiradas. Un libro
-    /// escrito antes del §N puede traer dos cuentas con la misma identidad: aqui
+    /// escrito antes del §802 puede traer dos cuentas con la misma identidad: aqui
     /// colapsan, y no se rechazan.
     pub(crate) fn reindexar_identidades(&mut self) {
         self.identidades.clear();
@@ -507,7 +507,7 @@ impl SovereignLayer {
     }
 }
 
-/// §N: un eslabon de la cadena de retiradas. La cadena es `c_0 = [0; 4]`,
+/// §802: un eslabon de la cadena de retiradas. La cadena es `c_0 = [0; 4]`,
 /// `c_{k+1} = native_merge(c_k, id_k)`: ata el orden y el numero, y cuesta un hash por
 /// recuperacion. No es un arbol disperso: ese trata el digest cero como hoja libre, y
 /// el cable acepta abrir con `public_id = [0; 4]`.
@@ -515,13 +515,13 @@ pub(crate) fn eslabon_de_retirada(cabeza: Digest, id: Digest) -> Digest {
     stark_experiment::merkle::native_merge(cabeza, id)
 }
 
-/// §N: la cabeza de la cadena de retiradas, desde `[0; 4]`. El paso incremental de
+/// §802: la cabeza de la cadena de retiradas, desde `[0; 4]`. El paso incremental de
 /// `retirar` es un eslabon de este mismo pliegue: una sola definicion.
 pub(crate) fn cabeza_de_retiradas(ids: &[Digest]) -> Digest {
     ids.iter().fold([BaseElement::ZERO; 4], |c, id| eslabon_de_retirada(c, *id))
 }
 
-/// §N: una identidad, una cuenta en la vida del libro (SECURITY.md §3.13). Los dos primeros
+/// §802: una identidad, una cuenta en la vida del libro (SECURITY.md §3.13). Los dos primeros
 /// casos medidos en privado antes del arreglo -un tercero sin la clave abria otra cuenta con la
 /// identidad de Bob, y tras una recuperacion la clave vieja abria otra cuenta con la identidad
 /// retirada y cobraba ahi un pendiente en vuelo- quedan aqui invertidos: el escenario se monta
@@ -672,7 +672,7 @@ mod tests_una_identidad {
 
     /// La D-5 de `doc/ROTACION_DE_CUENTAS.md`, medida y no deducida: tras recuperar X->Y, la clave
     /// nueva genera la prueba de cobro del pendiente hacia X, y aplicarla da `StaleState`. Ni el
-    /// saldo de Alice ni el pendiente se mueven. Es una medida fijada, no un falsador del §N: la
+    /// saldo de Alice ni el pendiente se mueven. Es una medida fijada, no un falsador del §802: la
     /// tumbaria una rotacion que redirigiera los pendientes, que es lo que la D-5 discute.
     #[test]
     fn la_clave_nueva_no_cobra_el_pendiente_hacia_la_vieja() {

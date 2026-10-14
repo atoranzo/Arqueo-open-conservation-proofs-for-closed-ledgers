@@ -4220,7 +4220,7 @@ fn dispatch_dev(
         }
 
         // Comodidad de sandbox: abre desde una clave DETERMINISTA de la
-        // suite. En producción se abre con zkssl_openAccount. §N: por la via con error (`tests_una_identidad`).
+        // suite. En producción se abre con zkssl_openAccount. §802: por la via con error (`tests_una_identidad`).
         "dev_openSeeded" => {
             #[derive(Deserialize)]
             struct P { seed: Q }
@@ -7214,10 +7214,10 @@ mod tests_camino_congelados {
     }
 }
 
-/// §N: una identidad, una cuenta en la vida del libro (`SECURITY.md` §3.13), por el cable. Hasta
-/// el §N `zkssl_openAccount` abria una segunda cuenta con la `publicId` de otro, con la vista y la
+/// §802: una identidad, una cuenta en la vida del libro (`SECURITY.md` §3.13), por el cable. Hasta
+/// el §802 `zkssl_openAccount` abria una segunda cuenta con la `publicId` de otro, con la vista y la
 /// sal de quien la pedia, y `dev_openSeeded` con una semilla repetida abria otra cuenta con la
-/// misma identidad, sin panico. Con la puerta del §N, el `expect` de `open_account_wide` haria del
+/// misma identidad, sin panico. Con la puerta del §802, el `expect` de `open_account_wide` haria del
 /// rechazo un panico con el candado tomado, y PARADA -lo que ya hacia `AccountLimitReached` con el
 /// libro lleno-: por eso `dev_openSeeded` va por `open_account_wide_checked`, y el rechazo sale
 /// como `-32000` con su causa.
@@ -7241,7 +7241,7 @@ mod tests_una_identidad {
         assert_eq!(d["seq"], json!(Q(seq as u64)), "juzgado en el estado de antes: {d}");
     }
 
-    /// El primer caso del §N, por el cable: con la `publicId` de una cuenta que existe y una vista
+    /// El primer caso del §802, por el cable: con la `publicId` de una cuenta que existe y una vista
     /// y una sal AJENAS, abrir es `-32000` con su causa; ni la raiz, ni el registro, ni las cuentas
     /// se mueven, y el nodo no para.
     #[test]

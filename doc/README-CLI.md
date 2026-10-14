@@ -128,10 +128,10 @@ envío, que son los 66.164 B del envío del §218, de antes de ocultar.
 
 - Claves del sandbox **deterministas** (derivadas de `--key-seed`): solo
   para pruebas. Con `--ledger`, reutiliza la misma semilla con la que se
-  creó, o `prove_send` fallará con `NotTheAccountHolder`. ⚠️ §N: pero
+  creó, o `prove_send` fallará con `NotTheAccountHolder`. ⚠️ §802: pero
   si la corrida tiene que abrir cuentas, repetir la `--key-seed` sobre un
   libro con `--ledger` vuelve a abrir las mismas identidades, y desde el
-  §N eso se rechaza (`IdentityUnavailable`): una identidad tiene a lo sumo
+  §802 eso se rechaza (`IdentityUnavailable`): una identidad tiene a lo sumo
   una cuenta en la vida del libro.
 - Los parámetros (`--limit`, `--max-supply`, `--max-accounts`) de un
   ledger persistido deben coincidir con los de su creación

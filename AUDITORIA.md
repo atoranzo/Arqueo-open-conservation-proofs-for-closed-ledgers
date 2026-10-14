@@ -53730,3 +53730,50 @@ de 55 a 57, todas con `--locked`.
 **Lo que NO hace.** No mide este árbol contra el §699 —es otra medida, con su propia expectativa—, ni lo
 que el §699 tampoco midió: el cobro y la quema a través de los cortes, el umbral del §684, los commits
 intermedios uno a uno y lo anterior al §622. No enlaza el banco desde la especificación.
+
+## §805 — el §802 se publicó con 91 líneas que llevaban el marcador del número sin numerar: se numeran, y `verificar_citas` gana la v6, que da ROJO a todo marcador sin número; y dos cabeceras de RFC dejan de nombrar un modelo
+
+El commit que lleva este asiento, sobre el §804. Toca los dieciocho ficheros donde el §802 dejó el
+marcador sin numerar —`SECURITY.md`, el código de la capa (`accounts.rs`, `iso.rs`, `lib.rs`,
+`migration.rs`, `persistence.rs`, `recovery.rs`, `snapshot.rs` y `tests.rs`), el nodo, el sandbox de la
+CLI, `tools/banco_edad.sh`, `spec/RPC.md`, los RFC-0006 y 0007, `doc/CONFIANZA_RESIDUAL.md`,
+`doc/README-CLI.md` y el `BACKLOG.md`—; `tools/verificar_citas.py`; las cabeceras del RFC-0001 y del
+RFC-0018; y este asiento. Ni tests, ni vectores, ni comportamiento: lo único que cambia en el código son
+comentarios y el texto de dos `expect`. Del autor es nada nuevo: corrige lo publicado. Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§800 a
+§829). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon
+entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Un sello escribe «§» y la letra N donde va su propio número, que aún no tiene, y lo
+numera al sellar. El §802 se redactó en privado y se portó a la cadena con un `git apply --3way`, que
+deja en el índice lo que aplica limpio; al numerar, la sesión miró solo los ficheros sin preparar, y el
+marcador quedó sin número en 91 líneas de dieciocho ficheros, entre ellos `SECURITY.md` §3.13, que es
+el aviso del fallo. El canon salió VERDE y el autor lo subió en `4f808cc`: ninguna regla lo veía,
+porque la v4 de `verificar_citas` solo mira «§» con cifras. La sesión lo vio al portar la tarea
+siguiente, cuando una sustitución en `SECURITY.md` tocó más líneas de las que la tarea había escrito.
+
+**Lo que hace.**
+
+1. **Los numera.** Las 91 líneas son todas del §802 —se comprobó comparando el árbol de `3d3e0da` con
+   el de `4f808cc`: antes del §802 solo había nueve, que hablan del marcador mismo—, y llevan su número.
+   Sin marca en cada sitio: el texto es el mismo, con el número que le faltaba.
+2. **La v6 de `verificar_citas`.** Todo marcador sin número en un `.md`, `.rs`, `.py`, `.sh`, `.js` o
+   `.toml` del árbol es ROJO, salvo los ocho que hablan del marcador —la forma de una cita o de un
+   encabezado en tres asientos, la convención de `doc/blueprint-v2.md` y del informe ECST en sus dos
+   lenguas, y dos líneas del guion que generó ese informe—, declarados uno a uno con su razón; uno
+   declarado que ya no se ve también es ROJO. El fichero de la herramienta no se mira: es el que define
+   el marcador, y compone su patrón para no llevarlo. Su prueba de vida siembra un marcador sin número,
+   uno numerado y una palabra que empieza por N tras el «§», y exige el veredicto de cada uno.
+3. **Dos cabeceras.** La línea de asistencia del RFC-0001 y la de la D-G del RFC-0018 nombraban un
+   modelo con su identificador; pasan a decir «Claude, en una sesión de Claude Code en la nube», como
+   las demás. Los asientos que lo nombran no se reescriben.
+
+**Medido.** Sobre este árbol, la v6 da 0 marcadores sin número y los ocho declarados; con uno sembrado
+en `README.md` da ROJO con su línea, y con una de las razones cambiada da ROJO por declarado sin uso.
+Salen con 0 las once herramientas del bucle. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno.
+
+**Lo que NO hace.** No cambia el procedimiento de numerar: la puerta es la que lo vigila. No reescribe
+los asientos que nombran un modelo.

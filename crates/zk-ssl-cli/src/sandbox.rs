@@ -367,9 +367,9 @@ fn fail(tr: &mut dyn Tracer, phase: Phase, e: LayerError) -> anyhow::Error {
     anyhow::anyhow!("{phase}: {e:?}")
 }
 
-/// §N: una identidad, una cuenta en la vida del libro (`SECURITY.md` §3.13). Hasta el §N, repetir
+/// §802: una identidad, una cuenta en la vida del libro (`SECURITY.md` §3.13). Hasta el §802, repetir
 /// la semilla de claves con `--ledger` abria una segunda cuenta con la misma identidad; con la
-/// puerta del §N, el `expect` de `open_account_wide` haria del rechazo un panico. Por eso
+/// puerta del §802, el `expect` de `open_account_wide` haria del rechazo un panico. Por eso
 /// `open_funded` va por `open_account_wide_checked`: es un error del montaje, con su causa.
 #[cfg(test)]
 mod tests_una_identidad {

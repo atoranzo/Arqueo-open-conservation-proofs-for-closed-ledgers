@@ -15,7 +15,7 @@ grupo de prioridad sin cambiar de numero.
 **Estado**: 44 abiertas, 77 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
-cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, y el §N, que abre la
+cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, y el §802, que abre la
 119.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
@@ -1276,12 +1276,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   62 llevan la v1 (58 con m = 64, y las cuatro de m = 32 del §706) y 25 el meta vacío (las de los
   recibos de los lotes de rechazo y los dos negativos del §706); las 34 de `0.3/`, el meta vacío.
 
-- [ ] **119. Abrir una cuenta prueba que se tiene la clave (§N).** Desde el §N abrir rechaza una
+- [ ] **119. Abrir una cuenta prueba que se tiene la clave (§802).** Desde el §802 abrir rechaza una
   identidad que ya tiene cuenta o que una recuperación retiró (`SECURITY.md` §3.13), y eso agrava la
   ocupación anticipada: quien conozca la identidad X antes de que su dueño abra la cuenta la ocupa con
   su vista y su sal, y el dueño tiene que cambiar de clave; y quien conozca la identidad nueva de una
   recuperación antes de que se aplique la bloquea (hoy sin consecuencias: la recuperación no está en
-  el cable). El autor lo dejó como residuo declarado (D-2 del §N) y lo lleva al corte `zkssl/0.5`.
+  el cable). El autor lo dejó como residuo declarado (D-2 del §802) y lo lleva al corte `zkssl/0.5`.
   **Lo que pide**: que `zkssl_openAccount` lleve una prueba de que quien abre conoce la clave de la
   identidad —un circuito nuevo y un parámetro nuevo, con la versión que sube en el corte—, que es
   también la autorización que la 8 echa en falta. **Qué la cierra**: abrir sin esa prueba se rechaza,
@@ -3899,13 +3899,13 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   es `log.len()`. Deducido de la lectura, sin ejecutar: una cuenta recuperada no pasaría la
   credencial de vista del nodo ni re-deriva su sal, que es lo que el B18.2 necesita; y un pendiente
   en vuelo hacia la identidad vieja no lo cobra la clave nueva. **Sigue abierta.**
-  ⚠️ **§N: el pendiente en vuelo, medido; el robo, cerrado.** Lo que el §791 dedujo, medido: tras
+  ⚠️ **§802: el pendiente en vuelo, medido; el robo, cerrado.** Lo que el §791 dedujo, medido: tras
   recuperar X→Y, la clave nueva genera la prueba de cobro de un pendiente hacia X y aplicarla da
   `StaleState`. Y lo que no vio: la clave VIEJA sí lo cobraba, abriendo otra cuenta con la identidad
-  retirada X (medido en privado: cobró 7.000). Desde el §N abrir rechaza una identidad que ya tiene
+  retirada X (medido en privado: cobró 7.000). Desde el §802 abrir rechaza una identidad que ya tiene
   cuenta o que una recuperación retiró (`IdentityUnavailable`; `SECURITY.md` §3.13), y el pendiente
   solo vuelve al emisor por reembolso al caducar, salvo un duplicado que la clave vieja abriera antes
-  del §N (el residuo de `SECURITY.md` §3.13). Para el diseño que se elija: **toda rotación que
+  del §802 (el residuo de `SECURITY.md` §3.13). Para el diseño que se elija: **toda rotación que
   retire una identidad tiene que añadirla al mismo conjunto de retiradas, en el mismo lote**, o la
   identidad vieja vuelve a abrir; y la D-5 de `doc/ROTACION_DE_CUENTAS.md` se estrecha: la identidad
   vieja ya no puede seguir cobrando en una cuenta nueva, solo en la rotada si un diseño lo admite. La

@@ -329,7 +329,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&path);
     }
 
-    /// **§N: la migracion B13/B14 conserva la invariante.** Recoloca cada cuenta por su
+    /// **§802: la migracion B13/B14 conserva la invariante.** Recoloca cada cuenta por su
     /// identidad -la de Alice, recuperada de X hacia Y, sale de la cadena de X- y no toca ni el
     /// indice, que va por identidad, ni las retiradas, que van por ordinal: tras migrar, ni X ni
     /// Y abren otra cuenta.

@@ -3817,7 +3817,7 @@ fn el_montaje_comparte_sus_pruebas_y_nada_mas() {
 }
 
 // -----------------------------------------------------------------
-// §N: las identidades retiradas, en reposo
+// §802: las identidades retiradas, en reposo
 // -----------------------------------------------------------------
 // Al final del fichero, como los del §702: ninguna cita `tests.rs:linea` se mueve.
 
@@ -3856,7 +3856,7 @@ fn es_de_las_retiradas<T>(r: &Result<T, LayerError>) -> bool {
     )
 }
 
-/// **§N: la retirada sobrevive al reinicio, y un rechazo no escribe.** Libro cifrado con X->Y,
+/// **§802: la retirada sobrevive al reinicio, y un rechazo no escribe.** Libro cifrado con X->Y,
 /// cerrado y reabierto: ni X ni Y abren otra cuenta. El `sled` queda pareja a pareja como
 /// estaba tras los dos rechazos -cada sello lleva un nonce aleatorio, asi que cualquier `commit`
 /// cambiaria bytes-, y el libro vuelve a abrir.
@@ -3890,7 +3890,7 @@ fn la_retirada_sobrevive_al_reinicio_y_un_rechazo_no_escribe() {
     let _ = std::fs::remove_dir_all(&path);
 }
 
-/// **§N: una retirada borrada en reposo no abre.** Libro en claro con una recuperacion: sin
+/// **§802: una retirada borrada en reposo no abre.** Libro en claro con una recuperacion: sin
 /// `retir:0` no abre, y tampoco si ademas se reescribe `root:retir` con la cabeza de la lista
 /// vacia, que en claro se puede: la lista tiene una por recuperacion del registro.
 #[test]
@@ -3922,7 +3922,7 @@ fn una_retirada_borrada_en_reposo_no_abre() {
     let _ = std::fs::remove_dir_all(&path);
 }
 
-/// **§N: una retirada sustituida en reposo no abre.** El sellado no lleva AAD: el valor sellado
+/// **§802: una retirada sustituida en reposo no abre.** El sellado no lleva AAD: el valor sellado
 /// de `meta:governance` -32 B, con la misma clave- se pega en `retir:0` sin la frase, y la
 /// cuenta seguiria cuadrando. Lo caza `root:retir`, que es la razon de que exista.
 #[test]
@@ -3950,8 +3950,8 @@ fn una_retirada_sustituida_en_reposo_no_abre() {
     let _ = std::fs::remove_dir_all(&path);
 }
 
-/// **§N: sin `root:retir`, un libro abre si no tuvo recuperaciones y no abre si las tuvo.** (a)
-/// Un libro anterior al §N, sin recuperaciones, no tiene ninguna retirada: abre, y el indice se
+/// **§802: sin `root:retir`, un libro abre si no tuvo recuperaciones y no abre si las tuvo.** (a)
+/// Un libro anterior al §802, sin recuperaciones, no tiene ninguna retirada: abre, y el indice se
 /// rehace de los registros. (b) Con una recuperacion y sin la raiz, no abre aunque `retir:0`
 /// siga: sin raiz no hay contra que mirarla, y una sustituida pasaria. (b') Sin sus dos claves
 /// tampoco: se ve igual que un libro al que se las han borrado. (c) Sin recuperaciones y con una
@@ -4017,7 +4017,7 @@ fn sin_root_retir_abre_si_no_hubo_recuperaciones_y_no_si_las_hubo() {
     let _ = std::fs::remove_dir_all(&c);
 }
 
-/// **§N: la migracion del KDF conserva las retiradas.** Un libro cifrado con una recuperacion,
+/// **§802: la migracion del KDF conserva las retiradas.** Un libro cifrado con una recuperacion,
 /// llevado a la version 1 y abierto -que lo migra-: X sigue sin abrir, y `retir:0` y
 /// `root:retir` abren con la clave de la version 2 y no con la de la 1.
 #[test]
@@ -4060,7 +4060,7 @@ fn la_migracion_del_kdf_conserva_las_retiradas() {
     let _ = std::fs::remove_dir_all(&path);
 }
 
-/// **§N: varias retiradas, varios reinicios, en su orden.** Libro cifrado: Alice X->Y, reabrir;
+/// **§802: varias retiradas, varios reinicios, en su orden.** Libro cifrado: Alice X->Y, reabrir;
 /// Bob B->W, reabrir; Alice Y->Z, reabrir. Tras el ultimo, la lista sale en el orden de las
 /// recuperaciones, la cadena de tres eslabones es la de `root:retir` y ninguna de las cinco
 /// identidades -las tres retiradas y las dos vigentes- abre otra cuenta. Y cada lote escribio solo

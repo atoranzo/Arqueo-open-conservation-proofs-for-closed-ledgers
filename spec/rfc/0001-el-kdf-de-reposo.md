@@ -5,9 +5,8 @@
   este RFC no toca el cable, así que ni `spec/RPC.md`, ni `spec/openrpc.json`, ni `spec/vectors/` se
   mueven; las suites de los crates que toca salieron verdes en el §702, y la decisión no está tomada.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude Opus 5.5 (`claude-opus-5-5`, el modelo de la sesión), en una sesión
-  de Claude Code en la nube (§702): midió, propuso, aplicó y comprobó, y lo commitea la sesión que
-  la lanzó, fuera del paso 4 de `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§702): midió, propuso,
+  aplicó y comprobó, y lo commitea la sesión que la lanzó, fuera del paso 4 de `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-10-07
 - **Versión del protocolo afectada:** ninguna. `zkssl/0.4` no se mueve: nada de esto cruza el cable.
   Cambia el formato EN REPOSO: el keystore del SDK pasa de `zkssl-keystore/1` a `zkssl-keystore/2`,

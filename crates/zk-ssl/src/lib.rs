@@ -350,7 +350,7 @@ pub enum LayerError {
     /// RFC-0006 (E1, §413): la posicion del consumo la ocupa OTRO consumo
     /// (colision de los 63 bits de posicion, 2^-63 por pareja, declarada).
     ConsumoColision { consumo: Digest, ocupante: Digest },
-    /// §N: la identidad ya tiene cuenta, o una recuperacion la retiro. Una
+    /// §802: la identidad ya tiene cuenta, o una recuperacion la retiro. Una
     /// identidad -el `public_id` entero, sus cuatro elementos- abre a lo sumo
     /// una cuenta en la vida del libro, y la que una recuperacion retira no
     /// vuelve a abrir ninguna. Sin campos, a proposito: no dice cual de las
@@ -1060,22 +1060,22 @@ pub struct SovereignLayer {
     /// **No se guarda junto a los datos**: la aporta el operador al
     /// arrancar. Guardarla al lado no protegería nada.
     key: Option<crate::crypto::LedgerKey>,
-    /// §N: las identidades que ya no pueden abrir cuenta, en bytes
+    /// §802: las identidades que ya no pueden abrir cuenta, en bytes
     /// canonicos (`digest_to_bytes`; `BaseElement` no implementa `Hash`): las
     /// que tienen cuenta y las que una recuperacion retiro. Solo crece. Es
     /// DERIVADO -no se persiste-: lo reconstruye `reindexar_identidades`, de
     /// los registros y de `retiradas`, al cargar y al importar.
     identidades: std::collections::HashSet<[u8; 32]>,
-    /// §N: las identidades que una recuperacion retiro, en el orden de las
+    /// §802: las identidades que una recuperacion retiro, en el orden de las
     /// recuperaciones: la posicion es el ordinal de la recuperacion. No se
     /// pueden derivar -la entrada Recovery del registro lleva raices y
     /// contadores, y el registro de la cuenta se sobrescribe-, asi que se
     /// persisten (`retir:{k}`) en el mismo lote que la recuperacion.
     retiradas: Vec<Digest>,
-    /// §N: la cadena sobre `retiradas` (`cabeza_de_retiradas`), cacheada. Va a
+    /// §802: la cadena sobre `retiradas` (`cabeza_de_retiradas`), cacheada. Va a
     /// sled como `root:retir` y `load` la exige.
     retir_cabeza: Digest,
-    /// §N: cuantas de `retiradas` estan ya en disco. Misma disciplina que
+    /// §802: cuantas de `retiradas` estan ya en disco. Misma disciplina que
     /// `log_persisted` y `cons_persisted`.
     retir_persisted: usize,
 }

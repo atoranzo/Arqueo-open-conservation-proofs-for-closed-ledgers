@@ -110,10 +110,10 @@ qnum(){ python3 -c 'import json,sys; print(int(json.loads(sys.argv[1]), 16))' "$
 # posiciones se derivan de la identidad (F3), asi que tampoco son 0 y 1-. Con el censo por
 # delante, cada corrida abre SU pareja. La semilla de claves va aparte para que las identidades
 # no colisionen.
-# ⚠️ §N: y no colisionaban por poco, sino SI. Cada corrida abre `key_of(K, 0)` y `key_of(K, 1)`,
+# ⚠️ §802: y no colisionaban por poco, sino SI. Cada corrida abre `key_of(K, 0)` y `key_of(K, 1)`,
 # que son `wide_key(K)` y `wide_key(K + 1)` (`sandbox.rs`): con `K = 0xA11CE + S`, la corrida de
 # S=7 abria 0xA11D5 y 0xA11D6, y la de S=8 volvia a abrir 0xA11D6 como pagadora, una segunda
-# cuenta con la misma identidad. Desde el §N eso se rechaza, y las semillas van separadas de dos
+# cuenta con la misma identidad. Desde el §802 eso se rechaza, y las semillas van separadas de dos
 # en dos.
 I=0
 for S in 7 8; do

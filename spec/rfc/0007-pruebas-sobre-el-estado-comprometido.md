@@ -185,7 +185,7 @@ código: lo pone el catálogo (`index`, `detalle`), y tres llevan texto, no QUAN
 Y `ConsumoRepetido` y `ConsumoColision` no viajan en el objeto de error sino en el `result` de
 `zkssl_publishConsumo` (`accepted: false`): E2 les pone el mismo `data`.
 
-**CORRECCIÓN (§247, escrita por el §N).** El catálogo pasa de veinticinco a veintiséis causas:
+**CORRECCIÓN (§247, escrita por el §802).** El catálogo pasa de veinticinco a veintiséis causas:
 `IdentityUnavailable`, sin campos —la identidad ya tiene cuenta, o una recuperación la retiró
 (`SECURITY.md` §3.13)—, que emiten `zkssl_openAccount` y `dev_openSeeded`. No tiene prueba
 portable, por dos razones: «tiene cuenta» exigiría abrir la hoja (saldo, nonce y sal), y las
