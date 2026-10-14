@@ -81,6 +81,10 @@ impl SovereignLayer {
         if new_public_id == account.public_id {
             return Err(LayerError::RecoveryToSameIdentity);
         }
+        // §N: ni hacia una identidad con cuenta ni hacia una retirada -tampoco deshacer
+        // X->Y->X-. Tras la puerta de arriba, para que siga dando su variante, y antes de
+        // verificar: no gasta cupo, contador ni nonce.
+        self.identidad_libre(&new_public_id)?;
 
         let root_old = self.accounts.root();
         let count_old = self.recovery_count;
@@ -172,6 +176,10 @@ impl SovereignLayer {
         self.accounts = tentativo;
         self.records.insert(account_index, updated);
         self.recovery_count = count_new;
+        // §N: la identidad vieja queda retirada -en el mismo lote que la recuperacion, el
+        // `commit` de abajo- y la nueva entra en el indice.
+        self.retirar(account.public_id);
+        self.identidades.insert(digest_to_bytes(&new_public_id));
 
         self.log.append_con_compromiso(OpKind::Recovery, root_old, root_new, &crate::log::sello_de_autorizacion(&operation), operation);
         // ⚠️ **El registro VIAJA en el lote, como en la vía-recibo.** Con
@@ -462,5 +470,72 @@ mod tests_delegada {
         let r = layer.apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva);
         assert!(matches!(r, Err(LayerError::NotTheIssuer)), "fue {r:?}");
         assert_eq!(layer.records.get(&idx).unwrap().public_id, antes);
+    }
+
+    // -----------------------------------------------------------------
+    // §N: una identidad, una cuenta. Al final del modulo, para no mover sus citas.
+    // -----------------------------------------------------------------
+
+    /// La recuperacion delegada entera de `idx` hacia `nueva`, con materiales VALIDOS: la subida
+    /// y la pareja de custodios 1 y 3 sobre el compromiso de ESTA transicion.
+    fn recuperar(layer: &mut SovereignLayer, idx: AccountIndex, nueva: Digest) -> Result<(), LayerError> {
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+        let op = compromiso(layer.accounts.root(), raiz_nueva(layer, idx, nueva), layer.recovery_count());
+        let subida = prueba_subida(layer, idx, nueva);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+        layer.apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva)
+    }
+
+    /// Lo que una recuperacion rechazada no puede gastar ni mover.
+    fn intactos(layer: &SovereignLayer, idx: AccountIndex) -> (u64, u64, Option<BaseElement>, Option<Digest>, Digest, usize) {
+        (
+            layer.recovery_count(),
+            layer.custodian_uses(),
+            layer.nonce_of(idx),
+            layer.public_id_of(idx),
+            layer.state_root(),
+            layer.log.len(),
+        )
+    }
+
+    /// **§N: recuperar hacia una identidad que ya tiene cuenta se rechaza ANTES de verificar**,
+    /// con una subida y una pareja de custodios VALIDAS: aplicarla dejaba dos cuentas con la
+    /// identidad de Bob. No gasta contador, cupo ni nonce.
+    #[test]
+    fn recuperar_hacia_una_identidad_con_cuenta_se_rechaza_antes_de_verificar() {
+        let (mut layer, idx, _) = capa();
+        let bob = layer.open_account_checked(BaseElement::new(SK_BOB)).expect("bob");
+        let id_bob = layer.public_id_of(bob).expect("bob");
+        let antes = intactos(&layer, idx);
+        let r = recuperar(&mut layer, idx, id_bob);
+        assert!(
+            matches!(r, Err(LayerError::IdentityUnavailable)),
+            "CRITICO: la recuperacion dio a Alice la identidad de Bob: {r:?}"
+        );
+        assert_eq!(intactos(&layer, idx), antes, "el rechazo gasto o movio algo");
+    }
+
+    /// **§N: recuperar hacia una identidad RETIRADA se rechaza**: tras X->Y, ni otra cuenta recibe
+    /// X ni Alice deshace X->Y->X, aunque los materiales sean validos.
+    #[test]
+    fn recuperar_hacia_una_identidad_retirada_se_rechaza() {
+        let (mut layer, alice, y) = capa();
+        let x = layer.public_id_of(alice).expect("alice");
+        let carol = layer.open_account_checked(BaseElement::new(0xCA201)).expect("carol");
+        recuperar(&mut layer, alice, y).expect("X->Y");
+        let (antes_a, antes_c) = (intactos(&layer, alice), intactos(&layer, carol));
+        let r = recuperar(&mut layer, carol, x);
+        assert!(
+            matches!(r, Err(LayerError::IdentityUnavailable)),
+            "CRITICO: otra cuenta recibio la identidad retirada: {r:?}"
+        );
+        let r = recuperar(&mut layer, alice, x);
+        assert!(
+            matches!(r, Err(LayerError::IdentityUnavailable)),
+            "CRITICO: Alice deshizo X->Y->X: {r:?}"
+        );
+        assert_eq!((intactos(&layer, alice), intactos(&layer, carol)), (antes_a, antes_c));
     }
 }

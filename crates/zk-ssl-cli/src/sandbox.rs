@@ -96,7 +96,7 @@ pub fn open_funded(
     amount: u64,
     tr: &mut dyn Tracer,
 ) -> anyhow::Result<AccountIndex> {
-    let idx = layer.open_account_wide(key);
+    let idx = layer.open_account_wide_checked(key).map_err(|e| anyhow::anyhow!("abrir la cuenta: {e}"))?;
     tr.emit(&TraceEvent::Note {
         text: format!("cuenta #{idx} abierta — saldo CERO por diseño"),
     });
@@ -365,4 +365,31 @@ fn emit_applied(
 fn fail(tr: &mut dyn Tracer, phase: Phase, e: LayerError) -> anyhow::Error {
     tr.emit(&TraceEvent::Rejected { phase, error: format!("{e:?}") });
     anyhow::anyhow!("{phase}: {e:?}")
+}
+
+/// §N: una identidad, una cuenta en la vida del libro (`SECURITY.md` §3.13). Hasta el §N, repetir
+/// la semilla de claves con `--ledger` abria una segunda cuenta con la misma identidad; con la
+/// puerta del §N, el `expect` de `open_account_wide` haria del rechazo un panico. Por eso
+/// `open_funded` va por `open_account_wide_checked`: es un error del montaje, con su causa.
+#[cfg(test)]
+mod tests_una_identidad {
+    use super::*;
+
+    /// Abrir dos veces la misma clave en el mismo libro -lo que hace `simulate --ledger` si se
+    /// repite la `--key-seed`- es un error con la causa, no un panico.
+    #[test]
+    fn open_funded_repetido_es_un_error_no_un_panico() {
+        let mut l = open_layer(None, Params::default()).expect("capa");
+        let mut tr = crate::trace::make_tracer(true);
+        let k = key_of(0x1D05, 0);
+        open_funded(&mut l, k, 0, tr.as_mut()).expect("la primera");
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            open_funded(&mut l, k, 0, tr.as_mut())
+        }));
+        let e = r
+            .expect("CRITICO: repetir la clave fue un panico")
+            .expect_err("CRITICO: la misma clave abrio dos cuentas");
+        assert!(e.to_string().contains("la identidad no esta disponible"), "{e}");
+        assert_eq!(l.account_count(), 1);
+    }
 }

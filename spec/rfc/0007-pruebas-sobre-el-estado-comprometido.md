@@ -185,6 +185,16 @@ código: lo pone el catálogo (`index`, `detalle`), y tres llevan texto, no QUAN
 Y `ConsumoRepetido` y `ConsumoColision` no viajan en el objeto de error sino en el `result` de
 `zkssl_publishConsumo` (`accepted: false`): E2 les pone el mismo `data`.
 
+**CORRECCIÓN (§247, escrita por el §N).** El catálogo pasa de veinticinco a veintiséis causas:
+`IdentityUnavailable`, sin campos —la identidad ya tiene cuenta, o una recuperación la retiró
+(`SECURITY.md` §3.13)—, que emiten `zkssl_openAccount` y `dev_openSeeded`. No tiene prueba
+portable, por dos razones: «tiene cuenta» exigiría abrir la hoja (saldo, nonce y sal), y las
+identidades retiradas no van bajo la cabeza. Queda fuera del sobre de rechazo y de la completitud:
+`zkssl_openAccount` no reserva recibo; el mando la rechaza por su nombre, y la lista de las cuatro
+causas sin prueba portable no cambia. Es aditiva en el sentido de E2 —ningún vector ni el OpenRPC
+pina el objeto de error—: la versión no sube. Se redactó en privado y se publica con el arreglo
+(`spec/rfc/PROCESO.md` §«Fallos de seguridad»). La fila de E2 y la tabla de D-D no se reescriben.
+
 ### D-D — El sobre de rechazo, por caminos primero
 
 E3 añade al paquete de evidencia la forma `tipo: "rechazo"`: la cabeza v5 firmada (campos,

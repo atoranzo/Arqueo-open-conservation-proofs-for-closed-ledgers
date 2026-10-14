@@ -53407,3 +53407,247 @@ no compara las líneas de VERDE del contrato del kit (la D-D solo pide los códi
 textos de las cabezas v3 a v6 que el hecho 3 del RFC deja para el sello que el autor elija, ni las
 demás citas de `doc/METODO.md` a `tools/canon.sh` que el §793 midió y ya apuntan a otro sitio. La lista
 no se pone al día sola cuando entra algo aditivo: lo cuenta.
+
+## §802 — una identidad, una cuenta en la vida del libro: abrir rechaza la identidad que ya tiene cuenta o que una recuperación retiró, recuperar también, y las retiradas se guardan, se exigen al reabrir, viajan en la instantánea v9 y cruzan las dos migraciones (un fallo de seguridad, `SECURITY.md` §3.13)
+
+El commit que lleva este asiento, sobre el §801. Es el arreglo de un fallo de seguridad, y se redactó
+en privado y se publica de una vez —el código, los tests y los documentos en un solo sello—, como piden
+`SECURITY.md` §5 y `spec/rfc/PROCESO.md` §«Fallos de seguridad». Toca la capa (`lib.rs`, `iso.rs`,
+`accounts.rs`, `recovery.rs`, `persistence.rs`, `snapshot.rs`, `migration.rs` y `tests.rs`), el nodo
+(`dev_openSeeded` y dos tests), el sandbox de la CLI (`open_funded` y un test) y `tools/banco_edad.sh`;
+y `SECURITY.md` §3.13, `spec/RPC.md`, la corrección del §802 al RFC-0007, `doc/ROTACION_DE_CUENTAS.md`, la
+cabecera de `doc/CONFIANZA_RESIDUAL.md`, la entrada 52 del `BACKLOG.md`, `doc/README-CLI.md`, las cifras
+de tests de las portadas, los pines de `tools/canon.sh` y este asiento. Ni vectores, ni el OpenRPC, ni
+`NUCLEO.md`, ni el kit. No toca `crates/zk-ssl-guardian` —no llama a nada de lo que cambia—, ni las AIR,
+ni el probador, ni `tools/check_constraint_layout.py`, ni `crates/ceremony`. El fallo lo encontró, lo
+midió y lo arregló una sesión de Claude Code, que lo commitea, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`; el autor eligió las dos reglas y las dos decisiones de abajo.
+
+**De dónde sale.** `SovereignLayer::open_with_id`, por donde pasan todas las vías que abren, no miraba si
+la identidad era nueva: sondeaba la posición `public_id[0] mod capacidad` y abría en el primer hueco.
+`zkssl_openAccount` lo llama tal cual con los tres resúmenes del cliente.
+
+**Lo medido antes del arreglo**, en privado, con cuatro tests fuera del árbol sobre `b6491ef`:
+
+- PRIV1: un tercero SIN la clave abre una segunda cuenta con la identidad de Bob y con su propia vista y
+  su propia sal: `Ok`, índice 700774416 frente al 700774415 de Bob.
+- PRIV2: Alice tiene un pendiente en vuelo de 7.000 hacia su identidad; los custodios la recuperan hacia
+  una clave nueva; quien conserva la clave VIEJA abre otra cuenta con la identidad vieja y cobra ahí el
+  pendiente: `claim` `Ok`, `apply_claim` `Ok`, saldo 7.000.
+- PRIV3: la clave nueva NO lo cobra en la cuenta recuperada: `apply_claim` da `StaleState`.
+- PRIV4: el mismo pendiente no se cobra dos veces entre duplicados: el segundo `apply_claim` da
+  `StaleState`, y el suministro de 500.000 cuadra.
+
+Por el cable, abrir un duplicado llegaba y, sin la clave, no cobraba nada: ocupaba la identidad y una
+plaza del tope. El robo exigía una recuperación, que solo está en la biblioteca: ningún nodo llegaba.
+
+**Lo que el autor decidió.** (1) Abrir rechaza una identidad que ya tiene cuenta; (2) abrir rechaza una
+identidad que una recuperación retiró. La (2) obliga a guardar en el libro las identidades retiradas.
+
+**El diseño.**
+
+- **La invariante.** Una identidad —el `public_id` entero, los cuatro elementos— tiene a lo sumo una
+  cuenta en la vida del libro, y la que una recuperación retira no vuelve a tener ninguna. El conjunto
+  «en uso ∪ retiradas» solo crece. Un solo juez, `identidad_libre`, en `open_with_id` (tras el tope, para
+  que con el libro lleno siga ganando `AccountLimitReached`, que es lo que fija
+  `spec/vectors/rechazo/tope-de-cuentas.json`, y antes de `next_index += 1`) y en
+  `apply_recovery_delegated` (tras `RecoveryToSameIdentity`, que sigue dando su variante, y antes de
+  verificar). Un rechazo devuelve antes de mutar nada.
+- **Un índice, no un recorrido.** `identidades: HashSet<[u8; 32]>`, con la forma canónica
+  `digest_to_bytes`: `BaseElement` no implementa `Hash`. Recorrer `records` en cada apertura es O(n), y
+  cuadrático en `etapa_b3` y `etapa_b4`, que abren hasta 10^6 cuentas. Sondear desde `public_id[0] mod
+  capacidad` no basta: la recuperación cambia la identidad sin mover la cuenta, que se queda en la
+  cadena de la vieja. El índice es derivado: no se persiste, y lo rehace un solo productor
+  (`reindexar_identidades`) al cargar y al importar.
+- **Las retiradas, persistidas.** No se pueden derivar: la entrada Recovery lleva raíces y contadores, y
+  el registro de la cuenta se sobrescribe. `retir:{k}` (k = ordinal de la recuperación) y `root:retir`, en
+  el mismo lote que la recuperación, sellados si el libro está cifrado. La raíz es una CADENA (`c_0 = [0; 4]`,
+  `c_{k+1} = native_merge(c_k, id_k)`), no un árbol disperso: ata orden y número con un hash por
+  recuperación, y un árbol disperso trata el digest cero como hoja libre, cuando el cable acepta abrir con
+  `public_id = [0; 4]`. Y la raíz hace falta: el sellado no lleva AAD (`crypto.rs`), así que un valor
+  sellado de 32 B se puede cortar de otra clave (`meta:governance`) y pegar en `retir:0` sin la frase.
+- **La recarga.** Sin `root:retir`, un libro sin recuperaciones y sin `retir:` abre (es anterior al §802),
+  y en cualquier otro caso no. Con ella, los ordinales son exactamente `0..len`, `len` es el número de
+  Recovery del registro ya verificado y la cadena cuadra. Si no, `IntegrityFailure` de «identidades
+  retiradas». Los duplicados que ya estén en `acct:` no se rechazan: el índice los colapsa. Contra
+  quien borra o añade retiradas, eso vale en claro y cifrado; contra quien las sustituye o las
+  reordena, solo cifrado: en claro, `root:retir` se rehace con `native_merge`, que es público.
+  Reordenar no cambia el conjunto y no reabre ninguna identidad (medido en la revisión: un libro en
+  claro con dos retiradas intercambiadas y su raíz rehecha abre, y las dos siguen rechazadas).
+- **La instantánea v9** es la v8 byte a byte con el mágico `ZKSSL9` y una cola tras el registro:
+  `n_retir` y las identidades. Al final, para que la cabecera de 264 B y los desplazamientos que fijan
+  `a_tampered_snapshot_is_rejected`, `a_snapshot_with_a_lying_supply_is_rejected` y
+  `tampering_with_the_log_inside_a_snapshot_is_detected` sigan valiendo (siguen, sin cambiar su
+  constante; sus comentarios se corrigen con marca). Al importar se exige una por cada Recovery del
+  registro importado, contadas del registro y no de la cabecera; una v3..v8 solo importa si su registro
+  no tiene ninguna.
+- **Las migraciones, sin código.** La del KDF vuelve a sellar todo lo que no está en `EN_CLARO`, y
+  `retir:` y `root:retir` no están; la de B13/B14 recoloca registros con su identidad intacta, y el índice
+  va por identidad y las retiradas por ordinal.
+
+**El cable.** `zkssl_openAccount` no cambia: su `map_err` ya lleva cualquier `Err` de la capa. Sale
+`-32000`, `message` `IdentityUnavailable`, `data` `{causa: "IdentityUnavailable", campos: {}, seq}`, con
+el `seq` de antes de la petición, y no pone el nodo en PARADA. `dev_openSeeded` pasa a la vía `_checked`:
+antes del §802, una semilla repetida abría, sin error, otra cuenta con la misma identidad; con la puerta y el
+`expect` de `open_account_wide` sería un pánico con el candado tomado, y PARADA, lo que ya daba
+`AccountLimitReached` con el libro lleno. El sandbox de la CLI, igual: `open_funded` pasa a la vía `_checked`,
+y los `expect` de `open_account` y `open_account_wide`, y la doc de sus vías `_checked`, nombran ya los
+rechazos de la capa. La versión no sube (`zkssl/0.4`):
+ningún vector fija un error de `openAccount`, los dos del escenario de `spec/vectors/zkssl-0.4.json` son
+claves distintas, y `rechazo/tope-de-cuentas.json` no cambia porque la puerta va tras el tope; es aditiva
+como la E2 del RFC-0007. Al recuento de este registro del §454 se suma `IdentityUnavailable`: por
+`zkssl_openAccount` salen ya `AccountLimitReached`, `IdentityUnavailable` y `Store`, y con `--dev`
+también por `dev_openSeeded`. ISO 20022: AM05, la duplicación. La causa no tiene prueba portable —«tiene
+cuenta» exigiría abrir la hoja, y las retiradas no van bajo la cabeza—, y queda fuera del sobre de
+rechazo y de la completitud: `openAccount` no reserva recibo. El kit no cambia.
+
+**Ningún test existente abría dos veces la misma identidad.** Medido: la suite entera de la capa con la
+puerta puesta y sin la fila del catálogo en `spec/RPC.md` dio 447 `ok` y un `FAILED`,
+`el_catalogo_publicado_es_el_de_la_capa`, que es la fila. Los ejemplos `etapa_*` abren con claves
+distintas, y el nodo y el SDK también (medido con sus suites, abajo). Sí duplicaba, sin quererlo,
+`tools/banco_edad.sh`: abría `key_of(K, 0)` y `key_of(K, 1)` con `K = 0xA11CE + S`, y la corrida
+de S=8 volvía a abrir como pagadora la identidad de la receptora de S=7. Pasa a `K = 0xA11CE + 2·S`, con
+marca. Los vectores de edad que salieron de él no se regeneran: el kit los juzga por sí mismos. Es el
+único banco que se corrió. Los demás que abren cuentas sobre un nodo con `--dev` o un libro con
+`--ledger` —`banco_rechazo`, `banco_apagado`, `banco_completo`, `banco_recibo_agregado`, `banco_pago`,
+`banco_pendiente`, `banco_prenda` y `banco_mentiroso_sin_resolver`, que es el que corre el e2e— se
+juzgaron leyéndolos, sin correrlos: semillas distintas, un libro
+por corrida, `Wallet::random` en el e2e y `d2_lote_rpc` una sola vez por nodo.
+
+**Los tests**, cada uno al final de su fichero o módulo, y cada uno contra su mutante, roto a mano y
+restaurado con el mismo sha256:
+
+- **Capa, `accounts.rs`.** `abrir_una_identidad_con_cuenta_se_rechaza_sin_tocar_nada`: sin la puerta en
+  `open_with_id`, `Ok(700774416)`, el índice de PRIV1. `la_estrecha_y_la_ancha_rellenada_son_una_sola_identidad`:
+  con la puerta solo en la vía ancha, la estrecha abre tras la ancha. `una_identidad_distinta_con_el_mismo_primer_elemento_abre`:
+  con la puerta por el primer elemento, la segunda da `IdentityUnavailable`.
+  `tras_recuperar_la_identidad_nueva_tampoco_abre_otra_cuenta`: si recuperar no indexa la identidad
+  nueva, `Ok(2027400955)`. `el_robo_tras_una_recuperacion_no_abre_y_el_pendiente_vuelve_al_emisor`
+  —PRIV2 invertido: el envío, la recuperación, el ladrón y el reembolso al caducar, con el suministro
+  cuadrado—: con el índice solo de las identidades en uso (quitar X al recuperar), el ladrón abre,
+  `Ok(3899196794)`. `la_clave_nueva_no_cobra_el_pendiente_hacia_la_vieja` es PRIV3, la D-5 de
+  `doc/ROTACION_DE_CUENTAS.md` medida: una medida fijada, que ningún mutante del arreglo tumba (sin la
+  puerta sigue `ok`); cae si `validate_claim` deja de cruzar la raíz de pendientes de partida: `apply_claim`
+  deja de dar `StaleState`. Quitar el cruce de `root_new` no la tumba: el `StaleState` sale antes,
+  porque la prueba de la clave nueva compone el compromiso con Y y su raíz de pendientes no es la del
+  árbol.
+- **Recuperación, `recovery.rs`.** `recuperar_hacia_una_identidad_con_cuenta_se_rechaza_antes_de_verificar`,
+  con materiales válidos: sin la puerta, `Ok(())` y Alice con la identidad de Bob.
+  `recuperar_hacia_una_identidad_retirada_se_rechaza`: con el índice solo en uso, `Ok(())`. Y el que ya
+  había, `delegated_recovery_to_the_same_identity_is_rejected`, guarda el orden: con la puerta nueva
+  antes de la suya, recibe `IdentityUnavailable`.
+- **Persistencia, `tests.rs`.** `la_retirada_sobrevive_al_reinicio_y_un_rechazo_no_escribe`, sobre un
+  libro cifrado, cae con tres: si `commit` no escribe `retir:`, el libro no reabre («identidades
+  retiradas»); si `load` no las carga, X abre, `Ok(3899196794)`; y si el rechazo hace `commit`, el
+  volcado del `sled` difiere. `una_retirada_borrada_en_reposo_no_abre`: sin el cruce de la cuenta con
+  las Recovery, la lista vacía con su raíz vacía abre. `una_retirada_sustituida_en_reposo_no_abre`
+  (el valor sellado de `meta:governance` pegado en `retir:0`): sin la comparación con `root:retir`,
+  abre. `sin_root_retir_abre_si_no_hubo_recuperaciones_y_no_si_las_hubo`: con `root:retir`
+  obligatoria, el libro sin recuperaciones no abre; con «sin raíz es vacío», el libro con una
+  recuperación y sin la raíz abre. El que ya había, `the_recovery_counter_survives_restart`, cae
+  también si `commit` no escribe `retir:`. `la_migracion_del_kdf_conserva_las_retiradas`: con `retir:`
+  en claro, la rebaja a la versión 1 no abre su valor. Y `la_migracion_b13_b14_conserva_la_invariante`
+  (`migration.rs`): si la migración rehace el índice solo de los registros, X abre, `Ok(3899196793)`.
+  Los anteriores hacen una sola recuperación por libro, y no ven ni el orden, ni la cadena larga, ni lo
+  que se escribe tras reabrir: `varias_retiradas_sobreviven_a_varios_reinicios_en_su_orden` hace tres
+  en un libro cifrado, con un reinicio entre cada dos, y comprueba el orden, la cadena, las cinco
+  identidades y que en disco queden `retir:0`, `:1` y `:2`. Con la cadena plegada al revés, o con
+  `commit` escribiendo `retir:` con el ordinal relativo a lo ya escrito, el libro no reabre
+  («identidades retiradas»), y los de una sola recuperación siguen `ok` con los dos. Y
+  `cargar_retiradas_ordena_por_ordinal_y_no_por_los_bytes` (`persistence.rs`) planta 300 retiradas
+  con su raíz, porque en little-endian el orden de bytes de `sled` se separa del numérico desde
+  k = 256 y ningún test llega a 257 recuperaciones: sin ordenar por ordinal, las 300 no cargan; con una
+  o con tres, ese mutante no se ve.
+- **Instantánea, `snapshot.rs`.** `la_instantanea_v9_lleva_las_retiradas`: exportada sin la cola, la
+  importación se queda sin bytes. `una_v8_con_recuperaciones_no_importa_y_sin_ellas_si` y
+  `una_v9_con_una_retirada_de_menos_no_importa`: sin el cruce de la cuenta con las Recovery del
+  registro, las dos importan.
+- **Catálogo.** `el_catalogo_publicado_es_el_de_la_capa`, el que ya había: sin la fila de
+  `IdentityUnavailable` en `spec/RPC.md`, `FAILED`; y `una_de_cada` lleva su entrada.
+- **Nodo.** `abrir_por_el_cable_una_identidad_con_cuenta_da_32000_con_su_causa`: sin la puerta, el cable
+  abre la segunda cuenta (`{"index": "0x875cd0c6"}`), y `dev_openSeeded` con la misma semilla, otra.
+  `dev_openseeded_repetido_rechaza_sin_parar_el_nodo`: con `open_account_wide`, la segunda semilla es un
+  pánico con el candado tomado y sale `-32603`, PARADA.
+- **CLI.** `open_funded_repetido_es_un_error_no_un_panico`: con `open_account_wide`, pánico.
+
+Cada mutante se aplicó a mano, se compiló y se corrió con sus tests en release, y el fichero volvió con el
+mismo sha256. De los veintidós tests nuevos, veintiuno falsan el §802, cada uno contra su mutante; el de la
+D-5 es una medida. Sin la puerta de abrir caen a la vez nueve de los once tests de la capa que se corrieron con
+ese mutante —los otros dos, el del primer elemento y la medida de la D-5, no la miran—, los dos del nodo
+y el de la CLI.
+
+**Medido, con el árbol restaurado.** Las suites enteras, en release: `zk-ssl` 467 y 7 ignorados,
+`zk-ssl-node` 206, `zk-ssl-cli` 153 y `zk-ssl-sdk` 22 (21 y 1), todos verdes y sin avisos. Salen con 0
+`check_figures`, `verificar_citas`, `check_publicadas`, `check_tests` (1933 declarados), `check_dominios`,
+`check_nucleo`, `check_vectores`, `check_catalogo` y `check_curvas`; `check_cifras` también, con el
+número de este asiento puesto en las tres crónicas de `tools/canon.sh`. `tools/banco_edad.sh`, con las
+semillas separadas: VERDE.
+
+**Las citas.** El código nuevo va al final de cada fichero, salvo lo que tiene sitio fijo —la variante al
+final del enum, las dos puertas, los cuatro campos y sus inicializadores, las dos llamadas de `commit` y
+la de `load`, la cola de la instantánea y su nota en la doc del módulo—, y eso mueve líneas de `lib.rs`,
+`accounts.rs`, `recovery.rs`, `persistence.rs` y `snapshot.rs`. No mueve ninguna de `iso.rs`, del
+`main.rs` del nodo ni del `sandbox.rs` de la CLI: el brazo de `iso_reason` va en la línea de
+`ConsumoColision`, y las llamadas de `dev_openSeeded` y `open_funded` caben en la línea que
+reemplazan, con su explicación en el módulo de tests del final. Así siguen valiendo las citas a
+`iso.rs` de `doc/AVISO_EN_ISO20022.md` y las dos a `main.rs` del RFC-0021 (`:5129` y `:5162`), que
+una primera versión de este arreglo desplazaba. `doc/ROTACION_DE_CUENTAS.md`, que este sello edita y cita
+con `fichero:línea` como medido, corrige sus 36 citas a los cuatro primeros, con marca. Las citas por
+línea de los asientos, de las notas fechadas del `BACKLOG.md` y de los documentos fechados a esos cinco
+ficheros no se persiguen; la del §791 en la 52 la corrige la nota del §802.
+
+**Lo que se midió además, y queda declarado.** Con cuatro tests temporales, que no quedan en el árbol, se
+midieron los cuatro bordes del arreglo que `SECURITY.md` §3.13 declara como residuo:
+
+- un duplicado de antes del §802 (`B(X)`, abierto con la clave de X cuando no había puerta) sigue
+  cobrando tras recuperar la cuenta legítima X→Y: la recuperación retira X, y aun así `claim` da `Ok`,
+  `apply_claim` da `Ok` y el saldo de B queda en 7.000;
+- en un libro en claro, `retir:0` reescrita con Y y `root:retir` recalculada: el libro reabre y X abre,
+  `Ok(3899196794)`; en uno cifrado no se puede sin la frase;
+- una v9 en claro con la cola cambiada a Y: importa, y en la capa importada X abre, `Ok(3899196794)`;
+- un libro en claro de antes de la recuperación con `acct:` y `root:state` de después: reabre con cero
+  recuperaciones, y X abre, `Ok(3899196794)`. `load` exige las retiradas contra el registro, pero no
+  cruza `root:state` con el `root_new` de la última entrada que mueve el árbol de cuentas, y eso ya era
+  así antes del §802; la revisión lo midió también con el libro cifrado. Cruzarlo queda aparte: antes hay
+  que comprobar que la igualdad vale para todos los `OpKind`.
+
+**Decisiones del autor**, tomadas en la sesión al ver el arreglo: la D-1, como está; y la D-2, como
+residuo declarado, con la prueba de posesión al abrir llevada al corte `zkssl/0.5` en una entrada
+nueva, la 119.
+
+- **D-1.** Un libro con recuperaciones y sin retiradas guardadas no abre (fail-closed): es
+  indistinguible de uno al que se las han borrado en reposo, y abrirlo vacío devolvería el robo de PRIV2.
+  Solo lo fabrica la biblioteca, o un test con el código de antes, y en el árbol no hay ninguno; todo
+  libro de nodo tiene cero recuperaciones. Lo mismo una instantánea v3..v8 con Recovery: su importación
+  queda condicionada a que su registro no tenga ninguna, frente a lo que dice la corrección del §413 en
+  `spec/rfc/0006-consumo-publicado.md` («v3..v7 siguen importándose con el conjunto vacío»), que es
+  fechada y no se reescribe. El código ya lo implementa así; la alternativa es abrirlos vacíos y
+  declarar ese agujero.
+- **D-2.** La ocupación anticipada se agrava: quien conozca la identidad X antes de que su dueño abra la
+  cuenta la ocupa con su vista y su sal, y desde el §802 el dueño queda fuera para siempre y tiene que
+  cambiar de clave. Cerrarlo exige probar la posesión de la clave al abrir: un circuito y un parámetro
+  nuevos en `zkssl_openAccount`, y la versión sube. Y bloquea una recuperación: como la puerta de
+  recuperar va antes de verificar, quien conozca la identidad nueva Y antes de que se aplique la ocupa
+  con `zkssl_openAccount`, y la recuperación legítima sale con `IdentityUnavailable` (es lo que fija
+  `recuperar_hacia_una_identidad_con_cuenta_se_rechaza_antes_de_verificar`); hoy sin consecuencias,
+  porque la recuperación no está en el cable. Queda como residuo declarado en `SECURITY.md` §3.13, y la
+  prueba de posesión al abrir va a la entrada 119, para el corte `zkssl/0.5`.
+- **Observado de paso**, fuera de este arreglo: al importar una instantánea, `recovery_count`,
+  `freeze_count` y `governance_change_count` se toman de la cabecera sin el cruce con el registro que
+  `load` hace desde el §393. Las retiradas se cuentan del registro y no dependen de ello.
+
+**Contadores.** `zk-ssl` 448 -> 467, `zk-ssl-node` 204 -> 206 y `zk-ssl-cli` 152 -> 153, en sus filas de
+`tools/canon.sh`, con su crónica. TOTAL DE SELLO 1752 -> 1774 y TOTAL CON LARGOS 1889 -> 1911, en
+`PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`, y el desglose de `PRINCIPIOS.md`. Las citas de «448 tests»
+de la capa pasan a 467 en `ARQUITECTURA.md` (dos), `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`. `check_tests`, de 1911 a
+1933. Las «1364 declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores. Ni
+vectores. El `BACKLOG.md` gana una entrada, la 119, y pasa a 44 abiertas y 77 resueltas; la 52 gana su
+nota.
+
+**Lo que NO hace.** No cierra la ocupación anticipada (D-2) ni pone la recuperación o el reembolso en el
+cable. No rechaza ni limpia los duplicados que ya estén en un libro, ni impide que uno de antes del §802
+cobre tras recuperar la cuenta legítima. No cruza `root:state` con el registro al reabrir, ni ata la
+cola de la v9 en claro. No ata las retiradas bajo la cabeza
+firmada, ni en el registro, ni las lleva a una prueba portable. No cambia el kit, los vectores, el
+OpenRPC ni `NUCLEO.md`. No corrige el cruce de los contadores de la instantánea.

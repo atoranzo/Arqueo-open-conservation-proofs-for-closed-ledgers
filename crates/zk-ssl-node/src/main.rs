@@ -4220,13 +4220,13 @@ fn dispatch_dev(
         }
 
         // Comodidad de sandbox: abre desde una clave DETERMINISTA de la
-        // suite. En producción se abre con zkssl_openAccount.
+        // suite. En producción se abre con zkssl_openAccount. §N: por la via con error (`tests_una_identidad`).
         "dev_openSeeded" => {
             #[derive(Deserialize)]
             struct P { seed: Q }
             let p: P = parse(params)?;
             let sk = ts::wide_key(p.seed.0);
-            let index = l.open_account_wide(sk);
+            let index = l.open_account_wide_checked(sk).map_err(|e| RpcError::layer(e, seq_juicio))?;
             Ok(json!({
                 "index": Q(index),
                 "publicId": digest_to_wire(&stark_experiment::native::derive_public_id_wide(sk)),
@@ -7211,5 +7211,72 @@ mod tests_camino_congelados {
         let e = dispatch(&app, "dev_freeze", json!({ "index": Q(0), "frozen": true }))
             .expect_err("dev_* sin --dev debe rechazarse");
         assert_eq!(e.code, -32601, "sin --dev, dev_freeze no existe");
+    }
+}
+
+/// §N: una identidad, una cuenta en la vida del libro (`SECURITY.md` §3.13), por el cable. Hasta
+/// el §N `zkssl_openAccount` abria una segunda cuenta con la `publicId` de otro, con la vista y la
+/// sal de quien la pedia, y `dev_openSeeded` con una semilla repetida abria otra cuenta con la
+/// misma identidad, sin panico. Con la puerta del §N, el `expect` de `open_account_wide` haria del
+/// rechazo un panico con el candado tomado, y PARADA -lo que ya hacia `AccountLimitReached` con el
+/// libro lleno-: por eso `dev_openSeeded` va por `open_account_wide_checked`, y el rechazo sale
+/// como `-32000` con su causa.
+#[cfg(test)]
+mod tests_una_identidad {
+    use super::*;
+
+    /// Lo que un rechazo no puede mover: la altura del registro, la raiz y las cuentas.
+    fn foto(app: &App) -> (usize, stark_experiment::merkle::Digest, usize) {
+        let e = app.estado.lock().expect("mutex");
+        (e.layer.transition_log().len(), e.layer.state_root(), e.layer.account_count())
+    }
+
+    /// Un `-32000` con la causa `IdentityUnavailable`, sin campos y juzgado en `seq`.
+    fn es_identidad_no_disponible(e: &RpcError, seq: usize) {
+        assert_eq!(e.code, -32000, "{}", e.message);
+        assert_eq!(e.message, "IdentityUnavailable");
+        let d = e.data.as_ref().expect("un rechazo de la capa lleva su causa como dato");
+        assert_eq!(d["causa"], "IdentityUnavailable", "{d}");
+        assert_eq!(d["campos"], json!({}), "sin campos, a proposito: {d}");
+        assert_eq!(d["seq"], json!(Q(seq as u64)), "juzgado en el estado de antes: {d}");
+    }
+
+    /// El primer caso del §N, por el cable: con la `publicId` de una cuenta que existe y una vista
+    /// y una sal AJENAS, abrir es `-32000` con su causa; ni la raiz, ni el registro, ni las cuentas
+    /// se mueven, y el nodo no para.
+    #[test]
+    fn abrir_por_el_cable_una_identidad_con_cuenta_da_32000_con_su_causa() {
+        let app = crate::tests::nodo(30);
+        let (_, id, _) = crate::tests::cuenta(&app, 0x1D01, 0);
+        let ajena = zk_ssl::tests_support::wide_key(0x1D02);
+        let params = json!({
+            "publicId": id,
+            "viewId": digest_to_wire(&stark_experiment::native::view_id_of_wide(ajena)),
+            "leafSalt": digest_to_wire(&stark_experiment::native::derive_leaf_salt_wide(ajena)),
+        });
+        let antes = foto(&app);
+        let e = despachar(&app, "zkssl_openAccount", || dispatch(&app, "zkssl_openAccount", params))
+            .expect_err("CRITICO: el cable abrio una segunda cuenta con la misma identidad");
+        es_identidad_no_disponible(&e, antes.0);
+        assert_eq!(foto(&app), antes, "el rechazo movio el libro");
+        assert!(app.parada.get().is_none(), "un rechazo de la capa no para el nodo");
+    }
+
+    /// `dev_openSeeded` con la misma semilla dos veces: la segunda es `-32000` con su causa, no un
+    /// panico con el candado tomado; el nodo no para, y otra semilla abre despues.
+    #[test]
+    fn dev_openseeded_repetido_rechaza_sin_parar_el_nodo() {
+        let app = crate::tests::nodo(30);
+        let abrir = |s: u64| {
+            despachar(&app, "dev_openSeeded", || dispatch(&app, "dev_openSeeded", json!({ "seed": Q(s) })))
+        };
+        abrir(0x1D03).expect("la primera");
+        let antes = foto(&app);
+        let e = abrir(0x1D03).expect_err("CRITICO: la misma semilla abrio dos cuentas");
+        es_identidad_no_disponible(&e, antes.0);
+        assert!(app.parada.get().is_none(), "CRITICO: repetir la semilla paro el nodo");
+        assert!(!app.estado.is_poisoned(), "y el candado sigue sano");
+        assert_eq!(foto(&app), antes);
+        abrir(0x1D04).expect("otra semilla abre");
     }
 }

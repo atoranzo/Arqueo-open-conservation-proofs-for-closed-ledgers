@@ -3815,3 +3815,295 @@ fn el_montaje_comparte_sus_pruebas_y_nada_mas() {
     assert_eq!(otro_libro.balance_of(b), Some(IMPORTE));
     assert_eq!(otro_libro.total_supply(), IMPORTE);
 }
+
+// -----------------------------------------------------------------
+// §N: las identidades retiradas, en reposo
+// -----------------------------------------------------------------
+// Al final del fichero, como los del §702: ninguna cita `tests.rs:linea` se mueve.
+
+/// La identidad de la clave estrecha `sk`.
+fn id_de(sk: u64) -> Digest {
+    derive_public_id(BaseElement::new(sk))
+}
+
+/// Intenta abrir `id` con una vista y una sal ajenas: lo que haria quien solo la conoce.
+fn abrir_ajena(l: &mut SovereignLayer, id: Digest) -> Result<AccountIndex, LayerError> {
+    l.open_with_id(id, [BaseElement::new(9); 4], [BaseElement::new(7); 4])
+}
+
+/// La clave en sled de la identidad retirada de ordinal `k`.
+fn clave_retir(k: u64) -> Vec<u8> {
+    let mut v = b"retir:".to_vec();
+    v.extend_from_slice(&k.to_le_bytes());
+    v
+}
+
+/// Un libro en `path` con Alice recuperada de X hacia Y: una retirada en disco.
+fn libro_con_una_recuperacion(path: &str, key: Option<crate::crypto::LedgerKey>) {
+    let mut l = open_encrypted_retry(
+        path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS, key,
+    )
+    .expect("abrir");
+    let alice = open_and_fund(&mut l, SK_ALICE, 1_000);
+    recover_delegated(&mut l, alice, id_de(0xA11CE_2));
+}
+
+/// Es el `IntegrityFailure` de las identidades retiradas, y no otro.
+fn es_de_las_retiradas<T>(r: &Result<T, LayerError>) -> bool {
+    matches!(
+        r,
+        Err(LayerError::Store(StoreError::IntegrityFailure { what: "identidades retiradas" }))
+    )
+}
+
+/// **§N: la retirada sobrevive al reinicio, y un rechazo no escribe.** Libro cifrado con X->Y,
+/// cerrado y reabierto: ni X ni Y abren otra cuenta. El `sled` queda pareja a pareja como
+/// estaba tras los dos rechazos -cada sello lleva un nonce aleatorio, asi que cualquier `commit`
+/// cambiaria bytes-, y el libro vuelve a abrir.
+#[test]
+fn la_retirada_sobrevive_al_reinicio_y_un_rechazo_no_escribe() {
+    use crate::crypto::LedgerKey;
+    let path = temp_path("retir_reinicio");
+    let frase = "la frase del libro de las retiradas";
+    let abrir = || {
+        open_encrypted_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            Some(LedgerKey::from_passphrase(frase)),
+        )
+    };
+    libro_con_una_recuperacion(&path, Some(LedgerKey::from_passphrase(frase)));
+    let antes = volcado(&path);
+    {
+        let mut l = abrir().expect("CRITICO: el libro con una recuperacion no reabre");
+        for (nombre, id) in [("X, la retirada", id_de(SK_ALICE)), ("Y, la recuperada", id_de(0xA11CE_2))] {
+            let r = abrir_ajena(&mut l, id);
+            assert!(
+                matches!(r, Err(LayerError::IdentityUnavailable)),
+                "CRITICO: tras reiniciar, {nombre} abrio otra cuenta: {r:?}"
+            );
+        }
+    }
+    assert_eq!(volcado(&path), antes, "CRITICO: un rechazo escribio en el libro");
+    let l = abrir().expect("y vuelve a abrir");
+    assert_eq!(l.recovery_count(), 1);
+    drop(l);
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+/// **§N: una retirada borrada en reposo no abre.** Libro en claro con una recuperacion: sin
+/// `retir:0` no abre, y tampoco si ademas se reescribe `root:retir` con la cabeza de la lista
+/// vacia, que en claro se puede: la lista tiene una por recuperacion del registro.
+#[test]
+fn una_retirada_borrada_en_reposo_no_abre() {
+    let path = temp_path("retir_borrada");
+    libro_con_una_recuperacion(&path, None);
+    let abrir = || open_retry(&path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS);
+    {
+        let db = sled_open_retry(&path);
+        db.remove(clave_retir(0)).expect("borrar").expect("estaba");
+        db.flush().expect("flush");
+    }
+    let r = abrir();
+    assert!(es_de_las_retiradas(&r), "(a) sin retir:0: {:?}", r.as_ref().err());
+    drop(r);
+    {
+        let db = sled_open_retry(&path);
+        db.insert(b"root:retir", store::digest_to_bytes(&[BaseElement::ZERO; 4]).to_vec())
+            .expect("reescribir la raiz");
+        db.flush().expect("flush");
+    }
+    let r = abrir();
+    assert!(
+        es_de_las_retiradas(&r),
+        "CRITICO: (b) la lista vacia con su raiz vacia abrio un libro con una recuperacion: {:?}",
+        r.as_ref().err()
+    );
+    drop(r);
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+/// **§N: una retirada sustituida en reposo no abre.** El sellado no lleva AAD: el valor sellado
+/// de `meta:governance` -32 B, con la misma clave- se pega en `retir:0` sin la frase, y la
+/// cuenta seguiria cuadrando. Lo caza `root:retir`, que es la razon de que exista.
+#[test]
+fn una_retirada_sustituida_en_reposo_no_abre() {
+    use crate::crypto::LedgerKey;
+    let path = temp_path("retir_sustituida");
+    let frase = "la frase del libro de las retiradas";
+    libro_con_una_recuperacion(&path, Some(LedgerKey::from_passphrase(frase)));
+    {
+        let db = sled_open_retry(&path);
+        let otra = db.get(b"meta:governance").expect("leer").expect("sellada");
+        db.insert(clave_retir(0), otra).expect("pegar");
+        db.flush().expect("flush");
+    }
+    let r = open_encrypted_retry(
+        &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        Some(LedgerKey::from_passphrase(frase)),
+    );
+    assert!(
+        es_de_las_retiradas(&r),
+        "CRITICO: un valor sellado de otra clave paso por la identidad retirada: {:?}",
+        r.as_ref().err()
+    );
+    drop(r);
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+/// **§N: sin `root:retir`, un libro abre si no tuvo recuperaciones y no abre si las tuvo.** (a)
+/// Un libro anterior al §N, sin recuperaciones, no tiene ninguna retirada: abre, y el indice se
+/// rehace de los registros. (b) Con una recuperacion y sin la raiz, no abre aunque `retir:0`
+/// siga: sin raiz no hay contra que mirarla, y una sustituida pasaria. (b') Sin sus dos claves
+/// tampoco: se ve igual que un libro al que se las han borrado. (c) Sin recuperaciones y con una
+/// `retir:` sin raiz, no abre.
+#[test]
+fn sin_root_retir_abre_si_no_hubo_recuperaciones_y_no_si_las_hubo() {
+    let abrir = |p: &str| open_retry(p, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS);
+    let quitar = |p: &str, claves: &[Vec<u8>]| {
+        let db = sled_open_retry(p);
+        for k in claves {
+            db.remove(k).expect("borrar").expect("estaba");
+        }
+        db.flush().expect("flush");
+    };
+
+    let a = temp_path("retir_sin_raiz_a");
+    {
+        let mut l = abrir(&a).expect("abrir");
+        open_and_fund(&mut l, SK_ALICE, 1_000);
+    }
+    quitar(&a, &[b"root:retir".to_vec()]);
+    {
+        let mut l = abrir(&a).expect("(a) un libro sin recuperaciones y sin root:retir abre");
+        let r = abrir_ajena(&mut l, id_de(SK_ALICE));
+        assert!(matches!(r, Err(LayerError::IdentityUnavailable)), "(a) el indice: {r:?}");
+    }
+    let _ = std::fs::remove_dir_all(&a);
+
+    let b = temp_path("retir_sin_raiz_b");
+    libro_con_una_recuperacion(&b, None);
+    quitar(&b, &[b"root:retir".to_vec()]);
+    let r = abrir(&b);
+    assert!(
+        es_de_las_retiradas(&r),
+        "CRITICO: (b) un libro con una recuperacion abrio sin la raiz de sus retiradas: {:?}",
+        r.as_ref().err()
+    );
+    drop(r);
+    quitar(&b, &[clave_retir(0)]);
+    let r = abrir(&b);
+    assert!(
+        es_de_las_retiradas(&r),
+        "CRITICO: (b') un libro con una recuperacion abrio sin sus retiradas: {:?}",
+        r.as_ref().err()
+    );
+    drop(r);
+    let _ = std::fs::remove_dir_all(&b);
+
+    let c = temp_path("retir_sin_raiz_c");
+    {
+        let mut l = abrir(&c).expect("abrir");
+        open_and_fund(&mut l, SK_ALICE, 1_000);
+    }
+    quitar(&c, &[b"root:retir".to_vec()]);
+    {
+        let db = sled_open_retry(&c);
+        db.insert(clave_retir(0), store::digest_to_bytes(&id_de(SK_BOB)).to_vec()).expect("plantar");
+        db.flush().expect("flush");
+    }
+    let r = abrir(&c);
+    assert!(es_de_las_retiradas(&r), "(c) una retir: sin raiz: {:?}", r.as_ref().err());
+    drop(r);
+    let _ = std::fs::remove_dir_all(&c);
+}
+
+/// **§N: la migracion del KDF conserva las retiradas.** Un libro cifrado con una recuperacion,
+/// llevado a la version 1 y abierto -que lo migra-: X sigue sin abrir, y `retir:0` y
+/// `root:retir` abren con la clave de la version 2 y no con la de la 1.
+#[test]
+fn la_migracion_del_kdf_conserva_las_retiradas() {
+    use crate::crypto::{Kdf, LedgerKey};
+    use crate::persistence::CLAVE_KDF;
+    let path = temp_path("retir_kdf");
+    let frase = "la frase del libro de las retiradas";
+    libro_con_una_recuperacion(&path, Some(LedgerKey::from_passphrase(frase)));
+    rebajar_a_v1(&path, frase);
+    {
+        let mut l = open_encrypted_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            Some(LedgerKey::from_passphrase(frase)),
+        )
+        .expect("la v1 abre y se migra");
+        let r = abrir_ajena(&mut l, id_de(SK_ALICE));
+        assert!(
+            matches!(r, Err(LayerError::IdentityUnavailable)),
+            "CRITICO: tras migrar el KDF, la identidad retirada abrio: {r:?}"
+        );
+    }
+    let kdf = {
+        let db = sled_open_retry(&path);
+        let c = db.get(CLAVE_KDF).unwrap().expect("la migracion escribe la cabecera");
+        Kdf::de_cabecera(&c).expect("cabecera v2")
+    };
+    let v1 = LedgerKey::derivar(frase, &Kdf::Sha256V1).unwrap();
+    let v2 = LedgerKey::derivar(frase, &kdf).unwrap();
+    let mut vistas = 0;
+    for (k, v) in volcado(&path) {
+        if k.starts_with(b"retir:") || k.as_slice() == b"root:retir" {
+            let nombre = String::from_utf8_lossy(&k).into_owned();
+            assert!(v1.open(&v).is_err(), "CRITICO: {nombre} sigue sellado con la clave v1");
+            assert!(v2.open(&v).is_ok(), "{nombre} no abre con la clave v2");
+            vistas += 1;
+        }
+    }
+    assert_eq!(vistas, 2, "retir:0 y root:retir");
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+/// **§N: varias retiradas, varios reinicios, en su orden.** Libro cifrado: Alice X->Y, reabrir;
+/// Bob B->W, reabrir; Alice Y->Z, reabrir. Tras el ultimo, la lista sale en el orden de las
+/// recuperaciones, la cadena de tres eslabones es la de `root:retir` y ninguna de las cinco
+/// identidades -las tres retiradas y las dos vigentes- abre otra cuenta. Y cada lote escribio solo
+/// su retirada, a su ordinal: en disco quedan `retir:0`, `:1` y `:2`, ninguna mas. Con una sola
+/// recuperacion por libro, los demas tests no ven ni el orden, ni la cadena larga, ni la marca de
+/// lo escrito despues de reabrir.
+#[test]
+fn varias_retiradas_sobreviven_a_varios_reinicios_en_su_orden() {
+    use crate::crypto::LedgerKey;
+    let path = temp_path("retir_varias");
+    let frase = "la frase del libro de las retiradas";
+    let abrir = || {
+        open_encrypted_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            Some(LedgerKey::from_passphrase(frase)),
+        )
+        .expect("CRITICO: el libro con sus retiradas no reabre")
+    };
+    let (x, y, z) = (id_de(SK_ALICE), id_de(0xA11CE_2), id_de(0xA11CE_3));
+    let (b, w) = (id_de(SK_BOB), id_de(0xB0B_2));
+    let (alice, bob) = {
+        let mut l = abrir();
+        let alice = open_and_fund(&mut l, SK_ALICE, 1_000);
+        let bob = open_and_fund(&mut l, SK_BOB, 0);
+        recover_delegated(&mut l, alice, y);
+        (alice, bob)
+    };
+    recover_delegated(&mut abrir(), bob, w);
+    recover_delegated(&mut abrir(), alice, z);
+    let mut l = abrir();
+    assert_eq!(l.recovery_count(), 3);
+    assert_eq!(l.retiradas, vec![x, b, y], "las retiradas, en el orden de las recuperaciones");
+    assert_eq!(l.retir_cabeza, crate::accounts::cabeza_de_retiradas(&[x, b, y]));
+    for (nombre, id) in [("X", x), ("B", b), ("Y", y), ("Z", z), ("W", w)] {
+        let r = abrir_ajena(&mut l, id);
+        assert!(
+            matches!(r, Err(LayerError::IdentityUnavailable)),
+            "CRITICO: tras tres reinicios, {nombre} abrio otra cuenta: {r:?}"
+        );
+    }
+    drop(l);
+    let claves: Vec<Vec<u8>> =
+        volcado(&path).into_iter().map(|(k, _)| k).filter(|k| k.starts_with(b"retir:")).collect();
+    assert_eq!(claves, vec![clave_retir(0), clave_retir(1), clave_retir(2)], "una por recuperacion");
+    let _ = std::fs::remove_dir_all(&path);
+}

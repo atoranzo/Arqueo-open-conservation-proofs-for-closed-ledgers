@@ -753,6 +753,83 @@ no hacerlo, y la medida mira la carpeta, no un contador que sea un montaje propi
 protege de un disco que confirma escrituras que siguen en una caché volátil, ni de un corte de
 corriente, que no se ha medido. El guardián no está en el kit publicado: no lleva aviso ni release.
 
+### 3.13 Abrir una cuenta no comprobaba que la identidad fuera nueva — ⚠️ MEDIDO, cerrado en la capa (§N)
+
+`open_with_id`, por donde pasan todas las vías que abren —`zkssl_openAccount`, `dev_openSeeded`, las
+aperturas estrecha y ancha de la capa—, no miraba si la identidad era nueva: sondeaba la posición
+`public_id[0] mod capacidad` y abría en el primer hueco. Medido el 14-10-2026, en privado y con cuatro
+tests fuera del árbol (`AUDITORIA.md` §N): un tercero **sin la clave** abría una segunda cuenta con la
+identidad de Bob y con su propia vista y su propia sal (`Ok`, índice 700774416 frente al 700774415 de
+Bob); tras una recuperación hacia una clave nueva, quien conservara la clave **vieja** —el ladrón, si
+la recuperación era por robo— abría otra cuenta con la identidad retirada y cobraba ahí un pendiente de
+7.000 que estaba en vuelo hacia ella; la clave nueva no lo cobra en la cuenta recuperada
+(`StaleState`); y el mismo pendiente no se cobra dos veces entre duplicados (el segundo `apply_claim`
+da `StaleState`, y el suministro de 500.000 cuadra). No crea dinero: lo que rompía es a quién llega.
+
+**Alcance.** Por el cable, un tercero sin la clave ocupaba la identidad de otro y una plaza del tope de
+cuentas, sin poder cobrar nada en ella. El robo de un pendiente en vuelo exigía una recuperación, y la
+recuperación solo está en la biblioteca y en sus tests: ningún nodo llegaba a ese caso.
+
+**Cerrado** en el §N, en la capa, con dos reglas: una identidad —el `public_id` entero, sus cuatro
+elementos— tiene a lo sumo una cuenta en la vida del libro, y la que una recuperación retira no vuelve a
+tener ninguna. Abrir rechaza las dos con `IdentityUnavailable` (`-32000` en el cable, AM05 en ISO
+20022) antes de mutar nada; recuperar hacia una identidad con cuenta o retirada —también deshacer
+X→Y→X— se rechaza antes de verificar, sin gastar cupo, contador ni nonce. Las retiradas se escriben
+en el mismo lote que la recuperación (`retir:`, con su raíz `root:retir`), selladas si el libro está
+cifrado, y se exigen al reabrir: un libro no abre si faltan o sobran, y uno cifrado tampoco si se
+sustituyen; la instantánea pasa a la v9 y las lleva; la migración del KDF las vuelve a sellar, y la de
+B13/B14 no las toca. De los veintidós tests nuevos, veintiuno lo falsan, cada uno contra su mutante, y
+uno fija la medida de la D-5 de `doc/ROTACION_DE_CUENTAS.md`. Hasta el §N, una semilla repetida en
+`dev_openSeeded` o en el sandbox de la CLI abría, sin error, otra cuenta con la misma identidad; los dos
+pasan a la vía que devuelve el rechazo, porque con el `expect` de `open_account_wide` la puerta nueva
+sería un pánico —en el nodo, con el candado tomado, y la PARADA, que ya daba `AccountLimitReached` con
+el libro lleno—.
+
+**Residuo**:
+
+- las cuentas duplicadas que ya estén en un libro siguen ahí: el libro abre y el índice las colapsa.
+  Y lo peor de ellas: si el duplicado B(X) lo abrió quien tenía la clave de X y después se recupera la
+  cuenta legítima X→Y, B conserva X y cobra lo que esté en vuelo hacia X —el robo de antes del §N, con
+  un duplicado de antes del arreglo—. Medido en privado: la recuperación retira X, y aun así el cobro
+  en B da `Ok` y su saldo queda en 7.000. Solo lo alcanza un libro con duplicados y recuperaciones, y
+  la recuperación no está en el cable;
+- la integridad de las retiradas en reposo es la del libro: en uno cifrado, una retirada borrada,
+  añadida o sustituida no abre; en uno en claro, quien escribe en el disco rehace `root:retir` —la
+  cadena es `native_merge`, pública— y una retirada sustituida abre (medido: la identidad retirada
+  vuelve a abrir cuenta). Es lo que ya puede hacer con el resto de un libro en claro, y las retiradas no
+  van bajo la cabeza, así que ningún testigo lo ve;
+- con una copia anterior del libro y acceso al disco, la hoja rotada de después pegada sobre el
+  registro de antes abre, cifrado o en claro: `load` exige las retiradas contra el registro, pero no
+  cruza `root:state` con la última entrada que mueve el árbol de cuentas. Medido en privado: el libro
+  reabre con cero recuperaciones y la identidad retirada vuelve a abrir. Es lo mismo que un rebobinado
+  entero, que deshace la recuperación entera y devuelve la cuenta a la clave vieja; el cruce queda
+  aparte;
+- una instantánea v9 en claro lleva las retiradas sin ninguna raíz que el receptor pueda comprobar:
+  `SnapshotInfo` no la trae, y una cola cambiada importa (medido: la identidad retirada vuelve a abrir
+  en la capa importada). Solo la cifrada las protege;
+- un libro con recuperaciones escritas antes del §N no abre: sin sus retiradas se ve igual que uno al
+  que se las han borrado en reposo, y abrirlo vacío devolvería el robo. Solo lo fabrica la biblioteca,
+  porque la recuperación no está en el cable; y lo mismo una instantánea v3..v8 con recuperaciones.
+  Es lo que el autor eligió frente a abrirlos vacíos (D-1 del §N);
+- la ocupación anticipada se agrava: quien conozca una identidad antes de que su dueño abra la cuenta
+  la ocupa con su vista y su sal, y el dueño tiene que cambiar de clave. Y bloquea una recuperación:
+  quien conozca la identidad nueva antes de que se aplique la ocupa, y la recuperación legítima sale con
+  `IdentityUnavailable`; hoy sin consecuencias, porque la recuperación no está en el cable. Cerrarlo
+  exige probar la posesión de la clave al abrir, un circuito y un cambio de cable: el autor lo dejó como
+  residuo declarado y lo lleva al corte `zkssl/0.5`, en la entrada 119 del `BACKLOG.md` (D-2 del §N);
+- la causa no tiene prueba portable: «tiene cuenta» exigiría abrir la hoja, y las retiradas no van bajo
+  la cabeza;
+- una sola causa no dice cuál de las dos reglas saltó, aunque recorrer con `zkssl_publicId` la cadena
+  de sondeo deja inferirlo en el caso común (no para la identidad nueva de una cuenta recuperada, que
+  se queda en la cadena de sondeo de la vieja);
+- un pendiente hacia una identidad retirada solo vuelve al emisor por reembolso, al caducar, y el
+  reembolso tampoco está en el cable (la D-5 de `doc/ROTACION_DE_CUENTAS.md`).
+
+Se redactó en privado y se publica de una vez con el código, como pide la sección 5. No hay libro
+desplegado ni terceros a quien avisar: el aviso es esta sección y el asiento §N, no un GHSA. El kit
+publicado no cambia: no depende de la capa, y un sobre de rechazo con esta causa lo rechaza por su
+nombre. `AUDITORIA.md` §N.
+
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
 Desde agosto de 2026 esto no es solo una capa: hay cable, nodo, SDK y un

@@ -92,6 +92,10 @@ impl SovereignLayer {
             options: proof_options(),
             db: Some(db),
             key: fijada,
+            identidades: std::collections::HashSet::new(),
+            retiradas: Vec::new(),
+            retir_cabeza: [BaseElement::ZERO; 4],
+            retir_persisted: 0,
         };
 
         if layer.has_existing_ledger()? {
@@ -641,6 +645,8 @@ impl SovereignLayer {
             }
             .into());
         }
+        // §N: las identidades retiradas, una por recuperacion del registro (al final del fichero).
+        self.cargar_retiradas(&db, n_recovery)?;
 
         // --- CUOTA DE CUSTODIOS ---
         //
@@ -852,6 +858,8 @@ impl SovereignLayer {
             key.extend_from_slice(&pos.to_le_bytes());
             batch.insert(key, self.seal(digest_to_bytes(c).to_vec())?);
         }
+        // §N: las identidades retiradas y su raiz, en el MISMO lote (al final del fichero).
+        self.retiradas_al_lote(&mut batch)?;
 
         // --- Cuentas congeladas ---
         //
@@ -928,6 +936,7 @@ impl SovereignLayer {
         // seguro.
         self.log_persisted = self.log.len();
         self.cons_persisted = self.consumos_orden.len();
+        self.retir_persisted = self.retiradas.len();
         Ok(())
     }
 }
@@ -1044,5 +1053,129 @@ impl SovereignLayer {
         db.flush().map_err(|e| StoreError::Io(e.to_string()))?;
         self.key = Some(nueva);
         Ok(())
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §N: LAS IDENTIDADES RETIRADAS, EN REPOSO. Va al final del fichero, como el §702,
+// para que las citas `persistence.rs:linea` de los documentos no se muevan.
+//
+// `retir:{k u64 LE}` = la identidad que retiro la recuperacion de ordinal k, y
+// `root:retir` = la cadena sobre ellas (`cabeza_de_retiradas`). Las dos van SELLADAS
+// (ninguna entra en `EN_CLARO`), y la migracion del KDF las vuelve a sellar sin codigo
+// propio. La raiz no es estado: el sellado no lleva AAD (`crypto.rs`), asi que un valor
+// sellado de 32 B se puede cortar de otra clave y pegar en `retir:k` sin la frase; la
+// cuenta seguiria cuadrando, y la identidad retirada volveria a abrir. La raiz lo caza.
+// ─────────────────────────────────────────────────────────────────────────────
+impl SovereignLayer {
+    /// `commit`: la raiz de las retiradas y las que aun no estan en disco, por ordinal.
+    /// Una lista que solo crece no tiene huerfanas que barrer, como `cons:`.
+    fn retiradas_al_lote(&self, batch: &mut sled::Batch) -> Result<(), LayerError> {
+        batch.insert(b"root:retir".as_ref(), self.seal(digest_to_bytes(&self.retir_cabeza).to_vec())?);
+        for (k, id) in self.retiradas.iter().enumerate().skip(self.retir_persisted) {
+            let mut key = b"retir:".to_vec();
+            key.extend_from_slice(&(k as u64).to_le_bytes());
+            batch.insert(key, self.seal(digest_to_bytes(id).to_vec())?);
+        }
+        Ok(())
+    }
+
+    /// `load`: lee `retir:` y `root:retir`, los exige contra el registro ya verificado
+    /// -`n_recovery` lo contaron los contadores del §393- y reindexa.
+    ///
+    /// - Sin `root:retir`, con ninguna recuperacion y ninguna `retir:`: un libro anterior
+    ///   al §N, que no tiene ninguna retirada. Abre, y su primer `commit` escribe la raiz.
+    /// - Sin `root:retir` en cualquier otro caso: no abre. Un libro con recuperaciones y
+    ///   sin retiradas se ve igual que uno al que le han borrado las dos claves en reposo,
+    ///   y abrirlo vacio devolveria a la vida las identidades retiradas.
+    /// - Con `root:retir`: los ordinales exactamente `0..len`, `len == n_recovery` y la
+    ///   cadena que cuadra con la raiz. Si no, no abre.
+    ///
+    /// No rechaza dos cuentas con la misma identidad que entraran antes del §N: el indice
+    /// las colapsa.
+    fn cargar_retiradas(&mut self, db: &sled::Db, n_recovery: u64) -> Result<(), LayerError> {
+        const WHAT: &str = "identidades retiradas";
+        let integridad = || -> LayerError { StoreError::IntegrityFailure { what: WHAT }.into() };
+        let key = self.key.clone();
+        let abrir = |v: sled::IVec| -> Result<Vec<u8>, LayerError> {
+            match &key {
+                None => Ok(v.to_vec()),
+                Some(k) => Ok(k.open(&v)?),
+            }
+        };
+        // sled ordena las claves como bytes, y un u64 en little-endian no sigue ese orden.
+        let mut leidas: Vec<(u64, Digest)> = Vec::new();
+        for item in db.scan_prefix(b"retir:") {
+            let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
+            let k = u64::from_le_bytes(
+                k[6..]
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("ordinal de identidad retirada".into()))?,
+            );
+            leidas.push((k, digest_from_bytes(&abrir(v)?)?));
+        }
+        leidas.sort_by_key(|(k, _)| *k);
+        let raiz = match db.get(b"root:retir").map_err(|e| StoreError::Io(e.to_string()))? {
+            Some(v) => Some(digest_from_bytes(&abrir(v)?)?),
+            None => None,
+        };
+        let ids: Vec<Digest> = leidas.iter().map(|(_, id)| *id).collect();
+        match raiz {
+            None if n_recovery != 0 || !ids.is_empty() => return Err(integridad()),
+            None => {}
+            Some(r) => {
+                if leidas.iter().enumerate().any(|(i, (k, _))| *k != i as u64)
+                    || crate::accounts::cabeza_de_retiradas(&ids) != r
+                {
+                    return Err(integridad());
+                }
+            }
+        }
+        self.adoptar_retiradas(ids, n_recovery, WHAT)?;
+        self.retir_persisted = self.retiradas.len();
+        Ok(())
+    }
+}
+
+/// §N: `cargar_retiradas`, por dentro.
+#[cfg(test)]
+mod tests_retiradas {
+    use super::*;
+
+    /// **`cargar_retiradas` ordena por ORDINAL, no por los bytes de la clave.** sled devuelve
+    /// `retir:{k u64 LE}` en orden de bytes, y en little-endian ese orden se separa del numerico
+    /// desde k = 256: `retir:0`, `retir:256`, `retir:1`... Ningun test llega a 257 recuperaciones
+    /// -cada una son tres pruebas-, asi que aqui se plantan 300 retiradas con su raiz en un `sled`
+    /// en claro y se cargan: la lista sale en su orden, la cadena cuadra y las 300 quedan en el
+    /// indice.
+    #[test]
+    fn cargar_retiradas_ordena_por_ordinal_y_no_por_los_bytes() {
+        let mut p = std::env::temp_dir();
+        p.push(format!("zkssl_retir_orden_{}", std::process::id()));
+        let path = p.to_str().expect("ruta").to_string();
+        let _ = std::fs::remove_dir_all(&path);
+        let e = BaseElement::new;
+        let ids: Vec<Digest> = (0..300u64).map(|k| [e(k + 1), e(7), e(0), e(0)]).collect();
+        {
+            let db = crate::tests_support::sled_open_retry(&path);
+            for (k, id) in ids.iter().enumerate() {
+                let mut key = b"retir:".to_vec();
+                key.extend_from_slice(&(k as u64).to_le_bytes());
+                db.insert(key, digest_to_bytes(id).to_vec()).expect("plantar");
+            }
+            let raiz = crate::accounts::cabeza_de_retiradas(&ids);
+            db.insert(b"root:retir", digest_to_bytes(&raiz).to_vec()).expect("la raiz");
+            let segunda = db.scan_prefix(b"retir:").nth(1).expect("hay dos").expect("leer").0;
+            assert_eq!(&segunda[6..], &256u64.to_le_bytes(), "el orden de bytes no es el numerico");
+
+            let mut l = crate::tests_support::new_layer();
+            l.cargar_retiradas(&db, 300).expect("CRITICO: 300 retiradas en orden no cargan");
+            assert_eq!(l.retiradas, ids, "la lista, en el orden de los ordinales");
+            assert_eq!((l.retir_cabeza, l.retir_persisted), (raiz, 300));
+            for k in [0, 1, 255, 256, 299] {
+                assert!(matches!(l.identidad_libre(&ids[k]), Err(LayerError::IdentityUnavailable)), "{k}");
+            }
+        }
+        let _ = std::fs::remove_dir_all(&path);
     }
 }

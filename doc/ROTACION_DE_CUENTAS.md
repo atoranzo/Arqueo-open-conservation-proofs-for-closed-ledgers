@@ -21,6 +21,8 @@ nube, sobre `8c02941` (§789), fuera del paso 4 de [`GENAI.md`](../GENAI.md); la
 autor la acepta como análisis, con sus decisiones abiertas. ⚠️ §799: hasta aquí decía «la
 aceptación queda pendiente». ⚠️ §792: sus citas al `BACKLOG.md` por línea pasaron a citas por
 entrada, la regla v5 de `tools/verificar_citas.py`.
+⚠️ §802: el código del §802 movió `lib.rs`, `accounts.rs`, `recovery.rs` y `persistence.rs`, y sus
+36 citas a esos ficheros se corrigieron a la línea de hoy: cada una apunta a lo que apuntaba.
 
 **Convención**: ✅ medido en este árbol, con fichero:línea · 📐 derivado de la lectura del código, sin
 ejecutarlo · ⚠️ matiz · ❓ no medido.
@@ -44,35 +46,35 @@ tiene tiempo. Son el §1.2 y el §1.4.
 
 | clave | lo que cuelga de ella | quién la cambia hoy |
 |---|---|---|
-| **de gasto** `sk` | todo derivado y nada guardado: la identidad (`crates/stark-experiment/src/native.rs:25-48`), el nullificador (`native.rs:67-83`), la sal de la hoja (`native.rs:102-122`) y la clave de vista con su `view_id` (`native.rs:134-185`); abrir guarda la identidad, la sal y el `view_id` ya derivados (`crates/zk-ssl/src/accounts.rs:170-246`) | dos custodios, con `apply_recovery_delegated` (`crates/zk-ssl/src/recovery.rs:52-185`); el titular, no |
-| **de custodio** | `custodian_set_root` (`crates/zk-ssl/src/lib.rs:952-962`) | la gobernanza, con `apply_governance_delegated` (`crates/zk-ssl/src/governance.rs:104`) |
-| **de gobernanza** | `governance_set_root`, «INMUTABLE» (`lib.rs:963-971`) | nadie: cambiarla es crear un libro nuevo (`governance.rs:18-25`, `:30-34`) |
-| **de reposo del libro** | `LedgerKey`, de la frase que el operador da al arrancar (`lib.rs:1044-1050`; `crates/zk-ssl/src/crypto.rs:16-26`) | nadie cambia la frase (§2, caso 5) |
+| **de gasto** `sk` | todo derivado y nada guardado: la identidad (`crates/stark-experiment/src/native.rs:25-48`), el nullificador (`native.rs:67-83`), la sal de la hoja (`native.rs:102-122`) y la clave de vista con su `view_id` (`native.rs:134-185`); abrir guarda la identidad, la sal y el `view_id` ya derivados (`crates/zk-ssl/src/accounts.rs:170-248`) | dos custodios, con `apply_recovery_delegated` (`crates/zk-ssl/src/recovery.rs:52-193`); el titular, no |
+| **de custodio** | `custodian_set_root` (`crates/zk-ssl/src/lib.rs:964-974`) | la gobernanza, con `apply_governance_delegated` (`crates/zk-ssl/src/governance.rs:104`) |
+| **de gobernanza** | `governance_set_root`, «INMUTABLE» (`lib.rs:975-983`) | nadie: cambiarla es crear un libro nuevo (`governance.rs:18-25`, `:30-34`) |
+| **de reposo del libro** | `LedgerKey`, de la frase que el operador da al arrancar (`lib.rs:1056-1062`; `crates/zk-ssl/src/crypto.rs:16-26`) | nadie cambia la frase (§2, caso 5) |
 | **del keystore del wallet** | la frase del fichero (`crates/zk-ssl-sdk/src/keystore.rs:1-27`) | `save` con otra frase (`keystore.rs:262`) |
 | del firmante del nodo | las cabezas, con XMSS | el RFC-0015, con sus actas: **fuera** de esta nota, que es de las claves de cuenta |
 
 ### 1.2 Cómo se acopla la recuperación con los custodios
 
-✅ Lo que `apply_recovery_delegated` hace (`recovery.rs:52-185`), leído línea a línea:
+✅ Lo que `apply_recovery_delegated` hace (`recovery.rs:52-193`), leído línea a línea:
 
 - **La autoridad son dos custodios distintos del conjunto vigente**: dos pruebas de
   `circuit_threshold_single_nullifier` con el dominio de custodio y contra `custodian_set_root`
-  (`recovery.rs:147-167`). Las de gobernanza no recuperan (`governance_keys_cannot_recover`,
-  `recovery.rs:450`).
-- **Gasta cupo de custodio** después de verificar la autoridad (`recovery.rs:168-170`), y el
+  (`recovery.rs:151-171`). Las de gobernanza no recuperan (`governance_keys_cannot_recover`,
+  `recovery.rs:458`).
+- **Gasta cupo de custodio** después de verificar la autoridad (`recovery.rs:172-174`), y el
   registro lo **deriva**: `usos_custodiados` cuenta cada `Recovery` como un uso
   (`crates/zk-ssl/src/log.rs:520-538`).
 - **Sube un contador público**, `recovery_count`, que va en las entradas públicas de la subida
   (`crates/stark-experiment/src/circuit_recovery_climb.rs:325-332`) y en el compromiso que firman
-  los custodios, junto con las dos raíces (`recovery.rs:141-145`).
+  los custodios, junto con las dos raíces (`recovery.rs:145-149`).
 - **La hoja se queda en su posición**: identidad nueva, el mismo saldo y el nonce más uno
-  (`recovery.rs:85-92`), con la subida de los dos carriles por el mismo camino
+  (`recovery.rs:89-96`), con la subida de los dos carriles por el mismo camino
   (`circuit_recovery_climb.rs:1-25`). Recuperar hacia la misma identidad se rechaza antes de
-  verificar (`recovery.rs:81-83`), y reenviar los mismos materiales, también (`recovery.rs:279`).
+  verificar (`recovery.rs:81-83`), y reenviar los mismos materiales, también (`recovery.rs:287`).
 - **La API pide la identidad nueva, no la clave** (`recovery.rs:21-25`, `:60`), y por eso una cuenta
   estrecha puede rotar a una clave ancha (`a_narrow_account_can_rotate_to_a_256_bit_key`,
-  `recovery.rs:215`), que el propio test declara **no soberana**: «exige DOS CUSTODIOS»
-  (`recovery.rs:209-214`).
+  `recovery.rs:223`), que el propio test declara **no soberana**: «exige DOS CUSTODIOS»
+  (`recovery.rs:217-222`).
 - **No está en el cable ni en los vectores**: `spec/RPC.md` no tiene ningún método de recuperación
   (su tabla, `spec/RPC.md:76-125`), y `grep -ril "recover\|recuper" spec/vectors` sale vacío. Lo que
   sí está fuera de la capa es el sello: el reverificador recompone el compromiso de una recuperación
@@ -85,11 +87,11 @@ tiene tiempo. Son el §1.2 y el §1.4.
 
 ### 1.3 Lo que la recuperación deja viejo: la costura 49-A↔52
 
-✅ **El `view_id` y la sal se copian** de la clave vieja (`recovery.rs:93-106`), y la copia de la sal
+✅ **El `view_id` y la sal se copian** de la clave vieja (`recovery.rs:97-110`), y la copia de la sal
 no es solo de la capa: la subida tiene **una sola** columna de sal para los dos carriles, «LA COPIA»
 (`circuit_recovery_climb.rs:72-77`; su `build_trace`, `:180-189`, «la rotación es de la costura 52,
 fuera de alcance»). La sal la impone el circuito; el `view_id`, que no está en la hoja
-(`lib.rs:740-755` frente a `native_leaf_salted`, `crates/zk-ssl-hash/src/lib.rs:205-212`), no lo ata
+(`lib.rs:752-767` frente a `native_leaf_salted`, `crates/zk-ssl-hash/src/lib.rs:205-212`), no lo ata
 ninguna prueba.
 
 📐 Lo que se sigue de ahí, leído y no ejecutado; la recuperación no está en el cable, así que hoy
@@ -112,19 +114,28 @@ ningún nodo lo alcanza:
   cuenta (`two_phase.rs:1229-1231`). Un pendiente enviado a la identidad vieja antes de rotar no lo
   cobra la clave nueva, y la cuenta rotada ya no tiene esa identidad; el reembolso del emisor es
   `apply_refund` (`two_phase.rs:657-697`), y qué hacer con ellos es la D-5. Ningún test lo ejerce.
-- **e. El test que la costura cita no existe.** `recovery.rs:101` remite a
+  ⚠️ §802: ✅ ahora sí, medido y no deducido. `la_clave_nueva_no_cobra_el_pendiente_hacia_la_vieja`
+  (`crates/zk-ssl/src/accounts.rs`, al final): tras recuperar X→Y, la clave nueva genera la prueba de
+  cobro y aplicarla da `StaleState`, sin mover el saldo ni el pendiente. Y lo que esta nota no vio: la
+  clave VIEJA sí lo cobraba, abriendo otra cuenta con la identidad retirada X —medido en privado: cobró
+  7.000—. Desde el §802 abrir rechaza una identidad que ya tiene cuenta o que una recuperación retiró
+  (`IdentityUnavailable`; `SECURITY.md` §3.13), y el pendiente solo vuelve al emisor por `apply_refund`
+  al caducar —salvo un duplicado que la clave vieja abriera antes del §802, que es el residuo de
+  `SECURITY.md` §3.13—: `el_robo_tras_una_recuperacion_no_abre_y_el_pendiente_vuelve_al_emisor`. Ni la
+  recuperación ni el reembolso están en el cable.
+- **e. El test que la costura cita no existe.** `recovery.rs:105` remite a
   `recovery_deja_view_id_viejo`, y `AUDITORIA.md:12774-12777` lo da por hecho; el grep no encuentra
   su definición en ningún crate. `doc/ecst/VERIFICACION.md:1323-1324` ya lo dijo.
 
-⚠️ **Y uno de paso**: el doc del contador público de recuperaciones (`lib.rs:975-981`) está encima
-del campo `frozen`, no del `recovery_count` (`lib.rs:1013`). No cambia nada; se dice para que no se
+⚠️ **Y uno de paso**: el doc del contador público de recuperaciones (`lib.rs:987-993`) está encima
+del campo `frozen`, no del `recovery_count` (`lib.rs:1025`). No cambia nada; se dice para que no se
 lea mal.
 
 ### 1.4 La ausencia de tiempo
 
 ✅ La capa rota los custodios **por uso**: `custodian_uses` sube con cada intervención y al llegar al
 cupo los custodios dejan de actuar hasta que la gobernanza rote el conjunto, «esta capa no tiene
-noción de tiempo» (`lib.rs:1014-1025`; `governance.rs:69-79`). El cupo no lo protege ninguna
+noción de tiempo» (`lib.rs:1026-1037`; `governance.rs:69-79`). El cupo no lo protege ninguna
 autorización (`governance.rs:42-56`).
 
 ✅ **El único reloj del código de plazos es `log.len()`**: `let now = self.log.len()` en la
@@ -153,7 +164,7 @@ aplica.
 - **Un código de operación nuevo**: una línea `REGISTRO` en
   `crates/zk-ssl-hash/src/lib.rs:1708-1745`, su fila en `spec/NUCLEO.md:228-231` y lo que vigila
   `tools/check_nucleo.py`.
-- **Un `OpKind` nuevo**: `log.rs:117` y `:136`, el recuento de `persistence.rs:630`, la derivación
+- **Un `OpKind` nuevo**: `log.rs:117` y `:136`, el recuento de `persistence.rs:634`, la derivación
   del cupo (`log.rs:520-538`), la tabla de clases del reverificador (`reverificacion.rs:30-52`) y
   los `kind` del cable (`spec/RPC.md:102-105`), que ya es protocolo.
 - **Un método nuevo**: `spec/RPC.md`, `spec/openrpc.json`, vectores y RFC (`spec/rfc/PROCESO.md:3-5`
@@ -167,16 +178,16 @@ aplica.
 | | caso | de dónde | qué falta, medido |
 |---|---|---|---|
 | 1 | **hoja nueva** | §117 (`AUDITORIA.md:9569-9625`); «rotar clave implicará nueva hoja» (`native.rs:117-118`) | la segunda sal en la subida (`circuit_recovery_climb.rs:72-77`) |
-| 2 | **vista** | §127.5 (`AUDITORIA.md:10487-10499`); «solo rota rotando la clave» (`native.rs:143-146`) | traer el `view_id` nuevo con la rotación (`recovery.rs:93-102`), y decidir qué lo ata (§3, N3) |
+| 2 | **vista** | §127.5 (`AUDITORIA.md:10487-10499`); «solo rota rotando la clave» (`native.rs:143-146`) | traer el `view_id` nuevo con la rotación (`recovery.rs:97-106`), y decidir qué lo ata (§3, N3) |
 | 3 | **reclamo del B18.2** | `doc/CONFIANZA_RESIDUAL.md:471-477` y `:565` | todo: el circuito, la disponibilidad de datos del B18.1 (`:448-458`) y la declaración del B18.3 |
-| 4 | **gobernanza inmutable** | la 20 | por diseño, nada; el coste es que una clave de gobernanza comprometida lo está para siempre. Lo fija `the_governance_set_survives_restart` (`tests.rs:1176`), y la raíz va en `params_digest` de cada cabeza (`lib.rs:878-886`) |
+| 4 | **gobernanza inmutable** | la 20 | por diseño, nada; el coste es que una clave de gobernanza comprometida lo está para siempre. Lo fija `the_governance_set_survives_restart` (`tests.rs:1176`), y la raíz va en `params_digest` de cada cabeza (`lib.rs:890-898`) |
 | 5 | **recifrado** | la 20 | ver abajo |
-| 6 | **la clave del aviso cifrado**, si el B11.2 sale | [`AVISO_EN_ISO20022.md`](AVISO_EN_ISO20022.md) §6.1 | hoy no existe: ninguna cuenta tiene una clave a la que cifrar (`lib.rs:740-755`; `spec/RPC.md:111`) |
+| 6 | **la clave del aviso cifrado**, si el B11.2 sale | [`AVISO_EN_ISO20022.md`](AVISO_EN_ISO20022.md) §6.1 | hoy no existe: ninguna cuenta tiene una clave a la que cifrar (`lib.rs:752-767`; `spec/RPC.md:111`) |
 
 ✅ **El caso 5 medido, que ya no es el de la 20.** El grep de la 20 sigue vacío, pero desde el §702
 (RFC-0001) **hay un re-sellado de todo el libro**: `migrar_a_kdf_v2` abre cada valor con la clave v1
 y lo vuelve a sellar con una v2 de sal nueva, en un solo lote de sled
-(`crates/zk-ssl/src/persistence.rs:1003-1047`); y el keystore se migra al abrirlo
+(`crates/zk-ssl/src/persistence.rs:1012-1056`); y el keystore se migra al abrirlo
 (`keystore.rs:11-21`). Es con la **misma** frase: cambiar la frase del libro sigue sin existir. Y
 hay una medida que la 20 no tenía: **el nodo no cifra en reposo**. Abre el libro con
 `SovereignLayer::open` (`crates/zk-ssl-node/src/main.rs:2258-2261`), que llama a `open_encrypted`
@@ -199,10 +210,10 @@ es esa transición con `sal' = sal` forzado. Cualquier opción necesita estas cu
   abrir por el cable (`spec/RPC.md:111`; `accounts.rs:205-209`).
 - **N3. Qué ata a cada una.** La sal nueva queda atada por `root_new`, porque va en la hoja. El
   `view_id` nuevo no va en ninguna hoja: solo lo ataría meterlo en el compromiso de la autorización,
-  que hoy son las raíces y los contadores (`recovery.rs:141-145`). Eso cambia el sello de la
+  que hoy son las raíces y los contadores (`recovery.rs:145-149`). Eso cambia el sello de la
   entrada: la era 1 del reverificador lo recompone con los parámetros de hoy
   (`reverificacion.rs:178-198`), y la era 2, que lleva el compromiso en la entrada
-  (`reverificacion.rs:155-167`), es como la capa ya escribe (`recovery.rs:176`).
+  (`reverificacion.rs:155-167`), es como la capa ya escribe (`recovery.rs:184`).
 - **N4. El cliente.** El `Wallet` del SDK guarda una sola clave de gasto
   (`crates/zk-ssl-sdk/src/lib.rs:93-95`) y el keystore comprueba al cargar que esa clave deriva la
   identidad guardada (`keystore.rs:25-27`): una cuenta rotada es otro fichero, y nada en el SDK
@@ -216,9 +227,13 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
 
 - **Autoriza**: dos custodios, como hoy.
 - **Cubre**: los casos 1 y 2 por la vía de custodia, y cierra la costura del §1.3 (a, b y c).
-- **No cubre**: la rotación soberana; cada rotación gasta cupo (`recovery.rs:168-170`) y sube el
+- **No cubre**: la rotación soberana; cada rotación gasta cupo (`recovery.rs:172-174`) y sube el
   contador público, así que una rotación de higiene se cuenta como una intervención; los casos 3 a
-  6; los pendientes en vuelo (§1.3 d) siguen fuera del alcance de la clave nueva.
+  6; los pendientes en vuelo (§1.3 d) siguen fuera del alcance de la clave nueva. ⚠️ §802: y desde el
+  §802 recuperar hacia una identidad con cuenta o retirada se rechaza (`IdentityUnavailable`), antes de
+  verificar: deshacer X→Y→X tampoco se puede, y una R1 que quiera volver a una clave anterior necesita
+  otra regla. Y quien conozca la identidad nueva antes de que se aplique puede ocuparla abriendo una
+  cuenta con ella: la recuperación sale entonces con `IdentityUnavailable` (`SECURITY.md` §3.13).
 - **Coste**: N1 a N4 sobre la subida y la capa; los ficheros del §1.5 hasta «El mando». **Cero
   vectores y cero cable**: la recuperación no está en ninguno. Rompe los bytes de la prueba de
   subida, así que va en un tren.
@@ -236,12 +251,12 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
 - **Coste**: una AIR nueva, o la subida con un modo: la subida no tiene sección de clave
   (`circuit_recovery_climb.rs:22-25`). **No puede reutilizar `OpKind::Recovery`**: el registro
   derivaría un uso de custodio que no hubo (`log.rs:520-538`) y el contador público mezclaría
-  intervenciones con rotaciones (`lib.rs:975-981`). Pide un `OpKind` y, si va al cable, un método,
+  intervenciones con rotaciones (`lib.rs:987-993`). Pide un `OpKind` y, si va al cable, un método,
   sus vectores, su RFC, su fila en la suite del RFC-0009 y su familia en el registro del RFC-0018
   (§1.5). Y una decisión sobre la cuenta congelada: la subida no tiene fase de congelados
   (`circuit_recovery_climb.rs:42-45`).
 - **Tiempo y carrera**: sin ventana; el reenvío lo para el nonce más uno con las raíces, como en la
-  recuperación (`recovery.rs:279`).
+  recuperación (`recovery.rs:287`).
 
 ### R3. Rotación precomprometida — la clave siguiente, el patrón del RFC-0015
 
@@ -259,7 +274,7 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
   `crates/stark-experiment/src/`—, la función del núcleo (`crates/zk-ssl-hash/src/lib.rs:205-212`)
   con su KAT nuevo junto a `spec/vectors/nucleo/native_leaf_salted.json`, y una migración de todas
   las hojas: la clase del B13/B14. **Solo en el registro**, la atadura es la palabra del operador,
-  que guarda los registros (`lib.rs:733-738`). Más todo lo de R2.
+  que guarda los registros (`lib.rs:745-750`). Más todo lo de R2.
 - **Tiempo y carrera**: no necesita ventana. El RFC-0015 la evita porque quien juzga las actas es el
   testigo, no la capa.
 
@@ -275,7 +290,7 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
   local (`crates/zk-ssl/src/iso.rs:297-299`) y no se persiste
   (`crates/zk-ssl/src/migration.rs:46-47`), hay que reapuntarlo a mano.
 - **Coste**: **ningún fichero**. Lo operativo: dos pruebas por rotación, las de un pago; una plaza
-  del tope de cuentas (`lib.rs:1031-1042`), que abrir no autoriza (la 8 del `BACKLOG.md`); el
+  del tope de cuentas (`lib.rs:1043-1054`), que abrir no autoriza (la 8 del `BACKLOG.md`); el
   enlace viejo → nuevo, a la vista de quien vea las dos mitades (`spec/RPC.md:344-347`) y del
   operador. Una cuenta congelada no puede: el envío lo comprueba (`two_phase.rs:859`).
 - **Tiempo y carrera**: sin ventana.
@@ -286,7 +301,7 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
   o una cabeza viva— (`doc/CONFIANZA_RESIDUAL.md:471-477`); los custodios, si se quieren, como
   respaldo.
 - **Cubre**: el caso 3 por construcción, y el 1 y el 2 si la hoja nueva se escribe con identidad,
-  sal y vista nuevas. Y el 4 **de lado**: «cambiarla exige crear un ledger nuevo» (`lib.rs:963-971`)
+  sal y vista nuevas. Y el 4 **de lado**: «cambiarla exige crear un ledger nuevo» (`lib.rs:975-983`)
   deja de ser fatal para los titulares si cada cuenta puede pasar por reclamo a un sucesor con otra
   raíz de gobernanza (G2, abajo).
 - **No cubre**: el caso 5. Es la más cara.
@@ -304,13 +319,13 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
 - **G0. La gobernanza, inmutable** como hoy: coste cero, y el declarado de la 20.
 - **G1. Que la gobernanza se rote con su propio umbral**: una vía como `apply_governance_delegated`
   (`governance.rs:104-169`) con un código de operación nuevo (§1.5), la raíz mutable y persistida, y
-  `params_digest` cambiando entre cabezas (`lib.rs:878-886`). ❓ Qué hace el testigo cuando
+  `params_digest` cambiando entre cabezas (`lib.rs:890-898`). ❓ Qué hace el testigo cuando
   `params_digest` cambia entre dos cabezas no está medido aquí; rotar el conjunto de custodios ya lo
   mueve hoy. La circularidad se traslada otra vez: dos claves de gobernanza comprometidas rotarían
   la gobernanza a las suyas.
 - **G2. Por R5**: un libro nuevo con otra raíz y los reclamos de todas las cuentas.
 - **K0. El recifrado, como hoy**: solo la biblioteca, y el nodo en claro.
-- **K1. Cambiar la frase**: generalizar `migrar_a_kdf_v2` a dos frases (`persistence.rs:1013-1047`);
+- **K1. Cambiar la frase**: generalizar `migrar_a_kdf_v2` a dos frases (`persistence.rs:1022-1056`);
   en el nodo, antes, cablear el cifrado (`SECURITY.md:413-417`); en el keystore, `load` y `save` ya
   bastan (`keystore.rs:262` y `:280`). Ningún circuito y nada en el cable, como el RFC-0001, que no
   movió `zkssl/0.4` (`spec/rfc/0001-el-kdf-de-reposo.md:12`). ✅ **No comparte pieza con las opciones
@@ -350,7 +365,10 @@ opción que se elija aquí, o se derivará de `sk` y rotará con ella (D-9).
 - **D-3. Si la gobernanza entra**: G0, G1 o G2.
 - **D-4. Si el recifrado entra o va aparte**: K0 o K1, y si antes se cablea el cifrado en el nodo.
 - **D-5. Los pendientes en vuelo** hacia la identidad vieja (§1.3 d): si se aceptan varados hasta el
-  reembolso, si la rotación los espera o si la identidad vieja sigue cobrando.
+  reembolso, si la rotación los espera o si la identidad vieja sigue cobrando. ⚠️ §802: la tercera ya no
+  puede ser una cuenta nueva con la identidad vieja —una identidad retirada no vuelve a abrir—; solo un
+  diseño en el que la cuenta rotada acepte su identidad anterior. Y toda rotación que retire una
+  identidad tiene que añadirla al mismo conjunto de retiradas, en el mismo lote.
 - **D-6. El contador**: si una rotación propia cuenta en `recovery_count` o tiene el suyo.
 - **D-7. La cuenta congelada**: si puede rotar, y si rotar puede sacarla de su posición.
 - **D-8. El tren**: el 0.5 del RFC-0018 u otro.
@@ -362,7 +380,8 @@ opción que se elija aquí, o se derivará de `sk` y rotará con ella (D-9).
 No toca código, ni el cable, ni un circuito; no gasta número de RFC; no elige; no cierra la 52 ni la
 20. Los pasos que siguen necesitan compilar, y esta sesión no compila:
 
-1. el test que `recovery.rs:101` cita y no existe: una recuperación deja el `view_id` viejo, y la
+1. el test que `recovery.rs:105` cita y no existe: una recuperación deja el `view_id` viejo, y la
    clave nueva no pasa `account_view_authenticated`;
-2. el pendiente en vuelo tras una recuperación (§1.3 d), medido con un test y no deducido;
+2. el pendiente en vuelo tras una recuperación (§1.3 d), medido con un test y no deducido; ⚠️ §802:
+   hecho, con el robo que destapó cerrado (§1.3 d);
 3. de la opción que se elija, su test de mutación sobre la sal nueva (N1).

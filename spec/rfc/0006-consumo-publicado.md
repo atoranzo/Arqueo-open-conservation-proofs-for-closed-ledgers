@@ -137,7 +137,8 @@ abre.
 > (`PASTE-E1-M`, `PASTE-E1-M2`, `PASTE-E1-M3`): (1) **la instantánea no estaba en la versión 4
 > sino en la 7** (`MAGIC_V7`, `snapshot.rs`; el «Versión 4 del formato» de su doc-comment era
 > historia, la v4 fue la que retiró el nulificador): E1 la sube de **v7 a v8** (`ZKSSL8`), y v3..v7
-> siguen importándose con el conjunto vacío; (2) **la posición no puede ser el digest completo**:
+> siguen importándose con el conjunto vacío (⚠️ §N: desde el §N, solo si su registro no tiene ninguna
+> `Recovery`, por la D-1 que el autor tomó: `SECURITY.md` §3.13); (2) **la posición no puede ser el digest completo**:
 > `SparseTree` se indexa por `u64`, luego la posición son los **63 bits bajos de los primeros ocho
 > bytes** del consumo (`CONS_DEPTH = 63`), y la hoja es el digest entero, de modo que una colisión
 > de prefijo (2⁻⁶³ por pareja) se detecta y se rechaza con su propio nombre (`ConsumoColision`),

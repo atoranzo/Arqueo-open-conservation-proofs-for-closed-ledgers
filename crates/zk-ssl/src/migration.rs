@@ -328,4 +328,26 @@ mod tests {
                 "re-migrar el ledger reabierto debe RECHAZARSE (marcador)");
         let _ = std::fs::remove_dir_all(&path);
     }
+
+    /// **§N: la migracion B13/B14 conserva la invariante.** Recoloca cada cuenta por su
+    /// identidad -la de Alice, recuperada de X hacia Y, sale de la cadena de X- y no toca ni el
+    /// indice, que va por identidad, ni las retiradas, que van por ordinal: tras migrar, ni X ni
+    /// Y abren otra cuenta.
+    #[test]
+    fn la_migracion_b13_b14_conserva_la_invariante() {
+        let mut l = new_layer();
+        let alice = open_and_fund(&mut l, SK_ALICE, 1_000);
+        open_and_fund(&mut l, SK_BOB, 0);
+        let x = l.public_id_of(alice).expect("alice");
+        let y = derive_public_id(BaseElement::new(0xA11CE_2));
+        recover_delegated(&mut l, alice, y);
+        l.migrate_to_salted_positions().expect("migra");
+        for (nombre, id) in [("X, la retirada", x), ("Y, la recuperada", y)] {
+            let r = l.open_with_id(id, [BaseElement::new(9); 4], [BaseElement::new(7); 4]);
+            assert!(
+                matches!(r, Err(LayerError::IdentityUnavailable)),
+                "CRITICO: tras migrar, {nombre} abrio otra cuenta: {r:?}"
+            );
+        }
+    }
 }

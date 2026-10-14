@@ -350,6 +350,12 @@ pub enum LayerError {
     /// RFC-0006 (E1, §413): la posicion del consumo la ocupa OTRO consumo
     /// (colision de los 63 bits de posicion, 2^-63 por pareja, declarada).
     ConsumoColision { consumo: Digest, ocupante: Digest },
+    /// §N: la identidad ya tiene cuenta, o una recuperacion la retiro. Una
+    /// identidad -el `public_id` entero, sus cuatro elementos- abre a lo sumo
+    /// una cuenta en la vida del libro, y la que una recuperacion retira no
+    /// vuelve a abrir ninguna. Sin campos, a proposito: no dice cual de las
+    /// dos.
+    IdentityUnavailable,
 }
 
 impl From<StoreError> for LayerError {
@@ -456,6 +462,10 @@ impl std::fmt::Display for LayerError {
                  no repeticion",
                 crate::consumo::posicion_de_consumo(consumo)
             ),
+            IdentityUnavailable => write!(
+                f,
+                "la identidad no esta disponible: ya tiene cuenta o una recuperacion la retiro"
+            ),
         }
     }
 }
@@ -555,6 +565,7 @@ impl LayerError {
                 "ConsumoColision",
                 vec![("consumo", Campo::Digest(*consumo)), ("ocupante", Campo::Digest(*ocupante))],
             ),
+            IdentityUnavailable => ("IdentityUnavailable", vec![]),
         };
         Causa { nombre, campos }
     }
@@ -597,6 +608,7 @@ mod tests_causa {
             LayerError::AlreadyInThatFreezeState,
             LayerError::ConsumoRepetido { consumo: d(22) },
             LayerError::ConsumoColision { consumo: d(23), ocupante: d(24) },
+            LayerError::IdentityUnavailable,
         ]
     }
 
@@ -1048,6 +1060,24 @@ pub struct SovereignLayer {
     /// **No se guarda junto a los datos**: la aporta el operador al
     /// arrancar. Guardarla al lado no protegería nada.
     key: Option<crate::crypto::LedgerKey>,
+    /// §N: las identidades que ya no pueden abrir cuenta, en bytes
+    /// canonicos (`digest_to_bytes`; `BaseElement` no implementa `Hash`): las
+    /// que tienen cuenta y las que una recuperacion retiro. Solo crece. Es
+    /// DERIVADO -no se persiste-: lo reconstruye `reindexar_identidades`, de
+    /// los registros y de `retiradas`, al cargar y al importar.
+    identidades: std::collections::HashSet<[u8; 32]>,
+    /// §N: las identidades que una recuperacion retiro, en el orden de las
+    /// recuperaciones: la posicion es el ordinal de la recuperacion. No se
+    /// pueden derivar -la entrada Recovery del registro lleva raices y
+    /// contadores, y el registro de la cuenta se sobrescribe-, asi que se
+    /// persisten (`retir:{k}`) en el mismo lote que la recuperacion.
+    retiradas: Vec<Digest>,
+    /// §N: la cadena sobre `retiradas` (`cabeza_de_retiradas`), cacheada. Va a
+    /// sled como `root:retir` y `load` la exige.
+    retir_cabeza: Digest,
+    /// §N: cuantas de `retiradas` estan ya en disco. Misma disciplina que
+    /// `log_persisted` y `cons_persisted`.
+    retir_persisted: usize,
 }
 
 /// §668: el tope de suministro que la capa admite: el rango de los AIR desde
@@ -1105,6 +1135,10 @@ impl SovereignLayer {
             options: proof_options(),
             db: None,
             key: None,
+            identidades: std::collections::HashSet::new(),
+            retiradas: Vec::new(),
+            retir_cabeza: [BaseElement::ZERO; 4],
+            retir_persisted: 0,
         }
     }
 

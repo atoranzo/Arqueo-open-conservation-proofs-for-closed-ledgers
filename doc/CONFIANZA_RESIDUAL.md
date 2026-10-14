@@ -166,6 +166,15 @@ decidido, y dónde):
   entero en `SplmtryData`, no en un campo de 140 caracteres. El cuerpo de este documento no se toca.
 · B18.2 (el reclamo de migración) → ES UNA ROTACIÓN, ESTUDIADA, SIN DECIDIR (§791): su ⚠️ está en
   «La errata del salt», arriba, y su análisis en `doc/ROTACION_DE_CUENTAS.md`. El cuerpo no se toca.
+· ⚠️ §N: B18.2 y B18.4 reconstruyen desde H*, y desde el §N el libro guarda un estado que NO va bajo
+  la cabeza: las identidades que retiraron las recuperaciones (`retir:` y `root:retir`; `SECURITY.md`
+  §3.13). Una reconstrucción sin ellas dejaría abrir otra cuenta con una identidad retirada y cobrar
+  ahí lo que esté en vuelo hacia ella. El sucesor tiene que llevarlas: la instantánea v9 las lleva; los
+  deltas de la DA (B18.1) no están diseñados. Y en reposo las ata el libro, no la cabeza: en uno en
+  claro, quien escribe en el disco rehace `root:retir`, y la v9 en claro no trae raíz que comprobar;
+  y con una copia anterior del libro, la hoja rotada pegada sobre el registro de antes abre, cifrado
+  o en claro —`load` exige las retiradas contra el registro, pero no cruza `root:state` con él—, y la
+  identidad retirada vuelve a abrir. Ningún testigo lo ve. El cuerpo no se toca.
 ============================================================ -->
 
 # CONFIANZA_RESIDUAL — hacer comprobable la honestidad del operador

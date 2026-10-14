@@ -23,7 +23,8 @@
 //! años sin depender de la versión de `sled` que la escribió.
 //!
 //! ```text
-//! formato v7 -- lo que escribe export_snapshot
+//! formato v9 -- lo que escribe export_snapshot (§N; hasta el §N esta linea decia v7 y
+//!               describia la v8)
 //!
 //! fichero = marca (1 B) + cuerpo
 //!
@@ -35,7 +36,7 @@
 //!
 //! cuerpo (desplazamiento desde su byte 0):
 //!
-//!     0  MAGIC              8 B   "ZKSSL8\0\0"  (MAGIC_V8)
+//!     0  MAGIC              8 B   "ZKSSL9\0\0"  (MAGIC_V9)
 //!     8  custodian_root    32 B
 //!    40  governance_root   32 B
 //!    72  state_root        32 B   ← para verificar
@@ -63,11 +64,15 @@
 //!        ── registro ──     n_log x (2 B longitud u16, luego longitud B)
 //!                           longitud vale 137, o 169 si la entrada
 //!                           lleva compromiso
+//!        ── retiradas ──    n_retir 8 B, luego n_retir x 32 B (v9, §N):
+//!                           las identidades que retiraron las
+//!                           recuperaciones, en su orden
 //! ```
 //!
-//! Esto es lo que `export_snapshot` **escribe**: v8. Lo que se **lee**
-//! es v3..v8 — la tabla de mágicos, con lo que cambia en cada versión,
-//! vive pegada a las constantes `MAGIC`..`MAGIC_V8`, más abajo en este fichero.
+//! Esto es lo que `export_snapshot` **escribe**: v9 (⚠️ §N: hasta el §N, v8). Lo que se
+//! **lee** es v3..v9 — la tabla de mágicos, con lo que cambia en cada versión,
+//! vive pegada a las constantes `MAGIC`..`MAGIC_V9`, más abajo en este fichero. La cola
+//! de la v9 va DETRAS del registro: los desplazamientos de la cabecera no se mueven.
 //!
 //! ## ⚠️ Lo que NO es
 //!
@@ -78,8 +83,14 @@
 //! - **Va cifrada si la capa tiene clave**, con el mismo cifrado
 //!   autenticado que el ledger y la cabecera de su KDF (§702). Sin clave va
 //!   en claro, y entonces quien tenga el fichero **ve todos los saldos**.
+//! - **⚠️ §N: en claro, las retiradas no van atadas a nada.** La cola de la
+//!   v9 no lleva raíz, y `SnapshotInfo` solo trae `state_root`, el
+//!   suministro y los recuentos: una cola cambiada importa, y la identidad
+//!   que una recuperación retiró vuelve a abrir (medido). El resto del cuerpo
+//!   lo atan `state_root` y la cadena del registro; la cola, solo el sellado
+//!   de una instantánea cifrada (`SECURITY.md` §3.13).
 //! - **No hay copias incrementales.** Cada instantánea es completa.
-//! - **No lleva los pagos en vuelo.** El formato (v8) no tiene hueco
+//! - **No lleva los pagos en vuelo.** El formato (v9, como la v8) no tiene hueco
 //!   para el árbol de pendientes ni su raíz: una copia de un ledger
 //!   con dinero en tránsito lo perdería callando, y la verificación
 //!   pasaría igual. Por eso `export_snapshot` **rehúsa** exportar
@@ -123,6 +134,11 @@ const MAGIC_V7: &[u8; 8] = b"ZKSSL7\0\0";
 /// tras `frozen_root`, `n_cons` tras `n_frozen`, la seccion tras las
 /// congeladas—. v7 y anteriores se importan con el conjunto vacio.
 const MAGIC_V8: &[u8; 8] = b"ZKSSL8\0\0";
+/// v9 (§N): la v8 byte a byte, mas una COLA tras el registro: `n_retir` (8 B LE) y
+/// `n_retir` x 32 B, las identidades que retiraron las recuperaciones, en su orden. Al
+/// importar se exige una por cada entrada Recovery del registro importado; v3..v8 no la
+/// traen, y por eso solo importan si su registro no tiene ninguna.
+const MAGIC_V9: &[u8; 8] = b"ZKSSL9\0\0";
 
 /// Resumen de una instantánea, para registro y verificación externa.
 #[derive(Clone, Debug)]
@@ -199,7 +215,7 @@ impl SovereignLayer {
     /// protección distintos para el mismo dato**, y la instantánea es
     /// justo la que se copia fuera del nodo.
     pub fn export_snapshot(&self, path: &str) -> Result<SnapshotInfo, LayerError> {
-        // (b') del §359: el formato (v8) NO lleva el pendiente -- ni
+        // (b') del §359: el formato (v9, como la v8) NO lleva el pendiente -- ni
         // arbol, ni raiz, ni meta. Exportar con pagos en vuelo fabricaria
         // una copia que MIENTE: restaura sin ellos y la verificacion pasa
         // igual. Se rehusa ANTES de escribir un solo byte; la via real es
@@ -207,12 +223,12 @@ impl SovereignLayer {
         let en_vuelo = self.total_pending();
         if en_vuelo > 0 || !self.pending_amounts.is_empty() || !self.reserved_pending.is_empty() {
             return Err(LayerError::VerificationFailed(format!(
-                "instantanea: {en_vuelo} en transito en {} posiciones; el formato v8 no lleva el pendiente y exportarlo lo perderia callando",
+                "instantanea: {en_vuelo} en transito en {} posiciones; el formato v9 no lleva el pendiente y exportarlo lo perderia callando",
                 self.pending_amounts.len() + self.reserved_pending.len()
             )));
         }
         let mut out: Vec<u8> = Vec::new();
-        out.extend_from_slice(MAGIC_V8);
+        out.extend_from_slice(MAGIC_V9);
         out.extend_from_slice(&digest_to_bytes(&self.custodian_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.governance_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.accounts.root()));
@@ -259,6 +275,13 @@ impl SovereignLayer {
             let b = crate::store::log_entry_to_bytes(e);
             out.extend_from_slice(&(b.len() as u16).to_le_bytes());
             out.extend_from_slice(&b);
+        }
+        // §N (v9): la cola de las identidades retiradas, en su orden. Va sin raiz: con
+        // clave, el cuerpo entero es un sellado autenticado; en claro no la ata nada (ver la
+        // doc del modulo).
+        out.extend_from_slice(&(self.retiradas.len() as u64).to_le_bytes());
+        for id in &self.retiradas {
+            out.extend_from_slice(&digest_to_bytes(id));
         }
 
         // Cifrado con la misma clave que el ledger, si la hay. Se antepone
@@ -336,25 +359,28 @@ impl SovereignLayer {
         // Una copia v3 —anterior a la retirada del arbol de
         // nullificadores— sigue siendo importable: sus nullificadores se
         // verifican contra la raiz que declara y se descartan despues.
-        // Se ESCRIBE v8; se LEEN v3..v8. El reparto no se enumera aqui:
-        // cada magico fija su cuaterna (legacy_v3, rec_len, salted, con_cons) justo
-        // debajo, y esa es la unica lista que manda.
-        let (legacy_v3, rec_len, salted, con_cons) = {
+        // ⚠️ §N: se ESCRIBE v9; se LEEN v3..v9. El reparto no se enumera aqui:
+        // cada magico fija su quintupla (legacy_v3, rec_len, salted, con_cons, con_retir)
+        // justo debajo, y esa es la unica lista que manda.
+        let (legacy_v3, rec_len, salted, con_cons, con_retir) = {
             let magic = take(8, "magic")?;
             if magic == MAGIC_V3 {
-                (true, 48usize, false, false)
+                (true, 48usize, false, false, false)
             } else if magic == MAGIC {
-                (false, 48usize, false, false)
+                (false, 48usize, false, false, false)
             } else if magic == MAGIC_V5 {
-                (false, 80usize, false, false)
+                (false, 80usize, false, false, false)
             } else if magic == MAGIC_V6 {
-                (false, 112usize, false, false)
+                (false, 112usize, false, false, false)
             } else if magic == MAGIC_V7 {
                 // Mundo nuevo (flip D4): hoja envuelta y frozen a 32.
-                (false, 112usize, true, false)
+                (false, 112usize, true, false, false)
             } else if magic == MAGIC_V8 {
                 // v8 (RFC-0006 E1): como v7, mas el arbol de consumos.
-                (false, 112usize, true, true)
+                (false, 112usize, true, true, false)
+            } else if magic == MAGIC_V9 {
+                // v9 (§N): como v8, mas la cola de las identidades retiradas.
+                (false, 112usize, true, true, true)
             } else {
                 return Err(malformed(
                     "cabecera desconocida: no es una instantanea ZK-SSL",
@@ -434,6 +460,10 @@ impl SovereignLayer {
             // Una capa importada arranca en memoria y sin cifrar: quien
             // la persista decidira con que clave.
             key: None,
+            identidades: std::collections::HashSet::new(),
+            retiradas: Vec::new(),
+            retir_cabeza: [BaseElement::ZERO; 4],
+            retir_persisted: 0,
         };
 
         for _ in 0..n_accounts {
@@ -519,6 +549,17 @@ impl SovereignLayer {
             }
         }
         layer.log = TransitionLog::from_entries(entradas);
+        // §N (v9): la cola de las identidades retiradas. Sin reservar con su cuenta: una
+        // cuenta falsa no reserva memoria, se queda sin bytes.
+        let mut retiradas: Vec<Digest> = Vec::new();
+        if con_retir {
+            let n_retir = u64::from_le_bytes(
+                take(8, "n_retir")?.try_into().map_err(|_| malformed("n_retir"))?,
+            );
+            for _ in 0..n_retir {
+                retiradas.push(digest_from_bytes(take(32, "identidad retirada")?)?);
+            }
+        }
 
         // ===== VERIFICACION DE INTEGRIDAD =====
         // Reconstruir no basta: hay que comprobar que lo reconstruido es
@@ -547,6 +588,15 @@ impl SovereignLayer {
         // abriria. Mismo productor que `load`: las dos no pueden divergir. El TOPE
         // sigue viniendo del defecto -es politica y no viaja-, y va declarado.
         layer.custodian_uses = layer.log.usos_custodiados();
+        // §N: una retirada por cada recuperacion del registro VERIFICADO -no de la cabecera,
+        // que no se cruza-, y el indice de identidades. Una v3..v8 trae la lista vacia.
+        let n_rec = layer
+            .log
+            .entries()
+            .iter()
+            .filter(|e| matches!(e.kind, OpKind::Recovery))
+            .count() as u64;
+        layer.adoptar_retiradas(retiradas, n_rec, "identidades retiradas de la instantanea")?;
 
         if layer.frozen.root() != declared_frozen {
             return Err(LayerError::Store(
@@ -839,7 +889,8 @@ mod tests {
         // raiz de consumos, RFC-0006 E1, §413: este test cayo en el canon
         // antes de moverla). Un cambio de formato hay que contrastarlo con
         // todo test que codifique desplazamientos, no solo con los que
-        // nombran lo cambiado.
+        // nombran lo cambiado. ⚠️ §N: la v9 añade una cola DETRAS del
+        // registro y la cabecera no se mueve: la constante sigue valiendo.
         const CABECERA: usize = 8 + 32 * 5 + 8 * 8 + 8 * 4; // 264
         let mut bytes = std::fs::read(&file).expect("leer");
         bytes[CABECERA + 20] ^= 0xFF;
@@ -866,7 +917,7 @@ mod tests {
     /// `state_root` y lo caza la puerta de cuentas; manipular el SUMINISTRO
     /// no mueve ninguna raiz, y hasta el §379 se importaba en silencio.
     ///
-    /// El formato v8 NO transporta pendientes, asi que aqui la invariante se
+    /// El formato v8 -y la v9, §N- NO transporta pendientes, asi que aqui la invariante se
     /// reduce a sum(saldos) == suministro; es cierto porque el §359 hizo
     /// que `export_snapshot` rehuse con pagos en vuelo.
     #[test]
@@ -883,7 +934,8 @@ mod tests {
         // cuerpo): dos productores del mismo numero.
         //
         // El test vecino declara que una constante asi ya se quedo rancia DOS
-        // veces. Por eso esta se AUTOVERIFICA antes de usarse.
+        // veces. Por eso esta se AUTOVERIFICA antes de usarse. ⚠️ §N: la v9 no
+        // la mueve; su cola va detras del registro.
         const OFF: usize = 1 + 8 + 32 * 5 + 8 * 3;
         let mut bytes = std::fs::read(&file).expect("leer");
         let mut ocho = [0u8; 8];
@@ -891,7 +943,7 @@ mod tests {
         let leido = u64::from_le_bytes(ocho);
         assert_eq!(
             leido, info.total_supply,
-            "el desplazamiento del suministro en el v8 se ha movido: el formato cambio y esta constante no"
+            "el desplazamiento del suministro en la v9 se ha movido: el formato cambio y esta constante no"
         );
 
         bytes[OFF..OFF + 8].copy_from_slice(&(info.total_supply + 1).to_le_bytes());
@@ -1072,7 +1124,9 @@ mod tests {
             .expect("transferencia en dos fases");
         layer.export_snapshot(&file).expect("exportar");
 
-        // El registro esta al final del fichero.
+        // El registro esta al final del fichero. ⚠️ §N: desde la v9 le sigue
+        // la cola de las identidades retiradas, 8 B sin ninguna, como aqui: el
+        // byte `len - 20` sigue cayendo en la ultima entrada del registro.
         let mut bytes = std::fs::read(&file).expect("leer");
         let len = bytes.len();
         bytes[len - 20] ^= 0xFF;
@@ -1368,6 +1422,116 @@ mod tests {
                 .is_err(),
             "CRITICO: otra frase abrio la instantanea v1"
         );
+        let _ = std::fs::remove_file(&file);
+    }
+
+    // -----------------------------------------------------------------
+    // §N: la instantanea v9, con las identidades retiradas
+    // -----------------------------------------------------------------
+
+    /// Una capa con Alice recuperada de X hacia Y, exportada en claro; devuelve (X, Y).
+    fn v9_con_una_recuperacion(file: &str) -> (Digest, Digest) {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000);
+        let x = layer.public_id_of(alice).expect("alice");
+        let y = derive_public_id(winterfell::math::fields::f64::BaseElement::new(0xA11CE_2));
+        recover_delegated(&mut layer, alice, y);
+        layer.export_snapshot(file).expect("exportar");
+        (x, y)
+    }
+
+    /// La misma instantanea, como la habria escrito el codigo de antes: el magico de la v8 y sin
+    /// la cola de `n_retir` identidades.
+    fn a_v8(bytes: &mut Vec<u8>, n_retir: usize) {
+        bytes[1..9].copy_from_slice(b"ZKSSL8\0\0");
+        bytes.truncate(bytes.len() - 8 - 32 * n_retir);
+    }
+
+    fn abrir_ajena(l: &mut SovereignLayer, id: Digest) -> Result<AccountIndex, LayerError> {
+        use winterfell::math::fields::f64::BaseElement;
+        l.open_with_id(id, [BaseElement::new(9); 4], [BaseElement::new(7); 4])
+    }
+
+    fn es_de_las_retiradas<T>(r: &Result<T, LayerError>) -> bool {
+        matches!(
+            r,
+            Err(LayerError::Store(StoreError::IntegrityFailure {
+                what: "identidades retiradas de la instantanea"
+            }))
+        )
+    }
+
+    /// **§N: la instantanea v9 lleva las retiradas.** Exportar tras X->Y escribe el magico de la
+    /// v9, e importarla deja la invariante en pie: ni X ni Y abren otra cuenta en la capa
+    /// restaurada.
+    #[test]
+    fn la_instantanea_v9_lleva_las_retiradas() {
+        let file = temp_file("v9_retiradas");
+        let (x, y) = v9_con_una_recuperacion(&file);
+        let bytes = std::fs::read(&file).expect("leer");
+        assert_eq!(&bytes[1..9], b"ZKSSL9\0\0", "la instantanea se escribe en v9");
+        let mut r = SovereignLayer::import_snapshot(&file).expect("importar la v9");
+        for (nombre, id) in [("X, la retirada", x), ("Y, la recuperada", y)] {
+            let a = abrir_ajena(&mut r, id);
+            assert!(
+                matches!(a, Err(LayerError::IdentityUnavailable)),
+                "CRITICO: en la capa restaurada, {nombre} abrio otra cuenta: {a:?}"
+            );
+        }
+        let _ = std::fs::remove_file(&file);
+    }
+
+    /// **§N: una v8 con recuperaciones no importa, y sin ellas si.** La v8 no trae las
+    /// retiradas: con una entrada Recovery en su registro, importarla vacia devolveria la
+    /// identidad retirada; sin ninguna, no hay nada que perder, e importa con el indice rehecho
+    /// de los registros.
+    #[test]
+    fn una_v8_con_recuperaciones_no_importa_y_sin_ellas_si() {
+        let file = temp_file("v8_con_recuperacion");
+        v9_con_una_recuperacion(&file);
+        let mut bytes = std::fs::read(&file).expect("leer");
+        a_v8(&mut bytes, 1);
+        std::fs::write(&file, &bytes).expect("escribir");
+        let r = SovereignLayer::import_snapshot(&file);
+        assert!(
+            es_de_las_retiradas(&r),
+            "CRITICO: una v8 con una recuperacion se importo sin sus retiradas: {:?}",
+            r.as_ref().err()
+        );
+        drop(r);
+
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000);
+        let x = layer.public_id_of(alice).expect("alice");
+        layer.export_snapshot(&file).expect("exportar");
+        let mut bytes = std::fs::read(&file).expect("leer");
+        a_v8(&mut bytes, 0);
+        std::fs::write(&file, &bytes).expect("escribir");
+        let mut r = SovereignLayer::import_snapshot(&file).expect("una v8 sin recuperaciones importa");
+        let a = abrir_ajena(&mut r, x);
+        assert!(matches!(a, Err(LayerError::IdentityUnavailable)), "el indice de la v8: {a:?}");
+        let _ = std::fs::remove_file(&file);
+    }
+
+    /// **§N: una v9 con una retirada de menos no importa.** La cola dice cero sobre un registro
+    /// con una Recovery: la cuenta se cruza con el registro verificado, no con la cabecera.
+    #[test]
+    fn una_v9_con_una_retirada_de_menos_no_importa() {
+        let file = temp_file("v9_retirada_de_menos");
+        v9_con_una_recuperacion(&file);
+        let mut bytes = std::fs::read(&file).expect("leer");
+        let n = bytes.len();
+        bytes.truncate(n - 32);
+        let fin = bytes.len();
+        bytes[fin - 8..].copy_from_slice(&0u64.to_le_bytes());
+        std::fs::write(&file, &bytes).expect("escribir");
+        let r = SovereignLayer::import_snapshot(&file);
+        assert!(
+            es_de_las_retiradas(&r),
+            "CRITICO: una v9 sin la retirada de su recuperacion se importo: {:?}",
+            r.as_ref().err()
+        );
+        drop(r);
         let _ = std::fs::remove_file(&file);
     }
 }

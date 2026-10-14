@@ -121,6 +121,11 @@ La cuenta nace con saldo CERO por diseño. El cliente deriva los tres
 identificadores con `stark_experiment::native::{derive_public_id_wide,
 view_id_of_wide, derive_leaf_salt_wide}`.
 
+⚠️ §N: una identidad abre a lo sumo una cuenta en la vida del libro: una `publicId` que ya tiene
+cuenta, o que una recuperación retiró, se rechaza con `-32000` y la causa `IdentityUnavailable`,
+sin campos y sin tocar `nextIndex`, la raíz ni el registro. Hasta el §N se abría una segunda
+cuenta con la misma identidad (`SECURITY.md` §3.13).
+
 ### Pago en dos fases
 
 | método | params | result |
@@ -203,7 +208,8 @@ causa. El ejemplo es el de un pago sin saldo:
 El catálogo lo produce la capa —`LayerError::causa`, un `match` exhaustivo— y un test lo ata a
 esta tabla (`tests_causa`, en `crates/zk-ssl/src/lib.rs`): una variante nueva no compila sin su
 causa ni pasa sin su fila. `Store` es un fallo del operador, no una regla. Qué causas emite hoy el
-cable, y por qué métodos, está medido en el asiento §454 de `AUDITORIA.md`, sin puerta.
+cable, y por qué métodos, está medido en el asiento §454 de `AUDITORIA.md`, sin puerta; ⚠️ §N: el
+§N añade `IdentityUnavailable`, que emiten `zkssl_openAccount` y `dev_openSeeded`.
 
 | causa | campos |
 |---|---|
@@ -232,6 +238,7 @@ cable, y por qué métodos, está medido en el asiento §454 de `AUDITORIA.md`, 
 | `AlreadyInThatFreezeState` | — |
 | `ConsumoRepetido` | `consumo` |
 | `ConsumoColision` | `consumo`, `ocupante` |
+| `IdentityUnavailable` | — |
 
 ## Qué afirma el registro de transiciones
 
