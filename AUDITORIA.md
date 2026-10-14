@@ -53345,3 +53345,65 @@ del otro— que `spec/NUCLEO.md` §6 escribe. Salen con 0 `check_cifras`, `check
 nodo, el testigo y el kit), ni la E5; no registra un segundo esquema (la 108). Las citas por línea del
 RFC-0020 a `lib.rs`, medidas en `8c02941`, quedan desplazadas por este sello: son medida fechada, y la
 E3 tendrá que leerlas de nuevo.
+
+## §801 — RFC-0021 E2 y E3a: la sección «Versionado y compatibilidad» cierra `spec/RPC.md` con la lista de la superficie de `zkssl/0.4`, y `tools/check_superficie.py` la compara en cada canon con lo que da cada productor
+
+El commit que lleva este asiento, sobre el §800. Toca `spec/RPC.md`, con la sección nueva y una nota
+en «Versionado»; las remisiones desde `spec/PAQUETE.md` §6, `spec/NUCLEO.md` §3, `doc/KIT.md` y
+`doc/KIT_EN.md` §0, los dos README y `spec/README.md`; un fichero nuevo, `tools/check_superficie.py`, en
+el bucle de herramientas de `tools/canon.sh`; las cuentas de herramientas de las portadas y de
+`GENAI.md`; tres citas de `doc/METODO.md`; el RFC-0021, la entrada 90 del `BACKLOG.md` y este asiento.
+Ni código de los crates, ni tests, ni vectores. Del autor es la decisión: aceptó el RFC-0021 en el
+§799, con sus decisiones. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa
+sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es
+el siguiente del rango que el autor asignó (§800 a §829). No toca `crates/zk-ssl-guardian` ni la zona de
+la migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en
+su sitio, y salió VERDE.
+
+**Lo que hace.**
+
+1. **La sección normativa (E2).** `spec/RPC.md` termina en «Versionado y compatibilidad», con el texto
+   de la D-C del RFC: la superficie estable, la regla de ruptura, el aviso y lo que sigue verificando
+   después de una ruptura; lo que `zkssl/0.4` todavía no identifica; y la lista de la superficie de
+   `zkssl/0.4`, 65 entradas leídas de sus productores —los 29 métodos `zkssl_*`, las versiones de
+   cabeza que se aceptan y la que se emite, los `tipo` y `v` de los sobres del kit, los códigos de
+   salida del mando, los vectores y los 18 manifiestos—, sin la superficie de las pruebas, que bajo
+   `zkssl/0.4` no tiene identificador (§699). La entrada «Versionado» de «Notas operativas» remite a la
+   sección sin fechar su vigencia: la D-C dice que rige desde el sello que acepte el RFC-0021, y cuál es
+   ese sello lo dice el autor. Remiten a ella `spec/PAQUETE.md`, `spec/NUCLEO.md`, los dos manuales y
+   los dos README.
+2. **Los dos manuales.** `doc/KIT.md` y `doc/KIT_EN.md` decían tres códigos de salida del mando; desde
+   el §573 son cuatro, con el 3 del cuarto estado del sobre de completitud. Corregido con marca.
+3. **La compuerta (E3a).** `tools/check_superficie.py` deriva cada superficie de su productor —el
+   OpenRPC y `spec/RPC.md`, `VersionCabeza` y la versión de cofirma y de acta, el despacho del kit, sus
+   códigos de salida, los manifiestos y las `FAMILIAS` de `tools/artefacto.sh`— y la compara con la
+   lista: lo que rompe la superficie sin que la lista lo diga es ROJO; lo aditivo se cuenta, no es ROJO,
+   como pide la D-D. Lee el Rust sin sus comentarios ni sus `#[cfg(test)]`, corre su prueba de vida en
+   los dos sentidos en cada pasada, y `--lista` imprime lo que dan los productores. Entra en el bucle
+   del canon, que pasa de diez a once herramientas, como entró la de las curvas en el §788.
+
+**Medido.** Sobre el §799 la herramienta sale ROJO —falta la sección, y los dos manuales no dicen el
+3—; sobre este árbol, la superficie es la de su lista en 28 comparaciones, sin novedades. Cada ruptura
+mutada sale ROJO y cada añadido sale NUEVO sin ROJO; una variante, un brazo del despacho o un código
+comentados ya no cuentan. Un agente lo hizo; un escéptico lo bloqueó porque la nota de «Versionado»
+fijaba la vigencia de la promesa en este sello, que es del autor, y cinco cosas menores; un arreglador
+lo corrigió y un segundo escéptico lo aprobó con cuatro menores, que corrigió la sesión al portarlo
+sobre el §800 —el RFC-0021 seguía diciendo que los manuales discrepan, y la cuenta de vectores de la
+lista pasa a 495 con los KAT del §800—. Salen con 0 `check_cifras`, `check_figures`, `verificar_citas`,
+`check_publicadas`, `check_tests`, `check_dominios`, `check_nucleo`, `check_vectores`, `check_catalogo`,
+`check_curvas` y `check_superficie`. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno de tests ni de vectores. Las herramientas del bucle del canon pasan de diez a
+once. El `BACKLOG.md` sigue con 43 abiertas y 77 resueltas: la 90 gana su nota y sigue abierta.
+
+**Lo que el autor confirma.** El nombre de la herramienta, que el RFC le deja («el nombre que el autor
+elija»), es provisional; también la forma de la lista —un bloque de líneas «clave valor»— y los nombres
+de sus claves. Y qué sello es el que acepta el RFC-0021: el §799, que tomó sus decisiones, o el que lo
+pase a ACEPTADO.
+
+**Lo que NO hace.** No construye la E3b, la compuerta de las pruebas que viajan, ni la E4, el corte:
+llegan con el corte `zkssl/0.5`. No da un productor único de la versión del cable (llega con el corte),
+no compara las líneas de VERDE del contrato del kit (la D-D solo pide los códigos), no corrige los
+textos de las cabezas v3 a v6 que el hecho 3 del RFC deja para el sello que el autor elija, ni las
+demás citas de `doc/METODO.md` a `tools/canon.sh` que el §793 midió y ya apuntan a otro sitio. La lista
+no se pone al día sola cuando entra algo aditivo: lo cuenta.

@@ -1514,7 +1514,7 @@ si la distingue, y por eso el manifiesto pina clase y texto. Abrir una clase sub
   otro problema y no está implementado).
 - Parámetros de un ledger persistido: inmutables
   (`ParameterMismatch` al reabrir con otros valores).
-- Versionado: `zkssl_protocolVersion` gobierna compatibilidad. **La
+- Versionado: ⚠️ §801: la regla la escribe «Versionado y compatibilidad», al final de este documento (§801), que rige desde el sello que acepte el RFC-0021; esta entrada cuenta lo de antes, que no se reescribe. Bajo aquélla la compatibilidad la gobiernan seis superficies, cada una con su identificador —lo que hoy les falta lo declara allí—, y la versión del cable sube con toda ruptura del cable, de las pruebas que viajan o de lo firmado, también con una versión de cabeza nueva que el nodo emita, que de la v3 a la v6 no la subió (RFC-0021, hecho 3). `zkssl_protocolVersion` gobierna compatibilidad. **La
   versión vigente es `zkssl/0.4`** desde §538 (la `0.3` rigió desde §354, la `0.2` desde §209), y lo
   que la sube es que
   cambien los **valores que viajan**, no el tamaño de la superficie:
@@ -1550,3 +1550,148 @@ si la distingue, y por eso el manifiesto pina clase y texto. Abrir una clase sub
   `compromiso`, en cada entrada). Lo publicado es la emisión del §281: una implementación de `0.2`
   anterior a ese asiento no lo reproduce, y la etiqueta no la distingue. Fue contra la regla 2 de
   `rfc/PROCESO.md`; desde el §692 la huella de cada vector (`vectors/HUELLAS.sha256`) lo impide.
+
+## Versionado y compatibilidad
+
+Esta sección es la promesa del protocolo a quien lo implementa y a quien custodia lo que produce.
+Rige desde el sello que acepte el RFC-0021; lo de antes lo cuenta «Versionado», en «Notas
+operativas», que no se reescribe.
+
+**La superficie estable** son seis superficies, cada una con su identificador: (1) el cable,
+`zkssl/0.N`: los métodos `zkssl_*` de `openrpc.json`, sus parámetros, sus resultados, sus errores
+con su causa en `data`, y la codificación; (2) las pruebas que viajan, por la marca de su traza;
+(3) lo firmado —la cabeza, la cofirma y el acta—, por su versión, con sus preámbulos y sus
+composiciones (`NUCLEO.md` §6); (4) los sobres del kit, por su `v` y su `tipo` (`PAQUETE.md` §2),
+con su catálogo y sus causas; (5) los vectores de `vectors/`, por su ruta, su línea de manifiesto
+y su huella; (6) el kit, `arqueo-verify-vX.Y.Z`, por su tag, su commit y sus huellas, con el
+contrato de `PAQUETE.md` §6. Lo demás —los `dev_*`, la API de los crates, las opciones de línea de
+mando, los diarios, el libro en disco y los límites de operación— no está prometido.
+
+**Rompe** lo que hace que una implementación conforme con la versión anterior produzca o acepte
+otra cosa en una de las seis: un valor que viaja, también los bytes de una prueba o su AIR, y lo
+que el nodo firma, también una versión de cabeza nueva que emita; quitar o renombrar un método, un
+campo o un `tipo`; el veredicto o el texto de un vector publicado; sacar una versión de un conjunto
+aceptado; un código de salida del kit. **No rompe** lo aditivo que nadie emite todavía.
+
+**Sube** `zkssl/0.N` con toda ruptura de (1), (2) o (3); el `v` del sobre, o un `tipo` nuevo, con
+una de (4); el kit pasa a `0.N.0` con el cable y no antes, y un `0.N.x` no rompe nada salvo por un
+arreglo de seguridad. Las rupturas se juntan en un corte, y su RFC está en el árbol antes que él.
+
+**Después de una ruptura sigue verificando**: todo kit publicado, que no se retira y se reproduce
+desde su commit; todo vector, que no se reescribe y, si su veredicto cambia, se muda a
+`vectors/<versión>/` con el de su kit; toda cabeza que un kit aceptó, en todo kit posterior, porque
+el conjunto de versiones de cabeza sólo crece, salvo la de un esquema de firma roto, que vale
+contenida en algo firmado con uno aceptado; todo sobre, con el kit de su versión, y con uno
+posterior o verifica o se rechaza como «fuera del contrato»; y toda prueba, con el kit de su
+versión del cable, porque ningún kit acepta dos. Un arreglo de seguridad puede cambiar un
+veredicto dentro de `0.N.x`, con su aviso y la lista de lo que cambia.
+
+**Lo que la versión no identifica todavía** se declara aquí, con su asiento, hasta que lo
+identifique.
+
+### Lo que `zkssl/0.4` no identifica todavía
+
+Cada superficie ha de tener un identificador, y un productor del que se derivan las demás
+escrituras (R7 del RFC-0021). Hoy faltan tres:
+
+- **La versión del cable no tiene un productor.** La escriben, sin que nada las ate, la respuesta
+  del nodo a `zkssl_protocolVersion`, el OpenRPC, dos veces, y la emisión de los vectores de
+  conformidad; los tests que la comprueban la escriben otra vez (RFC-0021, hecho 5, medido en el
+  §790). La lista de abajo nombra cada escritura de producción, y la compuerta exige que todas
+  digan la misma. Cuando la versión suba, pasa a tener uno (R3 del RFC-0021).
+- **Una prueba de `zkssl/0.4` no dice de qué AIR es** (§699): las que viajan cambiaron en el §641,
+  el §680 y el §684 sin subir la versión, y lo que las identifica hoy es el commit; el detalle, en
+  «Versionado», en «Notas operativas». La marca que las identificará es la D-G del RFC-0018 (la 118
+  de `BACKLOG.md`), y la compuerta que verá un AIR cambiado, la E3b del RFC-0021, entra con el corte.
+- **La cabeza y la cofirma no dicen con qué esquema de firma se firmaron**: lo firmado no lo nombra
+  (el acta nombra, desde el §643, el de la clave que entra). Meterlo dentro es el RFC-0020 (la 87),
+  aceptado con el RFC-0021 en el §799.
+
+### La lista de `zkssl/0.4`
+
+Lo que es hoy cada superficie que tiene entrada, leído de su productor y fijado en el §801 para
+`zkssl/0.4`: la versión vigente, y con otra versión, otra lista. `tools/check_superficie.py`, en el
+bucle del canon (la E3a del RFC-0021), lo vuelve a leer de cada productor y lo compara con esta lista: una entrada que su
+productor ya no da, o da cambiada, es ROJO; lo aditivo que nadie emite todavía —un método, un
+parámetro opcional, un `tipo`, un vector, una versión aceptada que nadie emite— se cuenta y no es
+ROJO. Sus reglas, lo que lee y lo que no ve están en su cabecera; `--lista` imprime lo que dan hoy
+los productores, en esta misma forma, y no escribe nada.
+
+| clave | superficie | su productor |
+|---|---|---|
+| `cable`, `cable.escrituras` | (1) | las escrituras de producción de la versión, en `crates/` (hoy sin un productor) |
+| `metodo`, `esquema` | (1) | `openrpc.json`, que `zk-ssl-wire` genera; los `dev_*` no entran |
+| `cabeza.acepta`, `cabeza.emite`, `cofirma.emite`, `cofirma.lee-hasta`, `acta.emite` | (3) | `VersionCabeza::TODAS`, `VERSION_FORMATO`, `COFIRMA_VERSION`, `COFIRMA_V_MAX` y `ACTA_VERSION`, en `zk-ssl-verify` |
+| `sobre.v`, `sobre.tipo` | (4) | el despacho del kit, `verificar_paquete`, frente a `PAQUETE.md` §2 |
+| `vectores.json`, `vectores.lineas`, `manifiesto` | (5) | `vectors/`; sus huellas las mira `tools/check_vectores.py`, que el canon corre |
+| `kit.salida`, `familia` | (6) | `codigo_de_salida` y el uso, en el kit, frente a `PAQUETE.md` §6 y a la sección 0 de `doc/KIT.md`; `FAMILIAS`, en `tools/artefacto.sh` |
+
+La superficie (2) no tiene entrada: no tiene identificador (arriba).
+
+```superficie
+cable zkssl/0.4
+cable.escrituras zk-ssl-cli/src/conformance.rs zk-ssl-node/src/main.rs zk-ssl-wire/src/openrpc.rs×2
+metodo zkssl_protocolVersion() -> ProtocolVersion
+metodo zkssl_params() -> Params
+metodo zkssl_epochHead() -> EpochHead
+metodo zkssl_supply() -> Supply
+metodo zkssl_accountCount() -> Q
+metodo zkssl_publicId(index: Q) -> Digest
+metodo zkssl_accountView(index: Q, viewKey: Digest) -> AccountView
+metodo zkssl_logEntry(seq: Q) -> LogEntry
+metodo zkssl_logEntries(fromSeq?: Q, limit?: Q) -> LogEntries
+metodo zkssl_verifyChain() -> VerifyChain
+metodo zkssl_openAccount(publicId: Digest, viewId: Digest, leafSalt: Digest) -> Opened
+metodo zkssl_sendMaterials(sender: Q, viewKey: Digest, receiverId: Digest, amount: Q, salt: Digest) -> SendMaterials
+metodo zkssl_applySend(receipt: SendReceipt, sender: Q, senderState: ClientState, amount: Q) -> Applied
+metodo zkssl_claimMaterials(receiver: Q, viewKey: Digest, notice: PendingNotice) -> ClaimMaterials
+metodo zkssl_applyClaim(receipt: ClaimReceipt, receiver: Q, receiverState: ClientState, notice: PendingNotice) -> Applied
+metodo zkssl_applyMany(ops: BatchOp) -> BatchApplied
+metodo zkssl_signedEpochHead() -> SignedEpochHead
+metodo zkssl_inclusionReceipt(index: Q, viewKey: Digest) -> InclusionReceipt
+metodo zkssl_ackPath(seq: Q) -> AckPath
+metodo zkssl_consistencyProof(oldSize: Q) -> ConsistencyProof
+metodo zkssl_submitCosig(cosig: Cosig) -> CosigAccepted
+metodo zkssl_cosigs(epochDigest?: Digest) -> Cosigs
+metodo zkssl_publishConsumo(consumo: Digest) -> ConsumoPublicado
+metodo zkssl_consumoPath(consumo: Digest, seq: Q) -> ConsumoPath
+metodo zkssl_frozenPath(index: Q, viewKey: Digest) -> FrozenPath
+metodo zkssl_pendingPath(index: Q, viewKey: Digest, position: Q, salt: Digest, amount: Q, x: Digest, receiverId?: Digest) -> PendingPath
+metodo zkssl_pledge(prueba: DATA, receptor: Digest, marca: Digest, seq: Q) -> PrendaPublicada
+metodo zkssl_recepPath(rx: Q) -> RecepPath
+metodo zkssl_keyActs() -> KeyActs
+esquema Bool boolean
+esquema DATA string pattern ^0x([0-9a-f][0-9a-f])*$
+esquema Digest string pattern ^0x[0-9a-f]{64}$
+esquema ProtocolVersion string const zkssl/0.4
+esquema Q string pattern ^0x[0-9a-f]+$
+cabeza.acepta v2 v3 v4 v5 v6
+cabeza.emite v6
+cofirma.emite 1
+cofirma.lee-hasta 1
+acta.emite 1
+sobre.v 1 2
+sobre.tipo extension consumo conflicto rechazo edad cobro_pendiente pago_en_curso prenda completitud ancla ancla-cofirmada solapamiento
+kit.salida 0 1 2 3
+vectores.json 495
+vectores.lineas 982
+manifiesto 0.3/edad/MANIFIESTO.txt
+manifiesto 0.3/pago/MANIFIESTO.txt
+manifiesto 0.3/pendiente/MANIFIESTO.txt
+manifiesto 0.3/rechazo/MANIFIESTO.txt
+manifiesto 0.4/completitud/MANIFIESTO.txt
+manifiesto ancla-cofirmada/MANIFIESTO.txt
+manifiesto ancla/MANIFIESTO.txt
+manifiesto cable/MANIFIESTO.txt
+manifiesto completitud/MANIFIESTO.txt
+manifiesto conflicto/MANIFIESTO.txt
+manifiesto consumo/MANIFIESTO.txt
+manifiesto edad/MANIFIESTO.txt
+manifiesto pago/MANIFIESTO.txt
+manifiesto paquete/MANIFIESTO.txt
+manifiesto pendiente/MANIFIESTO.txt
+manifiesto prenda/MANIFIESTO.txt
+manifiesto rechazo/MANIFIESTO.txt
+manifiesto rotacion/MANIFIESTO.txt
+familia paquete consumo conflicto rechazo edad pendiente pago prenda completitud ancla ancla-cofirmada rotacion
+```

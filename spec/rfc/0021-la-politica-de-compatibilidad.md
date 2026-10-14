@@ -3,10 +3,11 @@
 - **Estado:** PROPUESTO (§790) — el texto, la superficie enumerada, la regla de ruptura, la enmienda
   que propone a `spec/RPC.md` y sus ocho decisiones, escritos sobre lo medido en el árbol en
   `8c02941` y en el §699. El autor lo aceptó en el §799, con sus ocho decisiones TOMADAS, en cada
-  una la que el texto recomienda: ver «Decisiones (del autor, §799)». Ninguna etapa construida:
-  ACEPTADO llega con ellas, porque el paso a ACEPTADO exige construir sus etapas (regla 4 del
-  PROCESO). ⚠️ §799: hasta aquí decía «Ninguna decisión está tomada y ninguna etapa construida:
-  adoptarlo es del autor».
+  una la que el texto recomienda: ver «Decisiones (del autor, §799)». La E2 y la E3a, construidas
+  en el §801; la E3b y la E4 llegan con el corte, y ACEPTADO con ellas, porque el paso a ACEPTADO
+  exige construir sus etapas (regla 4 del PROCESO). ⚠️ §799: hasta aquí decía «Ninguna decisión
+  está tomada y ninguna etapa construida: adoptarlo es del autor». ⚠️ §801: hasta aquí decía
+  «Ninguna etapa construida: ACEPTADO llega con ellas».
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§790): midió el árbol y
   redactó el borrador, fuera del paso 4 de `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
@@ -30,8 +31,8 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — la promesa, escrita | este texto: la superficie, la regla de ruptura, el aviso y lo que se garantiza después | no | **escrita (§790) y decidida (§799)** ⚠️ §799: hasta aquí decía «propuesta (§790)» |
-| E2 — la sección normativa | la sección «Versionado y compatibilidad» de `spec/RPC.md`, con el texto de la D-C, y las remisiones desde `spec/PAQUETE.md` §6, `spec/NUCLEO.md` §3, `doc/KIT.md` §0 y la fila «Estado» de los dos README | no (texto) | sin construir |
-| E3a — la compuerta de la superficie | una herramienta del bucle del canon que deriva cada superficie de su productor y la compara con la lista de la sección (D-D) | no | sin construir; **decidida (§799), no escrita** ⚠️ §799: hasta aquí decía «propuesta, no escrita» |
+| E2 — la sección normativa | la sección «Versionado y compatibilidad» de `spec/RPC.md`, con el texto de la D-C, y las remisiones desde `spec/PAQUETE.md` §6, `spec/NUCLEO.md` §3, `doc/KIT.md` §0 y la fila «Estado» de los dos README | no (texto) | **construida (§801)** ⚠️ §801: hasta aquí decía «sin construir» |
+| E3a — la compuerta de la superficie | una herramienta del bucle del canon que deriva cada superficie de su productor y la compara con la lista de la sección (D-D) | no | **construida (§801)**: `tools/check_superficie.py`, nombre provisional que confirma el autor ⚠️ §799: hasta aquí decía «propuesta, no escrita» ⚠️ §801: hasta aquí decía «sin construir; **decidida (§799), no escrita**» |
 | E3b — la compuerta de las pruebas que viajan | una prueba positiva por familia que viaja, juzgada en cada canon por el verificador del nodo y del kit (D-D) | no por sí misma | sin construir; con la E3 de la D-G del RFC-0018, en el corte |
 | E4 — el corte, bajo la política | el corte `zkssl/0.5` con su aviso, sus mudanzas y el kit 0.5.0, como primera ruptura que la cumple | **sí** (la del RFC-0018) | sin construir |
 
@@ -249,7 +250,9 @@ en la lista que la compuerta de la E3a compara, para que la prosa no las tenga q
 La 90 pide «una compuerta que la haga cierta: lo declarado estable no cambia sin que el canon lo
 diga». Este RFC no la escribe: no estaba aceptado cuando se escribió (§790), y lo que vigilaría es
 la sección que propone; aceptado en el §799, la compuerta llega con su etapa. La propone en dos
-etapas. ⚠️ §799: hasta aquí decía «no está aceptado», sin más.
+etapas. ⚠️ §799: hasta aquí decía «no está aceptado», sin más. ⚠️ §801: la E3a está construida:
+`tools/check_superficie.py`, nombre provisional, con las siete reglas de abajo en su cabecera, y la
+lista que compara al final de la sección «Versionado y compatibilidad» de `spec/RPC.md`.
 
 **E3a — La superficie, por su productor.** Una herramienta del bucle del canon,
 `tools/check_superficie.py` o el nombre que el autor elija, que lee cada superficie de su productor
@@ -265,7 +268,8 @@ y la compara con la lista fijada para la versión vigente:
 4. **los sobres**: los `tipo` del despacho del kit y los `v` que lee sólo crecen frente a
    `spec/PAQUETE.md` §2;
 5. **el contrato del kit**: los cuatro códigos de `codigo_de_salida` y del uso, frente a
-   `spec/PAQUETE.md` §6 y frente a `doc/KIT.md` §0 (hoy discrepan, hecho 6);
+   `spec/PAQUETE.md` §6 y frente a `doc/KIT.md` §0 (⚠️ §801: decía «hoy discrepan, hecho 6»; el
+   §801 corrigió `doc/KIT.md` y `doc/KIT_EN.md`, y ya no discrepan);
 6. **los vectores**: no repite `tools/check_vectores.py`; lo exige en el mismo canon;
 7. **prueba de vida en los dos sentidos**, como la del §787: una mutación de cada lista la pone roja,
    y una lista vacía también.

@@ -990,6 +990,13 @@ instrumentacion) al grupo E.*
   publicado siempre (R6 a); y la E3b, con el corte. Lo de arriba, «adoptarlo es del autor»
   y «ninguna tomada», valía hasta aquí. El RFC sigue PROPUESTO y ninguna etapa está construida:
   sigue abierta hasta que se construyan.
+  ⚠️ §801: la E2 y la E3a, construidas. La sección «Versionado y compatibilidad» cierra
+  `spec/RPC.md`, con el texto de la D-C, lo que `zkssl/0.4` no identifica todavía y la lista de la
+  superficie de hoy, y la remiten `spec/PAQUETE.md` §6, `spec/NUCLEO.md` §3, la sección 0 de los
+  dos manuales del kit y la fila del protocolo de los dos README; `tools/check_superficie.py`,
+  nombre provisional que confirma el autor, entra en el bucle del canon y compara esa lista con lo
+  que da cada productor. Lo de arriba, «ninguna etapa está construida», valía hasta
+  aquí. Sigue abierta: la E3b y la E4 llegan con el corte.
 
 - [x] **91. El fin de vida: cómo se apaga esto sin dejar a nadie
   dentro.** Toda capa de liquidación termina — por cierre, por

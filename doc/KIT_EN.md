@@ -77,9 +77,19 @@ cat VERSION                               # commit, describe, toolchain, glibc_m
 
 Requirements: Linux x86_64 and a glibc equal to or newer than the one `VERSION` declares in
 `glibc_max`. The binary is not static, and it says so. The command contract is one line:
-`./zk-ssl-verify <file.json>`; exit 0 and `VERDE: …` if the file holds, exit 1 and the **first**
-failure by name (`ROJO: …`) if not, exit 2 on wrong usage. The texts are in Spanish; the rule
-names are what the conformance manifests check.
+`./zk-ssl-verify <file.json>`; exit `0` and `VERDE: …` if the file holds, exit `1` and the
+**first** failure by name (`ROJO: …`) if not, exit `2` on wrong usage, and exit `3` in the fourth
+state of the completeness envelope, «resolution declared, not proven», which is written by its name
+and without `ROJO`, because it is not one. The texts are in Spanish; the rule names are what the
+conformance manifests check. ⚠️ §801: until here it said «exit 0 … exit 1 … exit 2 on wrong usage»,
+without the 3, which the command gives since §573 (`spec/PAQUETE.md` §«6. El contrato del mando»;
+RFC-0021, fact 6).
+
+What of this is promised —what does not change within a `0.N.x` line, what breaks it and what
+keeps verifying after a break— is said in `spec/RPC.md` §«Versionado y compatibilidad» (§801): no
+published kit is withdrawn, each one is reproducible from its commit, and what it judged it keeps
+judging the same way; a security fix may change a verdict within `0.N.x`, with its notice and the
+list of what it changes, as 0.4.2 did.
 
 ## 1. A file that adds up
 

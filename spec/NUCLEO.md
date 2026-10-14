@@ -59,7 +59,7 @@ del cable de la referencia rechace además claves desconocidas es elección decl
 implementación, no regla del formato.
 
 **Familias nuevas** entran con su `tipo` o su dominio, sus vectores y su RFC. Si necesitan entrar
-bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del preámbulo.
+bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del preámbulo. Qué de esto se promete —que el conjunto sólo crece, y que una versión nueva que el nodo emita rompe el cable y sube `zkssl/0.N`— lo dice `RPC.md` §«Versionado y compatibilidad» (§801), y `tools/check_superficie.py` compara en cada canon `VersionCabeza::TODAS` y `VERSION_FORMATO` con su lista.
 
 ## 4. El censo
 

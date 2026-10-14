@@ -76,8 +76,17 @@ cat VERSION                               # commit, describe, toolchain, glibc_m
 
 Requisitos: Linux x86_64 y una glibc igual o mayor que la que `VERSION` declara en `glibc_max`. El
 binario no es estático, y se dice. El contrato del mando es de una línea: `./zk-ssl-verify
-<fichero.json>`; sale 0 y escribe `VERDE: …` si el fichero se sostiene, 1 y el **primer** fallo con
-nombre (`ROJO: …`) si no, 2 si el uso es incorrecto.
+<fichero.json>`; sale `0` y escribe `VERDE: …` si el fichero se sostiene, `1` y el **primer** fallo
+con nombre (`ROJO: …`) si no, `2` si el uso es incorrecto, y `3` en el cuarto estado del sobre de
+completitud, «resolución declarada, no probada», que se escribe con su nombre y sin `ROJO`, porque
+no lo es. ⚠️ §801: hasta aquí decía «sale 0 … 1 … 2 si el uso es incorrecto», y no contaba el 3, que
+el mando da desde el §573 (`spec/PAQUETE.md` §«6. El contrato del mando»; RFC-0021, hecho 6).
+
+Qué de esto se promete —qué no cambia dentro de una línea `0.N.x`, qué lo rompe y qué sigue
+verificando después de una ruptura— lo dice `spec/RPC.md` §«Versionado y compatibilidad» (§801):
+ningún kit publicado se retira, cada uno se reproduce desde su commit, y lo que juzgaba lo sigue
+juzgando igual; un arreglo de seguridad puede cambiar un veredicto dentro de `0.N.x`, con su aviso
+y la lista de lo que cambia, como la 0.4.2.
 
 ## 1. Un expediente que cuadra
 

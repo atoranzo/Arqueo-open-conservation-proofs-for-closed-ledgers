@@ -219,17 +219,19 @@ cuántos sellos han pasado (`tools/canon.sh:62-67`); qué rutas lo vencen, `tool
 para en el primer fallo; cada crate tiene su timeout; ningún `.rs` de `src/` queda sin declarar; y
 todo `cargo` de los niveles corre con `--locked` (§694).
 
-**El bucle de herramientas** («2 ter», `tools/canon.sh:312-341`): las de la lista de su `for`
+**El bucle de herramientas** («2 ter», `tools/canon.sh:401-430`): las de la lista de su `for`
 —`check_cifras`, `check_figures`, `check_columns`, `check_constraint_layout`, `verificar_citas`,
-`check_dominios`, `check_publicadas`, `check_nucleo`, `check_techo` y `check_curvas`—, a pin cero.
-Y estar en el bucle no basta, «hay que mirar algo» (§695, `tools/canon.sh:324-330`): `check_columns`
-corría ahí sin mirar ningún `.rs` y decía verde, y desde el §695 su universo y su prueba de vida
-viven en la herramienta. Fuera del bucle, cada una en su bloque, van otras puertas; entre ellas,
-los vectores (`tools/check_vectores.py`, «2 quater», que sale del bucle «para que cada ROJO entre
-con su nombre»), el catálogo de rechazos (`tools/check_catalogo.py`, «2 quinquies»), la
-conformidad del kit en sus familias («3 bis familias»), la segunda implementación
-(`tools/segunda/`, «3 duodecies») y el artefacto («3 ter»). El veredicto es VERDE, o ROJO con la
-lista de fallos (`tools/canon.sh:608-621`).
+`check_dominios`, `check_publicadas`, `check_nucleo`, `check_techo`, `check_curvas` y
+`check_superficie`—, a pin cero. Y estar en el bucle no basta, «hay que mirar algo» (§695,
+`tools/canon.sh:413-419`): `check_columns` corría ahí sin mirar ningún `.rs` y decía verde, y desde
+el §695 su universo y su prueba de vida viven en la herramienta. Fuera del bucle, cada una en su
+bloque, van otras puertas; entre ellas, los vectores (`tools/check_vectores.py`, «2 quater», que
+sale del bucle «para que cada ROJO entre con su nombre»), el catálogo de rechazos
+(`tools/check_catalogo.py`, «2 quinquies»), la conformidad del kit en sus familias («3 bis
+familias»), la segunda implementación (`tools/segunda/`, «3 duodecies») y el artefacto («3 ter»).
+El veredicto es VERDE, o ROJO con la lista de fallos (`tools/canon.sh:697-710`). ⚠️ §801: las tres
+líneas de `tools/canon.sh` de este párrafo decían `:312-341`, `:324-330` y `:608-621`, las del §793;
+el fichero creció por delante del bucle y en el §799 ya estaban donde dicen ahora, con el mismo texto.
 
 **Los bancos.** `tools/banco_*.sh` arrancan el nodo, el testigo y el mando reales, y por eso viven
 fuera de los niveles (§582). `tools/bancos.sh` los corre todos: la lista se lee del directorio, cada

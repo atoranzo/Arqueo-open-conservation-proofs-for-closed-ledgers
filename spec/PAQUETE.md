@@ -1194,6 +1194,14 @@ extensión, con `cabeza` como sujeto.
   el arnés no lo cuenta nunca, ni como acierto ni como negativo superado (sección 6.1). Lo que no
   lee lo declara aparte, en una lista, como hace `tools/segunda/verificador.py`. La referencia lee
   las catorce formas y no lo imprime nunca.
+- **Lo que se promete** (§801). Este contrato es la superficie (6) de la promesa del protocolo, y las
+  formas de la sección 2 son la (4): `RPC.md` §«Versionado y compatibilidad» dice qué las rompe —un
+  código de salida que cambia, un `tipo` que se quita o se renombra, un `v` que se deja de leer—, con
+  qué se paga —un `v` nuevo, un `tipo` nuevo, o un kit `0.N.0` con el cable— y qué sigue
+  verificando después: un sobre que un kit dio por VERDE lo sigue dando el kit de su versión, y uno
+  posterior o lo verifica o lo rechaza en la clase «fuera del contrato» de la sección 6.1.
+  `tools/check_superficie.py` compara en cada canon los códigos de `codigo_de_salida` y del uso con
+  los de esta sección, y los `tipo` y los `v` que el binario lee con los de la sección 2.
 
 ### 6.1 La causa del rechazo (§693)
 
