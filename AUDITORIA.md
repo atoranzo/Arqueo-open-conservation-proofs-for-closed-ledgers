@@ -52569,3 +52569,49 @@ resueltas. `tools/canon.sh` pierde 86 líneas netas.
 
 **Lo que NO hace.** No mete en el bucle el paquete ni el cable, que tienen bloque propio por lo que
 hacen antes. No cambia `tools/conformidad.sh` ni ningún manifiesto.
+
+## §788 — ninguna curva en los binarios de producción: `tools/check_curvas.py` mira la clausura del nodo, el testigo, el SDK y el kit en `Cargo.lock`, y entra en el bucle del canon (ARQ-08 P1; la tarea 43)
+
+El commit que lleva este asiento, sobre el §787. Nace una herramienta, `tools/check_curvas.py`, que
+entra en el bucle de 2 ter de `tools/canon.sh`; la cifra de ese bucle, nueve -> diez, en `README.md`,
+`README_EN.md`, `RESUMEN_EJECUTIVO.md` y las dos versiones del paso 4 de `GENAI.md`; y este asiento. Ni
+código, ni tests, ni vectores. Del autor es elegir la tarea y su orden; lo demás lo propuso la sesión
+(«Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no
+el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el
+siguiente del rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la zona de la
+migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en
+su sitio, y salió VERDE.
+
+**De dónde sale.** ARQ-08 de `doc/blueprint-v2.md`. La familia de supuestos de la casa es la
+resistencia del hash (§106): STARK/FRI, Rescue, Blake3, Merkle y XMSS; la única excepción declarada es
+ML-DSA-44 en el medio del ancla (§705, RFC-0013 D-C), que no es una curva. Los comparativos del
+workspace —Groth16, Nova, Plonk, halo2— traen curvas al `Cargo.lock`, y que no llegaran a los binarios
+de producción lo sostenía la disciplina: un `use ark_ff` en el nodo compilaba.
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso la parte P1 de ARQ-08 —la puerta—, y
+no la P2/P3, que sacaría los comparativos del lock y no está adoptada.
+
+**Por qué no lleva aviso de seguridad.** Hoy no hay ninguna curva en esa clausura: la puerta fija lo
+que ya es.
+
+**Lo que hace.** `tools/check_curvas.py`, con sus reglas escritas antes de mirar, en su cabecera. R1:
+las raíces son el nodo, el testigo (`zk-ssl-cli`), el SDK y el kit, y su clausura es la de `cargo tree
+--locked --offline -e normal` —lo que se enlaza, sin dependencias de desarrollo ni de compilación—. R2:
+ningún crate de esa clausura casa con el patrón de las bibliotecas de curvas y emparejamientos
+(arkworks, BLS12-381, BN254, Pasta, curve25519, secp256k1, P-256…). R3, la prueba de vida: cada raíz
+tiene al menos 50 crates en su clausura, y el patrón reconoce los nombres de su autotest —y no
+reconoce los que no son curvas—, para que la puerta no salga verde por no reconocer nada.
+
+**Medido.**
+
+- **Sobre este árbol**: 4 raíces, 192 crates distintos en su clausura normal, ninguna curva. VERDE.
+- **Que cae**: con `ark-ff` añadido como dependencia del SDK, en un árbol aparte, 10 ROJO R2, uno por
+  crate de arkworks que entra («zk-ssl-sdk enlaza ark-serialize, una curva…»).
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE, con la herramienta en el bucle.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas. Las herramientas del bucle de 2 ter pasan de nueve a diez.
+
+**Lo que NO hace.** Mira nombres de crate, no código: una curva escrita a mano dentro de un crate de la
+casa, o en uno con otro nombre, no se ve, y lo dice su cabecera. No saca los comparativos del lock (la
+P2/P3 de ARQ-08). No mira las dependencias de desarrollo: los tests pueden usar lo que quieran.

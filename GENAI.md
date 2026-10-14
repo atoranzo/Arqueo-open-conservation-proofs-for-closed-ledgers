@@ -32,7 +32,7 @@ sido igual desde el principio es quién da el último: la sección «Fuera del p
 3. El asistente propone un **bloque**: un guion que aplica el cambio y que trae
    sus propias compuertas, incluido su camino rojo.
 4. **El autor lo ejecuta en su máquina**, corre el canon —`tools/canon.sh
-   --sello`, que ejecuta la suite de cada crate en release, las nueve
+   --sello`, que ejecuta la suite de cada crate en release, las diez
    herramientas de su bucle de `tools/` y el resto de compuertas que lista— y
    **commitea sólo lo que sale verde**.
 
@@ -156,7 +156,7 @@ step 4", further down, says how and since when.
 3. The assistant proposes a **block**: a script that applies the change and
    brings its own gates, its red path included.
 4. **The author runs it on his own machine**, runs the canon —`tools/canon.sh
-   --sello`, which runs every crate's suite in release, the nine tools of its
+   --sello`, which runs every crate's suite in release, the ten tools of its
    loop under `tools/` and the rest of the gates it lists— and **commits only
    what comes out green**.
 
