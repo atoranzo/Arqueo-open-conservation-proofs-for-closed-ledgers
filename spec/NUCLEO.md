@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 101 elementos alcanzables en `zk-ssl-verify` y 63 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 131, REFERENCIA 13, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 109 elementos alcanzables en `zk-ssl-verify` y 63 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 138, REFERENCIA 14, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`, `actas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -110,16 +110,22 @@ real de sus llaves, no por la primera marca.
 | `Conjunto` | `verify/lib.rs` | NÚCLEO | FIRMA | `type` |
 | `DOMINIO` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `DOMINIO_COFIRMA` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
+| `EntradaEsquema` | `verify/lib.rs` | NÚCLEO | FIRMA | `struct` |
+| `Esquema` | `verify/lib.rs` | NÚCLEO | FIRMA | `enum` |
+| `EsquemaNoRegistrado` | `verify/lib.rs` | REFERENCIA | FIRMA | `struct` |
 | `FIRMA_RFC_BYTES` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `OFFSET_MT_UPSTREAM` | `verify/lib.rs` | REFERENCIA | FIRMA | `const` |
 | `TODAS` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
+| `TODOS` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `VERSION_FORMATO` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `VerificaError` | `verify/lib.rs` | REFERENCIA | FIRMA | `enum` |
 | `VersionCabeza` | `verify/lib.rs` | NÚCLEO | FIRMA | `enum` |
 | `VersionCabezaDesconocida` | `verify/lib.rs` | REFERENCIA | FIRMA | `struct` |
 | `aplicar_apano_del_oid` | `verify/lib.rs` | REFERENCIA | FIRMA | `fn` |
+| `as_u64` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `as_u8` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `clave_desde_bytes` | `verify/lib.rs` | REFERENCIA | FIRMA | `fn` |
+| `entrada` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `indice_de_firma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `lleva_mmr` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `lleva_consumos` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
@@ -127,6 +133,8 @@ real de sus llaves, no por la primera marca.
 | `lleva_parametros` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `preambulo` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `preambulo_cofirma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `preambulo_cofirma_v7` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `preambulo_v7` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `texto` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `texto_con_mmr` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `texto_con_consumos` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
@@ -251,7 +259,10 @@ real de sus llaves, no por la primera marca.
   poder recomponerse siempre.
 - **FIRMA** — el esquema (`XmssMtSha2_40_8_256`), los dos dominios, el byte de versión y su conjunto,
   los dos preámbulos y el índice embebido en la firma. Son los bytes exactos bajo la firma; cambiar
-  uno haría colisionar o dejaría de verificar lo custodiado.
+  uno haría colisionar o dejaría de verificar lo custodiado. Desde el §800, también el registro de
+  esquemas, con lo que declara cada entrada, y los dos preámbulos v7 (RFC-0020, E2), que nadie
+  firma todavía: un número de esquema que cambiara de dueño haría que una firma custodiada dijera
+  otro esquema.
 - **ACUSES** — las reglas del árbol de acuses y su composición: el nodo las construye y el
   verificador las comprueba llamando las mismas (§274).
 - **MMR** — el MMR de cabezas: la hoja, el nodo, la cima, la inclusión y la consistencia (§291).
@@ -281,7 +292,10 @@ van como **número** hex (`seq`, `n`, `t`, los contadores, `as_digest.x`), salvo
 en un catálogo, y un juez tiene que saberlo por fuera (medido por la segunda implementación,
 `tools/segunda/juez_nucleo.py`). Una segunda implementación
 que dé estos bytes en cada uno da los mismos bytes en todo lo que se firma. Son una foto de la
-referencia, y se declara: fijan la propiedad «dos implementaciones dan estos bytes».
+referencia, y se declara: fijan la propiedad «dos implementaciones dan estos bytes». Desde el §800
+hay uno que no es de una `fn`: `registro_de_esquemas.json` fija el registro de esquemas entero
+(abajo), y su `salida` es la LISTA de sus entradas, con el número como QUANTITY, el prefijo de la
+clave en hex, los largos como número y los dos sí-o-no como booleanos de JSON.
 
 - **La permutación**: Rescue-Prime `Rp64_256`, tal como la implementa `winter-crypto =0.13.1`,
   sobre el campo de Goldilocks (`winter-math =0.13.1`, `f64::BaseElement`). Un `Digest` son cuatro
@@ -329,7 +343,44 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   b"ZK-SSL-epoch-head" ‖ version ‖ epoch_digest                            (17 + 1 + 32 = 50)
   b"ZK-SSL-witness-cosign" ‖ version ‖ epoch_digest ‖ len(u16 BE) ‖ clave_op     (21 + 1 + 32 + 2 + N)
   b"ZK-SSL-key-act" ‖ version ‖ acta_digest                                (14 + 1 + 32 = 47)
+  b"ZK-SSL-epoch-head" ‖ 7 ‖ esquema(u64 BE) ‖ epoch_digest                (17 + 1 + 8 + 32 = 58)
+  b"ZK-SSL-witness-cosign" ‖ 7 ‖ esquema_testigo(u64 BE) ‖ esquema_operador(u64 BE)
+      ‖ epoch_digest ‖ len(u16 BE) ‖ clave_op                              (21 + 1 + 8 + 8 + 32 + 2 + N)
   ```
+
+  Los dos últimos, desde el §800 (RFC-0020, E2), son **los preámbulos v7** de la cabeza y de la
+  cofirma: el byte de versión, 7, dice que el preámbulo lleva el esquema de la firma —un número
+  del registro de abajo, en ocho bytes big-endian—, y en la cofirma va primero el del testigo y
+  después el del operador, con la clave del operador la última, como hasta v6. El dominio no
+  cambia, y `epoch_digest` tampoco: el esquema es de la firma, no del libro. Están **apagados**:
+  nadie los firma ni los acepta hasta el corte `zkssl/0.5` (la E4 del RFC-0020), y una firma
+  sobre el v7 no la acepta hoy ningún verificador. Sus KAT son `preambulo_v7.json` y
+  `preambulo_cofirma_v7.json`; el de la cofirma lleva dos esquemas distintos, para fijar su orden,
+  y el del operador no está en el registro: el preámbulo compone bytes, y si un número está en el
+  registro lo comprueba quien verifica (la E3).
+
+- **El registro de esquemas** (RFC-0020, D-A; §800). El número con que se nombra el esquema de una
+  firma es el `esquema` del acta, un `u64` con la familia en los 32 bits altos y el parámetro de
+  la familia en los bajos; el acta lo compone con `as_digest`, y los preámbulos v7 lo escriben en
+  ocho bytes big-endian: una escritura y no dos. Tiene un solo productor, `Esquema` en
+  `zk-ssl-verify` —el molde de `VersionCabeza`—, del que sale `ESQUEMA_XMSSMT_SHA2_40_8_256`, y su
+  KAT, `registro_de_esquemas.json`, que fija la lista entera con lo que declara cada entrada: la
+  escritura de su clave pública, la de su firma, si tiene estado y el texto con que se nombra en
+  los rechazos. Nace con una entrada:
+
+  | esquema | familia y parámetro | nombre | clave pública | firma | estado |
+  |---|---|---|---|---|---|
+  | `0x1_0000_0005` | familia 1, el registro **XMSS^MT** de RFC 8391 —no el de XMSS, donde el 5 es XMSS-SHA2_16_512 (§240)—, y su OID, 5 | `XMSSMT-SHA2_40/8_256` | 68 B: `OID (u32 BE) ‖ root (32) ‖ SEED (32)`, que abre con `00 00 00 05` | 18.469 B de RFC 8391 —`idx_sig` (5 B) ‖ `r` (32 B) ‖ ocho capas de una firma WOTS+ (67 · 32 B) y su camino (5 · 32 B)—, con el preámbulo adjunto detrás | con estado: el índice va en la firma, y lo guarda un guardián |
+
+  Sus reglas: **el cero no se asigna**, como en la marca v2 de la D-G del RFC-0018; **dos
+  esquemas del registro no comparten ninguna escritura de clave** —el mismo largo, con un prefijo
+  que sea prefijo del otro— (la decisión 4 del RFC-0020, rama (a)): el `siguiente` de un acta es
+  la huella de los bytes de una clave, y sólo dice de qué esquema es la sucesora si ningún byte de
+  clave vale para dos; y cada número es **menor que `p`**, porque el acta lo compone con
+  `as_digest` (DERIVADO de la regla 2 de la canonicidad). Ninguna otra entrada se asigna aquí: qué
+  esquema sería el B lo mide la entrada 108 del `BACKLOG.md`, y su número lo da el registro cuando
+  entre. Está **apagado**: nadie lo lee todavía —el verificador fija `Conjunto` en su código y el
+  acta compara con su constante—; elegir el verificador por el esquema es la E3 del RFC-0020.
 
 - **Las composiciones**, en el orden exacto de los merges: `native_leaf = merge(merge(pk,
   embeber(saldo)), embeber(nonce))` y la salteada `merge(hoja, salt)`; `path_root` sube desde la
@@ -404,6 +455,14 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §800 — el registro de esquemas (`Esquema`, con `TODOS`, `as_u64` y `entrada`, `EntradaEsquema` y
+  `EsquemaNoRegistrado`) y los dos preámbulos v7, `preambulo_v7` y `preambulo_cofirma_v7`, en
+  `zk-ssl-verify` (RFC-0020, E2): el número del esquema que firma, el `u64` del acta, en el
+  preámbulo de la cabeza y en el de la cofirma, con tres KAT que la segunda implementación
+  reproduce. Ocho filas nuevas, familia FIRMA; el error, REFERENCIA. `ESQUEMA_XMSSMT_SHA2_40_8_256`
+  sale del registro con el mismo valor. Apagado: ni el nodo, ni el testigo, ni el kit los firman ni
+  los aceptan hasta la E3 y la E4; la cabeza, el conjunto de versiones y los 31 KAT de antes no se
+  mueven.
 - §773 — `DOMINIO_RECEP_V2`, `recibo_digest_v2` y `digest_pi` en `zk-ssl-hash` (RFC-0019 E3, primera
   pieza): la hoja del recibo de recepción con el digest de las entradas públicas, que ata también la
   familia y la versión de la AIR (RFC-0018 D-G), con dos KAT que la segunda implementación

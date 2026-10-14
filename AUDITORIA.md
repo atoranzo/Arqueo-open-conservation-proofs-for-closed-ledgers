@@ -53280,3 +53280,68 @@ abiertas y 77 resueltas: la 87 y la 90 siguen abiertas hasta que se construyan l
 nombre de la herramienta de la E3a del RFC-0021, ni ninguna opción de las dos notas. No corrige lo que
 el redactor vio fuera de lo pedido: que `doc/METODO.md` §5 enumera los RFC con tabla de etapas del
 0012 al 0017, sin el 0020 ni el 0021.
+
+## §800 — RFC-0020 E2, el núcleo apagado: el registro de esquemas, con su productor y su KAT, y los preámbulos v7 de la cabeza y de la cofirma, con los suyos; la segunda implementación los reproduce, y nadie los firma ni los acepta todavía
+
+El commit que lleva este asiento, sobre el §799. Toca `crates/zk-ssl-verify` (`lib.rs` y `actas.rs`),
+el emisor de los KAT de `crates/zk-ssl-cli/src/nucleo_kat.rs`, tres KAT nuevos en
+`spec/vectors/nucleo/` con sus huellas, `spec/NUCLEO.md`, la segunda implementación
+(`tools/segunda/nucleo.py`, `juez_nucleo.py` y su `README.md`), los dos RFC, `spec/README.md`, el pin y
+un comentario de `tools/canon.sh`, `tools/verificar_citas.py`, las cifras de las portadas, la 87 del
+`BACKLOG.md` y este asiento. Del autor es la decisión: aceptó el RFC-0020 en el §799, con sus
+decisiones. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el primero del rango
+que el autor asignó a esta sesión para lo que faltaba, §800 a §829; `tools/verificar_citas.py` lo
+aprende como reparto, con su fuente, igual que los anteriores. No toca `crates/zk-ssl-guardian` ni la
+zona de la migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este
+asiento en su sitio, y salió VERDE.
+
+**Lo que hace.**
+
+1. **El registro de esquemas.** `Esquema`, en `zk-ssl-verify`, con el molde de `VersionCabeza`, es el
+   único productor del número que nombra el esquema de una firma: el `u64` del acta, con la familia en
+   los 32 bits altos. Lo acompañan `TODOS`, `as_u64`, `entrada()` —la escritura de la clave y de la
+   firma, si tiene estado y su nombre— y el error `EsquemaNoRegistrado`, que nombra el número. Nace con
+   una entrada, `0x1_0000_0005`, XMSSMT-SHA2_40/8_256, la del acta: la familia 1 es el registro
+   XMSS^MT de RFC 8391, no el de XMSS (§240). `ESQUEMA_XMSSMT_SHA2_40_8_256` de `actas.rs` sale de él,
+   con el mismo valor. Tres reglas, atadas en tests: el cero no se asigna; cada número es menor que p
+   (§640); y dos esquemas no comparten escritura de clave, la decisión 4, rama (a), del §799.
+2. **Los dos preámbulos v7.** `preambulo_v7`: dominio, 7, el esquema en big-endian y el digest, 58
+   bytes. `preambulo_cofirma_v7`: el esquema del testigo y luego el del operador, con la clave al final,
+   72 bytes más la clave; una clave que no cabe en su prefijo se rechaza, no se trunca. El 7 es una
+   constante privada: `VersionCabeza` no gana la V7 hasta el corte.
+3. **Tres KAT** en `spec/vectors/nucleo/` —`preambulo_v7.json`, `preambulo_cofirma_v7.json` y
+   `registro_de_esquemas.json`, cuya salida es la lista de las entradas—, emitidos por la referencia y
+   registrados en `HUELLAS.sha256`, que solo crece. El de la cofirma usa como esquema del operador una
+   entrada de prueba, `0x0102030405060708`, que no está registrada, para fijar el orden de los dos.
+4. **La segunda implementación** los reproduce byte a byte, 34 de 34, y pasa las reglas del registro,
+   con un falsador: una gemela tiene que caer. **`spec/NUCLEO.md`** gana sus filas en el censo y, en §6,
+   el registro con su tabla y sus reglas y los dos preámbulos.
+
+**Apagado.** Ni el nodo, ni el testigo, ni el kit los firman ni los aceptan hasta la E3 y la E4. Ningún
+byte del cable ni ningún veredicto cambia: el kit da lo mismo en sus familias, el juez de cabezas sigue
+en 485 de 535, y los 31 KAT de antes, iguales. Una cautela para la E4, que hoy no es un fallo:
+`verificar_cabeza` compone el preámbulo con la versión declarada; con la V7 en el conjunto tendrá que
+pasar por `preambulo_v7`, y un test nuevo cae si alguien enciende la v7 en la biblioteca antes.
+
+**Medido.** `zk-ssl-verify` pasa de 185 a 190 tests y `zk-ssl-cli` sigue en 152, los dos con 0 avisos.
+Cada test nuevo cae con su mutante —el esquema en little-endian, los dos esquemas de la cofirma
+cambiados de sitio, la clave de 64 bytes, una gemela en el registro, la v7 encendida sin la E4—, y el
+código del §799 no compila con ellos; el KAT de la CLI cae con el emisor de antes. Un agente lo hizo y
+un escéptico lo midió de nuevo y lo aprobó con cosas menores. Son elecciones de la sesión que el autor
+puede revisar, porque el RFC no las da y los KAT las fijan: el texto de la entrada (el nombre de RFC
+8391), los campos de la entrada, la entrada de prueba de la cofirma, los nombres de las funciones y de
+los ficheros, y la definición de compartir escritura de clave —mismo largo y un prefijo que es prefijo
+del otro— que `spec/NUCLEO.md` §6 escribe. Salen con 0 `check_cifras`, `check_figures`,
+`verificar_citas`, `check_publicadas`, `check_tests`, `check_dominios`, `check_nucleo`, `check_vectores`,
+`check_catalogo` y `check_curvas`. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** `zk-ssl-verify` 185 -> 190. TOTAL DE SELLO 1747 -> 1752 y CON LARGOS 1884 -> 1889, en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests` 1906 -> 1911. Vectores 492 -> 495 `.json`,
+514 ficheros en `spec/vectors/`; KAT del núcleo 31 -> 34; el comentario del canon decía 26 KAT y eran
+31, corregido con marca. El `BACKLOG.md` sigue con 43 abiertas y 77 resueltas: la 87 sigue abierta.
+
+**Lo que NO hace.** No construye la E3 (el despacho por esquema), ni la E4 (el corte, con la V7, el
+nodo, el testigo y el kit), ni la E5; no registra un segundo esquema (la 108). Las citas por línea del
+RFC-0020 a `lib.rs`, medidas en `8c02941`, quedan desplazadas por este sello: son medida fechada, y la
+E3 tendrá que leerlas de nuevo.

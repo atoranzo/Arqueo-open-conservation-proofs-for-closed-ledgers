@@ -25,6 +25,10 @@
 //! deterministas —`as_digest(1..6)`, elementos 5 y 9—: lo que importa no es la entrada sino que
 //! dos implementaciones den la misma salida.
 //!
+//! §800 · Uno no es de una `fn`: `registro_de_esquemas` (RFC-0020, E2) fija el registro entero, y
+//! su `salida` es la LISTA de sus entradas, con el numero como QUANTITY, el prefijo de la clave
+//! en hex, los largos como numero y los dos si-o-no como booleanos de JSON.
+//!
 //! ⚠️ El test tambien exige que **cada fichero del directorio tenga su caso y cada caso su
 //! fichero**: un vector huerfano o uno de menos es ROJO, igual que en `tools/conformidad.sh`.
 
@@ -39,6 +43,7 @@ use zk_ssl_hash::{
 };
 use zk_ssl_verify::{
     actas::preambulo_acta, acuses::hoja_de_acuse, mmr::cima, preambulo, preambulo_cofirma,
+    preambulo_cofirma_v7, preambulo_v7, Esquema,
 };
 
 /// `spec/vectors/nucleo/` relativo a este crate, salvo que `ZKSSL_KAT_DIR` diga otro.
@@ -81,6 +86,16 @@ fn casos() -> Vec<(&'static str, Value)> {
     let nonce = element_from_bytes(&9u64.to_le_bytes()).unwrap_or_else(|_| panic!("nonce"));
     let siete = element_from_bytes(&7u64.to_le_bytes()).unwrap_or_else(|_| panic!("siete"));
     let clave_op: [u8; 2] = [0xcc, 0xcc];
+    // §800 · El registro de esquemas entero, entrada a entrada, con lo que declara cada una.
+    let registro: Vec<Value> = Esquema::TODOS
+        .iter()
+        .map(|e| {
+            let x = e.entrada();
+            json!({"esquema": q(x.esquema), "nombre": x.nombre, "clave_bytes": x.clave_bytes,
+                   "clave_prefijo": hx(x.clave_prefijo), "firma_bytes": x.firma_bytes,
+                   "preambulo_adjunto": x.preambulo_adjunto, "con_estado": x.con_estado})
+        })
+        .collect();
     vec![
         ("as_digest", json!({"fn": "as_digest", "entradas": {"x": q(7)},
             "salida": dg(&as_digest(7))})),
@@ -204,6 +219,22 @@ fn casos() -> Vec<(&'static str, Value)> {
         ("preambulo_acta", json!({"fn": "preambulo_acta",
             "entradas": {"version": 1, "acta_digest": dg(&a)},
             "salida": hx(&preambulo_acta(1, &digest_to_bytes(&a)))})),
+        // §800 · RFC-0020, E2: los dos preambulos v7 y el registro de esquemas, apagados. La
+        // cofirma lleva dos esquemas DISTINTOS para que el KAT fije su orden y sus bytes; el del
+        // operador no esta en el registro, y no hace falta: el preambulo compone bytes, y si el
+        // numero esta registrado lo comprueba quien verifica (E3).
+        ("preambulo_v7", json!({"fn": "preambulo_v7",
+            "entradas": {"esquema": q(Esquema::XmssMtSha2_40_8_256.as_u64()), "epoch_digest": dg(&a)},
+            "salida": hx(&preambulo_v7(Esquema::XmssMtSha2_40_8_256.as_u64(), &digest_to_bytes(&a)))})),
+        ("preambulo_cofirma_v7", json!({"fn": "preambulo_cofirma_v7",
+            "entradas": {"esquema_testigo": q(Esquema::XmssMtSha2_40_8_256.as_u64()),
+                         "esquema_operador": q(0x0102_0304_0506_0708), "epoch_digest": dg(&a),
+                         "clave_del_operador": hx(&clave_op)},
+            "salida": hx(&preambulo_cofirma_v7(Esquema::XmssMtSha2_40_8_256.as_u64(),
+                                               0x0102_0304_0506_0708, &digest_to_bytes(&a), &clave_op)
+                .unwrap_or_else(|_| panic!("clave corta")))})),
+        ("registro_de_esquemas", json!({"fn": "registro_de_esquemas", "entradas": {},
+            "salida": registro})),
     ]
 }
 

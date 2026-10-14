@@ -387,6 +387,64 @@ def preambulo_cofirma(version, epoch_dig, clave_op):
     return DOMINIO_COFIRMA + bytes([version]) + digest_to_bytes(epoch_dig) + len(clave_op).to_bytes(2, "big") + bytes(clave_op)
 
 
+# ─── §800 · los preambulos v7 y el registro de esquemas (RFC-0020, E2; NUCLEO.md seccion 6) ─────
+
+def preambulo_v7(esquema, epoch_dig):
+    """El preambulo v7 de la cabeza: el byte 7 y el esquema de la firma, en ocho bytes big-endian,
+    entre el dominio y el digest (58 bytes). Apagado en la referencia: nadie lo firma todavia."""
+    return DOMINIO_EPOCH_HEAD + bytes([7]) + esquema.to_bytes(8, "big") + digest_to_bytes(epoch_dig)
+
+
+def preambulo_cofirma_v7(esquema_testigo, esquema_operador, epoch_dig, clave_op):
+    """El preambulo v7 de la cofirma: los dos esquemas, primero el del testigo, y la clave del
+    operador la ultima, con su longitud en un u16 big-endian (72 + N bytes)."""
+    return (DOMINIO_COFIRMA + bytes([7]) + esquema_testigo.to_bytes(8, "big") + esquema_operador.to_bytes(8, "big")
+            + digest_to_bytes(epoch_dig) + len(clave_op).to_bytes(2, "big") + bytes(clave_op))
+
+
+# La familia 1 es el registro XMSS^MT de RFC 8391, y el parametro, su OID: XMSSMT-SHA2_40/8_256 es
+# el 5, con n = 32, h = 40 y d = 8 (RFC 8391, 5.4). Los largos salen del RFC, no de la casa: la clave
+# es OID (4) || root (n) || SEED (n), y la firma, idx_sig (ceil(h/8)) || r (n) || d capas de una
+# firma WOTS+ (len * n, con len = 67 para n = 32 y w = 16) y su camino (h/d * n).
+_N, _H, _D, _LEN = 32, 40, 8, 67
+REGISTRO_DE_ESQUEMAS = [
+    {
+        "esquema": (1 << 32) | 0x0000_0005,
+        "nombre": "XMSSMT-SHA2_40/8_256",
+        "clave_bytes": 4 + 2 * _N,
+        "clave_prefijo": (5).to_bytes(4, "big"),
+        "firma_bytes": (_H + 7) // 8 + _N + _D * (_LEN * _N + (_H // _D) * _N),
+        "preambulo_adjunto": True,
+        "con_estado": True,
+    },
+]
+
+
+def comparten_escritura_de_clave(a, b):
+    """La regla de la decision 4 (a): unos mismos bytes valen de clave para las dos entradas."""
+    pa, pb = a["clave_prefijo"], b["clave_prefijo"]
+    return a["clave_bytes"] == b["clave_bytes"] and (pa.startswith(pb) or pb.startswith(pa))
+
+
+def registro_valido(registro):
+    """Las reglas del registro, de NUCLEO.md seccion 6: el cero no se asigna, cada numero es menor
+    que P, ninguno se repite y dos entradas no comparten escritura de clave. Devuelve los fallos."""
+    fallos = []
+    vistos = set()
+    for i, e in enumerate(registro):
+        if e["esquema"] == 0:
+            fallos.append("el cero no se asigna")
+        if not e["esquema"] < P:
+            fallos.append(f"{e['esquema']:#x} no es menor que p")
+        if e["esquema"] in vistos:
+            fallos.append(f"{e['esquema']:#x} repetido")
+        vistos.add(e["esquema"])
+        for f in registro[i + 1:]:
+            if comparten_escritura_de_clave(e, f):
+                fallos.append(f"{e['esquema']:#x} y {f['esquema']:#x} comparten escritura de clave")
+    return fallos
+
+
 # ─── autotest de las primitivas, contra referencias ajenas a la casa ──────────────────────────
 # BLAKE3: salida del crate `blake3 1.8.5` (el del Cargo.lock) sobre el patron byte i = i % 251.
 _BLAKE3_REFERENCIA = {

@@ -30,7 +30,7 @@ v4 (§792, la 66): las citas §n del REGISTRO. Reglas, declaradas antes de mirar
       traga un fichero en silencio.
   R4  TOLERANCIAS, solo en `AUDITORIA.md`, porque los asientos no se
       reescriben ni se marcan: los números RESERVADOS que el propio registro
-      reparte entre sesiones (§631, §740, §770), y dos citas al 0, por el
+      reparte entre sesiones (§631, §740, §770, §800), y dos citas al 0, por el
       asiento que las lleva (TOLERADAS): el 0 de otro documento sin nombrarlo
       y un número provisional que el asiento narra. Se cuentan y se
       imprimen. En `BACKLOG.md` no hay ninguna. Una TOLERADA que ya no se
@@ -204,7 +204,10 @@ MINIMO_CITAS = {"AUDITORIA.md": 5000, "BACKLOG.md": 800}  # medido en 8c02941: 5
 #   711-739    «§711 a §739 la de la migracion» (§740, §770)
 #   741-769    «§741 a §769 la del medio» (§770)
 #   790-799    «§770 a §799 esta» (§770): lo que queda del rango de la sesion que lo escribe
-RESERVADOS = {630} | set(range(711, 740)) | set(range(741, 770)) | set(range(790, 800))
+#   800-829    «§800 a §829», el rango que el autor asigno a la misma sesion para lo que faltaba
+#              (§800): lo que queda de el
+RESERVADOS = {630} | set(range(711, 740)) | set(range(741, 770)) | set(range(790, 800)) | \
+    set(range(800, 830))
 # ⚠️ TOLERADAS: (seccion que la lleva, numero citado). Citas que no nombran una seccion del
 # registro, en asientos, que no se reescriben.
 TOLERADAS = {

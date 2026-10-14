@@ -16,6 +16,11 @@ Lo que el formato de los KAT no dice y este juez tiene que saber (NOTA al final)
 un u64 en OCHO BYTES little-endian, mientras `seq`, `n`, `t`, los contadores, `x` de `as_digest` y
 `familia`/`version_air` de `digest_pi` son el u64 como numero hex. Son dos codificaciones del
 mismo tipo en el mismo catalogo.
+
+§800 · Y que uno no es de una `fn`: `registro_de_esquemas` (RFC-0020, E2) trae como `salida` la LISTA
+de las entradas del registro de esquemas, no un hex. Este juez la compara entera con el registro de
+`nucleo.py`, escrito desde NUCLEO.md seccion 6, y antes le pasa las reglas del registro a los dos,
+con un falsador: una entrada gemela que comparte la escritura de la clave tiene que caer.
 """
 import hashlib
 import json
@@ -60,8 +65,11 @@ ESQUEMA = {
     "preambulo": {"version": I, "epoch_digest": D},
     "preambulo_acta": {"version": I, "acta_digest": D},
     "preambulo_cofirma": {"version": I, "epoch_digest": D, "clave_del_operador": B},
+    "preambulo_cofirma_v7": {"esquema_testigo": U, "esquema_operador": U, "epoch_digest": D, "clave_del_operador": B},
+    "preambulo_v7": {"esquema": U, "epoch_digest": D},
     "recibo_digest": {"hash_prueba": D, "era": U, "n": U},
     "recibo_digest_v2": {"hash_prueba": D, "digest_pi": D, "era": U, "n": U},
+    "registro_de_esquemas": {},
 }
 
 
@@ -107,6 +115,18 @@ def hx(b):
 
 def dig(d):
     return hx(N.digest_to_bytes(d))
+
+
+def registro_en_json(registro):
+    """El registro con la escritura del KAT: el numero como QUANTITY, el prefijo en hex."""
+    return [{"esquema": hex(x["esquema"]), "nombre": x["nombre"], "clave_bytes": x["clave_bytes"],
+             "clave_prefijo": hx(x["clave_prefijo"]), "firma_bytes": x["firma_bytes"],
+             "preambulo_adjunto": x["preambulo_adjunto"], "con_estado": x["con_estado"]}
+            for x in registro]
+
+
+def registro_de_json(lista):
+    return [{**x, "esquema": int(x["esquema"], 16), "clave_prefijo": hexbytes(x["clave_prefijo"])} for x in lista]
 
 
 def cabeza_v1(e):
@@ -173,6 +193,19 @@ def calcular(fn, e, notas):
         return hx(N.preambulo_acta(e["version"], e["acta_digest"]))
     if fn == "preambulo_cofirma":
         return hx(N.preambulo_cofirma(e["version"], e["epoch_digest"], e["clave_del_operador"]))
+    if fn == "preambulo_cofirma_v7":
+        return hx(N.preambulo_cofirma_v7(e["esquema_testigo"], e["esquema_operador"], e["epoch_digest"],
+                                         e["clave_del_operador"]))
+    if fn == "preambulo_v7":
+        return hx(N.preambulo_v7(e["esquema"], e["epoch_digest"]))
+    if fn == "registro_de_esquemas":
+        propios = N.registro_valido(N.REGISTRO_DE_ESQUEMAS)
+        if propios:
+            raise ValueError(f"el registro de nucleo.py no cumple sus reglas: {propios}")
+        gemela = {**N.REGISTRO_DE_ESQUEMAS[0], "esquema": N.REGISTRO_DE_ESQUEMAS[0]["esquema"] + (6 << 32)}
+        if not N.registro_valido(N.REGISTRO_DE_ESQUEMAS + [gemela]):
+            raise ValueError("falsador: una entrada gemela que comparte la escritura de la clave NO cae")
+        return registro_en_json(N.REGISTRO_DE_ESQUEMAS)
     if fn == "recibo_digest":
         return dig(N.recibo_digest(e["hash_prueba"], e["era"], e["n"]))
     if fn == "recibo_digest_v2":
@@ -185,7 +218,8 @@ def juzgar(directorio):
     ok, notas, vistos, verde = 0, [], set(), {}
     for f in ficheros:
         kat = json.load(open(os.path.join(directorio, f)))
-        fn, salida = kat["fn"], kat["salida"].lower()
+        fn, salida = kat["fn"], kat["salida"]
+        salida = salida.lower() if isinstance(salida, str) else salida
         vistos.add(fn)
         if fn not in ESQUEMA:
             print(f"ROJO {fn}: el juez no conoce esta fn (fichero {f})")
@@ -196,6 +230,10 @@ def juzgar(directorio):
             if faltan:
                 raise KeyError(f"entradas que faltan: {sorted(faltan)}")
             got = calcular(fn, e, notas)
+            if fn == "registro_de_esquemas":
+                ajenos = N.registro_valido(registro_de_json(salida))
+                if ajenos:
+                    raise ValueError(f"el registro del KAT no cumple sus reglas: {ajenos}")
         except Exception as ex:  # un KAT que no se puede leer es un ROJO con nombre
             print(f"ROJO {fn}: {type(ex).__name__}: {ex}")
             continue
@@ -204,7 +242,7 @@ def juzgar(directorio):
             ok += 1
             print(f"OK   {fn}")
         else:
-            print(f"ROJO {fn}: esperado {salida[:18]}.. obtenido {got[:18]}..")
+            print(f"ROJO {fn}: esperado {str(salida)[:18]}.. obtenido {str(got)[:18]}..")
             if fn == "cima":
                 alt = dig(N.cima(e["hojas"], con_hoja=False))
                 notas.append("cima: con las hojas CRUDAS da " + ("el KAT" if alt == salida else "otra cosa"))
@@ -230,6 +268,8 @@ def main(argv):
     ok, n, notas, verde = juzgar(directorio)
     notas.append("formato: embeber.x, balance/nonce de native_leaf* y las entradas_publicas de digest_pi van como u64 en ocho bytes LE; "
                  "seq, n, t, los contadores y as_digest.x como numero hex (dos codificaciones, un catalogo)")
+    notas.append("formato: registro_de_esquemas no es de una fn; su salida es la lista de las entradas del registro, "
+                 "con el esquema como numero hex, el prefijo de la clave en hex, los largos como numero y dos booleanos")
     notas.append("hoja_de_acuse: RPC.md (zkssl_ackPath) la da como acuse_digest(hashPrueba, epoca, n) y RPC.md (El acuse "
                  "en la respuesta) dice epoca = logSeq + 1; NUCLEO.md seccion 6 lo escribe desde el S622; "
                  "con seq + 1 el KAT " + ("la sostiene" if verde.get("hoja_de_acuse") else "NO la sostiene")

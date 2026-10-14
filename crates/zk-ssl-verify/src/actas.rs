@@ -35,7 +35,11 @@ pub const ACTA_VERSION: u8 = 1;
 /// **El esquema de la clave de hoy**: XMSS^MT-SHA2_40/8_256. La familia en los 32 bits altos
 /// (1, el registro de RFC 8391) y el OID de RFC 8391 en los bajos (`0x00000005`). Es el unico
 /// que este verificador sabe comprobar: otro esquema se rechaza con su numero (la 87).
-pub const ESQUEMA_XMSSMT_SHA2_40_8_256: u64 = (1 << 32) | 0x0000_0005;
+///
+/// ⚠️ §800 · Desde el registro de esquemas (RFC-0020, E2) el numero sale de [`crate::Esquema`],
+/// que dice cual de los dos registros de RFC 8391 es la familia 1: el de XMSS^MT. El valor no
+/// cambia, y el KAT del acta, tampoco. Hasta aqui era el literal `(1 << 32) | 0x0000_0005`.
+pub const ESQUEMA_XMSSMT_SHA2_40_8_256: u64 = crate::Esquema::XmssMtSha2_40_8_256 as u64;
 
 /// El preambulo exacto que firma un acta. **Es superficie de conformidad**, con su KAT en
 /// `spec/vectors/nucleo/`: dominio, version y los 32 bytes de [`acta_digest`], el molde de

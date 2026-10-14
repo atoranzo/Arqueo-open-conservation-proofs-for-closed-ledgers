@@ -898,6 +898,11 @@ instrumentacion) al grupo E.*
   `zkssl/0.5`, en el mismo sello que el corte, con su E2 y su E3 antes. Lo de arriba, «adoptarlo
   es del autor» y «ninguna tomada», valía hasta aquí. El RFC sigue PROPUESTO y ninguna etapa está
   construida: sigue abierta hasta que se construyan.
+  ⚠️ §800: la E2 del RFC-0020 está construida —el registro de esquemas en `spec/NUCLEO.md` §6, con
+  su productor `Esquema` en `zk-ssl-verify`, y los preámbulos v7 de la cabeza y de la cofirma, con
+  tres KAT que `tools/segunda` reproduce—, y apagada: ni el nodo, ni el testigo, ni el kit los
+  firman ni los aceptan. Lo de arriba, «ninguna etapa está construida», valía hasta aquí. Sigue
+  abierta: lo que la cierra, el esquema dentro de lo que se firma, llega con la E4, en el corte.
 
 - [ ] **88. Sucesión: qué pasa el día que el autor pare.** El proyecto
   lo lleva **una persona** con asistencia de IA, con una disciplina que

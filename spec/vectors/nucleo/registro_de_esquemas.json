@@ -1,0 +1,15 @@
+{
+  "entradas": {},
+  "fn": "registro_de_esquemas",
+  "salida": [
+    {
+      "clave_bytes": 68,
+      "clave_prefijo": "0x00000005",
+      "con_estado": true,
+      "esquema": "0x100000005",
+      "firma_bytes": 18469,
+      "nombre": "XMSSMT-SHA2_40/8_256",
+      "preambulo_adjunto": true
+    }
+  ]
+}

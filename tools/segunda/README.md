@@ -5,8 +5,8 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 
 | fichero | qué es |
 |---|---|
-| `nucleo.py` | la **segunda implementación del NÚCLEO** (`spec/NUCLEO.md`, sección 6) en Python, sin dependencias: el campo de Goldilocks, la permutación Rescue-Prime `Rp64_256`, BLAKE3, la serialización, los dominios, los preámbulos y las composiciones, en el orden exacto de los merges |
-| `juez_nucleo.py` | el **juez**: corre los 31 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto. ⚠️ §797: hasta aquí decía «es el único llamador de `nucleo.py`», y ya no lo era: lo importan también `juez_cabezas.py:23`, `verificador.py:25` y `stark.py:30`, y desde el §797 `cable.py` y `juez_cadena.py` |
+| `nucleo.py` | la **segunda implementación del NÚCLEO** (`spec/NUCLEO.md`, sección 6) en Python, sin dependencias: el campo de Goldilocks, la permutación Rescue-Prime `Rp64_256`, BLAKE3, la serialización, los dominios, los preámbulos y las composiciones, en el orden exacto de los merges; desde el §800, también los dos preámbulos v7 y el registro de esquemas del RFC-0020, con sus reglas, que el juez comprueba con un falsador |
+| `juez_nucleo.py` | el **juez**: corre los 34 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto. ⚠️ §797: hasta aquí decía «es el único llamador de `nucleo.py`», y ya no lo era: lo importan también `juez_cabezas.py:23`, `verificador.py:25` y `stark.py:30`, y desde el §797 `cable.py` y `juez_cadena.py` |
 | `kat_xmss/xmss.py` | la **verificación XMSS^MT de RFC 8391** para `XMSSMT-SHA2_40/8_256`, el conjunto que la casa firma, escrita desde el texto del RFC y de ningún crate; solo verificar |
 | `juez_cabezas.py` | el **juez de las cabezas firmadas**: para cada cabeza y cofirma de los vectores recompone el `epochDigest` por versión, compara el preámbulo recuperado, verifica la firma con `kat_xmss/xmss.py` y comprueba el índice embebido (`PAQUETE.md`, 2/3 y sección 8); con un falsador que voltea un byte |
 | `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario; desde el §693 declara lo que no lee, en `NO_SOPORTADOS`, y lo dice con el texto reservado `NO SOPORTADO` |
@@ -21,7 +21,7 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 ## Cómo se corre
 
 ```bash
-# 1 · la segunda implementación contra los KAT del núcleo        -> nucleo: 31 de 31
+# 1 · la segunda implementación contra los KAT del núcleo        -> nucleo: 34 de 34
 python3 tools/segunda/juez_nucleo.py
 
 # 1 bis · las cabezas firmadas de todos los vectores, con XMSS^MT desde RFC 8391  -> ~25 s
@@ -56,8 +56,8 @@ done
 
 ## Lo medido
 
-**La segunda implementación.** 31 de 31 vectores reproducidos byte a byte (26 hasta el §643, que
-añade los tres del acta, y 29 hasta el §773, que añade `digest_pi` y la hoja v2 del recibo), escritos desde la sección 6 de `NUCLEO.md` y de ningún `.rs` de la casa.
+**La segunda implementación.** 34 de 34 vectores reproducidos byte a byte (26 hasta el §643, que
+añade los tres del acta, 29 hasta el §773, que añade `digest_pi` y la hoja v2 del recibo, y 31 hasta el §800, que añade el registro de esquemas y los dos preámbulos v7 del RFC-0020), escritos desde la sección 6 de `NUCLEO.md` y de ningún `.rs` de la casa.
 La permutación sale de la fuente de `winter-crypto 0.13.1`, que es la primitiva y no la casa, y se
 valida en el autotest contra el vector que ese crate atribuye a la implementación Sage; BLAKE3 se
 escribe desde la especificación pública y se valida contra 19 salidas del crate `blake3 1.8.5` del

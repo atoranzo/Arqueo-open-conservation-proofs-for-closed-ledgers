@@ -283,6 +283,117 @@ impl TryFrom<u64> for VersionCabeza {
     }
 }
 
+/// ⚠️ §800 · **El registro de esquemas de firma** (RFC-0020, E2; su D-A y las decisiones 2, 4 y
+/// 6 del §799): el numero con que se nombra el esquema que firmo algo. Es el `esquema` del acta
+/// ([`actas::ESQUEMA_XMSSMT_SHA2_40_8_256`], §643), un `u64` con la familia en los 32 bits
+/// altos y el parametro de la familia en los bajos, y es el mismo que llevan el preambulo v7 de
+/// la cabeza y el de la cofirma ([`preambulo_v7`], [`preambulo_cofirma_v7`]): una escritura y
+/// no dos, como pide el RFC-0016.
+///
+/// ⚠️ Es la UNICA puerta por la que el registro crece, con el molde de [`VersionCabeza`]: un
+/// `enum` exhaustivo, del que se derivan su lista ([`Self::TODOS`]), lo que declara cada entrada
+/// ([`Self::entrada`]) y el texto de un numero que no esta ([`EsquemaNoRegistrado`]). La norma
+/// es `spec/NUCLEO.md`, seccion 6, y su KAT, `spec/vectors/nucleo/registro_de_esquemas.json`.
+///
+/// ⚠️ **Apagado.** Nadie lo lee todavia: el verificador sigue fijando [`Conjunto`] en el codigo
+/// y el acta sigue comparando con su constante. Elegir el verificador por el esquema es la E3, y
+/// firmar con el, la E4, en el corte `zkssl/0.5`.
+///
+/// Tres reglas, atadas en los tests de este fichero:
+/// - **el cero no se asigna**, como en la marca v2 de la D-G del RFC-0018: un firmante que no
+///   declare su esquema no escribe un numero valido;
+/// - **dos esquemas del registro no comparten ninguna escritura de clave** (la decision 4, rama
+///   (a)): el compromiso `siguiente` de un acta es la huella de los BYTES de una clave, y solo
+///   dice de que esquema es la sucesora si ningun byte de clave vale para dos;
+/// - **cada numero es menor que `p`**: el acta lo compone con `as_digest`, que solo es inyectiva
+///   por debajo de `p` (la regla 2 de la canonicidad, §640). DERIVADO de esa regla, no decidido.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u64)]
+pub enum Esquema {
+    /// XMSS^MT-SHA2_40/8_256 (§643). La familia 1 es el registro **XMSS^MT** de RFC 8391, y el 5
+    /// es su OID en el. No es el registro de XMSS, donde el 5 es XMSS-SHA2_16_512: los dos
+    /// empiezan en 1 (§240), y por eso el OID de la clave, solo, no dice el esquema.
+    XmssMtSha2_40_8_256 = 0x1_0000_0005,
+}
+
+/// Lo que declara una entrada del registro de esquemas (RFC-0020, D-A): la escritura de su clave
+/// publica, la de su firma, si tiene estado y el texto con que se nombra. Es lo que fija, entrada
+/// a entrada, el KAT del registro.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EntradaEsquema {
+    /// El numero: la familia en los 32 bits altos y su parametro en los bajos.
+    pub esquema: u64,
+    /// El texto con que se nombra en los rechazos: el nombre que le da su familia.
+    pub nombre: &'static str,
+    /// La escritura de la clave publica: los bytes que mide...
+    pub clave_bytes: usize,
+    /// ...y los que la abren. Para la familia 1, el OID de RFC 8391 en cuatro bytes big-endian,
+    /// sin el bit del apano (§664): lo que se publica.
+    pub clave_prefijo: &'static [u8],
+    /// La escritura de la firma: los bytes que mide, sin el mensaje.
+    pub firma_bytes: usize,
+    /// Si la firma lleva el mensaje -el preambulo- adjunto DETRAS, como la de RFC 8391 que
+    /// produce `xmss` y que el verificador separa (`FIRMA_RFC_BYTES` mas el preambulo).
+    pub preambulo_adjunto: bool,
+    /// Si el esquema tiene estado y, con el, un guardian del indice (`zk-ssl-guardian`).
+    pub con_estado: bool,
+}
+
+impl Esquema {
+    /// Todos, en orden: el registro entero, del que se derivan su KAT y el texto de un numero
+    /// que no esta.
+    pub const TODOS: [Esquema; 1] = [Esquema::XmssMtSha2_40_8_256];
+    /// El numero, tal como lo escriben el acta y el preambulo v7.
+    pub fn as_u64(self) -> u64 {
+        self as u64
+    }
+    /// Lo que declara su entrada.
+    pub fn entrada(self) -> EntradaEsquema {
+        match self {
+            Esquema::XmssMtSha2_40_8_256 => EntradaEsquema {
+                esquema: self.as_u64(),
+                nombre: "XMSSMT-SHA2_40/8_256",
+                // OID (4) ‖ root (n = 32) ‖ SEED (32), RFC 8391.
+                clave_bytes: 68,
+                clave_prefijo: &[0x00, 0x00, 0x00, 0x05],
+                firma_bytes: FIRMA_RFC_BYTES,
+                preambulo_adjunto: true,
+                con_estado: true,
+            },
+        }
+    }
+}
+
+/// Un numero que el registro de esquemas no asigna. Lleva el valor tal como llego, sin truncar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EsquemaNoRegistrado(pub u64);
+
+impl core::fmt::Display for EsquemaNoRegistrado {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let asignados: Vec<String> = Esquema::TODOS
+            .iter()
+            .map(|e| format!("{:#x} ({})", e.as_u64(), e.entrada().nombre))
+            .collect();
+        write!(
+            f,
+            "esquema {:#x}: no esta en el registro de esquemas (spec/NUCLEO.md, seccion 6), que asigna {}",
+            self.0,
+            asignados.join(", ")
+        )
+    }
+}
+
+impl TryFrom<u64> for Esquema {
+    type Error = EsquemaNoRegistrado;
+    fn try_from(v: u64) -> Result<Self, Self::Error> {
+        Self::TODOS
+            .iter()
+            .copied()
+            .find(|e| e.as_u64() == v)
+            .ok_or(EsquemaNoRegistrado(v))
+    }
+}
+
 /// Bytes del RFC 8391 que ocupa la firma de este conjunto, sin el mensaje.
 pub const FIRMA_RFC_BYTES: usize = 18_469;
 
@@ -471,6 +582,75 @@ pub fn preambulo_cofirma(
     let mut v = Vec::with_capacity(DOMINIO_COFIRMA.len() + 1 + 32 + 2 + n as usize);
     v.extend_from_slice(DOMINIO_COFIRMA);
     v.push(version);
+    v.extend_from_slice(epoch_digest);
+    v.extend_from_slice(&n.to_be_bytes());
+    v.extend_from_slice(clave_del_operador);
+    Ok(v)
+}
+
+/// El byte de version de los preambulos que llevan el esquema (RFC-0020, D-B y D-C). Privado a
+/// proposito: `VersionCabeza::V7` entra en el conjunto en el corte (E4), no antes, y hasta
+/// entonces este 7 no es una version que nadie acepte.
+const VERSION_CON_ESQUEMA: u8 = 7;
+
+/// ⚠️ §800 · **El preambulo v7 de la cabeza** (RFC-0020, D-B): el de hoy, con el esquema que firma
+/// entre la version y el digest, en ocho bytes big-endian.
+///
+/// ```text
+/// v1 a v6:  DOMINIO ‖ version ‖ epoch_digest                  (17 + 1 + 32 = 50)
+/// v7:       DOMINIO ‖ 7 ‖ esquema (u64 BE) ‖ epoch_digest      (17 + 1 + 8 + 32 = 58)
+/// ```
+///
+/// El byte de version sigue siendo el unico desambiguador (§236), y con 7 el preambulo lleva el
+/// esquema. El dominio no cambia ni lleva version dentro, y `epoch_digest` tampoco: el esquema es
+/// de la firma, no del libro, y nada compone sobre el preambulo. Los bytes, `spec/NUCLEO.md`
+/// seccion 6; su KAT, `spec/vectors/nucleo/preambulo_v7.json`.
+///
+/// ⚠️ **Apagado**: nadie lo firma ni lo acepta todavia -ni el nodo, ni el testigo, ni el kit-,
+/// y [`verificar_cabeza`] rechaza una firma sobre el con `PreambuloDistinto` (atado en los
+/// tests). El esquema entra como llega: si esta en el registro ([`Esquema`]) lo comprueba quien
+/// verifica (E3), igual que [`preambulo`] no comprueba la version.
+pub fn preambulo_v7(esquema: u64, epoch_digest: &[u8; 32]) -> Vec<u8> {
+    let mut v = Vec::with_capacity(DOMINIO.len() + 1 + 8 + 32);
+    v.extend_from_slice(DOMINIO);
+    v.push(VERSION_CON_ESQUEMA);
+    v.extend_from_slice(&esquema.to_be_bytes());
+    v.extend_from_slice(epoch_digest);
+    v
+}
+
+/// ⚠️ §800 · **El preambulo v7 de la cofirma** (RFC-0020, D-C, con la decision 3 del §799): los
+/// DOS esquemas, el del testigo y el del operador, entre la version y el digest.
+///
+/// ```text
+/// hasta v6: DOMINIO_COFIRMA ‖ version ‖ epoch_digest ‖ len (u16 BE) ‖ clave_op
+/// v7:       DOMINIO_COFIRMA ‖ 7 ‖ esquema_testigo (u64 BE) ‖ esquema_operador (u64 BE)
+///             ‖ epoch_digest ‖ len (u16 BE) ‖ clave_op                    (21 + 1 + 8 + 8 + 32 + 2 + N)
+/// ```
+///
+/// El byte de version es el de la cabeza que cofirma (§780), asi que una cofirma v7 es la de una
+/// cabeza v7. El del testigo es el esquema de SU firma, que hoy nada nombra; el del operador
+/// hace que la cofirma diga «este operador, con esta clave DE ESTE ESQUEMA, publico este
+/// digest», por la misma razon por la que [`preambulo_cofirma`] lleva su clave: que no sea
+/// transferible. La clave, con su prefijo de longitud, sigue la ULTIMA, «por diseno», y la que
+/// no cabe en el prefijo es `ClaveDemasiadoLarga` y no un truncado. Los bytes, `spec/NUCLEO.md`
+/// seccion 6; su KAT, `spec/vectors/nucleo/preambulo_cofirma_v7.json`.
+///
+/// ⚠️ **Apagado**, como [`preambulo_v7`]: ningun testigo cofirma v7 hasta el corte (E4).
+pub fn preambulo_cofirma_v7(
+    esquema_testigo: u64,
+    esquema_operador: u64,
+    epoch_digest: &[u8; 32],
+    clave_del_operador: &[u8],
+) -> Result<Vec<u8>, VerificaError> {
+    let n: u16 = clave_del_operador.len().try_into().map_err(|_| {
+        VerificaError::ClaveDemasiadoLarga { bytes: clave_del_operador.len() }
+    })?;
+    let mut v = Vec::with_capacity(DOMINIO_COFIRMA.len() + 1 + 8 + 8 + 32 + 2 + n as usize);
+    v.extend_from_slice(DOMINIO_COFIRMA);
+    v.push(VERSION_CON_ESQUEMA);
+    v.extend_from_slice(&esquema_testigo.to_be_bytes());
+    v.extend_from_slice(&esquema_operador.to_be_bytes());
     v.extend_from_slice(epoch_digest);
     v.extend_from_slice(&n.to_be_bytes());
     v.extend_from_slice(clave_del_operador);
@@ -1081,6 +1261,160 @@ mod tests {
         // Ni la firma del OPERADOR puede pasar por cofirma: otro dominio.
         let (_, c_op) = firmado(&d);
         assert!(verificar_cofirma(&pk_testigo, &d, &pk_op, &c_op).is_err());
+    }
+
+    // ── §800 · el registro de esquemas y los dos preambulos v7 (RFC-0020, E2), apagados ──
+
+    /// Dos entradas comparten una escritura de clave si unos mismos bytes valen de clave para
+    /// las dos: el mismo largo y un prefijo que es prefijo del otro.
+    fn comparten_escritura_de_clave(a: &EntradaEsquema, b: &EntradaEsquema) -> bool {
+        a.clave_bytes == b.clave_bytes
+            && (a.clave_prefijo.starts_with(b.clave_prefijo) || b.clave_prefijo.starts_with(a.clave_prefijo))
+    }
+
+    /// §800 · El registro nace con UNA entrada, la del acta, y sin el cero; cada entrada lleva su
+    /// numero; el numero cabe en el campo, porque el acta lo compone con `as_digest`; y lo que no
+    /// esta se nombra con su numero, sin truncar, y con lo que el registro asigna. El OID solo, el
+    /// 5, no es un esquema: es la ambiguedad del §240 que el registro resuelve.
+    #[test]
+    fn el_registro_de_esquemas_nace_con_la_entrada_del_acta_y_sin_el_cero() {
+        assert_eq!(&Esquema::TODOS[..], &[Esquema::XmssMtSha2_40_8_256][..], "nace con una entrada");
+        assert_eq!(Esquema::XmssMtSha2_40_8_256.as_u64(), 0x1_0000_0005);
+        assert_eq!(
+            actas::ESQUEMA_XMSSMT_SHA2_40_8_256,
+            Esquema::XmssMtSha2_40_8_256.as_u64(),
+            "el acta y el registro escriben el esquema con el mismo numero"
+        );
+        for e in Esquema::TODOS {
+            let x = e.entrada();
+            assert_eq!(x.esquema, e.as_u64(), "la entrada lleva su numero");
+            assert_ne!(x.esquema, 0, "el cero no se asigna");
+            assert!(x.esquema < zk_ssl_hash::MODULO, "{:#x} no cabe en el campo", x.esquema);
+            assert_eq!(Esquema::try_from(x.esquema), Ok(e));
+            assert!(!x.nombre.is_empty(), "cada entrada se nombra");
+        }
+        for ajeno in [0u64, 5, 0x0001_0005, 0x2_0000_0005, u64::MAX] {
+            assert_eq!(Esquema::try_from(ajeno), Err(EsquemaNoRegistrado(ajeno)), "{ajeno:#x}");
+        }
+        assert_eq!(
+            EsquemaNoRegistrado(0x2_0000_0001).to_string(),
+            "esquema 0x200000001: no esta en el registro de esquemas (spec/NUCLEO.md, seccion 6), \
+             que asigna 0x100000005 (XMSSMT-SHA2_40/8_256)"
+        );
+    }
+
+    /// §800 · La decision 4 del RFC-0020, rama (a): dos esquemas del registro no comparten ninguna
+    /// escritura de clave, y el registro lo comprueba al admitir uno -aqui, en cada canon-. La
+    /// regla misma se prueba con dos entradas de muestra que NO se registran: la clave de 68 B
+    /// que abre con el mismo OID la compartiria; la de XMSS-SHA2_16_512, el 5 del otro registro
+    /// de RFC 8391, mide 132 B y no.
+    #[test]
+    fn dos_esquemas_del_registro_no_comparten_escritura_de_clave() {
+        for (i, a) in Esquema::TODOS.iter().enumerate() {
+            for b in &Esquema::TODOS[i + 1..] {
+                assert!(
+                    !comparten_escritura_de_clave(&a.entrada(), &b.entrada()),
+                    "{:?} y {:?} comparten escritura de clave: la huella de la sucesora no diria cual es",
+                    a,
+                    b
+                );
+            }
+        }
+        let hoy = Esquema::XmssMtSha2_40_8_256.entrada();
+        let gemela = EntradaEsquema { esquema: 0x7_0000_0005, ..hoy };
+        assert!(comparten_escritura_de_clave(&hoy, &gemela), "la misma clave con otro numero se ve");
+        let sin_prefijo = EntradaEsquema { clave_prefijo: &[], ..gemela };
+        assert!(comparten_escritura_de_clave(&hoy, &sin_prefijo), "y una sin prefijo del mismo largo, tambien");
+        let xmss_16_512 = EntradaEsquema { clave_bytes: 4 + 2 * 64, ..gemela };
+        assert!(!comparten_escritura_de_clave(&hoy, &xmss_16_512), "el mismo OID con otro largo, no");
+    }
+
+    /// §800 · Lo que la entrada de hoy declara es lo que `xmss` escribe: el nombre y los largos del
+    /// conjunto, la clave publicada con su OID, la firma con el preambulo adjunto DETRAS -aqui, el
+    /// v7, de 58 bytes- y el estado, que es el indice embebido. Y APAGADO: el verificador de hoy
+    /// no acepta una firma sobre el preambulo v7, ni declarada v7 ni declarada v6.
+    #[test]
+    fn la_entrada_de_hoy_es_lo_que_xmss_escribe_y_el_v7_no_lo_acepta_nadie() {
+        use xmss::XmssParameter;
+        let x = Esquema::XmssMtSha2_40_8_256.entrada();
+        assert_eq!(x.nombre, <Conjunto as XmssParameter>::NAME, "el nombre de RFC 8391");
+        assert_eq!(x.clave_bytes, <Conjunto as XmssParameter>::VK_LEN);
+        assert_eq!(x.firma_bytes, <Conjunto as XmssParameter>::SIG_LEN);
+        let d = [0x7Au8; 32];
+        let mut s = [0u8; 96];
+        for (i, b) in s.iter_mut().enumerate() {
+            *b = (i as u8).wrapping_mul(17).wrapping_add(4);
+        }
+        let mut kp = KeyPair::<Conjunto>::from_seed(&s).expect("keygen");
+        let pk = kp.verifying_key().as_ref().to_vec();
+        assert_eq!(pk.len(), x.clave_bytes);
+        assert!(pk.starts_with(x.clave_prefijo), "la clave publicada abre con el OID declarado");
+        let pre = preambulo_v7(x.esquema, &d);
+        let sig = kp.signing_key().sign(&pre).expect("firmar").as_ref().to_vec();
+        assert!(x.preambulo_adjunto);
+        assert_eq!(sig.len(), x.firma_bytes + 58, "la firma de RFC 8391 y el preambulo v7 detras");
+        assert_eq!(&sig[x.firma_bytes..], &pre[..], "el preambulo va adjunto, entero, al final");
+        assert!(x.con_estado);
+        assert_eq!(indice_de_firma(&sig).expect("indice"), 0, "con estado: la firma lleva su hoja");
+        for version_formato in [VERSION_CON_ESQUEMA, VERSION_FORMATO] {
+            let c = CabezaFirmada { version_formato, indice: 1, firma: sig.clone() };
+            match verificar_cabeza(&pk, &d, &c) {
+                Err(VerificaError::PreambuloDistinto { esperado: 50, recibido: 58 }) => {}
+                otro => panic!("v{version_formato} sobre un preambulo v7 tenia que caer, y dio: {otro:?}"),
+            }
+        }
+    }
+
+    /// §800 · El preambulo v7 de la cabeza: dominio, 7, el esquema en ocho bytes BIG-endian y el
+    /// digest, 58 bytes. No es el de ninguna version de hoy -ni siquiera el de `preambulo(7, ..)`,
+    /// que no lleva esquema-, y otro esquema da otro preambulo.
+    #[test]
+    fn el_preambulo_v7_lleva_el_esquema_entre_la_version_y_el_digest() {
+        let d = [0xABu8; 32];
+        let e = Esquema::XmssMtSha2_40_8_256.as_u64();
+        let p = preambulo_v7(e, &d);
+        assert_eq!(p.len(), 17 + 1 + 8 + 32);
+        assert_eq!(p.len(), 58);
+        let o = DOMINIO.len();
+        assert_eq!(&p[..o], DOMINIO, "el dominio de la cabeza, sin version dentro");
+        assert_eq!(p[o], 7);
+        assert_eq!(&p[o + 1..o + 9], &[0, 0, 0, 1, 0, 0, 0, 5], "big-endian: la familia primero");
+        assert_eq!(&p[o + 9..], &d);
+        for v in 1..=7u8 {
+            assert_ne!(p, preambulo(v, &d), "v7 no es el preambulo de la version {v}");
+        }
+        assert_ne!(p, preambulo_v7(0x2_0000_0005, &d), "el esquema entra en lo que se firma");
+        assert_ne!(p, preambulo_v7(e, &[0xACu8; 32]));
+    }
+
+    /// §800 · El preambulo v7 de la cofirma: los dos esquemas en su orden -el del testigo y luego
+    /// el del operador-, el digest y la clave del operador, la ULTIMA, con su prefijo de longitud:
+    /// 72 + N bytes. Cambiar el orden de los dos esquemas cambia lo que se firma; una clave que no
+    /// cabe en el prefijo da error y no se trunca; y no es el preambulo de hoy con ninguna version.
+    #[test]
+    fn la_cofirma_v7_lleva_los_dos_esquemas_y_la_clave_del_operador_al_final() {
+        let d = [0xABu8; 32];
+        let k = vec![0xCDu8; 68];
+        let (t, op) = (0x1_0000_0005u64, 0x0102_0304_0506_0708u64);
+        let p = preambulo_cofirma_v7(t, op, &d, &k).expect("cabe");
+        assert_eq!(p.len(), 21 + 1 + 8 + 8 + 32 + 2 + 68);
+        let o = DOMINIO_COFIRMA.len();
+        assert_eq!(&p[..o], DOMINIO_COFIRMA);
+        assert_eq!(p[o], 7);
+        assert_eq!(&p[o + 1..o + 9], &t.to_be_bytes(), "primero el esquema del testigo");
+        assert_eq!(&p[o + 9..o + 17], &op.to_be_bytes(), "despues el del operador");
+        assert_eq!(&p[o + 17..o + 49], &d);
+        assert_eq!(&p[o + 49..o + 51], &68u16.to_be_bytes(), "la longitud, big-endian");
+        assert_eq!(&p[o + 51..], &k[..], "la clave del operador, la ultima");
+        assert_ne!(p, preambulo_cofirma_v7(op, t, &d, &k).expect("cabe"), "el orden de los esquemas firma");
+        for v in 1..=7u8 {
+            assert_ne!(p, preambulo_cofirma(v, &d, &k).expect("cabe"), "no es la cofirma v{v}");
+        }
+        match preambulo_cofirma_v7(t, t, &d, &vec![0u8; 70_000]) {
+            Err(VerificaError::ClaveDemasiadoLarga { bytes }) => assert_eq!(bytes, 70_000),
+            otro => panic!("debia decir que no cabe, no truncar: {otro:?}"),
+        }
+        assert!(preambulo_cofirma_v7(t, t, &d, &vec![0u8; 65_535]).is_ok(), "el techo exacto cabe");
     }
 
     // ── el indice que va DENTRO de la firma (§332) ──
