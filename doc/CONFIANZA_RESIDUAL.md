@@ -102,6 +102,30 @@ decidido, y dónde):
   ficheros son dos cerrojos—, y quien abra el fichero sin pedir el cerrojo, que
   en unix es de aviso. El cerrojo excluye procesos: no hace nada frente a un
   contador que vuelve atrás o se pierde. El cuerpo de este documento no se toca.
+· B10.1 / guardián del índice — EL FICHERO DE COFIRMAS ES UN DETECTOR, NO UNA PRUEBA (§779,
+  2026-10-14; BACKLOG 104): la gemela, en el cofirmante del testigo, del límite del diario del
+  nodo (§335, arriba). Desde el §337 el contador del cofirmante se ata al mayor índice que va
+  DENTRO de una firma del fichero de `--cofirmas` (`tope_de_cofirmas`), y desde el §594 en todo
+  estado que lea un contador: si el contador no pasa de ese índice (`<=`), el testigo no arranca.
+  Lo que eso SÍ ve lo mide el `NEGATIVO` de `tools/banco_reutilizacion.sh`: el contador
+  restaurado hacia atrás con las cofirmas en su sitio.
+  ⚠️ **Lo que NO ve**: `--cofirmar` exige una ruta (`requires_all`), no ESE fichero, y el
+  fichero se abre con `create` y en `append`: **borrado, vaciado o con `--cofirmas` apuntando a
+  otra ruta, no hay tope y el gate se apaga**, y el fichero vuelve a nacer vacío. Un contador
+  restaurado hacia atrás JUNTO CON el fichero borrado se resincroniza sobre hojas ya firmadas, y
+  un contador borrado con él coincide en 0 y vuelve a firmar la hoja 0. Una rotación rutinaria
+  del fichero lo apagaría **sin mala fe**; el testigo no lo rota, así que hoy es acción de
+  operador y no camino de código. El directorio entero restaurado tampoco se ve —contador y
+  cofirmas vuelven juntos—, y el tope falla hacia el lado PERMISIVO por tres vías más: las
+  líneas que no se leen como cofirma se saltan, la línea de cofirma se escribe sin `fsync` y
+  —leído, no medido— un solo byte que no sea UTF-8 deja el fichero ENTERO sin tope, porque
+  `tope_de_cofirmas` lee con `leer`, un `read_to_string`: el defecto que el §666 arregló en el
+  diario del nodo, y que el testigo conserva. **Detecta un subconjunto, no demuestra nada.**
+  Desde fuera, una cofirma que ya salió del disco —al nodo con `--enviar-cofirmas`, que nace
+  apagado, o copiada por un tercero— y la nueva sobre la misma hoja y otro mensaje, juntas en un
+  fichero, dan `indice-repetido` en `--verificar-cofirmas`; medido con una copia forjada (el
+  `NEGATIVO-B3` de `tools/banco_cofirma.sh`), no con un testigo restaurado. Es detección
+  después de firmar, no antes. El cuerpo de este documento no se toca.
 · B10.3 y §10.2 (el plazo N)  → DECIDIDOS en §121: el «acuse» (nombre
   reservado en §120: ya hay dos `*Receipt` de otra especie) compromete
   su propio N bajo N_max = 1.440 cabezas firmadas (24 h, precedente MMD

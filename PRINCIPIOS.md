@@ -214,6 +214,29 @@ firma pide CINCO (`audit.rs`): faltaba el estado del titular, que es justo lo
 que la capa no guarda, y el ejemplo no compilaba. Corregido en §363; el
 error se registra en vez de borrarse.
 
+### 4.3 Si el receptor nunca cobra: la reversión
+
+**Suelo de la reversión: Δ_min = 13 meses** — ❌ *(añadido: §779)*
+Ningún pago puede llevar un plazo de reversión menor: es la línea que
+`AUDITORIA.md` §119.8 escribió para este documento, y no había llegado.
+Tras un plazo Δ, el emisor —y solo él, con su clave— recupera un envío no
+cobrado (§119, §178-§181); en la vía v2 (RFC-0003) el Δ va dentro del
+compromiso y lo elige el emisor, Δ=∞ incluido, con un límite medido: el
+campo reduce `u64::MAX` a `2^32 - 2`, así que el emisor puede abrir su
+propio «nunca» tras `2^32 - 2` entradas del registro (§501). El suelo es
+política, con precedente en el plazo de *recall* de SEPA y la analogía
+imperfecta declarada: el recall exige consentimiento del receptor y esto es
+unilateral por abandono, lo que argumenta un suelo largo, nunca corto. Un
+Δ≈0 sería un pago que nunca fue promesa.
+
+❌ **No implementado.** `apply_refund` compara lo transcurrido con el Δ del
+sobre y no exige mínimo alguno —`un_refund_v2_tras_delta_devuelve_al_emisor`
+reembolsa con `delta = 1`—; la vía v1 sigue con un plazo global que fija el
+operador (`set_refund_ttl`); y el reloj es `log.len()`, entradas del
+registro y no meses, así que «13 meses» aún no tiene traducción en el árbol.
+La política sigue además pendiente de T3b, su prueba de aceptación (§119.7,
+§128.1; entrada 12 de `BACKLOG.md`).
+
 ---
 
 ## 5. Fundamentos tecnológicos

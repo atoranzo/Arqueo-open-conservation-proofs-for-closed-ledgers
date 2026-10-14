@@ -52020,3 +52020,77 @@ circuitos»; `BACKLOG.md:1465-1466`, en la entrada 15 ya cerrada, dice que la `s
 elementos invalida las cuentas existentes, y el §90 lo rectificó; `doc/historia/PUBLICACION.md:36`
 repite «64 bits son…», y hay que ver si es cita literal antes de tocarlo; y los mismos restos de la
 colisión en `INSTITUCIONAL`, `INSTITUTIONAL` y `ZENODO`.
+
+## §779 — cuatro entradas del `BACKLOG.md` contadas contra el árbol: se cierran la 42 (sin objeto desde `d19b20e`) y la 104 (el fichero de cofirmas es un detector, dicho en `doc/CONFIANZA_RESIDUAL.md`), y se recuentan la 12 y la 47 sin cerrarlas (las tareas 49, 51, 50 y 53)
+
+El commit que lleva este asiento, sobre el §778. Toca `BACKLOG.md`, `doc/CONFIANZA_RESIDUAL.md`,
+`PRINCIPIOS.md` §4.3, `doc/ESCALADO.md` y dos comentarios de `crates/zk-ssl/src/two_phase.rs`; y
+este asiento. Ningún código cambia de comportamiento: lo de `two_phase.rs` es comentario. Del autor
+es elegir las tareas y su orden; la forma la propuso la sesión («Quién lo decide»). Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770
+a §799). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el
+canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** De la rancia de otra clase que el §583 nombró: la que contar casillas no ve,
+una entrada cuya cuenta cuadra y cuyo texto ya no es verdad. Cuatro entradas que el recuento del
+§583 no miró contra el árbol. Cada una la redactó un lector con la evidencia en `fichero:línea` y la
+revisó otro, que la aprobó con retoques; lo que aquí entra es la versión retocada.
+
+**Quién lo decide.** El autor eligió las tareas. Cerrar la 42 y la 104 lo propone la sesión con la
+medida delante; la 12 y la 47 NO se cierran, porque lo medido dice que siguen abiertas. Nada se
+adopta: la tabla de la 47 dice dónde vive cada pieza, no que vaya a hacerse.
+
+**Lo que hace.**
+
+1. **La 42, cerrada (la tarea 49).** Decía que `mint_to_pending` devuelve `OverRegulatoryLimit` y
+   suma sin saturar. Esa vía se retiró en `d19b20e` (B-3b-ii, que el §171 registra al cerrar B-3):
+   en `crates/` no queda ninguna `fn mint_to_pending(` ni `fn apply_mint_to_pending(`, y la única
+   emisión a pendiente, `apply_mint_pending_delegated`, devuelve `SupplyCapExceeded` y suma con
+   `saturating_add` y `checked_add`, como `apply_mint_delegated`. El cierre va detrás del cuerpo,
+   como la 69, la 102 y la 106. Los dos comentarios de `two_phase.rs` que la daban por viva —«la via
+   antigua de arriba»— se corrigen con marca: es lo que el §375 dejó «fichado y NO tocado», y su
+   referente era éste, no `send`.
+2. **La 104, cerrada (la tarea 51).** El §337 dejó dicho en el código que el gate del contador del
+   cofirmante «va a CONFIANZA_RESIDUAL», y nadie lo llevó. Leído en `crates/zk-ssl-cli/src/witness.rs`
+   —leído, no medido: ningún test cubre el caso sin tope y ningún banco borra el fichero—: el tope
+   sale de `tope_de_cofirmas`, que da `None` con el fichero ausente, vacío o con un solo byte que no
+   sea UTF-8, porque lee el fichero entero con `read_to_string`; con `None` el gate no actúa; un
+   `--cofirmas` que apunte a otra ruta nace vacío; las líneas ilegibles se saltan; y la línea se
+   escribe sin `fsync`. Todo eso es un DETECTOR, no una barrera, y así queda dicho en
+   `doc/CONFIANZA_RESIDUAL.md`. La 103, su gemela, gana una nota y sigue abierta: le queda la
+   pérdida que no se sabe.
+3. **La 12, recontada y abierta (la tarea 50).** Seguía titulada «piezas 1-3 pendientes» desde el
+   §119, y las tres piezas del §88.4 están hechas: el compromiso v2 del RFC-0003 ata la reversión,
+   la altura entra en el digest firmado (§340) y `born` va bajo `pmetaRoot` (§388, cabeza v5). Lo
+   que la tiene abierta no es pieza, y queda escrito con su evidencia: no hay suelo Δ_min —la capa
+   reembolsa con `delta = 1` y su reloj cuenta entradas, no meses—; T3b-circuito sigue sin escribir;
+   la vía v1 conserva el `refund_ttl` global y todo mint-a-pendiente nace v1; y dos flecos de la v2:
+   Δ=∞ son 2³² − 2 épocas (§501) y el receptor no ve el Δ, contra el §119.2. La línea «Δ_min = 13
+   meses» que el §119.8 escribió para `PRINCIPIOS.md` entra allí, en el §4.3, marcada ❌ con su razón.
+4. **La 47, reconciliada y abierta (la tarea 53).** `doc/ESCALADO.md` decía que «añade B1–B9 al
+   backlog» y no se añadió ninguno. Una tabla con marca, bajo la de su §10 —con el precedente del
+   §488, que añadió notas al cuerpo VERBATIM de ese documento sin corregir ninguna cifra—, y una
+   línea en su cabecera-mapa dicen dónde vive cada pieza: B8 es la 12 y la réplica de B7 la 17; B1 se
+   evitó por otra vía, sin resolverse, y su residuo es la 23; B4 y B6 se hicieron en otra forma y sin
+   B3; B2 solo tiene objeto dentro de B3; B3, B5, B9 y el resto de B7 no tienen más sitio que la 47.
+   En la 47 se tacha lo pedido y queda lo pendiente, con la sensibilidad del §6 que el §89.4 pidió y
+   nadie rehízo.
+
+**Medido.** Cada `texto_viejo` salía una sola vez en su fichero. Las casillas, recontadas: 44 `- [ ]`
+y 76 `- [x]`. Las citas por línea a `two_phase.rs` que este mismo commit desplaza se dan en las
+líneas de después (`:1699`, `:3763-3791`, `:1690-1704`). Sobre este árbol, `check_cifras`,
+`check_figures`, `verificar_citas`, `check_publicadas` y `check_tests` salen con 0. El canon,
+`bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** El `BACKLOG.md` pasa de 46 abiertas y 74 resueltas a 44 y 76, con las mismas 3
+suspendidas, y su cabecera lo dice. Ni tests, ni vectores.
+
+**Lo que NO hace.** No cierra la 12 ni la 47, ni adopta nada de `doc/ESCALADO.md`. No arregla lo que
+la 104 describe: lo declara. No toca las menciones del nombre retirado que quedan fuera de estas
+entradas —`two_phase.rs:529-530`, `circuit_mint_pending.rs:1781`, que dice «la via que el sistema usa
+hoy», y `:1886`, `circuit_threshold_single_nullifier.rs:698` y `doc/CADUCIDAD_PENDIENTE.md:89`—. Ni
+las cadenas «desde el §N» de `doc/blueprint-v2.md:120` y `doc/integracion-vertical-evaluacion.md:73-74`,
+que llevan a mano anclas del `BACKLOG.md` ya corridas antes de este corte y que este corte corre
+otra vez; ninguna herramienta las mira. Si la divergencia (i) de la 12 también quedó saldada en el
+§340, la 12 entera podría cerrarse: eso es medirlo aparte.

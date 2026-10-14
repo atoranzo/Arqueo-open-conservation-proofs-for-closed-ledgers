@@ -1655,13 +1655,18 @@ impl SovereignLayer {
     /// antes de nada; en el circuito porque un auditor externo que solo ve
     /// el registro **no puede recomputar el suministro**.
     ///
-    /// ⚠️ **Usa `SupplyCapExceeded`, no `OverRegulatoryLimit`.** La via
-    /// antigua de arriba devuelve el segundo para esta misma condicion, que
-    /// es el error del limite regulatorio de una transferencia, no el del
-    /// tope de emision -y ademas suma sin saturar-. `mint` siempre uso
-    /// `SupplyCapExceeded`. La divergencia se deja anotada en vez de
-    /// corregirse de tapadillo: tocar el error de la via antigua cambia lo
-    /// que ven sus tests y es otra tarea.
+    /// ⚠️ **Usa `SupplyCapExceeded`, no `OverRegulatoryLimit`**, como
+    /// `apply_mint_delegated`: es el error del tope de emision, y el otro es
+    /// el del limite regulatorio de una transferencia (`send`).
+    ///
+    /// ⚠️ §779: este parrafo decia que «la via antigua de arriba» devolvia
+    /// `OverRegulatoryLimit` para esta misma condicion, sumando sin saturar,
+    /// y que la divergencia se dejaba anotada porque tocar aquel error
+    /// cambiaba lo que veian sus tests (entrada 42, §73.4). Era verdad al
+    /// escribirse; desde `d19b20e` (B-3b-ii, el §171) aquella via
+    /// -`mint_to_pending` y `apply_mint_to_pending`- no existe, y lo que hoy
+    /// queda justo arriba es `apply_many_con_operacion`, que no emite. No hay
+    /// divergencia que anotar: esta es la unica emision a pendiente de la capa.
     #[allow(clippy::too_many_arguments)]
     pub fn apply_mint_pending_delegated(
         &mut self,
@@ -1783,8 +1788,10 @@ impl SovereignLayer {
         self.meta_set(position, crate::REFUND_SENDER_NONE, nacido);
 
         // La MISMA raiz de cuentas en los dos lados, y es correcto: una
-        // emision a un pendiente no toca ninguna cuenta. Mismo criterio que
-        // la via antigua de arriba.
+        // emision a un pendiente no toca ninguna cuenta.
+        // ⚠️ §779: seguia «Mismo criterio que la via antigua de arriba». Esa
+        // via, `apply_mint_to_pending`, se retiro en `d19b20e` (B-3b-ii, el
+        // §171) y la frase apuntaba a una funcion que ya no esta.
         self.log.append_con_compromiso(
             OpKind::MintToPending,
             self.accounts.root(),

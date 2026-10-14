@@ -54,6 +54,10 @@ MAPA DE CORRECCIONES (cifra desfasada → dónde está la corrección):
   VISION §5.1 por exigir claves de gasto): aquí cada prueba se verifica
   individualmente; el lote es solo de árbol y disco. Homonimia, no
   violación del catálogo de rechazos.
+· «Añade B1–B9 al backlog» (Relación) y el orden de §10  → §779: no se
+  añadió ninguno. Tienen entrada B8 (la 12) y la réplica de B7 (la 17);
+  el resto se evitó o se hizo por otra vía, se descartó o se queda en la
+  47. La correspondencia, pieza a pieza, en la nota bajo la tabla de §10.
 ============================================================ -->
 
 # ESCALADO — de un nodo a la escala mundial con los cambios mínimos
@@ -419,6 +423,33 @@ integridad al arrancar siguen demostrados donde estaban.
 
 Orden sugerido: B1 → B9 en paralelo con B2 → B3 → B4 → {B5, B6, B7} → B8.
 B9 es barato y es el que más incertidumbre elimina por unidad de esfuerzo.
+
+⚠️ §779: **dónde vive cada B en `BACKLOG.md`.** La línea «Relación» del
+encabezado decía que este documento «añade B1–B9 al backlog», y no se añadió
+ninguno: la entrada 47 pidió reconciliarlos antes (`AUDITORIA.md` §128.3),
+porque anexarlos sin mirar duplicaba entradas. Medidos contra el árbol, solo
+uno tiene entrada propia entera (B8, la 12) y otro a medias (B7: su réplica
+es la 17); el límite de B1 lo evitó otra vía; B4 y B6 se hicieron en otra
+forma y sin pasar por B3; B2 solo tiene objeto dentro de B3; y B3, B5, B9 y
+el resto de B7 no tienen más sitio que la 47. **Esta tabla no adopta nada**:
+dice dónde está cada pieza, no que vaya a hacerse.
+
+| # | Entrada del BACKLOG | Lo que hay en el árbol |
+| --- | --- | --- |
+| B1 | ninguna; su residuo es la **23** | Evitado por otra vía, no resuelto (§2.3 de este documento): la vía de un paso se retiró de la capa con su árbol de nullifiers (`AUDITORIA.md` §32 y §36). Vuelve si el estado se reparte sin orden total, y eso es la 23 |
+| B2 | ninguna | Descartado como palanca propia: el RFC-0002 descartó el anti-replay por `nonce` de cuenta —el obstáculo es el camino contra `root_old`, no el `nonce` (`DIAGNOSTICO_ESCALADO.md` §5)— y «una operación por cuenta y por lote» la impone `apply_many` sin `nonce`. Solo tiene objeto como pieza de B3 |
+| B3 | la **47**, que además recibió el B11 de la 48 al cerrarse esta (§268) | Sin construir. El RFC-0002 mostró que los lotes no lo necesitan (su 2.2), así que dejó de ser condición del lote; queda el motivo de privacidad —el operador ciego: B11.1 de `CONFIANZA_RESIDUAL.md` depende de él, y B11.3 de B11.1— y la prioridad 1 de VISION (`AUDITORIA.md` §122.2). Y de él sigue colgando B5 |
+| B4 | ninguna; lo tomó la etapa 2 del RFC-0002 | Hecho en otra forma: `apply_many` (§215; el §216 midió cero pruebas tiradas), **sin circuitos y sin B3**. No por épocas de 1 s: el registro lleva una entrada por operación con las raíces reales (RFC-0002, 2.4.bis), `seq` sigue contando operaciones (§340) y la cabeza firmada es el latido de 1/min (cabecera) |
+| B5 | la **47**, sin entrada propia | Sin construir. Una prueba se ata hoy a la raíz vigente o a la instantánea del lote; no hay ventana ni registro de anclas. W descansa en la comprobación O(1) de C3, que es la que este documento da para aceptar un ancla vieja «sin árboles históricos»; y su dimensionado (§7) es del estudio condicional |
+| B6 | ninguna | Hecho para el nodo único, contra la raíz vigente y sin W: `apply` rechaza la cuenta congelada (§487) y el AIR ata la posición del titular en el árbol de congelados desde el §680 (E1 del RFC-0018; en el árbol, sin versión de cable hasta `zkssl/0.5`: `SECURITY.md` §3.6). La raíz de congelados va en la cabeza firmada. La nota §487 bajo C6 vale para el cable publicado (`zkssl/0.4`), y el arreglo B que nombra no es el del §511, que no ataba (§670), sino el del §680. Falta solo el «retardo ≤ W», que es B5 |
+| B7 | la **17**, la réplica; el particionado y el enrutador, la **47** | La réplica por *log-shipping* y el failover son la 17, que va con la 23. El particionado y el enrutador no tienen entrada propia, y no deben tenerla mientras el escalado no se adopte: son estudio condicional (cabecera; `AUDITORIA.md` §122.2). El RFC-0002 deja la partición como opcional, «solo si el pico objetivo lo exige» |
+| B8 | la **12** | Política decidida (§119) y mecanismo hecho sin B3 (§178-§181); el Δ por pago lo tomó el RFC-0003, que se aceptó en el §356 |
+| B9 | la **47**, adonde lo manda la **77** | Sin medir. Es una medida y no depende de adoptar nada; la 77 le junta la de XMSS en ARM. Toda comparación de tiempos entre sesiones arrastra la deriva de la **68** |
+
+El orden sugerido de arriba ya no ordena: B1 se evitó por otra vía, y B4, B6
+y B8 avanzaron sin pasar por B3. Lo que sigue colgando de B3 es B2, que solo
+tiene objeto dentro de él, B5 y, fuera de esta tabla, el B11 de
+`CONFIANZA_RESIDUAL.md`.
 
 ---
 

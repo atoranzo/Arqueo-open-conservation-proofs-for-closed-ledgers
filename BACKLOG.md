@@ -12,10 +12,10 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 46 abiertas, 74 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 44 abiertas, 76 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
-115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, y el §772, que
-cierra la 102.
+115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
+cierra la 102, y el §779, que cierra la 42 y la 104.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1255,9 +1255,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   aviso pendiente mirado por dos caras, y desde §268 vive **sólo aquí**.
   Cifrarlo es trabajo de circuito y de protocolo: se decide con esta entrada
   delante, no de propina.
-- [ ] **12. Fondos muertos — POLITICA DECIDIDA (§119), piezas 1-3
-  pendientes.** ✅ **La reversion es un segundo cobro**: el **emisor, con su
-  clave, tras un plazo**, hacia un `refund_id` comprometido en el envio.
+- [ ] **12. Fondos muertos — POLITICA DECIDIDA (§119), ~~piezas 1-3
+  pendientes~~ piezas 1-3 HECHAS; la tienen abierta el suelo Δ_min, T3b, la
+  via v1 y dos flecos de la v2 (§779).** ✅ **La reversion es un segundo
+  cobro**: el **emisor, con su clave, tras un plazo**, hacia un `refund_id`
+  comprometido en el envio.
   ⚠️ **Lo que mata las alternativas**: operador, gobernanza, custodios y
   **barrido automatico** serian **la primera transicion donde el dinero se
   mueve sin la clave de un titular**. «Nadie nunca» sobrevive como **Δ=∞ pago
@@ -1271,7 +1273,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   acelera el reloj**; cada pieza deja evidencia, **la combinacion no**.
   ⚠️ **Coste**: congelar pasa a **retener fondos de terceros**.
   **Para `PRINCIPIOS.md`**: **Δ_min = 13 meses**, precedente SEPA con la
-  analogia imperfecta declarada. **Pendiente T3b.**
+  analogia imperfecta declarada. **Pendiente T3b.** ⚠️ **§779: llevada a
+  `PRINCIPIOS.md` §4.3, marcada ❌**: el arbol no tiene suelo y T3b sigue
+  pendiente (ver el recuento al final de esta entrada), y
+  `doc/CONFIANZA_RESIDUAL.md:116` ya la citaba como «suelo de PRINCIPIOS».
   ✅✅ **MECANISMO EJECUTADO (§178-§181, 05-08-2026)**: la caducidad
   completa — `refund()` del EMISOR con su clave (el salt §117 fabrica la
   subida; `circuit_refund` #27 + `circuit_credit_climb` #28), **destino
@@ -1308,7 +1313,81 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   canon exige identicos ⇒ **version nueva, RFC y vectores**.
   💡 El RFC no parte de cero: `t3a_reversion_como_segundo_cobro` y
   `t3b_reversion_temporal_nativa` de `pending.rs` son el prototipo del compromiso
-  v2, escrito y ejercitado y nunca adoptado en produccion.
+  v2, escrito y ejercitado ~~y nunca adoptado en produccion~~ y adoptado en su
+  forma: el RFC-0003 la tomo, con la semantica de Δ cambiada (D1), y paso a
+  ACEPTADO en el §356.
+
+  ⚠️ **§779: recontada contra el arbol (14-10-2026). El titulo decia «piezas 1-3
+  pendientes» y las tres estan HECHAS.** Son las de §88.4
+  (`AUDITORIA.md:7364-7369`):
+  - **1, el compromiso ata la reversion: HECHA en la via v2.** El RFC-0003
+    (`spec/rfc/0003-compromiso-v2.md:3`) compromete `C2 = M(C1, M(f, d(Δ)))`
+    (RFC `:53-57`; `pending_commitment_v2`, `crates/zk-ssl/src/pending.rs:108`),
+    con el Δ elegido por el emisor y `u64::MAX` como Δ=∞ (RFC `:76-80`). La capa
+    juzga con el Δ del sobre (`two_phase.rs:687-696`) y solo acredita si el
+    emisor es `f` (`:710-714`). **La (ii) de arriba esta cerrada para la v2**,
+    salvo el Δ=∞ de abajo, y esta entrada no lo decia.
+  - **2, el reloj atado a una cabeza verificable (§119.3): HECHA.** `seq` entra
+    en el digest firmado (§340; lo ata `la_altura_entra_en_el_digest`,
+    `crates/zk-ssl/src/log.rs:791`) y `born` va bajo `pmeta_root`, en reposo
+    desde el §388 y en la cabeza desde la v5 (§451-§452;
+    `crates/zk-ssl-hash/src/lib.rs:446-479`). ⚠️ Atado no es calendario: el
+    reloj sigue siendo `self.log.len()` (`two_phase.rs:676`; la cabeza publica
+    ese numero, `crates/zk-ssl/src/lib.rs:891`) y `OpKind` no tiene latido
+    (`log.rs:66-101`). Un mes sin operaciones sigue sin mover el reloj, que es
+    lo que el §119.3 descarto. El §340 dio la (i) por «CUMPLIDA DE HECHO»: lo
+    cumplido es el atado, no el calendario.
+  - **3, el circuito de reversion: HECHA.** `circuit_refund` #27 y
+    `circuit_credit_climb` #28 (§179-§180); `RefundAirV2` para la v2 (§346).
+
+  **Lo que la tiene ABIERTA, y no es pieza:**
+  - **El suelo Δ_min = 13 meses no existe.** `apply_refund` compara
+    `now - born` con el Δ del sobre y nada mas (`two_phase.rs:694`), y
+    `un_refund_v2_tras_delta_devuelve_al_emisor` reembolsa con `delta = 1`
+    (`two_phase.rs:3763-3791`). Con el reloj en entradas, «13 meses» no tiene
+    unidad en el arbol. Por eso la linea entra en `PRINCIPIOS.md` con ❌.
+  - **T3b.** T3b-nativo, 2/2; T3b-circuito, «especificados, condicionados y
+    **NO escritos**» (§128.1, `AUDITORIA.md:10503-10509`), y ningun asiento
+    posterior vuelve a nombrarlo. Los circuitos de la pieza 3 no lo saldan
+    solos: sus entradas publicas son `{commitment, amount}`
+    (`circuit_refund.rs:209-212`; `RefundAirV2` las reusa,
+    `circuit_refund_v2.rs:172`) y el reloj no entra. El RFC-0003 deja el
+    plazo a quien compare dos cabezas firmadas con el Δ que el reembolso abre
+    (RFC `:128-131`); nadie ha medido si eso salda la (a) y la (e), y el §119.7
+    preveia este caso: «Si (a) no puede escribirse porque el reloj no entra
+    como input publico, la politica queda condicionada, no caida»
+    (`AUDITORIA.md:9716-9717`). Y su (c), «receptor congelado ⇒
+    rechazada» (`AUDITORIA.md:9712`), no se cumple: el §178 eligio «sin
+    frozen-check» (`doc/CADUCIDAD_PENDIENTE.md:65`) y ni `refund`, ni
+    `refund_v2`, ni `apply_refund` (`two_phase.rs:539-812`) miran congelados,
+    contra el §119.4 (`AUDITORIA.md:9662-9665`). Es una tercera divergencia, y
+    esta entrada no la declaraba.
+  - **La via v1, con el knob.** Sin apertura, `apply_refund` juzga con el
+    `refund_ttl` global (`two_phase.rs:679-683`; `set_refund_ttl`, `:257`):
+    ahi el plazo lo sigue moviendo el operador, y retirarlo o dejarlo de techo
+    es decision de corte (RFC-0003 `:141`; §388 (d), `AUDITORIA.md:29363-29364`).
+    Y todo mint-a-pendiente nace v1 (`two_phase.rs:1699`): el T-A del §388
+    (b), fichado y sin hacer.
+  - **Fleco 1 de la v2: Δ=∞ no es ∞.** El §501 midio que Goldilocks reduce
+    `u64::MAX` a `2^32 - 2`: el emisor abre su propio «nunca» con
+    `delta = 2^32 - 2` y la capa aplica ese delta (`AUDITORIA.md:36547-36559`;
+    el testigo es `el_nunca_se_abre_con_el_delta_reducido_y_muere_solo_en_el_tiempo`,
+    `crates/zk-ssl/src/instrumento_pago.rs:235`). El §501 lo dejo para la
+    cola del RFC-0003, y el RFC no lo recoge. El «nadie nunca» de arriba dura
+    `2^32 - 2` epocas del registro: milenios a mil pagos por jornada, unos
+    cincuenta dias a mil operaciones por segundo (§501).
+  - **Fleco 2 de la v2: el receptor no ve el Δ.** El sobre X le llega opaco
+    (RFC-0003 `:109-112` y `:186-187`), y el §119.2 queria los terminos «a la
+    vista del receptor, que ve al recibir cuando puede vencer lo suyo»
+    (`AUDITORIA.md:9632-9634`). El RFC lo decidio sin decir que se apartaba del
+    §119.2. Lo mas cerca es la prueba del pago en curso del RFC-0008 (E2): el
+    pagador puede probar `nacido + delta >= T` sin abrir Δ
+    (`spec/rfc/0008-pruebas-portables-del-pendiente.md:50`), pero solo si
+    quiere darla; al recibir, el receptor no ve nada.
+
+  ⚠️ Y la cita «(§342)» de arriba no se puede seguir: el §342 del registro trata
+  la cabecera de `mint` (`AUDITORIA.md:26573`), no los metadatos del reembolso,
+  y el RFC-0003 la repite (`:11`, `:22`). Se ficha; no se corrige aqui.
 - [x] **13. Senal temporal para el pagador: ya declarada, coherente.**
   ~~Puede recomputar el compromiso y ver cuando se cobra; declarado, no
   eliminado.~~ **Cerrada** el 30-07-2026: verificado que ya esta declarada
@@ -1897,7 +1976,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   Lo que faltaba no era el parche, que llevaba escrito desde el §334, sino un
   arbol donde el TESTIGO reiniciara (§337).
 
-- [ ] **104. El fichero de cofirmas es un DETECTOR, no una prueba.** El §337 ata
+- [x] **104. El fichero de cofirmas es un DETECTOR, no una prueba.** El §337 ata
   el contador del guardián del testigo a lo que las cofirmas acreditan: si el
   contador ha retrocedido por debajo del índice que va **dentro de una firma**,
   el testigo no arranca. El atado funciona mientras el fichero esté ahí.
@@ -1909,6 +1988,25 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **detecta un subconjunto, no demuestra nada**. Lo que falta no es código sino
   ponerlo por escrito donde se leen los límites: `doc/CONFIANZA_RESIDUAL.md`.
   Corte propio, sin urgencia.
+  ✅ (§779) **CERRADA: escrito donde se leen los límites.** La cabecera de
+  `doc/CONFIANZA_RESIDUAL.md` lo dice tras el límite gemelo del diario del nodo
+  (§335) y el del cerrojo (§709), y antes se leyó en
+  `crates/zk-ssl-cli/src/witness.rs`: un fichero ausente o vacío da `None` en
+  `tope_de_cofirmas`; con `None` la clave en cero se resincroniza sin mirar nada
+  —lo ata `la_clave_en_cero_sin_prueba_en_contra_se_resincroniza_hasta_el_contador`—
+  y un contador borrado junto con el fichero coincide en 0 y arranca, también
+  después del §594, que sólo mira el tope si lo hay. El fichero borrado está
+  LEÍDO, no ejercitado: ningún test ni banco lo borra, y el `NEGATIVO` de
+  `tools/banco_reutilizacion.sh` mide el caso que sí se ve, con las cofirmas en
+  su sitio. Tres precisiones a lo de arriba, declaradas también: «por debajo» es
+  `<=`, así que a la par tampoco arranca; `requires_all` exige una ruta y no ese
+  fichero, así que otra ruta también lo apaga; y el tope falla hacia el lado
+  permisivo por vías que esta entrada no nombraba —las líneas ilegibles se saltan,
+  la línea de cofirma se escribe sin `fsync` y, leído y no medido, un solo byte
+  que no sea UTF-8 deja el fichero entero sin tope, porque `leer` es un
+  `read_to_string`: el defecto que el §666 arregló en el diario del nodo y que el
+  testigo conserva—. Ningún código tocado: el «Va a CONFIANZA_RESIDUAL» de
+  `politica_del_cofirmante` ya es cierto, y el arreglo del byte es corte propio.
 
 - [x] **105. La cabecera del crate de la capa dice en presente lo que dejó de
   ser cierto.** `crates/zk-ssl/src/lib.rs` titula una sección **⚠️ Lo que esta
@@ -2054,8 +2152,33 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   medido el coste de verificacion (4 ms) sin estarlo** (§89). Medido: **2,35
   ms**, asi que el documento era conservador por 1,7 y **37 shards, no 64**.
   **Requiere cuatro correcciones antes de integrarse** (§89.4), y
-  **reconciliar sus B1-B9 contra este backlog**: su B8 es la entrada 12 y
-  otros solapan. Anexarlo sin reconciliar duplicaria entradas.
+  ~~**reconciliar sus B1-B9 contra este backlog**: su B8 es la entrada 12 y
+  otros solapan. Anexarlo sin reconciliar duplicaria entradas.~~
+  ✅ **B1-B9 RECONCILIADOS (§779), sin adoptar nada.** La tabla, pieza a pieza
+  y con fuentes, vive en `doc/ESCALADO.md` bajo su §10. Tienen entrada
+  propia dos: **B8 es la 12**, y la replica de B7 es la **17**. El limite de
+  **B1** lo evito otra via —la retirada de la via de un paso, §32 y §36;
+  evitado, no resuelto— y su residuo es la **23**. **B4** y **B6** estan
+  hechos en otra forma y sin B3: B4 es `apply_many` (RFC-0002, §215), con
+  una entrada del registro por operacion y sin epocas; B6, `apply` (§487)
+  mas el AIR (§680, en el arbol y sin version de cable hasta `zkssl/0.5`),
+  contra la raiz vigente y sin ventana. **B2** no tiene entrada: el RFC-0002
+  descarto el anti-replay por `nonce`, y solo tiene objeto dentro de B3.
+  **B9** tampoco tiene entrada propia, y la **77** lo manda aqui.
+  ⚠️ **Lo que queda en esta entrada**, y nada mas: **B3**, que no tiene otro
+  sitio —la 48 mando aqui su B11 al cerrarse (§268): B11.1 de
+  `CONFIANZA_RESIDUAL.md` depende de el, y B11.3 de B11.1—; **B5**, que
+  sigue colgando de B3; el particionado y el enrutador de **B7**, que son
+  estudio condicional y no entran sin decision de mision (`VISION.md` §5,
+  §122.2); **B9**, que es una medida y no espera a ninguna decision; y, de las
+  cuatro correcciones del §89.4, la sensibilidad «× 4 peor» de su §6. Las
+  otras tres las recoge la cabecera-mapa del documento (§122), aunque el
+  §128.3, escrito despues que ella, aun contaba las cuatro como pendientes;
+  esa cabecera pide rehacer la sensibilidad sobre 13.600 TPS/shard, y no se
+  ha rehecho.
+  ⚠️ **Y una que no es de esta entrada**: la divergencia (ii) de la 12, el Δ
+  por pago, la tomo el RFC-0003, ACEPTADO en el §356, y el cuerpo de la 12 no
+  lo dice.
 
 - [ ] **21. Delegacion de prueba a clientes ligeros.** Exige verificar una
   firma dentro del circuito: **~8.000 filas** con esquema Winternitz,
@@ -2360,6 +2483,28 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   DIRECTORIO ENTERO no hay nada que hacer: contador y diario vuelven juntos.
   **Dos testigos en el mismo disco son un solo testigo frente a una
   restauracion.** Declarado tambien en `doc/CONFIANZA_RESIDUAL.md`.
+  ⚠️ §779: **recontada, y SIGUE ABIERTA.** Lo de arriba sigue cierto en el codigo: el
+  tope sale de `diario::maximo_indice`, que da `None` con el fichero ausente o sin
+  ninguna firma, y con `None` el arranque resincroniza o arranca sin mirar nada
+  (`politica_de_reconciliacion`, en `crates/zk-ssl-node/src/main.rs`); el nodo sigue
+  sin rotar el diario. Desde que nacio se ha estrechado por cuatro sitios, y ninguno
+  la cierra: el §594 consulta el diario en TODO estado que lea un contador, asi que
+  un contador borrado con el diario en su sitio ya no pasa; el testigo de fuera del
+  disco ve el directorio restaurado (`vista-dividida`, §599) y el diario quitado
+  (`--ausentes`, §600), medido contra un nodo real; desde el §666 un byte que no es
+  UTF-8 se lleva su linea y no el diario entero, que antes dejaba el arranque sin
+  tope como un fichero quitado; y cuando la perdida SE SABE, la D-G del RFC-0015
+  tiene procedimiento, `--desde-minimo` (§690) con la hoja que da `--auditar` (§770).
+  **Lo que le queda es la perdida que NO se sabe**: el nodo solo no ve ni el
+  directorio restaurado ni el diario quitado, y lo de fuera lo ve DESPUES de firmar
+  la hoja repetida, cuando la clave ya se puede extraer (RFC-0015, la fila del
+  indice perdido). La cerraria un segundo testigo FUERA del disco consultado ANTES
+  de firmar, y lo construido y lo propuesto ven despues: el medio del RFC-0013 la
+  estrecha —sus testigos recuerdan el `size` que cofirmaron (D-D)—, pero su arbol
+  es de anclas de cabezas ya firmadas, su E3 esta pendiente y no cubre «el diario
+  ausente sin ancla publicada». Su gemela en el testigo, el fichero de cofirmas, es
+  la 104, cerrada en el mismo §779 como declaracion y no como arreglo: el testigo lee
+  sus cofirmas con `read_to_string` y no tiene el arreglo del §666.
 
 - [x] **109. El sdk del titular TIRA el recibo: quien paga con él no puede armar
   su sobre de completitud.** Medido en el §602: `zk-ssl-sdk` no lee `recepcion`
@@ -2733,7 +2878,8 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   test discriminante. Probable emparentada con la 25 -subidas a cuentas
   (indices 0 y 1) y a congelados (arbol vacio)-, **sin verificar**.
 
-- [ ] **42. `mint_to_pending` diverge de `mint` en el error del tope.**
+- [x] **42. ✅ (§779) ~~`mint_to_pending` diverge de `mint` en el error del tope.~~
+  Ya no diverge: la via antigua no existe.**
   **Respaldo**: §73.4, donde se decidio no tocar la via antigua al corregir
   la 43 porque cambiar su error cambia lo que ven sus tests.
   La via antigua devuelve `OverRegulatoryLimit` —el error del limite
@@ -2743,6 +2889,25 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   panico. `apply_mint_pending_delegated` usa `SupplyCapExceeded` y
   `saturating_add`; la antigua **no se toco**, porque cambiar su error
   cambia lo que ven sus tests. Menor, acotado, declarado.
+
+  ✅ **CERRADA EN EL §779, y no por arreglo: se fue su objeto.** `mint_to_pending`
+  y `apply_mint_to_pending` se retiraron con el resto de la via-recibo de
+  custodios en B-3b-ii (`d19b20e`, 05-08-2026), que asienta el §171. Antes de
+  ese commit la primera devolvia `OverRegulatoryLimit` sumando sin saturar
+  (`git show d19b20e^:crates/zk-ssl/src/two_phase.rs`, `:682` y `:692-693`).
+  Hoy no hay en `crates/` ninguna `fn mint_to_pending(` ni
+  `fn apply_mint_to_pending(`: el nombre sobrevive en el ayudante de tests
+  `mint_to_pending_delegated` (`tests_support.rs:577`), en nombres de test y
+  en comentarios. La unica emision a pendiente, `apply_mint_pending_delegated`,
+  devuelve `SupplyCapExceeded` y suma con `saturating_add` y `checked_add`
+  (`two_phase.rs:1690-1704`, lineas tras este §779), igual que
+  `apply_mint_delegated` (`mint.rs:43-63`): ya no hay dos lados que diverjan.
+  ⚠️ Siguio abierta dos meses despues de quedarse sin objeto: es la rancia de
+  OTRA clase del §583, la que contar casillas no ve, y la 42 era de «las otras
+  cuarenta» que aquel recuento no miro contra el arbol. Los dos comentarios
+  que la daban por viva como «la via antigua de arriba» se corrigen en el
+  mismo §779 (quedan en `two_phase.rs:1658-1669` y `:1790-1794`): es lo que el
+  §375 dejo «fichado y NO tocado», y su referente era este, no `send`.
 
 - [x] **43. ⚠️ FALLO GRAVE CORREGIDO: la capa no verificaba las pruebas de
   la via de pago.** ~~`apply_send`, `apply_claim` y `apply_mint_to_pending`
