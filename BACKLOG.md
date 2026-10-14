@@ -1635,6 +1635,29 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **No es un cambio de una línea**: bajar `TREE_DEPTH` rompería la
   conformidad, así que el arreglo es **no construir denso**, y eso toca el
   circuito. Sin urgencia declarada: cuesta minutos de suite, no corrección.
+  ⚠️ §795: **la mitad de `settlement-layer`, hecha; la de `iso-bridge`, no.**
+  Los doce tests que arrancan una capa comparten ya las claves de los dos
+  setups: `new_layer()`, en el módulo de tests de
+  `settlement-layer/src/lib.rs`, guarda en un `OnceLock` la capa que arranca
+  el `SettlementLayer::new` de producción, una sola vez, y da a cada test una
+  copia campo a campo. **Ni una línea de producción tocada.** Compartir no
+  cambia lo que se prueba: la semilla es 42 en los doce y `setup_generic`
+  siembra con ella un `ChaCha20Rng`, así que las claves ya eran las mismas.
+  Comprobado además, no sólo leído: un test temporal, retirado después,
+  comparó las cuatro claves serializadas de la plantilla con las de un `new`
+  fresco y salieron **iguales byte a byte** (13.091.760 B la de
+  transferencia, 4.020.384 B la de emisión). Ningún test pide claves frescas.
+  **Medido** con `nice -n 19 cargo test --release --locked -p
+  settlement-layer`, el binario ya compilado, segunda de dos corridas: CPU
+  (user+sys) **206,1 → 92,5 s**; pared **102,0 → 65,1 s**, con la máquina
+  cargada (carga de 5,5 a 10,6 en 4 núcleos), así que el dato bueno es el de
+  CPU. Los 17 siguen pasando y siguen siendo 17. Lo ahorrado, ~114 s de CPU,
+  son once pares de setups —`setup_settlement` y `setup_mint`— de ~10 s de
+  CPU cada par: `ark-groth16` compila aquí con
+  `parallel` (rayon, de serie), y un setup gasta en CPU varias veces su pared
+  —cuadra con los ~2,4 s de pared del §263 en cuatro núcleos, sin medirlo
+  aparte—. **Sigue abierta** por la otra causa: el árbol denso de
+  `iso-bridge`, que no se ha tocado.
 
 - [ ] **76. El store anterior a D4: una entrada, no tres.** Funde lo que
   estaba repartido —la exposición de un ledger sin sal (§259, `spec/RPC.md`),

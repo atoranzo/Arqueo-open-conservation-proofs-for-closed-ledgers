@@ -25,7 +25,6 @@
 //! arkworks), así que los valores no coinciden. Cada backend necesita su
 //! propio registro.
 
-use dusk_bytes::Serializable;
 use dusk_plonk::prelude::BlsScalar;
 
 pub struct PersistentNullifierRegistry {
@@ -67,6 +66,11 @@ impl PersistentNullifierRegistry {
     /// invalidaría silenciosamente todas las entradas de una base de
     /// datos existente, y el registro dejaría de reconocer nullifiers ya
     /// gastados — un fallo de doble gasto sin ningún error visible.
+    ///
+    /// ⚠️ §795: `to_bytes` es aquí el método INHERENTE de `BlsScalar`, y
+    /// siempre lo fue: el de `dusk_bytes::Serializable` delega en él. Por
+    /// eso el `use` del trait que llevaba este fichero no se usaba —era el
+    /// único aviso del crate— y quitarlo no mueve ni un byte de la clave.
     fn key(nullifier: &BlsScalar) -> [u8; 32] {
         nullifier.to_bytes()
     }

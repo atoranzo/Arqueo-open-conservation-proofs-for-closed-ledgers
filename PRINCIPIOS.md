@@ -412,12 +412,19 @@ sería faltar al principio de transparencia.
   del verificador independiente**, **152 del testigo**, y los del SDK, el
   cable, el puente ISO, el árbol del medio y el fork de winterfell—,
   **1884 contando los pines de `--largo` y `--completo`**, y **1364 declarados**.
-  0 fallos y 24 warnings **pinchados** (no crecen). Cada propiedad de
+  0 fallos y 21 warnings **pinchados** (no crecen). Cada propiedad de
   seguridad con test discriminante.
 
   ⚠️ Aquí decía **539** con el desglose «297 + 242», y ninguna de las
   dos cifras era ya cierta. **No se recuerdan: se ejecutan** —
   `bash tools/canon.sh --sello` falla si el árbol deja de darlas.
+
+  ⚠️ §795: y decía **24** warnings, la suma de los pines de la tabla
+  (11 + 3 + 10). Los 3 de `plonk-experiment` eran **un solo aviso** —un
+  `use` sin usar, quitado— y las dos líneas de resumen de cargo, porque el
+  pin cuenta las líneas que empiezan por `warning`, no los avisos. Su pin
+  baja a 0; quedan los 11 de la fila de la ceremonia y los 10 de la de
+  `zk-core`.
 - **De implementación a protocolo** (§197-§199): especificación, OpenRPC
   generado, vectores de conformidad como compuerta permanente, proceso
   RFC, nodo de referencia y SDK con keystore.

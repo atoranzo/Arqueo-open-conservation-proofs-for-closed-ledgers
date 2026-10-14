@@ -52967,3 +52967,66 @@ resueltas.
 la ocultación del §538. No toca lo que vio fuera de las seis: `doc/README-CLI.md:73`, con la misma orden
 rota; `doc/USE_CASES.md:80` y `:202`; `doc/KIT.md:28` y `doc/KIT_EN.md:28`; `GENAI.md:35` y `:159`; y
 `ARQUITECTURA.md:140`. No corta la release del kit.
+
+## §795 — los tests de `settlement-layer` pagan los dos setups Groth16 una vez por suite y no una por test, y la «DEUDA: 3 warnings» de `plonk-experiment` era un solo aviso: su pin baja a 0 (las tareas 20 y 35)
+
+El commit que lleva este asiento, sobre el §794. Toca el módulo de tests de
+`crates/settlement-layer/src/lib.rs`, sin tocar su producción; un `use` sin usar de
+`crates/plonk-experiment/src/persistent_nullifier_registry.rs`, con su comentario; dos filas de la
+tabla de `tools/canon.sh`, con su nota; la entrada 75 del `BACKLOG.md`, con una nota; la suma de pines
+de avisos de `PRINCIPIOS.md`, con su marca; y este asiento. Ni tests nuevos, ni vectores. Del autor es
+elegir las tareas; la forma la propuso la sesión. Lo escribe y lo comprueba una sesión de Claude Code,
+y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración, ni `crates/ceremony`. En la sesión se corrió el
+canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** La 75 dice que los tests de `settlement-layer` y de `iso-bridge` pagan un coste que
+no es suyo; el §263 midió la mitad de `settlement-layer`: `SettlementLayer::new` hace dos setups
+Groth16 (`setup_settlement` 1795,5 ms y `setup_mint` 608,3 ms) y cada test que arranca una capa los
+paga. La fila de `plonk-experiment` de `tools/canon.sh` llevaba en su nota «DEUDA: 3 warnings» y su pin
+de avisos en 3.
+
+**Lo que hace.**
+
+1. **Los setups, una vez.** `new_layer()` guarda en un `OnceLock` de test la capa que arranca el `new`
+   de producción, una sola vez por ejecución, y cada test recibe una copia que nombra los once campos
+   de `SettlementLayer` sin `..`: un campo nuevo no compila hasta que alguien decida si se comparte.
+   Ningún test necesitaba claves frescas: los doce usan la semilla 42, el mismo `SK_ISSUER` y el mismo
+   `LIMIT`, y `setup_generic` siembra con ella un `ChaCha20Rng`, así que las claves ya eran las mismas
+   antes del cambio. Un test temporal, retirado antes de medir, comparó las cuatro claves serializadas
+   de la plantilla con las de un `new` fresco: iguales byte a byte (`pk` de 13.091.760 B y `mint_pk` de
+   4.020.384 B), y también el `issuer_id` y las dos raíces. Los cinco tests de `sparse_tree` no
+   arrancan capa y no se tocan. El comentario del módulo, que decía que cada test paga el setup
+   (~2,6 s), gana su marca, con los ~2,4 s que midió el §263.
+2. **El aviso.** Los «3 warnings» eran UN aviso —`unused import: dusk_bytes::Serializable` en
+   `persistent_nullifier_registry.rs:28`— y las dos líneas de resumen de cargo, `(lib) generated 1
+   warning` y `(lib test) generated 1 warning (1 duplicate)`: el contador de `tools/canon.sh` es `grep
+   -c "^warning"` y cuenta líneas, no avisos. Quitar el `use` no mueve la clave del registro: el
+   `to_bytes` que se llama ya era el método inherente de `BlsScalar` (dusk-bls12_381 0.14.2,
+   `scalar.rs:296`), y el del trait (`scalar/dusk.rs:41`) solo delega en él. El pin baja de 3 a 0.
+3. **La suma.** `PRINCIPIOS.md` publicaba «24 warnings pinchados», la suma de la tabla (11 + 3 + 10):
+   ahora es 21, con su marca.
+
+**Medido.** Con `nice -n 19 cargo test --release --locked -p settlement-layer` y el binario ya
+compilado, la segunda de dos corridas: la CPU (user+sys) baja de 206,1 a 92,5 s, y la pared de 102,0 a
+65,1 s con la máquina cada vez más cargada (carga de 5,5 a 10,6 en cuatro núcleos); en el árbol final,
+41 s de pared y 89,8 s de CPU con carga de 3,7 a 5,5. Lo ahorrado, ~114 s de CPU, son once pares de
+setups de ~10 s de CPU cada par. Pasan los 17, y siguen siendo 17. `plonk-experiment` compila con 0
+líneas `^warning`, y pasan sus 36 en 1374 s de pared y 1973 s de CPU, con carga de hasta 14, dentro de
+su timeout de 1800. Un arreglador lo hizo y un revisor lo midió de nuevo —17 de 17 con 93,7 s de CPU,
+el build de plonk sin avisos, los doce tests leídos uno a uno— y encontró dos cosas menores, corregidas:
+que eran once pares de setups y no once setups, y la cifra del comentario, que el §263 había medido.
+Salen con 0 `check_cifras`, `check_figures`, `verificar_citas`, `check_publicadas` y `check_tests`. El
+canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno de tests: `settlement-layer` sigue en 17, `plonk-experiment` en 36 y
+`check_tests` en 1906. El pin de avisos de `plonk-experiment` pasa de 3 a 0 y la suma publicada, de 24 a
+21. El `BACKLOG.md` sigue con 43 abiertas y 77 resueltas: la 75 gana su nota y sigue abierta.
+
+**Lo que NO hace.** No cierra la 75: su otra mitad es el árbol denso de `iso-bridge`
+(`zk-core/src/merkle.rs`), que no se toca. No mide si los 11 avisos de `ceremony` y los 10 de `zk-core`
+llevan también líneas de resumen, ni cambia cómo cuenta el canon. No toca los timeouts ni las
+diferencias de `rustfmt` que ya estaban en esos ficheros.
+
+**Lo que NO cierra.** La 75.

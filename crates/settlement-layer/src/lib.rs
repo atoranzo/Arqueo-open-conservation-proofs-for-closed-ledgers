@@ -647,18 +647,59 @@ impl SettlementLayer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::OnceLock;
 
     /// Cada test que crea una capa paga el setup del circuito (~2,6 s) y
     /// cada transferencia una prueba (~2 s). Los tests son pocos y
     /// deliberados; ejecutar en release.
+    ///
+    /// ⚠️ §795: el setup ya no lo paga cada test. Los dos setups Groth16 de
+    /// `SettlementLayer::new` se pagan UNA vez por ejecución de la suite
+    /// (ver `new_layer`); cada emisión y cada transferencia siguen pagando
+    /// su prueba. Y su pared es de ~2,4 s, no de ~2,6: la midió el §263
+    /// (2403,8 ms).
     const SK_ALICE: u64 = 0xA11CE;
     const SK_BOB: u64 = 0xB0B;
     const SK_ISSUER: u64 = 0xBA1CE47;
     const LIMIT: u64 = 500_000;
 
+    /// Una capa recién arrancada para cada test, con las claves de los dos
+    /// setups COMPARTIDAS entre todos.
+    ///
+    /// ⚠️ §795: hasta aquí cada test llamaba a `SettlementLayer::new` y pagaba
+    /// `setup_settlement` y `setup_mint` (la 75 del BACKLOG). Compartirlos no
+    /// cambia lo que se prueba: `setup_generic` siembra un `ChaCha20Rng` con
+    /// la semilla, la semilla es 42 en todos los tests, y las claves ya eran
+    /// las mismas en los doce —comparadas byte a byte contra las de un
+    /// `new` fresco al hacer este cambio—. **Ningún test pide claves frescas
+    /// ni depende de la aleatoriedad del setup**: si alguno llega a
+    /// pedirlas, que llame a `SettlementLayer::new` y no a esto.
+    ///
+    /// La plantilla la arranca el `new` de producción, una vez, y cada test
+    /// recibe una copia campo a campo: árboles, registros y contadores tal
+    /// como `new` los deja, y las cuatro claves clonadas. La copia nombra
+    /// TODOS los campos, sin `..`: un campo nuevo en `SettlementLayer` no
+    /// compila aquí hasta que alguien decida si se comparte. Y cada test
+    /// muta su copia, nunca la plantilla.
     fn new_layer() -> SettlementLayer {
-        SettlementLayer::new(42, Fr::from(SK_ISSUER), LIMIT)
-            .expect("el arranque de la capa no deberia fallar")
+        static PLANTILLA: OnceLock<SettlementLayer> = OnceLock::new();
+        let p = PLANTILLA.get_or_init(|| {
+            SettlementLayer::new(42, Fr::from(SK_ISSUER), LIMIT)
+                .expect("el arranque de la capa no deberia fallar")
+        });
+        SettlementLayer {
+            accounts: p.accounts.clone(),
+            nullifiers: p.nullifiers.clone(),
+            records: p.records.clone(),
+            next_index: p.next_index,
+            pk: p.pk.clone(),
+            vk: p.vk.clone(),
+            mint_pk: p.mint_pk.clone(),
+            mint_vk: p.mint_vk.clone(),
+            issuer_id: p.issuer_id,
+            total_supply: p.total_supply,
+            regulatory_limit: p.regulatory_limit,
+        }
     }
 
     /// Abre una cuenta y le emite fondos, que es el unico camino legitimo
