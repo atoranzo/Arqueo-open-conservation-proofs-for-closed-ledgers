@@ -53030,3 +53030,74 @@ llevan también líneas de resumen, ni cambia cómo cuenta el canon. No toca los
 diferencias de `rustfmt` que ya estaban en esos ficheros.
 
 **Lo que NO cierra.** La 75.
+
+## §796 — el ATADO F: las cifras de nivel de seguridad que se publican, contra las constantes de las que salen y contra una réplica de la fórmula de `winter-air`, anclada a su fuente solo en lo que dice (la tarea 40)
+
+El commit que lleva este asiento, sobre el §795. Toca solo `tools/check_publicadas.py`, que gana el
+ATADO F y la variable `CANON_RAIZ`; y este asiento. Ni código del árbol, ni tests, ni vectores, ni
+documentos: el atado lee la prosa y no la cambia, porque hoy cuadra entera. Del autor es elegir la
+tarea; la forma la propuso la sesión. Lo escribe y lo comprueba una sesión de Claude Code, y lo
+commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian` ni edita la zona de la migración: lee `crates/winter-air/src/`, y por eso
+tiene un acoplamiento con ella que se dice abajo. En la sesión se corrió el canon entero, `--sello`,
+sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Las cifras de nivel —conjeturada, UDR, LDR, DEEP— viven en diez documentos y
+ningún cerrojo las miraba: el §698 las corrigió a mano en diez sitios, el §708 añadió la del término
+DEEP, y los dos dejaron escrito que los tests del §697 atan las cifras y no la prosa que las cita
+(`doc/blueprint-v2.md:327`, ZK-2).
+
+**Lo que hace.** Tres eslabones, sin compilar Rust, cada uno con su regla escrita antes de mirar en
+la cabecera del atado:
+
+1. **F.0, las constantes**, leídas del fuente por estructura: `proof_options()` de la capa y
+   `opciones()` de la edad (las mismas, o ROJO), `CICLO`, el `TRACE_LENGTH` de las familias que
+   prueba el test de la capa, las cuatro opciones del circuito de comparación, y lo que fijan los
+   tests de `nivel_de_produccion.rs` y de `tests_nivel`.
+2. **F.1, la réplica** de la función de `crates/winter-air/src/proof/security.rs`, con la aritmética
+   de `f64` de Rust, contrastada en tres frentes: a) con lo que los tests asiertan corriendo la
+   función real, y con IGUALDAD donde el test solo pide un piso, porque lo medido en el §697 dice que
+   los pisos son los valores de hoy; b) con los 18 KAT del `mod tests` del fork, `KAT_FORK`, fuera
+   del régimen de producción; y c) ANCLADA a su fuente y solo en lo que dice: las 213 líneas de
+   código de `security.rs` hasta `mod tests`, y 21 funciones enteras del cableado (200 líneas) por
+   las que pasan las opciones y la longitud. Cualquier otra línea del código del fork no se vigila
+   aquí, y la cabecera lo dice, con lo censado y las mutaciones medidas en VERDE.
+3. **F.2, la prosa** contra la réplica: cada cifra de nivel de un documento vivo, frase a frase, sale
+   de UNA configuración —la de producción o una de las cuatro de la comparación—, y las tres tablas
+   —las dos de `SECURITY.md` §3.11 y la de `FIVE_BACKENDS.md` §4— se atan celda a celda.
+
+`CANON_RAIZ`, como en `canon.sh`, `check_nucleo` y `check_dominios`, deja probar el atado en negativo
+sobre una copia.
+
+**Medido.** Sobre este árbol: opciones 42/16/21 y extensión de grado 2; la réplica da conjeturada 127,
+UDR 59, LDR 80-88 y DEEP 112,8-116,8 en las tres familias del test, y casa con los 21 pisos de la edad
+y con los 18 KAT del fork; 154 cifras de nivel en 51 frases y 68 celdas, que quedan como suelo. Los
+falsadores, sobre una copia con `CANON_RAIZ` y una mutación cada vez, salen ROJO, y la cabecera los
+lista: cifras de la prosa de cinco documentos, una celda de cada tabla, la constante de consultas, un
+piso, la familia más larga, y en el fork, cada línea de `security.rs` y del cableado que cambia, sobra
+o falta, con su línea. Lo escribió un agente y lo revisaron cinco escépticos sucesivos, cada uno nuevo,
+con un arreglador entre ronda y ronda. Cada ronda encontró que el texto prometía más de lo que las
+anclas vigilaban, y la cuarta llevó una regla de convergencia de la sesión: no ampliar más las anclas
+y que el texto diga exactamente lo que vigilan. El quinto escéptico encontró una frase que prometía
+nombrar todos los `use` y `mod` sin ancla, y la ceguera solo nombra dos, y seis cosas menores de
+texto: las corrigió la sesión. Salen con 0 `check_cifras`, `check_figures`, `verificar_citas`,
+`check_publicadas`, `check_tests`, `check_dominios`, `check_nucleo` y `check_vectores`. El canon,
+`bash tools/canon.sh --sello`: VERDE.
+
+**El acoplamiento.** El atado ancla, literales, líneas de cinco ficheros de `crates/winter-air/src/`,
+que es la zona de la migración de Winterfell de otra sesión. Un `rustfmt` o un cambio de esos ficheros
+que les cambie la forma pone el canon en ROJO FORMULA aunque la fórmula no cambie, y el remedio es que
+el sello que los toque actualice `CODIGO_FORMULA` y `CABLEADO` en el mismo sello; la cabecera lo dice.
+Esa sesión queda avisada.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas.
+
+**Lo que NO hace.** No compila ni corre la función real: que la réplica siga siendo la función nueva
+lo dicen los tests de Rust que el canon corre en el nivel sello, los del §697 y el §708 en
+`zk-ssl-air` y los 49 de upstream en `winter-air`. No vigila el código del fork fuera de sus anclas,
+ni los atributos de las 21 funciones del cableado, ni lo que va tras `mod tests`, ni lo de dentro de
+un `/* */` de varias líneas en las dos reglas de longitud; y su rojo de longitud sale sin línea. No
+mira los documentos excluidos —los registros, la historia, las comparativas superadas y el preprint
+suspendido—, ni la cifra de RISC Zero, que es la de su documentación.
