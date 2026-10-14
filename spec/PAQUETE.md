@@ -85,12 +85,14 @@ donde el valor es una respuesta del cable sin reescribir.
 { "v": 1, "tipo": "extension", "vieja": {…}, "nueva": {…}, "camino": […] }
 ```
 
-- `vieja` y `nueva` son dos cabezas **v3** firmadas, cada una el `result` de
+- `vieja` y `nueva` son dos cabezas **v3, v4, v5 o v6** firmadas, cada una el `result` de
   `zkssl_signedEpochHead`; `camino` es la prueba de consistencia entre sus cimas
   (`RPC.md:785-812`). Quien custodia la vieja comprueba que la nueva la **extiende**, con el MMR
   de cabezas (§291) como juez, sin el registro y sin el nodo.
-- La forma se elige por `tipo`: si vale `"extension"`, el sobre es este; si no, es el de posición.
-  `v` se comprueba antes en los dos casos.
+- La forma se elige por `tipo`: sin `tipo`, el sobre es el de posición; con `"extension"`, éste;
+  cada uno de los otros once lleva a su forma (2.4 a 2.14), y uno desconocido se rechaza con su
+  nombre (§418). `v` se comprueba antes en todos los casos. ⚠️ §776: hasta aquí decía «si no, es el
+  de posición», rancio desde el §418, como el paso 0 de la sección 4.
 - ⚠️ **§648 (RFC-0015 E5a) — `actas`, opcional: la continuidad de UN operador.** Con la misma
   `publicKey` en las dos cabezas no se lee. Con claves distintas y sin `actas`, el rechazo de
   siempre, letra por letra. Con `actas` —la lista que sirve `zkssl_keyActs`, cada acta en el JSON
@@ -119,7 +121,7 @@ donde el valor es una respuesta del cable sin reescribir.
   las mismas `actas` opcionales (§648), con el mismo juez.
   Lo que añade son los dos caminos del árbol de consumos: `presencia` sube el digest del
   consumo hasta el `consRoot` de la **nueva**, `ausencia` sube la **hoja vacía** hasta el de
-  la **vieja**. Las dos llevan `consRoot` (**v4 o v5**): una v2 o v3 no lo lleva.
+  la **vieja**. Las dos llevan `consRoot` (**v4, v5 o v6**): una v2 o v3 no lo lleva.
 - ⚠️ **La posición no viaja: se DERIVA.** El mando calcula `posicion_de_consumo(consumo)` y
   **cruza** sus bits contra el `isRight` recibido en los dos caminos. Sin ese cruce,
   `ausencia` sólo probaría que *alguna* posición está vacía bajo esa raíz, y quien empaqueta
@@ -206,19 +208,22 @@ donde el valor es una respuesta del cable sin reescribir.
 
 | causa | material | qué comprueba | cabeza |
 |---|---|---|---|
-| `OverRegulatoryLimit` | `parametros` | los siete recomponen el `paramsDigest`; `limit` es el comprometido y `requested` lo supera | v5, cualquiera del libro |
-| `AccountLimitReached` | `parametros` | recomponen; `limit` es `maxAccounts` y `nextIndex` lo alcanza | v5, anterior o la misma |
-| `ConsumoRepetido` | `presencia` | la posición se DERIVA del consumo, y el consumo está bajo `consRoot` | v4 o v5, anterior o la misma |
-| `ConsumoColision` | `presencia` | el ocupante está en la posición DERIVADA del consumo, y no es él | v4 o v5, anterior o la misma |
-| `StaleState` | `recibo` | una de las tres raíces que el recibo declaró (`rootOld`, `pendingRootOld`, `frozenRoot`) no es la de la cabeza | v5, la misma (§456) |
-| `WrongRegulatoryLimit` | `parametros` | los siete recomponen; `expected` es el comprometido y `declared` no lo es | v5, cualquiera del libro (§456) |
-| `DuplicateAccountInBatch` | `lote` | el primer choque del lote, con la regla de `apply_many`, es una cuenta repetida | v5, la misma (§456) |
-| `DuplicatePendingInBatch` | `lote` | el primer choque del lote es una posición repetida | v5, la misma (§456) |
-| `AccountFrozen` | `congelados` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `frozenRoot`; la hoja no es la vacía | v3, v4 o v5, la misma (§459) |
-| `AccountNotFound` | `cuenta` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `accountsRoot`; la hoja **es** la vacía | v3, v4 o v5, la misma (§476) |
-| `InsufficientBalance` | `banda` | `data` no trae `available`; el `requested` de `data` es el de `banda` y no es cero; la `prueba` verifica, con las opciones de la casa y sin el saldo, que el saldo de la cuenta `publicId` está en `[0, requested - 1]` bajo el `accountsRoot` (`zk_ssl_air::banda`) | v3, v4 o v5, la misma (§478) |
-| `SupplyCapExceeded` | `parametros`, `peticion` | los siete recomponen; `cap` es el `maxSupply` comprometido; `wouldBe` es el `totalSupply` de la cabeza más el `amount` de la petición (la suma saturada de la capa) y pasa el tope | v5, la misma (§460) |
+| `OverRegulatoryLimit` | `parametros` | los siete recomponen el `paramsDigest`; `limit` es el comprometido y `requested` lo supera | v5 o v6, cualquiera del libro |
+| `AccountLimitReached` | `parametros` | recomponen; `limit` es `maxAccounts` y `nextIndex` lo alcanza | v5 o v6, anterior o la misma |
+| `ConsumoRepetido` | `presencia` | la posición se DERIVA del consumo, y el consumo está bajo `consRoot` | v4, v5 o v6, anterior o la misma |
+| `ConsumoColision` | `presencia` | el ocupante está en la posición DERIVADA del consumo, y no es él | v4, v5 o v6, anterior o la misma |
+| `StaleState` | `recibo` | una de las tres raíces que el recibo declaró (`rootOld`, `pendingRootOld`, `frozenRoot`) no es la de la cabeza | v3, v4, v5 o v6, la misma (§456) |
+| `WrongRegulatoryLimit` | `parametros` | los siete recomponen; `expected` es el comprometido y `declared` no lo es | v5 o v6, cualquiera del libro (§456) |
+| `DuplicateAccountInBatch` | `lote` | el primer choque del lote, con la regla de `apply_many`, es una cuenta repetida | v3, v4, v5 o v6, la misma (§456) |
+| `DuplicatePendingInBatch` | `lote` | el primer choque del lote es una posición repetida | v3, v4, v5 o v6, la misma (§456) |
+| `AccountFrozen` | `congelados` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `frozenRoot`; la hoja no es la vacía | v3, v4, v5 o v6, la misma (§459) |
+| `AccountNotFound` | `cuenta` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `accountsRoot`; la hoja **es** la vacía | v3, v4, v5 o v6, la misma (§476) |
+| `InsufficientBalance` | `banda` | `data` no trae `available`; el `requested` de `data` es el de `banda` y no es cero; la `prueba` verifica, con las opciones de la casa y sin el saldo, que el saldo de la cuenta `publicId` está en `[0, requested - 1]` bajo el `accountsRoot` (`zk_ssl_air::banda`) | v3, v4, v5 o v6, la misma (§478) |
+| `SupplyCapExceeded` | `parametros`, `peticion` | los siete recomponen; `cap` es el `maxSupply` comprometido; `wouldBe` es el `totalSupply` de la cabeza más el `amount` de la petición (la suma saturada de la capa) y pasa el tope | v5 o v6, la misma (§460) |
 
+- ⚠️ §776: `StaleState` y los dos duplicados de lote decían «v5» desde el §456, y el código nunca
+  lo exigió: sus brazos no preguntan la versión y aceptan lo que `cabeza_v3_verificada` (v3 a v6).
+  No es el rancio del §558 de las demás filas.
 - Cualquier otra causa se rechaza con su nombre. `SupplyCapExceeded` la añadió el §460: por el
   cable sólo la produce el grifo del sandbox (`dev_fund`), y el importe viaja en `peticion`
   —palabra del solicitante, no del nodo— para que un `wouldBe` inventado no pase.
@@ -246,10 +251,10 @@ donde el valor es una respuesta del cable sin reescribir.
 ```
 
 - **Prueba la DISTRIBUCIÓN de edades de lo que está en vuelo** (RFC-0007 D-E): sobre las
-  posiciones `0..nextPending` de una cabeza **v5**, las vivas con edad `seq - nacido >= t` —y, si
-  el sobre nombra `emisor`, sólo las suyas— son **a lo sumo `k`**. La caja vacía es `k = 0`; el
-  tope por cuenta, `t = 0`; la concentración, un `emisor` nombrado. Sin `emisor` cuentan todos:
-  lo dice su ausencia, porque el índice 0 es una cuenta y no puede ser el centinela.
+  posiciones `0..nextPending` de una cabeza **v5 o v6**, las vivas con edad `seq - nacido >= t`
+  —y, si el sobre nombra `emisor`, sólo las suyas— son **a lo sumo `k`**. La caja vacía es
+  `k = 0`; el tope por cuenta, `t = 0`; la concentración, un `emisor` nombrado. Sin `emisor`
+  cuentan todos: lo dice su ausencia, porque el índice 0 es una cuenta y no puede ser el centinela.
 - `cabeza` es una respuesta de `zkssl_signedEpochHead` tal cual; `subraices` y `prueba` las
   produce quien prueba, y `prueba` son los bytes de la prueba STARK en `0x` + hex. `seq`,
   `nextPending`, `pendingRoot` y `pmetaRoot` salen **sólo de la cabeza**: el sobre no los
@@ -273,7 +278,7 @@ donde el valor es una respuesta del cable sin reescribir.
 ```
 
 - **Prueba que un pendiente EXISTE a nombre de alguien, por al menos un importe** (RFC-0008 D-A,
-  D-B): bajo la `pendingRoot` de una cabeza **v5** hay una hoja v2 que se abre a `receptor` y a
+  D-B): bajo la `pendingRoot` de una cabeza **v5 o v6** hay una hoja v2 que se abre a `receptor` y a
   un importe en `[inferior, MAX_VALOR]`, y en la MISMA posición del árbol de meta, bajo
   `pmetaRoot`, está la meta con ese `nacido`. Es un enunciado de ESTADO (D-G): no dice quién
   produjo la prueba, ni que el pendiente vaya a cobrarse, ni cuándo caduca.
@@ -307,11 +312,12 @@ donde el valor es una respuesta del cable sin reescribir.
 ```
 
 - **Prueba que alguien pagó un importe EXACTO a un receptor y que no puede revertirlo antes de
-  `t`** (RFC-0008 D-AD, D-AF): bajo la `pendingRoot` de una cabeza **v5** hay una hoja v2 que se
-  abre a `receptor` y a `importe`, con el sobre `X = M(refund_id, [delta, 0, 0, 0])` compuesto
-  DENTRO del circuito, y en la misma posición del árbol de meta, bajo `pmetaRoot`, la meta con
-  ese `nacido`; y `t - nacido <= delta`. Es la otra mitad del 2.8: donde el cobrador afirma «me
-  deben al menos `inferior`», el pagador afirma «pagué `importe` exacto y estoy atado hasta `t`».
+  `t`** (RFC-0008 D-AD, D-AF): bajo la `pendingRoot` de una cabeza **v5 o v6** hay una hoja v2
+  que se abre a `receptor` y a `importe`, con el sobre `X = M(refund_id, [delta, 0, 0, 0])`
+  compuesto DENTRO del circuito, y en la misma posición del árbol de meta, bajo `pmetaRoot`, la
+  meta con ese `nacido`; y `t - nacido <= delta`. Es la otra mitad del 2.8: donde el cobrador
+  afirma «me deben al menos `inferior`», el pagador afirma «pagué `importe` exacto y estoy atado
+  hasta `t`».
 - **El plazo no va en el enunciado, pero sí en la prueba.** Lo que se prueba es
   `delta >= t - nacido`, nunca `delta`; y entre el §521 y el §538 la prueba abría sus filas en claro
   con `delta` dentro (medido en §521): quien leyera los bytes del sobre leía el `delta` que esta
@@ -345,7 +351,7 @@ donde el valor es una respuesta del cable sin reescribir.
   "prueba": "0x…" }
 ```
 
-- **Prueba que bajo la `pendingRoot` de una cabeza v5 hay un pendiente que sólo puede cobrar
+- **Prueba que bajo la `pendingRoot` de una cabeza v5 o v6 hay un pendiente que sólo puede cobrar
   quien tiene la clave de `receptor`, y que la marca de esa hoja es `marca`** (RFC-0008 D-AV,
   D-AW): dentro del circuito se recompone la hoja v2 con
   `receptor = derive_public_id_wide(clave)`, se sube por el camino hasta la raíz, y se prueba que
@@ -357,10 +363,11 @@ donde el valor es una respuesta del cable sin reescribir.
 - **No lleva la meta** (D-AY): su cabeza aporta UNA raíz, `pendingRoot`, y el enunciado no dice
   `nacido` ni `importe`. Por eso el juez no compara nada contra el `seq`, y por eso el ancho del
   AIR baja de 44 a 42.
-- **La cabeza se exige v5** (D-BF), y el texto del rechazo dice SU razón y no la de sus hermanos:
-  no «la única que firma pmetaRoot» —que aquí sería falsa—, sino que es la que el nodo sirve
-  desde el §452 y contra la que `zkssl_pledge` juzga. `cabeza_v3_verificada` admitiría v3 y v4,
-  pero ningún productor de prenda puede emitir contra ellas.
+- **La cabeza se exige v5 o v6** (D-BF fijó la v5; la v6 entró en el conjunto en el §558), y el
+  texto del rechazo dice SU razón y no la de sus hermanos: no «las que firman pmetaRoot» —que aquí
+  sería falsa—, sino que es la que el nodo sirve (la v5 desde el §452, la v6 desde el §570) y
+  contra la que `zkssl_pledge` juzga. `cabeza_v3_verificada` admitiría v3
+  y v4, pero ningún productor de prenda puede emitir contra ellas.
 - ⚠️ **Un VERDE aquí es MEDIA prenda.** El juez NO comprueba que `marca` esté bajo el `consRoot`
   de esa misma cabeza —lo declara en su propia doc, «es la puerta de quien escribe en él»— y este
   binario no tiene árbol que mirar. El PAR es la marca bajo la raíz firmada MÁS este sobre
@@ -622,7 +629,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 |---|---|---|
 | sobre | `v`, `tipo`, `cabeza`, `acuse`, `cofirmas`, `vieja`, `nueva`, `camino`; y `actas` (§648) | este documento, sección 2 |
 | cada acta de `actas` (§648) | `acta` → `clave`, `esquema`, `desde`, `siguiente`, `procedencia` → `anterior`, `epochDigest`, `mmrRoot`, `mmrSize`; `firma`, `firmaAnterior` | `zkssl_keyActs`, `RPC.md`; RFC-0015 D-C |
-| `cabeza` (y `vieja`/`nueva`) | `available`, `formatVersion`, `seq`, `n`, `accountsRoot`, `pendingRoot`, `frozenRoot`, `chainDigest`, `acusesRoot`, `epochDigest`, `publicKey`, `signature`, `index`; en v3 y v4 `mmrRoot`, `mmrSize`; y en v4 `consRoot`, `consCount` | `zkssl_signedEpochHead`, `RPC.md:437-482` |
+| `cabeza` (y `vieja`/`nueva`) | `available`, `formatVersion`, `seq`, `n`, `accountsRoot`, `pendingRoot`, `frozenRoot`, `chainDigest`, `acusesRoot`, `epochDigest`, `publicKey`, `signature`, `index`; de v3 a v6 `mmrRoot`, `mmrSize`; y de v4 a v6 `consRoot`, `consCount` | `zkssl_signedEpochHead`, `RPC.md:437-482` |
 | `acuse` | `hashPrueba`, `seq`, `camino` → `siblings`, `isRight` | `zkssl_ackPath`, `RPC.md:568-739` |
 | cada cofirma | `v`, `epochDigest`, `clavePublicaOperador`, `clavePublicaTestigo`, `firma`, `versionFormato`, `indice` | `zkssl_cosigs`, `RPC.md:741-783` |
 | extensión | `camino` (lista de digests) | `RPC.md:785-812` |
@@ -660,45 +667,45 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
 **Paquete de posición (v1 y v2):**
 
 0. el fichero se lee y es JSON; `v` es 1 o 2; un v1 no trae `cofirmas`; el sobre **no lleva
-   `tipo`** —un `tipo` presente y distinto de `extension` o `consumo` se **rechaza con su
-   nombre**, nunca
-   se lee como paquete de posición (§418)—;
-1. **`1/3`** — `cabeza` existe y es `available:true`; `formatVersion` es 2, 3, 4 o 5; **la
+   `tipo`** —un `tipo` presente lleva a su forma, y se leen doce, los de las secciones 2.3 a
+   2.14; uno distinto de los doce se **rechaza con su nombre**, nunca se lee como paquete de
+   posición (§418)—;
+1. **`1/3`** — `cabeza` existe y es `available:true`; `formatVersion` es 2, 3, 4, 5 o 6; **la
    versión elige recomponedor**: v2 con la pareja de acuses (§275), v3 además con la del MMR
    (§292), v4 además con la raíz y la cuenta de consumos (RFC-0006 E2a, §414), v5 además con la
-   familia del estado comprometido (RFC-0007 E1a, §451); los campos de la cabeza recomponen su
-   `epochDigest`;
+   familia del estado comprometido (RFC-0007 E1a, §451), v6 además con la pareja de recepción
+   (RFC-0010 E2, §558); los campos de la cabeza recomponen su `epochDigest`;
 2. **`2/3`** — la firma XMSS verifica contra `publicKey` **y** el preámbulo recuperado es el
    esperado (verificar sin comparar no prueba nada) **y** el `index` declarado queda por
    encima del índice de hoja que va dentro de la firma (§399; la cota es por abajo, sección 8);
 3. **`3/3`** — si hay `acuse`: la hoja `hoja_de_acuse(hashPrueba, seq, n)` sube por `camino`
    hasta `acusesRoot`, y los campos vuelven a componer el digest firmado (v2), el digest y la
-   cima (v3), además la raíz y la cuenta de consumos (v4), o además la familia de v5 (v5). Si no
-   hay acuse, la cabeza sola queda demostrada;
+   cima (v3), además la raíz y la cuenta de consumos (v4), además la familia de v5 (v5), o además
+   la pareja de recepción (v6). Si no hay acuse, la cabeza sola queda demostrada;
 4. **cofirmas** (sólo v2) — cada una, antes de tocar la criptografía, nombra **esta** cabeza y
    **este** operador; después su firma verifica. Se imprime cuántas verifican; cuántas hacen
    falta no es asunto del paquete.
 
-**Paquete de extensión:** `1/3` las dos cabezas (v3, v4 o v5) recomponen su digest y sus firmas verifican ·
+**Paquete de extensión:** `1/3` las dos cabezas (v3, v4, v5 o v6) recomponen su digest y sus firmas verifican ·
 `2/3` misma `publicKey` en las dos: la continuidad es de **un** firmante —o, con `actas` (§648),
 claves distintas que la cadena une: la continuidad es de **un** operador— · `3/3` la cima nueva
 extiende a la vieja por `camino`.
 
 **Paquete de consumo:** `1/5` las dos cabezas recomponen su digest y sus firmas verifican ·
-`2/5` misma `publicKey` y las dos llevan `consRoot` (**v4 o v5**) a los dos lados · `3/5`
+`2/5` misma `publicKey` y las dos llevan `consRoot` (**v4, v5 o v6**) a los dos lados · `3/5`
 la cima nueva extiende a la vieja · `4/5` los dos caminos son los de la posición **derivada**
 del consumo, no de la que el sobre diga · `5/5` el consumo está bajo el `consRoot` de la
 nueva y **no estaba** bajo el de la vieja.
 
 **Paquete de conflicto:** `1/4` las dos cabezas recomponen su digest y sus firmas verifican ·
-`2/4` son de operadores **distintos** y las dos llevan `consRoot` (**v4 o v5**) · `3/4` los
+`2/4` son de operadores **distintos** y las dos llevan `consRoot` (**v4, v5 o v6**) · `3/4` los
 dos caminos son los de la posición **derivada** del consumo · `4/4` el mismo consumo está
 bajo el `consRoot` de los **dos** libros.
 
 **Paquete de rechazo:** `1/3` la cabeza recompone su digest y su firma verifica · `2/3` el
 material de la causa, el que la sección 2.6 le asigna: los `parametros` recomponen el
-`paramsDigest` de una cabeza **v5**; el camino de `presencia` es el de la posición
-**derivada** del consumo bajo una **v4 o v5**; el `recibo` declaró sus tres raíces; el `lote`
+`paramsDigest` de una cabeza **v5 o v6**; el camino de `presencia` es el de la posición
+**derivada** del consumo bajo una **v4, v5 o v6**; el `recibo` declaró sus tres raíces; el `lote`
 se lee en orden; el camino de `congelados` o de `cuenta` es el de la cuenta que `data` nombra;
 o el enunciado de la `banda` es el de esa cuenta bajo el `accountsRoot` firmado · `3/3` la
 causa se sostiene sobre lo comprometido, con la cabeza **anterior** al rechazo —o la misma—
@@ -706,15 +713,15 @@ cuando cita algo que sólo crece, y con **la misma** cuando el estado es instant
 `banda`, lo que se sostiene es la prueba, que verifica sin el saldo.
 
 **Paquete de edad:** antes de tocar la criptografía, el sobre tiene su forma (`enunciado`,
-`subraices`, `prueba`) y la cabeza es **v5** · `1/3` la cabeza recompone su digest y su firma
-verifica · `2/3` las dos subraíces, subidas a 32 niveles con la `m` que el mando deriva de
+`subraices`, `prueba`) y la cabeza es **v5 o v6** · `1/3` la cabeza recompone su digest y su
+firma verifica · `2/3` las dos subraíces, subidas a 32 niveles con la `m` que el mando deriva de
 `nextPending`, son `pendingRoot` y `pmetaRoot` · `3/3` la prueba verifica contra el enunciado
 que la cabeza fija (`seq`, `nextPending`, `m`) y el sobre afirma (`t`, `k`, `emisor`), con las
 opciones de la casa.
 
 **Paquete de cobro pendiente:** antes de tocar la criptografía, el sobre tiene su forma
-(`enunciado`, `prueba`) y la cabeza es **v5** · `1/3` la cabeza recompone su digest y su firma
-verifica · `2/3` el enunciado lo compone el juez con `pendingRoot`, `pmetaRoot` y el techo del
+(`enunciado`, `prueba`) y la cabeza es **v5 o v6** · `1/3` la cabeza recompone su digest y su
+firma verifica · `2/3` el enunciado lo compone el juez con `pendingRoot`, `pmetaRoot` y el techo del
 campo, y el `nacido` que el sobre afirma es anterior al `seq` firmado · `3/3` la prueba verifica
 contra ese enunciado, con las opciones de la casa. Las dos últimas las decide el MISMO juez, que
 comprueba el `nacido` **antes** de tocar la prueba.
@@ -732,17 +739,20 @@ verifica, y se lee su índice embebido · `2/3` la cadena vale entera, eslabón 
 de la cabeza entra en ella · `3/3` el índice cae fuera de todos los tramos de su clave: VERDE,
 SOLAPAMIENTO, la detección.
 
-Cabezas **v2, v3, v4 y v5** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
+Cabezas **v2, v3, v4, v5 y v6** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
 
 ## 5. Catálogo de rechazos
 
 Cualquier rechazo para el binario con **el primer fallo, con nombre**, en la salida de error, y
-sale con código 1 (sección 6). No hay pánico por paquete mal formado: cada lectura de campo falla
-cerrada. El catálogo es la lista de mensajes que el binario puede emitir, con sus huecos entre
-llaves; un lector que vea uno de estos textos sabe qué regla ha caído. **La verdad se mide en el
-fuente**: al sellar, el censo de llamadas se re-deriva por llamada (no por línea: seis textos van
-partidos en el fuente) y cada texto tiene que estar aquí.
+sale con código 1 (sección 6); los tres textos del cuarto estado del sobre de completitud salen
+con 3 y sin `ROJO` (bloque de la completitud). No hay pánico por paquete mal formado: cada
+lectura de campo falla cerrada. El catálogo es la lista de mensajes que el binario puede emitir,
+con sus huecos entre llaves; un lector que vea uno de estos textos sabe qué regla ha caído. **La
+verdad se mide en el fuente**: al sellar, el censo se re-deriva por llamada, no por línea —al
+§776, 254 llamadas de rechazo y 225 textos distintos, y 63 de esas llamadas van partidas con `\`
+en el fuente—, y cada texto tiene que estar aquí, también el que hoy no se alcanza: el censo es
+por llamada, y un texto inalcanzable entra con la nota que dice por qué.
 
 **Lectura del fichero y versión del sobre**
 
@@ -755,7 +765,13 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
-- `sin 0x: {s:.18}` · `hex impar ({} chars)` · `hex: {e}`
+- `sin 0x: {s:.18}` · `hex impar ({} chars)` · `hex: cifra no admitida en la posicion {i}` —
+  ⚠️ §776: hasta aquí decía `hex: {e}`, rancio desde el §650, cuando el lector pasó a
+  `zk_ssl_hash::hex_canonico` y cada `HexError` a su texto; `{i}` es la posición, contada en
+  bytes, de la primera cifra no admitida en la cadena sin el `0x`.
+- `hex no minimo: {s:.18}` — inalcanzable hoy: es el brazo de `HexError::NoMinima`, que sólo
+  produce `cantidad_canonica` (§662), y `hex_a_bytes` lee con `hex_canonico`, que no lo devuelve.
+  Entra porque el censo es por llamada y el `match` es exhaustivo.
 - `falta {campo} o no es cadena` · `{campo}: {} bytes, se esperaban 32` · `{campo}: {e}`
 - `falta {campo} o no es cadena 0x` · `{campo} sin 0x` · `{campo}: {e}`
 - `{campo}: 0x… no es canonico: no es menor que p = 2^64 - 2^32 + 1` — desde el §640 (RFC-0016,
@@ -769,7 +785,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 
 - `falta cabeza`
 - `la cabeza empaquetada no era available:true`
-- `formatVersion {version}: el paquete v1 empaqueta cabezas v2, v3, v4 o v5 (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)` — el texto dice «v1» aunque el sobre sea v2: regla vigente, prosa que la implementación de referencia debe corregir sin cambiar la regla.
+- `formatVersion {version}: el paquete v1 empaqueta cabezas v2, v3, v4, v5 o v6 (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)` — el texto dice «v1» aunque el sobre sea v2: regla vigente, prosa que la implementación de referencia debe corregir sin cambiar la regla. El conjunto lo deriva `VersionCabeza::texto()`. ⚠️ §776: hasta aquí decía `v2, v3, v4 o v5`, rancio desde el §558, cuando la v6 entró en el conjunto.
 - `los siete campos NO recomponen el epochDigest empaquetado: o el paquete esta adulterado o la cabeza nunca fue esa`
 - `falta publicKey` · `falta signature`
 - `cabeza: {e}` — la firma no verifica, el preámbulo no es el esperado, o el `index` declarado no queda por encima del que va dentro de la firma (§399); `{e}` es el error de la biblioteca.
@@ -779,7 +795,11 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `acuse sin camino` · `camino sin siblings` · `camino sin isRight`
 - `sibling {i} no es cadena` · `sibling {i}: {} bytes` · `sibling {i}: {e}`
 - `isRight no booleano`
-- `acuse: {e:?}` — la hoja no sube hasta la raíz firmada, en v2 o en v3 (dos sitios, un texto).
+- `acuse: {e:?}` — la hoja no sube hasta la raíz firmada, o los campos no componen el digest de la
+  cabeza firmada con el recomponedor de su versión; `{e:?}` es el `Debug` de
+  `zk_ssl_verify::inclusion::InclusionError` (`RaizDistinta`, `CabezaDistinta` o
+  `CaminoDescuadrado { … }`). Un sitio, `acuse_contra_cabeza`, para las cinco versiones, de v2 a
+  v6, y un texto.
 
 **Las cofirmas** (paso 4, sólo v2)
 
@@ -788,6 +808,9 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `cofirma {n}: version {cv} desconocida, este binario lee hasta la {}` — el tope es `COFIRMA_V_MAX` de la biblioteca.
 - `cofirma {n}: acredita OTRA cabeza, no la empaquetada`
 - `cofirma {n}: acredita a OTRO operador, no al que firmo la cabeza`
+- `cofirma {n}: repite el testigo de la cofirma {m}` — desde el §663: un testigo, una cofirma; la
+  misma copiada varias veces ya no cuenta como varios testigos. `{m}` es la primera que lo trae,
+  contadas desde 1 como `{n}`.
 - `cofirma {n}: {e}` — la firma del testigo no verifica.
 - Una lista vacía o ausente no es un error: el paquete v2 imprime que la cabeza queda sola.
 
@@ -795,7 +818,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 
 - `falta vieja` · `falta nueva`
 - `{cual}: la cabeza no era available:true`
-- `{cual}: formatVersion {version} — la extension exige cabezas v3, v4 o v5: una v2 no lleva la pareja del MMR que extender`
+- `{cual}: formatVersion {version} — la extension exige cabezas v3, v4, v5 o v6: una v2 no lleva la pareja del MMR que extender` — el conjunto lo deriva `VersionCabeza::texto_con_mmr()`. ⚠️ §776: hasta aquí decía `v3, v4 o v5`, rancio desde el §558.
 - `{cual}: los campos NO recomponen su epochDigest — adulterada o inventada`
 - `{cual}: falta publicKey` · `{cual}: falta signature`
 - `{cual}: cabeza: {e}`
@@ -811,25 +834,27 @@ partidos en el fuente) y cada texto tiene que estar aquí.
     {desde}` · `SOLAPAMIENTO: la clave que llega firmo en la hoja {indice}, fuera de su tramo:
     por encima de la {desde}[ y por debajo de la {hasta}]`
 - `falta camino (lista de digests)`
-- `camino[{i}] no es cadena` · `camino[{i}]: {} bytes` · `camino[{i}]: {e:?}`
+- `camino[{i}] no es cadena` · `camino[{i}]: {} bytes` · `camino[{i}]: {e}` — ⚠️ §776: hasta aquí
+  decía `{e:?}`, rancio desde el §640.
 - `la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia bifurcada, recortada, o camino que no es el suyo`
 
 **El consumo** (`{cual}` es `presencia` o `ausencia`)
 
-- `el sobre de consumo exige cabezas v4 o v5: una v2 o v3 no lleva consRoot contra el que comprobar`
+- `el sobre de consumo exige cabezas v4, v5 o v6: una v2 o v3 no lleva consRoot contra el que comprobar` — el conjunto lo deriva `VersionCabeza::texto_con_consumos()`, y el productor (`exige_consumos`) es uno, con `consumo`, `conflicto`, `rechazo` o `prenda` como sujeto. ⚠️ §776: hasta aquí decía `v4 o v5`, rancio desde el §558.
 - `falta {cual} (camino del consumo)` · `{cual}: falta siblings` · `{cual}: falta isRight`
-- `{cual}: siblings[{i}] no es cadena` · `{cual}: siblings[{i}]: {} bytes` · `{cual}: siblings[{i}]: {e:?}`
+- `{cual}: siblings[{i}] no es cadena` · `{cual}: siblings[{i}]: {} bytes` · `{cual}: siblings[{i}]: {e}` — ⚠️ §776: hasta aquí decía `{e:?}`, rancio desde el §640.
 - `{cual}: isRight[{i}] no es booleano`
 - `{cual}: el isRight recibido NO es el de la posicion {pos} que el consumo DERIVA - un camino de otra posicion no prueba nada de este consumo`
 - `{cual}: el camino no tiene los 63 niveles del arbol de consumos`
 - `presencia: el camino NO sube al consRoot de la nueva`
 - `ausencia: la hoja vacia NO sube al consRoot de la vieja - el consumo YA estaba`
+
 **El conflicto** (`{i}` es la posición en `libros`; `{cual}` sale `libro[0]` o `libro[1]`)
 
 Estos textos NACEN con esta forma. Todo lo demás que un sobre de conflicto puede emitir sale de
 los **mismos productores** que ya están arriba, con su hueco relleno distinto —la cabeza, la
-versión v4, los campos del camino y su descuadre—: **un hueco relleno de otra manera no es una
-entrada nueva del catálogo**, es el mismo texto y el mismo productor.
+versión v4, v5 o v6, los campos del camino y su descuadre—: **un hueco relleno de otra manera no
+es una entrada nueva del catálogo**, es el mismo texto y el mismo productor.
 
 - `falta libros` · `libros no es una lista`
 - `el sobre de conflicto exige DOS libros: se recibieron {n}`
@@ -841,12 +866,12 @@ entrada nueva del catálogo**, es el mismo texto y el mismo productor.
 `tope de suministro`)
 
 Estos textos NACEN con esta forma. La cabeza, la versión de los consumos (`el sobre de rechazo
-exige cabezas v4 o v5: …`), los campos del camino, su descuadre y el cruce de posición salen de
-los **mismos productores** de arriba, con su hueco relleno distinto.
+exige cabezas v4, v5 o v6: …`), los campos del camino, su descuadre y el cruce de posición salen
+de los **mismos productores** de arriba, con su hueco relleno distinto.
 
 - `falta data (el objeto del rechazo)` · `data: falta causa` · `data: falta campos`
 - `data: la causa {otra} no la prueba este mando (spec/PAQUETE.md, seccion 2.6)`
-- `la causa {causa} exige una cabeza v5: sus parametros viajan en paramsDigest`
+- `la causa {causa} exige una cabeza v5 o v6: sus parametros viajan en paramsDigest` — un productor (`parametros_comprometidos`) para las cuatro causas de los parámetros: `OverRegulatoryLimit`, `AccountLimitReached`, `WrongRegulatoryLimit` y `SupplyCapExceeded`; el conjunto lo deriva `VersionCabeza::texto_con_parametros()`. ⚠️ §776: hasta aquí decía `una cabeza v5`, rancio desde el §558, y la entrada iba dos veces, la segunda «también `WrongRegulatoryLimit`».
 - `falta parametros (zkssl_params)`
 - `parametros: NO recomponen el paramsDigest de la cabeza - no son los de este libro`
 - `data: el {que} que el nodo dice ({dicho}) no es el comprometido ({comprometido})`
@@ -858,7 +883,6 @@ los **mismos productores** de arriba, con su hueco relleno distinto.
 - `la cabeza (seq {s_cabeza}) es POSTERIOR al rechazo (seq {s_rechazo}): {porque}, y solo una cabeza anterior lo prueba`
 - `falta recibo (los publicInputs del rechazado)` · `StaleState no lleva campos: su material es el recibo`
 - `la causa NO se sostiene: las tres raices del recibo son las de la cabeza - ese estado NO estaba atras`
-- `la causa {causa} exige una cabeza v5: sus parametros viajan en paramsDigest` (también `WrongRegulatoryLimit`)
 - `la causa NO se sostiene: el limite declarado ({declarado}) ES el comprometido ({limite})`
 - `falta lote (las ops de applyMany)` · `lote[{i}]: falta kind` · `lote[{i}]: kind desconocido: {otro}`
 - `lote[{i}]: falta receipt.notice` · `lote[{i}]: falta notice`
@@ -890,7 +914,7 @@ Estos textos NACEN con esta forma. La forma de los valores y la cabeza —su rec
 firma y la familia de v5— salen de los **mismos productores** de arriba.
 
 - `falta enunciado` · `falta subraices` · `falta prueba o no es cadena 0x`
-- `formatVersion {version}: la prueba de edad exige una cabeza v5, la unica que firma pmetaRoot y nextPending`
+- `formatVersion {version}: la prueba de edad exige una cabeza v5 o v6, las que firman pmetaRoot y nextPending` — el conjunto lo deriva `VersionCabeza::texto_con_parametros()`. ⚠️ §776: hasta aquí decía `una cabeza v5, la unica que firma pmetaRoot y nextPending`, rancio desde el §558, cuando el texto pasó al predicado y la v6 entró en el conjunto.
 - `edad: {e}`, con `{e}` uno de estos:
   - `la subraiz de pendientes, subida a 32 niveles, no es el pendingRoot de la cabeza`
   - `la subraiz de meta, subida a 32 niveles, no es el pmetaRoot de la cabeza`
@@ -904,16 +928,31 @@ Estos textos NACEN con esta forma. La forma de los valores y la cabeza —su rec
 firma y la familia de v5— salen de los **mismos productores** de arriba, y `falta enunciado`,
 `falta prueba o no es cadena 0x` y `falta cabeza` son los de la edad, letra por letra.
 
-- `formatVersion {version}: el cobro pendiente exige una cabeza v5, la unica que firma pmetaRoot`
+- `formatVersion {version}: el cobro pendiente exige una cabeza v5 o v6, las que firman pmetaRoot` — ⚠️ §776: hasta aquí decía `una cabeza v5, la unica que firma pmetaRoot`, rancio desde el §558.
 - `cobro: {e}`, con `{e}` uno de estos:
   - `nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza que la firma`
   - los del enunciado: `las cotas {l} y {u} pasan del techo {MAX_VALOR}` · `banda vacia: inferior {l} sobre superior {u}`
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
   - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el de la edad
 
+**El pago en curso** (§506; `{e}` sale de `zk_ssl_air::pago_en_curso`)
+
+Estos textos NACEN con esta forma. La forma de los valores y la cabeza —su recomposición, su
+firma y la familia de v5— salen de los **mismos productores** de arriba, y `falta enunciado`,
+`falta prueba o no es cadena 0x` y `falta cabeza` son los de la edad, letra por letra.
+
+- `formatVersion {version}: el pago en curso exige una cabeza v5 o v6, las que firman pmetaRoot` —
+  el conjunto lo deriva `VersionCabeza::texto_con_parametros()`; hasta el §776 este bloque no
+  estaba en el catálogo.
+- `pago: {e}`, con `{e}` uno de estos:
+  - `nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza que la firma` — el del cobro, letra por letra, y como allí antes de tocar la prueba
+  - los del enunciado: `el importe {i} pasa del techo {MAX_VALOR}` · `T {t} o nacido {n} pasan del techo {MAX_VALOR}` · `nacido {n} posterior a T {t}: el plazo iria hacia atras`
+  - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
+  - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el de la edad
+
 **La prenda** (§520; `{e}` sale de `zk_ssl_air::prenda`)
 
-- `formatVersion {version}: la prenda exige una cabeza v5 - no por la meta, que no lleva (D-AY), sino porque es la que el nodo sirve y contra la que juzga zkssl_pledge`
+- `formatVersion {version}: la prenda exige una cabeza v5 o v6 - no por la meta, que no lleva (D-AY), sino porque es la que el nodo sirve y contra la que juzga zkssl_pledge` — ⚠️ §776: hasta aquí decía `una cabeza v5`, rancio desde el §558.
 - `prenda: {e}`, con `{e}` uno de estos:
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` ·
     `{e:?}`, el error de `winter-verifier`
@@ -923,14 +962,125 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
 por letra. **No hay rechazo por marca no publicada**: este brazo no lo comprueba, y el VERDE lo
 dice (D-AS).
 
+**La completitud** (§573, RFC-0010 E4; RFC-0014 E4a y E4b; RFC-0019 E1 y E2; sección 2.11)
+
+Estos textos NACEN con esta forma; hasta el §776 este bloque no estaba en el catálogo. Lo que el
+sobre REVERIFICA sale de los **mismos productores** de arriba, con su sujeto como hueco: cada
+cabeza —el `cierre`, la `vigente`, la de cada resolución (`resolucion.cabeza`,
+`resolucion.acuses[{i}].cabeza`, `resolucion.sobre.cabeza`, `resolucion.rechazo.cabeza`,
+`resolucion.consumo.cabeza`) y la `resolucion.juzgada`— por los de la extensión, con `{cual}` ese
+nombre, y por los de las `actas` cuando su clave no es la del cierre (§648); los caminos, por los
+del consumo, con `camino` o `resolucion.consumo.camino` como `{cual}`; el par de la resolución por
+acuse, por los del paquete de posición (`verificar_paquete`); el sobre de una resolución por
+rechazo, por los del rechazo; y el sobre de la prenda aceptada, por los de la prenda. La forma de
+los valores es la de arriba. **Un hueco relleno de otra manera no es una entrada nueva.**
+
+*El cierre y el recibo* (pasos 1 y 2)
+
+- `falta cierre (la cabeza v6 que cierra la era del recibo)`
+- `cierre: formatVersion {version}: el sobre de completitud lee cabezas v6` — una versión que
+  `VersionCabeza` no conoce; el conjunto lo deriva `VersionCabeza::texto_con_recepcion()`
+- `cierre: el sobre de completitud exige una cabeza v6: la pareja de recepcion viaja firmada desde ella` — una versión conocida que no lleva la pareja, de v2 a v5
+- `{cual}: {e}` — el de `indice_embebido`, que lee el índice XMSS de dentro de la firma (§681): el
+  del `cierre` —el inicio de la ventana—, el de cada cabeza que la mide (`{que}.cabeza`,
+  `resolucion.consumo.cabeza`, `vigente`) y, con `cabeza` fijo como `{cual}`, el de las dos cabezas
+  que `misma_continuidad` compara con `actas` (§648: extensión, consumo y las seis de la
+  completitud) y el de la cabeza del solapamiento (§686); `{e}` sería el
+  `FirmaSinIndice` de la biblioteca. Inalcanzable hoy: cada llamada va después de
+  `cabeza_v3_verificada` sobre la misma cabeza, y si su `verificar_cabeza` pasó, ya leyó ese índice
+  de los mismos bytes sin error. Entra porque el censo es por llamada.
+- `falta recepcion (el recibo del cable, §571)`
+- `recepcion: n {n} no es la que el cierre firma ({n_firmada}): una n mentida produce una hoja que no verifica`
+- `recepcion: el rx {rx} no pertenece a la era ({q}, {r}] que el cierre cierra` —
+  `Q < rx <= recepCount`, con `Q` el `limiteAnterior` DECLARADO (D1)
+- `falta camino (el de zkssl_recepPath)` — sus campos se leen después con los textos del consumo
+  y `camino` como sujeto
+- `camino: no mide 32 niveles o sus lados no son los de la posicion {pos} (rx {rx} - Q {q} - 1)` —
+  32 es `RECEP_DEPTH`
+- `el recibo NO sube a la recepRoot que el cierre firma`
+
+*El veredicto* (paso 3)
+
+- `resolucion: tipo {otro:?} desconocido: se lee acuse, rechazo o declarada, y lote o prenda para los recibos del RFC-0014` — `{otro:?}` es el `Debug` de lo leído en `resolucion.tipo`: `Some("…")`, o `None` si falta o no es una cadena
+- `sin resolucion y sin cabeza vigente: no hay ventana que medir`
+- `ventana ABIERTA: la cabeza vigente tiene indice acreditado {s} y la ventana empieza en {inicio}; con n {n} la promesa sigue viva y el sobre es prematuro`
+- `NO RESUELTA EN LA VENTANA: el operador recibio la operacion bajo su firma (rx {rx}, era {era}) y su cabeza vigente de indice acreditado {s} -{d} cabezas firmadas despues del inicio {inicio}, n {n}- llega sin resolucion: se comprometio a resolver y no lo hizo` — el veredicto 3, **ROJO NOMBRADO** y el producto del hito; `{d}` es `S − inicio`
+
+*La resolución por acuse* (veredicto 1; `{que}` es `resolucion`, y `resolucion.acuses[{i}]` en el lote)
+
+- `{que}: falta cabeza` · `{que}: falta acuse`
+- `{que}: el acuse es de OTRA prueba: no resuelve este recibo`
+- `{que}: llega FUERA de la ventana (indice acreditado {s}, inicio {inicio}, n {n})`
+
+*La resolución por rechazo* (veredicto 2; `{que}` es `resolucion.sobre`, también en el lote, y `resolucion.rechazo` en la prenda)
+
+- `resolucion: falta sobre (el de rechazo)` — sólo en la vía directa
+- `resolucion: el sobre no es de tipo rechazo` — con `resolucion` fijo, sea cual sea `{que}`
+- `{que}: falta data` · `{que}: falta cabeza`
+- `{que}: su data no lleva recepcion: no se ata a este recibo` · `{que}: es de OTRA operacion: su hashPrueba no es el del recibo` — la atadura al recibo por el `recepcion.hashPrueba` del objeto que recibe (D3), que es la PALABRA del nodo: el `data` del sobre de rechazo; el mismo productor (`exige_mismo_recibo`) lo lee en `resolucion.data` en el lote y en la declarada, y en la propia `resolucion.respuesta` en la prenda, que no lleva `data` aunque el texto diga «su data»
+- `resolucion: llega FUERA de la ventana (indice acreditado {s}, inicio {inicio}, n {n})` — con `resolucion` fijo; el mismo texto en la prenda aceptada
+
+*El lote* (veredicto 5, §612; `{que}` es `resolucion.sobre.data` o `resolucion.data`)
+
+- `resolucion: falta composicion (la lista del lote, D-C)` · `resolucion: composicion VACIA: el nodo no evalua un lote vacio`
+- `resolucion.composicion[{i}]: {e}` — `{e}` es un rechazo de la forma de los valores de su
+  `hashPrueba`, su `cuenta` o su `posicion`
+- `resolucion: la composicion NO es la del recibo: su huella no es su hashPrueba`
+- `resolucion del lote: lleva UNA de tres, acuses, sobre o data`
+- `resolucion.acuses: no es una lista` · `resolucion: {a} acuse(s) para un lote de {k}: el lote se aplica ENTERO o no se aplica` — después, cada acuse por los de la resolución por acuse
+- `{que}: {e}: el rechazo de un lote nombra su operacion (§611)` · `{que}: la operacion {j} no esta en un lote de {k}` — `data.operacion`, leída con `u64_de`: `{e}` es su rechazo de la forma de los valores
+- `resolucion.data: falta causa` · `resolucion.data: falta campos` · `resolucion.data.campos: {e}` — `{e}`, el rechazo de `u64_de` del campo que nombra lo repetido (`index` o `position`); `resolucion.data: falta causa` es también el de la declarada
+- `resolucion del lote con la causa {causa} y sin sobre: no es de forma ni de las que el RFC-0007 dejo sin prueba portable: se exhibe su sobre de rechazo`
+- `RECHAZO SIN FUNDAMENTO: el nodo dijo {causa} en la operacion {j} del lote, y la composicion que su recibo firma no lo sostiene: {por_que}. El juicio se repite sin el nodo; su negativa es su palabra, en su data (D3)` — **ROJO NOMBRADO** (RFC-0014, decisión 3), con `{por_que}` uno de estos:
+  - `la operacion {j} lleva la {que} {v} y la causa nombra la {valor}` · `ninguna operacion anterior a la {j} lleva la {que} {valor}` — aquí `{que}` es `cuenta` o `posicion`
+  - `{causa} no es una causa de la forma del lote` · `no hay operacion {j} en un lote de {k}` — inalcanzables hoy: `juzgar_forma` sólo se llama con una causa que `campo_de_forma` ya reconoció y con una `j` que `operacion_nombrada` ya acotó por debajo de `k`. Entran porque el censo es por llamada.
+
+*La prenda* (veredicto 6, §613)
+
+- `resolucion: falta sobre (el de la prenda, 2.10)` · `resolucion: el sobre no es de tipo prenda`
+- `resolucion.sobre: {e}` — `{e}` es un rechazo de la lectura del enunciado y de la prueba
+  (`enunciado_de_prenda`): `falta enunciado`, `falta prueba o no es cadena 0x` o uno de la forma de
+  los valores
+- `resolucion: la prenda es de OTRA prueba: su digest no es el hashPrueba del recibo`
+- `resolucion de la prenda: lleva UNA de tres, consumo, respuesta o rechazo`
+- `resolucion.sobre: falta cabeza` · `resolucion.consumo: falta cabeza` — la aceptada; su ventana
+  se mide con la cabeza del consumo
+- `resolucion.consumo: la marca NO esta bajo el consRoot de su cabeza`
+- `resolucion.respuesta: no es una negativa (accepted false): una prenda aceptada se resuelve con su consumo`
+- `resolucion.respuesta: la negativa lleva causa en su data: se exhibe su sobre de rechazo (resolucion.rechazo)`
+- `resolucion: falta juzgada (la cabeza que el nodo juzgo: la ultima firmada al recibir, de indice era - 1)`
+- `resolucion.juzgada: formatVersion {version}: la prenda se juzga contra una cabeza v5 o v6` —
+  el conjunto lo deriva `VersionCabeza::texto_con_parametros()`
+- `resolucion.juzgada: su indice {sj} no es el de la cabeza que el nodo juzgo: la ultima firmada al recibir es la de la era menos uno ({e1})` — `{e1}` es `era − 1`
+- `RECHAZO SIN FUNDAMENTO: el sobre de la prenda VERIFICA contra la cabeza que el nodo juzgo (indice {sj}), con el mismo juez y sin el nodo, y el nodo dijo que no: {dijo}. Su negativa es su palabra, en su respuesta (D3); si alguien la inventara, el operador la desmiente con el PAR` — **ROJO NOMBRADO** (RFC-0014, decisión 3); `{dijo}` es el `reason` de la respuesta, o `(sin razon)`
+- `resolucion.rechazo: el consumo que la capa rechazo no es la marca de este sobre`
+
+*La declarada* (veredicto 4)
+
+- `resolucion: falta data (la del rechazo declarado)` · `resolucion.data: falta causa`
+- `resolucion declarada con la causa {causa}, que no es de las que el RFC-0007 dejo sin prueba portable: se exhibe su sobre de rechazo, no se declara`
+
+*El cuarto estado* (RFC-0010 D-G; desde el §682 también RFC-0019 E2)
+
+Estos tres no son un rechazo: son el **cuarto estado**, «resolución declarada, no probada». Llevan
+el prefijo `DECLARADA, NO PROBADA: ` —la constante `DECLARADA_NO_PROBADA`—, y el mando los
+imprime **sin** `ROJO: ` delante y sale con `3` (`codigo_de_salida` y `main`; sección 6): ni
+VERDE ni ROJO.
+
+- `DECLARADA, NO PROBADA: el operador declara {causa}, una causa que el RFC-0007 dejo sin prueba portable: se cuenta aparte (RFC-0010, D-G)` — la declarada, con `{causa}` una de `CustodianSetExhausted`, `PendingTreeExhausted`, `NotTheIssuer` y `NotTheAccountHolder`, atada al recibo por su `data.recepcion`
+- `DECLARADA, NO PROBADA: el operador declara {causa} en la operacion {j} del lote, una causa que el RFC-0007 dejo sin prueba portable: se cuenta aparte (RFC-0010, D-G)` — el lote resuelto por `data`, con las mismas cuatro
+- `DECLARADA, NO PROBADA: {que}: el operador resuelve por StaleState. La causa se sostiene sobre el estado comprometido (cabeza de indice acreditado {s}), pero su atadura a ESTA operacion -los publicInputs del recibo del rechazo y su data- no va firmada: es la palabra del nodo (RFC-0019 E2)` — desde el §682 un `StaleState` no resuelve solo, ni en la vía directa ni en el lote (`{que}` es `resolucion.sobre`); sale después de que el sobre de rechazo verifique por sus reglas, para que uno mal formado siga siendo ROJO por lo suyo
+
 **El ancla** (§592, RFC-0012 E3)
 
 - `falta cabeza (la firmada que el ancla compromete)`
 - `un sobre con contraria no lleva ancla: la vista dividida se demuestra con las dos cabezas solas`
 - `camino sin ancla: no hay nada que extender`
 - `cabeza: formatVersion {version}: el ancla lee cabezas v3, v4, v5 o v6: la pareja del MMR
-  viaja firmada desde ellas` — el conjunto, derivado de su productor; y el mismo texto con
-  `contraria:` como sujeto
+  viaja firmada desde ellas` · `contraria: formatVersion {version_o}: el ancla lee cabezas v3, v4,
+  v5 o v6: la pareja del MMR viaja firmada desde ellas` — el conjunto, derivado de su productor
+  (`VersionCabeza::texto_con_mmr()`); la segunda, con la `contraria` de la vista dividida como
+  sujeto, es otra llamada, y desde el §776 su propia entrada
 - `el ancla no declara v 1: este binario lee ancla v1`
 - `el ancla es de OTRA clave: su clave no es la huella de la publicKey de la cabeza`
 - `el ancla no ES esta cabeza: su {campo} no casa`, con `{campo}` uno de `indice`,
@@ -941,6 +1091,10 @@ dice (D-AS).
   no es el suyo`
 - `los indices embebidos son DISTINTOS ({a}, {b}): dos firmas con su indice propio no dividen
   la vista`
+- `contraria: {e}` — el índice embebido de la contraria, leído con `indice_de_firma`; `{e}`
+  sería el `FirmaSinIndice` de la biblioteca. Inalcanzable hoy: va después de
+  `cabeza_v3_verificada` sobre la contraria, y si su `verificar_cabeza` pasó, ya leyó ese índice
+  de los mismos bytes sin error. Entra porque el censo es por llamada.
 - `las dos cabezas son LA MISMA: no hay vista que dividir`
 - `las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante` — el de la extensión,
   letra por letra. ⚠️ §648: aquí **no se lee `actas`**: la vista dividida es de UNA clave. Dos

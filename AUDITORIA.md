@@ -51767,3 +51767,85 @@ dicho. Una línea del PROPIO diario del testigo con un índice no canónico tamp
 `--ausentes`: solo pudo entrar antes de este sello, copiada de un nodo que la sirvió así, y desde
 este sello el testigo no acepta esa cabeza. No añade vectores, y la segunda implementación no se
 toca: no hay sobre nuevo que rechazar.
+
+## §776 — `spec/PAQUETE.md` sección 5 dice todo lo que el kit emite: los bloques del pago en curso y de la completitud, los conjuntos de versiones con la v6 y los textos que el código ya decía de otra manera (las tareas 59 y 21)
+
+El commit que lleva este asiento, sobre `a47249a` (el §775). Un solo sello y un solo fichero de
+especificación: `spec/PAQUETE.md`, en su sección 5, «Catálogo de rechazos», y en las secciones 2 a 4,
+donde nombran conjuntos de versiones de cabeza; y este asiento. Del autor es elegir esta tarea y su
+orden; lo demás lo propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de
+Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El hito H3 de la propuesta a NLnet pide que la especificación baste a un segundo
+implementador que no lea el código de referencia, y el catálogo de rechazos es la parte de la
+especificación que dice qué contesta el kit. `PAQUETE.md:742-745` promete que «al sellar, el censo de
+llamadas se re-deriva por llamada»; la cabecera de `crates/zk-ssl-verify/src/main.rs:20-22` dice lo
+mismo. Lo hizo el §397 a mano y nadie lo repitió. Un censo hecho ahora por llamada, con dos lectores
+del kit, un tercero para las familias nuevas y un escéptico que repasó cada diferencia contra el
+productor, dio 78 discrepancias.
+
+**El defecto.** Faltaban dos bloques enteros: el del pago en curso (§506), cuyo `tipo` solo aparecía
+en el texto de `tipo desconocido`, y el de la completitud (§573, RFC-0010 E4, RFC-0014 E4, RFC-0019),
+con sus resoluciones, el lote, la prenda y el cuarto estado. Los conjuntos de versiones de cabeza
+estaban rancios desde el §558, cuando entró la v6 en `VersionCabeza`: el catálogo decía «v2, v3, v4 o
+v5», «v4 o v5» y «una cabeza v5» donde el kit deriva «v2, v3, v4, v5 o v6», «v4, v5 o v6» y «una
+cabeza v5 o v6»; los manifiestos de los vectores ya pinaban los nuevos. `hex: {e}` era desde el §650
+el literal `hex: cifra no admitida en la posicion {i}`, y dos textos decían `{e:?}` donde el código
+formatea con `{e}`. Fuera de la sección 5 repetían los conjuntos viejos la tabla de causas de la 2.6,
+las secciones 2.3 a 2.10, la fila `cabeza` de la sección 3 y los pasos de la sección 4.
+
+**Quién lo decide.** El autor eligió las tareas. La forma la propuso la sesión: cada texto en su
+viñeta, con los huecos que el código nombra, y una nota «⚠️ §776: hasta aquí decía …» en cada texto
+que cambia. Y una decisión que el autor puede revertir: en la tabla de la 2.6, `StaleState` y los dos
+duplicados de lote decían «v5, la misma (§456)», y el kit no tiene guarda de versión para esas causas:
+aceptan lo que acepta `cabeza_v3_verificada`. El documento dice ahora lo que hace el código, «v3, v4,
+v5 o v6»; si la regla buscada era la v5, lo que falla es el código, y se arregla en otro sello.
+
+**Por qué no lleva aviso de seguridad.** Es documentación: ningún veredicto del kit cambia.
+
+**Lo que hace.**
+
+1. **El bloque del pago en curso**, entre el cobro pendiente y la prenda: el texto de versión con
+   «v5 o v6», `pago: {e}` y los ocho textos de `{e}` que salen de `zk_ssl_air::pago_en_curso`.
+2. **El bloque de la completitud**, entre la prenda y el ancla: 64 entradas, por pasos —el cierre y
+   el recibo, el veredicto, la resolución por acuse, por rechazo con la atadura al recibo, el lote
+   con los cuatro `{por_que}` de `juzgar_forma`, la prenda, la declarada— y el cuarto estado: los tres
+   textos que empiezan por `DECLARADA, NO PROBADA: `, que salen con código 3 y sin «ROJO:».
+3. **Los textos que difieren**, corregidos con su nota, y las entradas que faltaban: `hex no
+   minimo: {s:.18}`, `cofirma {n}: repite el testigo de la cofirma {m}`, `contraria: …` y `contraria:
+   {e}`. Los inalcanzables hoy —`hex no minimo`, el `{cual}: {e}` de `indice_embebido`, `contraria:
+   {e}` y dos de `juzgar_forma`— entran con su nota y la razón: el censo es por llamada.
+4. **La prosa de la sección que ya no era verdad**: «seis textos van partidos en el fuente» dice
+   ahora lo que hay (254 llamadas, 225 textos distintos y 63 llamadas partidas con `\`); la glosa de
+   `acuse: {e:?}` nombra un sitio, `acuse_contra_cabeza`, para v2 a v6; sale la entrada repetida de
+   los parámetros.
+5. **Los conjuntos de versiones de las secciones 2 a 4**, cada uno comprobado contra el sitio del
+   código que lo aplica antes de cambiarlo, y el paso 0 de la sección 4, que decía que un `tipo`
+   distinto de `extension` o `consumo` se rechaza: hoy son doce formas.
+
+**Medido.**
+
+- **El censo, por llamada**: con la herramienta que el §777 mete en el canon, `tools/check_catalogo.py`,
+  la sección 5 pasa de 78 discrepancias a ninguna: los 225 textos del kit están en ella, y sus 276
+  entradas salen del kit o de su biblioteca (eran 199).
+- **Un escéptico** releyó cada texto nuevo o cambiado contra su productor, no contra la herramienta,
+  que puede casar por un hueco. Encontró nueve cosas que la herramienta no ve, y entran en este
+  mismo sello: la glosa de `{cual}: {e}` de `indice_embebido` olvidaba dos llamadores
+  (`misma_continuidad` y el solapamiento); la de la atadura al recibo no valía para la prenda, que
+  la lee en su `resolucion.respuesta`; la entrada del pago en curso nombraba huecos que el código
+  no nombra; la 2.10 seguía con la razón de la v5 sola; la tabla de la 2.6 no decía que la «v5» de
+  `StaleState` y de los duplicados nunca la exigió el código, y ahora lo dice con su nota; y cuatro
+  retoques: `{version_o}`, qué posición es el `{i}` de `hex`, la 2.3, que repetía el «si no, es el
+  de posición» rancio desde el §418, y la nota que faltaba en los dos `{e:?}` que pasan a `{e}`.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 46 abiertas y 74
+resueltas.
+
+**Lo que NO hace.** No cambia una línea de código. No pone la puerta en el canon: eso es el §777. No
+escribe los textos de las bibliotecas que el catálogo trata como opacos (`VerificaError`, el `Debug`
+de `InclusionError`, `ErrorDeNota`): siguen dichos en prosa, y la puerta del §777 los imprime como
+excluidos. No cierra H3: el criterio es una implementación de un tercero.
