@@ -3,7 +3,9 @@
 Para quien tiene cinco minutos y no es técnico. En dos lenguas y más corto:
 [`RESUMEN_BILINGUE.md`](./RESUMEN_BILINGUE.md). El proyecto se llamaba antes ZK-SSL; cambió el
 nombre, no los identificadores publicados (`zkssl/0.4` desde el asiento 538, `zk-ssl-*`). Lo que dice esta página está
-verificado contra `main` en el commit `3294986`.
+verificado contra el commit `8c02941` (el §789), en el §794. ⚠️ **§794**: hasta aquí decía «contra
+`main` en el commit `3294986`», el del §448; lo que la relectura del §794 corrigió lleva su marca en
+su sitio.
 
 ## Qué es, en tres frases
 
@@ -26,8 +28,10 @@ conservación del dinero y la autoría de cada pago, hoy, sólo el nodo.
 - **Que lo que el nodo recibió se resolvió a tiempo**: toda operación que el nodo evalúa por las
   vías directas del titular deja un recibo bajo su cabeza firmada, y un sobre portable dice, sin
   el nodo, que se resolvió en su ventana —aplicada o rechazada con causa— o nombra al operador
-  que no la resolvió. Sus residuos, declarados: un operador que no emite recibo no deja rastro,
-  y el lote y la prenda no lo llevan (RFC-0010).
+  que no la resolvió. Sus residuos, declarados: un operador que no emite recibo no deja rastro
+  (RFC-0010); el lote y la prenda lo llevan desde el §611, y de ellos quedan el agregador que no
+  reenvía el recibo y la prenda presentada sobre un estado viejo (RFC-0014). ⚠️ **Corregido en
+  el §794**: decía «y el lote y la prenda no lo llevan (RFC-0010)».
 
 ⚠️ **Corregido en el §589**: hasta entonces esta página decía aquí «la completitud de un periodo
 […] está listada como planeada, no como hecha», y en «Qué falta» pedía «la completitud de los
@@ -64,12 +68,15 @@ libro es coherente consigo mismo, no que sus unidades existan fuera de él.
 
 ## Cómo se comprueba, sin saber programar
 
-Con **el kit del verificador**: una descarga, un programa de una sola línea y cuatro
+Con **el kit del verificador**: una descarga, un programa de una sola línea y cinco
 comprobaciones en la máquina del que comprueba, sin red. Un expediente que cuadra. Uno manipulado
 que no cuadra, y el programa dice qué regla se rompió. La misma unidad publicada en dos libros,
-detectada con los dos nodos apagados. Y un intercambio de libros, rechazado con su nombre. Las
+detectada con los dos nodos apagados. Un intercambio de libros, rechazado con su nombre. Y lo que
+el nodo recibió bajo su firma, resuelto a tiempo o con el operador que no lo resolvió nombrado. Las
 huellas del programa se publican junto al commit del que sale, y el programa se reproduce desde
 ese commit: no hay que fiarse de la descarga. Guion paso a paso: [`doc/KIT.md`](./doc/KIT.md).
+⚠️ **Corregido en el §794**: decía «cuatro comprobaciones»; desde la 0.3.0 el kit tiene una quinta
+(`doc/KIT.md`:5-12).
 
 ## Dónde encaja
 
@@ -85,7 +92,7 @@ están revisados: [`doc/USE_CASES.md`](./doc/USE_CASES.md).
 
 | pieza | estado |
 |---|---|
-| El motor | 18 crates en Rust; cada cambio pasa por el canon (los tests de todos los crates y diez herramientas que vigilan cifras, citas, dominios, el censo del núcleo, la geometría y que ninguna curva entre en los binarios de producción) |
+| El motor | 22 crates en Rust —19 propios y los tres del fork de winterfell—; cada cambio dice en su asiento qué compuertas pasó, y la mayor es el canon: los tests de los crates —19 en el sello, los 22 con `--completo`— y diez herramientas que vigilan cifras, citas, dominios, el censo del núcleo, la geometría y que ninguna curva entre en los binarios de producción. ⚠️ **Corregido en el §794**: decía «18 crates» (`Cargo.toml`:2-51 lista 22) y «cada cambio pasa por el canon (los tests de todos los crates …)»; el sello deja tres crates para `--largo` y `--completo` (`tools/canon.sh`:128-130), y `GENAI.md` §«Fuera del paso 4» dice que una sesión declara las compuertas que corrió, no siempre el canon entero |
 | El protocolo | `zkssl/0.4`: 32 métodos JSON-RPC, vectores de conformidad por versión que desde el §692 no se reescriben, y una versión que no dice qué pruebas acepta un nodo (§699); RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 y 0014 aceptados; 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 y 0021 propuestos |
 | El verificador | `zk-ssl-verify` 0.4.2, publicada como `arqueo-verify-v0.4.2` y reproducible desde el commit que su `VERSION` nombra |
 | El registro | [`AUDITORIA.md`](./AUDITORIA.md): un asiento por cambio verificado, con su commit; lo que se corrige se marca, no se borra |
@@ -95,10 +102,13 @@ están revisados: [`doc/USE_CASES.md`](./doc/USE_CASES.md).
 El diseño se eligió midiendo el mismo circuito en cinco sistemas de prueba de conocimiento cero
 ([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)). Se descartó el más rápido y el que produce las pruebas
 más pequeñas, Groth16, porque exige una ceremonia de confianza cuyos participantes, si coluden,
-pueden **crear dinero sin dejar rastro**. STARK sin ceremonia —sólo hashes, sin curvas, resistente a
-un adversario cuántico en su solidez— fue la única decisión del proyecto tomada contra los números.
-De ese trabajo salieron ocho hallazgos que no estaban en la literatura comparativa y seis depósitos
-con DOI; lo que se corrigió después está marcado en su fe de erratas.
+pueden **crear dinero sin dejar rastro**. STARK sin ceremonia —sólo hashes, sin curvas— fue la
+única decisión del proyecto tomada contra los números. Sólo hashes quiere decir sin supuestos de
+curva, no un nivel conocido frente a un adversario cuántico: ese nivel no está medido
+(`SECURITY.md` §«3.11 El nivel de las pruebas»). De ese trabajo salieron ocho hallazgos que no
+estaban en la literatura comparativa y seis depósitos con DOI; lo que se corrigió después está
+marcado en su fe de erratas. ⚠️ **Corregido en el §794**: decía «resistente a un adversario cuántico
+en su solidez», que esa sección contradice desde el §698.
 
 ## Qué falta para que un tercero real se apoye en esto
 

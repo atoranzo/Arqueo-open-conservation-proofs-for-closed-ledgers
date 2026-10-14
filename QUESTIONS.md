@@ -3,7 +3,10 @@
 The questions someone asks on meeting this project, answered without ornament. If an answer feels
 uncomfortable, it is well written. Every claim in the present tense points to the file or the
 [`AUDITORIA.md`](./AUDITORIA.md) entry that carries it; what is verified is verified against
-`main` at commit `9c64fd1`. In Spanish: [`PREGUNTAS.md`](./PREGUNTAS.md).
+commit `8c02941` (§789), in §794. In Spanish: [`PREGUNTAS.md`](./PREGUNTAS.md). ⚠️ **§794**: until
+here it said «against `main` at commit `9c64fd1`», the one of §445; what the re-reading of §794
+corrected carries its mark where it is. That re-reading neither compiled nor measured again: the
+figures of question 21 are those of the entries it cites.
 
 ---
 
@@ -72,15 +75,22 @@ account. That a payment is final before it is claimed: until the claim it is not
 claims, the amount stays locked until the sender refunds it (`AUDITORIA.md` §178–§181). Cut-off
 and completeness is answered since RFC-0010 for what the node receives on the holder's direct
 paths: each operation ends applied, rejected with proof or declared, or a named red says it did
-not; the batch and the pledge carry no receipt (D-E) ([`doc/USE_CASES.md`](./doc/USE_CASES.md),
-row 6).
+not; the batch and the pledge too, with a receipt since §611 and resolved by the envelope since
+§613 (RFC-0014), with their residue declared: the aggregator that does not forward and the pledge
+with a stale `seq` (D-H)
+([`doc/USE_CASES.md`](./doc/USE_CASES.md), row 6). ⚠️ **Corrected in §794**: it said «the batch and
+the pledge carry no receipt (D-E)»; both carry one since §611
+(`spec/rfc/0010-el-recibo-de-recepcion.md`:291-297).
 
 ### 5. What does it contribute that did not exist?
 
 Two things. First, eight findings absent from the comparative literature because they only appear
 when a **complete application** is ported across paradigms, not a reference SHA-256; the main one:
 the AIR arithmetisation **lacks copy constraints**, which opens a silent soundness hole when
-updating Merkle trees ([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)).
+updating Merkle trees (the eight, in `PAPER_EN.md` §«8. Findings»; the measured comparison of the
+five systems, in [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)). ⚠️ **Corrected in §794**: the citation
+was only `FIVE_BACKENDS.md`, which numbers seven findings, and not the same eight: 8.2 and 8.7 of
+`PAPER_EN.md` are not in it.
 
 Second, a **kit** with which a third party checks on their own machine, offline and without the
 repository, a file that adds up, a tampered one that does not — with the broken rule named —, the
@@ -98,9 +108,12 @@ Because Groth16 requires a **trusted ceremony**. If its participants collude and
 they can forge proofs — and in a ledger that means **creating money without a trace**. The forged
 proofs verify correctly.
 
-The price of avoiding it: proofs of about 62 KB instead of 192 bytes, a factor of 320
-([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)). It is the only decision in the project taken **against**
-the performance numbers.
+The price of avoiding it: a send or claim proof of 72,382 to 84,244 bytes — the band a test binds
+since §538 — instead of 192, between 377 and 439 times more (`FIVE_BACKENDS.md` §«Sobre el tamaño
+de prueba en un contexto bancario», in Spanish; `crates/zk-ssl/src/metrics.rs`:125-126). It is the
+only decision in the project taken **against** the performance numbers. ⚠️ **Corrected in §794**: it
+said «about 62 KB instead of 192 bytes, a factor of 320»; the 62 KB predate hiding, and the 320 is
+61,440 / 192, which comes from no measurement of today (§698).
 
 ### 7. Why is there no consensus?
 
@@ -273,15 +286,21 @@ another session**.
   laptop — generating both parties' proofs and applying them — comes to 1.5-1.9 payments per
   second, and for a while that figure was attributed to the node: **that was false, and by a lot**
   (§229, §238); the node works 4 % of that cycle.
-- **Size**: a thousand transfers are ~590 s of proving and 139.2 to 160.2 MiB accumulated (§130). Solving
-  that requires recursive aggregation or batched proofs, which are not implemented.
+- **Size**: a thousand transfers are ~590 s of proving (§130, before the hiding of §538) and 139.2
+  to 160.2 MiB accumulated (the band of §538). Solving that requires recursive aggregation or
+  batched proofs, which are not implemented. ⚠️ **Corrected in §794**: both figures were attributed
+  to §130, which gave ~124 MiB.
 - **The limit that bites first**: root-anchoring contention. Every proof binds to the exact root it
   saw, so two concurrent issuers serialise; with four clients at once, one applies and the other
   three are rejected (§123, §230). With a single issuer per root the waste is zero.
 - **Two more**: the pending tree runs out at 2³² simultaneous payments in flight, and the custodian
-  set caps at 128 (§13). The *nullifier* collision limit of the old path **was not solved, it was
-  avoided**: the path was retired (§32, §36), and the chaining that replaces it requires a total
-  order that a single node provides and a distributed system does not.
+  set, which today fits in 16 leaves (`CUSTODIAN_DEPTH = 4`), has its ceiling at 128, the one the
+  range segment of the strict order leaves (§13; the tree and its test, in
+  `crates/stark-experiment/src/circuit_threshold.rs`:76-77 and :1108). The *nullifier* collision
+  limit of the old path **was not solved, it was avoided**: the path was retired (§32, §36), and the
+  chaining that replaces it requires a total order that a single node provides and a distributed
+  system does not. ⚠️ **Corrected in §794**: it said «the custodian set caps at 128», without saying
+  that today's is 16.
 
 ### 22. How far is it from being usable?
 
@@ -289,13 +308,14 @@ For a real third party to rely on these proofs: an **external audit**, which doe
 more code; a **verified key custody**, not just a declared one (§244); and the **deployment of the
 external anchor** (RFC-0012), which brings the anchor prior to the
 first encounter between witness and node. For the engine to answer everything it intends to,
-only the declared residue of row 6 is left —the operator that issues no receipt, and the batch
-and the pledge (RFC-0010, D-H and D-E)— and that a third party checks without the node the
-conservation and the authorship of a payment, which today only the node checks (rows 1 and 5;
-`BACKLOG.md`, entry 115); the empty box, rejection with cause and completeness
-already are code.
-Distributed consensus is another discipline and not this project's road: the road is provable
-accountability, and its pieces are built (question 7).
+only the declared residue of row 6 is left —the operator that issues no receipt (RFC-0010, D-H),
+and of the batch and the pledge, the aggregator that does not forward and the pledge with a stale
+`seq` (RFC-0014, D-H)— and that a third party checks without the node the conservation and the
+authorship of a payment, which today only the node checks (rows 1 and 5; `BACKLOG.md`, entry 115);
+the empty box, rejection with cause and completeness already are code. Distributed consensus is
+another discipline and not this project's road: the road is provable accountability, and its
+pieces are built (question 7). ⚠️ **Corrected in §794**: the residue said «and the batch and the
+pledge (RFC-0010, D-H and D-E)», which carry a receipt since §611.
 
 What is already there: the format as a public contract with vectors that since §692 are not rewritten, the
 reproducible verifier, and a kit with which anyone can check the above without believing this page.

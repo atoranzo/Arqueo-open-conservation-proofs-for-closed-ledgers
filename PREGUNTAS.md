@@ -3,7 +3,10 @@
 Las preguntas que hace alguien que se encuentra con este proyecto, respondidas sin adornos. Si una
 respuesta te parece incómoda, es que está bien escrita. Cada afirmación en presente apunta al
 fichero o al asiento de [`AUDITORIA.md`](./AUDITORIA.md) que la sostiene; lo que está verificado
-lo está contra `main` en el commit `9c64fd1`. En inglés: [`QUESTIONS.md`](./QUESTIONS.md).
+lo está contra el commit `8c02941` (el §789), en el §794. En inglés: [`QUESTIONS.md`](./QUESTIONS.md).
+⚠️ **§794**: hasta aquí decía «contra `main` en el commit `9c64fd1`», el del §445; lo que la
+relectura del §794 corrigió lleva su marca en su sitio. Esa relectura no compiló ni volvió a medir:
+las cifras de la pregunta 21 son las de los asientos que cita.
 
 ---
 
@@ -70,15 +73,21 @@ cuenta. Que un pago sea firme antes de cobrarse: hasta el cobro no lo es, y si n
 importe queda inmovilizado hasta que el emisor lo reembolse (`AUDITORIA.md` §178–§181). El corte y
 la completitud se responden desde el RFC-0010 para lo que el nodo recibe por las vías directas del
 titular: cada operación acaba aplicada, rechazada con prueba o declarada, o un rojo con nombre dice
-que no; el lote y la prenda no llevan recibo (D-E) ([`doc/USE_CASES.md`](./doc/USE_CASES.md),
-fila 6).
+que no; el lote y la prenda, con recibo desde el §611 y resueltos por el sobre desde el §613
+(RFC-0014), con su residuo declarado: el agregador que no reenvía y la prenda con `seq` viejo
+(D-H) ([`doc/USE_CASES.md`](./doc/USE_CASES.md), fila 6). ⚠️ **Corregido en el §794**: decía «el
+lote y la prenda no llevan recibo (D-E)»; los dos lo llevan desde el §611
+(`spec/rfc/0010-el-recibo-de-recepcion.md`:291-297).
 
 ### 5. ¿Qué aporta que no existiera?
 
 Dos cosas. La primera, ocho hallazgos que no están en la literatura comparativa porque sólo aparecen
 al portar una **aplicación completa** entre paradigmas, no un SHA-256 de referencia; el principal:
 la aritmetización AIR **carece de restricciones de copia**, lo que abre un agujero de solidez
-silencioso al actualizar árboles de Merkle ([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)).
+silencioso al actualizar árboles de Merkle (los ocho, en `PAPER.md` §«8. Hallazgos»; la
+comparativa medida de los cinco sistemas, en [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)). ⚠️
+**Corregido en el §794**: la cita era sólo `FIVE_BACKENDS.md`, que numera siete hallazgos y no los
+mismos ocho: el 8.2 y el 8.7 de `PAPER.md` no están en ella.
 
 La segunda, un **kit** con el que un tercero comprueba en su máquina, sin red y sin el repositorio,
 un expediente que cuadra, uno manipulado que no cuadra —con la regla rota nombrada—, la misma
@@ -96,9 +105,12 @@ Porque Groth16 exige una **ceremonia de confianza**. Si sus participantes colude
 secreto, pueden falsificar pruebas — y en un libro eso significa **crear dinero sin dejar rastro**.
 Las pruebas falsas verifican correctamente.
 
-El precio de evitarlo: pruebas de unos 62 KB en vez de 192 bytes, un factor de 320
-([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)). Es la única decisión del proyecto tomada **contra** los
-números de rendimiento.
+El precio de evitarlo: una prueba de envío o de cobro de 72.382 a 84.244 bytes —la banda que ata un
+test desde el §538— en vez de 192, entre 377 y 439 veces más (`FIVE_BACKENDS.md` §«Sobre el tamaño
+de prueba en un contexto bancario»; `crates/zk-ssl/src/metrics.rs`:125-126). Es la única decisión
+del proyecto tomada **contra** los números de rendimiento. ⚠️ **Corregido en el §794**: decía
+«unos 62 KB en vez de 192 bytes, un factor de 320»; los 62 KB eran de antes de la ocultación, y el
+320 es 61.440 / 192, que no sale de ninguna medida de hoy (§698).
 
 ### 7. ¿Por qué no hay consenso?
 
@@ -273,16 +285,22 @@ binario difieren un ~9 % (`AUDITORIA.md` §131), y **no son comparables con medi
   portátil —generar las pruebas de las dos partes y aplicarlas— sale a 1,5-1,9 pagos por segundo,
   y durante un tiempo esa cifra se atribuyó al nodo: **era falso, y por mucho** (§229, §238); el
   nodo trabaja el 4 % de ese ciclo.
-- **Tamaño**: mil transferencias son ~590 s de prueba y 139,2 a 160,2 MiB acumulados (§130). Resolverlo
-  exige agregación recursiva o pruebas por lote, que no están implementadas.
+- **Tamaño**: mil transferencias son ~590 s de prueba (§130, de antes de la ocultación del §538) y
+  139,2 a 160,2 MiB acumulados (la banda del §538). Resolverlo exige agregación recursiva o pruebas
+  por lote, que no están implementadas. ⚠️ **Corregido en el §794**: las dos cifras iban atribuidas
+  al §130, que daba ~124 MiB.
 - **El límite que primero muerde**: la contención del anclaje de raíz. Cada prueba se ata a la raíz
   exacta que vio, así que dos emisores concurrentes se serializan; con cuatro clientes a la vez,
   uno aplica y los otros tres se rechazan (§123, §230). Con un solo emisor por raíz el desperdicio
   es cero.
 - **Otros dos**: el árbol de pendientes se agota a los 2³² pagos simultáneos en vuelo, y el conjunto
-  de custodios tope en 128 (§13). El límite de la colisión de *nullifiers* de la vía antigua
-  **no se resolvió, se evitó**: la vía se retiró (§32, §36), y el encadenamiento que la sustituye
-  exige un orden total que un nodo único da y un sistema distribuido no.
+  de custodios, que hoy cabe en 16 hojas (`CUSTODIAN_DEPTH = 4`), tiene su techo en 128, el que deja
+  el segmento de rango del orden estricto (§13; el árbol y su test, en
+  `crates/stark-experiment/src/circuit_threshold.rs`:76-77 y :1108). El límite de la colisión de
+  *nullifiers* de la vía antigua **no se resolvió, se evitó**: la vía se retiró (§32, §36), y el
+  encadenamiento que la sustituye exige un orden total que un nodo único da y un sistema
+  distribuido no. ⚠️ **Corregido en el §794**: decía «el conjunto de custodios tope en 128», sin
+  decir que el de hoy es de 16.
 
 ### 22. ¿Cuánto falta para que sea usable?
 
@@ -290,12 +308,14 @@ Para que un tercero real se apoye en estas pruebas: una **auditoría externa**, 
 más código; una **custodia de clave comprobada**, no sólo declarada (§244); y el **despliegue del
 ancla externa** (RFC-0012), que trae el ancla anterior
 al primer encuentro del testigo con el nodo. Para que el motor responda a todo lo que quiere
-responder sólo queda el residuo declarado de la fila 6 —el operador que no emite recibo, y el lote y
-la prenda (RFC-0010, D-H y D-E)— y que un tercero compruebe sin el nodo la conservación y la autoría
-de un pago, que hoy comprueba sólo el nodo (filas 1 y 5; `BACKLOG.md`, la 115); la caja vacía, el
-rechazo con causa y la completitud ya son código. El consenso distribuido es
-otra disciplina y no es el camino de este proyecto: el camino es la responsabilidad demostrable, y
-sus piezas están construidas (pregunta 7).
+responder sólo queda el residuo declarado de la fila 6 —el operador que no emite recibo (RFC-0010,
+D-H), y del lote y la prenda, el agregador que no reenvía y la prenda con `seq` viejo (RFC-0014,
+D-H)— y que un tercero compruebe sin el nodo la conservación y la autoría de un pago, que hoy
+comprueba sólo el nodo (filas 1 y 5; `BACKLOG.md`, la 115); la caja vacía, el rechazo con causa y
+la completitud ya son código. El consenso distribuido es otra disciplina y no es el camino de este
+proyecto: el camino es la responsabilidad demostrable, y sus piezas están construidas (pregunta 7).
+⚠️ **Corregido en el §794**: el residuo decía «y el lote y la prenda (RFC-0010, D-H y D-E)», que
+llevan recibo desde el §611.
 
 Lo que ya está: el formato como contrato público con vectores que desde el §692 no se reescriben, el
 verificador reproducible, y un kit con el que cualquiera puede comprobar lo anterior sin creerse

@@ -52910,3 +52910,60 @@ línea con la del segundo verificador— ni envía el issue. No corrige lo que v
 `tools/canon.sh:533` dice «26 KAT» y son 31, y `tools/canon.sh:43` dice que los bancos «todavía no»
 llevan `--locked`, y desde el §786 sí; ni el cuerpo del §5.3 de la evaluación, que solo nombra el
 `getrandom` de `xmss`.
+
+## §794 — las seis portadas, releídas contra el árbol del §789 y corregidas con marca: la orden de conformidad que prometía «todo IDENTICO» con un vector que se rechaza, el lote y la prenda que sí llevan recibo, las once familias del kit, lo que corre el canon y lo que no es la release 0.4.2 (la tarea 62)
+
+El commit que lleva este asiento, sobre el §793. Toca `README.md`, `README_EN.md`, `PREGUNTAS.md`,
+`QUESTIONS.md`, `RESUMEN_EJECUTIVO.md` y `RESUMEN_BILINGUE.md`, cada corrección en su sitio, con su
+marca y en las dos lenguas cuando la frase está en las dos, y su línea de verificación; y este asiento.
+Ni código, ni tests, ni vectores. Del autor es elegir la tarea y cortar la siguiente release del kit; la
+forma la propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code, y
+lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Las seis portadas declaraban estar verificadas contra commits del §444 al §448
+(`343d3b6`, `9c64fd1` y `3294986`); el §696 dejó escrito que no las re-verificaba, y el §700, que no
+tocaba los «18 crates» de `RESUMEN_EJECUTIVO.md`. Un lector releyó sus afirmaciones en presente contra
+el árbol del §789 (`8c02941`) y otro revisó cada cita.
+
+**El defecto más grave.** Las instrucciones de «Con Rust estable» de los dos README mandaban correr
+`conformance --check spec/vectors/zkssl-0.3.json` y prometían «todo IDENTICO»: desde el §538 ese
+fichero sale con «los vectores son de OTRA version» (`crates/zk-ssl-cli/src/conformance.rs:106`,
+`:238-242`), y el propio canon exige ese rechazo. Pasa a `zkssl-0.4.json`.
+
+**Quién lo decide.** El autor eligió la tarea. Si sube la versión de `zk-ssl-verify` es suyo: su código
+ya no es el de la release 0.4.2 —lo cambian quince commits desde `a4e888d`, del §643 al §782—, aunque
+su `Cargo.toml` siga diciendo 0.4.2; las portadas solo lo declaran. Y el orden de lo que falta.
+
+**Lo que hace.** Corrige, entre otras: «el lote y la prenda no lo llevan (D-E)», en cinco sitios, que
+llevan recibo desde el §611 y los resuelve el sobre desde el §613; «lee las diez familias», que en la
+release son once y en el árbol doce; que `conformidad.sh` sin segundo argumento corre solo el manifiesto
+del paquete; que la CLI tiene ocho mandos y no cuatro; «falta el medio», del que el RFC-0013 tiene
+construidos el árbol, la nota y el sobre; «unos 62 KB …, un factor de 320», que son 72.382–84.244 B por
+prueba, 377–439 veces 192 B (el §698 lo corrigió en diez documentos sin ver estos dos); «resistente a un
+adversario cuántico», que `SECURITY.md` dice no medido; «el canon corre los tests de todos», cuando
+halo2, plonk y zk-core son de `--largo` y `--completo`; los «18 crates» de `RESUMEN_EJECUTIVO.md`, que son
+22; y «el autor ejecuta… y sólo entra lo que el canon deja pasar», frente a `GENAI.md` §«Fuera del paso
+4». La línea de verificación pasa al commit del §789 y dice que la relectura no compiló: las salidas
+de `simulate`, de `conformance` y del kit se contrastaron con el código, el canon y los manifiestos.
+`README_EN.md` gana las dos filas de lectura que solo tenía la página española y completa su lista de
+páginas en inglés.
+
+**Medido.** El revisor comprobó cada cita y corrigió cinco cosas: que `SECURITY.md` sí nombra XMSS y
+ML-DSA como esquemas (lo que no dice es de qué dependencia ni con qué versión), una cita corrida del
+canon, el alcance de la línea de verificación, que el lote y la prenda los resuelve el sobre desde el
+§613 y no desde el §611, y que la comparativa de `FIVE_BACKENDS.md` numera siete hallazgos y no los ocho
+de `PAPER.md`. Al traer el trabajo a la cadena, las cuentas de RFC del §790 se conservaron en las cuatro
+portadas que las llevan. Sobre este árbol salen con 0 `check_cifras`, `check_figures`,
+`verificar_citas`, `check_publicadas`, `check_tests`, `check_dominios`, `check_nucleo` y
+`check_vectores`. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas.
+
+**Lo que NO hace.** No compila nada ni remide las cifras de rendimiento de la pregunta 21, anteriores a
+la ocultación del §538. No toca lo que vio fuera de las seis: `doc/README-CLI.md:73`, con la misma orden
+rota; `doc/USE_CASES.md:80` y `:202`; `doc/KIT.md:28` y `doc/KIT_EN.md:28`; `GENAI.md:35` y `:159`; y
+`ARQUITECTURA.md:140`. No corta la release del kit.

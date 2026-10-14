@@ -5,9 +5,12 @@
 **Formerly ZK-SSL.** The project changed its name, not its published identifiers: the wire
 protocol was `zkssl/0.3` and is `zkssl/0.4` since audit entry 538 (because of hiding, RFC-0009;
 not because of the name; and that label does not say which proofs a node accepts: «Status»), the crates are still `zk-ssl-*`, and the deposits with a DOI keep
-the title they were deposited under. What this page says is verified against `main` at commit
-`343d3b6`; whatever changes afterwards is recorded in [`AUDITORIA.md`](./AUDITORIA.md), one entry
-per change.
+the title they were deposited under. What this page says is verified against commit `8c02941`
+(§789), in §794; whatever changes afterwards is recorded in [`AUDITORIA.md`](./AUDITORIA.md), one
+entry per change. ⚠️ **§794**: until here it said «verified against `main` at commit `343d3b6`», the
+one of §444; what the re-reading of §794 corrected carries its mark where it is. That re-reading
+compiled nothing: the outputs this page expects from `simulate`, from `conformance` and from the kit
+were checked against the code, the canon and the manifests, not run.
 
 An operator keeps a ledger. The people who depend on it — members, holders, beneficiaries,
 counterparties — cannot see it, and the two sides do not trust each other. Today that conflict is
@@ -50,8 +53,11 @@ It proves **conservation, not solvency**: the proofs speak of the ledger, not of
 - **Not audited by third parties.** No amount of the author's own tests replaces that. Two
   cryptographic dependencies without an independent audit —`xmss`, a pre-release, and `ml-dsa`,
   in the kit since §633— are pinned with `=` and declared, and since §694 the canon checks it,
-  together with winterfell's pins and the kit's closure as a closed list. All of it in
-  [`SECURITY.md`](./SECURITY.md).
+  together with winterfell's pins and the kit's closure as a closed list. What is not audited, in
+  [`SECURITY.md`](./SECURITY.md); what the two dependencies declare, in the manifest that pins them
+  (`crates/zk-ssl-node/Cargo.toml`:48-52, `crates/zk-ssl-medio/Cargo.toml`:29-36). ⚠️ **Corrected
+  in §794**: it said «All of it in `SECURITY.md`», which says of neither dependency that it is
+  unaudited or pinned: it names XMSS and ML-DSA only as schemes (`SECURITY.md`:189, :728).
 - **The six deposits with a DOI predate corrections in the tree.** What was corrected is marked,
   not erased: [`doc/preprints/ERRATA.md`](./doc/preprints/ERRATA.md).
 
@@ -66,9 +72,12 @@ One download, and five checks on the checker's own machine, offline. The current
 tarball's fingerprint is published next to its commit, on the release page and in the
 `AUDITORIA.md` entry that records it. The full script, with the expected output of every step, is
 [`doc/KIT_EN.md`](./doc/KIT_EN.md). It recomposes heads up to v6, the one the node signs today, and
-reads the ten envelope families; release 0.2.0, which stops at v4, is still published and rejects
-what came later — it fails closed, never a false GREEN. Measured and declared in `doc/KIT_EN.md`,
-section 0.
+reads eleven envelope families, the eleventh the co-signed anchor's (§634); release 0.2.0, which
+stops at v4, is still published and rejects what came later — it fails closed, never a false
+GREEN. Measured and declared in `doc/KIT_EN.md`, section 0. ⚠️ **Corrected in §794**: it said «reads
+the ten envelope families»; since 0.4.0 they are eleven (`doc/KIT_EN.md`:27-28, :41), and the tree
+already assembles twelve, with rotation (§649; `FAMILIAS` in `tools/artefacto.sh`:31), which no
+published release carries.
 
 ```bash
 sha256sum arqueo-verify-*.tar.gz          # must be the fingerprint published next to the commit
@@ -99,7 +108,10 @@ cat VERSION                               # commit, describe, toolchain, glibc_m
 ```
 
 And the whole catalogues, with the harness that travels inside the tarball: `bash conformidad.sh
-./zk-ssl-verify` checks, entry by entry, that every vector says what its manifest declares.
+./zk-ssl-verify` checks, entry by entry, that every vector of the package says what its manifest
+declares, and with `spec/vectors/<familia>/MANIFIESTO.txt` as a second argument, that of each of
+the others. ⚠️ **Corrected in §794**: it said that this line alone checks «every vector»; with no
+second argument the harness runs the package's manifest (`tools/conformidad.sh`:16, :48).
 
 ### With stable Rust
 
@@ -114,15 +126,21 @@ cd Arqueo-open-conservation-proofs-for-closed-ledgers
 cargo run --release -p zk-ssl-cli -- simulate --amount 250000
 
 # the contract of a second implementation: re-run the canonical scenario, compare field by field
-cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.3.json
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.4.json
 
 # the canon: the table of tests per crate (--lista only shows it; --sello runs it whole)
 bash tools/canon.sh --lista
 ```
 
-You should see `cadena de transiciones íntegra` and `CONFORMIDAD: … todo IDENTICO`. The whole
-CLI — `simulate`, `trace-tx`, `inspect-state`, `conformance` — is in
-[`doc/README-CLI.md`](./doc/README-CLI.md) (Spanish).
+You should see `cadena de transiciones íntegra` and `CONFORMIDAD: … todo IDENTICO`. The four
+sandbox commands — `simulate`, `trace-tx`, `inspect-state`, `conformance` — are in
+[`doc/README-CLI.md`](./doc/README-CLI.md) (Spanish); the CLI has four more that page does not
+cover: `witness`, the witness, and `prueba-cobro`, `prueba-pago` and `prueba-prenda`, which write
+the RFC-0008 pending-item envelopes from what they ask a live node. ⚠️ **Corrected in §794**: the
+`--check` ran against `zkssl-0.3.json`, which since §538 is rejected as «de OTRA version» — the
+canon requires exactly that (`tools/canon.sh`:404-407;
+`crates/zk-ssl-cli/src/conformance.rs`:238-242) —, and this line called those four «The whole CLI»
+(`crates/zk-ssl-cli/src/main.rs`:59-86 has eight).
 
 ---
 
@@ -175,7 +193,10 @@ batch and the pledge carry one since §611, and the completeness envelope resolv
 - Privacy against the operator: the operator sees everything.
 - That the ledger's units exist outside the ledger.
 - That an operation the node never acknowledged would be detected: an operator that issues no
-  receipt leaves no trace (RFC-0010, D-H), and the batch and the pledge carry none (D-E).
+  receipt leaves no trace (RFC-0010, D-H); of the batch and the pledge, which carry a receipt since
+  §611, nor the one an aggregator does not forward or the pledge with a stale `seq` (RFC-0014,
+  D-H). ⚠️ **Corrected in §794**: it said «and the batch and the pledge carry none (D-E)», which the
+  row 6 paragraph already contradicted (`spec/rfc/0010-el-recibo-de-recepcion.md`:291-297).
 - Prevention across ledgers: two ledgers can accept the same label; a third party holding both
   signed heads sees it afterwards, never before.
 - Who is behind a key, or that one person holds one account.
@@ -199,12 +220,17 @@ built, is the author's decision (`BACKLOG.md`, entry 115).
 the balances and can censor; the alternative this project does pursue — provable accountability,
 in the manner of Certificate Transparency — has the signer, the index guardian, the heartbeat, the
 independent verifier and the witnesses, and lacks the deployment of the external anchor — the
-format and its verifier exist since RFC-0012; the medium, and with it the anchor prior to the
-first encounter, is still missing — and a
+format and its verifier exist since RFC-0012, and of the medium, proposed in RFC-0013, the tree,
+the signed note and its envelope in the kit are built (§631–§634); its publisher and the
+deployment are missing, and with it the anchor prior to the first encounter — and a
 **verified** key custody, not just a declared one) · an external audit · the admission receipt
 (`AUDITORIA.md` §121) · delegating the proof to third parties (verifying the signature in circuit) ·
-an expiry policy for freezes. Everything else is listed in [`AUDITORIA.md`](./AUDITORIA.md),
-section 4.
+an expiry policy for freezes. Everything else is listed in `AUDITORIA.md` §«16. Donde el autor
+tiene MENOS confianza» (in Spanish). ⚠️ **Corrected in §794**: it said that «the medium» is still
+missing, and the stage table of RFC-0013 gives E2 and E4 as built and E3, the publisher, as pending
+(`spec/rfc/0013-el-medio-del-ancla.md`:42-47); and it pointed to «section 4», which it was when
+this sentence was written and is today «FALLO GRAVE SIN RESOLVER: el pagador ve el saldo del
+receptor».
 
 ---
 
@@ -221,12 +247,18 @@ section 4.
 | Institutions, and the limits of scale | [`doc/INSTITUTIONAL.md`](./doc/INSTITUTIONAL.md) · [`doc/INSTITUCIONAL.md`](./doc/INSTITUCIONAL.md) |
 | Coming from Zenodo | [`doc/ZENODO.md`](./doc/ZENODO.md) |
 | Contributing, or reporting a vulnerability | [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
+| After the Merkle certificate CA (MTC) that was born here | [`doc/MTC.md`](./doc/MTC.md) · <https://github.com/atoranzo/mtc-core> |
+| After the XMSS^MT known-answer vectors that were born here | [`tools/segunda/kat_xmss/`](./tools/segunda/kat_xmss/) · <https://github.com/atoranzo/xmss-kat> |
+
+⚠️ **§794**: the last two rows were only on the Spanish page, since §603 and §623.
 
 Most of the repository is written in Spanish. The pages in English are this one,
 `spec/README.md`, `doc/KIT_EN.md`, `doc/USE_CASES.md`, `QUESTIONS.md`, `doc/INSTITUTIONAL.md`,
-`PAPER_EN.md` and the preprints under `doc/preprints/`. `AUDITORIA.md` includes a section with
-**the points where the author has the least confidence**; if you intend to break the code, start
-there.
+`doc/ZENODO.md`, `PAPER_EN.md`, `doc/ecst/ECST_EN.md` and the preprints under `doc/preprints/`;
+`GENAI.md`, `CLAUDE.md` and `RESUMEN_BILINGUE.md` carry both languages. ⚠️ **Corrected in §794**:
+the list lacked `doc/ZENODO.md`, `doc/ecst/ECST_EN.md` and the three bilingual pages.
+`AUDITORIA.md` includes a section with **the points where the author has the least confidence**;
+if you intend to break the code, start there.
 
 ---
 
@@ -234,10 +266,10 @@ there.
 
 | piece | where it is measured |
 |---|---|
-| **22 crates** in one workspace —19 of our own and the three of the winterfell 0.13.1 fork (§533)—; the canon (`tools/canon.sh --sello`) runs every crate's tests, in release, and the ten tools under `tools/` that watch figures, citations, domains, the core census, geometry and that no curve reaches the production binaries | the table in [`tools/canon.sh`](./tools/canon.sh) carries the passing tests per crate; every seal updates it |
+| **22 crates** in one workspace —19 of our own and the three of the winterfell 0.13.1 fork (§533)—; the canon (`tools/canon.sh`) runs every crate's tests, in release —nineteen in `--sello`; `halo2-experiment` and `plonk-experiment` from `--largo`, and `zk-core` in `--completo`—, and the ten tools of its loop under `tools/` that watch figures, citations, domains, the core census, geometry and that no curve reaches the production binaries. ⚠️ **Corrected in §794**: it said that `--sello` «runs every crate's tests»; the `nivel` column of its table leaves three out (`tools/canon.sh`:128-130, :154-158, :271) | the table in [`tools/canon.sh`](./tools/canon.sh) carries the passing tests per crate; every seal updates it |
 | **Protocol `zkssl/0.4`**: 32 JSON-RPC methods (29 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version, each one's hash fixed in `spec/vectors/HUELLAS.sha256` and checked by every canon run (§692), which since then lets none be rewritten. ⚠️ **The version does not identify which proofs a node accepts** (§699): the proofs changed without raising it in §641 (the layer's seventeen circuits), §680 (send, claim and burn) and §684 (threshold), because conformance does not compare proof bytes; measured, a node rejects a client's send when both say `zkssl/0.4` and §641 or §680 lies between them, whichever is older. This holds until the `zkssl/0.5` cut. And `zkssl-0.2.json` was re-issued three times under its own version before the hashes (§275, §278 and §281). ⚠️ **Corrected in §699**: it said «vectors per version that are never rewritten» | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (511 files: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla, ancla cofirmada, rotación, the 0.3 catalogues under `0.3/`, the two completitud vectors of kit 0.4 under `0.4/`, the four `zkssl-0.N.json` and `HUELLAS.sha256`) |
 | **RFCs**: 0002, 0003, 0004, 0006, 0007 (proofs over the committed state), 0008 (the portable proofs of a pending item), 0009 (what a proof reveals), 0010 (the reception receipt), 0011 (the lying node), 0012 (the head anchor) and 0014 (the batch and pledge receipt) accepted; 0001 (the KDF at rest: Argon2id with salt and cost), 0005 (the frozen core), 0013 (the anchor's medium), 0015 (the signer's lifecycle), 0016 (one value, one encoding), 0017 (the signature attests the arithmetic), 0018 (the `zkssl/0.5` train), 0019 (completeness that cannot be dodged), 0020 (the signature scheme inside what is signed) and 0021 (the compatibility policy) proposed | [`spec/rfc/`](./spec/rfc/) |
-| **Independent verifier** `zk-ssl-verify` 0.4.2, published as `arqueo-verify-v0.4.2` and reproducible from the commit its `VERSION` names | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
+| **Independent verifier** `zk-ssl-verify` 0.4.2, published as `arqueo-verify-v0.4.2` and reproducible from the commit its `VERSION` names. ⚠️ **§794**: the `zk-ssl-verify` of this tree is not that release, though its `Cargo.toml` still says 0.4.2: since `a4e888d`, the release commit, fifteen commits change it, from §643 to §782 (`git log a4e888d..8c02941 -- crates/zk-ssl-verify/src`), and cutting the next one is the author's decision | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
 | **Record**: one entry per verified change, with its commit; what is corrected is marked, not erased | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |
 
 The design was chosen by measuring **the same circuit in five proof systems**
@@ -281,10 +313,15 @@ license text in any copy or derivative; Apache-2.0 also requires honouring [`NOT
 ### Use of generative AI
 
 This project is developed with the assistance of a generative AI model
-(Anthropic's Claude): the assistant proposes, **the author runs, measures
-and accepts**, and only what the canon lets through gets into `main`. The
-method, its scope and where the per-change record lives:
-[`GENAI.md`](./GENAI.md).
+(Anthropic's Claude): the assistant proposes and **the author runs, measures
+and accepts**; outside that step, a Claude Code session applies, checks and
+commits on its branch, its entry says so and says which gates it passed, and
+the author's acceptance is the change entering `main`. The method, its scope
+and where the per-change record lives: [`GENAI.md`](./GENAI.md).
+⚠️ **Corrected in §794**: it said only «the author runs, measures and accepts,
+and only what the canon lets through gets into `main`»; `GENAI.md`
+§«Outside step 4» counts the entries a session commits since §628, and in
+them the gates are those the session declares, not always the whole canon.
 
 ### Third-party code
 

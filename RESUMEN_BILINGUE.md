@@ -1,8 +1,9 @@
 # Arqueo — Resumen ejecutivo · Executive Summary
 
 *Español primero, English below.* Antes ZK-SSL; cambió el nombre, no los identificadores
-publicados. Verificado contra `main` en `3294986`. · *Formerly ZK-SSL; the name changed, the
-published identifiers did not. Verified against `main` at `3294986`.*
+publicados. Verificado contra `8c02941` (el §789) en el §794; ⚠️ decía «contra `main` en `3294986`».
+· *Formerly ZK-SSL; the name changed, the published identifiers did not. Verified against
+`8c02941` (§789) in §794; ⚠️ it said «against `main` at `3294986`».*
 
 ---
 
@@ -39,9 +40,10 @@ ni lo usa nadie con dinero real.
 
 ### Cómo se comprueba
 
-Con el kit del verificador: una descarga, cuatro comprobaciones en tu máquina y sin red; el
+Con el kit del verificador: una descarga, cinco comprobaciones en tu máquina y sin red; el
 programa dice `VERDE` o nombra la regla rota, y se reproduce desde el commit que su `VERSION`
-declara ([`doc/KIT.md`](./doc/KIT.md)).
+declara ([`doc/KIT.md`](./doc/KIT.md)). ⚠️ Corregido en el §794: decía «cuatro»; desde la 0.3.0 son
+cinco.
 
 ### Dónde encaja
 
@@ -52,7 +54,8 @@ contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CAS
 
 ### Estado
 
-22 crates en Rust (19 propios y el fork de winterfell 0.13.1 en tres) con canon en cada cambio;
+22 crates en Rust (19 propios y el fork de winterfell 0.13.1 en tres), y cada cambio dice en su
+asiento qué compuertas pasó, la mayor el canon (⚠️ §794: decía «con canon en cada cambio»);
 protocolo `zkssl/0.4` con 32 métodos y vectores que no se reescriben desde el §692 (la versión no dice qué pruebas acepta un nodo: §699);
 RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 y 0014 aceptados, 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 y 0021 propuestos; verificador
 `zk-ssl-verify` 0.4.2 (publicada, `arqueo-verify-v0.4.2`, reproducible); registro con un asiento por
@@ -101,9 +104,10 @@ third parties, and nobody uses it with real money.
 
 ### How it is checked
 
-With the verifier kit: one download, four checks on your own machine, offline; the program prints
+With the verifier kit: one download, five checks on your own machine, offline; the program prints
 `VERDE` or names the broken rule, and it is reproduced from the commit its `VERSION` declares
-([`doc/KIT_EN.md`](./doc/KIT_EN.md)).
+([`doc/KIT_EN.md`](./doc/KIT_EN.md)). ⚠️ Corrected in §794: it said «four»; since 0.3.0 they are
+five.
 
 ### Where it fits
 
@@ -114,8 +118,10 @@ counterparties, nor a central-bank digital currency ([`doc/USE_CASES.md`](./doc/
 
 ### Status
 
-22 crates in Rust (19 of our own and the winterfell 0.13.1 fork in three) with the canon on every
-change; protocol `zkssl/0.4` with 32 methods and vectors not rewritten since §692 (the version does not say which proofs a node accepts: §699);
+22 crates in Rust (19 of our own and the winterfell 0.13.1 fork in three), and every change says
+in its entry which gates it passed, the largest being the canon (⚠️ §794: it said «with the canon on
+every change»);
+protocol `zkssl/0.4` with 32 methods and vectors not rewritten since §692 (the version does not say which proofs a node accepts: §699);
 RFCs 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 and 0014 accepted, 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 and 0021 proposed;
 verifier `zk-ssl-verify` 0.4.2 (published, `arqueo-verify-v0.4.2`, reproducible); a record with one
 entry per change. Missing: an external audit, a verified key custody, and an anchor prior to the
