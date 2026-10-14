@@ -52179,3 +52179,58 @@ El `BACKLOG.md` no cambia: 44 abiertas y 76 resueltas.
 
 **Lo que NO hace.** No cambia el formato: la versión sigue siendo un byte. No toca la versión de la
 cabeza, que ya valida `VersionCabeza` antes de llegar aquí. No cierra H3.
+
+## §781 — `conformance --emit` y el emisor de los KAT del núcleo no pisan un vector publicado: si `HUELLAS.sha256` lo registra, solo lo escriben con sus mismos bytes (la tarea 19)
+
+El commit que lleva este asiento, sobre el §780. Un solo sello: en `crates/zk-ssl-cli`, una función
+nueva, `vigilar_huella`, en `conformance.rs`, que usan `conformance --emit` y `nucleo_kat::emitir`,
+con tres tests nuevos; una frase en la fila de `vectors/HUELLAS.sha256` de `spec/README.md`; el pin
+del crate en `tools/canon.sh`; las cifras de tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y
+este asiento. Del autor es elegir esta tarea y su orden; lo demás lo propuso la sesión («Quién lo
+decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del
+rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la
+sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió
+VERDE.
+
+**De dónde sale.** La regla 2 de `spec/rfc/PROCESO.md`: un vector publicado no se reescribe. Desde el
+§692 la vigila el canon con `tools/check_vectores.py`, y lo hace DESPUÉS: el que escribe no se
+entera. `conformance --emit <ruta>` escribía donde le dijeran, también encima de
+`spec/vectors/zkssl-0.4.json`; y el emisor de los KAT del núcleo miraba el disco y, si el fichero
+faltaba, lo rehacía, con los bytes que diera el código de hoy. Un vector borrado y re-emitido con
+otros bytes solo lo veía el canon siguiente.
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso la regla: el registro manda; lo
+registrado se escribe solo idéntico, y lo no registrado —o sin registro en el camino— se escribe como
+antes, para que emitir a una ruta nueva siga siendo la manera de producir un vector nuevo.
+
+**Por qué no lleva aviso de seguridad.** Es una herramienta del que publica: ningún veredicto
+cambia.
+
+**Lo que hace.**
+
+1. **`vigilar_huella(ruta, bytes)`** busca el `HUELLAS.sha256` más cercano subiendo desde el
+   directorio de la ruta, ya resuelta (sin `..` ni enlaces); si la ruta está registrada, exige la
+   misma huella, y si no, se niega nombrando el fichero, el registro y las dos huellas, sin escribir.
+2. **`conformance --emit`** la llama antes de escribir.
+3. **`nucleo_kat::emitir`** la llama en la rama del fichero que FALTA: el que está ya se comparaba
+   con sus bytes; el borrado se rehacía sin mirar nada. Si uno solo se niega, no se escribe ninguno.
+4. **`spec/README.md`** lo dice en la fila del registro.
+
+**Medido.**
+
+- `un_vector_registrado_solo_se_escribe_con_su_huella`: con los mismos bytes pasa, con otros se
+  niega nombrando el fichero, también a través de `..`; lo no registrado pasa.
+- `el_vector_de_conformidad_publicado_esta_protegido`: sobre el `spec/vectors/zkssl-0.4.json` real,
+  sus bytes pasan y otros se niegan.
+- `emitir_no_rehace_un_kat_registrado_y_borrado`: con el emisor de antes, el KAT borrado se rehacía
+  con otros bytes y el test CAE (`FAILED`); con este, se niega y no escribe nada.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** `zk-ssl-cli` 148 -> 151, en su fila de `tools/canon.sh`, con su crónica. TOTAL DE
+SELLO 1738 -> 1741 y TOTAL CON LARGOS 1875 -> 1878, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`, y
+el desglose de `PRINCIPIOS.md`. Ni vectores, ni el `BACKLOG.md`: 44 abiertas y 76 resueltas.
+
+**Lo que NO hace.** No impide escribir a mano, con `cp` o con un editor, encima de un vector: eso lo
+sigue viendo el canon (§692), que es la puerta. No mira el registro de otra raíz que la del camino.
+No protege los vectores sin registrar, que por definición aún no están publicados.

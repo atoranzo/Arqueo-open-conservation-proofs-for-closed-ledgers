@@ -225,7 +225,12 @@ fn emitir(dir: &std::path::Path, casos: &[(&str, Value)]) -> Result<usize, Strin
                     ruta.display()
                 ))
             }
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => nuevos.push((ruta, texto)),
+            // §781: el que FALTA tampoco se rehace con otros bytes si `HUELLAS.sha256` lo registra.
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                crate::conformance::vigilar_huella(&ruta, texto.as_bytes())
+                    .map_err(|e| format!("KAT {nombre}: {e}"))?;
+                nuevos.push((ruta, texto))
+            }
             Err(e) => return Err(format!("KAT {nombre}: no se puede leer {}: {e}", ruta.display())),
         }
     }
@@ -267,6 +272,47 @@ fn los_kat_del_nucleo_se_reproducen_byte_a_byte() {
             ruta.display()
         );
     }
+}
+
+/// ⚠️ §781 · **Un KAT registrado y BORRADO no se rehace con otros bytes.** Hasta el §781 el
+/// emisor solo miraba el disco: si faltaba el fichero, lo escribia. Ahora, si `HUELLAS.sha256`
+/// lo registra, solo lo repone idéntico; con otros bytes se niega entero, sin escribir nada.
+#[test]
+fn emitir_no_rehace_un_kat_registrado_y_borrado() {
+    let raiz = std::env::temp_dir().join(format!("zkssl-kat-huellas-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&raiz);
+    let dir = raiz.join("nucleo");
+    std::fs::create_dir_all(&dir).unwrap_or_else(|e| panic!("crear: {e}"));
+    let a = ("a", json!({"fn": "a", "salida": "0x01"}));
+    let texto = serde_json::to_string_pretty(&a.1).unwrap_or_else(|e| panic!("json: {e}")) + "\n";
+    let huella = |b: &[u8]| -> String {
+        zk_ssl_medio::hash::sha256(b)
+            .iter()
+            .map(|x| format!("{x:02x}"))
+            .collect()
+    };
+    let registro = raiz.join("HUELLAS.sha256");
+    std::fs::write(
+        &registro,
+        format!("{}  nucleo/a.json\n", huella(texto.as_bytes())),
+    )
+    .unwrap_or_else(|e| panic!("registro: {e}"));
+    assert_eq!(
+        emitir(&dir, &[a.clone()]),
+        Ok(1),
+        "el registrado, con sus bytes, se repone"
+    );
+    std::fs::remove_file(dir.join("a.json")).unwrap_or_else(|e| panic!("borrar: {e}"));
+    let otro = ("a", json!({"fn": "a", "salida": "0x02"}));
+    let e = emitir(&dir, &[otro])
+        .err()
+        .unwrap_or_else(|| panic!("otros bytes tenian que negarse"));
+    assert!(
+        e.contains("a.json") && e.contains("no se reescribe"),
+        "nombra el fichero: {e}"
+    );
+    assert!(!dir.join("a.json").exists(), "y no se escribe nada");
+    let _ = std::fs::remove_dir_all(&raiz);
 }
 
 /// §692: emitir solo AÑADE. Lo que falta se escribe; lo que esta igual se deja; un KAT publicado

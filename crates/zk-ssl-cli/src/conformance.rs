@@ -151,6 +151,67 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
     }
 }
 
+/// ⚠️ §781 · **Un vector publicado no se pisa** (regla 2 de `spec/rfc/PROCESO.md`). Busca el
+/// `HUELLAS.sha256` más cercano subiendo desde el directorio de `ruta` y, si `ruta` está
+/// registrada en él, exige que `bytes` den su misma huella: lo idéntico se deja escribir, lo
+/// distinto se niega nombrando el fichero y su registro. Sin `HUELLAS.sha256` en el camino, o con
+/// `ruta` sin registrar, no hay nada que proteger. La usan `conformance --emit` y el emisor de los
+/// KAT del núcleo (`nucleo_kat.rs`), que hasta el §781 solo miraba el fichero en disco: uno
+/// borrado se rehacía con otros bytes sin que nada lo dijera hasta el canon.
+pub(crate) fn vigilar_huella(ruta: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
+    let absoluta = if ruta.is_absolute() {
+        ruta.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map_err(|e| format!("directorio actual: {e}"))?
+            .join(ruta)
+    };
+    let (Some(padre), Some(nombre)) = (absoluta.parent(), absoluta.file_name()) else {
+        return Ok(());
+    };
+    // El padre resuelto (sin `..` ni enlaces), si existe: la ruta relativa al registro sale limpia.
+    let padre = std::fs::canonicalize(padre).unwrap_or_else(|_| padre.to_path_buf());
+    let fichero = padre.join(nombre);
+    for dir in padre.ancestors() {
+        let registro = dir.join("HUELLAS.sha256");
+        let Ok(texto) = std::fs::read_to_string(&registro) else {
+            continue;
+        };
+        let Some(relativa) = fichero.strip_prefix(dir).ok().and_then(|r| r.to_str()) else {
+            return Ok(());
+        };
+        let relativa = relativa.replace(std::path::MAIN_SEPARATOR, "/");
+        let registrada = texto
+            .lines()
+            .filter(|l| !l.starts_with('#'))
+            .filter_map(|l| l.split_once("  "))
+            .find(|(_, r)| *r == relativa)
+            .map(|(h, _)| h.to_string());
+        let Some(registrada) = registrada else {
+            return Ok(());
+        };
+        let ahora: String = zk_ssl_medio::hash::sha256(bytes)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        return if ahora == registrada {
+            Ok(())
+        } else {
+            Err(format!(
+                "{}: es un vector publicado ({} lo registra con la huella {}…) y estos \
+                 bytes dan {}…: un vector publicado no se reescribe (regla 2 de \
+                 spec/rfc/PROCESO.md); se emite a otra ruta y, si su veredicto cambia, \
+                 entra con otro nombre o bajo una version nueva. No se ha escrito nada.",
+                ruta.display(),
+                registro.display(),
+                &registrada[..registrada.len().min(16)],
+                &ahora[..16]
+            ))
+        };
+    }
+    Ok(())
+}
+
 pub fn conformance(a: ConformanceArgs, tr: &mut dyn Tracer) -> anyhow::Result<()> {
     tr.emit(&TraceEvent::Note {
         text: format!("escenario canonico: {ESCENARIO} (pruebas reales, unos segundos)"),
@@ -159,8 +220,10 @@ pub fn conformance(a: ConformanceArgs, tr: &mut dyn Tracer) -> anyhow::Result<()
     let ahora = recolectar(&layer);
     match (a.emit, a.check) {
         (Some(ruta), None) => {
-            let js = serde_json::to_string_pretty(&ahora)?;
-            std::fs::write(&ruta, js + "\n")?;
+            let js = serde_json::to_string_pretty(&ahora)? + "\n";
+            vigilar_huella(std::path::Path::new(&ruta), js.as_bytes())
+                .map_err(anyhow::Error::msg)?;
+            std::fs::write(&ruta, js)?;
             tr.emit(&TraceEvent::Note {
                 text: format!(
                     "vectores emitidos: {} entradas + cabeza + suministro -> {ruta}",
@@ -223,5 +286,69 @@ pub fn conformance(a: ConformanceArgs, tr: &mut dyn Tracer) -> anyhow::Result<()
             }
         }
         _ => anyhow::bail!("usa exactamente uno: --emit RUTA o --check RUTA"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::vigilar_huella;
+
+    /// ⚠️ §781 · Lo registrado en un `HUELLAS.sha256` del camino solo se escribe con sus mismos
+    /// bytes; lo no registrado, o sin registro en el camino, se escribe.
+    #[test]
+    fn un_vector_registrado_solo_se_escribe_con_su_huella() {
+        let raiz = std::env::temp_dir().join(format!("zkssl-huellas-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&raiz);
+        std::fs::create_dir_all(raiz.join("sub")).unwrap_or_else(|e| panic!("crear: {e}"));
+        let huella: String = zk_ssl_medio::hash::sha256(b"vale\n")
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        std::fs::write(
+            raiz.join("HUELLAS.sha256"),
+            format!("# comentario\n{huella}  sub/v.json\n"),
+        )
+        .unwrap_or_else(|e| panic!("registro: {e}"));
+        let v = raiz.join("sub").join("v.json");
+        assert_eq!(
+            vigilar_huella(&v, b"vale\n"),
+            Ok(()),
+            "los mismos bytes pasan"
+        );
+        let e = vigilar_huella(&v, b"otro\n")
+            .err()
+            .unwrap_or_else(|| panic!("otros bytes pasaron"));
+        assert!(
+            e.contains("v.json") && e.contains("no se reescribe"),
+            "nombra el fichero: {e}"
+        );
+        // A traves de `..`, el mismo fichero registrado.
+        let rodeo = raiz.join("sub").join("..").join("sub").join("v.json");
+        assert!(
+            vigilar_huella(&rodeo, b"otro\n").is_err(),
+            "el `..` no lo esconde"
+        );
+        assert_eq!(
+            vigilar_huella(&raiz.join("sub").join("nuevo.json"), b"x"),
+            Ok(())
+        );
+        let _ = std::fs::remove_dir_all(&raiz);
+    }
+
+    /// El vector de conformidad publicado está registrado: emitir encima con otros bytes se niega.
+    #[test]
+    fn el_vector_de_conformidad_publicado_esta_protegido() {
+        let v = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../spec/vectors/zkssl-0.4.json");
+        let publicado = std::fs::read(&v).unwrap_or_else(|e| panic!("leer {}: {e}", v.display()));
+        assert_eq!(
+            vigilar_huella(&v, &publicado),
+            Ok(()),
+            "lo publicado se reconoce"
+        );
+        assert!(
+            vigilar_huella(&v, b"{}\n").is_err(),
+            "otros bytes encima de zkssl-0.4.json se niegan"
+        );
     }
 }
