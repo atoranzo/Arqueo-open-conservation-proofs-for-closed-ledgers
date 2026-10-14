@@ -53945,3 +53945,99 @@ públicos y registrarse, el transporte con TLS (y elegir su dependencia, que tra
 de producción), la cadencia de la D-F y el demonio que publica sin bloquear el nodo, servir el
 `checkpoint` en una URL, el keep-alive, la recuperación de monitorización y sign-subtree, y medir el
 coste y el O(n) del árbol de la D-G. No juzga al testigo que olvida: se reintenta y lo dice.
+
+## §809 — `tools/segunda/cable.py`, el segundo consumidor de `zkssl_signedEpochHead`: 23 de 23 con el arnés y el manifiesto del testigo, el mismo exit que el testigo en una cabeza firmada de un nodo de verdad y en las respuestas manipuladas, y los dos negativos del cable que pedía (tarea 22)
+
+El commit que lleva este asiento, sobre el §808. Toca `tools/segunda/cable.py`, que ya existía desde el
+§797 con la cadena del registro y gana el consumidor; `tools/segunda/README.md`; dos vectores nuevos
+en `spec/vectors/cable/`, su `MANIFIESTO.txt` y `HUELLAS.sha256`; `spec/RPC.md`, en «Los rechazos del
+cable» y en la lista de «Versionado y compatibilidad»; la fila de `vectors/cable/` de `spec/README.md`;
+la cifra de ficheros de `README.md` y `README_EN.md`; y este asiento. No mueve el cable, ni la cabeza,
+ni el nodo, ni el testigo, ni el kit, ni el `Cargo.lock`, ni `tools/canon.sh`. Del autor es elegir la
+tarea; la forma la propuso la sesión. Lo escribe y lo prueba Claude, en una sesión de Claude Code en la
+nube, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§800 a §829). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero, `--sello`,
+sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Ninguna entrada abierta del `BACKLOG.md` ni ningún RFC nombra el fichero. Lo piden
+dos textos: `spec/RPC.md`, en «Los rechazos del cable» —*«Una segunda implementacion del consumidor
+pone su ejecutable en lugar del adaptador»*—, y la fila de `vectors/cable/` de `spec/README.md` —*«you
+write a second consumer of `zkssl_signedEpochHead`»*—. Detrás, el criterio E5 del RFC-0005 y la 85
+del `BACKLOG.md`, ya cerrada. Ninguno de los dos pide que el canon lo corra.
+
+**Lo que hace.**
+
+1. **El consumidor.** Juzga desde fichero y sin nodo el cuerpo JSON-RPC de una respuesta tal como cruza
+   el cable, como `zk-ssl-cli witness --respuesta` con la memoria fresca, con el contrato del mando: un
+   argumento, `VERDE: nueva` o una línea `ROJO: <clase> · <texto>`, exit 0/1/2. El camino: el cuerpo
+   entero, que tiene que leerse dentro de los tres límites que el lector de la referencia —`serde_json`
+   1.0.151, sin `float_roundtrip`— pone sobre el cuerpo ENTERO (más de 127 niveles de anidamiento, un
+   sustituto UTF-16 suelto en cualquier cadena, un número cuyo `f64` sale infinito como él lo compone);
+   `result`; `available`, antes que la forma; el tipado de las treinta claves, por orden de nombre; lo
+   que una cabeza firmada tiene que traer, por versión y lo común; la versión; el `index` canónico; la
+   clave, sólo el OID 5; la firma XMSS^MT, con `kat_xmss/xmss.py`; el preámbulo; el `index` frente al
+   embebido; y la recomposición, que lee cada valor canónico y compone con `juez_cabezas.partir` y
+   `juez_cabezas.recomponer`. Lo que `RPC.md` no escribe lo fijó la conducta medida del testigo, como
+   caja negra; el `README.md` lo dice en seis puntos, y `RPC.md` lo resume y lo enlaza.
+2. **Un fichero, dos piezas.** El §797 ya había dejado en `tools/segunda/cable.py` la cadena del
+   registro, que `juez_cadena.py` importa como `import cable as C`, y esta tarea se escribió sobre un
+   árbol anterior, con un `cable.py` nuevo del mismo nombre. Se juntan en uno: la parte I es la cadena,
+   la II el consumidor, y `main` es del consumidor; no comparten ningún nombre, ninguna lee de la otra,
+   y las dos están byte a byte como se escribieron —comprobado sobre los dos textos—. La docstring y la
+   fila del `README.md` dicen las dos, con la marca del §809. La huella del fichero, que el arnés y
+   `juez_cadena.py` imprimen, pasa a `abbcac0a45a9cff6`; ningún texto del árbol la cita.
+3. **Los dos negativos que pedía.** Con las 21 entradas de antes, un consumidor sin la regla del `index`
+   (§399) o que reduce un `u64` en vez de rechazarlo (RFC-0016) daba 21 de 21. Entran
+   `rechazo-index-atrasado.json` —el `index` 5, igual al embebido— y `rechazo-n-no-canonico.json` —`n` =
+   0x5a0 + p, que recompone el mismo digest si el lector reduce—, cada uno una sola mutación del positivo
+   v6 (`aaffc6ceee72f2fb`), con sus dos entradas y tres líneas de comentario en el `MANIFIESTO.txt`, y
+   registrados con `tools/check_vectores.py --registrar`: `HUELLAS.sha256` sólo crece, siete líneas. El
+   testigo ya los rechazaba.
+4. **La lista de la superficie.** `vectores.json` 495 -> 497 y `vectores.lineas` 982 -> 987 en la lista
+   de «Versionado y compatibilidad»: `check_superficie` lo contaba como novedad aditiva, que no es ROJO,
+   y la lista no se pone al día sola (su «Ceguera declarada»).
+
+**Medido.** `bash tools/conformidad.sh tools/segunda/cable.py spec/vectors/cable/MANIFIESTO.txt`: 23 de
+23, en unos 2 s, con el fichero ya junto; el adaptador del testigo da también 23 de 23. Y
+`juez_cadena.py`, con el fichero junto, da 6 de 6 sobre `zkssl-0.4.json` y 24 de 24 sobre los cuatro,
+como antes. Contra un nodo de verdad, dos nodos `--dev` de release con su casa bajo `$HOME`, borrada al
+acabar —y con `--contador-recepcion`, que sin ella un nodo sin clave deja `recepcion.bin` en su
+directorio de trabajo, donde `git status` no lo ve—: tres respuestas reales —antes del primer latido,
+una v6 firmada y la del nodo sin clave— dan en los dos consumidores el mismo exit y la misma línea
+desde `ROJO:` o `VERDE:`. Contra respuestas manipuladas desde las tres cabezas reales del manifiesto, de
+una en una: mismo exit en todas, y la misma clase salvo tres de E/S en que el testigo sale sin línea
+`ROJO:` (abajo); en 42 parejas de defectos los dos nombran el primero. Los corpus de esos diferenciales
+no quedan en el árbol, y el `README.md` no da sus cifras: cada caso que nombran sus puntos se rehace a
+mano. Esas medidas, la del nodo y las de los mutantes, se hicieron sobre el consumidor antes de juntar
+los ficheros, con su código idéntico al de aquí. Dieciséis mutantes sobre copias: el de la regla del
+`index` y el que reduce caen cada uno en su vector nuevo (22 de 23); otros once los vigilaban ya las 21
+—la firma, el preámbulo, la recomposición, el conjunto de versiones, lo de cada versión, lo común, las
+obligadas, el largo del digest, `result`, `sin-firma`—; y los tres de los límites del lector siguen 23 de
+23, a propósito. `python3 tools/segunda/juez_cabezas.py` sobre este árbol: 485 de 537 cabezas, 10 de 15
+cofirmas, 406 ficheros, 57 con alguna que no verifica y 0 positivos, en 31 s; el `README.md` lo pone
+con la marca del §809, porque decía 404 ficheros, 535 cabezas y «~25 s». Un agente lo construyó y lo
+revisaron escépticos en tres vueltas: la primera pidió los dos negativos y los límites del lector; la
+segunda, que la falta de `available` es `sin-firma` y no `forma del cable`, el valor del OID 0x100 y
+quitar del `README.md` las cifras de corpus que no se reproducen desde el árbol; la tercera lo aprobó.
+Salen con 0 las once herramientas del bucle, más `check_vectores` y `check_catalogo`. El canon, `bash
+tools/canon.sh --sello`: VERDE.
+
+**Lo que ningún vector ve, declarado.** El `README.md` lo dice al final de «Los dos negativos que
+pidió», medido rompiendo cada regla en una copia: siguen 23 de 23 sin los límites del lector, sin la
+clave de más, sin el OID, sin el `index` leído canónico y sin la escritura mínima de una QUANTITY o de
+un hex; y con uno de los tres últimos rotos, `cable.py` da `VERDE` donde el testigo da `ROJO`. No hay
+vector de un `index` no canónico, ni de una QUANTITY con ceros delante, ni de un hex en mayúsculas. Los
+límites del lector no son reglas del formato (RFC 8259, secciones 8.2 y 9), y un vector los
+convertiría en regla; la clave de más es la D-B del RFC-0005, que es del autor.
+
+**Lo que NO hace.** El canon no corre `cable.py`: el bloque «3 bis cable» sigue con el adaptador del
+testigo, y ponerlo en el «3 duodecies» es una fila más, a pin cero, que queda por hacer, y el
+`README.md` lo dice. No toca el testigo, que con un fichero que no existe, un directorio o unos bytes
+que no son UTF-8 sale con exit 1 y el error de E/S de Rust, sin línea `ROJO:`: el exit es el mismo y
+ninguna entrada del manifiesto lo pide. Los dos consumidores aceptan `custody` `"hsm"` con
+`custodyChecked` `true`: son campos sin firma que ninguno juzga, y queda como observación.
+
+**Contadores.** Los tests de `tools/canon.sh` no cambian. `spec/vectors/` 514 -> 516 ficheros en
+`README.md` y `README_EN.md` (497 `.json` y 987 líneas de 18 manifiestos); el manifiesto del cable,
+21 -> 23 entradas. El `BACKLOG.md` sigue con 44 abiertas y 77 resueltas.

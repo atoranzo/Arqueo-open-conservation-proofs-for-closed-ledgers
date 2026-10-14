@@ -31,3 +31,8 @@ rechazo-v5-con-firma-de-v4.json|1|no-verifica · la firma es VALIDA pero de otro
 rechazo-v5-recomposicion.json|1|no-verifica · los campos NO recomponen el epochDigest firmado (v5)
 rechazo-v6-sin-recepRoot.json|1|no-verifica · cabeza firmada sin recepRoot: el productor la sirvio incompleta
 rechazo-v6-recomposicion.json|1|no-verifica · los campos NO recomponen el epochDigest firmado (v6)
+# rechazo-index-atrasado.json y rechazo-n-no-canonico.json derivan por mutacion de positivo-cabeza-v6.json (aaffc6ceee72f2fb): el index declarado
+# igual al embebido en la firma (5), y n + p, que recompone el mismo digest si el lector reduce. Los pidio el segundo consumidor del cable
+# (tools/segunda/cable.py): el testigo los rechaza, medido, y un consumidor sin cualquiera de las dos reglas pasaba las 21 entradas de antes.
+rechazo-index-atrasado.json|1|no-verifica · el indice declarado (5) no cuadra con el que va dentro de la firma (5)
+rechazo-n-no-canonico.json|1|no-verifica · QUANTITY "0xffffffff000005a1": 0xffffffff000005a1 no es canonico: no es menor que p = 2^64 - 2^32 + 1

@@ -1502,11 +1502,19 @@ de `spec/vectors/paquete/posicion-v2.json`; los dos `rechazo-v5-*` del §452, de
 recomposicion. El positivo v6 (§570) es otra cabeza REAL del mismo banco, contra el nodo que ya
 firma v6, con la pareja del genesis —el banco de consumo no recibe envios: `recepCount` 0 y la
 raiz del arbol vacio—; de ella derivan por mutacion sus dos negativos, sin `recepRoot` y con
-`recepCount` + 1.
+`recepCount` + 1. Del mismo positivo v6 derivan los dos del §809: `rechazo-index-atrasado`, con el
+`index` declarado igual al embebido en la firma, y `rechazo-n-no-canonico`, con `n + p`, que recompone
+el mismo digest si el lector reduce en vez de rechazar (RFC-0016). El testigo ya los rechazaba, y un
+consumidor sin esas dos reglas pasaba las 21 entradas de antes.
 `MANIFIESTO.txt` fija, por fichero, el codigo de salida y el texto que la salida tiene que contener;
 `tools/conformidad.sh tools/cable_respuesta.sh spec/vectors/cable/MANIFIESTO.txt` los corre —el
 mismo arnes que el paquete, sin doblar su contrato— y `tools/canon.sh` lo hace en cada canon.
-Una segunda implementacion del consumidor pone su ejecutable en lugar del adaptador.
+Una segunda implementacion del consumidor pone su ejecutable en lugar del adaptador. Desde el §809 la
+hay: `tools/segunda/cable.py`, en Python, sin una linea de Rust ni codigo de la referencia, da 23 de
+23; lo que esta seccion no escribe —que claves se exigen, en que orden se miran, con que texto se
+rechaza lo que el manifiesto no pina, y los limites del lector de la referencia: el anidamiento, el
+rango de los numeros y los sustitutos UTF-16 sueltos— lo fijo la conducta medida del testigo
+(`tools/segunda/README.md` §«El segundo consumidor del cable»).
 
 **Confianza residual, medida:** la clase no distingue la causa. Un `formatVersion` fuera del
 conjunto que acepta `VersionCabeza` sale `no-verifica` en vivo y `firma-no-verifica` en
@@ -1680,8 +1688,8 @@ acta.emite 1
 sobre.v 1 2
 sobre.tipo extension consumo conflicto rechazo edad cobro_pendiente pago_en_curso prenda completitud ancla ancla-cofirmada solapamiento
 kit.salida 0 1 2 3
-vectores.json 495
-vectores.lineas 982
+vectores.json 497
+vectores.lineas 987
 manifiesto 0.3/edad/MANIFIESTO.txt
 manifiesto 0.3/pago/MANIFIESTO.txt
 manifiesto 0.3/pendiente/MANIFIESTO.txt
