@@ -82,6 +82,16 @@ modelo y para qué. Este repositorio declara su propio uso en
 el mensaje describe lo que el commit contiene. Lo generado sin medir, sin
 ejecutar y sin que alguien responda de ello no entra.
 
+⚠️ **Lo que un PR no ve: los sellos y sus asientos** (§793). Aquí un cambio
+entra como un *sello*: un commit que lleva su asiento en
+[`AUDITORIA.md`](AUDITORIA.md), con su commit, sus contadores, lo que el
+cambio **no** cierra y las lecciones que dejó (`GENAI.md` §«Dónde está el
+registro»), y un asiento no se reescribe después: se corrige con otro. Cómo
+se escribe, cómo se corrige un documento vivo, las convenciones del
+`BACKLOG.md`, los RFC con sus etapas y los niveles del canon y los bancos los
+cuenta [`doc/METODO.md`](doc/METODO.md), con la cita al fichero que
+establece cada cosa.
+
 ## 4. Pruebas y validación
 
 ```bash

@@ -6,8 +6,9 @@
 > 2026-09-28 (`doc/ecst/VERIFICACION.md`, G10c), #1442 was opened on 2026-09-10 by another account
 > and does not mention parts 1, 3 and 4; this project's author did not open it, as he said on
 > 2026-10-07. If this draft is sent, part 2 goes as a comment on #1442, with the count corrected
-> below, and not as a new issue. What is sent starts at **Title**, without this note or the one
-> marked ⚠️ in part 2.
+> below, and not as a new issue. What is sent starts at **Title**, without this note or the ones
+> marked ⚠️ in parts 2 and 5. (⚠️ §793: until here this said «the one marked ⚠️ in part 2»; part 5
+> and its note are from §793.)
 
 **Title**: `xmss: expose signature index on SigningKey (index() / remaining()); BDS traversal state plans?`
 
@@ -122,5 +123,47 @@ it decides which parameter sets are usable at ~1 signature/second.
 `let k2 = sk.clone()` followed by signing with both silently reuses an index
 (we verified both signatures validate). Perhaps worth a doc warning, or
 gating `Clone` behind a feature so the misuse is at least deliberate.
+
+**5. Minor: `rand` with its default features puts `getrandom` in every
+consumer, verify-only ones included**, which keeps them off
+`wasm32-unknown-unknown`. `xmss` declares `rand = "0.10"` without
+`default-features = false`, and rand's defaults (`std`, `std_rng`, `sys_rng`,
+`thread_rng`) enable `getrandom` 0.4 with `sys_rng`. Our verifier never
+generates a key and still gets it:
+
+```text
+$ cargo tree -i getrandom@0.4.3 -e normal -p zk-ssl-verify
+getrandom v0.4.3
+└── rand v0.10.2
+    └── xmss v0.1.0-pre.0
+        └── zk-ssl-verify v0.4.2
+```
+
+On `wasm32-unknown-unknown`, the browser target, `getrandom` stops the build
+with a `compile_error!` unless its `wasm_js` feature is enabled, so a
+verify-only consumer would have to opt into a JavaScript entropy backend it
+never calls. As far as we can read 0.1.0-pre.0, the library itself only names
+the `rand::CryptoRng` trait (`KeyPair::generate`, `xmssmt_core_keypair`),
+which rand re-exports with no features enabled, and `rand::rng()` appears
+only under `#[cfg(test)]`. So `rand = { version = "0.10", default-features =
+false }`, with the defaults kept in `[dev-dependencies]`, might be all it
+takes. We have not built it that way; happy to send a PR.
+
+⚠️ **Added in §793** (internal; strip before sending). Measured with `cargo tree
+-i getrandom@0.4.3 --locked --offline -p zk-ssl-verify -e normal` on the tree
+of §789 (`8c02941`); the output above omits the local path of the crate. With
+`getrandom` alone the command refuses as ambiguous, because the verifier's
+closure carries two: the other, `getrandom` 0.2.17, comes through `rand_core`
+0.6.4 from our own `zk-ssl-air`, the salt of `MerkleConSal` (§535, D-X), not
+from `xmss`. So this part alone would not take the verifier to the browser:
+our salt blocks it too, and fixing that is ours, not RustCrypto's. Nothing was
+built for `wasm32-unknown-unknown`: that both stop the build is read in their
+sources from the cargo registry —`getrandom` 0.4.3 `src/backends.rs:170-182`
+(`wasm_js`) and 0.2.17 `src/lib.rs:344-349` (`js`)—, as are `xmss` 0.1.0-pre.0
+(`Cargo.toml`, `[dependencies.rand]`; `src/xmss_core.rs:135`,
+`src/xmss.rs:591`, `src/lib.rs:104`) and `rand` 0.10.2 (`Cargo.toml`,
+`[features]`; `src/lib.rs:59`), the pinned versions, not RustCrypto's
+`master`. This is the line that §5.3 and §8.4 of
+`doc/integracion-vertical-evaluacion.md` asked for, pending since §705.
 
 Details and measurements available on request. Thanks!

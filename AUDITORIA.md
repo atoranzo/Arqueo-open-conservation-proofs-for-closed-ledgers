@@ -52845,3 +52845,68 @@ sueltas de los demás documentos, ni extiende la v2 a los `.md`, ni las citas po
 No toca el encabezado «### 131.5» pegado al final de una línea del §131: es un asiento. Desde aquí, un
 «§n» escrito con § en este documento que no sea un encabezado ni un número reservado es ROJO, también en
 un asiento.
+
+## §793 — las cifras de la segunda implementación, remedidas; el borrador del issue a RustCrypto gana `getrandom` y WebAssembly, sin enviar; y `doc/METODO.md`, cómo se trabaja aquí fuera de los traspasos (las tareas 24, 63 y 54)
+
+El commit que lleva este asiento, sobre el §792. Toca `tools/segunda/README.md`, con sus cifras
+remedidas y marcadas; la [x] de la 85 del `BACKLOG.md`, con una nota; `doc/issue-rustcrypto.md`, con
+su parte 5; la celda de ese borrador en `doc/integracion-vertical-evaluacion.md` y dos citas de esa
+evaluación a `CONTRIBUTING.md`; un documento nuevo, `doc/METODO.md`, y su enlace en `CONTRIBUTING.md`;
+notas en las entradas 88 y 77 del `BACKLOG.md`; y este asiento. Ni código, ni tests, ni
+vectores. Del autor es elegir las tareas, enviar el issue y aceptar `doc/METODO.md`; la forma la
+propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo
+commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+El número es el siguiente del rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni
+la zona de la migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este
+asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** De remedir en Python, sin compilar, lo que `tools/segunda/README.md` afirma: sus
+cifras de cabezas eran las del S623 (331 ficheros, 418 cabezas) y hoy son 404 y 535; la tabla del
+segundo verificador decía paquete 72 y conflicto 16, y los manifiestos tienen 84 y 17. Los asientos
+las recontaron al crecer los vectores (el §640, 378 de 424 cabezas; el §706, 472 de 522), y la página
+no los siguió. La 63, de que el §710 dejó dicho que no añadía al borrador la línea de `getrandom` y
+WebAssembly. La 54 es la tercera pieza de la 88: dejar escrito el método fuera de los traspasos.
+
+**Quién lo decide.** El autor eligió las tareas. Enviar el issue, aceptar `doc/METODO.md` y decidir
+quién mantiene y con qué regla se acepta un RFC —la primera pieza de la 88— son del autor, y el
+documento lo dice.
+
+**Lo que hace.**
+
+1. **`tools/segunda/README.md`**: las cifras de hoy con su marca, cada una con lo que decía —485 de 535
+   cabezas y 10 de 15 cofirmas en 404 ficheros, con los 55 que no verifican negativos según su
+   manifiesto; 174 de 174 entradas del segundo verificador en sus cinco familias; 34 de 34 pares STARK
+   con 33 de 33 falsadores; 31 de 31 KAT del núcleo—, y lo que pide el binario o el `.wasm` compilado,
+   dicho como no remedido.
+2. **La [x] de la 85**, con las mismas cifras, sin cambiar de casilla.
+3. **`doc/issue-rustcrypto.md`, parte 5**: `xmss` pide `rand 0.10` con sus features por defecto y eso
+   mete `getrandom 0.4.3` en la clausura del verificador, que no genera claves; en
+   `wasm32-unknown-unknown` su fuente lo para con un `compile_error!`. Medido con `cargo tree -i
+   getrandom@0.4.3 --locked --offline -p zk-ssl-verify -e normal`; no se ha compilado para ese objetivo.
+   Una nota interna dice que hay otro, `getrandom 0.2.17`, por la sal de `zk-ssl-air` (§535), que es
+   de la casa y el issue no toca. Sigue sin enviar.
+4. **`doc/METODO.md`**: el sello y su asiento, cómo se corrige un documento vivo, las convenciones del
+   `BACKLOG.md`, los RFC y sus etapas, los niveles del canon y los bancos, y el paso 4 de `GENAI.md`,
+   cada cosa con la cita al fichero que la establece; y lo que es costumbre y ningún fichero manda
+   —la forma del asiento, «✅ a medias», las tablas de etapas, las decisiones D-x—, dicho como
+   costumbre. `CONTRIBUTING.md`, que no nombraba sellos ni asientos, lo enlaza.
+
+**Medido.** Un lector redactó y otro revisó cita a cita y corrigió once cosas —citas de línea a
+`tools/canon.sh` mal medidas, que la regla de cobertura no era «la segunda» de `CONTRIBUTING.md`, una
+generalización falsa sobre quién commitea, el «que nadie recontó» de las cifras, que sí recontaron
+el §640 y el §706—. El revisor encontró además que `juez_cabezas.py` caía con el vector del §780: es
+lo que la primera pasada del canon sobre el §780 midió, y se arregló en el propio §780. Sobre este
+árbol, la v5 de `verificar_citas` del §792 dio ocho citas por línea al `BACKLOG.md` en
+`doc/METODO.md`, escrito antes de que la regla existiera, y pasan a citar la entrada o la cabecera.
+Salen con 0 `check_cifras`, `check_figures`, `verificar_citas`, `check_publicadas` y `check_tests`. El
+canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas: la 88 gana su nota y sigue abierta, y la 77, la del corpus KAT de XMSS, gana la suya y
+sigue cerrada.
+
+**Lo que NO hace.** No compila nada —ni el `.wasm`, ni el binario para comparar su salida línea a
+línea con la del segundo verificador— ni envía el issue. No corrige lo que vio fuera de las tareas:
+`tools/canon.sh:533` dice «26 KAT» y son 31, y `tools/canon.sh:43` dice que los bancos «todavía no»
+llevan `--locked`, y desde el §786 sí; ni el cuerpo del §5.3 de la evaluación, que solo nombra el
+`getrandom` de `xmss`.

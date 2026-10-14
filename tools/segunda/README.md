@@ -56,38 +56,49 @@ valida en el autotest contra el vector que ese crate atribuye a la implementaci�
 escribe desde la especificación pública y se valida contra 19 salidas del crate `blake3 1.8.5` del
 `Cargo.lock`.
 
-**Las cabezas firmadas.** `juez_cabezas.py` recorre los 331 ficheros de `spec/vectors/` que llevan
+**Las cabezas firmadas.** `juez_cabezas.py` recorre los 404 ficheros de `spec/vectors/` que llevan
 cabezas, incluidos los catálogos `0.3/` y los del cable:
 
 | medida | valor |
 |---|---|
-| cabezas firmadas encontradas | 418 |
-| que recomponen su `epochDigest`, recuperan su preámbulo, verifican su firma y atan su índice | 376 |
-| cofirmas de testigo encontradas / que verifican | 11 / 7 |
-| ficheros con alguna cabeza o cofirma que NO verifica | 46, **los 46 negativos** según su `MANIFIESTO.txt` |
+| cabezas firmadas encontradas | 535 |
+| que recomponen su `epochDigest`, recuperan su preámbulo, verifican su firma y atan su índice | 485 |
+| cofirmas de testigo encontradas / que verifican | 15 / 10 |
+| ficheros con alguna cabeza o cofirma que NO verifica | 55, **los 55 negativos** según su `MANIFIESTO.txt` |
 | positivos con alguna cabeza que no verifica | 0 |
 | falsador: un byte volteado en la firma y otro en el preámbulo | las dos dejan de verificar |
 | una verificación XMSS^MT en Python | ~40 ms |
 
-Los 42 fallos son los que los negativos fabrican: 26 cabezas cuyos campos no recomponen el digest,
-6 firmas que no verifican, 2 preámbulos que no son el esperado, 2 índices declarados por debajo del
-embebido, 2 sin `index`, y versiones fuera del conjunto o sin sus campos. La firma viaja como
-RFC 8391 la describe, 18.469 bytes —`idx` (5) ‖ `r` (32) ‖ 8 × (WOTS+ 67×32 ‖ auth 5×32)—,
-seguida del preámbulo; la clave son `OID` (4, `0x00000005`) ‖ `root` ‖ `SEED`, 68 bytes, y una
-biblioteca que lea el OID como el RFC manda no necesita el apaño del §240.
+Los 50 fallos de cabeza son los que los negativos fabrican: 29 cabezas cuyos campos no recomponen
+el digest, 4 firmas que no verifican, 2 índices declarados que no quedan por encima del embebido
+(uno por debajo y otro igual), 2 sin `index`, 4 campos que no son canónicos (un `u64` que no es
+menor que `p`, RFC-0016), 8 versiones fuera del conjunto o sin sus campos y una clave cuyo OID no es
+de XMSS^MT; y los 5 de cofirma, 2 firmas que no verifican, 2 preámbulos que no son el esperado y una
+`versionFormato` que no cabe en su byte (§780). La firma viaja como RFC 8391 la describe, 18.469
+bytes —`idx` (5) ‖ `r` (32) ‖ 8 × (WOTS+ 67×32 ‖ auth 5×32)—, seguida del preámbulo; la clave son
+`OID` (4, `0x00000005`) ‖ `root` ‖ `SEED`, 68 bytes, y una biblioteca que lea el OID como el RFC
+manda no necesita el apaño del §240.
+
+⚠️ §793: aquí decía 331 ficheros, 418 cabezas, 376 que verifican, 11 / 7 cofirmas y 46 ficheros, y
+«los 42 fallos» —26 que no recomponen, 6 firmas, 2 preámbulos, 2 índices «por debajo del embebido»,
+2 sin `index` y las versiones—: las cifras del S623. Los asientos las recontaron al crecer los
+vectores (el §640, 378 de 424 cabezas; el §706, 472 de 522), y esta página no las siguió. Las de
+ahora son la salida de `python3 tools/segunda/juez_cabezas.py` sobre el árbol del §789 (`8c02941`); el
+~40 ms es del S623 y no se ha vuelto a medir. La cofirma de `versionFormato` `0x103` que trajo el §780
+cuenta entre los negativos: `juzgar_cofirma` la rechaza con el texto del kit, como `verificador.py`.
 
 **El segundo verificador.** `verificador.py` pasa, con el mismo arnés y los mismos manifiestos
-que el binario de referencia, las cuatro familias que no exigen STARK:
+que el binario de referencia, las cinco familias que no exigen STARK:
 
 | familia | entradas | segundo verificador |
 |---|---|---|
-| `paquete` (posición v1 y v2, extensión) | 72 | 72 de 72 |
+| `paquete` (posición v1 y v2, extensión) | 84 | 84 de 84 |
 | `consumo` (desde el §771, también entre dos claves con `actas`) | 17 | 17 de 17 |
-| `conflicto` | 16 | 16 de 16 |
+| `conflicto` | 17 | 17 de 17 |
 | `ancla` | 22 | 22 de 22 |
 | `rotacion` (la extensión entre dos claves, con `actas`; §649; y el sobre del solapamiento, §686) | 34 | 34 de 34 |
 
-Y en los positivos de las cuatro, su salida es **idéntica línea a línea** a la del binario, la
+Y en los positivos de las cinco, su salida es **idéntica línea a línea** a la del binario, la
 huella del ancla y la posición derivada del consumo incluidas. Lo que destapó: `NUCLEO.md` §6 no
 escribe `posicion_de_consumo` ni la hoja vacía ni la convención de `isRight`, que viven en
 RFC-0006 §413 (los 63 bits bajos de los primeros ocho bytes; la hoja vacía es el digest cero;
@@ -97,6 +108,16 @@ queda fuera del campo (2⁻³² por limbo): aquí era ROJO con nombre, y la refe
 el §640 (RFC-0016, `NUCLEO.md` sección 6, «Canonicidad») la regla está escrita: un productor reduce
 —`limbos_reducidos`, como `resumen_con_dominio`— y un lector rechaza lo que no es menor que `p`, con
 el mismo texto en las dos implementaciones.
+
+⚠️ §793: aquí decía «las cuatro familias», y la tabla lleva cinco desde que el §649 añadió `rotacion`;
+`paquete` 72, la cuenta del §640, que el §663 llevó a 73, el §693 a 83 y el §780 a 84; y `conflicto`
+16, que el §664 llevó a 17; y «Cómo se corre», arriba, decía «173 de 173 (§771)» hasta el §780,
+que lo llevó a 174. Las cinco filas
+son la salida de `bash tools/conformidad.sh tools/segunda/verificador.py
+spec/vectors/<familia>/MANIFIESTO.txt` sobre el árbol del §789 (`8c02941`): 174 de 174, con salida
+0 en las cinco. Que la salida de los positivos sea la del binario línea a línea es la medida del
+S623 y, para `rotacion`, la de la E5b del RFC-0015 (§649): no se ha vuelto a comparar, porque pide
+el binario compilado.
 
 **El verificador STARK** (§626). Las 58 pruebas de las seis familias que el kit verifica hoy van
 **ocultas** (la marca `arqueo:oculta:1` en el meta de la traza: L = 2T, una columna más, las
@@ -113,6 +134,13 @@ dos caminos. El juez compone el par de cada vector y lo compara con el manifiest
 | falsadores (un byte volteado en tres tercios de la prueba) que dejan de verificar | 33 de 33 |
 | vectores que caen antes del juez (firma, cabeza, campos) | 35, contados y no comparados |
 | una verificación en Python | 0,2 a 0,5 s (Edad, la multisegmento, la más lenta); el juez entero, 12 s |
+
+⚠️ §793: la tabla es la del §626 y sus 23 pares no son los de hoy. Sobre el árbol del §789
+(`8c02941`), `python3 tools/segunda/juez_stark.py` da 34 de 34 pares que dicen lo que deben —11 que
+verifican, en las seis familias, y 23 que no, con la causa del juez—, 48 pruebas juzgadas, 35
+vectores que caen antes del juez y 33 de 33 falsadores callados, lo que el párrafo del §706, abajo,
+ya dice. La fila de la causa del binario, par a par, no se ha vuelto a medir: pide `zk-ssl-verify`
+compilado.
 
 Lo que la medida fijó al escribirlo: que la semilla de Fiat-Shamir es el contexto **más las
 entradas públicas**, de modo que un enunciado mal compuesto no llega ni a la autenticación Merkle;
@@ -145,6 +173,13 @@ como las AIR; su texto y sus cuatro lecturas los da también `spec/PAQUETE.md` �
 Los diez manifiestos: `ancla` 21, `completitud` 73, `conflicto` 16, `consumo` 14, `edad` 11,
 `pago` 9, `paquete` 70, `pendiente` 9, `prenda` 9 y `rechazo` 84. El de `cable` es del testigo,
 no del verificador, y no entra.
+
+⚠️ §793: la tabla y esa cuenta son del S623, sobre `e8ac246`, y no se han vuelto a medir: hace falta
+compilar el `.wasm`, y este sello no compila. Hoy esos diez manifiestos tienen 351 entradas
+—`ancla` 22, `completitud` 78, `conflicto` 17, `consumo` 17, `edad` 15, `pago` 13, `paquete` 84,
+`pendiente` 10, `prenda` 11 y `rechazo` 84—, y `FAMILIAS` (`tools/artefacto.sh:31`) tiene doce: con
+`ancla-cofirmada` 27 y `rotacion` 34, son 412. Que el `.wasm` de hoy las pase no está medido, ni las
+diez ni las doce; el bucle de arriba sigue siendo el de los diez que se midieron.
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 
@@ -186,7 +221,8 @@ una spec»*. Cuatro cosas que quien escriba desde la sección 6 no puede saber:
 Los tres jueces y el segundo verificador corren en cada sello (`tools/canon.sh`, bloque «3 duodecies»), a pin cero: un KAT
 nuevo o una versión nueva de cabeza que la segunda implementación no reproduzca pone el sello en
 rojo con su nombre; el juez de `kat_xmss/` corre en el mismo bloque, para que un cambio de bytes del
-crate `xmss` se vea en el sello; el segundo verificador corre contra los cuatro manifiestos, para
+crate `xmss` se vea en el sello; el segundo verificador corre contra los cinco manifiestos —⚠️ §793:
+aquí decía «los cuatro», y el bucle del canon (`tools/canon.sh:578`) lleva cinco desde el §649—, para
 que un vector nuevo tenga que pasar por los dos códigos; y desde el §626 el juez del STARK corre en
 el mismo bloque, para que una prueba nueva de esas familias tenga que verificar también en Python. `wasm_runner.py` no corre en el canon: necesita `wasmtime` de PyPI.
 El `--sello` entero se corrió con el bloque dentro el 01-10-2026: VERDE, 1.054 s de tests.
@@ -204,6 +240,13 @@ El `--sello` entero se corrió con el bloque dentro el 01-10-2026: VERDE, 1.054 
 - Que el `.wasm` corra en un navegador: `wasm32-unknown-unknown` lo para `getrandom`, que `xmss`
   arrastra por `rand 0.10` para generar claves que el verificador no usa (medido con
   `cargo tree -i getrandom@0.4.3`). Es una línea más para el issue a RustCrypto de la entrada 77.
+  ⚠️ §793: la línea está desde el §793 en el borrador, `doc/issue-rustcrypto.md`, parte 5, sin enviar.
+  Y no es el único `getrandom` del verificador: `cargo tree -i getrandom --locked --offline -p
+  zk-ssl-verify -e normal` se niega por ambiguo, porque hay dos, y el otro, `getrandom 0.2.17`, llega
+  por `rand_core 0.6.4` de `zk-ssl-air`, la sal de `MerkleConSal` (§535, D-X): es de la casa, y el
+  issue no lo arregla. Que los dos paren la compilación es lo que dice su fuente, leída en el
+  registro de cargo y no compilada: un `compile_error!` para `wasm*-unknown-unknown` sin la feature
+  `wasm_js` (`getrandom` 0.4.3, `src/backends.rs:170-182`) o sin `js` (0.2.17, `src/lib.rs:344-349`).
 - Rendimiento: el `.wasm` no está optimizado para tamaño ni se ha pasado por `wasm-opt`.
 
 ## Procedencia

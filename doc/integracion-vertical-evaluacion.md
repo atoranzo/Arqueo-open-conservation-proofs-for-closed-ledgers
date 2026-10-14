@@ -73,7 +73,7 @@ El alcance cubre, por su nombre, tres veredictos de §6: «Capa 1: no», «Capa 
 | E3 | §2, fila 9; Fuentes | «BACKLOG 92» para la GPU suspendida | es la **entrada 22**; la 92 es la custodia de la clave | la entrada 22 de `BACKLOG.md`, SUSPENDIDA, con la RTX 5090 y los 12,4 GiB en su cuerpo; y la 92. ⚠️ §792: hasta aquí citaba líneas del `BACKLOG.md`: la `:2019`, la `:2065`, la `:2092` y la `:956` hasta el §705, y otras cuatro en cada sello del §706 al §709; las del §709, `:2055`, `:2101`, `:2128` y `:961`. En `8c02941` ninguna de las del §709 cae ya en su sitio: la 22 empieza en la `:2205` y la 92 en la `:968`. El número de la entrada no se mueve |
 | E4 | respuesta corta; §2, fila 2; §4, «Capa 1»; §7 | el campo de 31 bits «agrava un hallazgo medido»: la colisión de identidades en 2³² | ese hallazgo **ya estaba tachado** como corregido: la identidad es un digest de 256 bits. Lo vivo es el espacio de claves, 2⁶⁴ (§82) | la entrada 15 de `BACKLOG.md`, su párrafo tachado «Goldilocks es estrecho para identidades: 64 bits son colision en 2³²» y la nota que lo sigue. ⚠️ §792: hasta aquí citaba sus líneas: `:1401-1408` hasta el §705, y un rango nuevo en cada sello del §706 al §709, el último `:1437-1444`. En `8c02941` ese rango cae en otro párrafo de la entrada, y el tachado está en la `:1527` |
 | E5 | §2, fila 4; §4, «Capa 1» | la única decisión de capa 1 con número es `digest_of_proof` con Rescue (30,99 ms, techo del nodo) | está **hecha desde el §209** (`zkssl/0.2`): `digest_of_proof` es Blake3. Los 30,99 ms son del §204, anterior | `crates/zk-ssl-hash/src/lib.rs:1716`, `:1724` y `:1737-1739` |
-| E6 | §1, tras la tabla; §4, «Capa 1» | «una regla escrita en la capa 1»: «escribir criptografía propia aquí sería un error grave» | es un **comentario local** que justifica una dependencia, `chacha20poly1305`, la del cifrado en reposo; no es una regla del proyecto. El criterio general escrito es el de `CONTRIBUTING.md:149-157`: no apilar superficie sin un problema presente y medido | `crates/zk-ssl/Cargo.toml:35-37` |
+| E6 | §1, tras la tabla; §4, «Capa 1» | «una regla escrita en la capa 1»: «escribir criptografía propia aquí sería un error grave» | es un **comentario local** que justifica una dependencia, `chacha20poly1305`, la del cifrado en reposo; no es una regla del proyecto. El criterio general escrito es el de `CONTRIBUTING.md:149-157` (desde el §793, que le añade diez líneas antes, `:159-167`): no apilar superficie sin un problema presente y medido | `crates/zk-ssl/Cargo.toml:35-37` |
 | E7 | §2, fila 11 | la casa declara 127 conjeturados, y 128 demostrables costarían «125,6 KB en vez de 36,7» | esas cifras, como los «29-63» demostrables, son del circuito de comparación, con 32 consultas y sin molienda, no de producción; la casa las atribuía a producción hasta el §698. Producción —42 consultas, blowup 16, molienda 21, extensión cuadrática— da sobre las pruebas ocultas 127 conjeturados, UDR 59 y LDR 80-88 según el circuito, menos en la edad con `m` alta; desde el §708, la conjeturada con el término DEEP, que su fórmula no descuenta: 112,8-116,8 según el circuito | `crates/stark-experiment/src/compliance_real_proof.rs:211-220`; los tests del §697; `SECURITY.md` §3.11 |
 | E8 | §2, fila 17 | «el tamaño [del WASM] no se ha medido» | se contradice con §5.3, que lo mide: 1.587.916 B | §5.3, el bloque de órdenes y la tabla |
 | E9 | §2, filas 16 y 19; §4, «Capa 1»; §5.4 | `VISION.md` (P4, P6, P8 y §5) como criterio vigente | `VISION.md` se declara **histórico**: la posición vigente está en `README.md` y `doc/USE_CASES.md`. Se cita como antecedente, no como regla | `doc/historia/VISION.md:1-4` |
@@ -112,8 +112,8 @@ configuración (E7). El fundamento, todo vigente:
 
 1. **El núcleo congelado.** Goldilocks, `Rp64_256` y la firma XMSS no cambian sin versión nueva del
    preámbulo, vectores nuevos y RFC (`spec/NUCLEO.md` §2 y §5; RFC-0005).
-2. **El criterio de `CONTRIBUTING.md:149-157`.** No se apila superficie sin un problema presente y
-   medido, y «no hay auditoría».
+2. **El criterio de `CONTRIBUTING.md:149-157`** (desde el §793, `:159-167`). No se apila superficie
+   sin un problema presente y medido, y «no hay auditoría».
 3. **Ningún cuello de capa 1 medido contra el objetivo.** El de `digest_of_proof` se cerró en el
    §209 (E5). El techo que el árbol estima para una cadena de raíces Rescue, ≈1.300 op/s
    (`doc/blueprint-v2.md` §1, ESTIMADO), queda por encima del objetivo RTGS de 21-105 op/s. Y
@@ -130,7 +130,7 @@ configuración (E7). El fundamento, todo vigente:
 | §5.6, el asiento que diga que D-F no pesó el PR 293 | pendiente | ningún asiento hasta el §704, ni `BACKLOG.md` ni RFC-0009, lo nombra |
 | §5.1 y §8.5, el mapa de una página del módulo | pendiente | solo lo nombra este documento |
 | §5.4 y §8.3, el spike y el RFC de capa 2 | pendientes | ninguno de los RFC 0001 a 0019 vuelve a pesar la D-F de RFC-0009 |
-| §5.3 y §8.4, `getrandom` y WASM en el issue a RustCrypto | pendiente | `doc/issue-rustcrypto.md` no nombra ninguno de los dos |
+| §5.3 y §8.4, `getrandom` y WASM en el issue a RustCrypto | en el borrador desde el §793, sin enviar; hasta él, pendiente | `doc/issue-rustcrypto.md`, parte 5, con `cargo tree -i getrandom@0.4.3 --locked --offline -p zk-ssl-verify -e normal`; hasta el §793 no nombraba ninguno de los dos. ⚠️ §793: el verificador lleva otro `getrandom`, el 0.2.17, por `rand_core` 0.6.4 de `zk-ssl-air` (la sal, §535): §5.3 solo nombra el de `xmss`, y el issue no arregla el de la casa |
 | §8.2, la aceptación de `tools/segunda/` | pendiente: el §705 no la cubre | `tools/segunda/README.md` |
 | §8.6, «ocho herramientas» | corregido en el §700 | `GENAI.md` §«Cómo se usa, exactamente» |
 

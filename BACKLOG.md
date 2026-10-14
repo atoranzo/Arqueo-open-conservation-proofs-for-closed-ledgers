@@ -738,6 +738,16 @@ instrumentacion) al grupo E.*
   marca: una prueba de edad honesta con m = 32 en la marca era ROJO en el kit y VERDE aquí, contra
   «fallar igual» (H3). Desde el §706 exige lo mismo, en el mismo orden y con el mismo texto, y lo
   fijan seis negativos de la edad y el pago: 34 de 34 pares.
+  ⚠️ **§793: las cifras de arriba son las del cierre.** Decía 26/26 KAT, 376/418 cabezas con «los 42
+  fallos» y 121/121 entradas del segundo verificador; los asientos las recontaron al crecer los
+  vectores (el §640, 378/424 cabezas y 124 entradas), y esta entrada no las siguió. Remedidas en
+  Python sobre el árbol del §789 (`8c02941`), sin compilar nada: 31/31 KAT del núcleo (tres del §643
+  y dos del §773); 485/535 cabezas y 10/15 cofirmas en 404 ficheros, con los 55 que no verifican
+  negativos según su manifiesto; 174/174 entradas del segundo verificador en sus cinco familias; y
+  34/34 pares STARK con 33/33 falsadores; la cofirma con `versionFormato` `0x103` del §780, entre
+  los negativos, con el texto del kit en los dos lectores. La «salida
+  idéntica al binario» y «la causa del binario» no se han vuelto a comparar: piden el binario
+  compilado. El reparto, en `tools/segunda/README.md`.
 
 - [ ] **85 (original). Una SEGUNDA implementación que pase los vectores.** Lo caro
   ya está hecho: vectores de conformidad versionados (`0.2` idéntico,
@@ -898,6 +908,16 @@ instrumentacion) al grupo E.*
   que un extraño pueda comprobar que el binario es el fuente; y dejar
   escrito el «cómo se trabaja aquí» fuera de los traspasos de sesión,
   que hoy son el único sitio donde vive el método.
+  ⚠️ §793: **la tercera pieza, escrita.** `doc/METODO.md` cuenta el método
+  fuera de los traspasos —el sello y su asiento, cómo se corrige un
+  documento vivo, las convenciones de esta lista, los RFC y sus etapas, los
+  niveles del canon y los bancos, y el paso 4 de `GENAI.md`—, cada cosa con
+  la cita al fichero que la establece, y dice cuándo algo es costumbre y
+  ningún fichero lo manda; `CONTRIBUTING.md` lo enlaza. No decide quién
+  mantiene ni con qué regla se acepta un RFC, y lo dice: esa pieza, la
+  primera, es del autor. La segunda, las construcciones reproducibles, este
+  sello no la mira. Lo escribió una sesión y su aceptación es del autor.
+  Sigue abierta.
 
 - [ ] **89. El proyecto sólo se ha auditado a SÍ MISMO.** `AUDITORIA.md`
   tiene más de 21.000 líneas y registra los errores del propio método
@@ -3849,6 +3869,15 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   Si se envía, esa parte va como comentario en #1442, no como issue nuevo; del
   resto sigue sin constar envío. El §4.9 de los dos ECST sigue diciendo que
   esos 21 «cargan mal»: marcarlo es del autor.
+  ⚠️ **§793: el borrador gana su parte 5, `getrandom` y WebAssembly.** `xmss`
+  pide `rand 0.10` con sus features por defecto, y eso mete `getrandom 0.4.3`
+  en la clausura del verificador, que no genera claves; en
+  `wasm32-unknown-unknown` su fuente lo para con un `compile_error!`. Medido
+  con `cargo tree -i getrandom@0.4.3 --locked --offline -p zk-ssl-verify -e
+  normal`; no se ha compilado para ese objetivo. Una nota interna del
+  borrador dice que el verificador lleva otro, `getrandom 0.2.17`, por la sal
+  de `zk-ssl-air` (§535), que es de la casa y el issue no toca. Sigue sin
+  enviar: enviarlo es del autor.
   ⚠️ **ARM sin medir.** `doc/xmss-evaluacion.md` avisa de que los 0,62 ms por
   hoja son **de esa máquina** y deja las medidas en ARM pendientes junto a B9;
   `doc/ESCALADO.md` tiene B9 como medición pendiente. **Va con la 47.**
