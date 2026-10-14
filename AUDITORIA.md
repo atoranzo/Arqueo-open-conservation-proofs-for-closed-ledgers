@@ -53163,3 +53163,62 @@ la raíz del génesis, no rechaza una era 1 detrás de una de era 2 ni encadena 
 `seq` 0; no recompone el `epoch_digest` desde el fichero, ni el `proofDigest` de una `Recovery` de era
 1, que declara. `conformance --check` sigue sin comprobarlo, y el juez no entra en el canon: se corre a
 mano.
+
+## §798 — `--conservados`: cada catálogo conservado de `spec/vectors/<versión>/`, juzgado con el kit del commit que nombra su cabecera, y el canon dice cuándo pasó por última vez (la tarea 30)
+
+El commit que lleva este asiento, sobre el §797. Toca `tools/canon.sh`, que gana el nivel
+`--conservados`, su estado y su línea en la cabecera; un fichero nuevo, `tools/conservados.sh`; y este
+asiento. Ni código del árbol, ni tests, ni vectores. Del autor es elegir la tarea; la forma la propuso
+la sesión. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del
+rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En
+la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y
+salió VERDE.
+
+**De dónde sale.** `spec/vectors/0.3/` y `spec/vectors/0.4/completitud` guardan catálogos que el kit
+del árbol ya no verifica y que no se reescriben (regla 2 del `PROCESO`): cada `MANIFIESTO.txt` dice en
+su cabecera qué kit los verifica, «el zk-ssl-verify del árbol en <commit>», y nada lo vigilaba. Los de
+`0.3/` los midió la mano dos veces, el §620 (38 de 38) y el §693 (41 de 41); los dos de
+`0.4/completitud` los pasó el canon del §681 con el kit de entonces, `41f765d`, y el «2 de 2» del §682
+es el de la release `arqueo-verify-v0.4.2`, no el de ese kit.
+
+**Lo que hace.**
+
+1. **`tools/conservados.sh`** lee la lista del árbol —todo `spec/vectors/<x.y>/<familia>/`— y la cruza
+   con su TABLA: un directorio sin fila, una fila sin directorio o uno sin manifiesto son ROJO. El
+   commit lo dicen dos, la tabla entero y la cabecera del manifiesto como prefijo, y tienen que decir
+   lo mismo; los comentarios se leen por tramos, normalizados (NFKC, sin los invisibles de formato,
+   el espacio entre palabras opcional), y lo que no ve lo dice la cabecera. El commit tiene que ser
+   del árbol, antepasado de `HEAD`, con el crate y su arnés. Luego construye cada kit en un worktree
+   de su commit, con `--locked` y un target propio, y lo juzga con DOS arneses, el de su commit y el
+   del árbol. `--en-seco` da el plan sin compilar; `--frio`, con el target borrado.
+2. **`tools/canon.sh --conservados`** lo llama, deja constancia de cada pasada VERDE en
+   `.canon/ultimo-conservados`, y toda invocación dice cuándo fue la última y si cambió lo que ejerce:
+   los catálogos conservados, el arnés, la tabla y el `rustc`. Un cambio en `crates/` no lo vence,
+   porque los kits son de su commit. Un TERM o un INT llega al nivel y no lo deja huérfano.
+
+**Medido.** `--en-seco`, y `canon.sh --conservados --en-seco`, dan el plan VERDE: `0eda58c` en los
+cuatro de `0.3/` y `41f765d` en `0.4/completitud`. Y la ruta real, `bash tools/canon.sh
+--conservados`, se corrió una vez en un clon desechable de este árbol, con rustc 1.94.1: VERDE en
+125 s. Los dos kits se construyeron de su commit, cada uno en su worktree con `--locked`, en 41 s y
+37 s; el de `0eda58c` da el binario `775428d29ee1ca1b`, el mismo que midió el §620, y el de
+`41f765d`, `a9644c19f9ca7518`. Con los dos arneses, el de su commit y el del árbol: 12 de 12, 10 de
+10, 10 de 10 y 9 de 9 en `0.3/`, y 2 de 2 en `0.4/completitud`. La primera redacción de este sello
+decía que esa ruta no se había corrido nunca; se corrió después y las dos cabeceras lo dicen. La lectura de las cabeceras se probó con falsadores
+sobre clones desechables con `CANON_RAIZ` y `TMPDIR` propios —una mención con otro commit, partida
+en dos líneas, con mayúsculas, con espacios duros o de ancho cero, con la tilde combinada, con un
+hex de más de 40 cifras—, y la cabecera lista lo probado y lo que sale VERDE sin verse. Lo redactó un
+agente y lo revisaron cinco escépticos sucesivos con un arreglador entre ronda y ronda; el último lo
+aprobó con tres cosas menores, que corrigió la sesión: declarar el guion blando y el CR suelto, y que
+la lista de invisibles no es cerrada. Salen con 0 `check_cifras`, `check_figures`, `verificar_citas`,
+`check_publicadas` y `check_tests`, y `bash -n` de los dos scripts. El canon, `bash tools/canon.sh
+--sello`: VERDE; `--conservados` no entra en `--sello`.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas.
+
+**Lo que NO hace.** Su ruta real se ha corrido una vez, aquí, y ningún nivel que corra solo la
+repite. No juzga las releases publicadas —el «2 de 2»
+del §682 es de `arqueo-verify-v0.4.2` y sigue siendo de la mano—, ni entra en ningún nivel del canon
+que corra solo. No ve otra frase que nombre el kit, ni un hex de menos de 7 cifras, ni lo que la NFKC
+no lleva al ASCII, ni los invisibles que no son de formato ni blanco: lo declara.

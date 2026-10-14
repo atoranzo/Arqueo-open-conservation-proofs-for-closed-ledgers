@@ -18,6 +18,9 @@
 # invocaciones separadas de G.2.
 #     bash tools/canon.sh --lista      # solo enseña la tabla, no ejecuta
 #     bash tools/canon.sh --bancos     # los bancos, todos (tools/bancos.sh) · **~15 min**
+#     bash tools/canon.sh --conservados  # spec/vectors/<version>/, cada uno con el kit de SU
+#                                        # commit (tools/conservados.sh) · **~2 min** (§798)
+#     bash tools/canon.sh --conservados --en-seco  # su plan, sin construir nada · ~1 s
 #
 # ## Lo que lo hace ROBUSTO, y no es la tabla
 #
@@ -74,6 +77,23 @@
 # entonces. El de la reutilizacion estuvo ROJO del §337 al §579 sin que
 # nada lo dijera.
 #
+# ⚠️ **Los conservados, tampoco (§798).** `spec/vectors/0.3/` y `0.4/` guardan
+# catalogos que el kit del arbol ya no verifica y que no se reescriben: los
+# verifica el `zk-ssl-verify` del commit que nombra su cabecera. Hasta el §798
+# los de `0.3/` los midio la mano (§620, §693); los dos de `0.4/completitud`
+# los paso el canon del §681 con el kit de entonces, `41f765d`, y el «2 de 2»
+# del §682 es el de la release `arqueo-verify-v0.4.2`, no el de ese kit.
+# `--conservados` construye cada kit en un worktree de su commit, con
+# `--locked` y un target propio, y lo juzga con DOS arneses, el de su commit
+# y el del arbol (`tools/conservados.sh`). Cada pasada VERDE deja constancia
+# en `.canon/ultimo-conservados`, y TODA invocacion dice cuando fue y si
+# cambio lo que ejerce: los catalogos conservados, el arnes, la tabla de
+# `tools/conservados.sh` y el rustc. Un cambio en `crates/` NO lo vence: los
+# kits son de su commit. ⚠️ **Su ruta real se ha corrido UNA vez** (§798), en
+# un clon desechable: VERDE en 125 s, 41 de 41 en `0.3/` y 2 de 2 en
+# `0.4/completitud` con los dos arneses; el detalle, en la cabecera de
+# `tools/conservados.sh`.
+#
 # ## Como se actualiza un pin
 #
 # Se MIDE primero y se edita la tabla despues. Nunca al reves.
@@ -98,6 +118,7 @@ cd "$RAIZ" || exit 2
 NIVEL="${1:---sello}"
 SELLO_FILE=".canon/ultimo-completo"
 BANCOS_FILE=".canon/ultimo-bancos"
+CONSERVADOS_FILE=".canon/ultimo-conservados"
 
 # ── LA TABLA ────────────────────────────────────────────────────
 # crate | nivel | pasan | ignorados | warnings | timeout_s | nota
@@ -222,9 +243,40 @@ estado_bancos() {
   fi
 }
 
+# Los conservados (§798): cuando pasaron VERDES por ultima vez, y si cambio lo que ejercen.
+# ⚠️ Lo que ejercen NO es `crates/`: cada kit es el de su commit. Es lo que los JUZGA -el arnes
+# del arbol y la tabla de tools/conservados.sh-, lo juzgado -spec/vectors/<version>/- y el rustc
+# con que se construyen los kits viejos, que es lo que mas se mueve sin que nadie toque nada.
+estado_conservados() {
+  if [ -f "$CONSERVADOS_FILE" ]; then
+    local c f k r n toc rv
+    read -r c f k r < "$CONSERVADOS_FILE"
+    rv=$(rustc -V 2>/dev/null | awk '{print $2}')
+    n=$(git rev-list --count "$c..HEAD" 2>/dev/null || echo "?")
+    if [ "$n" = "?" ]; then
+      msg "  ultimo --conservados: $c ($f) · ese sello ya no se alcanza: se remide con --conservados"
+    else
+      toc=$(git diff --name-only "$c..HEAD" -- spec/vectors tools/conformidad.sh tools/conservados.sh 2>/dev/null \
+            | grep -cE '^(spec/vectors/[0-9]+\.[0-9]+/|tools/)')
+      if [ "$toc" != "0" ]; then
+        msg "  ultimo --conservados: $c ($f) · **$n sello(s) por detras**, y $toc fichero(s) de lo que ejercen cambiados — toca --conservados"
+      elif [ "$n" = "0" ]; then
+        msg "  ultimo --conservados: $c ($f, $k catalogos) · AL DIA"
+      else
+        msg "  ultimo --conservados: $c ($f) · $n sello(s) por detras, limpio en lo que ejercen: la foto VALE"
+      fi
+    fi
+    [ "${rv:-?}" = "${r:-?}" ] \
+      || msg "  ⚠️ el rustc de la maquina ya no es el de esa pasada (${r:-?} -> ${rv:-NINGUNO}): los kits viejos se construyen con el — toca --conservados"
+  else
+    msg "  ultimo --conservados: **NUNCA** en este clon. El §798 lo corrio una vez, VERDE, en otro;"
+    msg "    antes, spec/vectors/<version>/ lo juzgaron la mano (0.3/) y el canon del §681."
+  fi
+}
+
 case "$NIVEL" in
-  --sello|--largo|--completo|--lista|--bancos) : ;;
-  *) msg "nivel desconocido: $NIVEL. Usa --sello, --largo, --completo, --bancos o --lista."; exit 2 ;;
+  --sello|--largo|--completo|--lista|--bancos|--conservados) : ;;
+  *) msg "nivel desconocido: $NIVEL. Usa --sello, --largo, --completo, --bancos, --conservados o --lista."; exit 2 ;;
 esac
 
 # ── 0 · COHERENCIA: la tabla y el workspace dicen lo mismo ──────
@@ -243,12 +295,49 @@ done
 [ $rojo -eq 0 ] && msg "  OK  todos los crates tienen fila y todas las filas tienen crate"
 estado_completo
 estado_bancos
+estado_conservados
 
 if [ "$NIVEL" = "--bancos" ]; then
   msg ""
   bash tools/bancos.sh; rb=$?
   [ $rojo -eq 0 ] || rb=1
   exit $rb
+fi
+
+# ⚠️ §798: lo que va detras del nivel (`--en-seco`, `--frio`) es de tools/conservados.sh, que
+# rechaza con exit 2 lo que no conoce. Ningun otro nivel lee argumentos detras del primero.
+# ⚠️ El nivel corre en SEGUNDO PLANO y se espera con `wait`, por lo mismo que su construccion
+# (tools/conservados.sh, junto a `parar`). En primer plano y sin trap, un TERM al canon lo mata
+# solo a el -sale con 143- y el nivel sigue, huerfano y con su worktree listado; con trap, bash no
+# lo correria hasta que el nivel acabase. El `wait` vuelve en cuanto llega la senal, y el trap se
+# la pasa al nivel como TERM -el INT tambien: un hijo en segundo plano de un bash sin control de
+# trabajos nace con el INT IGNORADO, y lo que se ignora al nacer no se puede atrapar-, espera a
+# que limpie y sale con 143 (TERM) o 130 (INT). Medido en el §798 con un cargo falso dormido, las
+# dos cosas, y el INT ignorado en el `SigIgn` de /proc/<pid>/status del nivel. `--bancos` sigue
+# en primer plano, con el mismo hueco (no medido).
+# ⚠️ Entre el `&` y el `HIJO_C=$!` hay una ventana: una senal ahi encontraria HIJO_C vacio y el
+# nivel quedaria huerfano. En ella la senal solo se ANOTA (PEND_C) y se atiende en cuanto HIJO_C
+# tiene el PID, como hace tools/conservados.sh con su construccion (`anotar`, `atender`). No con
+# `${HIJO_C:-$!}`: con `set -u`, `$!` antes del primer hijo es una variable sin valor, y una senal
+# que llegase antes del `&` haria salir al canon con 127, no con 143 (medido en el §798, bash 5.2).
+if [ "$NIVEL" = "--conservados" ]; then
+  msg ""
+  HIJO_C=""; PEND_C=""
+  parar_conservados() {
+    [ -z "$HIJO_C" ] || { kill -TERM "$HIJO_C" 2>/dev/null; wait "$HIJO_C" 2>/dev/null; }
+    exit "$1"
+  }
+  trap 'PEND_C=143' TERM
+  trap 'PEND_C=130' INT
+  bash tools/conservados.sh "${@:2}" &
+  HIJO_C=$!
+  trap 'parar_conservados 143' TERM   # 128 + 15
+  trap 'parar_conservados 130' INT    # 128 + 2
+  [ -z "$PEND_C" ] || parar_conservados "$PEND_C"
+  wait "$HIJO_C"; rcv=$?
+  trap - TERM INT
+  [ $rojo -eq 0 ] || rcv=1
+  exit $rcv
 fi
 
 if [ "$NIVEL" = "--lista" ]; then
