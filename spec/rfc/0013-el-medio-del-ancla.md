@@ -2,8 +2,8 @@
 
 - **Estado:** PROPUESTO — el texto y las decisiones, escritos sobre lo medido en mtc-core y en
   las especificaciones C2SP; construida la E2 —el árbol del medio (E2a, §631) y su nota firmada
-  (E2b, §632)— y la E4 —el sobre en el kit (E4a, §633) y su catálogo y su banco (E4b, §634)—; E3
-  sin construir. Nació BORRADOR y entra PROPUESTO al
+  (E2b, §632)— y la E4 —el sobre en el kit (E4a, §633) y su catálogo y su banco (E4b, §634)—; de
+  la E3, solo la E3a, y SOLO EN LOCAL (§808). Nació BORRADOR y entra PROPUESTO al
   integrarse (§603): BORRADOR no tiene cara publicada en el cerrojo de `check_publicadas`, y el
   RFC-0011 nació igual, propuesto con sus decisiones delegadas. Las decisiones D-A a D-H son DELEGADAS y
   REVERSIBLES: la aceptación es del autor.
@@ -23,11 +23,11 @@
   (la E2a: el árbol del medio, y la D-G decidida), §632 (la E2b: la nota, contrastada con
   torchwood), §633 (la E4a: el sobre en el kit, y la D-D corregida), §634 (la E4b: el catálogo y
   el banco), §635 (el juez del umbral en el cli), §703 (la motivación al día: el #341, cerrado
-  por el #355) y §705 (el §106, enmendado: la firma de D-C es su excepción declarada, y el
-  puente Ed25519 no se construye); y, en mtc-core, sus asientos §14 y §15 (la interoperabilidad
-  medida contra la implementación de referencia del IETF, en las dos direcciones, y el checkpoint
-  de esa herramienta reconstruido desde sus tejas) y §26 y §27 (el #355 fusionado, y la
-  herramienta de referencia medida después: su checkpoint, ya una cofirma `tlog-cosignature`).
+  por el #355), §705 (el §106, enmendado: la firma de D-C es su excepción declarada, y el puente
+  Ed25519 no se construye) y §808 (la E3a, en local); y, en mtc-core, sus asientos §14 y §15 (la
+  interoperabilidad medida contra la implementación de referencia del IETF, en las dos direcciones,
+  y el checkpoint de esa herramienta reconstruido desde sus tejas) y §26 y §27 (el #355 fusionado, y
+  la herramienta de referencia medida después: su checkpoint, ya una cofirma `tlog-cosignature`).
 - **Backlog:** la 86 (elegir y medir el medio), que este RFC cierra en diseño y deja abierta en
   despliegue; la pregunta abierta de la 83 —«el diseño de referencia usa Ed25519 y ZK-SSL firma
   con XMSS con estado (…) hay que medir si cada testigo firma con su propia clave XMSS o si ahí
@@ -42,7 +42,7 @@
 | E1 — el medio, decidido | este texto: qué se publica (D-A), en qué árbol (D-B), con qué firma (D-C), a qué testigos y cómo (D-D), quién lo comprueba (D-E), con qué cadencia (D-F), con qué piezas (D-G) y qué no resuelve (D-H) | no | **este texto, propuesto (§603)** |
 | E2a — el árbol del medio | el árbol SHA-256 de anclas (`crates/zk-ssl-medio`) y los vectores de consistencia SHA-256: los acumulados y los grandes del borrador del IETF y las 685 sondas de `transparency-dev/merkle` | no (aditivo, fuera del cable) | **construida (§631)** |
 | E2b — la nota del medio | la nota `checkpoint` con su firma ML-DSA-44 tipo `0x06` (`zk_ssl_medio::nota`), y 33 notas positivas y negativas con el veredicto de `filippo.io/torchwood` | no (aditivo, fuera del cable) | **construida (§632)** |
-| E3 — el publicador | el cliente `add-checkpoint` del protocolo tlog-witness, la retención de las cofirmas de testigos y su publicación como nota cofirmada | no | pendiente |
+| E3 — el publicador | el cliente `add-checkpoint` del protocolo tlog-witness, la retención de las cofirmas de testigos y su publicación como nota cofirmada | no | ⚠️ §808: **E3a construida (§808), local** —el cliente, la retención y la nota cofirmada (`zk_ssl_medio::testigos`), medidos contra el motor de litewitness con ML-DSA-44 y contra litewitness, en `127.0.0.1`—; pendiente lo que pide testigos reales: elegirlos, llegar a ellos con TLS, la cadencia y servir la nota (decía «pendiente») |
 | E4a — el sobre en el kit | `tipo: "ancla-cofirmada"`: la nota, las cofirmas de los testigos —reportadas, no juzgadas: D-D—, la inclusión del ancla en el árbol del medio y, debajo, el ancla derivada de la cabeza firmada | no (aditivo: una forma nueva del kit) | **construida (§633)** |
 | E4b — el catálogo y el banco | `spec/vectors/ancla-cofirmada/` (5 positivos y 22 negativos, el medio ajeno bien firmado entre ellos), su bloque del canon, la undécima familia del artefacto y `tools/banco_ancla_cofirmada.sh` | no | **construida (§634)** |
 
@@ -180,6 +180,21 @@ su publicador y cuenta los testigos NOMBRADOS y distintos cuya cofirma verifica 
 checkpoint; por debajo de `k` no acredita, y `k = 0` se rechaza. Acredita el CHECKPOINT: la
 cabeza, su ancla y el atado al medio son del kit, sobre el mismo fichero.
 
+**Construido en el §808, SOLO EN LOCAL: el lado del publicador (E3a).** `zk_ssl_medio::testigos`,
+con la feature `firmar`, sobre `tlog-witness` v1.1.0 (C2SP `b2dd989`): arma `add-checkpoint`
+(`old N`, hasta 63 líneas de prueba, la nota del publicador SOLA); lee el `200` pegándolo a la nota,
+como la especificación permite, e ignora las líneas de claves que no conoce; reintenta UNA vez
+desde el tamaño de un `409`, y si el testigo recuerda MÁS anclas que la nota, para y lo dice: es la
+detección de la 103 de arriba, y no se esquiva. Retiene la cofirma `0x06` de cada testigo, una por
+testigo y verificada otra vez sobre su checkpoint, y escribe la nota cofirmada —la del publicador
+y detrás esas líneas— en el fichero `checkpoint` de un directorio, por renombrado atómico y sin
+retroceder. Su transporte solo habla HTTP con direcciones de bucle local (`127.0.0.0/8` y `::1`).
+Medido contra dos implementaciones de otra mano, en local: el `add-checkpoint` de litewitness
+(`filippo.io/torchwood` v0.10.0, `internal/witness`) con una clave ML-DSA-44, y litewitness v0.10.0
+sin tocar; la nota cofirmada por dos de esos testigos entra en el sobre del catálogo, el kit la da
+VERDE y el juez del §635 la acredita con `k = 2`. Lo que pide testigos reales —cuáles, con TLS,
+con qué cadencia y dónde se sirve la nota— queda sin construir.
+
 ### D-E — Lo que un tercero comprueba, sin el nodo
 
 El sobre `tipo: "ancla-cofirmada"` (E4) verifica, en este orden: la nota (tres líneas, firma del
@@ -254,6 +269,19 @@ que custodiar, sin estado pero con custodia.
 > ⚠️ **Corregido (§705).** Sin el puente de D-C, E3 no se mide contra un testigo público mientras
 > ninguno acepte `0x06`: se mide con `0x06` contra el verificador de mtc-core, y contra testigos
 > públicos cuando los haya.
+
+> ⚠️ §808: **lo medido en local en la E3a precisa el (1), y no lo cierra.** El software del testigo de
+> referencia ya acepta este `origin`: litewitness v0.10.0 lee la clave de un log de tipo `0x06`
+> (`NewLogVerifier`, y las notas de su versión: «Logs can now sign checkpoints with ML-DSA-44 keys») y
+> cofirmó las notas del medio en `127.0.0.1`. Pero **cofirma con Ed25519**: su clave sale de un
+> agente SSH y solo acepta Ed25519, aunque `tlog-witness` v1.1.0 dice que los testigos DEBERÍAN usar
+> ML-DSA-44. Una cofirma así no la verifica el publicador —la casa no enlaza curvas: el §106, el
+> §705 y `tools/check_curvas.py`—, que la ignora como línea de una clave que no conoce, y en el
+> sobre del kit sería una línea sin juzgar. Lo que la casa sabe retener y el kit sabe verificar es
+> la cofirma `0x06`, la de su mismo motor (`internal/witness`) con una clave ML-DSA-44, que el
+> binario de litewitness no ofrece. Qué testigo público corre esa versión, y con qué clave, no se ha
+> medido: pide red. Y la E3a no se midió contra mtc-core sino contra esos dos testigos, que son
+> testigos y no verificadores de notas.
 
 ## Lo que se DESCARTÓ al medir
 
@@ -330,7 +358,9 @@ porque contesta una pregunta que el BACKLOG tenía marcada como «antes de dise�
   `proof.VerifyConsistency`, con la que comprueba la consistencia el testigo de
   `transparency-dev/witness` (`witness/witness.go`, `b4c9458`).
 - `filippo.io/torchwood` v0.10.0 (`cosignature.go`, `checkpoint.go`) y `golang.org/x/mod/sumdb`
-  v0.40.0 (`note`, `tlog`), sobre el `crypto/mldsa` de Go 1.27: el contraste de la E2b.
+  v0.40.0 (`note`, `tlog`), sobre el `crypto/mldsa` de Go 1.27: el contraste de la E2b. Y su
+  `internal/witness`, `cmd/litewitness` y `cmd/witnessctl` (git `2fa53be`), los testigos locales de
+  la E3a (§808), con `tlog-witness` v1.1.0 (C2SP `b2dd989`).
 - `ietf-plants-wg/merkle-tree-certs`, issue #341: el checkpoint de la herramienta de referencia
   no era todavía una línea de `tlog-cosignature`; confirmado por su autor y cerrado por el pull
   request #355 del autor de Arqueo (`bfb754f`), fusionado como `26db9f2` el 2026-10-07.

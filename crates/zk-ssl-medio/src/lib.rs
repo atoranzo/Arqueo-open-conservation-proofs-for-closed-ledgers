@@ -6,7 +6,8 @@
 //! hojas son las huellas de las anclas** (D-B, E2a, §631), con sus pruebas
 //! de inclusión y de consistencia, y **la nota `checkpoint` que lo publica,
 //! firmada con ML-DSA-44 en el tipo `0x06`** (D-C, E2b, §632). El
-//! publicador es E3; el sobre del kit, E4.
+//! publicador es E3; el sobre del kit, E4. ⚠️ §808: de la E3 vive aquí, con
+//! `firmar` y SOLO EN LOCAL, su primera pieza: `testigos` (E3a).
 //!
 //! - [`hash`] y [`subtree`]: el árbol y las pruebas del borrador
 //!   `draft-ietf-plants-merkle-tree-certs` (RFC 9162 extendido a subárboles
@@ -16,6 +17,11 @@
 //! - [`nota`]: la nota, su firma, su `vkey` y su verificación, escritas
 //!   aquí desde las especificaciones C2SP y contrastadas con torchwood.
 //! - [`base64`]: la base64 estricta de mtc-core, sin PEM.
+//! - `testigos` (con `firmar`, §808): el lado del publicador de
+//!   `tlog-witness` —el cliente `add-checkpoint`, la retención de las
+//!   cofirmas `0x06` y la nota cofirmada—, con un transporte que solo habla
+//!   con direcciones de bucle local (`127.0.0.0/8` y `::1`). Hablar con
+//!   testigos de verdad no es de aquí todavía.
 //!
 //! ## ⚠️ Copiado, no dependido (D-G, decidido en §631)
 //!
@@ -47,7 +53,7 @@
 //! con nombres de `signed-note`. [`nota`] se escribió aquí, y lo que la
 //! ata no es mtc-core sino una implementación de otra mano: torchwood.
 //!
-//! ## Cuatro corpus, de tres manos
+//! ## Cuatro corpus, de tres manos (y una grabación, §808)
 //!
 //! - Los vectores acumulados del borrador del IETF: 65.058 casos sobre todo
 //!   subárbol de todo árbol hasta 130 hojas (`tests/vectores_ietf.rs`).
@@ -59,12 +65,21 @@
 //! - 33 notas `checkpoint`, 30 firmadas por `filippo.io/torchwood` sobre el
 //!   ML-DSA de la biblioteca estándar de Go y 3 aquí, con el veredicto de
 //!   los dos verificadores (`tests/vectores_notas.rs`).
+//! - ⚠️ §808: y lo que contestaron dos testigos de la misma mano que
+//!   torchwood —el `add-checkpoint` de litewitness con ML-DSA-44 y
+//!   litewitness— a nueve pasos del publicador, que el cliente rehace byte
+//!   a byte (`tests/testigos_torchwood.rs`).
 //!
 //! Procedencia y licencias, en `tests/vectores/README.md` y
-//! `tests/vectores/notas/README.md`.
+//! `tests/vectores/notas/README.md`; ⚠️ §808: y las de la grabación de los
+//! testigos, en `tests/vectores/testigos/README.md`.
 
 pub mod base64;
 pub mod hash;
 pub mod medio;
 pub mod nota;
 pub mod subtree;
+// ⚠️ §808 (RFC-0013 E3a): el lado del publicador va con `firmar`, como su
+// firma: el kit y el cli dependen del medio sin ella y no lo compilan.
+#[cfg(feature = "firmar")]
+pub mod testigos;

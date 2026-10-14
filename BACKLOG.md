@@ -815,6 +815,13 @@ instrumentacion) al grupo E.*
   --ancla-cofirmada --testigos-medio --k-medio`, con la política del
   cliente. QUEDA el publicador (E3), con el despliegue y su medida:
   sigue abierta.
+  ✅ a medias (§808): la E3a, SOLO EN LOCAL: el cliente `add-checkpoint`
+  de `tlog-witness`, la retención de las cofirmas `0x06` y la nota
+  cofirmada (`zk_ssl_medio::testigos`), medidos contra litewitness
+  v0.10.0 y su motor con ML-DSA-44 en `127.0.0.1`. QUEDA lo que pide
+  testigos reales —cuáles, con TLS, la cadencia, servir la nota y medir
+  el coste—, y una pregunta medida para el autor: litewitness cofirma
+  con Ed25519, que la casa no verifica (RFC-0013 D-H): sigue abierta.
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro
   tiene dos eras (§281). **El esquema de firma no tiene ninguna de las

@@ -74,8 +74,14 @@ crates/zk-ssl-medio/  (§631)
     Authors y The Torchwood Authors), y tres que firmó este crate; de
     torchwood no se copia nada.
 
-    Detalles y hashes en crates/zk-ssl-medio/tests/vectores/README.md y
-    en crates/zk-ssl-medio/tests/vectores/notas/README.md.
+    `tests/vectores/testigos/` (§808) es lo que contestaron, en local,
+    litewitness y el `internal/witness` de filippo.io/torchwood v0.10.0
+    (la misma licencia) a este crate, y un programa de este repositorio
+    que los importa; de torchwood no se copia nada.
+
+    Detalles y hashes en crates/zk-ssl-medio/tests/vectores/README.md,
+    en crates/zk-ssl-medio/tests/vectores/notas/README.md y en
+    crates/zk-ssl-medio/tests/vectores/testigos/README.md.
 
 --------------------------------------------------------------------------
 SIN AFILIACIÓN INSTITUCIONAL

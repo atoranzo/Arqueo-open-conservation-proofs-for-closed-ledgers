@@ -47,6 +47,10 @@ zeroize = { version = "1", optional = true }
 # notas y no firma ninguna: depende de este crate sin `firmar`, y así no
 # enlaza la sal del sistema, ni el borrado de la semilla, ni el firmado de
 # `ml-dsa`. El publicador (E3) y los tests la llevan, y es la de por defecto.
+# Desde el §808 la lleva también `testigos`, el lado del publicador de
+# `tlog-witness` (E3a, SOLO EN LOCAL): el cliente `add-checkpoint`, la
+# retención de las cofirmas y la nota cofirmada, sin dependencias nuevas
+# (el HTTP local es de `std`). El kit y el cli no lo compilan.
 default = ["firmar"]
 firmar = ["dep:getrandom", "dep:zeroize", "ml-dsa/rand_core", "ml-dsa/zeroize"]
 
@@ -56,12 +60,32 @@ firmar = ["dep:getrandom", "dep:zeroize", "ml-dsa/rand_core", "ml-dsa/zeroize"]
 name = "vectores_notas"
 required-features = ["firmar"]
 
+# El publicador contra testigos locales (E3a, §808): el cliente `add-checkpoint`
+# vive en `testigos`, que va con `firmar`.
+[[test]]
+name = "testigos_local"
+required-features = ["firmar"]
+
+[[test]]
+name = "testigos_torchwood"
+required-features = ["firmar"]
+
 # El medio del banco del ancla cofirmada (§634): firma notas y cofirmas para
 # `tools/banco_ancla_cofirmada.sh`. No es el publicador (E3).
 [[example]]
 name = "medio"
 required-features = ["firmar"]
 
+# El cliente del publicador contra testigos LOCALES (§808): lo que corre
+# `tests/vectores/testigos/rehacer.sh` contra el motor de litewitness y
+# litewitness mismo. Firma en determinista para que la grabación se pueda
+# rehacer byte a byte; no es el publicador de un operador.
+[[example]]
+name = "testigos_locales"
+required-features = ["firmar"]
+
 [dev-dependencies]
 # Solo el ejemplo del banco lee y escribe JSON. Ya está en el Cargo.lock.
+# ⚠️ §808: y desde el §808 también el ejemplo `testigos_locales` y
+# `tests/testigos_torchwood.rs`, que lee la grabación de los testigos.
 serde_json = "1"

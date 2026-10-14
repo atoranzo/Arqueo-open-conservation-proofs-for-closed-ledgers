@@ -53875,3 +53875,73 @@ por línea de `doc/USE_CASES.md` a `spec/RPC.md` que ya apuntan a otro sitio; la
 conformidad de `zkssl/0.3` en comentarios de `zk-ssl-hash` y del nodo; la tabla «Métricas de la capa,
 medidas» de `ARQUITECTURA.md`, que pide remedir; y un «arranque de la capa 1,12 ms» sin fuente. Quedan
 para la sesión que siga la lista.
+
+## §808 — RFC-0013 E3a, solo en local: el lado del publicador de tlog-witness —el cliente `add-checkpoint`, la retención de las cofirmas y la nota cofirmada—, probado contra testigos de la mano de torchwood que escuchan en 127.0.0.1 (la tarea 7, su parte local)
+
+El commit que lleva este asiento, sobre el §807. Toca `crates/zk-ssl-medio` —un módulo nuevo,
+`testigos`, detrás de la feature `firmar`; dos ficheros de tests nuevos; un ejemplo; y en
+`tests/vectores/testigos/` la grabación de los testigos, su `README.md`, el `rehacer.sh` que la rehace y
+el testigo mínimo en Go que usa—; su `lib.rs`, su `Cargo.toml` y el `README.md` de sus vectores; el
+RFC-0013; `spec/README.md`; `NOTICE`; la 86 del `BACKLOG.md`; el pin de la fila de `zk-ssl-medio` en
+`tools/canon.sh`; las cifras de los tres párrafos ancla; y este asiento. No mueve el cable, ni la
+cabeza, ni el nodo, ni el kit, ni el `Cargo.lock`: no entra ninguna dependencia, y el HTTP es de `std`.
+Del autor es elegir la tarea; la forma la propuso la sesión. Lo escribe y lo prueba una sesión de
+Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§800 a §829). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero, `--sello`,
+sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** La E3 del RFC-0013, el publicador, estaba pendiente desde el §603; el §634 y el
+§635 la dejaron esperando a que el autor eligiera con qué testigos públicos medir. Aquí se construye lo
+que no necesita esa decisión ni red, y se prueba en local.
+
+**Lo que hace.**
+
+1. **`zk_ssl_medio::testigos`**, sobre tlog-witness v1.1.0 (C2SP, `b2dd989`), que el RFC citaba sin
+   versión y ahora fija. `peticion` arma `old N`, hasta 63 líneas de prueba y la nota del publicador
+   sola: litewitness corta el cuerpo a 10 KiB, y medido con su motor y dos cofirmas ML-DSA-44 pegadas,
+   caben `old 0` (10.006 bytes) y hasta cinco líneas de prueba (10.231), con seis ya no (10.276, un
+   500) y con tres cofirmas nunca (13.283); la prueba crece con el árbol. `leer_respuesta` pega el 200
+   a la nota y lo pasa por `verificar_nota`, y del 409 exige su tipo y un tamaño canónico.
+   `pedir_cofirma` reintenta una vez desde el tamaño de un 409, y si el testigo recuerda más anclas que
+   la nota devuelve `Retroceso`, la 103 de la D-D, sin reintento. `Retencion` guarda una cofirma 0x06
+   por testigo y la verifica otra vez sobre el checkpoint de su nota; `nota_cofirmada()` es lo que lee el
+   sobre `ancla-cofirmada` del §633. `publicar` escribe el `checkpoint` por renombrado atómico, y no
+   retrocede, no se bifurca ni pisa uno que no verifica. `HttpLocal` solo habla con una IP de bucle
+   local, sin TLS, con tope de bytes y plazo total.
+2. **Contra testigos de otra mano**: el motor de litewitness (`internal/witness`) con ML-DSA-44, dos
+   veces, y `cmd/litewitness` sin tocar, con su Ed25519, compilados de `filippo.io/torchwood` v0.10.0
+   con Go 1.27.0 y registrados con `witnessctl`. Los tres dicen lo mismo en los nueve pasos de
+   `rehacer.sh`, que queda fuera del canon y de `tools/bancos.sh` porque pide Go y red. De punta a punta,
+   la nota cofirmada por los dos motores entra en el sobre del catálogo, el kit la da VERDE y el juez del
+   §635 la acredita con k = 2 y no con k = 3. La grabación queda en el árbol, y
+   `tests/testigos_torchwood.rs` rehace en cada canon cada petición, byte a byte, y cada resultado.
+3. **En `tests/testigos_local.rs`**, seis tests contra un testigo mínimo de test, declarado así, y dos
+   contra un servidor de un solo uso que mide solo el transporte: el que no acaba de contestar y el que
+   no para de mandar.
+
+**Medido.** `zk-ssl-medio` pasa de 37 a 58 tests, sin ignorados (sin `firmar`, sigue en 30); caen los 23
+mutantes, entre ellos sin `Retroceso`, sin reintento, cofirma o retención sin verificar, publicar que
+retrocede, cualquier IP, el 409 sin tipo, los trozos mal leídos, sin plazo total y sin tope de bytes.
+Ninguna curva entra en los binarios: la cofirma Ed25519 no se verifica en ningún sitio, solo se ignora.
+Un agente lo construyó y lo revisaron dos escépticos: el primero encontró que el motivo de la nota sola
+estaba mal dicho («con dos cofirmas ya no cabría») y que el tope de bytes no tenía test, y se
+arreglaron con las cifras medidas y un test; el segundo lo aprobó con cosas menores. Salen con 0 las
+once herramientas del bucle. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Lo que el autor decide.** litewitness v0.10.0 acepta un origin 0x06, pero el binario cofirma SOLO
+con Ed25519 —el motor sí con ML-DSA-44, pero el binario no lo ofrece—. Con los testigos públicos de hoy,
+sus cofirmas serían líneas que el publicador ignora y que el kit cuenta sin juzgar: no acreditaría
+nadie. Las salidas —buscar testigos con ML-DSA-44, o aceptar Ed25519 de testigos, que choca con el
+§106, el §705 y la R2 de `check_curvas`— son del autor, y el D-H del RFC lo dice con su marca.
+
+**Contadores.** `zk-ssl-medio` 37 -> 58. TOTAL DE SELLO 1774 -> 1795 y CON LARGOS 1911 -> 1932, en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests` 1933 -> 1954. Los vectores de `spec/` no
+cambian: la grabación vive en el crate, fuera de `HUELLAS.sha256`. El `BACKLOG.md` sigue con 44
+abiertas y 77 resueltas: la 86 gana su «✅ a medias» y sigue abierta.
+
+**Lo que NO hace.** Lo que pide testigos reales o red, que queda para otra sesión: elegir los testigos
+públicos y registrarse, el transporte con TLS (y elegir su dependencia, que traería curvas a un camino
+de producción), la cadencia de la D-F y el demonio que publica sin bloquear el nodo, servir el
+`checkpoint` en una URL, el keep-alive, la recuperación de monitorización y sign-subtree, y medir el
+coste y el O(n) del árbol de la D-G. No juzga al testigo que olvida: se reintenta y lo dice.
