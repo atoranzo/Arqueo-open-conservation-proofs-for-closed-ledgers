@@ -53651,3 +53651,42 @@ cobre tras recuperar la cuenta legítima. No cruza `root:state` con el registro 
 cola de la v9 en claro. No ata las retiradas bajo la cabeza
 firmada, ni en el registro, ni las lleva a una prueba portable. No cambia el kit, los vectores, el
 OpenRPC ni `NUCLEO.md`. No corrige el cruce de los contadores de la instantánea.
+
+## §803 — el `--largo` de los dos bancos de la completitud, corrido sobre el RFC-0019: VERDES, y sus cabeceras con la medida y con lo que el §681 y el §682 cambiaron (la tarea 46)
+
+El commit que lleva este asiento, sobre el §802. Toca solo las cabeceras de `tools/banco_completitud.sh`
+y de `tools/banco_mentiroso_sin_resolver.sh`, con su marca, y este asiento. Ni código, ni tests, ni
+vectores. Del autor es elegir la tarea; la forma la propuso la sesión. Lo escribe y lo comprueba una
+sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§800 a
+§829). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon
+entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Los dos bancos tienen un nivel `--largo` que espera a que el nodo cruce la ventana de
+la completitud, 1.440 cabezas, y desde que el RFC-0019 metió su E1 (§681) y su E2 (§682) nadie lo
+había corrido.
+
+**Medido.** Sobre el árbol del §794, con la E1 y la E2 del RFC-0019 dentro, los dos `--largo`, uno detrás
+de otro y bajo el cerrojo de cargo, salieron VERDES a la primera. El de la completitud: los treinta y
+seis sobres dicen lo que deben —entre ellos `rechazo-stale-declarada`, con la salida 3, y
+`neg-vigente-index-inflado`—, en 2687 s de banco más 216 de compilación. El del recibo sin resolver: las
+dieciocho comprobaciones, con el ROJO NOMBRADO de la mentira cuando expira la ventana y el control que
+sigue VERDE, en 2799 s más 198. El nodo firmó una cabeza cada ~1,9 s, en una máquina de cuatro CPU
+compartida y a `nice -n 19`: el latido duerme su segundo y después firma, así que los «24 minutos» de
+las cabeceras son el suelo; el §574 y el §602 midieron unos 31. Con `--guardar` a un temporal, 33 de
+los 36 sobres salen iguales byte a byte a los publicados salvo `emittedAtUnix`; los tres del `--largo`
+difieren en la vigente —la 1443 frente a la 1444 publicada—, porque el banco mira la cabeza cada dos
+segundos. Un agente lo corrió y un escéptico revisó el diff y las salidas y lo aprobó. Salen con 0 las
+once herramientas del bucle. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Lo que hace.** Las dos cabeceras ganan la fecha y el tiempo medidos. Y la de `banco_completitud.sh`
+se corrige con marca en dos cosas que ya no eran verdad: el sobre de rechazo no resuelve «CON
+PRUEBA», sino que desde el §682 sale DECLARADA, NO PROBADA, con la salida 3; y los negativos no son
+treinta, sino treinta y uno desde el §681.
+
+**Contadores.** Ninguno. La foto de `tools/bancos.sh` deja de valer porque cambian dos bancos, aunque
+solo en comentarios.
+
+**Lo que NO hace.** No vuelve a correr los dos bancos sobre este árbol: la medida es la del §794, y
+desde entonces ni la completitud ni el recibo han cambiado. No regenera los vectores publicados, que se
+juzgan por sí mismos.

@@ -7,6 +7,9 @@
 # lo que custodia, y el mando (§573) los juzga SIN el nodo:
 #   - RESUELTA COMO RECHAZO CON PRUEBA: el sobre de rechazo se arma con el error.data del cable -con
 #     su recepcion, que lo ata al recibo (D3)-, la cabeza de su seq y los publicInputs del envio;
+#     ⚠️ §803: desde el §682 (RFC-0019 E2) ese sobre ya NO resuelve: su causa es `StaleState`, cuya
+#     atadura a la operacion es la palabra del nodo, y sale DECLARADA, NO PROBADA, salida 3, como
+#     `rechazo-stale-declarada` (medido en la corrida del `--largo` de abajo);
 #   - DECLARADA, NO PROBADA: el mismo data, con una causa de las que el RFC-0007 dejo sin prueba
 #     portable (derivada por MUTACION: el nodo no produce hoy esas causas por esta via), salida 3;
 #   - con --largo, NO RESUELTA EN LA VENTANA: se espera a la cabeza de indice era + n + 1 -con
@@ -15,7 +18,8 @@
 #   - y un negativo por cada regla PRODUCIBLE del sobre, derivado por UNA mutacion de lo capturado:
 #     treinta siempre, y con --largo dos mas, los de una resolucion FUERA de la ventana. Las tres
 #     de las claves DISTINTAS se producen con la cabeza de un SEGUNDO nodo, de otra semilla, que se
-#     levanta un momento y se para.
+#     levanta un momento y se para. ⚠️ §803: treinta y UNO siempre desde el §681, que sumo
+#     `neg-vigente-index-inflado` (RFC-0019 E1); con --largo, treinta y tres.
 # El veredicto 1 (resuelta como transicion APLICADA) NO se siembra aqui: pide una prueba STARK real
 # de un envio aplicado, y su verificacion es la del paquete de posicion, que tiene sus vectores. Lo
 # siembra desde el §605 `tools/banco_mentiroso_sin_resolver.sh --guardar`, y su vector es el cuarto
@@ -27,6 +31,11 @@
 #   bash tools/banco_completitud.sh [--largo] [--guardar <dir>]
 #
 # --largo    espera a que la ventana EXPIRE y siembra el veredicto 3 (unos 24 minutos).
+#            ⚠️ §803: los 24 minutos son el suelo, no la cuenta: el latido de 1 s mas la firma no dan
+#            una cabeza por segundo. Medido el 2026-10-14 sobre el arbol del §794, con el RFC-0019
+#            E1 y E2 dentro: VERDE, los treinta y seis sobres, en 2687 s -unos 45 minutos: una
+#            cabeza cada ~1,9 s en una maquina de 4 CPU compartida, con el banco a `nice -n 19`-.
+#            El §574 midio unos 31.
 # --guardar  copia los sobres (positivos y negativos) a <dir>: de ahi sale el catalogo, COPIADO.
 set -u
 msg(){ echo "BANCO-COMPL| $*" >&2; }

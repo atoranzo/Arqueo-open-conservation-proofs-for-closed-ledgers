@@ -23,6 +23,12 @@
 #   --largo  espera a que la ventana expire -n = 1.440 cabezas, unos 24 minutos a un latido por
 #            segundo- y el sobre sale ROJO NOMBRADO, «NO RESUELTA EN LA VENTANA», esta vez con
 #            razon: el operador no tiene resolucion que exhibir. El del control sigue VERDE.
+#            ⚠️ §803: los 24 minutos son el suelo, no la cuenta: el latido de 1 s mas la firma no
+#            dan una cabeza por segundo. Medido el 2026-10-14 sobre el arbol del §794, con el
+#            RFC-0019 E1 y E2 dentro: VERDE, las dieciocho comprobaciones, en 2799 s -unos 47
+#            minutos: una cabeza cada ~1,9 s en una maquina de 4 CPU compartida, con el banco a
+#            `nice -n 19`-, esperando a la cabeza 1446, era 5 mas n 1.440 mas uno. El §602
+#            midio 31 minutos.
 #
 # El titular guarda lo que recibe con el SDK: desde el §606 `pay` y `claim` devuelven su
 # constancia -el recibo y el acuse tal como llegaron- y el ejemplo `e2e` la imprime, una linea JSON
