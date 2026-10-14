@@ -51849,3 +51849,68 @@ resueltas.
 escribe los textos de las bibliotecas que el catálogo trata como opacos (`VerificaError`, el `Debug`
 de `InclusionError`, `ErrorDeNota`): siguen dichos en prosa, y la puerta del §777 los imprime como
 excluidos. No cierra H3: el criterio es una implementación de un tercero.
+
+## §777 — el canon re-deriva el catálogo de rechazos por llamada: `tools/check_catalogo.py` (la tarea 44)
+
+El commit que lleva este asiento, sobre el §776. Nace una herramienta, `tools/check_catalogo.py`, y
+entra en el canon con un bloque propio, «el catalogo de rechazos»; cambian, para decir que ya hay
+quien la cumpla, una frase de `spec/PAQUETE.md` sección 5 y otra de la cabecera de
+`crates/zk-ssl-verify/src/main.rs`, que es comentario; y este asiento. Del autor es elegir la tarea
+y su orden; la forma la propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión
+de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** `spec/PAQUETE.md` sección 5 y la cabecera del kit prometen que, al sellar, el
+censo de los rechazos se re-deriva por llamada y que cada texto que el kit puede emitir está en el
+catálogo. El §397 lo hizo a mano —50 llamadas, 49 textos— y ninguna compuerta lo repitió. El §776
+lo hizo con esta herramienta, todavía fuera del canon, y encontró 78 discrepancias contra el árbol
+del §775. Sin compuerta, el siguiente texto nuevo del kit vuelve a entrar sin catálogo: el §780 ya
+trae uno.
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso las reglas y el sitio: compuerta
+a pin cero, como las del bucle de 2 ter, pero en un bloque propio, como la de los vectores, para que
+cada ROJO entre en el veredicto con su texto; y que el código mande: cuando difieren, se corrige la
+sección 5.
+
+**Lo que hace.**
+
+1. **`tools/check_catalogo.py`**, con sus reglas escritas antes de mirar, en su cabecera. R1, el
+   censo por llamada: un productor es un literal del código de producción de `main.rs` que es el
+   primer argumento de `format!` o va seguido de `.into()`, `.to_string()` o `.to_owned()`, bajo una
+   llamada a `err`, `Err`, `map_err`, `ok_or_else` u `ok_or`, reconstruido con sus continuaciones
+   `\`. R2: los huecos que valen un conjunto de `VersionCabeza` se leen de
+   `crates/zk-ssl-verify/src/lib.rs`, no de la prosa. R3, la ida: cada texto del kit está en la
+   sección 5. R4, la vuelta: cada entrada sale de un productor del kit o de la biblioteca de su
+   envoltorio. R5: cada envoltorio (`map_err(|e| …)`) tiene fila en `TABLA_E`, y cada fila tiene
+   envoltorio. R6, la prueba de vida: menos de 200 llamadas, 30 partidas o 150 entradas es ROJO.
+2. **El bloque del canon**, «2 quinquies», detrás del de los vectores: `OK` con la última línea de la
+   herramienta, o un `falla` por cada ROJO, con su texto.
+3. **Las dos promesas, con nombre**: la frase de la sección 5 dice ahora quién re-deriva el censo y
+   desde cuándo; la de la cabecera del kit, lo mismo, y que la otra mitad de su promesa —«CADA clave
+   que este fichero lee»— sigue a mano: la herramienta no la mira.
+
+**Medido.**
+
+- **Sobre este árbol**: 254 llamadas de rechazo, 225 textos distintos, 63 partidas con `\`; 276
+  entradas en la sección 5, 46 de ellas de listas de biblioteca; 6 invariantes `expect`/`unreachable!`
+  y 4 ítems `#[cfg(test)]` fuera por construcción; los cinco conjuntos de `VersionCabeza`, leídos de
+  `lib.rs`. VERDE.
+- **Que cae.** Con la sección 5 del §775 y el kit de hoy, en una copia: 78 ROJO, y el bloque del
+  canon, aislado con un arnés que solo define `msg` y `falla`, da 78 `falla` con su texto. Con la
+  sección 5 de hoy y el texto nuevo del §780 en el kit sin su entrada: 1 ROJO, `R3 FALTA
+  crates/zk-ssl-verify/src/main.rs:503 «cofirma {}: versionFormato {} no cabe en el byte que el
+  preambulo le reserva»`.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 46 abiertas y 74
+resueltas. Las «nueve herramientas» de `README.md` y `RESUMEN_EJECUTIVO.md` son las del bucle de 2
+ter, y esta queda fuera de él, como la de los vectores.
+
+**Lo que NO hace.** No sigue el flujo de datos: un texto armado en una variable y devuelto después,
+fuera de los patrones de R1, no lo ve, y lo dice su cabecera. No enumera los textos de las
+bibliotecas que la sección 5 trata como opacos (`VerificaError`, el `Debug` de `InclusionError`,
+`ErrorDeNota`, `ActaError`, `FormatoError`): los imprime, uno por envoltorio, como excluidos, y una
+exclusión que no se imprime sería un agujero. No mira las claves que el kit lee. No mira la segunda
+implementación (`tools/segunda`), cuyos textos ata su propio arnés.

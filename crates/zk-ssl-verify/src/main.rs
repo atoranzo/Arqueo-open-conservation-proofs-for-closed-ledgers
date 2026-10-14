@@ -19,8 +19,9 @@
 //! no enumera la superficie: una lista en prosa vuelve a caducar a la
 //! primera forma nueva, y ya caduco una vez. La verdad del sobre se lee en
 //! el documento; la del codigo, en el codigo. Al sellar se comprueba que
-//! el catalogo del documento cubre CADA llamada de rechazo y CADA clave
-//! que este fichero lee — censo por llamada, no por linea.
+//! el catalogo del documento cubre CADA llamada de rechazo —censo por
+//! llamada, no por linea: `tools/check_catalogo.py`, en el canon desde el
+//! §777— y CADA clave que este fichero lee (esa, todavia a mano).
 //!
 //! ⚠️ **El paquete REPORTA, no juzga.** Dice cuantas cofirmas verifican
 //! contra ESTA cabeza y ESTE operador. **Que testigos valen y cuantos hacen

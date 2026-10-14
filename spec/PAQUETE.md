@@ -749,10 +749,11 @@ sale con código 1 (sección 6); los tres textos del cuarto estado del sobre de 
 con 3 y sin `ROJO` (bloque de la completitud). No hay pánico por paquete mal formado: cada
 lectura de campo falla cerrada. El catálogo es la lista de mensajes que el binario puede emitir,
 con sus huecos entre llaves; un lector que vea uno de estos textos sabe qué regla ha caído. **La
-verdad se mide en el fuente**: al sellar, el censo se re-deriva por llamada, no por línea —al
-§776, 254 llamadas de rechazo y 225 textos distintos, y 63 de esas llamadas van partidas con `\`
-en el fuente—, y cada texto tiene que estar aquí, también el que hoy no se alcanza: el censo es
-por llamada, y un texto inalcanzable entra con la nota que dice por qué.
+verdad se mide en el fuente**: al sellar, `tools/check_catalogo.py` re-deriva el censo por llamada,
+no por línea, dentro del canon (§777) —al §776, 254 llamadas de rechazo y 225 textos distintos,
+y 63 de esas llamadas van partidas con `\` en el fuente—, y cada texto tiene que estar aquí,
+también el que hoy no se alcanza: el censo es por llamada, y un texto inalcanzable entra con la
+nota que dice por qué.
 
 **Lectura del fichero y versión del sobre**
 

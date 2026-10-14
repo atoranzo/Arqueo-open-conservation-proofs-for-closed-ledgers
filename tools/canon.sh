@@ -376,6 +376,28 @@ if [ -n "$BASE_V" ] && [ "$BASE_V" != "$(git rev-parse HEAD 2>/dev/null)" ]; the
   fi
 fi
 
+# ── 2 quinquies · el catalogo de rechazos (§777) ─────────────────
+# spec/PAQUETE.md seccion 5 y la cabecera del kit (crates/zk-ssl-verify/src/main.rs) prometen que,
+# al sellar, el censo de los rechazos se re-deriva POR LLAMADA y que cada texto que el kit puede
+# emitir esta en el catalogo. Desde el §397, que lo hizo a mano (50 llamadas, 49 textos), nadie lo
+# re-derivo, y el §776 encontro lo que eso deja: dos bloques enteros sin catalogar (el pago en curso
+# y la completitud), los conjuntos de versiones sin la v6 y textos que el codigo ya decia de otra
+# manera; contra el arbol del §775, 78 ROJO. tools/check_catalogo.py hace ese censo: cada llamada
+# de rechazo del kit tiene entrada en la seccion 5 (ida), cada entrada tiene un productor en el kit o
+# en la biblioteca de su envoltorio (vuelta), y los huecos que valen un conjunto de VersionCabeza se
+# leen de crates/zk-ssl-verify/src/lib.rs, no de la prosa. Lo que no enumera lo IMPRIME como
+# exclusion. Pin cero, fuera del bucle de 2 ter para que cada ROJO entre con su texto, como el de
+# los vectores. Menos de un segundo.
+msg ""
+msg "== CANON · el catalogo de rechazos =="
+if python3 tools/check_catalogo.py > "$OUT/check_catalogo.txt" 2>&1; then
+  msg "  OK  $(tail -n 1 "$OUT/check_catalogo.txt")"
+else
+  while IFS= read -r L; do falla "catalogo $L"; done < <(grep '^ROJO ' "$OUT/check_catalogo.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO ' "$OUT/check_catalogo.txt" || falla "check_catalogo.py en rojo sin nombrar el texto ($(tail -n 1 "$OUT/check_catalogo.txt"))"
+  msg "      que hacer: $OUT/check_catalogo.txt; el codigo manda: se corrige la seccion 5, no el kit"
+fi
+
 # ── 3 · conformidad ─────────────────────────────────────────────
 msg ""
 msg "== CANON · conformidad =="
