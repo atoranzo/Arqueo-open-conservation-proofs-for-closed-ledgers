@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =========================== LOS BANCOS ===========================
 #
-#     bash tools/bancos.sh             # todos los tools/banco_*.sh · **~15 min**
+#     bash tools/bancos.sh             # todos los tools/banco_*.sh · **~15 min** (⚠️ §804: menos los de FUERA, punto 5)
 #     bash tools/canon.sh --bancos     # lo mismo, desde el canon
 #
 # **Por que existe (§582).** Los bancos viven FUERA del canon: arrancan el
@@ -19,7 +19,7 @@
 # ## Lo que lo hace robusto
 #
 # 1. **La lista se LEE del directorio**: todo `tools/banco_*.sh`. Un banco
-#    nuevo entra solo; ninguno se puede olvidar en una lista a mano.
+#    nuevo entra solo; ninguno se puede olvidar en una lista a mano. ⚠️ §804: la unica lista a mano es la de los que NO corren, `FUERA`, y cada pasada la dice.
 # 2. **No se para en el primer fallo**: da el inventario entero.
 # 3. **Timeout POR BANCO** (`BANCO_TIMEOUT`, 1800 s): uno que cuelgue no
 #    cuelga los demas.
@@ -27,7 +27,7 @@
 #    arbol del sello; uno que lo ensucia es un fallo, y se nombra.
 # 5. **Declarado FUERA**: el `--largo` de la completitud (unos 24 minutos
 #    mas, §574) y el del recibo sin resolver (otros tantos, §602). Aqui
-#    corren sus modos por defecto.
+#    corren sus modos por defecto. ⚠️ §804: y FUERA entero, por su nombre, `tools/banco_cortes.sh`: mide seis commits fijos de la historia, no el arbol del sello, y compila seis veces.
 #
 # ================================================================
 
@@ -53,10 +53,16 @@ sucio() { git status --porcelain -uall; }
   exit 2
 }
 
-mapfile -t BANCOS < <(ls tools/banco_*.sh 2>/dev/null | sort)
+# Punto 5 (§804): los que no miden el arbol del sello, por su nombre. El de los cortes repite el
+# §699 sobre seis commits fijos: su resultado no lo cambia un sello, y entero tardo 1.251 s en el
+# §804, 1.115 de ellos en sus seis compilaciones, con la maquina compartida: otros veinte minutos
+# sobre los de esta pasada. Se corre aparte, y cada pasada lo nombra.
+FUERA=(tools/banco_cortes.sh)
+mapfile -t BANCOS < <(ls tools/banco_*.sh 2>/dev/null | sort | grep -vxF -f <(printf '%s\n' "${FUERA[@]}"))
 [ "${#BANCOS[@]}" -gt 0 ] || { msg "bancos: ningun tools/banco_*.sh"; exit 2; }
 mkdir -p "$LOGS"
 msg "== BANCOS · ${#BANCOS[@]} bancos, uno a uno, sobre $(git rev-parse --short HEAD) =="
+for f in "${FUERA[@]}"; do [ -f "$f" ] && msg "   FUERA (punto 5): $f, aparte: bash $f"; done
 msg "   banco                     exit     seg"
 T_INI=$(date +%s)
 for b in "${BANCOS[@]}"; do

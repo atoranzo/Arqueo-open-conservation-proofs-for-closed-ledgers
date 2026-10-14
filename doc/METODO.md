@@ -206,7 +206,7 @@ bloque las reescribía a mano (`tools/canon.sh:2-6`).
 | `bash tools/canon.sh --largo` | lo de `--sello`, y además halo2 y plonk |
 | `bash tools/canon.sh --completo` | lo de `--largo`, y además `zk-core` |
 | `bash tools/canon.sh --lista` | sólo enseña la tabla; no ejecuta |
-| `bash tools/canon.sh --bancos` | los bancos, todos (`tools/bancos.sh`) |
+| `bash tools/canon.sh --bancos` | los bancos, todos (`tools/bancos.sh`); ⚠️ §804: menos el de los cortes, que se corre aparte |
 
 Son tres niveles porque meter `zk-core` en cada sello «garantizaria que alguien acabe saltandose la
 compuerta, y una compuerta que se salta no protege» (§225, `tools/canon.sh:49-60`). El `--completo`
@@ -239,7 +239,10 @@ banco tiene su timeout, el árbol tiene que quedar limpio antes y después de ca
 largos quedan fuera, declarados (`tools/bancos.sh:7-30`). Tampoco los fuerza nadie: cada pasada
 verde deja constancia en `.canon/ultimo-bancos`, y toda invocación del canon dice cuándo fue y si lo
 que ejercen cambió desde entonces (`tools/canon.sh:69-75`). Desde el §786 compilan con `--locked`, y
-una puerta del canon lo exige por llamada (`tools/canon.sh:413-416`).
+una puerta del canon lo exige por llamada (`tools/canon.sh:413-416`). ⚠️ §804: los corre todos menos
+`tools/banco_cortes.sh`, que el punto 5 de `tools/bancos.sh` deja fuera por su nombre: repite la
+medida del §699 sobre seis commits fijos de la historia, no mide el árbol del sello, y compila seis
+veces. Se corre aparte, y cada pasada de los demás lo nombra.
 
 ## 7. Quién decide qué, en lo que hoy está escrito
 

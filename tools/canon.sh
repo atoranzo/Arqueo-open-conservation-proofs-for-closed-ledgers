@@ -18,6 +18,8 @@
 # invocaciones separadas de G.2.
 #     bash tools/canon.sh --lista      # solo enseña la tabla, no ejecuta
 #     bash tools/canon.sh --bancos     # los bancos, todos (tools/bancos.sh) · **~15 min**
+#                                      # (⚠️ §804: menos el de los cortes, que se corre aparte:
+#                                      # su punto 5)
 #     bash tools/canon.sh --conservados  # spec/vectors/<version>/, cada uno con el kit de SU
 #                                        # commit (tools/conservados.sh) · **~2 min** (§798)
 #     bash tools/canon.sh --conservados --en-seco  # su plan, sin construir nada · ~1 s

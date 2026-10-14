@@ -53690,3 +53690,43 @@ solo en comentarios.
 **Lo que NO hace.** No vuelve a correr los dos bancos sobre este árbol: la medida es la del §794, y
 desde entonces ni la completitud ni el recibo han cambiado. No regenera los vectores publicados, que se
 juzgan por sí mismos.
+
+## §804 — el banco de compatibilidad entre cortes del §699, en el árbol: `tools/banco_cortes.sh` compila los seis puntos de la historia y repite las 48 corridas, VERDE e idéntico casilla a casilla (la tarea 47)
+
+El commit que lleva este asiento, sobre el §803. Toca un fichero nuevo, `tools/banco_cortes.sh`;
+`tools/bancos.sh`, que lo deja fuera por su nombre; una línea de la cabecera de `tools/canon.sh` y una de
+`doc/METODO.md`, con su marca; y este asiento. Ni código de los crates, ni tests, ni vectores. Del
+autor es elegir la tarea; la forma la propuso la sesión. Lo escribe y lo comprueba una sesión de Claude
+Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§800 a §829). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero, `--sello`,
+sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El §699 midió, fuera del árbol y contra seis compilaciones, qué envíos acepta un nodo
+de `zkssl/0.4` de un cliente de otro punto de la historia, y dijo: «No deja el banco en el árbol».
+
+**Lo que hace.** `tools/banco_cortes.sh`, con la forma de los otros bancos, compila los seis puntos que
+midió el §699 —el §622 (`3d3bb3d`), el §640 (`7534380`), el §641 (`2901c54`), el §679 (`3a1b5d7`), el
+§680 (`f543ccf`) y el §699 (`b9e7b0c`)— desde sus commits con `git archive | tar -x -m`, en release, con
+`--locked` y un solo target temporal que borra al acabar; corre las 48 corridas nodo-cliente con el
+ejemplo `e2e` contra un nodo `--dev`, y compara casilla a casilla con la tabla del §699. El `-m` de `tar`
+hace falta: sin él, el §641 «compila» en cero segundos detrás del §640, porque las fechas de los
+ficheros no cambian, y su nodo es byte a byte el del §640, así que el banco mediría un binario
+equivocado. `tools/bancos.sh` lo deja en su lista `FUERA`, porque mide commits fijos y no el árbol del
+sello y costaría unos veinte minutos más por pasada; las líneas que decían «todos» los bancos llevan su
+marca.
+
+**Medido.** VERDE e idéntico en todas las casillas: los cortes son el §641 y el §680, cada rechazo es
+`VerificationFailed` con «envio: InconsistentOodConstraintEvaluations», y los seis nodos dicen
+`zkssl/0.4` las 48 veces. Tardó 1.251 s: 1.115 de compilación y 134 de corridas, de 1,6 a 3,9 s cada una.
+El falsador, con los binarios del §641 cambiados por los del §640, sale ROJO en las tres filas que el §641
+toca. Un agente lo escribió y lo corrió, y un escéptico lo revisó y lo aprobó. Salen con 0 las once
+herramientas del bucle, y `bash -n` de los tres scripts. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno de tests ni de vectores. Los ficheros `tools/banco_*.sh` pasan de 25 a 26, y
+`tools/bancos.sh` sigue corriendo 25; las llamadas a cargo que mira la puerta `--locked` del canon pasan
+de 55 a 57, todas con `--locked`.
+
+**Lo que NO hace.** No mide este árbol contra el §699 —es otra medida, con su propia expectativa—, ni lo
+que el §699 tampoco midió: el cobro y la quema a través de los cortes, el umbral del §684, los commits
+intermedios uno a uno y lo anterior al §622. No enlaza el banco desde la especificación.
