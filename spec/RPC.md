@@ -99,10 +99,17 @@ RFC-0009 (D-A, D-C). Ver `SECURITY.md`.
 | `zkssl_recepPath` | `{rx: Q}` | `{available, recepCount?: Q, index?: Q, camino?: {siblings: Digest[], isRight: bool[]}, reason?, beatSeconds?}` (RFC-0010 E3, §571) |
 | `zkssl_keyActs` | — | `{actas: ActaFirmada[]}`, desde la génesis; vacía si el nodo no firma actas (RFC-0015 E3b-2, §646) |
 
-`LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
+`LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest, compromiso?: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
-`Governance`,`Freeze`,`Send`,`Claim`,`MintToPending`,`Migration`,`Refund`}
+`Governance`,`Freeze`,`Send`,`Claim`,`MintToPending`,`Migration`,`Refund`,`Consumo`}
 (los `OpKind` de la capa; dicen qué circuito verifica la entrada).
+⚠️ §797: hasta aquí decía `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain:
+Digest}`, y la lista de `kind` acababa en `Refund`. Le faltaban dos cosas que el cable sirve:
+`compromiso`, desde el §281, que va en toda entrada de la era 2 y falta en las de la era 1
+(`LogEntryDto`, `crates/zk-ssl-wire/src/lib.rs:545-561`, `skip_serializing_if`) y sin el que la
+cadena de una entrada de la era 2 no se recompone; y `Consumo`, desde el §413 (RFC-0006 E1). La
+primera la señalaba ya `doc/ecst/ECST.md:761-764` (§5.4). Cómo componen `chain` los otros seis
+campos y el `chain` de la entrada anterior, en «La composición de `chain`, byte a byte».
 
 ### Apertura
 
@@ -247,11 +254,227 @@ que va a cambiar.
    del sello dice a qué clase pertenece (§278): a los **bytes de la
    prueba** donde la hay (§116); al **compromiso de umbral** en las
    vías delegadas; o a la **ausencia declarada**, con dominio propio,
-   donde no hay prueba por diseño. El registro no guarda ninguno de
-   los tres; los sellos los distinguen.
+   donde no hay prueba por diseño. El registro no guarda los bytes de
+   la prueba; desde el §281 la entrada de era 2 sí lleva el compromiso
+   de umbral, en `compromiso`. Los sellos los distinguen. (⚠️ §797: hasta
+   aquí decía «El registro no guarda ninguno de los tres», y desde el
+   §281 la entrada lleva el compromiso; la fórmula, en «La composición
+   de `chain`, byte a byte».)
 
 Estas cuatro se mantienen con lotes o sin ellos. `zkssl_verifyChain` las
 comprueba.
+
+### La composición de `chain`, byte a byte (§797)
+
+⚠️ **Esto documenta el CABLE; no amplía el núcleo.** `chain` es un valor del
+registro de transiciones, y el registro es la clase REGISTRO de
+`spec/NUCLEO.md` §«2. Las cuatro clases»: lo componen el nodo y el cliente
+por el cable, y por eso queda fuera del núcleo congelado (RFC-0005, D-A: «el
+núcleo es el lado del verificador, no el cable»). Lo que sigue es para un
+**segundo implementador del cliente** que quiera recomponer lo que sirve
+`zkssl_logEntries` sin fiarse del nodo, y no entra en el paquete. Lo que queda
+fuera del núcleo es la **composición**: `chain_digest`, `chain_digest_v2` y
+`OpKind::tag` viven en `crates/zk-ssl/src/log.rs` (:250, :281, :130), que el
+censo de `NUCLEO.md` (§«4. El censo»: `zk-ssl-verify` y `zk-ssl-hash`) no
+recorre, y no tienen KAT en `spec/vectors/nucleo/`. Las **piezas** sí están:
+`native_merge`, `as_digest`, `embeber`, `digest_to_bytes` y `digest_from_bytes`
+son NÚCLEO, con fila (`NUCLEO.md:93`, `:84`, `:92`, `:86`, `:85`) y KAT
+(`spec/vectors/nucleo/native_merge.json`, `as_digest.json`, `embeber.json`,
+`digest_to_bytes.json`, `digest_from_bytes.json`); `digest_of_proof`, los dos
+sellos y `COMPROMISO_AUSENTE` tienen fila de clase REGISTRO (`NUCLEO.md:233-235`
+y `:226`) y no tienen KAT.
+
+Hasta el §797 ningún texto de `spec/` daba la fórmula: la regla 3 de arriba la
+dice en prosa. Fuera de `spec/` sí estaba escrita con las dos eras, pero sólo
+el árbol de merges, ni la tabla de etiquetas ni la escritura del cable, en
+`doc/ecst/ECST.md` §5.4 (:724-735; de las etiquetas dice sólo «`tag` es el u64
+de `OpKind` (1 a 13)», :733) y en el hallazgo L1a de `doc/ecst/VERIFICACION.md`
+(:993, que dice lo mismo de `tag_i`, y sus fuentes en :994), y la envoltura de
+la era 2 en el asiento del §281 (`AUDITORIA.md:21146`).
+
+`doc/ecst/ECST.md` es un informe fechado: su base es `main` en 71c5aad
+(`ECST.md:8-9`), y no se marca. Aún dice que «Nadie recompone la cadena por un
+tercero» (:761-764; con otras palabras, :54, :974 y :1252-1253) y que este
+fichero describe `LogEntry` sin `compromiso` (:762-764 y :1181-1182), y lo
+mismo en inglés `doc/ecst/ECST_EN.md` (:768-771 y :1199-1200; :59, :985-986 y
+:1273). Desde el §797 no es así: `LogEntry` lleva `compromiso` (arriba, en
+«Lectura»), y `tools/segunda/juez_cadena.py` recompone la cadena fuera del
+nodo, desde un fichero con las entradas. Lo que el juez no cambia: las pruebas
+siguen sin conservarse, y no compara la última `chain` con una cabeza firmada
+(lo medido, al final).
+
+⚠️ **Y `conformance --check` no comprueba esto.** El escenario de conformidad
+vuelve a correr el probador, y desde el §538 declara no reproducibles
+`proof_digest`, `chain` y `epoch_digest` (RFC-0009, D-AI): con la ocultación,
+los bytes de una prueba cambian en cada emisión, y con ellos todo lo que los
+arrastra. Lo que sí se comprueba sin el probador es la **composición**: con
+las entradas tal como las trae el vector de conformidad (`Entrada`,
+`crates/zk-ssl-cli/src/conformance.rs:38-51`, con las claves en snake_case) o
+tal como las sirve `zkssl_logEntries` (`LogEntryDto`, en camelCase), con su
+`proofDigest`, `chain` es aritmética pura. Las dos formas escriben los mismos
+bytes (`hexd` y `q`, `conformance.rs:65-71`; `B32` y `Q`,
+`crates/zk-ssl-wire/src/lib.rs:61-67`, `:84-88` y `:107-111`), y
+`tools/segunda/juez_cadena.py` lee las dos (lo medido, al final).
+
+**Las piezas**, de `crates/zk-ssl-hash/src/lib.rs` salvo la etiqueta, que es
+de `log.rs`, y las mismas que usa `NUCLEO.md` sección 6:
+
+- `merge(l, r)` es `native_merge` (`lib.rs:100`): un estado Rescue-Prime
+  `Rp64_256` de doce elementos a cero, `l` en `[4..8]` y `r` en `[8..12]`, una
+  permutación, y la salida es `[4..8]`.
+- `as_digest(x)` es `[x, 0, 0, 0]` (`embeber`, `lib.rs:126` y `:144`), para un
+  `u64` `x < p`.
+- Un `Digest` del cable son sus cuatro elementos, cada uno en ocho bytes
+  little-endian (`digest_to_bytes`, `lib.rs:1191`; «Codificación»), y se lee
+  con la canonicidad del RFC-0016: cada elemento `< p`, y el texto en el hex
+  canónico, `0x` y `[0-9a-f]` por pares (`hex_canonico`, `lib.rs:1135`).
+- `etiqueta(kind)` es `OpKind::tag` (`crates/zk-ssl/src/log.rs:130`), y el
+  texto de `kind` es el nombre de la variante (`LogEntryDto`:
+  `format!("{:?}", kind)`, `crates/zk-ssl-wire/src/lib.rs:567`):
+  `OpenAccount` 1, `Mint` 2, `Transfer` 3, `Burn` 4, `Recovery` 5,
+  `Governance` 6, `Freeze` 7, `Send` 8, `Claim` 9, `MintToPending` 10,
+  `Migration` 11, `Refund` 12, `Consumo` 13. Un `kind` que no esté en la
+  lista no tiene etiqueta y la entrada no se recompone. ⚠️ Contra un vector
+  sólo están medidas cuatro: 1, 2, 8 y 9 (lo medido, al final).
+
+**Era 1**: una entrada sin `compromiso`, anterior al §281 (`chain_digest`):
+
+```
+cabecera = merge(as_digest(seq), as_digest(etiqueta(kind)))
+raices   = merge(rootOld, rootNew)
+cuerpo   = merge(cabecera, raices)
+chain_v1 = merge(merge(cuerpo, proofDigest), anterior)
+```
+
+**Era 2**: una entrada con `compromiso`, que es toda entrada desde el §281
+(`chain_digest_v2`), y es la de era 1 entera, como subárbol, más el
+compromiso:
+
+```
+chain_v2 = merge(chain_v1, compromiso)
+```
+
+- `anterior` es el `chain` de la entrada `seq - 1`. Para `seq = 0` es el
+  digest cero, `[0, 0, 0, 0]` (`TransitionLog::head` de un registro vacío),
+  que es también el `chainDigest` de la cabeza de un nodo sin entradas.
+- **La era la decide la presencia del campo, entrada a entrada**
+  (`verify_chain` y `verify`, `match e.compromiso`): un registro mixto se
+  verifica con la fórmula de cada entrada. No hay byte de versión. En disco
+  la era se distingue por la longitud de la entrada (`LogEntry::compromiso`);
+  en el cable, por si la clave `compromiso` trae un valor: `LogEntryDto` la
+  declara `Option<B32>` con `default` (`crates/zk-ssl-wire/src/lib.rs:559-560`)
+  y lee igual la clave ausente que `"compromiso": null`, las dos como era 1.
+  El nodo no escribe nunca el `null` (`skip_serializing_if`), y el juez lo da
+  rojo (R7): es más estricto que el DTO.
+- ⚠️ **El «v2» de la cadena no es el compromiso v2 del RFC-0003.** El del
+  RFC-0003 es el de la hoja pendiente (`pending_commitment`, con su Δ por
+  pago). El de la cadena es el **compromiso autorizante** de la entrada
+  (§281): el `commit_operation` contra el que se verificó una vía delegada,
+  el consumo en un `Consumo`, o el centinela `COMPROMISO_AUSENTE` en todo
+  lo demás. El del RFC-0003 sólo llega a la cadena a través de las raíces y
+  de la prueba.
+- El `chain` de un `Applied` es el de SU entrada; `batch.chain` es el de la
+  última entrada del lote (`log_head`); el `chainDigest` de
+  `zkssl_epochHead`, el de la última entrada del registro.
+
+**Lo que asienta cada clase**: qué llevan `proofDigest` y `compromiso` (según
+los llamantes de `append` y `append_con_compromiso` en `crates/zk-ssl/src/`),
+y si un cliente puede recomponerlos sin la prueba.
+
+| `kind` | `proofDigest` | `compromiso` (era 2) | ¿se recompone sin la prueba? |
+|---|---|---|---|
+| `OpenAccount` | `digest_of_proof(sello_sin_prueba())` | `COMPROMISO_AUSENTE` | sí: es una constante |
+| `Mint`, `Freeze`, `Recovery`, `Governance`, `MintToPending` | `digest_of_proof(sello_de_autorizacion(compromiso))` | el `commit_operation` que las autorizó | sí, desde el `compromiso` de la propia entrada |
+| `Send`, `Claim`, `Burn`, `Refund` | `digest_of_proof(bytes de la prueba)` | `COMPROMISO_AUSENTE` | **no**: el registro no guarda la prueba, y desde el §538 sus bytes no se reproducen (D-AI) |
+| `Migration` | `digest_of_proof(payload)` (`migration.rs`) | `COMPROMISO_AUSENTE` | **no** desde la entrada: el payload no viaja |
+| `Consumo` | ⚠️ `digest_of_proof([])`, la prueba VACÍA (`consumo.rs`, `apply_consumo`) | el consumo publicado | sí: es una constante |
+| `Transfer` | — | — | no tiene llamador en la capa; sólo la asientan los tests de `log.rs` |
+
+⚠️ **La columna `proofDigest` vale para las entradas desde el §278, y la de
+`compromiso`, desde el §281 (la era 2).** Antes, el `proofDigest` depende de
+cuándo se asentó, y una entrada de era 1 no dice cuándo: hasta el §209
+`digest_of_proof` era un hash algebraico, Rescue por bloques de 16 bytes
+(`AUDITORIA.md:14147-14150`), y es lo que trae `zkssl-0.1.json`; del §209 al
+§278, `OpenAccount` y las cinco delegadas asentaban la prueba vacía,
+`digest_of_proof([])` (`AUDITORIA.md:20888-20893`). Del §278 al §281 la columna
+ya vale, pero una delegada de era 1 no lleva en la entrada el compromiso con que
+se selló, y desde la entrada no se recompone. La excepción es `Recovery`: su
+compromiso ata las dos raíces de la entrada y el contador de recuperaciones
+(`crates/zk-ssl/src/recovery.rs:141-145`), y el kit recompone su `proofDigest`
+con el registro entero desde `seq = 0`, contando las `Recovery` anteriores
+(`reverificar`, `crates/zk-ssl-verify/src/reverificacion.rs:18`, `:38`, `:119`
+y `:179-198`; leído y no ejecutado). El juez no lo hace, y también la declara.
+`Consumo` es del §413 y es siempre de la era 2. Por eso el juez aplica la tabla
+sólo a la era 2, y en la era 1 la declara.
+
+- `digest_of_proof(b) = Blake3(b"ZK-SSL-proof-digest-v2" ‖ len(b) en u64 LE ‖ b)`,
+  y sus 32 bytes se leen como cuatro `u64` LE **reducidos** módulo `p`
+  (`resumen_con_dominio`, el molde del §116: un productor reduce).
+- `sello_sin_prueba() = b"ZK-SSL-no-proof-by-design-v1"` y
+  `sello_de_autorizacion(c) = b"ZK-SSL-authorization-seal-v1" ‖ digest_to_bytes(c)`.
+- `COMPROMISO_AUSENTE = [0xC0A92281; 4]`, un valor declarado y no un hash; en
+  el cable, `0x8122a9c000000000` cuatro veces.
+
+⚠️ **`Consumo` asienta la prueba vacía, no el sello de ausencia declarada.**
+El §278 separó «no hay prueba por diseño» (`sello_sin_prueba`) de «la prueba
+se olvidó» (`digest_of_proof([])`), y la regla 4 de arriba lo da por
+separado. `Consumo` (RFC-0006 E1, §413) llegó después y asienta el vacío. La
+entrada sigue atada, porque el consumo va en `compromiso` y entra en la
+cadena; pero su `proofDigest` es el mismo que el de una prueba olvidada. Se
+escribe aquí como lo que hace el código, no como una regla. Y `reverificar`
+(`crates/zk-ssl-verify/src/reverificacion.rs`), **leído y no ejecutado**, la
+rechazaría con `SelloDiscrepante`: ve un compromiso que no es el centinela y
+espera el sello de autorización. Ningún vector del cable trae una entrada
+`Consumo`, así que esta fila está sin ejercitar.
+
+**Lo medido (§797).** `python3 tools/segunda/juez_cadena.py` recompone las
+seis cadenas de `spec/vectors/zkssl-0.4.json` desde sus entradas: **seis de
+seis**, todas de era 2. Recompone también cuatro de sus seis `proof_digest`,
+los dos `OpenAccount` y los dos `Mint`. Los de `Send` y `Claim` (seq `0x4` y
+`0x5`) quedan **declarados** como no recomponibles (D-AI). Con los cuatro
+vectores del cable (de `zkssl-0.1` a `zkssl-0.4`) salen veinticuatro de
+veinticuatro, y las seis de `zkssl-0.1.json` son de era 1: las únicas que
+ejercitan `chain_v1`. Las seis de `zkssl-0.4.json` reescritas como las sirve
+el cable, una lista `LogEntry[]` en camelCase, salen también seis de seis. El
+juez lee el texto con la escritura canónica del cable (`hex_canonico` y
+`cantidad_canonica`: una mayúscula, un `0x١` o un `0x1_0` son rojo) y da rojo,
+con el nombre del fichero, a un JSON que no se lee, a una raíz que no es ninguna
+de las dos formas, a una clave repetida y a una que la cadena no ata. El
+`epoch_digest` del vector **no** se recompone desde el fichero, porque le
+faltan `pendingRoot` y `frozenRoot` (`conformance.rs:90`, `recolectar`, lo
+compone v2 con la cabeza entera). El juez no entra en el canon: se corre a
+mano.
+
+⚠️ **Lo que esa medida no cubre**, y el juez lo imprime en su salida:
+
+- **Lo que ningún vector ejercita.** Los cuatro traen sólo `OpenAccount`,
+  `Mint`, `Send` y `Claim`. De las trece etiquetas, nueve —`Transfer`, `Burn`,
+  `Recovery`, `Governance`, `Freeze`, `MintToPending`, `Migration`, `Refund` y
+  `Consumo`— están escritas aquí y en `tools/segunda/cable.py` sin contraste
+  con el nodo: con la de `Consumo` cambiada a 14 en una copia de `cable.py`
+  siguen saliendo veinticuatro de veinticuatro. De la tabla por clase,
+  contrastan su fila sólo `OpenAccount`, `Mint` (una de las cinco delegadas:
+  el sello de autorización de `Freeze`, `Recovery`, `Governance` y
+  `MintToPending` no lo prueba ninguna entrada) y `Send` y `Claim` (sólo el
+  centinela de su `compromiso`); `Burn`, `Refund`, `Migration`, `Consumo` y
+  `Transfer` no tienen entrada.
+- **Un registro truncado, o reescrito de forma coherente.** Quitando la última
+  entrada de `zkssl-0.4.json` salen cinco de cinco: recomponer dice que las
+  entradas son coherentes entre sí, no que la última `chain` sea la que el nodo
+  firmó. Eso lo diría compararla con el `chainDigest` de una cabeza firmada, y
+  el juez no lo hace.
+- **La raíz del génesis.** Viaja, como `rootOld` de la entrada `seq = 0`, pero
+  el fichero no trae otra, independiente, con que contrastarla (`verify` la
+  recibe de fuera, `log.rs:465`): la regla 2 se comprueba desde la segunda
+  entrada.
+- **Que las eras no retrocedan.** Desde el §281 todo asiento es de era 2
+  (`append` y `append_con_compromiso`, `log.rs:366-408`: `append` delega con
+  el centinela, :373, y el único `entries.push` asienta `chain_digest_v2`,
+  :397, y `compromiso: Some`, :403), pero ni `verify_chain` (`log.rs:420-447`)
+  ni el juez rechazan una entrada de era 1 detrás de una de era 2: el juez la
+  da como nota, no como rojo.
+- **Un tramo que no empiece en `seq = 0`** (`fromSeq`): sin el `chain` de la
+  entrada anterior no hay con qué encadenar la primera.
 
 ### `zkssl_applyMany` — N operaciones contra UNA raíz de arranque
 
@@ -488,7 +711,11 @@ el caso que importa es justo el rechazo.
 ### ⚠️ Lo que `receptionSeq` NO es: evidencia oponible
 
 **Es un número que el nodo dice y que nada ata.** `chain` autentica `seq`,
-`kind`, las dos raíces, el digest de prueba y el anterior — **y nada más**.
+`kind`, las dos raíces, el digest de prueba, el anterior y, desde el §281, el
+`compromiso` de la entrada — **y nada más**. (⚠️ §797: hasta aquí decía «el
+digest de prueba y el anterior — **y nada más**», sin el compromiso, que entra
+en la cadena desde el §281; la fórmula, en «La composición de `chain`, byte a
+byte».)
 
 - **Dos titulares que cooperan DETECTAN la reordenación**: A tiene
   recepción 100, B tiene 101, la de B está en el log y la de A no.

@@ -53101,3 +53101,65 @@ ni los atributos de las 21 funciones del cableado, ni lo que va tras `mod tests`
 un `/* */` de varias líneas en las dos reglas de longitud; y su rojo de longitud sale sin línea. No
 mira los documentos excluidos —los registros, la historia, las comparativas superadas y el preprint
 suspendido—, ni la cifra de RISC Zero, que es la de su documentación.
+
+## §797 — la composición de `chain`, byte a byte, escrita en `spec/RPC.md`, y la segunda implementación la recompone desde los vectores del cable: 24 de 24 cadenas (la tarea 23)
+
+El commit que lleva este asiento, sobre el §796. Toca `spec/RPC.md`, que gana la sección «La
+composición de `chain`, byte a byte» y dos correcciones con marca; `tools/segunda/`, con dos ficheros
+nuevos, `cable.py` y `juez_cadena.py`, una línea de `nucleo.py` y su `README.md`; y este asiento. Ni
+código del árbol, ni tests, ni vectores. Del autor es elegir la tarea; la forma la propuso la sesión.
+Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango
+de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la
+sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió
+VERDE.
+
+**De dónde sale.** Ningún texto de `spec/` daba la fórmula de `chain`: fuera de él solo estaban el
+árbol de merges, en `doc/ecst/ECST.md` §5.4 y `doc/ecst/VERIFICACION.md:993-994`, y la envoltura de la
+era 2 en el asiento del §281. El cable servía `compromiso` y la clase `Consumo` sin que `spec/RPC.md`
+los nombrara, y un segundo implementador del cliente no tenía de dónde recomponer lo que sirve
+`zkssl_logEntries`.
+
+**Quién lo decide.** Documenta el CABLE y no amplía el núcleo: la composición de `chain` es de la
+clase REGISTRO de `spec/NUCLEO.md` (RFC-0005, D-A) y vive en `crates/zk-ssl/src/log.rs` sin KAT; sus
+piezas sí son núcleo y tienen KAT. La sección lo dice en su primera línea.
+
+**Lo que hace.**
+
+1. **`spec/RPC.md`**: la cabecera y las dos eras —`chain_v1` desde la cabecera, las raíces, el
+   `proofDigest` y el anterior; `chain_v2 = merge(chain_v1, compromiso)`, la era decidida entrada a
+   entrada por la presencia de `compromiso`—, la tabla de lo que cada clase asienta como
+   `proofDigest`, con la excepción de `Recovery` en la era 1, que el kit recompone con el registro
+   entero desde `seq` 0 (`crates/zk-ssl-verify/src/reverificacion.rs`, leído y no ejecutado), y lo que
+   no se comprueba. Con marca: el `LogEntry` del método, que no nombraba `compromiso`, y la regla 4
+   de «Lo que el registro afirma SIEMPRE», que decía que el registro no guarda ninguno de los tres
+   destinos del sello, y desde el §281 guarda el compromiso. `doc/ecst/ECST.md` es un informe fechado
+   (base `71c5aad`) y no se marca: la sección dice que lo que allí consta ya no es así.
+2. **`tools/segunda/cable.py`**, que transcribe la composición desde la sección y de ningún `.rs`, y
+   toma de `nucleo.py` solo las primitivas; y **`juez_cadena.py`**, que la juzga entrada a entrada con
+   sus reglas R0-R7, en la forma del vector o en la lista `LogEntry[]` del cable, con falsadores
+   internos y sus líneas `NOTA` y `SIN EJERCITAR`. El `README.md` dice que `juez_nucleo.py` ya no era
+   el único llamador de `nucleo.py`, con marca, y da las cifras.
+
+**Medido.** Sobre `spec/vectors/zkssl-0.4.json`: 6 de 6 cadenas recompuestas, todas de era 2, con 4
+`proofDigest` recompuestos sin la prueba (los dos `OpenAccount` y los dos `Mint`) y 2 declarados
+(`Send` y `Claim`, bytes de prueba); sobre los cuatro vectores del cable, 24 de 24, y las seis de
+`zkssl-0.1` son las únicas de era 1. Los falsadores internos son 8 en la era 2 y 7 en la era 1, y cada
+uno altera un campo, o el orden del último merge, y deja de recomponer; los de fuera del juez, 13 casos
+sobre copias, salen con su `ROJO` con nombre o su `NOTA`. Lo redactó un agente y lo revisaron cinco
+escépticos sucesivos con un arreglador entre ronda y ronda; el último lo aprobó con dos cosas menores
+de texto, que corrigió la sesión. Salen con 0 `check_cifras`, `check_figures`, `verificar_citas`,
+`check_publicadas`, `check_tests`, `check_dominios`, `check_nucleo` y `check_vectores`. El canon,
+`bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas.
+
+**Lo que NO hace.** Solo 4 de las 13 etiquetas de clase las contrasta alguna entrada de los vectores
+—`OpenAccount`, `Mint`, `Send` y `Claim`—, y con la de `Consumo` cambiada siguen 24 de 24; de las
+siete clases cuyo `proofDigest` se fija sin la prueba, solo dos tienen entrada. No ve un registro
+truncado ni uno reescrito de forma coherente, porque no compara con una cabeza firmada; no contrasta
+la raíz del génesis, no rechaza una era 1 detrás de una de era 2 ni encadena un tramo que no empiece en
+`seq` 0; no recompone el `epoch_digest` desde el fichero, ni el `proofDigest` de una `Recovery` de era
+1, que declara. `conformance --check` sigue sin comprobarlo, y el juez no entra en el canon: se corre a
+mano.

@@ -5,7 +5,10 @@ dependencias: solo la biblioteca estandar.
 Que es. BACKLOG 85: <<una spec que solo implementa un codigo no es una spec, es documentacion>>.
 Este fichero es otro codigo. Reproduce, byte a byte, cada `fn` NUCLEO que `spec/vectors/nucleo/`
 fija con un KAT, y nada mas: ni la firma XMSS, ni las pruebas STARK, ni los sobres de PAQUETE.md.
-Lo juzga `juez_nucleo.py`, que es el unico llamador.
+Lo juzga `juez_nucleo.py`. ⚠️ §797: hasta aqui decia <<que es el unico llamador>>, y ya no lo era:
+lo importan tambien `juez_cabezas.py`, `verificador.py` y `stark.py` (sus `import nucleo`), y
+desde el §797 `cable.py` y `juez_cadena.py`, que toman de aqui las primitivas y no le anaden
+composiciones.
 
 De donde sale cada pieza, y de donde NO:
   - la permutacion Rescue-Prime `Rp64_256`: de la fuente de `winter-crypto 0.13.1` (ronda XLIX,

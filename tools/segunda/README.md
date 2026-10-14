@@ -6,13 +6,15 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 | fichero | qué es |
 |---|---|
 | `nucleo.py` | la **segunda implementación del NÚCLEO** (`spec/NUCLEO.md`, sección 6) en Python, sin dependencias: el campo de Goldilocks, la permutación Rescue-Prime `Rp64_256`, BLAKE3, la serialización, los dominios, los preámbulos y las composiciones, en el orden exacto de los merges |
-| `juez_nucleo.py` | el **juez**: corre los 31 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto; es el único llamador de `nucleo.py` |
+| `juez_nucleo.py` | el **juez**: corre los 31 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto. ⚠️ §797: hasta aquí decía «es el único llamador de `nucleo.py`», y ya no lo era: lo importan también `juez_cabezas.py:23`, `verificador.py:25` y `stark.py:30`, y desde el §797 `cable.py` y `juez_cadena.py` |
 | `kat_xmss/xmss.py` | la **verificación XMSS^MT de RFC 8391** para `XMSSMT-SHA2_40/8_256`, el conjunto que la casa firma, escrita desde el texto del RFC y de ningún crate; solo verificar |
 | `juez_cabezas.py` | el **juez de las cabezas firmadas**: para cada cabeza y cofirma de los vectores recompone el `epochDigest` por versión, compara el preámbulo recuperado, verifica la firma con `kat_xmss/xmss.py` y comprueba el índice embebido (`PAQUETE.md`, 2/3 y sección 8); con un falsador que voltea un byte |
 | `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario; desde el §693 declara lo que no lee, en `NO_SOPORTADOS`, y lo dice con el texto reservado `NO SOPORTADO` |
 | `stark.py` | el **verificador STARK** (§626): la maquinaria de `winter-verifier` 0.13.1 en Python, sin dependencias —el formato de `Proof`, la moneda pública sobre Blake3 en el orden exacto de Fiat-Shamir, la autenticación Merkle por lotes con la sal de `MerkleConSal`, el chequeo fuera del dominio, la composición DEEP, FRI y la envoltura `Oculta`—, leída de las fuentes de winterfell y no copiada; `INV_MDS` se calcula invirtiendo la MDS y el autotest la contrasta con la tabla de `winter-crypto` |
 | `airs.py` | las **cinco AIR** del paquete —Banda, Edad, Prenda, CobroPendiente y PagoEnCurso—, **transcritas** de `crates/zk-ssl-air/src/*.rs` restricción a restricción: ninguna RFC escribe sus restricciones y el `.rs` es la única fuente, así que una AIR infra-restringida pasaría aquí igual que allí |
 | `juez_stark.py` | el **juez del STARK**: compone, para cada vector con prueba, el par que el mando juzga —la prueba y el enunciado, con los campos y la cabeza que lee `zk-ssl-verify`— y lo compara con su `MANIFIESTO.txt`; tres falsadores por positivo |
+| `cable.py` | ⚠️ **no es núcleo** (§797): la **cadena del registro** como la sirve el cable, `chain_v1` y `chain_v2`, y lo que cada clase asienta como `proofDigest`, escritas desde `spec/RPC.md` §«La composición de `chain`, byte a byte»; es la clase REGISTRO de `NUCLEO.md` (RFC-0005, D-A), y por eso no vive en `nucleo.py`, del que sólo toma las primitivas |
+| `juez_cadena.py` | el **juez de la cadena** (§797): recompone desde sus entradas cada `chain` de los vectores del cable —en la forma del vector de conformidad o en la de la lista `LogEntry[]` que sirve `zkssl_logEntries`—, dice `OK`, `DECLARADO` o `ROJO <fichero> seq <seq> (<kind>)` por entrada, corre sus falsadores, dice en sus líneas `NOTA` y `SIN EJERCITAR` lo que no ve y cierra con `cadena: N de N cadenas recompuestas` |
 | `wasm_runner.py` | el **envoltorio** para correr `zk-ssl-verify` compilado a `wasm32-wasip1` dentro de wasmtime con el contrato del mando (`PAQUETE.md`, sección 6), para que `tools/conformidad.sh` lo juzgue como al binario nativo |
 | `kat_xmss/` | el **corpus KAT de XMSS^MT**: claves y firmas producidas por el crate `xmss 0.1.0-pre.0` desde semillas fijas y verificadas por `kat_xmss/xmss.py`, que vive dentro para que el directorio sea un repositorio por sí solo; con su juez y su generador. Es el módulo con perfil de `hbs-state`: extraíble tal cual, sin un byte del protocolo (`kat_xmss/README.md`) |
 
@@ -34,6 +36,11 @@ for m in paquete consumo conflicto ancla rotacion; do bash tools/conformidad.sh 
 # 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 34 de 34 (§706)
 python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca
 python3 tools/segunda/juez_stark.py
+
+# 1 sexies · la cadena del registro del cable (NO es núcleo: spec/RPC.md)       -> cadena: 6 de 6
+python3 tools/segunda/juez_cadena.py                          # spec/vectors/zkssl-0.4.json
+python3 tools/segunda/juez_cadena.py spec/vectors/zkssl-0.*.json   # los cuatro: 24 de 24
+python3 tools/segunda/juez_cadena.py respuesta.json   # o el `result` de zkssl_logEntries, desde seq 0
 
 # 2 · el verificador a WebAssembly, y los diez manifiestos bajo wasmtime
 rustup target add wasm32-wasip1
@@ -159,6 +166,30 @@ negativos de la edad y el pago (`neg-marca-m32`, `neg-meta-vacio` y `neg-marca-m
 con el `stark.py` anterior el juez da 28 de 34 pares; con este, 34 de 34, 48 pruebas juzgadas, 35
 vectores que caen antes del juez y 33 de 33 falsadores callados. La comprobación se leyó del kit,
 como las AIR; su texto y sus cuatro lecturas los da también `spec/PAQUETE.md` §5.
+
+**La cadena del registro** (§797). ⚠️ Esto mide el **cable**, no el núcleo: `chain` es de la clase
+REGISTRO (`spec/NUCLEO.md` §«2. Las cuatro clases»), su composición no tiene KAT (sus piezas sí:
+`spec/RPC.md` §«La composición de `chain`, byte a byte») y `conformance --check`, que exige el
+probador, la declara no reproducible desde el §538 (RFC-0009, D-AI). Lo que aquí se comprueba es la
+composición: con las entradas tal como el vector las trae, o como las sirve `zkssl_logEntries`,
+`proofDigest` incluido.
+
+| medida | valor |
+|---|---|
+| cadenas de `zkssl-0.4.json` recompuestas | 6 de 6, todas de era 2 |
+| sus `proof_digest` recompuestos sin la prueba | 4: los dos `OpenAccount` (constante) y los dos `Mint` (desde su `compromiso`) |
+| `proof_digest` declarados | 2: `Send` y `Claim`, bytes de prueba (D-AI) |
+| los cuatro vectores del cable, `zkssl-0.1` a `zkssl-0.4` | 24 de 24; las 6 de `0.1` son las únicas de era 1 |
+| las seis de `zkssl-0.4.json` reescritas como las sirve el cable, `LogEntry[]` en camelCase | 6 de 6 |
+| ⚠️ etiquetas que contrasta alguna entrada de los cuatro vectores | **4 de 13**: `OpenAccount` 1, `Mint` 2, `Send` 8 y `Claim` 9. Las otras nueve, sin contraste: con la de `Consumo` cambiada a 14 en una copia de `cable.py`, siguen 24 de 24 |
+| ⚠️ clases cuyo `proof_digest` fija R6 sin la prueba, contrastadas | **2 de 7**: `OpenAccount` y `Mint`. Sin entrada: `Freeze`, `Recovery`, `Governance` y `MintToPending` (el sello de autorización) y `Consumo` (la prueba vacía) |
+| falsadores dentro del juez (un campo alterado cada uno, o el orden del último merge) que dejan de recomponer | 8 de 8 en era 2, 7 de 7 en era 1 |
+| falsadores fuera del juez, sobre copias en un directorio temporal (§797) | 13 casos. Con la primera redacción, 5 + 4 + 1 + 1 + 2: 5 tracebacks (JSON roto, raíz numérica, entrada que no es objeto, la lista del cable, `kind` que no es texto sino una lista), 4 verdes que no debían (hex en mayúscula, `seq` `0x١`, clave repetida, clave ajena), 1 rojo falso (`OpenAccount` de era 1 con la prueba vacía), 1 `ROJO` por `KeyError: 'root_old'` (una entrada del vector con la grafía mezclada, `rootOld`) y 2 verdes sin aviso (el truncado; las eras que retroceden). Ahora: 9 `ROJO` con nombre, 2 verdes con su `DECLARADO` o su `NOTA` (la lista del cable; la era 1) y los 2 que no rechaza, con su `NOTA` (el truncado; las eras que retroceden). Y dos de la segunda ronda (§797): `"compromiso": null`, `ROJO` por R7, donde `LogEntryDto` leería la era 1; y un fichero de una sola entrada (la `OpenAccount` de era 1 de arriba, o la primera de `zkssl-0.4.json` sola), al que el falsador del anterior, que lo ponía a cero cuando ya lo era, daba un `ROJO FALSADOR` falso: ahora pone `[1, 0, 0, 0]` y los dos salen verdes, y con una copia de `cable.py` que ignora el anterior el falsador lo da `ROJO` |
+| ⚠️ un registro truncado (sin la última entrada) | **5 de 5**: no lo ve, y lo dice en una `NOTA` por fichero; tampoco uno reescrito de forma coherente |
+| `epoch_digest` del vector | **no** se recompone desde el fichero: faltan `pendingRoot` y `frozenRoot` |
+| el juez entero sobre `zkssl-0.4.json` / sobre los cuatro | ~0,5 s / ~0,9 s |
+
+No entra en el canon: se corre a mano.
 
 **El verificador bajo wasmtime** (`wasmtime` 49.0.0 de PyPI; `rustc` 1.97.0):
 
