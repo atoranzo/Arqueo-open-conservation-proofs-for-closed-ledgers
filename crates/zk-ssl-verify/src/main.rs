@@ -499,8 +499,17 @@ fn verificar_cofirmas_del_paquete(
         }
         testigos.push(kt.clone());
         let firma = hex_de_cofirma(c, "firma", n)?;
+        // ⚠️ §780 · El preambulo de la cofirma lleva la version en UN byte. Hasta el §780 se
+        //    truncaba (`as u8`): `0x103` verificaba como `0x3` -un valor, dos escrituras, lo que
+        //    el RFC-0016 cierra- y la segunda implementacion se caia en el mismo vector.
+        let vf = u64_de(c, "versionFormato")?;
+        let version_formato = u8::try_from(vf).map_err(|_| {
+            err(format!(
+                "cofirma {n}: versionFormato {vf:#x} no cabe en el byte que el preambulo le reserva"
+            ))
+        })?;
         let cf = CabezaFirmada {
-            version_formato: u64_de(c, "versionFormato")? as u8,
+            version_formato,
             indice: u64_de(c, "indice")?,
             firma,
         };

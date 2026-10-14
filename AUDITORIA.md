@@ -52094,3 +52094,88 @@ las cadenas «desde el §N» de `doc/blueprint-v2.md:120` y `doc/integracion-ver
 que llevan a mano anclas del `BACKLOG.md` ya corridas antes de este corte y que este corte corre
 otra vez; ninguna herramienta las mira. Si la divergencia (i) de la 12 también quedó saldada en el
 §340, la 12 entera podría cerrarse: eso es medirlo aparte.
+
+## §780 — la versión de una cofirma cabe en un byte o se rechaza: el kit, la segunda implementación, el testigo y el nodo dejan de truncarla (`as u8`), y un vector lo fija
+
+El commit que lleva este asiento, sobre el §779. Un solo sello: en
+`crates/zk-ssl-verify/src/main.rs`, la lectura de la `versionFormato` de cada cofirma del paquete; en
+`tools/segunda/verificador.py`, la misma lectura, y en `tools/segunda/juez_cabezas.py`, el juez de
+las cofirmas, que la usaba para componer el preámbulo; en `crates/zk-ssl-cli/src/witness.rs`, los dos
+sitios donde el testigo la lee —del fichero de cofirmas y del cable—, con un test nuevo; en
+`crates/zk-ssl-node/src/main.rs`, `zkssl_submitCosig` y la lectura de las cabezas de libros ajenos,
+con un test nuevo; un vector nuevo, `spec/vectors/paquete/rechazo-cofirma-versionformato-0x103.json`,
+con su línea en el manifiesto y sus dos huellas en `spec/vectors/HUELLAS.sha256`; su entrada en
+`spec/PAQUETE.md` sección 5; la cifra de `spec/vectors/` en `README.md` y `README_EN.md`, y la del
+segundo verificador en `tools/segunda/README.md`; los pines de los dos crates en `tools/canon.sh`;
+las cifras de tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y este asiento. Del autor es
+elegir esta tarea y su orden; lo demás lo propuso la sesión («Quién lo decide»). Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770
+a §799). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon
+entero, `--sello`, sobre este árbol y con este asiento en su sitio: la primera pasada salió ROJA, por
+la segunda implementación («Medido»), y la que siguió al arreglo, VERDE.
+
+**De dónde sale.** De buscar, para el hito H3, dónde el kit y la segunda implementación dicen cosas
+distintas del mismo vector. El preámbulo que firma un testigo lleva la versión de la cabeza en UN
+byte. El kit leía la `versionFormato` de la cofirma como `u64` y la truncaba con `as u8`: una cofirma
+con `"versionFormato": "0x103"` verificaba como si dijera `0x3`. La segunda implementación, en el
+mismo vector, se caía con un `ValueError` de `bytes([version])`. Lo mismo hacían el testigo, en sus
+dos lectores, y el nodo, que guardaba y servía la cofirma truncada.
+
+**El defecto.** Un valor con dos escrituras: el JSON dice `0x103`, la firma cubre `0x03`, y el kit da
+VERDE. No se falsifica nada —los bytes firmados son los del testigo—, pero quien relea el paquete sin
+truncar lo rechaza, y el kit no: es la clase de maleabilidad que el RFC-0016 cerró para los `u64` del
+cable y que aquí quedaba en el campo de la versión. Y una segunda implementación honesta no podía
+reproducir el veredicto del kit: tenía que elegir entre caerse y truncar como él.
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso la regla —lo que no cabe en el byte
+se rechaza con nombre, en los cuatro lectores, con el mismo texto donde el texto es público— y el
+vector.
+
+**Por qué no lleva aviso de seguridad.** Ningún veredicto sobre dinero cambia y no se acepta nada que
+un testigo no firmara: el kit pasaba a rechazar una escritura que el testigo nunca produjo.
+
+**Lo que hace.**
+
+1. **El kit**: `u8::try_from` en lugar de `as u8`, y si no cabe, `ROJO: cofirma {n}: versionFormato
+   {vf:#x} no cabe en el byte que el preambulo le reserva`.
+2. **La segunda implementación**: el mismo texto, antes de componer el preámbulo, en sus dos
+   lectores: `verificador.py`, el que pasa los manifiestos, y `juez_cabezas.py`, el que verifica
+   cada cabeza y cada cofirma de `spec/vectors/` y que el canon corre en el bloque de la segunda
+   implementación. Este segundo lo encontró la primera pasada del canon sobre este sello, en ROJO
+   («Medido»).
+3. **El testigo**: leída del fichero de cofirmas, una línea con esa versión es `Ilegible`; recogida
+   del cable, un `CampoTorcido { campo: "versionFormato" }`. Test:
+   `una_version_de_cofirma_que_no_cabe_en_un_byte_no_se_trunca`.
+4. **El nodo**: `zkssl_submitCosig` contesta `accepted: false` con esa razón antes de verificar, y la
+   lectura de la cabeza de un libro ajeno tampoco trunca. Test:
+   `una_cofirma_con_una_version_que_no_cabe_en_un_byte_se_rechaza`.
+5. **El vector** `rechazo-cofirma-versionformato-0x103.json`, derivado de `posicion-v2.json` con la
+   `versionFormato` de su cofirma de `"0x3"` a `"0x103"`, y su entrada en la sección 5, que la puerta
+   del §777 pedía: sin ella, `check_catalogo` da `R3 FALTA` con este texto.
+
+**Medido.**
+
+- **El vector, antes y después**: con el código de antes, el kit daba VERDE y la segunda se caía con
+  `ValueError`; con este, los dos dicen `ROJO: cofirma 1: versionFormato 0x103 no cabe en el byte que
+  el preambulo le reserva`, con salida 1.
+- **El juez de las cabezas de la segunda**: la primera pasada del canon sobre este sello salió ROJA
+  con un solo fallo, «la segunda implementacion NO verifica las cabezas firmadas (ValueError: bytes
+  must be in range(0, 256))»: `juez_cabezas.py` componía el preámbulo de la cofirma del vector nuevo
+  con `bytes([v])` fuera de su `try`, y caía entero. Con la misma regla que `verificador.py`: «cabezas:
+  485 de 535 verifican; cofirmas: 10 de 15; … de ellos positivos segun su MANIFIESTO: 0», con el
+  vector nuevo entre los negativos y el texto del kit.
+- **Que los tests caen**: con los dos lectores del testigo y el del nodo devueltos a `as u8`, en un
+  árbol aparte, `una_version_de_cofirma_que_no_cabe_en_un_byte_no_se_trunca` y
+  `una_cofirma_con_una_version_que_no_cabe_en_un_byte_se_rechaza` dan `FAILED`; con el código de
+  este sello, `ok`. El del kit lo mide el vector, arriba.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** `zk-ssl-cli` 147 -> 148 y `zk-ssl-node` 201 -> 202, en sus filas de `tools/canon.sh`,
+con su crónica. TOTAL DE SELLO 1736 -> 1738 y TOTAL CON LARGOS 1873 -> 1875, en `PRINCIPIOS.md`,
+`PAPER.md` y `PAPER_EN.md`, y el desglose de `PRINCIPIOS.md`. Vectores: 491 -> 492 `.json` y 981 -> 982
+líneas de manifiesto, todas con su huella; 510 -> 511 ficheros en `spec/vectors/`, en los dos README.
+El `BACKLOG.md` no cambia: 44 abiertas y 76 resueltas.
+
+**Lo que NO hace.** No cambia el formato: la versión sigue siendo un byte. No toca la versión de la
+cabeza, que ya valida `VersionCabeza` antes de llegar aquí. No cierra H3.

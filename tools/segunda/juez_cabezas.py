@@ -118,6 +118,11 @@ def juzgar_cofirma(co):
         firma, mensaje = partir(hexbytes(co["firma"]), oid)
     except (KeyError, ValueError, TypeError) as ex:
         return False, f"cofirma: {type(ex).__name__} {ex}"
+    # §780: el preambulo lleva la version en UN byte, y lo que no cabe se rechaza con el texto del
+    #    kit; `preambulo_cofirma` haria bytes([v]) fuera del try y el juez entero caeria con un
+    #    ValueError en el vector paquete/rechazo-cofirma-versionformato-0x103.json.
+    if v > 0xFF:
+        return False, f"cofirma: versionFormato {v:#x} no cabe en el byte que el preambulo le reserva"
     if mensaje != N.preambulo_cofirma(v, d, pk_op):
         return False, "cofirma: el preambulo recuperado no es el esperado"
     if not xmss.verificar(pk_t, mensaje, firma):

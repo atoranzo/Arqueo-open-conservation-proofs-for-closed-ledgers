@@ -93,4 +93,5 @@ rechazo-sibling-nibble.json|1|acuse: RaizDistinta
 rechazo-cofirma-firma-nibble.json|1|cofirma 1: la firma no verifica
 rechazo-cofirma-testigo-nibble.json|1|cofirma 1: la firma no verifica
 rechazo-ext-nueva-signature-nibble.json|1|nueva: cabeza: la firma no verifica
+rechazo-cofirma-versionformato-0x103.json|1|cofirma 1: versionFormato 0x103 no cabe
 no-existe.json|1|no se puede leer

@@ -807,6 +807,9 @@ nota que dice por qué.
 - `cofirmas no es una lista`
 - `cofirma {n}: falta {campo}`
 - `cofirma {n}: version {cv} desconocida, este binario lee hasta la {}` — el tope es `COFIRMA_V_MAX` de la biblioteca.
+- `cofirma {n}: versionFormato {vf:#x} no cabe en el byte que el preambulo le reserva` — desde el
+  §780: el preámbulo de la cofirma lleva la versión de la cabeza en un byte, y hasta entonces el kit
+  la truncaba (`as u8`): `0x103` verificaba como `0x3`, un valor con dos escrituras.
 - `cofirma {n}: acredita OTRA cabeza, no la empaquetada`
 - `cofirma {n}: acredita a OTRO operador, no al que firmo la cabeza`
 - `cofirma {n}: repite el testigo de la cofirma {m}` — desde el §663: un testigo, una cofirma; la

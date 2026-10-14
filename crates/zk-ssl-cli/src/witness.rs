@@ -2057,6 +2057,14 @@ pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
                 continue;
             }
         };
+        // §780: un byte en el preambulo; hasta el §780 se truncaba (`as u8`).
+        let Ok(vf) = u8::try_from(vf) else {
+            h.push(HallazgoCofirma::Ilegible {
+                linea: n,
+                error: "versionFormato no cabe en el byte que el preambulo le reserva".into(),
+            });
+            continue;
+        };
         // ⚠️ La SERIE, antes que la firma: un indice repetido es un hallazgo
         //    aunque las dos firmas verifiquen. Precisamente por eso.
         // ⚠️ La clave del mapa lleva la clave ENTERA del testigo; lo que se
@@ -2107,7 +2115,11 @@ pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
                 }
             }
         }
-        let c = CabezaFirmada { version_formato: vf as u8, indice: idx, firma };
+        let c = CabezaFirmada {
+            version_formato: vf,
+            indice: idx,
+            firma,
+        };
         if let Err(err) = verificar_cofirma(&testigo, &d32, &op, &c) {
             // ⚠️ `if let` y NO un `match` exhaustivo: `VerificaError` no es
             //    `#[non_exhaustive]`, asi que cerrarlo obligaria a tocar el
@@ -2207,11 +2219,18 @@ pub fn linea_desde_dto(dto: &CofirmaDto) -> Result<Value, RecogidaRechazada> {
     let q = |k: &'static str| {
         leer_q(&j[k]).map_err(|_| RecogidaRechazada::CampoTorcido { campo: k })
     };
-    let vf = q("versionFormato")?;
+    // §780: un byte en el preambulo; hasta el §780 se truncaba (`as u8`).
+    let vf = u8::try_from(q("versionFormato")?).map_err(|_| RecogidaRechazada::CampoTorcido {
+        campo: "versionFormato",
+    })?;
     let idx = q("indice")?;
     let visto = q("vistoUnix")?;
 
-    let c = CabezaFirmada { version_formato: vf as u8, indice: idx, firma };
+    let c = CabezaFirmada {
+        version_formato: vf,
+        indice: idx,
+        firma,
+    };
     Ok(linea_de_cofirma(&d32, &op, &testigo, &c, visto))
 }
 
@@ -6003,6 +6022,30 @@ mod tests {
         );
     }
 
+
+    /// ⚠️ §780 · **La versión de la cofirma, un byte y sin truncar.** Recogida del cable, una
+    /// `versionFormato` 0x103 es un campo torcido; leída del fichero, una línea ilegible. Hasta el
+    /// §780 las dos se truncaban a 0x3.
+    #[test]
+    fn una_version_de_cofirma_que_no_cabe_en_un_byte_no_se_trunca() {
+        let (d, op, tg, c, t) = material_320();
+        let mut j = serde_json::to_value(cofirma_dto(&d, &op, &tg, &c, t)).expect("serializa");
+        j["versionFormato"] = json!("0x103");
+        let dto: CofirmaDto = serde_json::from_value(j).expect("el cable lo deserializa");
+        assert_eq!(
+            linea_desde_dto(&dto),
+            Err(RecogidaRechazada::CampoTorcido {
+                campo: "versionFormato"
+            })
+        );
+        let mut linea = linea_de_cofirma(&d, &op, &tg, &c, t);
+        linea["versionFormato"] = json!("0x103");
+        let h = verificar_cofirmas(&[linea.to_string()]);
+        assert!(
+            h.iter().any(|x| matches!(x, HallazgoCofirma::Ilegible { error, .. } if error.contains("no cabe"))),
+            "{h:?}"
+        );
+    }
 
     /// ⚠️⚠️ **EL TEST QUE IMPIDE UNA ACUSACIÓN FABRICADA.** Recolectar dos
     /// veces no puede convertir la misma cofirma en un `IndiceRepetido`;

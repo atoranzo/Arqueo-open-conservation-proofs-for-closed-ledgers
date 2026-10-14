@@ -593,8 +593,11 @@ fn cargar_libros_ajenos(ruta: &str) -> anyhow::Result<BTreeSet<[u8; 32]>> {
             anyhow::bail!("libro {i}: el epochDigest declarado no es el de su propia cabeza");
         }
         // ── 5 · y la firma se verifica contra el COMPUTADO, no contra el declarado ──
+        // §780: la version ya la valido `EpochHead::try_from`; aun asi, sin truncar.
+        let version_formato = u8::try_from(vista.format_version.0)
+            .map_err(|_| anyhow::anyhow!("libro {i}: formatVersion no cabe en un byte"))?;
         let c = zk_ssl_verify::CabezaFirmada {
-            version_formato: vista.format_version.0 as u8,
+            version_formato,
             indice: vista.index.0,
             firma: vista.signature.0.clone(),
         };
@@ -2871,8 +2874,14 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             // es cota de FORMA. La cota de CONFIANZA es la politica del
             // cliente, que nombra testigos — y tiene que vivir alli, porque
             // el nodo es el operador.
+            // §780: el preambulo lleva la version en UN byte; hasta el §780 se truncaba
+            // (`as u8`) y el nodo guardaba, y servia, una cofirma que el kit ya no acepta.
+            let Ok(version_formato) = u8::try_from(p.cosig.version_formato.0) else {
+                return Ok(json!({ "accepted": false, "stored": Q(0),
+                    "reason": "versionFormato no cabe en el byte que el preambulo le reserva" }));
+            };
             let c = zk_ssl_verify::CabezaFirmada {
-                version_formato: p.cosig.version_formato.0 as u8,
+                version_formato,
                 indice: p.cosig.indice.0,
                 firma: p.cosig.firma.0.clone(),
             };
@@ -5364,6 +5373,41 @@ mod tests {
         assert!(
             v["reason"].as_str().expect("reason").contains("epoca en curso"),
             "dio: {}", v["reason"]
+        );
+    }
+
+    /// ⚠️ §780 · Una cofirma de la época en curso con `versionFormato` 0x103 se rechaza antes de
+    /// verificar: el preámbulo lleva la versión en un byte, y hasta el §780 se truncaba a 0x3.
+    #[test]
+    fn una_cofirma_con_una_version_que_no_cabe_en_un_byte_se_rechaza() {
+        let app = nodo(30);
+        let l = crate::latido::latir(&app, None).expect("latir");
+        crate::latido::conservar(&app, l);
+        let actual = app
+            .ultima_cabeza
+            .lock()
+            .expect("candado")
+            .as_ref()
+            .expect("cabeza")
+            .epoch_digest;
+        let d = format!(
+            "0x{}",
+            actual
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect::<String>()
+        );
+        let mut c = cofirma_de(&d);
+        c["versionFormato"] = json!("0x103");
+        let v = dispatch(&app, "zkssl_submitCosig", json!({ "cosig": c })).expect("no debe fallar");
+        assert_eq!(v["accepted"], json!(false));
+        assert!(
+            v["reason"]
+                .as_str()
+                .expect("reason")
+                .contains("no cabe en el byte"),
+            "dio: {}",
+            v["reason"]
         );
     }
 

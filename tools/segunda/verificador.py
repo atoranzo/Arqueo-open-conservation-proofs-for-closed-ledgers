@@ -257,6 +257,10 @@ def cofirmas(doc, cab):
         if clave_t in testigos:
             raise Rojo(f"cofirma {i}: repite el testigo de la cofirma {testigos.index(clave_t) + 1}")
         testigos.append(clave_t)
+        # §780: el preambulo lleva la version en UN byte; el kit lo dice con este texto, y aqui
+        # bytes([version]) se caia con un ValueError en el mismo vector.
+        if version > 0xFF:
+            raise Rojo(f"cofirma {i}: versionFormato {version:#x} no cabe en el byte que el preambulo le reserva")
         try:
             oid, _, _ = xmss.parsear_clave(clave_t)
         except ValueError as e:
