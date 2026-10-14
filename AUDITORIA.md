@@ -52615,3 +52615,47 @@ resueltas. Las herramientas del bucle de 2 ter pasan de nueve a diez.
 **Lo que NO hace.** Mira nombres de crate, no código: una curva escrita a mano dentro de un crate de la
 casa, o en uno con otro nombre, no se ve, y lo dice su cabecera. No saca los comparativos del lock (la
 P2/P3 de ARQ-08). No mira las dependencias de desarrollo: los tests pueden usar lo que quieran.
+
+## §789 — `check_dominios` mira también los dominios que viajan como CADENA: R6 (la 94 e; la tarea 38)
+
+El commit que lleva este asiento, sobre el §788. Toca `tools/check_dominios.py`, con una regla nueva;
+la entrada 94 del `BACKLOG.md`, con una nota en su (e); y este asiento. Ni código, ni tests, ni
+vectores. Del autor es elegir la tarea y su orden; lo demás lo propuso la sesión («Quién lo decide»).
+Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango de
+esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la sesión
+se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** La (e) de la 94: `check_dominios` solo veía literales de BYTES —su `LIT_ZK` casa
+`b"ZK-SSL-..."`—, y los dominios que viajan como cadena JSON, el campo `domain` del cable y el diario
+del testigo, eran invisibles al censo, así que R5 no los protegía. La entrada lo nombró en el §298,
+cuando el diario del testigo iba a escribir el dominio de la cofirma.
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso la regla: una cadena de dominio en
+código de producción es el valor de un dominio de bytes declarado, y las de los tests, que escriben a
+propósito dominios falsos, se cuentan sin juzgarse.
+
+**Por qué no lleva aviso de seguridad.** Hoy no hay ninguna cadena de dominio en código de
+producción: la regla fija lo que ya es.
+
+**Lo que hace.**
+
+1. **R6**: cada literal `"ZK-SSL-..."` —sin la `b`— fuera de las zonas `#[cfg(test)]` tiene que ser el
+   valor de un dominio de bytes del censo; si no, ROJO con su sitio y lo que hay que hacer: declararlo,
+   y entra en el registro, o escribirlo desde la constante.
+2. **Las zonas de test**, recortadas por el anidamiento real de sus llaves, como hace `check_nucleo`;
+   sus cadenas se cuentan, y si no hay ninguna en ningún sitio, el censo de cadenas está ciego y es
+   ROJO.
+3. **La salida** lo dice: «dominios en cadena (R6): 0 en produccion; 7 en zonas de test, sin juzgar».
+4. **La 94**, con la nota en su (e): cerrada la (e), la entrada sigue abierta por las otras cegueras.
+
+**Medido.** Sobre este árbol, VERDE: 0 cadenas en producción y 7 en tests. Con una cadena
+`"ZK-SSL-falso"` puesta en código de producción del nodo, en una copia: ROJO, «R6: el dominio
+'ZK-SSL-falso' viaja como cadena en crates/zk-ssl-node/src/main.rs:1 y no es el valor de ningun
+dominio de bytes declarado». El canon, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas: la 94 no se cierra.
+
+**Lo que NO hace.** No sigue el flujo de datos: un dominio armado con `format!` o concatenado no lo ve.
+No juzga las cadenas de los tests. No cierra la 94.

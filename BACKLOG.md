@@ -2399,6 +2399,14 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   entradas de hash— pero no está declarado, y **el §298 va a agravarlo** en
   cuanto el diario del testigo escriba el dominio de la cofirma. Se nombra
   ahora porque el corte que agrava una ceguera es el que mejor la conoce.
+  ⚠️ **§789: la (e), cerrada.** `check_dominios` gana R6: una cadena
+  `"ZK-SSL-..."` en codigo de produccion tiene que ser el VALOR de un dominio
+  de bytes declarado, o es ROJO con su sitio; las de las zonas `#[cfg(test)]`
+  —un test escribe a proposito un dominio falso— no se juzgan, pero se
+  cuentan, y si no hay ninguna el censo de cadenas esta ciego y es ROJO. Hoy:
+  0 en produccion —ningun codigo de produccion escribe un dominio como
+  literal de cadena— y 7 en tests. La entrada sigue abierta por las otras
+  cegueras.
   ⚠⚠ **Y esta entrada nacio en ROJO, por su propio tema.** La primera
   version llevaba la cifra de los fallos de debug, y `check_figures`
   la tumbo: vigila LA PREMISA de la exclusion de este fichero —cero

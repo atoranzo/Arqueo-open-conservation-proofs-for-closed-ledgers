@@ -19,6 +19,13 @@
 #  R4  valores &[u8] unicos globalmente (todos entran en Blake3).
 #  R5  la tabla REGISTRO y el censo coinciden EXACTAMENTE, en las dos
 #      direcciones; el rojo dice que linea editar.
+#  R6  (§789, la 94 e) un dominio que viaja como CADENA ("ZK-SSL-...",
+#      sin la b: el campo `domain` del cable, el diario del testigo) en
+#      codigo de produccion es el VALOR de un dominio de bytes declarado:
+#      hasta el §789 R1-R5 solo veian b"..." y esos eran invisibles. Las
+#      zonas #[cfg(test)] se recortan por sus llaves y no se juzgan -un
+#      test escribe a proposito un dominio falso-, pero se CUENTAN: un
+#      censo que no ve ninguna cadena esta ciego.
 import os, re, sys
 
 RAIZ = os.environ.get('CANON_RAIZ') or os.path.normpath(
@@ -33,6 +40,34 @@ NOMBRE_DOM = re.compile(r'(_DOMAIN$|^DOMINIO(_|$)|^OP_)')
 DECL_U64 = re.compile(r'^\s*(?:pub\s+)?const\s+(\w+)\s*:\s*u64\s*=\s*(.+?);')
 DECL_B = re.compile(r'^\s*(?:pub\s+)?const\s+(\w+)\s*:\s*&\[u8\]\s*=\s*b"([^"]+)";')
 LIT_ZK = re.compile(r'b"(ZK-SSL-[^"]*)"')
+LIT_CADENA = re.compile(r'(?<![b\w#])"(ZK-SSL-[^"\\]*)"')
+
+
+def zonas_test(L):
+    """Las zonas #[cfg(test)], por el anidamiento real de sus llaves (como check_nucleo.py)."""
+    z, i = [], 0
+    while i < len(L):
+        if re.match(r'^\s*#\[cfg\(test\)\]', L[i]):
+            j = i + 1
+            while j < len(L) and (L[j].strip() == '' or L[j].strip().startswith('#[')):
+                j += 1
+            depth, started, k = 0, False, j
+            for k in range(j, len(L)):
+                for ch in L[k]:
+                    if ch == '{':
+                        depth += 1
+                        started = True
+                    elif ch == '}':
+                        depth -= 1
+                if started and depth == 0:
+                    break
+                if not started and L[k].rstrip().endswith(';'):
+                    break
+            z.append((i, k))
+            i = k + 1
+        else:
+            i += 1
+    return z
 
 def valor_u64(expr):
     expr = expr.split('//')[0].strip()
@@ -52,6 +87,8 @@ rojo = []
 u64_decl = []     # (grupo, nombre, valor, sitio)
 bytes_decl = []   # (cadena, nombre, sitio)
 inline = []       # sitios R1
+cadenas = []      # R6: (valor, sitio) en produccion
+cadenas_test = 0  # R6: las que viven en zonas de test, contadas
 
 for crate in sorted(os.listdir(os.path.join(RAIZ, 'crates'))):
     src = os.path.join(RAIZ, 'crates', crate, 'src')
@@ -61,9 +98,16 @@ for crate in sorted(os.listdir(os.path.join(RAIZ, 'crates'))):
         for fn in sorted(f for f in files if f.endswith('.rs')):
             ruta = os.path.join(dirpath, fn)
             rel = os.path.relpath(ruta, RAIZ)
-            for num, linea in enumerate(open(ruta, encoding='utf-8'), 1):
+            lineas = open(ruta, encoding='utf-8').read().split('\n')
+            zonas = zonas_test(lineas)
+            for num, linea in enumerate(lineas, 1):
                 if es_comentario(linea):
                     continue
+                for mc in LIT_CADENA.finditer(linea.split('//')[0]):
+                    if any(a <= num - 1 <= b for a, b in zonas):
+                        cadenas_test += 1
+                    else:
+                        cadenas.append((mc.group(1), '%s:%d' % (rel, num)))
                 m = DECL_B.match(linea)
                 if m and m.group(2).startswith('ZK-SSL-'):
                     bytes_decl.append((m.group(2), m.group(1), '%s:%d' % (rel, num)))
@@ -134,8 +178,17 @@ for falta in sorted(censo_b - tabla_b):
 for sobra in sorted(tabla_b - censo_b):
     rojo.append('R5: en la tabla y NO en el arbol: bytes %s -> quitar o corregir en %s' % (sobra, TABLA_EN))
 
+# R6: la cadena que viaja es la de un dominio declarado
+for valor, sitio in cadenas:
+    if valor not in censo_b:
+        rojo.append('R6: el dominio %r viaja como cadena en %s y no es el valor de ningun dominio '
+                    'de bytes declarado: o se declara (y entra en el REGISTRO) o se escribe desde la const' % (valor, sitio))
+if cadenas_test == 0:
+    rojo.append('R6: ninguna cadena ZK-SSL- ni en los tests: el censo de cadenas esta ciego')
+
 print('dominios u64: %d declaraciones, %d (grupo,nombre,valor) distintos' % (len(u64_decl), len(censo_u64)))
 print('dominios bytes: %d cadenas ZK-SSL- declaradas' % len(censo_b))
+print('dominios en cadena (R6): %d en produccion; %d en zonas de test, sin juzgar' % (len(cadenas), cadenas_test))
 if rojo:
     for r in rojo:
         print('  XX  %s' % r)
