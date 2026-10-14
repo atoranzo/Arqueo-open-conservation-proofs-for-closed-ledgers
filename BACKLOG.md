@@ -1267,6 +1267,18 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   aviso pendiente mirado por dos caras, y desde §268 vive **sólo aquí**.
   Cifrarlo es trabajo de circuito y de protocolo: se decide con esta entrada
   delante, no de propina.
+  ⚠️ **§791: el canal, medido y sin elegir.** `doc/AVISO_EN_ISO20022.md` (BORRADOR) mide qué campos
+  del pacs.008 y del pacs.002 podrían llevar el aviso, contra el esquema y no contra el recuerdo:
+  leído en los modelos que `xsdata` genera desde los XSD (`pyiso20022` 1.6.2), porque el sitio de
+  ISO no era alcanzable, y con el cotejo contra el XSD original pendiente. Lo que sale:
+  `SplmtryData` existe en los dos mensajes y lleva el aviso entero, también cifrado, así que la
+  frase «ISO 20022 no tiene campo» de `iso.rs` no es exacta; los campos de 140 caracteres —`Ustrd`,
+  `AddtlRmtInf`, `InstrForCdtrAgt`— llevan el v1 en claro, y el v2, en una sola ocurrencia, solo en
+  base64; y el pacs.002 va de vuelta al deudor, que ya conoce el aviso. Con el B11.2, tres
+  condiciones que esta entrada no tenía: ninguna cuenta tiene una clave a la que cifrar, un acuerdo
+  de claves sobre una curva no pasa `tools/check_curvas.py` (§788) y cifrado solo cabe entero en
+  `SplmtryData`. El campo, la codificación y el orden frente al cifrado son del autor; el prototipo,
+  un test en `iso.rs`, necesita compilar y no está hecho. **La entrada sigue abierta.**
 - [ ] **12. Fondos muertos — POLITICA DECIDIDA (§119), ~~piezas 1-3
   pendientes~~ piezas 1-3 HECHAS; la tienen abierta el suelo Δ_min, T3b, la
   via v1 y dos flecos de la v2 (§779).** ✅ **La reversion es un segundo
@@ -2170,6 +2182,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     (test `the_governance_set_survives_restart`). El coste es que **una
     clave de gobernanza comprometida lo esta para siempre**, y eso si merece
     decision propia.
+  ⚠️ **§791: el ❌ del recifrado, recontado, y un nombre viejo.** El grep de arriba sigue vacío, pero
+  desde el §702 `migrar_a_kdf_v2` vuelve a sellar cada valor del libro con una clave nueva
+  (`crates/zk-ssl/src/persistence.rs:1003-1047`) y el keystore se migra al abrirse: es con la MISMA
+  frase, y cambiarla sigue sin existir. Y el nodo no cifra en reposo
+  (`crates/zk-ssl-node/src/main.rs:2258-2261`, declarado en `SECURITY.md`): para él no hay frase que
+  cambiar. El ✅ de la clave de cuenta nombra `recover`, que el §65 retiró
+  (`crates/zk-ssl/src/recovery.rs:229-230`); la vía es `apply_recovery_delegated`, y el test que
+  cita la recorre (`crates/zk-ssl/src/tests.rs:2079`). Los dos casos abiertos, con la 52, van a
+  `doc/ROTACION_DE_CUENTAS.md` (BORRADOR), que los cuesta y no elige. **Sigue abierta.**
 
 - [ ] **47. `doc/ESCALADO.md`: propuesta de sharding, COMMITTEADA (§122), sin adoptar.**
   Documento externo del 31-07-2026 que dimensiona 5 × 10⁹ usuarios con el
@@ -3758,6 +3779,16 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ausencia de tiempo ya condiciono dos diseños.**
   **Alcance real**: unificar los dos casos abiertos de la 20 + el reclamo de
   B18.2 + los tres costes diferidos. **Sesion propia.**
+  ⚠️ **§791: el análisis, hecho y sin elegir.** `doc/ROTACION_DE_CUENTAS.md` (BORRADOR) junta los
+  casos en un núcleo común —la hoja vieja pasa a una con identidad, sal y vista nuevas, sin mover
+  saldo— y cinco opciones con su coste medido en ficheros, circuitos y vectores: la recuperación
+  completada, la rotación propia, la precomprometida (el patrón del RFC-0015), el traspaso sin
+  código y el reclamo como rotación; más la gobernanza (G0 a G2) y el recifrado (K0 y K1), y nueve
+  decisiones para el autor. Medido de paso: la subida de la recuperación impone la copia de la sal
+  con una sola columna; el test que `recovery.rs:101` cita no existe; y el único reloj de los plazos
+  es `log.len()`. Deducido de la lectura, sin ejecutar: una cuenta recuperada no pasaría la
+  credencial de vista del nodo ni re-deriva su sal, que es lo que el B18.2 necesita; y un pendiente
+  en vuelo hacia la identidad vieja no lo cobra la clave nueva. **Sigue abierta.**
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo

@@ -52730,3 +52730,60 @@ cable en `zkssl/0.3`, y `doc/KIT.md:78-80` y `doc/KIT_EN.md:80-81` dan tres cód
 y son cuatro—: cada una, en un sello que lo diga. Quedan como DERIVADO, sin medir, que la regla de
 contención alcance a todas las cabezas de un esquema roto y que las siete líneas cambien de texto con
 la v7.
+
+## §791 — dos notas de diseño en BORRADOR, medidas y sin elegir: por dónde viajaría el aviso del pendiente dentro de un mensaje ISO 20022 (la 11) y un solo diseño de la rotación de las claves de cuenta (la 52) (las tareas 13 y 14)
+
+El commit que lleva este asiento, sobre el §790. Dos notas nuevas en `doc/`, las dos BORRADOR y sin
+número de RFC: `doc/AVISO_EN_ISO20022.md` y `doc/ROTACION_DE_CUENTAS.md`; una nota en las entradas 11,
+20 y 52 del `BACKLOG.md`, que siguen abiertas; dos viñetas y una corrección con marca en la cabecera de
+`doc/CONFIANZA_RESIDUAL.md`; y este asiento. Ni código, ni tests, ni vectores. Del autor es elegir las
+tareas; las notas las propuso la sesión, y sus decisiones —D-1 a D-6 en la del aviso, D-1 a D-9 en la
+de la rotación— son del autor («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code,
+y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** La 11 dejó el canal lateral del aviso como «constatación de ausencia»; la 52 pide un
+solo diseño de la rotación de las claves de cuenta «en sesión propia», antes de que se haga tres veces
+—los dos casos abiertos de la 20, la clave de vista que no rota sin la de gasto (§127.5), la hoja nueva
+del §117 y el reclamo de B18.2—.
+
+**La 11, medida.** El árbol no tiene el esquema ISO: `Pacs008` son seis campos (`crates/zk-ssl/src/iso.rs:61-75`).
+Se leyó una copia derivada de los XSD, `pyiso20022` 1.6.2, porque el sitio de ISO devolvió 403 desde el
+entorno. Contra ella, «ISO 20022 no tiene campo donde llevarlos» (`iso.rs:487`, `:528-529`) no es
+exacta: el pacs.008 y el pacs.002 tienen `SplmtryData`, con un sobre `##any` que lleva el aviso entero,
+también cifrado; los campos de 140 caracteres llevan el v1 en claro, y `AddtlInf`, 0..n, lo lleva en
+dos o tres ocurrencias. Al B11.2 —el aviso cifrado— le faltan tres cosas: ninguna cuenta tiene una
+clave a la que cifrar, no hay acuerdo de claves (y uno sobre curva no pasaría `tools/check_curvas.py`),
+y cifrado, el aviso solo cabe entero en `SplmtryData`.
+
+**La 52, medida.** La subida de la recuperación impone la copia de la sal con una sola columna
+(`circuit_recovery_climb.rs:72-77`) y la capa copia también el `view_id` (`recovery.rs:93-106`); el test
+que cita `recovery.rs:101` no existe; el único reloj de los plazos es `log.len()` —el de la des-emisión,
+`two_phase.rs:441`, y el del reembolso, `:676`—. Deducido de leer el código, SIN EJECUTAR: la clave nueva
+de una cuenta recuperada no pasaría `exige_credencial`, y un pendiente en vuelo hacia la identidad
+vieja no lo cobra la clave nueva. La nota lo marca 📐 y pide el test que lo mida.
+
+**Quién lo decide.** El autor eligió las tareas. La sesión midió y redactó las opciones con su coste
+—cinco canales, de la A a la E, para el aviso; R1 a R5, más G0-G2, K0-K1 y V, para la rotación— y no
+elige ninguna.
+
+**Medido.** Un lector redactó y otro revisó cita a cita y corrigió trece cosas, entre ellas una
+afirmación falsa —que un aviso dentro de ISO sería el primer sitio del cable que lo transporta, cuando
+`zkssl_pendingPath` ya lo pide (`spec/RPC.md:98`)—, el tope de `AddtlInf`, las citas del reembolso, que
+eran las de la des-emisión, y el sitio de la corrección de
+«exige solo la clave» en `CONFIANZA_RESIDUAL.md`. Sobre este árbol salen con 0 `check_cifras`,
+`check_figures`, `verificar_citas`, `check_publicadas`, `check_tests`, `check_dominios`, `check_nucleo` y
+`check_vectores`. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno de tests ni de vectores. El `BACKLOG.md` sigue con 43 abiertas y 77 resueltas:
+la 11, la 20 y la 52 ganan su nota y siguen abiertas.
+
+**Lo que NO hace.** No compila ni escribe el test de `iso.rs` ni los de la recuperación, que medirían lo
+deducido. No corrige las frases rancias que son código o especificación —el «ISO 20022 no tiene campo»
+de `iso.rs` y de `spec/RPC.md:133`, la cita al «AUDITORIA §21» de `spec/RPC.md:134`, que habla de los
+códigos de motivo y no del canal (es el §39), el «No está implementado» de `iso.rs:421-424`, el doc de
+`lib.rs:975-981` desplazado sobre `frozen`—: son del autor (D-6). No coteja contra el XSD original ni contra
+las reglas de uso de SEPA, CBPR+ o TARGET2, ni mide un KEM poscuántico. No añade las dos notas a la
+lista fechada de `GENAI.md:108-111`.
