@@ -78,6 +78,7 @@ regla de ruptura escrita, y una compuerta que la haga cierta («Qué lo cierra»
    la versión lo dijera, que es la clase del §699 aplicada a las cabezas. De la v6, además, los dos
    textos dan la versión equivocada: la v6 es del §570, y el cable estaba en `zkssl/0.4` desde el
    §538 (`spec/RPC.md:1290-1292`). No se corrigen aquí: lo hará el sello que el autor elija.
+   ⚠️ §807: corregidos en el §807, con su marca, dentro de la lista de tareas que el autor encargó.
 4. **Dentro de `0.4.x` dos arreglos cambiaron veredictos.** La 0.4.2 rechaza lo que la 0.4.1 aceptaba:
    un `u64` con `+` o con ceros a la izquierda (§662), la misma cofirma contada varias veces (§663)
    y la clave con el OID alterno, que daba VERDE a un conflicto con un solo libro (§664)

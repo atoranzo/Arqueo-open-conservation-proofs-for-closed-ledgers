@@ -32,9 +32,12 @@ sido igual desde el principio es quién da el último: la sección «Fuera del p
 3. El asistente propone un **bloque**: un guion que aplica el cambio y que trae
    sus propias compuertas, incluido su camino rojo.
 4. **El autor lo ejecuta en su máquina**, corre el canon —`tools/canon.sh
-   --sello`, que ejecuta la suite de cada crate en release, las once
-   herramientas de su bucle de `tools/` y el resto de compuertas que lista— y
-   **commitea sólo lo que sale verde**.
+   --sello`, que ejecuta en release la suite de diecinueve de los veintidós
+   crates (`halo2-experiment` y `plonk-experiment` van en `--largo`, y
+   `zk-core` en `--completo`), las once herramientas de su bucle de `tools/` y
+   el resto de compuertas que lista— y **commitea sólo lo que sale verde**.
+   ⚠️ **Corregido en el §807**: decía que `--sello` ejecuta «la suite de cada
+   crate»; la columna `nivel` de la tabla de `tools/canon.sh` deja tres fuera.
 
 De ese método se siguen dos cosas que este documento afirma y que el registro
 sostiene:
@@ -156,9 +159,12 @@ step 4", further down, says how and since when.
 3. The assistant proposes a **block**: a script that applies the change and
    brings its own gates, its red path included.
 4. **The author runs it on his own machine**, runs the canon —`tools/canon.sh
-   --sello`, which runs every crate's suite in release, the eleven tools of its
-   loop under `tools/` and the rest of the gates it lists— and **commits only
-   what comes out green**.
+   --sello`, which runs in release the suites of nineteen of the twenty-two
+   crates (`halo2-experiment` and `plonk-experiment` go in `--largo`, and
+   `zk-core` in `--completo`), the eleven tools of its loop under `tools/` and the
+   rest of the gates it lists— and **commits only what comes out green**.
+   ⚠️ **Corrected in §807**: it said that `--sello` runs «every crate's suite»;
+   the `nivel` column of the table in `tools/canon.sh` leaves three out.
 
 Two things follow from that method, and the record sustains them:
 

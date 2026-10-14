@@ -77,11 +77,16 @@ what a row does not cover stays uncovered.
 | Existence / occurrence | row 4: an entry is in the committed record, provable without the operator | that the unit or the event exists **outside** the ledger: the oracle limit (`SECURITY.md`); and the total in flight, which the head does not sign (row 1) |
 | Accuracy | row 2: single use holds under the signed head, recomputed by the checker; of row 1, the signed supply against its committed cap | valuation: the proofs carry amounts, not worth; and, without the node, the conservation arithmetic (row 1): the node checks it, the checker does not |
 | Cut-off | row 6, first half: the "empty box" proof that nothing in flight outlives its age (RFC-0007 E4) | — |
-| Completeness | row 6, second half: every operation the node evaluates on the holder's direct paths resolves in its window or a named red says it did not (RFC-0010) | what the node never receipted (D-H), and the batch and pledge paths (D-E): completeness of the receipted, never of the unreceipted |
+| Completeness | row 6, second half: every operation the node evaluates on the holder's direct paths, and since §611 in a batch or a pledge (RFC-0014), resolves in its window or a named red says it did not (RFC-0010) | what the node never receipted (D-H); of the batch and the pledge, the one an aggregator does not forward or the pledge with a stale `seq` (RFC-0014, D-H): completeness of the receipted, never of the unreceipted |
 | Rights / authorization | row 5, in part: the pledge proves, without the node, that the key holder produced it | who is behind a key, and whether one person holds one account; and, without the node, the authorization of a send, claim or burn: the node checks it, the checker does not |
 
 The classification and presentation assertions have no row: the ledger's
 categories are the operator's, and no proof here speaks of them.
+
+⚠️ **Corrected in §807**: the Completeness row said «on the holder's direct paths» and left «the
+batch and pledge paths (D-E)» outside. The batch and the pledge carry a receipt since §611, and
+the completeness envelope resolves them since §612 and §613 (RFC-0014, ACCEPTED in §618; the
+row 6 paragraph above already said so); what stays outside of them is RFC-0014's D-H.
 
 ## Use cases, by the property that resolves them
 
@@ -198,8 +203,11 @@ surfaces in retail CBDC incidents (doi:10.5281/zenodo.22077991).
 - Privacy against the operator: the operator sees everything (`SECURITY.md`).
 - That the ledger's units exist outside the ledger.
 - That an operation the node never acknowledged would be detected: an
-  operator that issues no receipt leaves no trace (RFC-0010, D-H), and the
-  batch and the pledge carry none (D-E).
+  operator that issues no receipt leaves no trace (RFC-0010, D-H); of the
+  batch and the pledge, which carry a receipt since §611, nor the one an
+  aggregator does not forward or the pledge with a stale `seq` (RFC-0014,
+  D-H). ⚠️ **Corrected in §807**: it said «and the batch and the pledge carry
+  none (D-E)», which the row 6 paragraph above already contradicted.
 - Prevention across ledgers: two ledgers can accept the same label; a third
   party holding both signed heads sees it afterwards, never before.
 - Who is behind a key, or that one person holds one account.

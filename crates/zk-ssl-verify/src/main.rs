@@ -46,9 +46,9 @@
 //! ⚠️ Este binario tambien es **el procedimiento de apagado** (nota 91):
 //! apaga el nodo, y una posicion sigue siendo demostrable sin el.
 //!
-//! Salida: VERDE y exit 0; el primer fallo con nombre (`ROJO: …`) y exit 1;
-//! uso —ningun argumento, o mas de uno— y exit 2. Los textos, en el
-//! catalogo de `spec/PAQUETE.md`.
+//! Salida: VERDE y exit 0; el primer fallo con nombre (`ROJO: …`) y exit 1; uso —ningun argumento,
+//! o mas de uno— y exit 2; el cuarto estado del sobre de completitud, sin `ROJO`, y exit 3 (§807:
+//! decia hasta el 2; el 3 es del §573). Los textos y los codigos, en `spec/PAQUETE.md`, 5 y 6.
 use std::process::ExitCode;
 
 use zk_ssl_verify::actas::{

@@ -25,7 +25,7 @@ binario `7734376463d120b0bbd47d3bde852da628557caf28b530cbe5076fce17a68ee2`. Las 
 medidas desde fuera —descarga por `curl`, el `digest` del asset en la API, el kit descargado
 corriendo sus once catálogos desde dentro del tarball— en el asiento de `AUDITORIA.md` que registra
 esta release (§671). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee once
-familias: las diez de la sección 11 de `spec/PAQUETE.md` y la del ancla cofirmada (§633, §634).
+familias: las once de la sección 11 del `spec/PAQUETE.md` que viaja en su tarball, la undécima la del ancla cofirmada (§633, §634); la del árbol cuenta ya doce, con la rotación (§649), que ninguna release publicada lleva. ⚠️ **Corregido en el §807**: decía «las diez de la sección 11 de `spec/PAQUETE.md` y la del ancla cofirmada»; la sección 11 del commit `a4e888d` nombra once familias, el ancla cofirmada entre ellas, y la del árbol doce (`FAMILIAS` en `tools/artefacto.sh`:31).
 
 **La 0.4.1 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.1`, commit `ff1f06f`,
 tarball `505de994f243bc76…`). Tiene tres defectos que la 0.4.2 corrige: lee un `u64` del sobre con

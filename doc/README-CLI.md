@@ -70,7 +70,7 @@ cargo run -p zk-ssl-cli -- inspect-state --ledger ./ledger --accounts
 
 # Conformidad del protocolo: re-ejecuta el escenario canónico y compara
 # campo a campo contra los vectores fijados — la 2ª implementación empieza aquí:
-cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.3.json
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.4.json
 
 # Eventos como JSON Lines (datos por stdout, diagnóstico por stderr):
 cargo run -p zk-ssl-cli -- --json simulate | jq .
@@ -78,6 +78,13 @@ cargo run -p zk-ssl-cli -- --json simulate | jq .
 # Spans y tiempos internos:
 cargo run -p zk-ssl-cli -- --log debug simulate
 ```
+
+⚠️ **Corregido en el §807**: la orden de conformidad apuntaba a `spec/vectors/zkssl-0.3.json`, y
+el cable es `zkssl/0.4` desde el §538: con ese fichero el binario sale con 1 y `los vectores son de
+OTRA version: zkssl/0.3 …`, que es lo que el canon exige de él (`tools/canon.sh`, «3 ·
+conformidad»). Con `zkssl-0.4.json` sale con 0 y `CONFORMIDAD: 6 entradas + suministro +
+pendiente, todo IDENTICO en lo que el circuito fija`: `proof_digest`, `chain` y `epoch_digest` no
+se reproducen con la ocultación (RFC-0009, D-AI), así que «campo a campo» no es cada campo.
 
 Salida típica de `simulate` (abreviada; una corrida en release del 2026-10-07):
 

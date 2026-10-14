@@ -25,7 +25,7 @@ binary `7734376463d120b0bbd47d3bde852da628557caf28b530cbe5076fce17a68ee2`. Both 
 measured from the outside — `curl` download, the asset's `digest` in the API, the downloaded kit
 running its eleven catalogues from inside the tarball — in the `AUDITORIA.md` entry that registers
 this release (§671). It recomposes heads up to **v6**, the one the node signs today, and reads
-eleven families: the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor (§633, §634).
+eleven families: the eleven of section 11 of the `spec/PAQUETE.md` that travels in its tarball, the eleventh being the co-signed anchor (§633, §634); the tree's section 11 already counts twelve, with rotation (§649), which no published release carries. ⚠️ **Corrected in §807**: it said «the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor»; section 11 at commit `a4e888d` names eleven families, the co-signed anchor among them, and the tree's names twelve (`FAMILIAS` in `tools/artefacto.sh`:31).
 
 **0.4.1 is still published and is no longer current** (`arqueo-verify-v0.4.1`, commit `ff1f06f`,
 tarball `505de994f243bc76…`). It has three defects that 0.4.2 fixes: it reads a `u64` of the

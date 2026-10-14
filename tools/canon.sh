@@ -45,7 +45,7 @@
 #    `--locked`, y `tools/artefacto.sh` ya lo llevaba: un `Cargo.toml` que
 #    pida algo que el `Cargo.lock` no tiene pone ROJA la fila, en vez de
 #    reescribir el lock en silencio y probar otra cosa. Los bancos de
-#    `--bancos` (`tools/banco_*.sh`) todavia no (§694, Lo que NO hace).
+#    `--bancos` (`tools/banco_*.sh`), desde el §786, con su puerta mas abajo (§807: decia «todavia no»).
 #    Que el lock lleve lo que debe lo dicen dos tests del kit, en su fila:
 #    `las_fijaciones_son_exactas` (los `=` de winterfell, `xmss` y `ml-dsa`,
 #    y el fork por ruta) y `la_clausura_del_kit_no_lleva_el_probador` (la

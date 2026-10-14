@@ -137,8 +137,8 @@ los dos, STARK gana en todo salvo el tamaño de prueba y es el único con
 resistencia cuántica.
 
 **Se descartó Groth16 pese a ser el más rápido y el de pruebas más
-pequeñas** (192 bytes frente a 62 KB). La coherencia con el principio pesó
-más que el rendimiento.
+pequeñas** (192 bytes frente a los 72.382–84.244 de una prueba de envío o de cobro, la banda que ata un test desde el §538). La coherencia con el principio pesó
+más que el rendimiento. ⚠️ **Corregido en el §807**: decía «192 bytes frente a 62 KB»; los 62 KB, y los 53.164 B y 61.966 B que daba la tabla de abajo, son de antes de la ocultación del §538 (`crates/zk-ssl/src/metrics.rs`: `BANDA_ENVIO_B` y `BANDA_COBRO_B`).
 
 ### La diferencia, medida
 
@@ -146,13 +146,13 @@ más que el rendimiento.
 |---|---|---|
 | Arranque de la capa | 2,6 s generando claves | **1,12 ms** |
 | Ceremonias necesarias | Una **por circuito** | **Ninguna** |
-| Prueba de emisión | 192 B | 53.164 B |
-| Prueba de liquidación | 192 B | 61.966 B |
+| Prueba de emisión | 192 B | 66,4 KB de 1.024 B en la corrida de `doc/README-CLI.md`; varía con la sal y no tiene banda medida |
+| Prueba de liquidación (envío o cobro) | 192 B | 72.382–84.244 B, la banda del §538 |
 | Resistencia cuántica | No | **Sí** |
 
-Que el constructor sea `new(issuer_key, limite)` en vez de devolver
-`Result` tras generar claves **es la propiedad hecha código**: no hay nada
-que generar ni ningún secreto que destruir.
+Que el constructor sea `new(custodian_set_root, governance_set_root, regulatory_limit, max_supply, max_accounts)` y devuelva `Self`, en vez de devolver
+`Result` tras generar claves, **es la propiedad hecha código**: no hay nada
+que generar ni ningún secreto que destruir. ⚠️ **Corregido en el §807**: decía `new(issuer_key, limite)`, la firma de cuando una sola clave emitía, retirada (§«Emisión con umbral: se acabó la clave única», más abajo; `SovereignLayer::new` en `crates/zk-ssl/src/lib.rs`).
 
 ## Escrituras atómicas: se acabó la intervención manual
 

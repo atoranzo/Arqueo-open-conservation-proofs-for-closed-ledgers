@@ -909,10 +909,10 @@ La hoja, la posición densa `rx - Q - 1` y la era que el recibo declara —el í
 mismas que usa el constructor del nodo. **Génesis declarado**: la primera cabeza compone con la
 raíz del árbol vacío y `recepCount: 0`; tras un reinicio `Q` sale del diario del nodo, que desde
 el §570 anota `recepCount` en cada línea, y sin él la primera era sale gorda —desde 0—, como la
-primera época de acuses. Como en v5: aditivo en el cable (`zkssl/0.3` no sube), rotura en voz alta
+primera época de acuses. Como en v5: aditivo en el cable (`zkssl/0.4` no sube), rotura en voz alta
 para un consumidor con `deny_unknown_fields`, y una cabeza v2 a v5 custodiada **sigue
 verificando** con su recomponedor. El recibo de recepción en el cable es la E3; hasta entonces el
-titular no tiene el suyo, y lo que esta versión fija es el árbol bajo la firma.
+titular no tiene el suyo, y lo que esta versión fija es el árbol bajo la firma. ⚠️ **Corregido en el §807**: decía «`zkssl/0.3` no sube»; la v6 es del §570, y el cable estaba en `zkssl/0.4` desde el §538 (§«Notas operativas», «Versionado»): lo que no subió fue la `0.4`.
 
 ⚠️ **Tres respuestas, y ninguna es un error genérico**:
 

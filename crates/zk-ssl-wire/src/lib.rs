@@ -609,9 +609,9 @@ pub struct EpochHeadDto {
     pub next_index: Q,
     pub total_supply: Q,
     /// La pareja de recepcion (RFC-0010 E2d, §570): dos claves nuevas y aditivas, como la
-    /// familia de v5 en su dia: `zkssl/0.3` no sube; la version de FORMATO viaja en la firma y
-    /// es la que separa v5 de v6. El limite inferior de la era NO viaja: es el `recepCount` de
-    /// la cabeza anterior.
+    /// familia de v5 en su dia: `zkssl/0.4`, la del §538, no sube (§807: decia `zkssl/0.3`); la
+    /// version de FORMATO viaja en la firma y es la que separa v5 de v6. El limite inferior de la
+    /// era NO viaja: es el `recepCount` de la cabeza anterior.
     pub recep_root: B32,
     pub recep_count: Q,
     /// `EpochHead::digest()`: la cabeza entera en un solo digest.

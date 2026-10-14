@@ -53821,3 +53821,57 @@ los probadores de envío y de cobro ocultan siempre.
 **Lo que NO hace.** No corrige `crates/stark-experiment/src/lib.rs:38` («125,6 KB y 45 ms»), que es de
 la zona de la migración y queda para esa sesión; ni el blueprint, la evaluación fechada o los registros;
 ni los tiempos. No explica por qué el §641 movió el tamaño.
+
+## §807 — las frases rancias que los revisores señalaron, medidas y corregidas con marca: el kit y sus familias, la v6 bajo `zkssl/0.4`, la orden de conformidad, el recibo del lote y de la prenda, lo que corre `--sello` y las cifras de prueba de antes de la ocultación
+
+El commit que lleva este asiento, sobre el §806. Toca `doc/README-CLI.md`, `doc/USE_CASES.md`,
+`GENAI.md`, `ARQUITECTURA.md`, `spec/RPC.md`, el RFC-0021, `tools/canon.sh` y tres comentarios de código
+(`crates/zk-ssl-verify/src/lib.rs`, su `main.rs` y `crates/zk-ssl-wire/src/lib.rs`), cada corrección con
+su marca; y este asiento. Ni tests, ni vectores, ni comportamiento. Del autor es elegir las tareas: la
+lista que encargó llevaba estas frases. Lo escribe y lo comprueba una sesión de Claude Code, y lo
+commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+El número es el siguiente del rango que el autor asignó (§800 a §829). No toca `crates/zk-ssl-guardian`
+ni la zona de la migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con
+este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Los revisores de los sellos anteriores de esta sesión señalaron frases que ya no
+eran verdad y que sus tareas no tocaban. Un agente las midió una a una contra el árbol del §794 y
+corrigió las que lo contradecían; lo que resultó cierto se dejó. El RFC-0021 había descrito dos de
+ellas (su hecho 3) y dicho que las corregiría el sello que el autor eligiera: este, que entra en la
+lista que el autor encargó, y el RFC lo dice con su marca.
+
+**Lo que corrige.**
+
+1. **La v6 bajo `zkssl/0.4`.** La v6 de la cabeza es del §570, cuando el cable ya estaba en `zkssl/0.4`
+   desde el §538; `spec/RPC.md`, el comentario de `VERSION_FORMATO` y el DTO del cable decían
+   «`zkssl/0.3` no sube».
+2. **El kit.** La release 0.4.2 lee las once familias de la sección 11 del `spec/PAQUETE.md` que viaja
+   en su tarball; el árbol cuenta ya doce, con la rotación. Y el comentario de `main.rs` cuenta el exit
+   3 del cuarto estado. Los códigos de los dos manuales ya los había corregido el §801.
+3. **La orden de conformidad** de `doc/README-CLI.md` apuntaba a `spec/vectors/zkssl-0.3.json`, que el
+   binario rechaza por ser de otra versión.
+4. **El lote y la prenda** llevan recibo desde el §611; `doc/USE_CASES.md` decía que no.
+5. **Lo que corre `--sello`**: `GENAI.md` decía «la suite de cada crate», y son diecinueve de los
+   veintidós —`halo2-experiment` y `plonk-experiment` van en `--largo`, y `zk-core` en `--completo`—,
+   con las once herramientas de su bucle.
+6. **`ARQUITECTURA.md`**: los 62 KB, los 53.164 B y los 61.966 B de su tabla de comparación son de
+   antes de la ocultación, y el constructor citado era el de cuando una sola clave emitía.
+7. **`tools/canon.sh`**: la cabecera decía que los bancos «todavía no» llevan `--locked`, y lo llevan
+   desde el §786. La cuenta de KAT de su comentario ya la había corregido el §800.
+
+Para no mover las citas por línea que otros documentos hacen, varias notas van al final de una línea
+existente.
+
+**Medido.** Las salidas de la conformidad se midieron con un `zk-ssl-cli` compilado sobre el mismo
+commit, en otro árbol. Un agente lo hizo y un escéptico abrió cada cita y lo aprobó. Al portarlo sobre
+el §806, tres correcciones ya las había hecho la cadena —los dos manuales en el §801 y la cuenta de KAT
+en el §800— y se quedan las de la cadena; la de `GENAI.md` pasa a decir once herramientas, como dejó el
+§801. Salen con 0 las once herramientas del bucle. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno.
+
+**Lo que NO hace.** No corrige lo que el agente encontró de paso y quedó fuera de la lista: tres citas
+por línea de `doc/USE_CASES.md` a `spec/RPC.md` que ya apuntan a otro sitio; las menciones a la
+conformidad de `zkssl/0.3` en comentarios de `zk-ssl-hash` y del nodo; la tabla «Métricas de la capa,
+medidas» de `ARQUITECTURA.md`, que pide remedir; y un «arranque de la capa 1,12 ms» sin fuente. Quedan
+para la sesión que siga la lista.
