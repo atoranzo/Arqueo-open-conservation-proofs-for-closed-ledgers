@@ -149,9 +149,16 @@ verificación, e incorpora una propiedad adicional: **resistencia
 cuántica**, al depender exclusivamente de funciones hash.
 
 El coste es sustancial. Las pruebas STARK del circuito de comparación
-ocupan 36,7 KB en la tabla comparativa frente a los 192 bytes de Groth16:
-un factor de **unas 196×** (remedidas el 2026-10-07, 39.048 B: unas
-203×). Las pruebas de producción de la capa son mayores: desde
+ocupan 39.048 B frente a los 192 bytes de Groth16: un factor de **unas
+203×**. ⚠️ §806: decía que ocupaban «36,7 KB en la tabla comparativa», «un
+factor de unas 196×», y entre paréntesis «remedidas el 2026-10-07,
+39.048 B: unas 203×». Remedidas otra vez el 2026-10-14 sobre `b6491ef`,
+con
+`cargo test --release --locked -p stark-experiment --lib real_proof_end_to_end_with_metrics -- --nocapture`,
+dan los mismos 39.048 B, y la tabla comparativa de abajo y las de
+`FIVE_BACKENDS.md` llevan ya esa cifra. Los 36,7 KB eran lo que daba el
+mismo test en el árbol de la tabla, y los movió el §641 (`FIVE_BACKENDS.md`
+§4). Las pruebas de producción de la capa son mayores: desde
 que ocultan su testigo (§538), las de envío y cobro ocupan **72.382 a
 84.244 B** cada una, la banda que ata un test (antes de ocultar, 64,6 y
 65,3 KB: §218), así que para ellas el factor ronda 380-440×; el tamaño de
@@ -475,7 +482,7 @@ como benchmark.
 | Setup | 438 ms | 16,3 s | **ninguno** | 26,3 s + 12,8 s |
 | Generación | 422 ms | 4,86 s | **39 ms** | 6,85 s |
 | Verificación | 5 ms | 91 ms | **1 ms** | 8 ms |
-| Tamaño de prueba | **192 B** | 4.096 B | 36,7 KB | 1.008 B |
+| Tamaño de prueba | **192 B** | 4.096 B | 39.048 B (⚠️ §806: decía «36,7 KB»; remedido el 2026-10-14 sobre `b6491ef`, en el apartado 2.2) | 1.008 B |
 | Post-cuántico | No | No | **Sí** | No |
 
 **Nova/plegado** se evalúa por separado por su naturaleza distinta: no
@@ -584,8 +591,9 @@ capa usa la extensión cuadrática (§8.4).
 
 En el circuito de comparación, con 32 consultas y sin molienda, 127 bits de
 seguridad **conjeturada** conviven con 29-63 bits **demostrables** (29 en
-UDR, 63 en LDR). Cerrar la brecha eleva el tamaño de prueba de 36,7 KB a
-125,6 KB.
+UDR, 63 en LDR). Cerrar la brecha eleva el tamaño de prueba de 39.048 B a
+127.274 B (⚠️ §806: decía «de 36,7 KB a 125,6 KB»; remedido el 2026-10-14
+sobre `b6491ef` con el mismo test, en el apartado 2.2).
 
 Las opciones de producción de la capa —42 consultas, blowup 16, molienda
 21 y extensión cuadrática— dan, sobre sus pruebas ocultas, 127 bits

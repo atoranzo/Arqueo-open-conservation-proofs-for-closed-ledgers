@@ -261,7 +261,7 @@ rendimiento.**
 | Setup | 438 ms | 16,3 s | **ninguno** | 26,3 s + 12,8 s |
 | Generación | 422 ms | 4,86 s | **39 ms** | 6,85 s |
 | Verificación | 5 ms | 91 ms | **1 ms** | 8 ms |
-| Tamaño | **192 B** | 4.096 B | 36,7 KB | 1.008 B |
+| Tamaño | **192 B** | 4.096 B | 39.048 B (⚠️ §806: decía «36,7 KB»; remedido el 2026-10-14 sobre `b6491ef`, en `FIVE_BACKENDS.md` §4) | 1.008 B |
 | Post-cuántico | No | No | **Sí** | No |
 
 **Nova/folding**, medido aparte por ser de naturaleza distinta:
@@ -363,8 +363,10 @@ bits de los otros; la capa usa la extensión cuadrática.
 
 **4. Brecha entre seguridad conjeturada y demostrable**: en el circuito de
 comparación, con 32 consultas y sin molienda, 127 bits conjeturados
-conviven con 29 (UDR) y 63 (LDR) demostrables, y cerrarla cuesta 125,6 KB
-en vez de 36,7. Con las opciones de producción —42 consultas, blowup 16,
+conviven con 29 (UDR) y 63 (LDR) demostrables, y cerrarla cuesta 127.274 B
+en vez de 39.048 (⚠️ §806: decía «125,6 KB en vez de 36,7»; remedido el
+2026-10-14 sobre `b6491ef`, en `FIVE_BACKENDS.md` §4). Con las opciones de
+producción —42 consultas, blowup 16,
 molienda 21— y sobre las pruebas ocultas: 127 conjeturados (112,8-116,8
 según el circuito con el término DEEP, que la fórmula no descuenta, §708),
 59 en UDR y 80-88 en LDR según el circuito, menos en la edad con `m` alta;

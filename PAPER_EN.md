@@ -141,8 +141,14 @@ verification, and adds a further property: **post-quantum security**,
 depending only on hash functions.
 
 The cost is substantial. The STARK proofs of the comparison circuit
-occupy 36.7 KB in the comparison table against Groth16's 192 bytes — a
-factor of **about 196×** (remeasured on 2026-10-07, 39,048 B: about 203×).
+occupy 39,048 B against Groth16's 192 bytes — a factor of **about 203×**.
+⚠️ §806: it said they occupy «36.7 KB in the comparison table», «a factor of
+about 196×», and in brackets «remeasured on 2026-10-07, 39,048 B: about
+203×». Remeasured again on 2026-10-14 at `b6491ef`, with
+`cargo test --release --locked -p stark-experiment --lib real_proof_end_to_end_with_metrics -- --nocapture`,
+they give the same 39,048 B, and the comparison table below and those of
+`FIVE_BACKENDS.md` now carry that figure. The 36.7 KB was what the same
+test gave on the table's tree, and §641 moved it (`FIVE_BACKENDS.md` §4).
 The layer's production proofs are larger: since they hide their witness
 (§538), the send and claim proofs take **72,382 to 84,244 B** each, the
 band a test binds (before hiding, 64.6 and 65.3 KB: §218), so for them the
@@ -445,7 +451,7 @@ support order-of-magnitude comparison between paradigms, not benchmarking.
 | Setup | 438 ms | 16.3 s | **none** | 26.3 s + 12.8 s |
 | Proving | 422 ms | 4.86 s | **39 ms** | 6.85 s |
 | Verification | 5 ms | 91 ms | **1 ms** | 8 ms |
-| Proof size | **192 B** | 4,096 B | 36.7 KB | 1,008 B |
+| Proof size | **192 B** | 4,096 B | 39,048 B (⚠️ §806: it said «36.7 KB»; remeasured on 2026-10-14 at `b6491ef`, in section 2.2) | 1,008 B |
 | Post-quantum | No | No | **Yes** | No |
 
 **Nova/folding** is evaluated separately given its different nature: it
@@ -550,7 +556,8 @@ The layer uses the quadratic extension (§8.4).
 In the comparison circuit, with 32 queries and no grinding, 127 bits of
 **conjectured** security coexist with 29–63 bits of **provable** security
 (29 under UDR, 63 under LDR). Closing the gap raises proof size from
-36.7 KB to 125.6 KB.
+39,048 B to 127,274 B (⚠️ §806: it said «from 36.7 KB to 125.6 KB»;
+remeasured on 2026-10-14 at `b6491ef` with the same test, in section 2.2).
 
 The layer's production options — 42 queries, blowup 16, grinding 21 and
 quadratic extension — give, over its hidden proofs, 127 conjectured bits

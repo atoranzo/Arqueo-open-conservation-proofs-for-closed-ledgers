@@ -54,7 +54,7 @@ So the same settlement circuit was implemented five times.
 | Trusted setup | Per circuit | **None** | **None** | Universal | **None** |
 | Proving | 422 ms | 4.86 s | **39 ms** | 6.85 s | — |
 | Verification | 5 ms | 91 ms | **1 ms** | 8 ms | — |
-| Proof size | **192 B** | 4,096 B | 36.7 KB | 1,008 B | — |
+| Proof size | **192 B** | 4,096 B | 39,048 B (⚠️ §806: it said «36.7 KB»; remeasured on 2026-10-14 at `b6491ef`, in `FIVE_BACKENDS.md` §4) | 1,008 B | — |
 | Post-quantum | No | No | **Yes** | No | No |
 
 *Same machine, release builds, single run. Figures compare orders of
@@ -64,9 +64,15 @@ magnitude, not vendors.*
 
 ## 2. The decision that cost the most
 
-**Groth16 was rejected despite being faster and producing proofs about 196
-times smaller than the comparison circuit's 36.7 KB, and 380-440 times
+**Groth16 was rejected despite being faster and producing proofs about 203
+times smaller than the comparison circuit's 39,048 B, and 380-440 times
 smaller than the layer's send and claim proofs.**
+
+⚠️ §806: until here it said «about 196 times smaller than the comparison
+circuit's 36.7 KB», the table's figure; remeasured on 2026-10-14 at
+`b6491ef` with the test that produces it, the comparison circuit gives
+39,048 B (`FIVE_BACKENDS.md` §4). The size does not depend on the machine;
+the times in the table above were not remeasured.
 
 ⚠️ **Corrected in §698**: until then it said «320 times smaller», which
 follows from neither size: the 36.7 KB in the table above, nor the

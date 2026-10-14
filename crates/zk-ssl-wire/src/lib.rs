@@ -484,7 +484,7 @@ pub struct SendReceiptDto {
     /// `winterfell::Proof::to_bytes`. Oculta desde el §538: la banda del envío,
     /// **73.571-84.244 B**, la ata un test en `zk-ssl` (`metrics.rs`); antes, 66.164 B (§218).
     ///
-    /// ⚠️ Los 36,7 KB que citan las tablas comparativas son del
+    /// ⚠️ Los 39.048 B que citan las tablas comparativas (⚠️ §806: decía «Los 36,7 KB») son del
     /// **circuito de comparación** (32 consultas, sin ocultar), no de
     /// los circuitos de esta capa. Ver `crates/zk-ssl/src/lib.rs`.
     pub proof: Blob,

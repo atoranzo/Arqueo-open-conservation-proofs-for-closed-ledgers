@@ -160,11 +160,11 @@ Se evaluaron cinco paradigmas implementando el mismo circuito en cada uno:
 | Setup | 438 ms | 16,3 s | **ninguno** | 26,3 s + 12,8 s |
 | Generación | 422 ms | 4,86 s | **39 ms** | 6,85 s |
 | Verificación | 5 ms | 91 ms | **1 ms** | 8 ms |
-| Tamaño de prueba | **192 B** | 4.096 B | 36,7 KB | 1.008 B |
+| Tamaño de prueba | **192 B** | 4.096 B | 39.048 B (⚠️ §806: decía «36,7 KB»; remedido el 2026-10-14 sobre `b6491ef`, en `FIVE_BACKENDS.md` §4) | 1.008 B |
 | Post-cuántico | No | No | **Sí** | No |
 
-**Se descartó Groth16 pese a ser más rápido y producir pruebas unas 196 veces menores que los
-36,7 KB del circuito de comparación, y 380-440 veces menores que las de envío y cobro de la capa.**
+**Se descartó Groth16 pese a ser más rápido y producir pruebas unas 203 veces menores que los
+39.048 B del circuito de comparación, y 380-440 veces menores que las de envío y cobro de la capa.** ⚠️ §806: decía «unas 196 veces menores que los 36,7 KB», la cifra de la tabla; remedido el 2026-10-14 sobre `b6491ef` con el test que la da, el circuito de comparación da 39.048 B (`FIVE_BACKENDS.md` §4).
 
 El motivo es el que más debería importar a un banco central: Groth16 y
 PLONK/KZG **exigen una ceremonia de setup de confianza**. Un conjunto de
@@ -464,9 +464,9 @@ circuito, menos en la prueba de edad.
 
 Para un despliegue bajo criterios regulatorios, esa distinción debería
 resolverse explícitamente al elegir parámetros. El coste de 128 bits
-demostrables está medido en el circuito de comparación —36,7 KB frente a
-125,6 KB por prueba, con otras opciones y sin ocultar—, no en las pruebas
-de producción.
+demostrables está medido en el circuito de comparación —39.048 B frente a
+127.274 B por prueba, con otras opciones y sin ocultar—, no en las pruebas
+de producción (⚠️ §806: decía «36,7 KB frente a 125,6 KB»; remedido el 2026-10-14 sobre `b6491ef`, en `FIVE_BACKENDS.md` §4).
 
 ⚠️ **Corregido en el §698**: hasta entonces este apartado y el 1 decían que
 los demostrables «en esa configuración» estaban «entre 29 y 63», que son del

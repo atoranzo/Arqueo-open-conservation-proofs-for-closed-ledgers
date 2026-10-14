@@ -36,9 +36,17 @@ les atribuía. Se documenta el error en vez de corregirlo en silencio.
 | **Compilación por circuito** | (incluida arriba) | — | — | 12,8 s |
 | **Generación** | **0,42 s** | 4,86 s | **0,039 s** | 6,85 s |
 | **Verificación** | 5 ms | 91 ms | **1 ms** | 8 ms |
-| **Tamaño de prueba** | **192 bytes** | 4.096 bytes | 36,7 KB | 1.008 bytes |
+| **Tamaño de prueba** | **192 bytes** | 4.096 bytes | 39.048 bytes ⚠️ | 1.008 bytes |
 | **Resistencia cuántica** | No | No | **Sí** | No |
 | **Profundidad del árbol** | 20 | 20 | 32 | 20 |
+
+⚠️ §806: la celda del tamaño STARK decía «36,7 KB». Es la fila de blowup 16
+con extensión cuadrática del apartado 4, y la mide el mismo test; remedida
+el 2026-10-14 sobre `b6491ef`, da 39.048 B (la orden y el detalle, en el
+apartado 4: los 36,7 KB eran la medida de su árbol, y los movió el §641).
+Sólo se corrige el tamaño, que no depende de la máquina: la generación y la
+verificación de esta columna son las de la medida de la tabla, y no se han
+vuelto a medir en condiciones comparables.
 
 ## Circuito de partida doble
 
@@ -142,16 +150,16 @@ no la usa: sus opciones llevan extensión cuadrática.
 
 | Configuración | Tamaño | Generación | Conjeturada | Demostrable |
 |---|---|---|---|---|
-| blowup 8, sin extensión | 27,7 KB | 25 ms | 63 bits | 26 / 24 |
-| blowup 8, ext. cuadrática | 32,7 KB | 28 ms | 95 bits | 26 / 47 |
-| **blowup 16, ext. cuadrática** | **36,7 KB** | **39 ms** | **127 bits** | 29 / 63 |
-| 120 queries, grinding 20, ext. cúbica | 125,6 KB | 48 ms | 128 bits | **128 / 128** |
+| blowup 8, sin extensión | 27.794 B ⚠️ | 25 ms | 63 bits | 26 / 24 |
+| blowup 8, ext. cuadrática | 33.125 B ⚠️ | 28 ms | 95 bits | 26 / 47 |
+| **blowup 16, ext. cuadrática** | **39.048 B** ⚠️ | **39 ms** | **127 bits** | 29 / 63 |
+| 120 queries, grinding 20, ext. cúbica | 127.274 B ⚠️ | 48 ms | 128 bits | **128 / 128** |
 
 Las cuatro filas son del circuito de cumplimiento, con 32 queries salvo la
 última y sin grinding salvo la última. Ahí, los 127 bits conjeturados que
 suele citar el ecosistema conviven con 29 (UDR) y 63 (LDR) demostrables.
-Cerrar la brecha cuesta 125,6 KB en vez de 36,7 — y aun así sigue siendo el
-generador más rápido.
+Cerrar la brecha cuesta 127.274 B en vez de 39.048 —⚠️ §806: decía «125,6 KB
+en vez de 36,7»— y aun así sigue siendo el generador más rápido.
 
 ⚠️ **No son las cifras de producción.** Las opciones de la capa —42 queries,
 blowup 16, grinding 21 y extensión cuadrática— dan, sobre sus pruebas
@@ -168,9 +176,32 @@ qué opciones, y otros documentos lo citaban como si fuera la capa.
 
 Remedido el 2026-10-07 (§698) con el mismo test
 (`real_proof_end_to_end_with_metrics`): los mismos bits en las cuatro filas,
-y 27.794, 33.125, 39.048 y 127.274 B. Los tamaños se movieron desde la medida
-de la tabla —por el circuito o por la versión de winterfell; no se ha buscado
-cuál—, y la tabla se conserva porque es la de la comparación entre backends.
+y 27.794, 33.125, 39.048 y 127.274 B.
+
+⚠️ §806: hasta aquí la tabla daba 27,7, 32,7, 36,7 y 125,6 KB, y este párrafo
+seguía «Los tamaños se movieron desde la medida de la tabla —por el circuito
+o por la versión de winterfell; no se ha buscado cuál—, y la tabla se
+conserva porque es la de la comparación entre backends». Remedida el
+2026-10-14 sobre `b6491ef`, con el test de
+`crates/stark-experiment/src/compliance_real_proof.rs`,
+
+```bash
+cargo test --release --locked -p stark-experiment --lib real_proof_end_to_end_with_metrics -- --nocapture
+```
+
+da en tres corridas los mismos bytes —27.794, 33.125, 39.048 y 127.274 B,
+los del §698— y los bits de la tabla, y la tabla lleva ahora esos tamaños,
+en bytes. La de antes no estaba mal medida: la misma orden sobre el árbol de
+`9a1e2f1` (2026-07-27), el commit que trajo la tabla, da en tres corridas
+28.339, 33.535, 37.607 y 128.576 B, que en el KB de 1.024 B que imprime el
+test son sus 27,7, 32,7, 36,7 y 125,6 KB. El tamaño se movió después —tres
+filas bajan y una sube, con los mismos bits—, y lo movió el §641
+(`2901c54`, RFC-0017), que llevó el rango del circuito a 62 bits: con la
+misma orden, el árbol de su padre, `7534380`, da aún los tamaños de la
+tabla, y el suyo, los de hoy. Por qué ese cambio mueve así los tamaños no se
+ha estudiado. Los tiempos no se corrigen: dependen de la máquina, y esta, de
+4 CPU y cargada por otras tareas, dio en las mismas tres corridas 31-40,
+35-40, 47-56 y 74-78 ms.
 
 ### 5. Solo dos de seis librerías se defienden del uso inseguro
 
@@ -313,9 +344,21 @@ fricción real es la **acumulación histórica**: a millones de
 transacciones, almacenar **72.382-84.244 B** por prueba de envío o de
 cobro —la banda que ata un test para esas dos, ocultas, desde el §538; las
 demás pruebas no las ata; antes de ocultar eran 64,6 y 65,3 KB (§218), y
-nunca los 36,7 KB del circuito de comparación— en vez de 192 bytes cambia
+nunca los 39.048 B del circuito de comparación— en vez de 192 bytes cambia
 el tamaño del ledger, los tiempos de sincronización y la validación en frío
 en dos órdenes de magnitud.
+
+⚠️ §806: decía «nunca los 36,7 KB del circuito de comparación», el tamaño de
+la tabla del apartado 4, que se remide allí. La banda sigue en pie: el
+2026-10-14, sobre `b6491ef`, el test que la ata
+(`la_cifra_publicada_sigue_siendo_la_medida`, en `crates/zk-ssl/src/metrics.rs`),
+con
+`cargo test --release --locked -p zk-ssl --lib la_cifra_publicada_sigue_siendo_la_medida -- --nocapture`,
+midió en tres corridas envíos de 79.339, 78.762 y 79.752 B y cobros de
+78.840, 79.737 y 78.618 B, dentro de sus bandas; cambian de una corrida a
+otra porque la sal de cada una cambia la prueba. Los 64,6 y 65,3 KB no se
+vuelven a medir: son de pruebas sin ocultar, y los probadores de envío y de
+cobro de hoy ocultan siempre.
 
 ---
 

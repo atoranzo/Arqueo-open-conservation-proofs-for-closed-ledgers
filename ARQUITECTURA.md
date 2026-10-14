@@ -1421,19 +1421,27 @@ de con lo que dicen los papers:
 | Setup / parámetros | 438 ms | 16,3 s | ninguno |
 | Generación | 422 ms | 4,86 s | 38 ms |
 | Verificación | 5 ms | 91 ms | 1 ms |
-| Tamaño de prueba | 192 bytes | 4.096 bytes | 36,7 KB / 125,6 KB |
+| Tamaño de prueba | 192 bytes | 4.096 bytes | 39.048 B / 127.274 B (⚠️ §806: decía «36,7 KB / 125,6 KB») |
 | Resistencia cuántica | No | No | Sí (solo hashes) |
 | Árbol de Merkle | 20 niveles | 20 niveles | 32 niveles |
 | `SettlementProver` | Implementado | Implementado | Implementado |
 | Estado | Verificado end-to-end | Verificado end-to-end | Verificado end-to-end |
 
 Las dos cifras de tamaño del backend STARK corresponden a dos niveles de
-seguridad distintos, y la diferencia importa: **36,7 KB con 127 bits
+seguridad distintos, y la diferencia importa: **39.048 B con 127 bits
 _conjeturados_** (el nivel que se cita habitualmente en el ecosistema
-STARK) frente a **125,6 KB con 128 bits _demostrables_** (solidez con
+STARK) frente a **127.274 B con 128 bits _demostrables_** (solidez con
 demostración, sin apoyarse en la conjetura de decodificación de
 Reed-Solomon). El puente ISO 20022 del backend STARK usa la segunda por
 defecto.
+
+⚠️ §806: la tabla y este párrafo decían «36,7 KB» y «125,6 KB». Son las filas
+de blowup 16 del test `real_proof_end_to_end_with_metrics` de
+`stark-experiment`, y remedidas el 2026-10-14 sobre `b6491ef`, con
+`cargo test --release --locked -p stark-experiment --lib real_proof_end_to_end_with_metrics -- --nocapture`,
+dan 39.048 y 127.274 B, como el 2026-10-07 (§698); lo cuenta
+`FIVE_BACKENDS.md` §4. El tamaño de la prueba del puente ISO no se ha
+vuelto a medir aquí.
 
 **La comparación completa de los tres, con metodología y números
 medidos, está en [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md).** La

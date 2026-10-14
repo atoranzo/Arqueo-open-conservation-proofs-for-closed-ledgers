@@ -53777,3 +53777,47 @@ Salen con 0 las once herramientas del bucle. El canon, `bash tools/canon.sh --se
 
 **Lo que NO hace.** No cambia el procedimiento de numerar: la puerta es la que lo vigila. No reescribe
 los asientos que nombran un modelo.
+
+## §806 — el tamaño STARK del circuito de comparación, remedido: 39.048 B y no 36,7 KB, y lo movió el §641; corregido con marca en cada documento vivo que lo da (la tarea 48)
+
+El commit que lleva este asiento, sobre el §805. Toca `FIVE_BACKENDS.md`, `PAPER.md`, `PAPER_EN.md`,
+`PRINCIPIOS.md`, `ARQUITECTURA.md`, `SECURITY.md`, `doc/ZENODO.md`, `doc/INSTITUCIONAL.md` y
+`doc/INSTITUTIONAL.md`, y cinco comentarios de código —`crates/zk-ssl/src/lib.rs` (dos), su
+`Cargo.toml`, `crates/zk-ssl-wire/src/lib.rs` y `crates/zk-core/src/performance.rs`—, cada corrección con
+su marca; y este asiento. Ni tests, ni vectores, ni comportamiento. Del autor es elegir la tarea; la
+forma la propuso la sesión. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa
+sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es
+el siguiente del rango que el autor asignó (§800 a §829). No toca `crates/zk-ssl-guardian` ni edita la
+zona de la migración: solo mide en ella. En la sesión se corrió el canon entero, `--sello`, sobre este
+árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Los tamaños STARK de `FIVE_BACKENDS.md` —la tabla del apartado 4, su celda de la
+tabla comparativa y la frase de la brecha— salen todos de `real_proof_end_to_end_with_metrics`
+(`crates/stark-experiment/src/compliance_real_proof.rs`). Llegaron con `9a1e2f1`, sin asiento que los
+midiera. El §698 los remidió (27.794, 33.125, 39.048 y 127.274 B), dejó la tabla como estaba y no buscó
+la causa.
+
+**Medido.** En release, con la misma orden, `cargo test --release --locked -p stark-experiment --lib
+real_proof_end_to_end_with_metrics -- --nocapture`, tres veces sobre el árbol del §794: 27.794, 33.125,
+39.048 y 127.274 B, con los mismos bits de seguridad que la tabla. Tres veces sobre `9a1e2f1`: 28.339,
+33.535, 37.607 y 128.576 B, que son los 27,7, 32,7, 36,7 y 125,6 KB de la tabla: la tabla era la medida
+de su árbol. Por bisección, con un target propio por árbol, `e1d1db3` y el §640 (`7534380`) dan aún los
+de la tabla, y el §641 (`2901c54`, el RFC-0017, el rango a 62 bits) da los de hoy; por qué, no se ha
+estudiado. La banda, `la_cifra_publicada_sigue_siendo_la_medida`, tres corridas: el envío y el cobro,
+dentro. Los tiempos, con la máquina cargada, no se comparan. Un agente lo midió y un escéptico lo
+repitió y lo aprobó. Salen con 0 las once herramientas del bucle. El canon, `bash tools/canon.sh
+--sello`: VERDE.
+
+**Lo que hace.** Corrige con marca, en bytes, cada aparición viva: en `FIVE_BACKENDS.md` la tabla
+comparativa con su nota, el apartado 4, la brecha, el párrafo del §698 y «Sobre el tamaño»; en los dos
+`PAPER` la sección 2.2 —el factor pasa de 196 a 203 veces—, su tabla y la 8.4; la tabla y el punto 4 de
+`PRINCIPIOS.md`; la tabla y su párrafo de `ARQUITECTURA.md`; la 3.11 y la fila del tamaño de
+`SECURITY.md`; `doc/ZENODO.md`, los dos institucionales y los cinco comentarios. Sin mover las líneas
+que otros citan. Y marca como no remedibles hoy los 64,6 y 65,3 KB del §218: eran pruebas sin ocultar, y
+los probadores de envío y de cobro ocultan siempre.
+
+**Contadores.** Ninguno.
+
+**Lo que NO hace.** No corrige `crates/stark-experiment/src/lib.rs:38` («125,6 KB y 45 ms»), que es de
+la zona de la migración y queda para esa sesión; ni el blueprint, la evaluación fechada o los registros;
+ni los tiempos. No explica por qué el §641 movió el tamaño.

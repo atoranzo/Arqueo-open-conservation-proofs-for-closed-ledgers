@@ -24,7 +24,7 @@
 //!
 //! | qué | tamaño | dónde se mide |
 //! |---|---|---|
-//! | **circuito de comparación** (32 consultas, blowup 16, ext. cuadrática, sin molienda ni ocultación) | 36,7 KB | `FIVE_BACKENDS.md`: es lo que se enfrenta a Groth16, PLONK y Halo2 sobre la MISMA carga |
+//! | **circuito de comparación** (32 consultas, blowup 16, ext. cuadrática, sin molienda ni ocultación) | 39.048 B (⚠️ §806: decía «36,7 KB»; remedido el 2026-10-14 sobre `b6491ef`) | `FIVE_BACKENDS.md`: es lo que se enfrenta a Groth16, PLONK y Halo2 sobre la MISMA carga |
 //! | **pruebas de envío y de cobro de esta capa**, ocultas, con [`proof_options`] | **72.382-84.244 B** | la banda de `metrics.rs` (§538), que ata un test: envío 73.571-84.244 B, cobro 72.382-83.723 B; el tamaño de las demás pruebas no lo ata ninguno |
 //!
 //! Antes de ocultar el testigo (§538), los circuitos de producción
@@ -211,7 +211,7 @@ pub type AccountIndex = u64;
 ///
 /// Sobre las pruebas ocultas dan **127 bits conjeturados** (112,8-116,8 con el término DEEP) y,
 /// demostrables, UDR 59 y LDR 80-88 según la traza (80 en envío, cobro y quema; la edad baja con
-/// `m`): lo fijan los tests del §697. Los 36,7 y 125,6 KB de `FIVE_BACKENDS.md` §4 son del circuito
+/// `m`): lo fijan los tests del §697. Los 39.048 y 127.274 B de `FIVE_BACKENDS.md` §4 (⚠️ §806: decía «36,7 y 125,6 KB») son del circuito
 /// de comparación, con 32 y 120 consultas y sin ocultar. El nivel cuántico no está medido.
 pub fn proof_options() -> ProofOptions {
     ProofOptions::new(

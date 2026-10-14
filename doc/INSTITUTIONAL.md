@@ -160,11 +160,11 @@ Five paradigms were evaluated by implementing the same circuit in each:
 | Setup | 438 ms | 16.3 s | **none** | 26.3 s + 12.8 s |
 | Proving | 422 ms | 4.86 s | **39 ms** | 6.85 s |
 | Verification | 5 ms | 91 ms | **1 ms** | 8 ms |
-| Proof size | **192 B** | 4,096 B | 36.7 KB | 1,008 B |
+| Proof size | **192 B** | 4,096 B | 39,048 B (⚠️ §806: it said «36.7 KB»; remeasured on 2026-10-14 at `b6491ef`, in `FIVE_BACKENDS.md` §4) | 1,008 B |
 | Post-quantum | No | No | **Yes** | No |
 
-**Groth16 was rejected despite being faster and producing proofs about 196× smaller than the
-comparison circuit's 36.7 KB, and 380-440× smaller than the production send and claim proofs.**
+**Groth16 was rejected despite being faster and producing proofs about 203× smaller than the
+comparison circuit's 39,048 B, and 380-440× smaller than the production send and claim proofs.** ⚠️ §806: it said «about 196× smaller than the comparison circuit's 36.7 KB», the table's figure; remeasured on 2026-10-14 at `b6491ef` with the test that produces it, the comparison circuit gives 39,048 B (`FIVE_BACKENDS.md` §4).
 
 The reason is the one that should matter most to a central bank: Groth16
 and PLONK/KZG **require a trusted setup ceremony**. A set of participants
@@ -447,9 +447,9 @@ circuit, fewer in the age proof.
 
 For a deployment under regulatory criteria, that distinction should be
 resolved explicitly during parameter selection. The cost of 128 provable
-bits is measured in the comparison circuit — 36.7 KB versus 125.6 KB per
+bits is measured in the comparison circuit — 39,048 B versus 127,274 B per
 proof, with other options and without hiding — not in the production
-proofs.
+proofs (⚠️ §806: it said «36.7 KB versus 125.6 KB»; remeasured on 2026-10-14 at `b6491ef`, in `FIVE_BACKENDS.md` §4).
 
 ⚠️ **Corrected in §698**: until then this section and §1 said that
 provable security «in that configuration» lay «between 29 and 63», which are

@@ -19,7 +19,7 @@
 //! - `setup_ms`: generación de claves (la ceremonia real sería aparte).
 //! - `prove_ms`: generación de la prueba.
 //! - `proof_size_bytes`: prueba SERIALIZADA en forma comprimida — el
-//!   número que viajaría por la red, comparable con los 36,7 KB de STARK
+//!   número que viajaría por la red, comparable con los 39.048 B de STARK (⚠️ §806: decía «36,7 KB»)
 //!   y los ~4 KB de Halo2.
 //! - `verify_ms`: verificación **partiendo de los bytes**
 //!   (deserialización incluida), como haría un nodo que recibe la prueba,

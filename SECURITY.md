@@ -707,7 +707,9 @@ siguen exigiendo los tests del §697.
 Los «127 conjeturados frente a 29-63 demostrables» y los «36,7 KB frente a 125,6 KB» que
 publicaban varios documentos hasta el §698 son del circuito de comparación de
 `FIVE_BACKENDS.md` §4, con 32 consultas y sin molienda ni ocultación, no de estas pruebas. Lo
-que costaría llevar las de producción a 128 bits demostrables no está medido.
+que costaría llevar las de producción a 128 bits demostrables no está medido. ⚠️ §806: y esos dos
+tamaños tampoco son lo que da hoy aquel circuito: remedido el 2026-10-14 sobre `b6491ef`, con el
+test de su tabla, da 39.048 y 127.274 B.
 
 **Frente a un adversario cuántico: no medido.** Que el sistema de pruebas sólo use hashes
 quiere decir que no tiene supuestos de curva. No quiere decir que tenga un nivel cuántico
@@ -961,7 +963,7 @@ este eje solo aplica contra Zcash.
 | **Descentralización** | miles de validadores/mineros independientes | **UN nodo, un operador**. Ve el estado, ordena, puede censurar |
 | **Rendimiento** | Solana en miles de TPS; Bitcoin y Ethereum en un orden muy superior a este | **1,5-1,9 TPS** medidos (§123) |
 | **Madurez** | años en producción, auditorías repetidas, recompensas por fallos | **cero auditorías externas**, prototipo de investigación |
-| **Tamaño de prueba** | Groth16: 192 B | **72.382-84.244 B** por prueba de envío o de cobro, ocultas, la banda que ata un test desde el §538 (un pago son dos: 145.953-167.967 B); el tamaño de las demás pruebas no lo ata ninguna banda — el precio de no depender de nadie. Antes de ocultar, el envío y el cobro medían 64,6 y 65,3 KB (§218). Los 36,7 KB de las tablas comparativas son del circuito de comparación, con otras opciones y sin ocultar |
+| **Tamaño de prueba** | Groth16: 192 B | **72.382-84.244 B** por prueba de envío o de cobro, ocultas, la banda que ata un test desde el §538 (un pago son dos: 145.953-167.967 B); el tamaño de las demás pruebas no lo ata ninguna banda — el precio de no depender de nadie. Antes de ocultar, el envío y el cobro medían 64,6 y 65,3 KB (§218). Los 39.048 B de las tablas comparativas (⚠️ §806: decía «Los 36,7 KB»; remedido el 2026-10-14 sobre `b6491ef`, en `FIVE_BACKENDS.md` §4) son del circuito de comparación, con otras opciones y sin ocultar |
 
 **Y una lección que este proyecto toma prestada, no presta**: el fallo de
 sub-restringimiento de Orchard (junio de 2026) ocurrió en la clase que
