@@ -1,21 +1,26 @@
 <!--
   ROTACION_DE_CUENTAS — un solo diseño para cambiar las claves de una cuenta.
-  Nota de diseño en BORRADOR para la entrada 52 del BACKLOG, que junta los dos casos abiertos de
-  la 20, la hoja nueva del §117, la vista irrotable del §127.5 y el reclamo del B18.2 de
-  CONFIANZA_RESIDUAL.md. Hermana de AVISO_EN_ISO20022.md, que le añade un caso. No toca código, ni
-  el cable, ni un circuito: mide lo que hay y lo que costaría cada opción, y no elige.
+  Nota de diseño para la entrada 52 del BACKLOG, ACEPTADA como análisis en el §799 (⚠️ §799: hasta
+  aquí decía «en BORRADOR»), que junta los dos casos abiertos de la 20, la hoja nueva del §117, la
+  vista irrotable del §127.5 y el reclamo del B18.2 de CONFIANZA_RESIDUAL.md. Hermana de
+  AVISO_EN_ISO20022.md, que le añade un caso. No toca código, ni el cable, ni un circuito: mide lo
+  que hay y lo que costaría cada opción, y no elige.
 -->
 
 # ROTACION_DE_CUENTAS — cambiar de clave sin diseñarlo tres veces
 
-**Estado**: BORRADOR. Análisis sin código y sin número de RFC. Las opciones del §4 se dejan **sin
-elegir**: quién autoriza una rotación, dónde cae la hoja nueva y qué casos entran es del autor (§6).
-No cierra la 52 ni la 20.
+**Estado**: ACEPTADA (§799), como análisis: el autor la acepta como está y deja abiertas sus
+decisiones, de la D-1 a la D-9 del §6, sin elegir ninguna opción. ⚠️ §799: hasta aquí decía
+«BORRADOR». Análisis sin código y sin número de RFC. Las opciones del §4 se dejan **sin elegir**:
+quién autoriza una rotación, dónde cae la hoja nueva y qué casos entran es del autor (§6). No
+cierra la 52 ni la 20.
 
 **Procedencia**: la escribió Claude en una sesión de Claude Code en la
 nube, sobre `8c02941` (§789), fuera del paso 4 de [`GENAI.md`](../GENAI.md); la lleva el §791 de
-`AUDITORIA.md`. Integrar no es aceptar: la aceptación queda pendiente. ⚠️ §792: sus citas al
-`BACKLOG.md` por línea pasaron a citas por entrada, la regla v5 de `tools/verificar_citas.py`.
+`AUDITORIA.md`. Integrar no es aceptar: la aceptación quedó pendiente hasta el §799, en el que el
+autor la acepta como análisis, con sus decisiones abiertas. ⚠️ §799: hasta aquí decía «la
+aceptación queda pendiente». ⚠️ §792: sus citas al `BACKLOG.md` por línea pasaron a citas por
+entrada, la regla v5 de `tools/verificar_citas.py`.
 
 **Convención**: ✅ medido en este árbol, con fichero:línea · 📐 derivado de la lectura del código, sin
 ejecutarlo · ⚠️ matiz · ❓ no medido.

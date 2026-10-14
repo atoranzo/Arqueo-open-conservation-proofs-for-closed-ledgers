@@ -891,6 +891,13 @@ instrumentacion) al grupo E.*
   una cabeza del esquema A sigue verificando cuando el nodo firma con el B, y su coste en bytes y
   en vectores, para el corte `zkssl/0.5`. Siete decisiones del autor, ninguna tomada, y ninguna
   etapa construida: sigue abierta.
+  ⚠️ §799: el autor aceptó el RFC-0020 con sus siete decisiones, en cada una la que el RFC
+  recomienda: el identificador en el preámbulo v7 de la cabeza y de la cofirma, el `u64` del acta,
+  la cofirma con el esquema del operador, la regla del registro para la sucesora, la salida de un
+  esquema sólo si se rompe, el registro en `spec/NUCLEO.md` §6, y el viaje en el corte
+  `zkssl/0.5`, en el mismo sello que el corte, con su E2 y su E3 antes. Lo de arriba, «adoptarlo
+  es del autor» y «ninguna tomada», valía hasta aquí. El RFC sigue PROPUESTO y ninguna etapa está
+  construida: sigue abierta hasta que se construyan.
 
 - [ ] **88. Sucesión: qué pasa el día que el autor pare.** El proyecto
   lo lleva **una persona** con asistencia de IA, con una disciplina que
@@ -968,6 +975,16 @@ instrumentacion) al grupo E.*
   sigue verificando después, desde lo medido en el §699; propone la enmienda a «Versionado» de
   `spec/RPC.md`, que ya existe en «Notas operativas»; y deja la compuerta como etapa, sin
   escribir. Ocho decisiones del autor, ninguna tomada: sigue abierta.
+  ⚠️ §799: el autor aceptó el RFC-0021 con sus ocho decisiones, en cada una la que el RFC
+  recomienda: la promesa en `spec/RPC.md`; las seis superficies de su D-A, con el diario del
+  testigo y `zk-ssl-verify` como biblioteca fuera de la promesa, como allí se enumera; emitir una
+  versión de cabeza nueva rompe el cable; el aviso, un sello con el RFC PROPUESTO antes del corte;
+  la línea `0.N`: dentro de `0.N.x` nada de la superficie se rompe salvo por R6 f, y entre `0.N` y
+  `0.N+1` todo puede romperse con R5 y R6, mientras el protocolo esté por debajo de 1.0; un arreglo
+  de seguridad puede cambiar un veredicto dentro de `0.N.x`, con su aviso; un kit publicado sigue
+  publicado siempre (R6 a); y la E3b, con el corte. Lo de arriba, «adoptarlo es del autor»
+  y «ninguna tomada», valía hasta aquí. El RFC sigue PROPUESTO y ninguna etapa está construida:
+  sigue abierta hasta que se construyan.
 
 - [x] **91. El fin de vida: cómo se apaga esto sin dejar a nadie
   dentro.** Toda capa de liquidación termina — por cierre, por
@@ -1287,7 +1304,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   aviso pendiente mirado por dos caras, y desde §268 vive **sólo aquí**.
   Cifrarlo es trabajo de circuito y de protocolo: se decide con esta entrada
   delante, no de propina.
-  ⚠️ **§791: el canal, medido y sin elegir.** `doc/AVISO_EN_ISO20022.md` (BORRADOR) mide qué campos
+  ⚠️ **§791: el canal, medido y sin elegir.** `doc/AVISO_EN_ISO20022.md` (aceptada como análisis
+  en el §799, con sus decisiones abiertas; ⚠️ §799: hasta aquí decía «(BORRADOR)») mide qué campos
   del pacs.008 y del pacs.002 podrían llevar el aviso, contra el esquema y no contra el recuerdo:
   leído en los modelos que `xsdata` genera desde los XSD (`pyiso20022` 1.6.2), porque el sitio de
   ISO no era alcanzable, y con el cotejo contra el XSD original pendiente. Lo que sale:
@@ -2233,7 +2251,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   cambiar. El ✅ de la clave de cuenta nombra `recover`, que el §65 retiró
   (`crates/zk-ssl/src/recovery.rs:229-230`); la vía es `apply_recovery_delegated`, y el test que
   cita la recorre (`crates/zk-ssl/src/tests.rs:2079`). Los dos casos abiertos, con la 52, van a
-  `doc/ROTACION_DE_CUENTAS.md` (BORRADOR), que los cuesta y no elige. **Sigue abierta.**
+  `doc/ROTACION_DE_CUENTAS.md` (aceptada como análisis en el §799, con sus decisiones abiertas;
+  ⚠️ §799: hasta aquí decía «(BORRADOR)»), que los cuesta y no elige. **Sigue abierta.**
 
 - [ ] **47. `doc/ESCALADO.md`: propuesta de sharding, COMMITTEADA (§122), sin adoptar.**
   Documento externo del 31-07-2026 que dimensiona 5 × 10⁹ usuarios con el
@@ -3845,7 +3864,8 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ausencia de tiempo ya condiciono dos diseños.**
   **Alcance real**: unificar los dos casos abiertos de la 20 + el reclamo de
   B18.2 + los tres costes diferidos. **Sesion propia.**
-  ⚠️ **§791: el análisis, hecho y sin elegir.** `doc/ROTACION_DE_CUENTAS.md` (BORRADOR) junta los
+  ⚠️ **§791: el análisis, hecho y sin elegir.** `doc/ROTACION_DE_CUENTAS.md` (aceptada como
+  análisis en el §799, con sus decisiones abiertas; ⚠️ §799: hasta aquí decía «(BORRADOR)») junta los
   casos en un núcleo común —la hoja vieja pasa a una con identidad, sal y vista nuevas, sin mover
   saldo— y cinco opciones con su coste medido en ficheros, circuitos y vectores: la recuperación
   completada, la rotación propia, la precomprometida (el patrón del RFC-0015), el traspaso sin

@@ -53222,3 +53222,61 @@ repite. No juzga las releases publicadas —el «2 de 2»
 del §682 es de `arqueo-verify-v0.4.2` y sigue siendo de la mano—, ni entra en ningún nivel del canon
 que corra solo. No ve otra frase que nombre el kit, ni un hex de menos de 7 cifras, ni lo que la NFKC
 no lleva al ASCII, ni los invisibles que no son de formato ni blanco: lo declara.
+
+## §799 — el autor acepta el RFC-0020 y el RFC-0021, con sus decisiones tomadas, la recomendada en cada una, y acepta como análisis las dos notas de diseño del §791, con sus decisiones abiertas
+
+El commit que lleva este asiento, sobre el §798. Toca los dos RFC, sus filas de `spec/README.md`, las
+dos notas, `doc/CONFIANZA_RESIDUAL.md`, las entradas 11, 20, 52, 87 y 90 del `BACKLOG.md` y este
+asiento. Ni código, ni tests, ni vectores. La decisión es del autor, que la dio en la sesión con estas
+palabras: «Se aceptan RFC-0020 y RFC-0021. Se aceptan también las dos notas de diseño del §791, que
+quedan sin elegir: el aviso en ISO 20022 y la rotación de las claves de cuenta». La forma de
+registrarla es la de la casa. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa
+sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es
+el último del rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la zona de la
+migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en
+su sitio, y salió VERDE.
+
+**Los dos RFC.** Aceptarlos toma sus decisiones con la recomendación que cada uno daba. El RFC-0020,
+las siete: el esquema en un preámbulo v7 de la cabeza y de la cofirma; escrito como el `u64` del acta;
+la cofirma firma también el esquema del operador; la sucesora, atada por una regla del registro, la
+rama (a), que no cambia nada firmado; un esquema sale del conjunto aceptado solo si se rompe, con la
+regla de contención; el registro, en `spec/NUCLEO.md` §6, con su productor y su KAT; y viaja en el
+corte `zkssl/0.5`, en el mismo sello que el corte, con su E2 y su E3 antes. El RFC-0021, las ocho: la
+promesa, en `spec/RPC.md`; las seis superficies de su D-A, y fuera de la promesa lo que allí se
+enumera, el diario del testigo y `zk-ssl-verify` como biblioteca incluidos, porque en esas dos dudas
+la sesión no recomendó y vale lo que el texto ya decía; emitir una versión de cabeza nueva rompe el
+cable; el aviso, un sello con el RFC PROPUESTO antes del corte; la línea `0.N`, con nada roto dentro de
+`0.N.x` salvo por un arreglo de seguridad y todo rompible entre `0.N` y `0.N+1`, por debajo de 1.0; un
+arreglo de seguridad puede cambiar un veredicto dentro de `0.N.x`, con su aviso; un kit publicado sigue
+publicado siempre; y la E3b, con el corte.
+
+**Por qué siguen en PROPUESTO.** La regla 4 del `PROCESO` reserva ACEPTADO para cuando la spec, el
+OpenRPC, los vectores y las suites estén hechos, es decir, sus etapas construidas; así quedaron el
+RFC-0015 en el §642 y el RFC-0018 en el §679. Los dos dicen en su línea de estado que el autor los
+aceptó aquí con sus decisiones tomadas; su sección pasa a «Decisiones (del autor, §799)», con la rama
+tomada y las descartadas en cada una; su E1 queda «escrita (§790) y decidida (§799)», y las frases que
+trataban el estado como no decidido van corregidas con su marca. Las que describen el diseño no se
+tocan.
+
+**Las dos notas.** `doc/AVISO_EN_ISO20022.md` y `doc/ROTACION_DE_CUENTAS.md` pasan de BORRADOR a
+ACEPTADA, como análisis: el autor las acepta como están, y sus decisiones siguen abiertas —D-1 a D-6
+en el aviso, D-1 a D-9 en la rotación—, sin ninguna opción elegida. `doc/CONFIANZA_RESIDUAL.md` y las
+entradas 11, 20 y 52 dejan de llamarlas BORRADOR, con su marca; `CONFIANZA_RESIDUAL.md` conserva su
+número de líneas, porque las notas lo citan por línea.
+
+**Medido.** Un agente lo redactó y un escéptico lo revisó contra el texto de antes, decisión a
+decisión: lo aprobó con cuatro cosas menores, que corrigió la sesión —un «cumple» que debía seguir en
+condicional en la compatibilidad del RFC-0021, la decisión 5 y la 7 del RFC-0021 dichas enteras en la
+entrada 90, y «como análisis» en las dos marcas de `CONFIANZA_RESIDUAL.md`—. Las cuatro portadas los
+siguen listando como propuestos, igual que al 0015, al 0018 y al 0019, y es verdad. Salen con 0
+`check_cifras`, `check_figures`, `verificar_citas`, `check_publicadas`, `check_tests`, `check_dominios`,
+`check_nucleo`, `check_vectores`, `check_catalogo` y `check_curvas`. El canon, `bash tools/canon.sh
+--sello`: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni la cabecera del `BACKLOG.md`, que sigue con 43
+abiertas y 77 resueltas: la 87 y la 90 siguen abiertas hasta que se construyan las etapas.
+
+**Lo que NO hace.** No construye ninguna etapa, no elige el esquema B del RFC-0020 (la 108), ni el
+nombre de la herramienta de la E3a del RFC-0021, ni ninguna opción de las dos notas. No corrige lo que
+el redactor vio fuera de lo pedido: que `doc/METODO.md` §5 enumera los RFC con tabla de etapas del
+0012 al 0017, sin el 0020 ni el 0021.

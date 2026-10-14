@@ -1,19 +1,24 @@
 # RFC-0020 — El esquema dentro de lo que se firma: la cabeza y la cofirma dicen con qué se firmaron, y una cabeza del esquema A sigue verificando cuando el nodo firma con el B
 
 - **Estado:** PROPUESTO (§790) — el texto, sus etapas y sus siete decisiones, escritos sobre lo
-  medido en el árbol en `8c02941`. Ninguna decisión está tomada y ninguna etapa construida:
-  adoptarlo, en todo o en parte, es del autor. El paso a ACEPTADO exige construir sus etapas
-  (regla 4 del PROCESO).
+  medido en el árbol en `8c02941`. El autor lo aceptó en el §799, con sus siete decisiones TOMADAS,
+  en cada una la que el texto recomienda: ver «Decisiones (del autor, §799)». Ninguna etapa
+  construida: ACEPTADO llega con ellas, porque el paso a ACEPTADO exige construir sus etapas (regla
+  4 del PROCESO). ⚠️ §799: hasta aquí decía «Ninguna decisión está tomada y ninguna etapa
+  construida: adoptarlo, en todo o en parte, es del autor».
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§790): midió el árbol y
   redactó el borrador, fuera del paso 4 de `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-10-14
-- **Versión del protocolo afectada:** `zkssl/0.4` -> `zkssl/0.5`, si se adopta: la cabeza v7 cambia
-  lo que el nodo firma y sirve, y un verificador de hoy la rechaza. Propone viajar en el corte del
-  RFC-0018 (decisión 7). Las cabezas v2 a v6, las actas y los vectores publicados no cambian un byte.
+- **Versión del protocolo afectada:** `zkssl/0.4` -> `zkssl/0.5`, con la E4: la cabeza v7 cambia
+  lo que el nodo firma y sirve, y un verificador de hoy la rechaza. Viaja en el corte del RFC-0018
+  (decisión 7, tomada en el §799). Las cabezas v2 a v6, las actas y los vectores publicados no
+  cambian un byte. ⚠️ §799: hasta aquí decía «si se adopta» donde dice «con la E4», y «Propone
+  viajar en el corte».
 - **Asiento(s) de AUDITORIA:** §236 (un solo marcador de versión), §240 (el apaño del OID), §275 (el
   byte de versión elige recompositor), §297 (la cofirma), §406 (`VersionCabeza`), §643 y §644 (el
-  acta, con su esquema, y su opt-in), §699 (lo que una versión no identifica), §790 (este borrador).
+  acta, con su esquema, y su opt-in), §699 (lo que una versión no identifica), §790 (este borrador),
+  §799 (la aceptación del autor, con sus siete decisiones).
 - **Backlog:** la **87** (agilidad criptográfica: el esquema de firma no está versionado), que este
   RFC no cierra hasta que se construya; con la **84** (cambiar de esquema es una rotación) y la
   **108** (qué esquema sería el B: no se mide aquí).
@@ -22,10 +27,10 @@
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
-| E1 — la regla, escrita | este texto: el identificador, dónde entra, la regla de la transición y su coste | no | **propuesta (§790)** |
+| E1 — la regla, escrita | este texto: el identificador, dónde entra, la regla de la transición y su coste | no | **escrita (§790) y decidida (§799)** ⚠️ §799: hasta aquí decía «propuesta (§790)» |
 | E2 — el núcleo, apagado | el registro de esquemas en `spec/NUCLEO.md` §6, el preámbulo v7 de la cabeza y el de la cofirma con sus KAT, y la segunda implementación que los reproduce; nadie los firma todavía | no (aditivo: el registro, dos funciones y tres KAT) | sin construir |
 | E3 — el despacho | el verificador elige el verificador por el esquema, con un conjunto aceptado y otro emitido; un esquema que no se acepta se rechaza con su número | no (con un solo esquema registrado, nada cambia de veredicto) | sin construir |
-| E4 — el corte | `VersionCabeza::V7` en el conjunto; el nodo firma y sirve v7 con `esquema`; el testigo cofirma v7; el kit lee `esquema` en cada cabeza de sus sobres; los vectores que cambian de texto, mudados a `0.4/` | **sí** | sin construir; en el sello del corte `zkssl/0.5` si el autor lo decide así (decisión 7) |
+| E4 — el corte | `VersionCabeza::V7` en el conjunto; el nodo firma y sirve v7 con `esquema`; el testigo cofirma v7; el kit lee `esquema` en cada cabeza de sus sobres; los vectores que cambian de texto, mudados a `0.4/` | **sí** | sin construir; en el sello del corte `zkssl/0.5`, como decidió el autor en el §799 (decisión 7) ⚠️ §799: hasta aquí decía «si el autor lo decide así» |
 | E5 — la transición, medida | un segundo esquema registrado, una rotación A -> B en un nodo real y una cabeza de A juzgada por contención bajo B, en un banco | según el esquema B | sin construir; espera a la 108 y a la elección del autor |
 
 ## Motivación
@@ -71,8 +76,9 @@ cabeza: una v7 de la cabeza y todos sus vectores, para decir en cada latido lo q
 vez por clave» (`spec/rfc/0015-el-ciclo-de-vida-del-firmante.md:381-382`). El argumento vale para un
 nodo con actas. No pesó los hechos 1 y 3: que el acta es opcional, que la cofirma no tiene ninguna,
 y que el verificador tiene que elegir el verificador antes de leer el acta de la clave. La decisión
-1, abajo, deja al autor las dos ramas: la v7, o quedarse en el acta y exigirla para todo esquema que
-no sea el de hoy.
+1, abajo, dejaba al autor las dos ramas: la v7, o quedarse en el acta y exigirla para todo esquema
+que no sea el de hoy; el autor eligió la v7 en el §799. ⚠️ §799: hasta aquí decía «deja al autor
+las dos ramas», sin la elección.
 
 **Cuánto pesa lo firmado, medido.** De los 492 ficheros `.json` de `spec/vectors/`, 405 llevan al
 menos una firma XMSS^MT con su preámbulo adjunto: 678 apariciones, de las que 536 son de cabeza
@@ -141,7 +147,8 @@ cofirma v7 es la de una cabeza v7, y el campo con prefijo sigue el último, «po
 (`lib.rs:461-462`). El esquema del testigo es el de su firma, que hoy nada nombra (hecho 3). El del
 operador hace que la cofirma diga «este operador, con esta clave **de este esquema**, publicó este
 digest»: la clave del operador va dentro para que la cofirma no sea transferible (`lib.rs:440-444`),
-y la misma razón vale para su esquema. Si el autor no lo quiere, son ocho bytes menos (decisión 3).
+y la misma razón vale para su esquema. El autor lo quiso en el §799 (decisión 3); sin él serían
+ocho bytes menos. ⚠️ §799: hasta aquí decía «Si el autor no lo quiere, son ocho bytes menos».
 `Cosig` (`spec/RPC.md:992-994`) gana `esquemaTestigo` y, con la decisión 3, `esquemaOperador`.
 
 ### D-D — En el acta: nada
@@ -232,8 +239,9 @@ Una cabeza v7 es una ruptura para quien verifica hoy: el testigo y el kit 0.4.x 
 (`spec/vectors/cable/MANIFIESTO.txt:21`) y su par del paquete, a partir del texto de la biblioteca
 (`lib.rs:269-273`): el fallo correcto, cerrado y con nombre. La rotura se paga una vez para varias
 razones juntas (el corolario de la 82, `BACKLOG.md`, entrada 82), y el corte del RFC-0018 ya rompe
-el cable y emite vectores nuevos. Así que, si el autor lo adopta, **viaja en la misma rotura**: la
-E4 entra en el sello del corte, y la D-E del RFC-0018 la gobierna —el kit 0.5.0 sale cuando el nodo
+el cable y emite vectores nuevos. Así que, como lo adoptó el autor en el §799 (decisión 7), **viaja
+en la misma rotura** (⚠️ §799: hasta aquí decía «si el autor lo adopta»): la E4 entra en el sello
+del corte, y la D-E del RFC-0018 la gobierna —el kit 0.5.0 sale cuando el nodo
 hable `zkssl/0.5`, no antes y sin aceptar las dos versiones del cable
 (`spec/rfc/0018-el-tren-0-5.md:160-161`)—. El kit 0.5 acepta cabezas v2 a v7: las cabezas no son
 pruebas, y su conjunto sólo crece. Lo que no cambia ningún byte ni ningún veredicto —el registro,
@@ -249,15 +257,22 @@ prueba es; el preámbulo v7, con qué se firmó la cabeza.
 
 ## Compatibilidad
 
-Con la E4, el cable sube a `zkssl/0.5` en el corte del RFC-0018 o en uno propio (decisión 7). Las
-cabezas v2 a v6 custodiadas siguen verificando con el kit de su versión y con el 0.5, con su
+Con la E4, el cable sube a `zkssl/0.5` en el corte del RFC-0018 (decisión 7, tomada en el §799).
+Las cabezas v2 a v6 custodiadas siguen verificando con el kit de su versión y con el 0.5, con su
 esquema implícito; los vectores de `zkssl/0.4` se quedan con sus bytes y su veredicto, y los siete
-de arriba se mudan a `0.4/`. El kit 0.4.x no verifica una cabeza v7, y lo dice. El acta no cambia,
-salvo con la decisión 4, rama (b). La E2 y la E3 no cambian nada que viaje.
+de arriba se mudan a `0.4/`. El kit 0.4.x no verifica una cabeza v7, y lo dice. El acta no cambia:
+la decisión 4 tomó la rama (a). La E2 y la E3 no cambian nada que viaje. ⚠️ §799: hasta aquí
+decía «en el corte del RFC-0018 o en uno propio (decisión 7)» y «El acta no cambia, salvo con la
+decisión 4, rama (b)».
 
-## Decisiones abiertas (del autor)
+## Decisiones (del autor, §799)
 
-Ninguna está tomada. La sesión dice lo que recomienda y por qué; decide el autor.
+⚠️ §799: hasta aquí esta sección se titulaba «Decisiones abiertas (del autor)» y empezaba «Ninguna
+está tomada. La sesión dice lo que recomienda y por qué; decide el autor».
+
+El autor aceptó este RFC en el §799, y con él tomó las siete decisiones: en cada una, la rama que el
+texto recomienda. Las preguntas y sus ramas se quedan como se escribieron en el §790; detrás de
+cada una, la tomada y las descartadas. El RFC sigue PROPUESTO hasta que se construyan sus etapas.
 
 1. **¿Dónde va el identificador?** (a) En el preámbulo, v7, para la cabeza y la cofirma (D-B,
    D-C); (b) sólo en el acta, como hoy, exigiéndola para todo esquema que no sea el implícito —sin
@@ -265,25 +280,36 @@ Ninguna está tomada. La sesión dice lo que recomienda y por qué; decide el au
    de `epoch_digest`, que lo metería en el MMR, el ancla y los acuses. La sesión recomienda (a): es
    la única que cubre la cofirma y la cabeza sin acta, al precio de D-F, y (b) es la que el RFC-0015
    eligió para un nodo con actas.
+   **Tomada (§799): (a)**, el preámbulo v7 de la cabeza y de la cofirma. Descartadas: (b) y (c).
 2. **¿Cómo se escribe?** El `u64` del acta, ocho bytes (recomendado: una escritura por esquema), o un
    índice de una tabla en uno o dos bytes, que ahorraría seis y obligaría a traducir entre el acta y
    la cabeza.
+   **Tomada (§799): el `u64` del acta**, ocho bytes. Descartado: el índice de una tabla.
 3. **¿La cofirma firma también el esquema del operador?** Ocho bytes más por cofirma. La sesión lo
    recomienda, por la razón por la que ya firma su clave.
+   **Tomada (§799): sí**, `esquema_testigo` y `esquema_op` en la cofirma v7 (D-C). Descartado:
+   firmar sólo el del testigo.
 4. **¿El compromiso de la sucesora ata su esquema?** (a) Una regla del registro: dos esquemas
    aceptados no comparten ninguna escritura de clave, y el registro lo comprueba al admitir uno; (b)
    un acta v2 que compone `esquema_siguiente` junto a `siguiente` (dos KAT nuevos, y las actas
    nuevas con otra versión); (c) una huella de clave v2 que cubra el esquema, que cambiaría el ancla
    del RFC-0012, que la compone. La sesión recomienda (a): no cambia nada firmado, y (c) toca un RFC
    ACEPTADO.
+   **Tomada (§799): (a)**, la regla del registro. Descartadas: (b), el acta v2, y (c), la huella v2.
 5. **¿Cuándo sale un esquema del conjunto aceptado?** Sólo si se rompe, con la regla de contención
    de la D-E (5) (recomendado); o también cuando su biblioteca muere, que dejaría sin verificar
    cabezas que nadie ha roto.
+   **Tomada (§799): sólo si se rompe**, con la regla de contención. Descartado: también cuando su
+   biblioteca muere.
 6. **¿Dónde vive el registro?** `spec/NUCLEO.md` §6, con un productor y su KAT (recomendado, como el
    de familias de la D-G), o una tabla en el código, sin spec.
+   **Tomada (§799): `spec/NUCLEO.md` §6**, con un productor y su KAT. Descartada: la tabla en el
+   código, sin spec.
 7. **¿Viaja en el corte `zkssl/0.5`?** Sí, en el mismo sello que el corte, con la E2 y la E3 antes
    (recomendado); o en un corte propio después, que pagaría otra rotura, otro kit y otra mudanza de
    vectores; o no se adopta, y la 87 sigue abierta con lo que el acta da.
+   **Tomada (§799): sí**, en el mismo sello que el corte, con la E2 y la E3 antes. Descartadas: un
+   corte propio después, y no adoptarlo.
 
 ## Lo que se descarta
 
@@ -318,7 +344,8 @@ Qué esquema sería el B, ni con qué banco se elige (la 108 y la adenda de la 8
 medidas en el hardware real, con el método del §263). La dependencia `xmss` y su fijación. El
 esquema del medio, que es el de C2SP y ya lleva su tipo (RFC-0013, D-C). La escritura de la firma de
 un esquema B, que la da su entrada del registro. Y la política de compatibilidad que dice cuándo un
-esquema sale del conjunto: la propone el RFC-0021.
+esquema sale del conjunto: la escribe el RFC-0021, que el autor aceptó en el mismo §799. ⚠️ §799:
+hasta aquí decía «la propone el RFC-0021».
 
 ## Referencias
 

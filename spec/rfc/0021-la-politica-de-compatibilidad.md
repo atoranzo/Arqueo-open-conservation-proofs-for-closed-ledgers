@@ -2,30 +2,36 @@
 
 - **Estado:** PROPUESTO (§790) — el texto, la superficie enumerada, la regla de ruptura, la enmienda
   que propone a `spec/RPC.md` y sus ocho decisiones, escritos sobre lo medido en el árbol en
-  `8c02941` y en el §699. Ninguna decisión está tomada y ninguna etapa construida: adoptarlo es del
-  autor. El paso a ACEPTADO exige construir sus etapas (regla 4 del PROCESO).
+  `8c02941` y en el §699. El autor lo aceptó en el §799, con sus ocho decisiones TOMADAS, en cada
+  una la que el texto recomienda: ver «Decisiones (del autor, §799)». Ninguna etapa construida:
+  ACEPTADO llega con ellas, porque el paso a ACEPTADO exige construir sus etapas (regla 4 del
+  PROCESO). ⚠️ §799: hasta aquí decía «Ninguna decisión está tomada y ninguna etapa construida:
+  adoptarlo es del autor».
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§790): midió el árbol y
   redactó el borrador, fuera del paso 4 de `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-10-14
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no cambia ningún byte ni ningún veredicto**:
-  dice cómo cambian. Su primera aplicación sería el corte `zkssl/0.5` del RFC-0018.
+  dice cómo cambian. Su primera aplicación será el corte `zkssl/0.5` del RFC-0018. ⚠️ §799: hasta
+  aquí decía «sería».
 - **Asiento(s) de AUDITORIA:** §209 (el `0.2`) y §275, §278 y §281 (sus re-emisiones), §290 (lo
   custodiado no caduca), §418 (el `tipo` desconocido, con nombre), §641, §680 y §684 (las pruebas
   que cambiaron bajo `zkssl/0.4`), §662 a §664 (la 0.4.2), §682 (la primera mudanza a `0.4/`), §692
-  (las huellas), §699 (lo que `zkssl/0.4` no identifica, medido), §707 (la D-G), §790 (este borrador).
+  (las huellas), §699 (lo que `zkssl/0.4` no identifica, medido), §707 (la D-G), §790 (este
+  borrador), §799 (la aceptación del autor, con sus ocho decisiones).
 - **Backlog:** la **90** (la política de compatibilidad, como promesa), que este RFC no cierra hasta
   que se construya; con la **85** (una segunda implementación necesita contra qué comprometerse),
   la **82** (una ruptura para varias razones), la **118** (cómo se identifica una prueba) y la
-  **87** (el esquema de firma, que propone el RFC-0020).
+  **87** (el esquema de firma, que escribe el RFC-0020, aceptado con éste en el §799). ⚠️ §799:
+  hasta aquí decía «que propone el RFC-0020».
 
 ## Estado de las etapas
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
-| E1 — la promesa, escrita | este texto: la superficie, la regla de ruptura, el aviso y lo que se garantiza después | no | **propuesta (§790)** |
+| E1 — la promesa, escrita | este texto: la superficie, la regla de ruptura, el aviso y lo que se garantiza después | no | **escrita (§790) y decidida (§799)** ⚠️ §799: hasta aquí decía «propuesta (§790)» |
 | E2 — la sección normativa | la sección «Versionado y compatibilidad» de `spec/RPC.md`, con el texto de la D-C, y las remisiones desde `spec/PAQUETE.md` §6, `spec/NUCLEO.md` §3, `doc/KIT.md` §0 y la fila «Estado» de los dos README | no (texto) | sin construir |
-| E3a — la compuerta de la superficie | una herramienta del bucle del canon que deriva cada superficie de su productor y la compara con la lista de la sección (D-D) | no | sin construir; **propuesta, no escrita** |
+| E3a — la compuerta de la superficie | una herramienta del bucle del canon que deriva cada superficie de su productor y la compara con la lista de la sección (D-D) | no | sin construir; **decidida (§799), no escrita** ⚠️ §799: hasta aquí decía «propuesta, no escrita» |
 | E3b — la compuerta de las pruebas que viajan | una prueba positiva por familia que viaja, juzgada en cada canon por el verificador del nodo y del kit (D-D) | no por sí misma | sin construir; con la E3 de la D-G del RFC-0018, en el corte |
 | E4 — el corte, bajo la política | el corte `zkssl/0.5` con su aviso, sus mudanzas y el kit 0.5.0, como primera ruptura que la cumple | **sí** (la del RFC-0018) | sin construir |
 
@@ -116,8 +122,10 @@ con `--dev`; la API de Rust de los crates —el SDK, y `zk-ssl-verify` como bibl
 de línea de mando de `zk-ssl-cli` y del testigo; los diarios del nodo (`DIARIO_VERSION` 1,
 `crates/zk-ssl-node/src/diario.rs:67`) y del testigo (4, `crates/zk-ssl-cli/src/witness.rs:478`); el
 libro en disco y sus instantáneas; los límites de operación, como el del cuerpo de una petición
-(`spec/RPC.md`, «Transporte y sobre»); los tiempos y los tamaños; y `doc/`. La decisión 2 es del
-autor.
+(`spec/RPC.md`, «Transporte y sobre»); los tiempos y los tamaños; y `doc/`. La decisión 2 la tomó
+el autor en el §799: estas seis superficies, y fuera de la promesa lo que aquí se enumera, el diario
+del testigo y `zk-ssl-verify` como biblioteca incluidos. ⚠️ §799: hasta aquí decía «La decisión 2
+es del autor».
 
 ### D-B — La regla de ruptura
 
@@ -188,7 +196,8 @@ su esquema (el RFC-0020, la 87). Mientras falten, la sección los declara.
 `spec/RPC.md` ya tiene un «Versionado»: una entrada de «Notas operativas» (`spec/RPC.md:1290-1298`),
 con las dos del §699 detrás (`:1299-1325`), y la línea del aviso, bajo el título, remite a ella
 (`spec/RPC.md:2`). Así que este RFC no escribe una sección en `spec/RPC.md`: propone su enmienda, y
-la E2 la aplica si el autor lo adopta. La sección nueva va **al final del documento**, detrás de
+la E2 la aplica; el autor lo adoptó en el §799 (⚠️ §799: hasta aquí decía «la E2 la aplica si el
+autor lo adopta»). La sección nueva va **al final del documento**, detrás de
 «Notas operativas», para no mover ninguna línea que otros documentos citen —el §699 dejó `:9`,
 `:88`, `:101` y `:164-165` donde estaban—. La entrada «Versionado» no se borra: gana en su misma
 línea una nota «⚠️ §M:» que remite a la sección nueva, y sigue contando lo que pasó antes. El texto
@@ -238,8 +247,9 @@ en la lista que la compuerta de la E3a compara, para que la prosa no las tenga q
 ### D-D — La compuerta, propuesta como etapa y no escrita
 
 La 90 pide «una compuerta que la haga cierta: lo declarado estable no cambia sin que el canon lo
-diga». Este RFC no la escribe: no está aceptado, y lo que vigilaría es la sección que propone. La
-propone en dos etapas.
+diga». Este RFC no la escribe: no estaba aceptado cuando se escribió (§790), y lo que vigilaría es
+la sección que propone; aceptado en el §799, la compuerta llega con su etapa. La propone en dos
+etapas. ⚠️ §799: hasta aquí decía «no está aceptado», sin más.
 
 **E3a — La superficie, por su productor.** Una herramienta del bucle del canon,
 `tools/check_superficie.py` o el nombre que el autor elija, que lee cada superficie de su productor
@@ -274,36 +284,55 @@ con la E3 de la D-G, en el corte: una prueba de `zkssl/0.4` no dice de qué AIR 
 ## Compatibilidad
 
 Ninguna. La E1 es este texto; la E2, texto en `spec/RPC.md` y remisiones; la E3, compuertas que no
-cambian nada de lo que viaja. Ningún vector se mueve por este RFC. Su primera aplicación sería el
+cambian nada de lo que viaja. Ningún vector se mueve por este RFC. Su primera aplicación será el
 corte `zkssl/0.5` (E4): el RFC-0018 ya está en el árbol, PROPUESTO desde el §675, con sus etapas y
-su estado en la cabecera, y eso cumpliría la R5 para lo que ya tiene construido.
+su estado en la cabecera, y eso cumpliría la R5 para lo que ya tiene construido. ⚠️ §799: hasta
+aquí decía «sería».
 
-## Decisiones abiertas (del autor)
+## Decisiones (del autor, §799)
 
-Ninguna está tomada. La sesión dice lo que recomienda; decide el autor.
+⚠️ §799: hasta aquí esta sección se titulaba «Decisiones abiertas (del autor)» y empezaba «Ninguna
+está tomada. La sesión dice lo que recomienda; decide el autor».
+
+El autor aceptó este RFC en el §799, y con él tomó las ocho decisiones: en cada una, la rama que el
+texto recomienda; en la 2, donde la sesión no recomendó sobre dos dudas, lo que la D-A ya decía.
+Las preguntas y sus ramas se quedan como se escribieron en el §790; detrás de cada una, la tomada y
+las descartadas. El RFC sigue PROPUESTO hasta que se construyan sus etapas.
 
 1. **¿Dónde vive la promesa?** En `spec/RPC.md`, como la sección de la D-C (recomendado: es el
    documento normativo que lee primero quien implementa el cable, y la 90 la pone «al lado» de la
    suya), o en un documento propio de `spec/`, con remisiones desde `spec/RPC.md`,
    `spec/PAQUETE.md` y `spec/NUCLEO.md`.
+   **Tomada (§799): en `spec/RPC.md`**, la sección de la D-C. Descartado: un documento propio.
 2. **¿Qué entra en la superficie?** Las seis de la D-A y lo que dice fuera. Dos dudas que la sesión
    no resuelve: el diario del testigo, que `--auditar` relee y que un auditor custodia; y
    `zk-ssl-verify` como biblioteca, que con la segunda es lo único que verifica hoy una cabeza v1.
+   **Tomada (§799): las seis de la D-A**, y «Fuera de la promesa» lo que allí se enumera, el diario
+   del testigo y `zk-ssl-verify` como biblioteca incluidos. Descartado: meter en la superficie el
+   diario del testigo o la biblioteca.
 3. **¿Emitir una versión de cabeza nueva rompe el cable?** La sesión recomienda que sí (R1): cierra
    la práctica de la v3 a la v6 (hecho 3), y es lo que el RFC-0020 propone para su v7.
+   **Tomada (§799): sí**, es R1. Descartado: que no rompa.
 4. **¿Cuánto aviso?** Un sello con el RFC PROPUESTO antes del corte (R5, recomendado, porque es lo
    que la casa puede comprobar); un plazo en días; o una release del kit que acepte lo nuevo antes de
    que el nodo lo emita, que la R2 permite para las versiones de cabeza y la D-E del RFC-0018 prohíbe
    para el cable.
+   **Tomada (§799): un sello con el RFC PROPUESTO antes del corte** (R5). Descartados: el plazo en
+   días y la release del kit por delante del nodo.
 5. **¿Qué promete una línea `0.N`?** Que dentro de `0.N.x` nada de la superficie se rompe, salvo por
    R6 f, y que entre `0.N` y `0.N+1` todo puede romperse con R5 y R6 (recomendado, mientras el
    protocolo esté por debajo de 1.0); o una promesa más fuerte desde ahora.
+   **Tomada (§799): la primera**, mientras el protocolo esté por debajo de 1.0. Descartada: una
+   promesa más fuerte desde ahora.
 6. **¿Un arreglo de seguridad puede cambiar veredictos dentro de `0.N.x`?** La sesión recomienda que
    sí, con su aviso (R6 f), como la 0.4.2; la otra rama obliga a una línea nueva por cada arreglo.
+   **Tomada (§799): sí**, con su aviso (R6 f). Descartada: una línea nueva por cada arreglo.
 7. **¿Cuánto tiempo sigue publicado un kit?** Siempre, que es la práctica (recomendado, R6 a); o
    hasta una fecha que la release declare.
+   **Tomada (§799): siempre** (R6 a). Descartado: hasta una fecha que la release declare.
 8. **¿La E3b entra con el corte o antes?** Con el corte (recomendado): antes, una prueba de
    `zkssl/0.4` no dice de qué AIR es, y la compuerta sólo podría compararla con el commit.
+   **Tomada (§799): con el corte.** Descartado: antes.
 
 ## Seguridad
 

@@ -146,8 +146,8 @@ decidido, y dónde):
   Despliegue en hoja: entrada 50 (B13/B14).
   ⚠️ §791: «exige solo la clave» no vale para una cuenta RECUPERADA: la recuperación copia la sal de
   la clave vieja, y la subida lo impone con una sola columna (`circuit_recovery_climb.rs`, «LA
-  COPIA»); la clave nueva no re-deriva esa sal. Y el reclamo ES una rotación (§134.1): su análisis
-  está en `doc/ROTACION_DE_CUENTAS.md` (§791, BORRADOR; BACKLOG 52).
+  COPIA»); la clave nueva no re-deriva esa sal. Y el reclamo ES una rotación (§134.1): su análisis está
+  en `doc/ROTACION_DE_CUENTAS.md` (§791; ⚠️ §799: ACEPTADA como análisis; decía «BORRADOR»; BACKLOG 52).
 · Coherencia §5.3 ↔ §119: la reversión de pendientes NO es el rollback
   que §5.3 prohíbe — es un claim con clave de titular; nunca se muta
   estado sin prueba.
@@ -157,13 +157,13 @@ decidido, y dónde):
   cabecera: C3 sirve a la misión declarada; el dimensionamiento
   planetario es estudio condicional. La dependencia B11←C3 queda intacta.
 · B11.2 (aviso cifrado) y el canal ISO de la entrada 11 → ESTUDIADOS, SIN DECIDIR (§791, 2026-10-14):
-  `doc/AVISO_EN_ISO20022.md`, BORRADOR. ⚠️ §791: el cuerpo dice en §3.2 «AEAD + clave efímera, ~100 B
-  de sobrecoste» y en §8 «independiente e implementable hoy», y medido contra el árbol le faltan
-  tres cosas: ninguna cuenta tiene una clave pública a la que cifrar —`AccountRecord` y
-  `zkssl_openAccount` llevan tres resúmenes—, así que hay que crearla y rotarla; el árbol no tiene
-  ningún acuerdo de claves, y uno sobre una curva no pasa `tools/check_curvas.py` (§788) en el SDK;
-  el tamaño de uno poscuántico no está medido aquí; y, cifrado, el aviso solo cabe entero en
-  `SplmtryData`, no en un campo de 140 caracteres. El cuerpo de este documento no se toca.
+  `doc/AVISO_EN_ISO20022.md`, ⚠️ §799: ACEPTADA como análisis; decía «BORRADOR». ⚠️ §791: el cuerpo dice
+  en §3.2 «AEAD + clave efímera, ~100 B de sobrecoste» y en §8 «independiente e implementable hoy», y
+  medido contra el árbol le faltan tres cosas: ninguna cuenta tiene una clave pública a la que cifrar
+  —`AccountRecord` y `zkssl_openAccount` llevan tres resúmenes—, así que hay que crearla y rotarla;
+  el árbol no tiene ningún acuerdo de claves, y uno sobre una curva no pasa `tools/check_curvas.py`
+  (§788) en el SDK; el tamaño de uno poscuántico no está medido aquí; y, cifrado, el aviso solo cabe
+  entero en `SplmtryData`, no en un campo de 140 caracteres. El cuerpo de este documento no se toca.
 · B18.2 (el reclamo de migración) → ES UNA ROTACIÓN, ESTUDIADA, SIN DECIDIR (§791): su ⚠️ está en
   «La errata del salt», arriba, y su análisis en `doc/ROTACION_DE_CUENTAS.md`. El cuerpo no se toca.
 ============================================================ -->

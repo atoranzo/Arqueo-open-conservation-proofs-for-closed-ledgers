@@ -1,20 +1,25 @@
 <!--
   AVISO_EN_ISO20022 — por dónde viajaría el aviso del pendiente dentro de un mensaje ISO 20022.
-  Nota de diseño en BORRADOR para la entrada 11 del BACKLOG, con su otra cara: el B11.2 de
-  CONFIANZA_RESIDUAL.md, el aviso cifrado. Hermana de CADUCIDAD_PENDIENTE.md y de
-  ROTACION_DE_CUENTAS.md, a la que le añade un caso. No toca código, ni el cable, ni un circuito:
-  mide los campos que podrían llevarlo y deja las decisiones al autor.
+  Nota de diseño para la entrada 11 del BACKLOG, ACEPTADA como análisis en el §799 (⚠️ §799: hasta
+  aquí decía «en BORRADOR»), con su otra cara: el B11.2 de CONFIANZA_RESIDUAL.md, el aviso
+  cifrado. Hermana de CADUCIDAD_PENDIENTE.md y de ROTACION_DE_CUENTAS.md, a la que le añade un
+  caso. No toca código, ni el cable, ni un circuito: mide los campos que podrían llevarlo y deja
+  las decisiones al autor.
 -->
 
 # AVISO_EN_ISO20022 — el aviso del pendiente, dentro o fuera del mensaje
 
-**Estado**: BORRADOR. Nota de diseño, sin código y sin número de RFC. Elegir el campo, su
-codificación y su orden frente al cifrado del aviso es del autor (§8). No cierra la 11 ni el B11.2.
+**Estado**: ACEPTADA (§799), como análisis: el autor la acepta como está y deja abiertas sus
+decisiones, de la D-1 a la D-6 del §8, sin elegir ninguna opción. ⚠️ §799: hasta aquí decía
+«BORRADOR». Nota de diseño, sin código y sin número de RFC. Elegir el campo, su codificación y su
+orden frente al cifrado del aviso es del autor (§8). No cierra la 11 ni el B11.2.
 
 **Procedencia**: la escribió Claude en una sesión de Claude Code en la
 nube, sobre `8c02941` (§789), fuera del paso 4 de [`GENAI.md`](../GENAI.md); la lleva el §791 de
-`AUDITORIA.md`. Integrar no es aceptar: la aceptación queda pendiente. ⚠️ §792: sus citas al
-`BACKLOG.md` por línea pasaron a citas por entrada, la regla v5 de `tools/verificar_citas.py`.
+`AUDITORIA.md`. Integrar no es aceptar: la aceptación quedó pendiente hasta el §799, en el que el
+autor la acepta como análisis, con sus decisiones abiertas. ⚠️ §799: hasta aquí decía «la
+aceptación queda pendiente». ⚠️ §792: sus citas al `BACKLOG.md` por línea pasaron a citas por
+entrada, la regla v5 de `tools/verificar_citas.py`.
 
 **Convención**: ✅ medido en este árbol, con fichero:línea · 📐 derivado con una aritmética que se
 reproduce · 📖 leído fuera del árbol, con su fuente y su fecha · ⚠️ matiz · ❓ no medido.
