@@ -2236,10 +2236,34 @@ fn open_layer(a: &Args) -> anyhow::Result<SovereignLayer> {
         anyhow::bail!("--max-supply {} por encima del tope de la capa, 2^62 - 1", a.max_supply);
     }
     Ok(match &a.ledger {
-        Some(path) => SovereignLayer::open(path, c_root, g_root, a.limit, a.max_supply, a.max_accounts)
-            .map_err(|e| anyhow::anyhow!("abriendo {path}: {e:?}"))?,
+        Some(path) => {
+            SovereignLayer::open(path, c_root, g_root, a.limit, a.max_supply, a.max_accounts)
+                .map_err(|e| error_al_abrir(path, &e))?
+        }
         None => SovereignLayer::new(c_root, g_root, a.limit, a.max_supply, a.max_accounts),
     })
+}
+
+/// ⚠️ §783 · El error de abrir el libro, y con nombre el de un libro TOMADO (la 18). `sled` toma
+/// un cerrojo sobre el directorio, y un segundo proceso sobre el mismo libro se niega antes de
+/// leer ni escribir nada: falla cerrado, y ya lo hacía. Lo que cambia es que se dice qué pasa,
+/// en vez del `Store(Io("IO error: could not acquire lock …"))` de la biblioteca. **No se
+/// reintenta**: medido en el §783, un nodo que muere (SIGKILL o SIGTERM) y se rearranca al
+/// instante sobre su libro lo reabre a la primera, 90 de 90; un reintento solo haría esperar a un
+/// segundo nodo que no debería estar ahí.
+fn error_al_abrir(path: &str, e: &LayerError) -> anyhow::Error {
+    match e {
+        LayerError::Store(zk_ssl::store::StoreError::Io(m))
+            if m.contains("could not acquire lock") =>
+        {
+            anyhow::anyhow!(
+                "abriendo {path}: el libro lo tiene abierto OTRO proceso (el cerrojo de sled): un \
+                 nodo por libro. Se para el que esta de mas, o se arranca este sobre otro --ledger. \
+                 ({m})"
+            )
+        }
+        _ => anyhow::anyhow!("abriendo {path}: {e:?}"),
+    }
 }
 
 // ─────────────────────────── JSON-RPC 2.0 ───────────────────────────
@@ -6517,6 +6541,28 @@ mod tests {
             Err(e) => panic!("tenia que pararlo el cerrojo del indice, y dio: {e}"),
             Ok(_) => panic!("CRITICO: dos firmantes con la misma semilla sobre el mismo indice"),
         }
+    }
+
+    /// ⚠️ §783 · **Dos nodos sobre el mismo libro: el segundo se niega, y dice por qué** (la 18).
+    /// El cerrojo de `sled` es por descripción de fichero: un segundo `open` en el mismo proceso
+    /// choca igual que el de otro proceso, y así se ata sin arrancar dos binarios.
+    #[test]
+    fn dos_nodos_sobre_el_mismo_libro_el_segundo_se_niega_con_nombre() {
+        use clap::Parser;
+        let dir = tests_dir("dos_nodos_un_libro");
+        let ruta = dir.join("ledger");
+        let ruta = ruta.to_str().expect("ruta utf-8");
+        let a = Args::try_parse_from(["zk-ssl-node", "--ledger", ruta]).expect("args");
+        let _primero = open_layer(&a).expect("el primero abre el libro");
+        let e = match open_layer(&a) {
+            Ok(_) => panic!("CRITICO: dos capas sobre el mismo libro"),
+            Err(e) => e.to_string(),
+        };
+        assert!(
+            e.contains("OTRO proceso") && e.contains("un nodo por libro"),
+            "{e}"
+        );
+        assert!(e.contains(ruta), "nombra el libro: {e}");
     }
 
     /// ⚠️ El CABLEADO de las banderas: que ningun `default_value` vuelva a colarse en

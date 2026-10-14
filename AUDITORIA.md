@@ -52295,3 +52295,68 @@ el desglose de `PRINCIPIOS.md`. Ni vectores, ni el `BACKLOG.md`: 44 abiertas y 7
 **Lo que NO hace.** No acepta el RFC-0016. No cambia ningún veredicto del kit ni del mando. No toca el
 `Debug` de `InclusionError` que el kit imprime en `acuse: {e:?}`, más que por las dos variantes nuevas,
 que el catálogo trata como opaco (la puerta del §777 lo imprime como excluido).
+
+## §783 — la 18 se cierra medida: un nodo que muere y se rearranca al instante reabre su libro a la primera (90 de 90), y un segundo nodo sobre un libro tomado se niega diciendo qué pasa; nace `tools/banco_reinicio.sh`
+
+El commit que lleva este asiento, sobre el §782. Un solo sello: en `crates/zk-ssl-node/src/main.rs`,
+`error_al_abrir`, que da nombre al error de abrir un libro que otro proceso tiene abierto, con un test
+nuevo; un banco nuevo, `tools/banco_reinicio.sh`; la entrada 18 del `BACKLOG.md`, cerrada, y su
+cabecera, recontada; el pin del crate en `tools/canon.sh`; las cifras de tests de `PAPER.md`,
+`PAPER_EN.md` y `PRINCIPIOS.md`; y este asiento. Del autor es elegir esta tarea y su orden; lo demás
+lo propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo
+commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+El número es el siguiente del rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la
+zona de la migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este
+asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** La 18 temía que un nodo real que se reinicia justo después de cerrarse no pudiera
+reabrir su libro: el cerrojo de `sled` sobre el directorio había hecho fallar un test 1 de cada 12
+pasadas (§79), con `WouldBlock`, y desde entonces los tests reintentan (`open_encrypted_retry`, la
+45). Nadie lo había medido con un nodo de verdad.
+
+**Lo medido, antes de tocar nada.** Un nodo de release, con su libro, su diario, su contador de
+recepción y su índice de firma bajo `$HOME`, muerto y rearrancado al instante sobre el mismo libro:
+con SIGKILL esperando al viejo y con SIGTERM sin esperarlo, 90 rearranques de 90 contestaron a la
+primera. La 18 no se reproduce: el cerrojo es del proceso y muere con él. Lo que sí choca es un
+segundo nodo sobre un libro que otro tiene abierto, y ahí el nodo ya fallaba cerrado —se negaba antes
+de leer ni escribir—, pero lo decía con el `Store(Io("IO error: could not acquire lock …"))` de la
+biblioteca.
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso NO reintentar —un reintento solo
+haría esperar a un segundo nodo que no debería estar ahí— y dar nombre al error.
+
+**Por qué no lleva aviso de seguridad.** Nada que antes se aceptara se acepta ahora, ni al revés:
+cambia el texto de un error de arranque.
+
+**Lo que hace.**
+
+1. **`error_al_abrir(path, &LayerError)`**: el error del cerrojo sale como «abriendo {path}: el libro
+   lo tiene abierto OTRO proceso (el cerrojo de sled): un nodo por libro. Se para el que esta de mas,
+   o se arranca este sobre otro --ledger», con el texto de la biblioteca entre paréntesis; cualquier
+   otro error, como antes.
+2. **El test** `dos_nodos_sobre_el_mismo_libro_el_segundo_se_niega_con_nombre`: el cerrojo de `sled`
+   es por descripción de fichero, así que un segundo `open_layer` en el mismo proceso choca como el
+   de otro proceso, y se ata sin arrancar dos binarios.
+3. **`tools/banco_reinicio.sh`**, en el puerto 8619: el REINICIO, `$BANCO_REINICIO_N` veces (15 por
+   omisión) con cada señal, ROJO si una sola vuelta no reabre; y DOS NODOS, el segundo se niega con su
+   nombre y el primero sigue contestando. `tools/bancos.sh` lo encuentra solo, como a todos.
+4. **La 18, cerrada**, con lo medido debajo del cuerpo, y la cabecera del `BACKLOG.md`.
+
+**Medido.**
+
+- **El banco**: VERDE, «REINICIO: 15 de 15 rearranques a la primera tras SIGKILL», lo mismo tras
+  SIGTERM, y «DOS NODOS: el segundo se niega con su nombre (exit 1) y el primero sigue contestando».
+- **Que el test cae**: con el error de antes, `dos_nodos_sobre_el_mismo_libro_el_segundo_se_niega_con_nombre`
+  da `FAILED`; con este sello, `ok`.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE. El banco no entra en el canon
+  de sello: va con `--bancos`, como los demás.
+
+**Contadores.** `zk-ssl-node` 202 -> 203, en su fila de `tools/canon.sh`, con su crónica. TOTAL DE
+SELLO 1744 -> 1745 y TOTAL CON LARGOS 1881 -> 1882, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`, y
+el desglose de `PRINCIPIOS.md`. El `BACKLOG.md` pasa de 44 abiertas y 76 resueltas a 43 y 77. Ni
+vectores. `tools/` gana un banco: 25 `banco_*.sh`.
+
+**Lo que NO hace.** No quita `open_encrypted_retry` de los tests: allí el libro se cierra y se reabre
+dentro del mismo proceso, y no es lo que se midió aquí. No mide un reinicio de la MÁQUINA ni un disco
+lleno. No mira dos nodos sobre libros distintos que compartan diario o contador: eso es otra cosa, y
+este banco no la mide.

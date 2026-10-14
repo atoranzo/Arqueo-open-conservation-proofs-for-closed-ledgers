@@ -12,10 +12,10 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 76 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 43 abiertas, 77 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
-cierra la 102, y el §779, que cierra la 42 y la 104.
+cierra la 102, el §779, que cierra la 42 y la 104, y el §783, que cierra la 18.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -2088,7 +2088,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   unico de
   fallo.
 
-- [ ] **18. Bloqueo de directorio de `sled`.** Puede impedir un reinicio
+- [x] **18. ✅ (§783) Bloqueo de directorio de `sled`.** ~~Puede impedir un reinicio~~
   inmediato tras cerrar (§16.6). ⚠️ **Manifestacion MEDIDA** el 31-07-2026
   (§79): hizo fallar un test de release **1 de cada 12 pasadas** a 16 hilos,
   con `WouldBlock` al reabrir. Los tests quedan protegidos con
@@ -2096,6 +2096,22 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   nodo real que se reinicie inmediatamente tras cerrarse puede sufrir lo
   mismo, y ahi no hay reintento de test que valga. Deja de ser una
   limitacion teorica.
+
+  ⚠️ **§783: medido con un nodo de verdad, no se reproduce, y lo que queda
+  se dice con su nombre.** `tools/banco_reinicio.sh` mata el nodo —SIGKILL
+  esperando al viejo, y SIGTERM SIN esperar, el rearranque inmediato que esta
+  entrada temia— y lo rearranca al instante sobre el MISMO libro: 15 de 15
+  con cada senal en el banco, y 90 de 90 en la medida del sello. El cerrojo
+  de `sled` es del proceso: muere con el. Lo que si choca es un SEGUNDO nodo
+  sobre un libro que otro tiene abierto, y eso es correcto —falla cerrado,
+  antes de leer ni escribir—; el §783 hace que lo diga («el libro lo tiene
+  abierto OTRO proceso (el cerrojo de sled): un nodo por libro») en vez del
+  `Io("could not acquire lock")` de la biblioteca, lo ata
+  `dos_nodos_sobre_el_mismo_libro_el_segundo_se_niega_con_nombre` y el
+  banco lo comprueba. **No se reintenta**: un reintento solo haria esperar a
+  un nodo que no deberia estar ahi. El `WouldBlock` del §79 salio en los
+  tests, que cierran y reabren el libro dentro de un mismo proceso, a 16
+  hilos; ahi sigue `open_encrypted_retry` (la 45).
 
 - [ ] **19. Sin log de escritura anticipada — y la consecuencia que se
   describia NO existe.** **Comprobable**: `grep -rn "write_ahead|journal"
