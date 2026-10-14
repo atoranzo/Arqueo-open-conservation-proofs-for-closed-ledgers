@@ -1133,8 +1133,16 @@ comprueba que transferir no altera el suministro.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 33 módulos y **448 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 34 módulos y **448 tests**, frente a
 > los 2 módulos y 17 de este.
+>
+> ⚠️ §778: aquí decía **33 módulos**, la cuenta del §531, y son **34** desde
+> el §697, que añadió `nivel_de_produccion.rs`; el propio §697 dejó dicho
+> que la cifra seguía en 33 y no la recontó. Se cuenta como el §531: los
+> `.rs` de `src/` menos `lib.rs`, que son los `mod` de fichero que declara
+> `crates/zk-ssl/src/lib.rs` (sus tres módulos en línea no cuentan). El 2
+> de este crate es de otra vara: con esta serían 34 frente a 1 (su único
+> `mod` de fichero es `sparse_tree`), y con todos los `.rs`, 35 frente a 2.
 >
 > Una versión anterior de este documento lo titulaba *"La capa"* sin más,
 > lo que **contradecía a `AUDITORIA.md` §15** en el mismo repositorio.

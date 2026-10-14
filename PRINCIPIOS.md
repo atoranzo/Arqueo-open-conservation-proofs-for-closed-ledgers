@@ -315,7 +315,24 @@ hermanos. Es **silencioso** — los testigos honestos nunca lo revelarían.
 Obligó a diseñar un patrón en lockstep.
 
 **2. Goldilocks es demasiado estrecho para identidades.** Un elemento son
-64 bits: colisión en 2³². En BLS12-381 (255 bits) el problema no existe.
+64 bits: una identidad de un solo elemento admitiría colisión en 2³² por
+la paradoja del cumpleaños, y por eso la identidad es el digest completo
+de cuatro elementos, 256 bits. En BLS12-381 (255 bits) un elemento basta.
+La estrechez tiene una segunda consecuencia que ensanchar la identidad no
+arregla —impide hallar *otra* clave con la misma identidad, no hallar *la*
+clave—: el espacio de una clave de gasto de un solo elemento es 2⁶⁴, y
+como la identidad es pública —el pagador la necesita para direccionar—,
+agotarlo fuera de línea cuesta 2⁶³, 2,38 millones de años-núcleo medidos
+sobre una CPU sin optimizar el ataque, que es cota superior floja (§82).
+`open_account_wide` abre cuentas con claves de cuatro elementos (§97),
+pero la vía de un elemento, `open_account`, sigue viva —marcada
+`#[deprecated]` (§98.1); la adopción es opt-in (§102)— y quien no rote
+sigue con 64 bits (§90.4); rotar exige la autorización de dos custodios
+(§98.4). ⚠️ §778: hasta entonces decía «Un elemento son 64 bits: colisión
+en 2³². En BLS12-381 (255 bits) el problema no existe», como si la
+colisión siguiera abierta y fuera la única consecuencia: la identidad ya
+era de cuatro elementos (§82.1), la entrada 15 del backlog lo tacha, y lo
+vivo es la búsqueda exhaustiva de la clave, no una colisión.
 
 **3. Techo de 63 bits de solidez** en STARK sobre Goldilocks sin
 extensión de campo. Esa configuración **no es comparable** con los ~128

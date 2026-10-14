@@ -64,11 +64,11 @@ comprobaciones de la capa son comodidad; la garantía está en el AIR.
 
 | Invariante | Circuito | Restricción |
 |---|---|---|
-| Conservación del dinero | `circuit_settlement` | `C_CONSERVATION` |
-| Solo el titular gasta | `circuit_settlement` | `C_PK_CHECK` |
-| Nadie gasta dos veces | `circuit_settlement` | `C_NULL_EMPTY` + raíces públicas |
-| `importe <= saldo` | `circuit_settlement` | Rango sobre `saldo − importe` |
-| `importe <= límite` | `circuit_settlement` | Rango sobre `límite − importe` |
+| Conservación del dinero | ~~`circuit_settlement`~~ `circuit_send` + `circuit_claim` (⚠️ §778) | ~~`C_CONSERVATION`~~ va en dos pruebas: abajo |
+| Solo el titular gasta | ~~`circuit_settlement`~~ `circuit_send` (⚠️ §778) | `C_PK_CHECK` |
+| Nadie gasta dos veces | ~~`circuit_settlement`~~ `circuit_send` + `circuit_claim` (⚠️ §778) | ~~`C_NULL_EMPTY` +~~ raíces públicas, sin nullificador: abajo |
+| `importe <= saldo` | ~~`circuit_settlement`~~ `circuit_send` (⚠️ §778) | Rango sobre `saldo − importe` |
+| `importe <= límite` | ~~`circuit_settlement`~~ `circuit_send` (⚠️ §778) | Rango sobre `límite − importe` |
 | Solo 2 custodios emiten | `circuit_mint` | Aserciones sobre `custodian_set_root` |
 | Un custodio no cuenta dos veces | `circuit_mint`, `circuit_threshold` | Rango sobre `idx_b − idx_a − 1` |
 | El índice no se puede mentir | ídem | `C_ACC` + `C_ACC_FINAL` |
@@ -81,12 +81,47 @@ comprobaciones de la capa son comodidad; la garantía está en el AIR.
 | Revelar exige ser titular | `circuit_audit` | `C_PK_CHECK` |
 | No se finge solvencia | `circuit_audit` | Rango sobre `saldo − inferior` |
 
+⚠️ §778: **las cinco primeras filas nombraban un circuito que la capa ya no ejecuta.**
+Decían `circuit_settlement`, la liquidación de un paso: actualizaba las dos hojas y por
+eso entregaba al pagador el saldo del receptor (§4). Esa vía se retiró en el §32, el §161
+sacó del árbol su `transfer.rs` con su `apply`, y el §176 derribó su `circuit_settlement.rs`
+STARK (`1f41a1d`). Hoy un pago son **dos pruebas**, las que importan `zk-ssl/src/lib.rs` y
+`two_phase.rs` y con las que prueba `client.rs`: el envío con `circuit_send` y el cobro con
+`circuit_claim`. Con sobre de devolución (RFC-0003) van sus gemelos `circuit_send_v2` y
+`circuit_claim_v2`, que elige el aviso (`notice.x`) y que llevan las mismas restricciones
+con los mismos nombres, más `C_ENV_DIG` y `C_ENV_IN`, el cuarto merge, el del sobre. El
+único `circuit_settlement` que queda es el homónimo Groth16 de `zk-core`, y fuera de
+`zk-core` solo lo usa `settlement-layer`, la capa anterior: ningún crate de la capa
+—`zk-ssl`, el nodo, el SDK, la CLI, el cable, el verificador— depende de `zk-core` ni de
+`settlement-layer`, ni directa ni transitivamente. Leídas en el AIR, hoy:
+
+| Invariante | Circuito | Restricción |
+|---|---|---|
+| Conservación del dinero | `circuit_send` + `circuit_claim` | **No hay `C_CONSERVATION`**: va en dos pruebas. Envío: `C_BALANCE` (saldo nuevo = saldo − importe), `C_PEND_VAL + 4` (el importe del compromiso es el mismo `COL_AMT`, asertado al `amount` público) y `C_SUPPLY` (el suministro no se mueve). Cobro: `C_PEND_ENTRY_A` (el compromiso con ese importe estaba en `pending_root_old`), `C_PEND_VAL + 4`, `C_BALANCE` (saldo nuevo = saldo + importe) y `C_SUPPLY` |
+| Solo el titular gasta | `circuit_send` | `C_KEY_INPUT` (los cuatro elementos de la clave entran al hash, junto al dominio `SPEND_KEY_DOMAIN`, asertado) + `C_PK_CHECK` (la identidad derivada es `COL_ACC_ID`) + `C_INPUT` (y es la de la hoja que se debita) |
+| Solo el destinatario cobra | `circuit_claim` | `C_PEND_IN + 4`: el compromiso se rehace con `COL_ACC_ID`, que `C_PK_CHECK` ata a la clave, y no con `COL_R_ID` —el agujero del §39— |
+| Nadie gasta dos veces | `circuit_send` + `circuit_claim` | **Sin nullificador, por decisión** (`circuit_send.rs`, «Por qué NO lleva nullificador»): raíces públicas `root_old`/`root_new` y `pending_root_old`/`pending_root_new`, `C_PEND_ENTRY_A` del envío (la posición estaba libre: no se pisa otro pendiente) y `C_PEND_ENTRY_B` del cobro (el pendiente sale: el carril B coloca cero) |
+| `importe <= saldo` | `circuit_send` | `C_SEG_LINK + 2`: rango sobre `COL_BAL_NEW`, que `C_BALANCE` iguala a `saldo − importe`; `C_SEG_LINK + 0` y `+ 1` acotan saldo e importe. Segmentos de **62 bits**: `C_FIRST_S` en sus dos primeras filas (RFC-0017, §641) |
+| `importe <= límite` | `circuit_send` | `C_SEG_LINK + 4`: rango sobre `COL_LIMIT − COL_AMT`, con `C_LIMIT_CONST` y `COL_LIMIT` asertado al `regulatory_limit` público (§25) |
+
+**Cambian tres cosas, no solo el nombre.** La conservación ya no es una igualdad dentro
+de una prueba: el envío prueba lo que sale y el cobro lo que entra, y lo que hace que
+sea lo mismo es el compromiso `H(H(id_receptor, aleatorio), importe)` en el árbol de
+pendientes y que el cobro parta de la `pending_root_old` vigente. El doble gasto no
+tiene marca pública propia en el circuito: el envío ni siquiera sube el nonce (`C_NONCE`
+pone el mismo en los dos carriles), así que lo que impide reaplicar es que `validate_send`
+y `validate_claim` comparen las raíces declaradas con las vigentes y, desde el §654,
+rechacen una prueba ya aplicada: la fila «No se reaplica una operación» de la tabla
+siguiente. Y el circuito acredita `importe <= límite declarado`; que el declarado sea el
+del sistema lo comprueba `validate_send` (`WrongRegulatoryLimit`), no el `apply` de la
+vía retirada.
+
 **Impuesto solo en la capa** (no en circuito):
 
 | Invariante | Dónde | Riesgo si falla |
 |---|---|---|
 | No se reaplica una operación | Comparación de `root_old` | Duplicación de dinero |
-| El límite es el del sistema | `apply` | El regulado elegiría su límite |
+| El límite es el del sistema | ~~`apply`~~ `validate_send` (⚠️ §778) | El regulado elegiría su límite |
 | El estado no está corrupto | `load` | Pruebas válidas sobre un ledger falso |
 
 ---
@@ -51914,3 +51949,74 @@ bibliotecas que la sección 5 trata como opacos (`VerificaError`, el `Debug` de 
 `ErrorDeNota`, `ActaError`, `FormatoError`): los imprime, uno por envoltorio, como excluidos, y una
 exclusión que no se imprime sería un agujero. No mira las claves que el kit lee. No mira la segunda
 implementación (`tools/segunda`), cuyos textos ata su propio arnés.
+
+## §778 — cuatro textos vivos que decían lo que el árbol ya no es, corregidos con marca: la tabla de invariantes de este documento (§3), «colisión en 2³²» en `PRINCIPIOS.md`, «33 módulos» en `ARQUITECTURA.md` y las citas heredadas del RFC-0017 (las tareas 57, 58, 56 y 55)
+
+El commit que lleva este asiento, sobre el §777. Toca la cabecera §3 de este documento —no un
+asiento—, `PRINCIPIOS.md`, `ARQUITECTURA.md` y `spec/rfc/0017-la-firma-acredita-la-aritmetica.md`;
+y este asiento. Ni código, ni vectores, ni el `BACKLOG.md`. Del autor es elegir las tareas y su
+orden; la forma la propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de
+Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** De releer contra el árbol los textos que un evaluador lee primero. Cada
+corrección la redactó un lector con la evidencia en `fichero:línea` y la revisó otro, que la aprobó
+con retoques; lo que aquí entra es la versión retocada.
+
+**Quién lo decide.** El autor eligió las tareas. La forma es la de la casa: en un documento vivo, el
+texto se corrige en su sitio y una nota «⚠️ §778» dice qué decía y por qué cambia; en la tabla de
+este documento, que tacha, se tacha y se pone al lado lo correcto.
+
+**Lo que hace.**
+
+1. **La tabla de invariantes de §3 (la tarea 57).** Atribuía conservación, titularidad, doble
+   gasto, `importe <= saldo` e `importe <= límite` a `circuit_settlement`. Esa vía se retiró en el
+   §32, el §161 sacó del árbol su `transfer.rs` con su `apply`, y el §176 derribó su
+   `circuit_settlement.rs` STARK (`1f41a1d`); el único `circuit_settlement` que queda es el Groth16
+   de `zk-core`, y fuera de `zk-core` solo lo usa `settlement-layer`, de la que ningún crate de la
+   capa depende, ni directa ni transitivamente. Hoy un pago son dos pruebas, `circuit_send` y
+   `circuit_claim`, con sus gemelos v2. Las cinco filas llevan el circuito tachado y el de hoy al
+   lado; una tabla nueva, leída en el AIR, da cada invariante con sus restricciones: ni
+   `circuit_send` ni `circuit_claim` tienen `C_CONSERVATION`, y `C_NULL_EMPTY` ya no existe; la
+   conservación va en dos pruebas unidas por el compromiso del pendiente, y el doble gasto, sin
+   nullificador por decisión, descansa en las raíces públicas, `C_PEND_ENTRY_A`/`B` y la frescura
+   que comprueba la capa (§654). La fila «El límite es el del sistema | `apply`» pasa a
+   `validate_send`.
+2. **`PRINCIPIOS.md`, «Goldilocks es demasiado estrecho para identidades» (la tarea 58).** Decía
+   sin marca «colisión en 2³²», como si siguiera abierta: la identidad es el digest completo desde el
+   §82.1 y la entrada 15 del backlog lo tacha. El título se queda, porque es cierto y lo citan
+   `PAPER.md` y `doc/integracion-vertical-evaluacion.md`; el cuerpo dice ahora lo vivo, que es otra
+   cosa: el espacio de una clave de un elemento, 2⁶⁴, agotable fuera de línea en 2⁶³ (§82), la vía
+   ancha `open_account_wide` (§97), la estrecha `#[deprecated]` (§98.1) con adopción opt-in (§102), y
+   que rotar exige dos custodios (§98.4). Sigue el molde del §698 en la misma sección.
+3. **`ARQUITECTURA.md`, «33 módulos» (la tarea 56).** Era la cuenta del §531; el §697 añadió
+   `nivel_de_produccion.rs` y dejó dicho que no recontaba. Con la vara del §531 —los `.rs` de `src/`
+   menos `lib.rs`, que son los `mod` de fichero de `crates/zk-ssl/src/lib.rs`— son 34. La nota dice
+   también, sin moverlo, que el «2» de `settlement-layer` es de otra vara: con esta sería 1.
+4. **El RFC-0017 (la tarea 55).** Decía «RFC-0015» en cuatro sitios y «§631» como asiento de la
+   frase que cita: los números que la canonicidad llevaba en su rama antes de renombrarse. Hoy son
+   el RFC-0016 y el §640; el RFC-0015 es el ciclo de vida del firmante y el §631, la E2a del
+   RFC-0013. Se corrigen en su sitio, sin tachar —ningún RFC tacha—, con una sola nota al final de
+   la sección. El §641 trae las mismas dos atribuciones y, como asiento, no se reescribe.
+
+**Medido.** Cada `texto_viejo` salía una sola vez en su fichero. Sobre este árbol, `check_cifras`,
+`check_figures`, `verificar_citas`, `check_publicadas` y `check_tests` salen con 0. El canon,
+`bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 46 abiertas y 74
+resueltas. Las líneas se mueven: `ARQUITECTURA.md` crece 8 detrás de la 1137 y `PRINCIPIOS.md` 17
+detrás de la 318. Las citas por línea a esas zonas en documentos vivos son de evaluaciones fechadas
+(`doc/ecst/VERIFICACION.md:1630` y cinco JSON de `doc/ecst/borrador/`, que citan la 1568 de
+`ARQUITECTURA.md`; `doc/blueprint-v2.md:245`, `:339` y `:674`, sobre `e69fadd`) y no se tocan.
+
+**Lo que NO hace.** No toca los restos que los lectores vieron y no son de estas tareas, que quedan
+dichos aquí: `two_phase.rs:991-995` dice que `circuit_send` no lleva el límite como entrada pública,
+y sí lo lleva (§25); `crates/stark-experiment/src/lib.rs:55-59` sigue anunciando `circuit_settlement`;
+`two_phase.rs:979-983` y la cabecera de `circuit_send_v2.rs` dicen que la no-congelación solo la
+impone la capa, y el §680 la ata en el AIR; la cabecera de este documento dice «Los seis
+circuitos»; `BACKLOG.md:1465-1466`, en la entrada 15 ya cerrada, dice que la `sk` de cuatro
+elementos invalida las cuentas existentes, y el §90 lo rectificó; `doc/historia/PUBLICACION.md:36`
+repite «64 bits son…», y hay que ver si es cita literal antes de tocarlo; y los mismos restos de la
+colisión en `INSTITUCIONAL`, `INSTITUTIONAL` y `ZENODO`.

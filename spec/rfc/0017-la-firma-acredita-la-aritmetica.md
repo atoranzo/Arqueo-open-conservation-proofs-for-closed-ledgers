@@ -24,7 +24,7 @@
 | E1 — la capa no confía | `validate_send` ata `amount == pi.amount`, el estado del remitente a la hoja del árbol y `pi.amount <= límite`, y resta con `checked_sub`; el cobro ata `notice.amount == pi.amount` y suma con `checked_add`; la quema deriva el suministro nativo (`checked_sub`) en vez de copiar `pi.supply_new`, y ata su estado a la hoja | NO | sellada — §641 |
 | E2 — el rango a 62 bits en los AIR de la capa | los diecisiete circuitos de `stark-experiment` fuerzan a cero **dos** bits altos (63 y 62) de cada segmento de rango, no uno: el rango demostrado baja a `[0, 2^62)` y una resta que envuelve en Goldilocks ya no cabe. `MAX_VALUE` de `compliance_circuit`, `double_entry` y `range_check` a `2^62 - 1` | NO | sellada — §641 |
 | E3 — la auditoría ata la identidad y acota la banda | `circuit_audit::get_assertions` ata `COL_ID` (la cuenta del testigo) al `public_id` público, y `verify_audit` exige `lower <= upper <= 2^62 - 1` antes de tocar la prueba | NO | sellada — §641 |
-| E4 — el saldo del cliente, canónico en el cable | `zk-ssl-wire` lee `balance` con la regla de RFC-0015 (`u64` canónico, `< p`) en los dos DTO de estado, antes de que la capa lo sume o reste | NO | sellada — §641 |
+| E4 — el saldo del cliente, canónico en el cable | `zk-ssl-wire` lee `balance` con la regla de RFC-0016 (`u64` canónico, `< p`) en los dos DTO de estado, antes de que la capa lo sume o reste | NO | sellada — §641 |
 
 ## Motivación
 
@@ -78,7 +78,7 @@ Con el probador y el verificador reales (perfil release), sobre la capa:
    cuenta y declaraba el `public_id` de otra, y el verificador atribuía la banda a la víctima.
    `verify_audit` exige `lower <= upper <= 2^62 - 1` antes de parsear la prueba.
 4. **El cable** (E4). `zk-ssl-wire` lee el `balance` de `ClientStateDto` y de `AccountViewDto` con la
-   regla canónica de RFC-0015 (reutilizando `element_from_bytes`): un saldo escrito como `b + p` se
+   regla canónica de RFC-0016 (reutilizando `element_from_bytes`): un saldo escrito como `b + p` se
    rechaza en el cable, antes de que la capa lo sume o reste.
 
 ## Decisiones (REVERSIBLES)
@@ -108,9 +108,16 @@ Con el probador y el verificador reales (perfil release), sobre la capa:
   `--sello`.
 - No corre `--bancos` ni `--completo`: sólo `--sello`.
 
-## Lo que corrige de RFC-0015
+## Lo que corrige de RFC-0016
 
-El §631 (RFC-0015) cerró con «ningún veredicto de un tercero depende» del lector de `u64` del cable
+El §640 (RFC-0016) cerró con «ningún veredicto de un tercero depende» del lector de `u64` del cable
 sin la regla canónica. E4 lo cierra para el saldo del cliente: el estado que el titular aporta se lee
 canónico antes de que la capa lo use, de modo que un saldo escrito como `b + p` ya no descuadra la
 conservación del suministro al reabrir. Queda nombrado en el §641.
+⚠️ §778: este RFC decía «RFC-0015» en la fila E4, en el punto 4 de «Lo que hace», en el título de esta
+sección y aquí, y «§631» como asiento de la frase citada: eran los números que la canonicidad llevaba
+en su rama antes de renombrarse, que el §641 da como «hoy §631» y «ya renombrada de RFC-0015 a
+RFC-0016». En el árbol, la regla del `u64` canónico es la E1 del RFC-0016, cuyo asiento es el §640,
+y la frase citada está en el «Lo que NO cierra» de ese asiento; el RFC-0015 es el ciclo de vida del
+firmante, y el §631, la E2a del RFC-0013. El §641 trae las mismas dos atribuciones y, como asiento,
+no se reescribe.
