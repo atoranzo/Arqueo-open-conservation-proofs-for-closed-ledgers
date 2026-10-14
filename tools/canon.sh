@@ -483,137 +483,51 @@ else
   grep -q '^ROJO' "$OUT/cable.txt" || falla "cable: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/cable.txt"))"
 fi
 
-# ── 3 bis consumo · el sobre de CONSUMO (RFC-0006 E3, §422): el MISMO arnes, otro manifiesto ──
-msg ""
-msg "== CANON · los rechazos del sobre de consumo =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/consumo/MANIFIESTO.txt > "$OUT/consumo.txt" 2>&1; then
-  msg "  OK  consumo: $(tail -n 1 "$OUT/consumo.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "consumo $L"; done < <(grep '^ROJO' "$OUT/consumo.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/consumo.txt" || falla "consumo: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/consumo.txt"))"
-fi
-
-# ── 3 bis conflicto · el sobre de CONFLICTO (RFC-0006 E4a, §431): el MISMO arnes ──
-msg ""
-msg "== CANON · los rechazos del sobre de conflicto =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/conflicto/MANIFIESTO.txt > "$OUT/conflicto.txt" 2>&1; then
-  msg "  OK  conflicto: $(tail -n 1 "$OUT/conflicto.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "conflicto $L"; done < <(grep '^ROJO' "$OUT/conflicto.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/conflicto.txt" || falla "conflicto: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/conflicto.txt"))"
-fi
-
-# ── 3 bis rechazo · el sobre de RECHAZO (RFC-0007 E3, desde el §455): el MISMO arnes ──
-msg ""
-msg "== CANON · las causas del sobre de rechazo =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/rechazo/MANIFIESTO.txt > "$OUT/rechazo.txt" 2>&1; then
-  msg "  OK  rechazo: $(tail -n 1 "$OUT/rechazo.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "rechazo $L"; done < <(grep '^ROJO' "$OUT/rechazo.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/rechazo.txt" || falla "rechazo: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/rechazo.txt"))"
-fi
-
-# ── 3 bis edad · el sobre de EDAD (RFC-0007 E4b-3, desde el §467): el MISMO arnes ──
-msg ""
-msg "== CANON · las formas del sobre de edad =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/edad/MANIFIESTO.txt > "$OUT/edad.txt" 2>&1; then
-  msg "  OK  edad: $(tail -n 1 "$OUT/edad.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "edad $L"; done < <(grep '^ROJO' "$OUT/edad.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/edad.txt" || falla "edad: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/edad.txt"))"
-fi
-
-# ── 3 bis pendiente · el sobre de COBRO PENDIENTE (RFC-0008 E4-cobro, desde el §499): el MISMO arnes ──
-msg ""
-msg "== CANON · las formas del sobre de cobro pendiente =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/pendiente/MANIFIESTO.txt > "$OUT/pendiente.txt" 2>&1; then
-  msg "  OK  pendiente: $(tail -n 1 "$OUT/pendiente.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "pendiente $L"; done < <(grep '^ROJO' "$OUT/pendiente.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/pendiente.txt" || falla "pendiente: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/pendiente.txt"))"
-fi
-
-# ── 3 bis pago · el sobre de PAGO EN CURSO (RFC-0008 E2, desde el §509): el MISMO arnes ──
-msg ""
-msg "== CANON · las formas del sobre de pago en curso =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/pago/MANIFIESTO.txt > "$OUT/pago.txt" 2>&1; then
-  msg "  OK  pago: $(tail -n 1 "$OUT/pago.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "pago $L"; done < <(grep '^ROJO' "$OUT/pago.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/pago.txt" || falla "pago: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/pago.txt"))"
-fi
-
-# ── 3 bis prenda · el sobre de PRENDA (RFC-0008 E3, desde el §546): el MISMO arnes ──
-msg ""
-msg "== CANON · las formas del sobre de prenda =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/prenda/MANIFIESTO.txt > "$OUT/prenda.txt" 2>&1; then
-  msg "  OK  prenda: $(tail -n 1 "$OUT/prenda.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "prenda $L"; done < <(grep '^ROJO' "$OUT/prenda.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/prenda.txt" || falla "prenda: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/prenda.txt"))"
-fi
-
-# ── 3 bis completitud · el sobre de COMPLETITUD (RFC-0010 E5, desde el §574): el MISMO arnes ──
-msg ""
-msg "== CANON · las formas del sobre de completitud =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/completitud/MANIFIESTO.txt > "$OUT/completitud.txt" 2>&1; then
-  msg "  OK  completitud: $(tail -n 1 "$OUT/completitud.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "completitud $L"; done < <(grep '^ROJO' "$OUT/completitud.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/completitud.txt" || falla "completitud: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/completitud.txt"))"
-fi
-
-# ── 3 bis ancla · el sobre del ANCLA (RFC-0012 E4, desde el §593): el MISMO arnes ──
-msg ""
-msg "== CANON · las formas del sobre del ancla =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/ancla/MANIFIESTO.txt > "$OUT/ancla.txt" 2>&1; then
-  msg "  OK  ancla: $(tail -n 1 "$OUT/ancla.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "ancla $L"; done < <(grep '^ROJO' "$OUT/ancla.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/ancla.txt" || falla "ancla: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/ancla.txt"))"
-fi
-
-# ── 3 bis ancla cofirmada · el sobre del ANCLA COFIRMADA (RFC-0013 E4b, desde el §634) ──
-msg ""
-msg "== CANON · las formas del sobre del ancla cofirmada =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/ancla-cofirmada/MANIFIESTO.txt > "$OUT/ancla_cofirmada.txt" 2>&1; then
-  msg "  OK  ancla-cofirmada: $(tail -n 1 "$OUT/ancla_cofirmada.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "ancla-cofirmada $L"; done < <(grep '^ROJO' "$OUT/ancla_cofirmada.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/ancla_cofirmada.txt" || falla "ancla-cofirmada: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/ancla_cofirmada.txt"))"
-fi
-
-# ── 3 bis rotacion · la ROTACION de la clave en el sobre de extension (RFC-0015 E5b, desde el §649) ──
-msg ""
-msg "== CANON · la rotacion de la clave, con su cadena de actas =="
-# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
-# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
-if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/rotacion/MANIFIESTO.txt > "$OUT/rotacion.txt" 2>&1; then
-  msg "  OK  rotacion: $(tail -n 1 "$OUT/rotacion.txt" | sed 's/^conformidad: //')"
-else
-  while IFS= read -r L; do falla "rotacion $L"; done < <(grep '^ROJO' "$OUT/rotacion.txt" | sed 's/^ROJO //')
-  grep -q '^ROJO' "$OUT/rotacion.txt" || falla "rotacion: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/rotacion.txt"))"
-fi
+# ── 3 bis familias · los sobres del kit, UN bucle sobre FAMILIAS (§787) ──
+# Hasta el §787 aqui iban once bloques identicos salvo el nombre, uno por familia, copiados a mano
+# cada vez que entraba una. FAMILIAS tiene UN productor, tools/artefacto.sh (S423), y aqui se LEE,
+# no se copia. Prueba de vida en los dos sentidos: cada familia tiene su MANIFIESTO con entradas, y
+# cada spec/vectors/<x>/MANIFIESTO.txt es de una familia o del cable (el 3 bis cable): un
+# manifiesto que ningun bucle corre es ROJO. El binario es el MISMO que el 3 bis ya construyo en
+# release; el bucle es tools/conformidad.sh, con cada ROJO entrando por falla con su nombre.
+FAMILIAS=$(sed -n 's/^FAMILIAS="\([^"]*\)".*/\1/p' tools/artefacto.sh)
+[ -n "$FAMILIAS" ] || falla "no leo FAMILIAS de tools/artefacto.sh"
+titulo_de(){
+  case "$1" in
+    consumo|conflicto) echo "los rechazos del sobre de $1" ;;
+    rechazo) echo "las causas del sobre de rechazo" ;;
+    pendiente) echo "las formas del sobre de cobro pendiente" ;;
+    pago) echo "las formas del sobre de pago en curso" ;;
+    ancla) echo "las formas del sobre del ancla" ;;
+    ancla-cofirmada) echo "las formas del sobre del ancla cofirmada" ;;
+    rotacion) echo "la rotacion de la clave, con su cadena de actas" ;;
+    *) echo "las formas del sobre de $1" ;;
+  esac
+}
+for F in $FAMILIAS; do
+  [ "$F" = paquete ] && continue   # el 3 bis, que compila el binario
+  M="spec/vectors/$F/MANIFIESTO.txt"
+  msg ""
+  msg "== CANON · $(titulo_de "$F") =="
+  if [ ! -s "$M" ] || ! grep -qv '^#' "$M"; then
+    falla "$F: la familia esta en FAMILIAS y $M no existe o no tiene entradas"
+    continue
+  fi
+  O="$OUT/${F//-/_}.txt"
+  if bash tools/conformidad.sh target/release/zk-ssl-verify "$M" > "$O" 2>&1; then
+    msg "  OK  $F: $(tail -n 1 "$O" | sed 's/^conformidad: //')"
+  else
+    while IFS= read -r L; do falla "$F $L"; done < <(grep '^ROJO' "$O" | sed 's/^ROJO //')
+    grep -q '^ROJO' "$O" || falla "$F: el arnes falla sin nombrar la entrada ($(tail -n 1 "$O"))"
+  fi
+done
+for M in spec/vectors/*/MANIFIESTO.txt; do
+  D=$(basename "$(dirname "$M")")
+  case " $FAMILIAS cable " in
+    *" $D "*) ;;
+    *) falla "$M: ningun bucle del canon lo corre (falta $D en FAMILIAS, tools/artefacto.sh)" ;;
+  esac
+done
 
 # ── 3 duodecies · la SEGUNDA implementacion (BACKLOG 85; tools/segunda/) ──
 # Otro codigo, en Python y sin dependencias, reproduce el nucleo congelado desde NUCLEO.md (26 KAT)

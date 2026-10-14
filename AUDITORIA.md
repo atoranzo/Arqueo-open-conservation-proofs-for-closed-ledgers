@@ -52522,3 +52522,50 @@ resueltas.
 **Lo que NO hace.** No corre los bancos: van con `--bancos`, como siempre. No exige `--locked` a lo
 que se compile fuera de `tools/banco_*.sh`. No fija los programas de `tools/segunda/`, sólo su único
 fichero de datos, el corpus.
+
+## §787 — la conformidad de las familias del kit, en UN bucle que lee `FAMILIAS` de su único productor, con prueba de vida en los dos sentidos (la tarea 29)
+
+El commit que lleva este asiento, sobre el §786. Toca `tools/canon.sh`: once bloques pasan a un bucle;
+y este asiento. Ni código, ni tests, ni vectores. Del autor es elegir la tarea y su orden; lo demás lo
+propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo
+commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+El número es el siguiente del rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni
+la zona de la migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este
+asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El canon corría la conformidad de cada familia del kit en un bloque propio, once
+bloques idénticos salvo el nombre —consumo, conflicto, rechazo, edad, cobro pendiente, pago en curso,
+prenda, completitud, ancla, ancla cofirmada y rotación—, copiados a mano cada vez que entraba una.
+`FAMILIAS` ya tenía un productor, `tools/artefacto.sh` (§423), que monta con ella el artefacto; el
+canon no la leía, y una familia que entrara en el artefacto sin su bloque, o un manifiesto sin
+familia, no los veía nadie.
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso leer `FAMILIAS` y no copiarla, que
+cada familia conserve su título en la salida, y la prueba de vida en los dos sentidos.
+
+**Por qué no lleva aviso de seguridad.** Es el canon: lo que mira es lo mismo.
+
+**Lo que hace.**
+
+1. **El bucle «3 bis familias»**: lee `FAMILIAS` de `tools/artefacto.sh` —ROJO si no la lee—, salta
+   `paquete`, que va en el 3 bis con el binario que éste construye, y corre `tools/conformidad.sh` con
+   cada manifiesto, con su título de siempre; cada ROJO entra por `falla` con la familia y su texto.
+2. **La prueba de vida**: una familia de `FAMILIAS` sin `spec/vectors/<familia>/MANIFIESTO.txt`, o
+   con él vacío, es ROJO; y un `spec/vectors/*/MANIFIESTO.txt` que no sea de una familia ni del cable
+   (el 3 bis cable), también: un manifiesto que ningún bucle corre es un manifiesto que no se mira.
+
+**Medido.**
+
+- **Que caen**: en una copia, con una familia `fantasma` añadida a `FAMILIAS` y un manifiesto en
+  `spec/vectors/huerfano/`, el bloque, aislado con un arnés que solo define `msg` y `falla`, da los dos
+  ROJO —«fantasma: la familia esta en FAMILIAS y … no existe o no tiene entradas» y «…huerfano/MANIFIESTO.txt:
+  ningun bucle del canon lo corre»— y las once familias de verdad, OK.
+- **Sobre este árbol**: 13 manifiestos, 12 de `FAMILIAS` y el del cable; ninguno huérfano.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE, con las once familias y los
+  mismos recuentos que antes por manifiesto.
+
+**Contadores.** Ninguno: ni tests, ni vectores, ni el `BACKLOG.md`, que sigue con 43 abiertas y 77
+resueltas. `tools/canon.sh` pierde 86 líneas netas.
+
+**Lo que NO hace.** No mete en el bucle el paquete ni el cable, que tienen bloque propio por lo que
+hacen antes. No cambia `tools/conformidad.sh` ni ningún manifiesto.
