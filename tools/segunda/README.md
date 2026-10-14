@@ -9,7 +9,10 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 | `juez_nucleo.py` | el **juez**: corre los 34 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto. ⚠️ §797: hasta aquí decía «es el único llamador de `nucleo.py`», y ya no lo era: lo importan también `juez_cabezas.py:23`, `verificador.py:25` y `stark.py:30`, y desde el §797 `cable.py` y `juez_cadena.py` |
 | `kat_xmss/xmss.py` | la **verificación XMSS^MT de RFC 8391** para `XMSSMT-SHA2_40/8_256`, el conjunto que la casa firma, escrita desde el texto del RFC y de ningún crate; solo verificar |
 | `juez_cabezas.py` | el **juez de las cabezas firmadas**: para cada cabeza y cofirma de los vectores recompone el `epochDigest` por versión, compara el preámbulo recuperado, verifica la firma con `kat_xmss/xmss.py` y comprueba el índice embebido (`PAQUETE.md`, 2/3 y sección 8); con un falsador que voltea un byte |
-| `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario; desde el §693 declara lo que no lee, en `NO_SOPORTADOS`, y lo dice con el texto reservado `NO SOPORTADO` |
+| `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario; desde el §693 declara lo que no lee, en `NO_SOPORTADOS`, y lo dice con el texto reservado `NO SOPORTADO`; y desde el §810 lee el sobre del **ancla cofirmada** (RFC-0013 E4a), que no exige STARK sino el medio: la cabeza, la nota con su firma ML-DSA-44, las cofirmas y la inclusión, con `mldsa44.py` y `medio.py` |
+| `mldsa44.py` | la **verificación ML-DSA-44 de FIPS 204** (§810), en Python y sin dependencias —`hashlib` trae SHAKE128 y SHAKE256—, escrita desde el texto del estándar —del crate `ml-dsa` 0.1.1 se leyó, para contrastar y no para copiar, cómo arma μ y dónde rechaza la norma y las pistas—: el algoritmo 3 con el contexto vacío y la firma pura, que es como la casa llama a `ml-dsa` 0.1.1 (`nota.rs`, `verify_with_context(mensaje, &[], firma)`), sobre el 8, con pkDecode, sigDecode, HintBitUnpack, SampleInBall, ExpandA, la NTT y UseHint; solo verificar |
+| `medio.py` | el **medio del ancla** (§810): la base64 estricta, la inclusión de RFC 9162 en el árbol SHA-256 de anclas y la nota `checkpoint` con su firma `0x06` y sus cofirmas, con las reglas que declara la cabecera de `crates/zk-ssl-medio/src/nota.rs` —que es lo que `PAQUETE.md` 2.13 manda leer— y los textos de su `Display`, para que la causa de un rechazo sea la del binario |
+| `juez_medio.py` | el **juez del medio** (§810): las 33 notas del §632 con el veredicto de su `MANIFIESTO.txt`, un **firmante de prueba** de FIPS 204 —KeyGen y Sign, solo aquí— que rehace byte a byte las vkeys y las líneas deterministas que firmó Go, las dos firmas de frontera de la norma, una pista donde la parte baja es cero con una clave a medida, la unicidad de la escritura de una firma, la base64, las 98 sondas de inclusión de transparency-dev y el `{:?}` de Rust con el que salen los nombres en un rechazo |
 | `cable.py` | el **cable en Python**, dos piezas en un fichero, y ⚠️ **ninguna es núcleo** (§797). ⚠️ §809: las dos se escribieron con el mismo nombre de fichero —la cadena en el §797, el consumidor en el §809— y se juntaron en uno sin compartir ningún nombre; `juez_cadena.py` importa la parte I y `main` es de la II. I · la **cadena del registro** como la sirve el cable, `chain_v1` y `chain_v2`, y lo que cada clase asienta como `proofDigest`, escritas desde `spec/RPC.md` §«La composición de `chain`, byte a byte»; es la clase REGISTRO de `NUCLEO.md` (RFC-0005, D-A), y por eso no vive en `nucleo.py`, del que sólo toma las primitivas. II · el **segundo consumidor del cable** (§809): juzga una respuesta de `zkssl_signedEpochHead` desde fichero y sin nodo, como `zk-ssl-cli witness --respuesta` con la memoria fresca —el cuerpo JSON-RPC, con los límites del lector de la referencia, `available`, el tipado del cable, lo que una cabeza firmada tiene que traer, la versión, la clave, la firma, el preámbulo, el `index` y la recomposición—, con el contrato del mando (un argumento, `VERDE: nueva` o una línea `ROJO: <clase> · <texto>`, exit 0/1/2), y lo juzga `tools/conformidad.sh` con el manifiesto del cable, en lugar del adaptador `tools/cable_respuesta.sh`; la cabeza se parte y se recompone con `juez_cabezas.py` y la firma se verifica con `kat_xmss/xmss.py`. Lo que `spec/RPC.md` no escribe lo fija la conducta medida del testigo, como caja negra (abajo, «El segundo consumidor del cable») |
 | `stark.py` | el **verificador STARK** (§626): la maquinaria de `winter-verifier` 0.13.1 en Python, sin dependencias —el formato de `Proof`, la moneda pública sobre Blake3 en el orden exacto de Fiat-Shamir, la autenticación Merkle por lotes con la sal de `MerkleConSal`, el chequeo fuera del dominio, la composición DEEP, FRI y la envoltura `Oculta`—, leída de las fuentes de winterfell y no copiada; `INV_MDS` se calcula invirtiendo la MDS y el autotest la contrasta con la tabla de `winter-crypto` |
 | `airs.py` | las **cinco AIR** del paquete —Banda, Edad, Prenda, CobroPendiente y PagoEnCurso—, **transcritas** de `crates/zk-ssl-air/src/*.rs` restricción a restricción: ninguna RFC escribe sus restricciones y el `.rs` es la única fuente, así que una AIR infra-restringida pasaría aquí igual que allí |
@@ -30,8 +33,9 @@ python3 tools/segunda/juez_cabezas.py
 # 1 ter · el corpus KAT de XMSS^MT: dos implementaciones, los mismos bytes       -> 8 de 8
 python3 tools/segunda/kat_xmss/juez_xmss.py
 
-# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 174 de 174 (§780)
-for m in paquete consumo conflicto ancla rotacion; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
+# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 201 de 201 (§810)
+#   ⚠️ §810: decia 174 de 174 (§780), las cinco familias sin `ancla-cofirmada`, que salia NO SOPORTADO
+for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
 # 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 34 de 34 (§706)
 python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca
@@ -43,6 +47,8 @@ python3 tools/segunda/juez_cadena.py spec/vectors/zkssl-0.*.json   # los cuatro:
 python3 tools/segunda/juez_cadena.py respuesta.json   # o el `result` de zkssl_logEntries, desde seq 0
 # 1 septies · el segundo consumidor del cable, con el arnes y el manifiesto del testigo     -> 23 de 23 (§809)
 bash tools/conformidad.sh tools/segunda/cable.py spec/vectors/cable/MANIFIESTO.txt | tail -1
+# 1 octies · el medio: ML-DSA-44 de FIPS 204, la nota checkpoint y la inclusion de RFC 9162   -> 87 de 87 (§810), ~2 s
+python3 tools/segunda/juez_medio.py
 
 # 2 · el verificador a WebAssembly, y los diez manifiestos bajo wasmtime
 rustup target add wasm32-wasip1
@@ -105,7 +111,8 @@ embebido) y `cable/rechazo-n-no-canonico.json` (`n + p`). Las de ahora son la sa
 de reloj y 30,1 de CPU en la última corrida). Y la línea «1 bis» de «Cómo se corre» decía «~25 s».
 
 **El segundo verificador.** `verificador.py` pasa, con el mismo arnés y los mismos manifiestos
-que el binario de referencia, las cinco familias que no exigen STARK:
+que el binario de referencia, las seis familias que no exigen STARK (⚠️ §810: decía «las cinco»;
+la sexta, `ancla-cofirmada`, es del §810):
 
 | familia | entradas | segundo verificador |
 |---|---|---|
@@ -114,6 +121,7 @@ que el binario de referencia, las cinco familias que no exigen STARK:
 | `conflicto` | 17 | 17 de 17 |
 | `ancla` | 22 | 22 de 22 |
 | `rotacion` (la extensión entre dos claves, con `actas`; §649; y el sobre del solapamiento, §686) | 34 | 34 de 34 |
+| `ancla-cofirmada` (la nota del medio con su firma ML-DSA-44, las cofirmas y la inclusión; §810) | 27 | 27 de 27 |
 
 Y en los positivos de las cinco, su salida es **idéntica línea a línea** a la del binario, la
 huella del ancla y la posición derivada del consumo incluidas. Lo que destapó: `NUCLEO.md` §6 no
@@ -135,6 +143,31 @@ spec/vectors/<familia>/MANIFIESTO.txt` sobre el árbol del §789 (`8c02941`): 17
 0 en las cinco. Que la salida de los positivos sea la del binario línea a línea es la medida del
 S623 y, para `rotacion`, la de la E5b del RFC-0015 (§649): no se ha vuelto a comparar, porque pide
 el binario compilado.
+
+⚠️ §810: con `ancla-cofirmada`, seis familias y **201 de 201**, con salida 0 en las seis, sobre el árbol
+del §794 (`b6491ef`) y este sello; hasta aquí sus 27 entradas salían `NO SOPORTADO` (0 de 27, medido
+con el `verificador.py` del §794). En esa familia la comparación con el binario SÍ se ha hecho, con
+`zk-ssl-verify` compilado en este sello (`cargo build --release --locked -p zk-ssl-verify`), sobre el
+árbol del §794 y otra vez sobre el del §810, cuyos crates son los del §808: en los 5
+positivos la salida es la del binario byte a byte, la huella del ancla, la marca y la huella SHA-256
+de la clave de cada testigo incluidas; en los 22 negativos, la línea del `ROJO` es la misma letra a
+letra y el código de salida también. Lo que el binario imprime antes del `ROJO` —las líneas `1/4` a
+`3/4` a las que llegó— el segundo no lo imprime: junta las líneas y solo las da con el VERDE, en las
+seis formas.
+
+Desde el §810 `juzgar` rechaza también una suplente sola (`\ud800`) en una cadena, que serde_json no
+lee y `json.loads` sí: sale `ROJO: JSON ilegible: …`, con exit 1, como en el binario. No rechaza lo
+demás que `json.loads` acepta y serde_json no —`NaN`, `Infinity`, `-Infinity` y un número fuera del
+rango de un `f64` (`1e400`)—: en un campo que la segunda no lee siguen dando VERDE donde el kit dice
+«JSON ilegible», como ya pasaba en el §794 (medido con `"zz": NaN`, `Infinity` y `1e400` en
+`ancla/ancla-derivada.json`). Con el
+`verificador.py` del §794, `ancla/ancla-derivada.json` con un campo `"zz": "\ud800"` salía VERDE, y
+el binario da `ROJO: JSON ilegible: unexpected end of hex escape …`. Medido con `zk-ssl-verify`
+compilado en este sello, sobre ese sobre y dos de `ancla-cofirmada`, fuera del árbol
+—`cofirmada-un-testigo.json` con un testigo más, `x\ud800`, sin línea en la nota, y con un testigo
+`testigo.invalid/\ud800` que cofirma, firmado por el firmante de prueba de `juez_medio.py`—: en los
+tres, el binario y la segunda dan `JSON ilegible` con exit 1. La letra después de los dos puntos es
+otra (aquí, `'utf-8' codec can't encode …`), como en `paquete/rechazo-json-ilegible.json`.
 
 **El verificador STARK** (§626). Las 58 pruebas de las seis familias que el kit verifica hoy van
 **ocultas** (la marca `arqueo:oculta:1` en el meta de la traza: L = 2T, una columna más, las
@@ -201,6 +234,70 @@ composición: con las entradas tal como el vector las trae, o como las sirve `zk
 
 No entra en el canon: se corre a mano.
 
+**El medio** (§810). `mldsa44.py` verifica ML-DSA-44 desde FIPS 204, y `medio.py` la nota y la
+inclusión; `juez_medio.py` los juzga contra lo que escribieron otras manos, 87 de 87:
+
+| medida | valor |
+|---|---|
+| las 33 notas del §632 (30 de torchwood sobre el `crypto/mldsa` de Go 1.27 y 3 del crate `ml-dsa` 0.1.1) con el veredicto de la columna 2 de su `MANIFIESTO.txt`, la variante de `ErrorDeNota` incluida | 33 de 33: 10 aceptadas, 23 rechazadas, y entre ellas las cuatro en que el medio es más estricto que torchwood (la base64 no canónica, dos líneas del publicador, dos veces, y el `origin` ajeno) |
+| las vkeys de torchwood, rehechas con el KeyGen del firmante de prueba desde las semillas de `torchwood/main.go` | 2 de 2 |
+| las líneas del publicador y del testigo de `pos-01`, `pos-05` y `pos-13`, firmadas aquí en determinista con su marca | 6 de 6, byte a byte con las de Go |
+| las firmas de FRONTERA: z con `‖z‖∞` = γ1 − β = 130.994, válida en todo lo demás, y otra con 130.993 | la primera NO verifica y la segunda SÍ, aquí y en el binario |
+| una pista donde la parte baja de w̃ es CERO, que ningún firmante de FIPS 204 pone: con una clave a medida (t1 = 0, y w̃ = A·z no depende de c), z con un solo coeficiente, −83.537, y w̃ = 42·2γ2 exacto en un coeficiente, con su única pista ahí | UseHint baja r1: con w1 = r1 − 1 verifica, y con r1 + 1 no |
+| la unicidad de la escritura: las pistas desordenadas, una pista repetida, un relleno distinto de cero, un corte que pasa de ω, unos que pasan de ω + k (200, 201, 202 y 255, sin leer fuera de la firma) y el último por debajo del penúltimo, un contexto no vacío, uno de 256 bytes, un bit en cada tercio y un byte de menos | 12 de 12 no verifican, sin una excepción |
+| las 98 sondas `inclusion/` de transparency-dev | 6 positivas, 26 que rechaza el tipo y 66 el árbol: las cifras de `vectores_transparency.rs` |
+| todo camino de todo árbol de 1 a 33 hojas / con el índice vecino, un hermano tocado, un hash de menos o uno de más | 561 verifican / 2.225 no |
+| el `{:?}` de Rust de los nombres que salen en un rechazo (`debug_rust`): once cadenas con U+200B, un acento que se combina, Zs, Zl, Zp, Cf, Co, Cn, Other_Grapheme_Extend y la comilla simple, que no se escapa | 11 de 11 con lo que imprime el `rustc` 1.94.1 que compila el kit |
+| una verificación ML-DSA-44 en Python (`verificar_nota` de `pos-05`, la media de 20 corridas) | de 7 a 18 ms según la carga de la máquina, en tres medidas de este sello; 8,0 ms (de 6,7 a 12,8) con la carga en 4,3 de 4 CPU. El juez entero, de 1,4 a 2 s |
+
+Fuera del canon, porque piden compilar, en este sello: las dos firmas de frontera y una del firmante
+de prueba con sal, puestas como cofirma de un testigo más en una copia de
+`cofirmada-un-testigo.json` (fuera del árbol), dan en `zk-ssl-verify` lo mismo que aquí —130.994,
+`la cofirma de testigo.invalid/frontera no verifica`; 130.993 y la de FIPS, VERDE con 2 testigos—; y
+el ejemplo `medio` de `zk-ssl-medio` (`cargo build --release --locked -p zk-ssl-medio --example
+medio`), con semillas al azar y árboles de 1, 2, 3, 5, 8, 13, 21 y 34 anclas en su primera, su
+central y su última posición, firmó 21 notas con sal y 42 cofirmas con sal: las 21 notas, las 42
+cofirmas y las 21 inclusiones verifican en Python, y las 42 cofirmas con un bit cambiado no.
+
+**Los mutantes del propio verificador** (§810), medidos uno a uno sobre una copia del árbol —cambiado
+a mano, corridos el juez de 87 y el arnés de `ancla-cofirmada` sin caché de bytecode, restaurado con
+el mismo sha256—: de 29, **caen 24**, cada uno con la comprobación que lo vigila, y **viven 5**, abajo.
+
+| mutante | lo que lo mata | juez / arnés |
+|---|---|---|
+| en `mldsa44.py`: un coeficiente de la tabla de las ζ; el signo de c en SampleInBall; `t1·2^(d−1)`; el prefijo de dominio de μ; ExpandA con r y s cruzados; UseHint al revés; el borde q − 1 de Decompose quitado | las 10 notas aceptadas pasan a `FirmaInvalida` | de 20 a 23 `ROJO` / 16 de 27 |
+| SampleInBall con `j ≥ i` en vez de `j > i` | las 3 notas del crate, la cofirma del testigo de `pos-05` y su línea rehecha | 82 de 87 / 26 de 27 |
+| la norma con `>` en vez de `≥`, y la norma sin comprobar | la firma de frontera de 130.994 verifica | 86 de 87 / 27 de 27 |
+| una cota de menos en la norma | la de 130.993 no verifica | 86 de 87 / 27 de 27 |
+| `r0 ≥ 0` en vez de `r0 > 0` en UseHint | la pista sobre r0 = 0: UseHint sube r1, y la firma con r1 − 1 no verifica y la de r1 + 1 sí | 85 de 87 / 27 de 27 |
+| las pistas con `>` en vez de `≥` | la pista repetida; las desordenadas no lo matan, porque bajan también con `>` | 86 de 87 / 27 de 27 |
+| el relleno de las pistas sin mirar | el relleno distinto de cero | 86 de 87 / 27 de 27 |
+| sin la cota `corte > ω` | los cortes por encima de ω + k (200, 201, 202 y 255), que leen fuera de la firma (`IndexError`) | 86 de 87 / 27 de 27 |
+| en `medio.py`: los bits sobrantes de la base64 sin mirar tras un `=` | `neg-firma-no-canonica` y `neg-raiz-no-canonica` | 85 de 87 / 27 de 27 |
+| el hermano de la inclusión a la derecha | las 98 sondas, sus 12 tocadas y los caminos de 1 a 33 hojas | 84 de 87 / 23 de 27 |
+| el `origin` ajeno sin mirar | `neg-origen-ajeno-firmado` y `neg-origen-cambiado` | 85 de 87 / 27 de 27 |
+| dos líneas del publicador | las dos `neg-firma-repetida-*` | 85 de 87 / 27 de 27 |
+| los caracteres de control sin mirar | `neg-retorno-de-carro` | 86 de 87 / 27 de 27 |
+| la hoja sin su `0x00` | la raíz de torchwood de 4 notas | 83 de 87 / 22 de 27 |
+| el `debug_rust` que solo escapa los de control | las once cadenas | 86 de 87 / 27 de 27 |
+| en `verificador.py`: el publicador de otra clave | `neg-medio-de-otra-clave` sale con exit 0: el ataque | 87 de 87 / 26 de 27 |
+| la cofirma sin verificar | `neg-cofirma-tocada` sale con exit 0 | 87 de 87 / 26 de 27 |
+
+`r0 ≥ 0` y el corte por encima de ω solo los matan las firmas que fabrica el juez: ninguna firma de
+FIPS 204 lleva una pista donde la parte baja es cero —MakeHint no la pone mientras `‖c·t0‖∞ < γ2`, que
+el firmante exige—, y ninguna de las notas lleva un corte por encima de ω.
+
+Los cinco que viven dan 87 de 87 y 27 de 27: ninguna entrada del juez ni del arnés los aísla.
+- En `mldsa44.py`, HintBitUnpack sin `corte < indice`. El corte que baja del juez es el último, que
+  deja pistas en el relleno, y lo para la regla del relleno. La regla hace falta: la firma de la
+  pista sobre r0 = 0 con los cortes [1, 0, 1, 1] en vez de [1, 1, 1, 1] es la misma h escrita de
+  otra manera, y el árbol la rechaza y el mutante la acepta.
+- En `medio.py`: el hash del subárbol vacío de `mensaje_cofirmado` sin mirar (la única nota de
+  tamaño 0, `pos-00-anclas`, lleva la raíz del árbol vacío); el `+` de `nombre_valido` (ninguna
+  línea de firma lleva uno en el nombre, y una vkey no puede: se parte por él); `marca > I64_MAX`
+  (`neg-marca-2-63` cae igual, por la firma); y el `key_id` de `leer_vkey` sin comparar (ninguna
+  vkey de los vectores lleva el de otra clave).
+
 **El verificador bajo wasmtime** (`wasmtime` 49.0.0 de PyPI; `rustc` 1.97.0):
 
 | medida | nativo | `wasm32-wasip1` |
@@ -224,10 +321,12 @@ diez ni las doce; el bucle de arriba sigue siendo el de los diez que se midieron
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 
-`verificador.py` lee seis formas de sobre —la de posición, sin `tipo`, y cinco tipos:
-`extension`, `consumo`, `conflicto`, `ancla` y `solapamiento`, los de `TIPOS_LEIDOS`— y declara los
-otros siete tipos en `NO_SOPORTADOS`: `rechazo`, `edad`, `cobro_pendiente`, `pago_en_curso`,
-`prenda`, `completitud` y `ancla-cofirmada`, los que piden una prueba STARK o el medio. Uno de ellos
+`verificador.py` lee siete formas de sobre —la de posición, sin `tipo`, y seis tipos:
+`extension`, `consumo`, `conflicto`, `ancla`, `ancla-cofirmada` y `solapamiento`, los de
+`TIPOS_LEIDOS`— y declara los otros seis en `NO_SOPORTADOS`: `rechazo`, `edad`, `cobro_pendiente`,
+`pago_en_curso`, `prenda` y `completitud`, los que piden una prueba STARK. ⚠️ §810: decía seis formas
+y siete tipos declarados, con `ancla-cofirmada` entre ellos, «los que piden una prueba STARK o el
+medio»; el medio lo lee desde el §810. Uno de ellos
 sale `ROJO: NO SOPORTADO: tipo {tipo}: …`, con exit 1: falla cerrado, y `tools/conformidad.sh` no lo
 cuenta nunca: lo da `ROJO <fichero>: NO SOPORTADO - …`
 (`spec/PAQUETE.md` §«6. El contrato del mando»). Hasta el §693 el texto era «no lee este sobre
@@ -237,6 +336,9 @@ sujeto: `prenda/neg-receptor-mentido`, `prenda/neg-marca-mentida`, `edad/neg-cot
 y de `0.4/`, todas las entradas salen `NO SOPORTADO` y ninguna `OK`. La causa de un rechazo se nombra con el texto del binario
 (`spec/PAQUETE.md` §«6.1 La causa del rechazo»): `la firma no verifica`, `acuse: RaizDistinta`, y
 la lectura de un `u64` con la escritura mínima del §662 y sus textos.
+⚠️ §810: medido otra vez sobre los manifiestos de los seis tipos que quedan, de `0.3/` y de `0.4/`:
+254 entradas, todas `NO SOPORTADO` y ninguna `OK`; con las 201 que lee, las 455 de los diecisiete
+manifiestos que no son del cable.
 
 ## El segundo consumidor del cable (§809)
 
@@ -378,7 +480,8 @@ de esos puntos, juzgados a mano con los dos.
 ## Lo que la segunda implementación destapó de la spec
 
 Es para lo que existe la entrada 85 del BACKLOG: *«una spec que sólo implementa un código no es
-una spec»*. Cuatro cosas que quien escriba desde la sección 6 no puede saber:
+una spec»*. Cinco cosas que quien escriba desde la spec no puede saber (⚠️ §810: decía «cuatro
+cosas» y «desde la sección 6»; la quinta es del medio, del §810):
 
 1. **`hoja_de_acuse(hashPrueba, seq, n)`** no estaba en la sección 6. `RPC.md`, en «`zkssl_ackPath`», da
    la hoja como `acuse_digest(hashPrueba, epoca, n)`, y en «El acuse en la respuesta (§274)» dice
@@ -393,16 +496,30 @@ una spec»*. Cuatro cosas que quien escriba desde la sección 6 no puede saber:
 4. **El formato de los KAT** codifica el mismo tipo de dos maneras: `embeber.x` y `balance` y
    `nonce` de `native_leaf*` van como u64 en **ocho bytes little-endian**; `seq`, `n`, `t`, los
    contadores y `as_digest.x` como el u64 en **hex**. Un juez tiene que saberlo por fuera.
+5. **Los textos de la nota del medio** (§810). `PAQUETE.md` §5 da `la nota: {e}` con `{e}` «la regla
+   de `zk-ssl-medio::nota` que cae», y `el ancla de esta cabeza no esta en la posicion {p} de las {n}
+   de la nota: {e}` sin decir `{e}`; el `MANIFIESTO.txt` de `ancla-cofirmada` pina tres de esos textos
+   (`checkpoint mal formado`, `ninguna firma del publicador`, `la firma del publicador no verifica`),
+   que solo están en el `Display` de `ErrorDeNota`, y los de la inclusión, en inglés, en el de
+   `SubtreeError`. `medio.py` los copia del `.rs`, como `airs.py` las AIR. Y uno de ellos nombra mal
+   a quien firma: una cofirma de TESTIGO que no verifica sale `la cofirma de {testigo} no verifica:
+   la firma del publicador no verifica`, en el binario y aquí.
 
 ## En el canon
 
 Los tres jueces y el segundo verificador corren en cada sello (`tools/canon.sh`, bloque «3 duodecies»), a pin cero: un KAT
 nuevo o una versión nueva de cabeza que la segunda implementación no reproduzca pone el sello en
 rojo con su nombre; el juez de `kat_xmss/` corre en el mismo bloque, para que un cambio de bytes del
-crate `xmss` se vea en el sello; el segundo verificador corre contra los cinco manifiestos —⚠️ §793:
-aquí decía «los cuatro», y el bucle del canon (`tools/canon.sh:578`) lleva cinco desde el §649—, para
+crate `xmss` se vea en el sello; el segundo verificador corre contra los seis manifiestos (⚠️ §810:
+decía «los cinco»; la sexta, `ancla-cofirmada`, es del §810) —⚠️ §793:
+aquí decía «los cuatro», y el bucle del canon (el `for F in …` del bloque «3 duodecies» de
+`tools/canon.sh`; ⚠️ §810: hasta aquí lo citaba por su línea, la `:578`, que el §798, el §800 y el
+§804 ya habían corrido a la 670, y las catorce que el §810 mete antes en el bloque la llevan a la 684:
+se cita por su bloque, que no se mueve) lleva cinco desde el §649—, para
 que un vector nuevo tenga que pasar por los dos códigos; y desde el §626 el juez del STARK corre en
-el mismo bloque, para que una prueba nueva de esas familias tenga que verificar también en Python. `wasm_runner.py` no corre en el canon: necesita `wasmtime` de PyPI.
+el mismo bloque, para que una prueba nueva de esas familias tenga que verificar también en Python.
+Desde el §810 corren también `juez_medio.py` y, en el bucle del segundo verificador, la sexta familia,
+`ancla-cofirmada`: unos 6 s más. `wasm_runner.py` no corre en el canon: necesita `wasmtime` de PyPI.
 `cable.py` tampoco (§809): ni `RPC.md` ni `spec/README.md`, que lo piden, dicen que el canon lo corra, y
 el bloque «3 bis cable» sigue corriendo el adaptador del testigo. Ponerlo junto al segundo verificador
 es una fila más del «3 duodecies», a pin cero, y queda por hacer.
@@ -410,6 +527,24 @@ El `--sello` entero se corrió con el bloque dentro el 01-10-2026: VERDE, 1.054 
 
 ## Lo que NO cubre
 
+- El medio entero: `medio.py` no comprueba la consistencia entre dos tamaños del árbol (la comprueba
+  un testigo antes de cofirmar; el sobre no la pide), ni juzga a los testigos, ni la frescura de las
+  marcas de tiempo: lo mismo que el kit, que reporta y no juzga (RFC-0013 D-D). Y el firmante de
+  prueba de `juez_medio.py` es del juez y no del verificador: firma en determinista para rehacer
+  las líneas de Go, y fuera de FIPS 204 para las dos de frontera; la clave a medida de la pista
+  sobre r0 = 0 (t1 = 0) la firma cualquiera, y no sirve para otra cosa.
+- El `{:?}` de Rust de un nombre con un carácter asignado después de Unicode 14.0, o que ha cambiado
+  de categoría desde entonces. `debug_rust` toma las categorías de `unicodedata`, el Unicode del
+  Python que corre (14.0 en 3.11), y la tabla Other_Grapheme_Extend de la 16.0 (la de `regex-syntax`
+  0.8.11); el kit, las del `rustc` 1.94.1 que lo compila, la 17.0 (`char::UNICODE_VERSION`). Medido en
+  este sello escalar a escalar, los 1.112.064, contra lo que imprime ese `rustc`: 1.097.084 salen
+  iguales y 14.980 no, todos escapados aquí y en claro en el kit; 14.979 son Cn en el 14.0 —asignados
+  después— y uno, U+1171E, es Mn en el 14.0 y Mc en el 16.0. Ninguno sale en claro aquí y escapado en
+  el kit, y ninguno lo cambia la tabla de extensiones de la 16.0 frente a la 17.0. Así, un nombre
+  con U+1FAE9, que está entre los 14.979, sale escapado aquí y en claro en el kit. Cambia la letra
+  de la causa, no el veredicto: `debug_rust` solo escribe el texto de un rechazo ya decidido
+  (`tools/segunda/medio.py:451-452` y `tools/segunda/verificador.py:955-956`). Un `{:?}` exacto
+  pediría las tablas de Unicode del kit dentro de la segunda.
 - Las AIR como segunda opinión: `airs.py` las transcribe del `.rs`, la única fuente que existe.
   Lo que el juez del STARK mide es la maquinaria del verificador, no si una AIR restringe lo que
   dice restringir.

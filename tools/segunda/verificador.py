@@ -7,14 +7,18 @@ seccion 5; exit 0 verde, 1 el primer fallo con nombre, 2 uso.
 
 Lo que lee hoy: las cinco formas que no exigen una prueba STARK -POSICION (v1 y v2, con acuse y
 cofirmas), EXTENSION, CONSUMO, CONFLICTO y ANCLA-, y desde el §649 las `actas` que unen dos claves de
-un operador en la extension y el consumo (RFC-0015); las que exigen una prueba quedan fuera. Un `tipo` conocido que esta implementacion no lee todavia
-sale ROJO con su nombre, nunca VERDE. Desde el §693 esos tipos estan DECLARADOS, en NO_SOPORTADOS, y su ROJO
+un operador en la extension y el consumo (RFC-0015); las que exigen una prueba quedan fuera. ⚠️ §810: aqui
+faltaba el sobre del SOLAPAMIENTO, que lee desde el §686 (RFC-0015 E5c). Y desde el §810 el del ANCLA
+COFIRMADA (RFC-0013 E4a, PAQUETE.md 2.13): la cabeza, la nota checkpoint del medio con su firma ML-DSA-44
+de tipo 0x06, las cofirmas con clave en el sobre y la inclusion RFC 9162 del ancla. Un `tipo` conocido que
+esta implementacion no lee todavia sale ROJO con su nombre, nunca VERDE. Desde el §693 esos tipos estan DECLARADOS, en NO_SOPORTADOS, y su ROJO
 lleva el texto reservado `NO SOPORTADO` (PAQUETE.md, seccion 6): tools/conformidad.sh no lo cuenta nunca como
 un negativo superado. Y la causa de un rechazo se nombra con el texto del binario de referencia (seccion 6.1).
 
 De donde sale: PAQUETE.md secciones 2.1 a 2.3, 3, 4, 5 y 6; NUCLEO.md seccion 6 a traves de
 nucleo.py; RFC 8391 a traves de kat_xmss/xmss.py; y la consistencia del MMR de RFC 6962 (RFC 9162, 2.1.4.2)
-con mmr_nodo como nodo. Lo juzga tools/conformidad.sh con los manifiestos de spec/vectors/.
+con mmr_nodo como nodo. Desde el §810, FIPS 204 a traves de mldsa44.py, y RFC 9162 y las notas de C2SP a
+traves de medio.py. Lo juzga tools/conformidad.sh con los manifiestos de spec/vectors/.
 """
 import json
 import os
@@ -22,6 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "kat_xmss"))  # xmss.py vive ahi
+import medio  # noqa: E402
 import nucleo as N  # noqa: E402
 import xmss  # noqa: E402
 
@@ -32,8 +37,9 @@ TIPOS_CONOCIDOS = ("extension", "consumo", "conflicto", "rechazo", "edad", "cobr
                    "prenda", "completitud", "ancla", "ancla-cofirmada", "solapamiento")
 # §693: lo que esta implementacion NO lee, declarado. Salen `ROJO: NO SOPORTADO: ...`, el texto que el contrato
 # reserva (PAQUETE.md, seccion 6), y el arnes no los cuenta nunca: ni como acierto ni como negativo superado.
-TIPOS_LEIDOS = ("extension", "consumo", "conflicto", "ancla", "solapamiento")
-NO_SOPORTADOS = ("rechazo", "edad", "cobro_pendiente", "pago_en_curso", "prenda", "completitud", "ancla-cofirmada")
+# §810: `ancla-cofirmada` pasa de NO_SOPORTADOS a TIPOS_LEIDOS (ML-DSA-44 en mldsa44.py, la nota en medio.py).
+TIPOS_LEIDOS = ("extension", "consumo", "conflicto", "ancla", "ancla-cofirmada", "solapamiento")
+NO_SOPORTADOS = ("rechazo", "edad", "cobro_pendiente", "pago_en_curso", "prenda", "completitud")
 assert sorted(TIPOS_LEIDOS + NO_SOPORTADOS) == sorted(TIPOS_CONOCIDOS), "un tipo conocido sin declarar"
 
 
@@ -877,6 +883,115 @@ def ancla(doc):
     return salida
 
 
+def _sha256_del_medio(x, campo):
+    """Un hash SHA-256 del medio: `0x` y 64 hex, los bytes TAL CUAL. No es un digest de Goldilocks: aqui
+    no hay campo, y un limbo fuera de p no es motivo de nada."""
+    try:
+        b = hex_a_bytes(x if isinstance(x, str) else "")
+    except Rojo as e:
+        raise Rojo(f"{campo}: {e}")
+    if len(b) != 32:
+        raise Rojo(f"{campo}: {len(b)} bytes, se esperaban 32")
+    return b
+
+
+def ancla_cofirmada(doc):
+    """PAQUETE.md 2.13 (RFC-0013 E4a). El ancla NO viaja: se deriva de la cabeza, y por eso es la cabeza
+    firmada que dice ser. El orden: la FORMA; la cabeza, entera (el `origin` de la nota sale de su
+    clave); la nota y la linea del publicador; las cofirmas con vkey en el sobre; la inclusion.
+    REPORTA, NO JUZGA: que testigos valen y cuantos hacen falta lo decide quien verifica (D-D)."""
+    salida = []
+    for ajeno in ("ancla", "camino", "contraria"):
+        if ajeno in doc:
+            raise Rojo(f"el sobre del ancla cofirmada no lleva {ajeno}: el ancla se deriva de la cabeza, y la "
+                       f"extension y la vista dividida son del sobre del ancla")
+    if "cabeza" not in doc:
+        raise Rojo("falta cabeza (la firmada cuya ancla se publico)")
+    c = doc["cabeza"] if isinstance(doc["cabeza"], dict) else {}
+    nota = doc.get("nota")
+    if not isinstance(nota, str):
+        raise Rojo("falta nota o no es cadena (la nota checkpoint del medio, entera)")
+    vkey_publicador = doc.get("publicador")
+    if not isinstance(vkey_publicador, str):
+        raise Rojo("falta publicador o no es cadena (la vkey del publicador del medio)")
+    posicion = u64_de(doc, "posicion")
+    inclusion = doc.get("inclusion")
+    if not isinstance(inclusion, list):
+        raise Rojo("falta inclusion o no es lista (el camino del ancla a la raiz)")
+    inclusion = [_sha256_del_medio(x, "inclusion") for x in inclusion]
+    testigos = []
+    if "testigos" in doc:
+        if not isinstance(doc["testigos"], list):
+            raise Rojo("testigos no es lista (las vkeys de los testigos)")
+        for x in doc["testigos"]:
+            try:
+                testigos.append(medio.ClaveDeNota.leer_vkey(x if isinstance(x, str) else ""))
+            except medio.ErrorDeNota as e:
+                raise Rojo(f"testigos: {e}")
+    for i, a in enumerate(testigos):
+        if any(b.nombre == a.nombre and b.id == a.id for b in testigos[:i]):
+            raise Rojo(f"testigos: {a.nombre} esta dos veces")
+
+    # 1/4 la cabeza, ENTERA, como en el sobre del ancla; la version, antes que nada de ella.
+    version = u64_de(c, "formatVersion")
+    if version not in (3, 4, 5, 6):
+        raise Rojo(f"cabeza: formatVersion {version}: el ancla lee cabezas v3, v4, v5 o v6: la pareja del MMR "
+                   f"viaja firmada desde ellas")
+    cab = leer_cabeza(c, "cabeza")
+    embebido = verificar_cabeza(cab, "cabeza")
+    huella_clave = N.huella_de_clave(cab["pk"])
+    huella_ancla = N.digest_to_bytes(N.ancla_digest(huella_como_digest(huella_clave), embebido, cab["digest"],
+                                                    cab["mmrRoot"], cab["mmrSize"]))
+    salida.append(f"1/4 la cabeza (v{version}) recompone su digest y su firma verifica (indice embebido {embebido}); "
+                  f"su ancla: 0x{huella_ancla.hex()}")
+
+    # 2/4 la nota: del medio de ESTA clave (D-A), y firmada por su publicador.
+    origen = medio.origen_del_medio(huella_clave)
+    try:
+        publicador = medio.ClaveDeNota.leer_vkey(vkey_publicador)
+    except medio.ErrorDeNota as e:
+        raise Rojo(f"publicador: {e}")
+    if publicador.nombre != origen:
+        raise Rojo(f"el publicador es {medio.debug_rust(publicador.nombre)} y el medio de esta cabeza es "
+                   f"{medio.debug_rust(origen)}: el origin lleva la huella de la clave XMSS (RFC-0013 D-A)")
+    try:
+        v = medio.verificar_nota(nota, publicador)
+    except medio.ErrorDeNota as e:
+        raise Rojo(f"la nota: {e}")
+    salida.append(f"2/4 la nota del medio verifica con su publicador (ML-DSA-44, tipo 0x06): {v.checkpoint.tamano} "
+                  f"anclas, marca {v.marca}")
+
+    # 3/4 las cofirmas: las que tienen clave en el sobre se verifican; las demas se cuentan.
+    cofirman, sin_clave = [], 0
+    for linea in v.ajenas:
+        k = next((t for t in testigos if t.nombre == linea.nombre and t.id == linea.id), None)
+        if k is None:
+            sin_clave += 1
+            continue
+        if any(o is k for o, _ in cofirman):
+            raise Rojo(f"la nota lleva dos cofirmas de {k.nombre}")
+        try:
+            cofirman.append((k, k.verificar_cofirma(v.checkpoint, linea)))
+        except medio.ErrorDeNota as e:
+            raise Rojo(f"la cofirma de {k.nombre} no verifica: {e}")
+    salida.append(f"3/4 cofirmas que verifican con las claves del sobre: {len(cofirman)}; lineas sin clave en el "
+                  f"sobre, sin juzgar: {sin_clave}; testigos del sobre sin cofirma: {len(testigos) - len(cofirman)}")
+    for k, marca in cofirman:
+        salida.append(f"   testigo {k.nombre} clave sha256:{medio.sha256(k.bytes).hex()} marca {marca}")
+
+    # 4/4 la inclusion: la hoja SHA-256(0x00 || huella del ancla) sube a la raiz de la nota, donde dice.
+    tamano = v.checkpoint.tamano
+    try:
+        medio.verificar_inclusion(medio.hoja(huella_ancla), posicion, tamano, inclusion, v.checkpoint.raiz)
+    except medio.ErrorDelMedio as e:
+        raise Rojo(f"el ancla de esta cabeza no esta en la posicion {posicion} de las {tamano} de la nota: {e}")
+    salida.append(f"4/4 el ancla esta en la posicion {posicion} de las {tamano} anclas de la nota")
+    salida.append(f"VERDE: la cabeza estaba publicada en el medio {origen}, en la posicion {posicion}, y la cofirman "
+                  f"{len(cofirman)} testigo(s) con clave en el sobre. Que testigos valen y cuantos hacen falta lo "
+                  f"decide quien verifica (RFC-0013 D-D): este mando reporta, no juzga")
+    return salida
+
+
 def juzgar(ruta):
     try:
         with open(ruta, "rb") as f:
@@ -885,6 +1000,8 @@ def juzgar(ruta):
         raise Rojo(f"no se puede leer {ruta}: {e.strerror} (os error {e.errno})")
     try:
         doc = json.loads(crudo.decode("utf-8"))
+        # §810: una suplente sola (`\ud800`), que json.loads deja pasar y serde_json no: JSON ilegible, como el binario
+        json.dumps(doc, ensure_ascii=False).encode("utf-8")
     except (ValueError, UnicodeDecodeError) as e:
         raise Rojo(f"JSON ilegible: {e}")
     if not isinstance(doc, dict):
@@ -904,6 +1021,8 @@ def juzgar(ruta):
             return conflicto(doc)
         if tipo == "ancla":
             return ancla(doc)
+        if tipo == "ancla-cofirmada":
+            return ancla_cofirmada(doc)
         if tipo == "solapamiento":
             return solapamiento(doc)
         if tipo in NO_SOPORTADOS:

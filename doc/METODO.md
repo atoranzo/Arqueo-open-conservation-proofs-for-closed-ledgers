@@ -229,9 +229,12 @@ bloque, van otras puertas; entre ellas, los vectores (`tools/check_vectores.py`,
 sale del bucle «para que cada ROJO entre con su nombre»), el catálogo de rechazos
 (`tools/check_catalogo.py`, «2 quinquies»), la conformidad del kit en sus familias («3 bis
 familias»), la segunda implementación (`tools/segunda/`, «3 duodecies») y el artefacto («3 ter»).
-El veredicto es VERDE, o ROJO con la lista de fallos (`tools/canon.sh:697-710`). ⚠️ §801: las tres
-líneas de `tools/canon.sh` de este párrafo decían `:312-341`, `:324-330` y `:608-621`, las del §793;
-el fichero creció por delante del bucle y en el §799 ya estaban donde dicen ahora, con el mismo texto.
+El veredicto es VERDE, o ROJO con la lista de fallos (el bloque «veredicto» de `tools/canon.sh`).
+⚠️ §801: las tres líneas de `tools/canon.sh` de este párrafo decían `:312-341`, `:324-330` y
+`:608-621`, las del §793; el fichero creció por delante del bucle y en el §799 ya estaban donde
+dicen ahora, con el mismo texto. ⚠️ §810: la tercera, la del veredicto, decía `:697-710`; el §804
+ya la había corrido dos líneas, y las catorce que el §810 mete en el «3 duodecies» la corren otras
+catorce: se cita por su bloque.
 
 **Los bancos.** `tools/banco_*.sh` arrancan el nodo, el testigo y el mando reales, y por eso viven
 fuera de los niveles (§582). `tools/bancos.sh` los corre todos: la lista se lee del directorio, cada

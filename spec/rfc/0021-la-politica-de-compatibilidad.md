@@ -55,7 +55,7 @@ regla de ruptura escrita, y una compuerta que la haga cierta («Qué lo cierra»
 | un `tipo` desconocido se rechaza con nombre | `crates/zk-ssl-verify/src/main.rs:183-221` (§418) | sus tests y su catálogo |
 | ningún kit acepta dos versiones del cable | la D-E del RFC-0018, `spec/rfc/0018-el-tren-0-5.md:160-161` | nada todavía: es del corte |
 | una versión nueva de AIR, de perfil o de marca es versión nueva del cable | la «Regla de extensión» de la D-G, `spec/rfc/0018-el-tren-0-5.md:334-340` | nada todavía: es del corte |
-| un kit viejo sigue publicado y reproducible | `doc/KIT.md:19-63`: las 0.2.0, 0.3.0, 0.4.0, 0.4.1 y 0.4.2, todas publicadas | nada lo exige; `tools/artefacto.sh --check` comprueba en cada canon que el árbol reproduce su artefacto (`tools/canon.sh:598-603`), no que los publicados sigan ahí |
+| un kit viejo sigue publicado y reproducible | `doc/KIT.md:19-63`: las 0.2.0, 0.3.0, 0.4.0, 0.4.1 y 0.4.2, todas publicadas | nada lo exige; `tools/artefacto.sh --check` comprueba en cada canon que el árbol reproduce su artefacto (el bloque «3 ter» de `tools/canon.sh`; ⚠️ §810: hasta aquí citaba sus líneas, la `:598-603`, que el §798, el §800 y el §804 ya habían corrido a la `:690-695`, y las catorce que el §810 mete en el «3 duodecies» las llevan a la `:704-709`: se cita por su bloque), no que los publicados sigan ahí |
 
 **Lo que el §699 midió, y es el punto de partida.** La práctica no fue siempre la promesa:
 

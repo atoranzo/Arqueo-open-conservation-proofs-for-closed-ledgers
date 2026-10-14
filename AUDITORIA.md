@@ -54041,3 +54041,77 @@ ninguna entrada del manifiesto lo pide. Los dos consumidores aceptan `custody` `
 **Contadores.** Los tests de `tools/canon.sh` no cambian. `spec/vectors/` 514 -> 516 ficheros en
 `README.md` y `README_EN.md` (497 `.json` y 987 líneas de 18 manifiestos); el manifiesto del cable,
 21 -> 23 entradas. El `BACKLOG.md` sigue con 44 abiertas y 77 resueltas.
+
+## §810 — la segunda implementación lee el sobre del ancla cofirmada: ML-DSA-44 escrito desde FIPS 204, la nota `checkpoint` con su firma 0x06 y la inclusión de RFC 9162, en Python; 201 de 201 en seis familias, y el juez del medio en el canon (tarea 25)
+
+El commit que lleva este asiento, sobre el §809. Toca `tools/segunda/` —tres ficheros nuevos,
+`mldsa44.py`, `medio.py` y `juez_medio.py`; `verificador.py`, y su `README.md`—; el bloque «3
+duodecies» de `tools/canon.sh`; una nota bajo la 85 del `BACKLOG.md`; la fila del tercer hito de
+`doc/integracion-vertical-evaluacion.md`; una cita por línea de `doc/METODO.md` y otra de
+`spec/rfc/0021-la-politica-de-compatibilidad.md`; y este asiento. No mueve el kit, ni el medio, ni un
+vector, ni el `Cargo.lock`. Del autor es elegir la tarea; la forma la propuso la sesión. Lo escribe y
+lo prueba Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango
+que el autor asignó (§800 a §829). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la
+sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió
+VERDE.
+
+**De dónde sale.** Desde el §693 el segundo verificador declaraba `ancla-cofirmada` en `NO_SOPORTADOS`:
+sus 27 entradas salían `NO SOPORTADO`, porque leerlas pide el medio —ML-DSA-44, la nota y la
+inclusión—, y la segunda no lo tenía. Es la 85 del `BACKLOG.md`, ya cerrada, en la familia que le
+faltaba de las que no exigen STARK.
+
+**Lo que hace.**
+
+1. **`mldsa44.py`**: la verificación ML-DSA-44 de FIPS 204, sólo verificar, sin dependencias
+   —`hashlib` trae SHAKE128 y SHAKE256—, escrita desde el texto del estándar: el algoritmo 3 con el
+   contexto vacío y la firma pura, que es como `nota.rs` llama a `ml-dsa` 0.1.1, sobre el 8. Del crate
+   se leyó cómo arma μ y dónde rechaza la norma y las pistas, para contrastar y no para copiar.
+2. **`medio.py`**: la base64 estricta, la inclusión de RFC 9162 en el árbol SHA-256 de anclas y la
+   nota `checkpoint` con su firma 0x06 y sus cofirmas, con las reglas de la cabecera de
+   `crates/zk-ssl-medio/src/nota.rs` —lo que `PAQUETE.md` 2.13 manda leer— y los textos de su
+   `Display`, para que la causa de un rechazo sea la del binario.
+3. **`verificador.py`**: `ancla_cofirmada` con el orden y los textos de `verificar_ancla_cofirmada`
+   del kit, y el tipo pasa de `NO_SOPORTADOS` a `TIPOS_LEIDOS`. Y rechaza una suplente UTF-16 sola en
+   una cadena como `JSON ilegible`, que es lo que hace el kit: hasta aquí daba VERDE, o una traza.
+4. **`juez_medio.py`**, 87 comprobaciones: las 33 notas del §632 con el veredicto de su
+   `MANIFIESTO.txt`; un firmante de prueba de FIPS 204, sólo en el juez, que rehace byte a byte las
+   vkeys y las líneas deterministas de Go; las firmas de frontera de la norma y una pista sobre una
+   parte baja cero; la unicidad de la escritura de una firma; la base64; las 98 sondas de inclusión
+   de transparency-dev y los caminos de 1 a 33 hojas; y el `{:?}` de Rust de los nombres.
+5. **El canon**: `juez_medio.py` entra en el «3 duodecies» a pin cero, y `ancla-cofirmada` en el bucle
+   del segundo verificador; unos 6 s más. Esas catorce líneas corren las de detrás, y dos citas por
+   línea pasan a citar por su bloque, con su marca: la del veredicto en `doc/METODO.md` y la del «3
+   ter» en el RFC-0021. Las dos, y la del bucle en `tools/segunda/README.md`, ya las habían corrido el
+   §798, el §800 y el §804, y las marcas lo dicen: la tarea se escribió sobre el árbol del §794 y su
+   primera redacción lo achacaba todo a sus catorce líneas.
+
+**Medido.** `juez_medio.py`: 87 de 87, en 1,5 s. El segundo verificador con el arnés y los manifiestos
+del binario: 201 de 201 en seis familias —84, 17, 17, 22, 34 y 27—, y las 254 entradas de las once que
+quedan, todas `NO SOPORTADO` y ninguna `OK`, medido otra vez sobre este árbol. En `ancla-cofirmada`, la
+salida comparada con `zk-ssl-verify` compilado: en los 5 positivos, la misma byte a byte; en los 22
+negativos, la misma línea del `ROJO` y el mismo exit. Se hizo sobre el árbol del §794 y otra vez sobre
+este, con el binario de sus crates, que son los del §808: 27 de 27 iguales. Fuera del canon, porque
+piden compilar: las firmas de frontera y una con sal, puestas en una copia de un sobre fuera del árbol,
+dan en el binario lo mismo que aquí; y el ejemplo `medio` del crate firmó 21 notas y 42 cofirmas con sal
+que verifican en Python, y las 42 cofirmas con un bit cambiado no. Mutantes sobre copias del árbol: de 29, caen 24, cada
+uno con la comprobación que lo mata, y viven 5, que el `README.md` nombra con lo que haría falta para
+matarlos —el corte de las pistas que baja en medio, el subárbol vacío, el `+` de un nombre, la marca por
+encima de `i64` y el `key_id` de una vkey ajena—. Un agente lo construyó y lo revisaron escépticos en
+tres vueltas: la primera encontró falso el párrafo de los mutantes, y se rehízo con la medida; la
+segunda, que la suplente sola salía VERDE o con traza donde el kit dice `JSON ilegible`, que es el
+arreglo del punto 3, y los cinco mutantes vivos, que se declaran; la tercera lo aprobó con cosas
+menores, ya hechas. Salen con 0 las once herramientas del bucle, más `check_vectores` y
+`check_catalogo`. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Lo que NO hace.** No rechaza lo demás que `json.loads` acepta y `serde_json` no —`NaN`, `Infinity`,
+`-Infinity` y un número fuera del rango de un `f64`—: en un campo que la segunda no lee sigue dando
+VERDE donde el kit dice «JSON ilegible», como ya pasaba en el §794, y el `README.md` lo declara. Detrás
+de «JSON ilegible:» la letra es la del `json` de Python, no la de `serde_json`, como ya pasaba en
+`paquete/rechazo-json-ilegible.json`: el manifiesto sólo pina «JSON ilegible». No mata los cinco
+mutantes que viven: añadir casos movería el 87. Las líneas `1/4` a `3/4` que el binario imprime antes
+de un `ROJO`, la segunda no las imprime.
+
+**Contadores.** Los tests de `tools/canon.sh` no cambian; el canon corre un juez más y una familia
+más en el «3 duodecies». El segundo verificador, 174 -> 201 entradas. El `BACKLOG.md` sigue con 44
+abiertas y 77 resueltas: la 85 gana una nota con su marca y sigue cerrada.

@@ -663,11 +663,25 @@ else
   grep '^ROJO' "$OUT/segunda_kat_xmss.txt" | sed 's/^/      /' >&2
   falla "el corpus KAT de xmss NO verifica con la implementacion de RFC 8391 ($(tail -n 1 "$OUT/segunda_kat_xmss.txt"))"
 fi
+# El MEDIO en la segunda implementacion (tools/segunda/mldsa44.py y medio.py, §810): ML-DSA-44 escrito
+# desde FIPS 204, la nota checkpoint con su firma 0x06 y la inclusion de RFC 9162, contra lo que
+# escribieron otras manos: las 33 notas del §632 (torchwood sobre el crypto/mldsa de Go, y el crate
+# ml-dsa), las vkeys y las lineas de Go rehechas byte a byte por un firmante de prueba, las firmas de
+# frontera de la norma y de UseHint, la unicidad de la escritura de una firma, las 98 sondas de
+# inclusion de transparency-dev y el {:?} de Rust de los nombres. Pin cero, como los otros. ~2 s.
+if python3 tools/segunda/juez_medio.py > "$OUT/segunda_medio.txt" 2>&1; then
+  msg "  OK  $(tail -n 1 "$OUT/segunda_medio.txt")"
+else
+  grep '^ROJO' "$OUT/segunda_medio.txt" | sed 's/^/      /' >&2
+  falla "la segunda implementacion NO juzga el medio como las otras manos ($(tail -n 1 "$OUT/segunda_medio.txt"))"
+fi
 # El SEGUNDO VERIFICADOR (tools/segunda/verificador.py): las cinco formas sin STARK del paquete -y
 # desde el §649 la extension entre dos claves con su cadena de actas, la familia rotacion-, con
 # el contrato del mando, juzgadas por el MISMO arnes y los MISMOS manifiestos que el binario de
 # referencia. Si un vector nuevo entra en estas familias, los dos codigos tienen que decir lo mismo.
-for F in paquete consumo conflicto ancla rotacion; do
+# ⚠️ §810: y desde el §810 la sexta, `ancla-cofirmada` (RFC-0013 E4a), que hasta aqui salia NO SOPORTADO
+# en sus 27 entradas y ahora pasa con el mando entero: la cabeza, la nota, las cofirmas y la inclusion.
+for F in paquete consumo conflicto ancla rotacion ancla-cofirmada; do
   if bash tools/conformidad.sh tools/segunda/verificador.py "spec/vectors/$F/MANIFIESTO.txt" > "$OUT/segunda_$F.txt" 2>&1; then
     msg "  OK  segunda $F: $(tail -n 1 "$OUT/segunda_$F.txt" | sed 's/^conformidad: //; s/ - binario.*//')"
   else
