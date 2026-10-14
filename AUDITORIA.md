@@ -52423,3 +52423,53 @@ el desglose de `PRINCIPIOS.md`. Ni vectores, ni el `BACKLOG.md`: 43 abiertas y 7
 bancos para pedirlo; no añade el test que exija que `tests_support` no exista en el build de
 producción; no arranca un nodo sin `dev` en ningún banco. No expone emisión, reembolso ni quema por
 RPC (el punto 4 de ARQ-02): cada uno, con su RFC. Es la primera parte de ARQ-02, no ARQ-02.
+
+## §785 — `witness --recolectar-cofirmas` pide la época por su nombre (`--epoca-cofirmas`), y el banco de la cofirma ejerce el mando (la tarea 3)
+
+El commit que lleva este asiento, sobre el §784. Un solo sello: en `crates/zk-ssl-cli/src/witness.rs`,
+la bandera `--epoca-cofirmas` y `parametros_de_cofirmas`, con un test nuevo; en
+`tools/banco_cofirma.sh`, un paso nuevo, el (E); el pin del crate en `tools/canon.sh`; las cifras de
+tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y este asiento. Del autor es elegir esta tarea y
+su orden; lo demás lo propuso la sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de
+Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a §799). No toca
+`crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** `zkssl_cosigs` acepta `{epochDigest?}` (`spec/RPC.md`), y el nodo retiene las
+cofirmas de la última época que recibió (§317) y las sirve por su nombre aunque la cabeza ya haya
+avanzado. El mando del tercero (`--recolectar-cofirmas`, §320) solo preguntaba por la época en
+curso: la cofirma que el nodo retenía de la época anterior solo la alcanzaba el banco, con `curl`.
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso que el nombre se lea en la escritura
+canónica antes de hablar con el nodo —un nombre mal escrito no es una época sin cofirmas— y que, si el
+nodo contesta por OTRA época, el mando falle sin añadir nada.
+
+**Por qué no lleva aviso de seguridad.** Es una bandera nueva de un mando de lectura: sin ella, todo
+es como antes.
+
+**Lo que hace.**
+
+1. **`--epoca-cofirmas <EPOCH_DIGEST>`**, que exige `--recolectar-cofirmas`.
+2. **`parametros_de_cofirmas`**: sin nombre, `params` vacíos; con él, `{"epochDigest": …}`, si es
+   `0x` y 64 cifras en minúscula; si no, el error lo dice antes de preguntar.
+3. **La época servida tiene que ser la pedida**: si no, «se pidio la epoca … y el nodo sirvio la …: no
+   se anade nada».
+4. **El banco de la cofirma, paso (E)**: el mando pide por su nombre la época que el nodo retiene, la
+   trae («1 cofirma(s) del nodo · 1 anadida(s)», «epoca servida: …») y la cofirma verifica; una época
+   bien escrita que el nodo no tiene da cero, y no es un error; un nombre mal escrito se rechaza.
+
+**Medido.**
+
+- **El test** `la_epoca_de_las_cofirmas_se_pide_por_su_nombre`: con la lectura canónica del nombre
+  quitada, en un árbol aparte, da `FAILED`; con este sello, `ok`.
+- **El banco**, `tools/banco_cofirma.sh`: VERDE, con «ENVIO-E: el mando pide la epoca por su nombre,
+  trae la que el nodo retiene y verifica».
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** `zk-ssl-cli` 151 -> 152, en su fila de `tools/canon.sh`, con su crónica. TOTAL DE
+SELLO 1746 -> 1747 y TOTAL CON LARGOS 1883 -> 1884, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`, y
+el desglose de `PRINCIPIOS.md`. Ni vectores, ni el `BACKLOG.md`: 43 abiertas y 77 resueltas.
+
+**Lo que NO hace.** No cambia el nodo ni el cable: `zkssl_cosigs` ya aceptaba el nombre. No hace que el
+nodo retenga más de una época. No recolecta varias épocas de una vez.

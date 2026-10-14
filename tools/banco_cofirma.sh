@@ -28,12 +28,15 @@
 #               embebido, preambulo distinto- y sale `indice-repetido`. Es
 #               el caso que de verdad quema una clave de un solo uso.
 #   ENVIO       (§316) el testigo ENVIA la cofirma al nodo y el nodo la
-#               SIRVE. Cuatro pasos: el nodo virgen da `n:0` —el rojo—;
+#               SIRVE. Cinco pasos: el nodo virgen da `n:0` —el rojo—;
 #               el testigo con `--enviar-cofirmas` obtiene aceptaciones y
 #               ningun rechazo —**el camino de ACEPTACION, que es lo que
 #               el §315 dejo declarado y sin cubrir**—; pedir la epoca de
 #               la ultima cofirma la devuelve —la RETENCION—; y sin
-#               parametros se MIDE lo que sale, sin asertarlo.
+#               parametros se MIDE lo que sale, sin asertarlo; y (§785) el
+#               mando del testigo pide esa epoca POR SU NOMBRE
+#               (`--epoca-cofirmas`), la trae y verifica, una epoca que el
+#               nodo no tiene da cero y un nombre mal escrito se rechaza.
 #
 # ⚠️ Bajo $HOME, NUNCA en /tmp: el guardian del indice se niega a operar
 #    donde `fsync` no persiste (K.1, §234), y /tmp suele ser tmpfs.
@@ -442,6 +445,33 @@ v = d.get("result") or {}
 print("BANCO-COFIRMA| ENVIO-D (medido, no asertado): sin parametros, la"
       " epoca EN CURSO da n:%s" % q(v.get("n", 0)))
 PYEOF
+
+# ── (E) EL MANDO pide la epoca POR SU NOMBRE (§785) ─────────
+# ⚠⚠ Lo que (C) pregunta con curl lo pide ahora el mando del testigo:
+#    `--recolectar-cofirmas` con `--epoca-cofirmas`. La epoca es la que el
+#    nodo RETIENE ($SIRVE), aunque la cabeza ya haya avanzado.
+"$CB" witness --nodo "http://127.0.0.1:$PORT" --recolectar-cofirmas "$DIR/recolectadas.jsonl" \
+  --epoca-cofirmas "$SIRVE" > "$DIR/r1.out" 2>&1 \
+  || { cat "$DIR/r1.out" >&2; fallo "el mando no recolecto la epoca por su nombre"; }
+grep -q '1 cofirma(s) del nodo · 1 anadida(s)' "$DIR/r1.out" \
+  || { cat "$DIR/r1.out" >&2; fallo "por su nombre, el mando no trajo la cofirma que el nodo retiene"; }
+grep -qF "epoca servida: $SIRVE" "$DIR/r1.out" \
+  || { cat "$DIR/r1.out" >&2; fallo "el mando no dice que se le sirvio la epoca pedida"; }
+"$CB" witness --verificar-cofirmas "$DIR/recolectadas.jsonl" > "$DIR/r2.out" 2>&1 \
+  || { cat "$DIR/r2.out" >&2; fallo "la cofirma recolectada por su nombre NO verifica"; }
+# Una epoca bien escrita que el nodo no tiene: cero, y no es un error.
+OTRA="0x$(python3 -c "print('00'*31 + '01', end='')")"
+"$CB" witness --nodo "http://127.0.0.1:$PORT" --recolectar-cofirmas "$DIR/otra.jsonl" \
+  --epoca-cofirmas "$OTRA" > "$DIR/r3.out" 2>&1 \
+  || { cat "$DIR/r3.out" >&2; fallo "una epoca sin cofirmas dio error"; }
+grep -q '0 cofirma(s) del nodo' "$DIR/r3.out" || { cat "$DIR/r3.out" >&2; fallo "una epoca que el nodo no tiene trajo cofirmas"; }
+# Un nombre mal escrito se rechaza ANTES de preguntar.
+if "$CB" witness --nodo "http://127.0.0.1:$PORT" --recolectar-cofirmas "$DIR/mal.jsonl" \
+     --epoca-cofirmas "0xABC" > "$DIR/r4.out" 2>&1; then
+  cat "$DIR/r4.out" >&2; fallo "un epochDigest mal escrito paso"
+fi
+grep -q -- '--epoca-cofirmas' "$DIR/r4.out" || { cat "$DIR/r4.out" >&2; fallo "el rechazo no nombra --epoca-cofirmas"; }
+msg "ENVIO-E: el mando pide la epoca por su nombre, trae la que el nodo retiene y verifica"
 
 msg "BANCO-COFIRMA VERDE: el testigo avala lo que juzga, solo cuando debe,"
 msg "                     y un tercero lo comprueba con solo el fichero"

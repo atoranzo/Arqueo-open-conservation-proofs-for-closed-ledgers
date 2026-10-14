@@ -1801,10 +1801,19 @@ pub struct WitnessArgs {
     ///
     /// ⚠️ El nodo guarda **una sola época** (§317), así que esto trae una
     /// época por vez: **acumular es trabajo de este mando**, corriéndolo más
-    /// de una vez. Declarado y no hecho: pedir una época **por su nombre**,
-    /// que el nodo ya sabe servir.
+    /// de una vez. Sin `--epoca-cofirmas`, la de la cabeza en curso; con él,
+    /// la que se nombre (§785).
     #[arg(long, value_name = "COFIRMAS")]
     recolectar_cofirmas: Option<PathBuf>,
+
+    /// ⚠️ §785 · **La época que `--recolectar-cofirmas` pide, por su nombre**:
+    /// el `epochDigest` de la cabeza cofirmada, `0x` y 64 cifras en minúscula.
+    /// El nodo retiene las cofirmas de la última época que recibió (§317) y las
+    /// sirve por su nombre aunque la cabeza ya haya avanzado; sin esto, el mando
+    /// solo preguntaba por la época en curso. Si el nodo contesta por OTRA
+    /// época, el mando falla y no añade nada.
+    #[arg(long, value_name = "EPOCH_DIGEST", requires = "recolectar_cofirmas")]
+    epoca_cofirmas: Option<String>,
 
     /// **Una RESPUESTA del cable, desde fichero y SIN nodo** (§409, RFC-0005 E3):
     /// el cuerpo JSON-RPC tal como lo sirve `zkssl_signedEpochHead`, juzgado por el
@@ -2232,6 +2241,23 @@ pub fn linea_desde_dto(dto: &CofirmaDto) -> Result<Value, RecogidaRechazada> {
         firma,
     };
     Ok(linea_de_cofirma(&d32, &op, &testigo, &c, visto))
+}
+
+/// ⚠️ §785 · Los `params` de `zkssl_cosigs`: vacíos, o `{"epochDigest": …}` si se nombra la
+/// época. El nombre se lee en la escritura canónica del cable —`0x`, 64 cifras en minúscula, 32
+/// bytes— antes de hablar con el nodo: un nombre mal escrito no es una época sin cofirmas.
+fn parametros_de_cofirmas(epoca: Option<&str>) -> Result<Value, String> {
+    let Some(e) = epoca else {
+        return Ok(json!({}));
+    };
+    let b = zk_ssl_hash::hex_canonico(e).map_err(|x| format!("{e:.20}: {x}"))?;
+    if b.len() != 32 {
+        return Err(format!(
+            "{e:.20}: {} bytes, un epochDigest lleva 32",
+            b.len()
+        ));
+    }
+    Ok(json!({ "epochDigest": e }))
 }
 
 /// **Deja pasar sólo las líneas que no estaban ya, comparadas ENTERAS.**
@@ -2704,8 +2730,10 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
     //    habla con el nodo, pero no se queda mirando.
     if let Some(p) = &a.recolectar_cofirmas {
         let agente = ureq::AgentBuilder::new().timeout(Duration::from_secs(10)).build();
+        let params = parametros_de_cofirmas(a.epoca_cofirmas.as_deref())
+            .map_err(|e| anyhow::anyhow!("--epoca-cofirmas: {e}"))?;
         let peticion = json!({"jsonrpc":"2.0","id":1,
-            "method":"zkssl_cosigs","params":{}});
+            "method":"zkssl_cosigs","params":params});
         // ⚠️⚠️ LEE `error`. Es la regla que el §316 dejó escrita para el
         //    código que NACE HOY: sin ella, un nodo sin el método contesta
         //    -32601, `result` viene ausente, y esto diría «cero cofirmas»
@@ -2726,6 +2754,14 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             .and_then(|x| x.as_str())
             .unwrap_or("(el nodo no dijo cual)")
             .to_string();
+        // §785: pedida por su nombre, la que sirve el nodo tiene que ser ESA.
+        if let Some(pedida) = &a.epoca_cofirmas {
+            if &epoca != pedida {
+                anyhow::bail!(
+                    "se pidio la epoca {pedida} y el nodo sirvio la {epoca}: no se anade nada"
+                );
+            }
+        }
         // ⚠️ El sobre se abre TIPADO: `deny_unknown_fields` en `CofirmaDto`
         //    hace que un campo que el cable no conoce sea un error aquí, y
         //    no una línea silenciosamente incompleta más abajo.
@@ -4138,6 +4174,28 @@ mod tests {
         let testigo = vec![dia("0x1", "0xaa", "0xdead"), dia("0x5", "0xbb", "0xdead")];
         let nodo = vec![dia("0x1", "0xaa", "0xdead")];
         assert_eq!(ausentes(&testigo, &nodo), vec![5]);
+    }
+
+    /// ⚠️ §785 · **La época de `--recolectar-cofirmas`, por su nombre y en forma canónica.**
+    /// Sin nombre, `params` vacíos (la época en curso); con él, `{"epochDigest": …}`; un nombre
+    /// que no es un digest canónico de 32 bytes se rechaza antes de preguntar al nodo.
+    #[test]
+    fn la_epoca_de_las_cofirmas_se_pide_por_su_nombre() {
+        assert_eq!(parametros_de_cofirmas(None), Ok(json!({})));
+        let d = format!("0x{}", "ab".repeat(32));
+        assert_eq!(
+            parametros_de_cofirmas(Some(&d)),
+            Ok(json!({ "epochDigest": d }))
+        );
+        let mayus = format!("0x{}", "AB".repeat(32));
+        let corto = format!("0x{}", "ab".repeat(31));
+        let sin_0x = "ab".repeat(32);
+        for mal in [mayus.as_str(), corto.as_str(), sin_0x.as_str(), "0x"] {
+            assert!(
+                parametros_de_cofirmas(Some(mal)).is_err(),
+                "{mal:.12} no es un epochDigest"
+            );
+        }
     }
 
     /// ⚠️ §775 · **El testigo lee los `u64` del nodo en forma canonica.**
