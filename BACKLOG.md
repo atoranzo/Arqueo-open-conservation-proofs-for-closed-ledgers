@@ -12,11 +12,11 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 77 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 46 abiertas, 77 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
-cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, y el §802, que abre la
-119.
+cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
+119, y el §812, que abre la 120 y la 121.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -2255,7 +2255,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   debe sobrevivir a un reinicio—. Las tres son el ciclo de vida del
   firmante y convendria cortarlas juntas.
 
-- [ ] **20. Rotacion de claves: DOS de cuatro casos, y uno no es un hueco.**
+- [ ] **20. Rotacion de claves: ~~DOS~~ TRES de cuatro casos (⚠️ §812), y uno no es un hueco.**
   ~~Implementada solo en parte.~~ ⚠️ **«En parte» no se podia ni confirmar ni
   refutar**, y esa era su unica pega: una entrada irrefutable no envejece, se
   queda para siempre pareciendo pendiente (§83). Descompuesta y comprobada el
@@ -2268,9 +2268,13 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   - ✅ **Clave de cuenta**: `recover` deja fuera la clave comprometida, con
     autorizacion de custodios. Test:
     `recovery_locks_out_the_compromised_key`.
-  - ❌ **Clave de cifrado del ledger**: **no hay recifrado**. Comprobable:
+  - ~~❌~~ ✅ (§812) **Clave de cifrado del ledger**: ~~**no hay recifrado**~~. Comprobable:
     `grep -rn "rekey\|re_encrypt" crates/zk-ssl/src/` no devuelve nada.
-    Cambiar la contraseña exige reconstruir el ledger.
+    ~~Cambiar la contraseña exige reconstruir el ledger.~~
+    ⚠️ §812: ya lo hay, en la biblioteca: `SovereignLayer::recifrar` cambia la frase y la sal del
+    libro entero, entero o nada, por un directorio hermano (RFC-0001, E4, decidida por el autor como
+    etapa de ese RFC). El grep de arriba sigue vacío: la función se llama `recifrar`. El nodo sigue abriendo su
+    libro en claro: para él no hay frase que cambiar, y cablear su cifrado queda fuera.
   - ⚠️ **Gobernanza**: `governance_set_root` **solo se fija en el
     constructor** y no tiene modificador —comprobable: `grep -n
     "governance_set_root" crates/zk-ssl/src/lib.rs` da lectura y
@@ -2281,14 +2285,22 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     decision propia.
   ⚠️ **§791: el ❌ del recifrado, recontado, y un nombre viejo.** El grep de arriba sigue vacío, pero
   desde el §702 `migrar_a_kdf_v2` vuelve a sellar cada valor del libro con una clave nueva
-  (`crates/zk-ssl/src/persistence.rs:1003-1047`) y el keystore se migra al abrirse: es con la MISMA
-  frase, y cambiarla sigue sin existir. Y el nodo no cifra en reposo
+  (`crates/zk-ssl/src/persistence.rs:1019-1052`; ⚠️ §812: aquí decía `:1003-1047`, las líneas de antes
+  del §802 y del §812) y el keystore se migra al abrirse: es con la MISMA
+  frase, y ~~cambiarla sigue sin existir~~. ⚠️ §812: aquel re-sellado iba en un lote sobre el mismo
+  `sled` y dejaba en los ficheros lo sellado con la clave v1 (`SECURITY.md` §3.14); desde el §812 va
+  por un directorio hermano, y cambiar la frase ya existe (arriba). Y el nodo no cifra en reposo
   (`crates/zk-ssl-node/src/main.rs:2258-2261`, declarado en `SECURITY.md`): para él no hay frase que
   cambiar. El ✅ de la clave de cuenta nombra `recover`, que el §65 retiró
   (`crates/zk-ssl/src/recovery.rs:229-230`); la vía es `apply_recovery_delegated`, y el test que
-  cita la recorre (`crates/zk-ssl/src/tests.rs:2079`). Los dos casos abiertos, con la 52, van a
+  cita la recorre (`crates/zk-ssl/src/tests.rs:2079`). ~~Los dos casos abiertos~~ El caso abierto, la
+  gobernanza (⚠️ §812: eran dos, con el recifrado), con la 52, va a
   `doc/ROTACION_DE_CUENTAS.md` (aceptada como análisis en el §799, con sus decisiones abiertas;
-  ⚠️ §799: hasta aquí decía «(BORRADOR)»), que los cuesta y no elige. **Sigue abierta.**
+  ⚠️ §799: hasta aquí decía «(BORRADOR)»), que cuesta los casos y no elige. **Sigue abierta.**
+  ⚠️ **§812: el recifrado, hecho; la entrada sigue abierta por la gobernanza.** El autor resolvió la
+  D-4 de esa nota —K1, aparte del diseño único, como E4 del RFC-0001— y la E4 entra construida en
+  la biblioteca (arriba). Queda el caso de la gobernanza inmutable, que «eso si merece decision
+  propia», y es la D-3 de la nota, sin decidir. **Sigue abierta.**
 
 - [ ] **47. `doc/ESCALADO.md`: propuesta de sharding, COMMITTEADA (§122), sin adoptar.**
   Documento externo del 31-07-2026 que dimensiona 5 × 10⁹ usuarios con el
@@ -2756,6 +2768,32 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   umbral 1e-4 por escala: falsa alarma ≤ 2e-4, y más potencia que la vieja
   (simulado con el ruido medido: frente a una correlación verdadera de 0,7, el 83 %
   contra el 52 %). Cuesta 31 s en vez de 15.
+
+- [ ] **120. La exportación de la instantánea no es atómica: trunca en sitio la anterior (§812).**
+  `export_snapshot` abre el destino con `File::create` (`crates/zk-ssl/src/snapshot.rs:304`), que lo
+  trunca, y escribe encima. Un proceso que muere a mitad deja en el sitio de la instantánea buena una
+  a medias, que no importa —la importación verifica las raíces—, y la anterior ya no está. Y la
+  anterior, truncada, deja sus bloques al sistema de ficheros: si iba en claro, o sellada con una
+  frase que se acaba de cambiar con `recifrar`, sigue en los bloques libres. Visto al leer el código
+  para la E4 del RFC-0001 (§812), sin medir una muerte a mitad; lo declaran el RFC-0001 y
+  `SECURITY.md` §3.14. **Lo que pide**: que la exportación escriba entera a un temporal junto al
+  destino, lo sincronice, lo cambie de nombre por el destino y sincronice el directorio, como el
+  keystore (`escribir_entero`, en `crates/zk-ssl-sdk/src/keystore.rs`), y que barra el temporal que
+  deje un proceso muerto. **Qué la cierra**: un test que mata la exportación a mitad y encuentra en
+  el destino la instantánea anterior, entera, que importa; con su mutante, la escritura en sitio.
+
+- [ ] **121. Una capa importada de una instantánea cifrada nace sin clave, y se reexporta en claro
+  (§812).** `import_snapshot_with_key` descifra la instantánea con su frase, pero la capa que devuelve
+  lleva `key: None` (`crates/zk-ssl/src/snapshot.rs:460-463`: «quien la persista decidirá con qué
+  clave»), y `export_snapshot` exporta en claro, con la marca `0x00`, la capa que no tiene clave.
+  Medido por una de las revisiones de la E4 del RFC-0001 (§812): una instantánea cifrada, importada con
+  su frase y vuelta a exportar, sale con la marca `0x00`. Quien restaura una copia cifrada y la
+  vuelve a guardar la deja en claro, y nada lo dice. Lo declaran el RFC-0001 y `SECURITY.md` §3.14.
+  **Lo que pide**, y lo decide el autor: que la capa importada con clave conserve la clave, fijada a
+  la cabecera de la instantánea, y exporte cifrada; o que exportar sin clave una capa que vino
+  cifrada se rehúse. Las dos cambian lo que hace la API. **Qué la cierra**: un test que importa una
+  instantánea cifrada y la vuelve a exportar, y la encuentra cifrada —o la exportación rehusada—, con
+  su mutante; y la marca en el RFC-0001 y en `SECURITY.md` §3.14.
 
 ## F. Publicacion, cuando el circuito este cerrado
 
@@ -3922,6 +3960,8 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   identidad vieja vuelve a abrir; y la D-5 de `doc/ROTACION_DE_CUENTAS.md` se estrecha: la identidad
   vieja ya no puede seguir cobrando en una cuenta nueva, solo en la rotada si un diseño lo admite. La
   cita `recovery.rs:101` del §791 es hoy `:105`. **Sigue abierta.**
+  ⚠️ §812: la D-4, resuelta por el autor —el recifrado, aparte del diseño único, como E4 del
+  RFC-0001, construida—; las otras ocho decisiones siguen abiertas.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo

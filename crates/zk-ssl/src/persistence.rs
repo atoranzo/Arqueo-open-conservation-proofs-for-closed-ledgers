@@ -99,7 +99,7 @@ impl SovereignLayer {
         };
 
         if layer.has_existing_ledger()? {
-            layer.cargar_y_migrar(de_v1, key.as_ref())?;
+            layer.cargar_y_migrar(path, de_v1, key.as_ref())?;
         } else {
             // Ledger nuevo: escribir los parametros del sistema.
             layer.commit(&[], None)?;
@@ -968,12 +968,17 @@ impl SovereignLayer {
     /// - Con cabecera y sin clave, no se abre en claro: `ParameterMismatch`
     ///   de «cifrado en reposo», en vez de un error de formato del primer
     ///   valor sellado que se intentara leer.
+    /// - ⚠️ §812 (RFC-0001, E4): antes de abrir, `resolver_restos` resuelve lo que
+    ///   dejara un recifrado muerto a mitad junto al libro (`<libro>.recifrando`,
+    ///   `<libro>.retirado`): hacia atras antes del compromiso, hacia delante
+    ///   despues. Sin hermanos, no hace nada mas que mirar si estan.
     #[allow(clippy::type_complexity)]
     fn abrir_con_su_kdf(
         path: &str,
         key: Option<&crate::crypto::LedgerKey>,
     ) -> Result<(sled::Db, Option<crate::crypto::LedgerKey>, bool), LayerError> {
         use crate::crypto::Kdf;
+        resolver_restos(path)?;
         let db = sled::open(path).map_err(|e| StoreError::Io(e.to_string()))?;
         let guardado = db
             .get(CLAVE_KDF)
@@ -996,15 +1001,17 @@ impl SovereignLayer {
     }
 
     /// `load`, y si el libro es de la version 1, la migracion: verificar
-    /// antes de mutar.
+    /// antes de mutar. §812: recibe la ruta, porque la migracion escribe al
+    /// lado del libro (`migrar_a_kdf_v2`).
     fn cargar_y_migrar(
         &mut self,
+        path: &str,
         de_v1: bool,
         frase: Option<&crate::crypto::LedgerKey>,
     ) -> Result<(), LayerError> {
         self.load()?;
         match (de_v1, frase) {
-            (true, Some(f)) => self.migrar_a_kdf_v2(f),
+            (true, Some(f)) => self.migrar_a_kdf_v2(path, f),
             _ => Ok(()),
         }
     }
@@ -1014,45 +1021,34 @@ impl SovereignLayer {
     /// de verificar entero con la clave vieja.
     ///
     /// Abre CADA valor sellado con la clave v1 y lo vuelve a sellar con una
-    /// v2 de sal nueva, y escribe la cabecera, todo en UN lote: sled lo aplica
-    /// entero o no lo aplica, asi que el libro queda en una version o en la
-    /// otra, nunca a medias. Lo que no se sella son las tres claves de
-    /// `EN_CLARO`. Un valor que no abre con la clave v1 para la migracion
-    /// sin escribir nada y la dice: descartar sin verificar no se hace.
-    fn migrar_a_kdf_v2(&mut self, frase: &crate::crypto::LedgerKey) -> Result<(), LayerError> {
-        let db = match self.db() {
-            None => return Ok(()),
-            Some(d) => d.clone(),
-        };
-        let vieja = match &self.key {
-            Some(k) if k.kdf() == Some(crate::crypto::Kdf::Sha256V1) => k.clone(),
-            _ => return Ok(()),
-        };
-        let nueva = frase.fijar(&crate::crypto::Kdf::nuevo())?;
-        let cabecera = nueva
-            .kdf()
-            .and_then(|k| k.cabecera())
-            .ok_or_else(|| StoreError::Malformed("la clave nueva no es de la version 2".into()))?;
-        let mut lote = sled::Batch::default();
-        for item in db.iter() {
-            let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
-            if EN_CLARO.contains(&k.as_ref()) {
-                continue;
-            }
-            let claro = vieja.open(&v).map_err(|_| {
-                StoreError::Malformed(format!(
-                    "migracion del cifrado en reposo: el valor de {} no abre con la clave de la version 1",
-                    String::from_utf8_lossy(&k)
-                ))
-            })?;
-            lote.insert(k, nueva.seal(&claro)?);
+    /// v2 de sal nueva, y escribe la cabecera. Lo que no se sella son las tres
+    /// claves de `EN_CLARO`. Un valor que no abre con la clave v1 para la
+    /// migracion sin tocar el libro y la dice: descartar sin verificar no se
+    /// hace.
+    ///
+    /// ⚠️ §812: hasta aqui lo hacia «todo en UN lote: sled lo aplica entero o no
+    /// lo aplica, asi que el libro queda en una version o en la otra, nunca a
+    /// medias». Era cierto de lo que se LEE, no de lo que queda en el DISCO:
+    /// sled es un log, y el lote dejaba en los ficheros del directorio los
+    /// valores sellados con la clave v1, sin sal, que se fuerzan a la velocidad
+    /// de un hash (`SECURITY.md` §3.14). Desde el §812 la migracion es el
+    /// recifrado de la E4 con la misma frase (`recifrar_en_hermano`, al
+    /// final): un directorio nuevo con lo vivo, un cambio de nombre y el viejo
+    /// borrado entero. Entero o nada sigue valiendo.
+    fn migrar_a_kdf_v2(
+        &mut self,
+        path: &str,
+        frase: &crate::crypto::LedgerKey,
+    ) -> Result<(), LayerError> {
+        if self.db().is_none() {
+            return Ok(());
         }
-        lote.insert(CLAVE_KDF, cabecera.to_vec());
-        db.apply_batch(lote)
-            .map_err(|e| StoreError::Io(e.to_string()))?;
-        db.flush().map_err(|e| StoreError::Io(e.to_string()))?;
-        self.key = Some(nueva);
-        Ok(())
+        match &self.key {
+            Some(k) if k.kdf() == Some(crate::crypto::Kdf::Sha256V1) => {}
+            _ => return Ok(()),
+        }
+        let nueva = frase.fijar(&crate::crypto::Kdf::nuevo())?;
+        self.recifrar_en_hermano(path, nueva, QUEDA_MIGRADO)
     }
 }
 
@@ -1178,4 +1174,721 @@ mod tests_retiradas {
         }
         let _ = std::fs::remove_dir_all(&path);
     }
+}
+
+// =====================================================================
+// ⚠️ §812 (RFC-0001, E4): EL RECIFRADO DEL LIBRO, y la migracion de la E2 por
+// el mismo camino. Va al final, como el bloque del §702. Delante se reescriben
+// en sitio la apertura y la migracion, y lo de detras sube cuatro lineas.
+//
+// Por que un directorio HERMANO y no un lote en sitio: sled es un log. Un
+// `Batch` que sobrescribe cada valor cambia lo que se lee entero o nada, pero
+// los valores viejos siguen en los ficheros del directorio hasta que sled
+// reaprovecha su segmento, y eso puede no pasar nunca. Medido en el §812 sobre
+// sled 0.34.7, con un libro de dos cuentas: tras la migracion v1 -> v2 del §702,
+// sus 25 valores sellados con la clave v1 -SHA-256 sin sal- seguian en los
+// ficheros tras 200 lotes mas y tres reaperturas (`SECURITY.md` §3.14); desde
+// el §802 el mismo libro lleva 26, con `root:retir`, y en sitio quedan 26. Quien se
+// lleve el disco de un libro que migro el codigo del §702 prueba frases contra
+// ese resto a la velocidad de un hash, y la frase buena abre tambien la v2.
+//
+// El recifrado copia lo VIVO, ya sellado con la clave nueva, a un directorio
+// nuevo junto al libro, lo verifica leyendolo del disco, y cambia los nombres;
+// el directorio viejo se borra entero. Los nombres, reservados:
+//
+//   P = el libro    R = `<P>.recifrando`    V = `<P>.retirado`
+//
+// El compromiso es `rename(P, V)`: antes, una muerte deja P con la frase
+// vieja y R a medias, y la apertura siguiente borra R; despues, deja V y R
+// -o P y V-, y la apertura siguiente termina hacia delante, con la nueva.
+//
+// Lo que esto NO alcanza, y se dice en `SECURITY.md` §3.14 y en el RFC: los
+// bloques que el sistema de ficheros libera al borrar (borrar no sobrescribe),
+// las copias que guarden un SSD, un sistema copy-on-write, una instantanea o el
+// journal, y cualquier copia del directorio hecha antes.
+// =====================================================================
+
+use std::path::{Path, PathBuf};
+
+/// §812: el directorio hermano en el que se escribe el libro recifrado.
+const SUFIJO_RECIFRANDO: &str = ".recifrando";
+/// §812: el nombre que toma el libro viejo en el compromiso, hasta borrarse.
+const SUFIJO_RETIRADO: &str = ".retirado";
+/// §812: cuantas veces se mira, cada 50 ms, si el cerrojo de sled esta libre.
+/// Las mismas que `open_retry` en los tests: sled tarda a veces en soltarlo
+/// tras cerrar (la entrada 18 del `BACKLOG.md`).
+const ESPERAS_CERROJO: u32 = 10;
+/// §812 · Lo que dice un error pasado el compromiso: con que frase queda el
+/// libro. La pieza la usan dos, y no lo deja igual: el recifrado, con la frase
+/// nueva; la migracion de la version 1, con la misma con que se abrio, que es
+/// la vieja cuando la migracion la hace `recifrar` antes de recifrar.
+const QUEDA_RECIFRADO: &str = "recifrado pasado el compromiso: el libro queda con la frase NUEVA";
+const QUEDA_MIGRADO: &str = "migracion a la version 2 pasado el compromiso: el libro queda con la MISMA \
+     frase con que se abrio -la vieja, si migraba para `recifrar`-, ya en la version 2";
+
+impl SovereignLayer {
+    /// **Recifra el libro ENTERO con una frase nueva y una sal nueva**, entero
+    /// o nada (RFC-0001, E4, §812). Devuelve la capa abierta con la clave nueva.
+    ///
+    /// Los parametros son los de [`SovereignLayer::open_encrypted`], porque
+    /// el libro se abre con la frase vieja y `load` lo verifica entero antes
+    /// de tocar nada. `nueva` tiene que llevar su frase
+    /// ([`crate::crypto::LedgerKey::from_passphrase`]): se fija a una sal
+    /// nueva con el coste de la version 2. Una clave ya fijada no puede
+    /// derivar otra sal y da `Malformed` antes de escribir nada. La misma frase
+    /// se admite: cambia la sal y deja el directorio limpio, pero no protege las
+    /// copias que ya existan. Un libro de la version 1 se migra primero, con la
+    /// vieja, y despues se recifra.
+    ///
+    /// No cambia la raiz ni el contenido: el libro recifrado tiene las mismas
+    /// claves y, abiertos sus valores, los mismos bytes -tambien las
+    /// identidades retiradas del §802 y su raiz-; y lo abre tambien el codigo
+    /// del §702, con la frase nueva: el de antes del §802, como a cualquier
+    /// libro desde el §802, sin hacer valer las identidades retiradas
+    /// (SECURITY.md §3.13).
+    ///
+    /// **Lo que exige.** El libro existe, es un directorio de verdad -no un
+    /// enlace- y solo lleva lo que escribe sled; nadie lo tiene abierto; y se
+    /// puede escribir en su directorio padre, con sitio para una copia. Los
+    /// nombres `<libro>.recifrando` y `<libro>.retirado` son del recifrado: un
+    /// directorio de sled con uno de ellos junto al libro lo BORRA la apertura
+    /// siguiente (`resolver_restos`), asi que no sirven para copias.
+    ///
+    /// **El contrato.** `Ok`: el libro esta entero con la frase nueva, y ni el
+    /// ni sus hermanos guardan nada sellado con la vieja. `Err`: el libro esta
+    /// entero con UNA de las dos frases: la vieja si fallo antes del
+    /// compromiso, y la nueva si el mensaje dice que el RECIFRADO lo paso; en
+    /// ese caso, hasta la apertura siguiente, el `<libro>.retirado` -si sigue
+    /// en el disco- guarda lo sellado con la vieja, y esa apertura lo borra. Con
+    /// un libro de la version 1 hay un compromiso antes, el de su migracion: si
+    /// falla pasado ese, el mensaje lo dice, y el libro queda con la vieja, ya
+    /// en la version 2. Si el proceso muere a mitad, la apertura siguiente lo
+    /// resuelve, y el libro abre con una de las dos: antes del compromiso
+    /// vuelve atras -el libro sigue entero con la frase VIEJA y el recifrado
+    /// hay que repetirlo-, y despues termina hacia delante, con la nueva. Quien
+    /// llama prueba las dos.
+    ///
+    /// ⚠️ Lo que borra no lo sobrescribe: los bloques libres del sistema de
+    /// ficheros, un SSD, un sistema copy-on-write, sus instantaneas y las
+    /// copias que ya existan pueden seguir guardando lo sellado con la frase
+    /// vieja (`SECURITY.md` §3.14).
+    #[allow(clippy::too_many_arguments)]
+    pub fn recifrar(
+        path: &str,
+        custodian_set_root: Digest,
+        governance_set_root: Digest,
+        regulatory_limit: u64,
+        max_supply: u64,
+        max_accounts: u64,
+        vieja: crate::crypto::LedgerKey,
+        nueva: crate::crypto::LedgerKey,
+    ) -> Result<Self, LayerError> {
+        // a. La clave nueva, primero: sin frase no hay sal nueva que fijar, y
+        //    el Argon2id se paga antes de escribir nada.
+        let nueva = nueva.fijar(&crate::crypto::Kdf::nuevo())?;
+        // b. Lo que dejara una muerte anterior.
+        resolver_restos(path)?;
+        // c. El libro existe, es de sled, y nadie lo tiene abierto. Sin esto,
+        //    `open_encrypted` crearia uno vacio donde no hay libro.
+        let (p, _, _) = hermanos(path).ok_or_else(|| sin_nombre(path))?;
+        es_de_sled(&p, true)?;
+        cerrojo_libre(&p)?;
+        // d. Abrirlo con la vieja lo verifica entero (`load`); un libro de la
+        //    version 1 se migra antes, por la misma pieza y con la misma frase.
+        let mut layer = Self::open_encrypted(
+            path,
+            custodian_set_root,
+            governance_set_root,
+            regulatory_limit,
+            max_supply,
+            max_accounts,
+            Some(vieja),
+        )?;
+        // e. El recifrado.
+        layer.recifrar_en_hermano(path, nueva, QUEDA_RECIFRADO)?;
+        Ok(layer)
+    }
+
+    /// **La pieza de la E4**: copia el libro abierto en `self` a
+    /// `<path>.recifrando` con la clave `nueva`, lo verifica, cambia los
+    /// nombres y borra el viejo. La usan `recifrar` y `migrar_a_kdf_v2`, y cada
+    /// uno dice en `queda` con que frase deja el libro un error pasado el
+    /// compromiso (`QUEDA_RECIFRADO`, `QUEDA_MIGRADO`).
+    ///
+    /// Precondicion: `self.db` esta abierto sobre `path` y `load` lo verifico;
+    /// `self.key` es la clave vieja, fijada; `nueva` esta fijada a una sal
+    /// nueva de la version 2. El libro sigue abierto -con su cerrojo- hasta el
+    /// paso 7, para que nadie lo abra en medio: tras el paso 5 sled escribe por
+    /// su descriptor, en el inodo de `<path>.retirado`, y despues de abrir solo
+    /// usa la ruta para los blobs. El libro no tiene: sled 0.34.7 pasa a blob un
+    /// fragmento de mas de 128 KiB (`segment_size / 4 - 20`), parte las hojas
+    /// por encima de 16 entradas, y un valor del libro mide unos cientos de
+    /// bytes (la entrada del registro, 137 o 169 en claro). Y todo se lee
+    /// antes del paso 5.
+    fn recifrar_en_hermano(
+        &mut self,
+        path: &str,
+        nueva: crate::crypto::LedgerKey,
+        queda: &'static str,
+    ) -> Result<(), LayerError> {
+        let (p, r, v) = hermanos(path).ok_or_else(|| sin_nombre(path))?;
+        let padre = padre_de(&p).to_path_buf();
+
+        // --- 0. Comprobaciones: si alguna falla, no se ha escrito nada ---
+        let db = self
+            .db()
+            .cloned()
+            .ok_or_else(|| StoreError::Malformed("recifrado: la capa no tiene libro en disco".into()))?;
+        let vieja = self
+            .key
+            .clone()
+            .ok_or_else(|| StoreError::Malformed("recifrado: el libro no esta cifrado".into()))?;
+        es_de_sled(&p, true)?;
+        if db.tree_names().len() != 1 {
+            return Err(StoreError::Malformed(format!(
+                "{}: lleva arboles de sled que la capa no escribe; no se toca",
+                p.display()
+            ))
+            .into());
+        }
+        let cabecera = nueva
+            .kdf()
+            .and_then(|k| k.cabecera())
+            .ok_or_else(|| StoreError::Malformed("la clave nueva no es de la version 2".into()))?;
+        if existe(&v)? {
+            return Err(ya_existe(&v));
+        }
+
+        // --- 1. R nace vacio y con 0700; si ya existe, no es nuestro ---
+        let mut nace = std::fs::DirBuilder::new();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::DirBuilderExt;
+            nace.mode(0o700);
+        }
+        nace.create(&r).map_err(|e| match e.kind() {
+            std::io::ErrorKind::AlreadyExists => ya_existe(&r),
+            _ => error_io(&r, e),
+        })?;
+
+        // --- 2 a 4: copiar, verificar leyendo del disco, sincronizar ---
+        if let Err(e) = preparar_hermano(&db, &p, &r, &padre, &vieja, &nueva, &cabecera) {
+            deshacer_hermano(&r, &padre);
+            return Err(e);
+        }
+
+        // --- 5. EL COMPROMISO ---
+        // Si el `rename` mismo falla -un punto de montaje da EBUSY; Windows no
+        // renombra un directorio con ficheros abiertos-, P sigue intacto.
+        if let Err(e) = std::fs::rename(&p, &v) {
+            deshacer_hermano(&r, &padre);
+            return Err(error_io(&p, e));
+        }
+        // Pasado el compromiso no se deshace nada: un error lo dice, con la
+        // frase con que queda el libro -la nueva al recifrar, la misma al
+        // migrar-, y la apertura siguiente termina lo que falte.
+        let pasado = |e: LayerError| -> LayerError {
+            StoreError::Io(format!(
+                "{queda}; la apertura siguiente lo termina, y hasta entonces el `.retirado`, si \
+                 sigue en el disco, guarda lo sellado con la clave de antes ({e})"
+            ))
+            .into()
+        };
+        sincronizar(&padre).map_err(pasado)?;
+        punto(5).map_err(pasado)?;
+
+        // --- 6. R pasa a ser el libro ---
+        std::fs::rename(&r, &p).map_err(|e| pasado(error_io(&r, e)))?;
+        sincronizar(&padre).map_err(pasado)?;
+        punto(6).map_err(pasado)?;
+
+        // --- 7. Se suelta el libro viejo y se borra entero ---
+        // Se le da a sled su tiempo para cerrar, sin exigirlo: en Unix un
+        // fichero abierto se borra igual, y lo que sled escriba al cerrar va a
+        // un inodo sin nombre. Donde no se puede, falla, y la apertura
+        // siguiente lo borra.
+        drop(db);
+        self.db = None;
+        let _ = cerrojo_libre(&v);
+        quitar(&v).map_err(pasado)?;
+        sincronizar(&padre).map_err(pasado)?;
+        punto(7).map_err(pasado)?;
+
+        // --- 8. Se reabre el libro, ya recifrado ---
+        // Nada se recarga: lo que hay en memoria es lo que el paso 3 comprobo
+        // que dice la copia.
+        cerrojo_libre(&p).map_err(pasado)?;
+        let db = sled::open(&p).map_err(|e| pasado(StoreError::Io(e.to_string()).into()))?;
+        self.db = Some(db);
+        self.key = Some(nueva);
+        Ok(())
+    }
+}
+
+/// §812 · Pasos 2 a 4 del recifrado, todos antes del compromiso: si uno falla,
+/// quien llama borra R y el libro sigue como estaba.
+fn preparar_hermano(
+    db: &sled::Db,
+    p: &Path,
+    r: &Path,
+    padre: &Path,
+    vieja: &crate::crypto::LedgerKey,
+    nueva: &crate::crypto::LedgerKey,
+    cabecera: &[u8],
+) -> Result<(), LayerError> {
+    punto(1)?;
+    // R sigue en 0700 hasta el final del paso 4: sled crea sus ficheros con la
+    // umask -un `db` en 0644-, y mientras no tomen los modos de P solo entra
+    // en R su dueno. Los permisos de P los toma alli, ficheros y directorio.
+
+    // --- 2. Copiar lo vivo, sellado con la nueva, en UN lote ---
+    {
+        let copia = abrir_sled(r)?;
+        let mut lote = sled::Batch::default();
+        for item in db.iter() {
+            let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
+            if k.as_ref() == CLAVE_KDF {
+                continue;
+            }
+            if EN_CLARO.contains(&k.as_ref()) {
+                lote.insert(k, v);
+                continue;
+            }
+            // Un valor que no abre con la vieja para el recifrado: descartar
+            // sin verificar no se hace.
+            let claro = zeroize::Zeroizing::new(vieja.open(&v).map_err(|_| {
+                StoreError::Malformed(format!(
+                    "recifrado del libro: el valor de {} no abre con la clave vieja",
+                    String::from_utf8_lossy(&k)
+                ))
+            })?);
+            lote.insert(k, nueva.seal(&claro)?);
+        }
+        lote.insert(CLAVE_KDF, cabecera.to_vec());
+        copia.apply_batch(lote).map_err(|e| StoreError::Io(e.to_string()))?;
+        copia.flush().map_err(|e| StoreError::Io(e.to_string()))?;
+    }
+    punto(2)?;
+
+    // --- 3. Verificar la copia leyendola DEL DISCO, en claro ---
+    // Las mismas claves que el libro, mas la cabecera nueva; lo que va en
+    // claro, igual; y cada valor sellado, abierto con la nueva, dice lo mismo
+    // que el del libro abierto con la vieja. Las raices son valores del libro
+    // (`root:*`), asi que van dentro; y `pamt:` y `pmeta:`, que ninguna raiz
+    // cubre, tambien. Y las identidades retiradas del §802, `retir:{k}` y su
+    // raiz `root:retir`: van selladas, asi que el paso 2 las copia con la nueva
+    // y aqui se comparan como las demas; sin ellas, el libro recifrado no
+    // abriria, o abriria devolviendo a la vida lo que una recuperacion retiro.
+    cerrojo_libre(r)?;
+    {
+        let copia = abrir_sled(r)?;
+        let mal = |por: String| -> LayerError {
+            StoreError::Malformed(format!(
+                "recifrado del libro: la copia de {} no es el libro: {por}",
+                r.display()
+            ))
+            .into()
+        };
+        let (mut en_copia, mut con_cabecera) = (0usize, false);
+        for item in copia.iter() {
+            let (k, en_r) = item.map_err(|e| StoreError::Io(e.to_string()))?;
+            en_copia += 1;
+            let nombre = String::from_utf8_lossy(&k).into_owned();
+            if k.as_ref() == CLAVE_KDF {
+                if en_r.as_ref() != cabecera {
+                    return Err(mal("la cabecera no es la de la clave nueva".into()));
+                }
+                con_cabecera = true;
+                continue;
+            }
+            let en_p = db
+                .get(&k)
+                .map_err(|e| StoreError::Io(e.to_string()))?
+                .ok_or_else(|| mal(format!("lleva {nombre}, que el libro no lleva")))?;
+            if EN_CLARO.contains(&k.as_ref()) {
+                if en_r != en_p {
+                    return Err(mal(format!("{nombre} no es el del libro")));
+                }
+                continue;
+            }
+            let antes = zeroize::Zeroizing::new(vieja.open(&en_p)?);
+            let ahora = zeroize::Zeroizing::new(
+                nueva.open(&en_r).map_err(|_| mal(format!("{nombre} no abre con la clave nueva")))?,
+            );
+            if *antes != *ahora {
+                return Err(mal(format!("{nombre} no dice lo mismo que en el libro")));
+            }
+        }
+        let mut en_libro = 0usize;
+        for k in db.iter().keys() {
+            let k = k.map_err(|e| StoreError::Io(e.to_string()))?;
+            if k.as_ref() != CLAVE_KDF {
+                en_libro += 1;
+            }
+        }
+        if !con_cabecera || en_copia != en_libro + 1 {
+            return Err(mal(format!(
+                "{en_copia} claves en la copia, y {en_libro} en el libro mas la cabecera"
+            )));
+        }
+    }
+    cerrojo_libre(r)?;
+    punto(3)?;
+
+    // --- 4. Los permisos de P, y sincronizar: R entero, y su nombre en el padre ---
+    // Primero los modos de los ficheros y despues el del directorio, que hasta
+    // aqui era 0700: sin esto, sled dejaria la copia con la umask, y un 0700 o
+    // un 0600 del operador pasarian a 0755 o a 0644.
+    copiar_modos(p, r)?;
+    let permisos = std::fs::metadata(p).map_err(|e| error_io(p, e))?.permissions();
+    std::fs::set_permissions(r, permisos).map_err(|e| error_io(r, e))?;
+    // sled no sincroniza `conf` ni el nombre de `snap.*`; sin esto, un corte
+    // de corriente tras el compromiso podria dejar un R incompleto.
+    sincronizar_arbol(r)?;
+    sincronizar(padre)?;
+    punto(4)?;
+    Ok(())
+}
+
+/// §812 · Antes del compromiso, un fallo borra R -que solo lleva lo sellado con
+/// la nueva- y deja el libro como estaba. Sin errores: es limpieza, y si no se
+/// pudiera, la apertura siguiente lo borra.
+fn deshacer_hermano(r: &Path, padre: &Path) {
+    let _ = cerrojo_libre(r);
+    let _ = std::fs::remove_dir_all(r);
+    let _ = sincronizar(padre);
+}
+
+/// §812 · **Lo que deja una muerte a mitad de un recifrado, resuelto antes de
+/// abrir.** La llama `abrir_con_su_kdf`, asi que vale para toda apertura:
+/// `open`, `open_encrypted` y `recifrar`; tambien la del libro que el nodo
+/// abre en claro (`SovereignLayer::open`), con el mismo borrado y la misma
+/// negativa. Sin hermanos no hace nada mas que mirar si estan.
+///
+/// | en disco | murio                        | la apertura                   | abre con |
+/// |----------|------------------------------|-------------------------------|----------|
+/// | P + R    | pasos 1 a 4, o antes del 5   | borra R (solo lleva lo nuevo) | la vieja |
+/// | V + R    | entre el 5 y el 6            | R pasa a P, y V se borra      | la nueva |
+/// | P + V    | tras el rename del 6, o en 7 | borra V (todo lo de la vieja) | la nueva |
+/// | otro     | -                            | rehusa, sin tocar nada        | -        |
+///
+/// «Otro» es P + R + V, R solo, V solo, o V + R con un R sin `db`: el
+/// recifrado no los deja, pero los deja, por ejemplo, el codigo de antes del
+/// §812, que con V + R y sin P crea un libro vacio en P. Y rehusa tambien un
+/// hermano que no es un directorio de verdad o que lleva algo que no es de
+/// sled. Nunca crea un libro vacio donde habia un recifrado a medias.
+///
+/// Antes de actuar mira el cerrojo de sled de cada uno: si alguno sigue
+/// tomado, el libro esta abierto o recifrandose en otro proceso, y la
+/// respuesta es Io, sin tocar nada. Y si no puede borrar V, falla y lo dice:
+/// no se abre con lo viejo al lado sin que nadie lo vea.
+///
+/// ⚠️ Los dos nombres son RESERVADOS: no hay marca que distinga un hermano
+/// que dejo el recifrado de un directorio de sled que alguien llamo asi. Con
+/// el libro al lado, la apertura BORRA un `<libro>.recifrando` o un
+/// `<libro>.retirado` de sled que nadie tenga abierto -una copia de seguridad
+/// con ese nombre, tambien-. Lo que no es de sled no lo toca.
+fn resolver_restos(path: &str) -> Result<(), LayerError> {
+    let Some((p, r, v)) = hermanos(path) else {
+        return Ok(());
+    };
+    let (hay_r, hay_v) = (existe(&r)?, existe(&v)?);
+    if !hay_r && !hay_v {
+        return Ok(());
+    }
+    let hay_p = existe(&p)?;
+    let padre = padre_de(&p).to_path_buf();
+    if hay_r {
+        es_de_sled(&r, false)?;
+    }
+    if hay_v {
+        es_de_sled(&v, false)?;
+    }
+    let rehusa = |que: &str| -> LayerError {
+        StoreError::Malformed(format!(
+            "{}: {que}; el recifrado no deja este estado, y no se toca nada: lo resuelve una persona",
+            p.display()
+        ))
+        .into()
+    };
+    match (hay_p, hay_r, hay_v) {
+        (true, true, false) | (true, false, true) => {}
+        (false, true, true) => es_de_sled(&r, true)?,
+        (true, true, true) => return Err(rehusa("estan el libro, su `.recifrando` y su `.retirado`")),
+        (false, true, false) => return Err(rehusa("esta su `.recifrando` y no el libro")),
+        // (false, false, true); sin ningun hermano ya se volvio arriba.
+        _ => return Err(rehusa("esta su `.retirado` y no el libro")),
+    }
+    for d in [&p, &r, &v] {
+        if existe(d)? {
+            cerrojo_libre(d)?;
+        }
+    }
+    if hay_r && hay_p {
+        // Murio antes del compromiso: R solo lleva lo sellado con la nueva.
+        quitar(&r)?;
+        sincronizar(&padre)?;
+    }
+    if hay_r && !hay_p {
+        // Murio entre los dos nombres: R esta entero, verificado y
+        // sincronizado, porque los pasos 3 y 4 van antes del 5.
+        std::fs::rename(&r, &p).map_err(|e| error_io(&r, e))?;
+        sincronizar(&padre)?;
+    }
+    if hay_v {
+        // V es TODO lo sellado con la vieja.
+        quitar(&v)?;
+        sincronizar(&padre)?;
+    }
+    Ok(())
+}
+
+/// §812 · El libro y sus dos hermanos, en su mismo directorio. Se forman con
+/// `parent` y `file_name`, como el temporal del keystore, nunca pegando texto
+/// a la ruta: con una ruta acabada en `/`, pegar caeria DENTRO del libro. Una
+/// ruta sin nombre (`.`, `..`) no tiene hermanos: la apertura no resuelve
+/// nada, y recifrar o migrar rehusan.
+fn hermanos(path: &str) -> Option<(PathBuf, PathBuf, PathBuf)> {
+    let ruta = Path::new(path);
+    let nombre = ruta.file_name()?;
+    let padre = ruta.parent().unwrap_or(Path::new(""));
+    let con = |sufijo: &str| {
+        let mut n = nombre.to_os_string();
+        n.push(sufijo);
+        padre.join(n)
+    };
+    Some((padre.join(nombre), con(SUFIJO_RECIFRANDO), con(SUFIJO_RETIRADO)))
+}
+
+/// El directorio que guarda el nombre de `p`: una ruta sin directorio es del
+/// actual.
+fn padre_de(p: &Path) -> &Path {
+    match p.parent() {
+        Some(d) if !d.as_os_str().is_empty() => d,
+        _ => Path::new("."),
+    }
+}
+
+/// Si hay algo con ese nombre, sin seguir enlaces.
+fn existe(p: &Path) -> Result<bool, LayerError> {
+    match std::fs::symlink_metadata(p) {
+        Ok(_) => Ok(true),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(error_io(p, e)),
+    }
+}
+
+/// §812 · Un directorio de verdad -no un enlace- cuyas entradas son todas de
+/// sled 0.34.7: `conf`, `db`, `blobs/` con ficheros, y `snap.*`. Lo que no lo
+/// es no se copia, no se renombra y no se borra.
+fn es_de_sled(dir: &Path, exige_db: bool) -> Result<(), LayerError> {
+    let rehusa = |por: String| -> LayerError {
+        StoreError::Malformed(format!("{}: {por}; no se toca", dir.display())).into()
+    };
+    let md = std::fs::symlink_metadata(dir).map_err(|e| match e.kind() {
+        std::io::ErrorKind::NotFound => rehusa("no existe".into()),
+        _ => error_io(dir, e),
+    })?;
+    if !md.file_type().is_dir() {
+        return Err(rehusa("no es un directorio de verdad (un enlace no se sigue)".into()));
+    }
+    let mut hay_db = false;
+    for e in std::fs::read_dir(dir).map_err(|e| error_io(dir, e))? {
+        let e = e.map_err(|e| error_io(dir, e))?;
+        let tipo = e.file_type().map_err(|x| error_io(&e.path(), x))?;
+        let nombre = e.file_name();
+        let nombre = nombre.to_string_lossy();
+        let de_sled = match &*nombre {
+            "db" if tipo.is_file() => {
+                hay_db = true;
+                true
+            }
+            "conf" if tipo.is_file() => true,
+            "blobs" if tipo.is_dir() => solo_ficheros(&e.path())?,
+            n => n.starts_with("snap.") && tipo.is_file(),
+        };
+        if !de_sled {
+            return Err(rehusa(format!("lleva «{nombre}», que no es de sled")));
+        }
+    }
+    if exige_db && !hay_db {
+        return Err(rehusa("no lleva `db`: no es un libro".into()));
+    }
+    Ok(())
+}
+
+fn solo_ficheros(dir: &Path) -> Result<bool, LayerError> {
+    for e in std::fs::read_dir(dir).map_err(|e| error_io(dir, e))? {
+        let e = e.map_err(|e| error_io(dir, e))?;
+        if !e.file_type().map_err(|x| error_io(&e.path(), x))?.is_file() {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+/// §812 · Espera, acotado, a que nadie tenga el cerrojo de sled sobre
+/// `<dir>/db`. Es el mismo `flock` que toma sled 0.34.7 por fs2, y el de `std`
+/// es compatible con el. Si sigue tomado, el libro esta abierto: Io, que es lo
+/// que reintentan los `*_retry` de los tests. Sin `db`, no hay cerrojo.
+fn cerrojo_libre(dir: &Path) -> Result<(), LayerError> {
+    let ruta = dir.join("db");
+    let f = match std::fs::File::open(&ruta) {
+        Ok(f) => f,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(error_io(&ruta, e)),
+    };
+    for intento in 1..=ESPERAS_CERROJO {
+        match f.try_lock() {
+            Ok(()) => {
+                let _ = f.unlock();
+                return Ok(());
+            }
+            Err(std::fs::TryLockError::WouldBlock) if intento < ESPERAS_CERROJO => {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(std::fs::TryLockError::WouldBlock) => break,
+            Err(std::fs::TryLockError::Error(e)) => return Err(error_io(&ruta, e)),
+        }
+    }
+    Err(StoreError::Io(format!(
+        "{}: el libro esta abierto o recifrandose en otro proceso",
+        dir.display()
+    ))
+    .into())
+}
+
+/// §812 · Borra un directorio entero; si ya no esta, esta hecho.
+fn quitar(dir: &Path) -> Result<(), LayerError> {
+    match std::fs::remove_dir_all(dir) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(StoreError::Io(format!(
+            "{}: no se pudo borrar ({e}); el libro no se abre con eso al lado",
+            dir.display()
+        ))
+        .into()),
+    }
+}
+
+/// §812 · Sincroniza un directorio: es donde viven los nombres. Como el
+/// keystore del §702, solo en Unix; fuera, la durabilidad de un nombre es la
+/// que de el sistema.
+fn sincronizar(dir: &Path) -> Result<(), LayerError> {
+    #[cfg(unix)]
+    {
+        std::fs::File::open(dir)
+            .and_then(|d| d.sync_all())
+            .map_err(|e| error_io(dir, e))?;
+    }
+    #[cfg(not(unix))]
+    let _ = dir;
+    Ok(())
+}
+
+/// §812 · Sincroniza cada fichero de R y de `R/blobs`, y los dos directorios.
+fn sincronizar_arbol(dir: &Path) -> Result<(), LayerError> {
+    for e in std::fs::read_dir(dir).map_err(|e| error_io(dir, e))? {
+        let e = e.map_err(|e| error_io(dir, e))?;
+        let ruta = e.path();
+        let tipo = e.file_type().map_err(|x| error_io(&ruta, x))?;
+        if tipo.is_dir() {
+            sincronizar_arbol(&ruta)?;
+        } else {
+            std::fs::OpenOptions::new()
+                .read(true)
+                .write(cfg!(windows))
+                .open(&ruta)
+                .and_then(|f| f.sync_all())
+                .map_err(|x| error_io(&ruta, x))?;
+        }
+    }
+    sincronizar(dir)
+}
+
+/// §812 · Los modos de los ficheros del libro pasan a los de la copia: cada uno
+/// toma el de su homonimo en P, y el que no lo tiene -los `snap.*` llevan su
+/// numero-, el de `P/db`. Sled los crea con la umask, y un 0600 del operador
+/// pasaria a 0644. Fuera de Unix no hay modos que copiar.
+fn copiar_modos(p: &Path, r: &Path) -> Result<(), LayerError> {
+    #[cfg(unix)]
+    {
+        let del_db = std::fs::metadata(p.join("db")).map_err(|e| error_io(p, e))?.permissions();
+        for e in std::fs::read_dir(r).map_err(|e| error_io(r, e))? {
+            let e = e.map_err(|e| error_io(r, e))?;
+            let ruta = e.path();
+            let homonimo = p.join(e.file_name());
+            let permisos = match std::fs::symlink_metadata(&homonimo) {
+                Ok(m) => m.permissions(),
+                Err(_) if e.file_type().map(|t| t.is_file()).unwrap_or(false) => del_db.clone(),
+                Err(_) => continue,
+            };
+            std::fs::set_permissions(&ruta, permisos).map_err(|x| error_io(&ruta, x))?;
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = (p, r);
+    Ok(())
+}
+
+fn abrir_sled(dir: &Path) -> Result<sled::Db, LayerError> {
+    sled::open(dir).map_err(|e| StoreError::Io(format!("{}: {e}", dir.display())).into())
+}
+
+fn error_io(p: &Path, e: std::io::Error) -> LayerError {
+    StoreError::Io(format!("{}: {e}", p.display())).into()
+}
+
+fn ya_existe(p: &Path) -> LayerError {
+    StoreError::Malformed(format!(
+        "{}: ya existe, y el recifrado no lo crea ni lo borra; no se toca",
+        p.display()
+    ))
+    .into()
+}
+
+fn sin_nombre(path: &str) -> LayerError {
+    StoreError::Malformed(format!(
+        "{path}: la ruta no nombra el directorio del libro; el recifrado escribe a su lado"
+    ))
+    .into()
+}
+
+// §812 · Lo que inyectan los tests del recifrado al acabar el paso k: en ellos,
+// `punto(k)` entra en panico si el hilo lo pidio en `MORIR_EN`, o devuelve un
+// error si lo pidio en `FALLAR_EN`, que sigue el camino de un error de verdad
+// en ese paso -antes del compromiso, se borra R; despues, el mensaje dice con
+// que frase queda el libro-. Fuera de los tests no hace nada y no se compila
+// nada.
+//
+// El panico es una aproximacion de la muerte: desenrolla la pila y corre los
+// `Drop`, y el de sled hace `flush` y `sync_all` de lo que tenga abierto. Una
+// muerte de verdad -un SIGKILL, un `abort`- no. En cada punto, lo unico
+// abierto es el libro viejo, que el recifrado solo lee, y R se escribio con
+// `flush` en el paso 2, asi que a ese `Drop` no le queda nada pendiente que
+// cambie lo que se mide. Fuera de la suite se midio tambien con muertes de
+// verdad, sin `Drop` (§812): un `abort` al acabar cada paso y SIGKILL a
+// destiempo, en el recifrado, en la migracion y en la apertura que resuelve,
+// con el mismo resultado que aqui.
+#[cfg(test)]
+thread_local! {
+    pub(crate) static MORIR_EN: std::cell::Cell<Option<u8>> = const { std::cell::Cell::new(None) };
+    pub(crate) static FALLAR_EN: std::cell::Cell<Option<u8>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(test)]
+fn punto(k: u8) -> Result<(), LayerError> {
+    if MORIR_EN.with(|m| m.get()) == Some(k) {
+        panic!("§812: muerte inyectada al acabar el paso {k} del recifrado");
+    }
+    if FALLAR_EN.with(|m| m.get()) == Some(k) {
+        return Err(StoreError::Io(format!("§812: fallo inyectado al acabar el paso {k}")).into());
+    }
+    Ok(())
+}
+
+#[cfg(not(test))]
+#[inline(always)]
+fn punto(_: u8) -> Result<(), LayerError> {
+    Ok(())
 }

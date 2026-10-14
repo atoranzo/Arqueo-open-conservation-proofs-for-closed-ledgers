@@ -832,6 +832,101 @@ desplegado ni terceros a quien avisar: el aviso es esta sección y el asiento §
 publicado no cambia: no depende de la capa, y un sobre de rechazo con esta causa lo rechaza por su
 nombre. `AUDITORIA.md` §802.
 
+### 3.14 El libro cifrado migrado desde la versión 1 guardaba en sus ficheros lo sellado con la clave v1 — ⚠️ MEDIDO, cerrado en la biblioteca (§812)
+
+Desde el §702 (RFC-0001, E2) un libro cifrado de la versión 1 —clave `SHA-256(dominio_v1 ‖ frase)`,
+sin sal ni coste— se migra a la 2 al abrirlo con su frase. La migración sobrescribía cada valor en
+un lote sobre el mismo `sled` y hacía `flush`: lo que se lee cambiaba entero o nada, pero sled es un
+log, y los valores sobrescritos siguen en los ficheros del directorio hasta que sled reaprovecha su
+segmento, lo que puede no pasar nunca. Medido en el §812 sobre sled 0.34.7, el del `Cargo.lock`,
+buscando los bytes de cada valor sellado en los ficheros del libro: con un libro de dos cuentas, sus
+25 valores sellados con la clave v1 seguían, los 25, en los ficheros tras el lote, tras 200 lotes
+más y tras tres reaperturas (sobre el código de antes del §802; desde él, el mismo libro lleva 26,
+con `root:retir`, y el lote en sitio deja los 26); con uno de 702 cuentas, 1425 de 1425 tras el
+lote, 1356 tras 200 lotes más, y ninguno tras tres reaperturas, cuando sled rehízo sus segmentos (si
+los sobrescribió o los devolvió como bloques libres al sistema de ficheros, no se midió). Con el de
+dos cuentas siguieron los 25 tras tres reaperturas: no se puede contar con que reabrir limpie.
+Cuánto dura el resto depende de lo que el libro escriba después: en uno pequeño o quieto, no se va.
+El test del §702 miraba lo que sled devuelve, no los ficheros, y ningún documento lo decía.
+
+**El ataque.** Quien se lleve el disco —o una copia del directorio— de un libro migrado prueba
+frases contra ese resto a la velocidad de un SHA-256, unos 159 ns por intento (§702), en vez de un
+Argon2id de 64 MiB; la etiqueta de XChaCha20-Poly1305 le confirma la buena, y esa frase abre también
+la versión 2, cuya sal está en claro. El endurecimiento del RFC-0001 no protegía esos discos. **La
+ventana**: los libros que migró el código desde `2ac6db4` (§702, 07-10-2026) hasta el §812.
+
+**Lo que lo cierra** (§812, RFC-0001 E4, redactada en privado con este arreglo): la migración ya no
+escribe en sitio. Copia lo vivo, sellado con la clave nueva, a un directorio hermano
+(`<libro>.recifrando`), lo verifica en claro leyéndolo del disco, lo cambia de nombre por el libro y
+borra el viejo entero. Una muerte a mitad de la migración la resuelve la apertura siguiente, con la
+misma frase, sin dejar nada de la v1 en el directorio del libro
+(`una_muerte_en_la_migracion_v1_no_deja_en_el_directorio_lo_sellado_con_v1`, con una muerte al
+acabar cada paso). La misma pieza es `SovereignLayer::recifrar`, que cambia la frase y la sal del
+libro entero; si un recifrado muere antes de su compromiso, la apertura vuelve atrás y el libro
+sigue entero con la frase vieja, con lo sellado con ella: el recifrado hay que repetirlo; y si falla
+con un error pasado el compromiso, el `.retirado`, si sigue en el disco, guarda lo sellado con la
+vieja hasta la apertura siguiente, que lo borra. Las identidades retiradas de la §3.13 (`retir:{k}`
+y `root:retir`) van selladas, y se copian y se verifican como lo demás
+(`recifrar_conserva_las_identidades_retiradas`). Medido con mutantes: si la migración vuelve a ser
+un lote en sitio, `la_migracion_v1_no_deja_en_los_ficheros_lo_sellado_con_v1` cae con 26 de 26
+valores v1 en los ficheros (25 de 25 antes del §802); con la pieza nueva no queda ninguno en los
+ficheros del libro ni de sus hermanos, también en el de 702 cuentas.
+
+**El remedio de un libro ya migrado**: `SovereignLayer::recifrar` **con una frase nueva**. La
+biblioteca no distingue un libro migrado —aquella migración sólo escribió `meta:kdf`—, así que es a
+mano. Deja el directorio limpio de lo sellado con la v1 y con la frase vieja
+(`un_libro_migrado_por_el_702_se_limpia_recifrandolo`). Con la misma frase el directorio también
+queda limpio, pero las copias hechas desde la migración y los bloques libres siguen dando la frase
+v1 a la velocidad de un hash, y esa frase abre el libro.
+
+**Lo que la biblioteca no controla, y no se promete.** Borrar es borrar, no sobrescribir. No se
+sobrescribe antes de borrar: lo decidió el autor (§812), por recomendación de la sesión —no se
+puede medir aquí, no vale en un SSD, en un sistema copy-on-write ni con el journal, e invitaría a
+prometer—. Se borra, y se dice lo que puede seguir guardando copias:
+
+- **los bloques que el sistema de ficheros libera** al borrar el directorio viejo; y los mismos
+  bloques de otros restos: el inodo del keystore v1 que la E3 reescribe con un `rename` (deducido,
+  sin medir: en la máquina de la sesión no se podía leer el dispositivo), los segmentos que sled
+  trunca, la instantánea anterior, que `export_snapshot` trunca en sitio (la entrada 120 del
+  `BACKLOG.md`), y los `{instantánea}.tmp-descifrada` que la importación escribía EN CLARO y
+  borraba, entre `5d2833e` (28-07-2026) y `c87d7d6` (§774, 08-10-2026);
+- **un `.tmp-descifrada` entero, en claro**, si un proceso murió a mitad de una importación en esa
+  ventana: el §774 quitó el escritor y no barría. Desde el §812, por decisión del autor, la
+  importación de esa misma instantánea lo barre: si junto a ella hay un fichero con ese nombre, lo
+  borra (`la_importacion_barre_el_claro_que_dejaba_una_importacion_muerta`) y lo dice por la salida
+  de errores. Es de la sesión, reversible, que si no puede borrarlo la importación falle con un error
+  que lo nombra, sin importar nada, y que sólo borre un fichero regular: un directorio o un enlace
+  con ese nombre no se tocan. Ni la negativa ni el aviso tienen test. El de una instantánea que no
+  se vuelva a importar se busca junto a ella y se borra a mano; y borrarlo tampoco sobrescribe;
+- **la capa importada** de una instantánea cifrada nace sin clave y, si se vuelve a exportar, sale
+  en claro (la entrada 121 del `BACKLOG.md`);
+- **el hardware y el sistema de ficheros**: un SSD (su FTL, el nivelado de desgaste, TRIM), los
+  sistemas copy-on-write o de log (btrfs, ZFS, APFS, F2FS) y sus instantáneas, las de LVM, de una
+  máquina virtual o de la nube, y el journal con `data=journal`;
+- **las copias**: del directorio, las instantáneas exportadas antes y un enlace duro hecho fuera
+  siguen abriendo con la frase vieja; las de un libro migrado llevan además el resto v1;
+- **el keystore**: cambiar su frase (`load` y `save`) no cambia la clave de gasto, y una copia vieja
+  abierta con su frase vieja da la misma clave;
+- **la memoria**: swap, hibernación y volcados.
+
+**Los dos nombres son reservados**: no hay marca que distinga un hermano que dejó el recifrado de un
+directorio que alguien llamó así, y la apertura BORRA un `<libro>.recifrando` o un
+`<libro>.retirado` de sled que encuentre junto al libro y que nadie tenga abierto, también una copia
+de seguridad con ese nombre. Lo que no es de sled no lo toca.
+
+El nodo abre su libro en claro (§3.3): no tiene frase que cambiar ni resto de la v1 que limpiar, y
+cablear su cifrado queda fuera. Pero su apertura es la de la capa, y también resuelve los dos
+nombres reservados junto a su libro, con el mismo borrado y la misma negativa: un `.recifrando` o un
+`.retirado` de sled al lado del libro del nodo los resuelve al arrancar como cualquier apertura —los
+borra, o, si falta el libro y está su `.retirado`, pone el `.recifrando` en su sitio—, y un estado
+que el recifrado no deja le impide arrancar.
+
+Se redactó en privado y se publica de una vez con el código, como pide la sección 5. El aviso es
+esta sección y el asiento §812, sin GHSA, por decisión del autor: el kit publicado no está afectado
+—no depende de la capa—, así que no lleva aviso ni release. Un marcador para distinguir los libros
+ya migrados no se pone; eso es de la sesión, y el autor no lo ha decidido: sería un formato nuevo y
+daría a entender que con eso basta; es reversible. `AUDITORIA.md` §812.
+
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
 Desde agosto de 2026 esto no es solo una capa: hay cable, nodo, SDK y un
@@ -901,7 +996,11 @@ y también trae dos defensas que antes no existían.
   sin sal ni coste, cada intento fuera de línea costaba un SHA-256. Lo que
   sigue en pie: una contraseña débil sigue siendo débil —el coste encarece
   cada intento, no reduce los intentos—, y quien tenga el proceso en marcha
-  tiene la clave derivada en memoria.
+  tiene la clave derivada en memoria. ⚠️ **Corregido en el §812**: hasta aquí
+  este párrafo no decía lo que quedaba en el disco, y un libro migrado
+  guardaba en sus ficheros lo sellado con la clave v1, que se forzaba a la
+  velocidad de un hash (§3.14). Desde el §812 la migración no lo deja, y
+  `SovereignLayer::recifrar` cambia la frase y la sal del libro entero.
 
 ---
 

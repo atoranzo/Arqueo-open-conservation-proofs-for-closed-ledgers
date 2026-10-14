@@ -3,6 +3,7 @@ name = "zk-ssl"
 version = "0.1.0"
 edition = "2021"
 license.workspace = true
+rust-version = "1.89" # §812: `File::try_lock` (Rust 1.89), el cerrojo del recifrado (`cerrojo_libre`)
 
 # **LA CAPA.** ZK-Sovereign Settlement Layer.
 #

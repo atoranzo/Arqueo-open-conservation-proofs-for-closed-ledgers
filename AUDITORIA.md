@@ -54181,3 +54181,173 @@ les puso las mismas dos medidas de `--largo`, con su marca, y el pie de `bancos.
 
 **Contadores.** Ninguno cambia: ni pines, ni tests, ni vectores. El `BACKLOG.md` sigue con 44 abiertas
 y 77 resueltas.
+
+## §812 — el recifrado del libro (RFC-0001, E4): `SovereignLayer::recifrar` cambia la frase y la sal del libro entero, entero o nada, por un directorio hermano; y la migración v1→v2 del §702, que dejaba en los ficheros lo sellado con la clave v1, va por el mismo camino. Redactado en privado
+
+El commit que lleva este asiento, sobre el §811. Se redactó en privado (`spec/rfc/PROCESO.md`
+§«Fallos de seguridad»; `SECURITY.md` §5): el fallo, su medida y su arreglo se escribieron fuera del
+árbol, en clones sin remoto, y entran de una vez en este sello, con la etapa construida. Ningún sello
+anterior lo nombra. Toca `crates/zk-ssl` —`persistence.rs`, `snapshot.rs`, `tests.rs` y la
+`rust-version` de su `Cargo.toml`—; el RFC-0001; `SECURITY.md` —la §3.14, nueva, y una marca en la
+3.bis—; `BACKLOG.md`; `doc/ROTACION_DE_CUENTAS.md`; `ARQUITECTURA.md`; `spec/README.md`; el pin de la
+capa en `tools/canon.sh`; las cifras de los tres párrafos ancla y de los dos manuales institucionales
+y de `doc/ecst/VERIFICACION.md`; y este asiento. No mueve el cable, ni un vector, ni el kit, ni el
+`Cargo.lock`. No toca `crates/zk-ssl-guardian` ni la zona de la migración de Winterfell. Lo hizo Claude, en una
+sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4
+de `GENAI.md`, como pide `CLAUDE.md`: un agente lo construyó sobre `1fe3097` (§799); lo leyeron dos
+rondas de tres revisiones, y la primera pidió arreglos que se hicieron antes de la segunda; otro lo
+portó sobre `e506627` (§807), después del §802, con los arreglos de la segunda ronda y las decisiones
+del autor; tres revisiones más lo aprobaron sobre ese porte con cosas menores, que se hicieron; y la
+sesión lo trae a la punta de la cadena. El número es el siguiente del rango que el autor asignó (§800
+a §829). En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su
+sitio, y salió VERDE.
+
+**De dónde sale.** El autor pidió la E4 del RFC-0001: la tarea 9 de la lista de la sesión, sobre la
+entrada 20 del `BACKLOG.md`, «La 20: `SovereignLayer` recifra todo el libro con sal nueva en un lote
+atómico (RFC-0001 E4)». El lote en sitio que decía la tarea es justo lo que la D-G sustituye (abajo).
+Al pedirla resuelve la D-4 de `doc/ROTACION_DE_CUENTAS.md`: la K1 va aparte del diseño único de la
+52, como etapa de este RFC y no como RFC propio; cablear el cifrado en reposo del nodo no entra en lo
+que pidió, una tarea de la biblioteca. Al diseñarla, la sesión midió en
+privado que la migración del §702 dejaba un resto en disco; un recifrado hecho igual lo habría
+heredado.
+
+**El defecto.** `migrar_a_kdf_v2` sobrescribía cada valor en un `sled::Batch` sobre el mismo sled y
+hacía `flush`: lo que se lee cambiaba entero o nada, pero sled es un log, y los valores sobrescritos
+siguen en los ficheros del directorio hasta que reaprovecha su segmento. Medido con sled 0.34.7,
+buscando los bytes de cada valor sellado en los ficheros, sobre el código de `1fe3097`:
+
+| | valores v1 en los ficheros |
+|---|---|
+| libro de 2 cuentas, tras el lote | 25 de 25 |
+| … tras 200 lotes más | 25 de 25 |
+| … tras tres reaperturas | 25 de 25 |
+| libro de 702 cuentas, tras el lote | 1425 de 1425 |
+| … tras 200 lotes más | 1356 de 1425 |
+| … tras tres reaperturas | 0 de 1425 |
+
+Desde el §802 el libro de dos cuentas lleva un valor sellado más, la raíz de las identidades
+retiradas, y sobre `e506627` el lote en sitio deja 26 de 26 (con el mutante de la migración en sitio,
+y con el test del remedio). No se puede contar con que reabrir limpie: en el libro pequeño, tres
+reaperturas no quitaron ninguno. La v1 es `SHA-256(dominio_v1 ‖ frase)`, sin sal: quien se lleve el
+disco de un libro migrado prueba frases contra ese resto a unos 159 ns por intento (§702); la etiqueta
+AEAD le confirma la buena, y esa frase abre también la v2. La ventana va desde `2ac6db4` (§702,
+07-10-2026) hasta este sello. El test del §702 sólo miraba lo que sled devuelve, y ningún documento lo
+decía.
+
+**Quién lo decide.**
+- **El autor**: la E4 como etapa del RFC-0001, y con ella la K1 aparte, al pedirla, sin el nodo; y en este
+  sello, a cuatro preguntas de la sesión, cada una con la respuesta que la sesión recomendaba: (a) no
+  se sobrescribe antes de borrar —se borra, y se declara que los bloques libres del sistema de
+  ficheros, un SSD, un sistema copy-on-write o el journal pueden guardar copias—; (b) la importación de
+  una instantánea barre el `.tmp-descifrada` que dejaban las versiones `5d2833e`→`c87d7d6` —la sesión,
+  en privado, había propuesto antes sólo declararlo—; (c) el aviso es `SECURITY.md` §3.14 y este
+  asiento, sin GitHub Security Advisory; (d) las entradas 120 y 121 del `BACKLOG.md`.
+- **La sesión**, y reversible mientras el RFC siga PROPUESTO:
+  - la D-G, un directorio hermano y un cambio de nombre;
+  - la D-H, la copia verificada en claro y leída del disco antes del compromiso; lo que el protocolo
+    no deja, se rehúsa; no se abre si no se puede borrar el retirado;
+  - la D-I, el remedio a mano, `recifrar` con frase nueva, y que se admita la misma frase;
+  - **no poner un marcador** para los libros ya migrados: no se le preguntó al autor (un borrador
+    privado lo daba por suyo);
+  - que la importación falle, sin importar nada, si no puede borrar el `.tmp-descifrada`, y que sólo
+    borre un fichero regular: un directorio o un enlace con ese nombre no los escribió aquel código.
+
+**Por qué no lleva aviso de seguridad.** El fallo está en la capa, `zk-ssl`, y el kit publicado no
+depende de ella: los `[dependencies]` de `crates/zk-ssl-verify/Cargo.toml` no la nombran. Por
+`SECURITY.md` §5 no corresponde aviso ni release, y el autor eligió la §3.14 y este asiento, sin GHSA
+(c).
+
+**Lo que hace.** En `crates/zk-ssl/src/persistence.rs`, al final del fichero, detrás del bloque del
+§802. Delante, el sello reescribe en sitio `abrir_con_su_kdf`, `cargar_y_migrar` y `migrar_a_kdf_v2`,
+y lo de detrás, el bloque del §802 incluido, sube cuatro líneas; de eso sólo `migrar_a_kdf_v2` tenía
+citas, y llevan marca. `SovereignLayer::recifrar(path, …, vieja, nueva)` abre el libro
+con la vieja, y `load` lo verifica; copia lo vivo a `<libro>.recifrando`, sellado con la frase nueva,
+una sal nueva y el coste v2, en 0700 hasta tener los modos del libro; verifica la copia en claro,
+leída del disco, contra el libro, clave a clave —las raíces, y las identidades retiradas del §802,
+`retir:{k}` y `root:retir`, que van selladas y se copian y comparan como lo demás—; lo sincroniza
+todo; hace `rename(libro, <libro>.retirado)`, que es el compromiso; pone la copia en su sitio; borra
+el viejo entero y reabre. Ok deja el libro con la nueva y nada de la vieja en él ni en sus hermanos;
+Err, con una de las dos frases, y el mensaje dice cuál si se pasó el compromiso, y que hasta la
+apertura siguiente el `.retirado`, si sigue en el disco, guarda lo sellado con la de antes; una muerte
+a mitad la resuelve la apertura siguiente: antes del compromiso vuelve atrás, con la frase vieja, y
+después termina hacia delante. `migrar_a_kdf_v2` es la misma pieza con la misma frase. Toda apertura
+—también la del libro que el nodo abre en claro— resuelve antes los restos: P+R hacia atrás; V+R
+hacia delante; P+V, borra V; otro estado, o un hermano ajeno, se rehúsa sin tocar nada; un cerrojo
+tomado da Io. Los dos nombres son reservados: la apertura borra un directorio de sled con uno de
+ellos junto al libro, aunque sea una copia de seguridad. No cambia ningún formato; un libro recifrado
+lo abre el código del §702 con la frase nueva, y el de antes del §802, como a cualquier libro desde el
+§802, sin hacer valer sus identidades retiradas. La capa declara `rust-version = "1.89"`, por
+`File::try_lock`. Y en `snapshot.rs`, al principio de `import_snapshot_with_key`, `barrer_descifrada`:
+la importación de una instantánea cifrada borra el `{instantánea}.tmp-descifrada` que dejaba, EN
+CLARO, una importación muerta de una versión entre `5d2833e` y `c87d7d6`, si es un fichero regular, y
+lo dice por la salida de errores; si no puede borrarlo, falla con un error que lo nombra.
+
+**Medido**, en release y compilado desde los clones privados, con su propio target:
+- **Catorce tests nuevos**: los once de la E4 y tres del porte. Los que miden lo que queda buscan en
+  los ficheros los bytes sellados con la clave vieja, tras la migración, el recifrado, una muerte o el
+  remedio; uno mira el directorio entero con 130 agujas que incluyen el historial, tras una muerte
+  inyectada al acabar cada paso 1-7 de la migración; otro inyecta un error en los pasos 5-7, en tres
+  caminos, y comprueba que el libro abre con la frase que dice el mensaje. Los del porte: el
+  recifrado de un libro con una recuperación, en v2 y en v1, conserva la retirada, que sigue
+  rechazando; `recifrar` rehúsa una ruta sin libro y no crea ninguno; y la importación barre el claro
+  que dejaba una importación muerta. Ni la negativa del barrido cuando no puede borrar, ni su aviso
+  por la salida de errores, tienen test.
+- **Las muertes de la suite son pánicos**, que ejecutan los `Drop`. Fuera de ella, sin destructores y
+  con sus registros, y contando aparte las muertes que dejaron hermanos en el disco: sobre el código
+  de la E4 en `1fe3097`, la primera ronda hizo 14 abort al acabar cada paso, 80 SIGKILL —62 con el
+  proceso vivo, 37 con hermanos— y 80 casos de SIGKILL a destiempo en la apertura que resuelve; la segunda, 48
+  abort en cuatro caminos, 16 segundas muertes dentro de la apertura y 450 SIGKILL, 185 de ellos
+  muertes y 152 con hermanos; y otra, 50 SIGKILL a un recifrado en bucle. Sobre el porte, en
+  `e506627`, con un libro de 65 claves y una recuperación: 21 abort en los tres caminos, 18 con
+  hermanos; SIGKILL inyectado con `strace` antes de la n-ésima llamada de cada clase, 140 muertes en
+  185 casos, 118 con hermanos; 135 segundas muertes dentro de la apertura, en 180 casos; y 114
+  SIGKILL a destiempo en 120 casos, 19 con hermanos. Siempre resultó un libro entero con exactamente
+  una de las dos frases, la que tocaba, con la misma huella (y, en el porte, las mismas retiradas y nada
+  del intento muerto), sin ningún trozo de la clave vieja cuando acabó con la nueva o venía de la v1,
+  y sin hermanos. Cuando vuelve atrás, el libro sigue con la frase vieja y con todo lo sellado
+  con ella, que es el contrato. En la tabla de
+  estados, P+V lo deja también una muerte tras el cambio de nombre del paso 6, no sólo en el 7: la
+  apertura lo resuelve igual, y las dos tablas lo dicen ahora.
+- **26 mutantes, todos caen**, sobre copias: los 20 de la construcción y seis del porte. Entre ellos,
+  la migración en sitio y el recifrado en sitio, con 26 de 26 valores sellados con la clave vieja; sin
+  resolver los restos, el libro vacío que nace tras una muerte entre los dos nombres; los permisos
+  puestos antes de copiar; el recifrado por un enlace; el que pierde las retiradas; sin el rechazo de
+  la ruta sin libro; la importación que no barre, y la que sigue los enlaces.
+- **El remedio** de un libro migrado por el §702 deja 0 valores v1 y 0 de la frase vieja; y el libro
+  de 702 cuentas, rebajado a v1, pasa de 1426 trozos v1 a 0 al migrarlo por la pieza.
+- **Las suites**, desde el clon del porte: `zk-ssl` 481 pasan y 7 ignorados, el nodo 206, el sdk y el
+  cli sin cambio; clippy, un aviso en el código nuevo, `unusual_byte_groupings` en el literal
+  `0xA11CE_2`, el mismo que llevan los tests del §802; y `barrer_descifrada`, al final de
+  `snapshot.rs`, entra en el `items_after_test_module` que el fichero ya tenía. Las herramientas del bucle, más
+  `check_vectores`, `check_catalogo`, `check_tests` y `check_modulos`, con 0.
+- **Lo que la tercera revisión pidió y se hizo aquí**: la cláusula del código de antes del §802; los
+  dos puntos sueltos de la §3.14; la línea en blanco del `Cargo.toml`; la fila P+V; quitar una cifra
+  sin registro de un libro de 2026 valores —la frase que apoyaba la sostiene el de dos cuentas—; lo
+  que el barrido no borra y lo que no tiene test; la frase del nodo, que pone el `.recifrando` en su
+  sitio sólo si falta el libro y está su `.retirado`; y el tachado de la 20. Lo que pidió, además,
+  sobre las recomendaciones de la sesión y las rondas, lo dice este asiento. Y tres revisiones de este
+  sello, ya en la punta de la cadena, pidieron cosas que se hicieron antes de commitearlo; entre
+  ellas: las muertes contadas con una sola medida, con la cifra de su registro, y la frase de lo que
+  queda tras una vuelta atrás, arriba; las citas de `recifrar` y de su pieza en
+  `doc/ROTACION_DE_CUENTAS.md`, que dos líneas de comentario habían corrido, y la del RFC, que ya
+  corrió el §805; la cita de la tarea 9 entera; el marcador como cosa de la sesión; clippy; separar del
+  barrido, que es del autor, la negativa y el fichero regular, que son de la sesión; el nodo fuera
+  por el alcance de lo pedido, no por una decisión aparte; el tachado de lo que el sello deja falso en
+  la 20 y en la nota; y, en el RFC, el coste del recifrado con su medida y que, desde que suelta el
+  libro viejo en el paso 7, otro proceso puede abrirlo ya recifrado.
+
+**Contadores.** La capa, 467 -> 481. TOTAL DE SELLO 1795 -> 1809 y CON LARGOS 1932 -> 1946, en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests` 1954 -> 1968. El `BACKLOG.md`, de 44 a 46
+abiertas y 77 resueltas: abre la 120 (la exportación de la instantánea trunca en sitio) y la 121 (una
+capa importada de una instantánea cifrada nace sin clave y se reexporta en claro). La 20 sigue
+abierta por la gobernanza; su caso del recifrado pasa a resuelto, y la 52 lleva una marca por la D-4.
+
+**Lo que NO hace.** El nodo sigue en claro, y `recifrar` no se expone en el cli ni en el SDK. No cifra
+un libro en claro. No sobrescribe antes de borrar, y no alcanza los bloques libres, un SSD, un sistema
+COW o de log y sus instantáneas, ni el journal. Las copias del directorio y las instantáneas
+exportadas antes siguen abriendo con la frase vieja. Quedan sin tocar el inodo del keystore v1 tras su
+`rename` (deducido, sin medir), el `.tmp-descifrada` de una instantánea que no se vuelva a importar,
+que se borra a mano, y la 120 y la 121. No pone un marcador para los libros ya migrados. Windows, un
+corte de corriente y el «en uso» de la apertura con otro proceso vivo no están probados. Queda para el
+autor: el RFC-0001 a ACEPTADO, y con él la D-G, la D-H, la D-I y el marcador; Windows; exponer
+`recifrar` en el cli o el SDK.

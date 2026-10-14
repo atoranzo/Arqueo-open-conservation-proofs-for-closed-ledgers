@@ -181,6 +181,7 @@ impl SovereignLayer {
         path: &str,
         key: &crate::crypto::LedgerKey,
     ) -> Result<Self, LayerError> {
+        barrer_descifrada(path)?; // ⚠️ §812: el claro que dejaba una importacion muerta (al final)
         let mut buf = Vec::new();
         std::fs::File::open(path)
             .map_err(io_err)?
@@ -1574,4 +1575,38 @@ fn abrir_sellada(buf: &[u8], key: &crate::crypto::LedgerKey) -> Result<Vec<u8>, 
         _ => (Kdf::Sha256V1, buf.get(1..).unwrap_or(&[])),
     };
     key.fijar(&kdf).and_then(|k| k.open(cuerpo)).map_err(LayerError::Store)
+}
+
+/// ⚠️ §812 · **Barre el `{path}.tmp-descifrada` que dejaba una importacion muerta.** Entre `5d2833e`
+/// (28-07-2026) y `c87d7d6` (§774, 08-10-2026), `import_snapshot_with_key` escribia el estado
+/// entero EN CLARO en `{path}.tmp-descifrada`, junto a la instantanea cifrada, y lo borraba
+/// despues: un proceso que muriera entre medias lo dejaba en el disco para siempre. El §774 quito
+/// el escritor, y no barria. Desde el §812, la importacion de esa misma instantanea lo borra si es un
+/// fichero -un directorio, un enlace o cualquier otra cosa con ese nombre no los escribio aquel
+/// codigo, y no se tocan- y lo dice por la salida de errores: quien lo lea sabe asi que el estado
+/// de su libro estuvo en claro en ese disco, y borrar no sobrescribe -los bloques libres, un SSD,
+/// un sistema copy-on-write o el journal pueden seguir guardandolo (`SECURITY.md` §3.14)-. Si no
+/// puede borrarlo, la importacion falla y lo dice: no se importa con el claro al lado sin que nadie
+/// lo vea. Devuelve si lo borro. El de una instantanea que no se vuelva a importar se busca junto a
+/// ella y se borra a mano.
+pub(crate) fn barrer_descifrada(path: &str) -> Result<bool, LayerError> {
+    // El nombre, como lo formaba aquel codigo: pegando el sufijo a la ruta.
+    let resto = format!("{path}.tmp-descifrada");
+    match std::fs::symlink_metadata(&resto) {
+        Ok(m) if m.file_type().is_file() => {}
+        _ => return Ok(false),
+    }
+    std::fs::remove_file(&resto).map_err(|e| {
+        io_err(format!(
+            "{resto}: es el estado del libro EN CLARO que dejo una importacion muerta de una version \
+             entre 5d2833e y c87d7d6, y no se pudo borrar ({e}); no se importa con el al lado: hay \
+             que borrarlo a mano"
+        ))
+    })?;
+    eprintln!(
+        "aviso (§812): se borro {resto}, el estado del libro EN CLARO que dejo una importacion muerta \
+         de una version entre 5d2833e y c87d7d6; borrar no sobrescribe, y su contenido puede seguir \
+         en el disco (SECURITY.md §3.14)"
+    );
+    Ok(true)
 }

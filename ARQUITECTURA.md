@@ -55,7 +55,7 @@ custodios distintos**, no una clave; y el flujo documentado es el de
 hallazgo propio. Corregido en §361; el error se registra en vez de
 borrarse.
 
-`crates/zk-ssl` — **467 tests** (7 ignorados, declarados). Material para
+`crates/zk-ssl` — **481 tests** (7 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
 El backend STARK añade **18 circuitos** verificados por separado.
 
@@ -280,6 +280,14 @@ Desde el §702 (RFC-0001) la clave se deriva con Argon2id (RFC 9106), con sal po
 hasta entonces era SHA-256, sin sal ni coste, y un libro de antes se migra al abrirlo con su frase.
 El coste encarece cada intento de fuerza bruta, no los evita: una contraseña débil sigue siendo
 débil.
+
+Desde el §812 (RFC-0001, E4) la frase se cambia: `SovereignLayer::recifrar` vuelve a sellar el libro
+entero con una frase y una sal nuevas, en un directorio al lado que, verificado, se cambia de nombre
+por el libro, y el viejo se borra entero. ⚠️ §812: la migración del §702 sobrescribía en un lote sobre
+el mismo `sled`, y sled, que es un log, dejaba en los ficheros lo sellado con la clave de la versión
+1, que se fuerza a la velocidad de un hash (`SECURITY.md` §3.14). Desde el §812 la migración va por el
+mismo camino que el recifrado; un libro migrado antes se limpia recifrándolo con una frase nueva. Lo
+que el sistema de ficheros o el disco guarden de lo borrado no lo alcanza la capa.
 
 ## La clave de gasto ya no llega al nodo como argumento
 
@@ -1133,7 +1141,7 @@ comprueba que transferir no altera el suministro.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 34 módulos y **467 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 34 módulos y **481 tests**, frente a
 > los 2 módulos y 17 de este.
 >
 > ⚠️ §778: aquí decía **33 módulos**, la cuenta del §531, y son **34** desde

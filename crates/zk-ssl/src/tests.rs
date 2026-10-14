@@ -4107,3 +4107,908 @@ fn varias_retiradas_sobreviven_a_varios_reinicios_en_su_orden() {
     assert_eq!(claves, vec![clave_retir(0), clave_retir(1), clave_retir(2)], "una por recuperacion");
     let _ = std::fs::remove_dir_all(&path);
 }
+
+// -----------------------------------------------------------------
+// §812 (RFC-0001, E4): el recifrado, y lo que queda en los ficheros
+// -----------------------------------------------------------------
+// Al final del fichero, como los del §702: ninguna cita `tests.rs:linea` se mueve. Los que buscan
+// en los ficheros del directorio no miran lo que sled devuelve (`volcado`), sino los BYTES de cada
+// fichero: sled es un log, y lo sobrescrito sigue en ellos hasta que reaprovecha su segmento.
+
+const FRASE_VIEJA_E4: &str = "la frase vieja del libro";
+const FRASE_NUEVA_E4: &str = "la frase nueva del libro";
+
+/// Los dos hermanos del libro, formados como los forma la capa: `<libro>.recifrando` y
+/// `<libro>.retirado`, en su mismo directorio.
+fn hermanos_de(path: &str) -> (String, String) {
+    let p = std::path::Path::new(path);
+    let nombre = p.file_name().expect("nombre").to_string_lossy().into_owned();
+    let padre = p.parent().expect("padre");
+    let con = |s: &str| padre.join(format!("{nombre}{s}")).to_string_lossy().into_owned();
+    (con(".recifrando"), con(".retirado"))
+}
+
+fn hay(p: &str) -> bool {
+    std::fs::symlink_metadata(p).is_ok()
+}
+
+fn ficheros_bajo(dir: &std::path::Path, out: &mut Vec<Vec<u8>>) {
+    let Ok(entradas) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for e in entradas.flatten() {
+        let tipo = e.file_type().expect("tipo");
+        if tipo.is_dir() {
+            ficheros_bajo(&e.path(), out);
+        } else if tipo.is_file() {
+            out.push(std::fs::read(e.path()).expect("leer un fichero del libro"));
+        }
+    }
+}
+
+/// **Cuantas de las `agujas` aparecen, byte a byte, en algun fichero** bajo esos directorios; los
+/// que no existen se saltan. Cada aguja es un valor sellado: 24 bytes de nonce aleatorio delante y
+/// la etiqueta detras, mas de 40 bytes que no aparecen por azar.
+fn apariciones(dirs: &[&str], agujas: &[Vec<u8>]) -> usize {
+    let mut contenidos = Vec::new();
+    for d in dirs {
+        ficheros_bajo(std::path::Path::new(d), &mut contenidos);
+    }
+    agujas
+        .iter()
+        .filter(|a| {
+            contenidos
+                .iter()
+                .any(|c| c.windows(a.len()).any(|w| w[0] == a[0] && w == a.as_slice()))
+        })
+        .count()
+}
+
+/// Los valores sellados del libro, tal como estan en disco: todo lo que no va en claro.
+fn sellados(path: &str) -> Vec<Vec<u8>> {
+    use crate::persistence::EN_CLARO;
+    volcado(path)
+        .into_iter()
+        .filter(|(k, _)| !EN_CLARO.contains(&k.as_slice()))
+        .map(|(_, v)| v)
+        .collect()
+}
+
+fn cabecera_de(path: &str) -> Vec<u8> {
+    use crate::persistence::CLAVE_KDF;
+    sled_open_retry(path).get(CLAVE_KDF).unwrap().expect("un libro v2 lleva cabecera").to_vec()
+}
+
+/// El libro EN CLARO: cada valor sellado abierto con la frase fijada a la cabecera del libro, lo
+/// que va en claro tal cual, y sin la cabecera. Es lo que el recifrado no puede cambiar.
+fn en_claro(path: &str, frase: &str) -> Vec<(Vec<u8>, Vec<u8>)> {
+    use crate::crypto::{Kdf, LedgerKey};
+    use crate::persistence::{CLAVE_KDF, EN_CLARO};
+    let clave = LedgerKey::derivar(frase, &Kdf::de_cabecera(&cabecera_de(path)).unwrap()).unwrap();
+    volcado(path)
+        .into_iter()
+        .filter(|(k, _)| k.as_slice() != CLAVE_KDF)
+        .map(|(k, v)| {
+            if EN_CLARO.contains(&k.as_slice()) {
+                (k, v)
+            } else {
+                let c = clave.open(&v).expect("abre con la frase del libro");
+                (k, c)
+            }
+        })
+        .collect()
+}
+
+fn copiar_dir(de: &str, a: &str) {
+    std::fs::create_dir_all(a).unwrap();
+    for e in std::fs::read_dir(de).unwrap().flatten() {
+        let destino = std::path::Path::new(a).join(e.file_name());
+        if e.file_type().unwrap().is_dir() {
+            copiar_dir(e.path().to_str().unwrap(), destino.to_str().unwrap());
+        } else {
+            std::fs::copy(e.path(), destino).unwrap();
+        }
+    }
+}
+
+fn abrir_e4(path: &str, frase: &str) -> Result<SovereignLayer, LayerError> {
+    use crate::crypto::LedgerKey;
+    open_encrypted_retry(
+        path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        Some(LedgerKey::from_passphrase(frase)),
+    )
+}
+
+/// `SovereignLayer::recifrar`, reintentando como `open_encrypted_retry` solo el Io de un cerrojo
+/// que sled no ha soltado todavia: nunca el que llega pasado el compromiso.
+fn recifrar_e4(path: &str, vieja: &str, nueva: &str) -> Result<SovereignLayer, LayerError> {
+    use crate::crypto::LedgerKey;
+    for intento in 0..10 {
+        match SovereignLayer::recifrar(
+            path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            LedgerKey::from_passphrase(vieja), LedgerKey::from_passphrase(nueva),
+        ) {
+            Err(LayerError::Store(StoreError::Io(m))) if intento < 9 && !m.contains("compromiso") => {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            otro => return otro,
+        }
+    }
+    unreachable!()
+}
+
+/// Un libro cifrado con la frase vieja, con una cuenta fondeada y otra vacia, sin hermanos. Las
+/// pruebas de la emision las comparte el montaje del §704: cada test paga su Argon2id, no su STARK.
+fn libro_e4(nombre: &str) -> (String, AccountIndex, AccountIndex) {
+    let path = temp_path(nombre);
+    let (r, v) = hermanos_de(&path);
+    let _ = std::fs::remove_dir_all(&r);
+    let _ = std::fs::remove_dir_all(&v);
+    let mut layer = abrir_e4(&path, FRASE_VIEJA_E4).expect("abrir cifrado");
+    let alice = open_and_fund(&mut layer, SK_ALICE, 777_777);
+    let bob = open_and_fund(&mut layer, SK_BOB, 0);
+    (path, alice, bob)
+}
+
+fn quitar_e4(path: &str) {
+    let (r, v) = hermanos_de(path);
+    for d in [path, r.as_str(), v.as_str()] {
+        let _ = std::fs::remove_dir_all(d);
+    }
+}
+
+/// Corre `f` con una muerte inyectada al acabar el paso `paso` del recifrado
+/// (`persistence::MORIR_EN`). Dice si murio. Es una aproximacion: el panico corre los `Drop`, y el
+/// de sled hace `flush` de lo que tenga abierto, que una muerte de verdad no hace. En cada punto lo
+/// unico abierto es el libro viejo, que el recifrado solo lee, asi que no cambia lo que se mide (lo
+/// dice `persistence::punto`, con lo medido fuera de la suite con muertes de verdad).
+fn morir_en<T>(paso: u8, f: impl FnOnce() -> T) -> bool {
+    use crate::persistence::MORIR_EN;
+    MORIR_EN.with(|m| m.set(Some(paso)));
+    let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
+    MORIR_EN.with(|m| m.set(None));
+    r.is_err()
+}
+
+/// Corre `f` con un ERROR inyectado al acabar el paso `paso` del recifrado
+/// (`persistence::FALLAR_EN`): sigue el camino de un error de verdad en ese paso.
+fn fallar_en<T>(paso: u8, f: impl FnOnce() -> T) -> T {
+    use crate::persistence::FALLAR_EN;
+    FALLAR_EN.with(|m| m.set(Some(paso)));
+    let r = f();
+    FALLAR_EN.with(|m| m.set(None));
+    r
+}
+
+/// **§812: la migracion de la version 1 no deja en los ficheros lo sellado con la clave v1.** Hasta
+/// el §812 la migracion sobrescribia cada valor en un lote sobre el mismo `sled`, y los valores v1
+/// -SHA-256 sin sal- seguian en los ficheros del directorio: el test del §702 solo miraba lo que
+/// sled devuelve. Aqui se buscan sus bytes en los ficheros del libro y de sus dos hermanos.
+#[test]
+fn la_migracion_v1_no_deja_en_los_ficheros_lo_sellado_con_v1() {
+    let (path, alice, bob) = libro_e4("e4_migra");
+    let (r, v) = hermanos_de(&path);
+    rebajar_a_v1(&path, FRASE_VIEJA_E4);
+    let agujas = sellados(&path);
+    assert!(agujas.len() >= 20, "el libro tenia que llevar valores sellados: {}", agujas.len());
+    // Prueba de vida del instrumento: antes de abrir, todos estan en los ficheros.
+    assert_eq!(apariciones(&[&path], &agujas), agujas.len(), "el instrumento no ve lo que hay");
+    {
+        let layer = abrir_e4(&path, FRASE_VIEJA_E4).expect("la v1 abre con su frase");
+        assert_eq!(layer.balance_of(alice), Some(777_777));
+        assert_eq!(layer.balance_of(bob), Some(0));
+        assert_eq!(layer.total_supply(), 777_777);
+    }
+    let quedan = apariciones(&[&path, &r, &v], &agujas);
+    assert_eq!(
+        quedan,
+        0,
+        "CRITICO: tras la migracion siguen en los ficheros {quedan} de {} valores sellados con la clave v1",
+        agujas.len()
+    );
+    assert!(!hay(&r) && !hay(&v), "la migracion dejo un hermano");
+    let layer = abrir_e4(&path, FRASE_VIEJA_E4).expect("reabre en la version 2");
+    assert_eq!(layer.balance_of(alice), Some(777_777));
+    drop(layer);
+    quitar_e4(&path);
+}
+
+/// **§812 (E4): `recifrar` cambia la frase y la sal del libro entero, sin cambiar lo que dice, y no
+/// deja en los ficheros nada sellado con la vieja.** El contenido en claro es el mismo, pareja a
+/// pareja; la sal es otra, con el coste de la version 2; la frase vieja ya no abre; no queda
+/// ningun hermano; y el directorio conserva sus permisos, y `db` los suyos.
+#[test]
+fn recifrar_cambia_frase_y_sal_y_no_deja_lo_sellado_con_la_vieja() {
+    use crate::crypto::Kdf;
+    let (path, alice, bob) = libro_e4("e4_recifra");
+    let (r, v) = hermanos_de(&path);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = sled_open_retry(&path); // que sled haya soltado el libro
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o710)).unwrap();
+        std::fs::set_permissions(format!("{path}/db"), std::fs::Permissions::from_mode(0o600)).unwrap();
+    }
+    let claro_antes = en_claro(&path, FRASE_VIEJA_E4);
+    let agujas = sellados(&path);
+    let sal_antes = cabecera_de(&path)[13..].to_vec();
+    assert_eq!(apariciones(&[&path], &agujas), agujas.len(), "el instrumento no ve lo que hay");
+
+    {
+        let layer = recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4).expect("recifrar");
+        assert_eq!(layer.balance_of(alice), Some(777_777));
+        assert_eq!(layer.balance_of(bob), Some(0));
+        assert_eq!(layer.total_supply(), 777_777);
+    }
+
+    let quedan = apariciones(&[&path, &r, &v], &agujas);
+    assert_eq!(
+        quedan,
+        0,
+        "CRITICO: tras recifrar siguen en los ficheros {quedan} de {} valores sellados con la frase vieja",
+        agujas.len()
+    );
+    assert!(!hay(&r) && !hay(&v), "el recifrado dejo un hermano");
+    assert_eq!(en_claro(&path, FRASE_NUEVA_E4), claro_antes, "el recifrado cambio lo que dice el libro");
+    let cabecera = cabecera_de(&path);
+    assert!(matches!(Kdf::de_cabecera(&cabecera), Ok(Kdf::Argon2idV2 { .. })), "cabecera v2");
+    assert_ne!(cabecera[13..], sal_antes[..], "la sal no cambio");
+    let vieja = abrir_e4(&path, FRASE_VIEJA_E4);
+    assert!(
+        matches!(vieja, Err(LayerError::Store(StoreError::IntegrityFailure { .. }))),
+        "CRITICO: la frase vieja abre el libro recifrado: {:?}",
+        vieja.err()
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let modo = |p: &str| std::fs::metadata(p).unwrap().permissions().mode() & 0o7777;
+        assert_eq!(modo(&path), 0o710, "el directorio del libro perdio sus permisos");
+        assert_eq!(modo(&format!("{path}/db")), 0o600, "`db` perdio sus permisos");
+    }
+    quitar_e4(&path);
+}
+
+/// **§812 (E4): un recifrado que falla antes del compromiso no toca el libro**: el `sled` queda
+/// pareja a pareja como estaba y no queda ningun hermano. Tres fallos: (a) un valor que no abre
+/// con la vieja -una clave ajena, metida con sled en crudo, que `load` no lee-: el error la
+/// nombra, y descartarla sin verificar no se hace; (b) la frase vieja equivocada; y (c) una clave
+/// nueva ya fijada, sin frase, que no puede tomar una sal nueva.
+#[test]
+fn recifrar_que_falla_antes_del_compromiso_no_toca_el_libro() {
+    use crate::crypto::{Kdf, LedgerKey};
+    let (path, _, _) = libro_e4("e4_falla");
+    let (r, v) = hermanos_de(&path);
+    {
+        let db = sled_open_retry(&path);
+        let ajena: Vec<u8> = (0..64u32).map(|i| (i.wrapping_mul(97) ^ 0x5A) as u8).collect();
+        db.insert(b"zz:ajena", ajena).unwrap();
+        db.flush().unwrap();
+    }
+    let antes = volcado(&path);
+
+    let a = recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4);
+    match &a {
+        Err(LayerError::Store(StoreError::Malformed(m))) if m.contains("zz:ajena") => {}
+        otro => panic!("CRITICO: un valor que no abre con la vieja no paro el recifrado: {:?}", otro.as_ref().err()),
+    }
+    drop(a);
+    assert_eq!(volcado(&path), antes, "(a) el recifrado fallido toco el libro");
+    assert!(!hay(&r) && !hay(&v), "(a) el recifrado fallido dejo un hermano");
+
+    let b = recifrar_e4(&path, "otra frase", FRASE_NUEVA_E4);
+    assert!(b.is_err(), "CRITICO: otra frase recifro el libro");
+    drop(b);
+    assert_eq!(volcado(&path), antes, "(b) una frase mala toco el libro");
+    assert!(!hay(&r) && !hay(&v), "(b) una frase mala dejo un hermano");
+
+    let fijada = LedgerKey::derivar(FRASE_NUEVA_E4, &Kdf::nuevo()).unwrap();
+    let c = SovereignLayer::recifrar(
+        &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        LedgerKey::from_passphrase(FRASE_VIEJA_E4), fijada,
+    );
+    assert!(
+        matches!(c, Err(LayerError::Store(StoreError::Malformed(_)))),
+        "una clave nueva sin frase: {:?}",
+        c.as_ref().err()
+    );
+    drop(c);
+    assert_eq!(volcado(&path), antes, "(c) una clave sin frase toco el libro");
+    assert!(!hay(&r) && !hay(&v), "(c) una clave sin frase dejo un hermano");
+    quitar_e4(&path);
+}
+
+/// **§812 (E4): una muerte ANTES del compromiso deja el libro con la frase vieja.** La muerte se
+/// inyecta al acabar cada uno de los pasos 1 a 4 -crear el hermano, copiar, verificar,
+/// sincronizar-, y deja el libro y su `.recifrando`. La apertura siguiente borra el hermano, que
+/// solo lleva lo sellado con la nueva, y el libro abre con la vieja, pareja a pareja como estaba;
+/// la nueva no lo abre. Con el codigo de antes del §812 el hermano se quedaba en el disco. Y mientras
+/// el hermano lleva los ficheros que sled crea con la umask -pasos 1 a 3-, esta en 0700: solo al
+/// final del paso 4, con los modos de los ficheros ya copiados, toma el del libro.
+#[test]
+fn una_muerte_antes_del_compromiso_deja_el_libro_con_la_frase_vieja() {
+    let (base, alice, _) = libro_e4("e4_muerte_antes");
+    let antes = volcado(&base);
+    for paso in 1..=4u8 {
+        let path = temp_path(&format!("e4_muerte_antes_{paso}"));
+        quitar_e4(&path);
+        let (r, v) = hermanos_de(&path);
+        copiar_dir(&base, &path);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o751)).unwrap();
+            std::fs::set_permissions(format!("{path}/db"), std::fs::Permissions::from_mode(0o600)).unwrap();
+        }
+        let murio = morir_en(paso, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4));
+        assert!(murio, "paso {paso}: el recifrado no murio donde se le pidio");
+        assert!(hay(&path) && hay(&r) && !hay(&v), "paso {paso}: la muerte tenia que dejar el libro y su .recifrando");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let modo = |p: &str| std::fs::metadata(p).unwrap().permissions().mode() & 0o7777;
+            if paso < 4 {
+                assert_eq!(modo(&r), 0o700, "CRITICO: paso {paso}: el .recifrando se abrio antes de tener los modos del libro");
+            } else {
+                assert_eq!(modo(&r), 0o751, "paso 4: el .recifrando no tomo el modo del libro");
+                assert_eq!(modo(&format!("{r}/db")), 0o600, "paso 4: el `db` de la copia no tomo el del libro");
+            }
+        }
+
+        let layer = abrir_e4(&path, FRASE_VIEJA_E4)
+            .unwrap_or_else(|e| panic!("CRITICO: paso {paso}: el libro no abre con la frase vieja: {e}"));
+        assert_eq!(layer.balance_of(alice), Some(777_777), "paso {paso}");
+        assert_eq!(layer.total_supply(), 777_777, "paso {paso}");
+        drop(layer);
+        assert!(!hay(&r) && !hay(&v), "paso {paso}: la apertura dejo un hermano");
+        assert_eq!(volcado(&path), antes, "paso {paso}: la vuelta atras toco el libro");
+        assert!(abrir_e4(&path, FRASE_NUEVA_E4).is_err(), "CRITICO: paso {paso}: la frase nueva abre");
+        quitar_e4(&path);
+    }
+    quitar_e4(&base);
+}
+
+/// **§812 (E4): una muerte DESPUES del compromiso deja el libro con la frase nueva.** La muerte se
+/// inyecta al acabar el paso 5 (el libro pasa a `.retirado`: quedan el retirado y el
+/// `.recifrando`, sin libro), el 6 (el `.recifrando` pasa a ser el libro: quedan el libro y el
+/// retirado) y el 7 (el retirado, borrado). La apertura siguiente termina hacia delante: el libro
+/// abre con la nueva, dice lo mismo que antes, no queda ningun hermano ni nada sellado con la
+/// vieja, y la vieja no abre. Con el codigo de antes del §812, tras el paso 5 nacia un libro VACIO.
+#[test]
+fn una_muerte_despues_del_compromiso_deja_el_libro_con_la_frase_nueva() {
+    let (base, alice, _) = libro_e4("e4_muerte_despues");
+    let agujas = sellados(&base);
+    let claro = en_claro(&base, FRASE_VIEJA_E4);
+    for paso in 5..=7u8 {
+        let path = temp_path(&format!("e4_muerte_despues_{paso}"));
+        quitar_e4(&path);
+        let (r, v) = hermanos_de(&path);
+        copiar_dir(&base, &path);
+        let murio = morir_en(paso, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4));
+        assert!(murio, "paso {paso}: el recifrado no murio donde se le pidio");
+        let en_disco = (hay(&path), hay(&r), hay(&v));
+        let esperado = match paso {
+            5 => (false, true, true),
+            6 => (true, false, true),
+            _ => (true, false, false),
+        };
+        assert_eq!(en_disco, esperado, "paso {paso}: (libro, .recifrando, .retirado)");
+
+        let layer = abrir_e4(&path, FRASE_NUEVA_E4)
+            .unwrap_or_else(|e| panic!("CRITICO: paso {paso}: el libro no abre con la frase nueva: {e}"));
+        assert_eq!(layer.balance_of(alice), Some(777_777), "CRITICO: paso {paso}: el libro perdio el saldo");
+        assert_eq!(layer.total_supply(), 777_777, "CRITICO: paso {paso}: el libro perdio el suministro");
+        drop(layer);
+        assert!(!hay(&r) && !hay(&v), "paso {paso}: la apertura dejo un hermano");
+        let quedan = apariciones(&[&path, &r, &v], &agujas);
+        assert_eq!(quedan, 0, "CRITICO: paso {paso}: quedan {quedan} valores sellados con la vieja");
+        assert_eq!(en_claro(&path, FRASE_NUEVA_E4), claro, "paso {paso}: el libro no dice lo mismo");
+        assert!(abrir_e4(&path, FRASE_VIEJA_E4).is_err(), "CRITICO: paso {paso}: la frase vieja abre");
+        quitar_e4(&path);
+    }
+    quitar_e4(&base);
+}
+
+/// **§812: el remedio de un libro que migro el codigo del §702.** Esa migracion sobrescribia en un
+/// lote sobre el mismo `sled`, y aqui se reproduce tal cual: el libro abre en la version 2 y lo
+/// sellado con la clave v1 sigue en sus ficheros -el defecto, medido-. Recifrarlo con una frase
+/// nueva limpia el directorio: ni lo sellado con la v1 ni lo sellado con la v2 de la frase vieja
+/// quedan. Y la capa que devuelve `recifrar` escribe con la clave nueva.
+#[test]
+fn un_libro_migrado_por_el_702_se_limpia_recifrandolo() {
+    use crate::crypto::{Kdf, LedgerKey};
+    use crate::persistence::{CLAVE_KDF, EN_CLARO};
+    let (path, alice, _) = libro_e4("e4_remedio");
+    let (r, v) = hermanos_de(&path);
+    rebajar_a_v1(&path, FRASE_VIEJA_E4);
+    let agujas_v1 = sellados(&path);
+    {
+        // El cuerpo de `migrar_a_kdf_v2` del §702: cada valor, de la v1 a una v2 de sal nueva, en
+        // UN lote sobre el mismo sled.
+        let db = sled_open_retry(&path);
+        let v1 = LedgerKey::derivar(FRASE_VIEJA_E4, &Kdf::Sha256V1).unwrap();
+        let kdf = Kdf::nuevo();
+        let v2 = LedgerKey::derivar(FRASE_VIEJA_E4, &kdf).unwrap();
+        let mut lote = sled::Batch::default();
+        for item in db.iter() {
+            let (k, val) = item.unwrap();
+            if EN_CLARO.contains(&k.as_ref()) {
+                continue;
+            }
+            lote.insert(k, v2.seal(&v1.open(&val).unwrap()).unwrap());
+        }
+        lote.insert(CLAVE_KDF, kdf.cabecera().unwrap().to_vec());
+        db.apply_batch(lote).unwrap();
+        db.flush().unwrap();
+    }
+    let agujas_v2 = sellados(&path);
+    let restos = apariciones(&[&path], &agujas_v1);
+    println!("§812: tras la migracion en sitio, {restos} de {} valores v1 en los ficheros", agujas_v1.len());
+    assert!(restos > 0, "la migracion en sitio ya no deja el resto: el test no mide el defecto");
+
+    {
+        let mut layer = recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4).expect("recifrar");
+        layer.open_account(BaseElement::new(0xE4));
+    }
+    let v1 = apariciones(&[&path, &r, &v], &agujas_v1);
+    let v2 = apariciones(&[&path, &r, &v], &agujas_v2);
+    assert_eq!(v1, 0, "CRITICO: tras el remedio quedan {v1} valores sellados con la clave v1");
+    assert_eq!(v2, 0, "CRITICO: tras el remedio quedan {v2} valores sellados con la frase vieja");
+    let layer = abrir_e4(&path, FRASE_NUEVA_E4).expect("abre con la nueva");
+    assert_eq!(layer.balance_of(alice), Some(777_777));
+    assert_eq!(layer.account_count(), 3, "la capa recifrada no escribio con la clave nueva");
+    drop(layer);
+    quitar_e4(&path);
+}
+
+/// **§812 (E4): la apertura rehusa los estados que el recifrado no deja**, sin tocar nada y sin
+/// crear un libro vacio: (a) el libro con sus dos hermanos -lo deja, por ejemplo, el codigo de
+/// antes del §812, que crea un libro vacio donde solo estaban los hermanos-; (b) un `.recifrando`
+/// sin libro; (c) un `.retirado` sin libro.
+#[test]
+fn abrir_rehusa_los_estados_que_el_recifrado_no_deja() {
+    let basura = |d: &str| {
+        let db = sled::open(d).unwrap();
+        db.insert(b"basura", b"x".to_vec()).unwrap();
+        db.flush().unwrap();
+    };
+    let rehusa = |r: Result<SovereignLayer, LayerError>, que: &str| match r {
+        Err(LayerError::Store(StoreError::Malformed(_))) => {}
+        otro => panic!("CRITICO: {que}: {:?}", otro.err()),
+    };
+
+    let (path, _, _) = libro_e4("e4_estados");
+    let (r, v) = hermanos_de(&path);
+    basura(&r);
+    basura(&v);
+    let (vp, vr, vv) = (volcado(&path), volcado(&r), volcado(&v));
+    rehusa(abrir_e4(&path, FRASE_VIEJA_E4), "(a) abrio con sus dos hermanos al lado");
+    assert_eq!((volcado(&path), volcado(&r), volcado(&v)), (vp, vr, vv), "(a) toco algo");
+    quitar_e4(&path);
+
+    for (que, cual) in [("(b) un .recifrando sin libro", 0), ("(c) un .retirado sin libro", 1)] {
+        let solo = temp_path(&format!("e4_estados_solo_{cual}"));
+        quitar_e4(&solo);
+        let (sr, sv) = hermanos_de(&solo);
+        let hermano = if cual == 0 { &sr } else { &sv };
+        basura(hermano);
+        let antes = volcado(hermano);
+        rehusa(
+            open_retry(&solo, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS),
+            que,
+        );
+        assert!(!hay(&solo), "CRITICO: {que}: nacio un libro vacio");
+        assert_eq!(volcado(hermano), antes, "{que}: toco el hermano");
+        quitar_e4(&solo);
+    }
+}
+
+/// **§812 (E4): `recifrar` rehusa una ruta que es un enlace.** Renombrar el enlace y borrarlo
+/// quitaria solo el enlace, y el libro de verdad, al que apunta, se quedaria con todo lo sellado
+/// con la vieja mientras `recifrar` decia que si.
+#[cfg(unix)]
+#[test]
+fn recifrar_rehusa_una_ruta_que_es_un_enlace() {
+    let (real, _, _) = libro_e4("e4_enlace_real");
+    let enlace = temp_path("e4_enlace");
+    quitar_e4(&enlace);
+    let _ = std::fs::remove_file(&enlace);
+    std::os::unix::fs::symlink(&real, &enlace).unwrap();
+    let (r, v) = hermanos_de(&enlace);
+    let antes = volcado(&real);
+    let agujas = sellados(&real);
+    let res = recifrar_e4(&enlace, FRASE_VIEJA_E4, FRASE_NUEVA_E4);
+    assert!(
+        matches!(res, Err(LayerError::Store(StoreError::Malformed(_)))),
+        "CRITICO: se recifro por un enlace: {:?}",
+        res.as_ref().err()
+    );
+    drop(res);
+    assert_eq!(volcado(&real), antes, "el libro de verdad cambio");
+    assert_eq!(apariciones(&[&real], &agujas), agujas.len());
+    assert!(!hay(&r) && !hay(&v), "quedo un hermano");
+    assert!(std::fs::symlink_metadata(&enlace).unwrap().file_type().is_symlink());
+    let _ = std::fs::remove_file(&enlace);
+    quitar_e4(&real);
+}
+
+/// **§812 (E4): `recifrar` no borra lo que no es de sled.** Un fichero del operador dentro del
+/// directorio del libro se iria con el `.retirado`; el recifrado rehusa, lo nombra y no toca nada.
+#[test]
+fn recifrar_no_borra_lo_que_no_es_de_sled() {
+    let (path, _, _) = libro_e4("e4_ajeno");
+    let (r, v) = hermanos_de(&path);
+    let nota = format!("{path}/nota.txt");
+    std::fs::write(&nota, b"del operador").unwrap();
+    let antes = volcado(&path);
+    let res = recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4);
+    match &res {
+        Err(LayerError::Store(StoreError::Malformed(m))) if m.contains("nota.txt") => {}
+        otro => panic!("CRITICO: el recifrado no rehuso un fichero ajeno: {:?}", otro.as_ref().err()),
+    }
+    drop(res);
+    assert_eq!(std::fs::read(&nota).ok().as_deref(), Some(&b"del operador"[..]), "CRITICO: se borro la nota");
+    assert_eq!(volcado(&path), antes, "se toco el libro");
+    assert!(!hay(&r) && !hay(&v), "quedo un hermano");
+    quitar_e4(&path);
+}
+
+/// **§812: una muerte a mitad de la MIGRACION de la version 1 no deja en el directorio nada sellado
+/// con la clave v1.** La migracion es la via que cierra el fallo de la §3.14 de `SECURITY.md`, y
+/// las muertes de arriba solo recorren `recifrar`. Aqui se inyecta la muerte al acabar cada uno de
+/// los pasos 1 a 7 de la migracion que hace la apertura, y se reabre con la misma frase: antes del
+/// compromiso, la apertura borra el `.recifrando` y vuelve a migrar; despues, termina hacia delante.
+/// El instrumento es mas ancho que el de los otros tests: busca en TODOS los ficheros del
+/// directorio que guarda el libro, que al final solo puede llevar el libro, y no solo lo vivo de un
+/// momento, sino tambien lo que el libro llevo antes -la v2 de la que se rebajo, la v1 del rebaje y
+/// tres reescrituras con la v1- y lo que la migracion muerta dejo sellado con su sal en el
+/// `.recifrando`.
+#[test]
+fn una_muerte_en_la_migracion_v1_no_deja_en_el_directorio_lo_sellado_con_v1() {
+    use crate::crypto::{Kdf, LedgerKey};
+    use crate::persistence::EN_CLARO;
+    let base_dir = temp_path("e4_migra_muerte_base");
+    std::fs::create_dir_all(&base_dir).unwrap();
+    let base = format!("{base_dir}/libro");
+    let (alice, bob) = {
+        let mut layer = abrir_e4(&base, FRASE_VIEJA_E4).expect("abrir cifrado");
+        (open_and_fund(&mut layer, SK_ALICE, 777_777), open_and_fund(&mut layer, SK_BOB, 0))
+    };
+    // Las agujas: lo sellado con la v2 de la que se rebaja, y cada ronda con la v1.
+    let mut agujas = sellados(&base);
+    rebajar_a_v1(&base, FRASE_VIEJA_E4);
+    let v1 = LedgerKey::derivar(FRASE_VIEJA_E4, &Kdf::Sha256V1).unwrap();
+    for _ in 0..3 {
+        agujas.extend(sellados(&base));
+        let db = sled_open_retry(&base);
+        let mut lote = sled::Batch::default();
+        for item in db.iter() {
+            let (k, val) = item.unwrap();
+            if EN_CLARO.contains(&k.as_ref()) {
+                continue;
+            }
+            lote.insert(k, v1.seal(&v1.open(&val).unwrap()).unwrap());
+        }
+        db.apply_batch(lote).unwrap();
+        db.flush().unwrap();
+    }
+    agujas.extend(sellados(&base));
+    // Prueba de vida del instrumento: antes de migrar, todas estan en los ficheros.
+    assert_eq!(apariciones(&[&base_dir], &agujas), agujas.len(), "el instrumento no ve lo que hay");
+    println!(
+        "§812: {} agujas en los ficheros antes de migrar: la v2 de la que se rebajo, el rebaje y tres reescrituras v1",
+        agujas.len()
+    );
+
+    for paso in 1..=7u8 {
+        let dir = temp_path(&format!("e4_migra_muerte_{paso}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = format!("{dir}/libro");
+        let (r, v) = hermanos_de(&path);
+        copiar_dir(&base, &path);
+        let murio = morir_en(paso, || abrir_e4(&path, FRASE_VIEJA_E4));
+        assert!(murio, "paso {paso}: la migracion no murio donde se le pidio");
+        let mut todas = agujas.clone();
+        if paso <= 4 {
+            assert!(hay(&path) && hay(&r) && !hay(&v), "paso {paso}: la muerte tenia que dejar el libro y su .recifrando");
+            if hay(&format!("{r}/db")) {
+                // Lo que la migracion muerta sello con su sal: la apertura migra con otra.
+                todas.extend(sellados(&r));
+            }
+        }
+
+        let layer = abrir_e4(&path, FRASE_VIEJA_E4)
+            .unwrap_or_else(|e| panic!("CRITICO: paso {paso}: el libro no abre con su frase: {e}"));
+        assert_eq!(layer.balance_of(alice), Some(777_777), "CRITICO: paso {paso}: el libro perdio el saldo");
+        assert_eq!(layer.balance_of(bob), Some(0), "paso {paso}");
+        assert_eq!(layer.total_supply(), 777_777, "CRITICO: paso {paso}: el libro perdio el suministro");
+        drop(layer);
+        assert!(
+            matches!(Kdf::de_cabecera(&cabecera_de(&path)), Ok(Kdf::Argon2idV2 { .. })),
+            "paso {paso}: el libro no quedo en la version 2"
+        );
+        let en_dir: Vec<String> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(en_dir, vec!["libro".to_string()], "paso {paso}: el directorio lleva algo mas que el libro");
+        let quedan = apariciones(&[&dir], &todas);
+        assert_eq!(
+            quedan,
+            0,
+            "CRITICO: paso {paso}: quedan en el directorio {quedan} de {} valores sellados con la v1 o con una sal anterior",
+            todas.len()
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+    let _ = std::fs::remove_dir_all(&base_dir);
+}
+
+/// **§812: un error pasado el compromiso dice con que frase queda el libro, y es verdad.** La pieza
+/// la usan el recifrado y la migracion de la version 1, y no dejan el libro igual: el recifrado,
+/// con la frase NUEVA; la migracion, con la MISMA con que se abrio, ya en la version 2, tambien
+/// cuando la hace `recifrar` antes de recifrar un libro v1. Se inyecta un error al acabar cada uno
+/// de los pasos 5 a 7, en los tres caminos: (a) `recifrar` de un libro v2, (b) la apertura de un
+/// libro v1 y (c) `recifrar` de un libro v1, que falla en su migracion. Quien siga el mensaje
+/// encuentra el libro con la frase que dice. Hasta este arreglo el mensaje decia «la frase NUEVA»
+/// en los tres, y en (b) y (c) el libro quedaba con la vieja. Y dice que, hasta la apertura
+/// siguiente, el `.retirado` -si sigue- guarda lo sellado con la clave de antes.
+#[test]
+fn un_error_pasado_el_compromiso_dice_con_que_frase_queda_el_libro() {
+    use crate::crypto::{Kdf, LedgerKey};
+    let mensaje = |r: Result<SovereignLayer, LayerError>, que: &str| -> String {
+        match r {
+            Err(LayerError::Store(StoreError::Io(m))) if m.contains("pasado el compromiso") => m,
+            otro => panic!("{que}: tenia que dar el Io de pasado el compromiso: {:?}", otro.err()),
+        }
+    };
+    // La apertura sin reintentar el Io que llega pasado el compromiso: `open_encrypted_retry` lo
+    // reintentaria, y el reintento lo terminaria sin que nadie viera el mensaje.
+    let abrir_sin_tapar = |path: &str, frase: &str| -> Result<SovereignLayer, LayerError> {
+        for intento in 0..10 {
+            match SovereignLayer::open_encrypted(
+                path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+                Some(LedgerKey::from_passphrase(frase)),
+            ) {
+                Err(LayerError::Store(StoreError::Io(m))) if intento < 9 && !m.contains("compromiso") => {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+                otro => return otro,
+            }
+        }
+        unreachable!()
+    };
+    let (base_v2, alice, _) = libro_e4("e4_mensaje_v2");
+    let base_v1 = temp_path("e4_mensaje_v1");
+    copiar_dir(&base_v2, &base_v1);
+    rebajar_a_v1(&base_v1, FRASE_VIEJA_E4);
+    let es_v2 = |path: &str| matches!(Kdf::de_cabecera(&cabecera_de(path)), Ok(Kdf::Argon2idV2 { .. }));
+
+    for paso in 5..=7u8 {
+        // (a) recifrar un libro v2: queda con la NUEVA.
+        let path = temp_path(&format!("e4_mensaje_a_{paso}"));
+        quitar_e4(&path);
+        copiar_dir(&base_v2, &path);
+        let m = mensaje(
+            fallar_en(paso, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)),
+            &format!("(a) paso {paso}"),
+        );
+        assert!(m.contains("frase NUEVA"), "(a) paso {paso}: el mensaje no dice la nueva: {m}");
+        assert!(
+            m.contains("`.retirado`, si sigue en el disco, guarda lo sellado con la clave de antes"),
+            "(a) paso {paso}: el mensaje no dice que el retirado, si sigue, guarda lo de la vieja: {m}"
+        );
+        let layer = abrir_e4(&path, FRASE_NUEVA_E4)
+            .unwrap_or_else(|e| panic!("CRITICO: (a) paso {paso}: el mensaje dice la nueva y no abre: {e}"));
+        assert_eq!(layer.balance_of(alice), Some(777_777), "(a) paso {paso}");
+        drop(layer);
+        quitar_e4(&path);
+
+        // (b) abrir un libro v1, que se migra: queda con la MISMA, en la version 2.
+        let path = temp_path(&format!("e4_mensaje_b_{paso}"));
+        quitar_e4(&path);
+        copiar_dir(&base_v1, &path);
+        let m = mensaje(fallar_en(paso, || abrir_sin_tapar(&path, FRASE_VIEJA_E4)), &format!("(b) paso {paso}"));
+        assert!(
+            m.contains("MISMA") && !m.contains("NUEVA"),
+            "CRITICO: (b) paso {paso}: la migracion dice otra frase que la que deja: {m}"
+        );
+        let layer = abrir_e4(&path, FRASE_VIEJA_E4)
+            .unwrap_or_else(|e| panic!("CRITICO: (b) paso {paso}: el mensaje dice la misma y no abre: {e}"));
+        assert_eq!(layer.balance_of(alice), Some(777_777), "(b) paso {paso}");
+        drop(layer);
+        assert!(es_v2(&path), "(b) paso {paso}: no quedo en la version 2");
+        quitar_e4(&path);
+
+        // (c) recifrar un libro v1: falla la migracion de antes, y queda con la VIEJA, en la 2.
+        let path = temp_path(&format!("e4_mensaje_c_{paso}"));
+        quitar_e4(&path);
+        copiar_dir(&base_v1, &path);
+        let m = mensaje(
+            fallar_en(paso, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)),
+            &format!("(c) paso {paso}"),
+        );
+        assert!(
+            m.contains("MISMA") && !m.contains("NUEVA"),
+            "CRITICO: (c) paso {paso}: el mensaje manda a la frase nueva y el libro queda con la vieja: {m}"
+        );
+        let layer = abrir_e4(&path, FRASE_VIEJA_E4)
+            .unwrap_or_else(|e| panic!("CRITICO: (c) paso {paso}: el libro no abre con la vieja: {e}"));
+        assert_eq!(layer.balance_of(alice), Some(777_777), "(c) paso {paso}");
+        drop(layer);
+        assert!(es_v2(&path), "(c) paso {paso}: no quedo en la version 2");
+        assert!(abrir_e4(&path, FRASE_NUEVA_E4).is_err(), "(c) paso {paso}: la nueva abre un libro que no se recifro");
+        quitar_e4(&path);
+    }
+    quitar_e4(&base_v2);
+    quitar_e4(&base_v1);
+}
+
+/// **§812 (E4) con el §802: el recifrado conserva las identidades retiradas.** `retir:{k}` y su raiz
+/// `root:retir` van selladas, asi que el paso 2 las copia con la clave nueva y el paso 3 las
+/// compara como a las demas. Un libro con una recuperacion (X -> Y), en la version 2 y en la 1 -que
+/// `recifrar` migra antes-: tras recifrar, la capa que devuelve y la que se reabre del disco siguen
+/// con su recuperacion y su retirada, y ni X ni Y abren otra cuenta; las dos claves dicen en claro
+/// lo mismo que antes, abren con la nueva y no con la vieja; y en los ficheros no queda nada sellado
+/// con la vieja ni ningun hermano. Si el recifrado las perdiera, el libro no reabriria -sin raiz,
+/// un libro con recuperaciones no abre (§802)-, y si las perdiera tambien la carga, X volveria a
+/// abrir.
+#[test]
+fn recifrar_conserva_las_identidades_retiradas() {
+    use crate::crypto::{Kdf, LedgerKey};
+    use crate::persistence::CLAVE_KDF;
+    let es_retir = |k: &[u8]| k.starts_with(b"retir:") || k == b"root:retir";
+    let clave_de = |path: &str, frase: &str| {
+        let kdf = match sled_open_retry(path).get(CLAVE_KDF).unwrap() {
+            Some(c) => Kdf::de_cabecera(&c).unwrap(),
+            None => Kdf::Sha256V1,
+        };
+        LedgerKey::derivar(frase, &kdf).unwrap()
+    };
+    let (x, y) = (id_de(SK_ALICE), id_de(0xA11CE_2));
+    let rechaza = |l: &mut SovereignLayer, que: &str| {
+        assert_eq!(l.recovery_count(), 1, "{que}: la recuperacion");
+        assert_eq!(l.retiradas, vec![x], "CRITICO: {que}: la retirada no siguio");
+        for (nombre, id) in [("X, la retirada", x), ("Y, la recuperada", y)] {
+            let r = abrir_ajena(l, id);
+            assert!(
+                matches!(r, Err(LayerError::IdentityUnavailable)),
+                "CRITICO: {que}: tras recifrar, {nombre} abrio otra cuenta: {r:?}"
+            );
+        }
+    };
+    for v1 in [false, true] {
+        let que = if v1 { "(v1)" } else { "(v2)" };
+        let path = temp_path(if v1 { "e4_retir_v1" } else { "e4_retir_v2" });
+        quitar_e4(&path);
+        let (r, v) = hermanos_de(&path);
+        libro_con_una_recuperacion(&path, Some(LedgerKey::from_passphrase(FRASE_VIEJA_E4)));
+        if v1 {
+            rebajar_a_v1(&path, FRASE_VIEJA_E4);
+        }
+        let vieja = clave_de(&path, FRASE_VIEJA_E4);
+        let retir_antes: Vec<(Vec<u8>, Vec<u8>)> = volcado(&path)
+            .into_iter()
+            .filter(|(k, _)| es_retir(k))
+            .map(|(k, s)| {
+                let c = vieja.open(&s).expect("abre con la vieja");
+                (k, c)
+            })
+            .collect();
+        assert_eq!(retir_antes.len(), 2, "{que}: retir:0 y root:retir");
+        let agujas = sellados(&path);
+
+        {
+            let mut l = recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)
+                .unwrap_or_else(|e| panic!("CRITICO: {que}: un libro con recuperaciones no se recifra: {e}"));
+            rechaza(&mut l, &format!("{que} la capa que devuelve"));
+        }
+        {
+            let mut l = abrir_e4(&path, FRASE_NUEVA_E4)
+                .unwrap_or_else(|e| panic!("CRITICO: {que}: el libro recifrado no reabre: {e}"));
+            rechaza(&mut l, &format!("{que} reabierto"));
+        }
+        let nueva = clave_de(&path, FRASE_NUEVA_E4);
+        let vieja_v2 = LedgerKey::derivar(FRASE_VIEJA_E4, &Kdf::de_cabecera(&cabecera_de(&path)).unwrap()).unwrap();
+        let retir_ahora: Vec<(Vec<u8>, Vec<u8>)> = volcado(&path)
+            .into_iter()
+            .filter(|(k, _)| es_retir(k))
+            .map(|(k, s)| {
+                let nombre = String::from_utf8_lossy(&k).into_owned();
+                assert!(vieja.open(&s).is_err(), "CRITICO: {que}: {nombre} sigue sellado con la vieja");
+                assert!(vieja_v2.open(&s).is_err(), "CRITICO: {que}: {nombre} abre con la frase vieja");
+                let c = nueva.open(&s).unwrap_or_else(|_| panic!("{que}: {nombre} no abre con la nueva"));
+                (k, c)
+            })
+            .collect();
+        assert_eq!(retir_ahora, retir_antes, "CRITICO: {que}: las retiradas no dicen lo mismo que antes");
+        let quedan = apariciones(&[&path, &r, &v], &agujas);
+        assert_eq!(quedan, 0, "CRITICO: {que}: quedan {quedan} valores sellados con la vieja");
+        assert!(!hay(&r) && !hay(&v), "{que}: quedo un hermano");
+        quitar_e4(&path);
+    }
+}
+
+/// **§812 (E4): `recifrar` rehusa una ruta sin libro, y no crea ninguno.** (a) Una ruta que no
+/// existe y (b) un directorio vacio: `Malformed`, y ni el libro, ni su `.recifrando`, ni su
+/// `.retirado`; el directorio vacio sigue vacio. Sin el paso c de `recifrar`, `open_encrypted`
+/// crearia ahi un libro vacio con la frase vieja, lo recifraria y daria `Ok`.
+#[test]
+fn recifrar_rehusa_una_ruta_sin_libro() {
+    let path = temp_path("e4_sin_libro");
+    quitar_e4(&path);
+    let (r, v) = hermanos_de(&path);
+    let rehusa = |que: &str| {
+        let res = recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4);
+        assert!(
+            matches!(res, Err(LayerError::Store(StoreError::Malformed(_)))),
+            "CRITICO: {que}: recifrar no rehuso una ruta sin libro: {:?}",
+            res.as_ref().err()
+        );
+    };
+    rehusa("(a) una ruta que no existe");
+    assert!(!hay(&path), "CRITICO: (a) nacio un libro donde no lo habia");
+    assert!(!hay(&r) && !hay(&v), "(a) quedo un hermano");
+
+    std::fs::create_dir_all(&path).unwrap();
+    rehusa("(b) un directorio vacio");
+    assert!(
+        std::fs::read_dir(&path).unwrap().next().is_none(),
+        "CRITICO: (b) se escribio un libro en el directorio vacio"
+    );
+    assert!(!hay(&r) && !hay(&v), "(b) quedo un hermano");
+    quitar_e4(&path);
+}
+
+/// **§812: la importacion de una instantanea cifrada barre el claro que dejaba una importacion
+/// muerta.** Entre `5d2833e` y `c87d7d6` (§774), `import_snapshot_with_key` escribia el estado
+/// entero en claro en `{instantanea}.tmp-descifrada` y lo borraba despues: un proceso muerto en
+/// medio lo dejaba en el disco. (a) Con ese fichero al lado, la importacion lo borra y el estado
+/// importado es el mismo; (b) `barrer_descifrada` dice si lo borro; (c) un enlace con ese nombre no
+/// es lo que aquel codigo escribia: no se sigue, el enlace se queda y su destino no se toca. Que un
+/// DIRECTORIO con ese nombre tampoco se toca lo mide el test del §774
+/// (`una_instantanea_cifrada_se_importa_sin_escribir_el_claro_en_disco`).
+#[test]
+fn la_importacion_barre_el_claro_que_dejaba_una_importacion_muerta() {
+    use crate::crypto::LedgerKey;
+    use crate::snapshot::barrer_descifrada;
+    let (path, alice, _) = libro_e4("e4_barre");
+    let file = format!("{path}.instantanea");
+    let resto = format!("{file}.tmp-descifrada");
+    let _ = std::fs::remove_file(&file);
+    let _ = std::fs::remove_file(&resto);
+    let key = LedgerKey::from_passphrase(FRASE_VIEJA_E4);
+    let raiz = {
+        let layer = abrir_e4(&path, FRASE_VIEJA_E4).expect("abrir");
+        layer.export_snapshot(&file).expect("exportar");
+        layer.state_root()
+    };
+
+    std::fs::write(&resto, b"el estado del libro en claro, de mentira").unwrap();
+    let l = SovereignLayer::import_snapshot_with_key(&file, &key).expect("importar");
+    assert_eq!(l.state_root(), raiz, "(a) el estado importado no es el exportado");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(a)");
+    assert!(!hay(&resto), "CRITICO: (a) la importacion dejo el claro de una importacion muerta");
+
+    assert!(!barrer_descifrada(&file).expect("(b) sin resto"), "(b) dice que borro lo que no habia");
+    std::fs::write(&resto, b"otra vez").unwrap();
+    assert!(barrer_descifrada(&file).expect("(b) con resto"), "(b) no dice que lo borro");
+    assert!(!hay(&resto), "(b) dice que lo borro y sigue");
+
+    #[cfg(unix)]
+    {
+        let destino = format!("{path}.destino");
+        std::fs::write(&destino, b"del operador").unwrap();
+        std::os::unix::fs::symlink(&destino, &resto).unwrap();
+        SovereignLayer::import_snapshot_with_key(&file, &key).expect("(c) importar");
+        assert!(
+            std::fs::symlink_metadata(&resto).map(|m| m.file_type().is_symlink()).unwrap_or(false),
+            "CRITICO: (c) se borro un enlace que no escribio la importacion"
+        );
+        assert_eq!(std::fs::read(&destino).ok().as_deref(), Some(&b"del operador"[..]), "(c) se toco el destino");
+        let _ = std::fs::remove_file(&resto);
+        let _ = std::fs::remove_file(&destino);
+    }
+    let _ = std::fs::remove_file(&file);
+    quitar_e4(&path);
+}

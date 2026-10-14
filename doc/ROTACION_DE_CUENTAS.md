@@ -13,7 +13,8 @@
 decisiones, de la D-1 a la D-9 del §6, sin elegir ninguna opción. ⚠️ §799: hasta aquí decía
 «BORRADOR». Análisis sin código y sin número de RFC. Las opciones del §4 se dejan **sin elegir**:
 quién autoriza una rotación, dónde cae la hoja nueva y qué casos entran es del autor (§6). No
-cierra la 52 ni la 20.
+cierra la 52 ni la 20. ⚠️ §812: el autor resolvió la D-4 —K1, aparte del diseño único, como E4 del
+RFC-0001, construida en el §812—; las otras ocho siguen abiertas.
 
 **Procedencia**: la escribió Claude en una sesión de Claude Code en la
 nube, sobre `8c02941` (§789), fuera del paso 4 de [`GENAI.md`](../GENAI.md); la lleva el §791 de
@@ -49,7 +50,7 @@ tiene tiempo. Son el §1.2 y el §1.4.
 | **de gasto** `sk` | todo derivado y nada guardado: la identidad (`crates/stark-experiment/src/native.rs:25-48`), el nullificador (`native.rs:67-83`), la sal de la hoja (`native.rs:102-122`) y la clave de vista con su `view_id` (`native.rs:134-185`); abrir guarda la identidad, la sal y el `view_id` ya derivados (`crates/zk-ssl/src/accounts.rs:170-248`) | dos custodios, con `apply_recovery_delegated` (`crates/zk-ssl/src/recovery.rs:52-193`); el titular, no |
 | **de custodio** | `custodian_set_root` (`crates/zk-ssl/src/lib.rs:964-974`) | la gobernanza, con `apply_governance_delegated` (`crates/zk-ssl/src/governance.rs:104`) |
 | **de gobernanza** | `governance_set_root`, «INMUTABLE» (`lib.rs:975-983`) | nadie: cambiarla es crear un libro nuevo (`governance.rs:18-25`, `:30-34`) |
-| **de reposo del libro** | `LedgerKey`, de la frase que el operador da al arrancar (`lib.rs:1056-1062`; `crates/zk-ssl/src/crypto.rs:16-26`) | nadie cambia la frase (§2, caso 5) |
+| **de reposo del libro** | `LedgerKey`, de la frase que el operador da al arrancar (`lib.rs:1056-1062`; `crates/zk-ssl/src/crypto.rs:16-26`) | ~~nadie cambia la frase~~ (§2, caso 5). ⚠️ §812: la cambia `SovereignLayer::recifrar` (`crates/zk-ssl/src/persistence.rs:1230-1310`), en la biblioteca; el nodo sigue en claro |
 | **del keystore del wallet** | la frase del fichero (`crates/zk-ssl-sdk/src/keystore.rs:1-27`) | `save` con otra frase (`keystore.rs:262`) |
 | del firmante del nodo | las cabezas, con XMSS | el RFC-0015, con sus actas: **fuera** de esta nota, que es de las claves de cuenta |
 
@@ -187,12 +188,21 @@ aplica.
 ✅ **El caso 5 medido, que ya no es el de la 20.** El grep de la 20 sigue vacío, pero desde el §702
 (RFC-0001) **hay un re-sellado de todo el libro**: `migrar_a_kdf_v2` abre cada valor con la clave v1
 y lo vuelve a sellar con una v2 de sal nueva, en un solo lote de sled
-(`crates/zk-ssl/src/persistence.rs:1012-1056`); y el keystore se migra al abrirlo
-(`keystore.rs:11-21`). Es con la **misma** frase: cambiar la frase del libro sigue sin existir. Y
+(`crates/zk-ssl/src/persistence.rs:1019-1052`; ⚠️ §812: aquí decía `:1012-1056`, las líneas de antes
+del §812); y el keystore se migra al abrirlo
+(`keystore.rs:11-21`). Es con la **misma** frase: ~~cambiar la frase del libro sigue sin existir~~
+(⚠️ §812: existe desde el §812, `SovereignLayer::recifrar`, más abajo). Y
 hay una medida que la 20 no tenía: **el nodo no cifra en reposo**. Abre el libro con
 `SovereignLayer::open` (`crates/zk-ssl-node/src/main.rs:2258-2261`), que llama a `open_encrypted`
 sin clave (`persistence.rs:20-37`); `SECURITY.md:413-417` lo declara. Para el nodo no hay frase que
 cambiar.
+
+⚠️ §812: ese re-sellado en un lote dejaba en los ficheros del libro lo sellado con la clave v1, sin
+sal: sled es un log, y lo sobrescrito sigue en el directorio (`SECURITY.md` §3.14). Desde el §812
+`migrar_a_kdf_v2` va por un directorio hermano y un cambio de nombre
+(`crates/zk-ssl/src/persistence.rs:1019-1052`), y cambiar la frase del libro existe en la
+biblioteca: `SovereignLayer::recifrar` (`persistence.rs:1230-1310`), la E4 del RFC-0001. El nodo
+sigue sin cifrar en reposo.
 
 ## 3. El núcleo común: lo que cualquier opción comparte
 
@@ -325,12 +335,19 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
   la gobernanza a las suyas.
 - **G2. Por R5**: un libro nuevo con otra raíz y los reclamos de todas las cuentas.
 - **K0. El recifrado, como hoy**: solo la biblioteca, y el nodo en claro.
-- **K1. Cambiar la frase**: generalizar `migrar_a_kdf_v2` a dos frases (`persistence.rs:1022-1056`);
+- **K1. Cambiar la frase**: generalizar `migrar_a_kdf_v2` a dos frases (`persistence.rs:1038-1052`);
   en el nodo, antes, cablear el cifrado (`SECURITY.md:413-417`); en el keystore, `load` y `save` ya
   bastan (`keystore.rs:262` y `:280`). Ningún circuito y nada en el cable, como el RFC-0001, que no
-  movió `zkssl/0.4` (`spec/rfc/0001-el-kdf-de-reposo.md:12`). ✅ **No comparte pieza con las opciones
+  movió `zkssl/0.4` (`spec/rfc/0001-el-kdf-de-reposo.md:16`). ✅ **No comparte pieza con las opciones
   de cuenta** salvo `persistence.rs`, que persiste los registros: si entra en el diseño único es por
   calendario, no por mecanismo.
+  ⚠️ §812: hecha, como E4 del RFC-0001 y en la biblioteca: `SovereignLayer::recifrar`
+  (`persistence.rs:1230-1310`). Generalizar `migrar_a_kdf_v2` tal como estaba habría heredado su
+  resto: el lote en sitio dejaba en los ficheros lo sellado con la clave vieja (`SECURITY.md` §3.14).
+  Las dos van ahora por un directorio hermano (`persistence.rs:1312-1425`). Las dos citas de arriba
+  decían, hasta el §812, `persistence.rs:1022-1056` y `0001-el-kdf-de-reposo.md:12`: la segunda ya
+  estaba una línea corrida desde el §805, y el §812 movió las dos. El nodo, sin cablear: no entra en
+  lo que pidió el autor, la E4 de la biblioteca.
 
 ### V. Solo la vista, con un contador
 
@@ -364,6 +381,8 @@ opción que se elija aquí, o se derivará de `sk` y rotará con ella (D-9).
 - **D-2. Dónde cae la hoja nueva**: en su posición, en otra del mismo libro o en otro libro.
 - **D-3. Si la gobernanza entra**: G0, G1 o G2.
 - **D-4. Si el recifrado entra o va aparte**: K0 o K1, y si antes se cablea el cifrado en el nodo.
+  ✅ **Resuelta por el autor (§812)**: K1, aparte del diseño único, como E4 del RFC-0001, al pedirla;
+  cablear el cifrado del nodo no entra en lo que pidió, la E4 de la biblioteca.
 - **D-5. Los pendientes en vuelo** hacia la identidad vieja (§1.3 d): si se aceptan varados hasta el
   reembolso, si la rotación los espera o si la identidad vieja sigue cobrando. ⚠️ §802: la tercera ya no
   puede ser una cuenta nueva con la identidad vieja —una identidad retirada no vuelve a abrir—; solo un
