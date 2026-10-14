@@ -54115,3 +54115,69 @@ de un `ROJO`, la segunda no las imprime.
 **Contadores.** Los tests de `tools/canon.sh` no cambian; el canon corre un juez más y una familia
 más en el «3 duodecies». El segundo verificador, 174 -> 201 entradas. El `BACKLOG.md` sigue con 44
 abiertas y 77 resueltas: la 85 gana una nota con su marca y sigue cerrada.
+
+## §811 — los tiempos de las cabeceras de `tools/canon.sh` y `tools/bancos.sh`, remedidos o devueltos a su fuente, con marca y con un pie que dice de dónde sale cada cifra y qué no consta (tarea 34)
+
+El commit que lleva este asiento, sobre el §810. Toca sólo comentarios y dos mensajes de
+`tools/canon.sh` —la cabecera de sus niveles, «Los TRES niveles», las notas de tres filas de la tabla
+y los mensajes de `estado_completo` y `estado_bancos`— y la cabecera de `tools/bancos.sh`, más un pie
+en cada uno; y este asiento. No mueve un pin, un timeout, una compuerta ni una línea de la parte que
+se ejecuta. Del autor es elegir la tarea; la forma la propuso la sesión. Lo escribe y lo prueba Claude,
+en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó
+(§800 a §829). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el
+canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** Las cifras de tiempo de las dos cabeceras eran de sellos viejos y algunas no eran
+medidas. `--sello` decía **151 s**, los tests de sus filas en el §226; `--largo`, **~20 min**, una
+suma del §226 que nadie midió como pasada; `--completo`, **53,6 min**; «Los TRES niveles», que
+`zk-core` cuesta 33,9 minutos; «Meter 54 minutos en cada sello»; la tabla, 438 s para halo2 y 749 para
+plonk, las cifras en frío del banco F.1 (§224); `--bancos`, **~15 min**, los 779 s del §582 con 15
+bancos; y el punto 5 de los bancos, «unos 24 minutos» por `--largo`, que es una cuenta —1.440 cabezas
+a un latido por segundo— y no una medida.
+
+**Lo que hace.** Cada cifra corregida lleva su «⚠️ §811, 14-10-2026» y remite al pie, que va detrás
+del `exit` y no se ejecuta, para que ninguna línea de arriba se mueva: hay citas por línea a los dos
+ficheros en documentos vivos. El pie de `canon.sh` nombra las dos unidades —el RELOJ de la pasada y
+los TESTS, la línea «total» de la tabla— y da: catorce `--sello` VERDES, del §776 al §789, el
+14-10-2026, de 470 a 926 s de reloj y de 318 a 765 s de tests, sin la carga anotada; que de `--largo`
+ningún asiento da una pasada, y no se escribe otra suma; que la pasada de `--completo` más reciente que
+consta es la del §629, 58 min de tests, sin su reloj; y de esa misma pasada salen los 35 minutos de
+`zk-core`, los 58 en vez de 54, y 386 y 730 s en la tabla. Los dos mensajes que decían «no los ha
+corrido nadie» dicen que ningún `--completo` o `--bancos` ha pasado VERDE aquí —la foto sólo se escribe
+con el VERDE— y nombran la pasada que consta. El pie de `bancos.sh` da la serie de pasadas enteras que
+constan —779 s con 15 bancos (§582), 854 con 21 (§629), 1.185 con 22 (§636) y las dos del §709 con 24,
+1.561 s de bancos y 1.891 con las compilaciones—, y los dos `--largo` medidos el 14-10-2026 sobre
+`b6491ef`: 2.687 s el de la completitud y 2.799 el del recibo sin resolver, unos 1,9 s por cabeza.
+
+**Al juntarlo con lo que había llegado después.** La tarea se escribió sobre el árbol del §794. Desde
+entonces el §795 saldó la deuda de los tres avisos de plonk y el §804 sacó el banco de los cortes de la
+pasada (punto 5). Se queda lo de los dos: la fila de plonk conserva su pin de avisos a 0 y su nota del
+§795, con la cifra del §629 delante; y la cabecera de los bancos, la del §804. Y el pie se ajusta: hoy
+hay 26 `tools/banco_*.sh` y una pasada corre 25, y de esos el único que no ha corrido en ninguna pasada
+entera que conste es `reinicio` (§783).
+
+**Medido.** Las cifras del pie son las de los asientos que cita y, las del 14-10-2026, las de los
+registros de las corridas de la sesión de ese día. La revisión pidió quitar las que no salen de un
+registro que se conserve: las muestras de carga, el «hoy son 25» de un mensaje que se imprime en cada
+invocación, y, en esta vuelta, lo que tarda la recompilación de `reinicio` y el banco con su nodo ya
+compilado, que se midió una vez y no se guardó: el pie dice que no consta. Un agente lo escribió y lo
+revisaron escépticos en tres vueltas: la primera y la segunda encontraron la última pasada de
+`--bancos` mal nombrada (era la del §709, no la del §636), los 54 minutos atribuidos al §260 en vez de
+al §226, las unidades mezcladas y las cifras de carga sin registro; la tercera lo aprobó con cosas
+menores, hechas aquí. `bash -n` sobre los dos ficheros, `bash tools/canon.sh --lista` y las once
+herramientas del bucle, más `check_vectores` y `check_catalogo`, con 0. El canon, `bash tools/canon.sh
+--sello`: VERDE.
+
+**Lo que NO hace.** No mide una pasada de `--largo`, ni el reloj de un `--completo`, ni una de
+`--bancos` con los 25, ni nada en una máquina tranquila: cada pie lo dice. No mide lo que el banco de
+`reinicio` añade a una pasada. Y no recoge en los scripts lo que vio la revisión el 14-10-2026 sobre
+`b6491ef`: con carga de 4 a 5, `banco_reinicio` cayó ROJO una vez de seis, en la vuelta de SIGTERM,
+porque el nodo nuevo no reabre su libro mientras el que muere tiene aún el cerrojo de sled
+(`WouldBlock`); las otras cinco, VERDES en 4 a 6 s. Es de disponibilidad y falla cerrado —el nodo se
+niega a abrir, que es lo seguro—, pero toca la 18, que el §783 dio por cerrada, y lo decide el autor.
+Tampoco toca las cabeceras de `banco_completitud.sh` y `banco_mentiroso_sin_resolver.sh`: el §803 ya
+les puso las mismas dos medidas de `--largo`, con su marca, y el pie de `bancos.sh` lo dice.
+
+**Contadores.** Ninguno cambia: ni pines, ni tests, ni vectores. El `BACKLOG.md` sigue con 44 abiertas
+y 77 resueltas.

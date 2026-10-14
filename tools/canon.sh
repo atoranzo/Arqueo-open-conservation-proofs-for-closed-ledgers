@@ -5,19 +5,19 @@
 # a mano, y por eso `zk-ssl-wire` paso SEIS sellos sin que nadie corriera
 # sus tests.
 #
-#     bash tools/canon.sh --sello      # cada bloque · **151 s**
-#     bash tools/canon.sh --largo      # + halo2 y plonk · **~20 min**
-#     bash tools/canon.sh --completo   # + zk-core · **53,6 min**
+#     bash tools/canon.sh --sello      # cada bloque · **470 a 926 s** de reloj (⚠️ §811, 14-10-2026)
+#     bash tools/canon.sh --largo      # + halo2 y plonk · sin medir (⚠️ §811, 14-10-2026)
+#     bash tools/canon.sh --completo   # + zk-core · **58 min** de tests, §629 (⚠️ §811, 14-10-2026)
 #
-# ⚠️ Estos tiempos los midio el CANON, no los bancos (§226, primera
+# ⚠️ §811, 14-10-2026: las cifras de los niveles, y lo que consta de cada uno,
+# al pie. Las de antes las midio el CANON, no los bancos (§226, primera
 # pasada de `--completo`): 151 + 347 (halo2) + 689 (plonk) + 2.032
 # (zk-core) = **3.217 s**. Los bancos F.1 y G.2 daban cifras mayores
-# porque midieron en FRIO; el canon mide con el `target` caliente,
-# que es como se corre de verdad. La diferencia no es pequeña:
-# zk-core 2.032 s aqui frente a los 2.317 que sumaban las dos
-# invocaciones separadas de G.2.
+# porque midieron en FRIO; el canon mide con el `target` caliente, que es
+# como se corre de verdad. La diferencia no es pequeña: zk-core 2.032 s
+# aqui frente a los 2.317 que sumaban las dos invocaciones separadas de G.2.
 #     bash tools/canon.sh --lista      # solo enseña la tabla, no ejecuta
-#     bash tools/canon.sh --bancos     # los bancos, todos (tools/bancos.sh) · **~15 min**
+#     bash tools/canon.sh --bancos     # los bancos, todos (tools/bancos.sh) · ⚠️ §811, 14-10-2026
 #                                      # (⚠️ §804: menos el de los cortes, que se corre aparte:
 #                                      # su punto 5)
 #     bash tools/canon.sh --conservados  # spec/vectors/<version>/, cada uno con el kit de SU
@@ -53,16 +53,16 @@
 #
 # ## Los TRES niveles, y por que tres (§225)
 #
-# `zk-core` cuesta **33,9 minutos** medidos por el canon (2.032 s). G.2
-# lo midio en dos invocaciones separadas y en frio: 1.472 s los 73 tests
-# de biblioteca con 8 hilos mas **845 s la ceremonia**. Y no hay hilo
-# que lo arregle: medido, generar la prueba añade un 5 % y rayon un
-# 17 % — **el coste es SINTETIZAR el circuito**, y `ark-r1cs-std`
-# sintetiza en serie.
+# `zk-core` cuesta **35 minutos** medidos por el canon (2.103 s, §629;
+# ⚠️ §811, 14-10-2026: decia 33,9, los 2.032 s del §226). G.2 lo midio en
+# dos invocaciones separadas y en frio: 1.472 s los 73 tests de biblioteca
+# con 8 hilos mas **845 s la ceremonia**. Y no hay hilo que lo arregle:
+# medido, generar la prueba añade un 5 % y rayon un 17 % — **el coste es
+# SINTETIZAR el circuito**, y `ark-r1cs-std` sintetiza en serie.
 #
-# Meter 54 minutos en cada sello garantizaria que alguien acabe saltandose
-# la compuerta, y una compuerta que se salta no protege. Es exactamente lo
-# que le paso a `check_tests.py`.
+# Meter 58 minutos en cada sello (⚠️ §811, 14-10-2026: decia 54) garantizaria
+# que alguien acabe saltandose la compuerta, y una compuerta que se salta no
+# protege. Es exactamente lo que le paso a `check_tests.py`.
 #
 # ⚠️ **El nivel `--completo` NO lo fuerza nadie.** Es disciplina, no
 # compuerta, y la disciplina es justo lo que ha fallado seis veces en este
@@ -148,9 +148,9 @@ winter-prover      sello       6   0   0    60  FORK de winterfell 0.13.1, APAGA
 winter-verifier    sello       0   0   0    60  FORK de winterfell 0.13.1, APAGADO (§533): upstream no trae tests; 0 es CORRECTO
 settlement-prover  sello       0   0   0   300  sin tests
 nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
-halo2-experiment   largo      27   0   0  1200  caro: 438 s medidos
-plonk-experiment   largo      36   0   0  1800  caro: 749 s medidos · §795: la DEUDA de 3 warnings, saldada: eran UN aviso -un use sin usar de dusk_bytes::Serializable en persistent_nullifier_registry.rs, cuyo to_bytes ya era el inherente de BlsScalar- y las dos lineas de resumen de cargo, (lib) y (lib test), que el contador cuenta porque empiezan por warning; quitado el use quedan 0 lineas, y 36 de 36 en 1374 s de pared y 1973 s de CPU con la maquina cargada (carga 5 a 14 en 4 nucleos): cabe en el timeout
-zk-core            completo   74   0  10  3600  2075 s medidos en 6cb8883 (§260). La nota anterior (§225) decia 38,6 min = 1472 lib + 845 ceremonia: envejecio A LA BAJA. Los 10 warnings son de `ceremony`, no suyos
+halo2-experiment   largo      27   0   0  1200  caro: 386 s medidos en el §629, maquina del autor (⚠️ §811, 14-10-2026: decia 438 s, la cifra en frio del banco F.1)
+plonk-experiment   largo      36   0   0  1800  caro: 730 s medidos en el §629, maquina del autor (⚠️ §811, 14-10-2026: decia 749 s, la cifra en frio del banco F.1) · §795: la DEUDA de 3 warnings, saldada: eran UN aviso -un use sin usar de dusk_bytes::Serializable en persistent_nullifier_registry.rs, cuyo to_bytes ya era el inherente de BlsScalar- y las dos lineas de resumen de cargo, (lib) y (lib test), que el contador cuenta porque empiezan por warning; quitado el use quedan 0 lineas, y 36 de 36 en 1374 s de pared y 1973 s de CPU con la maquina cargada (carga 5 a 14 en 4 nucleos): cabe en el timeout
+zk-core            completo   74   0  10  3600  2075 s medidos en 6cb8883 (§260). La nota anterior (§225) decia 38,6 min = 1472 lib + 845 ceremonia: envejecio A LA BAJA. Los 10 warnings son de `ceremony`, no suyos · ⚠️ §811, 14-10-2026: el §629 midio 2.103 s, en la maquina del autor
 FIN_TABLA
 )
 
@@ -217,7 +217,7 @@ estado_completo() {
       fi
     fi
   else
-    msg "  ultimo --completo: **NUNCA**. Los 54 min del nivel completo no los ha corrido nadie."
+    msg "  ultimo --completo: **NUNCA**. Ningun --completo ha pasado VERDE aqui; el del §629 fueron 58 min de tests."
   fi
 }
 
@@ -241,7 +241,7 @@ estado_bancos() {
       fi
     fi
   else
-    msg "  ultimo --bancos: **NUNCA** desde que se anotan (§582). Los ~15 min de --bancos no los ha corrido nadie."
+    msg "  ultimo --bancos: **NUNCA** desde que se anotan (§582). Ningun --bancos ha pasado VERDE aqui; el del §709 tardo 1.891 s."
   fi
 }
 
@@ -726,3 +726,62 @@ else
 fi
 msg "   salida integra en $OUT/"
 exit $rojo
+
+# ── AL PIE (⚠️ §811, 14-10-2026): los tiempos de la cabecera, remedidos ────────
+# Va DESPUES del `exit` y no se ejecuta. Esta aqui y no arriba para que
+# ninguna linea de arriba se mueva: las citas por linea a este fichero, en los
+# documentos vivos, siguen señalando lo que señalaban. Cada cifra corregida
+# arriba lleva su «⚠️ §811» y remite a este pie.
+#
+# ⚠️ §811, 14-10-2026: dos unidades, y arriba se dicen. El RELOJ es lo que tarda
+# la pasada entera. Los TESTS son la linea «total» de la tabla: la suma de lo
+# que tarda el `cargo test` de cada fila, compilacion incluida (el bloque
+# «1 · los tests, crate a crate»). Los 151 s y los 53,6 min de antes eran de
+# tests (§226). Arriba, `--sello` da el reloj, y `--completo` los tests: el
+# reloj de un `--completo` no consta.
+#
+# ⚠️ §811, 14-10-2026: `--sello` decia **151 s**, los tests de sus filas en el
+# §226. Catorce `--sello` VERDES, del §776 al §789, el 14-10-2026 entre las
+# 08:01 y las 12:02 (UTC), en el contenedor de una sesion: de 470 a 926 s de
+# reloj (mediana 579) y de 318 a 765 s de tests (mediana 415,5), de los que la
+# fila de la capa sola se lleva de 111 a 352. La carga no se anoto con
+# ninguna, y no consta que la maquina estuviera tranquila. El del propio
+# `b6491ef` (§794), en la tanda siguiente: 514 s de reloj y 344 de tests,
+# mientras corria a la vez el `--largo` de la completitud (`tools/bancos.sh`,
+# al pie). Lo que no son tests suma ya de 152 a 227 s de reloj; entre ello,
+# los dos tramos cronometrados de la segunda implementacion, de 44 a 52, y el
+# artefacto, de 35 a 69. En frio, una pasada sobre `7d13f26` tardo 16 min
+# 45 s de reloj, con carga de 1,6 a 2,8 (`doc/blueprint-v2.md`, 2.1). En una
+# maquina tranquila, sin medir.
+#
+# ⚠️ §811, 14-10-2026: `--largo` decia **~20 min**: la suma 151 + 347 + 689 s
+# del §226, no una medida, y ningun asiento da el tiempo de una pasada de
+# `--largo`. Con el `--sello` de hoy esa suma ya no vale, y otra sin medir no
+# se escribe.
+#
+# ⚠️ §811, 14-10-2026: `--completo` decia **53,6 min**, los 3.217 s de tests del
+# §226. La pasada de `--completo` mas reciente que consta es la del §629
+# (01-10-2026, en la maquina del autor, sobre `2c0671e`): halo2 386 s, plonk
+# 730 s y zk-core 2.103 s, y «3.481 s en total» de sus crates: 58 min de
+# tests. Su reloj no consta, y en este sello no se ha medido.
+#
+# ⚠️ §811, 14-10-2026: de esa misma pasada del §629 salen las demas cifras
+# corregidas arriba:
+# - «Los TRES niveles» decia que `zk-core` cuesta **33,9 minutos**, los
+#   2.032 s del §226 (entre medias el §260 midio 2.075): ahora 35, los 2.103.
+# - «Meter 54 minutos en cada sello»: los 54 eran los 3.217 s (53,6 min) del
+#   §226, que escribio la frase; el §260 midio despues 3.268. Ahora 58, los
+#   3.481 s de tests del §629.
+# - En la TABLA, halo2 decia «438 s» y plonk «749 s»: las cifras en frio del
+#   banco F.1 (§224), que el canon bajo a 347 y 689 en el §226. Ahora 386 y
+#   730. La nota de zk-core suma los 2.103 s.
+# - `estado_completo` decia «Los 54 min del nivel completo no los ha corrido
+#   nadie»; ahora, que ningun `--completo` ha pasado VERDE aqui -la foto solo
+#   se escribe con el VERDE- y los 58 min de tests del §629.
+#
+# ⚠️ §811, 14-10-2026: `--bancos` decia **~15 min**, y `estado_bancos`, «Los
+# ~15 min de --bancos»; los escribio el §582, que midio 779 s con 15 bancos.
+# Lo que consta despues esta en el pie de `tools/bancos.sh`: la pasada entera
+# mas reciente que consta es la del §709, con 24 bancos, 1.891 s con las
+# compilaciones, y `estado_bancos` la da ahora. Con los 25 que corre hoy una
+# pasada (el 26, el de los cortes, va FUERA desde el §804), sin medir.

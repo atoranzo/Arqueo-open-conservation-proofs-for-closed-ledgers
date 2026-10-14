@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =========================== LOS BANCOS ===========================
 #
-#     bash tools/bancos.sh             # todos los tools/banco_*.sh · **~15 min** (⚠️ §804: menos los de FUERA, punto 5)
+#     bash tools/bancos.sh             # todos los tools/banco_*.sh · ⚠️ §811, 14-10-2026: al pie (⚠️ §804: menos los de FUERA, punto 5)
 #     bash tools/canon.sh --bancos     # lo mismo, desde el canon
 #
 # **Por que existe (§582).** Los bancos viven FUERA del canon: arrancan el
@@ -25,9 +25,9 @@
 #    cuelga los demas.
 # 4. **El arbol, LIMPIO antes y despues de cada banco.** Un banco mide el
 #    arbol del sello; uno que lo ensucia es un fallo, y se nombra.
-# 5. **Declarado FUERA**: el `--largo` de la completitud (unos 24 minutos
-#    mas, §574) y el del recibo sin resolver (otros tantos, §602). Aqui
-#    corren sus modos por defecto. ⚠️ §804: y FUERA entero, por su nombre, `tools/banco_cortes.sh`: mide seis commits fijos de la historia, no el arbol del sello, y compila seis veces.
+# 5. **Declarado FUERA**: el `--largo` de la completitud (§574) y el del
+#    recibo sin resolver (§602), de 31 a 47 minutos medidos cada uno (⚠️ §811,
+#    14-10-2026: decia unos 24; al pie). Aqui corren sus modos por defecto. ⚠️ §804: y FUERA entero, por su nombre, `tools/banco_cortes.sh`: mide seis commits fijos de la historia, no el arbol del sello, y compila seis veces.
 #
 # ================================================================
 
@@ -99,3 +99,43 @@ msg "== BANCOS: ROJO · ${#fallos[@]} fallo(s) =="
 for f in "${fallos[@]}"; do msg "   · $f"; done
 msg "   salida integra en $LOGS/"
 exit 1
+
+# ── AL PIE (⚠️ §811, 14-10-2026): los tiempos de la cabecera, remedidos ────────
+# Va DESPUES del `exit` y no se ejecuta. Esta aqui y no arriba para que
+# ninguna linea de la cabecera se mueva: `doc/METODO.md` la cita por lineas.
+#
+# ⚠️ §811, 14-10-2026: la cabecera decia **~15 min** por pasada entera; la
+# escribio el §582, que midio 779 s con 15 bancos. Las que constan despues:
+# 854 s con 21, sobre `6f56956` en la maquina del autor (§629); 1185 s con 22,
+# sobre `f7aad05`, en el contenedor de una sesion y sin la carga anotada
+# (§636); y las dos del §709, con 24, que corrio la sesion que lo escribio,
+# cada una sobre una copia de su arbol con su propio directorio de
+# compilacion: 1.561 s de bancos y 26 min con las compilaciones, y, tras la
+# revision, 1.891 s con las compilaciones. Hoy hay 26 `tools/banco_*.sh` y
+# una pasada corre 25: el de los cortes va FUERA desde el §804 (punto 5). De
+# esos 25, el unico que no ha corrido en ninguna pasada entera que conste es
+# `reinicio` (§783), y los otros han cambiado desde el §709 (el §771, el §785
+# y el §786, entre otros): los 1.891 s son de sus versiones de entonces. Una
+# pasada con los 25 no se ha medido.
+#
+# `reinicio` compila el nodo SOLO (`-p zk-ssl-node`), y cargo le unifica otras
+# features que al nodo, el verificador y el testigo juntos (`getrandom` 0.2 sin
+# `std`, `rand_core` 0.6 sin `alloc` ni `std`, `syn` 2 sin `fold` ni `visit`):
+# justo despues de compilar los tres, ese paso recompila en release crates que
+# ya estaban compilados, y el banco lo paga dentro de su tiempo. Cuanto, y
+# cuanto anade a una pasada entera, no consta: la medida que se hizo el
+# 14-10-2026 sobre `b6491ef`, con otro trabajo corriendo a la vez, no se
+# conservo.
+#
+# ⚠️ §811, 14-10-2026: el punto 5 decia que cada `--largo` cuesta «unos 24
+# minutos mas». Los 24 son una cuenta -la ventana de 1.440 cabezas a un latido
+# por segundo-, no una medida, y las medidas no la cumplen. Ya el §574 dio los
+# sobres de la completitud «tras unos treinta y un minutos de espera», y el
+# §602 el recibo sin resolver con «31 minutos de corrida»: unos 1,3 s por
+# cabeza. El 14-10-2026, sobre `b6491ef` y contados desde que acabo su
+# compilacion: el de la completitud, 2.687 s (45 min), mientras corrian a la
+# vez los `--sello` del §790 al §794; y el del recibo sin resolver, 2.799 s
+# (47 min), sin la carga anotada: unos 1,9 s por cabeza; las mismas dos que el
+# §803 dejo en la cabecera de cada banco. Sin `--largo`, la
+# completitud tardo «unos cinco segundos» en el §574: casi todo es la espera.
+# En una maquina tranquila de principio a fin, sin medir en este sello.
