@@ -628,10 +628,14 @@ Lo que sigue valiendo un elemento, y se dice aquí:
   custodios pueden rotar a claves anchas con la firma de su gobernanza
   (`un_libro_de_claves_estrechas_rota_sus_custodios_a_claves_anchas`); su gobernanza no,
   porque es inmutable: una gobernanza ancha la da sólo un libro nuevo (RFC-0018, D-B y D-C).
-- **El nodo no constituye libros.** Con la feature `dev`, la de la compilación por defecto,
-  abre la capa con las raíces de la suite, de claves de un elemento escritas en
-  `crates/zk-ssl/src/tests_support.rs`; sin ella no arranca. `--custodian-root` y
-  `--governance-root` siguen pendientes.
+- **El nodo constituye un libro con las raíces que se le pasan** (§784, ARQ-02):
+  `--custodian-root` y `--governance-root`, las de la ceremonia, en la escritura canónica del
+  cable y distintas del digest cero, dichas al arrancar. En un libro que ya existe, la de
+  gobernanza se compara y, si no es la suya, el libro no abre. Sin las dos banderas, con la
+  feature `dev` —la de la compilación por defecto— abre la capa con las raíces de la suite, de
+  claves de un elemento escritas en `crates/zk-ssl/src/tests_support.rs`, y lo dice; sin `dev`
+  no arranca. El canon compila el nodo sin `dev` en cada sello. ⚠️ §784: hasta aquí decía «El
+  nodo no constituye libros» y que las dos banderas seguían pendientes.
 - **El cable sigue diciendo `zkssl/0.4`** hasta el corte del tren (RFC-0018; `spec/RPC.md`,
   §699). Los vectores de rechazo llevan la raíz de custodios de la suite, y los publicados no
   se reescriben.

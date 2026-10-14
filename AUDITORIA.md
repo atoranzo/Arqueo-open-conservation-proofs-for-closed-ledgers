@@ -52360,3 +52360,66 @@ vectores. `tools/` gana un banco: 25 `banco_*.sh`.
 dentro del mismo proceso, y no es lo que se midió aquí. No mide un reinicio de la MÁQUINA ni un disco
 lleno. No mira dos nodos sobre libros distintos que compartan diario o contador: eso es otra cosa, y
 este banco no la mide.
+
+## §784 — ARQ-02, primera parte: el nodo constituye un libro con `--custodian-root` y `--governance-root`, y el canon compila en cada sello el nodo sin `dev`, que nadie compilaba
+
+El commit que lleva este asiento, sobre el §783. Un solo sello: en `crates/zk-ssl-node/src/main.rs`,
+las dos banderas, `raiz_de` y `raices_sin_banderas`, con un test nuevo; en
+`crates/zk-ssl-node/src/firma_cabeza.rs`, dos reexportaciones que solo usan los tests pasan a
+`#[cfg(test)]`; una sección nueva del canon, «el nodo sin dev (ARQ-02)»; la viñeta del nodo en
+`SECURITY.md`; el pin del crate en `tools/canon.sh`; las cifras de tests de `PAPER.md`, `PAPER_EN.md` y
+`PRINCIPIOS.md`; y este asiento. Del autor es elegir esta tarea y su orden; lo demás lo propuso la
+sesión («Quién lo decide»). Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa
+sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es
+el siguiente del rango de esta sesión (§770 a §799). No toca `crates/zk-ssl-guardian` ni la zona de la
+migración. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en
+su sitio, y salió VERDE.
+
+**De dónde sale.** ARQ-02 de `doc/blueprint-v2.md`: no hay nodo de producción. Con `default =
+["dev"]`, el nodo abría siempre la capa con las raíces de la suite —claves de un elemento escritas
+en `crates/zk-ssl/src/tests_support.rs`—, y el build sin `dev` se paraba con «pendiente de flags
+--custodian-root/--governance-root». Ese build no lo compilaba nadie: ni el canon ni los bancos.
+`SECURITY.md` lo decía: «El nodo no constituye libros».
+
+**Quién lo decide.** El autor eligió la tarea. La sesión propuso hacer los puntos de ARQ-02 que no
+cambian la conducta de nadie —las banderas, la línea del canon y el test con las raíces pasadas por
+argumento— y dejar para otro sello invertir el valor por defecto de `dev`, que obliga a editar las
+órdenes de todos los bancos.
+
+**Por qué no lleva aviso de seguridad.** Sin las banderas, el nodo hace lo mismo que antes; con ellas,
+hace lo que antes no podía. Ningún veredicto cambia.
+
+**Lo que hace.**
+
+1. **`--custodian-root` y `--governance-root`**, que se exigen una a la otra: la escritura canónica
+   del cable (`0x`, 64 cifras en minúscula, cuatro elementos menores que `p`) y distinta del digest
+   cero, que es el de un árbol sin miembros. Quedan dichas al arrancar. En un libro que ya existe, la
+   de custodios no manda —el conjunto vigente se lee del libro, porque la gobernanza lo rota— y la de
+   gobernanza se compara: si no es la suya, el libro no abre.
+2. **Sin las dos**: con `dev`, las de la suite, y lo dice al arrancar («DE LA SUITE»); sin `dev`, no
+   arranca, y el error nombra las banderas.
+3. **El test** `el_libro_se_constituye_con_las_raices_de_las_banderas`: un libro abierto con dos
+   raíces propias las lleva; reabierto con otra gobernanza no abre; con la suya, sí; y `raiz_de`
+   rechaza el cero, las mayúsculas, la longitud corta y la falta de `0x`.
+4. **La sección del canon**: `cargo check --release --locked -p zk-ssl-node --no-default-features`
+   —compila y tipa sin pisar el binario con `dev` que usan los bancos—, con un pin de avisos de 1, el
+   de `podar` (§580): uno más es ROJO. Para que el pin se cumpla, las dos reexportaciones de
+   `firma_cabeza.rs` que solo usan los tests y el campo que solo lee `dispatch_dev` dejan de avisar.
+5. **`SECURITY.md`**: la viñeta del nodo dice lo que hace ahora, con su nota.
+
+**Medido.**
+
+- **Que el test cae**: con `open_layer` sin mirar las banderas —siempre las raíces sin banderas—, en un
+  árbol aparte, `el_libro_se_constituye_con_las_raices_de_las_banderas` da `FAILED`; con este sello,
+  `ok`.
+- **El build sin `dev`**: compila, con un aviso, el de `podar`.
+- **El canon**, `bash tools/canon.sh --sello`, sobre este árbol: VERDE.
+
+**Contadores.** `zk-ssl-node` 203 -> 204, en su fila de `tools/canon.sh`, con su crónica. TOTAL DE
+SELLO 1745 -> 1746 y TOTAL CON LARGOS 1882 -> 1883, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`, y
+el desglose de `PRINCIPIOS.md`. Ni vectores, ni el `BACKLOG.md`: 43 abiertas y 77 resueltas.
+
+**Lo que NO hace.** No invierte el valor por defecto (`default = []`, con `dev` opt-in) ni edita los
+bancos para pedirlo; no añade el test que exija que `tests_support` no exista en el build de
+producción; no arranca un nodo sin `dev` en ningún banco. No expone emisión, reembolso ni quema por
+RPC (el punto 4 de ARQ-02): cada uno, con su RFC. Es la primera parte de ARQ-02, no ARQ-02.

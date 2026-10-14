@@ -74,6 +74,19 @@ struct Args {
     #[arg(long)]
     ledger: Option<String>,
 
+    /// ⚠️ §784 · ARQ-02 · **La raíz del conjunto de CUSTODIOS con la que se constituye el
+    /// libro**: `0x` y 64 cifras en minúscula, el digest de `build_custodian_set` de la
+    /// ceremonia. Va con `--governance-root`, y el cero no vale. En un libro que ya existe no
+    /// manda: el conjunto vigente se lee del libro, porque la gobernanza lo cambia. Sin las dos,
+    /// el build con `dev` usa las de la suite, y el de producción no arranca.
+    #[arg(long, value_name = "DIGEST", requires = "governance_root")]
+    custodian_root: Option<String>,
+
+    /// ⚠️ §784 · ARQ-02 · **La raíz del conjunto de GOBERNANZA**, como `--custodian-root`. Esta
+    /// sí se compara al abrir un libro existente: si no es la suya, el libro no abre.
+    #[arg(long, value_name = "DIGEST", requires = "custodian_root")]
+    governance_root: Option<String>,
+
     /// Habilita el espacio `dev_*` (fondos con custodios de PRUEBA).
     #[arg(long)]
     dev: bool,
@@ -385,6 +398,8 @@ struct Estado {
 
 struct App {
     estado: Mutex<Estado>,
+    // §784: solo lo lee `dispatch_dev`, que sin `dev` no existe.
+    #[cfg_attr(not(feature = "dev"), allow(dead_code))]
     dev: bool,
     /// **Si ya se aviso de que la acumulacion cruzo la escala** (§318).
     ///
@@ -2219,17 +2234,22 @@ fn modo_prueba_rechazo(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow
 }
 
 fn open_layer(a: &Args) -> anyhow::Result<SovereignLayer> {
-    // Las raíces de los conjuntos: en dev, las de la suite; en producción
-    // vendrían de la ceremonia de constitución de custodios/gobernanza.
-    #[cfg(feature = "dev")]
-    let (c_root, g_root) = (
-        zk_ssl::tests_support::custodian_root(),
-        zk_ssl::tests_support::governance_root(),
-    );
-    #[cfg(not(feature = "dev"))]
-    let (c_root, g_root) = anyhow::bail!(
-        "build sin feature `dev`: pasar raíces de custodios/gobernanza reales (pendiente de flags --custodian-root/--governance-root)"
-    );
+    // ⚠️ §784 · ARQ-02: las raíces de los conjuntos salen de `--custodian-root` y
+    // `--governance-root` —las de la ceremonia de constitución— y, sin ellas, en `dev`, de la
+    // suite. El build de producción sin ellas no arranca. Quedan dichas al arrancar.
+    let (c_root, g_root) = match (&a.custodian_root, &a.governance_root) {
+        (Some(c), Some(g)) => {
+            let raices = (
+                raiz_de("--custodian-root", c)?,
+                raiz_de("--governance-root", g)?,
+            );
+            eprintln!(
+                "libro: custodios {c} · gobernanza {g} (--custodian-root, --governance-root)"
+            );
+            raices
+        }
+        _ => raices_sin_banderas()?,
+    };
 
     // §668: el tope de la capa, dicho al arrancar y no como un panico de `new`.
     if a.max_supply > zk_ssl::MAX_SUMINISTRO {
@@ -2242,6 +2262,44 @@ fn open_layer(a: &Args) -> anyhow::Result<SovereignLayer> {
         }
         None => SovereignLayer::new(c_root, g_root, a.limit, a.max_supply, a.max_accounts),
     })
+}
+
+/// ⚠️ §784 · Una raíz de conjunto desde su bandera: la escritura canónica del cable (`0x`, 64
+/// cifras en minúscula, cuatro elementos menores que `p`) y distinta del digest cero, que es el
+/// de un árbol sin miembros: un libro constituido con él no tendría quien emita ni quien gobierne.
+fn raiz_de(bandera: &str, s: &str) -> anyhow::Result<zk_ssl_verify::acuses::Digest> {
+    let b = zk_ssl_hash::hex_canonico(s).map_err(|e| anyhow::anyhow!("{bandera}: {e}"))?;
+    anyhow::ensure!(
+        b.len() == 32,
+        "{bandera}: {} bytes, una raiz lleva 32",
+        b.len()
+    );
+    anyhow::ensure!(
+        b.iter().any(|x| *x != 0),
+        "{bandera}: la raiz cero no constituye un conjunto"
+    );
+    zk_ssl::store::digest_from_bytes(&b).map_err(|e| anyhow::anyhow!("{bandera}: {e}"))
+}
+
+/// Sin banderas, en `dev`: las raíces de la suite, dichas como tales.
+#[cfg(feature = "dev")]
+fn raices_sin_banderas(
+) -> anyhow::Result<(zk_ssl_verify::acuses::Digest, zk_ssl_verify::acuses::Digest)> {
+    eprintln!("libro: custodios y gobernanza DE LA SUITE (build dev, sin --custodian-root)");
+    Ok((
+        zk_ssl::tests_support::custodian_root(),
+        zk_ssl::tests_support::governance_root(),
+    ))
+}
+
+/// Sin banderas, en producción: no hay libro que constituir.
+#[cfg(not(feature = "dev"))]
+fn raices_sin_banderas(
+) -> anyhow::Result<(zk_ssl_verify::acuses::Digest, zk_ssl_verify::acuses::Digest)> {
+    anyhow::bail!(
+        "build sin `dev`: el libro se constituye con --custodian-root y --governance-root, las \
+         raices de la ceremonia (ARQ-02)"
+    )
 }
 
 /// ⚠️ §783 · El error de abrir el libro, y con nombre el de un libro TOMADO (la 18). `sled` toma
@@ -2337,6 +2395,7 @@ pub(crate) fn proximo_nodo() -> u64 {
     N.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
 
+#[cfg(test)]
 pub(crate) fn tests_dir(nombre: &str) -> std::path::PathBuf {
     let d = std::path::Path::new("target").join(format!("t_{nombre}"));
     let _ = std::fs::remove_dir_all(&d);
@@ -6541,6 +6600,76 @@ mod tests {
             Err(e) => panic!("tenia que pararlo el cerrojo del indice, y dio: {e}"),
             Ok(_) => panic!("CRITICO: dos firmantes con la misma semilla sobre el mismo indice"),
         }
+    }
+
+    /// ⚠️ §784 · ARQ-02 · **El libro se constituye con las raíces que se pasan**, y no con las de
+    /// la suite: se abre con dos raíces propias, se cierra, y al reabrirlo con otra gobernanza no
+    /// abre; con la suya, sí. Y la bandera rechaza lo que no es una raíz.
+    #[test]
+    fn el_libro_se_constituye_con_las_raices_de_las_banderas() {
+        use clap::Parser;
+        use zk_ssl::store::digest_to_bytes;
+        let hx = |d: zk_ssl_verify::acuses::Digest| -> String {
+            format!(
+                "0x{}",
+                digest_to_bytes(&d)
+                    .iter()
+                    .map(|b| format!("{b:02x}"))
+                    .collect::<String>()
+            )
+        };
+        let (c, g) = (
+            zk_ssl::tests_support::custodian_root_wide(),
+            zk_ssl_verify::acuses::as_digest(7),
+        );
+        assert_ne!(
+            c,
+            zk_ssl::tests_support::custodian_root(),
+            "una raiz que no es la de la suite"
+        );
+        let dir = tests_dir("raices_por_bandera");
+        let ruta = dir.join("ledger");
+        let ruta = ruta.to_str().expect("ruta utf-8");
+        let args = |g: &str| {
+            Args::try_parse_from([
+                "zk-ssl-node",
+                "--ledger",
+                ruta,
+                "--custodian-root",
+                &hx(c),
+                "--governance-root",
+                g,
+            ])
+            .expect("args")
+        };
+        {
+            let l = open_layer(&args(&hx(g))).expect("se constituye");
+            assert_eq!(
+                l.custodian_set_root(),
+                c,
+                "los custodios son los de la bandera"
+            );
+            assert_eq!(l.governance_set_root(), g, "y la gobernanza");
+        }
+        let otra = hx(zk_ssl_verify::acuses::as_digest(8));
+        let e = match open_layer(&args(&otra)) {
+            Ok(_) => panic!("CRITICO: el libro abrio con OTRA gobernanza"),
+            Err(e) => format!("{e:#}"),
+        };
+        assert!(e.contains("gobernanza"), "{e}");
+        assert!(open_layer(&args(&hx(g))).is_ok(), "con la suya, reabre");
+        let cero = format!("0x{}", "00".repeat(32));
+        let mayus = format!("0x{}", "AB".repeat(32));
+        for mal in [cero.as_str(), mayus.as_str(), "0x12", "12"] {
+            assert!(
+                raiz_de("--governance-root", mal).is_err(),
+                "{mal:.12} no es una raiz"
+            );
+        }
+        assert!(
+            Args::try_parse_from(["zk-ssl-node", "--custodian-root", &hx(c)]).is_err(),
+            "una raiz sin la otra no se acepta"
+        );
     }
 
     /// ⚠️ §783 · **Dos nodos sobre el mismo libro: el segundo se niega, y dice por qué** (la 18).

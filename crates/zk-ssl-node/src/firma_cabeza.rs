@@ -54,10 +54,12 @@ use zk_ssl_guardian::{
 // ⚠️ Reexportado, no reimplementado: la verificación vive en `zk-ssl-verify`
 // y quien la usaba desde aquí (main.rs, latido.rs) no cambia.
 pub use zk_ssl_verify::{
-    aplicar_apano_del_oid, indice_de_firma, preambulo, verificar_cabeza,
-    CabezaFirmada, Conjunto, VerificaError, DOMINIO, FIRMA_RFC_BYTES,
-    VERSION_FORMATO,
+    aplicar_apano_del_oid, preambulo, verificar_cabeza, CabezaFirmada, Conjunto, VerificaError,
+    DOMINIO, VERSION_FORMATO,
 };
+// §784: solo los tests los usan; reexportados fuera de ellos eran un aviso en cada build.
+#[cfg(test)]
+pub use zk_ssl_verify::{indice_de_firma, FIRMA_RFC_BYTES};
 
 
 /// ⚠️⚠️ **El invariante que el `&mut` deja huerfano.**
