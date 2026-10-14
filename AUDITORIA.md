@@ -52659,3 +52659,74 @@ resueltas: la 94 no se cierra.
 
 **Lo que NO hace.** No sigue el flujo de datos: un dominio armado con `format!` o concatenado no lo ve.
 No juzga las cadenas de los tests. No cierra la 94.
+
+## §790 — RFC-0020 (el esquema dentro de lo que se firma, la 87) y RFC-0021 (la política de compatibilidad, la 90), PROPUESTOS sobre lo medido: ninguna decisión tomada, ninguna etapa construida (las tareas 11 y 12)
+
+El commit que lleva este asiento, sobre el §789. Dos RFC nuevos, PROPUESTOS:
+`spec/rfc/0020-el-esquema-dentro-de-lo-que-se-firma.md` y `spec/rfc/0021-la-politica-de-compatibilidad.md`;
+su fila en `spec/README.md`; la cuenta de RFC propuestos en `README.md`, `README_EN.md`,
+`RESUMEN_BILINGUE.md` (dos sitios) y `RESUMEN_EJECUTIVO.md`, dentro de la misma línea; la cuenta de RFC
+de `doc/integracion-vertical-evaluacion.md`; una nota en las entradas 87 y 90 del `BACKLOG.md`, que
+siguen abiertas; y este asiento. Ni código, ni tests, ni vectores. Del autor es elegir las tareas; los
+dos textos los propuso la sesión, y sus decisiones son del autor («Quién lo decide»). Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango de esta sesión (§770 a
+§799). No toca `crates/zk-ssl-guardian` ni la zona de la migración. En la sesión se corrió el canon
+entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** La 87 pide «un identificador de esquema dentro de lo que se firma, y la regla
+escrita de cómo una cabeza firmada con el esquema A sigue verificando cuando el nodo ya emite con el
+B». La 90 pide la promesa: la superficie enumerada, la regla de ruptura y una compuerta; el §699
+midió que `zkssl/0.4` no identifica qué pruebas acepta un nodo, y la entrada cierra con «la promesa,
+y cómo se identifica una prueba, siguen abiertas».
+
+**El hueco de la 87, medido.** El único sitio firmado que nombra un esquema es el acta, por
+`as_digest(esquema)` (`crates/zk-ssl-hash/src/lib.rs:871`), y el acta es opt-in (RFC-0015,
+`:154-155`); las claves de los testigos no tienen actas. Los preámbulos de la cabeza y de la cofirma
+no llevan esquema (`spec/NUCLEO.md:329-330`), el verificador fija XMSS^MT en el código
+(`crates/zk-ssl-verify/src/lib.rs:145`) y el OID de la clave es ambiguo incluso dentro de RFC 8391
+(§240). En los vectores, de 492 `.json`, 405 llevan firma: 678 apariciones (536 de cabeza, 127 de acta
+y 15 de cofirma), 60 distintas.
+
+**Quién lo decide.** El autor eligió las tareas. La sesión midió y redactó, y en cada decisión dice qué
+recomienda; las siete decisiones del RFC-0020 y las ocho del RFC-0021 son del autor, y ninguna está
+tomada. Un PROPUESTO no se construye: lo dice la regla 4 de `spec/rfc/PROCESO.md`.
+
+**Lo que hace.**
+
+1. **El RFC-0020** propone que el `esquema` del acta entre también en un preámbulo v7 de la cabeza
+   (de 50 a 58 bytes, con el `epoch_digest` igual que la v6) y en el de la cofirma, con el del testigo
+   y el del operador; que aceptar y emitir sean conjuntos distintos, con el molde de `COFIRMA_V_MAX`;
+   y que una cabeza de un esquema roto solo valga contenida en algo firmado con uno vigente. Ningún
+   vector publicado se reescribe: siete líneas de manifiesto se mudarían a `0.4/`. Si se adopta, viaja
+   en el corte `zkssl/0.5` (RFC-0018, D-E). Reabre a la vista el descarte del RFC-0015 y deja al autor
+   quedarse en el acta.
+2. **El RFC-0021** enumera seis superficies estables —el cable, las pruebas que viajan, lo firmado, los
+   sobres del kit, los vectores y el kit como binario—, cada una con su identificador y su productor,
+   escribe la regla de ruptura (R1 a R7) y lo que sigue verificando después de una ruptura, con la
+   excepción declarada de los arreglos de seguridad (como la 0.4.1 y la 0.4.2). La enmienda a
+   `spec/RPC.md` va dentro del RFC (D-C), porque `RPC.md` ya tiene su «Versionado» en «Notas
+   operativas» y el RFC no está aceptado. La compuerta del canon va como etapas E3a y E3b, sin
+   escribir.
+3. **Las cuentas**: 21 RFC con estado propio en `spec/README.md`, y 0020 y 0021 entre los propuestos
+   en las cinco cuentas de las portadas.
+
+**Medido.** Un lector redactó los dos textos y otro los revisó cita a cita contra el árbol y corrigió
+ocho cosas: una cita que faltaba al RFC-0015 (`:128-130`), dos reglas de la D-E del RFC-0020 que se
+contradecían, la v1 que faltaba (también la recompone `tools/segunda/juez_cabezas.py`), la cuenta de
+KAT de la E2 (tres, no dos), el historial del kit frente al cable en el RFC-0021, la excepción del
+esquema roto en su R6 y dos citas corridas. Sobre este árbol salen con 0 `check_cifras`,
+`check_figures`, `verificar_citas`, `check_publicadas` —«21 RFC con estado propio»; con la fila de
+0021 quitada de una cuenta, ROJO AUSENTE—, `check_tests`, `check_dominios`, `check_nucleo`,
+`check_vectores` y `check_catalogo`. El canon, `bash tools/canon.sh --sello`: VERDE.
+
+**Contadores.** Ninguno de tests ni de vectores. El `BACKLOG.md` sigue con 43 abiertas y 77 resueltas:
+la 87 y la 90 ganan una nota cada una y siguen abiertas. Los RFC con estado propio pasan de 19 a 21.
+
+**Lo que NO hace.** No adopta nada, no construye ninguna etapa y no cambia un byte de lo firmado ni un
+veredicto. No escribe la compuerta. No corrige las dos discrepancias que el RFC-0021 cita como hechos
+—`spec/RPC.md:678` y el comentario de `crates/zk-ssl-verify/src/lib.rs:168-170` fechan la v6 con el
+cable en `zkssl/0.3`, y `doc/KIT.md:78-80` y `doc/KIT_EN.md:80-81` dan tres códigos de salida del kit,
+y son cuatro—: cada una, en un sello que lo diga. Quedan como DERIVADO, sin medir, que la regla de
+contención alcance a todas las cabezas de un esquema roto y que las siete líneas cambien de texto con
+la v7.

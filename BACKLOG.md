@@ -874,6 +874,13 @@ instrumentacion) al grupo E.*
   conversacion**: (1) la 87 primero; (2) un banco con las tres
   primitivas sobre el hardware real, metodo de §263; (3) la decision
   escrita con su procedencia y su precio, en el paper.
+  ⚠️ §790: propuesto en el RFC-0020 (`spec/rfc/0020-el-esquema-dentro-de-lo-que-se-firma.md`);
+  adoptarlo es del autor. Mide dónde entra hoy un esquema en lo que se firma —sólo en el acta,
+  que es opt-in y no cubre al testigo; ni la cabeza ni la cofirma lo llevan— y propone el
+  `esquema` del acta, un `u64`, en un preámbulo v7 de la cabeza y de la cofirma, la regla con que
+  una cabeza del esquema A sigue verificando cuando el nodo firma con el B, y su coste en bytes y
+  en vectores, para el corte `zkssl/0.5`. Siete decisiones del autor, ninguna tomada, y ninguna
+  etapa construida: sigue abierta.
 
 - [ ] **88. Sucesión: qué pasa el día que el autor pare.** El proyecto
   lo lleva **una persona** con asistencia de IA, con una disciplina que
@@ -936,6 +943,11 @@ instrumentacion) al grupo E.*
   §699, un nodo no acepta el envío de un cliente si los dos dicen `zkssl/0.4` y entre ellos queda
   el §641 o el §680. Lo dicen `spec/RPC.md` («Versionado»), el OpenRPC, `spec/README.md`, los dos
   README y el RFC-0017; la promesa, y cómo se identifica una prueba, siguen abiertas.
+  ⚠️ §790: propuesto en el RFC-0021 (`spec/rfc/0021-la-politica-de-compatibilidad.md`); adoptarlo
+  es del autor. Enumera seis superficies estables, escribe la regla de ruptura, el aviso y lo que
+  sigue verificando después, desde lo medido en el §699; propone la enmienda a «Versionado» de
+  `spec/RPC.md`, que ya existe en «Notas operativas»; y deja la compuerta como etapa, sin
+  escribir. Ocho decisiones del autor, ninguna tomada: sigue abierta.
 
 - [x] **91. El fin de vida: cómo se apaga esto sin dejar a nadie
   dentro.** Toda capa de liquidación termina — por cierre, por
