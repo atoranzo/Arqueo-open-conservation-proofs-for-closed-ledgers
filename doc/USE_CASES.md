@@ -27,8 +27,8 @@ of the world (`SECURITY.md`, the oracle limit).
 |---|---|---|---|
 | 1 | Conservation | the supply the head signs (since v5) and, for a rejection by cap, that the head's supply plus the amount exceeds the committed cap (`spec/PAQUETE.md`, 2.6); **not** that supply = balances + in flight | measured **in the node**: in circuit, on every send, claim and burn, and the aggregate in the layer on reopening (`AUDITORIA.md` §379; the roots, §387, §388, §391 and §392); **without the node, no**: the checker verifies no transition proof — nor the issuance and refund ones —, and the log does not keep them |
 | 2 | No double use | a label is consumed once in a ledger and published in its signed head; the same label in two ledgers is detected from both | measured (RFC-0006; `doc/KIT.md`) |
-| 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md:785-812`, `zkssl_consistencyProof`) |
-| 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md:568-739`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
+| 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md` §«La prueba de extension», `zkssl_consistencyProof`. ⚠️ §831: until here it cited lines, `:785-812`; §389 wrote `:781-808`, correct at the time, and the section moved with §415) |
+| 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md` §«`zkssl_inclusionReceipt` — la inclusión, comprobable sin el nodo» and `spec/RPC.md` §«`zkssl_ackPath` — el camino de acuse de una época CERRADA». ⚠️ §831: until here it cited lines, `:568-739`; §389 wrote `:564-735`, correct at the time, and the sections moved with §415) |
 | 5 | Authorship without the key travelling | of the pledge, that whoever holds the key produced it (`spec/PAQUETE.md`, 2.10); **not** that only the holder of a key moves its account | measured **in the node**: in circuit (`C_PK_CHECK`), on every send, claim and burn; **without the node, only the pledge**. That the key does not travel: `spec/RPC.md` §«Principio que el API preserva» |
 | 6 | Cut-off and completeness | nothing stays in flight past its time; every operation the node receives ends applied, rejected with proof or declared, or a named red says it did not | measured (RFC-0010; `spec/PAQUETE.md`, 2.11; the empty box, RFC-0007 E4) |
 | 7 | Rejection with cause | a refusal carries the rule that produced it | measured (RFC-0007; `spec/PAQUETE.md`, 2.6) |
@@ -171,7 +171,9 @@ who cannot see it? (iii) Is the question conservation, or counterparty risk?
 (iv) Scale: measured throughput is 1.5–1.9 transactions per second, given as a
 band because two runs on the same machine differed by 22 % (`AUDITORIA.md`
 §123); 2^32 simultaneous payments in flight; one node, one writer, no
-distributed consensus (`spec/RPC.md:860-871`).
+distributed consensus (`spec/RPC.md` §«Notas operativas», its first item. ⚠️ §831:
+until here it cited lines, `:860-871`; §389 wrote `:856-867`, correct at the time,
+and the section moved with §409).
 
 - Fits: registers of entitlements (agricultural payment rights, irrigation and
   fishing quotas, planting rights); netting between operators; netting between

@@ -54486,3 +54486,129 @@ filas donde hace falta.
 
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos. El
 `BACKLOG.md` no cambia: ninguna entrada llevaba esto.
+
+## §831 — las tres citas por línea de `doc/USE_CASES.md` a `spec/RPC.md` pasan a citas por encabezado, y `verificar_citas` gana la v3 bis, que da ROJO a una cita por línea en un fichero de su lista que cita ese documento por encabezado (hoy, nueve con `spec/RPC.md`; lo descubierto 1a)
+
+El commit que lleva este asiento, sobre `ce74110` (el §830). Toca `doc/USE_CASES.md`,
+`tools/verificar_citas.py` y este asiento. Ni tests, ni vectores, ni código de ningún crate. Del
+autor es el encargo: la lista y lo que se descubra por el camino. Esto lo encontró el §807 y lo dejó
+en su «Lo que NO hace». La forma la propuso la sesión. Lo escribe y lo commitea Claude, en una sesión
+de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a §859). No toca
+`crates/zk-ssl-guardian`. Un revisor de la sesión lo leyó y midió sus propios mutantes; lo que pidió
+está aquí: que el título, la cabecera y el comentario digan solo lo que la regla mira, sus ficheros
+de la lista y no todos; que el canon se corra antes de commitear; tres palabras de las marcas, «right
+then», que pasan a «correct at the time»; y ocho ficheros más en la lista, lo que mata su mutante
+vivo (M12). El canon, `bash tools/canon.sh --sello`, corrido por la sesión sobre el árbol limpio de
+este commit, con este asiento en su sitio y sin esta frase: VERDE, 389 s de reloj (del primer al
+último byte de su log) y 257 s de tests (la línea «total» de la tabla), cada fila en su pin, 1809
+tests que pasan (la suma de la columna «pasan»). Medido sobre este sello antes de corregir texto en
+los asientos de la serie; el canon de la punta, en el §836.
+
+**La base.** Este sello se escribió primero sobre el §807 (`e506627`), detrás del de `check_columns`,
+con otro número. Cuando el autor subió del §808 al §812, la sesión lo rebasó sobre el §830. El
+cherry-pick no chocó. Del §808 al §812 no tocan `doc/USE_CASES.md` ni la herramienta, y el §830 sólo
+toca de ella su reparto de números. Sí tocan
+`spec/RPC.md`: el §809 añade 8 líneas antes de «Notas operativas». Y tocan seis ficheros que lo citan:
+cuatro de la lista y dos de los que lo citan de las dos formas, `BACKLOG.md` y el RFC-0021. Sus
+cuentas por encabezado y por línea son las mismas antes y después. Todo lo medido abajo se
+remidió sobre el árbol rebasado, y los mutantes se volvieron a correr sobre copias de él. Cambian
+cuatro cifras: «Notas operativas» pasa de la 1517 a la 1525, y su primer punto de la 1519 a la 1527;
+los encabezados citados, de 134 y 138 a 138 y 142; y `check_tests`, de 1933 a 1968 tests declarados.
+Las líneas de los mutantes que citan «Notas operativas» llevan la nueva. Lo demás sale igual.
+
+**De dónde sale.** El §389 publicó `doc/USE_CASES.md` (`bece7b6`) con tres citas por línea a
+`spec/RPC.md`: `:781-808` para la prueba de extensión, `:564-735` para el recibo de inclusión y el
+camino de acuse, y `:856-867` para «un nodo, un escritor». Entonces caían en su sitio: medido con
+`git show bece7b6:spec/RPC.md` y el encabezado que abre cada rango. El §409 (`e08d767`) metió «Los
+rechazos del cable» delante de «Notas operativas», y la tercera cayó en ella. El §415 (`c853d18`) metió
+20 líneas más arriba, y las otras dos se desfasaron. Después, el commit `6edb4c8`, del §538, sumó cuatro
+a cada una, `:785-812`, `:568-739` y `:860-871`. Las secciones ya estaban en las líneas 918, 701 y 727,
+y 1164.
+
+**Medido antes de tocar nada.** Sobre el §830, con el encabezado que abre cada rango en `spec/RPC.md`:
+
+- `:785-812` cae en el final de «El recibo de recepción en la respuesta» y en el principio de
+  «`zkssl_signedEpochHead`». «La prueba de extension» está en la 1261.
+- `:568-739` va de «Qué ve exactamente un agregador» a «`receipt` y `acuse` son cosas distintas»: el
+  lote y `receptionSeq`. El recibo de inclusión está en la 1070 y el camino de acuse en la 1013.
+- `:860-871` cae entre la cabeza v4 y la v5. «Notas operativas» está en la 1525, y su primer punto,
+  «Un nodo, un escritor», en la 1527.
+
+Con la herramienta del §830 (`git show ce74110:tools/verificar_citas.py`), la cita `:785-812`
+repuesta en una copia da VERDE, exit 0. La v3 mira las citas por encabezado, y la v5 sólo las de línea
+al `BACKLOG.md`. Ninguna regla veía estas tres.
+
+Quién cita `spec/RPC.md` y cómo, sin `AUDITORIA.md` ni `doc/ecst/VERIFICACION.md`, con el patrón
+`ENCABEZADO` de la herramienta y con «RPC\.md`?:\d» por línea, sobre los `.md` y `.rs` de
+`git ls-files`. Doce ficheros lo citan por encabezado al menos una vez. Nueve no lo citan nunca por
+línea: `doc/USE_CASES.md` (tras este sello), `spec/README.md` (24 por encabezado), `README.md`,
+`README_EN.md`, `doc/KIT.md`, `doc/KIT_EN.md`, `spec/NUCLEO.md`, el RFC-0018 y
+`tools/segunda/README.md`. Tres lo citan de las dos formas: `spec/PAQUETE.md` (1 y 10 líneas),
+el RFC-0021 (1 y 8) y `BACKLOG.md` (1 y 1).
+
+**Lo que hace.**
+
+1. Las tres pasan a citas por encabezado, en la forma que ya usaba la fila 5 de la misma tabla:
+   §«La prueba de extension»; §«`zkssl_inclusionReceipt` — …» y §«`zkssl_ackPath` — …», con el título
+   entero; y §«Notas operativas», su primer punto. Cada una lleva su marca, «⚠️ §831: until here it
+   cited lines», con el rango de antes, el que escribió el §389, «correct at the time», y el sello que
+   movió la sección. El documento está en inglés, y la marca también. El rango viejo va sin el nombre
+   del fichero delante, «`:785-812`»: así la regla nueva no lo lee como cita.
+2. `verificar_citas` gana la v3 bis. En un fichero de `SOLO_POR_ENCABEZADO`, una cita por línea a su
+   documento es ROJO. La lista tiene los nueve ficheros de arriba que no citan `spec/RPC.md` por
+   línea, todos con `spec/RPC.md`. Los ocho que no son `doc/USE_CASES.md` entran sin tocar su texto.
+   Los ficheros que no están en la lista no se miran. Respeta los bloques de numeración vieja, como
+   la v5. La prueba de vida: el patrón ve cuatro formas reales y no toma por cita otras cuatro (la
+   cita por encabezado, la marca, una coma tras el nombre y «`openrpc.json`:12»); un texto sembrado
+   pasa por la misma función que mira el árbol y tiene que dar sólo su línea; cada fichero declarado
+   tiene que existir y citar su documento por encabezado al menos una vez; y la lista no puede estar
+   vacía.
+3. La cabecera dice la v3 bis, sus reglas, su lista y su ceguera. Corrige con marca la frase de la v5
+   que decía que la cita por línea a otro fichero «no se mira», y añade la v3 bis al «Uso».
+
+**Medido después.** `python3 tools/verificar_citas.py`, con este asiento en su sitio: exit 0. 142
+encabezados citados, 0 muertos; eran 138, y suman las cuatro nuevas. La línea nueva: «línea a un
+documento citado por encabezado (v3 bis): 0 · 9 ficheros, 37 citas por encabezado a su documento»,
+con la cuenta de cada fichero detrás. Las cinco de `doc/USE_CASES.md` son las cuatro nuevas y la de
+la fila 5.
+
+**Mutantes.** Cada uno sobre una copia del árbol hecha con `tar`, sin `target` ni `.git`, y con la
+herramienta de la copia; nunca en el árbol. La copia sin mutar da exit 0.
+
+- M0, el de control: la herramienta del §830 sobre la copia de M1 da exit 0. Es lo que cambia la regla.
+- Mueren catorce, todos con exit 1. M1, `spec/RPC.md:785-812` repuesta en la fila 3: es el mutante
+  que pedía la tarea. M2, `:860-871` repuesta en la línea 174. M3, la forma con la comilla antes de
+  los dos puntos, en una marca. M4, «La prueba de extension» renombrada en `spec/RPC.md`: ENCABEZADO
+  MUERTO en `USE_CASES.md` y en `spec/README.md`; lo mata la v3, no la nueva. M5, las cinco citas por
+  encabezado quitadas de `USE_CASES.md`: la prueba de vida. M6, el patrón que exige la comilla. M7,
+  el fichero declarado con otro nombre. M8, el patrón sin el nombre del documento, que se traga la
+  marca. M9, la lista vacía, con M1 encima. M10, la función que no ve nada, con M1 encima. M11, la
+  función sin los bloques de numeración vieja. M12, «; `RPC.md:1525`» añadido dentro del paréntesis
+  de la cita por encabezado de la línea 166 de `spec/README.md`: con la lista de un solo fichero
+  vivía. En la primera escritura, M12 cambiaba esa cita por «(`RPC.md:1517`)»; sobre el árbol
+  rebasado se corrió en la forma de ahora. M13, una cita `spec/RPC.md:1525` añadida al final de
+  `README_EN.md`. M14, las citas por encabezado a `RPC.md` quitadas de `doc/KIT.md`: la prueba de
+  vida.
+- Viven tres, y se declaran. V2: «line 1527 of `spec/RPC.md`» en la prosa de `USE_CASES.md`: la regla
+  sólo ve «:<número>». V3: §«Errores» en vez de §«Notas operativas»: el encabezado existe, y la v3
+  mira que exista, no que sea el que toca. V4: una cita `spec/RPC.md:1525` añadida a
+  `spec/PAQUETE.md`, que no está en la lista.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores` y `check_catalogo`.
+
+**Lo que NO hace.** No toca las demás citas por línea a `spec/RPC.md`: 53 en 13 ficheros, sin contar
+`AUDITORIA.md` ni `doc/ecst/VERIFICACION.md`, medidas con el patrón de la v3 bis sobre los `.md` y `.rs`
+del árbol. Diez son de `spec/PAQUETE.md`, que cita `:785-812` y `:568-739`, los mismos rangos rancios.
+La regla no las mira: sólo mira los ficheros de su lista. `spec/PAQUETE.md`, el RFC-0021 y `BACKLOG.md`
+citan `spec/RPC.md` de las dos formas, por encabezado y por línea, y la regla no los ve (V4). No
+comprueba que el encabezado citado sea el que toca (V3), ni ve la línea dicha en prosa (V2). No mira
+otros documentos que `spec/RPC.md`.
+
+**Lo que es del autor.** Extender la lista a `spec/PAQUETE.md`, al RFC-0021, a `BACKLOG.md` o a otros
+documentos citados. Cada fichero que entre tiene que pasar antes sus citas a encabezado, en el mismo
+sello. Y sacar de la lista a alguno de los ocho que entran sin cambio, si prefiere que siga citando por
+línea.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos. El
+`BACKLOG.md` no cambia: ninguna entrada llevaba esto.

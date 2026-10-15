@@ -14,6 +14,27 @@ siendo de `.rs`; la v4 mira el registro y excluye por BLOQUE marcado, no
 por extensión.
 v3 (§616, la 112): la cita por encabezado, `FICHERO.md` §«Título», más abajo.
 
+v3 bis (§831): un fichero de la lista SOLO_POR_ENCABEZADO, que cita su documento por encabezado,
+no vuelve a citarlo por línea. Solo los de la lista: los demás no se miran.
+  R1  En cada fichero de SOLO_POR_ENCABEZADO, toda cita por línea al documento que declara,
+      «RPC.md:<número>» —con o sin la ruta delante y con o sin comilla invertida antes de los dos
+      puntos—, es ROJO. Fuera, como en la v5, lo que vaya en un bloque de numeración vieja (v4 R3).
+      Hoy son nueve, todos con `spec/RPC.md`. Uno es `doc/USE_CASES.md`, que lo citaba por línea
+      en tres sitios: el §389 las escribió bien, el §409 y el §415 movieron las secciones, y
+      ninguna caía en su sitio. Los otros ocho lo citan por encabezado y ninguno por línea:
+      entran sin tocar su texto.
+  R2  PRUEBA DE VIDA: el autotest exige que el patrón vea las formas reales y no tome por cita
+      por línea la cita por encabezado ni la marca que narra la línea vieja («`:785-812`»), y
+      siembra un texto con una de cada y una dentro de un bloque, y exige que la función que mira
+      el árbol vea solo la suya. Cada fichero declarado tiene que citar su documento por
+      encabezado al menos una vez: una declaración que no mira nada es ROJO, y un fichero
+      declarado que no existe y una lista vacía, también.
+  Ceguera declarada. Solo los ficheros de la lista: las demás citas por línea a `spec/RPC.md` de
+  los documentos vivos —53 en 13 ficheros al escribir esto, sin `AUDITORIA.md` ni
+  `doc/ecst/VERIFICACION.md`— no se miran, y muchas ya no caen en su sitio. `spec/PAQUETE.md`,
+  el RFC-0021 y `BACKLOG.md` citan `spec/RPC.md` de las dos formas y no están. Solo la forma
+  «:<número>»: «la línea 860 de `spec/RPC.md`» no se mira.
+
 v4 (§792, la 66): las citas §n del REGISTRO. Reglas, declaradas antes de mirar:
   R1  En `AUDITORIA.md` y `BACKLOG.md`, todo «§n» o «§n.m» que no lleve justo
       delante el nombre de otro documento (`SECURITY.md` §3.9, o
@@ -77,7 +98,8 @@ v5 (§792): ninguna cita por LÍNEA al `BACKLOG.md` en un documento vivo.
   fichero se desfasa igual y no se mira —`doc/blueprint-v2.md` tenía tres
   cadenas así, a `spec/rfc/0018-el-tren-0-5.md` y a
   `doc/integracion-vertical-evaluacion.md`, que el §792 pasó a citas por
-  encabezado—. Y solo `.md` y `.rs`: `doc/ecst/borrador/*.json` tiene
+  encabezado—. ⚠️ §831: salvo en los ficheros de la v3 bis, que la miran para
+  su documento. Y solo `.md` y `.rs`: `doc/ecst/borrador/*.json` tiene
   decenas, generadas.
 
 v6 (§805): el número que falta. Un sello escribe «§» y la letra N como marcador del número
@@ -94,7 +116,8 @@ lo vio: la v4 solo mira «§» con cifras.
 
 Uso: python3 tools/verificar_citas.py [raíz] — sale con 1 si hay fantasmas,
 secciones muertas, encabezados muertos, citas del registro muertas, citas
-por línea al `BACKLOG.md` en un documento vivo, un marcador sin número (v6),
+por línea al `BACKLOG.md` en un documento vivo, una cita por línea en un fichero de
+la v3 bis, un marcador sin número (v6),
 una marca rota o una prueba de vida que no ve.
 """
 import re
@@ -376,6 +399,73 @@ if not excluidas_vistas:
     reg_rojo.append("PRUEBA DE VIDA  v5: ninguna cita por línea en los ficheros excluidos: "
                     "el patrón está ciego")
 
+# ⚠️ v3 bis (§831): en un fichero de esta lista, que cita su documento por ENCABEZADO, ninguna
+# cita por LINEA a ese documento. Los demás ficheros no se miran. (fichero, documento que cita):
+# la razon va en la cabecera.
+SOLO_POR_ENCABEZADO = {
+    "doc/USE_CASES.md": "spec/RPC.md",
+    "spec/README.md": "spec/RPC.md",
+    "README.md": "spec/RPC.md",
+    "README_EN.md": "spec/RPC.md",
+    "doc/KIT.md": "spec/RPC.md",
+    "doc/KIT_EN.md": "spec/RPC.md",
+    "spec/NUCLEO.md": "spec/RPC.md",
+    "spec/rfc/0018-el-tren-0-5.md": "spec/RPC.md",
+    "tools/segunda/README.md": "spec/RPC.md",
+}
+
+
+def linea_a(doc):
+    """La cita por linea a `doc`: `spec/RPC.md:785-812`, spec/RPC.md`:860, RPC.md:88."""
+    return re.compile(re.escape(Path(doc).name) + r"`?:\d")
+
+
+def por_linea(texto, rel, doc):
+    """v3 bis R1: las lineas (1-based) de `texto` que citan `doc` por linea."""
+    pat = linea_a(doc)
+    return [i for i, linea in vivas(texto, rel, [], Counter()) if pat.search(linea)]
+
+
+def autotest_v3bis():
+    mal = []
+    pat = linea_a("spec/RPC.md")
+    sembrado = "\n".join(["`spec/RPC.md` §«Notas operativas»", "`spec/RPC.md:785-812`",
+                           "<!-- numeracion-vieja -->", "`spec/RPC.md:860`",
+                           "<!-- /numeracion-vieja -->", "decía `:860-871`"])
+    if por_linea(sembrado, "autotest", "spec/RPC.md") != [2]:
+        mal.append(f"v3 bis: el sembrado da {por_linea(sembrado, 'autotest', 'spec/RPC.md')}, "
+                   "se esperaba [2]")
+    for si in ("`spec/RPC.md:785-812`", "`spec/RPC.md`:860", "RPC.md:88", "(spec/RPC.md:568-739,"):
+        if not pat.search(si):
+            mal.append(f"v3 bis: el patron no ve {si}")
+    for no in ("`spec/RPC.md` §«Notas operativas»", "until here it cited lines, `:785-812`",
+               "`spec/RPC.md`, its first item: 3", "`openrpc.json`:12"):
+        if pat.search(no):
+            mal.append(f"v3 bis: el patron toma por cita por linea {no}")
+    return mal
+
+
+for v in autotest_v3bis():
+    reg_rojo.append(f"PRUEBA DE VIDA  {v}")
+if not SOLO_POR_ENCABEZADO:
+    reg_rojo.append("PRUEBA DE VIDA  v3 bis: SOLO_POR_ENCABEZADO está vacía: la regla no mira nada")
+v3bis_lineas, v3bis_encab = 0, {}
+for rel, doc in SOLO_POR_ENCABEZADO.items():
+    p = RAIZ / rel
+    if not p.is_file():
+        reg_rojo.append(f"SOLO POR ENCABEZADO SIN FICHERO  {rel}: se quita de SOLO_POR_ENCABEZADO")
+        continue
+    texto = p.read_text(encoding="utf-8", errors="replace")
+    for i in por_linea(texto, rel, doc):
+        reg_rojo.append(f"CITA POR LINEA  {rel}:{i}: a {doc}, que este fichero cita por "
+                        "encabezado: se cita el encabezado")
+        v3bis_lineas += 1
+    v3bis_encab[rel] = sum(1 for d, _ in ENCABEZADO.findall(texto)
+                           if Path(d).name == Path(doc).name)
+    if not v3bis_encab[rel]:
+        reg_rojo.append(f"PRUEBA DE VIDA  v3 bis: {rel} no cita {doc} por encabezado: "
+                        "la declaración no mira nada")
+
 # ⚠️ v6 (§805): el marcador sin número. El patrón se compone para que este fichero no lo lleve.
 SIN_NUMERO = re.compile("\u00a7" + r"N\b")
 EXTENSIONES_V6 = ("md", "rs", "py", "sh", "js", "toml")
@@ -446,6 +536,9 @@ print(f"registro (v4): {len(secciones)} encabezados · {reg_cuenta['citas']} cit
       f"{reg_cuenta['bloques']} bloques de numeración vieja")
 print(f"línea al BACKLOG (v5): {en_vivos} en documentos vivos · "
       + ", ".join(f"{k} {v}" for k, v in sorted(excluidas_vistas.items())) + " (excluidos)")
+print(f"línea a un documento citado por encabezado (v3 bis): {v3bis_lineas} · "
+      f"{len(v3bis_encab)} ficheros, {sum(v3bis_encab.values())} citas por encabezado a su "
+      "documento (" + ", ".join(f"{r} {n}" for r, n in sorted(v3bis_encab.items())) + ")")
 print(f"marcador sin número (v6): {sin_numero_vivos} en el árbol · "
       f"{sum(legitimos_vistos.values())} que hablan del marcador, declarados")
 sys.exit(1 if fallos else 0)
