@@ -62,6 +62,23 @@ traza, no la rellenan. Quitar el relleno de `COL_R_ID` en
 verde, y la versión de antes daba ROJO. Desde entonces, las escrituras se
 cuentan fuera de los módulos `#[cfg(test)]`.
 
+## Y la AIR de la edad (§830)
+
+Hasta el §830 miraba cuatro de las cinco AIR del kit. La de la edad vive en
+`crates/zk-ssl-air/src/lib.rs`, que saltaba por su nombre; sus columnas se
+llaman `C_…`, y su probador, `circuit_edad.rs`, rellena la traza por
+columnas, `col[C_…][fila]`, y tres carriles de doce columnas con un bucle:
+`for (k, base) in [C_A, C_B, C_M]` y `col[base + i][f + r]` dentro. Ni el
+nombre, ni la declaración, ni las dos formas de relleno las reconocía.
+
+Desde el §830 las reconoce, sólo para ese fichero: en el resto del universo
+`C_…` nombra una restricción, no una columna, y leerla como columna daría
+cientos de falsos positivos. El fichero, su probador y su prefijo se
+declaran aquí (`EDAD`, `PROBADOR_DE_LA_EDAD`, `DECLARACION_EDAD`) y no se
+deducen. Y la prueba de vida exige sus 16 columnas (`MINIMO_EDAD`): sin ese
+mínimo, una AIR nueva del kit taparía en el suelo del directorio una edad que
+se dejara de mirar.
+
 ## Uso
 
     python3 tools/check_columns.py
@@ -80,6 +97,13 @@ prueba de vida falla.
 - Escrituras: `row[COL] = …`, `rows[…][COL] = …`, `fila[COL] = …`,
   `filas[…][COL] = …`, `state[COL] = …`, el tramo `row[COL..]`,
   `fila[COL..]` o `state[COL..]`, y `t.set(COL, …)` (`TraceTable::set`).
+- Desde el §830, también `col[COL][…] = …` y `col[COL + i][…] = …`, la
+  traza por columnas; y el bucle `for v in [COL_X, COL_Y, …]` o
+  `for (k, v) in [COL_X, …]…`, cuyo cuerpo escribe `col[v…][…] = …`: cuenta
+  una escritura para cada columna de la lista. El nombre de la columna ha de
+  acabar donde acaba la palabra: `C_A` no se lee en `col[C_ACT]`.
+- La AIR de la edad (§830): `const C_…: usize` en `crates/zk-ssl-air/src/lib.rs`,
+  con su probador en `crates/stark-experiment/src/circuit_edad.rs`.
 - Las escrituras cuentan sólo fuera de los módulos de test: un
   `#[cfg(test)]` y un `mod <nombre> {` en la columna 0, hasta la primera `}`
   sola en la columna 0. Lo que escribe un test cuenta como uso.
@@ -101,20 +125,50 @@ prueba de vida falla.
   entero de test, como `kat_probador.rs`, que `lib.rs` declara bajo
   `#[cfg(test)]`: no los recorta, y lo que escriben cuenta como relleno.
   Recortar de más, en cambio, sólo quita escrituras: da ROJO, no VERDE.
-- `lib.rs` y `merkle.rs`, que salta por su nombre. En `zk-ssl-air` eso deja
-  fuera la AIR de la edad: vive en su `lib.rs`, sus columnas se llaman `C_…`
-  y su probador rellena por columnas, `col[C_…][fila]`. De las cinco AIR del
-  kit, esta herramienta mira cuatro; `sal.rs` es el quinto fichero del
-  directorio y no declara columnas.
+- `lib.rs` y `merkle.rs`, que salta por su nombre, salvo el `lib.rs` de
+  `zk-ssl-air`. ⚠️ §830: decía «En `zk-ssl-air` eso deja fuera la AIR de la
+  edad […] De las cinco AIR del kit, esta herramienta mira cuatro; `sal.rs`
+  es el quinto fichero del directorio»; desde el §830 mira las cinco, y
+  `sal.rs` es el sexto fichero del directorio. No declara columnas.
+- Que cada columna de un carril se rellene: `C_A` nombra doce, `C_P` cuatro
+  y `C_BITS` treinta y dos, y la herramienta mira la constante, no el ancho.
+  Lo mismo vale para los `COL_…` que abren un tramo.
+- Un bucle con otra forma (otro receptor que `col`, una lista que no se
+  escribe entre corchetes en la cabecera del `for`): no lo reconoce, y da
+  ROJO, no VERDE.
+- Las llaves dentro de una cadena o de un comentario del cuerpo del bucle:
+  las cuenta. Las `}` de más que cierran el bucle antes de su escritura la
+  esconden, y da ROJO; una `{` de más lo alarga hasta la llave que cierra el
+  bloque de fuera, y una escritura `col[v…]` de ese bloque, con una variable
+  del mismo nombre, contaría como del bucle: ese es un falso negativo. Hoy el
+  único bucle que reconoce es el de la edad, `for (k, base) in [C_A, C_B, C_M]`
+  en `circuit_edad.rs`, y su cuerpo no lleva cadenas ni comentarios.
+- Comentarios y cadenas: no los quita. Una escritura dentro de un comentario
+  (`//`, `/* */`) o de una cadena cuenta como relleno, con cualquiera de los
+  patrones de arriba, los del §830 y los de antes. Si se borra la escritura
+  de verdad y queda la del comentario, da VERDE: es un falso negativo.
+- Que el bucle recorra cada columna de su lista. Lo reconoce por la lista de
+  su cabecera y cuenta una escritura por nombre. Lo que va tras la lista
+  (`.skip(1)`, `.take(…)`, `.filter(…)`) o un salto en el cuerpo (`continue`,
+  un `if` sobre `k`) puede dejar sin recorrer una columna que la herramienta
+  da por rellena: es otro falso negativo.
+- La traza auxiliar de la edad (`X_H`, `X_S`): no son `C_…` y no se miran.
 - Que el fichero emparejado sea de verdad el probador de esa AIR: lo da por
   hecho por su nombre.
 
-Un patrón nuevo de relleno haría que esta herramienta diera falsos
-positivos, no falsos negativos: es el sentido seguro del error. Un patrón
-nuevo de DECLARACIÓN, en cambio, la deja sin ver la columna, y por eso la
-prueba de vida cuenta columnas, no solo ficheros.
+Un patrón nuevo de relleno, que no reconoce, haría que esta herramienta
+diera falsos positivos, no falsos negativos: es el sentido seguro del error.
+Los patrones que sí reconoce admiten los falsos negativos de la lista de
+arriba. Los del §830 son una escritura en un comentario o en una cadena,
+una `{` de más en el cuerpo del bucle, un bucle que no recorre toda su
+lista y un carril del que no se rellenan todas sus columnas. ⚠️ §830:
+decía sólo lo del patrón nuevo, y callaba los falsos negativos de los
+patrones que reconoce. Un patrón nuevo de DECLARACIÓN, en cambio, la deja
+sin ver la columna, y por eso la prueba de vida cuenta columnas, no solo
+ficheros.
 """
 
+import functools
 import os
 import re
 import sys
@@ -122,12 +176,16 @@ import sys
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # El universo sin argumentos y su prueba de vida (§695): directorio relativo a
-# la raíz, mínimo de ficheros y mínimo de columnas. Los mínimos son los medidos
-# en el §695. Un circuito nuevo no obliga a tocarlos; uno que se va, sí: es un
-# suelo, no un pin, y bajarlo se hace aquí, a mano y con su asiento.
+# la raíz, mínimo de ficheros y mínimo de columnas. El de `stark-experiment` es
+# el medido en el §695, y el de `zk-ssl-air`, el del §830. Un circuito nuevo no
+# obliga a tocarlos; uno que se va, sí: es un suelo, no un pin, y bajarlo se
+# hace aquí, a mano y con su asiento.
+# ⚠️ §830: decía «Los mínimos son los medidos en el §695»; el de `zk-ssl-air`
+# sube de 5 y 37 a 6 y 53 con la AIR de la edad, que entra con su `lib.rs` y 16
+# columnas.
 UNIVERSO = (
     ("crates/stark-experiment/src", 42, 270),
-    ("crates/zk-ssl-air/src", 5, 37),
+    ("crates/zk-ssl-air/src", 6, 53),
 )
 
 # Las AIR del kit viven en `zk-ssl-air` sin su probador; la traza la rellena
@@ -135,12 +193,28 @@ UNIVERSO = (
 KIT = "crates/zk-ssl-air/src"
 PROBADOR_DEL_KIT = "crates/stark-experiment/src"
 
+# La AIR de la edad (§830): vive en el `lib.rs` del kit, sus columnas se llaman
+# `C_…` y su probador es `circuit_edad.rs`. Se declara aquí y no se deduce: en
+# el resto del universo `C_…` nombra una restricción, no una columna. Su
+# mínimo es el medido en el §830, las 16 de `C_A` a `C_BITS`; sin él, una AIR
+# nueva del kit taparía en el suelo de `zk-ssl-air` una edad que no se mirara.
+EDAD = "lib.rs"
+PROBADOR_DE_LA_EDAD = "circuit_edad.rs"
+MINIMO_EDAD = 16
+
 EXCLUIDOS = ("lib.rs", "merkle.rs")
 IGNORAR = {"target", ".git"}
 
 DECLARACION = re.compile(
     r"^[ \t]*(?:pub(?:\([^)]*\))?[ \t]+)?const (COL_\w+)[ \t]*:[ \t]*usize", re.M
 )
+DECLARACION_EDAD = re.compile(
+    r"^[ \t]*(?:pub(?:\([^)]*\))?[ \t]+)?const (C_\w+)[ \t]*:[ \t]*usize", re.M
+)
+
+# El bucle de la edad (§830): `for v in [C_A, …]` o `for (k, v) in [C_A, …]…`,
+# con la lista en la cabecera. La variable que cuenta es `v`, la última.
+BUCLE = re.compile(r"\bfor\s+(?:\(\s*\w+\s*,\s*)?(\w+)\s*\)?\s+in\s+\[([^\]]*)\]")
 
 # Un módulo de test en línea: `#[cfg(test)]` y `mod <nombre> {` en la columna 0,
 # con otros atributos en medio o sin ellos, hasta la primera `}` sola en la
@@ -184,19 +258,59 @@ def escrituras(col, c):
     n += len(re.findall(rf"\b(?:row|fila|state)\[{col}\.\.", c))
     # t.set(COL, fila, valor)  (TraceTable::set)
     n += len(re.findall(rf"\.set\(\s*{col}\b", c))
+    # col[COL][fila] = …  y  col[COL + i][fila] = …  (la traza por columnas, §830)
+    n += len(re.findall(rf"\bcol\[\s*{col}\b[^\]]*\]\[[^\]]*\]\s*=(?!=)", c))
+    # el bucle: for (k, base) in [COL, …] { … col[base + i][fila] = … }  (§830)
+    n += por_bucle(c).count(col)
     return n
 
 
-def analizar(ruta, relleno=None):
+def cuerpo(c, abre):
+    """El texto entre la llave `{` de `abre` y la que la cierra. Cuenta llaves y
+    no sabe de cadenas ni de comentarios: las `}` de más que lo cierran antes
+    de su escritura la esconden (ROJO); una `{` de más lo alarga hasta la llave
+    que cierra el bloque de fuera, y una escritura `col[v…]` de ese bloque
+    contaría (un falso negativo)."""
+    nivel = 0
+    for i in range(abre, len(c)):
+        if c[i] == "{":
+            nivel += 1
+        elif c[i] == "}":
+            nivel -= 1
+            if nivel == 0:
+                return c[abre + 1 : i]
+    return c[abre + 1 :]
+
+
+@functools.lru_cache(maxsize=None)
+def por_bucle(c):
+    """Las columnas que rellena un bucle: los nombres de la lista de un
+    `for v in [A, B, …]` cuyo cuerpo escribe `col[v…][…] = …`, una vez por
+    bucle. Se calcula una vez por texto, no una por columna."""
+    salida = []
+    for m in BUCLE.finditer(c):
+        abre = c.find("{", m.end())
+        if abre < 0:
+            continue
+        v = m.group(1)
+        if re.search(rf"\bcol\[\s*{v}\b[^\]]*\]\[[^\]]*\]\s*=(?!=)", cuerpo(c, abre)):
+            salida += re.findall(r"\b[A-Za-z_]\w*\b", m.group(2))
+    return tuple(salida)
+
+
+def analizar(ruta, relleno=None, edad=False):
     """Devuelve (columnas declaradas, [(columna, usos)] de las nunca rellenadas).
 
     `relleno` es el fichero del probador, si la traza se rellena fuera. Las
     escrituras se cuentan fuera de los módulos de test; los usos, en todo el
-    fichero, y lo que escribe un test cuenta como uso."""
+    fichero, y lo que escribe un test cuenta como uso. Con `edad`, las
+    columnas son también los `C_…` (§830)."""
     c = leer(ruta)
     produccion = sin_tests(c)
     otro = sin_tests(leer(relleno)) if relleno and os.path.isfile(relleno) else ""
     columnas = DECLARACION.findall(c)
+    if edad:
+        columnas += DECLARACION_EDAD.findall(c)
     malos = []
     for col in columnas:
         propias = escrituras(col, produccion)
@@ -206,14 +320,21 @@ def analizar(ruta, relleno=None):
     return columnas, malos
 
 
-def ficheros(directorio):
-    """Los `.rs` del directorio, subdirectorios incluidos, menos los EXCLUIDOS."""
+def es_la_edad(ruta, kit):
+    """Si `ruta` es el `lib.rs` del kit, el de la AIR de la edad (§830)."""
+    return os.path.basename(ruta) == EDAD and os.path.realpath(os.path.dirname(ruta)) == kit
+
+
+def ficheros(directorio, kit):
+    """Los `.rs` del directorio, subdirectorios incluidos, menos los EXCLUIDOS;
+    el `lib.rs` del kit entra: es la AIR de la edad (§830)."""
     salida = []
     for base, dirs, nombres in os.walk(directorio):
         dirs[:] = sorted(d for d in dirs if d not in IGNORAR)
         for f in nombres:
-            if f.endswith(".rs") and f not in EXCLUIDOS:
-                salida.append(os.path.join(base, f))
+            ruta = os.path.join(base, f)
+            if f.endswith(".rs") and (f not in EXCLUIDOS or es_la_edad(ruta, kit)):
+                salida.append(ruta)
     return sorted(salida)
 
 
@@ -227,20 +348,27 @@ def main(argv):
     total = 0
     vida = []
     n_ficheros = n_columnas = 0
+    columnas_edad = None
     for directorio, min_f, min_c in universo:
         nombre = os.path.relpath(directorio, RAIZ) if not argv else directorio
         if not os.path.isdir(directorio):
             vida.append(f"{nombre}: no es un directorio")
             continue
-        fs = ficheros(directorio)
+        fs = ficheros(directorio, kit)
         columnas = con_columnas = 0
         for ruta in fs:
             relleno = None
-            if os.path.realpath(os.path.dirname(ruta)) == kit:
+            edad = es_la_edad(ruta, kit)
+            if edad:
+                relleno = os.path.join(RAIZ, PROBADOR_DEL_KIT, PROBADOR_DE_LA_EDAD)
+            elif os.path.realpath(os.path.dirname(ruta)) == kit:
                 relleno = os.path.join(
                     RAIZ, PROBADOR_DEL_KIT, "circuit_" + os.path.basename(ruta)
                 )
-            cols, malos = analizar(ruta, relleno)
+            cols, malos = analizar(ruta, relleno, edad)
+            if edad:
+                columnas_edad = len(cols)
+                print(f"  la AIR de la edad ({KIT}/{EDAD}): {len(cols)} columnas")
             columnas += len(cols)
             con_columnas += bool(cols)
             if malos:
@@ -259,6 +387,15 @@ def main(argv):
                 f"{nombre}: {len(fs)} ficheros y {columnas} columnas, "
                 f"por debajo de su minimo ({min_f} y {min_c})"
             )
+    # La edad, con su propio mínimo (§830): sólo sin argumentos, como los demás.
+    if not argv and (columnas_edad or 0) < MINIMO_EDAD:
+        vida.append(
+            f"la AIR de la edad ({KIT}/{EDAD}): "
+            f"{'no se ha leido' if columnas_edad is None else f'{columnas_edad} columnas'}, "
+            f"por debajo de su minimo ({MINIMO_EDAD})"
+        )
+    if not argv and not os.path.isfile(os.path.join(RAIZ, PROBADOR_DEL_KIT, PROBADOR_DE_LA_EDAD)):
+        vida.append(f"el probador de la edad ({PROBADOR_DEL_KIT}/{PROBADOR_DE_LA_EDAD}) no existe")
 
     rojo = False
     if total:

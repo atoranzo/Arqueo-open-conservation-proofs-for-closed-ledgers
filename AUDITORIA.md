@@ -54351,3 +54351,138 @@ que se borra a mano, y la 120 y la 121. No pone un marcador para los libros ya m
 corte de corriente y el «en uso» de la apertura con otro proceso vivo no están probados. Queda para el
 autor: el RFC-0001 a ACEPTADO, y con él la D-G, la D-H, la D-I y el marcador; Windows; exponer
 `recifrar` en el cli o el SDK.
+
+## §830 — `check_columns` mira también la AIR de la edad: su `lib.rs`, sus 16 columnas `C_…` y las dos formas de relleno de su probador, con su propio mínimo en la prueba de vida (la tarea 42)
+
+El commit que lleva este asiento, sobre `b6994c3` (el §812). Toca `tools/check_columns.py`,
+`tools/verificar_citas.py` (sólo su reparto de números) y este asiento. Ni tests, ni vectores, ni
+comportamiento de ningún crate. Del autor es la tarea: la 42 de la lista que encargó. La forma la
+propuso la sesión. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. No toca
+`crates/zk-ssl-guardian`. Un revisor de la sesión lo leyó y midió sus propios mutantes; lo que pidió
+está aquí (sus mutantes, M17 a M21, con M22 a M23b del mismo tipo, que añadió la sesión; los falsos
+negativos que declara la cabecera y la cifra del tiempo). El canon, `bash tools/canon.sh --sello`,
+corrido por la sesión sobre el árbol limpio de este commit, con este asiento en su sitio y sin esta
+frase: VERDE, 420 s de reloj y 268 s de tests (la línea «total» de la tabla), cada fila en su pin, 1809
+tests que pasan (la suma de la columna «pasan»). Medido sobre este sello antes de corregir texto en los
+asientos de la serie; el canon de la punta, en el §836.
+
+**El número.** Es el primero de un rango nuevo, §830 a §859, que el autor asignó a la sesión que
+escribe este asiento para lo que queda de su lista de tareas. Lo propuso la sesión y lo decidió el
+autor. Son treinta números, uno por sello, con margen. Ningún asiento ni documento de `main` cita hoy
+uno de ellos. Los repartos anteriores no cambian (§740, §770, §800). `tools/verificar_citas.py` lo
+aprende como reparto, con su fuente, igual que los anteriores, porque este asiento cita el §859 antes
+de que exista. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+**El reparto, medido.** `python3 tools/verificar_citas.py` sobre `b6994c3`: exit 0, 753 encabezados,
+7191 citas, 23 a números reservados. Con este sello: exit 0, 754, 7208 y 25. Las dos nuevas a números
+reservados son las del final del rango, en el párrafo de arriba. Eso, y los mutantes que siguen, se
+midió antes de la última frase del primer párrafo. Con ella, 7209 citas y 26 a números reservados: la
+nueva es el número de la punta, que cita. Tres mutantes de `RESERVADOS`, cada uno sobre una copia del árbol, nunca
+en él. Sin el rango nuevo (MV1) y con `range(830, 859)` (MV2), los dos dan ROJO: dos citas muertas,
+«no es ningún encabezado». Con `range(830, 900)` (MV3) da VERDE y vive: la herramienta no mira dónde
+acaba un reparto. Se declara. La línea de R4 y el comentario del reparto son texto, y ninguna
+comprobación los mira.
+
+**La base.** Este sello se escribió primero sobre `e506627` (el §807). Cuando el autor subió del §808
+al §812, la sesión lo rebasó sobre `b6994c3`. El rebase chocó sólo en la cola de este registro. Del
+§808 al §812 no tocan `tools/check_columns.py` ni los dos directorios que lee
+(`git diff --stat e506627 b6994c3` sobre los tres: vacío). Por eso valen igual las cifras de la
+herramienta y sus mutantes. El tiempo es una cifra de reloj del árbol de antes. Se remidieron sobre el
+árbol rebasado las cifras que dependen de la base: `check_columns`, 47 ficheros y 307 columnas antes, y
+48 y 323 después, las mismas que sobre el §807; y `check_tests`, de 1933 a 1968 tests declarados.
+
+**De dónde sale.** El §695 devolvió a `check_columns` su universo y su prueba de vida, y dejó escrito
+en «Lo que NO hace» que de las cinco AIR del kit miraba cuatro. La de la edad vive en
+`crates/zk-ssl-air/src/lib.rs`, que la herramienta saltaba por su nombre. Sus columnas se llaman
+`C_…`, no `COL_…`. Y su probador, `crates/stark-experiment/src/circuit_edad.rs`, rellena la traza por
+columnas, `col[C_…][fila]`, con un patrón que la herramienta no reconocía.
+
+**Medido antes de tocar nada.** La herramienta de la base, la del §807,
+`python3 tools/check_columns.py`: VERDE, 47 ficheros, 307 columnas. Después, sus propias funciones
+sobre la edad, con lo mínimo para leerla (las `const C_…: usize` de `lib.rs`, el probador
+`circuit_edad.rs` sin su módulo de test, y el patrón `col[C_…][…] =`): 16 columnas, de `C_A` a
+`C_BITS`. Trece se rellenan con `col[C_…][fila] =`. Las otras tres, `C_A`, `C_B` y `C_M`, daban cero
+escrituras con esos patrones: las rellena el bucle de `circuit_edad.rs:143-153`,
+`for (k, base) in [C_A, C_B, C_M]`, con `col[base + i][f + r]` dentro. Ninguna columna de la edad queda
+sin rellenar. Y a mano: los carriles cubren el ancho entero, de la 0 a la 82
+(`ANCHO = C_BITS + BITS = 83`).
+
+**Lo que hace.**
+
+1. Lee el `lib.rs` de `zk-ssl-air`, y sólo ese: el de cualquier otro crate sigue fuera.
+2. En ese fichero, las columnas son también las `const C_…: usize`. En el resto del universo `C_…`
+   nombra una restricción, no una columna; leerla como columna en todo el universo da 631 falsos
+   positivos en 25 ficheros (medido con una copia).
+3. Empareja la edad con `circuit_edad.rs` por declaración (`EDAD`, `PROBADOR_DE_LA_EDAD`), no por el
+   nombre `circuit_lib.rs`.
+4. Reconoce dos formas de relleno, en cualquier fichero: `col[COL…][…] = …`, y el bucle
+   `for v in [COL_X, …]` o `for (k, v) in [COL_X, …]…` cuyo cuerpo escribe `col[v…][…] = …`. El nombre
+   de la columna acaba donde acaba la palabra: `C_A` no se lee en `col[C_ACT][fila]`.
+5. La prueba de vida sube el suelo de `zk-ssl-air` de 5 ficheros y 37 columnas a 6 y 53, y gana uno
+   propio: la edad, con sus 16 columnas (`MINIMO_EDAD`), y su probador, que tiene que existir. Sin ese
+   mínimo, una AIR nueva del kit con 16 columnas taparía en el suelo del directorio una edad que se
+   dejara de mirar.
+6. La cabecera dice todo esto, y corrige con marca las tres frases que lo contradecían o lo callaban:
+   la de «Lo que NO comprueba» sobre `lib.rs`, la del comentario de `UNIVERSO` sobre los mínimos y la
+   del final, que sólo decía que un patrón nuevo daría falsos positivos y callaba los falsos negativos
+   de los patrones que sí reconoce.
+
+**Medido después.** `python3 tools/check_columns.py`: VERDE, 48 ficheros, 323 columnas, y «la AIR de
+la edad (crates/zk-ssl-air/src/lib.rs): 16 columnas». Lo mismo llamada desde `/`. Las 307 columnas de
+antes dan, una a una, las mismas escrituras con la versión del §807 y con esta, en su fichero y en el
+de su probador: los dos patrones nuevos no cambian nada fuera de la edad. El único bucle que reconoce
+el universo es el de `circuit_edad.rs:143-153`. Tarda más: cinco corridas alternas de las dos
+versiones sobre una copia, con `date +%s.%N` antes y después (carga de 0,4 a 0,9 en cuatro núcleos),
+dan entre 0,18 y 0,32 s más por corrida. Es una cifra de reloj, y cambia con la carga.
+
+**Mutantes.** Veintisiete corridas, cada una sobre una copia de los dos directorios y de la
+herramienta, nunca en el árbol: una sin mutar (M0, VERDE) y veintiséis mutantes. Mueren dieciséis,
+uno da VERDE como debe (M15b) y viven nueve, todos declarados.
+
+- Los que pedía la tarea, los cuatro ROJO: quitar `col[C_WINV][fila] = winv;` (M1, «`C_WINV`: 0
+  escrituras»); quitar `C_A` de la lista del bucle (M2, «`C_A`: 0 escrituras»); volver a excluir
+  `lib.rs` (M3, la prueba de vida: 5 ficheros y 37 columnas, y la edad sin leer); una `C_FANTASMA`
+  declarada y usada en una restricción, sin relleno (M4).
+- Otros nueve, ROJO: la herramienta sin el bucle (M6, tres columnas, el sentido seguro); sin la
+  declaración `C_…` (M7); el relleno de `C_WINV` movido al módulo de test del probador (M8); el bucle
+  que lee en vez de escribir (M9) o que escribe otra cosa que `col[base…]` (M10); el probador borrado
+  (M11); la edad emparejada por nombre con `circuit_lib.rs` (M12); `lib.rs` excluido otra vez con una
+  AIR nueva de 16 columnas en el kit (M13, sólo `MINIMO_EDAD` lo ve); `C_…` leída como columna en
+  todo el universo (M14).
+- Las llaves: `"}}}"` en una cadena del cuerpo, antes de la escritura, lo corta (M15, ROJO); una `"}"`
+  sola no llega a cerrarlo y la escritura se ve (M15b, VERDE, correcto); el control de M16 sin la
+  llave da ROJO (M16b).
+- Viven dos, y se declaran. M5: la herramienta sin el `\b` del patrón `col[…]`, con M2 encima, da
+  VERDE: `C_A` se lee en `col[C_ACT][fila]`. Es la razón del `\b`, y M2 lo mata con la herramienta
+  real. M16: el bucle deja de escribir, una `"{"` en una cadena alarga su cuerpo hasta la llave del
+  bloque de fuera, y una escritura `col[base][f]` de ese bloque, con `let base = C_P`, cuenta como del
+  bucle. Es un falso negativo, y la cabecera lo dice en «Lo que NO comprueba».
+- Viven siete más, los que midió el revisor y otros dos del mismo tipo, y se declaran. Una escritura
+  en un comentario o en una cadena cuenta como relleno: `col[C_WINV][fila] = winv;` tras `//` (M17),
+  entre `/* */` (M18) o dentro de una cadena (M19); la escritura del bucle tras `//` (M20); y un patrón
+  de antes, `fila[COL_INFERIOR] = c_inferior;` de `circuit_cobro_pendiente.rs`, tras `//` (M23). Su
+  control, la misma línea borrada, da ROJO (M23b). Y el bucle que deja de recorrer `C_A`: con
+  `.enumerate().skip(1)` tras la lista (M21) o con `if k == 0 { continue; }` en el cuerpo (M22). La
+  herramienta cuenta una escritura por nombre de la lista y no mira ni lo que va tras ella ni el flujo
+  del cuerpo. Los dos son falsos negativos, y la cabecera los dice en «Lo que NO comprueba».
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores` y `check_catalogo`.
+
+**Lo que NO hace.** No mira cada columna de un carril: `C_A` nombra doce, `C_P` cuatro y `C_BITS`
+treinta y dos, y la herramienta mira la constante, no el ancho; lo mismo vale para los `COL_…` que
+abren un tramo. Medido en una copia: con `for i in 0..1` en vez de `for i in 0..4` en
+`circuit_edad.rs:170`, `C_P + 1` a `C_P + 3` quedan sin rellenar, y `python3 tools/check_columns.py` da
+VERDE, 323 columnas, exit 0. Es un falso negativo del patrón nuevo `col[COL + i][…]`. No mira la
+traza auxiliar de la edad (`X_H`, `X_S`). No sabe de comentarios ni de cadenas, en nada de lo que
+cuenta: una escritura comentada o dentro de una cadena cuenta como relleno,
+con cualquier patrón, los nuevos y los de antes (M17 a M20, M23), y una llave dentro de ellos mueve el
+final del cuerpo del bucle (M16). No mira si el bucle recorre de verdad cada columna de su lista: lo que
+va tras ella o un salto en el cuerpo pueden dejar una sin rellenar, y la da por rellena (M21, M22). No
+reconoce un bucle con otro receptor que `col` ni con la lista fuera de la cabecera del `for`: eso da
+ROJO, no VERDE. Sigue sin comprobar que la columna se rellene con el valor correcto o en todas las
+filas donde hace falta.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos. El
+`BACKLOG.md` no cambia: ninguna entrada llevaba esto.
