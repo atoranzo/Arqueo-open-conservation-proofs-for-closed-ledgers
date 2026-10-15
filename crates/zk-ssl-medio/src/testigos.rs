@@ -69,7 +69,10 @@
 //!   enlaza curvas (§106, §705, `tools/check_curvas.py`), así que una
 //!   cofirma así es una línea de una clave que el cliente no conoce, y se
 //!   ignora como manda la especificación. Lo que se retiene son cofirmas
-//!   `0x06`, que es lo que el kit sabe verificar.
+//!   `0x06`, que es lo que el kit sabe verificar. ⚠️ §835: decía que la
+//!   casa no enlaza curvas. Este crate no las enlaza, pero el cli y el SDK,
+//!   que lo enlazan, enlazan `ring` por `rustls` para el transporte (la 122
+//!   de `BACKLOG.md`). Ninguna cofirma se verifica con curvas.
 //! - **No decide la frescura** de las marcas de tiempo: las devuelve.
 //! - **No recuerda entre arranques** el tamaño que cofirmó cada testigo: lo
 //!   aprende del `409`, que es para lo que la especificación lo deja.

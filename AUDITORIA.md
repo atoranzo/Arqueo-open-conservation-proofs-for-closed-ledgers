@@ -55057,3 +55057,218 @@ comentario y el mensaje de `tools/canon.sh` («La base»).
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos, y
 `check_modulos` en 205 ficheros. Ningún pin de la tabla cambia. El `BACKLOG.md` no cambia: la 81 ya
 está cerrada, y este sello cierra su causa en el canon sin abrir otra entrada.
+
+## §835 — el TLS del cli y del SDK enlaza curvas, y `check_curvas` no lo ve: declarado con marca, y la 122 de `BACKLOG.md` para decidirlo
+
+El commit que lleva este asiento, sobre `c99bc8e` (el §834). Toca nueve ficheros y este asiento.
+Una marca en la nota del §808 de la D-H del RFC-0013. Una marca en `README.md`, otra en su gemelo
+`README_EN.md` y otra en `RESUMEN_EJECUTIVO.md`. La cabecera de `tools/check_curvas.py`, con su
+marca, y la línea de su VERDE. Una marca en un comentario `//!` de
+`crates/zk-ssl-medio/src/testigos.rs`. Una marca, y una cita por línea corregida, en
+`doc/AVISO_EN_ISO20022.md`. Una marca en `doc/CONFIANZA_RESIDUAL.md`. Y `BACKLOG.md`: la 122,
+nueva, una marca en la 11 y la línea del estado. Ni código que se compile, ni tests, ni vectores,
+ni `Cargo.toml`, ni `Cargo.lock`. El patrón de `check_curvas` no cambia. Lo escribe y lo commitea
+Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a
+§859). No toca `crates/zk-ssl-guardian`.
+
+Del autor es el orden: este sello va solo, y antes del que decida la D-H del RFC-0013, la parte
+bloqueada de la tarea 7 de la lista que encargó. La forma la propuso la sesión. Antes de esta
+versión, el canon, `bash tools/canon.sh --sello`, corrido por la sesión sobre el árbol limpio de una
+versión anterior de este commit, con su asiento en su sitio y sin esa frase, dio VERDE, 432 s de
+reloj (de su arranque a su salida) y 291 s de tests (la línea «total» de la tabla), en una máquina de
+4 CPU con carga de 0,19 al empezar. Las 19 filas del nivel, en su pin, con 1809 tests que pasan; la
+puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (2 s)»; `check_tests` en
+1968 y 20 instrumentos; `check_modulos` en 205; las once herramientas del bucle «2 ter»,
+`check_curvas` entre ellas; la puerta de los vectores, en 497 ficheros y 987 líneas;
+`check_catalogo`; el cable, en 23 de 23; la segunda implementación, con sus pares STARK en 34 de 34;
+y el artefacto reproducible, con el binario `473eb5f63e5b091d` y el tarball `e16a56f4ab18d9d8`. Otra
+corrida, antes, sobre una versión anterior de este commit, murió sin resultado: se cortó con el
+proceso que la lanzó, sin ninguna fila de la tabla. No cuenta. Esta versión cambia la 122, tres
+marcas y este asiento, tras una tercera revisión (abajo). El canon de esta versión,
+`bash tools/canon.sh --sello`, corrido por la sesión sobre el árbol limpio de este commit, con este
+asiento en su sitio y sin esta frase: VERDE, 404 s de reloj (de su arranque a su salida) y 272 s de
+tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,23 al empezar. Las 19
+filas del nivel, en su pin, con 1809 tests que pasan (la suma de la columna «pasan»); la puerta de
+los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (2 s)»; `check_tests` en 1968 y 20
+instrumentos; `check_modulos` en 205; las once herramientas del bucle «2 ter», `check_curvas` entre
+ellas; la puerta de los vectores, en 497 ficheros y 987 líneas; `check_catalogo`; el cable, en 23 de
+23; la segunda implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el
+binario `473eb5f63e5b091d` y el tarball `e16ebc20d4c66f28`. Corrió con un `TMPDIR` propio y vacío, y
+al acabar no quedaba nada en él.
+
+**Lo que hace.** `ureq` 2.12.1 entra en `zk-ssl-cli` y en `zk-ssl-sdk` con `features = ["json"]` y
+sin `default-features = false` (`crates/zk-ssl-cli/Cargo.toml:62`,
+`crates/zk-ssl-sdk/Cargo.toml:32`). Su `default` es `tls` y `gzip`, y `tls` trae `rustls`. En el
+lock: `rustls` 0.23.43 sobre `ring` 0.17.14 y `rustls-webpki` 0.103.13 (`Cargo.lock:2983-2998`,
+`:2302-2314`, `:2279-2290`, `:2326-2334`). Con `ring`, `rustls` negocia X25519, P-256 y P-384 para el
+intercambio, y verifica firmas ECDSA P-256/P-384 y Ed25519 (y RSA, que no es curva) de certificados y
+del handshake, con los verificadores de `rustls-webpki`. `ring` no está en el patrón de
+`tools/check_curvas.py`: mira nombres de crate, y ése no lo nombra. `zk-ssl-verify`, `zk-ssl-node` y
+`zk-ssl-medio` no enlazan `ring`.
+
+El §808 escribió «Ninguna curva entra en los binarios». En los dos binarios del cliente, por el
+transporte, no es así. Lo que el §808 decía de las cofirmas sigue en pie: ninguna cofirma, nota ni
+cabeza se verifica con curvas. El asiento del §808 no se reescribe; lo corrige éste. Hoy, una
+dependencia directa de `ring` en el cli, o en el SDK, sale VERDE en la puerta: los mutantes B y C,
+abajo. Y ni siquiera hace falta. `ureq` 2.12.1 reexporta `rustls` (`pub use rustls;`, su
+`src/lib.rs:374`, con `tls`), y con él su proveedor `ring`. El cli y el SDK pueden hacer hoy un
+X25519 y verificar Ed25519 o ECDSA con `ureq::rustls::crypto::ring`, sin tocar `Cargo.toml` ni
+`Cargo.lock`: el mutante D, compilado y corrido fuera del árbol. Ninguna puerta que mire nombres de
+crate lo cierra mientras `ureq` lleve `tls`.
+
+Las correcciones, sobre los ficheros STAGED de este commit:
+
+1. `spec/rfc/0013-el-medio-del-ancla.md`, en la nota del §808 de la D-H, al final de la oración que
+   acaba en «una línea sin juzgar.»: «⚠️ §835: decía que la casa no enlaza curvas». El cli y el SDK
+   enlazan `ring` por `rustls`, para el transporte. El párrafo (1) de la D-H no cambia.
+2. `README.md`, la fila de los crates, al final de su celda: «⚠️ **Corregido en el §835**: decía que
+   las herramientas vigilan «que ninguna curva entre en los binarios de producción»», y que la de
+   curvas no ve el TLS de `ureq`.
+3. `README_EN.md`, la misma celda, en inglés: «⚠️ **Corrected in §835**: it said they watch «that no
+   curve reaches the production binaries»».
+4. `RESUMEN_EJECUTIVO.md`, la fila del motor: «⚠️ **Corregido en el §835**: decía que vigilan «que
+   ninguna curva entre en los binarios de producción»».
+5. `tools/check_curvas.py`, cabecera, tras «que no es una curva.»: «⚠️ §835: el VERDE decia
+   «ninguna curva en la clausura de produccion»». Su VERDE dice ahora «ninguna curva del patron en
+   la clausura de produccion (ring, por el TLS, no esta en el patron: la 122)». Sin acentos, como
+   el resto del fichero.
+6. `crates/zk-ssl-medio/src/testigos.rs`, el `//!` de «Lo que este módulo NO hace», al final del
+   punto de las cofirmas Ed25519: «⚠️ §835: decía que la casa no enlaza curvas». Este crate no las
+   enlaza; el cli y el SDK, que lo enlazan, sí, por `rustls`. Es texto: ni tests ni código cambian.
+7. `doc/AVISO_EN_ISO20022.md`, el punto 2 de sus condiciones: «⚠️ §835: decía `:10-14` y `:26-30`», y
+   que un Diffie-Hellman sobre una curva no pasa la puerta en el SDK. La cita pasa a
+   `tools/check_curvas.py:12-16` y `:28-32`: la marca 5 metió dos líneas en esa cabecera. Y la marca
+   dice que `ring` trae X25519 y ECDH P-256/P-384 y no está en el patrón. Dice también que «ningún
+   acuerdo de claves» vale para el código de la casa: el TLS de `rustls` hace uno en cada conexión
+   `https`. Y que el SDK puede hacer hoy un X25519 por `ureq::rustls`, sin dependencia nueva, y que
+   ninguna puerta por nombre lo cierra mientras `ureq` lleve `tls`.
+8. `BACKLOG.md`, la 11, tras «cifrado solo cabe entero en `SplmtryData`.»: «⚠️ §835: decía que un
+   acuerdo de claves sobre una curva no pasa la puerta». Y que el código de la casa no escribe
+   ninguno: el del TLS lo hace `rustls`, dentro de `ureq`.
+9. `doc/CONFIANZA_RESIDUAL.md`, la línea del B11.2, tras «no pasa `tools/check_curvas.py` (§788) en
+   el SDK»: «⚠️ §835: decía que no pasa», con lo que trae `ring`, que se llama por `ureq::rustls`, y
+   que el TLS hace uno: así corrige también el «ningún acuerdo de claves» de la misma frase. El
+   párrafo se reparte en sus mismas ocho líneas: otros documentos citan el fichero por línea más
+   abajo, y ninguna cita se mueve.
+
+Fuera de este asiento, el commit deja nueve marcas del §835, una en cada fichero de la lista
+(`git grep --cached`, con «⚠️ §835» y «⚠️ **Corregido en el §835**» o su forma inglesa).
+
+El texto del sello nombraba tres sitios: el RFC, `README.md` y la cabecera de `check_curvas`. Leído
+el árbol, la misma frase estaba en otros tres: `README_EN.md`, `RESUMEN_EJECUTIVO.md` y el `//!` de
+`testigos.rs`, partida en dos líneas. Y la puerta la imprimía en su VERDE. Tres textos más decían
+que un acuerdo de claves sobre una curva no pasa la puerta en el SDK: los puntos 7, 8 y 9. Y la
+marca 5 dejaba rancia la única cita por línea a `check_curvas.py`. Los encontró una revisión de
+este sello, antes de cerrarlo. Todos llevan su marca o su texto nuevo en este sello.
+
+Una segunda revisión encontró cuatro cosas más, y esta versión las corrige. La 11 decía «Sigue sin
+haber ningún acuerdo de claves en el árbol», y el TLS de `rustls` hace uno en cada conexión `https`.
+La 122 y el punto 2 de `doc/AVISO_EN_ISO20022.md` daban por medido el código escrito con `ring`, y lo
+medido es la dependencia. La marca de `testigos.rs` olvidaba el SDK. Y el ajuste de líneas estaba
+roto en este asiento y en la 11. `doc/CONFIANZA_RESIDUAL.md` no se reajusta: sus siete líneas del
+B11.2 quedan en 119 a 127 caracteres, y volver al ancho de antes pediría más líneas, que moverían las
+citas de más abajo. Su «el árbol no tiene ningún acuerdo de claves», del §791, no llevaba marca
+nueva; en esta versión la lleva, dentro de la del punto 9.
+
+Una tercera revisión encontró cinco cosas más, y esta versión las corrige. La vía por la que una
+verificación con curvas entraría sin verse no pide dependencia nueva: `ureq` reexporta `rustls`, y lo
+medido con B y C se quedaba corto (el mutante D). Entre las firmas que `ring` verifica dentro del TLS
+sólo se nombraba Ed25519, y verifica también ECDSA P-256 y P-384, las más comunes en la cadena WebPKI
+y en el handshake de TLS 1.3. Las opciones de la 122 no daban su coste: al nodo viaja la clave de
+VISTA, y el nodo no tiene TLS (`SECURITY.md` §3.3); y la (c) presupone la (a). La marca de
+`README.md` decía «la puerta vigila», y la celda dice que vigilan las herramientas. Y
+`doc/CONFIANZA_RESIDUAL.md` dejaba sin marca una frase que, leída sola, es falsa. La 122 se
+reescribe, y cambian las marcas de los puntos 2, 7 y 9.
+
+**Medido y leído**, en este orden, en el worktree de la sesión, con 4 CPU y carga de 0,26:
+
+1. `cargo tree --locked --offline -e normal -i ring`: `ring` ← `rustls` ← `ureq` ← `zk-ssl-cli` y
+   `zk-ssl-sdk`; y `ring` ← `rustls-webpki` ← `rustls`.
+2. `cargo tree --locked --offline -e normal -p <raíz>`, para las cuatro raíces de la puerta: `ring`,
+   `rustls` y `rustls-webpki` salen en `zk-ssl-cli` y en `zk-ssl-sdk`; en `zk-ssl-verify` y en
+   `zk-ssl-node`, ninguno. `cargo tree -i aws-lc-rs`: no está en el lock. Y `-p zk-ssl-medio`: ni
+   `ring`, ni `rustls`, ni `ureq`.
+3. Leído en las fuentes de la caché de cargo, sin correrlo: `ring` 0.17.14 define
+   `signature::ED25519` (`src/ec/curve25519/ed25519/verification.rs:34`); `rustls-webpki` 0.103.13 lo
+   usa como algoritmo de verificación (`src/ring_algs.rs:207-210`); `rustls` 0.23.43 lo lista en los
+   algoritmos de firma de su proveedor `ring` (`src/crypto/ring/mod.rs:112`, `:139`), detrás de ECDSA
+   P-256 y P-384 (`:108-111`, y su correspondencia con los esquemas de TLS en `:124-137`), y sus
+   grupos por defecto son X25519, SECP256R1 y SECP384R1 (`:176-180`). `rustls-webpki` exporta en
+   público `webpki::ring::{ED25519, ECDSA_P256_*, ECDSA_P384_*}` (`src/lib.rs:105-109`). `ureq`
+   reexporta `rustls` (`src/lib.rs:374`, bajo `cfg(feature = "tls")`). El `default` de `ureq` 2.12.1
+   es `["tls", "gzip"]`, y `tls` es `webpki-roots`, `rustls` y `rustls-pki-types` (su
+   `Cargo.toml:221-241`). `ring` declara `pub mod agreement` (`src/lib.rs:115`), con X25519 y ECDH
+   P-256/P-384 (`src/agreement.rs:15-21`, `:66-67`).
+4. `python3 tools/check_curvas.py` sobre el árbol: VERDE, 4 raíces y 192 crates distintos en su
+   clausura normal.
+5. `git grep -n 'check_curvas.py[`]*:[0-9]'`, antes de corregir: una cita por línea, la de
+   `doc/AVISO_EN_ISO20022.md`. Su `:10-14` era R1 y R2 en `c99bc8e`, y en este árbol es «ANTES de
+   mirar», `#` y R1. Después: la misma cita, en `:12-16` y `:28-32`. `verificar_citas` sale con 0
+   en los dos casos: no ve que una cita por línea dentro de un fichero se desplace.
+6. Las citas por línea a los ficheros que este sello alarga: ninguna a `testigos.rs` ni a
+   `doc/AVISO_EN_ISO20022.md`. A `BACKLOG.md`, sólo las de `doc/ecst/`: las que caen más abajo de
+   la 11 se desplazan, y este sello no las corrige. A `doc/CONFIANZA_RESIDUAL.md`, siete más abajo
+   de la 165 en `doc/AVISO_EN_ISO20022.md` y en `doc/ROTACION_DE_CUENTAS.md`, de la 315 a la 565, y
+   otras en `doc/ecst/`: por eso el punto 9 no añade líneas.
+
+**Mutantes.** Este sello no añade ninguna comprobación: no hay mutante que matar. Los cuatro que
+siguen miden la ceguera que se declara. A, B y C, sobre copias; D, sobre un crate aparte. Todos, en
+un directorio de trabajo de la sesión.
+
+- A, `ring` en el patrón, sin excepción del transporte: una copia de `tools/check_curvas.py` con
+  `ring` en el patrón, corrida sobre este árbol con `CANON_RAIZ`. ROJO, 2 fallos: «zk-ssl-cli enlaza
+  ring» y «zk-ssl-sdk enlaza ring». Ni el nodo ni `zk-ssl-verify`: lo mismo que el punto 2, visto por
+  la clausura de la propia puerta. Es la (c) sin su excepción: para volver a VERDE habría que quitar
+  `tls`, que es la (b).
+- B, vivo, y se declara: una copia del árbol hecha con `git archive HEAD`. En ella, `ring = "0.17"`
+  como dependencia directa de `zk-ssl-cli`, y un fichero con una verificación Ed25519 escrita con
+  `ring`. `cargo metadata --offline` pone al día su `Cargo.lock`: una línea, `ring` en las
+  dependencias del cli. La puerta de este árbol, sobre esa copia: VERDE, con los mismos 192 crates.
+  La copia de A, sobre la misma copia: ROJO, 2 fallos. Vive porque `ring` ya estaba en la clausura y
+  la puerta no lee código. El fichero no se declara como módulo ni se compila: lo que la puerta mira
+  es la clausura, y la clausura ya cambia con la dependencia.
+- C, vivo, y se declara: lo mismo en el SDK, sobre otra copia hecha con `git archive HEAD`.
+  `ring = "0.17"` como dependencia directa de `zk-ssl-sdk`, y un fichero con un X25519 efímero de
+  `ring::agreement`. `cargo metadata --offline`: una línea en su lock, `ring` en las dependencias
+  del SDK. La puerta de este árbol: VERDE, 192 crates. La copia de A: ROJO, 2 fallos. Es lo que
+  dicen las marcas de los puntos 7, 8 y 9: lo medido es la dependencia. El fichero tampoco se
+  compila.
+- D, vivo, y se declara: la vía sin dependencia nueva. Un crate fuera del árbol, en un directorio de
+  trabajo de la sesión, con `ureq = "=2.12.1"` y `json` como única dependencia, como el cli y el SDK.
+  Resuelve `ring` 0.17.14, `rustls` 0.23.43 y `rustls-webpki` 0.103.13, los del lock. Su `main` hace
+  un X25519 con `ureq::rustls::crypto::ring::kx_group::X25519` y verifica el vector 1 del RFC 8032
+  con los algoritmos de `default_provider()`. Lo midió un revisor, y la sesión lo repitió con su
+  propio directorio de compilación, no el del canon: «x25519 iguales: true» y «ed25519: 1 de 14
+  algoritmos aceptan la firma buena; 0 la mala». En el cli o en el SDK, ese código no cambiaría
+  `Cargo.toml` ni `Cargo.lock`: la puerta de hoy seguiría en VERDE, y la de A, en el mismo ROJO que
+  ya le da el TLS. Una excepción del transporte por nombre o por raíz, como la de la (c) de antes, lo
+  dejaría pasar con el TLS: leído, no medido, porque esa (c) no está escrita.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores --desde b6994c3` (497
+ficheros y 987 líneas) y `check_catalogo`; también `check_tests`, `check_modulos` y
+`bash -n tools/canon.sh`.
+
+**Lo que NO hace.** No cambia el patrón de `check_curvas`: es la opción (c), y la decide el autor. No
+cierra la vía de `ureq::rustls`: ninguna puerta por nombre la cierra mientras `ureq` lleve `tls`. No
+quita `tls` a `ureq`. No enmienda el §106. No mide si algún camino real del cli o del SDK habla
+HTTPS: sus agentes `ureq` toman la URL que da el usuario (`crates/zk-ssl-cli/src/cobro.rs:252`,
+`pago.rs:142`, `prenda.rs:155`, `witness.rs:2732`, `:2816`, y `crates/zk-ssl-sdk/src/lib.rs:54`), y
+ningún fuente de los dos crates escribe una URL `https://`. No compila los mutantes B y C. No
+reescribe el asiento del §808. No reescribe el título del punto 2 de `doc/AVISO_EN_ISO20022.md` («Una
+clave efímera sobre una curva no entra en el SDK»): su marca dice para qué vale. No toca
+`doc/blueprint-v2.md` (las líneas 481, 606 y 677): dicen cómo debía ser la puerta, «sin curvas por
+raíz», y no lo que se enlaza. No toca `doc/ecst/`. No hace que `verificar_citas` vea el
+desplazamiento de una cita por línea: sería maquinaria nueva. No decide la D-H del RFC-0013: va en su
+propio sello, después de éste.
+
+**Lo que es del autor.** La 122 y sus opciones, con su coste: (a) enmendar el §106 para el
+transporte, con la clave de vista confiada en tránsito a un ECDHE clásico; (b) quitar `tls` a `ureq`,
+hoy en todo el cli y todo el SDK, con la clave de vista en claro hasta el proxy, contra `SECURITY.md`
+§3.3, o un túnel fuera del árbol; y (c), complemento de la (a) y no alternativa: una regla por
+aristas en `check_curvas` y un grep de `ureq::rustls`, `ring::` y `webpki::` en los fuentes de las
+raíces, con su mutante. Hasta que decida, el publicador del medio no elige transporte.
+
+**Contadores.** `BACKLOG.md` pasa de 46 a 47 abiertas; las resueltas siguen en 77. `check_tests`
+sigue en 1968 tests declarados y 20 instrumentos, y `check_modulos` en 205 ficheros. Ningún pin de
+la tabla del canon cambia.

@@ -2,7 +2,9 @@
 # ── LAS RAICES DE PRODUCCION, SIN CURVAS (§788, ARQ-08 P1) ──────────
 # La familia de supuestos de la casa es la resistencia del hash (§106): STARK/FRI, Rescue, Blake3,
 # Merkle y XMSS; la unica excepcion declarada es ML-DSA-44 en el medio del ancla (§705, RFC-0013
-# D-C), que no es una curva. Los comparativos del workspace -Groth16, Nova, Plonk, halo2- traen
+# D-C), que no es una curva. ⚠️ §835: el VERDE decia «ninguna curva en la clausura de produccion»;
+# el TLS de `ureq` enlaza `ring` en el cli y en el SDK, y `ring` no esta en el patron (la 122 de
+# BACKLOG.md). Los comparativos del workspace -Groth16, Nova, Plonk, halo2- traen
 # curvas al Cargo.lock, y hasta el §788 que no llegaran a los binarios de produccion lo sostenia la
 # disciplina: un `use ark_ff` en el nodo compilaba (doc/blueprint-v2.md, ARQ-08). Reglas, declaradas
 # ANTES de mirar:
@@ -67,7 +69,7 @@ def main():
             print('ROJO %s' % r)
         print('check_curvas: ROJO · %d fallo(s)' % len(rojo))
         return 1
-    print('check_curvas: ninguna curva en la clausura de produccion')
+    print('check_curvas: ninguna curva del patron en la clausura de produccion (ring, por el TLS, no esta en el patron: la 122)')
     return 0
 
 

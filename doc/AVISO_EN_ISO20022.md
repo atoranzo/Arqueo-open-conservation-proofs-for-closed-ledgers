@@ -192,10 +192,19 @@ canal:
    claves. El B11.2 habla de «clave efímera» sin decir sobre qué grupo, y el árbol tampoco lo dice
    de Sapling (📖 no se leyó aquí). Lo medido es esto: desde el §788, `tools/check_curvas.py` rechaza
    las bibliotecas de curvas —`x25519-dalek` y `curve25519-dalek` entre ellas— en la clausura del
-   nodo, el testigo, el SDK y el kit (`tools/check_curvas.py:10-14` y `:26-30`), así que un
-   Diffie-Hellman sobre una curva no pasaría esa puerta en el SDK. Uno poscuántico, un KEM, no está
-   en el árbol —el grep de «ML-KEM» y de «Kyber» sale vacío— y **su tamaño no está medido aquí**:
-   los ~100 B del B11.2 no se pueden dar por buenos para él.
+   nodo, el testigo, el SDK y el kit (`tools/check_curvas.py:12-16` y `:28-32`), así que un
+   Diffie-Hellman sobre una curva no pasaría esa puerta en el SDK. ⚠️ §835: decía `:10-14` y
+   `:26-30`; la marca del §835 en esa cabecera movió dos líneas. Y decía que un Diffie-Hellman sobre
+   una curva no pasa la puerta en el SDK. `ring`, que ya está en el SDK por el TLS de `ureq`, trae
+   X25519 y ECDH P-256/P-384, y no está en el patrón (la 122 de `BACKLOG.md`): una dependencia
+   directa de `ring` en el SDK sale VERDE, medido en el §835 sobre una copia. Y ni siquiera hace
+   falta: `ureq` reexporta `rustls`, y el SDK puede hacer hoy un X25519 con
+   `ureq::rustls::crypto::ring`, sin tocar `Cargo.toml` ni `Cargo.lock`, medido en el §835 con un
+   crate aparte. Ninguna puerta que mire nombres de crate lo cierra mientras `ureq` lleve `tls`. El
+   título de este punto vale para las bibliotecas del patrón, no para `ring`. Y «ningún acuerdo de
+   claves» vale para el código de la casa: el TLS de `rustls` hace uno en cada conexión `https`. Uno
+   poscuántico, un KEM, no está en el árbol —el grep de «ML-KEM» y de «Kyber» sale vacío— y **su
+   tamaño no está medido aquí**: los ~100 B del B11.2 no se pueden dar por buenos para él.
 3. 📐 **Cifrado, solo cabe entero en la extensión.** Sin contar el KEM, el AEAD de la casa añade
    40 bytes, 24 de nonce y 16 de etiqueta: 88 y 120 bytes para v1 y v2, que en base64 son 120 y 160
    caracteres. El v2 ya no cabe en un campo de 140 (filas B a D), y con el encapsulado del KEM no

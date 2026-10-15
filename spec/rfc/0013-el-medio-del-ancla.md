@@ -277,7 +277,9 @@ que custodiar, sin estado pero con custodia.
 > agente SSH y solo acepta Ed25519, aunque `tlog-witness` v1.1.0 dice que los testigos DEBERÍAN usar
 > ML-DSA-44. Una cofirma así no la verifica el publicador —la casa no enlaza curvas: el §106, el
 > §705 y `tools/check_curvas.py`—, que la ignora como línea de una clave que no conoce, y en el
-> sobre del kit sería una línea sin juzgar. Lo que la casa sabe retener y el kit sabe verificar es
+> sobre del kit sería una línea sin juzgar. (⚠️ §835: decía que la casa no enlaza curvas; el cli y
+> el SDK enlazan `ring` por `rustls`, para el transporte, y lo abre la 122 de `BACKLOG.md`; ninguna
+> cofirma, nota ni cabeza se verifica con curvas.) Lo que la casa sabe retener y el kit sabe verificar es
 > la cofirma `0x06`, la de su mismo motor (`internal/witness`) con una clave ML-DSA-44, que el
 > binario de litewitness no ofrece. Qué testigo público corre esa versión, y con qué clave, no se ha
 > medido: pide red. Y la E3a no se midió contra mtc-core sino contra esos dos testigos, que son
