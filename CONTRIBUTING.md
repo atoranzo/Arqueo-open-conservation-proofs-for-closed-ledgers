@@ -108,6 +108,21 @@ grado depende del testigo-. Pero verás rojo si corres la orden de arriba
 tal cual. **La capa se mide con `cargo test -p zk-ssl --release`**, que es lo
 que corre `tools/canon.sh`.
 
+⚠️ **§814: remedido el 15-10-2026, y la capa ya no da rojo en depuración.**
+`cargo test --locked -p zk-ssl` en depuración da 443 pasan, 0 fallan y 45
+ignorados, sobre `0315b14` (el §813), en 3.253,94 s con otro trabajo en la
+máquina (4 CPU, carga de 9,2 a 18,6). En release, la fila de la capa en
+`tools/canon.sh` fija hoy 481 pasan y 7 ignorados. De los 45, 7 son
+instrumentos de medida, ignorados en todo perfil, y 38 llevan
+`cfg_attr(debug_assertions, ignore = …)`: en depuración no corren, y corridos
+ahí con `--ignored` pasan los 38. Ya no hay fallos que atribuir al límite de
+grados, y con esta medida se cierra la entrada 41 de `BACKLOG.md`. Sigue en
+pie: esos 38 solo los corre release, y la capa se mide con `--release`. Si la
+orden de arriba, el workspace entero con `--all-features`, da rojo hoy no se
+sabe: no se ha remedido. Y el «307» de release no era del 26-08-2026: aquel
+día fueron 287 (§366), y los sellos lo subieron con el pin hasta el §394 sin
+tocar la fecha.
+
 Y para los circuitos:
 
 ```bash

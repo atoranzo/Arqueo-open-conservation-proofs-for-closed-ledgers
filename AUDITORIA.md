@@ -55641,3 +55641,176 @@ nombre. No mide un reinicio de la máquina, ni un disco lleno. No explica la lat
 con carga (la 123). Y no detecta que una clave firme sobre dos libros, o con un contador nuevo: la
 negativa ya no lo receta, pero un nodo arrancado así con la misma clave vuelve a firmar hojas
 gastadas, y uno con el diario de otro libro lo mezcla en su cadena (la 124).
+
+## §814 — la 41 se cierra medida: en depuración la capa da 443 pasan, 0 fallan y 45 ignorados, y los 38 que lleva marcados para depuración pasan ahí y se quedan marcados hasta la migración de Winterfell; y la 125, nueva: el instrumento del vecino no corre en ningún perfil
+
+El commit que lleva este asiento, sobre `4d8017d` (el §813). Un solo sello, de prosa: la 41 del
+`BACKLOG.md`, cerrada, con su título tachado y su nota; la nota de la cabecera que decía que la 41
+no se cerraba, con su marca; la cabecera, recontada; la (a) de la 94, que remitía a la 41, con su
+marca; la 125, nueva; el «Aviso de perfil» de `ARQUITECTURA.md` y el aviso de la sección 4 de
+`CONTRIBUTING.md`, con su marca; y este asiento. No toca código, ni un test, ni un pin, ni ninguna
+de las marcas `cfg_attr(debug_assertions, ignore = …)` de `crates/zk-ssl`; no toca
+`crates/zk-ssl-guardian` ni la zona de la migración de Winterfell. Lo hizo Claude, en una sesión de
+Claude Code en la nube, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`: la sesión corrió el censo y la medida; un agente escribió el
+sello sobre ellos, tres revisiones lo leyeron y pidieron arreglos -la marca de la 94, abajo, es
+uno-, y otro agente los hizo y volvió a correr las herramientas. La sesión midió sobre `0315b14`
+-el §813 antes de portarse detrás de los §830 a §836- y escribió el sello sobre `4d8017d`: de una a
+otra, `crates/zk-ssl` solo cambia en `two_phase.rs`, ocho líneas del §832 que limpian un test, sin
+añadir ni quitar tests, y no cambian el fork de winterfell, `stark-experiment`, `zk-ssl-hash`,
+`zk-ssl-air` ni `Cargo.lock` (`git diff --stat 0315b14 4d8017d`). El número es el siguiente del
+rango que el autor asignó (§800 a §829). En la sesión se corrió el canon entero, `--sello`, sobre
+este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El censo de la misma sesión corrió la capa en depuración y la encontró hecha
+sin registrar: 443 pasan, 0 fallan y 45 ignorados, en 2.613,48 s (`debug41.log`). Y corrió en tres
+tandas, con `--ignored`, los 32 marcados «juez release» y el instrumento del pago: los 4 de
+`instrumento_edad.rs`, 4 de 4 en 8,38 s; los 2 de `instrumento_pago.rs`, el de
+`nivel_de_produccion.rs`, los 4 de `prueba_edad.rs` e `instrumento_del_pago`, 8 de 8 en 85,31 s; y
+los 21 de `instrumento_revela.rs`, 21 de 21 en 170,76 s (`debug41_edad.log`,
+`debug41_ignorados.log`, `debug41_revela.log`). Sus registros no traen la orden ni el commit:
+`debug41.log` corre un binario de `target/debug` y no trae doc-tests, como da `--lib`, y los de las
+tres tandas no dicen el perfil. La orden -`cargo test -p zk-ssl --lib`-, la base -`b6994c3`;
+`0315b14` es el §813 sobre él y no toca `crates/zk-ssl`- y que las tres tandas corrieran en
+depuración los dice el censo, no sus registros; la medida de abajo, cuyos registros sí traen el
+commit y cuyo guion trae las órdenes, da lo mismo. La 41 seguía diciendo «Noventa y tres fallos de
+depuracion», y la cabecera, «La 41 no se cierra hoy, y eso es deliberado». Es la rancia de OTRA
+clase del §583, la que contar casillas no ve: una entrada abierta que el árbol ya cerró, como la 42
+en el §779 y la 50 en el §266.
+
+**Quién lo decide.** El autor pidió «HACER todo». Cerrar la 41 con una medida no es una decisión de
+diseño: la entrada contaba fallos de depuración, la orden de la capa en depuración no da hoy
+ninguno, y ninguna marca tapa uno de los 93 que contaba; lo que la entrada temía -marcarlos en
+bloque (§78.4)- no se hizo. Lo que sí sería decisión -quitar las 38 marcas, que hoy esconden en
+depuración tests que pasan ahí- no se toma aquí: que sigan pasando puede depender del fork de
+winterfell -es la hipótesis del censo, abajo-, que migra otra sesión, y quitarlas es de esa sesión,
+después de la migración; se declara como suyo. La 125 no decide nada: deja la pregunta, con su
+medida.
+
+**Lo que hace.**
+
+1. **La 41, cerrada.** `[x]`, el título tachado con la cifra de hoy al lado, «✅ (§814)», y al final
+   de la entrada una nota «⚠️ §814» con la medida y el registro de cada cifra, el origen de cada
+   marca, lo que dieron los 7 instrumentos, la hipótesis dicha como hipótesis y lo que no se hace.
+   El cuerpo, entero.
+2. **La cabecera del `BACKLOG.md`.** La nota «⚠️ **La 41 no se cierra hoy, y eso es deliberado.**»
+   se queda y gana su marca: se cierra en el §814, medida, y no marcando en bloque. El «**Estado**»
+   pasa a 49 abiertas y 78 resueltas, y su lista gana «y el §814, que cierra la 41 y abre la 125».
+3. **La (a) de la 94**, abierta, que decía que «hay tests de la capa que caen hoy en depuración» y
+   remitía su cifra a la 41, gana una marca «⚠️ §814» sin cifra de tests -la premisa de
+   `check_figures` no la admite en una entrada abierta-: hoy no cae ninguno, medido a mano, y la
+   ceguera sigue entera: la del canon, que corre en release; la de los marcados, que en depuración
+   no corre ninguna orden; y la de los `#[ignore]` sin condición, que el canon no corre (la 125).
+4. **La 125, nueva, tras la 124**, en el grupo E, el de la 94, de cuya clase es su ceguera: el
+   instrumento del vecino no corre, con la medida en los dos perfiles; la premisa rancia; lo que
+   contradice del §157 -su «verde»- y el candidato a bisecar, sin bisecar; el testigo nativo de la
+   50 que se borró en el §176; lo que pide y qué la cierra.
+5. **Los dos avisos de perfil**, el de `ARQUITECTURA.md` («Cómo compilar y verificar») y el de
+   `CONTRIBUTING.md` («Pruebas y validación»), ganan una marca «⚠️ §814» detrás, sin borrar nada: lo
+   medido hoy en depuración, con su base, su tiempo y su carga; el pin de release del canon; que ya
+   no hay fallos que atribuir al límite de grados; lo que sigue en pie -los 38 marcados solo los
+   corre release, y «La capa se mide con `cargo test -p zk-ssl --release`», que es lo que corre
+   `tools/canon.sh`-; que si la orden del workspace entero da rojo hoy no se sabe, porque no se ha
+   remedido; y que el «307» de release no era del 26-08-2026: aquel día fueron 287 (§366, y el
+   §367 los escribió en los dos avisos), y los sellos lo subieron con el pin sin tocar la fecha
+   (`git log -S` lo da en el §379, 287 -> 289, y en el §394, 304 -> 307, `bfa6f7b`). Buscadas con
+   `grep` las cifras «188 pasan», «93 fallan» y «307 pasan» en los demás documentos: solo están en
+   `AUDITORIA.md`, en `doc/ecst/VERIFICACION.md` -registro generado, cuya M11 ya decía que el 307
+   era el pin del §394- y en sus fuentes, `doc/ecst/borrador/*.json` y `flujo-verificacion.js`.
+   Ninguno es documento vivo, y no se tocan.
+
+**Medido.**
+
+- **La suite de la capa en depuración**, el 15-10-2026 en 4 CPU, sobre `0315b14`, con su propio
+  `CARGO_TARGET_DIR`, por el guion `correr.sh`: `flock <fichero de turno de cargo de la sesión>
+  nice -n 19 cargo test --locked -p zk-ssl --no-run` tarda 139 s en total, de los que cargo cuenta
+  1 min 09 s (`info.txt`, `build.log`), y `nice -n 19 cargo test --locked -p zk-ssl`, empezada
+  hacia las 10:52 UTC, da `443 passed; 0 failed; 45 ignored` en 3.253,94 s, y los doc-tests
+  `0 passed; 0 failed; 0 ignored` (salida 0; `todo.log`, `info.txt`). Había otro trabajo en la
+  máquina: la carga de un minuto, mirada cada minuto, fue de 9,20 a 18,57 durante la suite (54
+  muestras, de las 10:53 a las 11:46 UTC) y de 8,38 a 13,90 después (`carga.txt`).
+- **Los 45 ignorados**: `nice -n 19 cargo test --locked -p zk-ssl --lib -- --list --ignored` lista
+  45 (`lista_ignorados.txt`). En `crates/zk-ssl/src` hay 38 marcas
+  `#[cfg_attr(debug_assertions, ignore = "…")]`, 6 de ellas partidas en varias líneas -las 5 de
+  `two_phase.rs` y la de `tests.rs`-: `grep -c debug_assertions` da 38 líneas en siete ficheros, y
+  `grep -c 'cfg_attr(debug_assertions'`, que solo ve las de una línea, 32. Son 32 «winterfell
+  valida grados en depuracion: juez release» (`instrumento_edad.rs` 4, `instrumento_pago.rs` 2,
+  `instrumento_revela.rs` 21, `nivel_de_produccion.rs` 1 y `prueba_edad.rs` 4), 5 «grado
+  dependiente del testigo: la posicion 0 anula COL_PBIT» en `two_phase.rs` y 1 «escenario de
+  rechazo» en `tests.rs`, `the_governance_set_survives_restart` (§78). Los otros 7 son
+  instrumentos de medida, `#[ignore]` en todo perfil. En release, la fila de `zk-ssl` de
+  `tools/canon.sh` fija 481 pasan y 7 ignorados: 443 + 38 = 481, y 45 - 38 = 7. Ese pin es el del
+  canon; esta sesión no corrió la capa en release.
+- **Los 38, en depuración.** `nice -n 19 cargo test --locked -p zk-ssl --lib -- --ignored --exact`
+  debía correr solo los 38 por su nombre completo, y un error del guion -partía cada línea de la
+  lista por «:» y se quedaba con su primer tramo- dejó la lista vacía (`marcados_full.txt`, un
+  byte): la orden corrió los 45 ignorados. Los 38 marcados, **38 de 38 `ok`** (`marcados.log`). De
+  los 7 instrumentos, 5 `ok` (`instrumento_del_cobro`, `instrumento_de_la_puerta_de_edad`,
+  `instrumento_del_pago`, `el_coste_de_verificar_una_prueba` y `remedicion_89_1::muestra`);
+  `instrumento_de_la_prueba_de_edad` no terminó: entró entre los primeros y seguía corriendo cuando
+  el límite de dos horas del guion entero paró la corrida, hacia las 12:50 UTC, unos 63 minutos
+  después (`info.txt` no tiene su línea de salida); y
+  `a_neighbour_leaf_does_not_reveal_its_balance`, `FAILED`.
+- **El del vecino, solo**, con `cargo test` y `-- --ignored` filtrado a su nombre. La orden entera
+  no quedó escrita: el registro da `-p zk-ssl --lib` (su «to rerun pass») y un solo test corrido de
+  488 (487 filtrados). En depuración, `FAILED` en 3,96 s, sin recompilar, con el binario
+  `target/debug/deps/zk_ssl-8c644f88ceed432e` (`vecino_debug.log`; la sesión lo corrió en el árbol
+  de la medida, en `0315b14`, y el registro no lo dice); en release, `FAILED` en 0,49 s
+  (`vecino_release.log`; la sesión lo corrió en su árbol de validación, en `4d8017d`, y el registro
+  tampoco lo dice). El mismo pánico en los dos, en `crates/zk-ssl/src/client.rs:676:9`: «assertion
+  `left == right` failed: deben ser vecinos de arbol», `left: 3899196792`, `right: 625182909`.
+  `client.rs` y `accounts.rs` son el mismo blob en `b6994c3`, `0315b14` y `4d8017d` (`git
+  rev-parse <commit>:<ruta>`), así que el commit no cambia lo medido. El test supone que dos altas
+  seguidas caen en los índices 0 y 1 (`victima ^ 1 == atacante`); desde F3 (§157) el índice sale de
+  `public_id[0] mod capacidad`, con sondeo lineal (`accounts.rs`). Eso es lectura del código, no
+  bisección. El aserto de los índices está desde `d907efe` (01-08-2026), y `e3116c6` (F3,
+  04-08-2026) solo toca `accounts.rs` (`git log -S`, `git show --stat`). El testigo nativo de la 50,
+  `t2b_diccionario_sin_salt_no_acierta`, lo borró `1f41a1d` (§176) (`git log -S`).
+- **El origen de las marcas**, con `git log -S` sobre el motivo de cada una y `git show` de cada
+  commit: las 32 «juez release» entraron con sus tests, que nacen en el mismo commit, del 11-09 al
+  07-10-2026 -`393be18` (§463) 1, `738f736` (§465) 3, `7495846` (§466) 4, `d298447` (§502) 2,
+  `81549de` (§531) 21 y `9da6906` (§697) 1-; las 5 de `two_phase.rs` (`51b7297`) y la de `tests.rs`
+  (`d267acf`, §78) son del 31-07-2026. Los 93 se contaron el 26-08-2026 (§366) y entonces fallaban:
+  ninguna marca tapa uno de ellos.
+- **Las herramientas del bucle del canon** (`check_cifras`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `verificar_citas`, `check_dominios`, `check_publicadas`,
+  `check_nucleo`, `check_techo`, `check_curvas`, `check_superficie`) y `check_tests`,
+  `check_modulos`, `check_vectores` y `check_catalogo`: antes de tocar nada, las quince en 0; en el
+  árbol con «§814» sin número, ROJA solo `verificar_citas` (v6: 11 líneas con el marcador, 9 en el
+  `BACKLOG.md`, 1 en `ARQUITECTURA.md` y 1 en `CONTRIBUTING.md`), y las otras catorce en 0 y con la
+  misma salida que antes de tocar nada: `check_tests` con 1972, `check_cifras` con sus 26 cifras de
+  tests en documentos vivos, sin ninguna rancia, y `check_figures` con la premisa de su exclusión
+  -cero cifras de tests en entradas abiertas del `BACKLOG.md`- en OK. En un clon del repositorio en
+  `4d8017d` con estos tres ficheros, un número de prueba en esas líneas y un encabezado de prueba al
+  final de `AUDITORIA.md`, las quince en 0 (`verificar_citas`: 762 encabezados, 0 citas muertas;
+  `check_vectores`, con git, compara sus huellas con HEAD); y con este asiento, numerado, en vez
+  del encabezado, también las quince en 0. El clon se borró. Las cuentas del `BACKLOG.md`, con
+  `grep -c`: 49 `- [ ]` y 78 `- [x]`. `git diff --check`, limpio.
+
+**Lo que NO se midió.** Por qué dejaron de fallar en depuración los de grados, ni desde cuándo: no
+se ha bisecado. La hipótesis del censo, y no es más: la ocultación del fork (§538, RFC-0009;
+`crates/winter-prover/README.md`) aleatoriza la traza, y el grado declarado se realiza. Ni
+`instrumento_de_la_prueba_de_edad` en depuración, que no terminó. Ni desde cuándo falla el del
+vecino, ni si tras F3 estuvo en verde, como dice el §157: `e3116c6` es el candidato a bisecar. Ni
+la orden del workspace entero en depuración, la que nombran los dos avisos. Ni la capa en release:
+su cifra es el pin del canon.
+
+**Contadores.** Ninguna cifra de tests cambia: el pin de la capa sigue en 481 y 7, los totales de
+sello y con largos no se mueven, `check_tests` sigue en 1972, y ningún `#[test]` ni marca cambia.
+El `BACKLOG.md`, de 49 abiertas y 77 resueltas a 49 y 78: cierra la 41 y abre la 125. Ni vectores.
+
+**Lo que NO hace.** No quita ninguna de las 38 marcas: esconden en depuración tests que pasan ahí,
+y quitarlas es de la sesión que migra el fork de winterfell, tras la migración. No arregla ni retira
+el instrumento del vecino, y no toca la 50: es la 125. No toca `README.md` ni `README_EN.md`
+(«`--release` es obligatorio para la capa, no una optimización (los circuitos validan en depuración
+con grados que dependen del testigo)», y su traducción): release sigue siendo lo único que corre
+los 38 marcados, y el paréntesis es el motivo de sus marcas, que se quedan; corridos con
+`--ignored`, pasan en depuración, y matizarlo va con quitar las marcas, tras la migración. Ni el
+comentario de `crates/zk-ssl/src/two_phase.rs:2236-2239`: «Los DOCE fallos de depuracion de
+`mint`, `freeze` y `recovery` NO llevan esta marca», y «Van en su propia entrada de backlog»: habla de la 41 original, y es código, que este sello no toca. Ni los comentarios
+«(nota 41)» de `instrumento_pago.rs` e `instrumento_revela.rs`, que dicen que esos tests se saltan
+en depuración, y se saltan. Ni `crates/stark-experiment/src/circuit_send.rs:2542`, que llama
+«Hermano de» a un test borrado: es de la zona de Winterfell, y lo dice la 125. Ni
+`doc/ecst/VERIFICACION.md`, registro generado; ni la entrada 2, historia fechada; ni los preprints,
+depositados. Y no explica por qué dejaron de fallar los de grados: la hipótesis queda dicha como
+hipótesis.

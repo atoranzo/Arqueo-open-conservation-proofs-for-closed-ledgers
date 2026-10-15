@@ -12,12 +12,12 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 49 abiertas, 77 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 49 abiertas, 78 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
-119, el §812, que abre la 120 y la 121, el §835, que abre la 122, y el §813, que abre la 123 y
-la 124.
+119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
+124, y el §814, que cierra la 41 y abre la 125.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -54,6 +54,9 @@ operacion dejaba de ser recuperable.
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
 restantes tienen causa decidida pero **no medida uno a uno**, y marcarlos en
 bloque seria el error que §77 acaba de desmentir.
+⚠️ §814: se cierra en el §814, medida, y no marcando en bloque: el 15-10-2026, en
+depuración, la capa da 443 pasan, 0 fallan y 45 ignorados, y ninguna de sus 38
+marcas de depuración tapa uno de los 93 del 26-08-2026. La medida, en la entrada.
 
 ⚠️ **El 31-07 aparecio la 43 leyendo codigo para otra cosa**: la capa no
 verificaba las pruebas de la via de pago, y un tercero vaciaba cualquier
@@ -2592,7 +2595,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   13-08-2026) y el canon es estructuralmente ciego a ellos. ⚠️ **La
   cifra no vive aquí**: es de la **41**, que posee los fallos, y del
   asiento §292, que la mide — esta nota es del INSTRUMENTO que no los
-  ve, no de los grados. **(b)** los warnings de `cargo build` no
+  ve, no de los grados. ⚠️ **§814: hoy no cae ninguno, medido a mano.** El
+  15-10-2026, `cargo test --locked -p zk-ssl` en depuración no da ningún
+  fallo, y la 41 se cierra en el §814 con su cifra. La ceguera de la (a)
+  sigue entera: el canon corre en release y no vería el día que uno vuelva
+  a caer; los que llevan `cfg_attr(debug_assertions, ignore = …)` no
+  corren en depuración en ninguna orden; y el canon tampoco corre los
+  `#[ignore]` sin condición: uno de ellos, el instrumento del vecino, no
+  corre en ningún perfil y nada lo decía (la 125).
+  **(b)** los warnings de `cargo build` no
   son los de `cargo test`: un accesor usado sólo por tests da
   cero warnings en el canon y warning en el build normal — cazado por
   un `--help` (§295, y corregido allí borrando el accesor).
@@ -2934,6 +2945,37 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   declarado, con esta medida, como hasta ahora. **Qué la cierra**: esa decisión, con su test y su
   banco si se construye, o la frase de `SECURITY.md` §2 con la medida.
 
+- [ ] **125. El instrumento del vecino no corre: falla igual en depuración y en release (§814).**
+  Medido el 15-10-2026: `client::tests_privacidad::a_neighbour_leaf_does_not_reveal_its_balance`,
+  ignorado en todo perfil y corrido solo, a mano, con `--ignored`, panica antes de barrer nada, en
+  depuración (3,96 s, `vecino_debug.log`, que no dice el commit) y en release (0,49 s, sobre
+  `4d8017d`, `vecino_release.log`), con el mismo mensaje: `client.rs:676`, «deben ser vecinos de
+  arbol», `left: 3899196792`, `right: 625182909`. `client.rs` y `accounts.rs` son los mismos en
+  `b6994c3`, `0315b14` y `4d8017d`. Es el instrumento de la 50, cerrada: el que midió en el §93 el
+  diccionario de 10,84 s sobre la hoja del vecino SIN sal, y que desde el flip (§156) su docstring
+  da por contrato -si el barrido acierta, el cegado se rompió-. Su premisa es que la víctima y el
+  atacante, abiertos uno tras otro, caen en los índices 0 y 1 (`victima ^ 1 == atacante`): la de
+  `next_index += 1`. Desde F3 (§157) el índice sale de la identidad (`public_id[0] mod capacidad`,
+  con sondeo lineal, en `accounts.rs`), y dos altas seguidas ya no caen ahí. Eso es lectura del
+  código: desde cuándo falla no está medido, no se ha bisecado. ⚠️ **Y contradice lo publicado**:
+  el §157 dice que este instrumento «ya afirmaba `hallado.is_none()` — era un contrato durmiente
+  que el mundo salted puso en verde SOLO». Hoy no llega a ese aserto: panica antes, en el de los
+  índices, que está desde `d907efe` (01-08-2026). F3 cambia la colocación en `e3116c6`
+  (04-08-2026), que solo toca `accounts.rs`: es el candidato natural para bisecar, y no se ha
+  bisecado. Ese «verde» del §157 queda sin respaldo medido. El canon no lo ve: corre la capa sin
+  `--ignored`, y los ignorados de su fila no corren; es una ceguera de la clase de la 94, que
+  ninguno de sus apartados nombra. **Lo que pide**: decidir si se reescribe para un atacante que sí
+  sea vecino de alguien en el árbol de hoy, o si se retira con marca; y decir qué deja eso a la 50,
+  que se cerró en el §266 con sus testigos y cita el ataque que este instrumento midió, el de los
+  10,84 s, como el que con sal no acierta. Para esa decisión pesa un dato: el testigo nativo que la
+  50 cita para eso, `T2b-nativo` (`t2b_diccionario_sin_salt_no_acierta`, en `circuit_settlement.rs`
+  de `stark-experiment`), se borró con el museo en el §176 (`1f41a1d`). Queda el del circuito,
+  `t2b_circuito_diccionario_sin_salt_no_verifica` (`crates/stark-experiment/src/circuit_send.rs`,
+  cuyo docstring aún dice «Hermano de `t2b_diccionario_sin_salt_no_acierta`»), y en
+  `crates/zk-ssl/src` no hay otro test que barra por diccionario un hermano de camino: retirar este
+  deja a la capa sin el suyo. **Qué la cierra**: el instrumento corriendo, con su cifra y su fecha,
+  o retirado con marca, y en los dos casos una nota en la 50 que lo diga.
+
 ## F. Publicacion, cuando el circuito este cerrado
 
 La 28 se hace **al final**, por decision explicita: no se tocan los
@@ -3166,7 +3208,8 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   degradar a «cosmetico» antes de que un test lo mire**: eso se hizo tres
   veces con la 36.
 
-- [ ] **41. Noventa y tres fallos de depuracion: TRES clases, dos vacias.**
+- [x] **41. ✅ (§814) ~~Noventa y tres fallos de depuracion: TRES clases, dos vacias.~~
+  Ninguno: el 15-10-2026, en depuración, la capa da 443 pasan, 0 fallan y 45 ignorados.**
   **Remedido el 26-08-2026**, tras los §364 y §365: son **noventa y tres**,
   y **todos** de la clase de grados; las otras dos clases quedan **vacias**.
   ⚠️ **La tabla del §78.1 clasificaba por FICHERO**, y bajo
@@ -3209,6 +3252,38 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (§71.4). El metodo que funciono: diffear el vector, aislar la variable,
   test discriminante. Probable emparentada con la 25 -subidas a cuentas
   (indices 0 y 1) y a congelados (arbol vacio)-, **sin verificar**.
+
+  ⚠️ **§814: CERRADA EN EL §814, y no por arreglo: el censo de la sesión la encontró hecha y sin
+  registrar.** Medido el 15-10-2026 en 4 CPU, sobre `0315b14` (el §813; de ahí a `4d8017d`
+  `crates/zk-ssl` solo cambia la limpieza de un test de `two_phase.rs`, el §832, sin añadir ni
+  quitar tests): `cargo test --locked -p zk-ssl`, en depuración, da **443 pasan, 0 fallan y 45
+  ignorados**, en 3.253,94 s, y los doc-tests, ninguno (`todo.log`); con otro trabajo en la
+  máquina, la carga fue de 9,2 a 18,6 durante la suite (`carga.txt`). El censo de la misma
+  sesión, sobre `b6994c3` y con `--lib`, ya había dado lo mismo, en 2.613,48 s (`debug41.log`).
+  De los 45, **7 son instrumentos de medida**, ignorados en todo perfil, y **38 llevan
+  `cfg_attr(debug_assertions, ignore = …)`**: 32 con «winterfell valida grados en depuracion:
+  juez release» (`instrumento_edad.rs` 4, `instrumento_pago.rs` 2, `instrumento_revela.rs` 21,
+  `nivel_de_produccion.rs` 1 y `prueba_edad.rs` 4), los 5 de `two_phase.rs` con «grado
+  dependiente del testigo» y `the_governance_set_survives_restart`, el escenario de rechazo del
+  §78. **Corridos en depuración con `--ignored`, pasan los 38** (`marcados.log`). En release, la
+  fila de `zk-ssl` de `tools/canon.sh` fija 481 pasan y 7 ignorados: son los 443 y los 38.
+  **Ninguna de las 38 marcas tapa uno de los 93**: las 32 entraron con sus tests, nuevos, del
+  11-09 al 07-10-2026 (§463 a §697), y las 6 restantes ya estaban el 31-07 (§71.3 y §78), antes
+  de contarse los 93 (`git log -S` con el motivo de cada marca): lo que queda de los 93 pasa en
+  depuración sin marca. Los registros son de la sesión del §814, y su asiento los nombra.
+  **Por qué dejaron de fallar los de grados NO está medido**, ni desde cuándo: no se ha bisecado.
+  La hipótesis del censo, y es solo eso: la ocultación del fork de winterfell (§538, RFC-0009;
+  `crates/winter-prover/README.md`) aleatoriza la traza, y el grado declarado se realiza.
+  **Lo que NO se hace**: las 38 marcas se quedan, aunque escondan en depuración tests que hoy
+  pasan ahí. Que sigan pasando puede depender del fork de winterfell -es la hipótesis de
+  arriba-, que migra otra sesión, y quitarlas es de esa sesión, después de la migración. El
+  precio declarado arriba -un fallo nuevo en depuración se esconde entre los rojos- deja de
+  cobrarse, porque la orden de la capa ya no da ninguno, salvo en los 38 marcados, que en
+  depuración no corren y los mira release. De los 7 instrumentos, corridos en depuración con
+  `--ignored`, 5 dan `ok`; `instrumento_edad::instrumento_de_la_prueba_de_edad` no terminó: lo
+  paró, tras unos 63 min, el límite de dos horas del guion de la medida (`marcados.log`); y
+  `a_neighbour_leaf_does_not_reveal_its_balance` falla, y no por la depuración: falla igual en
+  release (la 125). La (a) de la 94, que remitía aquí la cifra, gana su marca del §814.
 
 - [x] **42. ✅ (§779) ~~`mint_to_pending` diverge de `mint` en el error del tope.~~
   Ya no diverge: la via antigua no existe.**
