@@ -1290,3 +1290,8 @@ mod tests_sal {
 // tests. Se declara al final para no mover las lineas que otros documentos citan de este fichero.
 #[cfg(test)]
 mod nivel_de_produccion;
+
+// §840 (la 51 de BACKLOG.md): el censo de los `native_leaf` y la guarda de que las estrechas no
+// llegan a produccion. Solo tests. Al final, por lo mismo que el anterior.
+#[cfg(test)]
+mod censo_de_hojas;

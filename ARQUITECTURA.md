@@ -55,7 +55,7 @@ custodios distintos**, no una clave; y el flujo documentado es el de
 hallazgo propio. Corregido en §361; el error se registra en vez de
 borrarse.
 
-`crates/zk-ssl` — **482 tests** (7 ignorados, declarados). Material para
+`crates/zk-ssl` — **484 tests** (7 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
 El backend STARK añade **18 circuitos** verificados por separado.
 
@@ -1141,7 +1141,7 @@ comprueba que transferir no altera el suministro.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 34 módulos y **482 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 35 módulos y **484 tests**, frente a
 > los 2 módulos y 17 de este.
 >
 > ⚠️ §778: aquí decía **33 módulos**, la cuenta del §531, y son **34** desde
@@ -1149,10 +1149,12 @@ comprueba que transferir no altera el suministro.
 > que la cifra seguía en 33 y no la recontó. Se cuenta como el §531: los
 > `.rs` de `src/` menos `lib.rs`, que son los `mod` de fichero que declara
 > `crates/zk-ssl/src/lib.rs` (sus tres módulos en línea no cuentan). El 2
-> de este crate es de otra vara: con esta serían 34 frente a 1 (su único
-> `mod` de fichero es `sparse_tree`), y con todos los `.rs`, 36 frente a 2.
+> de este crate es de otra vara: con esta serían 35 frente a 1 (su único
+> `mod` de fichero es `sparse_tree`), y con todos los `.rs`, 37 frente a 2.
 > ⚠️ §839: decía 35. El 36 es `src/nivel_de_produccion/censo.rs`, un
 > submódulo de `nivel_de_produccion` y no un `mod` de `lib.rs`: el 34 no cambia.
+> ⚠️ §840: decía 34 módulos, 34 frente a 1 y 36 `.rs`. El 35 y el 37 son
+> `src/censo_de_hojas.rs`, un `mod` de fichero de `lib.rs`, solo de tests.
 >
 > Una versión anterior de este documento lo titulaba *"La capa"* sin más,
 > lo que **contradecía a `AUDITORIA.md` §15** en el mismo repositorio.
@@ -1560,19 +1562,19 @@ rojo si corres esa orden tal cual. **La capa se mide con
 `cargo test --locked -p zk-ssl` en depuración da 443 pasan, 0 fallan y 45
 ignorados, sobre `0315b14` (el §813), en 3.253,94 s con otro trabajo en la
 máquina (4 CPU, carga de 9,2 a 18,6). En release, la fila de la capa en
-`tools/canon.sh` fija hoy 482 pasan y 7 ignorados (⚠️ §839: decía 481;
-el 482.º es el censo de las longitudes, que corre también en depuración,
-donde serían 444 pasan: los 443 son de `0315b14`, y la capa entera no se
-ha vuelto a correr ahí). De los 45, 7 son
-instrumentos de medida, ignorados en todo perfil, y 38 llevan
-`cfg_attr(debug_assertions, ignore = …)`: en depuración no corren, y corridos
-ahí con `--ignored` pasan los 38. Ya no hay fallos que atribuir al límite de
-grados, y con esta medida se cierra la entrada 41 de `BACKLOG.md`. Sigue en
-pie: esos 38 solo los corre release, y la capa se mide con `--release`. Si la
-primera orden de arriba, la del workspace entero, da rojo hoy no se sabe: no
-se ha remedido. Y el «307» de release no era del 26-08-2026: aquel día fueron
-287 (§366), y los sellos lo subieron con el pin hasta el §394 sin tocar la
-fecha.
+`tools/canon.sh` fija hoy 484 pasan y 7 ignorados (⚠️ §839: decía 481; el 482.º
+es el censo de las longitudes, que corre también en depuración, donde serían
+444 pasan: los 443 son de `0315b14`, y la capa entera no se ha vuelto a correr
+ahí. ⚠️ §840: decía 482; los dos de más, el censo de los `native_leaf`, corren
+también ahí: serían 446). De los 45, 7 son instrumentos de medida, ignorados en
+todo perfil, y 38 llevan `cfg_attr(debug_assertions, ignore = …)`: en
+depuración no corren, y corridos ahí con `--ignored` pasan los 38. Ya no hay
+fallos que atribuir al límite de grados, y con esta medida se cierra la entrada
+41 de `BACKLOG.md`. Sigue en pie: esos 38 solo los corre release, y la capa se
+mide con `--release`. Si la primera orden de arriba, la del workspace entero,
+da rojo hoy no se sabe: no se ha remedido. Y el «307» de release no era del
+26-08-2026: aquel día fueron 287 (§366), y los sellos lo subieron con el pin
+hasta el §394 sin tocar la fecha.
 
 ## Limitaciones honestas — léase antes de considerar esto para producción
 

@@ -57105,3 +57105,345 @@ Las correcciones, sobre los ficheros STAGED de este commit:
 
 La frase nueva de `SECURITY.md` §3.11 no lleva marca: la escribe este commit, y no corrige nada
 sellado.
+
+## §840 — el censo de los `native_leaf` y su guarda: diez en `crates/`, la ancha de producción en `zk-ssl-hash` y dos estrechas en `stark-experiment`, que no llegan a producción (la 52 de la lista)
+
+El commit que lleva este asiento, sobre `cea7879` (el §839). Toca
+`crates/zk-ssl/src/censo_de_hojas.rs`, que nace con dos tests; `crates/zk-ssl/src/lib.rs`, la línea
+`mod censo_de_hojas`, al final, tras `#[cfg(test)]`; `BACKLOG.md`, una nota en la 51, con su marca;
+`tools/canon.sh`, la fila de `zk-ssl`, con su pin de 482 a 484 y su crónica; los totales de
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; el «482» de la capa en `ARQUITECTURA.md` (tres: dos
+sin marca y el de la nota del §814, con la suya; y las cuentas de módulos y de `.rs`, con la suya),
+`CONTRIBUTING.md` (el de la misma nota, con su marca), `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`. Y este asiento. Ni
+código de los crates fuera de `#[cfg(test)]`, ni vectores, ni `Cargo.toml`, ni `Cargo.lock`. Lo
+escribe y lo commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el
+autor asignó (§830 a §859).
+
+Del autor es la tarea: la 52 de la lista que encargó, «censo de los `native_leaf` y su guarda». Es
+la entrada 51 de `BACKLOG.md`, no la 52. Del autor es el orden: este sello va detrás del §839, el
+segundo de los que mueven el pin de `zk-ssl`. La forma la propuso la sesión. El canon de este commit,
+`bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su
+sitio y sin esta frase: VERDE, 941 s de reloj (de su arranque a su salida) y 728 s de tests (la
+línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,18 al empezar. Antes, dentro del
+mismo cerrojo, la sesión tocó con `touch` los 274 `.rs` de `crates/` y de `tools/`, y su log lo
+registra. Las 19 filas del nivel, en su pin, con 1816 tests que pasan (la suma de la columna
+«pasan»), y la de `zk-ssl` en 484 pasan y 7 ignorados; la puerta de los binarios, con «OK 24
+objetivos en 8 paquetes, 12 con features (59 s)»; `check_tests` en 1975 y 20 instrumentos;
+`check_modulos` en 207; las once herramientas del bucle «2 ter»; la puerta de los vectores, en 497
+ficheros y 987 líneas; `check_catalogo`; el cable, en 23 de 23; la segunda implementación, con sus
+pares STARK en 34 de 34; y el artefacto reproducible, con el binario `473eb5f63e5b091d` y el
+tarball `329eb343d2a74d71`. Corrió con un `TMPDIR` propio y vacío, y al acabar no quedaba nada en
+él.
+
+**La base.** Este sello se escribió sobre otra versión del §839 (`97c513a`, fuera de la historia),
+que iba sobre otra versión del §838 (`7e83957`, de antes del arreglo de su revisión, que tampoco
+está). Allí se midió y se commiteó (`0d4bb21`), y la vuelta 1 de su revisión fue en un segundo
+commit, los dos fuera de la historia. Después se rebasó sobre la entrega, en un solo commit: sobre
+el §839 (`4f60198`), detrás del §838 (`ff9d4fc`) y del §837 (`e2b1019`), que van sobre el §814
+(`d4d6d45`), de otra sesión. En este fichero, los asientos del §814, del §837, del §838 y del
+§839 van antes y éste detrás. De `97c513a` a `4f60198` cambian `ARQUITECTURA.md`, `BACKLOG.md`,
+`CONTRIBUTING.md`, `doc/AVISO_EN_ISO20022.md`, `doc/CONFIANZA_RESIDUAL.md`, `tools/check_curvas.py`
+y este fichero. Ningún fuente de los crates, ni `tools/canon.sh`, ni `Cargo.toml`, ni
+`Cargo.lock`: el código de la guarda y lo que lee no cambian, y los mutantes de abajo no se han
+vuelto a correr. El §838
+cambia la R1 de `tools/check_curvas.py`, que ahora toma la clausura con `--all-features` y
+`--target all`. La guarda no lee ese fichero: sus cuatro raíces y `PRODUCCION` están escritas en
+el módulo. Remedido sobre `4f60198`, `cargo tree --locked --offline -q -e normal -p <raíz>
+--prefix none` de las cuatro raíces, con y sin `--all-features --target all`, da lo mismo: los
+doce crates de `PRODUCCION` y los tres del fork. El rebase corre 75 líneas las citas de este
+asiento a la entrada 51 de `BACKLOG.md`, por la 125 y las notas del §814: la entrada pasa de la
+4077 a la 4152. Se corrigen aquí sin marca, porque este asiento no estaba sellado.
+El commit de ese rebase (`56b57fc`) se selló con el canon en VERDE sobre `4f60198`, y después se
+rebasó otra vez: sobre el §839 de ahora (`cea7879`), que va sobre el §860 (`1eee2c5`) y el §861
+(`32b5b12`), de otra sesión. Son prosa y comentarios: cierran siete entradas de `BACKLOG.md`, abren
+la 126 y la 127, y la cabecera pasa de 48 abiertas y 79 resueltas a 43 y 86;
+`tools/verificar_citas.py` gana en `RESERVADOS` el rango del §860 al §889; y tocan `SECURITY.md`,
+`ARQUITECTURA.md`, `PAPER.md`, `PAPER_EN.md`, trece documentos de `doc/` y de `spec/`, un comentario
+de `tools/check_publicadas.py` y comentarios de seis fuentes de los crates (`metrics.rs`,
+`client.rs`, `iso.rs`, `migration.rs` y `persistence.rs` de la capa, y `lib.rs` del SDK). Ningún
+test, ni `tools/canon.sh`, ni `Cargo.toml`, ni `Cargo.lock`. Ninguna línea que cambian en los crates
+nombra uno de los seis apartados, `stark_experiment` ni `native_leaf`: `git diff 4f60198 cea7879 --
+crates`, con `grep` de esos ocho nombres, no da ninguna. En este fichero, los asientos del §860 y
+del §861 van antes que el del §839, y éste detrás. El `cherry-pick` entró sin conflicto. De los
+ficheros que toca este sello, el §860 y el §861 cambian `ARQUITECTURA.md` (cuatro líneas en su
+sitio, la 333, la 540, la 552 y la 770), `PAPER.md` y `PAPER_EN.md` (una línea cada uno, en su
+sitio, que no es la de los totales), `BACKLOG.md`, que crece 558 líneas, 449 de ellas por encima de
+la entrada 51, y este fichero. Ninguna cita de este asiento a `ARQUITECTURA.md`, `CONTRIBUTING.md`,
+`tools/check_publicadas.py`, `tools/canon.sh`, `doc/ecst/VERIFICACION.md`, `doc/METODO.md`,
+`doc/integracion-vertical-evaluacion.md` ni a los fuentes de los crates se mueve: medidas otra vez,
+dan lo mismo. Las de `BACKLOG.md` bajan 449 líneas: la entrada 51, de la 4152 a la 4601; su nota, de
+la 4159 a la 4608; la marca de la nota, de la 4164-4166 a la 4613-4615; la línea tras la que crece
+el fichero, de la 4158 a la 4607; y la frase de la entrada 41, de la 3282 a la 3731. Se corrigen
+aquí sin marca, como las del primer rebase. Medido otra vez sobre este commit, `git grep` de
+`BACKLOG.md:` con un número mayor que 4607, fuera de este fichero y en los asientos de este rango,
+no da ninguna. Las cifras de tests de la base no cambian: en `32b5b12` el pin de `zk-ssl` es 481,
+los totales de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` son 1813 y 1950, y `check_tests` y
+`check_modulos` dan 1972 y 205; en `cea7879`, 482, 1814 y 1951, y 1973 y 206, como en `4f60198`.
+Este segundo rebase cambia en este asiento la apertura; la frase del canon, que vuelve a «no se ha
+corrido todavía» hasta el canon de este commit; este párrafo; las citas por línea a `BACKLOG.md`, en
+«De dónde sale», en el punto 5 de «Medido», en «Lo que NO hace» y en las correcciones; y la cabecera
+de `BACKLOG.md` en «Contadores». Sobre este commit: `check_tests`, 1975 y 20 instrumentos;
+`check_modulos`, 207; y las once herramientas del bucle «2 ter», `check_vectores --desde 32b5b12` y
+`check_catalogo`, con 0. Los dos tests de este módulo no se han vuelto a correr sobre esta base
+fuera del canon.
+
+**De dónde sale.** La 51 (`BACKLOG.md:4601`), del §94: tres `native_leaf` con la misma estructura y
+distinta anchura de identidad, un `Digest` en `circuit_settlement` y un `BaseElement` en
+`compliance_circuit` y en `double_entry`, y «no medido si las otras dos están en algún camino de
+producción». Hoy `circuit_settlement` (`zk-core`) no tiene ninguna, y nada fijaba ni el censo ni que
+las estrechas siguieran fuera de producción.
+
+**Lo que hace.**
+
+1. `cada_native_leaf_esta_en_el_censo`: recorre los `.rs` de `crates/`, sin `target`, y toma cada
+   `fn native_leaf…` de las líneas de código, con su nombre y el tipo de su primer parámetro, la
+   identidad. Lo compara con `CENSO`, una lista escrita de diez: la ancha y su `native_leaf_salted`
+   en `zk-ssl-hash/src/lib.rs` (`Digest`); las dos estrechas de `stark-experiment`
+   (`BaseElement`); cinco de `halo2-experiment` (`Fp`) y una de `plonk-experiment` (`BlsScalar`).
+   Una que entra, que se va o que cambia de anchura, cae. Prueba de vida: al menos 250 ficheros.
+2. `ninguna_estrecha_llega_a_produccion`:
+   - la clausura de las cuatro raíces de `tools/check_curvas.py` (R1), leída de los
+     `[dependencies]` de sus `Cargo.toml`, sin las de desarrollo: tiene que ser `PRODUCCION`, doce
+     crates de la casa. Un `package` en una de esas dependencias, en la línea de su `path` o en su
+     tabla `[dependencies.x]`, es ROJO; y en un fuente de producción, un alias escrito
+     `stark_experiment as`, también con `extern crate`, o `stark_experiment::{self as …}`: la
+     guarda no los sigue;
+   - en `stark-experiment`, los módulos con una estrecha, del censo vivo, y los que nombran uno de
+     ellos como identificador entero, con su ruta o sin ella, hasta el punto fijo: tienen que ser
+     `APARTADOS`, seis. El código de un módulo `m` es su `m.rs` y todos los `.rs` bajo `m/`: su
+     `mod.rs` y los submódulos en directorio. Un glob (`use crate::*;`) trae nombres sin su ruta:
+     quien usa así un apartado escribe su nombre, y eso lo aparta. Los dos de las estrechas;
+     `compliance_real_proof`, `iso_bridge` y `settlement_prover_impl`, que usan la de
+     `compliance_circuit`; y `persistent_nullifier_registry`, que nombra ese módulo en sus tests;
+   - ningún fuente de `src/` de los otros once crates de `PRODUCCION` nombra un apartado, ni tiene
+     una `native_leaf` que no sea ancha. Quedan fuera los ficheros SOLO de tests, los que la raíz de
+     su crate declara con `#[cfg(test)] mod x;`, y lo que cuelga de ellos: el instrumento de D-B
+     (`instrumento_revela.rs`) prueba `double_entry` a propósito. Los módulos de test en línea de
+     un fichero de producción sí se leen;
+   - los módulos de `stark-experiment` que esos fuentes nombran como `stark_experiment::…`, más los
+     que nombra la raíz con `crate::`, y los que estos nombran con `crate::` o `super::`, hasta el
+     punto fijo: ninguno es un apartado. Nombrar uno ya aparta al que lo nombra, así que no hace
+     falta otra comprobación. Y la raíz de `stark-experiment` sólo nombra un apartado en su `mod`;
+   - prueba de vida: al menos 80 fuentes de producción, 20 módulos nombrados, 25 enlazados y dos
+     módulos con una estrecha.
+3. La nota de la 51: el censo medido, la guarda y la marca sobre `circuit_settlement`. La 51 sigue
+   abierta.
+
+**Medido y leído**, en este orden, en el worktree de la sesión, con 4 CPU:
+
+1. Sobre `97c513a`, y lo mismo sobre `4f60198`: `git grep -n 'fn native_leaf' -- crates` da diez
+   líneas, nueve `native_leaf` y una `native_leaf_salted`. Los usos de las estrechas, con `git grep`
+   de los nombres de sus módulos en `crates/`: en `stark-experiment`, `compliance_real_proof.rs`,
+   `iso_bridge.rs` y `settlement_prover_impl.rs` importan la de `compliance_circuit`;
+   `persistent_nullifier_registry.rs` importa `compliance_circuit::native_nullifier` en su `mod
+   tests`; nadie importa `double_entry` salvo su `mod` en `lib.rs`. Fuera de `stark-experiment`, en
+   los crates de producción, sólo `crates/zk-ssl/src/instrumento_revela.rs:42`, `use
+   stark_experiment::double_entry as de;`, un fichero que `lib.rs` declara con `#[cfg(test)]`; en
+   los demás, los nombres sólo salen en comentarios (`settlement-prover/src/lib.rs:38` y `:55`,
+   `zk-ssl-hash/src/lib.rs:117`, `zk-ssl/src/nivel_de_produccion.rs:5`). La clausura, con `cargo
+   tree --locked --offline -e normal -p <raíz> --prefix none` de las cuatro raíces: los doce crates
+   de `PRODUCCION` y los tres del fork, `winter-air`, `winter-prover` y `winter-verifier`.
+2. Leído en los fuentes, no medido por un test: la estrecha compone
+   `native_merge(native_merge(embeber(id), embeber(saldo)), embeber(nonce))`
+   (`stark-experiment/src/compliance_circuit.rs:108-111` y `double_entry.rs:163-166`, con el
+   `native_merge` de `zk-ssl-hash` por `merkle.rs:103`), y la ancha lo mismo con `public_id` en
+   lugar de `embeber(id)` (`zk-ssl-hash/src/lib.rs:188-191`). La diferencia es el dominio de la
+   identidad, no la función.
+3. Con el cambio, carga de 0,93 al empezar: `cargo test -p zk-ssl --locked --lib censo_de_hojas --
+   --nocapture`. En depuración, 2 pasan en 0,28 s, tras 22 s de compilar la capa; en release, 2
+   pasan en 0,05 s, tras 60 s, y 489 filtrados, 491 con los dos. Las dos líneas, iguales en los dos
+   perfiles: «10 funciones native_leaf… en 273 ficheros de crates/: 2 anchas (Digest), 2 estrechas
+   (BaseElement), 5 de halo2 (Fp) y 1 de plonk (BlsScalar)»; y «12 crates de produccion; 81 fuentes
+   de src/ fuera de stark-experiment, sin los de tests; 43 modulos de stark-experiment en 43
+   fuentes, 2 con una estrecha y 6 apartados; la produccion nombra 24 y enlaza 28», con los 28: 23
+   módulos `circuit_*`, `merkle`, `mutation`, `native`, `nullifier` y `rescue_hash`. Esas cifras son
+   las del código de la vuelta 1 (abajo), que añade «en 43 fuentes»: hoy `stark-experiment/src` no
+   tiene subdirectorios, y cada módulo es un fichero. Con ese código, en depuración, 2 pasan en
+   0,24 s, tras 4,9 s de compilar; en release, tras 57,9 s de compilar `zk-ssl`, 2 pasan en
+   0,06 s, con 489 filtrados. Sobre `4f60198`, con carga de 1,17 al empezar, en depuración: `cargo
+   test -p zk-ssl --locked -- --list` da 491 tests en `src/lib.rs`, los 484 que pasan y los 7
+   ignorados del pin, que es de release, tras 28,4 s de compilar; y los dos de este módulo pasan
+   en 0,28 s, con 489 filtrados y las mismas dos líneas. Release no se ha vuelto a correr sobre
+   esta base: es el canon.
+4. Las once herramientas del bucle «2 ter», `check_vectores --desde 4d8017d` (497 ficheros y 987
+   líneas), `check_catalogo`, `check_tests` (1975 tests declarados y 20 instrumentos) y
+   `check_modulos` (207 ficheros): con 0, salvo `verificar_citas` antes de este asiento, que daba
+   ROJO por las dos citas al §840 de la nota de la 51, «no es ningún encabezado». Sobre `4f60198`,
+   con este asiento: las once, `check_vectores --desde d4d6d45`, `check_catalogo`, `check_tests` y
+   `check_modulos`, con 0 y las mismas cifras.
+5. Las citas por línea que el cambio desplaza. `BACKLOG.md` crece dieciocho líneas tras la 4607:
+   `git grep` de `BACKLOG.md:` con un número mayor, fuera de este fichero y en los asientos de este
+   rango, no da ninguna. `ARQUITECTURA.md` crece dos en la 1156: las citas a ese fichero que caen
+   más abajo son las que el §839 ya declaró, y se declaran en «Lo que NO hace». `lib.rs` crece al
+   final, y `tools/canon.sh`, `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` no cambian de número de
+   líneas. La nota del §814, en `ARQUITECTURA.md` y en `CONTRIBUTING.md`, se recoloca desde la
+   línea que cambia hasta su final, a 79 columnas, y sigue en trece líneas: `wc -l` de
+   `CONTRIBUTING.md` no cambia, y las citas por línea a ese fichero (`doc/METODO.md:115`,
+   `doc/ecst/VERIFICACION.md:1195-1196` y `:1252`, `doc/integracion-vertical-evaluacion.md:76` y
+   `:115`) no se mueven.
+
+**Mutantes.** En la primera versión, sobre una copia del árbol hecha con `tar`, sin `target` ni
+`.git`, con el `CARGO_TARGET_DIR` del worktree, en depuración, `cargo test -p zk-ssl --locked --lib
+censo_de_hojas`. En la vuelta 1 corren todos otra vez, con el código de este commit, de otra forma:
+cada mutante en una copia limpia de `crates/` hecha con `tar`, sin `target`, en un directorio de la
+sesión; y el módulo se compila solo, `rustc --edition 2021 --test`, con `CARGO_MANIFEST_DIR`
+apuntando a la copia. El módulo sólo usa `std`, y así las copias no comparten el `CARGO_TARGET_DIR`
+del worktree. Los mutantes cambian texto que los tests leen; ningún crate mutado se compila. La
+copia sin mutar: VERDE, las dos líneas de arriba. Lo que sigue es lo que da la vuelta 1. Mueren
+todos los del árbol, salvo S6, que no debe morir. Los del código de la guarda, C1 a C5, quitan cada
+uno una pieza nueva, y con ellos vive el mutante del árbol que esa pieza mata.
+
+- M1, una función de producción al final de `crates/zk-ssl/src/snapshot.rs` que llama a
+  `stark_experiment::double_entry::native_leaf`: ROJO la guarda, por dos, «zk-ssl/src/snapshot.rs:
+  nombra `double_entry`» y «`double_entry`, apartado, lo enlaza la produccion». El censo, VERDE.
+- M2, `use stark_experiment::compliance_circuit;` en `crates/zk-ssl-node/src/main.rs`: ROJO la
+  guarda, lo mismo con `zk-ssl-node/src/main.rs` y `compliance_circuit`.
+- M3, una tercera estrecha, `native_leaf(id: BaseElement, …)`, en
+  `crates/stark-experiment/src/merkle.rs`: ROJO los dos. El censo, «no esta en el censo»; la
+  guarda, con 37 apartados, porque casi todo nombra `merkle`, cada fuente de producción que lo
+  nombra, y 25 módulos enlazados que son apartados.
+- M4, el filtro de los `.rs` que no ve ninguno: ROJO los dos, por las listas y por las dos pruebas
+  de vida, con 0 ficheros.
+- M4b, el mismo, con las dos comparaciones del censo con `CENSO` apagadas: el censo, ROJO sólo por
+  su prueba de vida, «0 ficheros (al menos 250)».
+- M5, `use crate::compliance_circuit;` en `crates/stark-experiment/src/circuit_burn.rs`: ROJO la
+  guarda, por los apartados, que son siete con `circuit_burn`, y porque la producción lo enlaza y
+  lo nombra (`zk-ssl/src/burn.rs`, `lib.rs` y `zk-ssl-cli/src/commands.rs`).
+- M6, `use stark_experiment as se;` en `crates/zk-ssl-wire/src/lib.rs`: ROJO sólo por el alias.
+- M7, el lector de los `Cargo.toml` que no encuentra `path`: ROJO por la clausura, que se queda en
+  las cuatro raíces, y por la prueba de vida, con 32 fuentes, 4 módulos nombrados y 11 enlazados.
+- M8, `pub use compliance_circuit::native_leaf as hoja_estrecha;` en
+  `crates/stark-experiment/src/lib.rs`: ROJO sólo por la regla de la raíz, «nombra
+  `compliance_circuit` fuera de su mod».
+- M9, `fn native_leaf(id: u64, saldo: u64)` en `crates/zk-ssl-wire/src/lib.rs`: ROJO los dos, el
+  censo y «una estrecha en produccion».
+- M10, el recorrido de los fuentes de producción, vacío: ROJO sólo por la prueba de vida de la
+  guarda, con 0 fuentes, 0 nombrados y 0 enlazados.
+- M11, sin la excepción de los ficheros solo de tests: ROJO, con 90 fuentes. Nombran apartados el
+  propio `censo_de_hojas.rs` y `instrumento_revela.rs`, y `nivel_de_produccion/censo.rs` lleva un
+  alias del crate. La excepción es la que deja pasar al instrumento de D-B.
+- M13, `let _ = crate :: compliance_circuit::native_leaf;`, con espacios, en `circuit_burn.rs`, en
+  una función: la lectura de `crate::` no lo ve, pero el punto fijo por nombre sí. ROJO por los
+  apartados, siete con `circuit_burn`, por los tres fuentes de producción que lo nombran y porque la
+  producción lo enlaza. En la primera versión daba ROJO sólo por la búsqueda del nombre en lo
+  enlazado, que la vuelta 1 quita (abajo).
+- S1, el de la revisión: `pub mod sub_mut;` al final de `circuit_burn.rs`, y
+  `circuit_burn/sub_mut.rs` con `pub use crate::compliance_circuit::native_leaf as hoja;`. ROJO la
+  guarda: «43 modulos de stark-experiment en 44 fuentes», siete apartados con `circuit_burn`, los
+  tres fuentes de producción que lo nombran, y `circuit_burn` y `compliance_circuit` enlazados. Con
+  el código de la primera versión, VERDE.
+- S2, el glob de la revisión: en `circuit_burn.rs`, `mod glob_mut { use crate::*; pub fn _x() {
+  dual_climb::hoja_mut(); } }`; en `dual_climb.rs`, `mod glob_mut2 { use crate::*; pub fn _y() { let
+  _ = compliance_circuit::native_leaf; } }` y `pub fn hoja_mut() { glob_mut2::_y() }`. ROJO la
+  guarda: ocho apartados, con `dual_climb` y `circuit_burn`, y los tres fuentes que nombran
+  `circuit_burn`. Con el código de la primera versión, VERDE.
+- S3, el de la revisión: al final de `crates/zk-ssl-wire/Cargo.toml`, `[dependencies.se]`, `path =
+  "../stark-experiment"` y `package = "stark-experiment"`, cada uno en su línea. ROJO sólo por
+  «`[dependencies.se]` renombra un crate de la casa». S3b, la misma tabla antes de `[dependencies]`,
+  con `package` antes que `path`: lo mismo. Con el código de la primera versión, VERDE los dos.
+- S4, `use stark_experiment::{ self  as se };` en `crates/zk-ssl-wire/src/lib.rs`: ROJO sólo por el
+  alias. Con el código de la primera versión, VERDE.
+- S5, `se = { package = "stark-experiment", path = "../stark-experiment" }` al final de la sección
+  `[dependencies]` de `crates/zk-ssl-wire/Cargo.toml`: ROJO sólo por «… renombra un crate de la
+  casa», con la línea.
+- S6, `circuit_burn.rs` movido a `circuit_burn/mod.rs`: VERDE, con 43 fuentes y los mismos 28
+  enlazados. No es un mutante que deba morir: comprueba que la forma `mod.rs` se sigue leyendo. S7,
+  S6 más el `sub_mut.rs` de S1, declarado en el `mod.rs`: ROJO, lo mismo que S1.
+- C1, la lectura de `m/` apagada: S1 vive, VERDE con «en 44 fuentes», porque se cuentan pero no se
+  leen; S7 da ROJO por «`mod circuit_burn` sin fuente», un pánico. C2, el punto fijo de la primera
+  versión, sólo por `crate::` y `super::`: S2 vive. C3, sin el cierre de la tabla: S3 y S3b viven.
+  C4, sin la forma `{self as …}`: S4 vive. C5, sin el `package` en la línea del `path`: S5 vive.
+
+Cada comprobación mata al menos uno: la lista del censo, M3, M4 y M9; su prueba de vida, M4b; la
+clausura, M7; los apartados, M3, M5, M13, S1 y S2; la lectura de `m/`, S1 y S7 (C1); el punto fijo
+por nombre, S2 y M13 (C2); el nombre en los fuentes de producción, M1, M2, M5, S1 y S2; el `package`
+en la línea del `path`, S5 (C5); el `package` en su tabla, S3 y S3b (C3); el alias, M6 y S4 (C4); lo
+enlazado que es apartado, M1, M2, M5, M13 y S1; la raíz de `stark-experiment`, M8; la estrecha en
+producción, M9; y la prueba de vida de la guarda, M10. Los mutantes M4, M4b, M7, M10 y M11 cambian
+el código de la guarda, sobre una copia del módulo. No hay M12: se retiró antes de correr, porque
+mutaba la lista escrita y no el código. Al acabar la primera versión, con el mismo
+`CARGO_TARGET_DIR`, `cargo clean -p zk-ssl -p stark-experiment` (893,5 MiB); las copias de las dos
+rondas se borraron.
+
+**La vuelta 1 de la revisión.** Una revisión de este sello, antes de cerrarlo, encontró cuatro
+cosas, y esta versión las corrige en el mismo commit:
+
+1. Importante: la guarda leía de cada módulo de `stark-experiment` sólo `m.rs` o `m/mod.rs`. Un
+   submódulo en directorio, `m/x.rs`, no lo leía nadie, y por él un módulo del cable podía
+   reexportar una estrecha con VERDE (S1). Ahora el código de un módulo es su `m.rs` y todos los
+   `.rs` bajo `m/`, y S1 muere. Hoy `stark-experiment/src` no tiene subdirectorios: lo medido en
+   la primera versión era cierto.
+2. Menor: el punto fijo de los apartados sólo seguía rutas `crate::x` y `super::x`, y dos globs
+   encadenados daban VERDE (S2). La revisión ofrecía declararlo o cerrarlo; se cierra: un módulo
+   que nombra un apartado como identificador entero, con su ruta o sin ella, es apartado. Los
+   apartados de hoy siguen siendo seis. Con eso, la búsqueda del nombre de un apartado en lo
+   enlazado ya no puede dar ROJO sola, y se quita.
+3. Menor: el asiento decía «Un `package =` en una de esas dependencias», y el código sólo lo veía
+   en la línea de su `path`; el alias sólo se buscaba escrito `stark_experiment as`. Ahora ve
+   también el `package` de una tabla `[dependencies.x]` con `path` de la casa (S3, S3b), y el
+   alias `stark_experiment::{self as …}` (S4); el texto dice las formas que ve. Y lee también las
+   tablas `[target.….dependencies.x]`, que antes saltaba.
+4. Menor, del entorno y no del commit: el `CARGO_TARGET_DIR` compartido tenía un binario de release
+   de `zk-ssl` de otro árbol, sin este módulo, que cargo daba por fresco. En esta vuelta el binario
+   de release es de una compilación de este código: 57,9 s, con los 2 tests y 489 filtrados. Los
+   mutantes de esta vuelta no usan cargo, por eso. Lo que pide para el canon es de la sesión que
+   entrega, no de este asiento.
+
+**Lo que NO hace.** No retira ninguna estrecha ni toca `stark-experiment`, `zk-core` ni los
+comparativos. No cierra la 51. No ve una estrecha con otro nombre, una función escrita con otro
+espaciado que `fn native_leaf`, un `#[path = ...]`, un `include!` o una macro que fabrique un
+nombre, un fichero de `stark-experiment/src` fuera de `m.rs` y de `m/` de un `mod m;` de su raíz,
+una dependencia de la casa por `workspace = true`, ni los crates del fork, que entran por el
+`[patch]` del workspace y no dependen de `stark-experiment`. Un nombre en un comentario de bloque, o
+tras código en la misma línea, se lee como código: da ROJO, no VERDE. Y lo mismo un identificador
+cualquiera de `stark-experiment` que se llame como un apartado: aparta a su módulo, ROJO y no VERDE.
+No mira `tests/`, `examples/` ni `benches/` de los crates de producción: no se enlazan. No corrige
+las citas por línea a `ARQUITECTURA.md` que este sello desplaza dos líneas:
+`doc/ecst/VERIFICACION.md:1630`, que cita `:1568-1571` y ya no daba en su sitio antes del §839 (la
+frase está en la 1614 de la base, y con este sello en la 1616); los
+JSON de `doc/ecst/borrador/`, el registro de su fecha; y `tools/check_publicadas.py:447`, el
+registro de un mutante de su fecha. Ni el «(tools/canon.sh:109)» de `doc/ecst/VERIFICACION.md:1549`,
+la frase cuyo 482 pasa a 484: la fila de `zk-ssl` está en la :132, y es de la 1g, `VERIFICACION.md`
+vivo, que el autor decidió que cite por fila. Tampoco toca la entrada 41 de `BACKLOG.md`, cerrada
+en el §814: su «fija 481 pasan y 7 ignorados: son los 443 y los 38» (`:3731`) es la medida de su
+fecha, como declaró el §839; con este sello serían 446 en depuración y 484 en release. No mueve
+«1364 declaradas», «1349 declared» ni «18 ignoradas»: son la 61, que va después, para no mover la
+cifra en cada sello mientras haya trabajo en curso que la cambia. El otro test del §697 que recorre
+`crates/` ve ahora un fichero más, el de este sello: su prueba de vida es «al menos 200», y no
+cambia.
+
+**Lo que es del autor.** Si la 51 se cierra con la guarda, o queda abierta hasta retirar las
+estrechas. Si el punto fijo por nombre, más ancho que el de rutas, se queda: cierra el glob, y a
+cambio puede dar ROJO por un identificador que se llame como un apartado. Si
+`persistent_nullifier_registry`, que sólo nombra `compliance_circuit` en sus tests, debe contar como
+apartado. Y si la guarda debe leer también los módulos de test en línea como fuera de producción, o
+seguir dando ROJO con ellos.
+
+**Contadores.** El pin de `zk-ssl` pasa de 482 a 484. El total de sello, de 1814 a 1816, y con
+largos, de 1951 a 1953, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`. `check_tests` pasa de 1973 a
+1975 tests declarados, con 20 instrumentos, y `check_modulos` de 206 a 207 ficheros: las cifras de
+la base, medidas otra vez sobre `crates/` y `tools/` de `4f60198`, sacados con `git archive` a un
+directorio de la sesión, que se borró. La capa pasa de 34 a 35 módulos y de 36 a 37 `.rs` en
+`ARQUITECTURA.md`. Las marcas «⚠️ §840» en los ficheros del commit, sin este asiento, son cinco,
+contadas con `git grep --cached -c -E '⚠️ (\*\*)?§840'`: dos en `ARQUITECTURA.md`, una en
+`CONTRIBUTING.md` y dos en `BACKLOG.md`, la de la nota y la de su corrección. `BACKLOG.md` no
+cambia su cabecera, en 43 abiertas y 86 resueltas: la 51 sigue abierta.
+
+Las correcciones, sobre los ficheros STAGED de este commit:
+
+1. `ARQUITECTURA.md:1156-1157`, tras las cuentas de la capa, que pasan a 35 módulos, 35 frente a 1 y
+   37 `.rs`: «⚠️ §840: decía 34 módulos, 34 frente a 1 y 36 `.rs`», y que el 35 y el 37 son
+   `src/censo_de_hojas.rs`, un `mod` de fichero de `lib.rs`, solo de tests.
+2. `ARQUITECTURA.md:1565-1569`, en la nota del §814, que fija hoy 484 pasan y 7 ignorados:
+   «⚠️ §840: decía 482», y que los dos de más, el censo de los `native_leaf`, corren también en
+   depuración, donde serían 446.
+3. `CONTRIBUTING.md:115-119`, la misma nota y la misma marca.
+4. `BACKLOG.md:4613-4615`, en la nota de la 51: «⚠️ §840: decia «`Digest` (256 bits) en
+   `circuit_settlement`»», y que hoy `circuit_settlement` no tiene ninguna y la ancha es la de
+   `zk-ssl-hash`.
+
+La nota de la 51 abre con «⚠️ **§840: medido, y con su guarda; sigue abierta.**»
+(`BACKLOG.md:4608`): es la nota nueva, no una corrección; corrige sólo lo que dice la marca del
+punto 4.

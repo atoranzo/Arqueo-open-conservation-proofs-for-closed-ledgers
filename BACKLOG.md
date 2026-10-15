@@ -4605,6 +4605,24 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   corrigio la auditada. ⚠️ **Compartir nombre invita a suponer que son la
   misma funcion.** No medido si las otras dos estan en algun camino de
   produccion.
+  ⚠️ **§840: medido, y con su guarda; sigue abierta.** El censo de hoy: diez
+  `fn native_leaf…` en `crates/`. La ancha, `native_leaf(public_id: Digest, …)`, y su
+  `native_leaf_salted`, en `zk-ssl-hash/src/lib.rs`, que `stark-experiment` reexporta
+  (`native.rs`): es la de produccion. Dos estrechas, con identidad `BaseElement`, en
+  `stark-experiment`: `compliance_circuit.rs` y `double_entry.rs`. Y seis en los comparativos:
+  cinco de halo2 (`Fp`) y una de plonk (`BlsScalar`). ⚠️ §840: decia «`Digest` (256 bits) en
+  `circuit_settlement`»; hoy `circuit_settlement` (`zk-core`) no tiene ninguna, y la ancha es la
+  de `zk-ssl-hash`. Ninguna estrecha esta en un camino de produccion: la de `compliance_circuit`
+  la usan `compliance_real_proof`, `iso_bridge` y `settlement_prover_impl`, y el
+  registro de nulificadores nombra ese modulo en sus tests; ningun fuente de `src/` de las cuatro
+  raices de `tools/check_curvas.py` ni de los crates de la casa de su clausura nombra esos seis
+  modulos, fuera de los ficheros solo de tests -el instrumento de D-B prueba `double_entry` a
+  proposito-, y ninguno de los 28 modulos de `stark-experiment` que la produccion enlaza los
+  nombra. Leido en los fuentes, no medido: la estrecha compone lo mismo que la ancha sobre
+  `embeber(id)`; la diferencia es el dominio de la identidad, no la funcion. **La guarda**, dos
+  tests de `crates/zk-ssl/src/censo_de_hojas.rs`: el censo, contra una lista escrita con la
+  anchura de cada una, y que ninguna estrecha ni el modulo de quien la usa llegue a produccion.
+  Cerrarla con la guarda, o dejarla abierta hasta retirar las estrechas, lo decide el autor.
 
 - [ ] **52. ⚠️ CLAVE DE BOVEDA: un solo diseño de rotacion, o se hara tres
   veces (§134.1).** **Tres decisiones difirieron su coste aqui**: §117 —rotar
