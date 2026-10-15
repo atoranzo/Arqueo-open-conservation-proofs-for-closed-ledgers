@@ -285,7 +285,10 @@ que custodiar, sin estado pero con custodia.
 > §705 y `tools/check_curvas.py`—, que la ignora como línea de una clave que no conoce, y en el
 > sobre del kit sería una línea sin juzgar. (⚠️ §835: decía que la casa no enlaza curvas; el cli y
 > el SDK enlazan `ring` por `rustls`, para el transporte, y lo abre la 122 de `BACKLOG.md`; ninguna
-> cofirma, nota ni cabeza se verifica con curvas.) Lo que la casa sabe retener y el kit sabe verificar es
+> cofirma, nota ni cabeza se verifica con curvas. ⚠️ §838: decía que lo abre la 122; el autor la
+> decidió: el §106 se enmienda para ese transporte, como excepción declarada al modo del §705, y
+> `tools/check_curvas.py` la acota por aristas y busca su uso en las fuentes de la casa. La excepción
+> no cubre ninguna cofirma, nota ni cabeza.) Lo que la casa sabe retener y el kit sabe verificar es
 > la cofirma `0x06`, la de su mismo motor (`internal/witness`) con una clave ML-DSA-44, que el
 > binario de litewitness no ofrece. Qué testigo público corre esa versión, y con qué clave, no se ha
 > medido: pide red. Y la E3a no se midió contra mtc-core sino contra esos dos testigos, que son
@@ -296,11 +299,16 @@ que custodiar, sin estado pero con custodia.
 > cofirmas ML-DSA-44 (`0x06`). El puente `0x01` de D-C sigue sin construirse (§705, punto 5). Las
 > cofirmas Ed25519 `0x04` no se verifican ni cuentan en `k`. Por qué: una cofirma Ed25519 que contara
 > en el umbral pondría sobre una curva la propiedad entera del medio, no solo su admisión; y el §106
-> y el §705, punto 4, no tienen excepción para firmas clásicas.
+> y el §705, punto 4, no tienen excepción para firmas clásicas. ⚠️ §838: desde el §838, el §106 tiene
+> una, la del transporte TLS del cli y del SDK, que verifica firmas ECDSA y Ed25519 de certificados y
+> del handshake; no cubre cofirmas, notas ni cabezas, y esta decisión no cambia.
 >
 > No se pide todavía el alta en ninguna red de testigos. Antes hacen falta tres cosas: el publicador
 > entero (el bucle, la cadencia, servir la nota y el transporte, que espera a la 122 de
-> `BACKLOG.md`); testigos que acepten un log `0x06`, por la lista de una red o configurados a mano; y
+> `BACKLOG.md`. ⚠️ §838: decía que espera a la 122; la 122 decidió el transporte del cli y del SDK,
+> no el del publicador, que sigue sin construir: `zk-ssl-medio` no enlaza TLS, y si lo necesita, la
+> regla por aristas de `tools/check_curvas.py` se amplía en un sello propio); testigos que acepten
+> un log `0x06`, por la lista de una red o configurados a mano; y
 > al menos dos testigos con clave ML-DSA-44. Son necesarias, no suficientes: el alta la da el autor.
 > Hasta el alta, E3 se mide en local: contra litewitness, como en el §808, y contra
 > `transparency-dev/witness` (`omniwitness` con una clave ML-DSA-44), que está leído y no corrido.

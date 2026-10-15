@@ -408,7 +408,7 @@ del código y no supuesto:
 autenticación, ni TLS, ni límite de tasa**, y lo único que hoy separa
 «fuga hacia-el-operador» de «fuga hacia-terceros» es que escucha en
 `127.0.0.1:8545` por defecto. **Publicarlo en `0.0.0.0` sin un proxy
-delante es exactamente el escenario que este apartado advierte.**
+delante es exactamente el escenario que este apartado advierte.** ⚠️ **§838: el tramo hasta el proxy.** La mandan al nodo el SDK (`crates/zk-ssl-sdk/src/lib.rs:192`, `:227` y `:267`) y el cli (`crates/zk-ssl-cli/src/pago.rs:150`, `cobro.rs:260` y `prenda.rs:163`), los dos por `ureq`; con una URL `https`, la cifra el TLS de `ureq`, que es `rustls` sobre `ring`, y su confidencialidad en tránsito descansa en un ECDHE clásico (X25519, P-256 o P-384): expuesta a «guardar ahora y descifrar después». Es la excepción del §106 para el transporte, declarada en el §838 de `AUDITORIA.md`; con una URL `http`, viaja en claro.
 
 ⚠️ **Y un segundo hallazgo, nuevo**: el nodo abre el ledger **sin cifrado
 en reposo**. La capa tiene `open_encrypted` y `zk_ssl::crypto` desde hace
@@ -1036,7 +1036,7 @@ producción usa la cuadrática. Un sistema con miles de validadores y años
 de producción sigue siendo, hoy, **más seguro en la práctica** que uno sin
 auditar. ⚠️ **Corregido en el §698**: hasta entonces este párrafo decía
 que «su configuración por defecto tiene techo de 63 bits de solidez sin
-extensión de campo», y no decía que el nivel cuántico no está medido.
+extensión de campo», y no decía que el nivel cuántico no está medido. ⚠️ **§838**: «sin supuestos de curva» vale para la vía de pago y para lo que se firma, no para el transporte. El TLS del cli y del SDK negocia un ECDHE clásico y verifica firmas ECDSA P-256/P-384 y Ed25519 de certificados y del handshake, y la clave de vista viaja bajo él (sección 3.3): es la excepción del §106 para el transporte, declarada en el §838 de `AUDITORIA.md`.
 
 **2. Sin ceremonia de confianza — y sin haberla tenido nunca.** Zcash la
 eliminó con Halo 2 en Orchard (mayo 2022), pero Sprout y Sapling nacieron

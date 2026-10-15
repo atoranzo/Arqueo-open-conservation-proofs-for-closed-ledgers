@@ -55954,3 +55954,403 @@ sello que traiga un objetivo con features nuevo sube también el mínimo, o lo d
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 1972 tests declarados y 20 instrumentos, y
 `check_modulos` en 205 ficheros. Ningún pin de la tabla del canon cambia. `BACKLOG.md` no cambia:
 sigue en 49 abiertas y 78 resueltas.
+
+## §838 — la 122, decidida: el §106 se enmienda para el transporte TLS del cli y del SDK, como excepción declarada, y `check_curvas` lo acota por aristas y busca su uso en las fuentes de la casa
+
+El commit que lleva este asiento, sobre `e2b1019` (el §837). Toca nueve ficheros y este asiento.
+`tools/check_curvas.py`: su cabecera, con dos marcas; el patrón; el árbol que lee, ahora con todas
+las features y todos los targets; dos reglas nuevas, R4, por aristas, y R5, en las fuentes; sus
+autotests; y su VERDE. Una marca en `README.md`, otra en su gemelo `README_EN.md` y otra en
+`RESUMEN_EJECUTIVO.md`. Dos en `SECURITY.md`: en el §3.3 y en la reserva de «post-cuántico». Tres en
+`spec/rfc/0013-el-medio-del-ancla.md`. Una en `doc/CONFIANZA_RESIDUAL.md`. Una, con su cita por
+línea corregida, en `doc/AVISO_EN_ISO20022.md`. Y `BACKLOG.md`: la 122, cerrada; una marca en la 11
+y otra en la 56; y la línea del estado. Ni código de los crates, ni tests, ni vectores, ni
+`Cargo.toml`, ni `Cargo.lock`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la
+nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es
+el siguiente del rango que el autor asignó (§830 a §859). No toca `crates/zk-ssl-guardian`.
+
+Del autor es la tarea: la 122 de `BACKLOG.md`, que abrió el §835. Del autor es la decisión, del
+2026-10-15: la (a), enmendar el §106 para el transporte, con la (c), su complemento. Del autor es el
+orden: este sello va detrás del §837. La forma la propuso la sesión. El canon de este commit, `bash
+tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y
+sin esta frase: VERDE, 493 s de reloj (de su arranque a su salida) y 344 s de tests (la línea
+«total» de la tabla), en una máquina de 4 CPU con carga de 0,27 al empezar. Las 19 filas del nivel,
+en su pin, con 1813 tests que pasan (la suma de la columna «pasan»); la puerta de los binarios, con
+«OK 24 objetivos en 8 paquetes, 12 con features (2 s)»; `check_tests` en 1972 y 20 instrumentos;
+`check_modulos` en 205; las once herramientas del bucle «2 ter», con `check_curvas` dentro; la
+puerta de los vectores, en 497 ficheros y 987 líneas; `check_catalogo`; el cable, en 23 de 23; la
+segunda implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`473eb5f63e5b091d` y el tarball `403c4e2fc79a4c36`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió sobre el §837 de entonces (`c8f923a`, una versión anterior del
+§837 que no está en la historia), que iba sobre el §836 (`669ee88`), y la sesión lo selló allí con
+el canon en VERDE. Después entró en `main` el §813 de la otra sesión, que va detrás del §836; el
+§837 se rebasó sobre él (`2c73182`, que tampoco está en la historia), y este sello detrás, y la
+sesión lo selló allí con el canon en VERDE. Después entró en `main` el §814, de otra sesión; el §837
+se rebasó otra vez (`e2b1019`), y este sello detrás: en este fichero, los asientos del §813 y del
+§814 van antes, luego el del §837 y luego éste. Del §836 al §813 cambian
+`crates/zk-ssl-node/src/main.rs`, `tools/banco_reinicio.sh`, `tools/canon.sh` (el pin del nodo, de
+206 a 210), `BACKLOG.md`, `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md` y este fichero. Del §813 al
+§814 cambian sólo `ARQUITECTURA.md`, `BACKLOG.md`, `CONTRIBUTING.md` y este fichero: prosa, que
+cierra la 41 y abre la 125. Ningún `Cargo.toml` ni `Cargo.lock` en los dos, y ninguno de los otros
+ocho ficheros que toca este sello. El conflicto, en los dos rebases, en dos sitios: el final del
+asiento del §837 y la línea del estado de `BACKLOG.md`, que el §813 recontó al abrir la 123 y la 124
+(49 abiertas y 77 resueltas), y el §814 al cerrar la 41 y abrir la 125 (49 abiertas y 78
+resueltas). Los rebases cambian en este asiento la apertura; la frase del canon, arriba;
+`check_tests`, de 1968 a 1972, por los cuatro tests del nodo del §813, que el §814 no mueve; la base
+de `check_vectores`, de `--desde 669ee88` a `--desde 4d8017d`, y de ahí a `--desde d4d6d45`; la
+cuenta de `BACKLOG.md`, que pasa ahora de 49 a 48 abiertas y de 78 a 79 resueltas (recontada: 48
+`- [ ]` y 79 `- [x]`, 127 casillas); la lista de recuentos, que nombra al §813 y al §814 antes del
+§838, y por eso dice «el §838, que cierra la 122» y no «que la cierra»; y las citas por línea a
+`BACKLOG.md` de los puntos 12 a 14. El §813 las desplazó: una línea más en el estado, 63 en la 18 y
+40 de la 123 y la 124, que van detrás de la 122 y delante de la 56. El §814, otra vez: tres líneas
+en el aviso de la 41 de la cabecera, delante de la 11; ocho en la 94, delante de la 122; y 64 entre
+la 122 y la 56, 31 de la 125, detrás de la 124, y 33 en la 41. Las del resto de los puntos no se
+mueven: ni el §813 ni el §814 tocan esos ficheros. Sobre el árbol del §813, con la herramienta de
+este commit, se midió otra vez: `python3 tools/check_curvas.py`, VERDE, 4 raíces, 213 crates (192
+sin las dos opciones de `arbol()`: «El árbol que se lee», abajo), 194 fuentes de 15 crates de la
+casa, en 2,0 s de mediana; la herramienta de `2c73182`, VERDE; M1 a M7, sobre copias de ese árbol,
+y M10, sobre él, lo mismo que sobre `c8f923a`, y la herramienta de `2c73182` da VERDE en todos; y
+H2, H3 y H12 a H14, lo mismo. `tools/check_curvas.py` es el mismo en `2c73182` y en `e2b1019`: el
+§837 no lo toca. Sobre este árbol, el del §814, la herramienta de este commit da lo mismo: VERDE, 4
+raíces, 213 crates y 194 fuentes de 15 crates de la casa, en 2,0 s de mediana de cinco corridas.
+Los mutantes no se repitieron sobre él: el §814 no cambia ningún fuente, ningún `Cargo.toml` ni el
+`Cargo.lock`. Lo demás de «Medido» y de los mutantes es del árbol de `c8f923a` y de la herramienta
+sin las dos opciones: el §813 no cambia ninguna arista de `cargo tree`, y de las fuentes que R5 lee
+solo cambia `crates/zk-ssl-node/src/main.rs`, sin ningún acierto. Las cifras de los canones
+corridos sobre `c8f923a` y sobre el árbol del §813 no se copian aquí.
+
+**La enmienda del §106, para el transporte.** Los asientos no se reescriben: el §106 queda como
+está, y el §705 también. La enmienda es esta, al modo del §705, punto 4.
+
+> **Excepción declarada: el transporte TLS del cli y del SDK.** `zk-ssl-cli` y `zk-ssl-sdk` hablan
+> con el nodo por `ureq` 2.12.1, con su `tls` por defecto: `rustls` 0.23.43 sobre `ring` 0.17.14, con
+> los verificadores de `rustls-webpki` 0.103.13. Entra solo en esos dos crates, y solo para el
+> transporte. En cada conexión `https` negocia un ECDHE clásico (X25519, P-256 o P-384) y verifica
+> firmas ECDSA P-256/P-384 y Ed25519 (y RSA, que no es curva) de certificados y del handshake.
+>
+> **Lo que cuesta, escrito.** Los dos crates de la excepción mandan la clave de VISTA al nodo, por
+> `ureq`. El SDK, en tres llamadas: `crates/zk-ssl-sdk/src/lib.rs:192` (`zkssl_accountView`), `:227`
+> (`zkssl_sendMaterials`) y `:267` (`zkssl_claimMaterials`); la de gasto no, `:186`. El cli, en
+> tres: `crates/zk-ssl-cli/src/pago.rs:150`, `cobro.rs:260` y `prenda.rs:163`, las tres a
+> `zkssl_pendingPath`. En los dos, su confidencialidad en tránsito descansa en ese ECDHE clásico, y
+> queda expuesta a «guardar ahora y descifrar después»: quien grabe hoy el tráfico hasta el proxy la
+> podrá leer el día que tenga un ordenador cuántico capaz. Y la autenticación del extremo descansa
+> en firmas clásicas de la WebPKI.
+>
+> **Lo que la excepción no cubre.** Nada de lo que la casa firma o juzga: el dinero y su prueba, las
+> cabezas y su firma XMSS, la nota del medio (ML-DSA-44, §705) y las cofirmas no cambian. La mitad
+> del §106 que el §705 dejaba sin excepción, «todo el camino de producción es poscuántico», la tiene
+> desde aquí para el transporte del cli y del SDK, y solo para él. Y no se extiende sola: otra raíz,
+> otro camino hasta `ring` u otro uso de `rustls`, `ring` o `webpki` en el código de la casa dan ROJO
+> en `tools/check_curvas.py`. Otra pila TLS que no esté en el patrón, como OpenSSL por `native-tls`,
+> no da ROJO: lo dice «Lo que NO hace».
+
+**Lo que hace en `tools/check_curvas.py`.**
+
+- El patrón gana `ring`, `aws-lc-.*`, `rustls`, `rustls-webpki` y `webpki` (el `webpki` viejo, que
+  también va sobre `ring`). Anclado, como antes. El autotest del patrón gana seis nombres que tiene
+  que reconocer (`ring`, `aws-lc-rs`, `aws-lc-sys`, `rustls`, `rustls-webpki`, `webpki`) y cinco que
+  no (`rustls-pki-types`, `webpki-roots`, `untrusted`, `ureq`, `ringbuf`).
+- El árbol, con todas las features y todos los targets: `arbol()` pide a `cargo tree`
+  `--all-features` y `--target all`. Sin ellas, una dependencia opcional tras una feature de la raíz
+  que no va por defecto, o una de otro target, no salía, y ni R2 ni R4 la veían. Es una ceguera del
+  §788, de R1 y R2, que este sello cierra. La de una feature de una dependencia que la raíz no pide
+  sigue, y se declara (M14): «El árbol que se lee», abajo.
+- R4, por aristas. La clausura de cada raíz se lee ahora con `cargo tree --prefix depth`, que da
+  también las aristas; eso solo no cambia la cuenta de crates. El transporte solo se admite en
+  `zk-ssl-cli` y en `zk-ssl-sdk`. En ellos, `ureq` solo bajo una de esas dos raíces; `rustls` solo
+  bajo `ureq`; `rustls-webpki` solo bajo `rustls`; y `ring` solo bajo `rustls` o `rustls-webpki`.
+  `aws-lc-*` no se admite en ninguna parte: lo rechaza R2, como cualquier otro crate del patrón
+  fuera de R4.
+- R5, en las fuentes. En los `.rs` de `src/` de cada crate de la casa de las cuatro clausuras (los
+  que `cargo tree` da con ruta dentro del repositorio: hoy 15 crates y 194 ficheros), sin
+  comentarios, ningún `ring::` y ningún `rustls` ni `webpki` como palabra entera. Cubre
+  `ureq::rustls`, `rustls::`, `ring::` y `webpki::`, y también `use ureq::{json, rustls}` y
+  `use ureq::rustls as r`. Lleva frontera de palabra delante, porque sin ella `ring::` casa con
+  `String::` y con `Ordering::`. Los comentarios se quitan con un lector pequeño que salta cadenas,
+  cadenas crudas (también con `b` o `c` delante: `br"…"` y `cr"…"`) y caracteres, para no tomar un
+  `"//"` por un comentario. Hace falta: el `//!` de
+  `crates/zk-ssl-medio/src/testigos.rs:74`, la marca del §835, nombra `rustls`.
+- R3, la prueba de vida, crece. Un árbol sembrado con el transporte declarado tiene que dar cero
+  fallos, y cinco árboles sembrados, al menos uno cada uno: `ring` bajo la raíz; `rustls` bajo
+  `hyper-rustls`; `aws-lc-rs` bajo `rustls`; `ureq` bajo `zk-ssl-medio`; y el nodo, que llega a
+  `ureq` por el SDK. La búsqueda de R5 tiene que ver nueve líneas sembradas y no ver diez, entre ellas
+  comentarios anidados, cadenas que contienen `//` o `/*`, caracteres `'"'` y vidas `'a`. Y R5 tiene
+  que leer al menos 150 fuentes.
+- El VERDE dice ahora «ninguna curva del patron en la clausura de produccion fuera del transporte
+  declarado (rustls sobre ring, por ureq, en el cli y el SDK: §838), y ningun uso de ring, rustls ni
+  webpki en las fuentes de la casa».
+
+La decisión dice «`ring` y `rustls-webpki` solo bajo `rustls`». En el lock, `ring` cuelga de
+`rustls` y de `rustls-webpki`, y `rustls-webpki` solo de `rustls`. R4 lo lee como «dentro del
+subárbol de `rustls`»: admitir solo `rustls` como padre de `ring` daría ROJO hoy. La regla de `ureq`
+y la de las dos raíces no están en el texto de la decisión: las pedía la tarea, y sin ellas `ureq`
+en el nodo pasaba (M6 y M7, abajo).
+
+Las correcciones, sobre los ficheros STAGED de este commit:
+
+1. `tools/check_curvas.py:4-8` y `:17-18`, la cabecera: dos excepciones declaradas, y la marca
+   «⚠️ §838: decia que la unica excepcion era ML-DSA-44; `ring` ya esta en el patron, con R4 y R5».
+   La marca del §835 se queda, en `:6-7`. Y en R1, `:17-18`, tras el texto del §788: «⚠️ §838:
+   decia eso sin `--all-features` ni `--target all`», y que R1 y R2 no veían una dependencia
+   opcional tras una feature de la raíz que no va por defecto, ni una de otro target. En la
+   «Ceguera declarada», `:36-38`, que `--all-features` activa solo las features de la raíz (M14,
+   abajo). Sin acentos, como el resto del fichero. La cabecera pasa de 22 a 38 líneas de
+   comentario.
+2. `README.md:255`, la fila de los crates, al final de su celda: «⚠️ **Corregido en el §838**: el
+   §835 decía que no lo ve; desde el §838 lo ve», y la admite solo como la excepción del §106 para
+   el transporte, con su coste.
+3. `README_EN.md:269`, la misma celda, en inglés: «⚠️ **Corrected in §838**: §835 said it does not
+   see it; since §838 it does».
+4. `RESUMEN_EJECUTIVO.md:95`, la fila del motor: la misma marca que el punto 2.
+5. `SECURITY.md:411`, en el §3.3, al final de «… el escenario que este apartado advierte.**»:
+   «⚠️ **§838: el tramo hasta el proxy.**», con dónde mandan la clave de vista el SDK (`lib.rs:192`,
+   `:227` y `:267`) y el cli (`pago.rs:150`, `cobro.rs:260` y `prenda.rs:163`), cómo viaja y su
+   coste, que vale para los dos. Va en la misma línea: la 413 y las siguientes las citan por línea
+   `doc/ROTACION_DE_CUENTAS.md`, `doc/blueprint-v2.md`, el RFC-0003 y el RFC-0006, y `README.md`
+   cita la 728.
+6. `SECURITY.md:1039`, al final de la reserva de «post-cuántico»: «⚠️ **§838**: «sin supuestos de
+   curva» vale para la vía de pago y para lo que se firma, no para el transporte». En la misma línea.
+7. `spec/rfc/0013-el-medio-del-ancla.md:288-291`, dentro de la marca del §835 en la nota del §808:
+   «⚠️ §838: decía que lo abre la 122», y que el autor la decidió. La excepción no cubre ninguna
+   cofirma, nota ni cabeza.
+8. El mismo RFC, `:302-304`, en la decisión del §836, tras «no tienen excepción para firmas
+   clásicas.»: «⚠️ §838: desde el §838, el §106 tiene una», la del transporte, que verifica firmas
+   ECDSA y Ed25519 de certificados y del handshake. La decisión del §836 no cambia.
+9. El mismo RFC, `:308-311`, en las condiciones del alta: «⚠️ §838: decía que espera a la 122». La
+   122 decidió el transporte del cli y del SDK, no el del publicador, que sigue sin construir.
+10. `doc/CONFIANZA_RESIDUAL.md:165`, la línea del B11.2. La marca del §835 se queda entera, como
+    estaba, de la 164 a la 165: «⚠️ §835: decía que no pasa; `ring`, en el SDK por el TLS, con
+    X25519 y ECDH P-256/P-384, no está en el patrón y se llama por `ureq::rustls`; el TLS hace uno:
+    la 122». Detrás, dentro del mismo paréntesis y en la misma línea física, la 165: «⚠️ §838:
+    `ring` ya está en el patrón, solo bajo `ureq` en el cli y el SDK, y la puerta busca su uso en las
+    fuentes de la casa», y que uno con las bibliotecas del patrón vuelve a no pasar (OpenSSL, otra
+    pila TLS, no está en él); el del TLS es la excepción del §106. Lo que el §791 escribió, que un
+    acuerdo de claves sobre una curva no pasa la puerta en el SDK, vuelve a ser cierto para el código
+    de la casa con las bibliotecas del patrón. La 165 pasa de 127 a 385 caracteres, y el fichero
+    sigue en 637 líneas: `doc/ROTACION_DE_CUENTAS.md` cita `:471-477` y `:487-490`, y esas citas,
+    y las de más abajo, no se mueven.
+11. `doc/AVISO_EN_ISO20022.md:195`, la cita: decía `tools/check_curvas.py:12-16` y `:28-32`, y dice
+    `:14-21` y `:44-50` (R1, con su marca, y R2; de `RAICES` al final de `CURVAS`). Y en `:206-213`,
+    tras la marca del §835: «⚠️ §838: decía `:12-16` y `:28-32`», y que lo que esa marca dice de
+    `ring` ya no vale, con R4 y R5 (`:26-31`). El título del punto vuelve a valer para el código de
+    la casa con las bibliotecas del patrón; OpenSSL, otra pila TLS, no está en él (`:211-212`). La
+    195 no cambia de número; el fichero crece ocho líneas desde la 206, y nadie lo cita por línea por
+    debajo.
+12. `BACKLOG.md:1367-1370`, la 11, tras la marca del §835: «⚠️ §838: decía que `ring` no está en el
+    patrón», y que un acuerdo de claves con las bibliotecas del patrón vuelve a no pasar la puerta,
+    pero OpenSSL, otra pila TLS, no está en él. Las líneas de antes no cambian. La cola del párrafo,
+    desde la 1367, pasa de dos líneas (1367-1368) a cinco (1367-1371), y lo de debajo baja tres.
+13. `BACKLOG.md:3438-3442`, la 56, tras la nota del §705: «⚠️ **(§838) Y otra vez, para el
+    transporte.**», con su coste y lo que no cubre.
+14. `BACKLOG.md:2887` y `:2910-2919`: la 122, a `[x]`, con «✅ **CERRADA en el §838**» y lo que la
+    cierra. Y la línea del estado (`:15-20`): de 49 a 48 abiertas y de 78 a 79 resueltas, y «el
+    §838, que cierra la 122».
+
+Fuera de este asiento, el commit deja quince marcas del §838: dos en la cabecera de
+`tools/check_curvas.py` y trece en los otros ocho ficheros (`git grep --cached`, con «⚠️ §838»,
+«⚠️ **§838», «Corregido en el §838» o su forma inglesa, «CERRADA en el §838» y «(§838) Y otra
+vez»). En `tools/check_curvas.py`, el código cita además el §838 en R4, en R5 y en su VERDE.
+
+**Medido y leído**, en este orden, en el worktree de la sesión, con 4 CPU y carga de 0,30 al
+empezar:
+
+1. `python3 tools/check_curvas.py` sobre `c8f923a`: VERDE, 4 raíces y 192 crates distintos.
+2. `cargo tree --locked --offline -q -e normal --prefix depth -p <raíz>`, en las cuatro raíces. En
+   `zk-ssl-cli`: `ureq` bajo el cli y bajo `zk-ssl-sdk`; `rustls` bajo `ureq`; `rustls-webpki` bajo
+   `rustls`; y `ring` bajo `rustls` y bajo `rustls-webpki`. En `zk-ssl-sdk`, lo mismo sin el cli. En
+   `zk-ssl-node` y en `zk-ssl-verify`, ninguno de los cuatro. `zk-ssl-medio` está en las cuatro
+   clausuras. `grep -c 'name = "aws-lc' Cargo.lock`: 0.
+3. Los crates de la casa en esas clausuras: 15 (los diez `zk-ssl*`, `stark-experiment`,
+   `settlement-prover` y los tres `winter-*` del fork), con 194 `.rs` en `src/`. El grep de R5 sobre
+   ellos, con comentarios: un acierto, `crates/zk-ssl-medio/src/testigos.rs:74`, en un `//!`. Sin
+   comentarios: 0. Sin la frontera delante: 69 aciertos de `ring::` en 25 ficheros, todos falsos.
+4. El lector de comentarios, sobre los 194: el mismo número de líneas que el fuente, los nueve
+   `ureq::` de antes también después, y ninguna línea de código que empiece por `fn`, `let`, `use`,
+   `impl` o `struct` borrada.
+5. Leído en las fuentes de la caché de cargo, sin compilar: el proveedor `ring` de `rustls` 0.23.43
+   da tres grupos de intercambio, `X25519`, `SECP256R1` y `SECP384R1` (`src/crypto/ring/mod.rs:179-180`),
+   y son también los de por defecto (`:176`). El híbrido `X25519MLKEM768` solo está en el proveedor
+   `aws-lc-rs` (`src/crypto/aws_lc_rs/pq/`), y la feature `prefer-post-quantum` pide `aws_lc_rs`
+   (su `Cargo.toml:83`). En `ring` 0.17.14, un grep de «mlkem», «ml_kem», «ml-kem» y «kyber» en todo
+   el crate: 0. `ureq` 2.12.1 pide `rustls` con `ring`, `logging`, `std` y `tls12` (su
+   `Cargo.toml:156-163`). `aws-lc-rs` no está en la caché.
+6. `python3 tools/check_curvas.py` sobre este árbol: VERDE, 4 raíces, 192 crates, 194 fuentes de 15
+   crates de la casa, en 1,7 s, con la herramienta sin las dos opciones de `arbol()`. Con ellas, 213
+   crates: «El árbol que se lee», abajo.
+7. `git grep -n 'check_curvas.py[`]*:[0-9]'`: una cita por línea, la de `doc/AVISO_EN_ISO20022.md`,
+   corregida en el punto 11.
+8. `grep -rn viewKey crates/zk-ssl-cli/src crates/zk-ssl-sdk/src`: el SDK manda la clave de vista
+   en `lib.rs:192`, `:227` y `:267`, por su `ureq::Agent` (`:46`); el cli, en `pago.rs:150`,
+   `cobro.rs:260` y `prenda.rs:163`, por `ureq::AgentBuilder` (`:142`, `:252` y `:155`). Las otras
+   dos líneas, `commands.rs:77` y `:90`, son `///` de la credencial que se escribe en un fichero.
+
+**Mutantes.** Todos dan ROJO salvo tres vivos, que se declaran: M8 y M9, abajo, y M14. M11 a M14,
+los de las features y los targets, van en «El árbol que se lee», abajo. Los del árbol, sobre copias
+hechas con `git archive` de `c8f923a` y la herramienta nueva dentro, en un directorio de trabajo de
+la sesión; la copia se rehízo entre uno y otro. Cuando el mutante toca un `Cargo.toml`,
+`cargo metadata --offline` pone al día el `Cargo.lock` de la copia: una línea cada vez. La
+herramienta de `c8f923a`, sobre cada una de esas copias, da VERDE: lo que las mata es lo nuevo. La
+copia sin mutar da VERDE con las dos.
+
+- M1: `use ureq::rustls::crypto::ring;` al final de `crates/zk-ssl-cli/src/cobro.rs`, con
+  `echo … >>`: el fichero tiene 410 líneas y acaba en salto de línea, así que entra como la 411.
+  ROJO, 1: R5, `cobro.rs:411`, `rustls`.
+- M2: `fn _x() { let _ = webpki::ring::ED25519; }` al final de `crates/zk-ssl-sdk/src/lib.rs`. ROJO,
+  2: R5, `webpki` y `ring::`, en la misma línea.
+- M3: `ring = "0.17"`, dependencia directa de `zk-ssl-cli`. ROJO, 1: R4, «ring cuelga de zk-ssl-cli».
+- M4: lo mismo en `zk-ssl-sdk`. ROJO, 2: R4, en el SDK y en el cli, que lo enlaza.
+- M5: `rustls` con `ring` y `std`, dependencia directa de `zk-ssl-medio`. ROJO, 10: R4 en las cuatro
+  raíces, porque el medio está en todas.
+- M6: `ureq` con `json` y su `tls` por defecto, como el cli, en `zk-ssl-verify`, en `zk-ssl-node` y
+  en `zk-ssl-medio`, una copia cada uno. ROJO, 12, 5 y 12: R4, por la raíz en el nodo y en el kit, y
+  por el padre de `ureq` en el cli y en el SDK.
+- M7: `zk-ssl-sdk` como dependencia del nodo. ROJO, 5: R4, el transporte fuera de sus dos raíces,
+  aunque cada arista sea de las admitidas.
+- M10: `aws-lc-rs` en la clausura. No se puede resolver sin red. La herramienta lee `cargo tree`, no
+  el lock, así que el mutante es un `cargo tree` editado: una copia que envuelve `arbol()` y, en el
+  cli y en el SDK, cambia la línea de `ring` bajo `rustls` por `aws-lc-rs` con `aws-lc-sys` debajo.
+  ROJO, 4: R2, los dos crates en las dos raíces.
+
+Los de la herramienta, sobre copias de `tools/check_curvas.py` corridas sobre este árbol con
+`CANON_RAIZ`:
+
+- H1, el patrón sin `ring`: ROJO, 1, R3 («no reconoce ring»).
+- H2, R5 sin la frontera delante: ROJO, 72: tres R3 por las líneas sembradas y 69 R5 en el árbol.
+- H3, R5 sin quitar comentarios: ROJO, 7: seis R3 y el `//!` de `testigos.rs:74`.
+- H4, el lector sin saltar cadenas (la rama de `"` cambiada por `elif False:`): ROJO, 2, R3, por
+  `"//"` y por la línea de `cr"\"`. H5, sin saltar cadenas crudas (la rama de `CRUDA`, con
+  `elif False and …`): ROJO, 2, R3, por `r"\"` y por `cr"\"`. H6, sin saltar caracteres: ROJO, 1,
+  R3, por `'"'`.
+- H7, R4 sin la regla de las dos raíces: ROJO, 1, R3 (el árbol sembrado del nodo por el SDK).
+- H8, R4 sin la regla del padre: ROJO, 3, R3.
+- H9, `ring` admitido también bajo el cli: ROJO, 1, R3.
+- H10, R2 sin `aws-lc` (en `CURVAS`, `ring|aws-lc-.*|rustls` pasa a `ring|rustls`): ROJO, 3, R3:
+  el patrón no reconoce `aws-lc-rs` ni `aws-lc-sys`, y la regla de aristas no ve el árbol sembrado
+  3.
+- H11, R5 en `source/` en vez de `src/`: ROJO, 1, R3 («R5 leyo 0 fuentes»).
+- H12, el lector del árbol sin rutas: ROJO, 1, R3, también por las 0 fuentes.
+- H13, el lector del árbol sin aristas: ROJO, 4, R3.
+- H14, R5 solo en las fuentes de las cuatro raíces: ROJO, 1, R3 («R5 leyo 33 fuentes»).
+- H15, toda comilla simple abre un carácter: ROJO, 1, R3 (las vidas `'a`).
+- H16, el lector sin la `c` de las cadenas C crudas (`in ('b', 'c')` vuelve a `== 'b'`): ROJO, 1,
+  R3, por `let s = cr"\"; let t = "//"; use ring::rand;`. Sin la `c`, el lector toma `r"\"` por
+  una cadena normal, la cierra en el `"` siguiente y toma por comentario el resto de la línea, con
+  el `use`. Medido también con `usos_tls` sola, sobre un fichero con `let a = cr"\"; let b =
+  "//"; use ureq::rustls as t;`: con `== 'b'` da `[]`, y con `in ('b', 'c')`, `[(1, 'rustls')]`.
+  Sobre los 244 `.rs` de `src/` de `crates/` y del fork, el
+  lector da hoy lo mismo con la `c` que sin ella: no hay ninguna `cr"`.
+
+Vivos, y se declaran:
+
+- M8: `use ureq::rustls::crypto::ring;` en un `examples/` nuevo del cli. VERDE: R5 no lee fuera de
+  `src/`. Un ejemplo no es producción, pero se compila con las dependencias del crate.
+- M9: `use ureq::*;` en el cli. VERDE. Solo, no hace nada: para llegar a `ring` hace falta escribir
+  `rustls`, y eso R5 lo ve.
+
+Leídos, sin mutante: un `#[path]` o un `include!` que saque código de `src/`, y un nombre fabricado
+por una macro, no los ve R5. Una cadena con `rustls` dentro sí la ve, aunque no sea un uso: hoy no
+hay ninguna.
+
+La copia, las herramientas mutadas y sus registros se borraron al acabar.
+
+**El árbol que se lee: todas las features y todos los targets.** Una revisión independiente, antes
+de publicar, encontró que `arbol()` leía `cargo tree` sin `--all-features` ni `--target all`. Así,
+`cargo tree` da solo las features por defecto de la raíz y el target de la máquina. Una dependencia
+opcional tras una feature que no va por defecto, o una de `[target.'cfg(windows)'.dependencies]`, no
+salía en el árbol, y ni R2 ni R4 la veían. La ceguera viene del §788: su R1 leía `cargo tree
+--locked --offline -e normal` sin las dos, y su R2 miraba lo que R1 le daba. Corrección: la cabecera
+del §788 dice que esa clausura es «lo que se enlaza», y era lo que se enlaza con las features por
+defecto y en el target de la máquina. La marca va en R1 (punto 1). Este sello pone las dos opciones
+en `arbol()`, con su comentario, y con ellas cambia también lo que leen R1 y R2. Medido sobre este
+árbol, con 4 CPU y carga de 2,3 a 3,4 (otro proceso compartía la máquina):
+
+- Las dos opciones valen con `--locked --offline` y sin red: la herramienta sale VERDE dentro de un
+  espacio de red vacío (`unshare -rn`, donde un `curl` a `index.crates.io` sale con 6), y el
+  `Cargo.lock` no cambia.
+- La clausura de cada raíz, sin y con ellas: el nodo, de 149 a 160 crates; el cli, de 160 a 181; el
+  SDK, de 136 a 154; y el kit, de 53 a 57. Distintos, de 192 a 213. Lo de más es de Windows
+  (`windows-sys`, `windows-link`, `windows-targets` y los `windows_*`, `winapi` y los suyos,
+  `anstyle-wincon` y `once_cell_polyfill`), de WASI (`wasi`), de UEFI (`r-efi`) y de Redox
+  (`redox_syscall`, y `bitflags` bajo él). Y tres entran por `[target.'cfg(any())'.dependencies]`,
+  un cfg que no casa con ningún target: `serde` y `serde_derive` bajo `serde_json` 1.0.151 en el kit
+  (su `Cargo.toml:160`), y `zerocopy-derive` bajo `zerocopy` 0.8.55 en el cli y el SDK (`:418`).
+  Ninguno del patrón. R5 sigue en 194 fuentes de 15 crates.
+- El tiempo, en cinco corridas alternas de cada una, sin red: sin las opciones, de 1,8 a 2,5 s, con
+  mediana de 2,0 s; con ellas, de 1,8 a 2,4 s, con mediana de 2,0 s. No se nota.
+- Los mutantes, sobre copias de este árbol hechas con `git archive` de su commit, con la herramienta
+  de este sello dentro. `cargo metadata --offline` pone al día el `Cargo.lock` de la copia: una
+  línea cada vez.
+  - M11: `ring = { version = "0.17", optional = true }` en `zk-ssl-node`, y en sus `[features]`
+    `tlsx = ["dep:ring"]`. ROJO, 1: R4, «zk-ssl-node enlaza ring».
+  - M12: `ring = "0.17"` en `[target.'cfg(windows)'.dependencies]` de `zk-ssl-node`. ROJO, 1: R4,
+    lo mismo.
+  - M13: `ureq = { version = "2.10", optional = true }` en `zk-ssl-verify`, con `[features]` y
+    `red = ["dep:ureq"]`. ROJO, 5: R4 en el kit, por `ureq`, `rustls`, `rustls-webpki` y `ring`
+    dos veces. El nodo y el cli enlazan el kit sin esa feature, y no lo ven.
+
+  La herramienta sin las dos opciones y la de `2c73182` dan VERDE en los tres. Con una sola: sin
+  `--all-features`, M11 y M13 salen VERDE y M12 ROJO; sin `--target all`, M12 sale VERDE, y M11 y
+  M13 ROJO. Hacen falta las dos. Hoy no se escapaba nada: lo de más no trae ningún crate del patrón.
+
+Lo que estas opciones no cubren, y se declara: `--all-features` activa solo las features de la
+raíz, no las de sus dependencias. Una feature de un crate de la casa que ninguna raíz pide no sale,
+aunque un build de la raíz la puede activar: con `--features zk-ssl-medio/firmar`, o por
+unificación, cuando el mismo build compila otro paquete que la pide. La puerta no lo ve. Una
+segunda revisión independiente, antes de publicar, lo encontró: este párrafo decía «y no hace
+falta: ningún build de las raíces la enlaza», y no es así. Medido, con 4 CPU y carga de 3,4 a 4,0:
+
+- M14, vivo: `ureq = { version = "2.10", optional = true }` en `zk-ssl-medio`, y `"dep:ureq"` en
+  `firmar`, que es una feature real. El cli y el kit dependen del medio con
+  `default-features = false`, y el kit la activa solo en sus dev-dependencies. Sobre una copia
+  hecha con `git archive` de `5283b99`, la versión de este sello antes de esta revisión, que no está
+  en la historia y solo difiere de ésta en texto, con la herramienta de este sello dentro. `cargo
+  metadata --offline` cambia una línea del `Cargo.lock` de la copia. La herramienta da VERDE, rc 0,
+  con 213 crates y 194 fuentes. Pero `cargo tree --locked --offline -p zk-ssl-verify -e normal --features
+  zk-ssl-medio/firmar --prefix depth` da `2ureq v2.12.1`, `3rustls v0.23.43` y `4ring v0.17.14`:
+  un build del kit con esa feature enlaza el transporte. Y por unificación: `cargo tree -p
+  zk-ssl-verify -p zk-ssl-medio -e normal -i ureq` da `ureq` bajo el medio, bajo el kit; sin `-p
+  zk-ssl-medio`, nada. Con `--all-features --target all -i ureq`, el kit no tiene `ureq`, el nodo
+  tampoco, y el cli y el SDK lo tienen solo bajo sus dos raíces, como sin el mutante.
+
+Cerrarlo pediría que `arbol()` active también las features de los crates de la casa: es maquinaria
+nueva, y no va en este sello. Y `--target all` trae también lo de `cfg(any())`, que no se compila en
+ningún target: si un día trae un crate del patrón, el ROJO será falso, y se verá por su arista.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores --desde d4d6d45` (497 ficheros
+y 987 líneas) y `check_catalogo`; también `check_tests`, `check_modulos` y `bash -n tools/canon.sh`.
+
+**Lo que NO hace.** No quita `tls` a `ureq`: es la (b), que el autor no eligió. No construye el
+transporte del publicador del medio. No ve otra pila TLS que no esté en el patrón: `ureq` con la
+feature `native-tls` trae `native-tls` (su `Cargo.toml:148-150`), que en Linux va sobre `openssl`, y
+ninguno de los dos está en `CURVAS` (lo de `openssl`, no comprobado aquí); `ureq` 2.12.1 reexporta
+`native_tls` (`src/lib.rs:380`), y R5 no busca ese nombre; y un `openssl` directo en el SDK, que
+trae ECDH, tampoco da ROJO. Esa ceguera viene del §788, que mira nombres de crate. El mutante no se
+pudo resolver: `native-tls` y `openssl` no están en la caché de cargo, y sin red no se bajan. No lee
+`examples/`, `tests/` ni `build.rs` (M8). No ve una feature de una dependencia que la raíz no pide,
+aunque un build de la raíz la pueda activar (M14). No compila los mutantes: R4 lee `cargo tree` y R5
+lee texto. No reescribe el §106, ni el §705, ni el §835. No toca
+`crates/zk-ssl-medio/src/testigos.rs`: su marca del §835 sigue siendo cierta, y nombra la 122, que
+ahora está cerrada. No toca las frases que dicen «sin curvas» de la prueba, no de los binarios
+(`README.md:33`, `README_EN.md:34`, `RESUMEN_EJECUTIVO.md:105`, `doc/INSTITUTIONAL.md:434` y `:441`,
+`doc/DIAGNOSTICO_ESCALADO.md:240`): STARK sigue sin curvas. No toca `doc/blueprint-v2.md` ni
+`doc/ecst/`. Las citas por línea de `doc/ecst/` a `BACKLOG.md` que caen más abajo de la 11 se
+desplazan, y este sello no las corrige, como hizo el §835. No mide si algún camino real del cli o
+del SDK habla `https`. No hace que `verificar_citas` vea el desplazamiento de una cita por línea.
+
+**Lo que queda abierto.** Un transporte poscuántico, híbrido, no existe hoy en la pila de `ring`:
+el punto 5 lo comprueba en las fuentes, sin compilar. Pasar a uno pediría el proveedor `aws-lc-rs`,
+que R2 rechaza: sería un sello propio, y lo decide el autor. Y el publicador del medio no enlaza
+TLS: si lo necesita, tendrá que ampliar R4 en un sello propio, con su raíz y sus aristas.
+
+**Lo que es del autor.** Si R4 se queda con la regla de `ureq` y la de las dos raíces, que no están
+en el texto de su decisión. Si «`ring` solo bajo `rustls`» se lee, como aquí, por el subárbol de
+`rustls`. Si R5 lee también `examples/`. Si `arbol()` activa también las features de los crates de
+la casa (M14). Si el patrón gana `native-tls` y `openssl`, y R5 `native_tls`. Y si se busca un
+transporte híbrido.
+
+**Contadores.** `BACKLOG.md` pasa de 49 a 48 abiertas y de 78 a 79 resueltas. `check_tests` sigue en
+1972 tests declarados y 20 instrumentos, y `check_modulos` en 205 ficheros. Ningún pin de la tabla
+del canon cambia.

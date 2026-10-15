@@ -192,7 +192,7 @@ canal:
    claves. El B11.2 habla de «clave efímera» sin decir sobre qué grupo, y el árbol tampoco lo dice
    de Sapling (📖 no se leyó aquí). Lo medido es esto: desde el §788, `tools/check_curvas.py` rechaza
    las bibliotecas de curvas —`x25519-dalek` y `curve25519-dalek` entre ellas— en la clausura del
-   nodo, el testigo, el SDK y el kit (`tools/check_curvas.py:12-16` y `:28-32`), así que un
+   nodo, el testigo, el SDK y el kit (`tools/check_curvas.py:14-21` y `:44-50`), así que un
    Diffie-Hellman sobre una curva no pasaría esa puerta en el SDK. ⚠️ §835: decía `:10-14` y
    `:26-30`; la marca del §835 en esa cabecera movió dos líneas. Y decía que un Diffie-Hellman sobre
    una curva no pasa la puerta en el SDK. `ring`, que ya está en el SDK por el TLS de `ureq`, trae
@@ -202,7 +202,15 @@ canal:
    `ureq::rustls::crypto::ring`, sin tocar `Cargo.toml` ni `Cargo.lock`, medido en el §835 con un
    crate aparte. Ninguna puerta que mire nombres de crate lo cierra mientras `ureq` lleve `tls`. El
    título de este punto vale para las bibliotecas del patrón, no para `ring`. Y «ningún acuerdo de
-   claves» vale para el código de la casa: el TLS de `rustls` hace uno en cada conexión `https`. Uno
+   claves» vale para el código de la casa: el TLS de `rustls` hace uno en cada conexión `https`.
+   ⚠️ §838: decía `:12-16` y `:28-32`; la cabecera creció con dos marcas, R4 y R5. Y lo que la marca
+   del §835 dice de `ring` ya no vale: `ring`, `rustls`, `rustls-webpki` y `aws-lc-*` están en el
+   patrón; R4 admite `ring` solo bajo `rustls` y `ureq`, y solo en el cli y el SDK; y R5 da ROJO a
+   `ureq::rustls`, `rustls::`, `ring::` o `webpki::` en las fuentes de la casa (`:26-31`). Una
+   dependencia directa de `ring` en el SDK, o un `use ureq::rustls::crypto::ring` en el cli, salen
+   ROJO, medido en el §838 sobre copias del árbol, y el título de este punto vuelve a valer para el
+   código de la casa con las bibliotecas del patrón (OpenSSL, otra pila TLS, no está en él). El
+   acuerdo de claves del TLS sigue: es la excepción del §106 para el transporte (§838). Uno
    poscuántico, un KEM, no está en el árbol —el grep de «ML-KEM» y de «Kyber» sale vacío— y **su
    tamaño no está medido aquí**: los ~100 B del B11.2 no se pueden dar por buenos para él.
 3. 📐 **Cifrado, solo cabe entero en la extensión.** Sin contar el KEM, el AEAD de la casa añade

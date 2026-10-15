@@ -12,12 +12,12 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 49 abiertas, 78 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 48 abiertas, 79 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
-124, y el §814, que cierra la 41 y abre la 125.
+124, el §814, que cierra la 41 y abre la 125, y el §838, que cierra la 122.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1364,7 +1364,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `SplmtryData`. ⚠️ §835: decía que un acuerdo de claves sobre una curva no pasa la puerta; `ring`,
   que ya está en el SDK por el TLS de `ureq`, trae X25519 y ECDH P-256/P-384 y no está en el patrón
   (la 122). El código de la casa sigue sin escribir ningún acuerdo de claves; el del TLS lo hace
-  `rustls`, dentro de `ureq`. El campo, la codificación y el orden frente al cifrado son del autor; el
+  `rustls`, dentro de `ureq`. ⚠️ §838: decía que `ring` no está en el patrón; ya está, solo bajo
+  `rustls` y `ureq`, y la puerta busca su uso en las fuentes de la casa: un acuerdo de claves con
+  las bibliotecas del patrón vuelve a no pasarla (OpenSSL, otra pila TLS, no está en él). El del TLS
+  es la excepción del §106. El campo, la codificación y el orden frente al cifrado son del autor; el
   prototipo, un test en `iso.rs`, necesita compilar y no está hecho. **La entrada sigue abierta.**
 - [ ] **12. Fondos muertos — POLITICA DECIDIDA (§119), ~~piezas 1-3
   pendientes~~ piezas 1-3 HECHAS; la tienen abierta el suelo Δ_min, T3b, la
@@ -2881,7 +2884,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   instantánea cifrada y la vuelve a exportar, y la encuentra cifrada —o la exportación rehusada—, con
   su mutante; y la marca en el RFC-0001 y en `SECURITY.md` §3.14.
 
-- [ ] **122. El TLS del cli y del SDK enlaza curvas, y `check_curvas` no lo ve (§835).** `ureq`
+- [x] **122. El TLS del cli y del SDK enlaza curvas, y `check_curvas` no lo ve (§835).** `ureq`
   2.12.1 entra en `zk-ssl-cli` y en `zk-ssl-sdk` con su `tls` por defecto, y trae `rustls` sobre
   `ring`: X25519, P-256 y P-384 para el intercambio, y verificación ECDSA P-256/P-384 y Ed25519 (y
   RSA, que no es curva) de certificados y del handshake. `ring` no está en el patrón de
@@ -2904,6 +2907,16 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   raíz no basta, y sin el grep la (c) declara la ceguera en vez de cerrarla. El publicador del medio
   no elige transporte hasta que esto se decida. **Qué la cierra**: la opción elegida, con su marca en
   el §106 o en la cabecera de `check_curvas`; si es (c), con sus mutantes.
+  ✅ **CERRADA en el §838**, con la (a) y la (c), que decidió el autor el 2026-10-15. El §106 se
+  enmienda para el transporte del cli y del SDK, como excepción declarada al modo del §705, con su
+  coste escrito en el asiento y en `SECURITY.md` §3.3. `tools/check_curvas.py` pone `ring`,
+  `aws-lc-*`, `rustls`, `rustls-webpki` y `webpki` en el patrón; su R4 admite el transporte solo en
+  el cli y el SDK y solo por sus aristas (`ureq` bajo una de esas dos raíces, `rustls` bajo `ureq`,
+  `rustls-webpki` bajo `rustls`, `ring` bajo `rustls` o `rustls-webpki`; `aws-lc-*`, nunca); y su R5
+  da ROJO a `ring::`, o a `rustls` o `webpki` como palabra, fuera de comentarios en las fuentes de los
+  crates de la casa de cada clausura. Los mutantes, en el asiento. Queda abierto, y no en esta
+  entrada: el transporte del publicador del medio, que no enlaza TLS y, si lo necesita, amplía R4
+  en un sello propio.
 
 - [ ] **123. Un nodo vivo que no contesta en 2 s con la máquina sobresuscrita (§813).** Medido el
   15-10-2026 sobre `b6994c3`, en 4 CPU con ocho `yes` y carga de 6,6 a 8,7, para el DOS NODOS de
@@ -3422,6 +3435,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   produccion es post-cuantico», así que el puente Ed25519 del RFC-0013 no
   se construye (lo adopta la aceptación en bloque, reversible). Las
   cabezas y su firma XMSS no cambian.
+  ⚠️ **(§838) Y otra vez, para el transporte.** La mitad que el §705 dejaba
+  sin excepción la tiene ahora el TLS del cli y del SDK, `rustls` sobre
+  `ring` por `ureq`, con su coste: la clave de vista en tránsito descansa
+  en un ECDHE clásico. No cubre nada de lo que la casa firma o juzga: ni
+  cabezas, ni notas, ni cofirmas (la 122).
 - [ ] **55. ⚠️ B12.1: el formato de especificacion del AIR, probado en un
   circuito.** `doc/air/circuit_burn.md`, escrito el 01-08-2026 (§105).
   ✅ **El formato funciona**: la seccion «que NO se restringe» es la unica que

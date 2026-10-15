@@ -162,7 +162,7 @@ decidido, y dónde):
   ninguna cuenta tiene una clave pública a la que cifrar —`AccountRecord` y `zkssl_openAccount` llevan tres resúmenes—, así que
   hay que crearla y rotarla; el árbol no tiene ningún acuerdo de claves, y uno sobre una curva no pasa `tools/check_curvas.py`
   (§788) en el SDK (⚠️ §835: decía que no pasa; `ring`, en el SDK por el TLS, con X25519 y ECDH P-256/P-384, no está en el
-  patrón y se llama por `ureq::rustls`; el TLS hace uno: la 122); el tamaño de uno poscuántico no está medido aquí; y, cifrado,
+  patrón y se llama por `ureq::rustls`; el TLS hace uno: la 122. ⚠️ §838: `ring` ya está en el patrón, solo bajo `ureq` en el cli y el SDK, y la puerta busca su uso en las fuentes de la casa: uno con las bibliotecas del patrón vuelve a no pasar (OpenSSL, otra pila TLS, no está en él); el del TLS es la excepción del §106); el tamaño de uno poscuántico no está medido aquí; y, cifrado,
   el aviso solo cabe entero en `SplmtryData`, no en un campo de 140 caracteres. El cuerpo de este documento no se toca.
 · B18.2 (el reclamo de migración) → ES UNA ROTACIÓN, ESTUDIADA, SIN DECIDIR (§791): su ⚠️ está en
   «La errata del salt», arriba, y su análisis en `doc/ROTACION_DE_CUENTAS.md`. El cuerpo no se toca.
