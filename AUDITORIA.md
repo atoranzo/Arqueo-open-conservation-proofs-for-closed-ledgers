@@ -55814,3 +55814,143 @@ en depuración, y se saltan. Ni `crates/stark-experiment/src/circuit_send.rs:254
 `doc/ecst/VERIFICACION.md`, registro generado; ni la entrada 2, historia fechada; ni los preprints,
 depositados. Y no explica por qué dejaron de fallar los de grados: la hipótesis queda dicha como
 hipótesis.
+
+## §837 — `MIN_CON_FEATURES` sube de 10 a 12: la prueba de vida de la puerta de los binarios se queda sin holgura, y R1 del §834 muere; y el autor acepta lo que el rebase cambió en el §833 y en el §834
+
+El commit que lleva este asiento, sobre `d4d6d45` (el §814). Toca `tools/canon.sh`, tres líneas de
+la sección del §834: la constante, con su marca; la segunda línea del comentario de la prueba de
+vida; y el mensaje de su `falla`. Y este asiento. Ni tests, ni vectores, ni código de los crates, ni
+`Cargo.toml`, ni `Cargo.lock`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la
+nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es
+el siguiente del rango que el autor asignó (§830 a §859). No toca `crates/zk-ssl-guardian`.
+
+Del autor es la decisión, del 2026-10-15: subir el mínimo a 12, una de las dos vías que el §834 le
+dejaba en «Lo que es del autor», con R1 muerto. La otra vía, contar sólo los `etapa_*`, era
+maquinaria nueva, y no la pidió. Del autor es también el orden: este sello va el primero de la
+tanda, antes de la 122 de `BACKLOG.md`. La forma la propuso la sesión. El canon de este commit,
+`bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su
+sitio y sin esta frase: VERDE, 480 s de reloj (de su arranque a su salida) y 336 s de tests (la
+línea «total» de la tabla), en una máquina de 4 CPU con carga de 1,45 al empezar. Las 19 filas del
+nivel, en su pin, con 1813 tests que pasan (la suma de la columna «pasan»); la puerta de los
+binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (2 s)»; `check_tests` en 1972 y 20
+instrumentos; `check_modulos` en 205; las once herramientas del bucle «2 ter»; la puerta de los
+vectores, en 497 ficheros y 987 líneas; `check_catalogo`; el cable, en 23 de 23; la segunda
+implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`473eb5f63e5b091d` y el tarball `84cf89ec6ee2821e`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió sobre el §836 (`669ee88`), y la sesión lo selló allí con el
+canon en VERDE. Después entró en `main` el §813 de la otra sesión, que va detrás del §836, y la
+sesión rebasó este sello sobre él y lo selló allí con el canon en VERDE. Después entró en `main` el
+§814, de otra sesión, y la sesión rebasó este sello otra vez: en este fichero, los asientos del §813
+y del §814 van antes y éste después. Del §836 al §813 cambian `crates/zk-ssl-node/src/main.rs`,
+`tools/banco_reinicio.sh`, `BACKLOG.md`, `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, este fichero y
+una línea de `tools/canon.sh`: la fila del nodo, en la 140, con su pin de 206 a 210. Ningún
+`Cargo.toml` ni ningún ejemplo, así que el plan de la puerta es el mismo. Del §813 al §814 cambian
+sólo `ARQUITECTURA.md`, `BACKLOG.md`, `CONTRIBUTING.md` y este fichero: prosa, que cierra la 41 y
+abre la 125. Ni código, ni tests, ni `tools/canon.sh`. Los rebases cambian en este asiento la
+apertura; la frase del canon, que es la del canon corrido sobre este árbol, arriba; `check_tests`,
+de 1968 a 1972, por los cuatro tests del nodo del §813, que el §814 no mueve; la base de
+`check_vectores`, de `--desde 669ee88` a `--desde 4d8017d`, y de ahí a `--desde d4d6d45`; y la
+cabecera del `BACKLOG.md`: de 47 a 49 abiertas, que el §813 recontó al abrir la 123 y la 124, y de
+77 a 78 resueltas, que el §814 recontó al cerrar la 41 y abrir la 125, con las abiertas en 49. En
+`tools/canon.sh` el conflicto no hubo que resolverlo a mano: la fila del nodo del §813 y las tres
+líneas de este sello están lejos, y quedan las dos. En este fichero sí hubo conflicto con el §814,
+porque los dos asientos van al final; se resolvió con el del §814 entero y éste detrás, sin tocar
+ninguno de los dos. Ninguna línea de `tools/canon.sh` se desplaza: las citas de abajo a las 565, 570
+y 622 siguen en su sitio, y la cita por línea viva más alta a `tools/canon.sh` sigue siendo la 453
+(64 citas en 61 líneas, las mismas en los tres árboles, fuera de este fichero). Sobre el árbol del
+§813 se midió otra vez la puerta sola, extraída como abajo y con `--sello`: con el mínimo en 12, «OK
+24 objetivos en 8 paquetes, 12 con features (12 s)», exit 0, en 12 s porque recompiló el nodo del
+§813; y G7, el control, con el mínimo en 13: «solo 12 … pide 13», exit 1. Sobre el del §814 esa
+medida no se repitió aparte: no cambia ningún fuente, ningún `Cargo.toml` ni ningún ejemplo, y la
+puerta la corre el canon de este árbol, arriba. Lo demás de «Medido» y de «Mutantes» es del árbol
+del §836: la puerta y lo que compila con features no cambian de uno a otro. Las cifras de los
+canones corridos sobre el §836 y sobre el §813 no se copian aquí: las de este asiento son las del
+canon de este árbol, arriba.
+
+**Lo que el autor acepta, del 2026-10-15.** El rebase sobre el §812 cambió en el §833 y en el §834
+más de lo que tenía que cambiar, que era el número, la apertura y las cifras de la base. Los dos
+asientos lo dejaron a la vista en «La base» y lo pusieron en su «Lo que es del autor». El autor lo
+acepta, y lo registra este asiento:
+
+- en el §833, la precisión sobre C4 y C5: que en los dos `check_cifras` da ROJO por la cuenta del
+  documento y no por la pieza mutada;
+- en el §834, las cifras del plan (24 objetivos, 20 ejemplos, 12 con features); la holgura del
+  mínimo, que pasó de uno a dos; los mutantes que la cuentan (M1, G1, G4, G6, G7 y R1); y el
+  comentario de la sección en `tools/canon.sh` y el mensaje de su `falla`, que nombran los dos
+  ejemplos de `zk-ssl-medio`.
+
+Los dos asientos no se reescriben. Lo demás de esos dos «Lo que es del autor» sigue abierto. Del
+§833: si la cuenta de los README entra en la lista de `check_cifras`, si entra también
+`RESUMEN_BILINGUE.md`, y si el canon compara además `members` con lo que da `cargo metadata`. Del
+§834: si la puerta se queda en `--sello` o baja a `--largo`, si se versiona el `Cargo.lock` del
+generador de `kat_xmss`, y si el pin del nodo sigue en 1 mientras `podar` no tenga llamador.
+
+**Lo que hace.** Las correcciones, sobre los ficheros STAGED de este commit:
+
+1. `tools/canon.sh:570`: `MIN_CON_FEATURES=12`, con la marca «⚠️ §837: era 10, y el comentario
+   decia que el minimo dejaba dos de holgura». Es la única marca «⚠️ §837» fuera de este asiento.
+2. `tools/canon.sh:565`, la segunda línea del comentario de la prueba de vida. Decía «el minimo deja
+   dos de holgura y no vigila cada `etapa_*`». Dice «Sin holgura: uno de menos es ROJO; uno de mas
+   deja holgura 1». La marca va en la línea de la constante, cinco más abajo, porque con ella el
+   comentario no cabía en sus dos líneas. La línea 564 no cambia: «La cuenta mezcla paquetes: hoy
+   12, los diez `etapa_*` y los dos de `zk-ssl-medio`» sigue siendo cierto.
+3. `tools/canon.sh:622`, el mensaje de la `falla`: «la prueba de vida pide $MIN_CON_FEATURES, los de
+   hoy, sin holgura (cuenta todos los paquetes: …)». Antes no mentía; ahora dice que no hay
+   holgura.
+4. El asiento del §834 dice que R1 vive y que «hasta dos `etapa_*` pueden salir del plan con el canon
+   en VERDE». Con este commit, R1 muere y no sale ninguno sin que otro objetivo con features entre.
+   El asiento sellado no se reescribe: lo corrige éste.
+
+Las tres líneas cambian en su sitio: ninguna línea de `tools/canon.sh` se desplaza. Ninguna cita
+por línea viva a `tools/canon.sh` pasa de la 453 (`git grep -nE 'canon\.sh:[0-9]+'` fuera de este
+fichero).
+
+**Medido**, en este orden, en el worktree de la sesión, con 4 CPU, `nice -n 10` y carga de 0,07 al
+empezar. La puerta se extrajo del `tools/canon.sh` de cada árbol con su preámbulo (`set`, la raíz,
+el nivel, la tabla, las utilidades, `PEDIDO` y `OUT`), como hizo el §834, y se corrió con `--sello`.
+
+1. La puerta de `669ee88`, con el mínimo en 10, sobre el árbol: «OK 24 objetivos en 8 paquetes, 12
+   con features (3 s)», exit 0.
+2. La puerta de este commit, con el mínimo en 12, sobre el árbol: «OK 24 objetivos en 8 paquetes, 12
+   con features (2 s)», exit 0. Hoy da VERDE con 12: doce es lo que compila con features.
+
+**Mutantes.** Sobre una copia del árbol hecha con `tar`, sin `target` ni `.git`, siempre en la misma
+ruta, con el `target` del worktree. Entre un mutante y otro la copia se rehízo desde el mismo `tar`,
+y los ficheros mutados se tocaron para que cargo los recompilara. Cada corrida extrae la puerta del
+`tools/canon.sh` de la copia, con la constante puesta a mano en el valor que se dice. La copia sin
+mutar da exit 0 antes y después: «OK 24 objetivos en 8 paquetes, 12 con features», la primera vez en
+164 s, porque recompiló, y la última en 3 s.
+
+- Mueren tres, con exit 1.
+  - R1, el del §834: borrar `crates/zk-ssl/examples/etapa_b4_arranque.rs` y su `[[example]]`. Con
+    el mínimo en 10, VERDE: «OK 23 objetivos en 8 paquetes, 11 con features», como en el §834. Con
+    12, ROJO: «solo 11 objetivos con features compilados, y la prueba de vida pide 12».
+  - R1b: borrar `crates/zk-ssl-medio/examples/testigos_locales.rs` y su `[[example]]`. Con 10, VERDE:
+    «OK 23 objetivos en 8 paquetes, 11 con features». Con 12, ROJO: «solo 11 … pide 12».
+  - G7, el control: el mínimo en 13 sobre la copia sin mutar. ROJO: «solo 12 … pide 13». Doce es
+    exacto: uno más ya no pasa.
+- Vive uno, y se declara. R1 más un ejemplo nuevo en `zk-ssl-medio`, `nuevo`, con
+  `required-features = ["firmar"]` y un `main` vacío: VERDE, «OK 24 objetivos en 8 paquetes, 12 con
+  features». La cuenta mezcla paquetes: un objetivo con features que entra tapa uno que sale. Contar
+  sólo los `etapa_*` lo mataría, y es maquinaria nueva que el autor no pidió.
+
+La copia, sus puertas y sus registros se borraron al acabar.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores --desde d4d6d45` y
+`check_catalogo`; también `check_tests`, en 1972 tests declarados y 20 instrumentos,
+`check_modulos`, en 205 ficheros, `bash -n tools/canon.sh` y `bash tools/canon.sh --lista`.
+
+**Lo que NO hace.** No cuenta sólo los `etapa_*`: el mutante vivo sigue vivo. No vigila los diez
+`etapa_*` uno a uno, ni los dos de `zk-ssl-medio`: vigila el total. No sube el mínimo solo: cuando
+entre un objetivo con features, la holgura será 1 hasta el sello que lo suba. No reescribe los
+asientos del §833 ni del §834. No toca la puerta en nada más: ni el nivel, ni el generador de
+`kat_xmss`, ni el pin del nodo. No toca la cabecera del canon ni sus cifras.
+
+**Lo que es del autor.** Lo que sigue abierto de los dos «Lo que es del autor», arriba. Y si el
+sello que traiga un objetivo con features nuevo sube también el mínimo, o lo deja con holgura 1.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1972 tests declarados y 20 instrumentos, y
+`check_modulos` en 205 ficheros. Ningún pin de la tabla del canon cambia. `BACKLOG.md` no cambia:
+sigue en 49 abiertas y 78 resueltas.

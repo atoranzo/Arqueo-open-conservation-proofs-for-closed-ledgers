@@ -562,12 +562,12 @@ fi
 # o con el kit; los que lo compilan con el mando lo rehacen, porque cargo unifica sus features.
 # Prueba de vida: cada objetivo listado sale con su ejecutable en un `compiler-artifact` de su
 # llamada, y al menos MIN_CON_FEATURES piden features. La cuenta mezcla paquetes: hoy 12, los diez
-# `etapa_*` y los dos de `zk-ssl-medio`; el minimo deja dos de holgura y no vigila cada `etapa_*`.
+# `etapa_*` y los dos de `zk-ssl-medio`. Sin holgura: uno de menos es ROJO; uno de mas deja holgura 1.
 # Los avisos de rustc y de cargo, con pin exacto por paquete: cero, salvo el nodo, el de `podar`
 # (§580), como en el §784. Fuera, declarado: el generador de `kat_xmss`, sin `Cargo.lock` versionado.
 msg ""
 msg "== CANON · los binarios y los ejemplos, en release y con --locked =="
-MIN_CON_FEATURES=10
+MIN_CON_FEATURES=12  # ⚠️ §837: era 10, y el comentario decia que el minimo dejaba dos de holgura
 T_OBJ0=$(date +%s)
 # Una linea por paquete con objetivos: nombre, features (o -), cuantos piden features, y los objetivos.
 PLAN_OBJ=$(cargo metadata --format-version 1 --no-deps --locked 2> "$OUT/objetivos_metadata.txt" | python3 -c '
@@ -619,7 +619,7 @@ print(" ".join(o for o in sys.argv[2:] if o not in hechos))
   N_PAQ=$((N_PAQ + 1)); N_OBJ=$((N_OBJ + $(wc -w <<< "$OBJS"))); N_FE=$((N_FE + NF))
 done <<< "$PLAN_OBJ"
 [ "$N_FE" -ge "$MIN_CON_FEATURES" ] \
-  || falla "solo $N_FE objetivos con features compilados, y la prueba de vida pide $MIN_CON_FEATURES (cuenta todos los paquetes: los diez etapa_* y los dos de zk-ssl-medio)"
+  || falla "solo $N_FE objetivos con features compilados, y la prueba de vida pide $MIN_CON_FEATURES, los de hoy, sin holgura (cuenta todos los paquetes: los diez etapa_* y los dos de zk-ssl-medio)"
 [ "${#fallos[@]}" != "$F_OBJ0" ] \
   || msg "  OK  $N_OBJ objetivos en $N_PAQ paquetes, $N_FE con features ($(( $(date +%s) - T_OBJ0 )) s)"
 
