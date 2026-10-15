@@ -55272,3 +55272,180 @@ raíces, con su mutante. Hasta que decida, el publicador del medio no elige tran
 **Contadores.** `BACKLOG.md` pasa de 46 a 47 abiertas; las resueltas siguen en 77. `check_tests`
 sigue en 1968 tests declarados y 20 instrumentos, y `check_modulos` en 205 ficheros. Ningún pin de
 la tabla del canon cambia.
+
+## §836 — RFC-0013 D-H, decidida: el medio entra en una red de testigos solo con `0x06`, en las dos puntas; sin puente Ed25519 y sin cofirmas `0x04`; el alta, después, y la da el autor
+
+El commit que lleva este asiento, sobre `dfc63ec` (el §835). Toca tres ficheros y este asiento. En
+`spec/rfc/0013-el-medio-del-ancla.md`: una nota en la D-H, una línea en D-C, otra en D-D y la
+cabecera. En `BACKLOG.md`: una línea en la 86. En `spec/README.md`: la fila del RFC-0013. Ni código
+que se compile, ni tests, ni vectores, ni `Cargo.toml`, ni `Cargo.lock`. Ningún correo. Lo escribe y
+lo commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó
+(§830 a §859).
+
+Del autor es la decisión, del 2026-10-15. Es la parte bloqueada de la tarea 7 de la lista que
+encargó. Del autor es también el orden: este sello va después del §835, el del TLS. La forma la
+propuso la sesión. Antes de corregir el texto de la serie, el canon, `bash tools/canon.sh --sello`,
+corrido por la sesión sobre el árbol limpio de `090b994`, una versión anterior de este commit que no está en la historia
+que se entrega, con su
+asiento en su sitio salvo esa frase y el párrafo que la seguía, que eran otros, dio VERDE, 407 s de
+reloj (de su arranque a su salida) y 263 s de tests (la línea «total» de la tabla), en una máquina de
+4 CPU con carga de 0,36 al empezar. Las 19 filas del nivel, en su pin, con 1809 tests que pasan; la
+puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (2 s)»; `check_tests` en
+1968 y 20 instrumentos; `check_modulos` en 205; las once herramientas del bucle «2 ter»; la puerta de
+los vectores, en 497 ficheros y 987 líneas; `check_catalogo`; el cable, en 23 de 23; la segunda
+implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`473eb5f63e5b091d` y el tarball `b91fadf605507fac`. El canon de la punta de la serie, este commit,
+`bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su
+sitio y sin esta frase: VERDE, 399 s de reloj (de su arranque a su salida) y 260 s de tests (la línea
+«total» de la tabla), en una máquina de 4 CPU con carga de 0,01 al empezar. Las 19 filas del nivel,
+en su pin, con 1809 tests que pasan (la suma de la columna «pasan»); la puerta de los binarios, con
+«OK 24 objetivos en 8 paquetes, 12 con features (2 s)»; `check_tests` en 1968 y 20 instrumentos;
+`check_modulos` en 205; las once herramientas del bucle «2 ter»; la puerta de los vectores, en 497
+ficheros y 987 líneas; `check_catalogo`; el cable, en 23 de 23; la segunda implementación, con sus
+pares STARK en 34 de 34; y el artefacto reproducible, con el binario `473eb5f63e5b091d` y el tarball
+`8d9a0bb899018d56`. Corrió con un `TMPDIR` propio y vacío, y al acabar no quedaba nada en él.
+
+Antes hubo otras dos corridas, las dos sobre una versión anterior de este commit, `5574437`, que tampoco
+está en la historia que se entrega. La
+segunda dio VERDE, 488 s de reloj y 319 s de tests, con el tarball `e2b2c3c664f5317c`. Después, una
+revisión cambió tres frases de este asiento, solo de texto. Por eso el canon se corrió otra vez: es
+la VERDE de arriba. La primera dio ROJO, 430 s, con dos fallos en una sola fila: `zk-ssl-medio`, 27
+de 58 y salida 101. Falló `la_vkey_va_y_vuelve_y_su_key_id_se_comprueba`, la aserción del mutante A
+de abajo. La causa no estaba en el árbol: `nota.rs` lleva la comprobación del tipo (líneas 330-331).
+Estaba en el directorio de compilación, compartido con una copia mutante: el binario de test que
+corrió es de las 08:14:16, siete segundos después de escribirse un `nota.rs` sin esa comprobación en
+una copia del árbol, y cargo no lo recompiló para este árbol. Se borró solo lo de `zk-ssl-medio`, con
+`cargo clean --release -p zk-ssl-medio`, y la segunda corrida dio la VERDE de 488 s. Queda una regla:
+un mutante no comparte el directorio de compilación del canon. Ya se había visto en el §832, y
+entonces no se escribió; su asiento lo cuenta ahora.
+
+**La serie, corregida.** Una revisión de la serie entera, antes de entregarla, encontró fallos de
+texto en los asientos y tres de fondo en el §835. Esta versión de la serie, rehecha sobre `b6994c3`
+sello a sello, los corrige. En el §830, «2077 tests que pasan»: eran 1809, y se les había sumado el
+«total» de 268 s. En el §831, la forma del mutante M12. En el §832, una corrida ROJA del canon que el
+asiento callaba. En el §833, la precisión de `check_cifras` en C4 y C5. En el §834, un párrafo «La
+base» que reúne lo que cambió con el rebase, y el ancho de un comentario de `tools/canon.sh`. En el
+§835, la vía de `ureq::rustls`, las firmas ECDSA, el coste de las opciones de la 122 y dos marcas. Y
+aquí, el contraste local de E3 con `omniwitness`, las dos corridas de antes y el §832. Cada asiento
+lleva el hash de su padre nuevo. Del §830 al §833 sólo cambió `AUDITORIA.md`, que el canon lee sólo
+por `verificar_citas`: su canon es el de antes, y lo dicen. El §834 y el §835 tocaron otros ficheros,
+y su canon se corrió otra vez. El de la punta va en la última frase del segundo párrafo de este
+asiento.
+
+**Lo que decide el autor** (reversible, como D-A a D-H). El §705, punto 5, sigue. El publicador
+firma la nota solo con ML-DSA-44 (`0x06`). La casa solo retiene, verifica y cuenta cofirmas
+ML-DSA-44 (`0x06`). No hay clave de log `0x01`. Las cofirmas Ed25519 `0x04` no se verifican ni
+cuentan en `k`. Por qué: una cofirma Ed25519 que contara en el umbral pondría sobre una curva la
+propiedad entera del medio, no solo su admisión. Y el §106 y el §705, punto 4, no tienen excepción
+para firmas clásicas.
+
+No se pide el alta en ninguna red todavía. Antes tiene que haber tres cosas:
+
+1. el publicador entero: el bucle, la cadencia, servir la nota y el transporte, que espera a la 122;
+2. testigos que acepten un log `0x06`, por la lista de una red o configurados a mano;
+3. al menos dos testigos con clave ML-DSA-44.
+
+Son necesarias, no suficientes: el alta la da el autor. Hasta el alta, E3 se mide en local: contra
+litewitness, como en el §808, y contra `transparency-dev/witness` (`omniwitness` con una clave
+ML-DSA-44), que está leído y no corrido. Ese contraste queda pendiente, en la 86.
+
+Queda escrita, sin decidir, otra vía: testigos de una red que configuran a mano el log `0x06` y
+cofirman con `0x04`. La casa no verificaría ni contaría esas líneas. Servirlas sin juzgar en la
+nota, para que un tercero las compruebe con sus herramientas, lo decidiría el autor más adelante.
+
+**Leído**, el 2026-10-15, fuera de este árbol. Nada de esto se ha corrido. Cada repositorio, clonado
+sin blobs desde GitHub y leído con `git show` en el commit que se cita:
+
+- `https://github.com/transparency-dev/witness-network`, en `a79e654` (`a79e654c9981`, del
+  2026-10-06; la punta de su rama por defecto al leerla). Su página `participate`, en
+  `site/content/`, pide al log una clave de tipo `0x01` (líneas 36-38) y al testigo una de tipo
+  `0x04` (líneas 151-153). Dice que no hay lista de producción (línea 73) y que un testigo puede
+  configurar logs a mano (líneas 141-142). Su formato de lista, `log-list-format`, admite las claves
+  de `tlog-cosignature`, ML-DSA-44 entre ellas (líneas 46-49), desde `de7a933` (2026-05-26). Su
+  validador, `cmd/validate/main.go`, lee las claves con `golang.org/x/mod/sumdb/note` (línea 30, y
+  `note.NewVerifier` en la 109), y su `go.mod` fija `golang.org/x/mod` v0.28.0. En
+  `sumdb/note/note.go` de v0.28.0, y lo mismo en v0.40.0 (los dos, del módulo que sirve
+  `proxy.golang.org`), `NewVerifier` solo conoce Ed25519: todo tipo que no sea `0x01` es
+  `errVerifierAlg` (líneas 259-264). Por el código, el validador rechazaría una clave `0x06`. Sus
+  tres listas de logs llevan 35 líneas `vkey` y 34 claves distintas; el primer byte de cada clave,
+  decodificada, es `0x01` en las 34. Las claves de los testigos no están en el repositorio: están en
+  sus páginas «about», que no se han leído. Su `go.mod` lleva también `transparency-dev/formats`
+  (línea 5), fijado en `bb8ad4d` (2025-04-21), y ningún fichero `.go` del repositorio lo importa.
+- `https://github.com/transparency-dev/formats`, en `bb8ad4d` y en `e6e205e`. En `bb8ad4d`, el que
+  fija witness-network, `NewVerifier` (`note/note_verifier.go:45-53`) solo conoce `0x02`, `0x04` y
+  `0x05`; todo lo demás va a `golang.org/x/mod/sumdb/note` (línea 28), y un `0x06` es
+  `errVerifierAlg`. `NewVerifier` acepta `0x06` desde `e6e205e` (2026-04-30, «Add MLDSA-44
+  cosigner implementation (#247)»; `note/note_verifier.go:91`). La primera etiqueta que lo lleva
+  es v0.1.1 (`f8d9ded`, 2026-06-02). El padre de `e6e205e` no nombra `algMLDSA44`. Cambiar solo
+  el import de `cmd/validate`, con `formats` en `bb8ad4d`, seguiría rechazando una clave `0x06`.
+- `https://github.com/transparency-dev/witness`, en `5397155` (`539715523ab9`, del 2026-10-14).
+  `config/public_witness_network.go` lee la clave de cada log con `NewVerifier` de
+  `transparency-dev/formats/note` (líneas 28 y 99). Su `go.mod` fija `formats` en `340a9e5`
+  (2026-10-13), y ahí `note/note.go` acepta el tipo `0x06` (líneas 24 y 145). Su `omniwitness` toma
+  una o varias claves, «Ed25519 or MLDSA» (`cmd/omniwitness/monolith.go:46`), y hace con cada una un
+  firmante de cofirmas (`:194-224`, con `NewSignerForCosignatureV1`). En `formats` `340a9e5`, ese
+  constructor hace de una clave ML-DSA-44 un firmante `0x06` (`note/note_cosigv1.go:218-232`). Y el
+  testigo devuelve una línea por clave (`witness/witness.go:363-388`). Leído así, para tener testigos
+  ML-DSA-44 no hace falta un cambio aguas arriba ni un testigo de la casa: basta con operadores de
+  `omniwitness` que añadan una clave ML-DSA-44. Que lo hagan no consta. Que el kit verifique esas
+  cofirmas no se ha medido: pide el contraste local de arriba. Y `omniwitness` también acepta un log
+  `0x06` configurado a mano: lee la clave de cada log con `NewVerifier` de
+  `transparency-dev/formats/note` (`omniwitness/configs.go:61`, con el import en la línea 28).
+- `https://github.com/FiloSottile/torchwood`: en `v0.10.0` (`2fa53be`, 2026-09-24) y en `1cadf59`
+  (2026-10-01, la punta al leerla), `cmd/litewitness/litewitness.go:294` salta toda clave del
+  agente SSH que no sea Ed25519. litewitness solo cofirma con Ed25519.
+- `https://github.com/C2SP/C2SP`, en `b2dd989` (2026-10-07): `tlog-witness`, líneas 177-178,
+  «Witnesses SHOULD use ML-DSA-44».
+
+Las dos páginas de witness-network se citan sin su extensión, en el RFC y aquí: `verificar_citas`
+(v1) pide que todo nombre de fichero Markdown citado exista en este árbol. Lo midió el punto 1 de
+abajo.
+
+**Leído en este árbol.** `ClaveDeNota::leer_vkey` rechaza toda clave que no sea de tipo `0x06`
+(`crates/zk-ssl-medio/src/nota.rs:330-331`). Por ella leen las claves de los testigos la política
+del cli (`crates/zk-ssl-cli/src/medio.rs:37`) y el kit (`crates/zk-ssl-verify/src/main.rs:2814`).
+Lo que la nota de D-D dice ya era así. Este sello no lo cambia: lo escribe.
+
+**Medido**, en este orden, en el worktree de la sesión, con 4 CPU y carga de 0,10 al empezar:
+
+1. `python3 tools/verificar_citas.py`, con la primera versión de la nota de la D-H: ROJO, con
+   «FALTA» para las dos páginas de witness-network, citadas con su extensión, y con la cita del
+   registro al §836 en `BACKLOG.md` muerta, porque este asiento no existía. Con las páginas citadas
+   sin extensión y con este asiento: 0.
+2. Mutante A, sobre una copia del árbol hecha con `git archive HEAD`: en `nota.rs`, `leer_vkey` sin
+   la comprobación del tipo. `cargo test --release --offline --locked -p zk-ssl-medio --lib --
+   nota::`: 5 pasan y 1 falla, `la_vkey_va_y_vuelve_y_su_key_id_se_comprueba`, en su aserción de
+   una clave de tipo `0x04` (`nota.rs:760-762` de este árbol). Muere. El `key_id` sale siempre con
+   `0x06`, así que solo la comprobación del tipo rechaza esa clave. Este sello no añade ninguna
+   comprobación: el mutante mide que lo que la decisión escribe ya lo guarda un test.
+3. Las citas por línea. `README.md` y `README_EN.md` citan la tabla de etapas del RFC por `:42-47`.
+   La cabecera se recompone en sus mismas seis líneas (de la 25 a la 30), y la cita sigue en su
+   sitio. Las notas nuevas del RFC van de la línea 150 hacia abajo; la única cita por línea a esa
+   zona está en un asiento sellado, el del §705, y no se reescribe. En `BACKLOG.md`, la 86 crece
+   seis líneas. Las citas por línea a `BACKLOG.md` que caen más abajo están en `doc/ecst/` y en
+   asientos sellados: se desplazan, y este sello no las corrige, como el §835.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores --desde b6994c3` (497 ficheros
+y 987 líneas) y `check_catalogo`; también `check_tests`, en 1968 tests declarados y 20
+instrumentos, y `check_modulos`, en 205 ficheros.
+
+**Lo que NO hace.** No manda el correo de alta a ninguna red. No construye el publicador ni elige
+transporte. No corre nada ajeno: ni el validador de witness-network, ni `omniwitness`, ni
+litewitness. El contraste local con `omniwitness` queda pendiente. No mira si algún testigo publica
+ya una clave ML-DSA-44. No cambia el código: la casa ya retenía, verificaba y contaba solo `0x06`. No
+reescribe el (1) de la D-H, ni el párrafo «Puente, declarado» de D-C, ni el puente en Seguridad: las
+notas de D-C y de la D-H remiten a la decisión. No toca la frase del Estado que llama DELEGADAS a las
+decisiones D-A a D-H: con la D-C, el §705 tampoco la tocó. No decide la 122.
+
+**Lo que es del autor.** El alta: las tres condiciones son necesarias, no suficientes. El contraste
+local de E3 con `omniwitness` y una clave ML-DSA-44, que pide red una vez para Go. La vía de los
+testigos que configuran a mano el log `0x06` y cofirman con `0x04`, escrita y sin decidir. La 122 y
+sus opciones. Y, si quiere, una incidencia en witness-network sobre su validador, con el arreglo
+concreto, en dos partes: que `cmd/validate` lea las claves con `transparency-dev/formats/note`, y que
+suba `formats` a una versión que conozca `0x06`. La que fija su `go.mod`, `bb8ad4d`, no lo conoce;
+`formats` lo conoce desde `e6e205e`; en etiqueta, desde v0.1.1. Leído como arriba; no se ha compilado
+ni corrido.
+
+**Contadores.** Ninguno se mueve. `BACKLOG.md` sigue en 47 abiertas y 77 resueltas: la 86 sigue
+abierta. Ningún pin de la tabla del canon cambia.

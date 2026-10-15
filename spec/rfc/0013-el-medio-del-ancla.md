@@ -22,12 +22,12 @@
   dividida servida por un nodo real: cada testigo solo no la ve), §603 (la integración), §631
   (la E2a: el árbol del medio, y la D-G decidida), §632 (la E2b: la nota, contrastada con
   torchwood), §633 (la E4a: el sobre en el kit, y la D-D corregida), §634 (la E4b: el catálogo y
-  el banco), §635 (el juez del umbral en el cli), §703 (la motivación al día: el #341, cerrado
-  por el #355), §705 (el §106, enmendado: la firma de D-C es su excepción declarada, y el puente
-  Ed25519 no se construye) y §808 (la E3a, en local); y, en mtc-core, sus asientos §14 y §15 (la
-  interoperabilidad medida contra la implementación de referencia del IETF, en las dos direcciones,
-  y el checkpoint de esa herramienta reconstruido desde sus tejas) y §26 y §27 (el #355 fusionado, y
-  la herramienta de referencia medida después: su checkpoint, ya una cofirma `tlog-cosignature`).
+  el banco), §635 (el juez del umbral en el cli), §703 (la motivación al día: el #341, cerrado por el
+  #355), §705 (el §106, enmendado: la firma de D-C es su excepción declarada, y el puente Ed25519 no se
+  construye), §808 (la E3a, en local) y §836 (la D-H, decidida); y, en mtc-core, sus asientos §14 y §15
+  (la interoperabilidad medida contra la implementación de referencia del IETF, en las dos direcciones,
+  y el checkpoint de esa herramienta reconstruido desde sus tejas) y §26 y §27 (el #355 fusionado, y la
+  herramienta de referencia medida después: su checkpoint, ya una cofirma `tlog-cosignature`).
 - **Backlog:** la 86 (elegir y medir el medio), que este RFC cierra en diseño y deja abierta en
   despliegue; la pregunta abierta de la 83 —«el diseño de referencia usa Ed25519 y ZK-SSL firma
   con XMSS con estado (…) hay que medir si cada testigo firma con su propia clave XMSS o si ahí
@@ -147,6 +147,9 @@ cuesta va en Seguridad.
 > deja como estaba y se corrige aquí; lo mismo vale para el (1) de D-H y para el puente en
 > Seguridad.
 
+> ⚠️ §836: la D-H, decidida por el autor: el puente sigue sin construirse, y no hay clave de log
+> `0x01`.
+
 ### D-D — Los testigos son ajenos, genéricos y de umbral, y el protocolo es `tlog-witness`
 
 El publicador envía a cada testigo `add-checkpoint`: `old <size anterior>`, hasta 63 líneas de
@@ -194,6 +197,9 @@ Medido contra dos implementaciones de otra mano, en local: el `add-checkpoint` d
 sin tocar; la nota cofirmada por dos de esos testigos entra en el sobre del catálogo, el kit la da
 VERDE y el juez del §635 la acredita con `k = 2`. Lo que pide testigos reales —cuáles, con TLS,
 con qué cadencia y dónde se sirve la nota— queda sin construir.
+
+> ⚠️ §836: en `k` solo cuentan las cofirmas `0x06`; las `0x04` no se verifican ni cuentan (la D-H,
+> decidida por el autor).
 
 ### D-E — Lo que un tercero comprueba, sin el nodo
 
@@ -284,6 +290,43 @@ que custodiar, sin estado pero con custodia.
 > binario de litewitness no ofrece. Qué testigo público corre esa versión, y con qué clave, no se ha
 > medido: pide red. Y la E3a no se midió contra mtc-core sino contra esos dos testigos, que son
 > testigos y no verificadores de notas.
+
+> ⚠️ §836: **decidido por el autor el 2026-10-15: solo `0x06`, en las dos puntas** (reversible, como
+> D-A a D-H). El publicador firma la nota solo con ML-DSA-44. La casa solo retiene, verifica y cuenta
+> cofirmas ML-DSA-44 (`0x06`). El puente `0x01` de D-C sigue sin construirse (§705, punto 5). Las
+> cofirmas Ed25519 `0x04` no se verifican ni cuentan en `k`. Por qué: una cofirma Ed25519 que contara
+> en el umbral pondría sobre una curva la propiedad entera del medio, no solo su admisión; y el §106
+> y el §705, punto 4, no tienen excepción para firmas clásicas.
+>
+> No se pide todavía el alta en ninguna red de testigos. Antes hacen falta tres cosas: el publicador
+> entero (el bucle, la cadencia, servir la nota y el transporte, que espera a la 122 de
+> `BACKLOG.md`); testigos que acepten un log `0x06`, por la lista de una red o configurados a mano; y
+> al menos dos testigos con clave ML-DSA-44. Son necesarias, no suficientes: el alta la da el autor.
+> Hasta el alta, E3 se mide en local: contra litewitness, como en el §808, y contra
+> `transparency-dev/witness` (`omniwitness` con una clave ML-DSA-44), que está leído y no corrido.
+>
+> Queda escrita, sin decidir, otra vía: testigos de una red que configuran a mano el log `0x06` y
+> cofirman con `0x04`. La casa no verificaría ni contaría esas líneas. Servirlas sin juzgar en la
+> nota, para que un tercero las compruebe con sus herramientas, lo decidiría el autor más adelante.
+>
+> Leído el 2026-10-15 fuera de este árbol, sin correrlo:
+>
+> - `https://github.com/transparency-dev/witness-network`, en `a79e654`: su página `participate`
+>   (en `site/content/`) pide al log una clave `0x01` (líneas 36-38) y al testigo una `0x04` (líneas
+>   151-153), y dice que no hay lista de producción (línea 73). Su formato de lista,
+>   `log-list-format`, admite ML-DSA-44 (líneas 46-49). Pero su validador (`cmd/validate`) lee las
+>   claves con `golang.org/x/mod/sumdb/note` v0.28.0, que solo conoce Ed25519 (`note.go:259-264`):
+>   por el código, rechazaría una clave `0x06`.
+> - `https://github.com/transparency-dev/witness`, en `5397155`: acepta logs `0x06`
+>   (`config/public_witness_network.go:99`, sobre `transparency-dev/formats` `340a9e5`; y a mano,
+>   `omniwitness/configs.go:61`), y su
+>   `omniwitness` cofirma con una clave Ed25519 o ML-DSA-44, o con varias
+>   (`cmd/omniwitness/monolith.go:46` y `:194-224`; en `formats` `340a9e5`,
+>   `note/note_cosigv1.go:218-232`). Que el kit verifique esas cofirmas no se ha medido.
+> - `https://github.com/FiloSottile/torchwood`, en `1cadf59`: litewitness solo cofirma con Ed25519
+>   (`cmd/litewitness/litewitness.go:294`).
+>
+> El (1) de arriba se deja como estaba.
 
 ## Lo que se DESCARTÓ al medir
 

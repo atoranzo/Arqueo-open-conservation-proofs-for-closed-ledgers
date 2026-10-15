@@ -827,6 +827,12 @@ instrumentacion) al grupo E.*
   testigos reales —cuáles, con TLS, la cadencia, servir la nota y medir
   el coste—, y una pregunta medida para el autor: litewitness cofirma
   con Ed25519, que la casa no verifica (RFC-0013 D-H): sigue abierta.
+  ✅ decidido (§836): la D-H del RFC-0013, por el autor. Solo `0x06` en
+  las dos puntas, sin puente ni cofirmas `0x04`. El alta en una red de
+  testigos, cuando estén el publicador entero, testigos que acepten el
+  log `0x06` y al menos dos con clave ML-DSA-44, y la dé el autor. QUEDA
+  lo mismo, y el contraste local de E3 con `omniwitness` y una clave
+  ML-DSA-44, leído y no corrido: sigue abierta.
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro
   tiene dos eras (§281). **El esquema de firma no tiene ninguna de las
