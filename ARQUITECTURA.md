@@ -330,7 +330,7 @@ en claro la identidad del receptor, la sal y la `X` (§521, §523); desde el
 §538 (RFC-0009 E3b-2) la prueba los oculta y sólo el importe sale, público
 por diseño. Que no le dé el aviso al receptor es una decisión de la API, no
 una imposibilidad. Cómo le llega el aviso es la pieza que ISO 20022 no
-transporta.
+transporta. ⚠️ §861: «no transporta» no es exacto: no hay un campo hecho para el aviso; el de extensión, `SplmtryData`, lo admite (leído en un modelo derivado de los XSD, sin cotejar con el original); usar el de remesa sería forzarlo. El canal, decidido por delegación en la entrada 11 del `BACKLOG.md`, sigue sin construir.
 
 **`prove_send` y `prove_claim` son funciones libres, no métodos de la capa.** Es
 deliberado: la capa **no puede** llamarla porque no tiene la clave. Si

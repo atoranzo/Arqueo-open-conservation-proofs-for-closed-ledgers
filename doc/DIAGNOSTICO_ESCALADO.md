@@ -203,7 +203,7 @@ requisito**.
 receptor no puede saber que le han pagado sin escanear todo el tráfico
 —el problema de usabilidad clásico de las monedas privadas—. Aquí no
 ocurre porque el `PendingNotice` **viaja fuera de banda** del pagador al
-receptor (`spec/RPC.md`, deuda §21). Coste de sincronización: cero.
+receptor (`spec/RPC.md`, deuda §21; ⚠️ §861: el asiento del canal lateral es el §39; el §21 trata los códigos de motivo). Coste de sincronización: cero.
 
 ⚠️ **Pero el coste no desapareció: se movió de la criptografía al
 producto**, y sus consecuencias no están medidas:
@@ -213,7 +213,7 @@ producto**, y sus consecuencias no están medidas:
   protegen;
 - **ISO 20022 no lo transporta** (`spec/RPC.md`), así que el puente
   institucional tiene un hueco por donde debe pasar el dato que hace
-  cobrable el pago;
+  cobrable el pago (⚠️ §861: «no lo transporta» no es exacto: no hay un campo hecho para el aviso; el de extensión, `SplmtryData`, lo admite (leído en un modelo derivado de los XSD, sin cotejar con el original); usar el de remesa sería forzarlo; el canal, decidido por delegación en la entrada 11 del `BACKLOG.md`, sigue sin construir, y el hueco del puente sigue ahí hasta entonces);
 - **no existen los pagos no solicitados**: no se puede pagar a quien no
   se tiene canal. En un contexto regulado es casi una virtud; como
   dinero, es una limitación real.
@@ -451,7 +451,7 @@ no rendimiento. Se pueden hacer hoy.)*
 3. **El `PendingNotice` y el estándar.** Hoy viaja fuera de banda y
    `spec/RPC.md` declara que ISO 20022 no lo transporta — mientras
    Fedwire completó su migración a ISO 20022 en julio de 2025. Es un
-   problema de **especificación**, con cauce: RFC en `spec/rfc/`.
+   problema de **especificación**, con cauce: RFC en `spec/rfc/`. ⚠️ §861: `spec/RPC.md` ya no lo declara así: lleva su marca, y el campo de extensión, `SplmtryData`, lo admite. El cauce está decidido: un RFC que especifica el aviso en ese campo o fuera del mensaje (la entrada 11 del `BACKLOG.md`), aún sin escribir.
 4. **Réplica verificable y acuse** (§121, `doc/CONFIANZA_RESIDUAL.md`):
    que un participante verifique la historia sin tener que creer al
    operador. **Esto es lo que una institución pide de verdad**, y no es

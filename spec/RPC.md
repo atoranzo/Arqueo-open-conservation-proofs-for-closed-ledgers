@@ -143,7 +143,7 @@ cuenta con la misma identidad (`SECURITY.md` §3.13).
   depender de ninguna ceremonia).
 - `PendingNotice = {position: Q, salt: Digest, amount: Q}` y **viaja
   fuera de banda** del pagador al receptor (ISO 20022 no lo transporta;
-  AUDITORIA §21). El RPC nunca lo entrega a terceros.
+  AUDITORIA §39; ⚠️ §861: decía «AUDITORIA §21», que trata los códigos de motivo, y «no lo transporta» no es exacto: no hay un campo hecho para el aviso, y el de extensión, `SplmtryData`, lo admite —leído en un modelo derivado de los XSD, sin cotejar con el original—, mientras que usar el de remesa sería forzarlo; el canal lo decidió por delegación la entrada 11 del `BACKLOG.md` y sigue sin construir, y este documento no cambia por ello). El RPC nunca lo entrega a terceros.
 - El pago **no es firme hasta el claim**; sin cobro, el importe queda
   inmovilizado hasta claim o refund (§29/§30).
 

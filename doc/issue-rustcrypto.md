@@ -9,16 +9,39 @@
 > below, and not as a new issue. What is sent starts at **Title**, without this note or the ones
 > marked ⚠️ in parts 2 and 5. (⚠️ §793: until here this said «the one marked ⚠️ in part 2»; part 5
 > and its note are from §793.)
+>
+> ⚠️ **Internal note — strip before sending** (§861 of `AUDITORIA.md`, 2026-10-15). **Decided by
+> delegation of the author** (entry 77 of `BACKLOG.md`): what is sent is a NEW issue with parts 1,
+> 3, 4 and 5, which keep their numbers, and, in the place of part 2, only the line marked «sent in
+> place of part 2» below; part 2 itself, from its heading to the workaround paragraph, is not sent,
+> nor are the notes marked ⚠️. Not as another comment on #1442 —it is about the OID only, and the PR
+> that says it fixes it will close it when merged, burying the rest—, nor one issue per part: this
+> draft already asks first and offers the PR. As read on 2026-10-15 with WebFetch —a summary, not
+> the raw page: GitHub's API and HTML gave the session 403—, #1442 is still open, with a PR that
+> says it closes it, [#1468](https://github.com/RustCrypto/signatures/pull/1468) («xmss: parse raw
+> OIDs by the expected key kind», opened on 2026-10-15, «Fixes #1442»), and it carries one comment
+> by the account `atoranzo`, the owner of this repository's `origin`, dated 2026-09-26, with the
+> `SigningKey` point and the 21 of 56: «if sent, part 2 goes as a comment on #1442» is already
+> done. G10c, which read it with no comments on 2026-09-28, does not record that comment; confirming
+> it is his is the author's. RustCrypto's `master`, read raw on the same day, is at 0.1.0-pre.1,
+> unpublished, and still has no `index()` or `remaining()`, still derives `Clone` on `SigningKey`,
+> still declares `rand = "0.10"` without `default-features = false`, and still has the `or_else` of
+> `xmss.rs:21`: parts 1, 4 and 5 stand. Part 3 was not checked. crates.io has only 0.1.0-pre.0.
+> Check `master` again on the day it is sent; sending it is the author's.
 
 **Title**: `xmss: expose signature index on SigningKey (index() / remaining()); BDS traversal state plans?`
 
 ---
 
-Thanks for publishing `xmss` 0.1.0-pre.0 — we are evaluating it to sign the
+Thanks for publishing `xmss` 0.1.0-pre.0 — we use it to sign the
 epoch heads of an append-only settlement log (one signature per epoch), where
 index reuse means key compromise, so we persist an external monotonic counter
 with fsync *before* each signature and reconcile it against the key's own
 index after restarts.
+
+⚠️ **Changed in §861** (internal; strip before sending): until here the opening
+said «we are evaluating it to sign»; the project has signed its epoch heads
+with it since §236 of `AUDITORIA.md`.
 
 **1. Could `SigningKey` expose the current index?** Something like:
 
@@ -41,6 +64,15 @@ state counter that refuses to sign past exhaustion. Different scope (single
 parameter set, XMSS-SHA2_10_256) but it shows the accessor is practical.
 
 ---
+
+*(Sent in place of part 2.)* **2. The OID defect** is already
+RustCrypto/signatures#1442, with PR #1468 open to fix it; nothing to add
+there.
+
+⚠️ **Added in §861** (internal; strip before sending): the line above is what
+goes in the new issue for part 2. From the heading below to the workaround
+paragraph, part 2 stays here as the record of what was found and of the
+comment already on #1442; it is not sent.
 
 **2. Keys of 21 of the 56 XMSS^MT sets cannot be parsed back from their own
 bytes** (verifying **and signing**)

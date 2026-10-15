@@ -8,7 +8,7 @@
 - **Asistencia GenAI:** Claude (sesiones 56-57) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-08-22 (r2; la r1 del 2026-08-21, `9bc8f30d3a14e0de`/182, se conserva para diff)
 - **Versión del protocolo afectada:** zkssl/0.2 → zkssl/0.3 (rotura de formato)
-- **Asiento(s) de AUDITORIA:** §178 (diseño de la caducidad), §180 (ejecución), §340 (el reloj atado), §342 (quién/cuándo son metadatos, medido) — y el **§343** (la adopción de este RFC), y §352–§354 (la E3c entera: SendV2Air, la via viva, la emision 0.3), y el §356 (este giro a ACEPTADO)
+- **Asiento(s) de AUDITORIA:** §178 (diseño de la caducidad), §180 (ejecución), §340 (el reloj atado), §342 (quién/cuándo son metadatos, medido; ⚠️ §861: lo midió la sesión que selló el §342 y lo trajo su mismo commit, `6a1c1bb`, a la entrada 12 del `BACKLOG.md`, pero el asiento del §342 trata la cabecera de `mint` y no lo registra; el §343 dice que este RFC se midió sobre ese commit) — y el **§343** (la adopción de este RFC), y §352–§354 (la E3c entera: SendV2Air, la via viva, la emision 0.3), y el §356 (este giro a ACEPTADO)
 - **Número: 0003, FIRME.** La regla 1 de `PROCESO.md` es numeración correlativa
   desde 0001, y el `0001` no falta: está **reservado** al endurecimiento del KDF
   del keystore (SHA-256 → Argon2id), «no está redactado» — nota de numeración del
@@ -19,7 +19,7 @@
 
 La entrada 12 del BACKLOG quedó abierta por la divergencia (ii): la política
 del §119 pide «Δ=∞ **pago a pago, elección del emisor**» y hoy `T` es global
-con knob (`set_refund_ttl`, persistida). El §342 midió además la afirmación
+con knob (`set_refund_ttl`, persistida). El §342 (⚠️ §861: la sesión que lo selló, sobre `6a1c1bb`; su asiento no lo registra) midió además la afirmación
 fuerte: **hoy quién puede reembolsar y cuándo son los dos metadatos del
 operador** — `pending_meta[pos] = (sender_index, born)` y `refund_ttl`, ninguno
 entra en entrada pública alguna (`RefundPublicInputs = {commitment, amount}`,
@@ -129,6 +129,19 @@ abre(C2) ∧ (now − born ≥ Δ) ∧ crédito → f
 - la 2ª la verifica **cualquiera** con dos cabezas firmadas (la de `born` y la
   de `now`) y el `Δ` que la apertura del reembolso hace público — detectable
   con evidencia oponible, coherente con la vigilancia del §119.5.
+  ⚠️ §861: **hoy no la verifica nadie.** El `Δ` no se publica en ningún sitio: el
+  registro guarda sólo el digest de la prueba, las entradas públicas de
+  `RefundAirV2` son `{commitment, amount}` (`RefundPublicInputs`,
+  `crates/stark-experiment/src/circuit_refund.rs`) y la apertura vive sólo en el
+  `RefundReceipt` (`crates/zk-ssl/src/two_phase.rs`), que ningún método del
+  cable transporta. Un operador que compuso el envío por `send_materials_v2`
+  (`crates/zk-ssl/src/client.rs`) conoce `(refund_id, delta)` y puede aplicar un
+  reembolso v2 antes de `Δ` sin que nadie pueda demostrarlo. El dinero vuelve al
+  emisor: es el «acelerar devoluciones, nunca desviarlas» que ya declara
+  `doc/CADUCIDAD_PENDIENTE.md`, no una fuga. Lo que esta línea vendía de más es la
+  oponibilidad. Atestiguar el `Δ` abierto es la cláusula (e) de T3b, y la
+  resuelve el RFC del reloj de la entrada 12. El autor lo clasificó como límite
+  del modelo de confianza, no como fallo (§861). Leído, no medido.
 
 ### Qué se toca, medido
 
@@ -175,6 +188,9 @@ las aperturas se generan y se quedan en el cliente.
 - **§119.5 se REDUCE**: el operador ya no puede mover el plazo (vive en el
   compromiso) ni el destino (ídem); conserva ordenar la carrera y acelerar el
   reloj, ambos con evidencia oponible (cabezas firmadas).
+  ⚠️ §861: acelerar el reloj, no: sin el `Δ` publicado no hay evidencia oponible
+  de que se reembolsó antes de plazo (ver «El invariante de reembolso,
+  completo»).
 - **B18.3 sin cambio**: el emisor con clave de retorno perdida no recupera —
   misma exposición declarada que hoy; `f` puede derivarse de una clave
   dedicada para aislar el riesgo.
@@ -199,7 +215,7 @@ las aperturas se generan y se quedan en el cliente.
 - **Δ en `pending_meta`**: igual de movible que hoy — no sería «elección del
   emisor», que es lo que la entrada 12 exige.
 - **f sólo en registros**: no verificable por un tercero — es exactamente el
-  estado actual que el §342 dejó medido.
+  estado actual que el §342 dejó medido (⚠️ §861: la sesión que lo selló, en `6a1c1bb`; su asiento trata la cabecera de `mint`).
 
 ## Etapas, con sus puertas
 
@@ -267,7 +283,7 @@ diseño ya no tiene piezas razonadas sin medir.**
 
 ## Referencias
 
-AUDITORIA §178, §180, §340, §342 · BACKLOG entrada 12 (la (ii)) y nota 106 ·
+AUDITORIA §178, §180, §340, §342 (⚠️ §861: su medida, no su asiento: lo midió la sesión que lo selló, en `6a1c1bb`) · BACKLOG entrada 12 (la (ii)) y nota 106 ·
 `doc/CADUCIDAD_PENDIENTE.md` (`dbd7f95593d36180`/150) ·
 `pending.rs` `t3a_reversion_como_segundo_cobro` (:353-452) y
 `t3b_reversion_temporal_nativa` (:456-503) · `circuit_refund.rs`

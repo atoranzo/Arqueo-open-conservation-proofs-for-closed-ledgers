@@ -18,7 +18,7 @@ en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, 
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
-8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127.
+8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, y el §861, que no mueve ninguna.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1423,6 +1423,37 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   las bibliotecas del patrón vuelve a no pasarla (OpenSSL, otra pila TLS, no está en él). El del TLS
   es la excepción del §106. El campo, la codificación y el orden frente al cifrado son del autor; el
   prototipo, un test en `iso.rs`, necesita compilar y no está hecho. **La entrada sigue abierta.**
+  ⚠️ **§861: el canal, decidido por delegación del autor («resuelvelas aplicando los principios»), con
+  el criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación.** Un formato y
+  dos portadores. **D-1**: dentro del mensaje, el aviso va en `CdtTrfTxInf/SplmtryData` del pacs.008
+  (la fila A de `doc/AVISO_EN_ISO20022.md`), y del banco del acreedor al titular, en
+  `TxDtls/SplmtryData` del camt.054; fuera del mensaje, el mismo elemento. Nace en la vía por
+  materiales, antes de la orden, y lo escribe el lado del pagador: el operador no escribe nada, y la
+  vía de en medio del puente no gana emisor. La remesa y `InstrForCdtrAgt` no: su nombre dice otra
+  cosa y cifrado no caben. **D-2**: un elemento propio con espacio de nombres versionado; sus hojas,
+  en `Q` y `B32` canónicos; se conforma por infoset, no por bytes; sin base64. **D-3**: v1 y v2; la
+  hoja `x` decide, y el espacio de nombres solo dice si va en claro o cifrado. **D-4**: en claro
+  dentro del mensaje es elección del pagador, no lo que el estándar da por defecto («conceder
+  observación que no hace falta se defiende mal después», `SECURITY.md` §2.ter), con la fuga dicha
+  —posición y sal a la cadena de agentes, sin poder de cobro— y su retirada escrita desde el
+  principio. Cifrarlo (el B11.2) pide una enmienda del §106, que solo da el autor, o la vía
+  simétrica con el AEAD de la casa y una clave por relación, que el receptor entrega con su
+  dirección y que deriva de `sk` con dominio propio (la D-9 de la 52, en
+  `doc/ROTACION_DE_CUENTAS.md` §6); con una curva no, aunque `ring` ya esté en el SDK (la 122): lo
+  prohíbe el §106, no la puerta. **D-5**: por RFC, con el número libre al entrar; su KAT, en una
+  familia propia, `spec/vectors/aviso/`, solo tras cotejar el XSD original y las reglas de uso
+  públicas de una práctica de mercado (hoy, 403). **D-6**: «ISO 20022 no tiene campo» y la cita al
+  §21, que es el §39, se corrigen con marca donde viven; `doc/historia/` no. El §861 lo hace en los
+  comentarios de `iso.rs`, de `client.rs` y del SDK, en `spec/RPC.md`, `ARQUITECTURA.md`, los dos
+  `PAPER` y `doc/DIAGNOSTICO_ESCALADO.md`; quedan, para otro sello, el «§21» de la plantilla de los
+  RFC y de los RFC del 0002 al 0007, el de la 74, cerrada, el de `doc/CADUCIDAD_PENDIENTE.md:35` y
+  el del `println!` de `crates/zk-ssl-sdk/examples/e2e.rs:25`, que es código. **Se reabre** la D-1
+  si el XSD o esas reglas quitan `SplmtryData`; la D-2, si una práctica de mercado veta los espacios
+  de nombres ajenos o acota el `Envlp`; la D-4, cuando exista la versión cifrada o si una medida de
+  lo que aprende un agente da más que el vínculo declarado; la D-5, si el autor prefiere
+  documentación del puente; y todas, si el autor las revoca (la tabla, en `doc/AVISO_EN_ISO20022.md`
+  §8). **Sigue abierta** hasta el prototipo por materiales en `iso.rs` y el RFC PROPUESTO; después,
+  solo por el B11.2.
 - [ ] **12. Fondos muertos — POLITICA DECIDIDA (§119), ~~piezas 1-3
   pendientes~~ piezas 1-3 HECHAS; la tienen abierta el suelo Δ_min, T3b, la
   via v1 y dos flecos de la v2 (§779).** ✅ **La reversion es un segundo
@@ -1472,7 +1503,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   global con knob (`set_refund_ttl`, persistida). **La entrada queda
   ABIERTA por estas dos divergencias, no por el mecanismo.**
 
-  ⚠️⚠️ **MEDIDO (§342): la (ii) es ROTURA DE FORMATO.** El compromiso de
+  ⚠️⚠️ **MEDIDO (§342): la (ii) es ROTURA DE FORMATO.** (⚠️ §861: la cita no se sigue, porque
+  el asiento del §342 trata la cabecera de `mint`; esto lo midió la sesión que lo selló y lo trajo
+  aquí el mismo commit, `6a1c1bb`, sin asiento que lo registre, y el §343 dice que el RFC-0003 se
+  midió sobre ese commit.) El compromiso de
   produccion es `pending_commitment(receiver_id, salt, amount)` —tres campos, ni
   identidad de reembolso ni caducidad— y el nativo del circuito
   (`native_refund_commitment`) declara por escrito ser identico. Para que el
@@ -1487,7 +1521,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 
   ⚠️ **§779: recontada contra el arbol (14-10-2026). El titulo decia «piezas 1-3
   pendientes» y las tres estan HECHAS.** Son las de §88.4
-  (`AUDITORIA.md:7364-7369`):
+  (`AUDITORIA.md:7397-7409`; ⚠️ §861: decía `:7364-7369`):
   - **1, el compromiso ata la reversion: HECHA en la via v2.** El RFC-0003
     (`spec/rfc/0003-compromiso-v2.md:3`) compromete `C2 = M(C1, M(f, d(Δ)))`
     (RFC `:53-57`; `pending_commitment_v2`, `crates/zk-ssl/src/pending.rs:108`),
@@ -1517,7 +1551,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     «13 meses» no tiene unidad en el arbol. Por eso la linea entra en
     `PRINCIPIOS.md` con ❌.
   - **T3b.** T3b-nativo, 2/2; T3b-circuito, «especificados, condicionados y
-    **NO escritos**» (§128.1, `AUDITORIA.md:10503-10509`), y ningun asiento
+    **NO escritos**» (§128.1, `AUDITORIA.md:10529-10544`; ⚠️ §861: decía `:10503-10509`), y ningun asiento
     posterior vuelve a nombrarlo. Los circuitos de la pieza 3 no lo saldan
     solos: sus entradas publicas son `{commitment, amount}`
     (`circuit_refund.rs:209-212`; `RefundAirV2` las reusa,
@@ -1526,21 +1560,21 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     (RFC `:128-131`); nadie ha medido si eso salda la (a) y la (e), y el §119.7
     preveia este caso: «Si (a) no puede escribirse porque el reloj no entra
     como input publico, la politica queda condicionada, no caida»
-    (`AUDITORIA.md:9716-9717`). Y su (c), «receptor congelado ⇒
-    rechazada» (`AUDITORIA.md:9712`), no se cumple: el §178 eligio «sin
+    (`AUDITORIA.md:9751-9752`; ⚠️ §861: decía `:9716-9717`). Y su (c), «receptor congelado ⇒
+    rechazada» (`AUDITORIA.md:9747`; ⚠️ §861: decía `:9712`), no se cumple: el §178 eligio «sin
     frozen-check» (`doc/CADUCIDAD_PENDIENTE.md:65`) y ni `refund`, ni
     `refund_v2`, ni `apply_refund` (`two_phase.rs:539-812`) miran congelados,
-    contra el §119.4 (`AUDITORIA.md:9662-9665`). Es una tercera divergencia, y
+    contra el §119.4 (`AUDITORIA.md:9697-9704`; ⚠️ §861: decía `:9662-9665`). Es una tercera divergencia, y
     esta entrada no la declaraba.
   - **La via v1, con el knob.** Sin apertura, `apply_refund` juzga con el
     `refund_ttl` global (`two_phase.rs:679-683`; `set_refund_ttl`, `:257`):
     ahi el plazo lo sigue moviendo el operador, y retirarlo o dejarlo de techo
-    es decision de corte (RFC-0003 `:141`; §388 (d), `AUDITORIA.md:29363-29364`).
+    es decision de corte (RFC-0003 `:141`; §388 (d), `AUDITORIA.md:29398-29399`; ⚠️ §861: decía `:29363-29364`).
     Y todo mint-a-pendiente nace v1 (`two_phase.rs:1699`): el T-A del §388
     (b), fichado y sin hacer.
   - **Fleco 1 de la v2: Δ=∞ no es ∞.** El §501 midio que Goldilocks reduce
     `u64::MAX` a `2^32 - 2`: el emisor abre su propio «nunca» con
-    `delta = 2^32 - 2` y la capa aplica ese delta (`AUDITORIA.md:36547-36559`;
+    `delta = 2^32 - 2` y la capa aplica ese delta (`AUDITORIA.md:36577-36594`, ⚠️ §861: decía `:36547-36559`;
     el testigo es `el_nunca_se_abre_con_el_delta_reducido_y_muere_solo_en_el_tiempo`,
     `crates/zk-ssl/src/instrumento_pago.rs:235`). El §501 lo dejo para la
     cola del RFC-0003, y el RFC no lo recoge. El «nadie nunca» de arriba dura
@@ -1549,15 +1583,132 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   - **Fleco 2 de la v2: el receptor no ve el Δ.** El sobre X le llega opaco
     (RFC-0003 `:109-112` y `:186-187`), y el §119.2 queria los terminos «a la
     vista del receptor, que ve al recibir cuando puede vencer lo suyo»
-    (`AUDITORIA.md:9632-9634`). El RFC lo decidio sin decir que se apartaba del
+    (`AUDITORIA.md:9667-9669`; ⚠️ §861: decía `:9632-9634`). El RFC lo decidio sin decir que se apartaba del
     §119.2. Lo mas cerca es la prueba del pago en curso del RFC-0008 (E2): el
     pagador puede probar `nacido + delta >= T` sin abrir Δ
     (`spec/rfc/0008-pruebas-portables-del-pendiente.md:50`), pero solo si
     quiere darla; al recibir, el receptor no ve nada.
 
   ⚠️ Y la cita «(§342)» de arriba no se puede seguir: el §342 del registro trata
-  la cabecera de `mint` (`AUDITORIA.md:26573`), no los metadatos del reembolso,
-  y el RFC-0003 la repite (`:11`, `:22`). Se ficha; no se corrige aqui.
+  la cabecera de `mint` (`AUDITORIA.md:26608`; ⚠️ §861: decía `:26573`), no los metadatos del reembolso,
+  y el RFC-0003 la repite (`:11`, `:22`). Se ficha; no se corrige aqui. ⚠️ §861: corregida con marca,
+  arriba y en el RFC-0003, que la repite cuatro veces (`:11`, `:22`, `:202` y `:270`), no dos.
+
+  ⚠️ **§861: decidida por delegación del autor («resuelvelas aplicando los principios»), con el
+  criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. Sigue ABIERTA,
+  con la decisión escrita residuo por residuo, y nada se enmienda**: aplicar no es retirar el
+  suelo (`PRINCIPIOS.md` §4.3, del §119.8), ni dar por buena la omisión del §119.4, ni quitar la
+  reversión a los v1 que nacieron con ella (§119.6), ni abrir `X` al receptor contra la D2 del
+  RFC-0003, ACEPTADO.
+  (1) **El «nunca», de verdad, en el juez.** Un delta abierto congruente con `u64::MAX` módulo p
+  —`2^32 − 2` o `u64::MAX`— no vence nunca, en `apply_refund` y en `apply_deissue`
+  (`crates/zk-ssl/src/two_phase.rs:687-697` y `:452-461`). Es la D1 del RFC-0003 tal como está
+  escrita (`spec/rfc/0003-compromiso-v2.md:76-78`) y no mueve un byte del sobre, de los vectores ni
+  de la AIR. A 248 op/s (§229), el «nunca» de hoy dura unos 200 días (deducido), menos que el
+  suelo. Un Δ explícito de `2^32 − 2` pasa a «nunca», y se declara: el compromiso no distingue los
+  dos valores y el §119.8 manda «largo, nunca corto». A mil operaciones por segundo, esos `2^32 − 2`
+  son unos 50 días (deducido, la cifra del §501), una elección finita plausible; por eso el camino
+  honrado no la compone: `send_materials_v2` (`crates/zk-ssl/src/client.rs:201`) rechaza `delta =
+  2^32 − 2` y todo `delta` en `[p, u64::MAX)`, y deja `u64::MAX` como el centinela. Es orientativo
+  —quien compone su propio `X` se lo salta—, y el comentario de `crates/zk-ssl-cli/src/pago.rs:11-13`
+  se marca. Lo construye un sello de la capa, con su test discriminante sobre la función pura del
+  plazo; ninguna de las seis superficies del RFC-0021 cambia.
+  (2) **Congelados: se cumple el §119.4 en la capa** —receptor congelado ⇒ `AccountFrozen`, en
+  `apply_refund` y en `apply_deissue`—, igual que en el cobro
+  (`crates/zk-ssl/src/client.rs:153-157`). El §178 lo dejó fuera sin citarlo
+  (`doc/CADUCIDAD_PENDIENTE.md:65`). `RefundReceipt` y `DeissueReceipt` ganan `(receiver_id, salt)`,
+  y la capa recompone C1 y busca la cuenta por identidad. Su coste se declara: el recibo lleva en
+  claro la identidad del receptor y la sal, que la fila del RFC-0009 D-B para la apertura del
+  reembolso y de la des-emisión pone en «no sale»; la fila se marca en su sello. Hoy no expone nada
+  nuevo: `refund`, `refund_v2` y `deissue` ya reciben las dos dentro de la capa (`two_phase.rs:539`,
+  `:593` y `:372`). Y el reembolso por el cable, cuando se abra (ARQ-02, `doc/blueprint-v2.md:388`),
+  no hereda este recibo: allí rige la letra del §119.4, `frozen_root` en circuito, que no revela al
+  receptor. Un receptor cuya identidad ya está entre las retiradas —recuperado, la 52— no tiene
+  cuenta que encontrar: su sello lo decide con un test, «el receptor tiene identidad retirada»;
+  coherente con la D-5 de la 52 (`doc/ROTACION_DE_CUENTAS.md` §6), se trata como sin cuenta y se
+  declara esa excepción al §119.4, y si se eligiera rechazar, la D-5 diría «y si el receptor estaba
+  congelado, para siempre». El §119.4 nombra «el circuito de reversión»: llevarlo a la des-emisión
+  es una extensión por analogía, y se dice. Retener fondos de terceros mientras dure la congelación
+  es el coste que esta entrada ya declara. La parte de circuito —`frozen_root` en `RefundAir` y
+  `RefundAirV2`— es T3b-circuito (c), de la sesión que lleva las AIR. Ninguna de las seis
+  superficies cambia.
+  (3) **El suelo no se retira** (`PRINCIPIOS.md` §4.3) **ni se escribe en entradas** (el §119.3 lo
+  descartó). Su unidad ya la eligió el §119.3: cabezas al latido. El árbol cuenta el número, firmado
+  —`mmr_t` (`crates/zk-ssl/src/log.rs:640-642`), una hoja por latido
+  (`crates/zk-ssl-node/src/latido.rs:455`)—, pero en el nodo, no en el juez (`two_phase.rs:676`), y
+  el ritmo no va firmado: la cadencia es una bandera del operador, `--latido`
+  (`crates/zk-ssl-node/src/main.rs:236-239`, 60 s por defecto, `latido.rs:72`; con `0` no hay
+  latido), y ni ella ni la hora entran en la cabeza (`EpochHead`, `log.rs:613-676`) ni en
+  `params_digest` (`crates/zk-ssl-hash/src/lib.rs:972-994`). Con `--latido 1`, los unos 569.790
+  latidos de trece meses duran unos 6,6 días (deducido). Se pospone a **un RFC del reloj de la
+  caducidad**, que tiene que firmar la cadencia, decir qué evidencia deja acelerarla —hoy solo el
+  reloj de un testigo, y no hay ninguno—, resolver `--latido 0` y la capa usada sin nodo, y
+  desambiguar con marca «latidos de `log.seq`», que son entradas (`crates/zk-ssl/src/lib.rs:229` y
+  la (i) de arriba). Si pide el corte `zkssl/0.5`, entra PROPUESTO un sello antes del corte (la R5
+  del RFC-0021).
+  - **Condición doble**: el Δ del emisor sigue en épocas del registro —la D1 intacta, y con ella la
+    prueba del pago en curso— y el suelo va en latidos, unos 569.790 a 60 s (deducido). Se declara
+    lo que eso deja: para el Δ sigue en pie el defecto del §119.3 —en un libro quieto un Δ en
+    entradas puede no vencer nunca, que es dinero muerto por quietud—, y el emisor solo controla el
+    calendario a través del suelo. «Funciona a cualquier ritmo» vale para el suelo, no para el Δ.
+    Queda escrita para el autor la opción de un Δ en latidos para los pendientes nuevos, que sí
+    enmendaría la D1.
+  - **Vale para todo lo vivo**: un v2 con Δ menor que el suelo —la conformidad usa 96,
+    `spec/rfc/0003-compromiso-v2.md:246-247`— y todo v1 con meta revierten más tarde de lo que
+    decía su Δ o su T, y `expiry = born + Δ` (la D1, `:67`) deja de valer por debajo del suelo. No
+    es cambiar términos a posteriori: el suelo es política publicada desde el §119.8, anterior a
+    todo pendiente reversible —el mecanismo es del §178, y la v2, del RFC-0003, desde el §345—,
+    aunque a `PRINCIPIOS.md` §4.3 no llegó hasta el §779; y restringe la D1 sin derogarla, en el
+    sentido «largo, nunca corto».
+  - `born` en latidos, atestiguado (la lección del §388); la T de la vía v1, la de su nacimiento,
+    con la misma condición doble.
+  - **La reversión por el cable no se abre sin el suelo**: hoy el nodo solo compone v1, con T = 64
+    entradas (`crates/zk-ssl/src/lib.rs:231`), unos 0,26 s a 248 op/s (deducido), y abrirla antes
+    incumpliría el §119.8 («Un Δ≈0 sería un pago que nunca fue promesa»).
+  **El suelo se cumple** cuando un test haga pasar un reembolso de `RefundTooEarly` a `Ok` solo
+  porque pasan latidos, sin operaciones, y otro haga rebotar un Δ por debajo del suelo.
+  (4) **Vía v1.** El «ni techo» ya lo decidió la D-4 del §350 (`AUDITORIA.md:26994-26997`), que esta
+  entrada no citaba. El juez v1 se queda para lo que ya existe: quitarlo sería cambiar términos a
+  posteriori (§119.6). Lo que cambia es que **se deja de producir v1**: hoy el `zkssl_sendMaterials`
+  del nodo solo compone v1 (`crates/zk-ssl-node/src/main.rs:3799`, por `send_materials_at`, `:3820`)
+  y todo mint-a-pendiente nace v1 (`two_phase.rs:1699`). El cambio va, con la T-A, al RFC que abra
+  la reversión por el cable (ARQ-02) o al corte de formato, el primero que llegue; si es el corte
+  `zkssl/0.5`, también PROPUESTO un sello antes. **D5, aceptada**: `set_refund_ttl` pasa a
+  `cfg(test)`; lo hace un sello de la capa, aún sin asignar. Sus llamadores son doce, todos en
+  módulos de test —el decimotercero que se contaba es su definición, `two_phase.rs:257`—, y así el
+  operador deja de mover en ejecución la T de lo enviado por v1, sin tocar el formato; no contradice
+  el «se revisa con datos» del §178, porque la T se revisa por release.
+  (5) **Fleco 2: no se construye, se declara.** La D2 del RFC-0003 hizo `X` opaco por la privacidad
+  de `f` y se apartó del §119.2 sin decirlo. Lo que tiene el receptor es el suelo público, cuando
+  exista, y la prueba del pago en curso del RFC-0008 E2, si el pagador se la da.
+  (6) **T3b, partido como en el §128.1.** (a) y (b): los cubre la capa con pruebas reales
+  (`la_frontera_de_t_es_nacido_mas_delta`, `crates/zk-ssl/src/instrumento_pago.rs:199`). (c): llega
+  con (2), y la des-emisión, por la analogía declarada. (d): nativo, `t3b_v1_no_es_reversible`
+  (`crates/zk-ssl/src/pending.rs:601`), y en circuito, que es lo que pide el §119.7,
+  `v2_proof_does_not_open_v1_commitment` (`crates/stark-experiment/src/circuit_refund_v2.rs:526`).
+  (e): espera al RFC de (3). (a) y (e) no se escriben en circuito: el RFC-0003 pone `born` y `now`
+  fuera, atestiguados (`spec/rfc/0003-compromiso-v2.md:46-49`), que es la rama «condicionada, no
+  caída» del §119.7. ⚠️ Además, el T3b-nativo no toca ningún reloj: `ahora` es una constante y su
+  `assert!` es una precondición (`pending.rs:588-589`), aunque el §128.1 diga «con el reloj en
+  cabezas firmadas» (`AUDITORIA.md:10538`).
+  (7) ⚠️ **Medido por lectura, nuevo.** El RFC-0003 dice que `f` «puede ser dedicada»
+  (`spec/rfc/0003-compromiso-v2.md:60` y `:178-180`), pero la capa solo acredita a la cuenta de
+  `meta.sender_index` y exige que su `public_id` sea `f` (`two_phase.rs:710-714`). Con una clave de
+  retorno dedicada, el reembolso v2 rebota siempre (`PendingMismatch`), y si el receptor no cobra,
+  el pendiente vuelve a ser dinero muerto. Lo mismo tras una rotación en su sitio (la D-5 de la 52,
+  en `doc/ROTACION_DE_CUENTAS.md` §6): la recuperación cambia la identidad de la cuenta en su
+  posición (`crates/zk-ssl/src/recovery.rs:94`), y lo que esa cuenta envió por v2 antes ya no le
+  vuelve; DEDUCIDO, y lo hace medido un test del sello de la 52. Falla cerrado: es una divergencia
+  de disponibilidad, no de solidez. Se ficha para la cola del RFC-0003.
+  (8) **Las citas.** La «(§342)» de arriba se corrige con marca, aquí y en el RFC-0003, que la
+  repite cuatro veces, no dos. Las nueve citas por línea a `AUDITORIA.md` de esta entrada caían
+  corridas desde que entraron, en el §779, y van corregidas con marca donde están.
+  **Zonas.** (1) y (2) tocan `apply_refund` y `apply_deissue`, cuyas llamadas `verify::<…>`
+  (`two_phase.rs:485`, `:506`, `:747`, `:768` y `:789`) son las que el juez único tiene que reunir:
+  la 117; el orden se coordina con ella. T3b-circuito (c) y la T-A, si toca `circuit_mint_pending`,
+  son de la sesión que lleva las AIR.
+  **La entrada se cierra** cuando el suelo se cumpla así, con las dos piezas de la capa, (1) y (2),
+  y T3b-circuito (c) ya hechos.
 - [x] **13. Senal temporal para el pagador: ya declarada, coherente.**
   ~~Puede recomputar el compromiso y ver cuando se cobra; declarado, no
   eliminado.~~ **Cerrada** el 30-07-2026: verificado que ya esta declarada
@@ -4561,6 +4712,8 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   8391 escrita desde el RFC: 8/8, tres falsadores callados, partido como `xmss-kat-main` y publicado
   en <https://github.com/atoranzo/xmss-kat>. Queda vivo el issue upstream (lo pide el §575, con su
   borrador en `doc/reporte-winterfell-575.md`) y ARM. El cuerpo original, abajo.
+  ⚠️ §861: el issue de esta entrada es `doc/issue-rustcrypto.md`; el que pide el §575, con su borrador
+  en `doc/reporte-winterfell-575.md`, es el reporte a winterfell, otro, que salió en el §625.
 
 - [ ] **77 (original). XMSS: lo que queda después de cerrar la 56 — KAT, el issue
   upstream y ARM.** Nace en §267 al cerrar la 56. La firma de cabezas está
@@ -4605,6 +4758,55 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   **Evidencia**: medido sobre `af9e786`, 10-08-2026.
   **Dónde vive**: con la 56 y la 53, donde acaben. La sección G está declarada
   **cajón** en §266 y ese reparto no lo toca este sello.
+  ⚠️ **§861: decidida por delegación del autor («resuelvelas aplicando los principios»), con el
+  criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. Sigue abierta
+  solo por un acto del autor: enviar el issue.** Decidir cabe en la delegación, porque esta entrada
+  nombraba las dos decisiones como suyas —«enviarlo es del autor», «marcarlo es del autor»—;
+  actuar fuera del árbol, no.
+  (1) **El KAT ya no falta**: lo cerró el §623 (`tools/segunda/kat_xmss/`, juzgado en el canon
+  por la implementación de RFC 8391), y el §786 le fijó la huella (`tools/canon.sh:723-741`).
+  «KAT ausente», arriba, valía hasta entonces. Y la versión de `xmss` está fijada exacta en tres
+  crates —`zk-ssl-cli`, `zk-ssl-node` y `zk-ssl-verify`— y en el generador del KAT, no «en los dos
+  que la usan». La cabecera de la casilla cerrada, arriba, lleva su marca: el issue de esta entrada
+  no es el que pedía el §575.
+  (2) **El issue se envía, sin su parte 2**: las partes 1 (`index()` y `remaining()`), 3 (BDS), 4
+  (`Clone`) y 5 (`rand`, `getrandom` y wasm) van en un issue NUEVO, con una línea que remite a
+  #1442 y a su PR para el OID; conservan su número. No como otro comentario en #1442 —trata solo
+  del OID, y el PR que dice cerrarla la cerrará al fusionarse, con lo que el resto quedaría
+  enterrado—, ni un issue por parte: el borrador ya fija el orden —se pregunta y se ofrece el PR—,
+  y el cierre por «sus cuatro partes» vale igual con uno que con cuatro. Según lo leído el
+  15-10-2026 con WebFetch —un resumen, no la página en bruto: la API y el HTML de GitHub dan 403 a
+  la sesión—, #1442 **sigue abierta, con un PR que dice cerrarla**, el #1468 («xmss: parse raw
+  OIDs by the expected key kind», abierto el 15-10-2026, «Fixes #1442»), y lleva un comentario de
+  la cuenta `atoranzo`, la dueña de `origin`, del 26-09-2026, con lo de `SigningKey` y los 21 de
+  56: «si se envía, esa parte va como comentario en #1442» ya está hecho. G10c de
+  `doc/ecst/VERIFICACION.md`, que la leyó sin comentarios el 28-09, no lo recoge, y sus propias
+  fuentes de `hbs-state` ya daban el reporte por hecho («Reported in RustCrypto/signatures#1442»):
+  lo que apoya que aquella lectura fue la fallida (DEDUCIDO). Confirmar que el comentario es suyo
+  es del autor. El `master` de RustCrypto/signatures, leído en bruto el mismo día, está en la
+  0.1.0-pre.1, sin publicar, y sigue sin `index()` ni `remaining()`, con `#[derive(Clone)]` en
+  `SigningKey`, con `rand = "0.10"` sin `default-features = false` y con el `or_else` de
+  `xmss.rs:21`; la parte 3 no se comprobó. crates.io no tiene más que la 0.1.0-pre.0. Si se publica
+  una versión con el arreglo de #1468, el centinela `el_apano_del_oid_sigue_haciendo_falta` se
+  pondrá en rojo, como está previsto. El borrador, `doc/issue-rustcrypto.md`, queda al día en el
+  mismo sello que esta nota; enviarlo, después de mirar otra vez `master` ese día, es del autor.
+  (3) **El §4.9 de `doc/ecst/ECST.md` y el de su traducción se marcan**: «cargan mal» pasa a «no se
+  releen de sus propios bytes: `xmss` rechaza la lectura con `InvalidOid` y no devuelve la clave de
+  otro conjunto», con **[MEDIDO por una sesión de Claude Code, no en la máquina del autor:
+  `AUDITORIA.md` §710]**, como el propio informe marca lo que midió una sesión (`doc/ecst/ECST.md`
+  §8.1): su leyenda da el [MEDIDO] a secas a lo que midió el autor. La base `71c5aad` lleva la misma
+  `xmss 0.1.0-pre.0`. Marcarlo no acepta el ECST, y G10c no se toca.
+  (4) **La firma XMSS en ARM se queda aquí**, y no va con B9: B9 es el banco de generación de
+  pruebas del cliente en ARM de gama baja, y la firma es del nodo y del testigo, que también firma
+  (el `Cofirmante`, `crates/zk-ssl-cli/src/witness.rs:3377-3380`). Se mide cuando el nodo o el
+  testigo tengan un objetivo ARM declarado, o cuando B9 se corra en ARM (la 21), y entonces la misma
+  tanda mide la firma. Una cifra en ARM es de otra máquina, y no se compara sin decirlo con los
+  144,5 ms del §236. A la cadencia de 60 s (`crates/zk-ssl-node/src/latido.rs:72`), esos 144,5 ms
+  dejan un margen de unas 415 veces: **deducido, no medido**. El arnés `tests/medidas.rs` vive en
+  `~/eval-xmss`, fuera del árbol (la cabecera de `doc/xmss-evaluacion.md`).
+  **Se cierra** cuando conste aquí el enlace del issue enviado, o cuando una versión publicada de
+  `xmss` deje sin objeto sus cuatro partes; si se cierra así con ARM sin medir, ARM pasa a una
+  entrada propia.
 
 - [ ] **108. Una firma poscuántica de menos de 100 bytes, sin estado: evaluada,
   y NO sale de las piezas de la casa.** Nace el 30-09-2026 de una pregunta hecha

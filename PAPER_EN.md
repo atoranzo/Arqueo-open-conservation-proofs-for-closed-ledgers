@@ -690,7 +690,7 @@ The two-phase model **uses the standard's own vocabulary**:
 ⚠️ **One piece is missing.** The recipient needs the pending position, the
 random value and the amount in order to claim, and **ISO 20022 has no field
 for them**. The implementation returns them alongside the message, not inside
-it. **How that side channel is operated is unresolved.**
+it. **How that side channel is operated is unresolved.** ⚠️ §861: «has no field» is not exact: there is no field made for the notice, but the extension one, `SplmtryData`, admits it (read in a model derived from the XSDs, not checked against the original); using the remittance one would be forcing it. The channel is decided by delegation (entry 11 of `BACKLOG.md`) and not yet built.
 
 ---
 

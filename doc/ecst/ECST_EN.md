@@ -639,8 +639,8 @@ more, or that costs at least 10 times a write without persisting (VERIFICACION.m
 Per its §9: how the counter is persisted —`fsync`, ordering, locks, copies—; the policy; several signers
 over the same public key; LMS and HSS, «the table ought to hold; it has not been tested»; family C and B8.
 A third-party defect also prevents exercising end to end the persisted-key branch with the available Rust
-library: `xmss` resolves the OID by trying single tree first, and 21 of the 56 XMSS^MT sets load
-wrongly; `pq-xmss` no longer has the defect (HBS-STATE v0.3, §9; VERIFICACION.md, G10c).
+library: `xmss` resolves the OID by trying single tree first, and 21 of the 56 XMSS^MT sets cannot be read
+back from their own bytes: `xmss` rejects the read with `InvalidOid` and never yields a key of another set **[MEASURED by a Claude Code session, not on the author's machine: `AUDITORIA.md` §710]** (⚠️ §861: it said «load wrongly», which lets an open failure be read where there is a closed one; corrected by delegation of the author, in entry 77 of `BACKLOG.md`; the defect is reported in RustCrypto/signatures#1442); `pq-xmss` no longer has the defect (HBS-STATE v0.3, §9; VERIFICACION.md, G10c).
 
 ### 4.10 Status
 

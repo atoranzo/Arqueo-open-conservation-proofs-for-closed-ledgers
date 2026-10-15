@@ -15,7 +15,7 @@
 //! // con ella arma el sobre de completitud sin el nodo (RFC-0010, §606).
 //! let _recibo = pago.constancia.recepcion.as_ref();
 //!
-//! // El aviso viaja FUERA de banda (§21) hasta Bob, que cobra igual:
+//! // El aviso viaja FUERA de banda (§39; ⚠️ §861: decía §21) hasta Bob, que cobra igual:
 //! bob.claim(&pago.aviso)?;
 //! # Ok::<(), anyhow::Error>(())
 //! ```
@@ -206,7 +206,7 @@ impl<'a> Account<'a> {
 
     /// FASE 1 completa: materiales → `prove_send` EN LOCAL → `applySend`.
     /// Devuelve el aviso que hay que hacer llegar al receptor (fuera de
-    /// banda: ISO 20022 no lo transporta, §21) y la [`Constancia`] de la
+    /// banda: ISO 20022 no lo transporta, §39; ⚠️ §861: decía «§21», y no hay un campo hecho para él, pero el de extensión, `SplmtryData`, lo admite) y la [`Constancia`] de la
     /// respuesta, que es del titular (§606).
     pub fn pay(&self, receiver_id: &Digest, amount: u64) -> anyhow::Result<Pago> {
         self.pay_with_salt(receiver_id, amount, random_salt())

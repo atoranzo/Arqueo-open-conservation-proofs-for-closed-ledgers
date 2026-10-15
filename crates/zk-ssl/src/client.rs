@@ -460,8 +460,8 @@ pub struct ClaimMaterials {
     /// El aviso que el pagador tuvo que hacerle llegar.
     ///
     /// ⚠️ **ISO 20022 no lo transporta.** Cómo viaja del pagador al receptor
-    /// sigue sin resolver; ver `AUDITORIA.md` §21 y el §3.5 de la nota de
-    /// política.
+    /// sigue sin resolver; ver `AUDITORIA.md` §39 y el §3.5 de la nota de
+    /// política. ⚠️ §861: decía «§21», que trata los códigos de motivo; y el estándar no tiene un campo hecho para el aviso, pero el de extensión, `SplmtryData`, lo admite (leído en un modelo derivado de los XSD, sin cotejar con el original). El canal está decidido y sin construir: la entrada 11 (`doc/AVISO_EN_ISO20022.md` §8).
     pub notice: PendingNotice,
 }
 
@@ -843,8 +843,8 @@ mod tests_privacidad {
     /// cobra y desde qué posición, pero no de quién. Lo que no valió hasta el §538
     /// es la propiedad de la capa: la prueba del envío le decía de quién es (§523).
     ///
-    /// ⚠️ Auditor (§16, §21): el notice viaja FUERA de banda (ISO 20022 no
-    /// lo transporta). Si el canal de entrega revelara al emisor, la fuga
+    /// ⚠️ Auditor (§16, §39; ⚠️ §861: decía «§21»): el notice viaja FUERA de banda (ISO 20022 no
+    /// lo transporta; ⚠️ §861: no tiene un campo hecho para él, y el de extensión, `SplmtryData`, lo admite). Si el canal de entrega revelara al emisor, la fuga
     /// estaria en ese canal, no aqui. Este test acota lo que la CAPA expone.
     #[test]
     fn el_receptor_no_aprende_al_emisor_del_aviso() {
@@ -1054,7 +1054,7 @@ mod tests {
         // ⚠️ **El aviso lo aporta el, no la capa.** La capa no sabe que
         // pendiente es suyo —esa es la privacidad del diseno— asi que no
         // podria entregarselo. Como le llega es la pieza que ISO 20022 no
-        // transporta; ver `AUDITORIA.md` §21.
+        // transporta; ver `AUDITORIA.md` §39 (⚠️ §861: decia §21, que trata los codigos de motivo; y el estandar no tiene un campo hecho para el aviso, pero el de extension, `SplmtryData`, lo admite: la entrada 11).
         let mat_cobro = layer
             .claim_materials(bob, &recibo.notice)
             .expect("materiales de cobro");

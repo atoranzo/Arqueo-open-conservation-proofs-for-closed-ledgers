@@ -636,8 +636,8 @@ los comentarios son una suposición, no una medida (VERIFICACION.md, H7f).
 Por su §9: cómo se persiste el contador —`fsync`, orden, cerrojos, copias—; la política; varios firmantes
 sobre la misma clave pública; LMS y HSS, «la tabla debería valer; no se ha probado»; la familia C y B8. Un
 defecto ajeno impide además ejercer de extremo a extremo la rama de clave persistida con la librería Rust
-disponible: `xmss` resuelve el OID probando primero árbol único, y 21 de los 56 conjuntos XMSS^MT cargan
-mal; `pq-xmss` ya no tiene el defecto (HBS-STATE v0.3, §9; VERIFICACION.md, G10c).
+disponible: `xmss` resuelve el OID probando primero árbol único, y 21 de los 56 conjuntos XMSS^MT no se releen
+de sus propios bytes: `xmss` rechaza la lectura con `InvalidOid` y no devuelve la clave de otro conjunto **[MEDIDO por una sesión de Claude Code, no en la máquina del autor: `AUDITORIA.md` §710]** (⚠️ §861: decía «cargan mal», que deja leer un fallo abierto donde lo hay cerrado; corregido por delegación del autor, en la entrada 77 del `BACKLOG.md`; el defecto está reportado en RustCrypto/signatures#1442); `pq-xmss` ya no tiene el defecto (HBS-STATE v0.3, §9; VERIFICACION.md, G10c).
 
 ### 4.10 Estado
 

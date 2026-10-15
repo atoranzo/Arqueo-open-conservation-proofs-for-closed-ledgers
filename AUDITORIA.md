@@ -56552,3 +56552,248 @@ línea a `SECURITY.md` de los documentos que no toca, aunque este sello mueva su
 ML-DSA de `README.md:59` y `README_EN.md:60`, «`SECURITY.md`:189, :728», ya apuntaba dos líneas
 antes de su viñeta en `d4d6d45`, que estaba en la `:730`, y con este sello la viñeta está en la
 `:777`. Y no responde a lo que el §16.1 deja a un auditor.
+
+## §861 — la 11, la 12 y la 77, decididas por delegación, y abiertas: el aviso del pendiente, un formato y dos portadores, `SplmtryData` o fuera del mensaje; los fondos muertos, residuo por residuo, con el suelo para todo lo vivo; y el issue de `xmss`, que se envía sin su parte del OID
+
+El commit que lleva este asiento, sobre el §860, el sello de los cierres de la misma tanda (abajo). Un solo sello, de documentos y comentarios: las notas de la 11, la 12 y la 77 del
+`BACKLOG.md`, con las marcas que corrigen en la 12 la cita «(§342)» y nueve citas por línea a este
+registro, la marca de la cabecera de la 77 cerrada y la línea de la cabecera del `BACKLOG.md` que
+nombra los asientos; `doc/AVISO_EN_ISO20022.md`, con sus seis decisiones; los comentarios de
+`crates/zk-ssl/src/iso.rs`, `crates/zk-ssl/src/client.rs` y `crates/zk-ssl-sdk/src/lib.rs`; una
+marca en `spec/RPC.md`, otra en `ARQUITECTURA.md`, en `PAPER.md`, en `PAPER_EN.md` y en
+`doc/CONFIANZA_RESIDUAL.md`, y tres en `doc/DIAGNOSTICO_ESCALADO.md`; cuatro en el RFC-0003 y, añadidas al portarlo, dos más que corrigen lo que decía del `Δ` del
+reembolso v2 (abajo, «Lo que hace»);
+`doc/ecst/ECST.md` §4.9 y `doc/ecst/ECST_EN.md` §4.9; `doc/issue-rustcrypto.md`;
+`doc/xmss-evaluacion.md`; y este asiento. Dieciséis ficheros fuera de él, ninguno nuevo. Ningún
+código: en los tres `.rs` cambian once líneas de comentario, una de ellas dentro del ejemplo de la
+cabecera del SDK, y ninguno gana ni pierde una línea (`iso.rs` sigue con 1.068, `client.rs` con
+1.260 y el `lib.rs` del SDK con 534), así que nada de lo que los cita por línea se mueve; tampoco
+`spec/RPC.md`, `ARQUITECTURA.md`, los dos `PAPER`, `doc/CONFIANZA_RESIDUAL.md`,
+`doc/DIAGNOSTICO_ESCALADO.md`, el RFC-0003 ni los dos ECST, cuyas marcas van en la misma línea. No
+toca `crates/zk-ssl-guardian`, ni la zona de la migración de Winterfell (`winter-*`,
+`crates/zk-ssl-air`, `crates/stark-experiment`), ni `crates/ceremony`, ni
+`tools/check_constraint_layout.py`. Lo hizo Claude, en una sesión de Claude Code en la nube, y lo
+commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`: un agente lo escribió sobre las decisiones de esta tanda -la recomendación de cada
+entrada con su escéptico, el juez final del grupo de la 11 y una crítica de coherencia que las ata
+entre sí-, dos revisiones lo leyeron y pidieron arreglos -que la nota de la 12 diga cuándo se
+cierra la entrada, y no solo el suelo, es uno-, y otro agente los hizo y volvió a correr las
+herramientas del bucle del canon. El sello de delante es el que la crítica pone antes: el de los
+cierres -la 8, la 17, la 20, la 23, la 47, la 76 y la 96, con las notas de la 52-. Este cita de él
+cuatro cosas, por su contenido y por su sitio: la D-5 y la D-9 de la 52, en
+`doc/ROTACION_DE_CUENTAS.md` §6; la 47, cerrada; y B9, en la 21. Se escribió y se midió sobre
+`d4d6d45` (el §814), sin él: allí esas dos preguntas siguen abiertas, la 47 también, y la 21 no
+nombra B9; por eso no entra sin él delante. La sesión lo porta sobre el §860. El número es el
+siguiente del rango que el autor asignó (§860 a §889). En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El autor pidió, para diecinueve entradas del `BACKLOG.md`, «resuelvelas
+aplicando los principios». Cada una tuvo una recomendación y un escéptico; las de los grupos en
+disputa, un juez final; y una crítica de coherencia ató las decisiones entre sí y las repartió en
+sellos. Éste lleva las notas del aviso, de los fondos muertos y de XMSS: la 11, su primer sello, el
+de documentos y comentarios (el RFC del aviso y su prototipo van en los suyos); la 12, su nota, con
+lo que su escéptico sostuvo y la crítica pidió (sus dos piezas de la capa y el RFC del reloj van en
+los suyos); y la 77 original, entera. Las tres siguen abiertas.
+
+**Quién lo decide.** Por delegación del autor («resuelvelas aplicando los principios»), con el
+criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. El criterio es el
+que el autor escribió en el §609: «que se aplique al mayor número de casos de uso sin modificaciones
+significativas». Cada nota del `BACKLOG.md` lleva la fórmula con esas palabras; la de la 11 dice,
+decisión por decisión, cuándo se reabre, y las tres, hasta cuándo siguen abiertas. Lo que el mandato
+no alcanza queda nombrado y sin hacer: enviar el issue de la 77 y confirmar que el comentario
+de #1442 es suyo, que son actos fuera del árbol; la enmienda del §106 que pediría un KEM para el
+aviso cifrado; y el giro de cualquier RFC a ACEPTADO.
+
+**Lo que hace.**
+
+0. **El `Δ` del reembolso v2, en el RFC-0003**, añadido por la sesión al portar el sello. La
+   recomendación de la 12 encontró, leyendo, que el RFC-0003 dice que la segunda cláusula del
+   invariante de reembolso, `now − born ≥ Δ`, «la verifica cualquiera con dos cabezas firmadas y el
+   `Δ` que la apertura del reembolso hace público», y que el operador conserva acelerar el reloj
+   «con evidencia oponible». El `Δ` no se publica en ningún sitio: las entradas públicas de
+   `RefundAirV2` son `{commitment, amount}`, la apertura vive en el `RefundReceipt`, que ningún
+   método del cable transporta, y un operador que compuso el envío por `send_materials_v2` conoce
+   `(refund_id, delta)`. Puede adelantar un reembolso v2 sin que nadie lo pruebe. El dinero vuelve
+   al emisor, que es lo que ya declara `doc/CADUCIDAD_PENDIENTE.md` («acelerar devoluciones, nunca
+   desviarlas»), y hoy el reembolso no está en el cable. La sesión se lo preguntó al autor, que lo
+   clasificó como límite del modelo de confianza, no como fallo: se corrige el texto, con marca,
+   donde lo decía (dos marcas, bajo «El invariante de reembolso, completo» y bajo «§119.5 se
+   REDUCE»), y atestiguar el `Δ` abierto es la cláusula (e) de T3b, del RFC del reloj. Leído, no
+   medido.
+
+1. **La 11, el canal del aviso.** Su nota, detrás de la marca del §835: un formato y dos
+   portadores. Dentro del mensaje, el aviso va en `CdtTrfTxInf/SplmtryData` del pacs.008, y del
+   banco del acreedor al titular, en `TxDtls/SplmtryData` del camt.054; fuera del mensaje, el
+   mismo elemento. Nace en la vía por materiales y lo escribe el lado del pagador; el operador no
+   escribe nada y el puente de en medio no gana emisor. Un elemento XML propio con espacio de
+   nombres versionado, hojas en `Q` y `B32` canónicos y conformidad de infoset; v1 y v2, con la
+   hoja `x` como única señal; en claro dentro del mensaje por elección del pagador, con la fuga
+   dicha y su retirada escrita; el cifrado, por una enmienda del §106, del autor, o por la vía
+   simétrica con una clave por relación, que es la D-9 de la 52; por RFC, con su KAT en
+   `spec/vectors/aviso/` detrás del cotejo del XSD y de las reglas de uso públicas, que hoy dan
+   403, y con el bloque `superficie` de `spec/RPC.md` puesto al día en el sello que lo entre, como
+   hizo el §809. Por los principios: el criterio del §609, porque un solo elemento sirve en
+   cualquier infraestructura que lleve `SplmtryData` y fuera de cualquier mensaje;
+   `PRINCIPIOS.md` §0, porque el operador no gana papel, y §4.2, porque ninguna clave de gasto
+   llega a la capa; `SECURITY.md` §2.ter, porque la observación no se concede por defecto;
+   `PRINCIPIOS.md` §3, porque no entra ninguna dependencia; y el §106, porque nada añade una
+   familia de supuestos. `doc/AVISO_EN_ISO20022.md` gana la marca en su cabecera y en su
+   «Estado»; su sección 8 pasa a «Decisiones (por delegación del autor, §861, REVERSIBLES)», con cada
+   decisión debajo de su pregunta, que se queda, y la tabla de cuándo se reabre; su sección 7, la
+   marca de su título -«sin elegir» valía hasta el §8- y de su «en las cinco», la combinación de A
+   con un `Ustrd` de reserva, descartada, y el salto al camt.054, leído en la misma rueda; sus seis
+   citas por línea a `spec/RPC.md`, en siete sitios -uno, la pregunta D-6-, que ya no caían en su
+   sitio, pasan a citas por encabezado -«Pago en dos fases», «Apertura» y «Qué ve exactamente un
+   agregador»- con una marca que dice la línea que citaban, como hizo el §831, y la de
+   `crates/zk-ssl/src/lib.rs:740-755` pasa a `:752-767`; y sus secciones 3, 9 y 10, su marca. La
+   frase «ISO 20022 no tiene campo» o «no lo transporta», y la cita al §21, que es el §39, se
+   corrigen con marca donde viven; este sello lo hace en dos comentarios de `iso.rs` -el del aviso
+   que nace al liquidar, que dice también que por esta vía no puede ir en la orden que llega y
+   que irá en ella por la vía por materiales cuando el puente la lleve, y el doc de
+   `claim_pacs008`, que declara además un límite del puente que no se decía: el `ACSC` copia los
+   identificadores de la orden anterior sin comprobar que el aviso sea de ese pago, sin crear
+   saldo ni gastar sin clave, y que la vía por materiales lo cerrará-, tres de `client.rs` y dos
+   del SDK -uno en el ejemplo de su cabecera, que solo cita el §21-, la nota de `PendingNotice` en
+   `spec/RPC.md` §«Pago en dos fases», `ARQUITECTURA.md`, los dos `PAPER` y tres sitios de
+   `doc/DIAGNOSTICO_ESCALADO.md`, uno de ellos solo con el §21; la D-6 del documento y la nota de
+   la 11 dicen esta lista y lo que queda para otro sello (abajo). `doc/CONFIANZA_RESIDUAL.md` marca
+   su «ESTUDIADOS, SIN DECIDIR» en la misma línea: el canal, decidido; el B11.2, con sus dos vías,
+   sin decidir. Y el doc de `settle_pacs008_two_phase`, que decía que la segunda fase «No está
+   implementado», gana su marca: la implementa `claim_pacs008`.
+2. **La 12, los fondos muertos.** Su nota, residuo por residuo y sin enmendar nada: (1) el «nunca»
+   de verdad en el juez, para toda la clase del centinela, con `send_materials_v2` rechazando los
+   Δ de esa clase que no son `u64::MAX`; (2) receptor congelado ⇒ `AccountFrozen` en el reembolso
+   y la des-emisión, con el coste de privacidad del recibo dicho, el reembolso por el cable sin
+   heredarlo, el caso del receptor con identidad retirada para el test de su sello, coherente con
+   la D-5 de la 52, y la extensión a la des-emisión declarada como analogía; (3) el suelo, ni
+   retirado ni en entradas, pospuesto a un RFC del reloj de la caducidad que firme la cadencia,
+   diga qué evidencia deja acelerarla, resuelva `--latido 0` y la capa sin nodo y desambigüe
+   «latidos de `log.seq`», con la condición doble y su defecto declarado, y con lo que la crítica
+   pidió decidir: el suelo vale para todo lo vivo, porque es política publicada desde el §119.8,
+   anterior a todo pendiente reversible -aunque a `PRINCIPIOS.md` §4.3 no llegó hasta el §779-, y
+   restringe la D1 del RFC-0003 sin derogarla, en el sentido «largo, nunca corto», y la reversión
+   por el cable no se abre sin él; el suelo se cumple con un test doble, y la entrada se cierra
+   cuando se cumpla, con (1), (2) y T3b-circuito (c) ya hechos; (4) la vía v1, que se deja de
+   producir en el RFC que abra la reversión por el cable o en el corte, con la D5, `set_refund_ttl`
+   a `cfg(test)`, aceptada, que hará un sello de la capa aún sin asignar; (5) el fleco 2,
+   declarado; (6) T3b partido como el §128.1, con el testigo en circuito de su (d); (7) el hallazgo
+   de la `f` dedicada, que falla cerrado, ampliado a la rotación en su sitio de la D-5 de la 52; y
+   (8) las citas. La «(§342)» no se seguía: el asiento del §342 trata la cabecera de `mint`, y la
+   medida la hizo la sesión que lo selló y la trajo a la 12 el mismo commit, `6a1c1bb`, sin
+   asiento que la registre; el §343 dice que el RFC-0003 se midió sobre ese commit. Se marca en la
+   12 y en las cuatro líneas del RFC-0003 que la repiten (`:11`, `:22`, `:202` y `:270`). Y las
+   nueve citas por línea a este registro de la 12 caían corridas desde que entraron, en el §779:
+   el escéptico de la 12 contó siete, y las del §501 (`:36547-36559`, hoy `:36577-36594`) y el
+   §342 (`:26573`, hoy `:26608`) caen igual; van corregidas con marca donde están. Por los
+   principios: aplicar no es enmendar -ni el suelo de `PRINCIPIOS.md` §4.3, ni el §119.4, ni la
+   reversión de los v1 (§119.6), ni la D2 del RFC-0003, ACEPTADO-, y cada pieza vale igual a
+   cualquier escala, que es el criterio del §609; el suelo, que «funciona a cualquier ritmo», y el
+   Δ en entradas, que no, se dicen como son.
+3. **La 77 original, XMSS.** Su nota: el KAT ya no falta -lo cerró el §623 y el §786 le fijó la
+   huella-; la versión está fijada en tres crates y en el generador del KAT, no en dos; el issue se
+   envía sin su parte 2, las partes 1, 3, 4 y 5 en un issue nuevo con su número y una línea que
+   remite a #1442 y a su PR, y no como comentario en #1442 ni un issue por parte; la sección 4.9
+   de los dos ECST se marca con quién midió, como el propio informe hace en `doc/ecst/ECST.md` §8.1;
+   y la firma en ARM se queda en la 77 -es del nodo y del testigo; B9 es del cliente-, con su
+   condición, el margen de unas 415 veces dicho deducido y el arnés fuera del árbol. Se cierra con
+   el enlace del issue enviado, o cuando una versión publicada deje sin objeto sus cuatro partes;
+   si se cierra así con ARM sin medir, ARM pasa a una entrada propia. La cabecera de la 77 cerrada
+   gana su marca: el issue que pide el §575 es el reporte a winterfell, que salió en el §625, no el
+   de esta entrada.
+   `doc/issue-rustcrypto.md` gana una nota interna con la decisión y lo leído el 15-10-2026, la
+   apertura «we use it», con su nota interna, y la línea que va en lugar de la parte 2, con la
+   suya; la parte 2 se queda como registro y no se envía. `doc/ecst/ECST.md` §4.9 y su
+   traducción dicen ahora que esos 21 conjuntos no se releen de sus propios bytes y que `xmss` no
+   devuelve la clave de otro conjunto, con **[MEDIDO por una sesión de Claude Code, no en la
+   máquina del autor: `AUDITORIA.md` §710]** y la marca de lo que decían. `doc/xmss-evaluacion.md`
+   marca su aviso de ARM y su pendiente 5. Por los principios: el criterio del §609, porque
+   `index()`, el aviso de `Clone` y `rand` sin sus características por defecto sirven a todo
+   usuario de `xmss`; `SECURITY.md` §5 («Problemas no sensibles […]: *issue* normal»), la misma
+   vara para lo ajeno; y lo falso se marca, no se borra.
+4. **La cabecera del `BACKLOG.md`**, recontada con `grep -c`: no mueve casillas, y su lista de
+   recuentos gana, al final, «y el §861, que no mueve ninguna».
+
+**Superficie.** Ninguna de las seis del RFC-0021: prosa y comentarios. La nota de `PendingNotice` en
+`spec/RPC.md` es prosa, y ningún método ni campo cambia. `check_superficie` da lo mismo que antes:
+28 comparaciones, 0 novedades.
+
+**Medido**, sobre `d4d6d45`; lo último, también con el sello de delante.
+
+- **Las herramientas del bucle del canon** (`check_cifras`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `verificar_citas`, `check_dominios`, `check_publicadas`,
+  `check_nucleo`, `check_techo`, `check_curvas`, `check_superficie`) y `check_tests`,
+  `check_modulos`, `check_vectores` y `check_catalogo`: antes de tocar nada, las quince en 0; en el
+  árbol con el marcador sin número, ROJA solo `verificar_citas` (v6: 77 líneas con el marcador, 31
+  en `doc/AVISO_EN_ISO20022.md`, 17 en el `BACKLOG.md`, 4 en `iso.rs`, 4 en `client.rs`, 4 en el
+  RFC-0003, 3 en `doc/issue-rustcrypto.md`, 3 en `doc/DIAGNOSTICO_ESCALADO.md`, 2 en el SDK, 2 en
+  `doc/xmss-evaluacion.md` y 1 en cada uno de `spec/RPC.md`, `ARQUITECTURA.md`, `PAPER.md`,
+  `PAPER_EN.md`, `doc/CONFIANZA_RESIDUAL.md` y los dos ECST), con 150 encabezados citados y
+  ninguno muerto -142 antes: los ocho nuevos son de `doc/AVISO_EN_ISO20022.md` a `spec/RPC.md`,
+  siete por las citas por línea y uno a «Versionado y compatibilidad»-, y las otras catorce en 0 y
+  con la misma salida que antes: `check_tests` con 1972, `check_cifras` con sus 26 cifras de tests
+  en documentos vivos, sin ninguna rancia, y `check_vectores` con 497 `.json` y 987 líneas. En un
+  clon del repositorio en `d4d6d45` con estos dieciséis ficheros, el número puesto -solo en las
+  líneas que este sello escribe: el «§» con la N de la leyenda de los dos ECST es de la leyenda- y
+  un encabezado de prueba al final de `AUDITORIA.md`, las quince en 0 (`verificar_citas`: 763
+  encabezados, 0 citas muertas, 150 encabezados citados y ninguno muerto); y con este asiento,
+  numerado, en vez del encabezado, también las quince en 0 (151 encabezados citados, ninguno
+  muerto). Las cuentas del `BACKLOG.md`, con `grep -c`: 49 `- [ ]` y 78 `- [x]`, antes y después.
+  `git diff --check`, limpio. Y en otro clon, con el texto del sello de delante, todavía sin
+  sellar, aplicado y numerado, y su asiento: éste se aplica encima con dos choques de líneas
+  vecinas -la lista de recuentos del `BACKLOG.md` y la cabecera-mapa de
+  `doc/CONFIANZA_RESIDUAL.md`-, que se resuelven tomando las dos; numerado y con su asiento, las
+  quince en 0, con 44 `- [ ]` y 85 `- [x]`. Los clones se borraron.
+- **Lo citado, contra este árbol**: cada «fichero:línea» de las tres notas y de las marcas; entre
+  ellas, `two_phase.rs:687-697`, `:452-461`, `:710-714`, `:676`, `:1699` y `:257`;
+  `client.rs:153-157` y `:201`; `crates/zk-ssl-node/src/main.rs:3799` (`zkssl_sendMaterials`) y
+  `:3820` (`send_materials_at`), no `:3720`, que es `zkssl_publicId`; `recovery.rs:94`;
+  `log.rs:640-642` y `:613-676`; `latido.rs:72` y `:455`; `crates/zk-ssl-hash/src/lib.rs:972-994`,
+  sin cadencia ni hora; `circuit_refund_v2.rs:526`; `witness.rs:3377-3380`;
+  `spec/rfc/0003-compromiso-v2.md:67`, la de `expiry = born + Δ`; el bloque del corpus KAT de
+  `tools/canon.sh`, de su comentario, en `:723`, al `fi` de su juez, en `:741`; los tres
+  `Cargo.toml` con `xmss = "=0.1.0-pre.0"`, y el del generador; los doce llamadores de
+  `set_refund_ttl`, todos en módulos de test; `PRINCIPIOS.md` §4.3, que marca el suelo «❌
+  *(añadido: §779)*»; y las nueve citas de la 12 a este registro, cada una contra su texto. El
+  commit `6a1c1bb` lleva a la vez el asiento del §342 y la nota «MEDIDO (§342)» de la 12 (`git
+  show --stat`). Los dos modelos derivados del camt.054 y del pain.001 se leyeron en la rueda
+  `pyiso20022` 1.6.2 que ya estaba bajada, con la suma `98693c96…3a50`, sin instalarla ni
+  ejecutarla: `EntryTransaction10` en `camt_054_001_08.py:5997` y su `SplmtryData`, una lista, en
+  `:6201-6208`; `CreditTransferTransaction34` en `pain_001_001_09.py:3139` y su `SplmtryData` en
+  `:3344`. Lo que cita del sello de delante se cotejó con su texto, todavía sin sellar: la D-5 y la
+  D-9 resueltas en `doc/ROTACION_DE_CUENTAS.md` §6, la 47 cerrada y B9 en la 21.
+- **Lo que no midió este sello**, y viene de la decisión: lo leído el 15-10-2026 de #1442 y del PR
+  #1468, con WebFetch -un resumen, no la página en bruto-, del `master` de RustCrypto/signatures en
+  bruto y de crates.io lo leyeron la recomendación de la 77 y su escéptico; las tres webs de ISO
+  20022 y de las prácticas de mercado que dan 403, el juez de la 11. Este sello no lo releyó. Ni
+  las herramientas con el sello de delante ya sellado: las corre el canon al sellar.
+- **`cargo` no se corrió** al escribir este sello: los comentarios de los tres `.rs` no cambian una
+  línea de código ni el número de líneas, y ninguno es un enlace de documentación. El canon
+  `--sello` es el de arriba.
+
+**Contadores.** Ningún test, ningún pin, ningún vector, ninguna cifra por crate: `check_tests` sigue
+en 1972. El `BACKLOG.md` no mueve casillas: las tres entradas siguen abiertas y no se abre ninguna.
+`check_publicadas` no cambia: ningún RFC cambia de estado.
+
+**Lo que NO hace.** No escribe el RFC del aviso ni el del reloj de la caducidad (van en su sello,
+PROPUESTOS), ni el prototipo por materiales de la 11, ni las dos piezas de la capa de la 12 -el
+«nunca» y los congelados-, ni la D5, ni las marcas que esas piezas ponen en `PRINCIPIOS.md` §4.3,
+en el RFC-0003, en el RFC-0008, en el RFC-0009, en `doc/CADUCIDAD_PENDIENTE.md`, en
+`SECURITY.md` §1 y en `crates/zk-ssl-cli/src/pago.rs`: son código o van con él. No envía el issue
+ni relee #1442. No toca la 21, ni la fila B9 de `doc/ESCALADO.md`, ni la 47, ni la línea «Va con
+la 47.» de la 77, ni la 52 y su D-9: son del sello de delante. No toca `doc/historia/VISION.md`, ni
+`doc/ecst/VERIFICACION.md` ni `doc/ecst/borrador/`, registros generados, ni los preprints
+depositados -`doc/preprints/ZK-SSL-policy-note.md` repite «has no field»-, ni los asientos. No
+corrige el «§21» con que nombran la deuda «aviso fuera de banda» la plantilla de los RFC y seis
+RFC que la siguen (del 0002 al 0007) y la 74, cerrada, ni el de `doc/CADUCIDAD_PENDIENTE.md:35`, ni
+el del `println!` de `crates/zk-ssl-sdk/examples/e2e.rs:25`, que es código: medido con `git grep`,
+queda para otro sello, y la D-6 del documento y la nota de la 11 lo dicen. No añade
+`doc/AVISO_EN_ISO20022.md` a la lista de la v3 bis de `tools/verificar_citas.py`, que es código de
+la herramienta. No toca el comentario de `crates/zk-ssl-guardian/src/lib.rs` que dice que el issue
+está «sin enviar», que sigue siendo cierto. `PRINCIPIOS.md`, en «Transición ordenada…», sigue en ❌
+hasta el prototipo. No toca la 19, que sigue abierta sin cambios.
+
+**Lo que NO cierra.** Las tres. La 11, hasta el prototipo por materiales y el RFC PROPUESTO; después,
+solo por el B11.2. La 12, cuando un test haga pasar un reembolso de `RefundTooEarly` a `Ok` solo
+porque pasan latidos y otro haga rebotar un Δ por debajo del suelo, con sus dos piezas de la capa y
+T3b-circuito (c) ya hechos. La 77, con el enlace del issue enviado, o cuando una versión publicada
+de `xmss` deje sin objeto sus cuatro partes.

@@ -730,7 +730,7 @@ El modelo en dos fases **usa el vocabulario del propio estándar**:
 ⚠️ **Falta una pieza.** El receptor necesita la posición del pendiente, el
 aleatorio y el importe para cobrar, y **ISO 20022 no tiene campo para ellos**.
 La implementación los devuelve junto al mensaje, no dentro. **Cómo viaja ese
-canal lateral está sin resolver.**
+canal lateral está sin resolver.** ⚠️ §861: «no tiene campo» no es exacto: no hay un campo hecho para el aviso; el de extensión, `SplmtryData`, lo admite (leído en un modelo derivado de los XSD, sin cotejar con el original); usar el de remesa sería forzarlo. El canal está decidido por delegación (la entrada 11 del `BACKLOG.md`) y sin construir.
 
 ---
 

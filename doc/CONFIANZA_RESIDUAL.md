@@ -156,7 +156,7 @@ decidido, y dónde):
 · `ESCALADO.md` (C3, C7, §6, §9, B9)  → existe en `doc/` con su propia
   cabecera: C3 sirve a la misión declarada; el dimensionamiento
   planetario es estudio condicional. La dependencia B11←C3 queda intacta. ⚠️ §860: la 47 se cerró sin adoptar el dimensionamiento, y C3, con B11.1 y B11.3, pasó a la 126 del `BACKLOG.md`.
-· B11.2 (aviso cifrado) y el canal ISO de la entrada 11 → ESTUDIADOS, SIN DECIDIR (§791, 2026-10-14):
+· B11.2 (aviso cifrado) y el canal ISO de la entrada 11 → ESTUDIADOS, SIN DECIDIR (§791, 2026-10-14; ⚠️ §861: el canal, decidido por delegación en la entrada 11; el B11.2, con sus dos vías —una enmienda del §106, del autor, o la simétrica con el AEAD de la casa—, sin decidir):
   `doc/AVISO_EN_ISO20022.md`, ⚠️ §799: ACEPTADA como análisis; decía «BORRADOR». ⚠️ §791: el cuerpo dice en §3.2 «AEAD + clave
   efímera, ~100 B de sobrecoste» y en §8 «independiente e implementable hoy», y medido contra el árbol le faltan tres cosas:
   ninguna cuenta tiene una clave pública a la que cifrar —`AccountRecord` y `zkssl_openAccount` llevan tres resúmenes—, así que

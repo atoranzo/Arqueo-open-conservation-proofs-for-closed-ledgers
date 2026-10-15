@@ -152,6 +152,18 @@ deja sin incógnitas.
 
 ⚠️ Los 0,62 ms/hoja son de **esta máquina**: si el nodo objetivo es ARM (B9),
 repetir `tests/medidas.rs` allí antes de fijar nada.
+⚠️ §861: decidido por delegación del autor (la entrada 77 del `BACKLOG.md`). El arnés
+`tests/medidas.rs` vive en `~/eval-xmss`, fuera del árbol (la cabecera de este
+documento): traerlo solo hace falta si se mide. La medida en ARM se queda en la
+77, y no va con B9, que es la generación de pruebas del cliente: firman el nodo
+y el testigo, que también lleva su clave XMSS. Se mide cuando el nodo o el
+testigo tengan un objetivo ARM declarado, o cuando B9 se corra en ARM —desde la
+47 cerrada, B9 está en la 21—, y entonces la misma tanda mide la firma. Una
+cifra en ARM es de otra máquina, y no se compara sin decirlo con la de aquí. A
+la cadencia decidida, un latido por minuto, los 144,5 ms de firma que el §236
+remidió dejan un margen de unas 415 veces: **deducido, no medido**; y, deducido
+también, el veredicto «a épocas de 1 s» de la tabla no condiciona ninguna
+decisión abierta.
 
 ---
 
@@ -177,4 +189,5 @@ Pendientes, por orden:
 3. **Issue en RustCrypto/signatures** (`issue-rustcrypto.md`): `index()`,
    `remaining()`, plan BDS, y el aviso sobre `Clone`.
 4. Guardián: implementación + test de layout (§3).
-5. Medidas en ARM si aplica (junto a B9).
+5. Medidas en ARM si aplica (junto a B9). ⚠️ §861: no junto a B9: se quedan en
+   la entrada 77, con su condición (arriba, tras la tabla).
