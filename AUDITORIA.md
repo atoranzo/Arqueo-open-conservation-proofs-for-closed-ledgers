@@ -1255,7 +1255,7 @@ la memoria.
 **Lo que NO resuelve**: un atacante puede agotar el cupo y dejar sin sitio
 a usuarios legítimos. La solución correcta —exigir autorización de
 custodio para abrir— requiere un circuito nuevo, porque **abrir hoy no
-genera ninguna prueba**.
+genera ninguna prueba**. ⚠️ §860: decidido no exigirla (BACKLOG 8, `SECURITY.md` §2).
 
 Un auditor debería valorar si el tope es suficiente para el caso de uso
 previsto.
@@ -56354,3 +56354,201 @@ transporte híbrido.
 **Contadores.** `BACKLOG.md` pasa de 49 a 48 abiertas y de 78 a 79 resueltas. `check_tests` sigue en
 1972 tests declarados y 20 instrumentos, y `check_modulos` en 205 ficheros. Ningún pin de la tabla
 del canon cambia.
+
+## §860 — por delegación del autor, siete entradas se cierran con su decisión escrita —la 8, la 17, la 20, la 23, la 47, la 76 y la 96—, la 52 toma sus ocho decisiones con la D-3 de la 20, y abren la 126, el operador ciego, y la 127, el nodo que abre su libro en claro
+
+El commit que lleva este asiento, sobre `ff9d4fc` (el §838). Un solo sello, de documentos y de
+comentarios. En el `BACKLOG.md`: la 8, la 17, la 20, la 23, la 47, la 76 y la 96, cerradas, cada una
+con su título anotado y su nota al final; la 52, con la suya; la 119, con dos líneas, la de la 8 y
+la de la 52, en ese orden; la 21, con B9; la 28, con el frente de la 96; la 77 (original), con su
+marca; la 126 y la 127, nuevas, detrás de la 125; «Lo demas», con su marca; y la cabecera,
+recontada. `SECURITY.md`: en la sección 2, dos viñetas nuevas —la gobernanza que no rota y el tope
+de cuentas que se agota— y dos marcas, en la viñeta del índice de la clave de firma y en «Rotar la
+clave exige dos custodios»; y una marca en la 3.3 y otra en la 3.13. `doc/ROTACION_DE_CUENTAS.md`:
+su estado, el caso 4 de su §2, la opción R3s, G1-M y G3, el ❓ del testigo, dos filas de la matriz y
+las ocho decisiones de su §6. `doc/ESCALADO.md`, en una sola edición: su cabecera y la tabla de su
+§10. `ARQUITECTURA.md`, tres marcas, y `doc/CONFIANZA_RESIDUAL.md`, tres, todas en la misma línea
+que marcan; y el §16.1 de este registro, una, también en su línea. `doc/preprints/ERRATA.md`, la
+Entrada 5. `spec/RPC.md`, una corrección encima de la del §265 y tres marcas en ella. El RFC-0009,
+una marca en su D-AJ. Comentarios, en la misma línea, de `crates/zk-ssl/src/migration.rs` (tres),
+`crates/zk-ssl/src/persistence.rs` (uno), `crates/zk-ssl/src/metrics.rs` (seis) y
+`tools/check_publicadas.py` (uno). `tools/verificar_citas.py`, que gana en RESERVADOS el rango
+§860 a §889, junto al §830 a §859 de la otra sesión. Y este asiento. No toca ningún código que se ejecute, ni un
+test, ni un pin, ni un vector; ni `crates/zk-ssl-guardian`, ni la zona de la migración de
+Winterfell —`winter-*`, `crates/zk-ssl-air`, `crates/stark-experiment`, `crates/ceremony`—, ni
+`tools/check_constraint_layout.py`: de `stark-experiment` solo se leen líneas, que se citan. Lo hizo
+Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`: por cada entrada, un agente
+recomendó y otro, escéptico, midió y objetó; en los grupos en disputa, un juez final decidió; una
+crítica de coherencia juntó las decisiones y escribió los arreglos entre ellas; y otro agente
+escribió este sello sobre todo eso, con cada cifra y cada cita vueltas a medir en `d4d6d45`; dos
+revisiones lo leyeron y pidieron arreglos —que la 126 recoge B11.1 y B11.3, y no todo el B11, es
+uno—, y otro agente los hizo y volvió a correr las herramientas. Se escribió sobre `d4d6d45`
+y la sesión lo porta sobre `ff9d4fc`, detrás de los §837 y §838 de la otra sesión, que cerró la
+122. El número es el primero del segundo rango que el autor asignó a la sesión del §800, §860 a
+§889, y este sello lo pone en RESERVADOS. En la sesión se corrió el canon entero, `--sello`, sobre
+este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El autor delegó las decisiones abiertas de diecinueve entradas del `BACKLOG.md`,
+y pidió resolverlas aplicando los principios. Por cada una se escribió una recomendación
+con sus opciones y un escéptico la midió contra el árbol y la objetó; los grupos en disputa —la 20
+con la 52, la 83 con la 54, la 87 con la 90 y la 116, la 11, la 88 y la 94— tuvieron un juez final;
+y una crítica de coherencia las juntó todas, escribió veinticinco arreglos entre ellas, fijó la
+numeración y los contadores y las agrupó en sellos. Éste es el primero: los documentos de las siete
+que se cierran, más la 52, que comparte asiento con la 20 porque las dos deciden la misma D-3. Las
+demás van en sellos aparte, de documentos y de código. La 19 queda abierta, sin cambios, hasta otro
+sello. Las recomendaciones se escribieron sobre `b6994c3` y la crítica sobre `4d8017d`, y sus
+números de línea se habían movido: aquí se buscaron por su texto y se citan los de `d4d6d45`. Y su
+numeración también: daba al operador ciego la 125 y al libro en claro la 126, y la 125 la abrió el
+§814; son la 126 y la 127.
+
+**Quién lo decide.** Por delegación del autor («resuelvelas aplicando los principios»), con el
+criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. El §609 pide «que
+se aplique al mayor número de casos de uso sin modificaciones significativas»; donde sus dos mitades
+tiran a lados contrarios —la gobernanza que podría rotarse, la alta disponibilidad que otro nodo
+podría añadir—, la nota lo dice. Cada decisión lleva en su nota la condición que la reabre. Fuera de
+la delegación, y sin tocar: la 19; lo que el §16.1 deja a un auditor —si el tope basta para el caso
+de uso—; y cualquier acto fuera del repositorio: desplegar, depositar en Zenodo, enviar un issue,
+comprar hardware.
+
+**Las decisiones.**
+
+1. **La 8: abrir no exigirá autorización de custodios, y la entrada se cierra.** Sería un segundo
+   veto sobre el alta sin quitar el del operador (`PRINCIPIOS.md` §0), impondría el alta
+   permisionada a todos los casos de uso, lo contrario del §609, y haría custodial el traspaso, la
+   R4 de `doc/ROTACION_DE_CUENTAS.md`, la única rotación sin custodios que existe hoy, sin código.
+   La prueba de posesión de la 119 no la cierra: prueba quién ocupa una identidad, no cuántas se
+   abren. El agotamiento del tope de cuentas, que es para siempre y quita también el traspaso, pasa
+   a `SECURITY.md` §2. Se descartan, con su razón en la nota, la política de apertura fijada en la
+   génesis —queda como la forma de reabrirla—, cerrarla con la 119, un coste por alta, una prueba de
+   trabajo, un límite de ritmo, liberar plazas, que la gobernanza suba el tope y posponerla al
+   corte. El cupo de intervenciones de los custodios no se usa como razón: es ajustable
+   (`set_max_custodian_uses`).
+2. **La 17: la alta disponibilidad del operador no se construye y el estándar no la prescribe.** Una
+   réplica del mismo operador hace que caiga menos, no que haga menos falta fiarse de él; la réplica
+   entre partes independientes es la 23. El §609, por sus dos caras: el estándar no impone
+   topología, y el nodo de referencia no puede añadirla sin modificaciones significativas. Lo que un
+   despliegue con réplica no debe romper se escribe con cuánto de ello impone hoy el nodo: un
+   escritor por libro, solo en la misma máquina; un estado de firmante por clave, declarado y no
+   impuesto, que es la 124; el relevo con el estado no fiable, la D-G del RFC-0015, PROPUESTO; y la
+   detección, la vista dividida medida en el §599, con su punto ciego, dos nodos con un testigo en
+   cada uno.
+3. **La 20 y la 52, un solo diseño.** La D-3, G0, para las dos: la raíz de gobernanza se fija al
+   constituir el libro y se compara al reabrirlo. G1 no se descarta, no se elige ahora; G1-M y G3
+   entran en `doc/ROTACION_DE_CUENTAS.md` sin costear, y la D-3 se reabre antes del primer libro
+   desplegado, si un caso de uso pide renovar a sus gobernadores o al construirse R3s. La tensión
+   del §609, dicha: G1 cubriría un caso que G0 no cubre, renovar miembros, y G0 no mueve nada; gana
+   G0 porque no hay libro desplegado que pague hoy su coste y porque es el caso de cero rotaciones
+   de cualquier variante: añadirla después no invalida ningún libro, y quitarla sí. La 20 se cierra:
+   tres casos hechos y el cuarto decidido. La 52 toma sus ocho: una transición, N1 a N4, y varios
+   autorizadores; R3 se adopta en la sal, no en la hoja, con tres puertas, la segunda de ellas la
+   119, que ata la sal sin imponer su origen; el traspaso, para la vista sola y la higiene sin
+   sospecha, con lo que no hace dicho; y sigue abierta hasta N4. El coste diferido del §127.5 —la
+   vista, irrotable sin rotar la clave de gasto— no se paga en código: lo asume el titular cambiando
+   de cuenta, y se declara. Retirar la recuperación se descarta porque devolvería la destrucción de
+   valor por pérdida de clave (`crates/stark-experiment/src/circuit_recovery.rs:1-9`), no por
+   enmendar un principio.
+4. **La 23: no se emprende.** Es una decisión, no una deuda, con la fórmula de la E4c del RFC-0006,
+   y `main` ya lo decía. El principio fundador sigue sin cumplirse en este punto, y el camino
+   elegido detecta la censura y no la previene: la nota lo dice. La restricción del orden total
+   queda escrita para quien reparta el estado, también para la 47 si se reabre.
+5. **La 47: el dimensionamiento no se adopta, y lo que sirve a la misión se reparte.** C3, con B2,
+   B11.1 y B11.3, a la 126 —B11.2 sigue en la 11—; B9, a la 21; la firma XMSS en ARM se queda en la
+   77 (original). Se escribe el invariante que la deja reabrible sin tocar el estándar: ninguna
+   operación toca dos cuentas. La sensibilidad «× 4 peor» no se rehace, porque su base es anterior
+   al §538; y no se escribe el 147 que proponía la recomendación.
+6. **La 76: el store anterior a D4, fuera de alcance porque este código no lo abre.** Razonado sobre
+   lo leído en `git`, no abierto contra un store real. El sujeto sí se puede fabricar con el código
+   viejo, como en el §702, y esa medida queda opcional. La puerta que queda es la instantánea ≤ v6,
+   y `migrate_to_salted_positions` es su herramienta, de geometría y no de privacidad. Se reabre si
+   aparece un libro de terceros anterior al §387.
+7. **La 96: se declara en la ERRATA, Entrada 5, y se funde en la 28.** Lo medido no sostiene lo
+   publicado, ni el sentido ni la causa, y la causa ya era errónea al depositarse; la relación no
+   está medida sobre el árbol de hoy, y no vuelve ningún aserto de sentido.
+
+**Correcciones a asientos anteriores, aquí y no en ellos, salvo la marca del §16.1, en su línea.**
+
+- El §512 llamó «Entrada 3» a la errata de la 96 que daba por pendiente; la Entrada 3 existía desde
+  el 2026-08-19, y era otra. Es la 5.
+- El §122.2 atribuye P4 a `PRINCIPIOS.md`; en `c46071c` estaba en `VISION.md`, y hoy está en
+  `doc/historia/VISION.md`, historia desde el §448.
+- Las citas del §258-A, en el punto 7 del §260: `persistence.rs:334` y `:339` son hoy `:353` y
+  `:358`; `accounts.rs:219` es `:235`; `persistence.rs:578` es `:794`; y `:603` es `:819`.
+- El §387 cerró de hecho la 76 —desde él, un store anterior no abre— sin tocar la 76 ni la tabla del
+  §265 de `spec/RPC.md`: la clase de fallo que el §265 describió, un sujeto que caduca sin que nadie
+  mueva su casilla.
+- El §16.1 gana su marca en la misma línea, sin salto, como el §16.2 ganó la suya al cerrarse la 9,
+  para no mover ninguna cita por línea a este registro.
+
+**Medido**, el 15-10-2026 sobre `d4d6d45`, por lectura, `grep` y `git`; nada se compiló ni se
+ejecutó, salvo las herramientas de abajo.
+
+- **El `BACKLOG.md`**: 49 `- [ ]` y 78 `- [x]` antes; 44 y 85 después (`grep -c`).
+- **La 8**: `zkssl_openAccount` llama a `open_with_id` sin prueba
+  (`crates/zk-ssl-node/src/main.rs:3783-3796`), y `permiso_de_ritmo` solo lo pide
+  `zkssl_verifyChain` (`:3775`); el tope del nodo es 1.000 por defecto (`:248`) y escucha en
+  `127.0.0.1:8545` (`:70`); al reabrir con otro tope, `ParameterMismatch`
+  (`crates/zk-ssl/src/persistence.rs:306-310`); `DEFAULT_MAX_CUSTODIAN_USES` es 100
+  (`crates/zk-ssl/src/lib.rs:835`) y `set_max_custodian_uses` existe (`governance.rs:54`); abrir
+  deja el sello de la ausencia declarada (`accounts.rs:250-266`); y la invariante del §802 está en
+  `AUDITORIA.md:53449-53451`.
+- **La 20**: la raíz de gobernanza la fija el constructor (`lib.rs:1098` y `:1119`) y al reabrir se
+  compara (`persistence.rs:160-169`); `params_digest` compone siete valores, ninguno N ni un quórum
+  (`lib.rs:890-898`); `changing_the_governance_set_on_an_existing_ledger_fails` está en
+  `tests.rs:2917` y `the_governance_set_survives_restart` en `:1176`; el testigo lee `paramsDigest`
+  solo como un campo de la cabeza que recompone (`crates/zk-ssl-cli/src/witness.rs:569`, `:1093` y
+  `:1113`); y `update_custodians` y `apply_governance` no son métodos de la capa: el primero es un
+  ayudante de los tests (`tests_support.rs:479`, `update_custodians_delegated`) y el segundo un
+  nombre en un comentario (`governance.rs:93`).
+- **La 52**: en las doce AIR con `leaf_salt`, la primera línea de `derive_leaf_salt` viene después
+  del `#[cfg(test)]`, y `circuit_banda` no la tiene; `circuit_claim.rs:246`; en las restricciones de
+  `circuit_send.rs`, `COL_LEAF_SALT` solo en `:1067` y `:1069`; `native.rs:117-119`; el cliente
+  prueba con la sal de los materiales (`client.rs:366`, `:400`, `:492` y `:517`); y el test que
+  `recovery.rs:105` cita sigue sin existir. DEDUCIDO, sin test: el reembolso v2 de un emisor
+  recuperado rebota con `PendingMismatch` (`two_phase.rs:710-714`), y falla cerrado.
+- **La 17**: el `grep` de su «Comprobable» da 5 líneas, y ninguna implementa nada; `LogEntry`
+  empieza en `log.rs:151`; `snapshot.rs:79-82` y `:219-230`.
+- **La 76**: `need` exige `root:pending` (`persistence.rs:519`), `root:pmeta` (`:534`), `root:froz`
+  (`:550`), `root:cons` (`:579`) y `root:log` (`:605`); en el código de la capa, la primera
+  escritura de cada una es `53d339e`, `b91896b`, `8a27afe`, `09dac0d` y `f74d7f9`, y las cinco
+  descienden de `2ac37c5` (`git merge-base --is-ancestor`); en el `persistence.rs` de `2ac37c5`,
+  `root:pending` sale 0 veces, y el de `2ac37c5^` no lee ni escribe más raíz que `root:state` y
+  `root:nullifier`; la importación de una instantánea v3..v6, en `snapshot.rs:366-376`, `:446`,
+  `:460` y `:485`.
+- **La 96**: en `6384907` y en `69fa2d4`, `circuit_send.rs` y `circuit_claim.rs` tienen
+  `TRACE_LENGTH` 1024, `ROW_ROOT` 271 y `ROW_PENDING_ROOT` 743, el envío 5 segmentos y el cobro 4, y
+  anchos de 49 y 48 en el primero y de 52 y 51 en el segundo; en `3db491f`, el envío y los dos
+  cobros tienen `CYC_ACC..CYC_PK` y `CYC_PEND_CLIMB..CYC_FIN`; `2901c54` (§641) y `f543ccf` (§680)
+  tocan `circuit_send.rs` y `circuit_claim*.rs`, y `e3b1987` (§652), `winter-prover`; las cifras del
+  ECST §7.2 y su instrumento, en `doc/ecst/ECST.md`; y las bandas de bytes, en
+  `crates/zk-ssl/src/metrics.rs`.
+- **La 47**: `uname -m` da `x86_64`; los 3,98-4,93 ms por prueba y el `apply` en memoria de 4,8-6,2
+  ms son del §637, con carga; y la banda de 265 a 320 op/s, del §217.
+- **Las herramientas del bucle del canon** (`check_cifras`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `verificar_citas`, `check_dominios`, `check_publicadas`,
+  `check_nucleo`, `check_techo`, `check_curvas`, `check_superficie`) y `check_tests`,
+  `check_modulos`, `check_vectores` y `check_catalogo`: antes de tocar nada, las quince en 0; en el
+  árbol con el marcador sin número, ROJA solo `verificar_citas`, por la v6 —102 líneas en catorce
+  ficheros, más las de este asiento—, y las otras catorce en 0, con `check_tests` en 1972 y
+  `check_cifras` con sus 26 cifras de tests en documentos vivos. En un clon de `d4d6d45` con estos
+  ficheros, un número de prueba en sus líneas y este asiento, numerado, al final de `AUDITORIA.md`,
+  las quince en 0: `verificar_citas`, 0 citas muertas y 0 marcadores sin número. El clon se borró.
+  `git diff --check`, limpio.
+
+**Contadores.** El `BACKLOG.md`, de 48 abiertas y 79 resueltas —tras el §838, que cerró la 122— a 43
+y 86: cierra la 8, la 17, la 20,
+la 23, la 47, la 76 y la 96, y abre la 126 y la 127. Ningún test, ningún pin, ningún vector:
+`check_tests` sigue en 1972.
+
+**Lo que NO hace.** No construye nada de la 52: los tests testigo —con el de un emisor recuperado
+cuyo reembolso v2 rebota—, N1, que es de la sesión de las AIR, N2 a N4 y R3s van en otros sellos. No
+mide la 76 con el código de `2ac37c5^`, ni la relación de la 96 sobre este árbol. No toca la 19, ni
+`README.md`, `README_EN.md`, `doc/USE_CASES.md`, `PRINCIPIOS.md`, `PREGUNTAS.md` o `GENAI.md`. No
+escribe la decisión de la 77 ni toca `doc/xmss-evaluacion.md`: solo marca que ya no va con la 47. No
+toca el cuerpo verbatim de `doc/ESCALADO.md`, ni el de los preprints, ni Zenodo. No adopta el B18 ni
+le abre entrada. No toca el comentario de `lib.rs` sobre el tope, que sigue siendo cierto como
+condicional, ni el `println!` de `metrics.rs` que nombra la entrada 47. No corrige las citas por
+línea a `SECURITY.md` de los documentos que no toca, aunque este sello mueva sus líneas: la de
+ML-DSA de `README.md:59` y `README_EN.md:60`, «`SECURITY.md`:189, :728», ya apuntaba dos líneas
+antes de su viñeta en `d4d6d45`, que estaba en la `:730`, y con este sello la viñeta está en la
+`:777`. Y no responde a lo que el §16.1 deja a un auditor.

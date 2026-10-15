@@ -203,6 +203,12 @@ atado al importe (§74). Ambas corregidas y medidas.
   cerrojos; y un proceso que abra el fichero sin pedir el cerrojo, que en unix
   es de aviso y no obligatorio. Tampoco hace nada frente a un contador que
   vuelve atrás o se pierde: eso lo declara `doc/CONFIANZA_RESIDUAL.md`.
+  ⚠️ §860: por eso una réplica o un relevo no lleva el contador ni la semilla a
+  otra máquina que pueda firmar; con el estado de la clave no fiable, el
+  relevo es la D-G del RFC-0015, PROPUESTO; y lo que el nodo no impide —la
+  misma clave en dos sitios, con dos contadores— es la entrada 124 del
+  `BACKLOG.md`. La alta disponibilidad del operador ni la construye el
+  proyecto ni la prescribe el estándar (la 17, cerrada).
 - ⚠️ **El operador puede cambiar el verificador, y hoy eso es invisible.**
   Es **el poder mayor de todos** y no estaba en esta lista: quien puede
   actualizar el verificador **cambia qué es una transición válida** —más
@@ -242,6 +248,42 @@ atado al importe (§74). Ambas corregidas y medidas.
 - ⚠️ **Rotar la clave exige dos custodios.** Un titular puede gastar sin
   permiso de nadie y **no puede mejorar su propia seguridad sin permiso de
   dos** (§98.4).
+  ⚠️ §860: ya no del todo. La vista comprometida sola y la higiene sin sospecha
+  no lo exigen: el traspaso, la R4 de `doc/ROTACION_DE_CUENTAS.md`, sin
+  código, mientras quede plaza en el tope de cuentas (la 8); pero no retira ni
+  la clave ni la identidad viejas, que siguen cobrando y abriendo la vista. El
+  robo, la pérdida y cualquier sospecha sobre `sk` siguen exigiendo a los dos
+  custodios —la recuperación— hasta que se construya la rotación
+  precomprometida en la sal (la D-1 de `doc/ROTACION_DE_CUENTAS.md` §6, la 52
+  del `BACKLOG.md`).
+- ⚠️ **La gobernanza no rota: su compromiso y su pérdida son para siempre en
+  su libro** (§860; la D-3 de `doc/ROTACION_DE_CUENTAS.md`). La raíz se fija al
+  constituir el libro y al reabrirlo se compara. Una clave filtrada se queda
+  en el conjunto, y el margen baja en una clave para siempre. Con dos
+  filtradas, el umbral, quien las tenga rota los custodios a los suyos; la
+  gobernanza legítima puede volver a rotarlos, pero lo que emitan o recuperen
+  entretanto no se deshace. Si quedan menos de dos claves, los custodios no
+  vuelven a rotar en ese libro y, agotado su cupo de intervenciones, no
+  emiten, ni congelan, ni recuperan, salvo que el operador suba el cupo, que
+  no protege ninguna autorización. La salida es un libro nuevo, y llevar a él
+  a los titulares exige el reclamo del B18.2, que no existe.
+  `PRINCIPIOS.md` §4.1.
+- ⚠️ **Abrir una cuenta no se autoriza, y el tope de cuentas se agota para
+  siempre** (§860; la 8 del `BACKLOG.md`, cerrada). `zkssl_openAccount` abre con
+  `open_with_id`, sin prueba y sin límite de ritmo
+  (`crates/zk-ssl-node/src/main.rs:3783-3796`), y quien llegue a él puede
+  agotar el tope de cuentas (`max_accounts`, 1.000 por defecto en el nodo,
+  `main.rs:248`). El tope es inmutable y una cuenta no se cierra, así que
+  agotarlo deja el libro sin altas para siempre, y quita también el traspaso
+  —la R4 de `doc/ROTACION_DE_CUENTAS.md` §4—, la única rotación sin custodios
+  que existe hoy; y cada R4 legítima gasta una plaza que no vuelve, sin
+  atacante. Es un ataque de vivacidad, y la vivacidad es hoy del operador, que
+  decide quién llega al método: la falta de autenticación y de límite de tasa
+  del nodo, y su `127.0.0.1` por defecto, los declara la sección 3.3; lo nuevo
+  es que el tope no vuelve. Se decidió no exigir autorización de custodios
+  para abrir: sería un segundo veto sobre el alta sin quitar el del operador.
+  Y la prueba de posesión de la entrada 119 no lo cierra: prueba quién puede
+  ocupar una identidad, no cuántas identidades frescas se abren.
 
 ### 2.bis Los dos residuos que quedan, y qué los elimina
 
@@ -419,6 +461,11 @@ los saldos. No es un fallo de la primitiva: es que no está conectada.
 **Estado: parcialmente resuelto (vista autenticada), y abierto en
 despliegue** (sin auth/TLS/límite de tasa; ledger del nodo en claro).
 Backlog 49. `AUDITORIA.md` §93.1, §129, §157.
+⚠️ §860: la 49-A está cerrada, y ese puntero cubría dos cosas. El ledger del
+nodo en claro es la entrada 127 del `BACKLOG.md`. La falta de autenticación,
+de TLS y de límite de tasa es un residuo de despliegue sin entrada: el proxy
+delante, arriba; y para `zkssl_openAccount`, la 8, cerrada, con su viñeta en
+la sección 2.
 
 ### 3.4 Espacio de los identificadores anti-doble-gasto — **no aplica**
 
@@ -826,6 +873,11 @@ el libro lleno—.
   se queda en la cadena de sondeo de la vieja);
 - un pendiente hacia una identidad retirada solo vuelve al emisor por reembolso, al caducar, y el
   reembolso tampoco está en el cable (la D-5 de `doc/ROTACION_DE_CUENTAS.md`).
+  ⚠️ §860: la D-5, decidida por delegación (la 52 del `BACKLOG.md`): quedan varados hasta ese
+  reembolso. Y DEDUCIDO, sin test: lo que una cuenta envió por v2 antes de que la recuperaran ya no
+  le vuelve por reembolso —`apply_refund` exige que la cuenta del emisor conserve la identidad del
+  compromiso, y da `PendingMismatch` (`crates/zk-ssl/src/two_phase.rs:710-714`)—: solo sale si el
+  receptor lo cobra. Falla cerrado: no crea ni mueve dinero.
 
 Se redactó en privado y se publica de una vez con el código, como pide la sección 5. No hay libro
 desplegado ni terceros a quien avisar: el aviso es esta sección y el asiento §802, no un GHSA. El kit

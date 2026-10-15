@@ -18,7 +18,7 @@
 //! que nunca lo tuvo. El mundo nuevo nace colocado y salado por
 //! `open_account` (§157); esto es para un store anterior a D4, que este
 //! código **ya no puede fabricar** —`commit()` escribe `meta:geometry_v7`
-//! en cada persistencia—. Ver la nota 76 del BACKLOG.
+//! en cada persistencia—. Ver la nota 76 del BACKLOG. ⚠️ §860: un `sled` anterior a D4 no llega aqui: no abre, le falta `root:pending` (§387). Esto es para una capa importada de una instantanea v3..v6, y es de geometria, no de privacidad: la sal cero de sus cuentas sigue siendo publica. La 76 se cerro en el §860.
 
 use super::*;
 use stark_experiment::native::native_leaf_salted;
@@ -28,7 +28,7 @@ use std::collections::HashMap;
 /// frozen a 32 es la salida elegida; el flip redefine FROZEN_DEPTH).
 pub(crate) const FROZEN_DEPTH_POST: usize = 32;
 /// Profundidad PRE-migración (mundo viejo): las vías de importación
-/// legacy (sled sin marcador, snapshots ≤v6) reconstruyen frozen a 24.
+/// legacy (sled sin marcador, snapshots ≤v6) reconstruyen frozen a 24. ⚠️ §860: el sled sin marcador ya no abre (le falta `root:pending`, §387); la via viva es la instantanea ≤v6.
 pub(crate) const FROZEN_DEPTH_PRE: usize = 24;
 
 impl SovereignLayer {
@@ -118,7 +118,7 @@ impl SovereignLayer {
         // acct:{viejo} y froz:{viejo} quedarian stale (un reinicio los
         // cargaria junto a los nuevos). Precedente: limpieza legacy_null.
         // ⚠️ Un snapshot exportado post-migracion NO reimporta hasta el
-        // flip (v7 reconstruye con salt); coherente con D4.
+        // flip (v7 reconstruye con salt); coherente con D4. ⚠️ §860: el flip ya ocurrio (§156, `2ac37c5`): «hasta el flip» no es una condicion pendiente.
         if self.db().is_some() {
             let nuevos: Vec<AccountIndex> = mapa.iter().map(|&(_, n)| n).collect();
             {

@@ -1128,6 +1128,34 @@ el espacio por el tamaño de la clave.
 > operar en abierto.** Un ledger sin migrar que exponga `sendMaterials` o
 > este método **publica los saldos** a quien quiera calcularlos.
 
+### ⚠️ CORRECCIÓN (§860): el store anterior a D4 no abre con este código, y la puerta que queda es la instantánea ≤ v6
+
+La tabla de abajo decía que un store legacy nunca migrado, anterior a D4,
+**sigue expuesto**, y que su herramienta es `migrate_to_salted_positions`. Con
+este código **no abre**: `load` exige con `need` las raíces `root:pending`
+—desde el §387—, `root:pmeta`, `root:froz`, `root:cons` y `root:log`, y
+ninguna existía antes del flip D4, así que el store sale, a más tardar, con
+`Malformed("falta la clave root:pending")`, antes de servir un camino o de
+abrir una cuenta. La clase entera, «anterior al §387», la ejercita
+`a_ledger_without_a_pending_root_does_not_open`. Lo de abajo dejó de ser
+cierto en el §387 (`53d339e`), y aquel sello no tocó esta tabla. Con el código
+que lo escribió, ese store **sigue expuesto**, y lo de arriba sigue en pie
+para él: razonado sobre lo leído en `git`, no abierto contra un store real.
+
+La puerta legacy que queda viva es otra:
+
+- **la instantánea v3..v6 se lee**, por la promesa del formato: como mundo
+  viejo, sin sal, con los congelados a 24, en memoria y sin `sled`. Ninguna
+  vía del nodo la importa;
+- **`migrate_to_salted_positions` es su herramienta, de geometría y no de
+  privacidad**: quita el árbol mezclado, pero sus cuentas con sal cero —las de
+  v3 a v5 y, en v6, las abiertas antes del §117— siguen siendo enumerables,
+  porque la sal cero es pública (§126.4, §132.3).
+
+Es prosa, no cable: no cambia ningún método, campo ni vector, como la
+corrección de abajo. La medida y las razones, en la 76 del `BACKLOG.md`,
+cerrada en el §860.
+
 ### ⚠️ CORRECCIÓN (§265): el enunciado sigue en pie, el sujeto caducó
 
 Lo de arriba **no era falso y no se retira**: un ledger sin sal que reparta
@@ -1135,8 +1163,8 @@ caminos publica los saldos. Lo que caducó es **de quién habla**.
 
 | ledger | estado hoy |
 |---|---|
-| creado o persistido por este código | **salado**. `commit()` escribe `meta:geometry_v7` en cada persistencia (`persistence.rs:578`), y en caliente toda cuenta nueva sale salada |
-| store legacy nunca migrado, anterior a D4 | **sigue expuesto**. Su herramienta es `migrate_to_salted_positions` (§157) |
+| creado o persistido por este código | **salado**. `commit()` escribe `meta:geometry_v7` en cada persistencia (`persistence.rs:578`; ⚠️ §860: hoy `:794`), y en caliente toda cuenta nueva sale salada |
+| store legacy nunca migrado, anterior a D4 | **sigue expuesto**. Su herramienta es `migrate_to_salted_positions` (§157). ⚠️ §860: con este código no abre, y esa herramienta es de la instantánea ≤ v6 (la corrección de arriba) |
 
 **Cuándo se cumplió, con el commit delante**: el flip D4 en **§156**
 (`2ac37c5`) —la capa habla salted de punta a punta y los legacy mueren— y la
@@ -1149,7 +1177,8 @@ colocación en **§157** (`e3116c6` + `f926de6`), donde `open_account` adopta
 todo ledger*. Un store anterior a D4 abierto en abierto sigue publicando
 saldos, y además **no vuelve a abrir** si se le crea una cuenta —§258-A—.
 Las dos cosas y su herramienta viven juntas en **la nota 76 del BACKLOG**,
-que es donde pueden marcarse.
+que es donde pueden marcarse. ⚠️ §860: la 76 se cerró: el store no abre con este
+código, y la herramienta es de la instantánea ≤ v6 (la corrección de arriba).
 
 > ⚠️ **Por qué esta frase duró cinco sellos.** Nació en §259 acompañada de
 > «no es una entrada de backlog pendiente; es una condición de despliegue».

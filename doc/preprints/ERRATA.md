@@ -163,6 +163,84 @@ el siguiente depósito la llevará dentro.
 
 ---
 
+## Entrada 5 — Los tres preprints: «la mitad cara es del receptor» no la sostiene lo medido
+
+**Detectada**: 2026-08-14 · **Backlog**: entrada 96 (cerrada en el §860, fundida
+en la 28) · `AUDITORIA.md` §304, §512, §538 ·
+`spec/rfc/0009-lo-que-revela-una-prueba.md` D-AJ.
+
+Los tres depositados dicen que generar la prueba de cobro cuesta «roughly 500
+ms against 283 ms for a send» (`ZK-SSL-policy-note.md:235`,
+`ZK-SSL-residual-trust.md:182`; `ZK-SSL-preprint.md:329`, con «to generate»
+detrás de «500 ms»). Dos de ellos dan la causa: «because the claim circuit
+walks both the pending tree and the accounts tree». Y sacan de ahí una
+conclusión: el coste de un pago cae sobre quien recibe. En la nota de
+política es un consejo («a fact worth knowing before pricing anything»), y en
+la de confianza residual un argumento normativo («the party with the least
+choice about participating carries the larger cost»). Los 500 frente a 283
+equivalen a una razón cobro/envío de 1,77.
+
+**Lo medido después de depositarlos, en orden**:
+
+- **2026-08-14** (§304): al revés. Cuatro corridas: envío 260,7-286,8 ms,
+  cobro 159,4-189,6 ms, y las bandas no se solapan. El cobro costaba menos que
+  el envío. Se midió por la vía de la capa, que junta el trabajo del cliente
+  con el de la capa, y por eso el §362 llevó la medida a la vía del cliente.
+  Por esa vía el sentido siguió siendo el mismo hasta el §511: medido apareado
+  en `3db491f`, envío 240,8 ms y cobro 160,2.
+- **2026-09-19** (§512): el arreglo B (5.A-272) vuelve a invertir el orden.
+  Medido apareado: la razón cobro/envío pasa de 0,67 a 1,75, cerca del 1,77
+  que equivale a lo publicado. El sentido vuelve a ser el publicado, pero no
+  por la causa publicada: el §512 lo atribuye al acumulador del arreglo B, y
+  el porqué de esa diferencia no está explicado.
+- **2026-09-24** (§538, D-AJ): con el testigo oculto, cada lado cuesta 700-750
+  ms y los dos miden lo mismo dentro del ruido. De tres corridas, dos dieron
+  receptor y una pagador (razón envío/cobro de 0,975 y de 1,064). El canon
+  dejó de asertar el sentido.
+- **2026-09-28 y 2026-09-30** (`doc/ecst/ECST.md` §7.2): otra máquina, una
+  microVM Firecracker de 4 vCPU, con `simulate --amount 250000` de la CLI y
+  una corrida por día —la vía de la capa, la que el §362 descartó como objeto
+  de esta relación—: envío 970 ms y cobro 1.198 ms el primer día; envío 1.333
+  ms y cobro 879 ms el segundo.
+
+**Lo que no está medido**: la relación sobre el árbol de hoy. Desde el §538
+cambiaron los circuitos de la vía del pago (§641, §680) y el probador (§652),
+y el canon imprime los tiempos sin asertarlos ni guardarlos. El sello que
+escribe esta entrada no los midió: **NO MEDIDO**.
+
+**Consecuencia para el lector del preprint**: lo publicado —el cobro, un 77 %
+más caro que el envío— quedó contradicho en el §538, donde los dos lados
+midieron lo mismo dentro del ruido, y hoy no está medido qué lado del pago es
+el caro. Y la causa publicada ya era errónea al depositarse: en `6384907`
+(2026-07-30, el commit que trajo al árbol el texto publicado) y en `69fa2d4`
+(2026-08-01), `circuit_send.rs` y `circuit_claim.rs` tienen la misma geometría
+—`TRACE_LENGTH` 1024, la raíz de cuentas en la fila 271 y la de pendientes en
+la 743—, y el envío lleva un segmento más (5 frente a 4) y una columna más (49
+frente a 48 en el primero, 52 frente a 51 en el segundo). En `3db491f`, el
+padre del arreglo B, el envío y los dos circuitos de cobro suben por los
+mismos ciclos de los dos árboles (`CYC_ACC..CYC_PK` y
+`CYC_PEND_CLIMB..CYC_FIN`), y por la vía del cliente el cobro costaba 160,2 ms
+y el envío 240,8 (§512). Lo leído en el código es MEDIDO; que «recorrer los
+dos árboles» no distinga el coste de los dos lados es DEDUCIDO. Los tiempos
+dependen de la máquina, y este proyecto no publica tiempos absolutos como
+propiedad (§304). Quien vaya a fijar precios no debe basarse en esa frase.
+
+**Y los bytes del mismo párrafo** —«Each proof is about 62 KB and that has not
+changed» y los «120.4 MiB» por mil pagos, «MB» en la nota de política— también
+se movieron: desde el §538 una prueba de envío pesa 73.571-84.244 B y una de
+cobro 72.382-83.723 B, y mil pagos, 139,2-160,2 MiB (la banda D-AC del
+RFC-0009, en `crates/zk-ssl/src/metrics.rs`). No son el objeto de esta
+entrada; la siguiente revisión los recoge con ella.
+
+**Corrección**: pendiente de la siguiente revisión (entrada 28 del
+`BACKLOG.md`). La frase o se retira o se vuelve a medir sobre el árbol de esa
+revisión, y no se copia de aquí. La condición para volver a afirmar un sentido
+es la de D-AJ: que se mida estable. No llega al lector del PDF depositado
+(«Qué NO es», arriba). El §512 la daba por pendiente y la llamaba «Entrada 3»,
+que ya era otra; es ésta.
+
+---
+
 *Este fichero crece por adición. Las entradas no se editan ni se borran:
 si una errata se corrige en una revisión posterior, se anota debajo con su
 fecha y su versión.*

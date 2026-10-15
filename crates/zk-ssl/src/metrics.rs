@@ -151,7 +151,7 @@ mod tests {
     // la capa en UNA llamada, luego el cronometro sumaba los dos lados de
     // justo la frontera que esta afirmacion separa. El contrato vive ahora en
     // `los_dos_lados_del_pago_atan_la_banda`, sobre los dos lados de verdad y
-    // SIN banda: se afirma el SENTIDO.
+    // SIN banda: se afirma el SENTIDO. ⚠️ §860: ya no: el §538 (RFC-0009 D-AJ) retiro el aserto del SENTIDO; el test ata la banda de bytes de los dos lados y los tiempos se imprimen.
 
     /// El montaje que produce la cifra publicada.
     ///
@@ -225,7 +225,7 @@ mod tests {
     /// ⚠️ `apply` no responde a esto: verifica, muta el arbol **y escribe a
     /// disco**. Los tres juntos son lo que mide `metrics_of_the_layer`.
     ///
-    /// Lo pregunta la propuesta de sharding —entrada 47 del backlog,
+    /// Lo pregunta la propuesta de sharding —entrada 47 del backlog (⚠️ §860: cerrada, sin adoptar el dimensionamiento),
     /// corregida en §89—, que dimensiona el shard sobre **4 ms por
     /// prueba** presentandolos como medidos —y no lo estaban—. De ese numero
     /// cuelga la primera etapa del cuello de botella:
@@ -627,9 +627,9 @@ mod tests {
         // `los_dos_lados_del_pago_atan_la_banda`, justo debajo de este.
     }
 
-    /// **El lado caro del pago es el DECLARADO, y hoy es el RECEPTOR.**
+    /// **El lado caro del pago es el DECLARADO, y hoy es el RECEPTOR.** ⚠️ §860: ya no hay lado declarado: desde el §538 (D-AJ) el sentido cae dentro del ruido y no se aserta (abajo).
     ///
-    /// **EL SENTIDO SE INVIRTIO EN EL S511, Y ESTE CONTRATO LO DECLARA.**
+    /// **EL SENTIDO SE INVIRTIO EN EL S511, Y ESTE CONTRATO LO DECLARA.** ⚠️ §860: lo declaro hasta el §538.
     /// Desde el S362 este test se llamaba `la_mitad_cara_la_soporta_el_pagador`
     /// y afirmaba, literal, **"La mitad cara la soporta el PAGADOR"**. La frase
     /// se cita y no se borra (molde S247). Medido APAREADO el 2026-09-19 --
@@ -642,14 +642,14 @@ mod tests {
     ///
     /// **El lado va en una CONSTANTE y no en el signo del aserto**: asi el
     /// contrato sigue afirmando un SENTIDO -- sin banda -- y el dia que vuelva
-    /// a cambiar habla otra vez sin que haya que renombrar nada.
+    /// a cambiar habla otra vez sin que haya que renombrar nada. ⚠️ §860: la constante `LADO_CARO` se retiro en el §538 (D-AJ), y el contrato ya no afirma ningun SENTIDO.
     ///
     /// Los tres preprints (entrada 28) publican que la mitad cara es del
     /// RECEPTOR con razon 1,77, y hoy lo medido da 1,75: **coincide el sentido
     /// y casi el numero, pero NO la causa** -- ellos la atribuyen a que el
     /// circuito del cobro recorre dos arboles, y lo que hoy la produce es el
     /// acumulador del arreglo B. Una afirmacion que se vuelve cierta por otro
-    /// motivo no queda validada: la nota 96 cambia de objeto y no se cierra.
+    /// motivo no queda validada: la nota 96 cambia de objeto y no se cierra. ⚠️ §860: con la ocultacion (§538) ni el sentido se sostiene, y la 96 se cerro en el §860, fundida en la 28, con la Entrada 5 de `doc/preprints/ERRATA.md`.
     ///
     /// Contrato traido del atado A en el S362, y no por ruido: por OBJETO. La
     /// afirmacion normativa de los preprints (entrada 28) es sobre QUIEN

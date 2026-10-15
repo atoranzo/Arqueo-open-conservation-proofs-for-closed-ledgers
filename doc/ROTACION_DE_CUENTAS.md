@@ -4,7 +4,8 @@
   aquí decía «en BORRADOR»), que junta los dos casos abiertos de la 20, la hoja nueva del §117, la
   vista irrotable del §127.5 y el reclamo del B18.2 de CONFIANZA_RESIDUAL.md. Hermana de
   AVISO_EN_ISO20022.md, que le añade un caso. No toca código, ni el cable, ni un circuito: mide lo
-  que hay y lo que costaría cada opción, y no elige.
+  que hay y lo que costaría cada opción, y no elige. ⚠️ §860: el autor delegó esas decisiones, y
+  se toman en el §860 (§6).
 -->
 
 # ROTACION_DE_CUENTAS — cambiar de clave sin diseñarlo tres veces
@@ -15,6 +16,11 @@ decisiones, de la D-1 a la D-9 del §6, sin elegir ninguna opción. ⚠️ §799
 quién autoriza una rotación, dónde cae la hoja nueva y qué casos entran es del autor (§6). No
 cierra la 52 ni la 20. ⚠️ §812: el autor resolvió la D-4 —K1, aparte del diseño único, como E4 del
 RFC-0001, construida en el §812—; las otras ocho siguen abiertas.
+⚠️ §860: las otras ocho, tomadas por delegación del autor («resuelvelas aplicando los principios»),
+con el criterio del §609 y el precedente del §642; REVERSIBLES; entran con su aceptación (§6). Un
+solo diseño: una transición —N1 a N4, §3— y varios autorizadores. Cierra la 20, con la D-3 en G0; la
+52 sigue abierta hasta N4. Tras ese sello no queda ninguna decisión abierta en el §6. Y el §4 gana
+tres opciones que no tenía: R3s, G1-M y G3.
 
 **Procedencia**: la escribió Claude en una sesión de Claude Code en la
 nube, sobre `8c02941` (§789), fuera del paso 4 de [`GENAI.md`](../GENAI.md); la lleva el §791 de
@@ -181,7 +187,7 @@ aplica.
 | 1 | **hoja nueva** | §117 (`AUDITORIA.md:9569-9625`); «rotar clave implicará nueva hoja» (`native.rs:117-118`) | la segunda sal en la subida (`circuit_recovery_climb.rs:72-77`) |
 | 2 | **vista** | §127.5 (`AUDITORIA.md:10487-10499`); «solo rota rotando la clave» (`native.rs:143-146`) | traer el `view_id` nuevo con la rotación (`recovery.rs:97-106`), y decidir qué lo ata (§3, N3) |
 | 3 | **reclamo del B18.2** | `doc/CONFIANZA_RESIDUAL.md:471-477` y `:565` | todo: el circuito, la disponibilidad de datos del B18.1 (`:448-458`) y la declaración del B18.3 |
-| 4 | **gobernanza inmutable** | la 20 | por diseño, nada; el coste es que una clave de gobernanza comprometida lo está para siempre. Lo fija `the_governance_set_survives_restart` (`tests.rs:1176`), y la raíz va en `params_digest` de cada cabeza (`lib.rs:890-898`) |
+| 4 | **gobernanza inmutable** | la 20 | por diseño, nada; el coste es que una clave de gobernanza comprometida lo está para siempre. Lo fija ~~`the_governance_set_survives_restart` (`tests.rs:1176`)~~ ⚠️ §860: `changing_the_governance_set_on_an_existing_ledger_fails` (`tests.rs:2917`), que solo cambia la raíz de gobernanza y al reabrir da `ParameterMismatch`; el de antes reabre con la MISMA raíz, fija otra cosa y se salta en depuración. Es la D-3, en G0 (§6), y la raíz va en `params_digest` de cada cabeza (`lib.rs:890-898`) |
 | 5 | **recifrado** | la 20 | ver abajo |
 | 6 | **la clave del aviso cifrado**, si el B11.2 sale | [`AVISO_EN_ISO20022.md`](AVISO_EN_ISO20022.md) §6.1 | hoy no existe: ninguna cuenta tiene una clave a la que cifrar (`lib.rs:752-767`; `spec/RPC.md:111`) |
 
@@ -194,7 +200,7 @@ del §812); y el keystore se migra al abrirlo
 (⚠️ §812: existe desde el §812, `SovereignLayer::recifrar`, más abajo). Y
 hay una medida que la 20 no tenía: **el nodo no cifra en reposo**. Abre el libro con
 `SovereignLayer::open` (`crates/zk-ssl-node/src/main.rs:2258-2261`), que llama a `open_encrypted`
-sin clave (`persistence.rs:20-37`); `SECURITY.md:413-417` lo declara. Para el nodo no hay frase que
+sin clave (`persistence.rs:20-37`); `SECURITY.md:413-417` (⚠️ §860: su §3.3, cuyas líneas mueve el §860; y la 127 del `BACKLOG.md`) lo declara. Para el nodo no hay frase que
 cambiar.
 
 ⚠️ §812: ese re-sellado en un lote dejaba en los ficheros del libro lo sellado con la clave v1, sin
@@ -288,6 +294,41 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
 - **Tiempo y carrera**: no necesita ventana. El RFC-0015 la evita porque quien juzga las actas es el
   testigo, no la capa.
 
+### R3s. La siguiente comprometida en la sal — ⚠️ §860: añadida, y adoptada con tres puertas
+
+📐 La variante de R3 que no toca la hoja: la cuenta que quiera abre con `sal =
+merge(derive_leaf_salt_wide(sk), H(DOM_SIGUIENTE, sk_siguiente))`, y la rotación prueba conocer
+`sk_siguiente`. La añadió el §860, de la objeción de una revisión de la 52.
+
+- **Autoriza**: como R3, conocer la clave siguiente.
+- **Cubre**: lo que cubre R3 —los casos 1 y 2, y el robo de `sk` sin custodios—, y es la higiene que
+  sí retira.
+- **No cubre**: los casos 3 a 6; perder la siguiente devuelve a R1, que con N1 escribe una sal
+  limpia.
+- **Coste**: ✅ en las doce AIR con `leaf_salt`, toda derivación de la sal está dentro del módulo de
+  tests —la primera línea de `derive_leaf_salt` viene siempre después del `#[cfg(test)]`, y
+  `circuit_banda` no la tiene—; la sal es un testigo que las AIR solo leen
+  (`crates/stark-experiment/src/circuit_claim.rs:246`: «el salt testigo solo se LEE en link_salt»;
+  en las restricciones de `circuit_send.rs`, `COL_LEAF_SALT` solo aparece en el enlace de la sal,
+  `:1067` y `:1069`), y «el protocolo no impone el origen»
+  (`crates/stark-experiment/src/native.rs:117-119`); `zkssl_openAccount` recibe la sal del cliente
+  (`accounts.rs:205-210`). 📐 Así que R3s no toca la preimagen, ni el KAT de la hoja, ni migra hojas,
+  ni a las cuentas que no la pidan: añade un autorizador. Pide N1 con una sección de clave y la
+  comprobación de la sal compuesta en la AIR de la rotación, su `OpKind`, el dominio `DOM_SIGUIENTE`
+  con su KAT y la clave fría en el SDK.
+- **Las tres puertas** (la D-1 del §6): (i) existe N1; (ii) la 119 del `BACKLOG.md` ata la sal como
+  entrada pública de su prueba de apertura y no impone su origen; (iii) medido que una cuenta con
+  sal compuesta abre, recibe, envía, cobra y audita sin tocar ninguna AIR, y escrito T2b con las dos
+  claves, contra el §117.1 y el §93.4. Si cae una, la higiene que retira pasa a R2.
+- **Por qué la (ii)**: ✅ el cliente prueba con la sal que le dan los materiales, no con la que
+  re-deriva (`client.rs:366`, `:400`, `:492` y `:517`), y el operador escribe la hoja al abrir sin
+  prueba (la 119). 📐 Si R3s existiera antes de la 119, el operador podría escribir al abrir una sal
+  con SU siguiente comprometida; el titular no lo notaría, porque sus pruebas usan la sal de los
+  materiales, y el operador rotaría la cuenta a sí mismo con una prueba válida, contra «Nadie gasta
+  sin ser el titular» (`PRINCIPIOS.md` §0). Hoy no es un fallo, porque R3s no existe: es una regla
+  de diseño, y vale igual para R3 en la hoja.
+- **Tiempo y carrera**: sin ventana, como R3.
+
 ### R4. Traspaso — una cuenta nueva y un pago, sin código
 
 - **Autoriza**: el titular, con un envío y un cobro.
@@ -300,7 +341,7 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
   local (`crates/zk-ssl/src/iso.rs:297-299`) y no se persiste
   (`crates/zk-ssl/src/migration.rs:46-47`), hay que reapuntarlo a mano.
 - **Coste**: **ningún fichero**. Lo operativo: dos pruebas por rotación, las de un pago; una plaza
-  del tope de cuentas (`lib.rs:1043-1054`), que abrir no autoriza (la 8 del `BACKLOG.md`); el
+  del tope de cuentas (`lib.rs:1043-1054`), que abrir no autoriza (la 8 del `BACKLOG.md`; ⚠️ §860: cerrada, sin autorización de custodios para abrir; y agotado el tope, no hay R4); el
   enlace viejo → nuevo, a la vista de quien vea las dos mitades (`spec/RPC.md:344-347`) y del
   operador. Una cuenta congelada no puede: el envío lo comprueba (`two_phase.rs:859`).
 - **Tiempo y carrera**: sin ventana.
@@ -333,10 +374,23 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
   `params_digest` cambia entre dos cabezas no está medido aquí; rotar el conjunto de custodios ya lo
   mueve hoy. La circularidad se traslada otra vez: dos claves de gobernanza comprometidas rotarían
   la gobernanza a las suyas.
+  ⚠️ §860: el ❓, resuelto por lectura: rotar los custodios ya mueve `params_digest` entre cabezas (lo
+  compone con `custodian_set_root`, `lib.rs:890-898`), y el testigo lo lee solo como un campo más de
+  la cabeza que recompone (`crates/zk-ssl-cli/src/witness.rs:569`, `:1093` y `:1113`): G1 no le pide
+  al testigo nada nuevo. Y «sin testigos, la inmutabilidad obliga a la gobernanza y no al operador,
+  que puede constituir otro libro» es un límite común a todas las opciones de gobernanza, no una
+  razón para ninguna.
 - **G2. Por R5**: un libro nuevo con otra raíz y los reclamos de todas las cuentas.
+- **G1-M. Que la gobernanza se rote con un quórum mayor** — ⚠️ §860, añadida: la autorrotación de G1
+  con un umbral mayor que el de su uso ordinario. Curaría el compromiso de una minoría y solo
+  dejaría atrincherarse a una mayoría. 📐 Pide un parámetro de constitución nuevo, N o el quórum: la
+  capa solo conoce la raíz (`params_digest` compone siete valores, y ninguno es N ni un quórum,
+  `lib.rs:890-898`). Sin costear: es la mejor candidata si la D-3 se reabre.
+- **G3. La gobernanza precomprometida** — ⚠️ §860, añadida: el patrón de R3s para la gobernanza, como
+  opción al constituir el libro. Sin costear: se diseña con R3s (la D-3).
 - **K0. El recifrado, como hoy**: solo la biblioteca, y el nodo en claro.
 - **K1. Cambiar la frase**: generalizar `migrar_a_kdf_v2` a dos frases (`persistence.rs:1038-1052`);
-  en el nodo, antes, cablear el cifrado (`SECURITY.md:413-417`); en el keystore, `load` y `save` ya
+  en el nodo, antes, cablear el cifrado (`SECURITY.md:413-417`; ⚠️ §860: su §3.3, y la 127 del `BACKLOG.md`); en el keystore, `load` y `save` ya
   bastan (`keystore.rs:262` y `:280`). Ningún circuito y nada en el cable, como el RFC-0001, que no
   movió `zkssl/0.4` (`spec/rfc/0001-el-kdf-de-reposo.md:16`). ✅ **No comparte pieza con las opciones
   de cuenta** salvo `persistence.rs`, que persiste los registros: si entra en el diseño único es por
@@ -355,7 +409,8 @@ Lo que distingue a las opciones es **quién autoriza** y **dónde cae la hoja nu
 la vista. No es un secreto nuevo —el §127.3 descartó el secreto independiente por ser el modo de
 pérdida fatal que el §117 rechazó (`AUDITORIA.md:10455-10469`)—, pero cambia esa decisión, y fijar
 el `view_id` nuevo sigue pidiendo que lo autorice `sk` con una prueba: es la clase de coste de R2
-sin tocar la hoja.
+sin tocar la hoja. ⚠️ §860: descartada (la D-1): cambia la decisión del §127.3, cuesta como R2, y R4
+ya cubre ese caso.
 
 ## 5. La matriz
 
@@ -364,9 +419,11 @@ sin tocar la hoja.
 | R1 | sí | sí | — | — | — | — | sí, con custodios | la subida | no |
 | R2 | sí | sí | — | — | — | — | no | nueva, o la subida con un modo | sí |
 | R3 | sí | sí | — | — | — | — | sí, sin custodios | las doce de la hoja | sí |
+| R3s ⚠️ §860 | sí | sí | — | — | — | — | sí, sin custodios | ninguna de la hoja; la subida (N1) con sección de clave | sí |
 | R4 | sí | sí | — | — | — | — | no | ninguna | no |
 | R5 | sí | sí | sí | por G2 | — | — | según quién autorice | nueva | sí |
 | G1 | — | — | — | sí | — | — | — | ninguna | ❓ |
+| G1-M ⚠️ §860 | — | — | — | sí | — | — | — | ninguna; un parámetro de constitución | ❓ |
 | K1 | — | — | — | — | sí | — | — | ninguna | no |
 | V | — | sí | — | — | — | — | no | ninguna de la hoja; una prueba de `sk` | sí |
 
@@ -375,11 +432,35 @@ opción que se elija aquí, o se derivará de `sk` y rotará con ella (D-9).
 
 ## 6. Decisiones abiertas para el autor
 
+⚠️ §860: ya no hay ninguna abierta: la D-4 la resolvió el autor en el §812, y las otras ocho se
+toman por delegación (arriba, en el «Estado»), cada una con su condición para reabrirse.
+
 - **D-1. Quién autoriza** una rotación de cuenta: los custodios, la clave vigente, una siguiente
   comprometida, o una combinación —por ejemplo, la vigente para la higiene y los custodios para el
   robo—.
+  ✅ **Resuelta por delegación (§860), REVERSIBLE**: un solo diseño, la transición N1-N4 del §3 con
+  varios autorizadores. El robo, la pérdida y cualquier sospecha sobre `sk`: los custodios (R1, la
+  recuperación completada, que retira la identidad). La vista comprometida sola y la higiene sin
+  sospecha: el traspaso (R4), sin código, con su coste declarado: no retira ni la clave ni la
+  identidad viejas —siguen cobrando y abriendo la vista—, gasta una plaza del tope, deja a la vista
+  el enlace entre las dos cuentas y no sirve a una cuenta congelada; y agotado el tope de cuentas
+  (la 8 del `BACKLOG.md`), no hay R4. R3s se ADOPTA, opcional para cada cuenta al abrirla, y se
+  construye tras sus tres puertas (§4); si cae una, la higiene que retira pasa a R2, y cuando entre,
+  R1 queda de respaldo. R2 no se construye; R3 en la hoja se descarta por su coste, que R3s evita, y
+  R3 solo en el registro, porque ataría la autorización a la palabra del operador; R5 es un
+  autorizador futuro de la misma transición. V se descarta (§4).
 - **D-2. Dónde cae la hoja nueva**: en su posición, en otra del mismo libro o en otro libro.
+  ✅ **Resuelta por delegación (§860), REVERSIBLE**: en su posición. A otra posición del mismo libro
+  no: rompería «ninguna operación toca dos cuentas», que la 47 del `BACKLOG.md`, cerrada en el §860,
+  deja escrito, y su versión no atómica ya es R4. A otro libro, solo con el reclamo del B18.2,
+  cuando haya B18.
 - **D-3. Si la gobernanza entra**: G0, G1 o G2.
+  ✅ **Resuelta por delegación (§860), REVERSIBLE**: G0, la misma para la 20, que se cierra. G1 no se
+  elige ahora; G1-M y G3 se añaden sin costear. Se reabre (a) antes de constituir el primer libro
+  desplegado, costeando G1-M contra el caso de uso concreto; (b) si un caso de uso pide renovar a
+  sus gobernadores sin libro nuevo; o (c) al construirse R3s, y entonces G3 se diseña con ella, como
+  opción al constituir el libro. G2 llega con el reclamo del B18.2 y no reabre nada. Un libro
+  constituido en G0 sigue en G0.
 - **D-4. Si el recifrado entra o va aparte**: K0 o K1, y si antes se cablea el cifrado en el nodo.
   ✅ **Resuelta por el autor (§812)**: K1, aparte del diseño único, como E4 del RFC-0001, al pedirla;
   cablear el cifrado del nodo no entra en lo que pidió, la E4 de la biblioteca.
@@ -388,16 +469,36 @@ opción que se elija aquí, o se derivará de `sk` y rotará con ella (D-9).
   puede ser una cuenta nueva con la identidad vieja —una identidad retirada no vuelve a abrir—; solo un
   diseño en el que la cuenta rotada acepte su identidad anterior. Y toda rotación que retire una
   identidad tiene que añadirla al mismo conjunto de retiradas, en el mismo lote.
+  ✅ **Resuelta por delegación (§860), REVERSIBLE**: varados hasta el reembolso del emisor, y se
+  declara (`SECURITY.md` §3.13). Que la rotación los espere (D-5b), solo como consejo del cliente.
+  Que la cuenta rotada acepte su identidad anterior (D-5c) se descarta por su coste —tocar
+  `circuit_claim` y `circuit_claim_v2`—, y se reabre si esas AIR se reabren por otra razón. 📐 Y lo
+  que una cuenta envió por v2 antes de rotar ya no le vuelve por reembolso: `apply_refund` exige que
+  la cuenta del emisor conserve la identidad del compromiso, y da `PendingMismatch`
+  (`crates/zk-ssl/src/two_phase.rs:710-714`); solo sale si el receptor lo cobra. Falla cerrado; sin
+  test todavía.
 - **D-6. El contador**: si una rotación propia cuenta en `recovery_count` o tiene el suyo.
+  ✅ **Resuelta por delegación (§860), REVERSIBLE**: `recovery_count` cuenta solo intervenciones de
+  custodios; R4 no tiene contador; R3s, cuando entre, lleva su `OpKind`, sin cupo y sin
+  `recovery_count`.
 - **D-7. La cuenta congelada**: si puede rotar, y si rotar puede sacarla de su posición.
+  ✅ **Resuelta por delegación (§860), REVERSIBLE**: ninguna rotación saca a una cuenta de su posición,
+  así que una congelada sigue congelada. Hoy solo la rotan los custodios, porque R4 la rechaza; R3s
+  podrá rotarla en su sitio, y seguirá congelada.
 - **D-8. El tren**: el 0.5 del RFC-0018 u otro.
+  ✅ **Resuelta por delegación (§860), REVERSIBLE**: N1 va en el tren `zkssl/0.5`, antes del corte; si
+  el corte llega primero, en el siguiente, con la versión de AIR que toque.
 - **D-9. La clave del aviso cifrado**, si el B11.2 sale: derivada de `sk`, y rota con ella, o
   independiente, que es el secreto nuevo que el §117 y el §127.3 no quisieron.
+  ✅ **Resuelta por delegación (§860), REVERSIBLE**: derivada de `sk`, con dominio propio, y rota con
+  ella; en la vía simétrica del B11.2 (la 11 del `BACKLOG.md`), una por relación. La independiente
+  se descarta por la decisión del §117 y del §127.3.
 
 ## 7. Lo que esta nota no hace, y el siguiente paso
 
 No toca código, ni el cable, ni un circuito; no gasta número de RFC; no elige; no cierra la 52 ni la
-20. Los pasos que siguen necesitan compilar, y esta sesión no compila:
+20. ⚠️ §860: el autor delegó la elección, y se tomó en el §860 (§6): cierra la 20; la 52 sigue hasta
+N4, y al cerrarla, R3s y el B18.2 pasan a una entrada propia si no se han construido. Los pasos que siguen necesitan compilar, y esta sesión no compila:
 
 1. el test que `recovery.rs:105` cita y no existe: una recuperación deja el `view_id` viejo, y la
    clave nueva no pasa `account_view_authenticated`;

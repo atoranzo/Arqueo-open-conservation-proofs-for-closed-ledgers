@@ -7,6 +7,9 @@ a este texto. Autoridad: PROPUESTA DE SESIÓN, no revisada — escalón
 `doc/`, no raíz. Patrón del preprint retirado (README → §31–32).
 
 QUÉ ES RESPECTO A LA MISIÓN (VISION §5 aplicado, 2026-08-02):
+  ⚠️ §860: VISION es historia desde el §448 (`doc/historia/VISION.md`); la
+  misión vigente se lee en el README y en `doc/USE_CASES.md`, y P4 queda
+  como apoyo histórico.
 · C2, C3, C6 y el hallazgo §2.2 sirven a la MISIÓN DECLARADA a cualquier
   escala: C3 es la prioridad 1 de VISION (operador que no lee saldos) y
   la pieza B11 de CONFIANZA_RESIDUAL. Entran al flujo normal, pieza a
@@ -16,16 +19,37 @@ QUÉ ES RESPECTO A LA MISIÓN (VISION §5 aplicado, 2026-08-02):
   la declarada (200 instituciones) «3,3 tx/s: el código actual la
   ejecuta hoy, sin cambios». Adoptarlo sería ampliación de alcance —
   P4 — y pasaría por VISION §5 como decisión de misión, no de backlog.
+· ⚠️ §860: DECIDIDO por delegación del autor («resuelvelas aplicando los
+  principios»), con el criterio del §609 y el precedente del §642;
+  REVERSIBLE; entra con su aceptación: el dimensionamiento NO SE ADOPTA
+  (la 47 del BACKLOG, cerrada). Se reabre si un caso de USE_CASES declara
+  un pico, en operaciones de capa por segundo (un pago son dos), por
+  encima del techo del `apply` del nodo único, remedido entonces con el
+  protocolo del §89.1 (la última medida con protocolo, la del §217,
+  265-320 op/s, es anterior al §538); y al reabrirse entra la restricción
+  del orden total de la 23 (§2.3). Fuera del rechazo: la fila de la capa
+  de liquidación del §6 y su párrafo de la federación. Lo que sirve a la
+  misión se reparte: C3/B3, con B2, B11.1 y B11.3, a la 126; B9, a la 21.
+  Y el invariante del §3.2 —ninguna operación toca dos cuentas— queda
+  escrito: un RFC que lo rompa lo dice.
 · Condiciones de VISION §5 aún abiertas: (4) cada fila de §8 exige test
   discriminante nuevo antes de declararse cerrada; (6) el hallazgo §2.2
   no está en README ni en AUDITORIA — debe registrarse aunque el
   escalado no se adopte.
+  ⚠️ §860: la (6), cumplida: la registra `AUDITORIA.md` §123, la da la (iv)
+  de `doc/USE_CASES.md` §«Institutional clearing: four tests» y
+  `doc/INSTITUCIONAL.md` §«Las limitaciones de escala, cuantificadas»,
+  n.º 1, que el README enlaza.
 
 MAPA DE CORRECCIONES (cifra desfasada → dónde está la corrección):
 · §5 «250/s/núcleo» y C4 «4 ms/prueba»  → §89.1: 2,35 ms MEDIDOS
   (5 ejecuciones, dispersión 4 %) = 425/s. El doc era conservador ×1,7.
 · §6 «64 shards» y la sensibilidad «×4 → 249»  → §89.1: 37 shards;
   la sensibilidad debe rehacerse sobre 13.600 TPS/shard.
+  ⚠️ §860: no se rehace: el estudio no se adopta, y su base medida —los 2,35
+  ms del §89.1, de los que salen los 13.600 TPS/shard— es anterior al
+  §538; el §637 midió 3,98-4,93 ms por prueba, con carga y sin el
+  protocolo del §89.1. No se escribe otra cifra.
 · C4  → §89.2: verificar es el 3,2 % del `apply`; árbol+disco ~70 ms son
   el 96,8 %. El lote ataca el 96,8 % — argumento MEJOR que el original.
 · §11  → §89.4: el coste de verificación pasa de «incertidumbre» a
@@ -58,6 +82,17 @@ MAPA DE CORRECCIONES (cifra desfasada → dónde está la corrección):
   añadió ninguno. Tienen entrada B8 (la 12) y la réplica de B7 (la 17);
   el resto se evitó o se hizo por otra vía, se descartó o se queda en la
   47. La correspondencia, pieza a pieza, en la nota bajo la tabla de §10.
+  ⚠️ §860: la 17, la 23 y la 47 se cerraron en el §860: la réplica no se
+  construye, el consenso no se emprende, y lo que quedaba en la 47 va a la
+  126 (B3, con B2, B11.1 y B11.3) y a la 21 (B9); el resto no se adopta.
+  Dónde queda cada una, en la misma tabla.
+· C7 «que ya es un WAL verificable» y la fila B7 de §10 «del WAL
+  existente» → ⚠️ §860: no hay WAL (la 19 del BACKLOG); una entrada del
+  registro lleva raíces, compromiso y resumen de prueba, no hojas
+  (`crates/zk-ssl/src/log.rs`, `LogEntry`), así que enviar el registro no
+  reproduce el estado. La réplica es la 17, cerrada en el §860: la alta
+  disponibilidad del operador no se construye ni se prescribe; y la
+  réplica entre partes independientes es la 23, cerrada sin emprenderse.
 ============================================================ -->
 
 # ESCALADO — de un nodo a la escala mundial con los cambios mínimos
@@ -432,24 +467,25 @@ uno tiene entrada propia entera (B8, la 12) y otro a medias (B7: su réplica
 es la 17); el límite de B1 lo evitó otra vía; B4 y B6 se hicieron en otra
 forma y sin pasar por B3; B2 solo tiene objeto dentro de B3; y B3, B5, B9 y
 el resto de B7 no tienen más sitio que la 47. **Esta tabla no adopta nada**:
-dice dónde está cada pieza, no que vaya a hacerse.
+dice dónde está cada pieza, no que vaya a hacerse. ⚠️ §860: la 47 se cerró, y la tabla dice
+dónde queda cada pieza ahora.
 
 | # | Entrada del BACKLOG | Lo que hay en el árbol |
 | --- | --- | --- |
-| B1 | ninguna; su residuo es la **23** | Evitado por otra vía, no resuelto (§2.3 de este documento): la vía de un paso se retiró de la capa con su árbol de nullifiers (`AUDITORIA.md` §32 y §36). Vuelve si el estado se reparte sin orden total, y eso es la 23 |
-| B2 | ninguna | Descartado como palanca propia: el RFC-0002 descartó el anti-replay por `nonce` de cuenta —el obstáculo es el camino contra `root_old`, no el `nonce` (`DIAGNOSTICO_ESCALADO.md` §5)— y «una operación por cuenta y por lote» la impone `apply_many` sin `nonce`. Solo tiene objeto como pieza de B3 |
-| B3 | la **47**, que además recibió el B11 de la 48 al cerrarse esta (§268) | Sin construir. El RFC-0002 mostró que los lotes no lo necesitan (su 2.2), así que dejó de ser condición del lote; queda el motivo de privacidad —el operador ciego: B11.1 de `CONFIANZA_RESIDUAL.md` depende de él, y B11.3 de B11.1— y la prioridad 1 de VISION (`AUDITORIA.md` §122.2). Y de él sigue colgando B5 |
+| B1 | ninguna; su residuo es la **23** ⚠️ §860: la **23**, cerrada: no se emprende | Evitado por otra vía, no resuelto (§2.3 de este documento): la vía de un paso se retiró de la capa con su árbol de nullifiers (`AUDITORIA.md` §32 y §36). Vuelve si el estado se reparte sin orden total, y eso es la 23 |
+| B2 | ninguna ⚠️ §860: la **126**, como pieza de B3 | Descartado como palanca propia: el RFC-0002 descartó el anti-replay por `nonce` de cuenta —el obstáculo es el camino contra `root_old`, no el `nonce` (`DIAGNOSTICO_ESCALADO.md` §5)— y «una operación por cuenta y por lote» la impone `apply_many` sin `nonce`. Solo tiene objeto como pieza de B3. ⚠️ §860: la primera pregunta del RFC de la 126 es ese descarte |
+| B3 | la **47**, que además recibió el B11 de la 48 al cerrarse esta (§268) ⚠️ §860: la **126**, con B2, B11.1 y B11.3; la 47, cerrada | Sin construir. El RFC-0002 mostró que los lotes no lo necesitan (su 2.2), así que dejó de ser condición del lote; queda el motivo de privacidad —el operador ciego: B11.1 de `CONFIANZA_RESIDUAL.md` depende de él, y B11.3 de B11.1— y la prioridad 1 de VISION (`AUDITORIA.md` §122.2). Y de él sigue colgando B5 |
 | B4 | ninguna; lo tomó la etapa 2 del RFC-0002 | Hecho en otra forma: `apply_many` (§215; el §216 midió cero pruebas tiradas), **sin circuitos y sin B3**. No por épocas de 1 s: el registro lleva una entrada por operación con las raíces reales (RFC-0002, 2.4.bis), `seq` sigue contando operaciones (§340) y la cabeza firmada es el latido de 1/min (cabecera) |
-| B5 | la **47**, sin entrada propia | Sin construir. Una prueba se ata hoy a la raíz vigente o a la instantánea del lote; no hay ventana ni registro de anclas. W descansa en la comprobación O(1) de C3, que es la que este documento da para aceptar un ancla vieja «sin árboles históricos»; y su dimensionado (§7) es del estudio condicional |
-| B6 | ninguna | Hecho para el nodo único, contra la raíz vigente y sin W: `apply` rechaza la cuenta congelada (§487) y el AIR ata la posición del titular en el árbol de congelados desde el §680 (E1 del RFC-0018; en el árbol, sin versión de cable hasta `zkssl/0.5`: `SECURITY.md` §3.6). La raíz de congelados va en la cabeza firmada. La nota §487 bajo C6 vale para el cable publicado (`zkssl/0.4`), y el arreglo B que nombra no es el del §511, que no ataba (§670), sino el del §680. Falta solo el «retardo ≤ W», que es B5 |
-| B7 | la **17**, la réplica; el particionado y el enrutador, la **47** | La réplica por *log-shipping* y el failover son la 17, que va con la 23. El particionado y el enrutador no tienen entrada propia, y no deben tenerla mientras el escalado no se adopte: son estudio condicional (cabecera; `AUDITORIA.md` §122.2). El RFC-0002 deja la partición como opcional, «solo si el pico objetivo lo exige» |
+| B5 | la **47**, sin entrada propia ⚠️ §860: la 47, cerrada: el dimensionado no se adopta; si el RFC de la **126** necesita anclas más viejas, lo plantea allí | Sin construir. Una prueba se ata hoy a la raíz vigente o a la instantánea del lote; no hay ventana ni registro de anclas. W descansa en la comprobación O(1) de C3, que es la que este documento da para aceptar un ancla vieja «sin árboles históricos»; y su dimensionado (§7) es del estudio condicional |
+| B6 | ninguna | Hecho para el nodo único, contra la raíz vigente y sin W: `apply` rechaza la cuenta congelada (§487) y el AIR ata la posición del titular en el árbol de congelados desde el §680 (E1 del RFC-0018; en el árbol, sin versión de cable hasta `zkssl/0.5`: `SECURITY.md` §3.6). La raíz de congelados va en la cabeza firmada. La nota §487 bajo C6 vale para el cable publicado (`zkssl/0.4`), y el arreglo B que nombra no es el del §511, que no ataba (§670), sino el del §680. Falta solo el «retardo ≤ W», que es B5. ⚠️ §860: y B5 no se adopta |
+| B7 | la **17**, la réplica; el particionado y el enrutador, la **47** ⚠️ §860: la réplica, la **17**, cerrada; el particionado y el enrutador, la **47**, cerrada sin adoptarse | La réplica por *log-shipping* y el failover son la 17, que va con la 23. El particionado y el enrutador no tienen entrada propia, y no deben tenerla mientras el escalado no se adopte: son estudio condicional (cabecera; `AUDITORIA.md` §122.2). El RFC-0002 deja la partición como opcional, «solo si el pico objetivo lo exige». ⚠️ §860: la 17 y la 23 se cerraron: la alta disponibilidad del operador no se construye ni se prescribe, y la réplica entre partes independientes no se emprende; el «WAL existente» de la fila B7 de la primera tabla de este §10 no existe (cabecera) |
 | B8 | la **12** | Política decidida (§119) y mecanismo hecho sin B3 (§178-§181); el Δ por pago lo tomó el RFC-0003, que se aceptó en el §356 |
-| B9 | la **47**, adonde lo manda la **77** | Sin medir. Es una medida y no depende de adoptar nada; la 77 le junta la de XMSS en ARM. Toda comparación de tiempos entre sesiones arrastra la deriva de la **68** |
+| B9 | la **47**, adonde lo manda la **77** ⚠️ §860: la **21**; la firma XMSS en ARM, que es del nodo y del testigo, en la **77** | Sin medir. Es una medida y no depende de adoptar nada; la 77 le junta la de XMSS en ARM. Toda comparación de tiempos entre sesiones arrastra la deriva de la **68** |
 
 El orden sugerido de arriba ya no ordena: B1 se evitó por otra vía, y B4, B6
 y B8 avanzaron sin pasar por B3. Lo que sigue colgando de B3 es B2, que solo
 tiene objeto dentro de él, B5 y, fuera de esta tabla, el B11 de
-`CONFIANZA_RESIDUAL.md`.
+`CONFIANZA_RESIDUAL.md`. ⚠️ §860: B3, B2, B11.1 y B11.3 van juntos a la 126 —B11.2 sigue en la 11—; B5 no se adopta.
 
 ---
 

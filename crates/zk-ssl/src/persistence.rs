@@ -427,7 +427,7 @@ impl SovereignLayer {
             self.frozen = SparseTree::with_depth(crate::migration::FROZEN_DEPTH_POST);
         } else {
             // Mundo viejo en disco: frozen se reconstruye a 24 (PRE), o las
-            // raíces almacenadas no cuadrarían (§128).
+            // raíces almacenadas no cuadrarían (§128). ⚠️ §860: un sled sin marcador es anterior al §387 y no abre: le falta `root:pending`, abajo; esta rama ya no lleva a abrir ningun libro (razonado, no medido contra un store real).
             self.frozen = SparseTree::with_depth(crate::migration::FROZEN_DEPTH_PRE);
         }
         let mut congeladas: Vec<(u64, Digest)> = Vec::new();

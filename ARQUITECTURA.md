@@ -537,7 +537,7 @@ layer.apply_governance(&g)?;
 ```
 
 **La circularidad no desaparece: se traslada.** Si el conjunto de
-gobernanza se compromete, no hay salida salvo crear un ledger nuevo.
+gobernanza se compromete, no hay salida salvo crear un ledger nuevo. ⚠️ §860: el ejemplo de arriba no compila: `update_custodians` y `apply_governance` no son métodos de la capa —el primero solo existe como ayudante de los tests, `update_custodians_delegated`, y el segundo como nombre en un comentario—; la vía es `apply_governance_delegated` (`crates/zk-ssl/src/governance.rs:104`), la misma familia de API retirada que la 106 del `BACKLOG.md`. Y la gobernanza sigue inmutable por decisión: la D-3 de `doc/ROTACION_DE_CUENTAS.md`, en G0 (§860; la 20 del `BACKLOG.md`).
 
 Pero se traslada a claves que se usan **casi nunca** y pueden guardarse
 sin conexión, frente a claves operativas expuestas a diario. Es una
@@ -549,7 +549,7 @@ mejora real, y no es lo mismo que resolver el problema.
 firmante necesita su propio carril en la traza — el circuito se dispara.
 
 **Retardo con veto**: en un nodo único **no protege nada**, porque el
-operador controla el orden de las operaciones y por tanto el reloj.
+operador controla el orden de las operaciones y por tanto el reloj. ⚠️ §860: se descartaron para la circularidad de los custodios; para la gobernanza se aplican por analogía, y la D-3 de `doc/ROTACION_DE_CUENTAS.md` las recoge con G1, que se rote con su propio umbral, y G1-M, con un quórum mayor: ninguna se elige ahora.
 
 ### El cambio de semántica en la persistencia
 
@@ -767,7 +767,7 @@ un **tope inmutable**, como el de emisión.
 ⚠️ **Acota el daño, no impide el abuso.** Un atacante puede agotar el cupo
 y dejar sin sitio a usuarios legítimos. Cerrarlo de verdad exigiría
 autorización de custodio para abrir, y eso requiere un circuito nuevo:
-**abrir hoy no genera ninguna prueba**.
+**abrir hoy no genera ninguna prueba**. ⚠️ §860: se decidió no hacerlo. Abrir no exigirá autorización de custodios, que serían un segundo veto sobre el alta sin quitar el del operador; el agotamiento del tope queda declarado en `SECURITY.md` §2 (la 8 del `BACKLOG.md`, cerrada).
 
 ### "El receptor no autoriza" → reetiquetado, no era el problema
 

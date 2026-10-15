@@ -12,12 +12,13 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 48 abiertas, 79 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 43 abiertas, 86 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
-124, el §814, que cierra la 41 y abre la 125, y el §838, que cierra la 122.
+124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
+8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -118,7 +119,7 @@ conserva contenido propio que el circuito debe seguir probando.
 
 Auditoria externa (7), declaradas (8, 11, 12, 15), operacion (grupo E),
 consenso (23), y los preprints al final (16, 28) — que ya acumulan tres
-fallos de solidez y una brecha de confianza sin declarar.
+fallos de solidez y una brecha de confianza sin declarar. ⚠️ §860: la 8 y la 23 se cerraron en el §860, decididas: la 8, sin autorización de custodios para abrir y con su residuo en `SECURITY.md` §2; la 23, sin emprenderse.
 
 ⚠️ **Reordenado el 30-07-2026.** Diez entradas nuevas entraron en una
 sola sesion ancladas sobre lineas concretas, y varias quedaron en el grupo
@@ -1308,12 +1309,65 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   identidad —un circuito nuevo y un parámetro nuevo, con la versión que sube en el corte—, que es
   también la autorización que la 8 echa en falta. **Qué la cierra**: abrir sin esa prueba se rechaza,
   con su test y su vector, y el residuo de `SECURITY.md` §3.13 se quita con su marca.
+  ⚠️ **§860**: decía que la prueba de posesión «es también la autorización que la 8 echa en falta». Lo
+  es en un sentido —abrir deja de ser la única transición sin prueba
+  (`crates/zk-ssl/src/accounts.rs:250-266`) y nadie ocupa una identidad cuya clave no tiene—, pero
+  no en el de la 8: quien genera claves frescas las prueba todas y sigue agotando el tope de cuentas
+  (`max_accounts`). La 8 se decidió en el §860 sin autorización de custodios; el «Qué la cierra» de
+  esta entrada no cambia.
+  ⚠️ §860: una restricción de la 52 (D-1): la prueba de apertura ata la sal como entrada pública, para
+  que el operador no la cambie, y no impone su origen; si lo impusiera, cerraría la rotación
+  precomprometida en la sal.
 
 ## D. Declaradas, acotadas, sin urgencia
 
-- [ ] **8. `open_account` sin autorizacion.** El tope de cuentas mitiga a
+- [x] **8. `open_account` sin autorizacion: decidido (⚠️ §860), no se exige autorización de
+  custodios, y el agotamiento del tope, declarado.** ~~El tope de cuentas mitiga a
   medias: un atacante aun puede agotar el cupo, y la solucion correcta
-  exige un circuito nuevo (§16.1).
+  exige un circuito nuevo (§16.1).~~
+  ⚠️ **§860: decidida por delegación del autor («resuelvelas aplicando los principios»), con el
+  criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. Abrir no exigirá
+  autorización de custodios, y la entrada se CIERRA.** La «solución correcta» del §16.1 daría a los
+  custodios un segundo veto sobre el alta, sin quitar el del operador, que ya puede negarse a abrir
+  (`PRINCIPIOS.md` §0); impondría el alta permisionada a todos los casos de uso, lo contrario del
+  criterio del §609; y haría custodial el traspaso, la R4 de `doc/ROTACION_DE_CUENTAS.md`, que abre
+  una cuenta nueva y es la única rotación sin custodios que existe hoy, sin código (la R2 y la R3
+  tampoco los piden, pero no existen). La prueba de posesión de la 119 no la cierra: prueba quién
+  puede ocupar una identidad, no cuántas identidades frescas se abren.
+  **El residuo, declarado en `SECURITY.md` §2**: agotar el tope de cuentas (`max_accounts`) es un
+  ataque de vivacidad, y la vivacidad es hoy del operador, que decide quién llega a
+  `zkssl_openAccount`. Medido sobre `d4d6d45`: el nodo abre con `open_with_id` sin prueba y sin
+  límite de ritmo (`crates/zk-ssl-node/src/main.rs:3783-3796`; `permiso_de_ritmo` solo lo pide
+  `zkssl_verifyChain`, `:3775`), con un tope de 1.000 cuentas por defecto (`main.rs:248`). El tope
+  es inmutable —al reabrir con otro, `ParameterMismatch`
+  (`crates/zk-ssl/src/persistence.rs:306-310`)— y una cuenta no se cierra, así que agotarlo vale
+  para toda la vida del libro, y quita también la R4: sin plaza, ningún titular rota sin custodios,
+  y cada R4 legítima gasta una plaza que no vuelve (`doc/ROTACION_DE_CUENTAS.md` §4). La falta de
+  autenticación y de límite de tasa del nodo, y que escuche en `127.0.0.1` por defecto, ya los
+  declaraba `SECURITY.md` §3.3.
+  **Descartadas**, además de la de custodios: una política de apertura fijada en la génesis (cumple
+  el §609 a la letra, pero en modo libre no cierra nada y ningún caso la pide:
+  `doc/USE_CASES.md` §«What none of this claims» deja fuera «that one person holds one account»);
+  dar la 8 por cerrada con la 119 (arriba); un coste económico por alta (en un libro cerrado la
+  unidad la emite el operador, y la reserva vuelve a pasar por una emisión custodial); una prueba de
+  trabajo por alta (asimétrica, y su dificultad la fija el operador); un límite de ritmo en el nodo
+  (despliegue y no estándar, y solo retrasa: a una apertura por segundo, las 1.000 plazas caen en
+  unos 17 minutos, DEDUCIDO); liberar plazas (o el conjunto de retiradas crece sin límite con
+  identidades frescas, la memoria que el tope existe para acotar, o se rompe la invariante del §802,
+  `AUDITORIA.md:53449-53451`); que la gobernanza pueda subir el tope (enmienda la mitigación
+  registrada del §16.1, un tope inmutable que va en `params_digest`, y solo aplaza: el atacante
+  vuelve a llenarlo; y con la D-3 en G0, la 20, lo que se fija al constituir el libro y se compara
+  al reabrirlo no lo cambia nadie dentro de él); y posponerla al corte `zkssl/0.5` (no depende de
+  nada que el corte vaya a medir).
+  **No responde** a lo que el §16.1 deja a un auditor —si el tope basta para el caso de uso—, que
+  sigue pendiente y fuera de la delegación. **Se reabre** si
+  `doc/USE_CASES.md` §«What none of this claims» deja de excluir la admisión, o un RFC pide que un
+  tercero compruebe el alta de cada cuenta, y el verificador del tercero reverifica las transiciones
+  (`README.md` §«Leer antes de nada»: hoy no lo hace); o si el autor reabre la 23. Entonces, la
+  política de apertura fijada en la génesis, con su `OP_` en el REGISTRO y su RFC
+  (`spec/NUCLEO.md` §3). Marcados en el mismo sello: el §16.1, en su línea;
+  `ARQUITECTURA.md` §«`open_account` sin autorización → tope de cuentas ✅»; la R4 de
+  `doc/ROTACION_DE_CUENTAS.md`; y la 119, con su línea.
 
 - [x] **9. Congelacion sin caducidad ni motivo registrado: ya declarada,
   y reconciliada.** ~~El circuito prueba que dos custodios la autorizaron,
@@ -1731,7 +1785,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   aparte—. **Sigue abierta** por la otra causa: el árbol denso de
   `iso-bridge`, que no se ha tocado.
 
-- [ ] **76. El store anterior a D4: una entrada, no tres.** Funde lo que
+- [x] **76. El store anterior a D4: una entrada, no tres — fuera de alcance, porque este código
+  no lo abre (⚠️ §860).** Funde lo que
   estaba repartido —la exposición de un ledger sin sal (§259, `spec/RPC.md`),
   el «árbol mezclado» y §258-A—, porque **son tres caras del mismo sujeto**:
   un store persistido por código anterior al flip D4. Listadas por separado
@@ -1759,6 +1814,51 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **Sin urgencia y sin plazo**: el sujeto no es fabricable por este
   repositorio. Cerrarla es decidir si el legacy se soporta o se declara
   fuera de alcance — decisión, no trabajo.
+  ⚠️ **§860: decidida por delegación del autor («resuelvelas aplicando los principios»), con el
+  criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. CERRADA: el store
+  `sled` anterior a D4 queda fuera de alcance, y no por decreto: este código no lo abre.** Lo que
+  esta entrada no vio: `load` exige con `need` `root:pending`
+  (`crates/zk-ssl/src/persistence.rs:519`, fail-closed desde el §387), y también `root:pmeta`
+  (`:534`), `root:froz` (`:550`), `root:cons` (`:579`) y `root:log` (`:605`). **Medido** con `git
+  log -S` y `git merge-base` sobre `d4d6d45`: en el código de la capa, `root:pending` se escribe
+  desde `53d339e` (S387, 03-09-2026) —en la historia entera aparece antes, en `9bf4a91` (S379), para
+  decir que no existe—, y las otras cuatro nacen en `b91896b`, `8a27afe`, `f74d7f9` y `09dac0d`. Las
+  cinco descienden de `2ac37c5` (D4, 04-08-2026), en cuyo `persistence.rs` `root:pending` sale 0
+  veces; el de `2ac37c5^` no lee ni escribe más raíz que `root:state` y `root:nullifier`.
+  **Razonado, no medido contra un store real**: un store anterior a D4 para, a más tardar, en
+  `Malformed("falta la clave root:pending")`, antes de servir un camino o de abrir una cuenta —puede
+  fallar antes, por el formato de sus registros—. Así, la cara (1) no la expone este código, la
+  cadena (2) del §258-A no llega a empezar y la herramienta (3) no lo alcanza. La clase entera,
+  «anterior al §387», que contiene a ésta, la ejercita
+  `a_ledger_without_a_pending_root_does_not_open`. **Por qué basta razonado**: lo que escribe el
+  código de `2ac37c5^` se lee en su fuente, y la exigencia de `need` la ejercita ese test. El sujeto
+  **sí se puede fabricar** con el código viejo —`git archive` de `2ac37c5^`, el precedente del
+  §702—; lo que objetaba el §260.7 era una réplica hecha a mano, y arriba lo decía «no fabricable».
+  Esa medida queda opcional, fuera de este cierre.
+  La frase de arriba «Sólo entra un store de antes» **dejó de ser cierta en el §387** (`53d339e`):
+  desde entonces ninguno llega a abrir; el store entra en la rama sin sal de `load` y falla después.
+  Aquel sello cerró de hecho esta entrada sin tocarla, ni tocar la tabla del §265 de `spec/RPC.md`.
+  **Lo que sigue vivo es otra puerta**: la instantánea v3..v6 se importa como mundo viejo, sin sal,
+  con los congelados a 24, en memoria y sin `sled` (`crates/zk-ssl/src/snapshot.rs:366-376`, `:446`,
+  `:460` y `:485`), porque el formato promete leerse dentro de diez años
+  (`ARQUITECTURA.md` §«Instantáneas: un disco perdido ya no es el ledger perdido»). Ninguna vía del
+  nodo la importa, y operarla pide antes `migrate_to_salted_positions`: es **su** herramienta, de
+  geometría y no de privacidad —sus cuentas con sal cero siguen siendo enumerables (§126.4,
+  §132.3)—.
+  **Descartadas**: soportar el store anterior a D4 (sirve a cero casos: no hay libro desplegado,
+  `SECURITY.md` §3.6, y fabricaría raíces sin árbitro); el mando explícito y aparte que el §387 dejó
+  previsto para migrar libros anteriores a él, por su propia condición, que no se cumple —«hoy no
+  hay libros de terceros»—; retirar el legacy entero (rompe la promesa del formato y la decisión del
+  §36); migrar al importar (cambia lo que significa importar, sin ningún caso que lo pida); y
+  posponerla (la advertencia perpetua del §265). El criterio del §609 se aplica al formato portable,
+  la instantánea, que existe para no depender de `sled` y que esta decisión conserva: el `sled` es
+  interno del motor, y ningún caso de uso depende de su forma anterior a D4. **Se reabre** si
+  aparece un libro de terceros anterior al §387: entonces, entrada nueva por la vía explícita del
+  §387. Corregidos encima, sin borrar: la tabla de
+  `spec/RPC.md` §«⚠️ CORRECCIÓN (§265): el enunciado sigue en pie, el sujeto caducó», con una
+  corrección nueva encima, que es prosa y no cable, como aquélla; y los comentarios de
+  `crates/zk-ssl/src/migration.rs` y de `persistence.rs`. Citas envejecidas de esta entrada:
+  `persistence.rs:578` es hoy `:794`, y `:334`/`:339` son `:353`/`:358`.
 
 - [x] **78. `proof_digest` dice que ata, y en cuatro vías no ata nada.**
   **PRESENTE y MEDIDO** sobre `bb85772`, 10-08-2026. Cuatro vías delegadas
@@ -2001,7 +2101,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   documento RESUELVE pero no da FORMA; de el no se genera un cliente sin `RPC.md`, y
   `spec/README.md` dejo de prometerlo. REVERSIBLE: dar forma seria otra entrada.
 
-- [ ] **96. Una RELACION publicada, INVERTIDA.** Los tres preprints afirman
+- [x] **96. Una RELACION publicada, INVERTIDA: declarada en la Entrada 5 de la ERRATA y fundida
+  en la 28 (⚠️ §860).** Los tres preprints afirman
   que la mitad cara de un pago cae en el RECEPTOR —cobro de unos 500 ms
   contra 283 ms de envio— y construyen sobre eso un argumento normativo:
   que la parte con menos capacidad de elegir si participa carga con el
@@ -2031,6 +2132,35 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   cierta por otro motivo y desde otra fecha. Y donde se mide la verdad hoy
   es `el_lado_caro_es_el_declarado` de `metrics.rs`: la banda
   `PUBLICADA_ENVIO_SOBRE_COBRO_MIN` que esta nota cita se fue en el S362.
+  ⚠️ **§860: decidida por delegación del autor («resuelvelas aplicando los principios»), con el
+  criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. La nota cambia de
+  objeto por TERCERA vez, y se CIERRA fundida en la 28**, la vía REVERSIBLE que su propio cuerpo
+  ofrecía. Citaba como sitio de la verdad `el_lado_caro_es_el_declarado`, que no existe desde el
+  §538: el test es `los_dos_lados_del_pago_atan_la_banda` (`crates/zk-ssl/src/metrics.rs`), y ya no
+  aserta el sentido (RFC-0009 D-AJ). Con la ocultación, los dos lados midieron lo mismo dentro del
+  ruido —unos 700-750 ms cada uno— y la razón envío/cobro dio 0,975 y 1,064 (SALIDA-538M). El ECST
+  §7.2 lo vio invertirse entre dos días en una microVM Firecracker de 4 vCPU, con `simulate --amount
+  250000` y una corrida por día —la vía de la capa por la CLI, la que el §362 descartó como objeto
+  de esta relación—: envío 970 ms y cobro 1.198, y luego 1.333 y 879. Después cambiaron los
+  circuitos de la vía del pago (§641, §680) y el probador (§652), y la relación **NO está medida**
+  sobre el árbol de hoy.
+  La causa publicada ya era errónea al depositarse: en `6384907` (30-07-2026, el commit que trajo al
+  árbol el texto publicado) y en `69fa2d4` (01-08-2026), `circuit_send.rs` y `circuit_claim.rs`
+  tienen la misma geometría —`TRACE_LENGTH` 1024, la raíz de cuentas en la fila 271 y la de
+  pendientes en la 743—, y el envío lleva un segmento más (5 frente a 4) y una columna más; y en
+  `3db491f` el envío y los dos cobros suben por los mismos ciclos de los dos árboles
+  (`CYC_ACC..CYC_PK` y `CYC_PEND_CLIMB..CYC_FIN`). Lo leído es MEDIDO; que eso no distinga el coste
+  de los dos lados es DEDUCIDO. Así que lo medido no sostiene lo publicado, ni el sentido ni la
+  causa: «la mitad cara es del receptor», 500 ms frente a 283 —equivale a 1,77—, «porque el cobro
+  recorre dos árboles», con su lectura normativa.
+  **Se DECLARA** donde el árbol manda declarar toda corrección a un preprint:
+  `doc/preprints/ERRATA.md`, Entrada 5, que dice además en una línea que los bytes del mismo párrafo
+  se movieron. El §512 la daba por pendiente y la llamó «Entrada 3», número que ya tenía otra. El
+  cuerpo de los preprints y Zenodo siguen en la 28, que gana el frente con este puntero. No vuelve
+  ningún aserto de sentido: D-AJ solo se reabre si el sentido «volviera a medirse estable».
+  Corregidos en su sitio, con marca y sin borrar, los comentarios que lo daban por vigente
+  —`metrics.rs` y `tools/check_publicadas.py`— y la atribución de cifras de D-AJ. **Se reabre** si
+  se prefiere la nota viva: vuelve con su número.
 
 - [ ] **97. Lo que costaria un `zk-ssl-air` de verdad, ya medido.** El
   spike del §305 extrajo la mitad verificadora del AIR a un crate propio
@@ -2220,12 +2350,65 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 
 ## E. Operacion
 
-- [ ] **17. Replica y alta disponibilidad.** **Comprobable**: `grep -rn
+- [x] **17. Replica y alta disponibilidad: no se construye ni se prescribe, y se dice por qué
+  (⚠️ §860).** **Comprobable**: `grep -rn
   "replica\|cluster\|raft" crates/zk-ssl/src/` no devuelve nada.
   ⚠️ **Constatacion de arquitectura, no hallazgo**: no hay seccion porque no
   hay nada medido que registrar, y va con la entrada 23. El nodo es punto
   unico de
   fallo.
+  ⚠️ **§860: decidida por delegación del autor («resuelvelas aplicando los principios»), con el
+  criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. La alta
+  disponibilidad del operador —réplica en caliente, failover— no se construye y el estándar no la
+  prescribe; la entrada se CIERRA.** El punto único de fallo que esta entrada constata es el de
+  `PRINCIPIOS.md` §0: el operador que se incauta, se apaga o se corrompe
+  (`ARQUITECTURA.md` §«⚠️ Lo primero: el operador del nodo ES un intermediario de confianza»). Una
+  réplica bajo el mismo operador hace que caiga menos, no que haga menos falta fiarse de él. Lo que
+  lo quitaría, la réplica entre partes independientes, es la 23, que se cerró sin emprenderla (§860),
+  y `PRINCIPIOS.md` §8 la deja en «lo que requeriría otros recursos».
+  **El §609, por sus dos caras**: el estándar —cable, pruebas, sobres— no impone topología, y por
+  eso otro nodo puede añadir alta disponibilidad sin cambiarlo; el nodo de referencia no puede sin
+  modificaciones significativas, y se dice: no hay WAL (la 19); una entrada del registro lleva
+  raíces, compromiso y resumen de la prueba, no hojas (`crates/zk-ssl/src/log.rs:151-235`);
+  `export_snapshot` se niega con dinero en vuelo (`crates/zk-ssl/src/snapshot.rs:219-230`); y
+  `snapshot.rs:79-82` lo dice: replicar en caliente «exige red y coordinación, que es el problema de
+  sistemas distribuidos que este proyecto no aborda». La cabecera de `doc/ESCALADO.md` llama a C7,
+  réplica y failover incluidos, «ESTUDIO CONDICIONAL de una misión no declarada». Y el RFC-0015
+  descartó «varias claves válidas a la vez»
+  (`spec/rfc/0015-el-ciclo-de-vida-del-firmante.md` §«Lo que se DESCARTÓ al medir»), que descarta
+  también un firmante por réplica, con su clave o con un tramo de hojas propio. El §5 de
+  `PRINCIPIOS.md` solo vale aquí como analogía.
+  **Lo que un despliegue con réplica NO DEBE romper, y cuánto de ello impone hoy el nodo**: (1) un
+  escritor por libro, impuesto solo en la misma máquina —el cerrojo de `sled`, §783 y §813—: una
+  réplica en otra máquina promovida con el primario vivo no lo ve; (2) un estado de firmante por
+  clave, declarado y no impuesto (`SECURITY.md` §2, el índice de la clave de firma), y si se ata lo
+  decide la 124, que midió la misma clave firmando dos mensajes con la misma hoja; (3) un relevo con
+  el estado de la clave no fiable sigue la D-G del RFC-0015, PROPUESTO —clave quemada, rotación a la
+  sucesora comprometida, `--desde-minimo` del §690—, y no clonar el estado sale de su «Lo que se
+  DESCARTÓ al medir»; (4) la detección es la vista dividida, MEDIDA en la E1 del RFC-0011 (§599):
+  con el contador restaurado bajo un testigo vivo, el testigo se detiene con `vista-dividida`; con
+  dos nodos de la misma semilla a la vez y un testigo en cada uno, ninguno ve nada solo y solo
+  `--comparar` de los diarios lo ve, que es el cerebro dividido de un failover. Y la 123 mide que
+  una sonda de 2 s puede dar por caído a un nodo vivo con la máquina sobresuscrita: el disparador de
+  un failover falso. La parte del firmante es la familia de la 92 y la 124, y esta entrada no la
+  decide. Lo dice, con marca, `SECURITY.md` §2, en la viñeta del índice de la clave de firma.
+  ⚠️ **§860: el «Comprobable» envejeció.** Medido sobre `d4d6d45`: el `grep` da 5 líneas
+  (`snapshot.rs:79`, `log.rs:93`, `store.rs:45`, `migration.rs:111` y `:167`), y ninguna implementa
+  nada: las tres primeras declaran que no hay réplica o comentan otra cosa, la cuarta es un
+  comentario de la migración y `migration.rs:167` es el mensaje de un `assert` de un test. Y el
+  «*log-shipping* … del WAL existente» de la fila B7 de `doc/ESCALADO.md` §10 no tiene base: no hay
+  WAL (la 19).
+  **Sigue declarado, y no se toca**: el nodo es punto único de fallo (`PRINCIPIOS.md` §0; el
+  objetivo «resistente» de `PRINCIPIOS.md` §3 sigue con ⚠️) y «No hay recuperación si el nodo
+  desaparece» (`SECURITY.md` §2, y `SECURITY.md` §4 lo deja fuera de alcance hoy). La vía coherente
+  con el principio no es la alta disponibilidad, sino que los fondos sobrevivan al operador: el B18
+  de `doc/CONFIANZA_RESIDUAL.md` §6, una propuesta sin entrada propia; adoptarla no se decide aquí.
+  **Descartadas**: construir la alta disponibilidad del operador; meter en la misión la réplica
+  entre operadores, que es la 23; cerrarla sin escribir por qué; posponerla a lo que decida la 23 o
+  a un libro desplegado —la decisión no depende de ninguna de las dos, no porque no se puedan medir:
+  `SECURITY.md` §3.6 dice que no hay libro desplegado—; y convertirla en B18. **Se reabre** si el
+  autor amplía la misión (`PRINCIPIOS.md` §8) o si se reabre la 23. Marcados en el mismo sello: la
+  fila B7 de `doc/ESCALADO.md` §10 y su cabecera.
 
 - [x] **18. ✅ (§783, ⚠️ §813) Bloqueo de directorio de `sled`.** ~~Puede impedir un reinicio~~
   inmediato tras cerrar (§16.6). ⚠️ **§813: el tachado era cierto** para un rearranque que no
@@ -2336,7 +2519,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   debe sobrevivir a un reinicio—. Las tres son el ciclo de vida del
   firmante y convendria cortarlas juntas.
 
-- [ ] **20. Rotacion de claves: ~~DOS~~ TRES de cuatro casos (⚠️ §812), y uno no es un hueco.**
+- [x] **20. Rotacion de claves: ~~DOS~~ TRES de cuatro casos (⚠️ §812), y ~~uno no es un hueco~~ el
+  cuarto, decidido (⚠️ §860): la gobernanza sigue inmutable.**
   ~~Implementada solo en parte.~~ ⚠️ **«En parte» no se podia ni confirmar ni
   refutar**, y esa era su unica pega: una entrada irrefutable no envejece, se
   queda para siempre pareciendo pendiente (§83). Descompuesta y comprobada el
@@ -2382,8 +2566,26 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   D-4 de esa nota —K1, aparte del diseño único, como E4 del RFC-0001— y la E4 entra construida en
   la biblioteca (arriba). Queda el caso de la gobernanza inmutable, que «eso si merece decision
   propia», y es la D-3 de la nota, sin decidir. **Sigue abierta.**
+  ⚠️ **§860: la gobernanza, decidida por delegación del autor («resuelvelas aplicando los
+  principios»), con el criterio del §609 y el precedente del §642; REVERSIBLE; entra con su
+  aceptación: G0, y la entrada se CIERRA.** Es la D-3 de `doc/ROTACION_DE_CUENTAS.md`, y la misma
+  para la 52. La raíz de gobernanza se fija al constituir el libro y al reabrirlo se compara. La
+  fija `changing_the_governance_set_on_an_existing_ledger_fails`, no
+  `the_governance_set_survives_restart`, que fija otra cosa (⚠️ en el caso 4 del §2 de
+  `doc/ROTACION_DE_CUENTAS.md`). **La contraria, dicha**: rotarla con su propio umbral (G1) curaría
+  lo que G0 no cura, una clave filtrada por debajo del umbral y la renovación de miembros. Pero
+  dejaría atrincherarse a un umbral comprometido, y pide un código de operación nuevo y que la
+  apertura deje de compararla. **Se elige G0** porque no mueve nada, porque no hay libro desplegado
+  que pague hoy su coste y porque es el caso de cero rotaciones de cualquier variante futura:
+  añadirla después no invalida ningún libro, y quitarla sí. **Se reabre** antes de constituir el
+  primer libro desplegado, o si un caso de uso pide renovar gobernadores (la autorrotación con
+  quórum mayor, que pide un parámetro de constitución), o al construirse R3 en la 52 (la gobernanza
+  precomprometida va con ella). El coste, compromiso y pérdida, pasa a `SECURITY.md` §2. El nodo que
+  abre su libro en claro no es un caso de rotación: pasa a su propia entrada, la 127. **CERRADA**:
+  tres casos hechos y uno decidido.
 
-- [ ] **47. `doc/ESCALADO.md`: propuesta de sharding, COMMITTEADA (§122), sin adoptar.**
+- [x] **47. `doc/ESCALADO.md`: propuesta de sharding, COMMITTEADA (§122), sin adoptar: decidida y
+  repartida, no descartada (⚠️ §860).**
   Documento externo del 31-07-2026 que dimensiona 5 × 10⁹ usuarios con el
   diseño casi intacto. ✅ **Su observacion central se sostiene**: ninguna
   operacion toca dos cuentas, luego **no hay transacciones cross-shard**, y
@@ -2419,12 +2621,69 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ **Y una que no es de esta entrada**: la divergencia (ii) de la 12, el Δ
   por pago, la tomo el RFC-0003, ACEPTADO en el §356, y el cuerpo de la 12 no
   lo dice.
+  ⚠️ **§860: decidida por delegación del autor («resuelvelas aplicando los principios»), con el
+  criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. CERRADA: decidida
+  y repartida, no descartada.** **El dimensionamiento 5 × 10⁹ no se adopta**: C7, §1 y §5-§7 de
+  `doc/ESCALADO.md`, y con ellos el dimensionado de B5 y el particionado y el enrutador de B7.
+  Quedan fuera del rechazo la fila de la capa de liquidación de `doc/ESCALADO.md` §6 —«3,3 tx/s: el
+  código actual la ejecuta hoy, sin cambios»— y el párrafo de la federación que la sigue, que
+  `doc/CONFIANZA_RESIDUAL.md` cita y que es la segunda vía del residuo 2 de `SECURITY.md` §2.bis: su
+  diseño no es dimensionamiento.
+  **Por qué**: amplía el alcance a una misión que el proyecto no declara —la vigente está en el
+  `README.md` y en `doc/USE_CASES.md`, que mide la escala en «Thousands of operations a year»
+  (`doc/USE_CASES.md` §«Institutional clearing: four tests») y llama al dinero minorista de banco
+  central «an argument, not a use case»
+  (`doc/USE_CASES.md` §«Central-bank money: an argument, not a use case»)—; cada shard conserva el
+  operador único y añade un enrutador nuevo (`doc/ESCALADO.md` §9), así que no quita ningún
+  intermediario (`PRINCIPIOS.md` §0); la hoja de ruta de `PRINCIPIOS.md` §8 se corrigió a lo
+  alcanzable; el RFC-0002, ACEPTADO, abre la partición «solo si el pico objetivo lo exige»; y
+  `doc/DIAGNOSTICO_ESCALADO.md` §6.7 pone la elegibilidad antes que el rendimiento.
+  `PRINCIPIOS.md` §2 cuenta la «escalabilidad limitada» entre lo que motiva el proyecto, y apunta al
+  otro lado; no gana, porque la respuesta del documento multiplica el problema de lo centralizado de
+  esa misma lista y `PRINCIPIOS.md` §3 no tiene ningún objetivo de escala. La P4 de
+  `doc/historia/VISION.md` queda como apoyo histórico: la decisión se sostiene sin ella.
+  **El invariante que sí se sostiene, escrito**: ninguna operación toca dos cuentas —el envío toca
+  la hoja del pagador, el cobro la del receptor—, así que particionar por cuenta no tiene
+  transacciones entre particiones (`doc/ESCALADO.md` §3.2; el RFC-0002: «el diseño de dos fases ya
+  es el protocolo entre particiones»). Es lo que mantiene posible la reapertura sin modificar el
+  estándar, y un RFC que lo rompa tiene que decirlo. La D-2 de la 52 se apoya en él.
+  **Se reabre** si un caso de `doc/USE_CASES.md` declara un pico, en operaciones de capa por segundo
+  —un pago son dos—, por encima del techo del `apply` del nodo único, remedido en ese momento con el
+  protocolo del §89.1: la última medida con protocolo es la del §217, 265-320 op/s, anterior al
+  §538, y el §637 midió el `apply` en memoria en 4,8-6,2 ms, con carga y sin ese protocolo. Al
+  reabrirse, entra en el diseño la restricción del orden total de la 23: el cobro y el reembolso de
+  un mismo pendiente en particiones distintas no comparten orden (DEDUCIDO). El documento se queda
+  en `doc/` como estudio condicional, con el cuerpo VERBATIM.
+  **Repartida.** **B3 (C3) sí sirve a la misión** (la cabecera de `doc/ESCALADO.md`): es uno de los
+  dos caminos que `SECURITY.md` §2.bis da para el residuo «el operador ve el estado» —el operador
+  ciego (B11) o la federación—. Pasa, con B2, B11.1 y B11.3, a la **126**, que lo decidirá por RFC
+  con su análisis medido antes. **B5** cae con el dimensionamiento: su único motivo escrito es la
+  latencia de `doc/ESCALADO.md` §7; si el RFC de la 126 necesita anclas más viejas que la raíz
+  vigente o la instantánea del lote, lo plantea allí. **B9** pasa a la **21**, porque mide lo que
+  decide si hace falta: la generación del titular en un dispositivo de gama baja, sin medir (aquí
+  `uname -m` da `x86_64`). La firma XMSS en ARM, que es del nodo y del testigo, se queda en la
+  **77** (original). La sensibilidad «× 4 peor» **no se rehace**: el estudio no se adopta, y su base
+  medida (§89.1, 2,35 ms) es anterior al §538; el §637 midió 3,98-4,93 ms por prueba, con carga y
+  sin protocolo. La cabecera de `doc/ESCALADO.md` lo dice y marca como anteriores al §538 los 13.600
+  TPS por shard. Su condición (6), registrar el hallazgo §2.2, está cumplida: `AUDITORIA.md` §123,
+  la (iv) de `doc/USE_CASES.md` §«Institutional clearing: four tests» y
+  `doc/INSTITUCIONAL.md` §«Las limitaciones de escala, cuantificadas», n.º 1, que el `README.md`
+  enlaza. Marcados en el mismo sello: la cabecera y la tabla del §10 de `doc/ESCALADO.md`,
+  `doc/CONFIANZA_RESIDUAL.md`, la 21 y la 77 (original).
+  ⚠️ **§860**: lo de la 12 que esta entrada decía que su cuerpo no recogía, lo recoge desde el §779.
 
 - [ ] **21. Delegacion de prueba a clientes ligeros.** Exige verificar una
   firma dentro del circuito: **~8.000 filas** con esquema Winternitz,
   estimacion documentada en `client.rs` (§18). ⚠️ Esta cifra se retiro por
   error en §42.3 dandola por inventada, y se **restituye** (§42.5): estaba
   en el codigo, se busco donde no estaba. Mismo primitivo que la 33.
+  ⚠️ **§860: gana B9**, de la 47 al cerrarse: el banco de generación en dispositivos ARM de gama baja
+  de `doc/ESCALADO.md` §10. Mide lo que decide si hace falta delegar: la generación del titular en
+  un dispositivo de gama baja, sin medir; aquí `uname -m` da `x86_64`, y un tiempo emulado no mide
+  un dispositivo. Necesita ese hardware, y conseguirlo queda fuera del repositorio. Alimenta además
+  a B11.1 (la 126; `doc/CONFIANZA_RESIDUAL.md` §10, su punto 4) y a B11.2 (la 11). La firma XMSS en
+  ARM no es B9: es del nodo y del testigo, y se queda en la 77 (original); si B9 se corre en ARM, la
+  misma tanda mide la firma.
 
 - [ ] **22. ⏸️ SUSPENDIDA. Agregacion de pruebas.** 127,2 MiB por mil pagos es coste, no
   parada, pero crece linealmente: un pago son **DOS pruebas** y **133.431
@@ -2989,6 +3248,38 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   deja a la capa sin el suyo. **Qué la cierra**: el instrumento corriendo, con su cifra y su fecha,
   o retirado con marca, y en los dos casos una nota en la 50 que lo diga.
 
+- [ ] **126. El operador ve los saldos: el operador ciego (B11.1 y B11.3) sobre la transición local
+  de hoja (C3/B3, con B2) (§860).** Viene de la 47 al cerrarse (§860), que lo tenía desde que la 48 se
+  cerró (§268). Es uno de los dos caminos que `SECURITY.md` §2.bis da para el segundo residuo
+  —«arquitectura de operador ciego (B11) o federación»—, y sirve a la misión a cualquier escala (la
+  cabecera de `doc/ESCALADO.md`; §122.2). El diseño está en `doc/ESCALADO.md` C3 y en
+  `doc/CONFIANZA_RESIDUAL.md` §3. Le falta todo lo que se mide antes de un RFC. (a) **La
+  conservación con orden parcial**, sin medir (`doc/DIAGNOSTICO_ESCALADO.md` §5.4). (b) **Quién
+  demuestra la transición de raíz**: hoy el circuito, y con C3 la compondría el servidor
+  (`doc/DIAGNOSTICO_ESCALADO.md` §5.3). (c) DEDUCIDO, sin medir: el agregado —suministro = saldos +
+  en vuelo— que la capa comprueba al reabrir (`README.md` §«Leer antes de nada»), sobre saldos en
+  claro, no sobrevive tal cual a hojas *hiding*, y eso toca la 115. (d) Cada fila de la tabla de
+  garantías que cambie necesita su test discriminante (`doc/ESCALADO.md` §8, y la condición (4) de
+  su cabecera). (e) **B2 entra solo como pieza de B3**, y la primera pregunta del RFC es por qué el
+  RFC-0002 descartó el anti-replay por `nonce`
+  (`spec/rfc/0002-lotes-y-transicion-de-hoja.md` §«Lo que se DESCARTÓ al medir»: quitar la atadura
+  de raíz reintroduce el marcador de doble gasto del §32 y el §36) y lo que dice
+  `doc/DIAGNOSTICO_ESCALADO.md` §5.2. (f) Los puntos 3 y 4 de `doc/CONFIANZA_RESIDUAL.md` §10: B11
+  no mide lo que se aprende de los metadatos, y el coste del segmento de rango de B11.1 lo absorbía
+  el presupuesto de latencia de `doc/ESCALADO.md` §7, que la 47 no adoptó: ya no hay presupuesto que
+  lo absorba. Cambia el cable y las entradas públicas del envío y del cobro, así que va por RFC
+  (`spec/rfc/PROCESO.md`); su corte de versión se coordina con el tren del RFC-0018, y los circuitos
+  son de la zona de la migración. B11.2, cifrar el aviso, sigue en la 11. **Qué la cierra**: un RFC
+  del operador ciego que conteste de la (a) a la (f) con lo medido, y la decisión del autor sobre
+  él.
+
+- [ ] **127. El nodo abre su libro en claro (`SECURITY.md` §3.3) (§860).** Lo nombraba la 20, aunque
+  no era un caso de rotación, y `SECURITY.md` §3.3 remitía a la 49, cerrada. El nodo abre con
+  `SovereignLayer::open`, que llama a `open_encrypted` sin clave. El autor dejó cablearlo fuera de
+  la E4 del RFC-0001 (D-4, §812). **Qué la cierra**: que el nodo abra cifrado, con una frase de
+  origen declarado y un test que no lea el libro sin ella; o una decisión del autor que lo deje como
+  residuo de despliegue.
+
 ## F. Publicacion, cuando el circuito este cerrado
 
 La 28 se hace **al final**, por decision explicita: no se tocan los
@@ -3069,6 +3360,13 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   tocaron **solo identificadores** -ni una cifra, ni un parrafo- y desde ese
   commit **ya no son byte a byte los PDF depositados**. Rehacer los papers
   sigue suspendido: esto no lo adelanta.
+  ⚠️ **§860: gana el frente de la 96**, que se cierra fundida aquí, por la vía REVERSIBLE que su
+  cuerpo ofrecía: «la mitad cara es del receptor, porque el cobro recorre dos árboles» no la
+  sostiene lo medido, ni el sentido ni la causa, y se declara en `doc/preprints/ERRATA.md`, Entrada
+  5. En la próxima revisión la frase o se retira o se vuelve a medir sobre el árbol de esa revisión,
+  y no se copia de la Entrada 5. Y los bytes del mismo párrafo —«about 62 KB» por prueba y «120.4
+  MiB» por mil pagos— también se movieron (la banda D-AC del RFC-0009, en
+  `crates/zk-ssl/src/metrics.rs`): la Entrada 5 lo dice en una línea, y no son su objeto.
 
 - [x] **107. El kit publicado no comprueba lo que el nodo firma hoy.**
   `arqueo-verify-v0.2.0` (§442, §443; commit `1528943`) recompone cabezas hasta
@@ -4194,10 +4492,67 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   cita `recovery.rs:101` del §791 es hoy `:105`. **Sigue abierta.**
   ⚠️ §812: la D-4, resuelta por el autor —el recifrado, aparte del diseño único, como E4 del
   RFC-0001, construida—; las otras ocho decisiones siguen abiertas.
+  ⚠️ **§860: las ocho decisiones, tomadas por delegación del autor («resuelvelas aplicando los
+  principios»), con el criterio del §609 y el precedente del §642; REVERSIBLES; entran con su
+  aceptación: UNA transición y varios autorizadores.** La transición es N1–N4 de
+  `doc/ROTACION_DE_CUENTAS.md` §3: la hoja, en su posición, pasa a `(id', saldo, nonce + 1, sal')`,
+  con el `view_id'` atado en el compromiso de la autorización y la identidad vieja a las retiradas
+  en el mismo lote (§802). **D-1**: el robo, la pérdida y cualquier sospecha sobre `sk` van por los
+  custodios (R1, completada: retira). La vista sola y la higiene sin sospecha van por el traspaso
+  (R4, sin código), y se declara lo que no hace: no retira ni la clave ni la identidad viejas, que
+  siguen cobrando y abriendo la vista; y agotado el tope de cuentas (la 8), no hay R4. **R3 se
+  adopta en la sal, no en la hoja**: la cuenta que quiera abre con `sal = merge(sal de sk, H(DOM, sk
+  siguiente))`, que las doce AIR solo leen como testigo. No toca la preimagen ni migra hojas, y
+  responde al robo sin custodios. Se construye tras tres puertas: N1; que la 119 ate la sal sin
+  imponer su origen —sin eso, el operador plantaría su propia siguiente al abrir—; y medidos el uso
+  con sal compuesta y T2b con las dos claves. Si cae una, la higiene que retira pasa a R2. R2 no se
+  construye; R3 solo en el registro se descarta. **D-2**: en su posición —a otra del mismo libro no:
+  rompería «ninguna operación toca dos cuentas», que la 47, cerrada en el §860, deja escrito—; a otro
+  libro, solo por el reclamo del B18.2. **D-3**: G0, la que cierra la 20. **D-5**: varados hasta el
+  reembolso del emisor, y se declara. Y, DEDUCIDO y sin test, lo que una cuenta envió por v2 antes
+  de rotar ya no le vuelve: su reembolso da `PendingMismatch`
+  (`crates/zk-ssl/src/two_phase.rs:710-714`), y solo sale si el receptor lo cobra; falla cerrado.
+  **D-6**: `recovery_count`, solo custodios. **D-7**: ninguna rotación saca a una cuenta de su
+  posición, así que la congelada sigue congelada. **D-8**: N1, en el tren `zkssl/0.5` antes del
+  corte, o en el siguiente. **D-9**: derivada de `sk`, con dominio propio y, en la vía simétrica del
+  B11.2 (la 11), una por relación. **Sigue abierta** hasta N4; al cerrarla, R3 y el B18.2 pasan a
+  una entrada propia si no se han construido.
 
-- [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
+- [x] **23. Consenso distribuido: NO se emprende en Arqueo — decidido y declarado (⚠️ §860).** No
+  anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
   que se indexe por el nullificador completo (§13, §32, §36).
+  ⚠️ **§860: decidida por delegación del autor («resuelvelas aplicando los principios»), con el
+  criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. No se emprende
+  —es una decisión, no una deuda—, y la entrada se CIERRA.** Arqueo no construye consenso
+  distribuido, y `main` ya lo decía: `PRINCIPIOS.md` §8 lo pone en «Lo que requeriría otros
+  recursos», fuera del alcance actual, y deja escrito que sin él la neutralidad y la soberanía no se
+  cumplen; `PREGUNTAS.md` y `RESUMEN_EJECUTIVO.md` lo llaman «otra disciplina y no es el camino de
+  este proyecto»; y `README.md` §«Qué garantiza y qué no» nombra la alternativa que sí se persigue:
+  la responsabilidad demostrable, con cabezas firmadas, testigos, acuse y el ancla externa de la 86.
+  La fórmula es la de la E4c del RFC-0006: «es una decisión, no una deuda».
+  **En este punto el principio fundador sigue sin cumplirse**: `PRINCIPIOS.md` §0 y §8 quedan
+  intactos, el operador sigue siendo el intermediario que nombra `PRINCIPIOS.md` §0, y nada pasa a
+  «resuelto». El camino que se persigue **detecta la censura, no la previene** —antes del recibo no
+  deja rastro (`SECURITY.md` §2)—, y `PRINCIPIOS.md` §2, que cuenta la censura entre lo que hace
+  vulnerable a lo centralizado, apunta al otro lado: se dice. **Las razones**: un consenso reparte
+  al que ordena, no lo quita (`SECURITY.md` §6); impondría validadores a cada libro cerrado de un
+  operador, que es el caso medido (`doc/USE_CASES.md` §«Institutional clearing: four tests»: «one
+  node, one writer»), lo contrario del criterio del §609; y su seguridad no tiene aquí test
+  discriminante (`PRINCIPIOS.md` §9; `PREGUNTAS.md`: «un consenso mal implementado es más peligroso
+  que ninguno»). **Por qué `[x]` y no ⏸️**: la 23 nació en `9670e76` como la única entrada del grupo
+  «E. Otro proyecto, no una incidencia», y la 9 y la 13 se cerraron con su residuo vivo y declarado;
+  la 16, suspendida, apunta al otro lado, y elegir entre las dos es convención, no principio: el
+  contenido de la decisión es el mismo.
+  **Para quien lo distribuya, en otro proyecto**: el encadenamiento de raíces exige orden total, y
+  sin él vuelven el doble gasto y el límite del cumpleaños (`SECURITY.md` §3.4; §13, §32, §36): hará
+  falta un identificador de gasto único indexado por su valor completo (la opción C del §13) u otro
+  mecanismo de gasto único. B7 no necesita consenso para particionar, pero esta restricción le
+  alcanza si la 47 se reabre (`doc/ESCALADO.md` §2.3). El failover automático elige quién escribe, y
+  cae aquí. **Se reabre**, y solo por el autor, si dedica los otros recursos de `PRINCIPIOS.md` §8,
+  o si un caso de `doc/USE_CASES.md` pide impedir —no solo detectar— el doble uso entre operadores
+  que no se fían. Marcados en el mismo sello: «Lo demas», en la cabecera, y la fila B1 de
+  `doc/ESCALADO.md` §10.
 
 ---
 
@@ -4243,6 +4598,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ⚠️ **ARM sin medir.** `doc/xmss-evaluacion.md` avisa de que los 0,62 ms por
   hoja son **de esa máquina** y deja las medidas en ARM pendientes junto a B9;
   `doc/ESCALADO.md` tiene B9 como medición pendiente. **Va con la 47.**
+  ⚠️ §860: ya no va con la 47 (cerrada, §860): B9 está en la 21; la firma en ARM se queda aquí.
   ✅ **Lo que ya NO está pendiente**, y por eso no entra aquí: el guardián del
   índice (`firma_indice.rs`, §111.1 y §234) y fijar la versión del crate,
   que es exacta en los dos que la usan.

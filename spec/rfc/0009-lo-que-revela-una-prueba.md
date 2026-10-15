@@ -765,7 +765,7 @@ que cae una de cada tres veces no afirma nada: desde el §538 el aserto se retir
 S247), `LADO_CARO` se retira con su historia, los tiempos se imprimen y el test pasa a llamarse por
 lo que ata, `los_dos_lados_del_pago_atan_la_banda`: los bytes de los dos lados por la vía del
 cliente, dentro de la banda de D-AC (una fila del `--list` de la capa cambia de nombre, ninguna nace
-ni muere).
+ni muere). ⚠️ §860: las cifras «260-290 ms de envío y 160-190 de cobro» no son de la medida apareada del 2026-09-19, sino de la del 2026-08-14 (§304), cuando el envío era el caro; la del 2026-09-19 dio envío 158,9 ms y cobro 278,4 (§512), el receptor más caro, que es lo que la frase afirma.
 
 Gana retirar frente a una banda temporal: imagen fiel (los tiempos dependen de la máquina y el
 sentido ya no se sostiene). **Reversible** si el sentido volviera a medirse estable.

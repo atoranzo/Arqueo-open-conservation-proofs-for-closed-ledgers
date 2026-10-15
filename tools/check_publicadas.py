@@ -46,7 +46,7 @@ client::prove_send -> apply_send -- da los MISMOS bytes, 66_739 y
 66_692, en cinco repeticiones y sin una sola diferencia. La cifra
 publicada NO depende de la via. Desde el S362 lo PINA un segundo
 gemelo, los_dos_lados_del_pago_atan_la_banda, que asierta esos dos
-bytes ademas de la relacion temporal.
+bytes ademas de la relacion temporal. ⚠️ §860: la relacion temporal ya no: el §538 (RFC-0009 D-AJ) retiro su aserto, y el test solo ata la banda de bytes de los dos lados; los tiempos se imprimen.
 
 Ceguera declarada:
   - no ve una cifra escrita con palabras;
