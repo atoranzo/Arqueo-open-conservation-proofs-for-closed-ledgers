@@ -2759,6 +2759,14 @@ mod tests_verificacion {
         let materiales = refund_de(&layer, alice, SK_ALICE, &recibo, receptor, 300_000);
         layer.apply_refund(&materiales).expect("refund tras reinicio");
         assert_eq!(state_of(&layer, alice).balance, 1_000_000);
+        // §832: hasta aqui el test dejaba su sled en el directorio temporal,
+        // uno por corrida. Se cierra la capa, se borra y se mira que no queda.
+        drop(layer);
+        std::fs::remove_dir_all(&path).expect("borrar el sled del test");
+        assert!(
+            !std::path::Path::new(&path).exists(),
+            "el test no deja su sled en el directorio temporal"
+        );
     }
 
     /// **TESTIGO §388 (punto 41, T-B): el reloj del reembolso no es fe del

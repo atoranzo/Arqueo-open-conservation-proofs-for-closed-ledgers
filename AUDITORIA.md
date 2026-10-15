@@ -54612,3 +54612,97 @@ línea.
 
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos. El
 `BACKLOG.md` no cambia: ninguna entrada llevaba esto.
+
+## §832 — el test `el_meta_sobrevive_al_reinicio_y_el_refund_funciona` cierra su capa, borra su sled y comprueba que no queda: dejaba un directorio de 528 KiB por corrida (lo descubierto 2)
+
+El commit que lleva este asiento, sobre `a09832a` (el §831). Toca `crates/zk-ssl/src/two_phase.rs`
+(ocho líneas al final de un test), una cita por línea de `BACKLOG.md` que esas ocho líneas desplazan
+y este asiento. Ni tests nuevos, ni vectores, ni código fuera de `#[cfg(test)]`. Del autor es el
+encargo: la lista y lo que se descubra por el camino. Esto lo encontró por el camino la sesión que
+trabaja esa lista; ningún asiento anterior lo nombra. La forma la propuso la sesión. Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4
+de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a
+§859). No toca `crates/zk-ssl-guardian`. El canon, `bash tools/canon.sh --sello`, corrido por la
+sesión sobre el árbol limpio de este commit, con este asiento en su sitio y sin esta frase: VERDE,
+655 s de reloj (del primer al último byte de su log) y 507 s de tests (la línea «total» de la tabla),
+cada fila en su pin, 1809 tests que pasan (la suma de la columna «pasan»); `zk-ssl`, 481 y 7
+ignorados, en 200 s. Corrió con un `TMPDIR` propio y vacío, y al acabar no quedaba en él ningún
+directorio. Medido sobre este sello antes de corregir texto en los asientos de la serie; el canon de
+la punta, en el §836.
+
+Antes de esa VERDE hubo una corrida ROJA sobre el mismo árbol que ella, el de `86da72c`, una versión
+anterior de este commit. Empezó a las 06:25:05, ocho segundos después de ese commit. `zk-ssl` salió
+con 101 y 480 de 481, y el canon dio ROJO con dos fallos en esa fila. La causa no estaba en el árbol,
+sino en el directorio de compilación. Las copias de los mutantes de abajo se compilaban en el mismo
+`target` que el canon, y M1, el test sin `remove_dir_all`, que cae en su `assert!`, se acababa de
+compilar y correr en él: su copia acabó a las 06:24:19. El fallo cuadra con que el canon corriera ese
+binario de test sin recompilarlo para este árbol; la salida del test que falló no se guardó. Antes de
+la VERDE se borraron las copias de los mutantes, y el canon se volvió a correr sobre el mismo árbol;
+no consta otro paso. Es la regla que el §836 deja escrita: un mutante no comparte el directorio de
+compilación del canon. Ya se había visto aquí, y entonces no se escribió.
+
+**La base.** Este sello se escribió primero con otro número, detrás del de `verificar_citas`. Cuando
+el autor dio el rango nuevo, la sesión lo rebasó sobre el §831. El cherry-pick no chocó: el §830 y el
+§831 no tocan `two_phase.rs` ni `BACKLOG.md`. Sobre este árbol se remidieron la cita de `BACKLOG.md`
+(`:3771-3799` sigue cayendo en el test, de su `#[test]` a su llave) y las dos cuentas de 17 de abajo.
+`two_phase.rs` es, byte a byte, el de la primera escritura; del crate cambian otros ficheros. Se
+volvieron a correr, sobre copias de este árbol, la copia sin mutar y M1: dan lo mismo que entonces.
+Lo «medido antes» y los otros mutantes son de la primera escritura y no se repitieron.
+
+**De dónde sale.** El test entró en el §181, con el tejido del reembolso (`1d244d2`). Abre un sled en
+`std::env::temp_dir()`, con un nombre que lleva el pid y los nanosegundos, lo cierra, lo reabre y
+comprueba que el meta del pendiente sobrevive. Nunca lo borraba. Sus vecinos del mismo fichero sí:
+hay 17 `let path = ruta_temporal(…)` y 17 `let _ = std::fs::remove_dir_all(&path);`, contados con
+`grep -c`. Como el nombre cambia en cada corrida, cada `cargo test -p zk-ssl` deja un directorio más.
+
+**Medido antes de tocar nada.** En el `/tmp` del contenedor de la sesión, con
+`ls -d /tmp/zkssl_meta_reinicio_* | wc -l` y `du -sk`: 69 directorios y 35.920 KiB, de corridas
+anteriores del canon en ese contenedor. Ningún otro nombre `zkssl_*` pasa de dos directorios. Uno
+solo, el que deja una corrida con el test del §831 y un `TMPDIR` vacío, mide 528 KiB.
+
+**Lo que hace.** Al final del test, tras el último `assert_eq!`:
+
+1. `drop(layer)`: cierra la capa reabierta, y con ella el sled.
+2. `std::fs::remove_dir_all(&path).expect(…)`: borra el directorio. Si no puede, el test falla y lo
+   dice.
+3. `assert!(!std::path::Path::new(&path).exists(), …)`: comprueba que no queda.
+
+Un comentario con la marca del §832 dice por qué. Las ocho líneas desplazan todo lo que viene después
+en `two_phase.rs`. La única cita por línea viva que caía detrás y era correcta, la de
+`un_refund_v2_tras_delta_devuelve_al_emisor` en `BACKLOG.md`, pasa de `:3763-3791` a `:3771-3799`,
+con su marca «⚠️ §832: decía». Las citas por línea a `two_phase.rs` se buscaron sobre
+`git ls-files`, sin `AUDITORIA.md`, con el patrón «two_phase(\.rs)?`?:<número>» y un número ≥ 2723.
+
+**Medido después.** `cargo test -p zk-ssl --release --locked --lib el_meta_sobrevive_al_reinicio`,
+sobre una copia de este árbol y con un `TMPDIR` propio y vacío: `ok`, 1 passed, 487 filtered out,
+3,16 s. Quedan 0 directorios `zkssl_meta_reinicio_*` en ese `TMPDIR`.
+
+**Mutantes.** Cada uno sobre una copia del árbol hecha con `tar`, sin `target` ni `.git`; nunca en el
+árbol. Un guion reescribe el test en la copia y corre la misma orden, con un `TMPDIR` propio y vacío
+por mutante, y cuenta lo que queda. La copia sin mutar da `ok` y 0 directorios.
+
+- M0, el de control: el test del §831, sin las ocho líneas. Da `ok` y deja 1 directorio. Es lo que
+  arregla este sello.
+- Mueren tres, con FAILED y exit 101. M1, sin `remove_dir_all`: es el mutante que pedía la tarea; cae
+  en el `assert!` y deja 1. M3, `remove_dir_all` sobre otra ruta, con su `expect`: cae en el `expect`.
+  M4, `remove_dir_all` sobre otra ruta con `let _ =`, que calla el error: cae en el `assert!`.
+- Viven dos, y se declaran. M2, sin `drop(layer)`: da `ok` y deja 0. En Linux se borra un directorio
+  con ficheros abiertos, y el sled no lo recrea al cerrarse. En otro sistema el `drop` puede hacer
+  falta; aquí no se mide. M5, sin `remove_dir_all` y sin el `assert!`: da `ok` y deja 1. Sin la
+  comprobación no hay nada que lo vea; está para mostrar que el `assert!` es lo que mata a M1.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores` y `check_catalogo`.
+
+**Lo que NO hace.** Si el test cae antes del final, el directorio se queda: no hay un guardián con
+`Drop` que lo borre al desenrollar. Lo mismo pasa con los vecinos que usan `ruta_temporal`, que
+además no comprueban que el borrado funcione; no los toca. No borra los 69 directorios que ya había en
+el `/tmp` del contenedor ni los que haya en otra máquina: no son del árbol. No toca las citas por línea
+a `two_phase.rs` del RFC-0008 (`:3429`, `:3473` y `:3364`): van con su «Medido sobre» y su commit, y
+ya no caían en su sitio antes de este sello.
+
+**Lo que es del autor.** Si quiere un guardián común para los tests que abren un sled, que borre
+también cuando el test cae. Y borrar en su máquina los `zkssl_meta_reinicio_*` que hayan dejado sus
+corridas del canon, en su directorio temporal.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos. El
+`BACKLOG.md` sólo cambia en esa cita: ninguna entrada llevaba esto.

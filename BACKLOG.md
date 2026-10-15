@@ -1442,8 +1442,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   - **El suelo Δ_min = 13 meses no existe.** `apply_refund` compara
     `now - born` con el Δ del sobre y nada mas (`two_phase.rs:694`), y
     `un_refund_v2_tras_delta_devuelve_al_emisor` reembolsa con `delta = 1`
-    (`two_phase.rs:3763-3791`). Con el reloj en entradas, «13 meses» no tiene
-    unidad en el arbol. Por eso la linea entra en `PRINCIPIOS.md` con ❌.
+    (`two_phase.rs:3771-3799`; ⚠️ §832: decía `:3763-3791`, correcto hasta
+    que el §832 metió ocho líneas más arriba). Con el reloj en entradas,
+    «13 meses» no tiene unidad en el arbol. Por eso la linea entra en
+    `PRINCIPIOS.md` con ❌.
   - **T3b.** T3b-nativo, 2/2; T3b-circuito, «especificados, condicionados y
     **NO escritos**» (§128.1, `AUDITORIA.md:10503-10509`), y ningun asiento
     posterior vuelve a nombrarlo. Los circuitos de la pieza 3 no lo saldan
