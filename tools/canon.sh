@@ -28,7 +28,7 @@
 #
 # 1. **Los miembros del workspace se LEEN de Cargo.toml.** Un crate nuevo
 #    sin fila pone la compuerta ROJA, y una fila sin crate tambien. El
-#    agujero de §223 pasa de "hay que acordarse" a **imposible**.
+#    agujero de §223 pasa de "hay que acordarse" a **imposible**. Los lee tools/miembros.py (§833).
 # 2. **Pines EXACTOS, no minimos.** Nada mejora ni empeora en silencio.
 # 3. **No se para en el primer fallo:** da el inventario completo.
 # 4. **Timeout POR CRATE.** Un crate que cuelgue no cuelga la compuerta.
@@ -181,8 +181,8 @@ nivel_num() {
 }
 
 miembros_del_workspace() {
-  sed -n '/^\[workspace\]/,/^\[[^w]/p' Cargo.toml \
-    | grep -oE '"crates/[a-z0-9-]+"' | tr -d '"' | sed 's|crates/||'
+  # ⚠️ §833: los lee tools/miembros.py, el unico lector de `members`; lo que hacia el sed de aqui, en su cabecera
+  python3 tools/miembros.py --con-crates | sed 's|^crates/||'
 }
 
 estado_completo() {
@@ -283,7 +283,7 @@ esac
 
 # ── 0 · COHERENCIA: la tabla y el workspace dicen lo mismo ──────
 msg "== CANON · coherencia con el workspace =="
-MIEMBROS=$(miembros_del_workspace)
+MIEMBROS=$(miembros_del_workspace) || falla "tools/miembros.py en ROJO: \`members\` ilegible, o crates/ y \`members\` no dicen lo mismo"
 EN_TABLA=$(awk 'NF{print $1}' <<< "$TABLA")
 n_m=$(wc -l <<< "$MIEMBROS"); n_t=$(wc -l <<< "$EN_TABLA")
 msg "  miembros en Cargo.toml: $n_m · filas en la tabla: $n_t"
@@ -294,7 +294,7 @@ done
 for c in $EN_TABLA; do
   grep -qx "$c" <<< "$MIEMBROS" || falla "la fila '$c' no corresponde a ningun crate del workspace"
 done
-[ $rojo -eq 0 ] && msg "  OK  todos los crates tienen fila y todas las filas tienen crate"
+[ $rojo -eq 0 ] && msg "  OK  todos los crates tienen fila y todas las filas tienen crate; crates/ y members, lo mismo"
 estado_completo
 estado_bancos
 estado_conservados

@@ -1976,18 +1976,21 @@ mod tests {
         fuera
     }
 
-    /// Los miembros del workspace, leidos del `Cargo.toml` raiz como los lee el canon.
-    fn miembros_del_workspace(toml: &str) -> Vec<String> {
-        let mut dentro = false;
-        let mut fuera = Vec::new();
-        for linea in toml.lines() {
-            let s = linea.trim();
-            if s.starts_with('[') {
-                dentro = s == "[workspace]";
-            } else if dentro && s.starts_with("\"crates/") {
-                fuera.push(s.trim_end_matches(',').trim_matches('"').to_string());
-            }
-        }
+    /// Los crates del arbol: cada `crates/<x>` con `Cargo.toml`, en orden. ⚠️ §833: aqui habia
+    /// un segundo lector de `members`, y decia «Los miembros del workspace, leidos del
+    /// `Cargo.toml` raiz como los lee el canon». No los leia como el canon: cogia las lineas que
+    /// empiezan por `"crates/` dentro de `[workspace]`, y con `members` en una sola linea veia
+    /// cero; el canon, al reves, contaba un `exclude` (medido en el §833, sobre copias). El unico
+    /// lector de `members` es ahora `tools/miembros.py`, y el canon exige que `crates/` y
+    /// `members` digan lo mismo, en las dos direcciones: este recorrido ve los miembros.
+    fn crates_del_arbol(raiz: &str) -> Vec<String> {
+        let mut fuera: Vec<String> = std::fs::read_dir(format!("{raiz}/crates"))
+            .unwrap_or_else(|e| panic!("{raiz}/crates: {e}"))
+            .map(|e| e.unwrap_or_else(|e| panic!("{raiz}/crates: {e}")).path())
+            .filter(|p| p.join("Cargo.toml").is_file())
+            .map(|p| format!("crates/{}", p.file_name().unwrap().to_string_lossy()))
+            .collect();
+        fuera.sort();
         fuera
     }
 
@@ -2038,7 +2041,8 @@ mod tests {
     }
 
     /// **§694: las fijaciones se comprueban, no se recuerdan.** Lee el `Cargo.lock` y el
-    /// `Cargo.toml` de la raiz y de cada miembro del workspace, y exige lo que dice `fijacion`.
+    /// `Cargo.toml` de la raiz y de cada crate de `crates/` -los miembros del workspace: el canon
+    /// lo exige desde el §833-, y exige lo que dice `fijacion`.
     /// Hasta aqui los `=` se sostenian por convencion: sobre el arbol de antes, este test da 23
     /// declaraciones sin `=` (`winterfell` en seis crates y diecisiete en los manifiestos del
     /// fork) y cinco paquetes del lock que no clavaba nadie -`winter-fri`, `winter-utils`,
@@ -2048,11 +2052,11 @@ mod tests {
     fn las_fijaciones_son_exactas() {
         let raiz = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
         let toml_raiz = include_str!("../../../Cargo.toml");
-        let miembros = miembros_del_workspace(toml_raiz);
+        let miembros = crates_del_arbol(raiz);
         assert!(
             miembros.iter().any(|m| m == "crates/zk-ssl-verify")
                 && FORK.iter().all(|f| miembros.contains(&format!("crates/{f}"))),
-            "prueba de vida: el lector de miembros no ve el kit o el fork: {miembros:?}"
+            "prueba de vida: el recorrido de crates/ no ve el kit o el fork: {miembros:?}"
         );
         let mut manifiestos = vec![("Cargo.toml".to_string(), toml_raiz.to_string())];
         for m in &miembros {

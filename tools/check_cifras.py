@@ -261,6 +261,68 @@ def total_largos(anclas, suma_todos):
     return fallos, ausentes, vistas
 
 
+# ── §833 · la CUENTA DE CRATES ──────────────────────────────────
+#
+# ⚠️ El hueco que esto cierra (la 60): `RESUMEN_EJECUTIVO.md` dijo «18 crates» con 22 en el
+#    workspace, y lo corrigio a mano el §794. Ninguna compuerta lo veia: este fichero cuenta
+#    tests, no crates. Ahora la cuenta se ata a `members` de `Cargo.toml`, que lee el unico
+#    lector, `tools/miembros.py`; aqui no se escribe ningun numero.
+#
+# ⚠️ Solo en los documentos de `DOCS_CUENTA_CRATES`, y hoy es uno. Los README y
+#    `RESUMEN_BILINGUE.md` dan tambien «22 crates», y hoy no los ata nada. Atarlos es decision
+#    del autor (la 1g).
+#
+# ⚠️ En un documento de la lista, todo «<N> en el sello» y todo «los <N> con `--completo`»
+#    cuenta como cuenta de crates, hable de lo que hable: los patrones no piden la palabra
+#    «crates» cerca. Hoy las tres coincidencias de `RESUMEN_EJECUTIVO.md` son de crates.
+#
+# ⚠️ Lo que va tras un «⚠️» en la misma linea es la nota de una correccion, y cita lo que el
+#    documento DECIA: «decía «18 crates»» no es una cuenta de hoy y no se juzga.
+#
+# ⚠️ PRESENCIA, con el molde del ATADO D (§549): un documento de la lista que deje de dar
+#    «<N> crates» antes de su primer «⚠️» es ROJO, no pasa callando.
+DOCS_CUENTA_CRATES = ("RESUMEN_EJECUTIVO.md",)
+CUENTA_CRATES = re.compile(r"\*{0,2}(\d+)\*{0,2} crates\b")
+CUENTA_SELLO = re.compile(r"\b(\d+) en el sello\b")
+CUENTA_COMPLETO = re.compile(r"\blos (\d+) con `--completo`")
+
+
+def cuenta_de_crates(p, ps):
+    """Las cuentas de crates de `DOCS_CUENTA_CRATES` frente al workspace y la tabla del canon.
+
+    «<N> crates» es el numero de `members`; «<N> en el sello», el de filas `sello` de la tabla;
+    «los <N> con `--completo`», el de todas sus filas. Devuelve (fallos, vistas, n_miembros):
+    cada fallo es (fichero, linea, que, dice, debe).
+    """
+    sys.path.insert(0, os.path.join(RAIZ, "tools"))
+    import miembros
+    try:
+        n = len(miembros.de_la_raiz(RAIZ))
+    except miembros.Ilegible as e:
+        return [("Cargo.toml", 0, "members", str(e), "un array que tools/miembros.py lea")], 0, 0
+    reglas = ((CUENTA_CRATES, "crates", n),
+              (CUENTA_SELLO, "crates en el sello", len(ps)),
+              (CUENTA_COMPLETO, "crates con --completo", len(p)))
+    fallos, vistas = [], 0
+    for rel in DOCS_CUENTA_CRATES:
+        ruta = os.path.join(RAIZ, rel)
+        if not os.path.isfile(ruta):
+            fallos.append((rel, 0, "crates", "nada: el fichero no esta", n))
+            continue
+        con_cuenta = 0
+        for k, linea in enumerate(open(ruta, encoding="utf-8").read().split("\n"), 1):
+            hoy = linea.split("\u26a0", 1)[0]
+            for patron, que, debe in reglas:
+                for m in patron.finditer(hoy):
+                    vistas += 1
+                    con_cuenta += patron is CUENTA_CRATES
+                    if int(m.group(1)) != debe:
+                        fallos.append((rel, k, que, m.group(1), debe))
+        if not con_cuenta:
+            fallos.append((rel, 0, "crates", "ninguna «<N> crates» antes de su primer ⚠️", n))
+    return fallos, vistas, n
+
+
 def cronica():
     """La CRONICA de cada fila del canon: si una fila cuenta su historia, su pin tiene que ser
     el segundo numero de su ULTIMA entrada.
@@ -370,10 +432,23 @@ def main():
     malas.extend(fallos_desglose)
     revisadas += vistas_desglose
 
+    fallos_cc, vistas_cc, n_miembros = cuenta_de_crates(p, pines_sello())
+    print("  CRATES: %d cuenta(s) de crates en %s; el workspace tiene %d miembros en `members`"
+          % (vistas_cc, ", ".join(DOCS_CUENTA_CRATES), n_miembros))
+
     for rel, n, crate, v, pin, l in malas:
         print(f"  RANCIA  {rel}:{n}")
         print(f"          dice {v} tests para `{crate}` y el canon pina {pin}")
         print(f"          {l}")
+
+    if fallos_cc:
+        print("")
+        print("ROJO: %d cuenta(s) de crates que no son las del workspace (§833)" % len(fallos_cc))
+        for rel, k, que, dice, debe in fallos_cc:
+            print("  %s:%-4d %s: dice %s y debe %s" % (rel, k, que, dice, debe))
+        print("")
+        print("  La cuenta sale de `members` (tools/miembros.py) y de la tabla del canon.")
+        return 1
 
     if fallos_cr:
         print("")

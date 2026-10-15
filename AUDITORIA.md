@@ -54706,3 +54706,156 @@ corridas del canon, en su directorio temporal.
 
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos. El
 `BACKLOG.md` sólo cambia en esa cita: ninguna entrada llevaba esto.
+
+## §833 — un solo lector de `members`: `tools/miembros.py`, que usan el canon y `check_cifras`; el test de fijaciones del kit recorre `crates/` y el canon lo ata a `members`; y `check_cifras` ata la cuenta de crates de `RESUMEN_EJECUTIVO.md` al workspace (las tareas 33 y 60, su núcleo)
+
+El commit que lleva este asiento, sobre `8243f24` (el §832). Toca `tools/miembros.py`, que nace,
+`tools/canon.sh`, `tools/check_cifras.py`, `crates/zk-ssl-verify/src/lib.rs` (un ayudante de tests y
+el test que lo usa) y este asiento. Ni tests nuevos, ni vectores, ni código de los crates fuera de
+`#[cfg(test)]`. Del autor son las tareas: la 33 y la 60 de la lista que encargó. De la 60 va aquí el
+núcleo, el atado en `check_cifras`; la parte de los README queda fuera, con la 1g, que espera la
+respuesta del autor. La forma la propuso la sesión. Lo escribe y lo commitea Claude, en una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a §859). No toca
+`crates/zk-ssl-guardian`. Un revisor de la sesión lo leyó; lo que pidió está aquí: que la cabecera
+del bloque nuevo de `check_cifras` diga que hoy nada ata los README ni `RESUMEN_BILINGUE.md`, sin
+anticipar lo que decida el autor; que declare que «<N> en el sello» cuenta en todo el documento; y
+que este párrafo hable del código de los crates, porque el de `tools/` sí cambia. El canon,
+`bash tools/canon.sh --sello`, corrido por la sesión sobre el árbol limpio de este commit, con este
+asiento en su sitio y sin esta frase: VERDE, 470 s de reloj (de su arranque a su salida) y 313 s de
+tests (la línea «total» de la tabla), en una máquina de 4 CPU. Las 19 filas del nivel, en su pin, con
+1809 tests que pasan (la suma de la columna «pasan»); `zk-ssl-verify`, 190 en 8 s. La coherencia, con
+22 miembros en `Cargo.toml` y 22 filas en la tabla; `check_tests` en 1968 y 20 instrumentos;
+`check_modulos` en 205; las once herramientas del bucle «2 ter»; la puerta de los vectores, en 497
+ficheros y 987 líneas; `check_catalogo`; las cuatro conformidades; el cable, en 23 de 23; la segunda
+implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`473eb5f63e5b091d` y el tarball `27e73f52a6360dec`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él. Medido sobre este sello antes de corregir texto en los asientos de la
+serie; el canon de la punta, en el §836.
+
+**La base.** Este sello se escribió primero sobre el §807 (`e506627`), detrás del de la limpieza del
+test del sled, con otro número. Cuando el autor subió del §808 al §812, la sesión lo rebasó sobre el
+§832. El cherry-pick no chocó. Del §808 al §812 no tocan `Cargo.toml`, `RESUMEN_EJECUTIVO.md`,
+`tools/check_cifras.py` ni `crates/zk-ssl-verify/src/lib.rs`. Sí tocan `tools/canon.sh`, con 99
+líneas añadidas y 26 quitadas, ninguna de las cinco de aquí. Y tocan dos manifiestos de crate: el de
+`zk-ssl-medio` gana dos `[[test]]` y un `[[example]]`, y el de `zk-ssl`, su `rust-version`. Ninguno
+toca `members`: los miembros siguen siendo 22. Sobre el árbol rebasado se remidió lo de «Medido
+después» y se volvieron a correr todos los mutantes, cada uno sobre su copia: dan lo mismo que
+entonces en lo que la primera escritura anotó. La nueva corrida añadió una precisión, que la primera
+escritura no anotaba: en C4 y C5, `check_cifras` da ROJO por la cuenta del documento, como dice
+abajo. Cambian dos cifras de la base: `check_tests` pasa de 1933 a 1968 tests declarados, y
+`check_modulos`, de 204 a 205 ficheros. Las cinco corridas de tiempos son de la primera escritura y
+no se repitieron.
+
+**De dónde sale.** Había dos lectores de `members`, y ninguno leía sólo el array.
+`miembros_del_workspace` de `tools/canon.sh` cogía todo `"crates/<x>"` desde `[workspace]` hasta la
+primera tabla que no empezara por `[w`: entraban `[workspace.package]` y `[workspace.dependencies]`.
+`miembros_del_workspace` de los tests del kit, del §694, cogía las líneas de `[workspace]` que empiezan
+por `"crates/`. Su documentación decía «como los lee el canon», y no era así. Y `RESUMEN_EJECUTIVO.md`
+dijo «18 crates» con 22 en el workspace hasta que el §794 lo corrigió a mano: ninguna puerta cuenta
+crates.
+
+**Medido antes de tocar nada.** Cada caso sobre una copia del árbol hecha con `tar`, sin `target` ni
+`.git`, con `CANON_RAIZ=<copia> bash tools/canon.sh --lista`. El lector del kit, con una copia en
+Python línea a línea de su función (no con el test).
+
+- El árbol: los dos dan 22, y `cargo metadata --no-deps` da los mismos 22.
+- Un `exclude = [ "crates/fantasma", ]` de tres líneas en `[workspace]`: el canon da 23 y un ROJO
+  falso, «el crate 'fantasma' esta en el workspace y NO en el canon». El del kit, 23.
+- `zk-ssl-hash = { path = "crates/zk-ssl-hash" }` en `[workspace.dependencies]`: el canon da 23, con
+  `zk-ssl-hash` dos veces, y VERDE. El del kit, 22.
+- `members` en una sola línea: el canon da 22. El del kit, 0.
+- `"crates/nova-experiment"` comentado: el canon da 22 y VERDE. `cargo metadata` da 21.
+- `"crates/ceremony"` comentado: el canon da 22 y VERDE, y `cargo metadata` también 22. Cargo hace
+  miembro a una dependencia por `path` dentro del workspace aunque `members` no la nombre, y `zk-core`
+  pide `ceremony` por ruta (`crates/zk-core/Cargo.toml:28`).
+
+**Lo que hace.**
+
+1. `tools/miembros.py` es el único lector. Lee la clave `members` de la tabla `[workspace]` y nada más:
+   su array de cadenas, en una línea o en varias, con comentarios `#` y coma final. Falla cerrada, con
+   exit 2 y la causa, ante lo que no sabe leer: sin `[workspace]`, sin `members`, dos `members`, un
+   array sin cerrar, algo que no es una cadena, un escape, un comodín o un miembro repetido. No entiende
+   TOML entero, y su cabecera lo dice. Con `--con-crates` exige además que cada miembro sea un
+   `crates/<x>` con `Cargo.toml`, y que cada `crates/<x>` con `Cargo.toml` sea miembro; si no, exit 1.
+2. `tools/canon.sh`: `miembros_del_workspace` llama a `python3 tools/miembros.py --con-crates`, y un
+   exit distinto de 0 es un `falla` con su causa. Cinco líneas cambian en su sitio, ninguna se añade:
+   las citas por línea a `tools/canon.sh` no se mueven. Lo que hacía el `sed` de antes lo cuenta la
+   cabecera del lector, y la función lleva su marca.
+3. Los tests del kit ya no leen `members`. `las_fijaciones_son_exactas` recorre `crates/*/Cargo.toml`
+   con `crates_del_arbol`, y el `--con-crates` del canon garantiza que es el mismo conjunto. La
+   documentación del ayudante viejo se corrige con su marca. El test sigue siendo uno, con su prueba de
+   vida: el recorrido tiene que ver el kit y los tres crates del fork.
+4. `tools/check_cifras.py` gana la cuenta de crates, en los documentos de `DOCS_CUENTA_CRATES`: hoy
+   sólo `RESUMEN_EJECUTIVO.md`. «<N> crates» tiene que ser el número de `members`, leído con
+   `tools/miembros.py`; «<N> en el sello», el de filas `sello` de la tabla del canon; y «los <N> con
+   `--completo`», el de todas sus filas. Esos dos patrones no piden la palabra «crates» cerca: en un
+   documento de la lista, todo «<N> en el sello» cuenta como cuenta de crates, y la cabecera del
+   bloque lo declara. Hoy las tres coincidencias son de crates. Lo que va tras un «⚠️» en la misma
+   línea es la nota de una corrección, cita lo que el documento decía, y no se juzga. Con el molde del ATADO D (§549), un
+   documento de la lista que deje de dar «<N> crates» es ROJO. Aquí no se escribe ningún número.
+
+**Medido después.** `python3 tools/miembros.py --con-crates`: 22 rutas, exit 0, las mismas que
+`cargo metadata --no-deps`. `bash tools/canon.sh --lista`: «miembros en Cargo.toml: 22 · filas en la
+tabla: 22», «OK … crates/ y members, lo mismo», exit 0. `python3 tools/check_cifras.py`: exit 0, con
+la línea nueva «CRATES: 3 cuenta(s) de crates en RESUMEN_EJECUTIVO.md; el workspace tiene 22 miembros
+en `members`». En la primera escritura, cinco corridas alternas con la versión de antes, sobre una
+copia, dieron de 0,47 a 0,63 s la nueva y de 0,47 a 0,56 s la vieja: no se ve diferencia. Y
+`cargo test -p zk-ssl-verify --release --locked`, con un `TMPDIR` propio: 190 pasan, 0 ignorados, 0
+warnings, el pin de su fila. Sobre el árbol rebasado, esa cifra la da su fila del canon.
+
+**Mutantes.** Cada uno sobre una copia nueva del árbol hecha con `tar`, con las herramientas de la
+copia; nunca en el árbol. La copia sin mutar da exit 0 en `canon.sh --lista` y en `check_cifras`.
+
+- Los que no deben dar ROJO, y no lo dan: M1, el `exclude` de tres líneas; M2, el `path` en
+  `[workspace.dependencies]`; M3, `members` en una sola línea. Los tres dan 22 y VERDE en el canon y
+  en `check_cifras`. Antes, M1 daba un ROJO falso y M2 contaba 23.
+- Mueren trece, con exit 1. M4, `"crates/ceremony"` comentado: el canon, por `--con-crates` y por la
+  fila sin miembro, y `check_cifras`, «dice 22 y debe 21». M4b, `"crates/nova-experiment"`
+  comentado: con el canon viejo, VERDE; con el nuevo, ROJO por `--con-crates` y por la fila, y
+  `check_cifras`, «dice 22 y debe 21». M5, «18 crates en Rust» sin marca
+  en `RESUMEN_EJECUTIVO.md`: «dice 18 y debe 22». M6, un miembro nuevo con su `Cargo.toml`, sin tocar
+  los documentos: el canon, por la fila que falta, y `check_cifras`, «dice 22 y debe 23». M7, un
+  `crates/huerfano` con `Cargo.toml` que no es miembro. M8, un miembro `otros/fuera` sin fila. M8b, el
+  mismo con su fila en la tabla: sólo `--con-crates` lo ve. M9, `members` renombrada: exit 2 del
+  lector, ROJO en el canon y en `check_cifras`. M10, un comodín, `"crates/winter-*"`. M11, el array
+  sin su `]`. M12, «22 crates en Rust» quitado: la presencia. M13, «20 en el sello» y «los 21 con
+  `--completo`»: las dos, con su nombre. C1, `check_cifras` sin el corte en «⚠️», sobre el árbol sin
+  tocar: «dice 18 y debe 22», por la nota del §794.
+- Viven seis, y se declaran: son los controles que muestran qué pieza mata a cuál. C2,
+  `check_cifras` sin la presencia, con M12 encima: VERDE. C3, el lector sin el lado de `crates/` a
+  `members`, con M7 encima: VERDE en el canon y en `check_cifras`. C4, sin el lado de `members` a
+  `crates/`, con M8b encima: VERDE en el canon. C5, el canon con el `sed` de antes, con M4 encima:
+  VERDE en el canon. C6, el canon sin `--con-crates`, con M7 encima: VERDE. C7, el canon sin el
+  `|| falla`, con M7 encima: VERDE. En C4 y C5, `check_cifras` da ROJO, «dice 22 y debe 23» y «dice
+  22 y debe 21», por la cuenta del documento y no por la pieza mutada: con el documento al día, no lo
+  vería.
+- Y uno que sigue en ROJO, y se declara. C8, el canon sin el `|| falla`, con M9 encima: ROJO igual,
+  porque la lista vacía deja todas las filas sin miembro. El `|| falla` sólo pone la causa; el lector
+  la dice también en su salida de error.
+
+No se mutó el test del kit: su cambio no añade comprobación, y su prueba de vida es la de antes.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores` y `check_catalogo`; también
+`check_tests` y `check_modulos`. Las marcas «⚠️ §833» en los ficheros del commit, sin este asiento,
+son dos, contadas con `git grep --cached -c`: una en `crates/zk-ssl-verify/src/lib.rs` y una en
+`tools/canon.sh`.
+
+**Lo que NO hace.** No lee los miembros que cargo añade por su cuenta: con `"crates/ceremony"`
+comentado, cargo da 22 y este lector 21, y el canon se pone ROJO. Es a propósito, y la cabecera de
+`tools/miembros.py` lo dice: un miembro del canon se declara. No lee `members` escrita de otra forma
+que TOML admite, como una clave entre comillas o `workspace.members` en la raíz: da exit 2, no VERDE.
+No ata las otras cuentas de crates: «22 crates» en `README.md`, `README_EN.md` y
+`RESUMEN_BILINGUE.md`, ni «19 propios» en `RESUMEN_EJECUTIVO.md`. Hoy no las ata nada, y la cabecera
+del bloque de `check_cifras` lo dice así. Corrido solo, sin el canon, el test
+del kit no ve un miembro que viva fuera de `crates/`; lo ve el canon. Con `members` ilegible, la línea
+del canon dice «miembros en Cargo.toml: 1», porque cuenta la línea vacía; la causa va en las dos líneas
+de antes.
+
+**Lo que es del autor.** Si la cuenta de los README entra en esta misma lista, y si
+`RESUMEN_BILINGUE.md` también. Y si quiere que el canon compare además `members` con lo que da
+`cargo metadata`, que ve los miembros implícitos. Y si acepta la precisión sobre C4 y C5 que trajo el
+rebase: sale de lo que el rebase tenía que cambiar.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos, y
+`check_modulos` en 205 ficheros. El `BACKLOG.md` no cambia: ninguna entrada llevaba esto.
