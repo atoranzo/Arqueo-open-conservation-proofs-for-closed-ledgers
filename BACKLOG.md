@@ -12,11 +12,12 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 47 abiertas, 77 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 49 abiertas, 77 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
-119, el §812, que abre la 120 y la 121, y el §835, que abre la 122.
+119, el §812, que abre la 120 y la 121, el §835, que abre la 122, y el §813, que abre la 123 y
+la 124.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -2220,8 +2221,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   unico de
   fallo.
 
-- [x] **18. ✅ (§783) Bloqueo de directorio de `sled`.** ~~Puede impedir un reinicio~~
-  inmediato tras cerrar (§16.6). ⚠️ **Manifestacion MEDIDA** el 31-07-2026
+- [x] **18. ✅ (§783, ⚠️ §813) Bloqueo de directorio de `sled`.** ~~Puede impedir un reinicio~~
+  inmediato tras cerrar (§16.6). ⚠️ **§813: el tachado era cierto** para un rearranque que no
+  espera la salida del proceso viejo —el de un supervisor que manda SIGTERM y relanza—: el
+  cerrojo es del viejo hasta que sale. Lo que la cierra es que el nodo espera, abajo.
+  ⚠️ **Manifestacion MEDIDA** el 31-07-2026
   (§79): hizo fallar un test de release **1 de cada 12 pasadas** a 16 hilos,
   con `WouldBlock` al reabrir. Los tests quedan protegidos con
   `open_encrypted_retry` (entrada 45), pero **el fondo sigue abierto**: un
@@ -2244,6 +2248,66 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   un nodo que no deberia estar ahi. El `WouldBlock` del §79 salio en los
   tests, que cierran y reabren el libro dentro de un mismo proceso, a 16
   hilos; ahi sigue `open_encrypted_retry` (la 45).
+
+  ⚠️ **§813: el §783 cerraba sobre una medida que no lo era, y la 18 se cierra
+  ahora porque el nodo ESPERA.** Decidido por delegacion del autor, que pidio
+  «Aplicar los Principios … para resolverlos», con el criterio del §609: «que
+  se aplique al mayor número de casos de uso sin modificaciones
+  significativas», y un supervisor que no espera la salida del viejo vale asi
+  sin tocarlo. Los «90 de 90» del sello eran 30 con SIGKILL y 30 con SIGTERM
+  esperando la salida del viejo, y **30 de 30 con SIGTERM SIN esperarla**: esos
+  los gano el nodo nuevo a la carrera. `kill` vuelve al poner la senal, no
+  cuando el viejo ha salido, y el cerrojo —un `flock(LOCK_EX | LOCK_NB)` de
+  `sled` sobre `<libro>/db`— es del viejo hasta que sale; el nodo lo pedia como
+  primer acto, sin reintento. Remedido el 15-10-2026 con el nodo de `b6994c3`,
+  en 4 CPU, sin esperar al viejo: **no reabrian a la primera 2 de 200
+  rearranques sin carga, 8 de 200 con cuatro `yes`, y 33 de 200 y 12 de 120 con
+  ocho**. El banco del §783 salia ROJO 1 pasada de 20 sin carga anadida y 1 de
+  20 con cuatro `yes`, y con otro trabajo en la maquina, 8 de 8 con cuatro
+  `yes` (carga de 9,2 a 12,5) y 10 de 10 con ocho (de 6,0 a 13,4). Tras la
+  salida del viejo, ninguno: en los 3.700 rearranques de los registros de la
+  decision (1.800 de un banco con el REINICIO esperando, 600 con SIGKILL
+  esperando, 900 de la propuesta, que al nodo solo le cambiaba un comentario, y
+  200 y 200 sueltos con ocho `yes`) y en 120 mas de su segunda ronda. Nunca
+  hubo dos escritores: el que llegaba antes se negaba. **Lo que hace el §813**:
+  el nodo espera al cerrojo, acotado —diez miradas cada 50 ms, las de
+  `cerrojo_libre` en la capa (§812) y las de `open_retry` en los tests (ya en
+  el §16.6; el §79.3 la lleva a `open_encrypted_retry`)—, y SOLO a ese error,
+  el `flock` de `sled` que da `WouldBlock`; un `Io` de otra causa, no. Es lo
+  que pedia el §16.6: «Un despliegue real debería reintentar con espera».
+  Pasado el tope, la negativa del solape largo sigue cerrada y con su nombre,
+  y ahora dice las dos causas —otro nodo, o el anterior que aun sale: «espera a
+  que salga y vuelve a arrancarlo»— y deja de recetar otro `--ledger` a
+  secas. Seguida al pie de la letra, con la misma clave y el mismo `--diario`,
+  `--contador-recepcion` e `--indice-firma`: con el nodo viejo vivo, el
+  guardian del indice no deja arrancar al nuevo (§709); con el viejo parado,
+  esa receta mezcla dos libros en la cadena de la clave: con un libro que ya
+  tenia una cuenta, el `seq` del diario va 0, 1 y vuelve a 0. Y no basta con
+  cambiar esos tres: con la misma clave, un `--indice-firma` nuevo vuelve a
+  firmar con hojas ya gastadas, y la misma hoja XMSS firmo dos mensajes
+  distintos, con el viejo vivo y con el viejo parado, que es lo que compromete
+  una clave XMSS (`SECURITY.md` §2). La negativa dice ahora que otro
+  `--ledger` es OTRO nodo, con OTRA clave de firma y su propio indice, su
+  contador y su diario, como ya decia la del guardian («su propio contador y
+  su propia semilla»); seguida asi, con el viejo vivo, ninguna hoja firma dos
+  mensajes. Lo que el nodo no detecta va en la 124. Lo atan cuatro tests del
+  nodo: tomado 200 ms y suelto, abre (sin la espera, cae en la primera
+  mirada); tomado mas que el tope, la negativa con nombre y con la otra clave,
+  sin tocar un byte; ningun otro error se espera, ni un `flock` que falla sin
+  `WouldBlock`; y `open_layer`, la espera que corre en el nodo, tarda al menos
+  450 ms en negarse, con las cifras de `cerrojo_libre` escritas.
+  `tools/banco_reinicio.sh` espera ahora la salida del viejo en el REINICIO y
+  exige reabrir a la primera, cuenta aparte el SOLAPE, SIGTERM y relanzar sin
+  esperar, y en DOS NODOS exige que el segundo tarde al menos 450 ms en
+  negarse. Medido el 15-10-2026 en 4 CPU con el nodo del §813, 10 pasadas sin
+  carga anadida, 10 con cuatro `yes` y 10 con ocho (con otro trabajo en la
+  maquina: carga de 4,3 a 5,8, de 5,9 a 9,7 y de 9,4 a 16,5), las 30 VERDES:
+  los 900 rearranques del REINICIO abren a la primera; de los 450 del SOLAPE,
+  abren a la primera 405 y tras esperar dentro del nodo 45, y ninguno se
+  niega; y en DOS NODOS el segundo se niega en 618 a 1.575 ms. Con un nodo que
+  mira sin dormir, el banco sale ROJO: se niega en 110 ms. DOS NODOS sigue
+  atando la exclusion. El «No se reintenta» de arriba deja de valer, y el de
+  `error_al_abrir` queda corregido con marca.
 
 - [ ] **19. Sin log de escritura anticipada — y la consecuencia que se
   describia NO existe.** **Comprobable**: `grep -rn "write_ahead|journal"
@@ -2829,6 +2893,46 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   raíz no basta, y sin el grep la (c) declara la ceguera en vez de cerrarla. El publicador del medio
   no elige transporte hasta que esto se decida. **Qué la cierra**: la opción elegida, con su marca en
   el §106 o en la cabecera de `check_curvas`; si es (c), con sus mutantes.
+
+- [ ] **123. Un nodo vivo que no contesta en 2 s con la máquina sobresuscrita (§813).** Medido el
+  15-10-2026 sobre `b6994c3`, en 4 CPU con ocho `yes` y carga de 6,6 a 8,7, para el DOS NODOS de
+  `tools/banco_reinicio.sh`: de 100 sondas `zkssl_supply` con 2 s de tope a un nodo vivo en cada
+  caso (200 en total), **10 quedan sin respuesta SIN segundo nodo y 5 CON él**. Las que contestan
+  lo hacen con mediana de 1 ms, p90 de 9 a 12 ms y máximo de 1,9 a 2,0 s, y las que no,
+  reintentadas con 30 s de tope, contestan todas, en 0,6 s como mucho. El segundo nodo no lo
+  explica, y no se ha medido nada más: ni dónde se va el tiempo —el planificador, el latido de
+  1 s, el runtime, la escucha—, ni sin carga, ni con otra sonda. Lo que hace el banco desde el §813:
+  el DOS NODOS sondea al primero con hasta cinco sondas de 2 s seguidas en vez de una -la misma
+  sonda que su arranque, que hace hasta cien con 0,1 s entre una y otra-, porque lo que comprueba
+  es que sigue vivo y contesta. **Lo que pide**: medir dónde se va el tiempo de una sonda sin
+  respuesta, con el reloj del nodo al recibir y al contestar, con y sin carga, y decir si un
+  cliente del cable con un plazo de 2 s puede dar por caído a un nodo vivo. **Qué la cierra**: esa
+  medida; si es el nodo, el arreglo con su test, y si es la máquina, la cifra dicha donde el cable
+  dice sus plazos.
+
+- [ ] **124. Nada ata una clave de firma a un solo libro ni a un solo contador (§813).** Medido el
+  15-10-2026, en la revisión del §813: un nodo B arranca con la MISMA `--clave-fichero` que un nodo
+  A, sobre otro `--ledger`, con otro `--diario`, otro `--contador-recepcion` y otro
+  `--indice-firma` -lo que recetaba la negativa del libro tomado en un borrador del §813, antes de
+  su revisión-, y firma. B vuelve a empezar por la hoja XMSS 1, y **la misma hoja de la misma
+  clave firma dos mensajes distintos**: con A parado y una cuenta abierta solo en B (en `--dev`),
+  la hoja 2 (la cabeza de A con `seq` 0, la de B con `seq` 1); con A vivo, las hojas 2 y 3. Dos
+  mensajes con la misma hoja comprometen la clave (`SECURITY.md` §2), y el nodo no lo ve: el
+  cerrojo del guardián es por fichero, y un contador nuevo con un diario nuevo no tiene con qué
+  compararse. Con el MISMO `--diario`, `--contador-recepcion` e `--indice-firma` -la receta del
+  §783-, con A vivo B no arranca (el guardián del índice, §709), y con A parado B no reusa hojas
+  (firma en la 4), pero el diario mezcla los dos libros: su `seq` va 0, 1 y vuelve a 0. Es «la
+  misma semilla con otro contador», que `SECURITY.md` §2 y `doc/CONFIANZA_RESIDUAL.md` ya
+  declaraban como lo que el cerrojo no cubre, que la negativa del guardián ya dice («su propio
+  contador y su propia semilla») y que la 92 nombra en su nota del §709; lo nuevo es la medida, y
+  que una negativa del nodo llegara a recetarlo. Lo que hace el §813: la negativa del libro tomado
+  dice que otro `--ledger` es OTRO nodo, con OTRA clave de firma y su propio índice, su contador y
+  su diario; seguida así, con A vivo, ninguna hoja firma dos mensajes. Fuera del disco, solo
+  podría verlo un testigo que haya visto las dos cadenas de la clave, y eso no se ha medido. **Lo
+  que pide**: decidir si el nodo ata la clave a un solo contador y a un solo libro -por ejemplo,
+  el libro guarda la huella de la clave con la que firma, y el contador la de su clave- o si queda
+  declarado, con esta medida, como hasta ahora. **Qué la cierra**: esa decisión, con su test y su
+  banco si se construye, o la frase de `SECURITY.md` §2 con la medida.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

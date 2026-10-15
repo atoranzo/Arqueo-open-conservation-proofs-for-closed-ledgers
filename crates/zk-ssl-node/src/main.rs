@@ -2234,6 +2234,12 @@ fn modo_prueba_rechazo(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow
 }
 
 fn open_layer(a: &Args) -> anyhow::Result<SovereignLayer> {
+    open_layer_con(a, |_| std::thread::sleep(PAUSA_CERROJO))
+}
+
+/// ⚠️ §813 · `open_layer` con la pausa entre dos miradas al cerrojo pasada por argumento: el nodo
+/// duerme `PAUSA_CERROJO`, y un test suelta el cerrojo en la pausa que quiera, sin carreras.
+fn open_layer_con(a: &Args, pausa: impl FnMut(u32)) -> anyhow::Result<SovereignLayer> {
     // ⚠️ §784 · ARQ-02: las raíces de los conjuntos salen de `--custodian-root` y
     // `--governance-root` —las de la ceremonia de constitución— y, sin ellas, en `dev`, de la
     // suite. El build de producción sin ellas no arranca. Quedan dichas al arrancar.
@@ -2257,11 +2263,82 @@ fn open_layer(a: &Args) -> anyhow::Result<SovereignLayer> {
     }
     Ok(match &a.ledger {
         Some(path) => {
-            SovereignLayer::open(path, c_root, g_root, a.limit, a.max_supply, a.max_accounts)
-                .map_err(|e| error_al_abrir(path, &e))?
+            let (abierto, miradas) = abrir_esperando_el_cerrojo(
+                || {
+                    SovereignLayer::open(
+                        path,
+                        c_root,
+                        g_root,
+                        a.limit,
+                        a.max_supply,
+                        a.max_accounts,
+                    )
+                },
+                pausa,
+            );
+            let layer = abierto.map_err(|e| error_al_abrir(path, &e, miradas))?;
+            // §813: si hubo que esperar, se dice; `tools/banco_reinicio.sh` lo cuenta por esta linea.
+            // Lo que dice es lo que el nodo sabe: que otro proceso lo tenia y lo solto. Si era el
+            // anterior saliendo, u otro nodo que se cerro, no lo ve.
+            if miradas > 1 {
+                eprintln!(
+                    "libro: {path} estaba tomado; abierto tras esperar al cerrojo, a la mirada \
+                     {miradas} de {ESPERAS_CERROJO}, cada {} ms (otro proceso lo tenia y lo solto)",
+                    PAUSA_CERROJO.as_millis()
+                );
+            }
+            layer
         }
         None => SovereignLayer::new(c_root, g_root, a.limit, a.max_supply, a.max_accounts),
     })
+}
+
+/// ⚠️ §813 · Cuántas veces mira el nodo el cerrojo del libro antes de negarse, y cuánto espera entre
+/// una y otra: diez, cada 50 ms. Son las cifras de `cerrojo_libre` en la capa (`ESPERAS_CERROJO`,
+/// §812, `crates/zk-ssl/src/persistence.rs`), que son las de `open_retry` en los tests (ya en el
+/// §16.6; el §79.3 la lleva a `open_encrypted_retry`): nueve pausas, 450 ms. No se importan -la
+/// capa no las expone y su espera es suya-; se copian, con su fuente, y un test las ata
+/// (`la_espera_del_nodo_es_la_real_diez_miradas_cada_50_ms`). Medido el 15-10-2026 (§813): tras
+/// SIGTERM, el viejo suelta el cerrojo en 26 ms como mucho, con ocho `yes` en 4 CPU, en 300 vueltas.
+const ESPERAS_CERROJO: u32 = 10;
+const PAUSA_CERROJO: Duration = Duration::from_millis(50);
+
+/// ⚠️ §813 · El error de un libro TOMADO: el `flock(LOCK_EX | LOCK_NB)` de sled 0.34.7 sobre
+/// `<libro>/db` que falla porque otro lo tiene. `sled` (`config.rs`, 0.34.7) escribe «could not
+/// acquire lock on …: {e:?}» para CUALQUIER fallo de ese `flock`, y el `Debug` del `io::Error`
+/// dice su clase: el de un cerrojo ajeno es `Os { code: 11, kind: WouldBlock, … }`. Se exigen las
+/// dos cosas, como `cerrojo_libre` en la capa, que solo espera a `WouldBlock`: un `ENOLCK` de un
+/// sistema de ficheros sin cerrojos, o un `Io` de otra causa, ni se esperan ni se llaman «libro
+/// tomado» (los `*_retry` de los tests reintentan todo `Io`, y eso aqui no vale).
+fn cerrojo_tomado(e: &LayerError) -> bool {
+    matches!(e, LayerError::Store(zk_ssl::store::StoreError::Io(m))
+        if m.contains("could not acquire lock") && m.contains("WouldBlock"))
+}
+
+/// ⚠️ §813 · Abre, y si el libro esta TOMADO vuelve a mirar, con `pausa` entre una mirada y la
+/// siguiente, hasta `ESPERAS_CERROJO` miradas (la 18). Devuelve lo que dio la ultima y cuantas
+/// hubo. Cualquier otro error, y el `Ok`, vuelven en la mirada en que salen.
+///
+/// Por que espera (§813, que corrige al §783): el cerrojo es del proceso viejo hasta que SALE, y un
+/// supervisor que rearranca tras mandar SIGTERM sin esperar la salida -`kill` vuelve en cuanto la
+/// senal queda puesta- llega a veces antes. Medido el 15-10-2026 en 4 CPU: 2 de 200 rearranques sin
+/// carga, 8 de 200 con cuatro `yes` y 33 de 200 con ocho no abrian a la primera, y se negaban; tras
+/// la salida del viejo, 0. Esperar, acotado, no deja entrar a nadie: mientras el cerrojo esta
+/// tomado `sled` no abre, y pasado el tope la negativa es la de siempre, con su nombre.
+fn abrir_esperando_el_cerrojo<T>(
+    mut abrir: impl FnMut() -> Result<T, LayerError>,
+    mut pausa: impl FnMut(u32),
+) -> (Result<T, LayerError>, u32) {
+    let mut mirada = 1;
+    loop {
+        match abrir() {
+            Err(e) if cerrojo_tomado(&e) && mirada < ESPERAS_CERROJO => {
+                pausa(mirada);
+                mirada += 1;
+            }
+            otro => return (otro, mirada),
+        }
+    }
 }
 
 /// ⚠️ §784 · Una raíz de conjunto desde su bandera: la escritura canónica del cable (`0x`, 64
@@ -2305,19 +2382,42 @@ fn raices_sin_banderas(
 /// ⚠️ §783 · El error de abrir el libro, y con nombre el de un libro TOMADO (la 18). `sled` toma
 /// un cerrojo sobre el directorio, y un segundo proceso sobre el mismo libro se niega antes de
 /// leer ni escribir nada: falla cerrado, y ya lo hacía. Lo que cambia es que se dice qué pasa,
-/// en vez del `Store(Io("IO error: could not acquire lock …"))` de la biblioteca. **No se
-/// reintenta**: medido en el §783, un nodo que muere (SIGKILL o SIGTERM) y se rearranca al
-/// instante sobre su libro lo reabre a la primera, 90 de 90; un reintento solo haría esperar a un
-/// segundo nodo que no debería estar ahí.
-fn error_al_abrir(path: &str, e: &LayerError) -> anyhow::Error {
+/// en vez del `Store(Io("IO error: could not acquire lock …"))` de la biblioteca.
+///
+/// ⚠️ §813: decía «**No se reintenta**: medido en el §783, un nodo que muere (SIGKILL o SIGTERM) y
+/// se rearranca al instante sobre su libro lo reabre a la primera, 90 de 90; un reintento solo
+/// haría esperar a un segundo nodo que no debería estar ahí». El 90 de 90 no lo era: 60 esperaban
+/// la salida del viejo, y los 30 con SIGTERM sin esperarla los ganó el nuevo a la carrera, porque
+/// `kill` vuelve al poner la señal, no cuando el viejo ha salido. Remedido el 15-10-2026 sobre
+/// `b6994c3`, en 4 CPU, sin esperar al viejo: no reabren a la primera 2 de 200 rearranques sin
+/// carga, 8 de 200 con cuatro `yes` y 33 de 200 con ocho; tras su salida, ninguno. Desde el §813 el
+/// nodo ESPERA al cerrojo, acotado (`abrir_esperando_el_cerrojo`): así vale sin tocarlo un
+/// supervisor que no espera, y un segundo nodo espera 450 ms antes de esta misma negativa, que es
+/// la del solape más largo que la espera.
+///
+/// ⚠️ §813: y recetaba «o se arranca este sobre otro --ledger» a secas. Seguida al pie de la letra
+/// -otro `--ledger` con el MISMO `--diario`, `--contador-recepcion` e `--indice-firma` y la misma
+/// clave-, el diario mezcla dos libros en la cadena de la clave: medido el 15-10-2026, con un
+/// libro que ya tenía una cuenta, el `seq` de las cabezas del diario va 0, 1 y vuelve a 0. Y no
+/// basta con cambiar también esos tres: con la MISMA clave, un `--indice-firma` nuevo vuelve a
+/// empezar por hojas ya gastadas, y la misma hoja XMSS firmó dos mensajes distintos, que es lo que
+/// compromete una clave XMSS. Es «la misma semilla con otro contador», lo que el cerrojo del
+/// guardián no cubre (`SECURITY.md` §2), y el nodo no lo ve (la 124 del `BACKLOG.md`). Ahora la
+/// negativa nombra las dos causas, y otro libro es otro nodo: con OTRA clave de firma, y con ella
+/// su índice, su contador y su diario.
+fn error_al_abrir(path: &str, e: &LayerError, miradas: u32) -> anyhow::Error {
     match e {
-        LayerError::Store(zk_ssl::store::StoreError::Io(m))
-            if m.contains("could not acquire lock") =>
-        {
+        LayerError::Store(zk_ssl::store::StoreError::Io(m)) if cerrojo_tomado(e) => {
             anyhow::anyhow!(
-                "abriendo {path}: el libro lo tiene abierto OTRO proceso (el cerrojo de sled): un \
-                 nodo por libro. Se para el que esta de mas, o se arranca este sobre otro --ledger. \
-                 ({m})"
+                "abriendo {path}: el libro lo tiene abierto OTRO proceso (el cerrojo de sled, \
+                 mirado {miradas} veces, cada {} ms): otro nodo lo tiene abierto, o el anterior \
+                 aún está saliendo: espera a que salga y vuelve a arrancarlo; si son dos nodos, \
+                 sobra uno: un nodo por libro. Otro --ledger es OTRO nodo, y va con OTRA clave de \
+                 firma y con su propio --indice-firma, su --contador-recepcion y su --diario: con \
+                 esta clave, un --indice-firma nuevo vuelve a firmar con hojas XMSS ya gastadas, y \
+                 eso la compromete (SECURITY.md §2); y en este --diario, su cadena mezclaría dos \
+                 libros. ({m})",
+                PAUSA_CERROJO.as_millis()
             )
         }
         _ => anyhow::anyhow!("abriendo {path}: {e:?}"),
@@ -6692,6 +6792,240 @@ mod tests {
             "{e}"
         );
         assert!(e.contains(ruta), "nombra el libro: {e}");
+    }
+
+    /// §813 · Toma el cerrojo de sled sobre `<libro>/db` como lo tiene otro proceso: un `flock`
+    /// exclusivo sobre una descripción de fichero propia (el de `std` es el mismo `flock` que el de
+    /// fs2, que usa sled 0.34.7). Mira cada 50 ms, hasta 10 s, a que la capa que se acaba de soltar
+    /// lo suelte.
+    fn tomar_el_cerrojo(libro: &std::path::Path) -> std::fs::File {
+        let f = std::fs::File::open(libro.join("db")).expect("el db del libro");
+        for _ in 0..200 {
+            match f.try_lock() {
+                Ok(()) => return f,
+                Err(std::fs::TryLockError::WouldBlock) => std::thread::sleep(PAUSA_CERROJO),
+                Err(std::fs::TryLockError::Error(e)) => panic!("el cerrojo del libro: {e}"),
+            }
+        }
+        panic!("la capa soltada no suelta el cerrojo en 10 s")
+    }
+
+    /// §813 · Lo que hay bajo `dir`, fichero a fichero: la ruta y los bytes.
+    fn foto_del_directorio(dir: &std::path::Path) -> Vec<(String, Vec<u8>)> {
+        let mut foto = Vec::new();
+        let mut pendientes = vec![dir.to_path_buf()];
+        while let Some(d) = pendientes.pop() {
+            for entrada in std::fs::read_dir(&d).expect("leer el directorio") {
+                let p = entrada.expect("una entrada").path();
+                let nombre = p.strip_prefix(dir).expect("bajo dir").display().to_string();
+                if p.is_dir() {
+                    foto.push((format!("{nombre}/"), Vec::new()));
+                    pendientes.push(p);
+                } else {
+                    foto.push((nombre, std::fs::read(&p).expect("leer el fichero")));
+                }
+            }
+        }
+        foto.sort();
+        foto
+    }
+
+    /// ⚠️ §813 · **Un libro tomado unos 200 ms y suelto: el nodo ESPERA y lo abre** (la 18). Es el
+    /// rearranque de un supervisor que no espera la salida del viejo, que tiene el cerrojo hasta
+    /// que sale. Sin carreras: el test lo suelta en la cuarta pausa (4 x 50 ms) y la quinta mirada
+    /// abre. Sin la espera -el nodo hasta el §813- cae en la primera.
+    #[test]
+    fn el_libro_tomado_200_ms_se_abre_en_cuanto_se_suelta() {
+        use clap::Parser;
+        let dir = tests_dir("cerrojo_200_ms");
+        let libro = dir.join("ledger");
+        let ruta = libro.to_str().expect("ruta utf-8");
+        let a = Args::try_parse_from(["zk-ssl-node", "--ledger", ruta]).expect("args");
+        drop(open_layer(&a).expect("se crea el libro"));
+        let mut viejo = Some(tomar_el_cerrojo(&libro));
+        let mut pausas = Vec::new();
+        let abierto = open_layer_con(&a, |n| {
+            pausas.push(n);
+            std::thread::sleep(PAUSA_CERROJO);
+            if n == 4 {
+                viejo = None; // el viejo sale, y su cerrojo se va con su descripcion
+            }
+        });
+        let capa = match abierto {
+            Ok(c) => c,
+            Err(e) => panic!("la 18: el cerrojo se solto a los 200 ms y el nodo no abrio: {e:#}"),
+        };
+        assert_eq!(
+            pausas,
+            [1, 2, 3, 4],
+            "cuatro pausas, y la quinta mirada abre"
+        );
+        assert_eq!(
+            capa.custodian_set_root(),
+            zk_ssl::tests_support::custodian_root(),
+            "es el libro de antes"
+        );
+    }
+
+    /// ⚠️ §813 · **Tomado más que el tope: la negativa de siempre, con su nombre, sin tocar nada.**
+    /// El cerrojo no se suelta en ninguna de las diez miradas: nueve pausas, y la negativa nombra
+    /// las dos causas -otro nodo, o el anterior que aún sale- y lo que es otro libro: OTRO nodo,
+    /// con OTRA clave de firma, porque con esta un `--indice-firma` nuevo vuelve a firmar hojas XMSS
+    /// ya gastadas. Ni un byte del directorio cambia; y en cuanto se suelta, abre. Las cifras van
+    /// escritas, no derivadas de `ESPERAS_CERROJO`: un tope cambiado cae aquí.
+    #[test]
+    fn el_libro_tomado_mas_que_el_tope_se_niega_con_nombre_sin_tocar_nada() {
+        use clap::Parser;
+        let dir = tests_dir("cerrojo_mas_que_el_tope");
+        let libro = dir.join("ledger");
+        let ruta = libro.to_str().expect("ruta utf-8");
+        let a = Args::try_parse_from(["zk-ssl-node", "--ledger", ruta]).expect("args");
+        drop(open_layer(&a).expect("se crea el libro"));
+        let viejo = tomar_el_cerrojo(&libro);
+        let antes = foto_del_directorio(&dir);
+        let mut pausas: u32 = 0;
+        let e = match open_layer_con(&a, |_| pausas += 1) {
+            Ok(_) => panic!("CRITICO: el nodo abrio un libro con el cerrojo tomado"),
+            Err(e) => e.to_string(),
+        };
+        assert_eq!(pausas, 9, "diez miradas, nueve pausas: {e}");
+        for dice in [
+            "OTRO proceso",
+            "un nodo por libro",
+            "otro nodo lo tiene abierto",
+            "o el anterior aún está saliendo",
+            "espera a que salga y vuelve a arrancarlo",
+            "Otro --ledger es OTRO nodo",
+            "OTRA clave de firma",
+            "su propio --indice-firma, su --contador-recepcion y su --diario",
+            "un --indice-firma nuevo vuelve a firmar con hojas XMSS ya gastadas",
+            "mirado 10 veces, cada 50 ms",
+            ruta,
+        ] {
+            assert!(e.contains(dice), "la negativa dice «{dice}»: {e}");
+        }
+        assert_eq!(foto_del_directorio(&dir), antes, "la negativa no toca nada");
+        drop(viejo);
+        assert!(open_layer(&a).is_ok(), "suelto el cerrojo, el libro abre");
+    }
+
+    /// ⚠️ §813 · **Solo se espera al cerrojo.** Un `Io` de otra causa -el libro es un fichero-, un
+    /// fallo del `flock` de sled que no es un cerrojo ajeno -un `ENOLCK`, con el mismo «could not
+    /// acquire lock»- y un error que no es `Io` -otra gobernanza- vuelven en la primera mirada, sin
+    /// pausa, y ninguno se llama libro tomado: los `*_retry` de los tests reintentan todo `Io`, y el
+    /// nodo no.
+    #[test]
+    fn el_nodo_solo_espera_al_cerrojo_y_a_ningun_otro_error() {
+        use clap::Parser;
+        use zk_ssl::store::digest_to_bytes;
+        let dir = tests_dir("cerrojo_otro_error");
+        let fichero = dir.join("no_es_un_libro");
+        std::fs::write(&fichero, b"x").expect("un fichero");
+        let fichero = fichero.to_str().expect("ruta utf-8");
+        let a = Args::try_parse_from(["zk-ssl-node", "--ledger", fichero]).expect("args");
+        let mut pausas: u32 = 0;
+        let e = match open_layer_con(&a, |_| pausas += 1) {
+            Ok(_) => panic!("un fichero abierto como libro"),
+            Err(e) => e.to_string(),
+        };
+        assert!(
+            e.contains("Store(Io(") && !e.contains("OTRO proceso"),
+            "{e}"
+        );
+        assert_eq!(pausas, 0, "un Io que no es el cerrojo no se espera: {e}");
+
+        // El texto de sled 0.34.7 (`config.rs`) es el mismo para todo fallo de su `flock`; lo que
+        // los distingue es la clase del `io::Error`. Con `WouldBlock` se espera; con otra, no.
+        let flock = |clase: &str| {
+            LayerError::Store(zk_ssl::store::StoreError::Io(format!(
+                "IO error: could not acquire lock on \"{fichero}/db\": {clase}"
+            )))
+        };
+        let enolck = "Os { code: 37, kind: Uncategorized, message: \"No locks available\" }";
+        let ajeno = "Os { code: 11, kind: WouldBlock, message: \"Resource temporarily unavailable\" }";
+        let mut p: u32 = 0;
+        let (r, miradas) = abrir_esperando_el_cerrojo(|| Err::<(), _>(flock(enolck)), |_| p += 1);
+        let e = error_al_abrir(fichero, &r.expect_err("el error"), miradas).to_string();
+        assert_eq!((miradas, p), (1, 0), "un ENOLCK no se espera: {e}");
+        assert!(!e.contains("OTRO proceso"), "un ENOLCK no es un libro tomado: {e}");
+        let (r, miradas) = abrir_esperando_el_cerrojo(|| Err::<(), _>(flock(ajeno)), |_| p += 1);
+        let e = error_al_abrir(fichero, &r.expect_err("el error"), miradas).to_string();
+        assert_eq!((miradas, p), (10, 9), "el cerrojo ajeno, con WouldBlock, se espera: {e}");
+        assert!(e.contains("OTRO proceso"), "{e}");
+
+        let libro = dir.join("ledger");
+        let ruta = libro.to_str().expect("ruta utf-8");
+        let sin = Args::try_parse_from(["zk-ssl-node", "--ledger", ruta]).expect("args");
+        drop(open_layer(&sin).expect("se crea el libro, con las raices de la suite"));
+        // Que la capa soltada haya soltado su cerrojo: si no, la mirada siguiente lo esperaria.
+        drop(tomar_el_cerrojo(&libro));
+        let hx = |d: zk_ssl_verify::acuses::Digest| -> String {
+            let b = digest_to_bytes(&d);
+            format!(
+                "0x{}",
+                b.iter().map(|x| format!("{x:02x}")).collect::<String>()
+            )
+        };
+        let (c, otra) = (
+            hx(zk_ssl::tests_support::custodian_root()),
+            hx(zk_ssl_verify::acuses::as_digest(8)),
+        );
+        let a = Args::try_parse_from([
+            "zk-ssl-node",
+            "--ledger",
+            ruta,
+            "--custodian-root",
+            &c,
+            "--governance-root",
+            &otra,
+        ])
+        .expect("args");
+        let e = match open_layer_con(&a, |_| pausas += 1) {
+            Ok(_) => panic!("CRITICO: el libro abrio con OTRA gobernanza"),
+            Err(e) => format!("{e:#}"),
+        };
+        assert!(
+            e.contains("gobernanza") && !e.contains("OTRO proceso"),
+            "{e}"
+        );
+        assert_eq!(pausas, 0, "otra gobernanza no se espera: {e}");
+    }
+
+    /// ⚠️ §813 · **La espera de `open_layer`, la que corre en el nodo, es la de verdad: diez miradas
+    /// cada 50 ms.** Los tests de arriba pasan la pausa por `open_layer_con`; este no. El libro lo
+    /// tiene una capa abierta -lo que encuentra un segundo nodo- y `open_layer` se niega pasados al
+    /// menos 450 ms, la cota inferior que `sleep` garantiza: es determinista. Cae una espera que no
+    /// duerme (en la revisión, un nodo real con ella se negaba en 123 a 135 ms, y el bueno en 535 a
+    /// 572), un tope o una pausa que no sean los de `cerrojo_libre` (§812), y un libro tomado cuyo
+    /// error no reconozca `cerrojo_tomado` -otro texto de sled, si cambia su versión-, que el nodo no
+    /// esperaría: el sitio que habría que tocar es `cerrojo_tomado`.
+    #[test]
+    fn la_espera_del_nodo_es_la_real_diez_miradas_cada_50_ms() {
+        use clap::Parser;
+        assert_eq!(
+            (ESPERAS_CERROJO, PAUSA_CERROJO),
+            (10, Duration::from_millis(50)),
+            "las cifras de cerrojo_libre en la capa (§812) y de open_retry en los tests"
+        );
+        let dir = tests_dir("cerrojo_espera_real");
+        let ruta = dir.join("ledger");
+        let ruta = ruta.to_str().expect("ruta utf-8");
+        let a = Args::try_parse_from(["zk-ssl-node", "--ledger", ruta]).expect("args");
+        let _primero = open_layer(&a).expect("el primero abre el libro");
+        let t0 = Instant::now();
+        let e = match open_layer(&a) {
+            Ok(_) => panic!("CRITICO: dos capas sobre el mismo libro"),
+            Err(e) => e.to_string(),
+        };
+        let tardo = t0.elapsed();
+        assert!(
+            e.contains("OTRO proceso") && e.contains("mirado 10 veces"),
+            "{e}"
+        );
+        assert!(
+            tardo >= Duration::from_millis(450),
+            "la 18: el nodo se nego en {tardo:?}, sin dormir sus nueve pausas de 50 ms: {e}"
+        );
     }
 
     /// ⚠️ El CABLEADO de las banderas: que ningun `default_value` vuelva a colarse en

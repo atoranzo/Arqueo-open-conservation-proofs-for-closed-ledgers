@@ -55449,3 +55449,195 @@ ni corrido.
 
 **Contadores.** Ninguno se mueve. `BACKLOG.md` sigue en 47 abiertas y 77 resueltas: la 86 sigue
 abierta. Ningún pin de la tabla del canon cambia.
+
+## §813 — la 18, remedida: el nodo espera al cerrojo de su libro, acotado, y la negativa del solape largo dice sus dos causas y que otro libro es otro nodo, con otra clave; el «90 de 90» del §783 no lo era
+
+El commit que lleva este asiento, sobre `669ee88` (el §836). Un solo sello: en
+`crates/zk-ssl-node/src/main.rs`, la espera acotada al cerrojo (`abrir_esperando_el_cerrojo`,
+`cerrojo_tomado`, `ESPERAS_CERROJO`, `PAUSA_CERROJO`, y `open_layer` sobre `open_layer_con`), el
+mensaje de `error_al_abrir` y su comentario corregido con marca, con cuatro tests nuevos;
+`tools/banco_reinicio.sh`, con el REINICIO que espera la salida, el SOLAPE y el DOS NODOS con su
+plazo y su espera medida; la 18 del `BACKLOG.md`, con su nota y su tachado anotado, la 123 y la 124
+nuevas y la cabecera, recontada; el pin del nodo en `tools/canon.sh`, con su crónica; las cifras de
+tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y este asiento. No toca
+`crates/zk-ssl-guardian`, ni la zona de la migración de Winterfell, ni
+`crates/zk-ssl/src/persistence.rs`: la espera de la capa (`cerrojo_libre`) es suya, y la del nodo
+cita sus cifras sin importarlas. Lo hizo Claude, en una sesión de Claude Code en la nube, y lo
+commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`: un agente lo construyó y lo midió sobre `b6994c3`, una revisión lo leyó y pidió
+arreglos -la negativa que no pedía otra clave, abajo, es uno-, que se hicieron y se volvieron a
+medir; la sesión lo selló sobre `b6994c3` y lo porta aquí, sobre `669ee88`, detrás de los §830 a
+§836, que sellaba otra sesión a la vez y que no tocan el nodo, ni el banco, ni el pin del nodo. Las
+medidas de abajo son las de `b6994c3`: de allí a `669ee88` no cambia ninguna línea del nodo ni del
+banco. El número es el siguiente del rango que el autor asignó (§800 a §829), y va detrás de
+números más altos porque los dos rangos se sellan a la vez. Las dos entradas nuevas del `BACKLOG.md`
+son la 123 y la 124: la 122 la abrió el §835. En la sesión se corrió el canon entero, `--sello`,
+sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**De dónde sale.** El §783 cerró la 18 sobre «90 de 90»: un nodo que muere y se rearranca al
+instante reabre su libro a la primera, y por eso `error_al_abrir` decía «**No se reintenta**». Los
+90 eran 30 con SIGKILL y 30 con SIGTERM esperando la salida del viejo, y 30 con SIGTERM SIN
+esperarla (`reinicio_term_no.log` de la sesión del §783), y esos 30 los ganó el nuevo a la carrera.
+`tools/banco_reinicio.sh` mandaba SIGTERM y rearrancaba sin esperar, `kill` vuelve en cuanto pone
+la señal y no cuando el proceso ha salido, el cerrojo de `sled` -un `flock(LOCK_EX | LOCK_NB)` sobre
+`<libro>/db`- es del viejo hasta que sale, y el nodo nuevo lo pedía como primer acto, sin reintento
+(`main` -> `open_layer` -> `SovereignLayer::open`). El banco salía ROJO a veces sin que nada
+estuviera mal. Y la negativa recetaba «o se arranca este sobre otro --ledger» a secas. Una revisión
+de la decisión la siguió al pie de la letra -otro `--ledger` con la misma clave y el MISMO
+`--diario`, `--contador-recepcion` e `--indice-firma`- y leyó en el diario dos cabezas con `seq` 0
+y `epochDigest` distintos; eso, medido en la revisión de este sello, es lo que hace un solo nodo en
+cada latido sin operaciones, y no prueba daño. El daño, con un libro que diverge y el nodo viejo
+parado, es que el diario mezcla dos libros en la cadena de la clave: su `seq` va 0, 1 y vuelve a 0.
+
+**Lo medido, antes de tocar nada** (15-10-2026, con el nodo de `b6994c3`, 4 CPU). Sin esperar al
+viejo, no reabren a la primera 2 de 200 rearranques sin carga, 8 de 200 con cuatro `yes`, y 33 de
+200 y 12 de 120 con ocho. El banco del §783 salió ROJO 1 pasada de 20 sin carga añadida y 1 de 20
+con cuatro `yes`; con otro trabajo en la máquina, 8 de 8 con cuatro `yes` (carga de 9,2 a 12,5) y
+10 de 10 con ocho (de 6,0 a 13,4). Tras la salida del viejo, ninguno: en los 3.700 rearranques de
+los registros de la decisión -1.800 de un banco con el REINICIO esperando la salida, 600 con SIGKILL
+esperándola, 900 de la propuesta, que al nodo solo le cambiaba un comentario, y 200 y 200 sueltos
+con ocho `yes`- y en 120 más de su segunda ronda. El viejo suelta el cerrojo, tras SIGTERM, en 26 ms
+como mucho con ocho `yes` (300 vueltas). Nunca hubo dos escritores: el nuevo que llegaba antes se
+negaba, con el nombre del §783.
+
+**Quién lo decide.** El autor pidió «Aplicar los Principios … para resolverlos», y lo delegó, con el
+criterio que escribió en el §609: «que se aplique al mayor número de casos de uso sin modificaciones
+significativas». Dos rondas de análisis lo pesaron, y se toma la salida que hace esperar al nodo,
+acotado, y deja después la negativa de hoy. No la propuesta de la primera ronda -arreglar solo el
+banco: esperar la salida en el REINICIO y dejar el nodo sin reintento-, porque deja el defecto en el
+supervisor, y uno que no espera la salida vale así sin tocarlo. Lo pedía ya el §16.6 («Un despliegue
+real debería reintentar con espera, como hace el ayudante `open_retry` de los tests»), lo hacen los
+tests con `open_retry` (ya en el §16.6; el §79.3 lo lleva a `open_encrypted_retry`) y la capa desde
+el §812 (`cerrojo_libre`, diez miradas cada 50 ms), y es lo que `PRINCIPIOS.md` §3 llama
+«resistente». La espera no deja entrar a nadie: mientras el cerrojo está tomado `sled` no abre, y
+pasado el tope la negativa es la de siempre.
+
+**Lo que toca a la seguridad.** La exclusión es el mismo `flock`, y ningún veredicto cambia: el
+código cambia CUÁNDO se niega el nodo -tras 450 ms en vez de al instante-. Pero la negativa es guía
+de operación, y lo que receta tiene efecto en la seguridad, medido. La del §783 -otro `--ledger`, a
+secas-, seguida con el mismo diario, contador e índice, mezcla dos libros en el diario de la clave
+si el nodo viejo está parado; con él vivo, B no arranca: el guardián del índice tiene su contador
+(§709). Una primera versión de la de este sello -otro `--ledger` con otro `--diario`, otro
+`--contador-recepcion` y otro `--indice-firma`, sin pedir otra clave- era peor: seguida con la misma
+`--clave-fichero`, B vuelve a empezar por hojas ya gastadas, y la misma hoja XMSS de la misma clave
+firmó dos mensajes distintos (la 2 con el viejo parado; la 2 y la 3 con el viejo vivo), que es lo
+que compromete una clave XMSS (`SECURITY.md` §2). La de este sello no receta un arranque con esta
+clave: dice que otro `--ledger` es OTRO nodo, con OTRA clave de firma y su propio índice, su
+contador y su diario, como ya decía la negativa del guardián del índice («su propio contador y su
+propia semilla», §709). Lo que el nodo no ve -la misma semilla con otro contador, que `SECURITY.md`
+§2 ya declaraba- no lo cierra este sello: queda como la 124, con su medida.
+
+**Lo que hace.**
+
+1. **La espera, en el nodo y solo para el cerrojo.** `abrir_esperando_el_cerrojo` abre, y si el
+   error es el del libro tomado vuelve a mirar, hasta diez veces, con 50 ms entre una y otra: nueve
+   pausas, 450 ms. `cerrojo_tomado` exige el «could not acquire lock» de sled 0.34.7 y también la
+   clase `WouldBlock` del `io::Error` que sled pega detrás: sled escribe ese texto para cualquier fallo
+   de su `flock`, y `cerrojo_libre`, en la capa, también espera solo a `WouldBlock`. Son las cifras
+   de `cerrojo_libre` (`ESPERAS_CERROJO`, §812), citadas y no importadas: la capa no las expone.
+   Cualquier otro error vuelve en la primera mirada, y un `Io` de otra causa también (los
+   `*_retry` de los tests reintentan todo `Io`). Si hubo que esperar, el nodo lo dice al arrancar:
+   «libro: … estaba tomado; abierto tras esperar al cerrojo, a la mirada k de 10, cada 50 ms (otro
+   proceso lo tenia y lo solto)»: lo que sabe, no si era el anterior saliendo. La pausa la recibe
+   `open_layer_con`, para que un test suelte el cerrojo sin carreras.
+2. **La negativa del solape largo**, cerrada y con nombre: «el libro lo tiene abierto OTRO proceso
+   (el cerrojo de sled, mirado 10 veces, cada 50 ms): otro nodo lo tiene abierto, o el anterior aún
+   está saliendo: espera a que salga y vuelve a arrancarlo; si son dos nodos, sobra uno: un nodo por
+   libro. Otro --ledger es OTRO nodo, y va con OTRA clave de firma y con su propio --indice-firma,
+   su --contador-recepcion y su --diario: con esta clave, un --indice-firma nuevo vuelve a firmar
+   con hojas XMSS ya gastadas, y eso la compromete (SECURITY.md §2); y en este --diario, su cadena
+   mezclaría dos libros». Conserva «OTRO proceso» y «un nodo por libro». El comentario de
+   `error_al_abrir` corrige con marca el «No se reintenta», el «90 de 90» y la receta.
+3. **Cuatro tests** en `main.rs`, deterministas. En tres, el cerrojo lo toma el test con un `flock`
+   propio sobre `<libro>/db` y la pausa va por `open_layer_con`:
+   `el_libro_tomado_200_ms_se_abre_en_cuanto_se_suelta` lo suelta en la cuarta pausa (4 x 50 ms) y
+   la quinta mirada abre; `el_libro_tomado_mas_que_el_tope_se_niega_con_nombre_sin_tocar_nada` no lo
+   suelta: nueve pausas, escritas, y la negativa con las dos causas, OTRA clave de firma y las hojas
+   ya gastadas, y el directorio byte a byte igual; suelto, abre;
+   `el_nodo_solo_espera_al_cerrojo_y_a_ningun_otro_error`: un libro que es un fichero (`Io` de otra
+   causa), un fallo del `flock` de sled sin `WouldBlock` (un `ENOLCK`) y otra gobernanza, cero
+   pausas, y el mismo texto con `WouldBlock`, nueve. El cuarto,
+   `la_espera_del_nodo_es_la_real_diez_miradas_cada_50_ms`, usa `open_layer`, la espera que corre en
+   el nodo: ata `(ESPERAS_CERROJO, PAUSA_CERROJO) == (10, 50 ms)`, abre el libro con una capa -lo
+   que encuentra un segundo nodo- y exige que el segundo `open_layer` se niegue con su nombre
+   pasados al menos 450 ms, la cota inferior que `sleep` da. Un libro tomado cuyo error no
+   reconozca `cerrojo_tomado` -otro texto de sled, si cambia su versión- caería ahí: deducido, no
+   medido.
+4. **`tools/banco_reinicio.sh`**, desde la propuesta de la decisión: el REINICIO espera la salida
+   real con `wait` y exige reabrir a la primera, sin la línea de espera del nodo; el SOLAPE,
+   informativo, manda SIGTERM y relanza sin esperar, y cuenta cuántos abren a la primera, cuántos
+   tras esperar dentro del nodo y cuántos se niegan con su nombre, ROJO solo si uno falla de otra
+   manera o si, ya salido el viejo, no reabre a la primera; y DOS NODOS sigue atando la exclusión,
+   ahora con «mirado 10 veces», ROJO si el segundo se niega antes de 450 ms desde que se lanza, y
+   sondea al primero con hasta cinco sondas de 2 s seguidas en vez de una (la misma sonda que
+   `arranca`, que hace hasta cien con 0,1 s entre una y otra). La cabecera cita lo que decía.
+5. **La 18**, con su nota «⚠️ §813» que corrige al §783 con estas cifras, dice quién lo decidió y con
+   qué criterio, y por qué se cierra; el tachado «~~Puede impedir un reinicio~~», anotado: era
+   cierto para un rearranque que no espera. **La 123**, nueva: un nodo vivo sin respuesta en 2 s
+   con la máquina sobresuscrita, con su medida. **La 124**, nueva: nada ata una clave de firma a un
+   solo libro ni a un solo contador, con la medida de la hoja firmada dos veces.
+
+**Medido.**
+
+- **Que los tests caen**, siete mutantes aplicados uno a uno y revertidos (`cmp` con la copia
+  buena): sin la espera (la guarda con `mirada < 1`) caen los cuatro, el de 200 ms en la primera
+  mirada; esperando a todo `Io` (la guarda de `open_retry`), cae
+  `el_nodo_solo_espera_al_cerrojo_y_a_ningun_otro_error` (9 pausas de 0 ante «Not a directory»);
+  con el mensaje del §783, caen el del tope («otro nodo lo tiene abierto») y el de la espera real;
+  con el tope en 1.000, caen tres, y el de la espera real en sus cifras (`(1000, 50ms)`); con una
+  espera que no duerme (`open_layer_con(a, |_| {})`), cae el de la espera real: se negó en 605 µs;
+  con la negativa de la primera versión, sin otra clave, cae el del tope («Otro --ledger es OTRO
+  nodo»); y con `cerrojo_tomado` sin `WouldBlock`, cae el de los otros errores (el `ENOLCK`, 9
+  pausas de 0). Con este sello, los cuatro `ok`, y `dos_nodos_sobre_el_mismo_libro…` y
+  `el_libro_se_constituye_con_las_raices_de_las_banderas` también.
+- **La suite del nodo**: 210 de 210, 0 ignorados y 0 avisos, en release.
+- **Las recetas, con el nodo de este sello y el viejo vivo**: la del §783 -otro `--ledger` con el
+  `--diario`, el `--contador-recepcion` y el `--indice-firma` del nodo A- no arranca: la niega el
+  guardián del índice, que tiene A, con su mensaje; la de este sello -otro `--ledger` con OTRA clave
+  y su propio índice, contador y diario- arranca, y ninguna hoja de ninguna clave firma dos
+  mensajes: A firma las hojas 1 a 4 con la suya y B la 1 y la 2 con la otra. La de la primera
+  versión, con la misma clave, la midió la revisión: la misma hoja XMSS firmó dos mensajes, la 2
+  con A parado y la 2 y la 3 con A vivo.
+- **El banco**, 30 pasadas el 15-10-2026 en 4 CPU con el nodo de este sello, todas VERDES: 10 sin
+  carga añadida (había otro trabajo en la máquina: carga de 4,3 a 5,8), 10 con cuatro `yes` (de
+  5,9 a 9,7) y 10 con ocho (de 9,4 a 16,5). Los 900 rearranques del REINICIO abren a la primera,
+  sin esperar al cerrojo; de los 450 del SOLAPE, 405 abren a la primera y 45 tras esperar dentro
+  del nodo (0, 21 y 24), y ninguno se niega; en los 30 DOS NODOS el segundo se niega con su nombre
+  en 618 a 1.575 ms (618 a 650 sin carga añadida), nunca antes de 450, y el primero contesta. En
+  ninguna pasada se lanzó el `cargo build` del banco: el binario lo construyó cargo desde las
+  fuentes del sello, y en cada pasada se comprobó su sha256 y que `main.rs` era el bueno, porque
+  la espera al cerrojo de cargo, compartido con otro trabajo, llegó a 22 minutos por pasada en la
+  primera versión. Con el nodo que mira sin dormir, en una copia del banco que solo cambia el
+  binario y el puerto, DOS NODOS sale ROJO 3 de 3: se niega en 110 ms. Y una primera versión de este sello -la misma
+  espera, con la negativa que no pedía otra clave- dio otras 30 pasadas VERDES (900 a la primera
+  en el REINICIO; 399 y 51 en el SOLAPE, ninguna negativa), y en 200 vueltas sueltas de SIGTERM
+  sin esperar, con ocho `yes`, 150 abrieron a la primera mirada y 50 a la segunda, ninguna más
+  allá.
+- **Las herramientas del bucle del canon** (`check_cifras`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `verificar_citas`, `check_dominios`, `check_publicadas`,
+  `check_nucleo`, `check_techo`, `check_curvas`, `check_superficie`) y `check_tests`,
+  `check_modulos`, `check_vectores` y `check_catalogo`: en el árbol con «§813» sin número, ROJAS
+  solo `check_cifras` (la crónica del nodo acaba en una entrada sin número: «pina 210 y su ultima
+  entrada dice §802: -> 206») y `verificar_citas` (35 marcadores sin número, v6: 17 en `main.rs`,
+  12 en el `BACKLOG.md`, 5 en el banco y 1 en `canon.sh`); las demás en 0, y `check_tests` con
+  1972. En una copia con el número puesto y este asiento al final de `AUDITORIA.md`,
+  `check_cifras` y `verificar_citas` en 0 (754 encabezados, 0 citas muertas). La puerta de los
+  bancos con `--locked`: 57 llamadas, todas con él. Y el nodo sin `dev` (`cargo check --release
+  --locked -p zk-ssl-node --no-default-features`) compila con 1 aviso, el de `podar` (pin 1). `git
+  diff --check`, limpio.
+
+**Contadores.** `zk-ssl-node` 206 -> 210, en su fila de `tools/canon.sh`, con su crónica. TOTAL DE
+SELLO 1809 -> 1813 y TOTAL CON LARGOS 1946 -> 1950, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`,
+y el desglose de `PRINCIPIOS.md` («210 del nodo»). `check_tests` 1968 -> 1972. Las «1364
+declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores. Ni vectores. El
+`BACKLOG.md`, de 47 a 49 abiertas y 77 resueltas: abre la 123 y la 124; la 18 sigue cerrada, con su
+nota. `tools/` sigue con 26 `banco_*.sh`.
+
+**Lo que NO hace.** No toca la capa: `SovereignLayer::open` sigue sin esperar al cerrojo de sled, y
+`cerrojo_libre` sigue siendo del recifrado y de la apertura que resuelve sus restos. No quita
+`open_encrypted_retry` de los tests. No cambia cómo muere el nodo con SIGTERM (no lo atiende: muere
+con la señal). No espera más que 450 ms: un viejo que tarde más en salir da la negativa, con su
+nombre. No mide un reinicio de la máquina, ni un disco lleno. No explica la latencia del DOS NODOS
+con carga (la 123). Y no detecta que una clave firme sobre dos libros, o con un contador nuevo: la
+negativa ya no lo receta, pero un nodo arrancado así con la misma clave vuelve a firmar hojas
+gastadas, y uno con el diario de otro libro lo mezcla en su cadena (la 124).
