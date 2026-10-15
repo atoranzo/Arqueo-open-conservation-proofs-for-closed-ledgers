@@ -54859,3 +54859,201 @@ rebase: sale de lo que el rebase tenía que cambiar.
 
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos, y
 `check_modulos` en 205 ficheros. El `BACKLOG.md` no cambia: ninguna entrada llevaba esto.
+
+## §834 — una puerta del canon compila en release y con `--locked` cada binario y cada ejemplo del workspace: los diez `etapa_*` de la capa, que piden `sandbox` y el canon no compilaba, y los ejecutables de `gen_openrpc` y del nodo (la tarea 31)
+
+El commit que lleva este asiento, sobre `bfddcec` (el §833). Toca `tools/canon.sh`, con una sección
+nueva tras la puerta del §784, y este asiento. Ni tests, ni vectores, ni código de los crates. Del
+autor es la tarea: la 31 de la lista que encargó. La forma la propuso la sesión. Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4
+de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a
+§859). No toca `crates/zk-ssl-guardian`.
+
+Un revisor de la sesión leyó la primera versión de este sello y corrió sobre ella el canon `--sello`,
+con el árbol limpio: VERDE, en 235 s de tests y 359 s en total, y la puerta nueva con «OK 23
+objetivos en 8 paquetes, 11 con features (2 s)». Aquel árbol era el de antes del §808: lo que eso
+cambia va en «La base». Lo que pidió está aquí. Que el nodo de la puerta no es el de todos los
+bancos: lo es el de los que lo compilan solo o con el kit. Que la prueba de vida cuenta objetivos de
+todos los paquetes, con holgura, y que eso se declare, con su mutante vivo, R1. Que el contador de
+avisos cuenta también los de cargo. Que la razón de G5 diga que es equivalente sólo hoy. Que el
+título no diga «nadie», porque el §583 compiló a mano un ejemplo y la 81 de `BACKLOG.md` ya nombraba
+la causa. Y que el canon se corra otra vez sobre el árbol final.
+
+Antes de que se corrigiera el texto de los asientos de la serie y el comentario de la sección en
+`tools/canon.sh`, el canon, `bash tools/canon.sh --sello`, corrido por la sesión sobre el árbol
+limpio de la versión anterior de este commit, con su asiento en su sitio y sin esa frase, dio VERDE,
+401 s de reloj (de su arranque a su salida) y 265 s de tests (la línea «total» de la tabla), en una
+máquina de 4 CPU con carga de 0,38 al empezar. Las 19 filas del nivel, en su pin, con 1809 tests que
+pasan; la puerta nueva, con «OK 24 objetivos en 8 paquetes, 12 con features (1 s)»; `check_tests` en
+1968 y 20 instrumentos; `check_modulos` en 205; las once herramientas del bucle «2 ter»; la puerta de
+los vectores, en 497 ficheros y 987 líneas; `check_catalogo`; el cable, en 23 de 23; la segunda
+implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`473eb5f63e5b091d` y el tarball `ee6d847bbdffbc3c`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él. El canon de esta versión, `bash tools/canon.sh --sello`, corrido por la
+sesión sobre el árbol limpio de este commit, con este asiento en su sitio y sin esta frase: VERDE,
+710 s de reloj (de su arranque a su salida) y 504 s de tests (la línea «total» de la tabla), en una
+máquina de 4 CPU con carga de 0,23 al empezar. Las 19 filas del nivel, en su pin, con 1809 tests que
+pasan (la suma de la columna «pasan»); la puerta nueva, con «OK 24 objetivos en 8 paquetes, 12 con
+features (61 s)», que recompiló; `check_tests` en 1968 y 20 instrumentos; `check_modulos` en 205; las
+once herramientas del bucle «2 ter»; la puerta de los vectores, en 497 ficheros y 987 líneas;
+`check_catalogo`; el cable, en 23 de 23; la segunda implementación, con sus pares STARK en 34 de 34;
+y el artefacto reproducible, con el binario `473eb5f63e5b091d` y el tarball `81d8e7855079048f`.
+Corrió con un `TMPDIR` propio y vacío, y al acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió primero sobre el §807 (`e506627`), con otro número, detrás del
+lector de `members`. Cuando el autor subió del §808 al §812, la sesión lo rebasó sobre el §833. Del
+§808 al §812 entra un ejemplo con features: `testigos_locales` de `zk-ssl-medio`, del §808, que pide
+`firmar`. Eso mueve las cifras del plan: de 23 a 24 objetivos, de 19 a 20 ejemplos y de 11 a 12 con
+features. Y mueve la holgura del mínimo: con `MIN_CON_FEATURES` en 10, pasa de uno a dos. Con ella
+cambian, sobre este árbol, M1 y G6 (la prueba de vida, de 1 a 2 de 10), G1 (de 19 a 20 ejemplos sin
+ejecutable), G7 (que ahora anota la línea de su OK) y R1 (de «22 objetivos … 10 con features» a «23 …
+11», y ahora pueden salir del plan hasta dos `etapa_*`, no uno). Cambian también el comentario de la
+sección en `tools/canon.sh` y el mensaje de su `falla`, que nombran los dos ejemplos de
+`zk-ssl-medio`. El plan, la puerta sola y los mutantes que dependen de la cuenta (M1, G1, G4, G6, G7
+y R1) se midieron otra vez sobre este árbol. Los tiempos de compilación y los demás mutantes son del
+árbol de antes del §808: la puerta y el código que compilan no cambian entre uno y otro, salvo ese
+ejemplo. Y el §810 pasó a citar por su bloque las tres citas por línea a `tools/canon.sh` que este
+sello corregía (punto 6 de abajo). Todo esto sale de lo que el rebase tenía que cambiar —el número,
+la apertura y las cifras de la base—: el autor lo acepta o no («Lo que es del autor»).
+
+**De dónde sale.** El canon sólo compila lo que compilan sus `cargo test`, sus conformidades y las
+puertas del §784 y del 3 bis. La 81 de `BACKLOG.md`, «Tres warnings en un ejemplo que el canon no
+ve», ya nombraba la causa: «El canon no compila ejemplos». El §583 la midió otra vez compilando a mano
+con `--features sandbox`, y el §584 la cerró arreglando el ejemplo. La causa quedó. Tres cosas
+quedaban fuera.
+
+- Los diez `etapa_*` de `crates/zk-ssl/examples`, los bancos del RFC-0002. Piden la feature
+  `sandbox` en su `required-features` (`crates/zk-ssl/Cargo.toml`), y `cargo test -p zk-ssl`, la
+  única llamada del canon a la capa, los salta sin decirlo. Medido abajo: con un argumento de menos
+  en uno de ellos, `cargo test -p zk-ssl --release --locked --no-run` sale con 0.
+- El ejecutable en release de `gen_openrpc`, el que `crates/zk-ssl-wire/src/openrpc.rs` manda usar
+  para regenerar `spec/openrpc.json`. Su código sí se compilaba: `cargo test -p zk-ssl-wire` lo
+  compila como test («Running unittests src/bin/gen_openrpc.rs»). Un error de tipos ya se veía; el
+  binario que se ejecuta, no.
+- El ejecutable en release del nodo con `dev`. Lo compilaban los bancos, fuera de los niveles; la
+  puerta del §784 compila el de sin `dev`, con `cargo check`.
+
+**Lo que hace.**
+
+1. Lee de `cargo metadata --format-version 1 --no-deps --locked` cada objetivo `bin` y `example` de
+   los miembros. Un paquete cuya fila de la tabla no cabe en el nivel pedido se salta, con una línea
+   «--» que lo dice. Hoy ninguno de `--largo` ni de `--completo` tiene binarios ni ejemplos.
+2. Una llamada por paquete: `cargo build --release --locked -p <paquete>`, con `--bins` y
+   `--examples` según lo que tenga, y `--features` con la unión de las `required-features` de sus
+   objetivos. Por paquete y no con `--workspace`: unificar features entre paquetes rehace un binario
+   con lo que pide otro, y el del kit es el que juzga el 3 bis.
+3. ROJO si una llamada falla; si un objetivo listado no sale con su ejecutable en un
+   `compiler-artifact` de su llamada (`--message-format=json-render-diagnostics`); si los avisos de
+   un paquete no son su pin exacto; o si los objetivos con features compilados son menos de
+   `MIN_CON_FEATURES`, que es 10. Los avisos son toda línea `warning` de su llamada: los de rustc y
+   también los de cargo. La línea de resumen de cargo («generated N warning») no cuenta. El pin es 0,
+   salvo el nodo: 1, el de `podar`, que el §580 deja a la vista a propósito, el mismo que admite la
+   puerta del §784. El mínimo cuenta los objetivos con features de todos los paquetes, y hoy son 12:
+   los diez `etapa_*` de `zk-ssl` y los dos ejemplos de `zk-ssl-medio`, `medio` y
+   `testigos_locales`, que piden `firmar`. Con 10 quedan dos de holgura, y no vigila los diez
+   `etapa_*` uno a uno: R1, abajo, vive por eso.
+4. Corre en los tres niveles, `--sello` incluido, tras la puerta del §784 y antes del 3 bis. Cabe:
+   la medida va abajo. Es lo que el autor tenía por defecto: en `--sello` si cabe.
+5. La cabecera de la sección declara lo que queda fuera: el generador de
+   `tools/segunda/kat_xmss/generador`, que no es miembro del workspace ni versiona su `Cargo.lock`.
+6. La sección mete 76 líneas en `tools/canon.sh`. Tres citas de documentos vivos caían detrás: el
+   veredicto en `doc/METODO.md`, el bucle del segundo verificador en `tools/segunda/README.md` y el
+   artefacto en el RFC-0021. Este sello las corregía por su línea, con marca. Al rebasar sobre el
+   §812 ya no hace falta: el §810 las pasó a citar por su bloque, que la sección nueva no mueve, y el
+   sello deja esos tres ficheros como los dejó el §810. Al traerlo sobre el §833, que también toca
+   `tools/canon.sh`, la sección entró sin choque; sólo chocó el pie de `AUDITORIA.md`.
+
+**Medido.** En el worktree de la sesión, con 4 CPU, `nice -n 19`, un `flock` común y un `TMPDIR`
+propio. Qué se midió otra vez sobre este árbol y qué es del de antes del §808, en «La base».
+
+- El plan del árbol: 24 objetivos en 8 paquetes. Cuatro `bin`: `zk-ssl-cli`, `gen_openrpc`,
+  `zk-ssl-verify` y `zk-ssl-node`. Veinte `example`: los diez `etapa_*`, siete de `zk-ssl-sdk`,
+  `medio` y `testigos_locales` de `zk-ssl-medio`, y `volcado_rescue` de `stark-experiment`. Doce
+  piden features: los diez `sandbox`, y `medio` y `testigos_locales`, `firmar`. Ningún paquete
+  tiene a la vez `bin` y `example`.
+- `cargo build --release --locked -p zk-ssl --features sandbox --examples`, con lo demás caliente:
+  40,5 s de pared y 137 s de CPU de usuario, con carga de 1,3 a 1,9. Recompila sólo `zk-ssl`, con
+  `sandbox`, y sus diez ejemplos. Sale con 0 y sin avisos: hoy los diez compilan.
+- El ejecutable del nodo en release, la primera vez: 9,3 s. El de `gen_openrpc`: 0,45 s.
+- La puerta sola, sobre una copia de este árbol, con todo compilado: «OK 24 objetivos en 8
+  paquetes, 12 con features (2 s)», exit 0. Con `--largo`, sobre una copia del árbol de antes del
+  §808, lo mismo que con `--sello`.
+- Lo que añade al `--sello`: unos 50 s cuando cambia la capa, y unos 2 s cuando no. El §833 midió
+  470 s de reloj para el `--sello` entero. En la primera corrida del canon con este `target`, sobre la
+  primera versión de este commit, la puerta tardó 57 s; en la segunda, 1 s.
+- Avisos: 0 en siete paquetes; en el nodo, 1, `podar`.
+- Los bancos que compilan el nodo en release, leídos de sus `cargo build` en `tools/banco_*.sh`: 23.
+  Ocho lo compilan solo o con el kit, como `banco_ancla`, `banco_consumo` y `banco_reinicio`. Quince
+  lo compilan con el mando, como `banco_cofirma`, `banco_completo` y los cuatro `banco_mentiroso_*`.
+
+**Mutantes.** Cada uno sobre una copia nueva del árbol hecha con `tar`, sin `target` ni `.git`, y
+con la puerta extraída del `tools/canon.sh` de la copia, con su preámbulo. Las copias comparten un
+`target` copiado del worktree a un directorio de trabajo; nunca el del árbol. La copia sin mutar da
+exit 0. Tras un mutante que dejó algo compilado, la copia sin mutar se recompiló con los ficheros
+tocados y volvió a dar exit 0 antes del siguiente. Una primera corrida de M4 arrastró el aviso de
+M3 por eso; se descartó y se repitió.
+
+- Mueren ocho, con exit 1.
+  - M1: `.apply_send(&envio, a, &est_a)` en `etapa_a_apply.rs`, sin `importe`. Hoy,
+    `cargo test -p zk-ssl --release --locked --no-run` sale con 0. La puerta: error E0061, y la
+    prueba de vida, 2 de 10.
+  - M2: `required-features = ["sandbox", "inexistente"]` en `etapa_a_apply`. Hoy, el mismo
+    `cargo test` sale con 0. La puerta: «the package 'zk-ssl' does not contain this feature:
+    inexistente».
+  - M3: una variable sin usar en `etapa_b4_arranque.rs`. Hoy, 0 avisos en ese `cargo test`. La
+    puerta: «1 aviso(s), pin 0».
+  - M4: `#[allow(dead_code)]` sobre `podar`. La puerta: «0 aviso(s), pin 1». La del §784, que
+    admite hasta 1, no lo ve.
+  - G1: la puerta sin `--examples`. ROJO en cuatro paquetes, con los 20 ejemplos sin ejecutable.
+  - G3: la puerta sin `--features`. ROJO: los diez `etapa_*` sin ejecutable, y el aviso de cargo de
+    que el filtro `examples` no casa nada, contado como aviso: «warning: target filter `examples`
+    specified, but no targets matched; this is a no-op».
+  - G4: el plan sólo con `bin`. ROJO por la prueba de vida: 0 de 10.
+  - G6: M1 con el fallo de la llamada como mensaje y no como `falla`. ROJO por la prueba de vida: 2
+    de 10.
+- Viven cinco, y se declaran.
+  - G2: G1 sin la comprobación de los `compiler-artifact`: VERDE. Es el control que muestra qué
+    pieza mata a G1.
+  - G5: la puerta sin `--bins`: VERDE. Es equivalente hoy, porque ningún paquete tiene `bin` y
+    `example` a la vez. Cargo compila los binarios por defecto sólo cuando no le llega otro filtro
+    de objetivos: con `--examples` y sin `--bins`, no los compila. Si un paquete tuviera los dos, la
+    comprobación de los `compiler-artifact` lo mataría. El `--bins` se queda.
+  - G7: G6 con `MIN_CON_FEATURES=1`: VERDE, con «OK 14 objetivos en 7 paquetes, 2 con features».
+    El control de G6: lo mata el mínimo.
+  - G8: un ejemplo roto en `crates/halo2-experiment`, que es de `--largo`, con `--sello`: VERDE,
+    con la línea «-- halo2-experiment: nivel largo, fuera de --sello». Es lo que se quiere: en
+    `--largo` se compilaría.
+  - R1, del revisor: borrar `crates/zk-ssl/examples/etapa_b4_arranque.rs` y su `[[example]]`. La
+    puerta da «OK 23 objetivos en 8 paquetes, 11 con features» y exit 0; el mismo `cargo test
+    --no-run` sale con 0. Vive por la holgura del mínimo: hasta dos `etapa_*` pueden salir del plan
+    con el canon en VERDE.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores` y `check_catalogo`; también
+`check_tests`, `check_modulos`, `bash -n tools/canon.sh` y `bash tools/canon.sh --lista`. Fuera de
+este asiento, el commit no deja ninguna marca «⚠️ §834» (`git grep --cached -c '⚠️ §834'` sólo da
+`AUDITORIA.md`).
+
+**Lo que NO hace.** No compila el generador de `tools/segunda/kat_xmss`: sin `Cargo.lock`
+versionado, `--locked` no tiene nada que fijar. No ejecuta ningún binario ni ejemplo: compilar no es
+correr. No compara la salida de `gen_openrpc` con `spec/openrpc.json`: eso lo hace el test de
+`openrpc.rs`. No mira las citas por línea a `tools/canon.sh` que caen antes de la sección nueva: este
+sello no las mueve. No toca las cifras de la cabecera del canon («151 s» y las demás). No vigila los
+diez `etapa_*` uno a uno: vigila el plan que lee y un mínimo con holgura. En el árbol, la puerta deja
+sus ejecutables en `target/release`. El del nodo es el mismo que construyen los ocho bancos que lo
+compilan solo o con el kit. Los quince que lo compilan con el mando lo reconstruyen, porque cargo
+unifica las features de los paquetes de una misma llamada: el revisor lo midió sobre una copia con su
+`target`, donde `-p zk-ssl-node -p zk-ssl-cli` cambia los hashes de `zk_ssl`, `xmss` y `winterfell`, y
+`-p zk-ssl-node -p zk-ssl-verify` lo deja todo fresco.
+
+**Lo que es del autor.** Si la puerta se queda en `--sello` o baja a `--largo`. Si se versiona el
+`Cargo.lock` del generador de `kat_xmss`, y entonces entra en la puerta. Si el pin del nodo sigue en
+1 mientras `podar` no tenga llamador. Y si la prueba de vida sube el mínimo a 12 o cuenta sólo los
+`etapa_*` de `zk-ssl`, para matar a R1. Subir `MIN_CON_FEATURES` a 12 es cambiar una constante;
+contar sólo los `etapa_*` es maquinaria nueva. Este sello no hace ninguna de las dos: con el rebase,
+la holgura pasó de uno a dos sin que nadie lo decidiera. Y si acepta lo que el rebase cambió fuera de
+lo que tenía que cambiar: las cifras del plan, la holgura, los mutantes que la cuentan, y el
+comentario y el mensaje de `tools/canon.sh` («La base»).
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 1968 tests declarados y 20 instrumentos, y
+`check_modulos` en 205 ficheros. Ningún pin de la tabla cambia. El `BACKLOG.md` no cambia: la 81 ya
+está cerrada, y este sello cierra su causa en el canon sin abrir otra entrada.

@@ -547,6 +547,82 @@ else
   falla "el nodo sin dev NO compila: $(grep -E '^error' "$OUT/sin_dev.txt" | head -3 | tr '\n' ' ')"
 fi
 
+# ── §834 · los binarios y los ejemplos compilan en release y con --locked (la tarea 31) ──
+# Hasta el §834 el canon no compilaba los diez `etapa_*` de `crates/zk-ssl/examples` (la 81 del
+# BACKLOG ya lo decia): piden `sandbox` en su `required-features`, y `cargo test -p zk-ssl` los
+# salta sin decirlo. Un argumento de menos en uno, o una feature que no existe en su
+# `required-features`, pasaban el canon en VERDE. Tampoco compilaba el canon en release el binario
+# `gen_openrpc` de `zk-ssl-wire`: su `cargo test` lo compila como test. Esta puerta lee de
+# `cargo metadata` cada `bin` y cada `example` de los miembros cuyo nivel cabe en el pedido, y los
+# compila con `cargo build --release --locked`: una llamada por paquete, con las features que piden
+# sus objetivos. Por paquete y no con `--workspace`, porque unificar features entre paquetes rehace
+# un binario con lo que pide otro, y el del kit es el que juzga el 3 bis. Lo que el canon ya
+# compilaba sale fresco: el mando (3) y los ejemplos sin features. El kit lo compila aqui y el 3 bis
+# lo encuentra hecho. El nodo con `dev` en release sale como el de los bancos que lo compilan solo
+# o con el kit; los que lo compilan con el mando lo rehacen, porque cargo unifica sus features.
+# Prueba de vida: cada objetivo listado sale con su ejecutable en un `compiler-artifact` de su
+# llamada, y al menos MIN_CON_FEATURES piden features. La cuenta mezcla paquetes: hoy 12, los diez
+# `etapa_*` y los dos de `zk-ssl-medio`; el minimo deja dos de holgura y no vigila cada `etapa_*`.
+# Los avisos de rustc y de cargo, con pin exacto por paquete: cero, salvo el nodo, el de `podar`
+# (§580), como en el §784. Fuera, declarado: el generador de `kat_xmss`, sin `Cargo.lock` versionado.
+msg ""
+msg "== CANON · los binarios y los ejemplos, en release y con --locked =="
+MIN_CON_FEATURES=10
+T_OBJ0=$(date +%s)
+# Una linea por paquete con objetivos: nombre, features (o -), cuantos piden features, y los objetivos.
+PLAN_OBJ=$(cargo metadata --format-version 1 --no-deps --locked 2> "$OUT/objetivos_metadata.txt" | python3 -c '
+import json, sys
+for p in json.load(sys.stdin)["packages"]:
+    obj = [t for t in p["targets"] if {"bin", "example"} & set(t["kind"])]
+    if not obj:
+        continue
+    fe = sorted({f for t in obj for f in (t.get("required-features") or [])})
+    print(p["name"], ",".join(fe) or "-", sum(1 for t in obj if t.get("required-features")),
+          " ".join(("bin:" if "bin" in t["kind"] else "example:") + t["name"] for t in obj))
+')
+[ -n "$PLAN_OBJ" ] || falla "no leo los binarios ni los ejemplos de cargo metadata: $(head -c 200 "$OUT/objetivos_metadata.txt")"
+N_OBJ=0; N_FE=0; N_PAQ=0; F_OBJ0=${#fallos[@]}
+while read -r P FE NF OBJS; do
+  [ -n "$P" ] || continue
+  NIV=$(awk -v c="$P" '$1 == c {print $2}' <<< "$TABLA")
+  if [ "$(nivel_num "${NIV:-?}")" -gt "$PEDIDO" ]; then
+    msg "  --  $P: nivel ${NIV:-sin fila}, fuera de $NIVEL"
+    continue
+  fi
+  ARGS=()
+  case " $OBJS" in *" bin:"*) ARGS+=(--bins) ;; esac
+  case " $OBJS" in *" example:"*) ARGS+=(--examples) ;; esac
+  [ "$FE" = "-" ] || ARGS+=(--features "$FE")
+  J="$OUT/objetivos_${P//-/_}.json"; E="$OUT/objetivos_${P//-/_}.txt"
+  if ! cargo build --release --locked -p "$P" "${ARGS[@]}" --message-format=json-render-diagnostics > "$J" 2> "$E"; then
+    falla "$P: sus binarios o ejemplos NO compilan en release con --locked (${ARGS[*]}): $(grep -E '^error' "$E" | head -3 | tr '\n' ' ')"
+    continue
+  fi
+  # Los avisos de rustc y de cargo; la linea de resumen de cargo («generated N warning(s)») no cuenta.
+  W=$(grep -E '^warning' "$E" | grep -cvE 'generated [0-9]+ warnings?')
+  case "$P" in zk-ssl-node) PIN_W=1 ;; *) PIN_W=0 ;; esac
+  [ "$W" = "$PIN_W" ] || falla "$P: sus binarios o ejemplos dan $W aviso(s), pin $PIN_W: $(grep -E '^warning' "$E" | head -3 | tr '\n' ' ')"
+  FALTAN=$(python3 -c '
+import json, sys
+hechos = set()
+for l in open(sys.argv[1], encoding="utf-8"):
+    try:
+        m = json.loads(l)
+    except ValueError:
+        continue
+    if m.get("reason") == "compiler-artifact" and m.get("executable"):
+        for k in m["target"]["kind"]:
+            hechos.add(k + ":" + m["target"]["name"])
+print(" ".join(o for o in sys.argv[2:] if o not in hechos))
+' "$J" $OBJS)
+  [ -z "$FALTAN" ] || falla "$P: cargo no dio el ejecutable de: $FALTAN"
+  N_PAQ=$((N_PAQ + 1)); N_OBJ=$((N_OBJ + $(wc -w <<< "$OBJS"))); N_FE=$((N_FE + NF))
+done <<< "$PLAN_OBJ"
+[ "$N_FE" -ge "$MIN_CON_FEATURES" ] \
+  || falla "solo $N_FE objetivos con features compilados, y la prueba de vida pide $MIN_CON_FEATURES (cuenta todos los paquetes: los diez etapa_* y los dos de zk-ssl-medio)"
+[ "${#fallos[@]}" != "$F_OBJ0" ] \
+  || msg "  OK  $N_OBJ objetivos en $N_PAQ paquetes, $N_FE con features ($(( $(date +%s) - T_OBJ0 )) s)"
+
 # ── 3 bis · conformidad del PAQUETE (spec/PAQUETE.md, RFC-0004 E2, §398; el arnes: RFC-0005 E4, §408) ──
 msg ""
 msg "== CANON · conformidad del paquete =="
