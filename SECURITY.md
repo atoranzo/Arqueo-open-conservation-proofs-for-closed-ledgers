@@ -1095,7 +1095,7 @@ extensión de campo», y no decía que el nivel cuántico no está medido. ⚠�
 **2. Sin ceremonia de confianza — y sin haberla tenido nunca.** Zcash la
 eliminó con Halo 2 en Orchard (mayo 2022), pero Sprout y Sapling nacieron
 de ceremonias y esos pools legados existen. Aquí el arranque **no genera
-claves**: 0,67 ms medidos, no hay secreto que destruir ni participante en
+claves**: 1,47-1,85 ms medidos (⚠️ §841: decía «0,67 ms»; remedido en tres corridas de `metrics_of_the_layer` sobre el §840, en la tabla de `ARQUITECTURA.md` «Métricas de la capa, medidas»), no hay secreto que destruir ni participante en
 quien confiar. *Matiz honesto: esto no diferencia frente a Bitcoin o
 Solana, que no usan SNARKs en absoluto — diferencia frente a la familia
 Groth16/PLONK-KZG, que fue de quien se descartó.*

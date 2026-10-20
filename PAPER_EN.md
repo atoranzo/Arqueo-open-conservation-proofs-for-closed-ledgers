@@ -441,6 +441,8 @@ exist at all.
 control or hardware characterization. Observed times for the same
 operation ranged from 180 to 620 ms depending on cache state. The figures
 support order-of-magnitude comparison between paradigms, not benchmarking.
+⚠️ §841: the §7.3 figures now come from three runs and carry their own note;
+the «from 180 to 620 ms» above is from the transfer of one proof from before §538, and that cache variation has not been remeasured.
 
 ### 7.2 Results
 
@@ -461,17 +463,31 @@ constant** (step 9 cost 0.77× step 1). Closing: 1.84 s, amortizable.
 
 ### 7.3 Full-layer measurements
 
-| Operation | Prove | Verify | Proof |
+| Operation | Prove | Apply / verify | Proof |
 |---|---|---|---|
-| Startup | **0.67 ms** | — | — |
-| Issuance (2-of-N) | ~105 ms | ~2 ms | 57,342 B |
-| Transfer | ~620 ms | ~4 ms | 61,966 B |
-| Destruction | ~110 ms | ~2 ms | 54,924 B |
-| Audit (band) | ~250 ms | ~1.5 ms | 48,782 B |
+| Startup | **1.47–1.85 ms** | — | — |
+| Issuance (2-of-N) | 656–689 ms | 3.3–3.4 ms | 66,756–68,965 B measured; no band |
+| Transfer (send + claim) | 1,446–1,678 ms | 9.4–10.3 ms | 145,953–167,967 B, the §538 band |
+| ├─ send | 649–858 ms | 4.7–6.1 ms | 73,571–84,244 B, the §538 band |
+| └─ claim | 758–820 ms | 4.3–4.7 ms | 72,382–83,723 B, the §538 band |
+| Destruction | 625–911 ms | 3.6–4.8 ms | 74,532–75,850 B measured; no band |
+| Audit (band) | 220–396 ms | 1.8–2.3 ms | 63,310–64,566 B measured; no band |
 
-**Verify/prove asymmetry: 0.5–0.8%.** This is the economic property that
-makes the model viable: cost falls on the party producing the proof, not
-on the party accepting it.
+In release, on a 4-CPU machine: `metrics_of_the_layer`
+(`crates/zk-ssl/src/metrics.rs`) run three times on 2026-10-20 on top of
+§840, with a load of 2.1 to 2.3; each time is the range of the three runs. A
+payment is two proofs, the send and the claim, and their sizes are given by the
+band that `BANDA_ENVIO_B` and `BANDA_COBRO_B` set; the three runs fall inside
+it. Issuance, destruction and the audit have no measured band.
+⚠️ §841: it said, from a single run and from before the §538 hiding:
+startup 0.67 ms; issuance ~105 ms, ~2 ms and 57,342 B; transfer, one proof,
+~620 ms, ~4 ms and 61,966 B; destruction ~110 ms, ~2 ms and 54,924 B; audit
+~250 ms, ~1.5 ms and 48,782 B; and the column said «Verify».
+
+**Apply/prove asymmetry of a payment: 0.6–0.7 %; verify/prove of an audit:
+0.6–0.8 %.** This is the economic property that makes the model viable: cost
+falls on the party producing the proof, not on the party accepting it.
+⚠️ §841: it said «Verify/prove asymmetry: 0.5–0.8%.».
 
 > ⚠️ **That ratio is the AUDIT DISCLOSURE's, not the transfer's.**
 >
@@ -483,6 +499,12 @@ on the party accepting it.
 > Applying a transfer costs **28.5 %** of generating it, because `apply`
 > **verifies, mutates the tree and writes to disk**. The two are not
 > comparable. See `AUDITORIA.md` §22.
+>
+> ⚠️ §841: those two ratios, 0.58 % and 28.5 %, are from before §538. In the
+> three runs of the table, `verify_audit` costs 1.8–2.3 ms against 220–396 ms
+> to generate, 0.6–0.8 %; and applying the payment, send and claim, costs
+> 9.4–10.3 ms against 1,446–1,678 ms, 0.6–0.7 %. This measurement does not
+> write to disk: the test's layer, `new_layer()`, opens no `sled`.
 
 **Quantified scaling limit**: one thousand transfers accumulate 139.2 to 160.2 MiB of
 proofs. This is the dominant practical constraint of choosing STARK, and
@@ -952,7 +974,7 @@ application, such a ceremony constitutes a permanent and unauditable
 dependency whose compromise permits creating money without detectable
 trace.
 
-Measurements show that verification costs 0.5–0.8% of proving — an
+Measurements show that verification costs 0.5–0.8% of proving (⚠️ §841: a figure from before §538; §7.3 now gives 0.6–0.8 % to verify an audit and 0.6–0.7 % to apply a payment) — an
 asymmetry that makes the model viable — and quantify its principal limit:
 **139.2 to 160.2 MiB of accumulated proofs per thousand transfers** — unit
 corrected in the fourth revision: the figure was always binary and was
@@ -960,7 +982,7 @@ labelled "MB"; in SI units it is 146.0 to 168.0 MB.
 
 ⚠️ That asymmetry is measured on **audit disclosures**, which verify without
 mutating state — precisely the supervisory case. A transfer's apply step
-costs 28.5 % of proving, because it also writes.
+costs 28.5 % of proving, because it also writes. ⚠️ §841: that 28.5 % is from before §538; in the three runs of §7.3, applying a payment costs 0.6–0.7 %, and that measurement does not write to disk.
 
 The results also delimit what has not been demonstrated. The single-node
 architecture means that state transitions are proven while the current

@@ -471,7 +471,8 @@ rendición de cuentas.
 varianza ni caracterización del hardware. Los tiempos observados de una
 misma operación variaron entre 180 y 620 ms según el estado de caché. Las
 cifras son válidas para comparar órdenes de magnitud entre paradigmas, no
-como benchmark.
+como benchmark. ⚠️ §841: las cifras del §7.3 son ya de tres corridas y llevan su
+propia nota; el «entre 180 y 620 ms» de arriba es de la transferencia de una prueba de antes del §538, y esa variación por caché no se ha remedido.
 
 ### 7.2 Resultados
 
@@ -493,17 +494,31 @@ amortizable.
 
 ### 7.3 Mediciones de la capa completa
 
-| Operación | Generar | Verificar | Prueba |
+| Operación | Generar | Aplicar / verificar | Prueba |
 |---|---|---|---|
-| Arranque | **0,67 ms** | — | — |
-| Emisión (2-de-N) | ~105 ms | ~2 ms | 57.342 B |
-| Transferencia | ~620 ms | ~4 ms | 61.966 B |
-| Destrucción | ~110 ms | ~2 ms | 54.924 B |
-| Auditoría (banda) | ~250 ms | ~1,5 ms | 48.782 B |
+| Arranque | **1,47-1,85 ms** | — | — |
+| Emisión (2-de-N) | 656-689 ms | 3,3-3,4 ms | 66.756-68.965 B medidos; sin banda |
+| Transferencia (envío + cobro) | 1.446-1.678 ms | 9,4-10,3 ms | 145.953–167.967 B, la banda del §538 |
+| ├─ envío | 649-858 ms | 4,7-6,1 ms | 73.571–84.244 B, la banda del §538 |
+| └─ cobro | 758-820 ms | 4,3-4,7 ms | 72.382–83.723 B, la banda del §538 |
+| Destrucción | 625-911 ms | 3,6-4,8 ms | 74.532-75.850 B medidos; sin banda |
+| Auditoría (banda) | 220-396 ms | 1,8-2,3 ms | 63.310-64.566 B medidos; sin banda |
 
-**Asimetría verificar/generar: 0,5-0,8%.** Es la propiedad económica que
-hace viable el modelo: el coste recae en quien produce la prueba, no en
-quien la acepta.
+En release, en una máquina de 4 CPU: `metrics_of_the_layer`
+(`crates/zk-ssl/src/metrics.rs`) corrido tres veces el 2026-10-20 sobre el
+§840, con una carga de 2,1 a 2,3; cada tiempo es el rango de las tres
+corridas. Un pago son dos pruebas, el envío y el cobro, y sus tamaños se dan por
+la banda que fijan `BANDA_ENVIO_B` y `BANDA_COBRO_B`; las tres corridas caen
+dentro. La emisión, la destrucción y la auditoría no tienen banda medida.
+⚠️ §841: la tabla decía, de una sola ejecución y de antes de la ocultación del
+§538: arranque 0,67 ms; emisión ~105 ms, ~2 ms y 57.342 B; transferencia, de una
+prueba, ~620 ms, ~4 ms y 61.966 B; destrucción ~110 ms, ~2 ms y 54.924 B;
+auditoría ~250 ms, ~1,5 ms y 48.782 B; y la columna decía «Verificar».
+
+**Asimetría aplicar/generar de un pago: 0,6-0,7 %; verificar/generar de una
+auditoría: 0,6-0,8 %.** Es la propiedad económica que hace viable el modelo: el
+coste recae en quien produce la prueba, no en quien la acepta. ⚠️ §841: decía
+«Asimetría verificar/generar: 0,5-0,8%.».
 
 > ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
 >
@@ -517,6 +532,12 @@ quien la acepta.
 >
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
 > --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
+>
+> ⚠️ §841: esas dos razones, el 0,58 % y el 28,5 %, son de antes del §538. En
+> las tres corridas de la tabla, `verify_audit` cuesta 1,8-2,3 ms frente a
+> 220-396 ms de generación, un 0,6-0,8 %; y aplicar el pago, envío y cobro,
+> 9,4-10,3 ms frente a 1.446-1.678 ms, un 0,6-0,7 %. Esta medida no escribe a
+> disco: la capa del test, `new_layer()`, no abre `sled`.
 
 **Límite de escala cuantificado**: mil transferencias acumulan 139,2 a 160,2 MiB de
 pruebas. Es la restricción práctica dominante de la elección de STARK, y
@@ -999,7 +1020,7 @@ ceremonia constituye una dependencia permanente e inauditable cuya
 compromisión permite crear dinero sin rastro detectable.
 
 Las mediciones muestran que verificar cuesta entre el 0,5% y el 0,8% de
-generar, asimetría que hace viable el modelo, y cuantifican su límite
+generar (⚠️ §841: cifra de antes del §538; el §7.3 da hoy 0,6-0,8 % al verificar una auditoría y 0,6-0,7 % al aplicar un pago), asimetría que hace viable el modelo, y cuantifican su límite
 principal: **139,2 a 160,2 MiB de pruebas acumuladas por cada mil transferencias**
 —unidad corregida en la cuarta revisión: la cifra siempre fue binaria, y
 se etiquetaba «MB»; en unidades SI son 146,0 a 168,0 MB—.

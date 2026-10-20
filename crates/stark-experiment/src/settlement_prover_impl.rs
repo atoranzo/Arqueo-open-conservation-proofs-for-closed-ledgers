@@ -26,7 +26,7 @@
 //!
 //! `setup()` ignora `rng_seed` (no hay aleatoriedad que sembrar) y
 //! devuelve la configuración de **128 bits DEMOSTRABLES**, la misma que
-//! usa `iso_bridge`. Cuesta ~125 KB y ~45 ms; se elige la garantía fuerte
+//! usa `iso_bridge`. Cuesta 127.274 B (⚠️ §841: decía «~125 KB y ~45 ms»; los bytes, del §806 en `FIVE_BACKENDS.md` §4; el tiempo no se fija aquí: depende de la máquina, y el §806 dio 74-78 ms en sus tres corridas); se elige la garantía fuerte
 //! por defecto. Para otras configuraciones, usar directamente
 //! `ComplianceProver` en vez del trait.
 //!

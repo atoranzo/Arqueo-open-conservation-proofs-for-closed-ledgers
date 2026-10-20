@@ -57447,3 +57447,314 @@ Las correcciones, sobre los ficheros STAGED de este commit:
 La nota de la 51 abre con «⚠️ **§840: medido, y con su guarda; sigue abierta.**»
 (`BACKLOG.md:4608`): es la nota nueva, no una corrección; corrige sólo lo que dice la marca del
 punto 4.
+
+## §841 — las métricas de la capa, remedidas: tres corridas de `metrics_of_the_layer` sustituyen la tabla de antes del §538 en `ARQUITECTURA.md`, `PAPER.md` y `PAPER_EN.md`, con los tamaños del pago por su banda; el «1,12 ms» sin fuente y el «125,6 KB y 45 ms» de `stark-experiment`, corregidos; y `check_publicadas` ata esas filas a las bandas y no deja publicar como de hoy cuatro cifras retiradas (lo descubierto 1d, 1e y 1f)
+
+El commit que lleva este asiento, sobre `f195662` (el §840). Toca `ARQUITECTURA.md`: la fila del
+arranque de la tabla «La diferencia, medida», y la sección «Métricas de la capa, medidas», con su
+tabla, sus razones, el límite de mil pagos, el coste encadenado, el tamaño que varía y «Qué NO son
+estas cifras»; `PAPER.md` y `PAPER_EN.md`, su §7.3: la tabla, con su columna «Aplicar / verificar»,
+la asimetría y la nota de sus dos razones; su §7.1, una frase tras la limitación; y su conclusión,
+con marcas en su misma línea; `SECURITY.md`, el arranque del punto 2 de «Donde este diseño va por delante», en su misma línea; tres comentarios de
+`crates/stark-experiment/src/`: la línea 38 de `lib.rs`, la 44 de `iso_bridge.rs` y la 29 de
+`settlement_prover_impl.rs`, cada uno en su misma línea; y `tools/check_publicadas.py`, con dos
+comprobaciones nuevas. Y este asiento. Ni tests, ni vectores, ni código de los crates fuera de esos
+tres comentarios, ni `Cargo.toml`, ni `Cargo.lock`. La línea 37 de `stark-experiment/src/lib.rs` no
+cambia. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango
+que el autor asignó (§830 a §859).
+
+Del autor es la tarea: lo descubierto 1d, 1e y 1f de la lista que encargó, juntos. 1d, las métricas
+de antes del §538 en `ARQUITECTURA.md`; 1e, el «1,12 ms» sin fuente; 1f, la línea 38 de
+`stark-experiment/src/lib.rs`. Del autor es el orden: va detrás del §839 y del §840, los que mueven
+el pin de `zk-ssl`. La forma la propuso la sesión. El canon de este commit, `bash tools/canon.sh
+--sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y sin esta frase:
+VERDE, 945 s de reloj (de su arranque a su salida) y 725 s de tests (la línea «total» de la tabla),
+en una máquina de 4 CPU con carga de 0,14 al empezar. Antes, dentro del mismo cerrojo, la sesión
+tocó con `touch` los 274 `.rs` de `crates/` y de `tools/`, y su log lo registra. Las 19 filas del
+nivel, en su pin, con 1816 tests que pasan (la suma de la columna «pasan»), y la de `zk-ssl` en 484
+pasan y 7 ignorados; la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features
+(60 s)»; `check_tests` en 1975 y 20 instrumentos; `check_modulos` en 207; las once herramientas del
+bucle «2 ter», con `check_publicadas` dentro; la puerta de los vectores, en 497 ficheros y 987
+líneas; `check_catalogo`; el cable, en 23 de 23; la segunda implementación, con sus pares STARK en
+34 de 34; y el artefacto reproducible, con el binario `473eb5f63e5b091d` y el tarball
+`3d7912c0921eab26`. Corrió con un `TMPDIR` propio y vacío, y al acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió, se midió y se commiteó (`4afa0b5`) sobre otra versión del §840
+(`56b57fc`), que iba sobre el §839 (`4f60198`) y el §838 (`ff9d4fc`). Allí su canon dio VERDE; sus
+cifras no se copian aquí. Después se rebasó sobre el §840 de ahora (`f195662`), que va sobre el
+§839 de ahora (`cea7879`), y éste sobre el §860 (`1eee2c5`) y el §861 (`32b5b12`), de otra sesión.
+Son prosa y comentarios: cierran siete entradas de `BACKLOG.md`, abren la 126 y la 127, y la
+cabecera pasa de 48 abiertas y 79 resueltas a 43 y 86; `tools/verificar_citas.py` gana en
+`RESERVADOS` el rango del §860 al §889; y tocan `SECURITY.md`, `ARQUITECTURA.md`, `PAPER.md`,
+`PAPER_EN.md`, trece documentos de `doc/` y de `spec/`, un comentario de `tools/check_publicadas.py`
+y comentarios de seis fuentes de los crates (`metrics.rs`, `client.rs`, `iso.rs`, `migration.rs` y
+`persistence.rs` de la capa, y `lib.rs` del SDK). Ningún test, ni `tools/canon.sh`, ni
+`Cargo.toml`, ni `Cargo.lock`. En este fichero, los asientos del §860 y del §861 van antes que los
+del §839 y del §840, y éste detrás. El `cherry-pick` entró sin conflicto, también en
+`ARQUITECTURA.md`, `SECURITY.md` y `tools/check_publicadas.py`, que tocan los dos lados: las
+líneas que quitó y añadió el `cherry-pick` sobre `f195662` son las mismas que las de `4afa0b5`
+sobre `56b57fc`, en cada uno de sus nueve ficheros, y lo del §860 y el §861 queda. De los ficheros que
+toca este sello, el §860 y el §861 cambian `ARQUITECTURA.md` (cuatro líneas en su sitio, la 333, la
+540, la 552 y la 770), `PAPER.md` y `PAPER_EN.md` (una línea cada uno, en su sitio),
+`tools/check_publicadas.py` (la 49, en su sitio), `SECURITY.md`, que crece 52 líneas, todas por
+encima del arranque del punto 2, y este fichero. De los que cita, cambian seis comentarios de
+`metrics.rs`, en su sitio; `doc/CONFIANZA_RESIDUAL.md`, en su sitio; y `BACKLOG.md` y
+`doc/ESCALADO.md`, que crecen. Medidas otra vez, por su texto en `56b57fc` y aquí, se mueven
+`SECURITY.md:1046`, a la 1098; `SECURITY.md:709-710`, a la 756-757; `BACKLOG.md:2218`, a la 2499;
+y `doc/ESCALADO.md:183`, `:272`, `:313` y `:402`, a la 218, la 307, la 348 y la 437. Se corrigen
+aquí sin marca, porque este asiento no estaba sellado. Las demás citas por línea de este asiento
+dan lo mismo. Las cifras de tests de la base no cambian: en `32b5b12` el pin de `zk-ssl` es 481,
+los totales de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` son 1813 y 1950, y `check_tests` y
+`check_modulos` dan 1972 y 205; en `f195662`, 484, 1816 y 1953, y 1975 y 207, como en `56b57fc`.
+Remedido sobre una copia de `f195662`, con el `check_publicadas.py` de este commit y el suelo a
+cero: 9 sin marca, en las líneas del punto 4 de «Medido»; 11 con su marca y 4 por excepción; y 1
+de 10 filas. Y las cifras retiradas, con `git grep -nF` fuera de este fichero, dan en `f195662` y
+en este commit lo mismo que en `56b57fc` y en `4afa0b5`. Lo demás de «Medido» y de «Mutantes» es
+del árbol de `56b57fc`: las tres corridas de `metrics_of_the_layer` y los mutantes no se
+repitieron, porque el rebase no cambia ningún fuente fuera de comentarios ni ninguna dependencia.
+Este rebase cambia en este asiento la apertura; la frase del canon, que vuelve a «no se ha corrido
+todavía» hasta el canon de este commit; este párrafo; y las citas por línea de arriba, en el punto
+4 y el 8 de «Lo que hace», en el 4 y el 6 de «Medido», en M6 y M8, en «Lo que NO hace» y en la
+corrección 12. Sobre este commit: `check_tests`, 1975 y 20 instrumentos; `check_modulos`, 207; y
+las once herramientas del bucle «2 ter», `check_vectores --desde 32b5b12` y `check_catalogo`, con 0.
+
+**La revisión.** La revisión final señaló que este sello cambia el encabezado de la columna
+«Verificar» de `PAPER.md:497` y «Verify» de `PAPER_EN.md:466` sin marca que lo diga, y que las
+correcciones 10 y 11 citaban esas dos líneas, que no llevan marca. La marca de la tabla del §7.3
+gana, en su última línea, «y la columna decía «Verificar»» (`PAPER.md:516`) y «and the column said
+«Verify»» (`PAPER_EN.md:485`), sin cambiar el número de líneas; el punto 1 de «Lo que hace» lo dice;
+y las correcciones 10 y 11 citan las líneas de las marcas.
+
+**De dónde sale.** El §807 corrigió la frase de Groth16 de `ARQUITECTURA.md` y la tabla «La
+diferencia, medida», pero dejó en ella el arranque, «**1,12 ms**», y la tabla de métricas de la capa,
+con la transferencia de una prueba en 61.966 B. `git log -S'1,12 ms'` lleva la cifra a `9a1e2f1`
+(2026-07-27), en `README.md:115`, sin fuente. El resto del árbol daba 0,67 ms, y esa cifra llegó con
+el mismo `9a1e2f1`, en la tabla de métricas de `README.md:485` y de `RESUMEN_EJECUTIVO.md:82`; a
+`ARQUITECTURA.md` las dos llegaron con `70b5808`, el mismo día. La tabla de métricas era de una sola ejecución y de antes de la ocultación del §538;
+`PAPER.md` y `PAPER_EN.md` la copiaban. Y el §806 remidió el circuito de la comparación, con 127.274
+B en la configuración de 128 bits demostrables, pero dejó el «125,6 KB y 45 ms» de
+`stark-experiment/src/lib.rs:38`, y el «~125 KB y ~45 ms» de `iso_bridge.rs:44` y de
+`settlement_prover_impl.rs:29`, el mismo caso.
+
+**Lo que hace.**
+
+1. La tabla de métricas, en `ARQUITECTURA.md`, `PAPER.md` y `PAPER_EN.md`, pasa a las tres corridas
+   de abajo: cada tiempo es su rango; el tamaño de la transferencia, del envío y del cobro, su banda
+   de `metrics.rs`; y el de la emisión, la destrucción y la auditoría, que no tienen banda, el rango
+   medido, con «sin banda». La transferencia es hoy un pago, envío y cobro, y la tabla gana dos
+   filas, una para cada fase. Cada tabla lleva su marca con lo que decía. En `PAPER.md` y
+   `PAPER_EN.md`, la columna «Verificar» («Verify») pasa a «Aplicar / verificar» («Apply /
+   verify»), como en `ARQUITECTURA.md`: en la emisión, el pago y la destrucción da el tiempo de
+   `apply_*`, y sólo en la auditoría el de `verify_audit` (`crates/zk-ssl/src/metrics.rs:383-468`).
+   La marca de la tabla de los dos papers lo dice: «y la columna decía «Verificar»» («and the
+   column said «Verify»»).
+2. La asimetría: «Aplicar un pago cuesta el 0,6-0,7 % de generarlo, y verificar una auditoría, el
+   0,6-0,8 %», con su marca. La nota del §22, que daba 0,58 % y 28,5 %, se queda, y gana una marca
+   con las razones de hoy.
+3. `ARQUITECTURA.md`: el arranque de «La diferencia, medida» pasa a 1,47-1,85 ms, con su fuente y su
+   marca; el límite, a «Mil pagos: 1.446 a 1.678 s de prueba», con su marca; el coste encadenado y
+   el tamaño que varía (5,4 %, 3.334 B sobre 61.517, y la correlación) llevan una marca que dice que
+   son de antes del §538, que llegaron con `9a1e2f1`, en `README.md:506` y `:512`, y a este
+   documento con `70b5808`, y que no se han remedido; y «Qué NO son estas cifras», tres ejecuciones
+   y no una.
+4. `SECURITY.md:1098`: el arranque, 1,47-1,85 ms, con su marca, «decía «0,67 ms»».
+5. El §7.1 de `PAPER.md` y de `PAPER_EN.md`, que dice «una sola ejecución por medición», gana una
+   frase con su marca: las cifras del §7.3 son ya de tres corridas, con su propia nota; y el «entre
+   180 y 620 ms» de arriba es de la transferencia de una prueba de antes del §538, y esa variación
+   por caché no se ha remedido. Es lo que dice `ARQUITECTURA.md:749-750`, que este sello marca:
+   «Los tiempos de transferencia oscilaron entre 180 y 620 ms». El «entre 180 y 620 ms» no cambia.
+   La conclusión de los dos papers daba aún como de hoy el «0,5-0,8 %» que el §7.3 marca:
+   `PAPER.md:1023` y `PAPER_EN.md:977` ganan, en su misma línea, una marca que dice que es de antes
+   del §538 y remite al §7.3; y el «28.5 %» de `PAPER_EN.md:985`, otra, con el 0,6-0,7 % de hoy y
+   la medida sin escritura a disco.
+6. Los documentos dicen «sobre el §840», sin hash: el commit del §840 no está todavía en el main
+   público, y un rebase de la entrega lo cambiaría. Sólo la cabecera de este asiento lo da.
+7. `stark-experiment`: «127.274 B», lo medido por el §806, en las tres líneas, cada una con su
+   marca. El tiempo no se fija en el comentario: depende de la máquina. La marca da lo que el §806
+   midió en sus tres corridas para esa configuración, 74-78 ms (`FIVE_BACKENDS.md` §4, :206-209,
+   la cuarta cifra; la tabla de :156 sigue en 48 ms), y no lo remide. Las tres líneas siguen
+   siendo una cada una: ninguna cita por línea a esos ficheros se mueve.
+8. `tools/check_publicadas.py`, dos comprobaciones, con su texto en la cabecera:
+   - **ATADO B, las filas.** `FILAS_BANDA`, diez filas: en cada tabla de métricas, la del pago, la
+     del envío y la del cobro; y la fila «envío o cobro» de «La diferencia, medida». Cada una tiene
+     que estar una vez en su documento y llevar en su última celda su banda y ninguna otra, leída de
+     `metrics.rs` por su nombre (`BANDA_ENVIO_B`, `BANDA_COBRO_B`, `PUBLICADA_PAGO_MIN_B` y
+     `PUBLICADA_PAGO_MAX_B`; la de «envío o cobro», la unión de las dos), en bytes y con el
+     separador de miles de su idioma.
+   - **RETIRADAS.** «1,12 ms», «0,67 ms», «61.966 B» y «125,6 KB», en sus dos formas, sólo pueden
+     quedar como cita: con «decía», «decían», «it said» o ⚠️ antes, en su línea o en su frase. El
+     universo es el del ATADO F sin sus `.rs`, más los comentarios de todos los `.rs` de `crates/`:
+     364 ficheros. Fuera, con su razón impresa, `doc/blueprint-v2.md`, `doc/ecst/VERIFICACION.md`,
+     `doc/comparativa/` y `doc/historia/`, las exclusiones del ATADO F; y cuatro frases de
+     `CITAS_RETIRADAS`, cada una con su ancla y su razón: `SECURITY.md:756-757`, que cita «lo que
+     publicaban varios documentos hasta el §698»; `FIVE_BACKENDS.md:197`, que explica la remedida
+     del §806; y `doc/integracion-vertical-evaluacion.md:77` y `:184`, una evaluación fechada que
+     cita lo que la casa publicaba el 01-10-2026. Un ancla que ya no casa es ROJO. Prueba de vida:
+     `MINIMO_RETIRADAS`, 20 citas marcadas, las de hoy.
+
+**Medido y leído**, en este orden, en el worktree de la sesión, con 4 CPU:
+
+1. Sobre el padre, las once herramientas del bucle «2 ter», `check_vectores --desde d4d6d45` y
+   `check_catalogo`: con 0.
+2. Antes de medir, `touch` de los `.rs` de `crates/zk-ssl` dentro del cerrojo de cargo, y
+   `cargo test -p zk-ssl --release --locked --lib --no-run`: cargo recompiló `zk-ssl` en 76 s. Una
+   primera tanda de tres corridas, hecha antes sobre un binario de release de `zk-ssl` del
+   2026-10-15 que cargo daba por fresco, se descartó, y sus cifras no se usan.
+3. Tres veces seguidas, sobre el padre, `cargo test -p zk-ssl --release --locked --lib
+   metrics_of_the_layer -- --nocapture`: las tres pasan, 1 test y 490 filtrados, en 3,94, 3,97 y
+   4,05 s; la carga de un minuto, de 2,30 a 2,08, la que dejó la compilación. Generar, aplicar o
+   verificar, y bytes, de la primera, la segunda y la tercera:
+   - arranque: 1,470, 1,582 y 1,846 ms;
+   - emisión (2-de-N): 656,4, 681,9 y 688,9 ms; 3,4, 3,4 y 3,3 ms; 66.756, 68.965 y 68.516 B;
+   - transferencia, envío y cobro: 1.678,4, 1.445,7 y 1.552,5 ms; 9,4, 9,8 y 10,3 ms; 158.851,
+     159.202 y 158.147 B;
+   - envío: 858,4, 649,1 y 794,6 ms; 4,7, 5,1 y 6,1 ms; 78.632, 79.820 y 79.659 B;
+   - cobro: 820,0, 796,6 y 757,9 ms; 4,6, 4,7 y 4,3 ms; 80.219, 79.382 y 78.488 B;
+   - destrucción: 625,0, 771,4 y 911,4 ms; 4,8, 4,7 y 3,6 ms; 75.850, 74.663 y 74.532 B;
+   - auditoría: 219,5, 300,6 y 396,3 ms; 1,8, 2,1 y 2,3 ms; 63.310, 64.566 y 63.829 B;
+   - «Verificar / generar (pago completo)»: 0,6, 0,7 y 0,7 %; mil pagos, 1.678,4, 1.445,7 y
+     1.552,5 s de prueba y 151,5, 151,8 y 150,8 MiB, dentro de la banda publicada.
+   El envío, el cobro y el pago caen dentro de su banda en las tres. Las razones del texto salen de
+   esas cifras: aplicar el pago, 9,4/1.678,4, 9,8/1.445,7 y 10,3/1.552,5, del 0,56 al 0,68 %;
+   verificar la auditoría, 1,8/219,5, 2,1/300,6 y 2,3/396,3, del 0,58 al 0,82 %. `new_layer()` crea
+   la capa con `db: None` (`SovereignLayer::new` en `crates/zk-ssl/src/lib.rs`): la medida no
+   escribe a disco.
+4. Las cifras retiradas, con `git grep -nF`, fuera de `AUDITORIA.md`, antes y después: «1,12 ms», 1
+   y 2; «0,67 ms», 6 y 7; «0.67 ms», 1 y 1; «61.966 B», 10 y 12, y la de más es el ejemplo de M16 en la cabecera de `check_publicadas.py`; «61,966 B», 1 y 1; «125,6 KB», 29
+   y 33; «125.6 KB», 2 y 2. Lo que crece son las marcas que las citan y la lista de
+   `check_publicadas.py`. La comprobación nueva, corrida sobre una copia del padre con el
+   `check_publicadas.py` de este commit y el suelo a cero: 9 sin marca, las que este sello
+   corrige (en las líneas del padre: `ARQUITECTURA.md:147`, `:634` y `:636`; `PAPER.md:498` y `:500`; `PAPER_EN.md:466` y
+   `:468`; `SECURITY.md:1098`; y `stark-experiment/src/lib.rs:38`), 11 con su marca y 4 por
+   excepción; y las filas, 1 de 10, la de «envío o cobro», que ya daba su banda. Con este commit: 0
+   sin marca, 20 con su marca y 4 por excepción; y 10 de 10 filas.
+5. Con el cambio y este asiento: las once herramientas del bucle «2 ter», `check_vectores --desde
+   d4d6d45` y `check_catalogo`, con 0. `check_figures` sólo cambia en los números de línea de las
+   cifras que lista, más abajo en `ARQUITECTURA.md`, `PAPER.md` y `PAPER_EN.md`.
+6. Las citas por línea que el cambio desplaza. `ARQUITECTURA.md` crece 41 líneas desde la 630,
+   `PAPER.md` 21 desde la 474 y `PAPER_EN.md` 22 desde la 444; `SECURITY.md` y los tres `.rs` no
+   cambian de número de líneas; `tools/check_publicadas.py` crece 228 desde la 79, y las citas a ese
+   fichero de otros ficheros, a las líneas 37 a 49 de su cabecera, no se mueven. `git grep` de las
+   citas por línea a `ARQUITECTURA.md`, `PAPER.md` y `PAPER_EN.md` más abajo de esas líneas, fuera de
+   este fichero: sólo `doc/ecst/VERIFICACION.md` y los JSON de `doc/ecst/borrador/` (entre ellas
+   `PAPER.md:477-481`, `:485-507` y `:489`), más `BACKLOG.md:2499` (`ARQUITECTURA.md:1077`) y el
+   comentario de `tools/check_publicadas.py:468` (447 en el padre), que cita `ARQUITECTURA.md:1423`;
+   ninguna daba ya en su sitio antes de este sello. Se declaran en «Lo que NO hace».
+
+**Mutantes.** Sobre copias del árbol con el cambio, hechas con `tar` de `git ls-files`, sin `target`
+ni `.git`, en un directorio de la sesión. Los de `check_publicadas.py`, con `CANON_RAIZ` en la copia;
+la copia sin mutar, VERDE.
+
+- M1, «La transferencia pesa 61.966 B.» en `PAPER.md`, tras la nota: ROJO, RETIRADA, en su línea.
+- M1b, la fila vieja «| Transferencia | ~620 ms | ~4 ms | 61.966 B |» repuesta en `PAPER.md`: ROJO,
+  FILA, «esta 0 veces».
+- M2, `BANDA_ENVIO_B` a `(73_571, 84_999)` sin tocar las tablas: ROJO, BANDA, cuatro filas, las
+  tres de envío y la de «envío o cobro». M2b, `BANDA_COBRO_B` a `(72_000, 83_723)`: ROJO, cuatro.
+  M2c, `PUBLICADA_PAGO_MAX_B` a 167.968: ROJO, las tres filas del pago.
+- M2d, la fila del envío de `PAPER.md` con el separador inglés: ROJO, BANDA. M2e, la fila del cobro
+  borrada en `PAPER_EN.md`: ROJO, FILA, 0 veces. M2f, la del envío duplicada en `ARQUITECTURA.md`:
+  ROJO, FILA, 2 veces. M2g, la de «envío o cobro» con la cota alta del cobro: ROJO, BANDA.
+- M3, `std::thread::sleep` de 2 s en `SovereignLayer::new` (`crates/zk-ssl/src/lib.rs`), en una
+  copia, con el `CARGO_TARGET_DIR` del worktree y `cargo test -p zk-ssl --release --locked --lib
+  metrics_of_the_layer -- --nocapture`: 68 s de compilar `zk-ssl`, y ROJO, «Arranque de la capa
+  2001.769 ms» y el pánico «el arranque debe ser inmediato» (`metrics.rs:496`). Lo mata el
+  `assert!` que ya tenía el test, `startup < Duration::from_millis(500)`: no hacía falta uno
+  nuevo, y este sello no añade ninguno. Es un test de tiempo: la
+  cota está unas 270 veces por encima de lo medido, 1,47-1,85 ms.
+- M4, «cuestan 125,6 KB y 45 ms» sin marca en `stark-experiment/src/lib.rs:38`: ROJO, RETIRADA,
+  `lib.rs:38`.
+- M5, «**1,12 ms**» repuesto en `ARQUITECTURA.md:147`: ROJO, RETIRADA.
+- M6, «0,67 ms medidos» repuesto en `SECURITY.md:1098`: ROJO, RETIRADA.
+- M7, «61,966 B» en la fila del pago de `PAPER_EN.md`, delante de la banda: ROJO, RETIRADA. La banda
+  sigue en la celda, y la fila pasa.
+- M8, la frase de `SECURITY.md:756-757` cambiada, «que se publicaban antes del §698»: ROJO, por dos,
+  la cifra sin marca y el ancla huérfana.
+- M9, «125.6 KB» sin marca en `doc/INSTITUTIONAL.md:452`: ROJO, RETIRADA.
+- M10, «⚠️ Nota de otra cosa.» y, en la línea siguiente del mismo párrafo, «La prueba pesaba
+  61.966 B.», en `PAPER.md`: ROJO, RETIRADA. La marca de otra frase y otra línea no vale.
+- M11, «⚠️ Nota. La prueba pesaba 61.966 B.» en una sola línea: VERDE. No es un fallo de la
+  comprobación: la regla admite la marca en la misma línea, aunque sea otra frase. Vivo y declarado.
+- M12, el universo sin los `.rs` de `crates/`: ROJO, el suelo, «18 citas marcadas, menos que su
+  suelo, 20».
+- M13, la marca sin «it said»: VERDE. Hoy todo «it said» de una cifra retirada va tras un ⚠️ en su
+  línea. Vivo y declarado.
+- M14, la marca sin ⚠️: ROJO, `FIVE_BACKENDS.md:181`, que sólo lleva la marca.
+- M15, la condición sin su cláusula «en su línea» (sólo `texto[a:p]`): VERDE sobre el árbol. Con el
+  caso de M11 añadido a `PAPER.md`: ROJO, RETIRADA. Sólo un caso como M11 ejercita esa cláusula.
+  Vivo y declarado.
+- M16, «Esto no lo decía nadie, pero la prueba pesa 61.966 B.» añadido a `PAPER.md`: VERDE, 21 citas
+  marcadas. La regla toma cualquier «decía» anterior de la frase como marca, aunque no cite la
+  cifra. Ceguera, declarada aquí y en la cabecera de `check_publicadas.py`.
+
+Cada comprobación nueva mata al menos uno: la fila que falta o sobra, M1b, M2e y M2f; la banda de
+cada fila, M2, M2b, M2c, M2d y M2g; la cifra retirada sin marca, M1, M4, M5, M6, M7, M9 y M10; el
+ancla huérfana, M8; la marca ⚠️, M14; y el suelo, M12. Vivos: M11, M13 y M15, y la ceguera de
+M16, declarados arriba. M15 y M16 se corrieron sobre una copia del árbol de este commit; la copia
+sin mutar, VERDE: 20 citas marcadas, 4 por excepción y 10 de 10 filas.
+El binario de test de la copia de M3 se compiló con el mismo nombre que el del worktree,
+`zk_ssl-d609563975c3f8d5`, y lo sustituyó. Por eso, al acabar M3, dentro del cerrojo de cargo y con
+el mismo `CARGO_TARGET_DIR`, `cargo clean --release -p zk-ssl`: 134 ficheros, 238,5 MiB. Las tres
+corridas de la tabla son de antes de M3, sobre el binario compilado del worktree. Las copias se
+borraron.
+
+**Lo que NO hace.** No remide los tiempos del circuito de la comparación de `FIVE_BACKENDS.md` §4,
+ni el de `stark-experiment`, que en sus tres comentarios remite a los 74-78 ms del §806. No remide el coste encadenado, el 5,4 % ni la
+correlación de `ARQUITECTURA.md`: los marca. No da banda a la emisión, a la destrucción ni a la
+auditoría. No ata las cifras de tiempo, que dependen de la máquina, como ya declaraba la cabecera
+de `check_publicadas.py`; ni el «72.382–84.244» de la frase de Groth16 de `ARQUITECTURA.md:141`,
+sólo su fila de la tabla. No pone «~125 KB» en la lista de retiradas: es una aproximación de 127.274
+B. RETIRADAS no ve una cifra en el código de un `.rs`, sólo en sus comentarios de línea entera; ni
+dentro de un bloque de código de un `.md`; ni escrita de otra forma; y cuenta como marca un «decía»
+en cualquier sitio de la frase antes de la cifra, aunque no la cite (M16). No marca las copias de la
+tabla de antes del §538 que quedan fuera de las tres tablas: `doc/INSTITUCIONAL.md:238-242` y
+`:261`, con «Verificar cuesta el 0,5-0,8% de generar.», la frase que este sello marca en
+`ARQUITECTURA.md:662`; `doc/INSTITUTIONAL.md:237-241`, con su par inglés, `:247` y `:485`; `doc/ESCALADO.md:218`,
+`:307`, `:348` y `:437`; `doc/CONSECUENCIAS.md:24`; y `doc/CONFIANZA_RESIDUAL.md:612`. Ni remide el «entre
+180 y 620 ms» del §7.1 de `PAPER.md:472` y `PAPER_EN.md:442`, que sólo gana la frase del punto 5 de «Lo que hace». Quedan
+para una tarea aparte. Las cuatro cifras se buscan
+también en los JSON de `doc/ecst/borrador/` con `git grep`, y siguen allí: no son `.md` y no entran
+en el universo. No corrige las citas por línea que ya no daban en su sitio: las de
+`doc/ecst/VERIFICACION.md` y de los JSON de `doc/ecst/borrador/`, el registro generado sobre
+`71c5aad`; `BACKLOG.md:2499`, que cita `ARQUITECTURA.md:1077` en una entrada cerrada; y
+`tools/check_publicadas.py:468` (447 en el padre), que cita `ARQUITECTURA.md:1423`, el registro de
+un mutante de su fecha. No mueve el pin de ningún crate ni los totales: no añade tests. No toca la frase del §814 en
+`ARQUITECTURA.md`, ni la línea 37 de `stark-experiment/src/lib.rs`.
+
+**Lo que es del autor.** Si las cifras de tiempo de la tabla, que dependen de la máquina, deben
+llevar la máquina con nombre, o quedarse en «4 CPU». Si la emisión, la destrucción y la auditoría
+deben tener banda, como el envío y el cobro. Si las cuatro frases de `CITAS_RETIRADAS` se quedan
+como excepción o se marcan. Y si «~125 KB» debe entrar en la lista.
+
+**Contadores.** Ningún pin cambia, ni el total de sello, 1816, ni el de con largos, 1953, ni
+`check_tests`, 1975. Las marcas «⚠️ §841» en los ficheros del commit, sin este asiento, son 24,
+contadas con `git grep --cached -c -E '⚠️ (\*\*)?§841'`: nueve en `ARQUITECTURA.md`, cinco en
+`PAPER.md`, seis en `PAPER_EN.md`, una en `SECURITY.md` y una en cada uno de los tres `.rs`.
+`BACKLOG.md` no cambia.
+
+Las correcciones, sobre los ficheros STAGED de este commit:
+
+1. `ARQUITECTURA.md:147`, el arranque de «La diferencia, medida»: «⚠️ §841: decía «1,12 ms», sin
+   fuente».
+2. `ARQUITECTURA.md:632`, la metodología: «⚠️ §841: decía «Todas en release, misma máquina, misma
+   ejecución.»».
+3. `ARQUITECTURA.md:647-657`, la tabla: «⚠️ §841: la tabla decía», con sus cifras.
+4. `ARQUITECTURA.md:662`, la asimetría: «⚠️ §841: decía «Verificar cuesta el 0,5-0,8% de
+   generar.»».
+5. `ARQUITECTURA.md:677-681`, las razones del §22, remedidas.
+6. `ARQUITECTURA.md:691-693`, el límite: «⚠️ §841: decía «Mil transferencias: ~620 s de prueba»».
+7. `ARQUITECTURA.md:708-710`, el coste encadenado: de antes del §538, sin remedir.
+8. `ARQUITECTURA.md:717-722`, el tamaño que varía y la correlación: de antes del §538, sin remedir.
+9. `ARQUITECTURA.md:749-750`, «Qué NO son estas cifras»: «⚠️ §841: decía «Una sola ejecución en una
+   máquina. …»».
+10. `PAPER.md:474-475`, la limitación del §7.1; `:513-516`, la tabla, y en `:516` la columna:
+    «y la columna decía «Verificar»»; `:520-521`, la asimetría; `:536-540`, las razones; y
+    `:1023`, la conclusión: «⚠️ §841: cifra de antes del §538».
+11. `PAPER_EN.md:444-445`, la limitación del §7.1; `:482-485`, la tabla, y en `:485` la columna:
+    «and the column said «Verify»»; `:490`, la asimetría; `:503-507`, las razones; y `:977` y
+    `:985`, la conclusión: «⚠️ §841: a figure from before §538» y «⚠️ §841: that 28.5 % is from before
+    §538».
+12. `SECURITY.md:1098`, el arranque: «⚠️ §841: decía «0,67 ms»».
+13. `crates/stark-experiment/src/lib.rs:38`: «⚠️ §841: decía «125,6 KB y 45 ms»».
+14. `crates/stark-experiment/src/iso_bridge.rs:44` y `settlement_prover_impl.rs:29`: «⚠️ §841: decía
+    «~125 KB y ~45 ms»».

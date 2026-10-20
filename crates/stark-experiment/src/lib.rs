@@ -35,7 +35,7 @@
 //! - `compliance_real_proof` (pipeline de extremo a extremo con métricas
 //!   reales): ✅ verificado. Halazgo clave: sin extensión de campo el
 //!   techo son 63 bits (tamaño de Goldilocks); 128 bits DEMOSTRABLES
-//!   cuestan 125,6 KB y 45 ms. Ver `THREE_BACKENDS.md`.
+//!   cuestan 127.274 B. Ver `THREE_BACKENDS.md`. ⚠️ §841: decía «125,6 KB y 45 ms»; los bytes los remidió el §806 (`FIVE_BACKENDS.md` §4); el tiempo no se fija aquí: depende de la máquina, y el §806 dio 74-78 ms en sus tres corridas.
 //! - `iso_bridge` (puente ISO 20022 pacs.008): ✅ verificado 4/4 a la
 //!   primera. Nótese que sus funciones NO reciben claves: la ausencia de
 //!   trusted setup se manifiesta en la propia firma de la API.

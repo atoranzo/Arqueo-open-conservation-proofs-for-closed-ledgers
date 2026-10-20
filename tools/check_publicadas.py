@@ -76,6 +76,27 @@ vida- que la URL nueva se cite al menos una vez: un universo vacio no pasa.
 Universo PROPIO (documentos_url): recursivo bajo la raiz, porque la URL vive
 tambien en doc/; fuera AUDITORIA.md y BACKLOG.md (registro) y doc/preprints/
 (entrada 28), que se imprimen como exclusion.
+
+ATADO B, LAS FILAS (§841). Las tablas de metricas de ARQUITECTURA.md, PAPER.md y
+PAPER_EN.md dan el tamano de las pruebas del pago por su banda: la de envio y la de
+cobro, BANDA_ENVIO_B y BANDA_COBRO_B de `mod tests` en metrics.rs; la del pago,
+PUBLICADA_PAGO_MIN_B y PUBLICADA_PAGO_MAX_B; y la fila «envio o cobro» de la tabla de
+Groth16 de ARQUITECTURA.md, la union de las dos. FILAS_BANDA dice que filas, y cada una
+tiene que estar una vez en su documento y llevar en su ultima celda esa banda y ninguna
+otra, en bytes con el separador de miles de su idioma. Quien mueva una banda mueve esas
+filas, o es ROJO.
+
+RETIRADAS (§841). Cifras que el arbol publico y que se retiraron por rancias o sin
+fuente: RETIRADAS. Solo pueden quedar como cita de lo que se decia: en la misma linea o
+en la misma frase, antes de la cifra, un «decia», «decian», «it said» o la marca ⚠️.
+Universo: el del ATADO F sin sus .rs, mas los comentarios de todos los .rs de crates/.
+Fuera, con su razon impresa, EXCLUIDOS_RETIRADAS y PREFIJOS_EXCLUIDOS_RETIRADAS; y las
+frases de CITAS_RETIRADAS, cada una con su ancla y su razon: un ancla que ya no casa es
+ROJO, para que la excepcion no sobreviva a su frase. Ceguera declarada: no ve una cifra
+en el codigo de un .rs (solo sus comentarios de linea entera), ni dentro de un bloque de
+codigo de un .md, ni escrita de otra forma («1.12 ms» si, «1,12 milisegundos» no). Y
+la marca no tiene que citar la cifra: un «decia» en cualquier sitio de la frase, antes
+de ella, cuenta («Esto no lo decia nadie, pero pesa 61.966 B.» pasa).
 """
 import difflib
 import math
@@ -1089,6 +1110,169 @@ def constante():
     mib = tuple("%.1f" % (x * 1000 / 1048576.0) for x in b)
     msi = tuple("%.1f" % (x * 1000 / 1000000.0) for x in b)
     return b, mib, msi, (f.group(1) if f else "sin fecha")
+
+
+# ---- ATADO B, las filas (§841) ----
+
+# (documento, comienzo de la fila, banda, separador de miles). La banda: ENVIO y COBRO son
+# BANDA_ENVIO_B y BANDA_COBRO_B; PAGO, PUBLICADA_PAGO_MIN_B y PUBLICADA_PAGO_MAX_B; UNION, la
+# menor de las dos cotas bajas y la mayor de las dos altas.
+FILAS_BANDA = (
+    ("ARQUITECTURA.md", "| Prueba de liquidación (envío o cobro) |", "UNION", "."),
+    ("ARQUITECTURA.md", "| Transferencia (envío + cobro) |", "PAGO", "."),
+    ("ARQUITECTURA.md", "| ├─ envío |", "ENVIO", "."),
+    ("ARQUITECTURA.md", "| └─ cobro |", "COBRO", "."),
+    ("PAPER.md", "| Transferencia (envío + cobro) |", "PAGO", "."),
+    ("PAPER.md", "| ├─ envío |", "ENVIO", "."),
+    ("PAPER.md", "| └─ cobro |", "COBRO", "."),
+    ("PAPER_EN.md", "| Transfer (send + claim) |", "PAGO", ","),
+    ("PAPER_EN.md", "| ├─ send |", "ENVIO", ","),
+    ("PAPER_EN.md", "| └─ claim |", "COBRO", ","),
+)
+BANDA_EN_CELDA = re.compile(r"(?<![\d.,])(\d{1,3}(?:[.,]\d{3})+)\s*[–-]\s*(\d{1,3}(?:[.,]\d{3})+)\s*B\b")
+
+
+def bandas(pago_b):
+    """Las bandas de metrics.rs, leidas por su nombre: {clase: (min, max)}."""
+    with open(FUENTE, encoding="utf-8") as fh:
+        src = fh.read()
+    out = {"PAGO": tuple(pago_b)}
+    for clase, nombre in (("ENVIO", "BANDA_ENVIO_B"), ("COBRO", "BANDA_COBRO_B")):
+        m = re.search(r"const %s:\s*\(usize,\s*usize\)\s*=\s*\(\s*([0-9_]+)\s*,\s*([0-9_]+)\s*\)"
+                      % nombre, src)
+        if not m:
+            return None, "no aparece %s en %s" % (nombre, FUENTE)
+        out[clase] = (int(m.group(1).replace("_", "")), int(m.group(2).replace("_", "")))
+    out["UNION"] = (min(out["ENVIO"][0], out["COBRO"][0]), max(out["ENVIO"][1], out["COBRO"][1]))
+    return out, None
+
+
+def _miles(n, sep):
+    return "{:,}".format(n).replace(",", sep)
+
+
+def atado_b_filas(pago_b):
+    """Cada fila de FILAS_BANDA, una vez en su documento y con su banda en la ultima celda.
+    Devuelve (fallos, filas vistas)."""
+    bs, error = bandas(pago_b)
+    if bs is None:
+        return [("metrics.rs", 0, "BANDA", error)], 0
+    fallos, vistas = [], 0
+    for rel, cabeza, clase, sep in FILAS_BANDA:
+        try:
+            with open(os.path.join(RAIZ, rel), encoding="utf-8") as fh:
+                lineas = fh.read().split("\n")
+        except OSError as exc:
+            fallos.append((rel, 0, "ILEGIBLE", str(exc)))
+            continue
+        donde = [(i, l) for i, l in enumerate(lineas, 1) if l.startswith(cabeza)]
+        if len(donde) != 1:
+            fallos.append((rel, 0, "FILA", "la fila «%s» esta %d vez/veces; tiene que estar una"
+                           % (cabeza, len(donde))))
+            continue
+        n, linea = donde[0]
+        vistas += 1
+        celdas = [c.strip() for c in linea.strip().strip("|").split("|")]
+        hay = [(int(a.replace(sep, "")), int(b.replace(sep, ""))) if sep in a + b else None
+               for a, b in BANDA_EN_CELDA.findall(celdas[-1])]
+        debe = bs[clase]
+        if hay != [debe]:
+            fallos.append((rel, n, "BANDA", "la fila «%s» da %s; la banda %s es %s–%s B"
+                           % (cabeza, celdas[-1], clase, _miles(debe[0], sep),
+                              _miles(debe[1], sep))))
+    return fallos, vistas
+
+
+# ---- RETIRADAS (§841) ----
+
+RETIRADAS = (
+    ("1,12 ms", re.compile(r"(?<![\d.,])1[.,]12\s*ms\b")),
+    ("0,67 ms", re.compile(r"(?<![\d.,])0[.,]67\s*ms\b")),
+    ("61.966 B", re.compile(r"(?<![\d.,])61[.,]966\s*B\b")),
+    ("125,6 KB", re.compile(r"(?<![\d.,])125[.,]6\s*KB\b")),
+)
+MARCA_RETIRADA = re.compile(r"\bdec[ií]an?\b|\bit said\b|\u26a0")
+EXCLUIDOS_RETIRADAS = {
+    "doc/blueprint-v2.md": "el debate del plan: su tabla contrasta lo publicado en su fecha con "
+                           "lo medido en la sesion, y lo dice",
+    "doc/ecst/VERIFICACION.md": "registro generado sobre el arbol de 71c5aad (S582): cada fila "
+                                "cita sus fuentes con el texto de esa fecha",
+}
+PREFIJOS_EXCLUIDOS_RETIRADAS = {
+    "doc/comparativa/": "comparativas superadas por FIVE_BACKENDS.md, conservadas como historia "
+                        "(§448)",
+    "doc/historia/": "historia: no se reescribe",
+}
+# (fichero, ancla en la frase, razon): frases que citan una cifra retirada como lo que otro
+# decia, sin la palabra. Cada ancla tiene que casar al menos una vez.
+CITAS_RETIRADAS = (
+    ("SECURITY.md", "que\npublicaban varios documentos hasta el §698",
+     "cita lo que otros documentos publicaban hasta el §698, y lo dice"),
+    ("FIVE_BACKENDS.md", "que imprime el\ntest son sus 27,7, 32,7, 36,7 y 125,6 KB",
+     "explica la remedida del §806: lo que el arbol de 9a1e2f1 imprimia en KB"),
+    ("doc/integracion-vertical-evaluacion.md", "la casa declara 127 conjeturados, y 128 "
+     "demostrables costarían «125,6 KB en vez de 36,7»",
+     "evaluacion fechada (01-10-2026, aceptada en el §705): cita lo que la casa publicaba "
+     "entonces, y su columna de correccion dice que no era produccion"),
+    ("doc/integracion-vertical-evaluacion.md", "La casa declara **127 bits conjeturados** y que "
+     "128 **demostrables** costarían 125,6 KB por prueba en vez de 36,7",
+     "evaluacion fechada (01-10-2026, aceptada en el §705): cita lo que la casa publicaba "
+     "entonces"),
+)
+# Lo medido al nacer, en el §841: las citas marcadas que el universo da. Es un suelo, como los
+# del ATADO F: encoger es un rojo que obliga a bajarlo con su asiento.
+MINIMO_RETIRADAS = 20
+
+
+def documentos_retiradas():
+    """El universo de RETIRADAS: los .md del ATADO C menos sus exclusiones, y los .rs de crates/."""
+    for rel in documentos_url():
+        if not rel.endswith(".md") or rel in EXCLUIDOS_RETIRADAS:
+            continue
+        if rel.startswith(tuple(PREFIJOS_EXCLUIDOS_RETIRADAS)):
+            continue
+        yield rel
+    rs = []
+    for base, dirs, fs in os.walk(os.path.join(RAIZ, "crates")):
+        dirs[:] = [d for d in dirs if d != "target"]
+        rs.extend(os.path.relpath(os.path.join(base, f), RAIZ) for f in fs if f.endswith(".rs"))
+    for rel in sorted(rs):
+        yield rel
+
+
+def retiradas():
+    """Devuelve (fallos, citas marcadas, citas por excepcion, ficheros recorridos)."""
+    anclas = [(rel, " ".join(_limpia(a).split()), razon, [0]) for rel, a, razon in CITAS_RETIRADAS]
+    fallos, marcadas, por_excepcion, recorridos = [], 0, 0, 0
+    for rel in documentos_retiradas():
+        recorridos += 1
+        for texto, mapa, es_fila, _ in _unidades(rel):
+            if not texto:
+                continue
+            for etiqueta, patron in RETIRADAS:
+                for m in patron.finditer(texto):
+                    p = m.start()
+                    a, b = next(((a, b) for a, b in _tramos(texto, es_fila) if a <= p < b),
+                                (0, len(texto)))
+                    ini = max([o for o, _ in mapa if o <= p] or [0])
+                    if MARCA_RETIRADA.search(texto[a:p]) or MARCA_RETIRADA.search(texto[ini:p]):
+                        marcadas += 1
+                        continue
+                    frase = " ".join(texto[a:b].split())
+                    casa = [x for x in anclas if x[0] == rel and x[1] in frase]
+                    if casa:
+                        for x in casa:
+                            x[3][0] += 1
+                        por_excepcion += 1
+                        continue
+                    fallos.append((rel, _linea_de(mapa, p), "RETIRADA",
+                                   "«%s» sin «decía», «it said» ni ⚠️ antes, en su línea o su "
+                                   "frase" % etiqueta))
+    for rel, ancla, _, usos in anclas:
+        if not usos[0]:
+            fallos.append((rel, 0, "EXCEPCION", "el ancla «%s» ya no casa con ninguna cifra "
+                           "retirada: quita la excepcion" % ancla[:60]))
+    return fallos, marcadas, por_excepcion, recorridos
 
 
 def documentos():
@@ -2316,6 +2500,20 @@ def main():
     for linea in resumen_f:
         print("  " + linea)
 
+    fallos_bf, filas_b = atado_b_filas(pago_b)
+    print("  ATADO B, las filas: %d de %d filas de tabla llevan su banda de metrics.rs"
+          % (filas_b - len([f for f in fallos_bf if f[2] == "BANDA"]), len(FILAS_BANDA)))
+
+    fallos_r, marcadas_r, excepcion_r, recorridos_r = retiradas()
+    print("  RETIRADAS: %d fichero(s); %d cita(s) de %s tras su marca y %d por excepcion"
+          % (recorridos_r, marcadas_r, ", ".join("«%s»" % e for e, _ in RETIRADAS), excepcion_r))
+    for nombre, razon in sorted(EXCLUIDOS_RETIRADAS.items()):
+        print("  excluido (RETIRADAS) %s - %s" % (nombre, razon))
+    for nombre, razon in sorted(PREFIJOS_EXCLUIDOS_RETIRADAS.items()):
+        print("  excluido (RETIRADAS) %s - %s" % (nombre, razon))
+    for nombre, _, razon in CITAS_RETIRADAS:
+        print("  excepcion (RETIRADAS) %s - %s" % (nombre, razon))
+
     if vistos == 0:
         print("ROJO: CERO citas encontradas.")
         print("      Un censo vacio no es un hallazgo: es un instrumento que")
@@ -2378,6 +2576,36 @@ def main():
         print("  CODIGO_FORMULA o CABLEADO en el MISMO sello que toco el fork; que la")
         print("  replica siga siendo la funcion lo dicen los tests de Rust del canon")
         print("  (tools/canon.sh:122-123), no los verdes REPLICA y KAT de aqui.")
+        return 1
+
+    if fallos_bf:
+        print("")
+        print("ROJO: %d fila(s) de tabla no dan la banda de metrics.rs (ATADO B, §841)"
+              % len(fallos_bf))
+        for nombre, n, clase, detalle in fallos_bf:
+            print("  %-18s :%-5d %-7s %s" % (nombre, n, clase, detalle))
+        print("")
+        print("  Las bandas viven en crates/zk-ssl/src/metrics.rs: BANDA_ENVIO_B y BANDA_COBRO_B")
+        print("  en `mod tests`, PUBLICADA_PAGO_MIN_B y PUBLICADA_PAGO_MAX_B arriba. Quien mueve")
+        print("  una mueve las filas de FILAS_BANDA en el mismo sello.")
+        return 1
+
+    if fallos_r:
+        print("")
+        print("ROJO: %d cifra(s) retirada(s) publicada(s) como de hoy (§841)" % len(fallos_r))
+        for nombre, n, clase, detalle in fallos_r:
+            print("  %-40s :%-5d %-9s %s" % (nombre, n, clase, detalle))
+        print("")
+        print("  Una cifra de RETIRADAS solo queda como cita de lo que se decia: con «decía»,")
+        print("  «it said» o ⚠️ delante, en su linea o su frase. Si la frase es legitima sin")
+        print("  marca, va a CITAS_RETIRADAS con su ancla y su razon.")
+        return 1
+
+    if marcadas_r < MINIMO_RETIRADAS:
+        print("ROJO: RETIRADAS ve %d cita(s) marcada(s), menos que su suelo, %d."
+              % (marcadas_r, MINIMO_RETIRADAS))
+        print("      Un censo que encoge sin asiento es un instrumento que dejo de ver: revisa")
+        print("      el universo y los patrones antes de bajar el suelo.")
         return 1
 
     if cifras_f == 0:

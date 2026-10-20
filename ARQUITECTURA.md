@@ -144,7 +144,7 @@ más que el rendimiento. ⚠️ **Corregido en el §807**: decía «192 bytes fr
 
 | | Groth16 | **Arqueo (STARK)** |
 |---|---|---|
-| Arranque de la capa | 2,6 s generando claves | **1,12 ms** |
+| Arranque de la capa | 2,6 s generando claves | **1,47-1,85 ms** en tres corridas de `metrics_of_the_layer` (`crates/zk-ssl/src/metrics.rs`), las de la tabla de «Métricas de la capa, medidas» (⚠️ §841: decía «1,12 ms», sin fuente) |
 | Ceremonias necesarias | Una **por circuito** | **Ninguna** |
 | Prueba de emisión | 192 B | 66,4 KB de 1.024 B en la corrida de `doc/README-CLI.md`; varía con la sal y no tiene banda medida |
 | Prueba de liquidación (envío o cobro) | 192 B | 72.382–84.244 B, la banda del §538 |
@@ -627,19 +627,39 @@ saldo restante, no lo ya gastado.
 
 ## Métricas de la capa, medidas
 
-Todas en release, misma máquina, misma ejecución.
+Todas en release y en la misma máquina, con el test `metrics_of_the_layer`
+(`crates/zk-ssl/src/metrics.rs`) corrido tres veces; cada tiempo es el rango de
+las tres corridas. ⚠️ §841: decía «Todas en release, misma máquina, misma
+ejecución.». Remedido el 2026-10-20 sobre el §840, con
+`cargo test -p zk-ssl --release --locked --lib metrics_of_the_layer -- --nocapture`,
+en una máquina de 4 CPU con una carga de 2,1 a 2,3.
 
 | Operación | Generar | Aplicar / verificar | Prueba |
 |---|---|---|---|
-| **Arranque** | **0,67 ms** | — | — |
-| Emisión (2-de-N) | ~105 ms | ~2 ms | 57.342 B |
-| Transferencia | ~620 ms | ~4 ms | 61.966 B |
-| Destrucción | ~110 ms | ~2 ms | 54.924 B |
-| Auditoría (banda) | ~250 ms | ~1,5 ms | 48.782 B |
+| **Arranque** | **1,47-1,85 ms** | — | — |
+| Emisión (2-de-N) | 656-689 ms | 3,3-3,4 ms | 66.756-68.965 B medidos; sin banda |
+| Transferencia (envío + cobro) | 1.446-1.678 ms | 9,4-10,3 ms | 145.953–167.967 B, la banda del §538 |
+| ├─ envío | 649-858 ms | 4,7-6,1 ms | 73.571–84.244 B, la banda del §538 |
+| └─ cobro | 758-820 ms | 4,3-4,7 ms | 72.382–83.723 B, la banda del §538 |
+| Destrucción | 625-911 ms | 3,6-4,8 ms | 74.532-75.850 B medidos; sin banda |
+| Auditoría (banda) | 220-396 ms | 1,8-2,3 ms | 63.310-64.566 B medidos; sin banda |
 
-**Verificar cuesta el 0,5-0,8% de generar.** Esa asimetría es la
-propiedad económica que hace útil el sistema: quien recibe una
-liquidación gasta dos órdenes de magnitud menos que quien la produce.
+⚠️ §841: la tabla decía, de una sola ejecución y de antes de la ocultación del
+§538: arranque 0,67 ms; emisión ~105 ms, ~2 ms y 57.342 B; transferencia ~620 ms,
+~4 ms y 61.966 B; destrucción ~110 ms, ~2 ms y 54.924 B; auditoría ~250 ms, ~1,5 ms
+y 48.782 B. La transferencia era entonces una prueba; hoy un pago son dos, el
+envío y el cobro, y la fila suma las dos. Con la ocultación el tamaño varía con la
+sal, y por eso las pruebas del pago se dan por su banda, la que fijan
+`BANDA_ENVIO_B` y `BANDA_COBRO_B` en `metrics.rs` y que
+`tools/check_publicadas.py` ata a esta tabla. Las tres corridas caen dentro:
+envío 78.632-79.820 B, cobro 78.488-80.219 B y pago 158.147-159.202 B. La
+emisión, la destrucción y la auditoría no tienen banda medida, y su fila da el
+rango de las tres corridas.
+
+**Aplicar un pago cuesta el 0,6-0,7 % de generarlo, y verificar una auditoría,
+el 0,6-0,8 %.** Esa asimetría es la propiedad económica que hace útil el
+sistema: quien recibe una liquidación gasta dos órdenes de magnitud menos que
+quien la produce. ⚠️ §841: decía «Verificar cuesta el 0,5-0,8% de generar.».
 
 > ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
 >
@@ -653,6 +673,12 @@ liquidación gasta dos órdenes de magnitud menos que quien la produce.
 >
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
 > --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
+>
+> ⚠️ §841: esas dos razones, el 0,58 % y el 28,5 %, son de antes del §538. En
+> las tres corridas de la tabla, `verify_audit` cuesta 1,8-2,3 ms frente a
+> 220-396 ms de generación, un 0,6-0,8 %; y aplicar el pago, envío y cobro,
+> 9,4-10,3 ms frente a 1.446-1.678 ms, un 0,6-0,7 %. Esta medida no escribe a
+> disco: la capa del test, `new_layer()`, no abre `sled`.
 
 **El arranque no genera claves.** En Groth16 eran 2,6 s de setup por
 circuito. Aquí no hay nada que generar ni ningún secreto que destruir, y
@@ -660,8 +686,11 @@ eso se ve en el propio constructor.
 
 ### El límite cuantificado
 
-**Mil transferencias: ~620 s de prueba y 139,2 a 160,2 MiB acumulados.** Ese es el
+**Mil pagos: 1.446 a 1.678 s de prueba y 139,2 a 160,2 MiB acumulados.** Ese es el
 argumento numérico a favor de las pruebas por lote — no una intuición.
+⚠️ §841: decía «Mil transferencias: ~620 s de prueba», mil veces la transferencia
+de una prueba de la tabla de antes; los segundos son hoy mil veces el pago de la
+tabla de arriba.
 
 ⚠️ **El límite que este documento publicaba aquí ya no aplica.** Decía que la
 posición del nullifier se derivaba del propio nullifier y que las colisiones
@@ -676,11 +705,21 @@ implica. Ver `PAPER.md` §4.2 y `AUDITORIA.md` §13.
 Cinco transferencias encadenadas: la última costó 1,18 veces la primera.
 ⚠️ Este dato se justificaba con el árbol de nullifiers, que
 **se eliminó de la capa**; la medida sigue siendo válida por sí misma.
+⚠️ §841: y es de la transferencia de una prueba, de antes de la ocultación del
+§538: llegó con `9a1e2f1` (2026-07-27), en `README.md`, y a este documento con
+`70b5808`, el mismo día; no se ha remedido.
 
 ### ⚠️ El tamaño de prueba NO es constante, y eso mereció investigarse
 
 Se suponía que era idéntico para cualquier importe. **No lo es**: varía
 un **5,4%** (3.334 B sobre 61.517).
+
+⚠️ §841: esas cifras, y las de la tabla de correlación de abajo, son de la
+transferencia de una prueba, de antes de la ocultación del §538: llegaron con
+`9a1e2f1` (2026-07-27), en `README.md`, y a este documento con `70b5808`, el
+mismo día. Desde el §538 la sal de la ocultación sale de la entropía, y el
+tamaño varía también entre corridas de las mismas entradas; por eso la tabla de
+arriba da una banda. No se han remedido aquí.
 
 La causa probable es la deduplicación de nodos en los caminos de Merkle
 de las posiciones consultadas, que salen de Fiat-Shamir y cambian de una
@@ -704,9 +743,11 @@ análisis estadístico que no se ha hecho.
 
 ### ⚠️ Qué NO son estas cifras
 
-Una sola ejecución en una máquina. Los tiempos de transferencia oscilaron
-entre 180 y 620 ms según el contexto de caché. Sirven para comparar
-órdenes de magnitud entre operaciones, **no como benchmark riguroso**.
+Tres ejecuciones en una máquina. Los tiempos de una misma operación varían de
+una corrida a otra: la generación de la destrucción fue de 625 a 911 ms. Sirven
+para comparar órdenes de magnitud entre operaciones, **no como benchmark
+riguroso**. ⚠️ §841: decía «Una sola ejecución en una máquina. Los tiempos de
+transferencia oscilaron entre 180 y 620 ms según el contexto de caché.».
 
 ## Ninguna vía para crear dinero
 

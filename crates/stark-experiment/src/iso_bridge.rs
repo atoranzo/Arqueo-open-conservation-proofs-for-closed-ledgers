@@ -41,7 +41,7 @@ type Blake3 = Blake3_256<BaseElement>;
 
 /// Configuración por defecto del puente: la que alcanza **128 bits de
 /// seguridad DEMOSTRABLE** (no solo conjeturada), medida en
-/// `compliance_real_proof`. Cuesta ~125 KB y ~45 ms — se elige la
+/// `compliance_real_proof`. Cuesta 127.274 B (⚠️ §841: decía «~125 KB y ~45 ms»; los bytes, del §806 en `FIVE_BACKENDS.md` §4; el tiempo no se fija aquí: depende de la máquina, y el §806 dio 74-78 ms en sus tres corridas) — se elige la
 /// garantía fuerte por defecto, y quien quiera pruebas más pequeñas debe
 /// pedirlo explícitamente y saber qué está cambiando.
 pub fn default_proof_options() -> ProofOptions {
