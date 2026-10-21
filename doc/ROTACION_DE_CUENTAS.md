@@ -166,7 +166,8 @@ aplica.
   `:969`.
 - **La capa y sus pruebas**: `recovery.rs`, `crates/zk-ssl/src/tests_support.rs:504-529`, las
   llamadas de `crates/zk-ssl/src/tests.rs` y la fila de `RecoveryClimbAir` en la suite de lo que
-  revela una prueba (`crates/zk-ssl/src/instrumento_revela.rs:1023-1030` y `:1060`).
+  revela una prueba (`crates/zk-ssl/src/instrumento_revela.rs:1029-1036` y `:1066`; ⚠️ §842:
+  decía `:1023-1030` y `:1060`, que la banda de bytes de cada prueba desplazó seis líneas).
 - **El mando**: `crates/zk-ssl-cli/src/commands.rs:374`.
 - **Un código de operación nuevo**: una línea `REGISTRO` en
   `crates/zk-ssl-hash/src/lib.rs:1708-1745`, su fila en `spec/NUCLEO.md:228-231` y lo que vigila

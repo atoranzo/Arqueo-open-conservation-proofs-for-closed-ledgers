@@ -24,6 +24,9 @@
 //! - **El censo** (D-L): un test lee los fuentes y falla si una AIR que la capa, el par de umbral
 //!   o el kit verifican no tiene fila, si una fila del cable ya no la verifica nadie o si una
 //!   fila nombra una AIR que no existe.
+//! - **Las bandas de bytes** (la 45 de la lista, §842): cada prueba que `asierta` cuenta cae
+//!   tambien en la banda de su familia, `BANDAS`, con la longitud de traza de esa banda; y otro
+//!   censo exige banda para cada probador de `stark-experiment` que oculta.
 //! - Prueban STARK reales: en depuracion se saltan (nota 41) y `--release` los corre. Claves y
 //!   valores de alta entropia, dentro del rango de cada circuito.
 
@@ -235,7 +238,8 @@ fn coinciden(a: &Valor, b: &Valor) -> bool {
 
 /// Cuenta cada celda en los bytes de `pr` y la compara con la tabla: un elemento, `k(q+2)`; un
 /// digest, `k*q`; con `q` leido de la propia prueba. Antes exige que ninguna celda que salga
-/// valga lo que otra: la cuenta de una contaria la otra. El control tiene que dar cero. Junta
+/// valga lo que otra: la cuenta de una contaria la otra. El control tiene que dar cero. Y la
+/// prueba cae en la banda de su familia, la AIR entre parentesis al final de `fila` (§842). Junta
 /// todas las discrepancias antes de fallar: un rojo dice cada celda que se movio.
 fn asierta(fila: &str, pr: &[u8], celdas: &[Celda]) {
     for (i, a) in celdas.iter().enumerate() {
@@ -253,7 +257,9 @@ fn asierta(fila: &str, pr: &[u8], celdas: &[Celda]) {
     let q = prueba.num_unique_queries as usize;
     let tope = proof_options().num_queries();
     assert!(q >= 1 && q <= tope, "{fila}: q = {q}, fuera de 1..={tope}");
+    println!("BANDA {fila} | {} B | q {q} | {} filas", pr.len(), prueba.trace_info().length());
     let mut mal = Vec::new();
+    en_su_banda(fila, pr.len(), prueba.trace_info().length(), &mut mal);
     for cel in celdas {
         let (bytes, esperada) = match cel.valor {
             Valor::E(x) => (element_to_bytes(x).to_vec(), cel.k * (q + 2)),
@@ -585,8 +591,8 @@ fn revela_la_autorizacion_delegada() {
     let op = op_cus();
     let (pa, _, pb, _) = custodian_pair_with(&ck, op, 1, 3);
     for (fila, prueba, suya, otra) in [
-        ("autorizacion delegada, custodio 1", pa, 1, 3),
-        ("autorizacion delegada, custodio 3", pb, 3, 1),
+        ("autorizacion delegada, custodio 1 (NullifierThresholdAir)", pa, 1, 3),
+        ("autorizacion delegada, custodio 3 (NullifierThresholdAir)", pb, 3, 1),
     ] {
         let celdas = [
             celda("la clave de SU custodio", Valor::E(ck[suya]), 0),
@@ -607,8 +613,8 @@ fn revela_la_gobernanza_delegada() {
     let op = op_gov();
     let (pa, pb) = par_de_gobernanza(&gk, op, 1, 3);
     for (fila, prueba, suya, otra) in [
-        ("gobernanza delegada, miembro 1", pa, 1, 3),
-        ("gobernanza delegada, miembro 3", pb, 3, 1),
+        ("gobernanza delegada, miembro 1 (NullifierThresholdAir)", pa, 1, 3),
+        ("gobernanza delegada, miembro 3 (NullifierThresholdAir)", pb, 3, 1),
     ] {
         let celdas = [
             celda("la clave del miembro", Valor::E(gk[suya]), 0),
@@ -1172,4 +1178,141 @@ fn el_censo_del_cable_da_fila_a_cada_air_verificada() {
         }
     }
     assert!(mal.is_empty(), "el censo del cable: {}", mal.join("; "));
+}
+
+// ================ LAS BANDAS DE BYTES DE LAS FAMILIAS OCULTAS (la 45, §842) ================
+
+/// **La banda de bytes de cada familia oculta**: `(probador, AIR, filas, banda)`. El probador es
+/// el fichero de `crates/stark-experiment/src` que oculta (llama a `ocultacion_encendida`); la
+/// AIR, la de su `type Air`; `filas`, la longitud de traza que la prueba declara
+/// (`trace_info`); y la banda, los bytes entre los que cae una prueba honesta, los dos extremos
+/// incluidos. Con la ocultacion una prueba pesa segun las posiciones que abre y segun la sal, y
+/// su tamano es una BANDA, no un valor: D-AC del RFC-0009, el molde de `metrics.rs`.
+///
+/// - El envio y el cobro v1 tienen banda desde el S538: `BANDA_ENVIO_B` y `BANDA_COBRO_B`, que
+///   se leen de alli y no se repiten.
+/// - Las otras 21 salen de 15 corridas de los tests de este modulo en release (§842), con cada
+///   prueba en su linea `BANDA` de `asierta`: 15 pruebas por familia; 30 la banda del saldo y la
+///   edad, que tienen dos montajes; 60 la pareja delegada, con cuatro pruebas por corrida. Cada
+///   extremo es el minimo o el maximo medido, con un margen DECLARADO del 5 % por lado, como en
+///   `metrics.rs`.
+/// - La edad, a `m = 3`, ocho hojas: es la de los dos montajes de `revela_la_edad`. Con mas
+///   hojas la traza crece y la prueba pesa mas, y `filas` lo pone rojo antes que los bytes.
+/// - Las cuatro de `FILAS` fuera del cable (`ThresholdAir`, `SolvencyAir`, `DoubleEntryAir` y
+///   `MerkleAir`) tambien ocultan, y tambien tienen banda.
+///
+/// Si cambian los parametros de la prueba, las bandas se remiden. Un rojo dice que una prueba se
+/// salio de su banda: se remide, y la banda se mueve con un asiento.
+const BANDAS: &[(&str, &str, usize, (usize, usize))] = &[
+    ("circuit_send", "SendAir", 2048, crate::metrics::tests::BANDA_ENVIO_B),
+    ("circuit_claim", "ClaimAir", 2048, crate::metrics::tests::BANDA_COBRO_B),
+    ("circuit_send_v2", "SendV2Air", 2048, (74_972, 86_230)),
+    ("circuit_claim_v2", "ClaimAirV2", 2048, (75_017, 85_339)),
+    ("circuit_burn", "BurnAir", 2048, (69_775, 80_685)),
+    ("double_entry", "DoubleEntryAir", 2048, (67_630, 77_440)),
+    ("circuit_audit", "AuditAir", 1024, (57_038, 67_526)),
+    ("circuit_banda", "BandaAir", 1024, (57_254, 66_519)),
+    ("circuit_cobro_pendiente", "CobroPendienteAir", 1024, (63_747, 72_043)),
+    ("circuit_pago_en_curso", "PagoEnCursoAir", 1024, (62_829, 73_527)),
+    ("circuit_prenda", "PrendaAir", 1024, (63_328, 72_515)),
+    ("circuit_credit_climb", "CreditClimbAir", 1024, (62_276, 70_682)),
+    ("circuit_mint_climb", "MintClimbAir", 1024, (62_684, 71_807)),
+    ("circuit_mint_pending_climb", "MintPendingClimbAir", 1024, (61_816, 70_343)),
+    ("circuit_recovery_climb", "RecoveryClimbAir", 1024, (62_607, 72_534)),
+    ("circuit_frozen_climb", "FrozenClimbAir", 512, (52_358, 60_935)),
+    ("merkle", "MerkleAir", 512, (48_348, 55_824)),
+    ("solvency", "SolvencyAir", 512, (39_739, 47_696)),
+    ("circuit_edad", "EdadAir", 128, (71_645, 84_021)),
+    ("circuit_threshold", "ThresholdAir", 128, (44_718, 51_521)),
+    ("circuit_threshold_single_nullifier", "NullifierThresholdAir", 128, (38_990, 47_138)),
+    ("circuit_refund", "RefundAir", 128, (35_988, 43_325)),
+    ("circuit_refund_v2", "RefundAirV2", 128, (39_019, 45_376)),
+];
+
+/// La prueba de `fila` frente a la banda de su familia: la AIR entre parentesis al final del
+/// nombre de la fila. Una familia sin banda, otra longitud de traza o unos bytes fuera de la
+/// banda van a `mal`, con lo demas que `asierta` junta.
+fn en_su_banda(fila: &str, bytes: usize, filas: usize, mal: &mut Vec<String>) {
+    let air = fila.rsplit_once('(').and_then(|(_, r)| r.strip_suffix(')')).unwrap_or("");
+    let Some(&(_, _, filas_banda, (min, max))) = BANDAS.iter().find(|b| b.1 == air) else {
+        mal.push(format!("la familia {air:?} no tiene banda"));
+        return;
+    };
+    if filas != filas_banda {
+        mal.push(format!("{air}: la traza declara {filas} filas y su banda es de {filas_banda}"));
+    }
+    if !(min..=max).contains(&bytes) {
+        mal.push(format!("{air}: {bytes} B, fuera de su banda {min}..={max}"));
+    }
+}
+
+/// Si alguna prueba de este modulo mira la banda de `air`: un literal de fila que acaba en
+/// `(<air>)"` dentro de una funcion de test que llama a `asierta`. Lee el texto del modulo, no
+/// lo que corre: no ve si la llamada recibe esa fila, solo que la fila y la llamada estan en la
+/// misma prueba.
+fn alguna_prueba_mira(texto: &str, air: &str) -> bool {
+    let literal = format!("({air})\"");
+    texto.match_indices(&literal).any(|(i, _)| {
+        let Some(ini) = texto[..i].rfind("\nfn ") else {
+            return false;
+        };
+        let fin = texto[i..].find("\n}\n").map_or(texto.len(), |f| i + f);
+        let antes = texto[..ini].rfind("\n}\n").unwrap_or(0);
+        // El atributo se parte en dos literales: `check_tests` cuenta su texto.
+        texto[antes..ini].contains(concat!("#[te", "st]")) && texto[ini..fin].contains("asierta(")
+    })
+}
+
+/// El censo de las bandas, leido de los fuentes y no tecleado: cada fichero de
+/// `crates/stark-experiment/src` cuyo probador oculta tiene banda, y una sola AIR, la de la
+/// banda; cada banda nombra un fichero que oculta, una AIR con fila en `FILAS` y una prueba de
+/// este modulo que la mira (`alguna_prueba_mira`); y ninguna AIR ni ningun fichero tiene dos.
+/// No prueba STARK: corre tambien en depuracion.
+#[test]
+fn el_censo_de_las_bandas_da_banda_a_cada_familia_oculta() {
+    let zk = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let src = zk.parent().expect("la carpeta crates").join("stark-experiment/src");
+    let oculta = "crate::ocultacion_encendida(";
+    let mut ocultos = std::collections::BTreeMap::new();
+    for (nombre, texto) in fuentes(&src) {
+        if texto.contains(oculta) {
+            let fichero = nombre.trim_end_matches(".rs").to_string();
+            ocultos.insert(fichero, nombres_tras(&texto, "type Air ="));
+        }
+    }
+    let modulo = std::fs::read_to_string(zk.join("src/instrumento_revela.rs"))
+        .expect("el censo lee este modulo");
+    println!("BANDA censo | {} probadores que ocultan ; {} bandas", ocultos.len(), BANDAS.len());
+    let mut mal = Vec::new();
+    if ocultos.is_empty() {
+        mal.push(format!("el censo no ve ningun probador que oculte en {}", src.display()));
+    }
+    for (fichero, airs) in &ocultos {
+        match (airs.as_slice(), BANDAS.iter().find(|b| b.0 == fichero.as_str())) {
+            ([air], Some(b)) if b.1 == air.as_str() => {}
+            ([air], Some(b)) => {
+                mal.push(format!("{fichero}: oculta {air} y su banda es de {}", b.1))
+            }
+            ([air], None) => mal.push(format!("{fichero}: oculta {air} y no tiene banda")),
+            _ => mal.push(format!("{fichero}: oculta y no tiene una sola type Air: {airs:?}")),
+        }
+    }
+    for (i, &(fichero, air, filas, (min, max))) in BANDAS.iter().enumerate() {
+        if !ocultos.contains_key(fichero) {
+            mal.push(format!("{fichero} ({air}): la banda nombra un probador que no oculta"));
+        }
+        if !FILAS.iter().any(|(n, _, _)| *n == air) {
+            mal.push(format!("{air}: la banda no tiene fila en FILAS"));
+        }
+        if !alguna_prueba_mira(&modulo, air) {
+            mal.push(format!("{air}: ninguna prueba de este modulo mira su banda"));
+        }
+        if BANDAS[..i].iter().any(|b| b.0 == fichero || b.1 == air) {
+            mal.push(format!("{fichero} ({air}): dos bandas"));
+        }
+        if filas == 0 || min >= max {
+            mal.push(format!("{air}: banda vacia, {filas} filas y {min}..={max}"));
+        }
+    }
+    assert!(mal.is_empty(), "el censo de las bandas: {}", mal.join("; "));
 }

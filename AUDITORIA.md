@@ -57758,3 +57758,329 @@ Las correcciones, sobre los ficheros STAGED de este commit:
 13. `crates/stark-experiment/src/lib.rs:38`: «⚠️ §841: decía «125,6 KB y 45 ms»».
 14. `crates/stark-experiment/src/iso_bridge.rs:44` y `settlement_prover_impl.rs:29`: «⚠️ §841: decía
     «~125 KB y ~45 ms»».
+
+## §842 — las bandas de bytes de las familias ocultas: cada prueba del testigo de lo que revela una prueba cae en la banda de su familia, con su longitud de traza, y un censo exige banda a cada probador de `stark-experiment` que oculta; 21 bandas nuevas, y las dos del pago, leídas de `metrics.rs` (la 45 de la lista)
+
+El commit que lleva este asiento, sobre `6ac4133` (el §841). Toca
+`crates/zk-ssl/src/instrumento_revela.rs`: una viñeta de la cabecera, el `///` de `asierta`, que
+gana una línea `BANDA` y la llamada a la banda, el nombre de las cuatro filas delegadas (que ahora
+dicen su AIR entre paréntesis), y al final la tabla `BANDAS`, la función `en_su_banda`, la función
+`alguna_prueba_mira` y un test nuevo, el censo de las bandas; `crates/zk-ssl/src/metrics.rs`, que
+hace `pub(crate)` su `mod tests` y sus dos bandas, y dice en un comentario, en su misma línea, que
+las lee también `instrumento_revela`: ninguna línea de ese fichero se mueve; `tools/canon.sh`, la
+fila de `zk-ssl`, con su pin de 484 a 485 y su crónica; los totales de `PAPER.md`, `PAPER_EN.md` y
+`PRINCIPIOS.md`; el «484» de la capa en `ARQUITECTURA.md` (tres: dos sin marca y el de la nota del
+§814 con la suya), `CONTRIBUTING.md` (el de la misma nota, con su marca), `PAPER.md`, `PAPER_EN.md`,
+`PRINCIPIOS.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`; y una
+cita por línea a `instrumento_revela.rs` en `doc/ROTACION_DE_CUENTAS.md`, con su marca. Y este
+asiento. Ni vectores, ni código de los crates fuera de `#[cfg(test)]`, ni ningún probador, ni
+`Cargo.toml`, ni `Cargo.lock`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la
+nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es
+el siguiente del rango que el autor asignó (§830 a §859).
+
+Del autor es la tarea: la 45 de la lista que encargó, «bandas de bytes para las familias ocultas
+que no tienen banda». No es la entrada 45 de `BACKLOG.md`. Del autor es el orden: va detrás del
+§839, del §840 y del §841, y es el último de los que mueven el pin de `zk-ssl` en esta tanda. La
+forma la propuso la sesión. El canon de este commit, `bash tools/canon.sh --sello`, corrido por la
+sesión sobre su árbol limpio, con este asiento en su sitio y sin esta frase: VERDE, 966 s de reloj
+(de su arranque a su salida) y 743 s de tests (la línea «total» de la tabla), en una máquina de 4
+CPU con carga de 0,21 al empezar. Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los
+274 `.rs` de `crates/` y de `tools/`, y su log lo registra. Las 19 filas del nivel, en su pin, con
+1817 tests que pasan (la suma de la columna «pasan»), y la de `zk-ssl` en 485 pasan y 7 ignorados;
+la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (62 s)»;
+`check_tests` en 1976 y 20 instrumentos; `check_modulos` en 207; las once herramientas del bucle
+«2 ter», con `check_publicadas` dentro; la puerta de los vectores, en 497 ficheros y 987 líneas;
+`check_catalogo`; el cable, en 23 de 23; la segunda implementación, con sus pares STARK en 34 de
+34; y el artefacto reproducible, con el binario `473eb5f63e5b091d` y el tarball
+`e021ea83511159fd`. Corrió con un `TMPDIR` propio y vacío, y al acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió, se midió y se commiteó (`77bca6c`) sobre otra versión del §841
+(`4afa0b5`), que iba sobre el §840 (`56b57fc`), el §839 (`4f60198`) y el §838 (`ff9d4fc`). Allí su
+canon dio VERDE; sus cifras no se copian aquí. Después se rebasó sobre el §841 de ahora (`6ac4133`),
+que va sobre el §840 de ahora (`f195662`) y el §839 de ahora (`cea7879`), y éstos sobre el §860
+(`1eee2c5`) y el §861 (`32b5b12`), de otra sesión. Son prosa y comentarios: cierran siete entradas
+de `BACKLOG.md`, abren la 126 y la 127, y la cabecera pasa de 48 abiertas y 79 resueltas a 43 y 86;
+`tools/verificar_citas.py` gana en `RESERVADOS` el rango del §860 al §889; y tocan `SECURITY.md`,
+`ARQUITECTURA.md`, `PAPER.md`, `PAPER_EN.md`, trece documentos de `doc/` y de `spec/`, un comentario
+de `tools/check_publicadas.py` y comentarios de seis fuentes de los crates (`metrics.rs`,
+`client.rs`, `iso.rs`, `migration.rs` y `persistence.rs` de la capa, y `lib.rs` del SDK). Ningún
+test, ni `tools/canon.sh`, ni `Cargo.toml`, ni `Cargo.lock`: `git diff ff9d4fc 32b5b12 -- crates`
+no cambia ninguna línea que no sea de comentario. De `4afa0b5` a `6ac4133`, el §841 cambia además,
+por su revisión, una línea de `PAPER.md` y otra de `PAPER_EN.md`, en su sitio, y su asiento. En
+este fichero, los asientos del §860 y del §861 van antes que los del §839, del §840 y del §841, y
+éste detrás. El `cherry-pick` entró sin conflicto, también en `metrics.rs`: el §860 cambia seis
+comentarios de ese fichero, en su sitio, y este sello hace `pub(crate)` su `mod tests` y sus dos
+bandas, con su comentario; quedan los dos. Las líneas que quitó y añadió el `cherry-pick` sobre
+`6ac4133` son las mismas que las de `77bca6c` sobre `4afa0b5`, en cada uno de sus doce ficheros
+fuera de este; sólo el trozo de `doc/ROTACION_DE_CUENTAS.md` empieza seis líneas más abajo. De los
+ficheros que toca este sello, el §860 y el §861 cambian `ARQUITECTURA.md` (cuatro líneas en su
+sitio, todas por encima de la nota del §814), `PAPER.md` y `PAPER_EN.md` (una línea cada uno, en
+su sitio, que no es la de los totales), `metrics.rs` (los seis comentarios), este fichero y
+`doc/ROTACION_DE_CUENTAS.md`, que crece seis líneas por encima de la cita de este sello. Medidas
+otra vez, las citas por línea de este asiento dan lo mismo, salvo las de ese fichero: en el punto
+7 de «Medido» y en la corrección 3, la 163 pasa a la 169, y la 163-164, a la 169-170. Se corrigen
+aquí sin marca, porque este asiento no estaba sellado. Las citas por línea que añaden el §860 y el
+§861 no dan en `ARQUITECTURA.md`, `CONTRIBUTING.md`, `doc/ROTACION_DE_CUENTAS.md` ni
+`instrumento_revela.rs`, que este sello corre: `git grep -o` de esos nombres seguidos de un número
+da lo mismo en `ff9d4fc` que en `32b5b12`. La única que añaden a un fichero de este sello es
+`tools/canon.sh:723-741`, y este sello cambia una sola línea de ese fichero, la 132, en su sitio.
+Las cifras de tests de la base no cambian: en `32b5b12` el pin de `zk-ssl` es 481, los totales de
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` son 1813 y 1950, y `check_tests` y `check_modulos` dan
+1972 y 205; en `6ac4133`, 484, 1816 y 1953, y 1975 y 207, como en `4afa0b5`. Remedido sobre
+`6ac4133`, con `git grep -l`: 23 ficheros de `crates/stark-experiment/src` con
+`crate::ocultacion_encendida(`, y dos bandas en `metrics.rs`, como en `4afa0b5`. Lo demás de
+«Medido» y de «Mutantes» es del árbol de `4afa0b5`: las corridas y los mutantes no se repitieron,
+porque el rebase no cambia ningún fuente fuera de comentarios ni ninguna dependencia. Este rebase
+cambia en este asiento la apertura; la frase del canon, que vuelve a «no se ha corrido todavía»
+hasta el canon de este commit; este párrafo; las citas por línea a `doc/ROTACION_DE_CUENTAS.md`, en
+el punto 7 de «Medido» y en la corrección 3; y la cabecera de `BACKLOG.md` en «Contadores». Sobre
+este commit: `check_tests`, 1976 y 20 instrumentos; `check_modulos`, 207; y las once herramientas
+del bucle «2 ter», `check_vectores --desde 32b5b12` y `check_catalogo`, con 0.
+
+**De dónde sale.** Desde el S538 una prueba oculta pesa según las posiciones que abre y según la
+sal, y su tamaño es una banda (D-AC del RFC-0009). Sólo dos familias la tenían: el envío y el cobro
+v1, `BANDA_ENVIO_B` y `BANDA_COBRO_B` de `metrics.rs`, que ata
+`la_cifra_publicada_sigue_siendo_la_medida`. En `4afa0b5` hay 23 ficheros de
+`crates/stark-experiment/src` cuyo probador llama a `crate::ocultacion_encendida()`, cada uno con
+una sola `type Air`, y son las 23 filas de `FILAS`, el censo D-L de `instrumento_revela.rs`: las 19
+del cable y las cuatro experimentales (`ThresholdAir`, `SolvencyAir`, `DoubleEntryAir` y
+`MerkleAir`). Las otras 21 no tenían banda: una prueba que se saliera de su tamaño, por una opción
+cambiada o por un probador que dejara de ocultar, no ponía rojo nada que mirara los bytes.
+
+**Lo que hace.**
+
+1. La tabla `BANDAS`: por familia, el fichero del probador, la AIR, la longitud de traza que
+   declara la prueba (`trace_info`) y la banda en bytes, con los dos extremos incluidos. Las del
+   envío y del cobro v1 se leen de `metrics.rs` y no se repiten. Las otras 21 salen de quince
+   corridas, abajo, con el molde de `metrics.rs`: el mínimo y el máximo medidos, con un margen
+   declarado del 5 % por lado (por abajo, el mínimo por 0,95 redondeado hacia abajo; por arriba, el
+   máximo por 1,05 redondeado hacia arriba). La edad, a `m = 3`, ocho hojas, la de los dos montajes
+   de `revela_la_edad`. Las cuatro experimentales también ocultan, y también tienen banda. Si
+   cambian los parámetros de la prueba, las bandas se remiden.
+2. `asierta`, el juez de cada fila del testigo de lo que revela una prueba, mira además la banda de
+   la familia que la fila nombra entre paréntesis al final de su nombre: si la familia no tiene
+   banda, si la traza declara otra longitud, o si los bytes caen fuera, lo junta con lo demás que
+   falla y da ROJO. Las cuatro filas delegadas no decían su AIR; ahora dicen
+   `(NullifierThresholdAir)`. Las pruebas son las que el módulo ya producía: no hay ninguna prueba
+   STARK nueva, y el coste es cero. Cada prueba deja una línea `BANDA <fila> | <bytes> B | q <q> |
+   <filas> filas`, que es la medida de una corrida.
+3. El censo, `el_censo_de_las_bandas_da_banda_a_cada_familia_oculta`, lee los fuentes de
+   `stark-experiment`: cada fichero con `crate::ocultacion_encendida(` tiene banda, y una sola
+   `type Air`, la de su banda; cada banda nombra un fichero que oculta, una AIR con fila en `FILAS` y una
+   prueba del módulo que la mira; ninguna AIR ni ningún fichero tiene dos; y ninguna banda está
+   vacía. No prueba STARK: corre también en depuración. Dice «BANDA censo | 23 probadores que
+   ocultan ; 23 bandas». Si no ve ninguno, da ROJO, y cada banda también, por su fichero.
+4. La prueba que mira cada banda, `alguna_prueba_mira`. `FILAS` es la tabla del censo D-L, no una
+   prueba: una banda con fila en `FILAS` y sin ninguna llamada a `asierta` que la juzgue quedaba en
+   VERDE. La función lee el texto de `instrumento_revela.rs` y busca un literal de fila que acabe en
+   `(<AIR>)"` dentro de una función `#[test]` que llame a `asierta`. El atributo lo busca partido en
+   dos literales, como el censo D-L sus patrones: `check_tests` cuenta su texto, y no debe contar
+   un test de más. Sirve el literal de las cuatro
+   delegadas y de las dos aperturas del reembolso, que está en la tupla del bucle y no en la
+   llamada. Esta comprobación es de la vuelta 1 de la revisión: la revisión halló el vivo, y es el
+   M13 de abajo.
+
+**Medido y leído**, en este orden, en el worktree de la sesión, con 4 CPU:
+
+1. Sobre `4afa0b5`, en un árbol sacado con `git archive`: `check_tests`, 1975 tests y 20
+   instrumentos; `check_modulos`, 207. `grep -rl 'crate::ocultacion_encendida('` en
+   `crates/stark-experiment/src`: 23 ficheros. En `metrics.rs`, dos bandas.
+2. Con sólo la línea `BANDA` añadida, una corrida de `cargo test --release -p zk-ssl --lib
+   instrumento_revela -- --nocapture`: 22 pasan, en 10,46 s de tests, tras compilar (61 s de reloj
+   en total). 28 pruebas: una por fila, dos en la banda del saldo y en la edad, cuatro en las
+   delegadas. Las longitudes de traza, una por familia.
+3. Quince corridas iguales, seguidas, con carga de 1,38 al empezar y de 3,62 al acabar: 22 pasan en
+   cada una, de 8,79 a 10,25 s de tests. 15 pruebas por familia; 30 la banda del saldo y la edad; 60
+   la pareja delegada. `q`, de 39 a 42. Por familia, el mínimo y el máximo medidos, en bytes, y la
+   banda que sale (la del envío y el cobro v1, la de `metrics.rs`):
+
+   | AIR | medido | banda |
+   |---|---|---|
+   | `SendAir` | 76.899–80.619 | 73.571–84.244 (`metrics.rs`) |
+   | `ClaimAir` | 76.707–79.864 | 72.382–83.723 (`metrics.rs`) |
+   | `SendV2Air` | 78.918–82.123 | 74.972–86.230 |
+   | `ClaimAirV2` | 78.966–81.275 | 75.017–85.339 |
+   | `BurnAir` | 73.448–76.842 | 69.775–80.685 |
+   | `DoubleEntryAir` | 71.190–73.752 | 67.630–77.440 |
+   | `AuditAir` | 60.041–64.310 | 57.038–67.526 |
+   | `BandaAir` | 60.268–63.351 | 57.254–66.519 |
+   | `CobroPendienteAir` | 67.103–68.612 | 63.747–72.043 |
+   | `PagoEnCursoAir` | 66.136–70.025 | 62.829–73.527 |
+   | `PrendaAir` | 66.662–69.061 | 63.328–72.515 |
+   | `CreditClimbAir` | 65.554–67.316 | 62.276–70.682 |
+   | `MintClimbAir` | 65.984–68.387 | 62.684–71.807 |
+   | `MintPendingClimbAir` | 65.070–66.993 | 61.816–70.343 |
+   | `RecoveryClimbAir` | 65.903–69.080 | 62.607–72.534 |
+   | `FrozenClimbAir` | 55.114–58.033 | 52.358–60.935 |
+   | `MerkleAir` | 50.893–53.165 | 48.348–55.824 |
+   | `SolvencyAir` | 41.831–45.424 | 39.739–47.696 |
+   | `EdadAir` | 75.416–80.020 | 71.645–84.021 |
+   | `ThresholdAir` | 47.072–49.067 | 44.718–51.521 |
+   | `NullifierThresholdAir` | 41.043–44.893 | 38.990–47.138 |
+   | `RefundAir` | 37.883–41.261 | 35.988–43.325 |
+   | `RefundAirV2` | 41.073–43.215 | 39.019–45.376 |
+
+   El envío y el cobro v1 de este módulo van con claves anchas y por `client::prove_send` y
+   `client::prove_claim`; las bandas de `metrics.rs` se midieron por `layer.send` y `layer.claim`.
+   Es la misma AIR, y las quince caen dentro. El más ancho es la pareja delegada, un 9,4 % del
+   mínimo al máximo, con 60 pruebas; el más bajo en `q`, la apertura del reembolso v1 y la edad, con
+   una prueba de `q = 39` cada una.
+4. Con el cambio, `cargo test --release --locked -p zk-ssl --lib instrumento_revela --
+   --nocapture`: 23 pasan en 9,55 s de tests, sin un aviso de compilación. Y otra vez al final,
+   tras los mutantes y la limpieza de abajo, con carga de 1,69 al empezar: 23 pasan en 9,49 s, tras
+   80 s de reloj en total, que son de recompilar la capa. Las 504 pruebas de las dieciocho corridas
+   (la del punto 2, las quince, y estas dos) caen en su banda: ninguna fuera.
+5. En depuración, `cargo test --locked -p zk-ssl --lib instrumento_revela`: 2 pasan y 21
+   ignorados, los dos censos. Y `cargo test --locked -p zk-ssl --lib -- nivel_de_produccion
+   censo_de_hojas instrumento_revela`: 6 pasan, con la línea del censo D-L como antes, «capa 13 +
+   par 1 + kit 5 = cable 19 ; AIR en el arbol 39 ; filas 23». El censo de las longitudes del §839,
+   que lee `FILAS` de este fichero, sigue en VERDE.
+6. Las once herramientas del bucle «2 ter», `check_vectores --desde d4d6d45` y `check_catalogo`,
+   con 0. `check_tests`: 1976 y 20 instrumentos. `check_modulos`: 207, como antes: no hay fichero
+   nuevo.
+7. Las citas por línea. `git grep` de `instrumento_revela` seguido de un número, fuera de este
+   fichero: una, `doc/ROTACION_DE_CUENTAS.md:169`, que citaba `:1023-1030` y `:1060`, la subida de
+   la recuperación y su fila en `FILAS`. Este sello las corre seis líneas: van corregidas con su
+   marca, en `:1029-1036` y `:1066`. Ese fichero crece una línea en la 169, y nadie lo cita por
+   línea. `metrics.rs` no cambia de número de líneas. `ARQUITECTURA.md` crece una línea en la 1610,
+   y `CONTRIBUTING.md`, una en la 119: las citas por línea que pasan de ahí se declaran en «Lo que
+   NO hace».
+8. La vuelta 1 de la revisión, sobre `35e3b2f`: con `alguna_prueba_mira`, el censo en depuración,
+   `cargo test --locked -p zk-ssl --lib instrumento_revela::el_censo_de_las_bandas`: 1 pasa, con
+   «BANDA censo | 23 probadores que ocultan ; 23 bandas». `instrumento_revela.rs` crece 22 líneas,
+   desde la 1249: ninguna cita por línea a ese fichero llega ahí. No hay test nuevo: el pin
+   no se mueve. En release no se ha vuelto a correr el módulo: el cambio sólo toca el censo, que no
+   prueba STARK. Y `cargo test --locked -p zk-ssl --lib -- nivel_de_produccion
+   censo_de_hojas instrumento_revela`: 6 pasan, con la línea del censo D-L como antes. Las once
+   herramientas del bucle «2 ter», `check_vectores --desde d4d6d45` y `check_catalogo`, otra vez
+   con 0. `check_tests`, 1976 y 20 instrumentos; `check_modulos`, 207.
+
+**Mutantes.** Sobre una copia del árbol de este commit hecha con `tar`, sin `target` ni `.git`, en
+un directorio de la sesión; antes de cada mutante, los ficheros que tocan los demás vuelven a su
+estado limpio. Con el `CARGO_TARGET_DIR` del worktree. El censo, en depuración, `cargo test --locked
+-p zk-ssl --lib instrumento_revela::el_censo_de_las_bandas`; las bandas, en release, `cargo test
+--release --locked -p zk-ssl --lib` con el filtro de la fila. La copia sin mutar: el censo, VERDE, y
+en release, 23 pasan. Mueren todos menos uno, M16, que vive y se declara abajo.
+
+- M1, el probador de la banda del saldo sin ocultación (`ocultacion()` devuelve `None` en
+  `circuit_banda.rs`): ROJO, pero antes de la banda. El productor de la capa verifica la prueba que
+  acaba de hacer, y la forma de traza no es la oculta que pide el enunciado. La banda no llega a
+  mirarla. Por eso M1b.
+- M1b, lo mismo en el umbral conjunto (`circuit_threshold.rs`), que el test prueba con su probador,
+  sin pasar por la capa: ROJO por tres, la traza declara otra longitud que la de su banda, los bytes
+  caen por debajo de ella, y la cuenta de D-B ve las dos claves de los custodios. Y en depuración,
+  el censo: ROJO, «circuit_threshold (ThresholdAir): la banda nombra un probador que no oculta».
+- M2, `num_queries` de 42 a 32 en `proof_options()` de la capa: ROJO los 21 tests que prueban STARK.
+  En 16, por la banda. El resumen guardado tiene el mensaje de siete, y las siete caen por debajo:
+  el envío v1, por ejemplo, con 62.515 B frente a 73.571..=84.244; el log entero se borró con la
+  copia. Las otras cinco (la banda del saldo, la edad, la prenda y los dos sobres) prueban con las
+  opciones del kit, `zk_ssl_air::opciones()`, que el mutante no toca, y caen antes, en el tope de
+  `q` de `asierta`, que lee `proof_options()`: «q = 41, fuera de 1..=32» o «q = 42, fuera de
+  1..=32». La `q` varía con la sal: en la corrida de la revisión, tres dan 42 y dos dan 41; en la de
+  la vuelta 1, rehecha sobre una copia en release, las cinco dan 42, con 2 pasan y 21 fallan, y las
+  16 de la banda, todas por debajo. La vuelta 1 lo corrige: decía «ROJO las 21 filas» y sólo «q =
+  42»; `FILAS` tiene 23 filas. Por eso M2b.
+- M2b, `num_queries` de 42 a 32 en `zk_ssl_air::opciones()`: ROJO esas cinco, y sólo esas, las
+  cinco por la banda, todas por debajo; las otras 16 pasan.
+- M3, la banda de la prenda borrada: el censo, ROJO, «circuit_prenda: oculta PrendaAir y no tiene
+  banda», con 22 bandas; y en release, `revela_la_prenda`, ROJO, «la familia "PrendaAir" no tiene
+  banda».
+- M4, un fichero nuevo en `stark-experiment/src`, fuera del árbol de módulos, con un probador que
+  oculta y `type Air = NuevoAir`: el censo, ROJO, con 24 probadores, «circuit_nuevo: oculta NuevoAir
+  y no tiene banda».
+- M5, la longitud de la banda de la edad, el doble: en release, ROJO, «la traza declara 128 filas
+  y su banda es de 256». Es lo que da una edad con más hojas que las de su banda.
+- M6, la AIR del envío v2 mal escrita en su banda: el censo, ROJO por dos, la AIR del fichero no es
+  la de su banda, y la banda no tiene fila en `FILAS`; en release, `revela_el_envio`, ROJO, «la
+  familia "SendV2Air" no tiene banda».
+- M7, la banda de la quema, dos veces: el censo, ROJO, «dos bandas».
+- M8, el patrón del censo roto: ROJO, con 0 probadores, «el censo no ve ningun probador que
+  oculte», y las 23 bandas, cada una por su fichero. Es la prueba de vida.
+- M9, la banda del saldo con los extremos al revés: el censo, ROJO, «banda vacia».
+- M10, una segunda `type Air` en `circuit_banda.rs`, en un comentario: el censo, ROJO, «no tiene una
+  sola type Air». Es un ROJO de la lectura por texto, declarado abajo.
+- M11, el techo de la auditoría por debajo de lo medido: en release, ROJO, los bytes por encima de
+  su banda. M12, el suelo de la apertura del reembolso v1 por encima de lo medido: ROJO, por debajo.
+  Los dos miran los dos lados de la comparación.
+- M13, el de la revisión: la llamada `asierta("camino de merkle (MerkleAir)", …)` cambiada por
+  `let _ = (&p, &celdas);`. Antes de la vuelta 1 vivía: el censo, VERDE, y en release, 23 pasan.
+  Con `alguna_prueba_mira`, el censo en depuración: ROJO, «MerkleAir: ninguna prueba de este modulo
+  mira su banda».
+- M14, las dos llamadas a `asierta` de las delegadas, la de la autorización y la de la gobernanza,
+  quitadas: el censo, ROJO, «NullifierThresholdAir: ninguna prueba de este modulo mira su banda».
+- M15, el `#[test]` de `revela_el_camino_de_merkle` quitado, con `#[allow(dead_code)]`: el censo,
+  ROJO, «MerkleAir: ninguna prueba de este modulo mira su banda».
+- M16, en el bucle de las dos aperturas del reembolso, `asierta(fila, …)` cambiada por
+  `asierta("apertura del reembolso v1 (RefundAir)", …)`: la v2 se juzga con la banda de la v1. El
+  censo, VERDE: VIVE. Los dos literales siguen en la tupla, dentro de una prueba que llama a
+  `asierta`. La lectura es de texto, y no ve qué fila recibe la llamada. El compilador avisa de
+  `fila` sin usar, y el censo no lo mira. En release no se corrió.
+
+Cada comprobación nueva mata al menos uno: la familia sin banda, M3 y M6; la longitud de traza, M5
+y M1b; los bytes, M2, M2b, M11 y M12; cada fichero que oculta con su banda, M3 y M4; la banda con
+su fichero que oculta, M1b y M8; la fila en `FILAS`, M6; las bandas repetidas, M7; la banda vacía,
+M9; una sola `type Air`, M10; la prueba de vida, M8; y la prueba que mira cada banda, M13, M14 y
+M15. Al acabar, con el mismo `CARGO_TARGET_DIR` y
+desde la copia, `cargo clean --release -p zk-ssl -p stark-experiment -p zk-ssl-air` y `cargo clean
+-p zk-ssl -p stark-experiment`: en release se mutaron los tres, y en depuración la capa y
+`stark-experiment`. La copia se borró. Los de la vuelta 1 (M13 a M16, y M2 rehecho en release)
+van sobre copias del árbol con el cambio, hechas con `git ls-files` y `cp --parents`, con el mismo
+`CARGO_TARGET_DIR`, y con `touch` de los `.rs` de cada copia antes de compilarla: sin él, cargo
+corría el binario de la copia anterior. M13 a M16 se corrieron dos veces: con la primera forma de
+`alguna_prueba_mira` y con la que va en el commit, que parte el atributo en dos literales; dan lo
+mismo, y la copia sin mutar, VERDE. Al acabar, `touch` de los `.rs` del worktree y el censo otra
+vez, en VERDE. Las copias se borraron.
+
+**Lo que NO hace.** No publica ninguna de las bandas nuevas en un documento: no hay atado que
+añadir. No cambia ningún probador, ninguna opción ni ningún parámetro de la ocultación. No mide las
+bandas del envío y del cobro v1: las lee de `metrics.rs`, y sus quince pruebas de aquí caen dentro.
+Cada banda es de un montaje por familia, dos en la banda del saldo y en la edad, y de esa longitud
+de traza; la edad, sólo a `m = 3`. No mira las pruebas que producen otros tests ni la capa fuera de
+este módulo. La AIR la lee del nombre de la fila, y el censo, del texto de los fuentes: una
+`type Air` en un comentario cuenta (M10), y un probador que oculte sin escribir
+`crate::ocultacion_encendida(` no lo ve. `WorkAir`, de `stark-experiment/src/lib.rs`, no oculta y no
+tiene banda. La prueba que mira una banda la lee también del texto: un literal de fila y una llamada
+a `asierta` en la misma prueba no dicen que la llamada reciba esa fila (M16, vivo), y basta una
+prueba por banda: si se quita la de la autorización delegada y queda la de la gobernanza, la banda
+de `NullifierThresholdAir` sigue mirada y el censo no se pone rojo. Una banda es un intervalo con
+margen, no una cifra: un cambio de tamaño menor que el margen no la pone roja. No corrige las citas
+por línea que este sello corre una línea: en `ARQUITECTURA.md`, la de
+`doc/ecst/VERIFICACION.md:1630`, que cita `:1568-1571` para un texto que ya estaba en la 1657 y
+ahora está en la 1658; en `CONTRIBUTING.md`, las de `doc/METODO.md:115` (`:171-172`, «el código
+gana», que pasa de la 190 a la 191), de `doc/ecst/VERIFICACION.md` (`:1195`, `:1196` y `:1252`, que
+citan `:147-151`, `:149-151`, `:149-154` y `:147-154`, «No encaja sin discusión previa», de la 177 a
+la 178) y de `doc/integracion-vertical-evaluacion.md` (`:76` y `:115`, que citan `:149-157` y
+`:159-167`, el mismo párrafo, de la 177-185 a la 178-186). Ninguna daba ya en su línea antes de este
+sello, y el §839 las declaró. La vuelta 1 lo corrige: decía sólo `:147-151` y `:149-154` en
+`doc/ecst/VERIFICACION.md`, y no daba las líneas de `doc/integracion-vertical-evaluacion.md`. Ni el
+«(tools/canon.sh:109)» de `doc/ecst/VERIFICACION.md:1549`, la frase cuyo 484 pasa a 485: la fila de
+`zk-ssl` está en la :132, y es de la 1g, `VERIFICACION.md` vivo, como declaró el §840. Ni los JSON
+de `doc/ecst/borrador/`, que son el registro de su fecha. No mueve «1364 declaradas», «1349
+declared» ni «18 ignoradas»: son la 61, que va después, para no mover la cifra en cada sello
+mientras haya trabajo en curso que la cambia. Tampoco toca la entrada 41 de `BACKLOG.md`, cerrada en
+el §814: con este sello, la capa en depuración daría 447 pasan, sin haberlo corrido, y ya lo dice la
+nota del §814, con su marca.
+
+**Lo que es del autor.** El margen del 5 % y las quince corridas, que son los del molde de
+`metrics.rs`. Si alguna banda nueva debe publicarse, y entonces atarse. Si la banda va bien dentro
+de `asierta`, que juzga ya lo que revela cada prueba, o en un test propio. Si la prueba que mira
+cada banda se lee del texto, como la propuso la vuelta 1, o con un registro en tiempo de
+ejecución, que mataría M16 pero pide correr las pruebas STARK. Y si la edad necesita banda en otra
+`m`.
+
+**Contadores.** El pin de `zk-ssl` pasa de 484 a 485. El total de sello, de 1816 a 1817, y con
+largos, de 1953 a 1954, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`. `check_tests` pasa de 1975
+a 1976 tests declarados, con 20 instrumentos, y `check_modulos` sigue en 207. Las marcas «⚠️ §842»
+en los ficheros del commit, sin este asiento, son tres, contadas con `git grep --cached -c`: una en
+`ARQUITECTURA.md`, una en `CONTRIBUTING.md` y una en `doc/ROTACION_DE_CUENTAS.md`. `BACKLOG.md` no
+cambia: ninguna entrada llevaba esto. Su cabecera sigue en 43 abiertas y 86 resueltas. La vuelta
+1 no mueve ningún contador: no añade test, sólo una comprobación al censo y una función.
+
+Las correcciones, sobre los ficheros STAGED de este commit:
+
+1. `ARQUITECTURA.md:1610-1611`, en la nota del §814, que fija hoy 485 pasan y 7 ignorados:
+   «⚠️ §842: decía 484», y que el de más, el censo de las bandas, corre también en depuración, donde
+   serían 447.
+2. `CONTRIBUTING.md:119-120`, la misma nota y la misma marca.
+3. `doc/ROTACION_DE_CUENTAS.md:169-170`, la fila de `RecoveryClimbAir` en la suite de lo que revela
+   una prueba: «⚠️ §842: decía `:1023-1030` y `:1060`», que ahora son `:1029-1036` y `:1066`.

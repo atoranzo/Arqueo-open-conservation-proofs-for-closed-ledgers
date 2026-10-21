@@ -83,7 +83,7 @@ pub const PUBLICADA_PAGO_MIN_B: usize = 145_953;
 pub const PUBLICADA_PAGO_MAX_B: usize = 167_967;
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     // El arnes mide la via ANTIGUA a proposito: es la que las cifras
     // publicadas describen. Cuando se migre (entrada 32) las mediciones
     // cambian con ella, y eso hay que declararlo, no absorberlo. §65.3: el
@@ -121,9 +121,9 @@ mod tests {
     // la capa y 10 por la del cliente, SALIDA-538M): envio 77.444..80.232 B, cobro
     // 76.192..79.736 B, con un margen DECLARADO del 5 % por cada lado. Un rojo aqui dice
     // que el sistema se salio de la banda: se remide, se mueve la banda y
-    // check_publicadas.py senala los documentos.
-    const BANDA_ENVIO_B: (usize, usize) = (73_571, 84_244);
-    const BANDA_COBRO_B: (usize, usize) = (72_382, 83_723);
+    // check_publicadas.py senala los documentos. Las lee tambien instrumento_revela (§842).
+    pub(crate) const BANDA_ENVIO_B: (usize, usize) = (73_571, 84_244);
+    pub(crate) const BANDA_COBRO_B: (usize, usize) = (72_382, 83_723);
     // PUBLICADA_PAGO_MIN_B y PUBLICADA_PAGO_MAX_B viven a nivel de fichero y son
     // publicas (§318, S538): el latido del nodo consume el maximo. Llegan hasta aqui
     // por el `use crate::*` de arriba, via el `pub use` de lib.rs.
