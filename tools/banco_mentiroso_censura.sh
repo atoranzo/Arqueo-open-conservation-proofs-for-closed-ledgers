@@ -42,7 +42,7 @@ cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli 2>/dev/null \
 python3 - "$DIR" <<'PY'
 import http.server, json, os, re, subprocess, sys, threading, time, urllib.request
 DIR = sys.argv[1]
-NODO, CLI = 'target/release/zk-ssl-node', 'target/release/zk-ssl-cli'
+TD = os.environ.get('CARGO_TARGET_DIR') or 'target'; NODO, CLI = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-cli'
 PN, PP, VECES = 8816, 8817, 24
 def msg(m): print('BANCO-MENT-CENSURA| ' + m, file=sys.stderr, flush=True)
 fallos = 0

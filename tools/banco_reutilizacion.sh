@@ -31,7 +31,7 @@ trap limpiar EXIT
 fallo(){ msg "ROJO: $*"; exit 1; }
 cd "$(dirname "$0")/.." || fallo "no encuentro la raiz"
 cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli >/dev/null 2>&1 || fallo "no compila"
-NB=target/release/zk-ssl-node; CB=target/release/zk-ssl-cli
+NB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-node"; CB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-cli"
 [ -x "$NB" ] && [ -x "$CB" ] || fallo "faltan los binarios"
 python3 -c "print('5b'*96, end='')" > "$DIR/semilla-nodo.hex"; chmod 600 "$DIR/semilla-nodo.hex"
 python3 -c "

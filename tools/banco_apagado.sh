@@ -32,8 +32,8 @@ trap limpiar EXIT
 msg "compilando nodo y verificador (silencioso; si falla, en voz alta)"
 cargo build --locked -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
   || cargo build --locked -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
-NODO=target/debug/zk-ssl-node
-VER=target/debug/zk-ssl-verify
+NODO="${CARGO_TARGET_DIR:-target}/debug/zk-ssl-node"
+VER="${CARGO_TARGET_DIR:-target}/debug/zk-ssl-verify"
 [ -x "$NODO" ] || fallo "falta $NODO"
 [ -x "$VER" ] || fallo "falta $VER"
 

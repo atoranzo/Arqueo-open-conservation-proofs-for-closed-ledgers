@@ -630,7 +630,7 @@ cargo build --release -q --locked -p zk-ssl-verify > "$OUT/paquete_build.txt" 2>
 # UN solo productor del bucle del manifiesto: tools/conformidad.sh, el mismo que un tercero corre
 # sobre cualquier binario y el que artefacto.sh corre sobre el binario con remap. Cada ROJO del
 # arnes entra aqui con su nombre; la prueba de vida (manifiesto vacio, vector sin entrada) es suya.
-if bash tools/conformidad.sh target/release/zk-ssl-verify > "$OUT/paquete.txt" 2>&1; then
+if bash tools/conformidad.sh "${CARGO_TARGET_DIR:-target}/release/zk-ssl-verify" > "$OUT/paquete.txt" 2>&1; then  # ⚠️ §844: decia target/release/, sin CARGO_TARGET_DIR
   msg "  OK  paquete: $(tail -n 1 "$OUT/paquete.txt" | sed 's/^conformidad: //')"
 else
   while IFS= read -r L; do falla "paquete $L"; done < <(grep '^ROJO' "$OUT/paquete.txt" | sed 's/^ROJO //')
@@ -681,7 +681,7 @@ for F in $FAMILIAS; do
     continue
   fi
   O="$OUT/${F//-/_}.txt"
-  if bash tools/conformidad.sh target/release/zk-ssl-verify "$M" > "$O" 2>&1; then
+  if bash tools/conformidad.sh "${CARGO_TARGET_DIR:-target}/release/zk-ssl-verify" "$M" > "$O" 2>&1; then  # ⚠️ §844: decia target/release/
     msg "  OK  $F: $(tail -n 1 "$O" | sed 's/^conformidad: //')"
   else
     while IFS= read -r L; do falla "$F $L"; done < <(grep '^ROJO' "$O" | sed 's/^ROJO //')

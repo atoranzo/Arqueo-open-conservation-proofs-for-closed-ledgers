@@ -59227,3 +59227,190 @@ cambia R1. Y si la línea del remedio necesita autotest (N3).
 `check_modulos` en 207. `BACKLOG.md` no cambia: ninguna entrada llevaba esto. Su cabecera sigue en
 44 abiertas y 86 resueltas. Las marcas «⚠️ §843» en los ficheros del commit, sin este asiento, son
 una, en `tools/check_curvas.py`, contada con `git grep --cached -c`.
+
+## §844 — el canon, el adaptador del cable y los bancos buscan los binarios en `${CARGO_TARGET_DIR:-target}`: con el `target` fuera del árbol, el canon daba 35 ROJO que no eran del sello, y ahora pasa (lo descubierto al sellar el §837)
+
+El commit que lleva este asiento, sobre `4e97c99` (el §843). Toca `tools/canon.sh`, dos líneas en su
+sitio, la `:633` (el 3 bis, el paquete) y la `:684` (el bucle de las familias), cada una con su
+marca; `tools/cable_respuesta.sh`, la `:7` (el comentario) y la `:9` (la ruta, con su marca); y 25
+de los 26 `tools/banco_*.sh`, 46 líneas, todas en su sitio. Y este asiento. Ninguna línea entra ni
+sale: cada fichero tiene las líneas que tenía, y ninguna cita por línea se mueve. Ni código de los
+crates, ni tests, ni vectores, ni `tools/conformidad.sh`, ni `tools/artefacto.sh`, ni
+`tools/bancos.sh`, ni `Cargo.toml`, ni `Cargo.lock`, ni `BACKLOG.md`. Lo escribe y lo commitea
+Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a
+§859).
+
+Del autor es el encargo: la lista y lo que se descubra por el camino. Esto lo descubrió la sesión
+que selló el §837, al correr su canon en otro árbol con `CARGO_TARGET_DIR` fuera de él: 35 ROJO que
+no eran del sello, 1 del paquete, 23 del cable y 11 de los sobres. `tools/canon.sh` pasaba al arnés
+`target/release/zk-ssl-verify`, y `tools/cable_respuesta.sh` buscaba `target/release/zk-ssl-cli`:
+las dos rutas, relativas a la raíz, sin mirar `CARGO_TARGET_DIR`. Cargo sí la mira, y deja ahí los
+binarios. La forma del arreglo la eligió la sesión que escribe este asiento, la que pedía el
+encargo. El canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su
+árbol limpio, con este asiento en su sitio y sin esta frase: VERDE, 1036 s de reloj (de su arranque
+a su salida) y 799 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de
+0,44 al empezar. Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los 274 `.rs` de
+`crates/` y de `tools/`, y su log lo registra. Las 19 filas del nivel, en su pin, con 1849 tests que
+pasan (la suma de la columna «pasan»), y la de `zk-ssl` en 497 pasan y 7 ignorados; la puerta de los
+binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (63 s)»; `check_tests` en 2008 y 20
+instrumentos; `check_modulos` en 207; las once herramientas del bucle «2 ter»; la puerta de los
+vectores, en 500 ficheros y 1002 líneas; `check_catalogo`; el paquete, en 84 de 84; el cable, en 23
+de 23, con la huella del adaptador `a804ab1cbe44f7b2`, la del punto 3 de «Medido»; la segunda
+implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`1515cc9e8518c627` y el tarball `694623f64b2f50de`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió, se midió y se commiteó (`56e8a93`) sobre el §843 de antes
+(`d1e9555`), y éste, sobre el §842 de antes (`77bca6c`), que no llevaba el §860 ni el §861. Después
+se rebasó sobre el §843 de ahora (`4e97c99`), que va sobre el §818 (`69597f3`), el §817, el §816, el
+§815 y el §842 de ahora (`4b9f14b`), y éste, sobre el §860 y el §861, de otra sesión. De los 27
+ficheros de las herramientas que toca este sello, de `77bca6c` a `69597f3` cambian tres, todos en el
+§815. `tools/canon.sh`, tres líneas en su sitio: las filas de la capa, del nodo y del kit en su
+tabla de cifras; ninguna línea que cite este asiento se mueve. `tools/banco_completitud.sh`, 9
+líneas nuevas, y `tools/banco_recibo_agregado.sh`, 9 nuevas y 1 que sale: los casos de
+`VerificationFailed` y de `ProofFailed`. El `cherry-pick` entró sin conflicto en los tres, con las
+mismas líneas de este sello que en `56e8a93`; en los dos bancos, la línea de este sello baja con las
+del §815, de la 62 a la 66 y de la 58 a la 60, y este asiento no la cita. El §815 no trae ninguna
+ruta fija nueva a un binario, ni en esos dos bancos ni en el canon: sus casos nuevos llaman a
+`mando`, que usa el `MANDO` de la cabecera, y `git grep 'target/' -- tools ':!*.md'` da las mismas
+líneas que abajo. No hubo nada que llevar a `${CARGO_TARGET_DIR:-target}`. Los otros 24 ficheros de
+las herramientas no cambian con el rebase. Lo que cambió por él: la apertura; este párrafo; las
+cuatro citas de `doc/ecst/ECST.md` y `doc/ecst/ECST_EN.md`, que el §815 movió de la 1481 y la 1489 a
+la 1488 y la 1496, y de la 1501 y la 1509 a la 1509 y la 1517; la base del `git diff` de los bancos;
+la cuenta de `check_tests`, de 1976 a 2008, y la cabecera de `BACKLOG.md`, de 48 abiertas y 79
+resueltas a 44 y 86. Las medidas de «Medido», de «Cargo y un `target` compartido» y de «Mutantes»
+son las de `d1e9555` y de sus copias, y no se rehicieron, salvo las herramientas rápidas sobre este
+árbol: las once del bucle «2 ter», `check_vectores --desde 69597f3` y `check_catalogo`, 0.
+
+**Lo que hace.**
+
+- `tools/canon.sh:633` y `:684`: el binario del arnés es `"${CARGO_TARGET_DIR:-target}/release/zk-ssl-verify"`.
+  El `cargo build` de la `:629` lo deja ahí; la `:684` usa ese mismo binario, como dice el
+  comentario de la `:658`. Sin la variable, es `target/`, como antes.
+- `tools/cable_respuesta.sh:9`: `BIN="${ZK_SSL_CLI:-${CARGO_TARGET_DIR:-target}/release/zk-ssl-cli}"`.
+  `ZK_SSL_CLI` sigue mandando, para una segunda implementación. El comentario de la `:7` dice dónde
+  busca.
+- Los bancos. En los 16 que nombran el binario en bash, `NODO="${CARGO_TARGET_DIR:-target}/release/…"`
+  y las demás, igual; tres de ellos, `apagado`, `consistencia` y `extension`, en `debug/`. En
+  `un_proceso`, que da rutas absolutas desde `$RAIZ`, la ruta relativa se ancla en `$RAIZ` y la
+  absoluta se deja. En los 9 que las nombran en Python, `TD = os.environ.get('CARGO_TARGET_DIR') or
+  'target'` en la misma línea de la primera ruta, y cada ruta, `TD + '/release/…'`; en
+  `recibo_agregado`, su `T`, igual. Todos ya importaban `os`. El que queda, `cortes`, fija su propio
+  `CARGO_TARGET_DIR` y copia de él: no se toca. Los bancos van sin marca «⚠️ §844»: son 46 líneas
+  con el mismo cambio, y 46 marcas iguales serían ruido. Este punto las cuenta, y `git diff 4e97c99
+  HEAD -- 'tools/banco_*.sh'` las da. Las tres marcas van en las líneas que el canon corre.
+- `git grep` de «target/» en `tools/`, sin los `.md`: después del cambio, salen el directorio del
+  artefacto (`tools/artefacto.sh:9`, `:11` y `:24`, abajo), un comentario del canon (`:535`), el
+  `.gitignore` de `tools/segunda/kat_xmss` y las tres marcas, que dicen la ruta vieja. Ninguna ruta
+  a un binario queda sin la variable.
+
+**Medido**, en este orden, en una máquina de 4 CPU, con el `target` del worktree, que no está en
+la copia. La copia es el árbol con el cambio, hecha con `tar`, sin `target` ni `.git`, y con la hora
+de extracción en cada fichero, para que cargo recompile sus crates. El trozo del canon que se corre es
+el de sus líneas 626 a 697 (el paquete, el cable y el bucle de las familias), con el preámbulo del
+canon (`msg`, `falla`, `fallos`, `OUT`), extraído con `sed`.
+
+1. Con las dos herramientas de `d1e9555` en la copia y `CARGO_TARGET_DIR` fuera: ROJO, 35. El
+   paquete, 1: «el binario no existe o no es ejecutable: target/release/zk-ssl-verify». El cable,
+   23: «exit 2, el manifiesto espera 1» en 20 y «… espera 0» en 3. Las familias, 11, una por
+   familia, con el mismo texto que el paquete. Es lo descubierto, con sus mismas cuentas.
+2. Con las de este sello: VERDE, 0 ROJO, en 79,8 s con la recompilación de la copia. Trece filas OK:
+   paquete 84 de 84, cable 23 de 23, consumo 17, conflicto 17, rechazo 84, edad 15, pendiente 10,
+   pago 13, prenda 11, completitud 78, ancla 22, ancla-cofirmada 27 y rotación 34. En la copia no
+   aparece ningún `target/`.
+3. Sin la variable, con un `target` en la copia que es un enlace al del worktree, para no crear
+   otro: VERDE con las de este sello y VERDE con las de `d1e9555`. Las trece filas son las mismas, y
+   las mismas que en el punto 2, salvo una cifra: la huella que el arnés da del cable es la del
+   adaptador, `tools/cable_respuesta.sh`, y pasa de `04b8b621ac40a073` a `a804ab1cbe44f7b2` con
+   este cambio. La del kit, `8cf3491901bb7c68`, es la misma en los tres.
+4. Los bancos, con `tools/bancos.sh` entero, sobre un clon del árbol con el cambio, commiteado en el
+   clon, con `CARGO_TARGET_DIR` fuera y sin `target/` en el clon: VERDE, 25 de 25, en 1109 s de
+   bancos y 18 min 29 s con las compilaciones. Los tres de `debug/` pasan.
+5. Las once herramientas del bucle «2 ter», `check_vectores --desde ff9d4fc` y `check_catalogo`,
+   sobre el worktree: 0. `bash -n` de los 26 bancos, del canon y del adaptador: 0. Los bloques de
+   Python de los 9 bancos compilan con `py_compile`.
+
+**Cargo y un `target` compartido entre dos árboles.** Medido con cargo 1.97.0, con dos crates
+mínimos del mismo nombre, `pruebabin`, en dos directorios, `a` y `b`, que imprimen «A» y «B», y un
+solo `CARGO_TARGET_DIR`. El fuente de `b` se escribió antes de compilar `a`.
+
+1. `cargo build --release` en `a`: «A».
+2. En `b`: cargo dice `Fresh`, y el binario dice «A».
+3. `touch` del fuente de `b` y otra vez en `b`: `Dirty`, compila, «B».
+4. En `a`: `Fresh`, y el binario dice «B».
+5. `touch` del fuente de `a` y otra vez en `a`: «A».
+
+La unidad de los dos árboles es la misma, `pruebabin-7c66e4e475a9b26b`: su nombre no depende de la
+ruta del árbol, y su dep-info nombra `src/main.rs`, sin la raíz. Cargo la da por al día si los
+fuentes del árbol que compila son más viejos que su última compilación, sea del árbol que sea. El
+ejecutable, en `deps/` y en `release/`, es el de esa última compilación. Así, un binario de otro árbol
+puede quedar en `target/release/`, y cargo no lo rehace. El `release/pruebabin.d`, en cambio, lo
+reescribe cada `cargo build`, también el `Fresh`, con las rutas absolutas del árbol que lo llama:
+tras el paso 2 nombraba `b/src/main.rs`, con el binario de `a`. Este sello no lo arregla: con el
+`target` fuera, el canon encuentra el binario, pero no sabe de qué árbol es.
+
+**Mutantes**, cada uno sobre la copia o el clon, con `CARGO_TARGET_DIR` fuera, y deshecho después.
+
+- M1, la `:633` del canon con la ruta vieja: ROJO, 1, el paquete.
+- M2, la `:684` con la ruta vieja: ROJO, 11, las familias.
+- M3, `tools/cable_respuesta.sh` de `d1e9555`: ROJO, 23, el cable.
+- B1, `tools/banco_reutilizacion.sh` de `d1e9555`: exit 1, «ROJO: faltan los binarios».
+- B2, `tools/banco_mentiroso_ausentes.sh` de `d1e9555`, commiteado en el clon para que el banco
+  vea el árbol limpio: exit 1, `FileNotFoundError` de `target/release/zk-ssl-node` y «ROJO: alguna
+  defensa no dijo lo que debia».
+- B3, `tools/banco_un_proceso.sh` de `d1e9555`: exit 1, «ROJO: faltan los binarios».
+
+Ninguno queda vivo. Los otros 22 bancos no se mutaron uno a uno: su cambio es el mismo que el de
+B1 o el de B2, y el punto 4 los corrió todos.
+
+La copia, el clon, los crates mínimos y su `target` se borraron al acabar. Las compilaciones del
+clon y de la copia fueron al `target` del worktree; sus fuentes de Rust son los de este commit.
+Por eso el `zk-ssl-verify` que queda en `target/release/` del worktree es el del clon, el último que
+lo compiló: da la huella `675c4cb29bfb990d`, no la `8cf3491901bb7c68` del punto 3, y su `.d` nombra
+los fuentes del clon, que ya no existe. Es el caso de arriba.
+
+**Lo que NO hace.**
+
+- No sigue `CARGO_BUILD_TARGET_DIR` ni el `build.target-dir` de un `.cargo/config.toml`: cargo sí
+  los sigue. Con `CARGO_BUILD_TARGET_DIR=/x/y`, `cargo metadata` da `/x/y` como `target_directory`,
+  y estas rutas siguen buscando en `target/`. Hoy el árbol no tiene `.cargo/config.toml`.
+- Un `CARGO_TARGET_DIR` relativo se lee desde la raíz, que es donde corre cargo en el canon y en
+  los bancos. No se ha medido.
+- No toca `tools/artefacto.sh`. Su `target/artefacto/` es un directorio propio, dentro de la raíz,
+  y compila en él con su propio `CARGO_TARGET_DIR`: no lee el de nadie. Su `--remap-path-prefix`
+  cubre la raíz; fuera de ella no se ha medido. En la corrida del §837 que dio los 35 ROJO, el
+  artefacto no estaba entre ellos.
+- No toca `crates/zk-ssl-medio/tests/vectores/testigos/rehacer.sh:69-70`, que rehace vectores con
+  `target/release/` y que el canon no corre. Ni las órdenes y las rutas para el lector de
+  `doc/ecst/ECST.md:1488` y `:1496`, `doc/ecst/ECST_EN.md:1509` y `:1517`, y
+  `doc/ecst/borrador/REPRODUCCION.md:21`, `:35` y `:56`. `git grep -c 'target/\(release\|debug\)' --
+  ':!AUDITORIA.md' ':!tools'` da 9 líneas en 4 ficheros: las 2 de `rehacer.sh` y 7 en 3 ficheros de
+  `doc/`. El canon no corre ninguna.
+- No guarda contra un binario de otro árbol en un `target` compartido: arriba.
+
+**Lo que es del autor.**
+
+- Una guarda barata contra el binario de otro árbol. Comparar la hora del binario con la de los
+  fuentes no sirve: en el paso 4, el binario de `b` es más nuevo que los fuentes de `a`, y cargo dice
+  `Fresh`. Comparar la ruta del `.d` del binario después de compilar tampoco: cargo la reescribe con
+  el árbol que llama. Leer ese `.d` al empezar el canon, antes de su primera llamada a cargo, sí
+  dice qué árbol llamó a cargo por última vez sobre esa unidad. Antes del `cargo build` del 3 bis
+  (`:629`) ya no lo dice: el canon llama antes a cargo en release sobre los mismos binarios, en la
+  `:495` (`cargo run` del cli) y en la `:597` (la puerta del §834, un `cargo build` por paquete,
+  también `zk-ssl-verify`), y cada una reescribe el `.d` con esta raíz sin rehacer el binario.
+  Medido con dos crates como los de arriba, en otra corrida: `cargo run --release` y `cargo build --release
+  --message-format=json-render-diagnostics` reescriben el `.d` con el árbol que llama; `cargo test
+  --release` y `cargo check --release`, no. Si el `.d` no es de esta raíz, el canon puede hacer
+  `touch` de los `.rs` de la casa o dar ROJO. Cuesta leer un fichero por binario. No ve un `cargo
+  build` a mano en este árbol entre dos canon, que reescribe el `.d` con esta raíz y deja el binario
+  del otro. No se ha probado como guarda: solo el comportamiento de cargo de arriba.
+- Si las rutas leen `target_directory` de `cargo metadata --no-deps --format-version 1` (0,1 s), que
+  sigue también `CARGO_BUILD_TARGET_DIR` y `build.target-dir`, en lugar de `${CARGO_TARGET_DIR:-target}`.
+- Si `rehacer.sh` sigue la misma forma.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2008 tests declarados y 20 instrumentos, y
+`check_modulos` en 207. `BACKLOG.md` no cambia: ninguna entrada llevaba esto. Su cabecera sigue en
+44 abiertas y 86 resueltas. Las marcas «⚠️ §844» en los ficheros del commit, sin este asiento, son
+tres: dos en `tools/canon.sh` y una en `tools/cable_respuesta.sh`, contadas con `git grep --cached
+-c`.

@@ -38,7 +38,7 @@ cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
 python3 - "$DIR" "${GUARDAR:-}" <<'PY'
 import json, os, shutil, subprocess, sys, time, urllib.request
 DIR, GUARDAR = sys.argv[1], sys.argv[2]
-NODO, MANDO = 'target/release/zk-ssl-node', 'target/release/zk-ssl-verify'
+TD = os.environ.get('CARGO_TARGET_DIR') or 'target'; NODO, MANDO = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-verify'
 def msg(m): print('BANCO-ANCLA| ' + m, file=sys.stderr, flush=True)
 def levantar(nombre, semilla, port):
     d = '%s/%s' % (DIR, nombre); os.makedirs(d)

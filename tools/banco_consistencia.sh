@@ -58,8 +58,8 @@ trap limpiar EXIT
 msg "compilando nodo y cli"
 cargo build --locked -q -p zk-ssl-node -p zk-ssl-cli 2>/dev/null \
   || cargo build --locked -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
-NODO=target/debug/zk-ssl-node
-CLI=target/debug/zk-ssl-cli
+NODO="${CARGO_TARGET_DIR:-target}/debug/zk-ssl-node"
+CLI="${CARGO_TARGET_DIR:-target}/debug/zk-ssl-cli"
 [ -x "$NODO" ] || fallo "falta $NODO"
 [ -x "$CLI" ] || fallo "falta $CLI"
 

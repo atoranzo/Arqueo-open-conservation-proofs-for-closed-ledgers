@@ -49,7 +49,7 @@ RAIZ=$(pwd)
 msg "compilando nodo y cli (release: aqui se firma)"
 cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli 2>/dev/null \
   || cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
-NB="$RAIZ/target/release/zk-ssl-node"; CB="$RAIZ/target/release/zk-ssl-cli"
+TD="${CARGO_TARGET_DIR:-target}"; case "$TD" in /*) ;; *) TD="$RAIZ/$TD" ;; esac; NB="$TD/release/zk-ssl-node"; CB="$TD/release/zk-ssl-cli"
 [ -x "$NB" ] && [ -x "$CB" ] || fallo "faltan los binarios"
 
 # ⚠️ Semillas DETERMINISTAS, en los dos formatos del proyecto: el nodo la lee en HEX y

@@ -44,7 +44,7 @@ cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify 
 python3 - "$DIR" <<'PY'
 import glob, json, os, re, subprocess, sys, time, urllib.request
 DIR = sys.argv[1]
-NODO, CLI, MANDO = 'target/release/zk-ssl-node', 'target/release/zk-ssl-cli', 'target/release/zk-ssl-verify'
+TD = os.environ.get('CARGO_TARGET_DIR') or 'target'; NODO, CLI, MANDO = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-cli', TD + '/release/zk-ssl-verify'
 def msg(m): print('BANCO-MENT-VISTA| ' + m, file=sys.stderr, flush=True)
 fallos = 0
 def exigir(ok, texto, detalle=''):

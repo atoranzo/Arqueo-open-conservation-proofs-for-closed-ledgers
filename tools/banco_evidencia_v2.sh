@@ -55,9 +55,9 @@ msg "compilando nodo, cli y verificador (release: el testigo FIRMA)"
 cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify \
   || cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify \
   || fallo "no compila"
-NB=target/release/zk-ssl-node
-CB=target/release/zk-ssl-cli
-VB=target/release/zk-ssl-verify
+NB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-node"
+CB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-cli"
+VB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-verify"
 [ -x "$NB" ] || fallo "falta $NB"
 [ -x "$CB" ] || fallo "falta $CB"
 [ -x "$VB" ] || fallo "falta $VB"

@@ -43,7 +43,7 @@ cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli 2>/dev/null \
 python3 - "$DIR" <<'PY'
 import json, os, re, subprocess, sys, time, urllib.request
 DIR = sys.argv[1]
-NODO, CLI = 'target/release/zk-ssl-node', 'target/release/zk-ssl-cli'
+TD = os.environ.get('CARGO_TARGET_DIR') or 'target'; NODO, CLI = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-cli'
 def msg(m): print('BANCO-MENT-AUSENTES| ' + m, file=sys.stderr, flush=True)
 fallos = 0
 def exigir(ok, texto, detalle=''):
