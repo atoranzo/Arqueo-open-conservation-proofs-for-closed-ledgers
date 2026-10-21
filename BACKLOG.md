@@ -993,11 +993,27 @@ instrumentacion) al grupo E.*
   gana nunca con `CARGO_HOME=$HOME/.cargo` y por eso da los mismos bytes en las
   dos máquinas (el publicado y la rehecha llevan las mismas 41 rutas
   `/home/x/.cargo/registry/src/…`), pero con un `CARGO_HOME` fuera de `HOME` no
-  casaría y dejaría entrar sus rutas enteras (deducido, sin medir), porque el
+  casaría y dejaría entrar sus rutas enteras (deducido, sin medir; ⚠️ §824: medido después, abajo), porque el
   script de `b6994c3` deriva sus reglas de `$HOME`— y lo medido están en
   `doc/KIT.md` §«Reproducir el kit, para quien no se fíe de la descarga». En
   `b6994c3` ninguna herramienta del árbol compila el nodo ni el testigo así, y
   no hay huellas publicadas de ninguno de los dos. Sigue abierta.
+  ⚠️ §824: **la herramienta.** `bash tools/artefacto.sh --binarios` compila el
+  nodo de producción, sin `dev`, y el testigo con las reglas del kit en dos
+  raíces, y exige la misma huella byte a byte; el canon lo corre desde
+  `--largo` (`doc/KIT.md` §«El nodo y el testigo, desde dos raíces»). El
+  `--check` del kit compila ya en dos raíces, y las reglas cubren `rust-src` y
+  un `CARGO_HOME` fuera de `HOME`; `cargo` corre con `env -i`, cada `target`
+  lleva el sello del host con que se compiló, y `VERSION` nombra el `cc`, el
+  `as`, la glibc y los objetos de arranque del host (`doc/KIT.md`
+  §«Reproducir el kit, para quien no se fíe de la descarga»). Lo deducido de
+  arriba, medido en el kit con la herramienta de `b6994c3` y un `target`
+  vacío: un `CARGO_HOME` fuera de `HOME` deja dentro 41 rutas suyas, enteras,
+  y `rust-src` en un `RUSTUP_HOME` fuera de él, once; la búsqueda de su
+  `--check`, que sólo mira `$HOME`, no las habría visto. Lo que la cierra no
+  cambia: no hay huellas publicadas del nodo ni del testigo, que publicarlas
+  es del autor, y entre máquinas no está demostrado. El SDK es una
+  biblioteca: no hay un binario suyo que reproducir. Sigue abierta.
 
 - [ ] **89. El proyecto sólo se ha auditado a SÍ MISMO.** `AUDITORIA.md`
   tiene más de 21.000 líneas y registra los errores del propio método

@@ -206,7 +206,7 @@ bloque las reescribía a mano (la cabecera de `tools/canon.sh`, «La fuente unic
 | orden | qué corre |
 |---|---|
 | `bash tools/canon.sh --sello` | cada bloque: los tests de cada crate en release y el resto de compuertas; es el de cada sello |
-| `bash tools/canon.sh --largo` | lo de `--sello`, y además halo2 y plonk |
+| `bash tools/canon.sh --largo` | lo de `--sello`, y además halo2 y plonk, y el nodo y el testigo compilados desde dos raíces (`tools/artefacto.sh --binarios`, «3 ter binarios»); ⚠️ §824: decía «lo de `--sello`, y además halo2 y plonk» |
 | `bash tools/canon.sh --completo` | lo de `--largo`, y además `zk-core` |
 | `bash tools/canon.sh --lista` | sólo enseña la tabla; no ejecuta |
 | `bash tools/canon.sh --bancos` | los bancos, todos (`tools/bancos.sh`); ⚠️ §804: menos el de los cortes, que se corre aparte |
@@ -235,7 +235,7 @@ desde el §695 su universo y su prueba de vida viven en la herramienta. Fuera de
 su bloque, van otras puertas; entre ellas, los vectores (`tools/check_vectores.py`, «2 quater», que
 sale del bucle «para que cada ROJO entre con su nombre»), el catálogo de rechazos
 (`tools/check_catalogo.py`, «2 quinquies»), la conformidad del kit en sus familias («3 bis
-familias»), la segunda implementación (`tools/segunda/`, «3 duodecies») y el artefacto («3 ter»).
+familias»), la segunda implementación (`tools/segunda/`, «3 duodecies») y el artefacto («3 ter»; ⚠️ §824: desde aquí en dos raíces, y desde `--largo` también el nodo y el testigo, «3 ter binarios»).
 El veredicto es VERDE, o ROJO con la lista de fallos (el bloque «veredicto» de `tools/canon.sh`).
 ⚠️ §801: las tres líneas de `tools/canon.sh` de este párrafo decían `:312-341`, `:324-330` y
 `:608-621`, las del §793; el fichero creció por delante del bucle y en el §799 ya estaban donde

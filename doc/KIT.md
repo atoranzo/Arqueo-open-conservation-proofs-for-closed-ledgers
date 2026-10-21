@@ -283,7 +283,7 @@ el mismo binario (misma huella, compilado con `--remap-path-prefix`) y el mismo 
   `07d659c6291ad68f…`. Sin el remap, dos compilaciones desde dos árboles también salen iguales entre
   sí, pero con otra huella y con las rutas de `$HOME` dentro: lo que el remap quita es la
   dependencia de `HOME`, con `CARGO_HOME` y `RUSTUP_HOME` bajo él (fuera de él, sus rutas entrarían
-  enteras, deducido de las reglas y sin medir: abajo, (i) y (ii)); la de la ruta del árbol no
+  enteras, deducido de las reglas y sin medir: abajo, (i) y (ii); ⚠️ §824: medido después en el kit, y entran: abajo, el párrafo «Desde el §824, la herramienta»); la de la ruta del árbol no
   aparece, porque cargo le pasa a `rustc` las rutas de los crates del workspace relativas a su raíz.
 - **Desde otra máquina, la 0.4.2 no sale.** Rehecha desde `a4e888d` con su `rustc` 1.97.1, el
   binario es `14832a067f6dc4cf…` y no `7734376463d120b0…`: 13 de sus 35 secciones distintas. Con
@@ -299,7 +299,7 @@ el mismo binario (misma huella, compilado con `--remap-path-prefix`) y el mismo 
   instalado, las rutas de la biblioteca estándar entran en el binario con el nombre de su toolchain,
   porque ninguna regla de `b6994c3` las lleva a `/rustc/<commit-hash>`: con `RUSTUP_HOME` bajo
   `HOME`, la de `$HOME` sólo les cambia el prefijo, y con `RUSTUP_HOME` fuera de `HOME` entrarían
-  enteras (deducido, sin medir); la 0.4.2 lleva once
+  enteras (deducido, sin medir; ⚠️ §824: medido después en el kit, entran once, enteras: abajo, el párrafo «Desde el §824, la herramienta»); la 0.4.2 lleva once
   `/home/x/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/…`. Un remap más,
   de `<sysroot>/lib/rustlib/src/rust` a `/rustc/<commit-hash>`, lo neutraliza: con él, la 0.4.2
   compilada con `rust-src` sale idéntica a la compilada sin él. (ii) Con los flags de `b6994c3`, la
@@ -309,14 +309,199 @@ el mismo binario (misma huella, compilado con `--remap-path-prefix`) y el mismo 
   las dos máquinas da los mismos bytes, y el publicado y la rehecha llevan las mismas 41 rutas
   `/home/x/.cargo/registry/src/…`. Es una dependencia que lo medido no toca: el script de `b6994c3`
   deriva tres de sus reglas de `$HOME`, no de `CARGO_HOME`, y con un `CARGO_HOME` fuera de `HOME`
-  ninguna casaría con sus rutas, que entrarían enteras (deducido, sin medir). (iii) El código nativo
+  ninguna casaría con sus rutas, que entrarían enteras (deducido, sin medir; ⚠️ §824: medido después en el kit, entran 41, enteras: abajo, el párrafo «Desde el §824, la herramienta»). (iii) El código nativo
   que compila el host —el ensamblador de blake3 en el kit, en el nodo y en el testigo, y el C y el
   ensamblador de ring en el testigo— depende de su `cc` y de su `as`, que el `VERSION` de la 0.4.2 no
   nombra. Que con el mismo `cc` y el mismo `as` la 0.4.2 saliera idéntica no está medido: aquí no hay
   una máquina con los suyos. Las causas de las 13 secciones son dos, (i) y (iii); la (ii) no pesó.
+
+**Desde el §824, la herramienta.** `tools/artefacto.sh` saca las reglas del remap de un solo
+productor, `reglas()`, que leen el kit, el nodo y el testigo: cinco, derivadas de `CARGO_HOME` y del
+sysroot que dice `rustc`, y ordenadas de la más corta a la más larga, porque `rustc` aplica la
+última que casa y así gana la más específica. El registry entra como `/registry/…`, y `rust-src`, si
+está instalado, como `/rustc/<commit-hash>/…`, lo que `rustc` escribe cuando no lo está. `cargo`,
+`rustc` y el `cc` corren con `env -i` y sólo las variables que hacen falta para encontrar el
+toolchain, el registry y la red (`PASAN`, en la herramienta; `VERSION` las nombra): `CC`, `CFLAGS`,
+`CC_<target>`, `RUSTC_WRAPPER`, `CARGO_PROFILE_RELEASE_*`, `CARGO_ENCODED_RUSTFLAGS` y las demás que
+cambiarían el binario sin que `VERSION` lo dijera no llegan, y un fichero de configuración de cargo
+que traiga `[profile]`, `[env]`, `[target]`, `[host]`, `[build]`, `[source]`, `[patch]` o
+`[unstable]` es ROJO. Cada `target` lleva el sello del host con que se compiló —la herramienta, el
+`rustc`, el `cargo`, el `cc`, el `cc1`, el `as`, la glibc y los objetos de arranque—, y si no es el
+de ahora se vacía antes de compilar, porque `cargo` no recompila cuando cambia el `cc` del host ni
+cuando cambia una variable que un build.rs leyó sin declararla. `VERSION` nombra además el `cc`, el
+`as` que ese `cc` llama, la glibc del host y la huella de los objetos que el `cc` enlaza siempre. El
+`--check` compila el kit en dos raíces —el árbol y una copia de lo que git sigue o no ignora, en
+`target/artefacto/raiz2`—, comprueba que cada binario salió de las fuentes de su raíz (el dep-info
+que cargo deja al lado las nombra), exige la misma huella, y busca en los dos binarios las rutas de
+las dos raíces, de `HOME`, de `CARGO_HOME`, de `RUSTUP_HOME` y, del sysroot, `<sysroot>/lib/rustlib`,
+enteras, sin exigirles la barra de detrás —un `$HOME` desnudo dentro del binario es tan de la
+máquina como `$HOME/algo`, y es igual en las dos raíces—, y la de `/home/x/`, que sólo aparece si
+una regla general le gana a una específica. Si `strings` falla o no saca nada, o `grep` sale con un
+error, es ROJO, no «ninguna ruta». Si las huellas difieren, dice qué secciones del ELF difieren.
+Medido con `rustc` 1.94.1, sobre las fuentes de `b6994c3` (el §812), en las que se escribió y se
+revisó este sello, y con tres versiones de la herramienta —la primera, el 15-10-2026, antes de los
+cuatro arreglos de su primera revisión; la segunda, el 20 y el 21-10-2026, sin el entorno limpio ni
+el sello del host; y la que se sella, el 21-10-2026—, con las mismas huellas en las tres; lo que se
+volvió a medir sobre el árbol del §817, en el penúltimo punto, y sobre el de este sello, en el último:
+
+- **El kit del árbol sale igual desde dos raíces**, `326d232b81250581…`, y el mismo con `rust-src`
+  instalado en otro `RUSTUP_HOME`, con `CARGO_HOME` fuera de `HOME`, y con las dos cosas y otro
+  `HOME` a la vez (esto último, también con la que se sella). Con la herramienta de `b6994c3`,
+  compilando en un `target` vacío, `rust-src` lo llevaba a `a5c68056442c3d83…`, con once rutas del
+  sysroot dentro, y un `CARGO_HOME` fuera de `HOME`, a `a0367207f77c57cf…`, con 41 rutas suyas. La
+  búsqueda de su `--check` (`strings -n 8 | grep -c "$HOME"`, en su línea 96), aplicada a esos dos
+  binarios, da 0: no las habría visto; su `--check` entero no se corrió así. Con el `target` ya
+  compilado, `cargo` no recompila cuando sólo cambia el sysroot, y con `rust-src` salía el
+  `311df1aa…` de siempre.
+- **El entorno ya no entra.** Con la segunda versión, `CC=clang` daba otro kit,
+  `7cb169729272c13a…`, y `VERSION` seguía nombrando el gcc (lo midió su revisión); con un mutante
+  de la que se sella sin el `env -i` de `construir()`, lo mismo, y también con sólo
+  `CC_x86_64-unknown-linux-gnu=clang`, que cc-rs lee y bash no sabe quitar. Con la que se sella, y
+  diez variables así a la vez —`CC`, `CFLAGS`, la del guion, `TARGET_CC`, `RUSTC_WRAPPER`,
+  `RUSTC_BOOTSTRAP`, `CARGO_PROFILE_RELEASE_OPT_LEVEL`, `CARGO_INCREMENTAL`, `CARGO_FEATURE_PURE` y
+  `CARGO_ENCODED_RUSTFLAGS`—, sale `326d232b81250581…` y el mismo tarball que sin ellas. El entorno
+  limpio solo no bastaba: sobre un `target` que ese mutante había compilado con la variable del
+  guion, la que se sella sin el sello del host daba el kit de clang, `7cb169729272c13a…`, con
+  `VERSION` nombrando el gcc, porque cc-rs no declara esa variable y `cargo` no recompiló; con el
+  sello, el `target` se vacía y sale `326d232b81250581…`. Un `cc` que es otro binario —un envoltorio
+  que llama al mismo gcc— también lo vacía, y sale la misma huella.
+- **La huella del kit del árbol se mueve con este sello.** Con las fuentes de `b6994c3`, el binario
+  pasa de `311df1aa4a70f4cb…` a `326d232b81250581…`; con las del árbol del §817, de
+  `a0ae4bfdddbaa207…` a `cc2077db8a608fe2…`, y con las de este sello, de `3923dcc03198efb7…` a
+  `2d94c323542bbe2d…` (abajo), porque las rutas del registry pasan de
+  `/home/x/.cargo/registry/src/…` a `/registry/…`. El tarball se mueve además por las líneas de
+  `VERSION` que pone la herramienta —las nuevas, el `cc`, el `as`, la glibc del host, los objetos de
+  arranque, el entorno de cargo y cómo se ordenan las reglas, y la de `rustflags`, que pasa de
+  cuatro reglas a cinco, con otros nombres—, aparte de lo que cambia con cada commit: `commit=`,
+  `describe=` y, en este sello, `spec/PAQUETE.md`, que viaja dentro. Un kit publicado se
+  reconstruye con el `tools/artefacto.sh` de su commit, no con el de este árbol (con la misma
+  huella, sólo dentro de una misma máquina): los flags son parte de lo que se compila. La 0.4.3,
+  publicada (§818), se produjo sobre `5fd5212` (el §817) con el `tools/artefacto.sh` de ese commit,
+  que es el del §815, y no con el de este sello: su `VERSION` no lleva las líneas nuevas, se
+  reconstruye con aquél, y su huella es la de la sección 0.
+- **El coste del `--check`**, en cuatro núcleos, con la carga media del minuto entre paréntesis: con
+  la primera versión, 164 s en frío, 41 s sin cambios y 48 s con un cambio en
+  `crates/zk-ssl-verify` (de 2,6 a 8,8); con la segunda, 66, 23 y 29 s (de 2,8 a 3,8); con la que se
+  sella, de 62 a 65 s en frío —y lo es la primera pasada tras cambiar la herramienta o el host— y
+  24 s sin cambios (de 2,3 a 3,9). El de `b6994c3`, 156 s en frío y 51 s sin cambios (de 6,4
+  a 9,1).
+- **Sobre el árbol del §817** —el de antes de rebasarlo sobre el §839 al §842, con los borradores
+  del §822 y del §823 encima, el árbol al que se portó primero este sello; ni aquellos cuatro ni
+  estos dos tocan lo que compila el kit—, el 21-10-2026, en cuatro núcleos con la carga media del
+  minuto de 4,9 a 6,8 y un `target/artefacto` vacío. Lo que compila `-p zk-ssl-verify` —sus crates
+  del árbol y el `Cargo.lock`— no cambia desde el commit del §815, ni frente a `5fd5212`
+  (`git diff`, vacío): es el kit de las fuentes de la 0.4.3. Con la herramienta de antes de este
+  sello, que sólo cambia comentarios de la del §815, sale en esta máquina
+  `a0ae4bfdddbaa20739fbe83b1bf092544c465c25d98a683f94ac5a5cf60e174a` (2.587.048 B, 78 s), con 41
+  rutas `/home/x/.cargo/registry/src/…`; no es la huella de la 0.4.3 publicada, `1b120e597897e005…`
+  (la sección 0), producida en otra máquina con `rustc` 1.97.1. Con la de este sello,
+  `cc2077db8a608fe253e441c5fe6abb90a1e0e7ed7d467dac0899448e52aca98b` (2.586.408 B, 64 s), con esas
+  41 como `/registry/…` y 12 de sus 35 secciones distintas. Los dos pasan los doce manifiestos
+  —paquete 84/84, consumo 17/17, conflicto 17/17, rechazo 84/84, edad 15/15, pendiente 10/10, pago
+  13/13, prenda 11/11, completitud 81/81, ancla 22/22, ancla cofirmada 27/27 y rotación 34/34—. El
+  `--check` de este sello sale VERDE: el mismo binario desde las dos raíces, sin rutas de la
+  máquina, y los doce manifiestos también desde dentro del tarball, en 177 s en frío y 53 s sin
+  cambios, con casi el doble de carga que arriba. Con las diez variables del segundo punto a la vez
+  (`RUSTC_WRAPPER=/bin/false` entre ellas), el mismo binario y el mismo tarball, en 56 s como mucho:
+  la cifra cuenta también la espera a que acabara otra compilación de la máquina.
+- **Sobre el árbol de este sello** —medido con el §852 de `main` y el §819 al §823 encima; sobre el
+  §859 lo que compila el kit es lo mismo, porque del §853 al §859, en `crates/`, en el `Cargo.toml` y
+  en el `Cargo.lock` sólo cambian dos guiones de `crates/zk-ssl-medio/tests/`, que el kit no compila,
+  y no se volvió a medir—, el 21-10-2026, en cuatro núcleos con la carga media del minuto de 5,7 a
+  8,3 y un `target/artefacto` vacío. Lo que compila el kit sí cambia desde `5fd5212`, el commit de
+  la 0.4.3: el §848 y el §849 tocan comentarios de `crates/zk-ssl-medio/src/lib.rs` y de
+  `crates/zk-ssl-hash/src/lib.rs`, y el §848 añade un `[[test]]` al `Cargo.toml` del medio; y el
+  paquete tiene cinco vectores más (§852). Con la herramienta de antes de este sello sale en esta máquina
+  `3923dcc03198efb7a122420ae649be918ad5c00bdd1a716809488f91c514d9bd` (2.587.056 B), y no
+  `a0ae4bfd…`; con el `Cargo.toml` del medio de `5fd5212`, sin el `[[test]]`, sale la misma
+  (medido el 22-10-2026): lo que mueve la huella son los comentarios, como dice abajo «De qué
+  depende la huella». Con la de este sello,
+  `2d94c323542bbe2d73db8d388403f831b3dc4d52f6819f0d56c26f88bb0426c9` (2.586.416 B), con las 41
+  rutas como `/registry/…` y 12 de sus 35 secciones distintas, las mismas que arriba. Los dos pasan
+  los doce manifiestos, con paquete 89/89 y los demás como arriba, y ninguno es la huella de la
+  0.4.3 publicada. El `--check` de este sello sale VERDE, con el mismo binario desde las dos raíces,
+  sin rutas de la máquina y con los doce manifiestos también desde dentro del tarball. Los tiempos
+  medidos cuentan la espera del cerrojo de `cargo`, que tenía otra compilación de la máquina: 193 s
+  el kit con la herramienta de antes, 237 s con la de este sello, y el `--check` 182 s en frío y
+  243 s sin cambios; sin la espera, unos 71, 70, 171 y 50 s, estimados por la hora a la que arrancó
+  cada pasada.
+
+**De qué depende la huella, con la herramienta de este sello**: del `rustc` (su versión y su commit,
+en `VERSION`), del `Cargo.lock`, de lo que se compila y con qué features (el kit, `-p zk-ssl-verify`
+solo), y del host: de su `cc` y de su `as`, porque el ensamblador de blake3 lo ensambla el host (en
+la 0.4.2, 240 bytes de `.text` distintos), y de los objetos que el `cc` enlaza en todo ejecutable,
+los de GCC, `crtbeginS.o` y `crtendS.o`, y los de la glibc del host, `Scrt1.o`, `crti.o` y `crtn.o`,
+de libc6-dev. Medido con `nm` en el kit, el nodo y el testigo: `_start` y `__abi_tag` vienen de
+`Scrt1.o`, `_init` y `_fini` de `crti.o`, y lo demás de `crtbeginS.o` y `crtendS.o`; de
+`libc_nonshared.a`, `libgcc.a` y `libgcc_eh.a` no llevan ningún símbolo, salvo `__floattidf` en el
+nodo, que `compiler_builtins` también define (el desenrollado es el de `libgcc_s.so.1`, dinámico).
+En la 0.4.2 los objetos de arranque no pesaron: los 240 bytes de `.text` caen todos en seis
+funciones de blake3. La `.comment` nombra el GCC del host porque `crtbeginS.o` y `crtendS.o` llevan
+la cadena «GCC: …» (medido con `readelf`; los objetos de blake3, `libgcc.a`, `libgcc_eh.a` y
+`libc_nonshared.a`, ninguna). El `cc` es el que cc-rs usa por defecto cuando el host es el target,
+`cc`, y el mismo con que `rustc` enlaza; `VERSION` lo nombra, y el `as` que ese `cc` llama, la glibc
+del host (la primera línea de `ldd --version`) y la huella de los cinco objetos de arranque. El
+enlazador no es el del host: la `.comment` del publicado dice «Linker: LLD 22.1.6», y la del kit de
+aquí, «LLD 21.1.8», el `rust-lld` de cada toolchain. Ya no de la ruta del árbol, del usuario, de
+`CARGO_HOME`, de `RUSTUP_HOME`, de si `rust-src` está instalado ni de las variables del entorno que
+no están en `PASAN`: medido arriba. Y sí de los bytes de la fuente, no sólo de lo que compila: una
+línea de comentario al final de `crates/zk-ssl-verify/src/lib.rs` lleva el kit de
+`326d232b81250581…` a `7f344beb37edc753…`, con el mismo tamaño y dos secciones distintas, los
+nombres de los símbolos (`.strtab`) y el `build-id`; el código, igual. Que dos máquinas con el mismo
+`rustc`, el mismo `cc`, el mismo `as` y los mismos objetos de arranque den la misma huella sigue sin
+demostrar: aquí hay una sola.
 
 Las demostraciones con nodos vivos —levantar dos libros, publicar la misma etiqueta en los dos,
 capturar el sobre— son los bancos `tools/banco_dos_libros.sh`, `tools/banco_consumo.sh` y
 `tools/banco_apagado.sh`, y los del paso 5, `tools/banco_completitud.sh`,
 `tools/banco_mentiroso_sin_resolver.sh` y `tools/banco_recibo_agregado.sh`; no viajan en el kit
 porque levantan procesos, y los vectores de arriba son sus capturas.
+
+## El nodo y el testigo, desde dos raíces
+
+`bash tools/artefacto.sh --binarios` (§824) compila el nodo de producción
+—`-p zk-ssl-node --no-default-features`, sin `dev`, la emisión con los custodios de prueba— y el
+testigo —`-p zk-ssl-cli`— con las mismas reglas, el mismo entorno y el mismo sello del host que el
+kit, en las mismas dos raíces, y exige que cada uno salga idéntico byte a byte y sin rutas de la
+máquina; si no, dice qué secciones del ELF difieren. Cada uno va en su invocación de `cargo`:
+compilados juntos, `cargo` unifica las features y el `zk-ssl` del nodo entraría con la `sandbox` que
+pide el testigo. Por eso el nodo de la medida de arriba, con `dev` y compilado junto al testigo, es
+otro binario. Medido con `rustc` 1.94.1 y las tres versiones de la herramienta de arriba, con las
+mismas huellas: el nodo `bc10653591e71134…` (10.623.960 B) y el testigo `1d074aaece334c65…`
+(14.581.944 B), iguales desde las dos raíces. Son las fuentes de `b6994c3`: desde entonces cambian
+las del nodo (el §813, el §815, el §816, el §817, el §819, el §820, el §821, el §832, el §833, el
+§835, el §839, el §840, el §841, el §842, el §848, el §849, el §860 y el §861) y las del testigo
+(las mismas salvo el §813, más el §850), y ni sobre el árbol del §817 ni sobre el de este sello se
+han compilado así. En cuatro núcleos, con la carga media del minuto entre paréntesis: con la primera
+versión, 474 s en frío —tras el `--check` en frío—, 5 s sin cambios y 188 s con un cambio en
+`crates/zk-ssl` (de 2,2 a 4,4); con la segunda, 341, 4 y 164 s (de 3,9 a 7,3); con la que se sella,
+366 s en frío —tras el `--check`— y 4 s sin cambios (de 2,4 a 3,7). El canon lo corre desde
+`--largo`, en el bloque «3 ter binarios» de `tools/canon.sh`, y no en cada sello, con el criterio de
+los niveles: una compuerta que encarece cada sello acaba saltándose (`doc/METODO.md` §«6. El canon y
+los bancos», el §225), y un sello que toque la capa pagaría de 164 a 188 s, y uno en frío de 341 a
+474, sobre los de 470 a 926 de un `--sello` (`tools/canon.sh`, al pie). Como en el kit, una línea de
+comentario al final de `crates/zk-ssl/src/lib.rs` los lleva a `4963bb3a7cc4b69c…` y
+`4d2acfa127d232b4…`: el `build-id`, `.symtab` y `.strtab` distintos, los nombres de los símbolos; el
+código, igual.
+
+**Lo que deja en disco.** Tras `--binarios`, `target/artefacto/tA` y `target/artefacto/raiz2`, con
+su `target`, ocupan 624 y 687 MB, unos 1,3 GB, y la herramienta no los borra: cada árbol que pase un
+`--largo` los guarda.
+`rm -rf target/artefacto/tA target/artefacto/raiz2 target/artefacto/raiz2.lista` los quita, y la
+pasada siguiente es en frío.
+
+**De qué depende su huella**: de lo mismo que la del kit —el `rustc`, el `Cargo.lock`, lo que se
+compila y con qué features, y el `cc`, el `as` y los objetos de arranque del host—, y el testigo
+lleva más código nativo: el C y el ensamblador de ring, además del ensamblador de blake3, que llevan
+los dos. No de la ruta del árbol, del usuario, de `CARGO_HOME`, de `RUSTUP_HOME` ni de si
+`rust-src` está instalado: medido el 20-10-2026 con la segunda versión, con otro `HOME`, un
+`CARGO_HOME` fuera de él y `rust-src` instalado en otro `RUSTUP_HOME`, las tres cosas a la vez,
+salen las mismas dos huellas (563 s en frío). Entre máquinas, sin demostrar.
+
+**Lo que NO prueba.** Que el operador corra ese binario. Una huella reproducible dice que un binario
+publicado sale de su fuente; el nodo lo arranca el operador en su máquina, y nada de lo que firma
+dice qué binario lo firmó: `hash_verificador_vigente` no está en la cabeza (`BACKLOG.md`, entradas
+54 y 83). Es una precondición de esa vía, no su cierre, y `SECURITY.md` §«2. Qué NO protege» —«El
+operador puede cambiar el verificador, y hoy eso es invisible»— sigue diciendo lo que dice. Tampoco
+hay huellas publicadas del nodo ni del testigo: ninguna release los lleva, y publicarlas es del
+autor.

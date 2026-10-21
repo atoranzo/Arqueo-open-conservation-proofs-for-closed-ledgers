@@ -144,7 +144,7 @@ tu máquina (§843). Sin ese paso, o con la caché de cargo vacía, el canon avi
 al empezar, con el remedio, y `check_curvas` sale ROJO en su bloque. No baja
 nada. Los binarios los busca donde los deja cargo: lo dice `tools/target_dir.sh`,
 que lo lee de `cargo metadata` y sigue `CARGO_TARGET_DIR`,
-`CARGO_BUILD_TARGET_DIR` y el `build.target-dir` de un `.cargo/config.toml`.
+`CARGO_BUILD_TARGET_DIR` y el `build.target-dir` de un `.cargo/config.toml` (⚠️ §824: con `build.target-dir`, o con cualquier otra clave de `[build]`, en el `.cargo/config.toml` o el `.cargo/config` de la raíz o de un directorio padre, o en el `config.toml` o el `config` de `CARGO_HOME`, el «3 ter» del canon sale ROJO: `tools/artefacto.sh` compila en su propio `target` y rechaza la tabla antes de compilar, porque otras claves suyas cambian lo que se compila; `doc/KIT.md` §«Reproducir el kit, para quien no se fíe de la descarga»).
 
 Y para los circuitos:
 

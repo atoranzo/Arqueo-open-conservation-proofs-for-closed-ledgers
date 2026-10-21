@@ -1679,7 +1679,7 @@ Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), 
 (este documento), `spec/vectors/<familia>/` por cada una de las DOCE familias de `FAMILIAS`
 —paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla, ancla
 cofirmada y rotación— (los doce manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
-licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
+licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló; ⚠️ §824: y el `cc`, el `as`, la glibc y los objetos de arranque del host y las variables que ve cargo)
 y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`, y
 el binario contra los doce catálogos con `bash conformidad.sh ./zk-ssl-verify` —el del paquete,
 por defecto— y `bash conformidad.sh ./zk-ssl-verify spec/vectors/<familia>/MANIFIESTO.txt` para
@@ -1690,7 +1690,7 @@ que ella lo dijera; el §574 lo corrige al sumar la novena, el §593 suma la dé
 
 La huella del binario **no depende de la ruta del árbol ni de `HOME` dentro de una misma máquina,
 con `CARGO_HOME` y `RUSTUP_HOME` bajo `HOME`** —se compila con `--remap-path-prefix`; fuera de
-`HOME`, sus rutas entrarían enteras (deducido, sin medir), las de `RUSTUP_HOME` si `rust-src` está
+`HOME`, sus rutas entrarían enteras (deducido, sin medir; ⚠️ §824: medido después en el kit, con la herramienta de `b6994c3`, y entran: `doc/KIT.md` §«Reproducir el kit, para quien no se fíe de la descarga»), las de `RUSTUP_HOME` si `rust-src` está
 instalado—, y sí del toolchain, de `Cargo.lock` y de la máquina: con el
 `rustc` que `VERSION` nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve
 a producir el mismo binario y el mismo tarball en la misma máquina, y `tools/canon.sh` comprueba en
@@ -1707,6 +1707,19 @@ ninguna regla de `b6994c3` las lleva a `/rustc/<commit-hash>`— y del código n
 `target` del mismo árbol. El detalle, en `doc/KIT.md` §«Reproducir el kit, para quien no se fíe de
 la descarga». Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
 declara (`glibc_max`); no es estático, y se dice.
+
+Desde el §824, `tools/artefacto.sh` saca las reglas del remap de un solo productor, derivadas de
+`CARGO_HOME` y del sysroot que dice `rustc` y ordenadas para que gane la más específica, una de ellas
+para `rust-src`, y con ellas la huella ya no depende de dónde estén `CARGO_HOME` ni `RUSTUP_HOME` ni
+de si `rust-src` está instalado; `cargo`, `rustc` y el `cc` corren con `env -i` y sólo las variables
+que la herramienta deja pasar, y un fichero de configuración de cargo que cambie lo que se compila
+es ROJO; cada `target` lleva el sello del host con que se compiló, y se vacía si no es el de ahora;
+`VERSION` nombra el `cc`, el `as`, la glibc del host, la huella de los objetos de arranque que el `cc`
+enlaza y las variables que pasan; y el `--check` compila el kit en dos
+raíces —el árbol y una copia suya bajo `target/artefacto/raiz2`— y busca en el binario, enteras, las
+rutas de las dos raíces, de `HOME`, de `CARGO_HOME`, de `RUSTUP_HOME` y de `<sysroot>/lib/rustlib`,
+y si no puede buscarlas es ROJO. Lo que eso cambia en la huella del kit, y lo que sigue sin
+demostrar entre máquinas, en `doc/KIT.md` §«Reproducir el kit, para quien no se fíe de la descarga».
 
 Lo que el artefacto NO es: no es una publicación en crates.io (el crate no lleva la spec ni los
 vectores) ni prueba nada sobre la clave del operador (sección 8). No lleva los vectores del cable

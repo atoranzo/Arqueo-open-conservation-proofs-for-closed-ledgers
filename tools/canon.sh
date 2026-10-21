@@ -6,7 +6,7 @@
 # sus tests.
 #
 #     bash tools/canon.sh --sello      # cada bloque · **470 a 926 s** de reloj (⚠️ §811, 14-10-2026)
-#     bash tools/canon.sh --largo      # + halo2 y plonk · sin medir (⚠️ §811, 14-10-2026)
+#     bash tools/canon.sh --largo      # + halo2 y plonk, y el nodo y el testigo desde dos raices (⚠️ §824: decia «+ halo2 y plonk») · sin medir (⚠️ §811, 14-10-2026)
 #     bash tools/canon.sh --completo   # + zk-core · **58 min** de tests, §629 (⚠️ §811, 14-10-2026) (⚠️ §822, 15-10-2026: con el arbol denso de zk-core; al pie)
 #
 # ⚠️ §811, 14-10-2026: las cifras de los niveles, y lo que consta de cada uno,
@@ -817,6 +817,21 @@ else
 fi
 
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
+# ⚠️ §824: desde aqui el --check compila el kit en DOS RAICES -el arbol y su copia en
+# target/artefacto/raiz2-, no dos target del mismo arbol; comprueba que cada binario salio de las
+# fuentes de su raiz (el dep-info de cargo), y busca las rutas de las raices, de HOME, de CARGO_HOME,
+# de RUSTUP_HOME, de <sysroot>/lib/rustlib y `/home/x/`; si no puede buscarlas, ROJO. cargo corre con
+# `env -i` y cada target lleva el sello del host con que se compilo (tools/artefacto.sh). Su coste, en
+# cuatro nucleos y con la carga media del minuto entre parentesis: con la primera version del §824
+# (15-10-2026), 164 s en frio, 41 s sin cambios y 48 s con un cambio en crates/zk-ssl-verify (2,6 a
+# 8,8); con la segunda (20 y 21-10-2026), 66, 23 y 29 s (2,8 a 3,8); con la que se sella (21-10-2026),
+# de 62 a 65 s en frio -y lo es la primera pasada tras cambiar la herramienta o el host- y 24 s
+# sin cambios (2,3 a 3,9) (el de antes: 156, 51; en los catorce --sello del §811, de 35 a 69); todo
+# eso, sobre las fuentes de b6994c3. Sobre las del kit de 5fd5212, el §817 (21-10-2026, en el arbol
+# de antes del rebase, con las mismas), 177 s en frio y 53 s sin cambios (4,9 a 5,7); sobre el de
+# este sello, medido sobre el §852 (21-10-2026; sobre el §859 lo que compila el kit es lo mismo, y no
+# se volvio a medir), 182 y 243 s con la espera del cerrojo de cargo, y sin ella unos 171 y 50,
+# estimados (5,7 a 8,3). Cabe en el sello, y se queda en el.
 msg ""
 msg "== CANON · el artefacto =="
 T_ART0=$(date +%s)
@@ -824,6 +839,32 @@ if bash tools/artefacto.sh --check > "$OUT/artefacto.txt" 2>&1; then
   msg "  OK  $(tail -n 1 "$OUT/artefacto.txt" | sed 's/^ *OK *//') ($(( $(date +%s) - T_ART0 )) s)"
 else
   tail -n 5 "$OUT/artefacto.txt" >&2; falla "el artefacto no es reproducible o no pasa el manifiesto"
+fi
+
+# ── 3 ter binarios · el NODO y el TESTIGO desde dos raices (tools/artefacto.sh --binarios, §824) ──
+# El nodo de produccion (sin `dev`) y el testigo, con las MISMAS reglas que el kit (un productor:
+# reglas(), en tools/artefacto.sh), el mismo entorno y el mismo sello del host, en las mismas dos
+# raices: la misma huella byte a byte o ROJO, con las secciones que difieren. Va desde --largo, no en
+# el sello, con el criterio de los niveles: una compuerta que encarece cada sello acaba saltandose
+# (doc/METODO.md §«6. El canon y los bancos», el §225). Medido en cuatro nucleos, con la carga media
+# del minuto entre parentesis: con la primera version del §824 (15-10-2026), 474 s en frio, 5 s sin
+# cambios y 188 s con un cambio en crates/zk-ssl (2,2 a 4,4); con la segunda (20 y 21-10-2026), 341, 4
+# y 164 s (3,9 a 7,3); con la que se sella (21-10-2026), 366 s en frio y 4 sin cambios (2,4 a 3,7),
+# sobre las fuentes de b6994c3 (sobre el arbol del §817 y sobre el de este sello, sin medir): lo que
+# pagaria cualquier sello que toque la capa, sobre los 470 a 926 de un --sello (cada compilacion en
+# frio de los dos juntos, en el censo de H6, de 172 a 516 s). Deja en disco
+# target/artefacto/tA y target/artefacto/raiz2, 624 y 687 MB (unos 1,3 GB), que no se borran
+# solos (doc/KIT.md, «El nodo y el testigo, desde dos raíces», dice como). Lo que NO prueba: que el
+# operador corra ese binario (la misma seccion; la 54 sigue abierta).
+if [ "$PEDIDO" -ge 2 ]; then
+  msg ""
+  msg "== CANON · el nodo y el testigo, desde dos raices =="
+  T_BIN0=$(date +%s)
+  if bash tools/artefacto.sh --binarios > "$OUT/binarios.txt" 2>&1; then
+    msg "  OK  $(tail -n 1 "$OUT/binarios.txt" | sed 's/^ *OK *//') ($(( $(date +%s) - T_BIN0 )) s)"
+  else
+    tail -n 12 "$OUT/binarios.txt" >&2; falla "el nodo o el testigo no salen iguales desde dos raices"
+  fi
 fi
 
 # ── veredicto ───────────────────────────────────────────────────
