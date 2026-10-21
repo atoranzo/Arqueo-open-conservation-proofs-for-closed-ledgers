@@ -56,7 +56,7 @@ tiene tiempo. Son el §1.2 y el §1.4.
 | **de gasto** `sk` | todo derivado y nada guardado: la identidad (`crates/stark-experiment/src/native.rs:25-48`), el nullificador (`native.rs:67-83`), la sal de la hoja (`native.rs:102-122`) y la clave de vista con su `view_id` (`native.rs:134-185`); abrir guarda la identidad, la sal y el `view_id` ya derivados (`crates/zk-ssl/src/accounts.rs:170-248`) | dos custodios, con `apply_recovery_delegated` (`crates/zk-ssl/src/recovery.rs:52-193`); el titular, no |
 | **de custodio** | `custodian_set_root` (`crates/zk-ssl/src/lib.rs:964-974`) | la gobernanza, con `apply_governance_delegated` (`crates/zk-ssl/src/governance.rs:104`) |
 | **de gobernanza** | `governance_set_root`, «INMUTABLE» (`lib.rs:975-983`) | nadie: cambiarla es crear un libro nuevo (`governance.rs:18-25`, `:30-34`) |
-| **de reposo del libro** | `LedgerKey`, de la frase que el operador da al arrancar (`lib.rs:1056-1062`; `crates/zk-ssl/src/crypto.rs:16-26`) | ~~nadie cambia la frase~~ (§2, caso 5). ⚠️ §812: la cambia `SovereignLayer::recifrar` (`crates/zk-ssl/src/persistence.rs:1230-1310`), en la biblioteca; el nodo sigue en claro |
+| **de reposo del libro** | `LedgerKey`, de la frase que el operador da al arrancar (`lib.rs:1056-1062`; `crates/zk-ssl/src/crypto.rs:16-26`) | ~~nadie cambia la frase~~ (§2, caso 5). ⚠️ §812: la cambia `SovereignLayer::recifrar` (`crates/zk-ssl/src/persistence.rs:1262-1355`; ⚠️ §816: decía `:1230-1310`, las líneas de antes del §816), en la biblioteca; el nodo sigue en claro |
 | **del keystore del wallet** | la frase del fichero (`crates/zk-ssl-sdk/src/keystore.rs:1-27`) | `save` con otra frase (`keystore.rs:262`) |
 | del firmante del nodo | las cabezas, con XMSS | el RFC-0015, con sus actas: **fuera** de esta nota, que es de las claves de cuenta |
 
@@ -195,8 +195,8 @@ aplica.
 ✅ **El caso 5 medido, que ya no es el de la 20.** El grep de la 20 sigue vacío, pero desde el §702
 (RFC-0001) **hay un re-sellado de todo el libro**: `migrar_a_kdf_v2` abre cada valor con la clave v1
 y lo vuelve a sellar con una v2 de sal nueva, en un solo lote de sled
-(`crates/zk-ssl/src/persistence.rs:1019-1052`; ⚠️ §812: aquí decía `:1012-1056`, las líneas de antes
-del §812); y el keystore se migra al abrirlo
+(`crates/zk-ssl/src/persistence.rs:1031-1065`; ⚠️ §812: aquí decía `:1012-1056`, las líneas de antes
+del §812; ⚠️ §816: y `:1019-1052`, las de antes del §816); y el keystore se migra al abrirlo
 (`keystore.rs:11-21`). Es con la **misma** frase: ~~cambiar la frase del libro sigue sin existir~~
 (⚠️ §812: existe desde el §812, `SovereignLayer::recifrar`, más abajo). Y
 hay una medida que la 20 no tenía: **el nodo no cifra en reposo**. Abre el libro con
@@ -207,9 +207,10 @@ cambiar.
 ⚠️ §812: ese re-sellado en un lote dejaba en los ficheros del libro lo sellado con la clave v1, sin
 sal: sled es un log, y lo sobrescrito sigue en el directorio (`SECURITY.md` §3.14). Desde el §812
 `migrar_a_kdf_v2` va por un directorio hermano y un cambio de nombre
-(`crates/zk-ssl/src/persistence.rs:1019-1052`), y cambiar la frase del libro existe en la
-biblioteca: `SovereignLayer::recifrar` (`persistence.rs:1230-1310`), la E4 del RFC-0001. El nodo
-sigue sin cifrar en reposo.
+(`crates/zk-ssl/src/persistence.rs:1031-1065`), y cambiar la frase del libro existe en la
+biblioteca: `SovereignLayer::recifrar` (`persistence.rs:1262-1355`), la E4 del RFC-0001. El nodo
+sigue sin cifrar en reposo. ⚠️ §816: las dos citas decían `:1019-1052` y `:1230-1310`, las líneas de
+antes del §816, que añade el cerrojo del libro a la apertura y al recifrado (`SECURITY.md` §3.14).
 
 ## 3. El núcleo común: lo que cualquier opción comparte
 
@@ -390,19 +391,20 @@ merge(derive_leaf_salt_wide(sk), H(DOM_SIGUIENTE, sk_siguiente))`, y la rotació
 - **G3. La gobernanza precomprometida** — ⚠️ §860, añadida: el patrón de R3s para la gobernanza, como
   opción al constituir el libro. Sin costear: se diseña con R3s (la D-3).
 - **K0. El recifrado, como hoy**: solo la biblioteca, y el nodo en claro.
-- **K1. Cambiar la frase**: generalizar `migrar_a_kdf_v2` a dos frases (`persistence.rs:1038-1052`);
+- **K1. Cambiar la frase**: generalizar `migrar_a_kdf_v2` a dos frases (`persistence.rs:1050-1065`; ⚠️ §816: decía `:1038-1052`);
   en el nodo, antes, cablear el cifrado (`SECURITY.md:413-417`; ⚠️ §860: su §3.3, y la 127 del `BACKLOG.md`); en el keystore, `load` y `save` ya
   bastan (`keystore.rs:262` y `:280`). Ningún circuito y nada en el cable, como el RFC-0001, que no
-  movió `zkssl/0.4` (`spec/rfc/0001-el-kdf-de-reposo.md:16`). ✅ **No comparte pieza con las opciones
+  movió `zkssl/0.4` (`spec/rfc/0001-el-kdf-de-reposo.md:21`; ⚠️ §816: decía `:16`, antes de que el §816 añadiera cinco líneas a su cabecera). ✅ **No comparte pieza con las opciones
   de cuenta** salvo `persistence.rs`, que persiste los registros: si entra en el diseño único es por
   calendario, no por mecanismo.
   ⚠️ §812: hecha, como E4 del RFC-0001 y en la biblioteca: `SovereignLayer::recifrar`
-  (`persistence.rs:1230-1310`). Generalizar `migrar_a_kdf_v2` tal como estaba habría heredado su
+  (`persistence.rs:1262-1355`). Generalizar `migrar_a_kdf_v2` tal como estaba habría heredado su
   resto: el lote en sitio dejaba en los ficheros lo sellado con la clave vieja (`SECURITY.md` §3.14).
-  Las dos van ahora por un directorio hermano (`persistence.rs:1312-1425`). Las dos citas de arriba
+  Las dos van ahora por un directorio hermano (`persistence.rs:1357-1480`). Las dos citas de arriba
   decían, hasta el §812, `persistence.rs:1022-1056` y `0001-el-kdf-de-reposo.md:12`: la segunda ya
   estaba una línea corrida desde el §805, y el §812 movió las dos. El nodo, sin cablear: no entra en
-  lo que pidió el autor, la E4 de la biblioteca.
+  lo que pidió el autor, la E4 de la biblioteca. ⚠️ §816: las dos de este párrafo decían
+  `persistence.rs:1230-1310` y `:1312-1425`, las líneas de antes del §816.
 
 ### V. Solo la vista, con un contador
 

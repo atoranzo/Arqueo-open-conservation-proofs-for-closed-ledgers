@@ -326,7 +326,7 @@ mod tests {
         assert_eq!(l.total_supply(), supply);
         assert!(l.migrate_to_salted_positions().is_err(),
                 "re-migrar el ledger reabierto debe RECHAZARSE (marcador)");
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **§802: la migracion B13/B14 conserva la invariante.** Recoloca cada cuenta por su

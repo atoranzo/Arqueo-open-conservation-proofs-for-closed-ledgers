@@ -904,7 +904,7 @@ desplegado ni terceros a quien avisar: el aviso es esta sección y el asiento §
 publicado no cambia: no depende de la capa, y un sobre de rechazo con esta causa lo rechaza por su
 nombre. `AUDITORIA.md` §802.
 
-### 3.14 El libro cifrado migrado desde la versión 1 guardaba en sus ficheros lo sellado con la clave v1 — ⚠️ MEDIDO, cerrado en la biblioteca (§812)
+### 3.14 El libro cifrado migrado desde la versión 1 guardaba en sus ficheros lo sellado con la clave v1 — ⚠️ MEDIDO, cerrado en la biblioteca (§812); su carrera, medida y cerrada en el §816
 
 Desde el §702 (RFC-0001, E2) un libro cifrado de la versión 1 —clave `SHA-256(dominio_v1 ‖ frase)`,
 sin sal ni coste— se migra a la 2 al abrirlo con su frase. La migración sobrescribía cada valor en
@@ -937,7 +937,8 @@ acabar cada paso). La misma pieza es `SovereignLayer::recifrar`, que cambia la f
 libro entero; si un recifrado muere antes de su compromiso, la apertura vuelve atrás y el libro
 sigue entero con la frase vieja, con lo sellado con ella: el recifrado hay que repetirlo; y si falla
 con un error pasado el compromiso, el `.retirado`, si sigue en el disco, guarda lo sellado con la
-vieja hasta la apertura siguiente, que lo borra. Las identidades retiradas de la §3.13 (`retir:{k}`
+vieja hasta la apertura siguiente, que lo borra (⚠️ §816: hasta el §816, sólo si nadie abría el libro a la
+vez; abajo, «La carrera de la E4»). Las identidades retiradas de la §3.13 (`retir:{k}`
 y `root:retir`) van selladas, y se copian y se verifican como lo demás
 (`recifrar_conserva_las_identidades_retiradas`). Medido con mutantes: si la migración vuelve a ser
 un lote en sitio, `la_migracion_v1_no_deja_en_los_ficheros_lo_sellado_con_v1` cae con 26 de 26
@@ -950,6 +951,83 @@ mano. Deja el directorio limpio de lo sellado con la v1 y con la frase vieja
 (`un_libro_migrado_por_el_702_se_limpia_recifrandolo`). Con la misma frase el directorio también
 queda limpio, pero las copias hechas desde la migración y los bloques libres siguen dando la frase
 v1 a la velocidad de un hash, y esa frase abre el libro.
+
+**⚠️ §816: la carrera de la E4, y lo que la cierra.** Medido en privado sobre `b6994c3` —el §812, ya en
+`main`— por un revisor, con dos hilos y pausas inyectadas en la biblioteca: la apertura miraba los
+hermanos —el cerrojo de sled de cada uno, tomado y soltado en el acto; sin hermanos, ninguno— y
+después actuaba y llamaba a `sled::open`, que crea el libro si no existe. Nada retenía un cerrojo
+entre mirar y actuar. (a) Sin hermanos, una apertura que miraba y se paraba, y un recifrado que
+llegaba en medio a su compromiso —`rename(P, V)`—, dejaban un libro VACÍO en el sitio del libro, que
+la apertura abría `Ok` sin saldo; el paso 6 del recifrado fallaba con «la apertura siguiente lo
+termina», y la siguiente rehusaba: el libro, entero en su `.recifrando` y en su `.retirado`, no
+volvía a abrir sin una persona. (b) Con el libro y su `.retirado` de una muerte tras el paso 6, la
+apertura borraba el `.retirado` NUEVO del recifrado y creaba un libro vacío, y la apertura siguiente
+con la frase que nombraba el error borraba el `.recifrando`, la última copia. (c) Con el libro y su
+`.recifrando` de una muerte antes del compromiso —medida por un revisor del arreglo, también sobre
+`b6994c3`—, la apertura borraba el `.recifrando` NUEVO y creaba un libro vacío; el paso 6 fallaba
+diciendo que el libro quedaba con la frase NUEVA, y no quedaba; y la apertura siguiente, con
+cualquier frase, borraba el `.retirado` —la única copia— y con la vieja abría `Ok` un libro vacío.
+En las tres, la apertura que se paraba abría `Ok` un libro vacío, **sin ningún error**. En (b) y en (c)
+**el libro, con sus saldos, se perdía entero**, y las dos lo decían igual de mal: el error del
+recifrado nombraba la frase nueva, con la que el libro ya no abría, y con la de antes la apertura
+abría `Ok` un libro vacío, sin ningún error. No crea saldo ni autoriza ningún gasto. **Alcance**: quien use la biblioteca con un
+libro cifrado y dos aperturas a la vez, una de ellas un recifrado o una migración de la versión 1
+—abrir un v1 es migrarlo—; el nodo y el cli abren en claro y nunca recifran, y el kit no depende de
+la capa. **La ventana**: desde el §812. **Lo que lo cierra** (§816): un cerrojo sobre algo que no se
+renombra, `<libro>.cerrojo`, un fichero con `flock` exclusivo que la capa crea —vacío; en Unix, con
+0600— y no borra nunca. Lo tiene toda apertura desde antes de mirar los hermanos hasta que vuelve con
+el libro abierto —y, si era v1, migrado—, y `recifrar`, desde antes de mirar los hermanos hasta el
+final —tras el Argon2id de la frase nueva, antes de tocar el disco—; el que llega lo espera como al
+de sled, diez veces cada 50 ms, y si no lo toma da `Io` con su nombre, sin tocar nada. No se crea
+nada a través de un enlace: si no está, se crea con `create_new`, que no sigue un enlace en el último
+nombre; uno que aparezca entre mirar y abrir se sigue, sin crear ni escribir nada en su destino
+aunque le toma el `flock` un instante, y con el `flock` tomado se mira que el nombre siga siendo ese
+fichero, por su dispositivo y su inodo, y se rehúsa si no lo es.
+Quien lo tiene lo vuelve a mirar antes de lo que no se deshace —el `sled::open` de la apertura y el
+compromiso del recifrado—, y si alguien lo borró o lo cambió, rehúsa con `Malformed` sin tocar nada.
+La apertura crea antes el directorio del libro si no está, como lo creaba `sled::open`; `recifrar`,
+no, ni el `.cerrojo` donde no hay libro ni hermanos. Por una ruta sin nombre —que acaba en `..`, como
+`<libro>/blobs/..`, y puede nombrar el libro— no se abre ni se recifra: sin nombre no hay cerrojo. El
+cerrojo no es `Send`: no cruza de hilo. Con el cerrojo tomado, la apertura no crea un libro donde hay
+un `.retirado` o un `.recifrando` sin libro. Medido con las mismas pausas, en tests de la suite: las tres carreras —la apertura abre el
+libro entero, el recifrado da el `Io` del cerrojo sin tocar nada, y después ninguna apertura crea un
+libro vacío ni borra la única copia, y el saldo sigue—, dos recifrados a la vez, una apertura que
+llega mientras otro recifra o migra, el cerrojo, que ningún paso renombra ni borra, la reentrada en
+el hilo, que no se queda tras volver, un libro nuevo en un directorio que no existe, un cerrojo que
+cambia mientras se toma, uno que se borra o se cambia mientras se tiene, una ruta sin nombre, un
+recifrado sin libro, que no deja el cerrojo, y el cerrojo, que no cruza de hilo; cada pieza cae con
+su mutante, y los de la carrera caen sobre `b6994c3`. Con dos procesos de verdad lo midió un revisor
+sobre el primer arreglo del §816, fuera de la suite, y la sesión con sus mismos tests sobre el arreglo
+de cada ronda, también el último: se excluyen en los dos sentidos, y uno muerto con SIGKILL con el
+cerrojo tomado no deja el libro cerrado. Por qué un fichero hermano y no un `flock`
+sobre el directorio padre lo dice la D-J del RFC-0001. **Residuo**:
+
+- un proceso con el código de antes del §816 sobre el mismo libro a la vez no toma el cerrojo, y con
+  él la carrera sigue;
+- borrar o sustituir el `.cerrojo` a mano —restaurar una copia, un `rsync`— mientras alguien lo tiene
+  deja entrar a otro, que crea o toma uno nuevo: sobre el primer arreglo del §816, un revisor midió que
+  con una apertura parada antes de `sled::open` era la carrera (a) otra vez. Desde el arreglo, quien lo
+  tenía lo nota antes de `sled::open` y antes del compromiso, y rehúsa (hay test); queda la ventana
+  entre esa comprobación y la llamada que sigue, y fuera de Unix sólo se mira que siga siendo un
+  fichero. Con un recifrado ya pasado su compromiso, el cerrojo de sled de su `.retirado` sigue
+  excluyendo (medido por el revisor);
+- quien abre por un enlace al directorio del libro toma el cerrojo de junto al enlace; recifrar y
+  migrar por un enlace se rehúsan, y en el hueco de un recifrado, entre los pasos 5 y 6, `sled::open`
+  por el enlace roto da «File exists» y no crea nada (medido por un revisor del arreglo);
+- un libro cuyo directorio padre no se puede escribir y sin su `.cerrojo` ya no abre, hasta que se
+  crea a mano, vacío y para quien lo abre; si el padre es de un sistema de ficheros de sólo lectura
+  —un libro que es un punto de montaje dentro de uno de sólo lectura—, el `.cerrojo` que ya está se
+  abre sólo para leer, porque ahí nadie puede cambiarlo, y si no está hay que crearlo antes, donde se
+  pueda escribir (medido fuera de la suite, con el cli y un montaje de sólo lectura);
+- un `.cerrojo` que quien abre no puede abrir en escritura —de otro usuario y con 0600, como el que
+  deja `root` si abre con el cli, antes que el nodo, el libro del nodo que aún no tenía el suyo— deja el
+  libro sin abrir: `Io` con su nombre, que dice el remedio: con el libro cerrado por todos, quien pueda
+  se lo da (`chown`) o lo borra, y la apertura siguiente lo crea. Hasta el §816 se abría. Abrirlo sólo
+  para leer no lo arreglaría: con 0600, otro usuario tampoco lo lee (medido fuera de la suite, sin
+  `CAP_DAC_OVERRIDE` ni `CAP_DAC_READ_SEARCH`);
+- por una ruta sin nombre —`.`, `..`, o una que acabe en `..`— ya no se abre ningún libro (`Malformed`);
+  hasta el §816 se abría lo que nombrara;
+- no está probado en Windows ni en NFS, donde el cliente emula `flock` con `fcntl`.
 
 **Lo que la biblioteca no controla, y no se promete.** Borrar es borrar, no sobrescribir. No se
 sobrescribe antes de borrar: lo decidió el autor (§812), por recomendación de la sesión —no se
@@ -984,20 +1062,28 @@ prometer—. Se borra, y se dice lo que puede seguir guardando copias:
 **Los dos nombres son reservados**: no hay marca que distinga un hermano que dejó el recifrado de un
 directorio que alguien llamó así, y la apertura BORRA un `<libro>.recifrando` o un
 `<libro>.retirado` de sled que encuentre junto al libro y que nadie tenga abierto, también una copia
-de seguridad con ese nombre. Lo que no es de sled no lo toca.
+de seguridad con ese nombre. Lo que no es de sled no lo toca. ⚠️ §816: y un tercero, `<libro>.cerrojo`,
+el cerrojo del libro, que la capa no borra nunca; uno que no es un fichero —un directorio, un enlace—
+hace rehusar la apertura.
 
 El nodo abre su libro en claro (§3.3): no tiene frase que cambiar ni resto de la v1 que limpiar, y
 cablear su cifrado queda fuera. Pero su apertura es la de la capa, y también resuelve los dos
 nombres reservados junto a su libro, con el mismo borrado y la misma negativa: un `.recifrando` o un
 `.retirado` de sled al lado del libro del nodo los resuelve al arrancar como cualquier apertura —los
 borra, o, si falta el libro y está su `.retirado`, pone el `.recifrando` en su sitio—, y un estado
-que el recifrado no deja le impide arrancar.
+que el recifrado no deja le impide arrancar. ⚠️ §816: y toma el cerrojo del libro como cualquier
+apertura: al arrancar, el nodo crea `<libro>.cerrojo` junto a su libro si no está —y, en su primer
+arranque en una ruta nueva, el directorio del libro, como antes del §816—.
 
 Se redactó en privado y se publica de una vez con el código, como pide la sección 5. El aviso es
 esta sección y el asiento §812, sin GHSA, por decisión del autor: el kit publicado no está afectado
 —no depende de la capa—, así que no lleva aviso ni release. Un marcador para distinguir los libros
 ya migrados no se pone; eso es de la sesión, y el autor no lo ha decidido: sería un formato nuevo y
-daría a entender que con eso basta; es reversible. `AUDITORIA.md` §812.
+daría a entender que con eso basta; es reversible. `AUDITORIA.md` §812. ⚠️ §816: el arreglo de la
+carrera se redactó en privado, como pide la sección 5, y se publica como el §812, por decisión del
+autor: de una vez con el código, y el aviso es esta sección y el asiento §816, sin GHSA ni release,
+porque el kit publicado no depende de la capa. El cerrojo elegido es de la sesión, y reversible
+mientras el RFC-0001 siga PROPUESTO. `AUDITORIA.md` §816.
 
 ### 3.15 El recibo de recepción nombraba en ROJO a un operador honrado, y en PARADA el nodo seguía firmando — ⚠️ MEDIDO, cerrado en el nodo y en el kit 0.4.3 (§815)
 

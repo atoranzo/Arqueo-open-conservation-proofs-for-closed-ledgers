@@ -312,7 +312,7 @@ use super::*;
             ),
             "CRITICO: no debe poder elevarse el tope de un ledger en curso"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **EL TOPE DE CUENTAS ACOTA LA DENEGACIÓN DE SERVICIO.**
@@ -365,7 +365,7 @@ use super::*;
             r,
             Err(LayerError::Store(StoreError::ParameterMismatch { .. }))
         ));
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -421,7 +421,7 @@ use super::*;
             "CRITICO: sin la clave, los datos en disco no deben ser legibles"
         );
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **Los saldos NO están en claro en el disco.**
@@ -469,7 +469,7 @@ use super::*;
             !encontrado,
             "CRITICO: el saldo aparece EN CLARO en el disco pese al cifrado"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **EL TEST QUE VALIDA AL TEST ANTERIOR.**
@@ -509,7 +509,7 @@ use super::*;
             "sin cifrado el saldo DEBE aparecer en disco; si no, la busqueda \
              del test de cifrado no comprueba nada"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -613,7 +613,7 @@ use super::*;
                 .verify(genesis)
                 .expect("debe seguir verificando tras el reinicio");
         }
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -821,7 +821,7 @@ use super::*;
             Some(250_000),
             "CRITICO: si los pendientes no sobrevivieran, el dinero se perderia"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -979,7 +979,7 @@ use super::*;
             "CRITICO: si el cupo se renovara al reiniciar, bastaria reiniciar \
              para seguir usando un conjunto agotado"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -1016,7 +1016,7 @@ use super::*;
         assert_ne!(nueva, bob, "CRITICO: la cuenta nueva pisaria a Bob");
         assert_eq!(layer.balance_of(alice), Some(500_000), "Alice intacta");
         assert_eq!(layer.balance_of(bob), Some(300_000), "Bob intacto");
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **EL SUMINISTRO TOTAL SOBREVIVE.**
@@ -1078,7 +1078,7 @@ use super::*;
         // Y hasta el tope, si — por la via real.
         fund_delegated(&mut layer, alice, MAX_SUPPLY - emitido);
         assert_eq!(layer.total_supply(), MAX_SUPPLY, "clavado en el tope");
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **LOS NULLIFICADORES SOBREVIVEN.**
@@ -1151,7 +1151,7 @@ use super::*;
             "bob no ha cobrado: el dinero sigue en un pendiente"
         );
         assert_eq!(layer.total_pending(), 250_000, "y el pendiente sobrevivio");
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **EL CONJUNTO DE GOBERNANZA SOBREVIVE.**
@@ -1216,7 +1216,7 @@ use super::*;
             "solo el cambio legitimo se aplico; el del impostor rebota"
         );
         assert_eq!(layer.governance_change_count(), 1);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -1845,7 +1845,7 @@ use super::*;
                 r.map(|_| "recibo generado")
             );
         }
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §390: descongelar tambien tiene que sobrevivir al reinicio. Antes,
@@ -1895,7 +1895,7 @@ use super::*;
                 r.err()
             );
         }
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -2054,7 +2054,7 @@ use super::*;
             );
             assert_eq!(layer.total_supply(), 0, "y no se emitio nada");
         }
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -2203,7 +2203,7 @@ use super::*;
             );
             assert_eq!(layer.recovery_count(), 1, "y sigue contando una");
         }
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -2602,7 +2602,7 @@ use super::*;
             );
         }
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **El pendiente cobrado sobrevive al reinicio.**
@@ -2676,7 +2676,7 @@ use super::*;
         assert_eq!(layer.balance_of(bob), Some(100_000), "cobrado UNA vez");
         assert_eq!(layer.total_pending(), 0, "y nada en transito");
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **EL TEST QUE DETECTA UN LEDGER CORRUPTO.**
@@ -2718,7 +2718,7 @@ use super::*;
             "CRITICO: un ledger corrupto debe detectarse ANTES de operar sobre el"
         );
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **UN SUMINISTRO QUE NO CUADRA CON LOS SALDOS SE DETECTA AL ABRIR.**
@@ -2778,7 +2778,7 @@ use super::*;
             "CRITICO: un suministro que no cuadra con los saldos debe pararse ANTES de operar"
         );
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §387 — la raiz del arbol de pendientes se guarda y se comprueba.
@@ -2825,7 +2825,7 @@ use super::*;
             "CRITICO: una hoja de pendiente que nadie creo debe pararse ANTES de operar"
         );
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §387 — un libro sin `root:pending` no abre.
@@ -2864,7 +2864,7 @@ use super::*;
             "CRITICO: un libro sin raiz del pendiente no debe abrir"
         );
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §387 — un importe `pamt:` mentido A SOLAS lo caza la conservacion.
@@ -2907,7 +2907,7 @@ use super::*;
             "CRITICO: un importe de pendiente mentido debe pararse ANTES de operar"
         );
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// Cambiar la identidad del emisor sobre un ledger existente falla.
@@ -2935,7 +2935,7 @@ use super::*;
              ledger en curso"
         );
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// Cambiar el límite regulatorio sobre un ledger existente también.
@@ -2957,7 +2957,7 @@ use super::*;
             Err(LayerError::Store(StoreError::ParameterMismatch { .. }))
         ));
 
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// Saldo insuficiente y límite regulatorio se reportan con claridad,
@@ -3202,7 +3202,7 @@ fn a_restart_does_not_renew_an_exhausted_custodian_quota() {
          Salio: {r:?}"
     );
 
-    let _ = std::fs::remove_dir_all(&path);
+    quitar_libro(&path);
 
 }
 
@@ -3405,7 +3405,7 @@ fn un_tope_de_suministro_por_encima_de_2_a_la_62_no_abre() {
     );
     let ok = SovereignLayer::open(&ruta, custodian_root(), governance_root(), LIMIT, MAX_SUMINISTRO, MAX_ACCOUNTS);
     assert!(ok.is_ok(), "el tope maximo si abre");
-    let _ = std::fs::remove_dir_all(&ruta);
+    quitar_libro(&ruta);
 }
 
 // -----------------------------------------------------------------
@@ -3706,7 +3706,7 @@ fn un_libro_cifrado_de_la_version_1_se_migra_al_abrirlo() {
     let layer = abrir(frase).expect("reabre en la version 2");
     assert_eq!(layer.balance_of(alice), Some(777_777));
     drop(layer);
-    let _ = std::fs::remove_dir_all(&path);
+    quitar_libro(&path);
 }
 
 /// **§702: con otra frase, un libro de la version 1 no abre y NO SE TOCA**: el `sled` queda
@@ -3733,7 +3733,7 @@ fn un_libro_de_la_version_1_con_otra_frase_no_se_toca() {
     assert!(r.is_err(), "CRITICO: otra frase abrio un libro de la version 1");
     drop(r);
     assert_eq!(volcado(&path), antes, "CRITICO: una frase mala toco el libro de la version 1");
-    let _ = std::fs::remove_dir_all(&path);
+    quitar_libro(&path);
 }
 
 /// **§702: la cabecera va en claro, cada libro tiene su sal, y sin frase no se abre en claro.**
@@ -3771,8 +3771,8 @@ fn cada_libro_cifrado_lleva_su_cabecera_y_su_sal() {
         "un libro cifrado sin su frase: {:?}",
         r.err()
     );
-    let _ = std::fs::remove_dir_all(&a);
-    let _ = std::fs::remove_dir_all(&b);
+    quitar_libro(&a);
+    quitar_libro(&b);
 }
 
 /// **§704: el montaje comparte sus pruebas, y nada más.** Dentro de `de_montaje`, la misma subida
@@ -3887,7 +3887,7 @@ fn la_retirada_sobrevive_al_reinicio_y_un_rechazo_no_escribe() {
     let l = abrir().expect("y vuelve a abrir");
     assert_eq!(l.recovery_count(), 1);
     drop(l);
-    let _ = std::fs::remove_dir_all(&path);
+    quitar_libro(&path);
 }
 
 /// **§802: una retirada borrada en reposo no abre.** Libro en claro con una recuperacion: sin
@@ -3919,7 +3919,7 @@ fn una_retirada_borrada_en_reposo_no_abre() {
         r.as_ref().err()
     );
     drop(r);
-    let _ = std::fs::remove_dir_all(&path);
+    quitar_libro(&path);
 }
 
 /// **§802: una retirada sustituida en reposo no abre.** El sellado no lleva AAD: el valor sellado
@@ -3947,7 +3947,7 @@ fn una_retirada_sustituida_en_reposo_no_abre() {
         r.as_ref().err()
     );
     drop(r);
-    let _ = std::fs::remove_dir_all(&path);
+    quitar_libro(&path);
 }
 
 /// **§802: sin `root:retir`, un libro abre si no tuvo recuperaciones y no abre si las tuvo.** (a)
@@ -3978,7 +3978,7 @@ fn sin_root_retir_abre_si_no_hubo_recuperaciones_y_no_si_las_hubo() {
         let r = abrir_ajena(&mut l, id_de(SK_ALICE));
         assert!(matches!(r, Err(LayerError::IdentityUnavailable)), "(a) el indice: {r:?}");
     }
-    let _ = std::fs::remove_dir_all(&a);
+    quitar_libro(&a);
 
     let b = temp_path("retir_sin_raiz_b");
     libro_con_una_recuperacion(&b, None);
@@ -3998,7 +3998,7 @@ fn sin_root_retir_abre_si_no_hubo_recuperaciones_y_no_si_las_hubo() {
         r.as_ref().err()
     );
     drop(r);
-    let _ = std::fs::remove_dir_all(&b);
+    quitar_libro(&b);
 
     let c = temp_path("retir_sin_raiz_c");
     {
@@ -4014,7 +4014,7 @@ fn sin_root_retir_abre_si_no_hubo_recuperaciones_y_no_si_las_hubo() {
     let r = abrir(&c);
     assert!(es_de_las_retiradas(&r), "(c) una retir: sin raiz: {:?}", r.as_ref().err());
     drop(r);
-    let _ = std::fs::remove_dir_all(&c);
+    quitar_libro(&c);
 }
 
 /// **§802: la migracion del KDF conserva las retiradas.** Un libro cifrado con una recuperacion,
@@ -4057,7 +4057,7 @@ fn la_migracion_del_kdf_conserva_las_retiradas() {
         }
     }
     assert_eq!(vistas, 2, "retir:0 y root:retir");
-    let _ = std::fs::remove_dir_all(&path);
+    quitar_libro(&path);
 }
 
 /// **§802: varias retiradas, varios reinicios, en su orden.** Libro cifrado: Alice X->Y, reabrir;
@@ -4105,7 +4105,7 @@ fn varias_retiradas_sobreviven_a_varios_reinicios_en_su_orden() {
     let claves: Vec<Vec<u8>> =
         volcado(&path).into_iter().map(|(k, _)| k).filter(|k| k.starts_with(b"retir:")).collect();
     assert_eq!(claves, vec![clave_retir(0), clave_retir(1), clave_retir(2)], "una por recuperacion");
-    let _ = std::fs::remove_dir_all(&path);
+    quitar_libro(&path);
 }
 
 // -----------------------------------------------------------------
@@ -4255,6 +4255,8 @@ fn quitar_e4(path: &str) {
     for d in [path, r.as_str(), v.as_str()] {
         let _ = std::fs::remove_dir_all(d);
     }
+    // §816: y el cerrojo del libro, que la capa no borra nunca.
+    let _ = std::fs::remove_file(cerrojo_de(path));
 }
 
 /// Corre `f` con una muerte inyectada al acabar el paso `paso` del recifrado
@@ -4628,7 +4630,7 @@ fn recifrar_rehusa_una_ruta_que_es_un_enlace() {
     assert_eq!(apariciones(&[&real], &agujas), agujas.len());
     assert!(!hay(&r) && !hay(&v), "quedo un hermano");
     assert!(std::fs::symlink_metadata(&enlace).unwrap().file_type().is_symlink());
-    let _ = std::fs::remove_file(&enlace);
+    quitar_e4(&enlace); // ⚠️ §816: el enlace y el `.cerrojo` que `recifrar` deja a su lado
     quitar_e4(&real);
 }
 
@@ -4727,11 +4729,19 @@ fn una_muerte_en_la_migracion_v1_no_deja_en_el_directorio_lo_sellado_con_v1() {
             matches!(Kdf::de_cabecera(&cabecera_de(&path)), Ok(Kdf::Argon2idV2 { .. })),
             "paso {paso}: el libro no quedo en la version 2"
         );
-        let en_dir: Vec<String> = std::fs::read_dir(&dir)
+        // ⚠️ §816: decia `vec!["libro".to_string()]`. Desde el §816 la apertura deja al lado el cerrojo
+        // del libro, un fichero vacio que la capa no borra; vacio, no guarda nada sellado.
+        let mut en_dir: Vec<String> = std::fs::read_dir(&dir)
             .unwrap()
             .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
-        assert_eq!(en_dir, vec!["libro".to_string()], "paso {paso}: el directorio lleva algo mas que el libro");
+        en_dir.sort();
+        assert_eq!(
+            en_dir,
+            vec!["libro".to_string(), "libro.cerrojo".to_string()],
+            "paso {paso}: el directorio lleva algo mas que el libro y su cerrojo"
+        );
+        assert_eq!(std::fs::metadata(format!("{dir}/libro.cerrojo")).unwrap().len(), 0, "paso {paso}: el cerrojo no esta vacio");
         let quedan = apariciones(&[&dir], &todas);
         assert_eq!(
             quedan,
@@ -4932,7 +4942,10 @@ fn recifrar_conserva_las_identidades_retiradas() {
 /// **§812 (E4): `recifrar` rehusa una ruta sin libro, y no crea ninguno.** (a) Una ruta que no
 /// existe y (b) un directorio vacio: `Malformed`, y ni el libro, ni su `.recifrando`, ni su
 /// `.retirado`; el directorio vacio sigue vacio. Sin el paso c de `recifrar`, `open_encrypted`
-/// crearia ahi un libro vacio con la frase vieja, lo recifraria y daria `Ok`.
+/// crearia ahi un libro vacio con la frase vieja, lo recifraria y daria `Ok`. ⚠️ §816: y tampoco el
+/// cerrojo del libro, `<libro>.cerrojo`: el arreglo, hasta sus revisores, lo tomaba antes de mirar
+/// si habia libro, y lo dejaba creado junto a una ruta sin libro (uno lo vio leyendo el codigo; este
+/// test no lo miraba, porque `quitar_e4` lo borra).
 #[test]
 fn recifrar_rehusa_una_ruta_sin_libro() {
     let path = temp_path("e4_sin_libro");
@@ -4949,6 +4962,7 @@ fn recifrar_rehusa_una_ruta_sin_libro() {
     rehusa("(a) una ruta que no existe");
     assert!(!hay(&path), "CRITICO: (a) nacio un libro donde no lo habia");
     assert!(!hay(&r) && !hay(&v), "(a) quedo un hermano");
+    assert!(!hay(&cerrojo_de(&path)), "(a) quedo un `.cerrojo` donde no hay libro");
 
     std::fs::create_dir_all(&path).unwrap();
     rehusa("(b) un directorio vacio");
@@ -4957,6 +4971,7 @@ fn recifrar_rehusa_una_ruta_sin_libro() {
         "CRITICO: (b) se escribio un libro en el directorio vacio"
     );
     assert!(!hay(&r) && !hay(&v), "(b) quedo un hermano");
+    assert!(!hay(&cerrojo_de(&path)), "(b) quedo un `.cerrojo` junto a un directorio que no es un libro");
     quitar_e4(&path);
 }
 
@@ -5011,4 +5026,808 @@ fn la_importacion_barre_el_claro_que_dejaba_una_importacion_muerta() {
     }
     let _ = std::fs::remove_file(&file);
     quitar_e4(&path);
+}
+
+// ---------------------------------------------------------------------------------------------
+// §816 (RFC-0001, E4): la carrera entre una apertura y un recifrado, y el cerrojo del libro
+// ---------------------------------------------------------------------------------------------
+// Medida sobre b6994c3 por un revisor, con dos hilos y pausas inyectadas: la apertura miraba los
+// hermanos -el cerrojo de sled de cada uno, tomado y SOLTADO en el acto; sin hermanos, ninguno- y
+// despues actuaba y llamaba a `sled::open`, que CREA el libro si no existe. Nada retenia un cerrojo
+// entre mirar y actuar, y un recifrado que llegaba a su compromiso en medio dejaba a la apertura
+// crear un libro VACIO donde estaba el libro. Desde el §816 la apertura y el recifrado toman el
+// cerrojo del libro, `<libro>.cerrojo`, un fichero que la capa no renombra ni borra. Los ganchos de pausa
+// (`persistence::pausa`) paran un hilo en un punto con nombre hasta que el otro llega al suyo o
+// acaba; las carreras van de una en una, porque el gancho es uno para todo el proceso.
+
+/// `<libro>.cerrojo`, formado como lo forma la capa.
+fn cerrojo_de(path: &str) -> String {
+    let p = std::path::Path::new(path);
+    let nombre = p.file_name().expect("nombre").to_string_lossy().into_owned();
+    p.parent().expect("padre").join(format!("{nombre}.cerrojo")).to_string_lossy().into_owned()
+}
+
+/// Lo que hay con el nombre del libro en su directorio -el libro, sus hermanos y su cerrojo-,
+/// ordenado.
+fn junto_al_libro(path: &str) -> Vec<String> {
+    let p = std::path::Path::new(path);
+    let nombre = p.file_name().expect("nombre").to_string_lossy().into_owned();
+    let con_punto = format!("{nombre}.");
+    let mut v: Vec<String> = std::fs::read_dir(p.parent().expect("padre"))
+        .expect("leer el directorio del libro")
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| *n == nombre || n.starts_with(&con_punto))
+        .collect();
+    v.sort();
+    v
+}
+
+/// Los hitos de una carrera: cada hilo marca los suyos y espera alguno del otro, con un tope de
+/// 30 s para que un hito que no llega no cuelgue la suite.
+struct Hitos(std::sync::Mutex<std::collections::BTreeSet<&'static str>>, std::sync::Condvar);
+
+impl Hitos {
+    fn nuevos() -> std::sync::Arc<Self> {
+        std::sync::Arc::new(Hitos(Default::default(), Default::default()))
+    }
+
+    fn marcar(&self, hito: &'static str) {
+        self.0.lock().unwrap_or_else(|e| e.into_inner()).insert(hito);
+        self.1.notify_all();
+    }
+
+    /// Espera a que este marcado alguno de `hitos`; dice si llego antes del tope.
+    fn esperar(&self, hitos: &[&'static str]) -> bool {
+        let g = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        let (_g, tope) = self
+            .1
+            .wait_timeout_while(g, std::time::Duration::from_secs(30), |m| !hitos.iter().any(|h| m.contains(h)))
+            .unwrap_or_else(|e| e.into_inner());
+        !tope.timed_out()
+    }
+}
+
+/// Las carreras van de una en una: el gancho de pausa es uno para todo el proceso.
+static CARRERAS: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// El gancho puesto. Al soltarse lo quita -tambien si el test cae- y deja pasar a la carrera
+/// siguiente.
+struct ConGancho(#[allow(dead_code)] std::sync::MutexGuard<'static, ()>);
+
+impl Drop for ConGancho {
+    fn drop(&mut self) {
+        *crate::persistence::PAUSA.lock().unwrap_or_else(|e| e.into_inner()) = None;
+    }
+}
+
+/// Pone el gancho: `f(hilo, punto)` se llama en cada punto de pausa de cada hilo con nombre; los
+/// de los otros tests, que corren a la vez, no llevan el nombre de ningun hilo de una carrera.
+fn con_gancho(f: impl Fn(&str, &'static str) + Send + Sync + 'static) -> ConGancho {
+    let turno = CARRERAS.lock().unwrap_or_else(|e| e.into_inner());
+    let g: crate::persistence::Gancho = std::sync::Arc::new(move |donde: &'static str| {
+        if let Some(hilo) = std::thread::current().name() {
+            f(hilo, donde)
+        }
+    });
+    *crate::persistence::PAUSA.lock().unwrap_or_else(|e| e.into_inner()) = Some(g);
+    ConGancho(turno)
+}
+
+/// Lo que sale de una apertura o de un recifrado en un hilo de la carrera: el saldo de alice y el
+/// suministro, o el error. La capa se suelta dentro del hilo.
+type Salida = Result<(Option<u64>, u64), LayerError>;
+
+fn salida(r: Result<SovereignLayer, LayerError>, alice: AccountIndex) -> Salida {
+    r.map(|l| (l.balance_of(alice), l.total_supply()))
+}
+
+/// Marca su hito al soltarse: tambien si el hilo cae, para que el otro no espere al tope.
+struct AlAcabar(std::sync::Arc<Hitos>, &'static str);
+
+impl Drop for AlAcabar {
+    fn drop(&mut self) {
+        self.0.marcar(self.1);
+    }
+}
+
+/// Corre `f` en un hilo llamado `nombre`, y marca `fin` al acabar.
+fn en_hilo(
+    nombre: &str,
+    hitos: &std::sync::Arc<Hitos>,
+    fin: &'static str,
+    f: impl FnOnce() -> Salida + Send + 'static,
+) -> std::thread::JoinHandle<Salida> {
+    let al_acabar = AlAcabar(hitos.clone(), fin);
+    std::thread::Builder::new()
+        .name(nombre.into())
+        .spawn(move || {
+            let _al_acabar = al_acabar;
+            f()
+        })
+        .expect("lanzar el hilo")
+}
+
+/// La apertura cifrada, SIN reintentar el Io: en una carrera, el Io es lo que se mide.
+fn abrir_una_vez(path: &str, frase: &str) -> Result<SovereignLayer, LayerError> {
+    use crate::crypto::LedgerKey;
+    SovereignLayer::open_encrypted(
+        path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        Some(LedgerKey::from_passphrase(frase)),
+    )
+}
+
+/// `recifrar`, SIN reintentar el Io.
+fn recifrar_una_vez(path: &str, vieja: &str, nueva: &str) -> Result<SovereignLayer, LayerError> {
+    use crate::crypto::LedgerKey;
+    SovereignLayer::recifrar(
+        path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        LedgerKey::from_passphrase(vieja), LedgerKey::from_passphrase(nueva),
+    )
+}
+
+/// Si la salida es el Io del cerrojo del libro, con su nombre.
+fn es_io_del_cerrojo(r: &Salida, path: &str) -> bool {
+    matches!(r, Err(LayerError::Store(StoreError::Io(m))) if m.contains(&cerrojo_de(path)))
+}
+
+/// **Despues de una carrera, el libro sigue entero**: cada frase de `otras` -que no son la suya-
+/// da `IntegrityFailure` y deja el libro en su sitio; no queda ningun hermano; y la suya lo abre con
+/// el saldo y el suministro enteros. Ninguna apertura crea un libro vacio ni borra la unica copia.
+fn el_libro_sigue(path: &str, alice: AccountIndex, suya: &str, otras: &[&str], que: &str) {
+    let (r, v) = hermanos_de(path);
+    for otra in otras {
+        let res = abrir_e4(path, otra);
+        assert!(
+            matches!(res, Err(LayerError::Store(StoreError::IntegrityFailure { .. }))),
+            "CRITICO: {que}: «{otra}» no es la frase del libro, y su apertura no dio IntegrityFailure: {:?}",
+            res.as_ref().map(|l| (l.balance_of(alice), l.total_supply()))
+        );
+        drop(res);
+        assert!(hay(path), "CRITICO: {que}: la apertura con «{otra}» se llevo el libro");
+    }
+    assert!(!hay(&r) && !hay(&v), "{que}: quedo un hermano: {:?}", junto_al_libro(path));
+    let l = abrir_e4(path, suya).unwrap_or_else(|e| panic!("CRITICO: {que}: el libro no abre con su frase: {e}"));
+    assert_eq!(l.balance_of(alice), Some(777_777), "CRITICO: {que}: el libro perdio el saldo");
+    assert_eq!(l.total_supply(), 777_777, "CRITICO: {que}: el libro perdio el suministro");
+}
+
+/// **§816: una apertura y un recifrado a la vez no crean un libro vacio** (la carrera (a), sin
+/// hermanos). Medido sobre b6994c3: la apertura A miraba si habia hermanos -no los habia, y sin
+/// ellos no miraba ningun cerrojo- y se paraba antes de `sled::open`; el recifrado B llegaba a su
+/// compromiso, `rename(P, V)`; A creaba un libro VACIO en P y abria `Ok`, sin saldo; el paso 6 de B
+/// fallaba diciendo «la apertura siguiente lo termina», y la apertura siguiente rehusaba: el libro
+/// entero se quedaba en V y en R, y ya no abria. Con el cerrojo del libro, A lo tiene desde antes de
+/// mirar hasta que vuelve con el libro abierto: B no lo toma en su tope y da `Io` con su nombre, sin
+/// tocar nada; A abre el libro entero; y despues ninguna apertura crea un libro vacio ni borra la
+/// unica copia: la frase nueva no lo abre y la vieja lo abre con el saldo.
+#[test]
+fn una_apertura_y_un_recifrado_a_la_vez_no_crean_un_libro_vacio() {
+    let (path, alice, _) = libro_e4("carrera_a");
+    drop(sled_open_retry(&path)); // que sled haya soltado el libro
+    let hitos = Hitos::nuevos();
+    let h = hitos.clone();
+    let gancho = con_gancho(move |hilo, donde| match (hilo, donde) {
+        ("carrera-a-A", "abrir:antes_de_sled") => {
+            h.marcar("A:tope");
+            h.esperar(&["B:5", "B:fin"]);
+        }
+        ("carrera-a-A", "abrir:tras_sled") => h.marcar("A:sled"),
+        ("carrera-a-B", "recifrar:5") => {
+            h.marcar("B:5");
+            h.esperar(&["A:sled", "A:fin"]);
+        }
+        _ => {}
+    });
+    let pa = path.clone();
+    let a = en_hilo("carrera-a-A", &hitos, "A:fin", move || salida(abrir_una_vez(&pa, FRASE_VIEJA_E4), alice));
+    assert!(hitos.esperar(&["A:tope"]), "(a) la apertura no llego a su tope");
+    let pb = path.clone();
+    let b = en_hilo("carrera-a-B", &hitos, "B:fin", move || {
+        salida(recifrar_una_vez(&pb, FRASE_VIEJA_E4, FRASE_NUEVA_E4), alice)
+    });
+    let (ra, rb) = (a.join().expect("hilo A"), b.join().expect("hilo B"));
+    drop(gancho);
+    eprintln!("§816 (a): A = {ra:?}; B = {rb:?}; junto al libro: {:?}", junto_al_libro(&path));
+    assert!(
+        matches!(ra, Ok((Some(777_777), 777_777))),
+        "CRITICO: (a) la apertura A no abrio el libro entero: {ra:?}"
+    );
+    assert!(es_io_del_cerrojo(&rb, &path), "(a) el recifrado B, en su tope, tenia que dar el Io del cerrojo: {rb:?}");
+    el_libro_sigue(&path, alice, FRASE_VIEJA_E4, &[FRASE_NUEVA_E4], "(a)");
+    quitar_e4(&path);
+}
+
+/// **§816: una apertura que resuelve lo que dejo una muerte y un recifrado a la vez no se llevan el
+/// libro** (las carreras (b) y (c)). Medido sobre b6994c3, en los dos estados de partida:
+///
+/// - (b) Una muerte tras el paso 6 deja el libro, con la frase nueva, y su `.retirado`. La apertura
+///   A miraba los cerrojos -libres- y se paraba antes de borrar el retirado; el recifrado B resolvia
+///   lo mismo, abria y recifraba hasta su compromiso, que pone el libro en un `.retirado` NUEVO; A
+///   borraba ese, el de B, y creaba un libro vacio en P; el paso 6 de B fallaba, y la apertura
+///   siguiente con la frase que nombraba su error borraba el `.recifrando` -la unica copia que
+///   quedaba- como resto de antes del compromiso.
+/// - (c) Una muerte antes del compromiso deja el libro, con la frase vieja, y su `.recifrando`. A
+///   miraba y se paraba antes de borrarlo; B lo borraba, recifraba hasta su compromiso y dejaba su
+///   `.recifrando` NUEVO; A borraba ese y creaba un libro vacio en P; el paso 6 de B fallaba diciendo
+///   que el libro quedaba con la frase NUEVA, y no quedaba; y la apertura siguiente, con cualquier
+///   frase, borraba el `.retirado` -la unica copia- y la vieja abria `Ok` un libro vacio, sin error.
+///
+/// El libro, con sus saldos, se perdia entero. Con el cerrojo, B da `Io` en su tope sin tocar nada,
+/// A resuelve lo de la muerte y abre el libro entero, y despues ni la frase de B, que no llego a
+/// nada, ni la otra lo abren ni lo tocan.
+#[test]
+fn una_apertura_que_resuelve_y_un_recifrado_a_la_vez_no_se_llevan_el_libro() {
+    const TERCERA: &str = "la tercera frase del libro";
+    // (que, paso de la muerte, frase con que queda el libro, la otra)
+    for (que, paso, suya, otra) in [("(b)", 6u8, FRASE_NUEVA_E4, FRASE_VIEJA_E4), ("(c)", 3, FRASE_VIEJA_E4, FRASE_NUEVA_E4)] {
+        let (path, alice, _) = libro_e4(if paso == 6 { "carrera_b" } else { "carrera_c" });
+        let (r, v) = hermanos_de(&path);
+        assert!(morir_en(paso, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)), "{que}: tenia que morir en el paso {paso}");
+        if paso == 6 {
+            assert!(hay(&path) && !hay(&r) && hay(&v), "(b) el estado de partida tenia que ser el libro y su .retirado");
+            drop(sled_open_retry(&v));
+        } else {
+            assert!(hay(&path) && hay(&r) && !hay(&v), "(c) el estado de partida tenia que ser el libro y su .recifrando");
+            drop(sled_open_retry(&r));
+        }
+        drop(sled_open_retry(&path));
+        let hitos = Hitos::nuevos();
+        let h = hitos.clone();
+        let gancho = con_gancho(move |hilo, donde| match (hilo, donde) {
+            ("carrera-b-A", "resolver:tras_cerrojos") => {
+                h.marcar("A:tope");
+                h.esperar(&["B:5", "B:fin"]);
+            }
+            ("carrera-b-A", "abrir:tras_sled") => h.marcar("A:sled"),
+            ("carrera-b-B", "recifrar:5") => {
+                h.marcar("B:5");
+                h.esperar(&["A:sled", "A:fin"]);
+            }
+            _ => {}
+        });
+        let pa = path.clone();
+        let a = en_hilo("carrera-b-A", &hitos, "A:fin", move || salida(abrir_una_vez(&pa, suya), alice));
+        assert!(hitos.esperar(&["A:tope"]), "{que} la apertura no llego a mirar los cerrojos");
+        let pb = path.clone();
+        let b = en_hilo("carrera-b-B", &hitos, "B:fin", move || salida(recifrar_una_vez(&pb, suya, TERCERA), alice));
+        let (ra, rb) = (a.join().expect("hilo A"), b.join().expect("hilo B"));
+        drop(gancho);
+        eprintln!("§816 {que}: A = {ra:?}; B = {rb:?}; junto al libro: {:?}", junto_al_libro(&path));
+        assert!(
+            matches!(ra, Ok((Some(777_777), 777_777))),
+            "CRITICO: {que} la apertura A no abrio el libro entero: {ra:?}"
+        );
+        assert!(es_io_del_cerrojo(&rb, &path), "{que} el recifrado B, en su tope, tenia que dar el Io del cerrojo: {rb:?}");
+        el_libro_sigue(&path, alice, suya, &[TERCERA, otra], que);
+        quitar_e4(&path);
+    }
+}
+
+/// **§816: dos recifrados a la vez: uno acaba y el otro da `Io` sin tocar nada.** B2 empieza primero
+/// y se para en su apertura con la frase vieja, despues de mirar los hermanos y antes de
+/// `sled::open`; B1 llega entonces. Sobre b6994c3, B1 recifraba hasta su compromiso y B2 creaba un
+/// libro vacio en P: el paso 6 de B1 fallaba, B2 recifraba el libro vacio hasta toparse con el
+/// `.retirado` de B1, y el libro quedaba repartido en tres nombres que la apertura siguiente rehusa.
+/// Con el cerrojo, B2 lo tiene desde antes de mirar los hermanos hasta el final; B1 no lo toma en su
+/// tope y da `Io` con su nombre;
+/// B2 acaba con el libro entero; y el libro abre con la frase de B2, no con la de B1 ni con la vieja.
+#[test]
+fn dos_recifrados_a_la_vez_uno_acaba_y_el_otro_no_toca_nada() {
+    const TERCERA: &str = "la tercera frase del libro";
+    let (path, alice, _) = libro_e4("carrera_dos");
+    drop(sled_open_retry(&path));
+    let hitos = Hitos::nuevos();
+    let h = hitos.clone();
+    let gancho = con_gancho(move |hilo, donde| match (hilo, donde) {
+        ("carrera-dos-B2", "abrir:antes_de_sled") => {
+            h.marcar("B2:tope");
+            h.esperar(&["B1:5", "B1:fin"]);
+        }
+        ("carrera-dos-B2", "abrir:tras_sled") => h.marcar("B2:sled"),
+        ("carrera-dos-B1", "recifrar:5") => {
+            h.marcar("B1:5");
+            h.esperar(&["B2:sled", "B2:fin"]);
+        }
+        _ => {}
+    });
+    let p2 = path.clone();
+    let b2 = en_hilo("carrera-dos-B2", &hitos, "B2:fin", move || {
+        salida(recifrar_una_vez(&p2, FRASE_VIEJA_E4, FRASE_NUEVA_E4), alice)
+    });
+    assert!(hitos.esperar(&["B2:tope"]), "B2 no llego a su apertura");
+    let p1 = path.clone();
+    let b1 = en_hilo("carrera-dos-B1", &hitos, "B1:fin", move || salida(recifrar_una_vez(&p1, FRASE_VIEJA_E4, TERCERA), alice));
+    let (r2, r1) = (b2.join().expect("hilo B2"), b1.join().expect("hilo B1"));
+    drop(gancho);
+    eprintln!("§816 (dos): B2 = {r2:?}; B1 = {r1:?}; junto al libro: {:?}", junto_al_libro(&path));
+    assert!(matches!(r2, Ok((Some(777_777), 777_777))), "CRITICO: el primer recifrado no acabo con el libro entero: {r2:?}");
+    assert!(es_io_del_cerrojo(&r1, &path), "el segundo recifrado, en su tope, tenia que dar el Io del cerrojo: {r1:?}");
+    el_libro_sigue(&path, alice, FRASE_NUEVA_E4, &[TERCERA, FRASE_VIEJA_E4], "(dos)");
+    quitar_e4(&path);
+}
+
+/// **§816: una apertura que no toma el cerrojo en su tope da `Io` con su nombre, sin tocar nada**,
+/// mientras otro recifra o migra el libro. B ya tiene el libro abierto y va a empezar a copiarlo
+/// -en `recifrar`, y en la apertura que migra un libro v1-, y se para ahi; A llega entonces: espera
+/// el tope, diez veces cada 50 ms, y da `Io` con el nombre del cerrojo; junto al libro no cambia
+/// nada; B acaba, y el libro abre con la frase con que B lo deja. Sin el cerrojo de B en ese tramo,
+/// A no veia hermanos, se paraba antes de `sled::open`, B llegaba a su compromiso y A creaba un
+/// libro vacio en P: es lo que cazan, en el §816, los mutantes que no toman el cerrojo en el
+/// recifrado o que lo sueltan en la apertura antes de migrar.
+#[test]
+fn una_apertura_en_el_tope_del_cerrojo_da_io_sin_tocar_nada() {
+    for migra in [false, true] {
+        let que = if migra { "(migracion)" } else { "(recifrado)" };
+        let (path, alice, _) = libro_e4(if migra { "carrera_tope_m" } else { "carrera_tope_r" });
+        if migra {
+            rebajar_a_v1(&path, FRASE_VIEJA_E4);
+        }
+        drop(sled_open_retry(&path));
+        let hitos = Hitos::nuevos();
+        let h = hitos.clone();
+        let gancho = con_gancho(move |hilo, donde| match (hilo, donde) {
+            ("carrera-tope-B", "recifrar:0") => {
+                h.marcar("B:abierto");
+                h.esperar(&["A:tope", "visto"]);
+            }
+            ("carrera-tope-B", "recifrar:5") => {
+                h.marcar("B:5");
+                h.esperar(&["A:sled", "A:fin"]);
+            }
+            ("carrera-tope-A", "abrir:antes_de_sled") => {
+                h.marcar("A:tope");
+                h.esperar(&["B:5", "B:fin"]);
+            }
+            ("carrera-tope-A", "abrir:tras_sled") => h.marcar("A:sled"),
+            _ => {}
+        });
+        let pb = path.clone();
+        let b = en_hilo("carrera-tope-B", &hitos, "B:fin", move || {
+            let r = if migra {
+                abrir_una_vez(&pb, FRASE_VIEJA_E4)
+            } else {
+                recifrar_una_vez(&pb, FRASE_VIEJA_E4, FRASE_NUEVA_E4)
+            };
+            salida(r, alice)
+        });
+        assert!(hitos.esperar(&["B:abierto"]), "{que}: B no llego a abrir el libro");
+        let antes = junto_al_libro(&path);
+        let pa = path.clone();
+        let ra = en_hilo("carrera-tope-A", &hitos, "A:fin", move || salida(abrir_una_vez(&pa, FRASE_VIEJA_E4), alice))
+            .join()
+            .expect("hilo A");
+        let despues = junto_al_libro(&path);
+        hitos.marcar("visto");
+        let rb = b.join().expect("hilo B");
+        drop(gancho);
+        eprintln!("§816 {que}: A = {ra:?}; B = {rb:?}; junto al libro antes {antes:?}, despues {despues:?}");
+        assert!(es_io_del_cerrojo(&ra, &path), "CRITICO: {que}: la apertura en el tope tenia que dar el Io del cerrojo: {ra:?}");
+        assert_eq!(despues, antes, "CRITICO: {que}: la apertura que no tomo el cerrojo cambio lo que hay junto al libro");
+        assert!(matches!(rb, Ok((Some(777_777), 777_777))), "{que}: B no acabo con el libro entero: {rb:?}");
+        if migra {
+            el_libro_sigue(&path, alice, FRASE_VIEJA_E4, &[FRASE_NUEVA_E4], que);
+            assert!(
+                matches!(crate::crypto::Kdf::de_cabecera(&cabecera_de(&path)), Ok(crate::crypto::Kdf::Argon2idV2 { .. })),
+                "{que}: el libro no quedo en la version 2"
+            );
+        } else {
+            el_libro_sigue(&path, alice, FRASE_NUEVA_E4, &[FRASE_VIEJA_E4], que);
+        }
+        quitar_e4(&path);
+    }
+}
+
+/// **§816: el cerrojo del libro es un fichero que nada renombra ni borra**, y uno que no es un fichero
+/// de verdad no se toma. (a) La primera apertura lo crea vacio y, en Unix, con 0600: solo su dueno
+/// puede tomarlo. (b) Un recifrado que acaba, una muerte pasado el compromiso, la apertura que la
+/// termina y la migracion de un libro v1 lo dejan donde estaba: el mismo inodo, vacio. Un cerrojo
+/// que se renombrara o se borrara no excluiria a nadie: quien espera en el viejo y quien crea uno
+/// nuevo lo tendrian los dos. (c) Un `<libro>.cerrojo` que es un directorio o un enlace no se toma:
+/// la apertura rehusa con `Malformed`, no crea el libro y no toca lo que hay, ni el destino del
+/// enlace.
+#[test]
+fn el_cerrojo_del_libro_es_un_fichero_que_nada_renombra_ni_borra() {
+    const TERCERA: &str = "la tercera frase del libro";
+    let (path, alice, _) = libro_e4("cerrojo_fijo");
+    let c = cerrojo_de(&path);
+    let marca = |que: &str| -> (u64, u64) {
+        let md = std::fs::symlink_metadata(&c).unwrap_or_else(|e| panic!("CRITICO: {que}: no esta el cerrojo: {e}"));
+        assert!(md.file_type().is_file(), "{que}: el cerrojo no es un fichero");
+        #[cfg(unix)]
+        let ino = {
+            use std::os::unix::fs::MetadataExt;
+            md.ino()
+        };
+        #[cfg(not(unix))]
+        let ino = 0;
+        (ino, md.len())
+    };
+    let nacio = marca("(a)");
+    assert_eq!(nacio.1, 0, "(a) el cerrojo no nacio vacio");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let modo = std::fs::metadata(&c).unwrap().permissions().mode() & 0o7777;
+        assert_eq!(modo, 0o600, "(a) el cerrojo no nacio con 0600");
+    }
+    drop(recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4).expect("(b) recifrar"));
+    assert_eq!(marca("(b) recifrado"), nacio, "CRITICO: (b) el recifrado renombro o borro el cerrojo");
+    assert!(morir_en(6, || recifrar_e4(&path, FRASE_NUEVA_E4, TERCERA)), "(b) tenia que morir en el paso 6");
+    assert_eq!(marca("(b) muerte"), nacio, "CRITICO: (b) la muerte renombro o borro el cerrojo");
+    drop(abrir_e4(&path, TERCERA).expect("(b) la apertura que termina el recifrado"));
+    assert_eq!(marca("(b) apertura"), nacio, "CRITICO: (b) la apertura que resuelve renombro o borro el cerrojo");
+    rebajar_a_v1(&path, TERCERA);
+    {
+        let l = abrir_e4(&path, TERCERA).expect("(b) la apertura que migra");
+        assert_eq!(l.balance_of(alice), Some(777_777), "(b) la migracion");
+    }
+    assert_eq!(marca("(b) migracion"), nacio, "CRITICO: (b) la migracion renombro o borro el cerrojo");
+    quitar_e4(&path);
+
+    let ajeno = temp_path("cerrojo_ajeno");
+    quitar_e4(&ajeno);
+    let ca = cerrojo_de(&ajeno);
+    let rehusa = |que: &str| {
+        let r = open_retry(&ajeno, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS);
+        assert!(
+            matches!(r, Err(LayerError::Store(StoreError::Malformed(ref m))) if m.contains(&ca)),
+            "CRITICO: {que}: la apertura tomo un cerrojo que no es un fichero: {:?}",
+            r.as_ref().err()
+        );
+        drop(r);
+        assert!(!hay(&ajeno), "CRITICO: {que}: la apertura creo el libro");
+    };
+    std::fs::create_dir_all(&ca).unwrap();
+    rehusa("(c) un directorio");
+    assert!(std::fs::read_dir(&ca).unwrap().next().is_none(), "(c) se escribio dentro del directorio");
+    std::fs::remove_dir_all(&ca).unwrap();
+    #[cfg(unix)]
+    {
+        let destino = format!("{ajeno}.destino");
+        std::fs::write(&destino, b"del operador").unwrap();
+        std::os::unix::fs::symlink(&destino, &ca).unwrap();
+        rehusa("(c) un enlace");
+        assert!(std::fs::symlink_metadata(&ca).unwrap().file_type().is_symlink(), "(c) se toco el enlace");
+        assert_eq!(std::fs::read(&destino).ok().as_deref(), Some(&b"del operador"[..]), "(c) se toco el destino");
+        let _ = std::fs::remove_file(&ca);
+        let _ = std::fs::remove_file(&destino);
+    }
+    quitar_e4(&ajeno);
+}
+
+// ---------------------------------------------------------------------------------------------
+// §816: lo que midieron los dos revisores del arreglo, y su atado
+// ---------------------------------------------------------------------------------------------
+
+/// **§816: un libro nuevo en un directorio que no existe se abre como antes del cerrojo.** `sled::open`
+/// crea la ruta entera del libro; el cerrojo del libro, que se abre antes, no encontraba su
+/// directorio, y la apertura daba `Io` con el nombre del `.cerrojo` sin crear nada (medido por los
+/// dos revisores del arreglo: el nodo no arrancaba, y el cli no abria, con `--ledger` en un
+/// directorio nuevo). La apertura, en claro y cifrada, crea antes el directorio del libro y deja el
+/// cerrojo a su lado, vacio y con 0600; `recifrar`, que exige un libro que ya existe, no crea ningun
+/// directorio.
+#[test]
+fn un_libro_nuevo_en_un_directorio_que_no_existe_se_abre_como_antes() {
+    let base = temp_path("sin_padre");
+    let _ = std::fs::remove_dir_all(&base);
+    let en = |que: &str| format!("{base}/{que}/a/b/libro");
+    let claro = en("claro");
+    let l = SovereignLayer::open(&claro, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+        .unwrap_or_else(|e| panic!("CRITICO: en claro, un libro nuevo en un directorio que no existe no abre: {e}"));
+    assert_eq!(l.total_supply(), 0, "en claro: el libro nuevo no nacio vacio");
+    drop(l);
+    let cifrado = en("cifrado");
+    let l = abrir_una_vez(&cifrado, FRASE_VIEJA_E4)
+        .unwrap_or_else(|e| panic!("CRITICO: cifrado, un libro nuevo en un directorio que no existe no abre: {e}"));
+    assert_eq!(l.total_supply(), 0, "cifrado: el libro nuevo no nacio vacio");
+    drop(l);
+    for p in [&claro, &cifrado] {
+        assert!(std::fs::symlink_metadata(p).map(|m| m.is_dir()).unwrap_or(false), "{p}: no se creo el libro");
+        let c = std::fs::symlink_metadata(cerrojo_de(p)).unwrap_or_else(|e| panic!("{p}: no se creo su cerrojo: {e}"));
+        assert!(c.is_file() && c.len() == 0, "{p}: el cerrojo no es un fichero vacio");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(c.permissions().mode() & 0o7777, 0o600, "{p}: el cerrojo no nacio con 0600");
+        }
+    }
+    let nada = en("recifrar");
+    let r = recifrar_una_vez(&nada, FRASE_VIEJA_E4, FRASE_NUEVA_E4).map(|_| ());
+    assert!(r.is_err(), "recifrar un libro que no existe no fallo");
+    assert!(!hay(&format!("{base}/recifrar")), "CRITICO: recifrar un libro que no existe creo su directorio: {r:?}");
+    let _ = std::fs::remove_dir_all(&base);
+}
+
+/// **§816: la reentrada del cerrojo no se queda tras volver.** El cerrojo es reentrante en el hilo que
+/// lo tiene -la apertura que hace `recifrar` dentro lo encuentra tomado-, y lo que lo hace reentrante
+/// es la lista del hilo, que se vacia al soltarlo. Un hilo abre el libro y lo suelta; otro recifra y
+/// se para con el cerrojo tomado; la segunda apertura del primer hilo tiene que esperar el tope y dar
+/// el `Io` del cerrojo. Si la entrada se quedara en la lista -el mutante M11 de un revisor, que
+/// pasaba los cinco tests de la carrera-, esa apertura no lo tomaria, se pararia antes de
+/// `sled::open`, el recifrado llegaria a su compromiso y ella crearia un libro vacio: la carrera (a)
+/// otra vez, en ese hilo (medido por el revisor: `Ok((None, 0))`, y el recifrado «pasado el
+/// compromiso»).
+#[test]
+fn la_reentrada_del_cerrojo_no_se_queda_tras_volver() {
+    let (path, alice, _) = libro_e4("reentrada");
+    drop(sled_open_retry(&path));
+    let segunda = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let hitos = Hitos::nuevos();
+    let (h, s2) = (hitos.clone(), segunda.clone());
+    let gancho = con_gancho(move |hilo, donde| {
+        let en_segunda = s2.load(std::sync::atomic::Ordering::SeqCst);
+        match (hilo, donde) {
+            ("reentrada-A", "abrir:antes_de_sled") if en_segunda => {
+                h.marcar("A:tope");
+                h.esperar(&["B:5", "B:fin"]);
+            }
+            ("reentrada-A", "abrir:tras_sled") if en_segunda => h.marcar("A:sled"),
+            ("reentrada-B", "recifrar:0") => {
+                h.marcar("B:0");
+                h.esperar(&["A:tope", "A:fin"]);
+            }
+            ("reentrada-B", "recifrar:5") => {
+                h.marcar("B:5");
+                h.esperar(&["A:sled", "A:fin"]);
+            }
+            _ => {}
+        }
+    });
+    let (pa, h2, s3) = (path.clone(), hitos.clone(), segunda.clone());
+    let a = en_hilo("reentrada-A", &hitos, "A:fin", move || {
+        drop(abrir_e4(&pa, FRASE_VIEJA_E4).expect("la primera apertura del hilo"));
+        drop(sled_open_retry(&pa));
+        s3.store(true, std::sync::atomic::Ordering::SeqCst);
+        h2.marcar("A:abrio");
+        assert!(h2.esperar(&["B:0", "B:fin"]), "el recifrado no llego a tener el libro abierto");
+        salida(abrir_una_vez(&pa, FRASE_VIEJA_E4), alice)
+    });
+    assert!(hitos.esperar(&["A:abrio", "A:fin"]), "la primera apertura del hilo no acabo");
+    let pb = path.clone();
+    let b = en_hilo("reentrada-B", &hitos, "B:fin", move || {
+        salida(recifrar_una_vez(&pb, FRASE_VIEJA_E4, FRASE_NUEVA_E4), alice)
+    });
+    let (ra, rb) = (a.join().expect("hilo A"), b.join().expect("hilo B"));
+    drop(gancho);
+    eprintln!("§816 reentrada: A, su segunda apertura = {ra:?}; B = {rb:?}; junto al libro: {:?}", junto_al_libro(&path));
+    assert!(es_io_del_cerrojo(&ra, &path), "CRITICO: la segunda apertura del hilo no espero el cerrojo: {ra:?}");
+    assert!(matches!(rb, Ok((Some(777_777), 777_777))), "el recifrado no acabo con el libro entero: {rb:?}");
+    el_libro_sigue(&path, alice, FRASE_NUEVA_E4, &[FRASE_VIEJA_E4], "reentrada");
+    quitar_e4(&path);
+}
+
+/// **§816: un cerrojo que cambia mientras se toma no se sigue.** Entre mirar el nombre
+/// (`symlink_metadata`) y abrirlo, un revisor cambiaba `<libro>.cerrojo` por un enlace en bucle, y la
+/// apertura, que lo abria con `create`, seguia el enlace y creaba su DESTINO, un fichero fuera del
+/// directorio del libro (medido: en el intento 64 de un bucle, y en el 126 en otra corrida; con
+/// b6994c3, ninguno en 9071); y el `flock` quedaba sobre otro inodo. Con el gancho entre mirar y
+/// abrir, sin bucle:
+///
+/// - (i) No estaba. Se crea con `create_new`, que no sigue el enlace: el destino no se crea, la
+///   apertura vuelve a mirar y rehusa el enlace, y no crea el libro.
+/// - (ii) Estaba, junto a un libro con el `.retirado` de una muerte. El enlace que aparece entre mirar
+///   y abrir se abre sin escribir en su destino, y con el `flock` tomado la apertura ve que el nombre
+///   ya no es ese fichero y rehusa ANTES de resolver: el `.retirado` sigue, y el destino tambien.
+#[cfg(unix)]
+#[test]
+fn un_cerrojo_que_cambia_mientras_se_toma_no_se_sigue() {
+    for estaba in [false, true] {
+        let que = if estaba { "(ii) estaba" } else { "(i) no estaba" };
+        let (path, alice) = if estaba {
+            let (path, alice, _) = libro_e4("toctou_estaba");
+            assert!(morir_en(6, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)), "{que}: tenia que morir en el paso 6");
+            drop(sled_open_retry(&path));
+            drop(sled_open_retry(&hermanos_de(&path).1));
+            (path, alice)
+        } else {
+            let path = temp_path("toctou_nuevo");
+            quitar_e4(&path);
+            (path, 0)
+        };
+        let (_, v) = hermanos_de(&path);
+        let c = cerrojo_de(&path);
+        let destino = format!("{path}.destino");
+        let _ = std::fs::remove_file(&destino);
+        if estaba {
+            std::fs::write(&destino, b"del operador").unwrap();
+        }
+        let hitos = Hitos::nuevos();
+        let h = hitos.clone();
+        let gancho = con_gancho(move |hilo, donde| {
+            if hilo == "toctou-A" && donde == "cerrojo:tras_mirar" {
+                h.marcar("A:miro");
+                h.esperar(&["cambiado"]);
+            }
+        });
+        let pa = path.clone();
+        let a = en_hilo("toctou-A", &hitos, "A:fin", move || salida(abrir_una_vez(&pa, FRASE_NUEVA_E4), alice));
+        assert!(hitos.esperar(&["A:miro"]), "{que}: la apertura no llego a mirar el cerrojo");
+        let _ = std::fs::remove_file(&c);
+        std::os::unix::fs::symlink(&destino, &c).unwrap();
+        hitos.marcar("cambiado");
+        let ra = a.join().expect("hilo A");
+        drop(gancho);
+        eprintln!("§816 toctou {que}: A = {ra:?}; destino: {:?}; junto al libro: {:?}", std::fs::read(&destino).ok(), junto_al_libro(&path));
+        assert!(
+            matches!(ra, Err(LayerError::Store(StoreError::Malformed(ref m))) if m.contains(&c)),
+            "CRITICO: {que}: la apertura siguio el enlace: {ra:?}"
+        );
+        assert!(std::fs::symlink_metadata(&c).unwrap().file_type().is_symlink(), "{que}: se toco el enlace");
+        std::fs::remove_file(&c).unwrap();
+        if estaba {
+            assert_eq!(std::fs::read(&destino).ok().as_deref(), Some(&b"del operador"[..]), "CRITICO: {que}: se toco el destino");
+            assert!(hay(&v), "CRITICO: {que}: la apertura resolvio los hermanos sin tener el cerrojo");
+            let _ = std::fs::remove_file(&destino);
+            el_libro_sigue(&path, alice, FRASE_NUEVA_E4, &[FRASE_VIEJA_E4], que);
+        } else {
+            assert!(!hay(&destino), "CRITICO: {que}: la apertura creo el destino del enlace");
+            assert!(!hay(&path), "{que}: la apertura creo el libro");
+        }
+        quitar_e4(&path);
+    }
+}
+
+/// **§816: un cerrojo que se borra o se cambia mientras se tiene no deja seguir a quien lo tenia.** El
+/// cerrojo es un fichero, y a mano se puede borrar o sustituir -restaurar una copia, un `rsync`-
+/// mientras alguien lo tiene; quien llega despues crea o toma uno nuevo y entra. Medido por un
+/// revisor sobre el primer arreglo del §816: con la apertura A parada antes de `sled::open` y su
+/// cerrojo borrado o cambiado por otro fichero, el recifrado B tomaba el nuevo y llegaba a su
+/// compromiso, y A creaba un libro vacio, la carrera (a) otra vez. Desde el §816 quien lo tiene mira,
+/// antes de lo que no se deshace -`sled::open` en la apertura, el compromiso en el recifrado-, que el
+/// nombre siga siendo el fichero que tomo (`Cerrojo::sigue`), y si no, rehusa sin tocar nada:
+///
+/// - (A) La apertura lo tiene y se para antes de `sled::open`; se borra, o se cambia por otro fichero
+///   o por un enlace; B recifra hasta su compromiso, o rehusa el enlace. A rehusa, B acaba, y el libro
+///   abre con la frase con que lo deja B.
+/// - (B) El recifrado lo tiene, con el libro abierto, y se para antes de copiarlo; se borra; A toma
+///   uno nuevo y se para antes de `sled::open`. B rehusa antes de su compromiso, borra su copia y deja
+///   el libro con la vieja; A sigue y abre el libro entero, o da el `Io` de sled si este aun no lo ha
+///   soltado.
+#[test]
+fn un_cerrojo_borrado_o_cambiado_mientras_se_tiene_no_deja_seguir() {
+    for como in ["borrado", "otro fichero", "enlace"] {
+        if como == "enlace" && !cfg!(unix) {
+            continue;
+        }
+        let que = format!("(A) {como}");
+        let (path, alice, _) = libro_e4(&format!("cambiado_a_{}", como.len()));
+        drop(sled_open_retry(&path));
+        let c = cerrojo_de(&path);
+        let destino = format!("{path}.destino");
+        let _ = std::fs::remove_file(&destino);
+        let hitos = Hitos::nuevos();
+        let h = hitos.clone();
+        let gancho = con_gancho(move |hilo, donde| match (hilo, donde) {
+            ("cambiado-A", "abrir:antes_de_sled") => {
+                h.marcar("A:tope");
+                h.esperar(&["B:5", "B:fin"]);
+            }
+            ("cambiado-A", "abrir:tras_sled") => h.marcar("A:sled"),
+            ("cambiado-B", "recifrar:5") => {
+                h.marcar("B:5");
+                h.esperar(&["A:sled", "A:fin"]);
+            }
+            _ => {}
+        });
+        let pa = path.clone();
+        let a = en_hilo("cambiado-A", &hitos, "A:fin", move || salida(abrir_una_vez(&pa, FRASE_VIEJA_E4), alice));
+        assert!(hitos.esperar(&["A:tope"]), "{que}: la apertura no llego a su tope");
+        std::fs::remove_file(&c).expect("borrar el cerrojo");
+        if como == "otro fichero" {
+            std::fs::write(&c, b"").unwrap();
+        }
+        #[cfg(unix)]
+        if como == "enlace" {
+            std::os::unix::fs::symlink(&destino, &c).unwrap();
+        }
+        let pb = path.clone();
+        let b = en_hilo("cambiado-B", &hitos, "B:fin", move || {
+            salida(recifrar_una_vez(&pb, FRASE_VIEJA_E4, FRASE_NUEVA_E4), alice)
+        });
+        let (ra, rb) = (a.join().expect("hilo A"), b.join().expect("hilo B"));
+        drop(gancho);
+        eprintln!("§816 {que}: A = {ra:?}; B = {rb:?}; junto al libro: {:?}", junto_al_libro(&path));
+        assert!(
+            matches!(ra, Err(LayerError::Store(StoreError::Malformed(ref m))) if m.contains(&c)),
+            "CRITICO: {que}: la apertura siguio sin su cerrojo: {ra:?}"
+        );
+        if como == "enlace" {
+            assert!(
+                matches!(rb, Err(LayerError::Store(StoreError::Malformed(ref m))) if m.contains(&c)),
+                "{que}: el recifrado tomo un enlace: {rb:?}"
+            );
+            assert!(!hay(&destino), "CRITICO: {que}: se creo el destino del enlace");
+            std::fs::remove_file(&c).unwrap();
+            el_libro_sigue(&path, alice, FRASE_VIEJA_E4, &[FRASE_NUEVA_E4], &que);
+        } else {
+            assert!(matches!(rb, Ok((Some(777_777), 777_777))), "{que}: el recifrado no acabo con el libro entero: {rb:?}");
+            el_libro_sigue(&path, alice, FRASE_NUEVA_E4, &[FRASE_VIEJA_E4], &que);
+        }
+        quitar_e4(&path);
+    }
+
+    let que = "(B) borrado";
+    let (path, alice, _) = libro_e4("cambiado_b");
+    drop(sled_open_retry(&path));
+    let c = cerrojo_de(&path);
+    let hitos = Hitos::nuevos();
+    let h = hitos.clone();
+    let gancho = con_gancho(move |hilo, donde| match (hilo, donde) {
+        ("cambiado2-B", "recifrar:0") => {
+            h.marcar("B:0");
+            h.esperar(&["A:tope", "A:fin"]);
+        }
+        ("cambiado2-B", "recifrar:5") => {
+            h.marcar("B:5");
+            h.esperar(&["A:sled", "A:fin"]);
+        }
+        ("cambiado2-A", "abrir:antes_de_sled") => {
+            h.marcar("A:tope");
+            h.esperar(&["B:5", "B:fin"]);
+        }
+        ("cambiado2-A", "abrir:tras_sled") => h.marcar("A:sled"),
+        _ => {}
+    });
+    let pb = path.clone();
+    let b = en_hilo("cambiado2-B", &hitos, "B:fin", move || {
+        salida(recifrar_una_vez(&pb, FRASE_VIEJA_E4, FRASE_NUEVA_E4), alice)
+    });
+    assert!(hitos.esperar(&["B:0"]), "{que}: el recifrado no llego a tener el libro abierto");
+    std::fs::remove_file(&c).expect("borrar el cerrojo");
+    let pa = path.clone();
+    let a = en_hilo("cambiado2-A", &hitos, "A:fin", move || salida(abrir_una_vez(&pa, FRASE_VIEJA_E4), alice));
+    let (rb, ra) = (b.join().expect("hilo B"), a.join().expect("hilo A"));
+    drop(gancho);
+    eprintln!("§816 {que}: A = {ra:?}; B = {rb:?}; junto al libro: {:?}", junto_al_libro(&path));
+    assert!(
+        matches!(rb, Err(LayerError::Store(StoreError::Malformed(ref m))) if m.contains(&c)),
+        "CRITICO: {que}: el recifrado siguio sin su cerrojo: {rb:?}"
+    );
+    assert!(
+        matches!(ra, Ok((Some(777_777), 777_777)) | Err(LayerError::Store(StoreError::Io(_)))),
+        "CRITICO: {que}: la apertura no abrio el libro entero: {ra:?}"
+    );
+    el_libro_sigue(&path, alice, FRASE_VIEJA_E4, &[FRASE_NUEVA_E4], que);
+    quitar_e4(&path);
+}
+
+/// **§816: una ruta sin nombre no abre el libro sin su cerrojo.** Una ruta que acaba en `..` no tiene
+/// nombre del que formar `<libro>.cerrojo`, y aun asi puede nombrar un libro: `<libro>/blobs/..` es el
+/// libro mismo, porque sled le crea `blobs`. El arreglo, hasta sus revisores, la abria sin cerrojo
+/// -uno lo vio leyendo el codigo-, y una apertura por ahi quedaba fuera de la exclusion, como antes
+/// del §816. La apertura, cifrada y en claro, y `recifrar` la rehusan con `Malformed`, sin tocar nada:
+/// junto al libro queda lo mismo que habia, y el libro abre por su nombre, entero.
+#[test]
+fn una_ruta_sin_nombre_no_abre_el_libro_sin_su_cerrojo() {
+    let rehusa = |que: &str, libro: &str, r: Result<SovereignLayer, LayerError>, antes: &[String]| {
+        assert!(
+            matches!(r, Err(LayerError::Store(StoreError::Malformed(ref m))) if m.contains("sin nombre no hay cerrojo")),
+            "CRITICO: {que}: una ruta sin nombre no se rehuso: {:?}",
+            r.as_ref().map(|l| l.total_supply())
+        );
+        drop(r);
+        assert_eq!(junto_al_libro(libro), antes, "CRITICO: {que}: se toco algo junto al libro");
+    };
+    let (path, alice, _) = libro_e4("sin_nombre");
+    let alias = format!("{path}/blobs/..");
+    assert!(std::fs::metadata(&alias).map(|m| m.is_dir()).unwrap_or(false), "el libro no tiene `blobs`: {alias}");
+    let antes = junto_al_libro(&path);
+    rehusa("cifrada", &path, abrir_una_vez(&alias, FRASE_VIEJA_E4), &antes);
+    rehusa("recifrar", &path, recifrar_una_vez(&alias, FRASE_VIEJA_E4, FRASE_NUEVA_E4), &antes);
+    el_libro_sigue(&path, alice, FRASE_VIEJA_E4, &[FRASE_NUEVA_E4], "sin nombre");
+    quitar_e4(&path);
+
+    let claro = temp_path("sin_nombre_claro");
+    quitar_e4(&claro);
+    drop(
+        SovereignLayer::open(&claro, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+            .expect("un libro en claro"),
+    );
+    let antes = junto_al_libro(&claro);
+    let r = SovereignLayer::open(
+        &format!("{claro}/blobs/.."), custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+    );
+    rehusa("en claro", &claro, r, &antes);
+    quitar_e4(&claro);
 }

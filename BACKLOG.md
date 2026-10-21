@@ -2689,7 +2689,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     `grep -rn "rekey\|re_encrypt" crates/zk-ssl/src/` no devuelve nada.
     ~~Cambiar la contraseña exige reconstruir el ledger.~~
     ⚠️ §812: ya lo hay, en la biblioteca: `SovereignLayer::recifrar` cambia la frase y la sal del
-    libro entero, entero o nada, por un directorio hermano (RFC-0001, E4, decidida por el autor como
+    libro entero, entero o nada (⚠️ §816: hasta el §816, sólo con nadie más a la vez: una apertura en medio podía dejar un libro vacío o perderlo; `SECURITY.md` §3.14), por un directorio hermano (RFC-0001, E4, decidida por el autor como
     etapa de ese RFC). El grep de arriba sigue vacío: la función se llama `recifrar`. El nodo sigue abriendo su
     libro en claro: para él no hay frase que cambiar, y cablear su cifrado queda fuera.
   - ⚠️ **Gobernanza**: `governance_set_root` **solo se fija en el
@@ -2702,8 +2702,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     decision propia.
   ⚠️ **§791: el ❌ del recifrado, recontado, y un nombre viejo.** El grep de arriba sigue vacío, pero
   desde el §702 `migrar_a_kdf_v2` vuelve a sellar cada valor del libro con una clave nueva
-  (`crates/zk-ssl/src/persistence.rs:1019-1052`; ⚠️ §812: aquí decía `:1003-1047`, las líneas de antes
-  del §802 y del §812) y el keystore se migra al abrirse: es con la MISMA
+  (`crates/zk-ssl/src/persistence.rs:1031-1065`; ⚠️ §812: aquí decía `:1003-1047`, las líneas de antes
+  del §802 y del §812; ⚠️ §816: y `:1019-1052`, las de antes del §816) y el keystore se migra al abrirse: es con la MISMA
   frase, y ~~cambiarla sigue sin existir~~. ⚠️ §812: aquel re-sellado iba en un lote sobre el mismo
   `sled` y dejaba en los ficheros lo sellado con la clave v1 (`SECURITY.md` §3.14); desde el §812 va
   por un directorio hermano, y cambiar la frase ya existe (arriba). Y el nodo no cifra en reposo

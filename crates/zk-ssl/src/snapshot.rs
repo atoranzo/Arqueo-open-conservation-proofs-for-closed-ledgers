@@ -1178,7 +1178,7 @@ mod tests {
             "CRITICO: el saldo aparece EN CLARO en la instantanea cifrada"
         );
         let _ = std::fs::remove_file(&file);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **Y el que valida al anterior**: sin clave, el saldo SÍ aparece.
@@ -1231,7 +1231,7 @@ mod tests {
             "una instantanea cifrada no debe abrirse sin clave"
         );
         let _ = std::fs::remove_file(&file);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **Y CON LA CLAVE SÍ, con el estado intacto.**
@@ -1264,7 +1264,7 @@ mod tests {
         assert_eq!(restaurada.balance_of(alice), Some(SALDO));
         assert_eq!(restaurada.state_root(), raiz);
         let _ = std::fs::remove_file(&file);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// ⚠️ §774 · **La instantanea cifrada se importa sin escribir el texto en claro en disco.**
@@ -1299,7 +1299,7 @@ mod tests {
         let vacio = std::fs::read_dir(&hueco).map(|mut d| d.next().is_none());
         let _ = std::fs::remove_dir_all(&hueco);
         let _ = std::fs::remove_file(&file);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
         assert_eq!(
             r.expect("importar sin pasar por el disco").state_root(),
             raiz
@@ -1340,7 +1340,7 @@ mod tests {
             "CRITICO: una clave incorrecta no debe abrir la instantanea"
         );
         let _ = std::fs::remove_file(&file);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     // -----------------------------------------------------------------
@@ -1389,7 +1389,7 @@ mod tests {
             "CRITICO: una sal cambiada abrio la instantanea"
         );
         let _ = std::fs::remove_file(&file);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **§702: una instantánea cifrada de la versión 1 se sigue importando.** Este código ya no

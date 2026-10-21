@@ -58645,3 +58645,133 @@ redacción privada no se numeró el marcador —lo numera quien selle; las dos l
 manifiesto de completitud no lo llevan, por lo dicho arriba—, ni se corrieron `tools/conservados.sh`
 entero (sólo `--en-seco`, el 15-10-2026, con su plan VERDE: cinco catálogos y dos kits) ni el canon
 con `--sello`.
+
+## §816 — la carrera de la E4 (RFC-0001), cerrada con el cerrojo del libro, `<libro>.cerrojo`: una apertura a la vez que un recifrado o una migración v1→v2 podía abrir Ok un libro vacío, y en dos de los casos perder el libro entero. Redactado en privado
+
+El commit que lleva este asiento, sobre `d27e3e6` (el §815). Se redactó en privado
+(`spec/rfc/PROCESO.md` §«Fallos de seguridad»; la sección 5 de `SECURITY.md`): el fallo, su medida y
+su arreglo se escribieron fuera del árbol, en clones sin remoto, y entran de una vez en este sello.
+Ningún sello anterior lo nombra. Toca `crates/zk-ssl` —`persistence.rs`, que lleva el arreglo y un
+test; `tests.rs`, con diez tests nuevos y dos con marca; `tests_support.rs`, con `quitar_libro`; y la
+limpieza de los tests de `migration.rs`, `snapshot.rs` y `two_phase.rs`, que pasan a borrar también
+el cerrojo—; el RFC-0001; `SECURITY.md` —su sección 3.14—; dos marcas en el `BACKLOG.md`; las citas
+de `doc/ROTACION_DE_CUENTAS.md`, que el arreglo corre; `spec/README.md`; el pin de la capa en
+`tools/canon.sh`, con su crónica; las cifras de `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`, que
+cita además el pin por su línea; la cifra del pin en la nota del §814 de `ARQUITECTURA.md` y de
+`CONTRIBUTING.md`, con marca; y este asiento. No cambia ningún formato: ni el cable, ni un vector,
+ni el kit, ni el `Cargo.lock`. No toca `crates/zk-ssl-guardian`, ni la zona de la migración de
+Winterfell, ni el nodo.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. Un revisor midió la carrera con dos
+hilos y pausas inyectadas sobre `b6994c3` (el §812); la sesión eligió el cerrojo (abajo); un agente lo
+construyó; cuatro rondas de revisiones lo juzgaron, con mutantes y medidas propias, y cada ronda pidió
+arreglos que se hicieron antes de la siguiente; y la sesión lo porta sobre el §815, que va detrás
+de los §839 a §842 de la otra sesión. Entre `b6994c3` y `d27e3e6`, `crates/zk-ssl` sólo cambia en
+comentarios, en módulos de tests de los §839 a §842 (`#[cfg(test)]`: el censo de los `native_leaf`,
+el nivel de producción, el instrumento de lo que revela una prueba y las constantes de las
+métricas), y en un test, el del §832, que borraba su sled con `remove_dir_all` y pasa, con marca, a
+`quitar_libro`, que borra también su cerrojo. En `persistence.rs` sólo cambia un comentario de
+`load`, la marca del §860 en la `:430`, y ninguna línea de código, ni de la apertura. El número es el siguiente del rango que el autor asignó (§800 a §829). En la sesión se
+corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**El defecto.** En `crates/zk-ssl/src/persistence.rs` de `b6994c3`, toda apertura —`open`,
+`open_encrypted`, la que hace `recifrar` y la del libro que el nodo abre en claro— llamaba a
+`resolver_restos` y después a `sled::open`, que crea el libro si no existe. `resolver_restos` tomaba
+el cerrojo de sled de cada hermano y lo soltaba en el acto, antes de actuar; sin hermanos, no miraba
+ninguno. Nada retenía un cerrojo entre mirar y actuar, y el de sled no podía excluir: va con el
+inodo de `<libro>/db`, y el recifrado renombra el libro. Medido con dos hilos y pausas inyectadas; la
+(c) la midió un revisor del arreglo:
+- (a) Sin hermanos: la apertura A mira y se para; el recifrado B llega a su paso 5; A crea en el
+  sitio del libro un libro VACÍO y abre Ok. El paso 6 de B falla diciendo que la apertura siguiente
+  lo termina, y la apertura siguiente rehúsa los tres nombres.
+- (b) Con el libro y el `.retirado` que deja una muerte anterior: A borra el `.retirado` NUEVO de B
+  y crea un libro vacío; la apertura siguiente borra el `.recifrando`, que era la última copia.
+- (c) Con el libro y el `.recifrando` de una muerte anterior: A borra el `.recifrando` de B y crea un
+  libro vacío; la apertura siguiente borra el `.retirado`, que era la última copia.
+
+En las tres, A abre Ok un libro vacío, sin ningún error. En la (b) y la (c) el libro, con sus saldos,
+se pierde entero, y las dos lo dicen igual de mal: el error de B nombra la frase nueva, con la que el
+libro ya no abre, y con la de antes se abre Ok un libro vacío. No crea saldo ni autoriza ningún
+gasto. Alcanza a quien use la biblioteca con un libro cifrado y dos aperturas a la vez, una de ellas
+un recifrado o una migración v1→v2; el nodo y el cli abren en claro y no recifran, y el kit no
+depende de la capa. La ventana va desde el §812, que trajo el recifrado y llevó la migración al
+mismo camino. Quedaban falsos, y llevan la marca, con su medida: en el RFC-0001, el paso 6, «nunca
+crea un libro vacío», el contrato, «Lo que cuesta» —el «No está probado con otro proceso vivo»
+incluido— y «Los pasos», «para que nadie lo abra en medio»; en `SECURITY.md` §3.14, la frase del
+`.retirado` hasta la apertura siguiente; dos sitios del `BACKLOG.md`; y los comentarios de
+`persistence.rs`.
+
+**Quién lo decide.**
+- **El autor**: delegó el trabajo («HACER todo») y, en este sello, a la pregunta de la sesión, cómo
+  se publica: como el §812, de una vez con el código y sin GHSA ni release (21-10-2026), la respuesta
+  que la sesión recomendaba.
+- **La sesión**, y reversible mientras el RFC-0001 siga PROPUESTO, la D-J: un fichero hermano,
+  `<libro>.cerrojo`, con flock exclusivo, que la capa no renombra ni borra, y que es un tercer nombre
+  reservado. Se descartan el flock sobre el directorio padre —cierra todos los libros del
+  directorio, en Windows no se puede (deducido) y un directorio compartido lo puede tener tomado
+  cualquiera—; el cerrojo de sled y un fichero dentro del libro, que siguen al inodo, y el libro se
+  renombra; un `Mutex`, que no excluye a otro proceso; y comprobar después de abrir y deshacer. Es
+  flock y no `O_EXCL` porque, si el proceso muere, el sistema lo suelta. Falla cerrado. Tras las revisiones, también de la sesión: la apertura crea el directorio del libro si falta,
+  y el recifrado no; `create_new`; la comparación por dispositivo e inodo al tomarlo y otra vez antes
+  de `sled::open` y antes del compromiso; y, en la cuarta ronda, que una ruta sin nombre no se abra,
+  que el recifrado no cree el cerrojo sin libro, que el cerrojo no sea `Send` y que se abra sólo para
+  leer en un sistema de ficheros de solo lectura.
+
+**Por qué no lleva aviso de seguridad.** El fallo está en la capa, `zk-ssl`, y el kit publicado no
+depende de ella: los `[dependencies]` de `crates/zk-ssl-verify/Cargo.toml` no la nombran. Por la
+sección 5 de `SECURITY.md` no corresponde aviso ni release, y el autor eligió, como en el §812, la
+§3.14 y este asiento, sin GHSA.
+
+**Lo que hace.** Toda apertura, `abrir_con_su_kdf`, toma el cerrojo antes de `resolver_restos` y lo
+tiene hasta volver, con el libro abierto y, si era v1, migrado; `recifrar` lo tiene de principio a
+fin, tras el Argon2id; `resolver_restos` y `recifrar_en_hermano` lo piden como `&Cerrojo`, así que no
+se los puede llamar sin él. Es reentrante en el hilo que lo tiene y deja de serlo al soltarlo; no es
+`Send`. Se espera diez veces cada 50 ms, en el mismo bucle que `cerrojo_libre`, y en el tope da `Io`
+con su nombre, sin tocar nada. Si no está, se crea con `create_new`, vacío y, en Unix, con 0600. Un
+`.cerrojo` que es un directorio o un enlace da `Malformed`. Un enlace que aparezca entre mirar y abrir
+se sigue, porque sin libc no hay `O_NOFOLLOW`, pero sin crear ni escribir nada en su destino, y se
+rehúsa por su inodo; antes de `sled::open` y antes del compromiso se mira que el cerrojo siga en su
+sitio. Una ruta sin nombre (`.`, `..`, `<libro>/blobs/..`) da `Malformed`. Un recifrado sin libro ni
+hermanos rehúsa sin crear el `.cerrojo`. En un sistema de solo lectura, el `.cerrojo` que ya está se
+abre para leer. Los dos `Io` de permiso dicen el remedio: «quien pueda se lo da (`chown`) o lo
+borra», o, si no está, «quien pueda lo crea, vacio, y se lo da». En `persistence.rs` no se mueve
+ninguna línea entre la 1 y la 1480: siguen válidas las citas `:1031-1065`, `:1050-1065`,
+`:1262-1355` y `:1357-1480`; las que corren llevan marca.
+
+**Medido**, en release y en los clones privados, sobre el árbol final de la cuarta ronda (su diff,
+de 19 ficheros y 2881 líneas, sha256 `15f769886affc3d3…`, es el que este sello aplica):
+- **La capa**: 492 pasan, 0 fallan, 7 ignorados, 0 avisos, sobre `b6994c3`; sobre esta base, con los
+  tests de los §839 a §842, 496. El nodo, el cli y el sdk, sin cambio.
+- **El falsador**: `b6994c3` con sólo los ganchos de las pausas y el `tests.rs` final da 16 pasan y
+  11 fallan; la apertura A abre Ok un libro vacío en la (a), en la (b), en el tope y en la reentrada,
+  y `<libro>/blobs/..` abre Ok el libro de dentro.
+- **Los dieciséis tests del revisor**, sobre el arreglo final, pasan todos. Fuera de la suite: dos
+  procesos con SIGKILL, en siete puntos; `setpriv`, con los mensajes nuevos; 23652 aperturas con un
+  enlace que aparece entre mirar y abrir, sin crear nunca el destino; el solo lectura, antes y
+  después, con el cli; los modos 0600 y 0644 con `setpriv`; y el cli y el nodo con un padre que no
+  existe.
+- **Diecinueve mutantes, caen dieciocho**: sin cerrojo en la apertura (10 tests caen), sin cerrojo en
+  el recifrado (4), el cerrojo que se borra al soltarse (4), el que se suelta antes de `sled::open`
+  (3), el que toma algo que no es un fichero (3), la reentrada que se queda (3), y once más con un
+  test cada uno. Sobrevive a la suite el que quita la lectura en un sistema de solo lectura; lo mide
+  el cli, fuera de ella.
+
+**Contadores.** La capa, 485 -> 496: once tests nuevos, diez en `tests.rs` y uno en
+`persistence.rs`. TOTAL DE SELLO 1837 -> 1848 y CON LARGOS 1974 -> 1985, en `PAPER.md`, `PAPER_EN.md`
+y `PRINCIPIOS.md`; las «1364 declarados» no se tocan; `check_tests` 1996 -> 2007. La cifra de la capa,
+en `ARQUITECTURA.md` (dos veces, y la nota del §814, con marca), la misma nota del §814 en
+`CONTRIBUTING.md`, con marca, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y
+`doc/ecst/VERIFICACION.md`, cuya cita del pin, `tools/canon.sh:109`, pasa con marca a `:132`. El
+`BACKLOG.md` no abre ni cierra ninguna entrada: 44 abiertas y 86 resueltas.
+
+**Lo que NO hace.** No excluye a un proceso con el código de antes de este sello. Borrar o sustituir
+el `.cerrojo` a mano se detecta antes de `sled::open` y antes del compromiso, pero queda la ventana
+hasta la llamada siguiente; fuera de Unix sólo se mira que sea un fichero. Quien abre por un enlace al
+directorio del libro toma el cerrojo de junto al enlace; recifrar y migrar por un enlace se rehúsan,
+y en el hueco entre los pasos 5 y 6 da «File exists» (medido). Un libro cuyo padre no se puede
+escribir, sin `.cerrojo`, no abre hasta que alguien lo crea; con el padre en solo lectura hay que
+crearlo antes. Un `.cerrojo` ajeno con 0600 deja el libro sin abrir. No está probado en Windows ni en
+NFS. El nodo no traduce el `Io` del cerrojo. Un `drop` entre el gancho y `sled::open` no lo caza
+ningún test. Queda para el autor: el RFC-0001 a ACEPTADO, y con él la D-J.

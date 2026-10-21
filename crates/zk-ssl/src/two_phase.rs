@@ -2762,7 +2762,9 @@ mod tests_verificacion {
         // §832: hasta aqui el test dejaba su sled en el directorio temporal,
         // uno por corrida. Se cierra la capa, se borra y se mira que no queda.
         drop(layer);
-        std::fs::remove_dir_all(&path).expect("borrar el sled del test");
+        // ⚠️ §816: borraba solo el sled con `remove_dir_all`; desde el §816 el libro deja además
+        // su `.cerrojo`, y `quitar_libro` borra los dos.
+        quitar_libro(&path);
         assert!(
             !std::path::Path::new(&path).exists(),
             "el test no deja su sled en el directorio temporal"
@@ -2799,7 +2801,7 @@ mod tests_verificacion {
             ),
             "CRITICO: un nacimiento mentido en pmeta: debe pararse ANTES de operar"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// **TESTIGO §388 (T-B bis): la AUSENCIA de meta tambien es una mentira.**
@@ -2829,7 +2831,7 @@ mod tests_verificacion {
             ),
             "CRITICO: un meta borrado en pmeta: debe pararse ANTES de operar"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// Ayudantes de los dos testigos: una ruta propia, y un ledger con UN
@@ -2914,7 +2916,7 @@ mod tests_verificacion {
             ),
             "CRITICO: una congelacion levantada desde el disco debe pararse ANTES de operar"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §391: el reves. El adversario del disco CONGELA a bob copiando la hoja
@@ -2941,7 +2943,7 @@ mod tests_verificacion {
             ),
             "CRITICO: una congelacion impuesta desde el disco debe pararse ANTES de operar"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §391: un libro sin `root:froz` (anterior a este sello) NO ABRE: fail-closed,
@@ -2968,7 +2970,7 @@ mod tests_verificacion {
             ),
             "CRITICO: un libro sin raiz de congelados no debe abrir"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     fn clave_log(seq: u64) -> Vec<u8> {
@@ -3007,7 +3009,7 @@ mod tests_verificacion {
             "CRITICO: una entrada del registro alterada en reposo no debe abrir. Salio: {:?}",
             r.err()
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §392: una entrada del registro BORRADA en reposo no abre. Se borra la
@@ -3040,7 +3042,7 @@ mod tests_verificacion {
             "CRITICO: un registro truncado en reposo no debe abrir. Salio: {:?}",
             r.err()
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §392: un libro sin `root:log` NO abre (fail-closed, como sin las otras raices).
@@ -3066,7 +3068,7 @@ mod tests_verificacion {
             ),
             "CRITICO: un libro sin raiz del registro no debe abrir"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §393: pone un contador custodiado en `v` por el disco. El valor va sin
@@ -3123,7 +3125,7 @@ mod tests_verificacion {
         let _cuentas = ledger_con_una_congelada(&path);
         poner_contador(&path, b"meta:cust_uses", 0);
         no_abre_por_cuota(&path);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §394: una cuota ADELANTADA tambien miente -gasta cupo que nadie uso- y la
@@ -3134,7 +3136,7 @@ mod tests_verificacion {
         let _cuentas = ledger_con_una_congelada(&path);
         poner_contador(&path, b"meta:cust_uses", 7);
         no_abre_por_cuota(&path);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §393: REBOBINAR `meta:freezes` es el ataque de verdad — revive una
@@ -3147,7 +3149,7 @@ mod tests_verificacion {
         let _cuentas = ledger_con_una_congelada(&path);
         poner_contador(&path, b"meta:freezes", 0);
         no_abre_por_contadores(&path);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §393: un contador ADELANTADO tambien miente. El registro no tiene
@@ -3158,7 +3160,7 @@ mod tests_verificacion {
         let _cuentas = ledger_con_una_congelada(&path);
         poner_contador(&path, b"meta:recoveries", 1);
         no_abre_por_contadores(&path);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §393: lo mismo con `meta:gov_changes`, que es el contador del conjunto
@@ -3169,7 +3171,7 @@ mod tests_verificacion {
         let _cuentas = ledger_con_una_congelada(&path);
         poner_contador(&path, b"meta:gov_changes", 1);
         no_abre_por_contadores(&path);
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// R-2d FELIZ: el mint-pendiente caducado se DES-EMITE — el
@@ -4346,7 +4348,7 @@ mod tests_verificacion {
             matches!(layer.apply_consumo(c), Err(LayerError::ConsumoRepetido { .. })),
             "tras reiniciar, el repetido se sigue rechazando"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §413: un libro sin `root:cons` (anterior a este sello) NO ABRE: fail-closed,
@@ -4373,7 +4375,7 @@ mod tests_verificacion {
             ),
             "CRITICO: un libro sin raiz de consumos no debe abrir"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §413: un consumo BORRADO en reposo no abre: la raiz guardada no cuadra.
@@ -4398,7 +4400,7 @@ mod tests_verificacion {
             ),
             "CRITICO: borrar un consumo en disco debe impedir abrir"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §413: un consumo ANADIDO en reposo, sin pasar por `apply_consumo`, no abre.
@@ -4427,7 +4429,7 @@ mod tests_verificacion {
             ),
             "CRITICO: anadir un consumo en disco debe impedir abrir"
         );
-        let _ = std::fs::remove_dir_all(&path);
+        quitar_libro(&path);
     }
 
     /// §413: la instantanea (v8) conserva los consumos: restaurar una copia

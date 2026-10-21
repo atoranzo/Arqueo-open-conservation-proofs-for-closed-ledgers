@@ -824,3 +824,16 @@ const _: () = {
         "un probador del montaje lleva mas estado que sus ProofOptions"
     );
 };
+
+/// ⚠️ §816 · Borra el libro de un test y su cerrojo, `<libro>.cerrojo`, que la capa crea al lado
+/// desde el §816 y no borra nunca: sin esto, cada corrida dejaba en el directorio temporal un
+/// `.cerrojo` vacio por libro. Lo que no esta, no se toca.
+pub fn quitar_libro(path: &str) {
+    let _ = std::fs::remove_dir_all(path);
+    let p = std::path::Path::new(path);
+    if let Some(nombre) = p.file_name() {
+        let mut n = nombre.to_os_string();
+        n.push(".cerrojo");
+        let _ = std::fs::remove_file(p.with_file_name(n));
+    }
+}

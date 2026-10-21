@@ -41,7 +41,7 @@ impl SovereignLayer {
     /// La clave la aporta el operador y **no se guarda junto a los datos**: guardarla al lado no
     /// protegería nada. Eso significa que el nodo **no puede reiniciar solo** — alguien tiene que
     /// introducirla. §702 (RFC-0001): se fija al KDF que el libro guarda en claro, y un libro de la
-    /// versión 1 se verifica y se migra a la 2 al abrirlo (`abrir_con_su_kdf`, al final).
+    /// versión 1 se verifica y se migra a la 2 al abrirlo (`abrir_con_su_kdf`, al final). ⚠️ §816: con el cerrojo del libro, `<libro>.cerrojo`, tomado hasta que vuelve.
     ///
     /// ⚠️ Protege contra el robo del disco o de una copia. **No contra el
     /// operador**, que ve los saldos en memoria.
@@ -59,7 +59,7 @@ impl SovereignLayer {
         if max_supply > crate::MAX_SUMINISTRO {
             return Err(LayerError::SupplyCapExceeded { cap: crate::MAX_SUMINISTRO, would_be: max_supply });
         }
-        let (db, fijada, de_v1) = Self::abrir_con_su_kdf(path, key.as_ref())?;
+        let (db, fijada, de_v1, cerrojo) = Self::abrir_con_su_kdf(path, key.as_ref())?;
 
         let mut layer = Self {
             accounts: SparseTree::new(),
@@ -99,7 +99,7 @@ impl SovereignLayer {
         };
 
         if layer.has_existing_ledger()? {
-            layer.cargar_y_migrar(path, de_v1, key.as_ref())?;
+            layer.cargar_y_migrar(path, de_v1, key.as_ref(), &cerrojo)?;
         } else {
             // Ledger nuevo: escribir los parametros del sistema.
             layer.commit(&[], None)?;
@@ -971,15 +971,25 @@ impl SovereignLayer {
     /// - ⚠️ §812 (RFC-0001, E4): antes de abrir, `resolver_restos` resuelve lo que
     ///   dejara un recifrado muerto a mitad junto al libro (`<libro>.recifrando`,
     ///   `<libro>.retirado`): hacia atras antes del compromiso, hacia delante
-    ///   despues. Sin hermanos, no hace nada mas que mirar si estan.
+    ///   despues. ⚠️ §816: decia «Sin hermanos, no hace nada mas que mirar si
+    ///   estan». Antes de mirar toma el cerrojo del libro (`Cerrojo`, al final) y
+    ///   lo devuelve: quien llama lo tiene hasta volver, con el libro abierto y, si
+    ///   era de la version 1, migrado. Sin el, un recifrado que llegaba a su
+    ///   compromiso entre mirar y `sled::open` -que crea el libro si no esta- dejaba
+    ///   aqui un libro VACIO (`SECURITY.md` §3.14). Una ruta sin nombre no se abre;
+    ///   crea antes el directorio del libro si falta, como `sled::open`, y antes de
+    ///   `sled::open` mira que el cerrojo siga en su sitio (`Cerrojo::sigue`).
     #[allow(clippy::type_complexity)]
     fn abrir_con_su_kdf(
         path: &str,
         key: Option<&crate::crypto::LedgerKey>,
-    ) -> Result<(sled::Db, Option<crate::crypto::LedgerKey>, bool), LayerError> {
+    ) -> Result<(sled::Db, Option<crate::crypto::LedgerKey>, bool, Cerrojo), LayerError> {
         use crate::crypto::Kdf;
-        resolver_restos(path)?;
+        let cerrojo = Cerrojo::tomar(path, Quien::Apertura)?;
+        resolver_restos(path, &cerrojo)?;
+        cerrojo.sigue("abrir:antes_de_sled")?;
         let db = sled::open(path).map_err(|e| StoreError::Io(e.to_string()))?;
+        pausa("abrir:tras_sled");
         let guardado = db
             .get(CLAVE_KDF)
             .map_err(|e| StoreError::Io(e.to_string()))?
@@ -997,21 +1007,23 @@ impl SovereignLayer {
             (Some(k), None) if con_datos => (Some(k.fijar(&Kdf::Sha256V1)?), true),
             (Some(k), None) => (Some(k.fijar(&Kdf::nuevo())?), false),
         };
-        Ok((db, fijada, de_v1))
+        Ok((db, fijada, de_v1, cerrojo))
     }
 
     /// `load`, y si el libro es de la version 1, la migracion: verificar
     /// antes de mutar. §812: recibe la ruta, porque la migracion escribe al
-    /// lado del libro (`migrar_a_kdf_v2`).
+    /// lado del libro (`migrar_a_kdf_v2`). ⚠️ §816: y el cerrojo del libro, que
+    /// la apertura tiene tomado y la migracion pide.
     fn cargar_y_migrar(
         &mut self,
         path: &str,
         de_v1: bool,
         frase: Option<&crate::crypto::LedgerKey>,
+        cerrojo: &Cerrojo,
     ) -> Result<(), LayerError> {
         self.load()?;
         match (de_v1, frase) {
-            (true, Some(f)) => self.migrar_a_kdf_v2(path, f),
+            (true, Some(f)) => self.migrar_a_kdf_v2(path, f, cerrojo),
             _ => Ok(()),
         }
     }
@@ -1039,6 +1051,7 @@ impl SovereignLayer {
         &mut self,
         path: &str,
         frase: &crate::crypto::LedgerKey,
+        cerrojo: &Cerrojo,
     ) -> Result<(), LayerError> {
         if self.db().is_none() {
             return Ok(());
@@ -1048,7 +1061,7 @@ impl SovereignLayer {
             _ => return Ok(()),
         }
         let nueva = frase.fijar(&crate::crypto::Kdf::nuevo())?;
-        self.recifrar_en_hermano(path, nueva, QUEDA_MIGRADO)
+        self.recifrar_en_hermano(path, nueva, QUEDA_MIGRADO, cerrojo)
     }
 }
 
@@ -1197,10 +1210,26 @@ mod tests_retiradas {
 // el directorio viejo se borra entero. Los nombres, reservados:
 //
 //   P = el libro    R = `<P>.recifrando`    V = `<P>.retirado`
+//   C = `<P>.cerrojo` (⚠️ §816)
 //
 // El compromiso es `rename(P, V)`: antes, una muerte deja P con la frase
 // vieja y R a medias, y la apertura siguiente borra R; despues, deja V y R
 // -o P y V-, y la apertura siguiente termina hacia delante, con la nueva.
+//
+// ⚠️ §816: EL CERROJO DEL LIBRO. Hasta el §816 la apertura miraba el cerrojo de sled
+// de cada hermano, lo tomaba y lo SOLTABA en el acto, y despues actuaba y abria;
+// sin hermanos no miraba ninguno, y `sled::open` crea el libro si no esta. Nada
+// retenia un cerrojo entre mirar y actuar: un recifrado que llegaba a su
+// compromiso en medio dejaba a la apertura crear un libro VACIO en P, o borrar el
+// `.retirado` NUEVO del recifrado, y el libro se perdia entero (medido con dos
+// hilos y pausas inyectadas; `SECURITY.md` §3.14). El cerrojo de sled no podia
+// excluir: va sobre `P/db`, y P se renombra. C es un fichero que la capa no
+// renombra ni borra, con `flock` exclusivo: lo tiene toda apertura desde antes de
+// resolver los hermanos hasta que vuelve con el libro abierto -y, si era v1,
+// migrado-, y `recifrar` desde antes de mirar los hermanos hasta el final; y se
+// mira que siga en su sitio antes de `sled::open` y antes del compromiso
+// (`Cerrojo`, al final). Excluye a las aperturas y recifrados de la capa desde el
+// §816 por el mismo nombre del libro; lo que no alcanza, en `SECURITY.md` §3.14.
 //
 // Lo que esto NO alcanza, y se dice en `SECURITY.md` §3.14 y en el RFC: los
 // bloques que el sistema de ficheros libera al borrar (borrar no sobrescribe),
@@ -1214,9 +1243,12 @@ use std::path::{Path, PathBuf};
 const SUFIJO_RECIFRANDO: &str = ".recifrando";
 /// §812: el nombre que toma el libro viejo en el compromiso, hasta borrarse.
 const SUFIJO_RETIRADO: &str = ".retirado";
+/// ⚠️ §816: el cerrojo del libro, un fichero que la capa no renombra ni borra (`Cerrojo`).
+const SUFIJO_CERROJO: &str = ".cerrojo";
 /// §812: cuantas veces se mira, cada 50 ms, si el cerrojo de sled esta libre.
 /// Las mismas que `open_retry` en los tests: sled tarda a veces en soltarlo
-/// tras cerrar (la entrada 18 del `BACKLOG.md`).
+/// tras cerrar (la entrada 18 del `BACKLOG.md`). ⚠️ §816: y las mismas para tomar
+/// el cerrojo del libro: una espera, no dos (`tomar_con_espera`).
 const ESPERAS_CERROJO: u32 = 10;
 /// §812 · Lo que dice un error pasado el compromiso: con que frase queda el
 /// libro. La pieza la usan dos, y no lo deja igual: el recifrado, con la frase
@@ -1252,7 +1284,13 @@ impl SovereignLayer {
     /// puede escribir en su directorio padre, con sitio para una copia. Los
     /// nombres `<libro>.recifrando` y `<libro>.retirado` son del recifrado: un
     /// directorio de sled con uno de ellos junto al libro lo BORRA la apertura
-    /// siguiente (`resolver_restos`), asi que no sirven para copias.
+    /// siguiente (`resolver_restos`), asi que no sirven para copias. ⚠️ §816: y el
+    /// cerrojo del libro, `<libro>.cerrojo`, que `recifrar` tiene desde antes de
+    /// mirar los hermanos hasta el final -tras el Argon2id de la frase nueva, antes
+    /// de tocar el disco-: lo toma con la espera de siempre -diez veces cada 50 ms-
+    /// y, si lo tiene otra apertura u otro recifrado, da `Io` con su nombre sin
+    /// tocar nada. Si no esta y hay libro, lo crea, vacio; nunca lo borra ni lo
+    /// renombra, y no crea el directorio del libro.
     ///
     /// **El contrato.** `Ok`: el libro esta entero con la frase nueva, y ni el
     /// ni sus hermanos guardan nada sellado con la vieja. `Err`: el libro esta
@@ -1266,7 +1304,11 @@ impl SovereignLayer {
     /// resuelve, y el libro abre con una de las dos: antes del compromiso
     /// vuelve atras -el libro sigue entero con la frase VIEJA y el recifrado
     /// hay que repetirlo-, y despues termina hacia delante, con la nueva. Quien
-    /// llama prueba las dos.
+    /// llama prueba las dos. ⚠️ §816: hasta el §816, todo esto con nadie mas a la vez:
+    /// una apertura que miraba los hermanos antes del compromiso y abria despues
+    /// creaba un libro vacio en el sitio del libro, el paso 6 fallaba, y el libro
+    /// se quedaba sin abrir o se perdia (`SECURITY.md` §3.14). Lo cierra el cerrojo
+    /// del libro.
     ///
     /// ⚠️ Lo que borra no lo sobrescribe: los bloques libres del sistema de
     /// ficheros, un SSD, un sistema copy-on-write, sus instantaneas y las
@@ -1286,8 +1328,11 @@ impl SovereignLayer {
         // a. La clave nueva, primero: sin frase no hay sal nueva que fijar, y
         //    el Argon2id se paga antes de escribir nada.
         let nueva = nueva.fijar(&crate::crypto::Kdf::nuevo())?;
+        // ⚠️ §816: el cerrojo del libro, de aqui al final. La apertura con la vieja
+        //    de d, y su migracion, lo encuentran tomado por este hilo.
+        let cerrojo = Cerrojo::tomar(path, Quien::Recifrado)?;
         // b. Lo que dejara una muerte anterior.
-        resolver_restos(path)?;
+        resolver_restos(path, &cerrojo)?;
         // c. El libro existe, es de sled, y nadie lo tiene abierto. Sin esto,
         //    `open_encrypted` crearia uno vacio donde no hay libro.
         let (p, _, _) = hermanos(path).ok_or_else(|| sin_nombre(path))?;
@@ -1305,7 +1350,7 @@ impl SovereignLayer {
             Some(vieja),
         )?;
         // e. El recifrado.
-        layer.recifrar_en_hermano(path, nueva, QUEDA_RECIFRADO)?;
+        layer.recifrar_en_hermano(path, nueva, QUEDA_RECIFRADO, &cerrojo)?;
         Ok(layer)
     }
 
@@ -1317,8 +1362,13 @@ impl SovereignLayer {
     ///
     /// Precondicion: `self.db` esta abierto sobre `path` y `load` lo verifico;
     /// `self.key` es la clave vieja, fijada; `nueva` esta fijada a una sal
-    /// nueva de la version 2. El libro sigue abierto -con su cerrojo- hasta el
-    /// paso 7, para que nadie lo abra en medio: tras el paso 5 sled escribe por
+    /// nueva de la version 2; y quien llama tiene el cerrojo del libro
+    /// (`cerrojo`), de antes del paso 0 a despues del 8, y mira antes del 5 que
+    /// siga en su sitio (⚠️ §816). El libro sigue
+    /// abierto -con el cerrojo de sled- hasta el paso 7 (⚠️ §816: decia «para que
+    /// nadie lo abra en medio», y no lo impedia: ese cerrojo va con el inodo, que
+    /// tras el paso 5 es el de `<path>.retirado`, y en P no queda ninguno; quien
+    /// excluye es el del libro): tras el paso 5 sled escribe por
     /// su descriptor, en el inodo de `<path>.retirado`, y despues de abrir solo
     /// usa la ruta para los blobs. El libro no tiene: sled 0.34.7 pasa a blob un
     /// fragmento de mas de 128 KiB (`segment_size / 4 - 20`), parte las hojas
@@ -1330,7 +1380,9 @@ impl SovereignLayer {
         path: &str,
         nueva: crate::crypto::LedgerKey,
         queda: &'static str,
+        cerrojo: &Cerrojo,
     ) -> Result<(), LayerError> {
+        pausa("recifrar:0");
         let (p, r, v) = hermanos(path).ok_or_else(|| sin_nombre(path))?;
         let padre = padre_de(&p).to_path_buf();
 
@@ -1372,7 +1424,9 @@ impl SovereignLayer {
         })?;
 
         // --- 2 a 4: copiar, verificar leyendo del disco, sincronizar ---
-        if let Err(e) = preparar_hermano(&db, &p, &r, &padre, &vieja, &nueva, &cabecera) {
+        // ⚠️ §816: y, antes del compromiso, que el cerrojo del libro siga en su sitio.
+        let preparado = preparar_hermano(&db, &p, &r, &padre, &vieja, &nueva, &cabecera);
+        if let Err(e) = preparado.and_then(|()| cerrojo.sigue("recifrar:4")) {
             deshacer_hermano(&r, &padre);
             return Err(e);
         }
@@ -1396,6 +1450,7 @@ impl SovereignLayer {
         };
         sincronizar(&padre).map_err(pasado)?;
         punto(5).map_err(pasado)?;
+        pausa("recifrar:5");
 
         // --- 6. R pasa a ser el libro ---
         std::fs::rename(&r, &p).map_err(|e| pasado(error_io(&r, e)))?;
@@ -1576,19 +1631,30 @@ fn deshacer_hermano(r: &Path, padre: &Path) {
 /// recifrado no los deja, pero los deja, por ejemplo, el codigo de antes del
 /// §812, que con V + R y sin P crea un libro vacio en P. Y rehusa tambien un
 /// hermano que no es un directorio de verdad o que lleva algo que no es de
-/// sled. Nunca crea un libro vacio donde habia un recifrado a medias.
+/// sled. Nunca crea un libro vacio donde habia un recifrado a medias (⚠️ §816:
+/// hasta el §816, solo con nadie mas a la vez; una apertura que miraba antes del
+/// compromiso de un recifrado vivo y abria despues lo creaba).
+///
+/// ⚠️ §816: quien llama tiene el cerrojo del libro (`cerrojo`), y lo tiene hasta
+/// despues de `sled::open`: ninguna apertura ni recifrado de la capa desde el §816,
+/// por el mismo nombre del libro, recifra ni resuelve mientras tanto, y lo que
+/// aqui se mira es lo que hay cuando se actua y cuando se abre (lo que no
+/// alcanza, en `Cerrojo` y en `SECURITY.md` §3.14).
 ///
 /// Antes de actuar mira el cerrojo de sled de cada uno: si alguno sigue
 /// tomado, el libro esta abierto o recifrandose en otro proceso, y la
-/// respuesta es Io, sin tocar nada. Y si no puede borrar V, falla y lo dice:
+/// respuesta es Io, sin tocar nada (⚠️ §816: lo toma y lo suelta en el acto, asi
+/// que dice como estaba al mirar; no excluye a nadie mientras se actua: eso es
+/// del cerrojo del libro). Y si no puede borrar V, falla y lo dice:
 /// no se abre con lo viejo al lado sin que nadie lo vea.
 ///
 /// ⚠️ Los dos nombres son RESERVADOS: no hay marca que distinga un hermano
 /// que dejo el recifrado de un directorio de sled que alguien llamo asi. Con
 /// el libro al lado, la apertura BORRA un `<libro>.recifrando` o un
 /// `<libro>.retirado` de sled que nadie tenga abierto -una copia de seguridad
-/// con ese nombre, tambien-. Lo que no es de sled no lo toca.
-fn resolver_restos(path: &str) -> Result<(), LayerError> {
+/// con ese nombre, tambien-. Lo que no es de sled no lo toca. ⚠️ §816: y un
+/// tercero, `<libro>.cerrojo`, que la capa crea y no borra nunca.
+fn resolver_restos(path: &str, _cerrojo: &Cerrojo) -> Result<(), LayerError> {
     let Some((p, r, v)) = hermanos(path) else {
         return Ok(());
     };
@@ -1624,6 +1690,7 @@ fn resolver_restos(path: &str) -> Result<(), LayerError> {
             cerrojo_libre(d)?;
         }
     }
+    pausa("resolver:tras_cerrojos");
     if hay_r && hay_p {
         // Murio antes del compromiso: R solo lleva lo sellado con la nueva.
         quitar(&r)?;
@@ -1647,17 +1714,22 @@ fn resolver_restos(path: &str) -> Result<(), LayerError> {
 /// `parent` y `file_name`, como el temporal del keystore, nunca pegando texto
 /// a la ruta: con una ruta acabada en `/`, pegar caeria DENTRO del libro. Una
 /// ruta sin nombre (`.`, `..`) no tiene hermanos: la apertura no resuelve
-/// nada, y recifrar o migrar rehusan.
+/// nada, y recifrar o migrar rehusan. ⚠️ §816: y desde el §816 la apertura tampoco
+/// la abre: sin nombre no hay cerrojo del libro (`Cerrojo`).
 fn hermanos(path: &str) -> Option<(PathBuf, PathBuf, PathBuf)> {
+    Some((con_sufijo(path, "")?, con_sufijo(path, SUFIJO_RECIFRANDO)?, con_sufijo(path, SUFIJO_RETIRADO)?))
+}
+
+/// §812 · `<libro><sufijo>`, en el directorio del libro y formado con su nombre:
+/// los hermanos y, desde el §816, el cerrojo del libro. Una ruta sin nombre no
+/// tiene ninguno.
+fn con_sufijo(path: &str, sufijo: &str) -> Option<PathBuf> {
     let ruta = Path::new(path);
     let nombre = ruta.file_name()?;
     let padre = ruta.parent().unwrap_or(Path::new(""));
-    let con = |sufijo: &str| {
-        let mut n = nombre.to_os_string();
-        n.push(sufijo);
-        padre.join(n)
-    };
-    Some((padre.join(nombre), con(SUFIJO_RECIFRANDO), con(SUFIJO_RETIRADO)))
+    let mut n = nombre.to_os_string();
+    n.push(sufijo);
+    Some(padre.join(n))
 }
 
 /// El directorio que guarda el nombre de `p`: una ruta sin directorio es del
@@ -1738,24 +1810,282 @@ fn cerrojo_libre(dir: &Path) -> Result<(), LayerError> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
         Err(e) => return Err(error_io(&ruta, e)),
     };
-    for intento in 1..=ESPERAS_CERROJO {
-        match f.try_lock() {
-            Ok(()) => {
-                let _ = f.unlock();
-                return Ok(());
-            }
-            Err(std::fs::TryLockError::WouldBlock) if intento < ESPERAS_CERROJO => {
-                std::thread::sleep(std::time::Duration::from_millis(50));
-            }
-            Err(std::fs::TryLockError::WouldBlock) => break,
-            Err(std::fs::TryLockError::Error(e)) => return Err(error_io(&ruta, e)),
-        }
+    if tomar_con_espera(&f, &ruta)? {
+        let _ = f.unlock();
+        return Ok(());
     }
     Err(StoreError::Io(format!(
         "{}: el libro esta abierto o recifrandose en otro proceso",
         dir.display()
     ))
     .into())
+}
+
+/// ⚠️ §816 · El `flock` exclusivo de `f`, con la espera acotada: `ESPERAS_CERROJO`
+/// veces, cada 50 ms. `Ok(false)` si en el tope sigue tomado. La comparten
+/// `cerrojo_libre` y `Cerrojo::tomar`: una espera, no dos.
+fn tomar_con_espera(f: &std::fs::File, ruta: &Path) -> Result<bool, LayerError> {
+    for intento in 1..=ESPERAS_CERROJO {
+        match f.try_lock() {
+            Ok(()) => return Ok(true),
+            Err(std::fs::TryLockError::WouldBlock) if intento < ESPERAS_CERROJO => {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(std::fs::TryLockError::WouldBlock) => break,
+            Err(std::fs::TryLockError::Error(e)) => return Err(error_io(ruta, e)),
+        }
+    }
+    Ok(false)
+}
+
+/// ⚠️ §816 · Lo que identifica el fichero del cerrojo: su dispositivo y su inodo, en
+/// Unix. Fuera de Unix `std` no los da en estable, y solo se mira que el nombre
+/// siga siendo un fichero.
+#[cfg(unix)]
+type Identidad = (u64, u64);
+#[cfg(not(unix))]
+type Identidad = ();
+
+#[cfg(unix)]
+fn identidad(m: &std::fs::Metadata) -> Identidad {
+    use std::os::unix::fs::MetadataExt;
+    (m.dev(), m.ino())
+}
+
+#[cfg(not(unix))]
+fn identidad(_: &std::fs::Metadata) -> Identidad {}
+
+/// ⚠️ §816 · Si `ruta` sigue nombrando, sin seguir enlaces, el fichero `id`.
+fn es_el_mismo(ruta: &Path, id: &Identidad) -> Result<bool, LayerError> {
+    match std::fs::symlink_metadata(ruta) {
+        Ok(m) => Ok(m.file_type().is_file() && identidad(&m) == *id),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(error_io(ruta, e)),
+    }
+}
+
+/// ⚠️ §816 · Abre `<libro>.cerrojo` sin crear nada a traves de un enlace. Si no esta,
+/// lo crea con `create_new` -`O_CREAT|O_EXCL`, que no sigue un enlace en el ultimo
+/// nombre-, vacio y, en Unix, con 0600; si esta y es un fichero, lo abre sin crear.
+/// Si cambia entre mirar y abrir -lo borran, u otro lo crea antes-, vuelve a mirar,
+/// tres veces como mucho. Un enlace que aparezca entre mirar y abrir uno que ya
+/// estaba se sigue -no se abre con `O_NOFOLLOW`: `std` no lo da sin `libc`-, sin
+/// crear ni escribir nada en su destino, aunque le toma el `flock` un instante; y
+/// lo rehusa `Cerrojo::tomar` al comparar el inodo, antes de tocar nada.
+///
+/// Se abre para escribir, aunque al `flock` le baste leer: con 0600 otro usuario
+/// tampoco lo leeria, uno que otro puede leer lo podria tomar y dejar el libro sin
+/// abrir, y en NFS el cliente emula el `flock` exclusivo con `fcntl`, que pide el
+/// fichero abierto para escribir. Salvo en un sistema de ficheros de solo lectura
+/// (`EROFS`) -un libro que es un punto de montaje en un padre de solo lectura-,
+/// donde nadie puede escribir ni cambiar el nombre: alli el que ya estaba se abre
+/// para leer, y si no esta se dice que hay que crearlo antes, donde se pueda.
+fn abrir_el_cerrojo(ruta: &Path) -> Result<std::fs::File, LayerError> {
+    for _ in 0..3 {
+        let esta = match std::fs::symlink_metadata(ruta) {
+            Ok(m) if !m.file_type().is_file() => {
+                return Err(StoreError::Malformed(format!(
+                    "{}: no es un fichero de verdad (un enlace no se sigue); el cerrojo del \
+                     libro no se toma, y no se toca nada",
+                    ruta.display()
+                ))
+                .into())
+            }
+            Ok(_) => true,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
+            Err(e) => return Err(error_io(ruta, e)),
+        };
+        pausa("cerrojo:tras_mirar");
+        let mut abrir = std::fs::OpenOptions::new();
+        abrir.read(true).write(true).create_new(!esta);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            abrir.mode(0o600);
+        }
+        match abrir.open(ruta) {
+            Ok(f) => return Ok(f),
+            Err(e) if esta && e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) if !esta && e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) if esta && e.kind() == std::io::ErrorKind::ReadOnlyFilesystem => {
+                match std::fs::File::open(ruta) {
+                    Ok(f) => return Ok(f),
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                    Err(e) => return Err(error_io(ruta, e)),
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::ReadOnlyFilesystem => {
+                return Err(StoreError::Io(format!(
+                    "{}: {e}; el directorio del libro es de solo lectura y el cerrojo del libro \
+                     no esta: hay que crearlo antes, vacio, donde se pueda escribir; no se toca nada",
+                    ruta.display()
+                ))
+                .into())
+            }
+            Err(e) if esta && e.kind() == std::io::ErrorKind::PermissionDenied => {
+                return Err(StoreError::Io(format!(
+                    "{}: {e}; quien abre el libro tiene que poder abrir su cerrojo para escribir: \
+                     con el libro cerrado por todos, quien pueda se lo da (`chown`) o lo borra, y \
+                     la apertura siguiente lo crea; no se toca nada",
+                    ruta.display()
+                ))
+                .into())
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                return Err(StoreError::Io(format!(
+                    "{}: {e}; el cerrojo del libro no esta, y quien abre no puede crearlo en el \
+                     directorio del libro: quien pueda lo crea, vacio, y se lo da (`chown`); no se \
+                     toca nada",
+                    ruta.display()
+                ))
+                .into())
+            }
+            Err(e) => return Err(error_io(ruta, e)),
+        }
+    }
+    Err(StoreError::Io(format!(
+        "{}: cambia mientras se abre; el cerrojo del libro no se toma, y no se toca nada",
+        ruta.display()
+    ))
+    .into())
+}
+
+thread_local! {
+    /// ⚠️ §816 · Los cerrojos de libro que tiene ESTE hilo, por su ruta y con lo que
+    /// identifica su fichero: `recifrar` toma el suyo hasta el final, y la apertura
+    /// con la vieja que hace dentro -y su migracion- lo encuentran tomado. Otro hilo
+    /// u otro proceso esperan.
+    static CERROJOS_DEL_HILO: std::cell::RefCell<Vec<(PathBuf, Identidad)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// ⚠️ §816 · **El cerrojo del libro**: `flock` exclusivo sobre `<libro>.cerrojo`,
+/// un fichero que la capa no renombra ni borra. El de sled no sirve para esto: va
+/// sobre `P/db`, que el recifrado renombra con P, y quien llega tras el compromiso
+/// encuentra otro inodo o ninguno. Lo toman toda apertura (`abrir_con_su_kdf`),
+/// desde antes de resolver los hermanos hasta que vuelve con el libro abierto -y,
+/// si era de la version 1, migrado-, y `recifrar`, desde antes de mirar los
+/// hermanos hasta el final; y `resolver_restos` y `recifrar_en_hermano` lo piden
+/// como argumento. Se suelta al soltarse el valor; si el proceso muere, lo suelta
+/// el sistema, y un muerto no deja el libro cerrado.
+///
+/// Reentrante en el hilo que lo tiene: tomarlo otra vez no espera ni suelta
+/// nada. Uno que no se toma en el tope -la espera de `cerrojo_libre`- es `Io` con
+/// su nombre, sin tocar nada. Si no esta se crea vacio y, en Unix, con 0600: solo
+/// su dueno puede tomarlo y dejar el libro sin abrir (`abrir_el_cerrojo`). La
+/// apertura crea antes el directorio del libro si no existe, como lo creaba
+/// `sled::open`; `recifrar`, no. Un `<libro>.cerrojo` que no es un fichero de
+/// verdad -un directorio, un enlace- no se toma: `Malformed`, sin tocar nada; y
+/// con el `flock` tomado se comprueba que el nombre sigue siendo ese fichero, y
+/// otra vez antes de lo que no se deshace (`sigue`). Una ruta sin nombre -`.`,
+/// `..`, o una que acabe en `..`, como `<libro>/blobs/..`- no tiene de que formar
+/// el cerrojo, y aun asi puede nombrar el libro: por ella no se abre ni se recifra
+/// (`Malformed`, sin tocar nada), porque quien abriera por ahi lo haria sin cerrojo.
+///
+/// No es `Send` ni `Sync`: la lista que lo hace reentrante es del hilo que lo
+/// tomo, y soltarlo en otro hilo dejaria en ella una entrada que ya no es de nadie.
+pub(crate) struct Cerrojo {
+    /// La ruta del `.cerrojo` y lo que identifica su fichero.
+    en: (PathBuf, Identidad),
+    /// El fichero con el `flock`; `None` si este hilo ya lo tenia: lo suelta quien
+    /// lo tomo.
+    f: Option<std::fs::File>,
+    /// Lo que le quita `Send` y `Sync`.
+    _del_hilo: std::marker::PhantomData<*const ()>,
+}
+
+/// ⚠️ §816 · Quien toma el cerrojo del libro, y lo que eso le deja hacer antes de
+/// tomarlo.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Quien {
+    /// La apertura, que crea el libro si no esta: si falta el directorio del libro,
+    /// lo crea antes, como `sled::open`. Es lo unico que hace antes de tomarlo, y con
+    /// el directorio ya hecho no escribe nada.
+    Apertura,
+    /// `recifrar`, que exige un libro que ya existe: no crea directorios, y si no
+    /// hay libro ni hermanos rehusa como su paso c, sin crear el `.cerrojo`.
+    Recifrado,
+}
+
+impl Cerrojo {
+    fn tomar(path: &str, quien: Quien) -> Result<Self, LayerError> {
+        let Some(ruta) = con_sufijo(path, SUFIJO_CERROJO) else {
+            return Err(StoreError::Malformed(format!(
+                "{path}: la ruta no nombra el directorio del libro, y sin nombre no hay cerrojo del \
+                 libro: por ella no se abre ni se recifra; no se toca nada"
+            ))
+            .into());
+        };
+        let del_hilo = CERROJOS_DEL_HILO.with(|t| t.borrow().iter().find(|(r, _)| *r == ruta).map(|(_, id)| *id));
+        if let Some(id) = del_hilo {
+            return Ok(Cerrojo { en: (ruta, id), f: None, _del_hilo: std::marker::PhantomData });
+        }
+        match quien {
+            Quien::Apertura => {
+                if let Some(padre) = ruta.parent().filter(|d| !d.as_os_str().is_empty()) {
+                    if !existe(padre)? {
+                        std::fs::create_dir_all(padre).map_err(|e| error_io(padre, e))?;
+                    }
+                }
+            }
+            Quien::Recifrado if !existe(&ruta)? => {
+                let (p, r, v) = hermanos(path).ok_or_else(|| sin_nombre(path))?;
+                if !existe(&r)? && !existe(&v)? {
+                    es_de_sled(&p, true)?;
+                }
+            }
+            Quien::Recifrado => {}
+        }
+        let f = abrir_el_cerrojo(&ruta)?;
+        if !tomar_con_espera(&f, &ruta)? {
+            return Err(StoreError::Io(format!(
+                "{}: el cerrojo del libro lo tiene otra apertura o un recifrado; no se toca nada",
+                ruta.display()
+            ))
+            .into());
+        }
+        let id = identidad(&f.metadata().map_err(|e| error_io(&ruta, e))?);
+        if !es_el_mismo(&ruta, &id)? {
+            return Err(StoreError::Malformed(format!(
+                "{}: cambio mientras se tomaba -por un enlace o por otro fichero-; el cerrojo \
+                 del libro no se toma, y no se toca nada",
+                ruta.display()
+            ))
+            .into());
+        }
+        CERROJOS_DEL_HILO.with(|t| t.borrow_mut().push((ruta.clone(), id)));
+        Ok(Cerrojo { en: (ruta, id), f: Some(f), _del_hilo: std::marker::PhantomData })
+    }
+
+    /// ⚠️ §816 · Antes de lo que no se deshace -el `sled::open` de la apertura, que crea
+    /// el libro si no esta, y el compromiso del recifrado-: que el nombre siga siendo
+    /// el fichero que se tomo. Si alguien lo borro o lo cambio mientras se tenia,
+    /// otra apertura o un recifrado pueden haber tomado uno nuevo y estar dentro:
+    /// `Malformed`, y no se sigue. `donde` es el punto de pausa de los tests, justo
+    /// antes de mirar.
+    fn sigue(&self, donde: &'static str) -> Result<(), LayerError> {
+        pausa(donde);
+        let (ruta, id) = &self.en;
+        if es_el_mismo(ruta, id)? {
+            return Ok(());
+        }
+        Err(StoreError::Malformed(format!(
+            "{}: ya no es el cerrojo que se tomo -alguien lo borro o lo cambio mientras se \
+             tenia-; otra apertura o un recifrado pueden estar dentro, y no se sigue: no se toca \
+             nada",
+            ruta.display()
+        ))
+        .into())
+    }
+}
+
+impl Drop for Cerrojo {
+    fn drop(&mut self) {
+        if let (Some(f), (ruta, _)) = (self.f.take(), &self.en) {
+            let _ = CERROJOS_DEL_HILO.try_with(|t| t.borrow_mut().retain(|(r, _)| r != ruta));
+            let _ = f.unlock();
+        }
+    }
 }
 
 /// §812 · Borra un directorio entero; si ya no esta, esta hecho.
@@ -1891,4 +2221,73 @@ fn punto(k: u8) -> Result<(), LayerError> {
 #[inline(always)]
 fn punto(_: u8) -> Result<(), LayerError> {
     Ok(())
+}
+
+// ⚠️ §816 · Los ganchos de pausa de los tests de la carrera: `pausa(punto)` llama al
+// gancho que haya puesto un test, con el nombre del punto, y el gancho para el
+// hilo que le toca hasta que el otro llega al suyo. Los puntos: `abrir:antes_de_sled`
+// y `abrir:tras_sled` (la apertura), `resolver:tras_cerrojos` (`resolver_restos`),
+// `recifrar:0`, `recifrar:4` y `recifrar:5` (la pieza de la E4), y
+// `cerrojo:tras_mirar` (`abrir_el_cerrojo`, entre mirar el nombre y abrirlo). Los de
+// `Cerrojo::sigue` van justo antes de mirar que el cerrojo siga en su sitio. Fuera
+// de los tests no hace nada y no se compila nada, como `punto`.
+#[cfg(test)]
+pub(crate) type Gancho = std::sync::Arc<dyn Fn(&'static str) + Send + Sync>;
+#[cfg(test)]
+pub(crate) static PAUSA: std::sync::Mutex<Option<Gancho>> = std::sync::Mutex::new(None);
+
+#[cfg(test)]
+fn pausa(donde: &'static str) {
+    let g = PAUSA.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    if let Some(g) = g {
+        g(donde)
+    }
+}
+
+#[cfg(not(test))]
+#[inline(always)]
+fn pausa(_: &'static str) {}
+
+/// ⚠️ §816 · **El cerrojo del libro no cruza de hilo.** Lo que lo hace reentrante es la
+/// lista del hilo que lo tomo (`CERROJOS_DEL_HILO`), que se vacia al soltarlo: si
+/// se soltara en otro hilo, la entrada se quedaria en el primero, y ese hilo creeria
+/// tener un cerrojo que ya no tiene -la carrera (a) otra vez, como con el mutante
+/// M11 de un revisor-. Ningun camino lo mueve de hilo; que no se pueda lo dice el
+/// compilador, y esto lo mide: la sonda elige la constante de su `impl` propio si
+/// el tipo es `Send`, y la del rasgo si no lo es.
+#[cfg(test)]
+mod tests_cerrojo {
+    #[allow(dead_code)]
+    struct Sonda<T>(std::marker::PhantomData<T>);
+
+    trait NoEsSend {
+        const ES_SEND: bool = false;
+        const ES_SYNC: bool = false;
+    }
+
+    impl<T> NoEsSend for Sonda<T> {}
+
+    impl<T: Send> Sonda<T> {
+        const ES_SEND: bool = true;
+    }
+
+    #[allow(dead_code)]
+    struct SondaSync<T>(std::marker::PhantomData<T>);
+
+    impl<T> NoEsSend for SondaSync<T> {}
+
+    impl<T: Sync> SondaSync<T> {
+        const ES_SYNC: bool = true;
+    }
+
+    #[test]
+    fn el_cerrojo_del_libro_no_cruza_de_hilo() {
+        assert!(<Sonda<std::fs::File>>::ES_SEND, "la sonda no ve que un fichero es Send");
+        assert!(<SondaSync<std::fs::File>>::ES_SYNC, "la sonda no ve que un fichero es Sync");
+        assert!(
+            !<Sonda<super::Cerrojo>>::ES_SEND,
+            "CRITICO: el cerrojo del libro es Send: soltado en otro hilo, su entrada se queda en la lista del primero"
+        );
+        assert!(!<SondaSync<super::Cerrojo>>::ES_SYNC, "el cerrojo del libro es Sync");
+    }
 }
