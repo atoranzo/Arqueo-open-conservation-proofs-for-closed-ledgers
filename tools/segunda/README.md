@@ -45,7 +45,8 @@ python3 tools/segunda/juez_stark.py
 python3 tools/segunda/juez_cadena.py                          # spec/vectors/zkssl-0.4.json
 python3 tools/segunda/juez_cadena.py spec/vectors/zkssl-0.*.json   # los cuatro: 24 de 24
 python3 tools/segunda/juez_cadena.py respuesta.json   # o el `result` de zkssl_logEntries, desde seq 0
-# 1 septies · el segundo consumidor del cable, con el arnes y el manifiesto del testigo     -> 23 de 23 (§809)
+# 1 septies · el segundo consumidor del cable, con el arnes y el manifiesto del testigo     -> 27 de 27 (§850)
+#   ⚠️ §850: decia 23 de 23 (§809), de antes de los tres negativos de la escritura y de `no-existe.json`
 bash tools/conformidad.sh tools/segunda/cable.py spec/vectors/cable/MANIFIESTO.txt | tail -1
 # 1 octies · el medio: ML-DSA-44 de FIPS 204, la nota checkpoint y la inclusion de RFC 9162   -> 87 de 87 (§810), ~2 s
 python3 tools/segunda/juez_medio.py
@@ -114,6 +115,15 @@ de reloj y 30,1 de CPU en la última corrida). Y la línea «1 bis» de «Cómo 
 `python3 tools/segunda/juez_cabezas.py` sobre el árbol del §815 es 488 de 540 cabezas, 10 de 15
 cofirmas, 409 ficheros, 57 con alguna que no verifica y 0 positivos: tres cabezas más, y las tres
 verifican. Las cifras de arriba son las del §809.
+
+⚠️ §850: los tres negativos del cable que trae el §850 (`cable/rechazo-index-no-minimo.json`,
+`cable/rechazo-quantity-con-ceros.json` y `cable/rechazo-hex-mayusculas.json`) el juez los da `OK`.
+Lee la QUANTITY con `int(s, 16)` y el hex con `bytes.fromhex`, que admiten un cero delante y las
+mayúsculas; y lo que juzga —la recomposición, el preámbulo, la firma y el índice— no cambia con la
+escritura. La salida sobre el árbol del §850 es 491 de 543 cabezas, 10 de 15 cofirmas, 412 ficheros,
+57 con alguna que no verifica y 0 positivos, en 29 s, con exit 0: el exit sólo mira que ningún
+positivo falle, y un fichero con el código 1 en su manifiesto y todas sus cabezas `OK` no lo cuenta.
+Este sello no toca `juez_cabezas.py`: la escritura del cable la juzga `cable.py`, abajo.
 
 **El segundo verificador.** `verificador.py` pasa, con el mismo arnés y los mismos manifiestos
 que el binario de referencia, las seis familias que no exigen STARK (⚠️ §810: decía «las cinco»;
@@ -360,8 +370,9 @@ para armar su sobre, pero no juzgan la firma. `cable.py` no comparte con el test
 cuerpo, lo tipa, y lo que queda se lo da a `juez_cabezas.py`.
 
 **Contra el manifiesto.** `bash tools/conformidad.sh tools/segunda/cable.py
-spec/vectors/cable/MANIFIESTO.txt`: 23 de 23 y exit 0, en unos 2 s; el adaptador del testigo,
-`tools/cable_respuesta.sh`, da también 23 de 23.
+spec/vectors/cable/MANIFIESTO.txt`: 27 de 27 y exit 0, en unos 2 s; el adaptador del testigo,
+`tools/cable_respuesta.sh`, da también 27 de 27 (⚠️ §850: decía 23 de 23 en los dos, de antes de los
+tres negativos de la escritura y de `no-existe.json`; abajo, «Los dos negativos que pidió»).
 
 **Contra un nodo de verdad.** Dos nodos `--dev` de release (`--latido 1`, uno con `--clave-fichero`,
 diario, contador de recepción e índice de firma, y otro sin `--clave`), con su casa bajo `$HOME` y
@@ -388,7 +399,7 @@ clase que el testigo: un anidamiento hondo, un sustituto UTF-16 suelto y un núm
 porque desde él no se reproducen. Lo que fijaron son los puntos de abajo, y cada caso que nombran se
 juzga a mano con los dos consumidores; juzgados así sobre el árbol del §809, con un testigo compilado de
 él, dan los dos el mismo exit en todos, y la misma clase salvo en los tres del final del punto 6, en que
-el testigo sale sin línea `ROJO:`. Con la misma clase, o el texto desde `ROJO:` es el mismo, o el
+el testigo sale sin línea `ROJO:` (⚠️ §850: hasta el §850; abajo, al final del punto 6). Con la misma clase, o el texto desde `ROJO:` es el mismo, o el
 texto de uno es el principio del otro —`cable.py` añade detrás el nombre del campo (`QUANTITY
 inválida`, y `en` y la clave) o el testigo el error de su biblioteca (`la firma no verifica: VerificationFailed`)—, o el texto
 lo escribe una biblioteca: `serde_json` (`missing field`, `invalid type`, `unknown field`, sus errores
@@ -461,6 +472,12 @@ la firma, la recomposición. Lo demás lo fijó el diferencial, mirando al testi
    se lee el fichero: …` o el error de la decodificación. El exit es el mismo, y ninguna entrada del
    manifiesto del cable lo pide.
 
+   ⚠️ §850: eso era hasta el §850. Desde él el testigo da en los tres una línea `ROJO: respuesta
+   ilegible · …` y exit 1: `no se lee el fichero: No such file or directory (os error 2)`, `no se lee
+   el fichero: Is a directory (os error 21)` e `invalid utf-8 sequence of 1 bytes from index 0`, medido
+   con unos bytes que empiezan por `0xff`. La entrada `no-existe.json` del manifiesto lo pide, con el
+   texto `ROJO: respuesta ilegible · no se lee el fichero`, que los dos consumidores dan.
+
 **Los dos negativos que pidió.** Con las 21 entradas de antes, un consumidor sin la regla del `index`
 (§399) o que reduce un `u64` en vez de rechazarlo (RFC-0016) daba 21 de 21: medido, rompiendo en una
 copia `cable.py` (`if False and declarado <= embebido`) y `nucleo.u64_canonico` (devolviendo `u % P` antes
@@ -469,21 +486,37 @@ negativos, derivados por una mutación del positivo v6 (`aaffc6ceee72f2fb`) y re
 `HUELLAS.sha256` con `tools/check_vectores.py --registrar`: `rechazo-index-atrasado.json`, con el
 `index` 5, igual al embebido, y `rechazo-n-no-canonico.json`, con `n` = 0x5a0 + p, que recompone el
 mismo digest si el lector reduce. Con ellos cada mutante cae en el suyo —22 de 23, «exit 0, el
-manifiesto espera 1»—, y los dos consumidores del árbol dan 23 de 23. Otros once
-pasos ya los vigilaban las 21, medido también rompiendo cada uno sobre una copia: sin verificar la firma
-cae `rechazo-firma`; sin comparar el preámbulo, `rechazo-v5-con-firma-de-v4`; sin comparar la
-recomposición, las tres de recomposición; con la v7 dentro del conjunto, `rechazo-formatVersion-7`, y
-sin mirar el conjunto, las tres de versión fuera (1, 0x103 y 7); sin lo que exige cada versión, las cinco
-`sin …`; sin lo común, `rechazo-sin-index`; sin las obligadas de la forma, `rechazo-forma-del-cable`;
-sin el largo del digest, `rechazo-epochDigest-corto`; sin `result`, `rechazo-sin-result`; y sin la
-clase `sin-firma`, `rechazo-available-false`. Lo que ningún vector pina el manifiesto no lo vigila, y
-rompiendo cada uno en una copia `cable.py` sigue dando 23 de 23: los límites del lector, a propósito
-(el punto 6: la profundidad a 100.000, sin mirar el anidamiento y los sustitutos, o sin el rango del
-`f64`); la clave de más (el punto 2); el OID (el punto 5); el `index` leído canónico (el punto 3); y la
-escritura mínima de una QUANTITY y de un hex (el punto 4: `0x05`, o un hex en mayúsculas). Con uno de
-los tres últimos rotos, `cable.py` da `VERDE` donde el testigo da `ROJO`: no hay vector de un `index`
-no canónico, ni de una QUANTITY con ceros delante, ni de un hex en mayúsculas. Sólo los miden los casos
-de esos puntos, juzgados a mano con los dos.
+manifiesto espera 1»—, y los dos consumidores del árbol del §809 daban 23 de 23 (⚠️ §850: decía «del
+árbol dan 23 de 23»; desde el §850 dan 27 de 27). Otros once pasos ya los vigilaban las 21, medido
+también rompiendo cada uno sobre una copia: sin verificar la firma cae `rechazo-firma`; sin comparar
+el preámbulo, `rechazo-v5-con-firma-de-v4`; sin comparar la recomposición, las tres de recomposición;
+con la v7 dentro del conjunto, `rechazo-formatVersion-7`, y sin mirar el conjunto, las tres de versión
+fuera (1, 0x103 y 7); sin lo que exige cada versión, las cinco `sin …`; sin lo común,
+`rechazo-sin-index`; sin las obligadas de la forma, `rechazo-forma-del-cable`; sin el largo del
+digest, `rechazo-epochDigest-corto`; sin `result`, `rechazo-sin-result`; y sin la clase `sin-firma`,
+`rechazo-available-false`. Lo que ningún vector pina el manifiesto no lo vigila, y rompiendo cada uno
+en una copia `cable.py` sigue dando 27 de 27 (⚠️ §850: decía 23 de 23): los límites del lector, a
+propósito (el punto 6: la profundidad a 100.000, sin mirar el anidamiento y los sustitutos, o sin el
+rango del `f64`); la clave de más (el punto 2); el OID (el punto 5); y el `index` leído canónico (el
+punto 3). Con el último roto, `cable.py` da `VERDE` donde el testigo da `ROJO`, y sólo lo miden los
+casos de ese punto, juzgados a mano con los dos.
+
+⚠️ §850: aquí decía también «y la escritura mínima de una QUANTITY y de un hex (el punto 4: `0x05`, o
+un hex en mayúsculas)», «con uno de los tres últimos rotos» y «no hay vector de un `index` no
+canónico, ni de una QUANTITY con ceros delante, ni de un hex en mayúsculas». Desde el §850 los hay de
+un `index` con un cero delante, de una QUANTITY con ceros delante y de un hex en mayúsculas; del
+`index` no canónico (la cota del punto 3) sigue sin haberlo. Los tres derivan por una mutación de la
+escritura del mismo positivo v6, registrados con `--registrar`: `rechazo-index-no-minimo.json`
+(`index` `0x06`), `rechazo-quantity-con-ceros.json` (`mmrSize` `0x05`) y `rechazo-hex-mayusculas.json`
+(el `epochDigest` en mayúsculas). Los dos consumidores los rechazan al tipar, con `forma del cable`.
+Medido en una copia, cada mutante de `cable.py` cae en el suyo: sin el cero delante en `tipar`, 25 de
+27 (caen el del `index` y el de la QUANTITY); sin él sólo para el `index`, 26 de 27; sólo para
+`mmrSize`, 26 de 27; y con `_hex` que admite mayúsculas, 26 de 27 (cae el del hex). El `index` leído
+sin la cota de `u64_canonico` (`int(cab["index"], 16)` en lugar de `q(cab, "index")`) sigue en 27 de
+27: ninguno de los tres lo mira. Los otros cuatro de la lista de arriba, rotos igual en una copia,
+también dan 27 de 27: la profundidad a 100.000 sin mirar el anidamiento ni los sustitutos, sin el
+rango del `f64`, la clave de más y el OID. Con las 23 entradas de antes, los tres primeros daban 23 de
+23, medido.
 
 ## Lo que la segunda implementación destapó de la spec
 

@@ -60464,3 +60464,213 @@ una en cada uno de los tres del nodo y una en `tools/check_superficie.py`.
 `git grep --cached -n "§849" -- ':!AUDITORIA.md'` da ocho líneas: esas seis y otras dos de
 `tools/check_superficie.py` (la cabecera de la R8 y la razón de su exención), crónica de la regla,
 que no corrige nada sellado.
+
+## §850 — tres negativos de la escritura del cable —dos de la QUANTITY mínima, el `index` `0x06` y `mmrSize` `0x05`, y uno del hex en minúsculas, el `epochDigest` en mayúsculas—, y `witness --respuesta` sale con `ROJO: respuesta ilegible` ante un fichero que no se lee, con la entrada `no-existe.json` que lo pide (lo descubierto 3a y 3c)
+
+El commit que lleva este asiento, sobre `29b4442` (el §849). Toca `spec/vectors/cable/`: tres
+vectores nuevos (`rechazo-index-no-minimo.json`, `rechazo-quantity-con-ceros.json` y
+`rechazo-hex-mayusculas.json`) y diez líneas añadidas al final de `MANIFIESTO.txt`, seis de
+comentario y cuatro entradas; `spec/vectors/HUELLAS.sha256`, con `--registrar --desde 29b4442`,
+trece líneas añadidas y ninguna cambiada. Toca `crates/zk-ssl-cli/src/witness.rs`: la `:2710`, en su
+misma línea, y una función nueva, `leer_respuesta`, en la `:3523-3534`, delante del módulo de tests.
+Toca `spec/RPC.md`: una frase en «Los rechazos del cable, con vector» (`:1573-1581`), la cuenta de
+`cable.py` con su marca (`:1586-1587`) y las dos cuentas de la lista de «Versionado y
+compatibilidad» (`:1765-1766`); `tools/segunda/README.md`, en ocho sitios, con su marca; y la cuenta
+de ficheros de `spec/vectors/` en `README.md:262` y `README_EN.md:276`. Y este asiento. Ni tests
+nuevos, ni pines, ni `tools/canon.sh`, ni `BACKLOG.md`. No toca `tools/segunda/juez_cabezas.py`,
+`nucleo.py` ni `cable.py`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube,
+no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el
+siguiente del rango que el autor asignó (§830 a §859).
+
+Del autor es la tarea: lo descubierto 3a y 3c de la lista que encargó, los vectores del cable que
+faltaban y la línea `ROJO:` del testigo ante un fichero ilegible. Los nombres de los vectores, el
+campo de cada mutación y el texto de las entradas los propone la sesión. El canon de este commit,
+`bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su
+sitio y una versión más corta de esta frase: VERDE, 1032 s de reloj (de su arranque a su salida) y
+795 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,84 al empezar.
+Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los 275 `.rs` de `crates/` y de `tools/`
+(los mismos que en el §849: este sello no añade ninguno), y su log lo registra. Las 19 filas del
+nivel, en su pin, con 1853 tests que pasan (la suma de la columna «pasan»), y la de `zk-ssl-cli` en
+153 pasan y 0 ignorados; la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con
+features (62 s)»; `check_tests` en 2012 y 20 instrumentos; `check_modulos` en 207; las once
+herramientas del bucle «2 ter»; la puerta de los vectores, en 503 ficheros y 1012 líneas;
+`check_catalogo`; el paquete, en 84 de 84; el cable, con «27 de 27 entradas dicen lo que deben (26
+.json, 27 con entrada)»; la segunda implementación, con sus pares STARK en 34 de 34; y el artefacto
+reproducible, con el binario `3a01451fb51204ac` y el tarball `2add27c23f2fcd9a`. Corrió con un
+`TMPDIR` propio y vacío, y al acabar no quedaba nada en él. Una corrida anterior, sobre el mismo
+árbol sin esta frase (`ece4092`), dio también VERDE, en 1094 s de reloj y 834 s de tests, con las
+mismas cifras salvo el tarball, `ee5b00f2411e257f`.
+
+**De dónde sale.** El §809 trajo el segundo consumidor del cable, `tools/segunda/cable.py`, y dejó
+escrito en `tools/segunda/README.md` dos cosas que el manifiesto no vigilaba. Una, con sus palabras:
+rompiendo en una copia `cable.py` «el `index` leído canónico (el punto 3)» o «la escritura mínima de
+una QUANTITY y de un hex (el punto 4: `0x05`, o un hex en mayúsculas)», seguía dando 23 de 23,
+porque «no hay vector de un `index` no canónico, ni de una QUANTITY con ceros delante, ni de un hex
+en mayúsculas». Este sello trae los de la escritura (el punto 4), no el de la cota del `index` (el
+punto 3). Otra: ante un fichero que no se lee, el testigo salía con exit 1 y sin línea `ROJO:`, el
+error de E/S de Rust tal cual, por un `?` desnudo en `witness.rs:2710`, y ninguna entrada lo pedía.
+La QUANTITY va sin ceros delante (`spec/RPC.md`, «Codificación»: «sin ceros a la izq.»;
+`spec/NUCLEO.md`, la entrada del §662: «sin `+`, sin mayusculas y sin ceros a la izquierda»). El hex
+va en el canónico, `0x` y `[0-9a-f]` por pares: `spec/RPC.md`, en «La composición de `chain`»
+(`hex_canonico`, `:339-340`) y en los esquemas DATA, Digest y Q de «La lista de `zkssl/0.4`»
+(`:1753-1756`); y `spec/NUCLEO.md`, la entrada del §650. La tabla de «Codificación» no dice nada de
+la caja del hex, ni el RFC-0016, que trata de los valores menores que p. En la referencia, la
+QUANTITY la lee `Q::deserialize` con `zk_ssl_hash::cantidad_canonica`
+(`crates/zk-ssl-wire/src/lib.rs:82-100`) y el digest, `B32` con `hex_canonico` (`:105-125`, y
+`from_hex` en la `:74-76`).
+
+**Medido**, en este orden, sobre `29b4442` y después con el cambio:
+
+1. Las citas de la especificación, escrita sobre `669ee88`, remedidas: `witness.rs:2710` (el `?`
+   desnudo) y `:1142` (el comentario de `leer_q`), `zk-ssl-wire/src/lib.rs:82` (`Q`), `:105` (`B32`)
+   y `:1302` (el falsador de `from_str_radix`) caen donde caían; `MANIFIESTO.txt` tenía 38 líneas y
+   23 entradas, ninguna de las tres clases; lo de `tools/segunda/README.md` que la especificación
+   citaba en `:471-478` está en `29b4442` en `:457-463` (el testigo sin `ROJO:`) y `:480-486` («no
+   hay vector de …»). `git show 29b4442:tools/segunda/README.md | grep -n '23 de 23'` da `:48`,
+   `:188`, `:363`, `:364`, `:472` y `:480`. La `:188` es de la tabla del verificador STARK, otra
+   cuenta, y no se toca. Las otras cinco son del cable, y las cinco se marcan (abajo, «El cambio»).
+   Una entrada sin fichero, como `no-existe.json`, ya era una forma admitida por
+   `tools/conformidad.sh` (cabecera, `:20-21`) y por `tools/check_vectores.py` (R3), y la usa el
+   manifiesto del paquete (`:97`).
+2. El binario de release del testigo, recompilado desde `29b4442` dentro del cerrojo tras un `touch`
+   de los `.rs` de `crates/` y `tools/`. Catorce mutaciones de la escritura de
+   `positivo-cabeza-v6.json` (`aaffc6ceee72f2fb`), cada una de un solo campo, juzgadas con
+   `zk-ssl-cli witness --respuesta` y con `python3 tools/segunda/cable.py`: las catorce, exit 1 en los
+   dos, con `no-verifica · forma del cable: QUANTITY inválida` o `hex mal formado (se espera "0x…")`;
+   `cable.py` añade detrás `en` y la clave. El testigo ya rechazaba las tres clases; faltaba el vector.
+3. Se eligieron tres, una mutación de la escritura y ninguna del valor, con valores pequeños: el
+   `index` `0x6` como `0x06`, la QUANTITY `mmrSize` `0x5` como `0x05`, y las 64 cifras del
+   `epochDigest` en mayúsculas, con el `0x` en minúscula. Cada uno es el positivo con una sola
+   sustitución de bytes (comprobado: `bytes.replace` del positivo da el fichero). Los dos
+   consumidores dan, en los tres, la misma clase y exit 1, con el texto de la entrada. Los dos
+   primeros ejercen la misma regla, la QUANTITY mínima, en dos campos: en la referencia caen en el
+   mismo sitio, `Q::deserialize`, con el mismo texto, y sólo los separan los mutantes de `cable.py`
+   que miran un campo (abajo). El tercero es la regla del hex.
+4. `bash tools/conformidad.sh tools/cable_respuesta.sh spec/vectors/cable/MANIFIESTO.txt`, con el
+   testigo compilado del árbol del §850: «27 de 27 entradas dicen lo que deben (26 .json, 27 con
+   entrada)», exit 0. Con `tools/segunda/cable.py` en su lugar: 27 de 27, exit 0, en 2,0 s.
+5. El testigo ante un fichero que no se lee, con el `?` desnudo (el código de `29b4442`, medido con el
+   mutante de abajo): `Error: No such file or directory (os error 2)`, exit 1, sin `ROJO:`. Con el
+   cambio, los tres casos del §809: un fichero que no existe, `Error: ROJO: respuesta ilegible · no
+   se lee el fichero: No such file or directory (os error 2)`; un directorio, `… no se lee el
+   fichero: Is a directory (os error 21)`; y unos bytes que empiezan por `0xff`, `Error: ROJO:
+   respuesta ilegible · invalid utf-8 sequence of 1 bytes from index 0`; exit 1 los tres. `cable.py`
+   da en los dos primeros `ROJO: respuesta ilegible · no se lee el fichero: …`, con el `strerror`, y
+   en el tercero el error de la decodificación de Python: la misma clase y el mismo exit.
+6. `python3 tools/check_vectores.py --desde 29b4442` antes de registrar: ROJO SIN HUELLA, tres
+   vectores y diez líneas. `python3 tools/check_vectores.py --registrar --desde 29b4442`: «3
+   vector(es) y 10 linea(s) nuevas; 0 … movidos»; después, `--desde 29b4442`, «503 ficheros .json y
+   1012 lineas de 18 manifiestos, cada uno con su huella», exit 0. `git diff 29b4442 --
+   spec/vectors/HUELLAS.sha256`: trece líneas añadidas, ninguna quitada.
+7. `python3 tools/segunda/juez_cabezas.py`, antes y después: sobre `29b4442`, 488 de 540 cabezas, 10
+   de 15 cofirmas, 409 ficheros, 57 con alguna que no verifica, 0 positivos, exit 0, 29,0 s de reloj;
+   con el cambio, 491 de 543, 10 de 15, 412 ficheros, 57, 0 positivos, exit 0, 29,1 s. Da `OK` a los
+   tres negativos nuevos: lee la QUANTITY con `int(s, 16)` y el hex con `bytes.fromhex`, y lo que
+   juzga —recomposición, preámbulo, firma, índice— no cambia con la escritura. Su exit sólo mira que
+   ningún positivo falle. No se alinea aquí; se declara en su README.
+8. `CARGO_TARGET_DIR=… cargo test -p zk-ssl-cli --release --locked`, con el cambio: 153 pasan, 0
+   fallan, 0 ignorados; el pin de la fila sigue en 153.
+9. Lo que el manifiesto sigue sin vigilar, con las 27 entradas: en copias de `tools/` y `spec/`, con
+   `bash tools/conformidad.sh tools/segunda/cable.py spec/vectors/cable/MANIFIESTO.txt` desde la raíz
+   de cada copia, cada uno de los cinco que la lista de `tools/segunda/README.md` nombra da 27 de 27,
+   exit 0: `PROFUNDIDAD` a 100.000 y sin `_anidamiento_y_sustitutos`; `_fuera_de_rango` apagado;
+   la clave desconocida saltada con `continue`; el OID sin comparar; y `declarado =
+   int(cab["index"], 16)`. Por eso la frase de esa lista dice 27 de 27 y no 23 de 23.
+10. Citas por línea: fuera de `AUDITORIA.md`, 258 citas por línea a `witness.rs`, y 120 de ellas
+   de la `:2690` en adelante (`doc/ecst/`, `BACKLOG.md`, `spec/rfc/0020-…`), hasta la `:3440`. Por
+   eso la `:2710` cambia en su misma línea y `leer_respuesta` va en la `:3523`, debajo de todas:
+   ninguna cita se mueve. `spec/RPC.md` crece nueve líneas en la `:1573`, y ninguna cita por línea
+   cae de la `:1570` en adelante. A `tools/segunda/README.md` nadie lo cita por línea.
+   `MANIFIESTO.txt` sólo crece al final, y sus citas por línea (`spec/rfc/0020-…:223` y `:242`,
+   `spec/rfc/0021-…:101`) son de la `:17` a la `:21`.
+
+**El cambio.**
+
+- `witness.rs:2710`: `serde_json::from_str(&leer_respuesta(p)?)`. `leer_respuesta` lee los bytes y
+  los pasa a `String`: el error de lectura sale como `ROJO: respuesta ilegible · no se lee el
+  fichero: <error>` y el de UTF-8 como `ROJO: respuesta ilegible · <error>`, como en `cable.py`. El
+  JSON ilegible ya salía así. Sin test de Rust nuevo, para no mover el pin del cli: lo prueba la
+  entrada `no-existe.json` por el arnés, en cada canon.
+- `MANIFIESTO.txt`, al final: un comentario de seis líneas que dice de dónde derivan los tres, dónde
+  escribe la spec cada regla (las secciones de arriba, «De dónde sale») y qué pide `no-existe.json`;
+  y cuatro entradas: los tres negativos con `no-verifica · forma del cable: QUANTITY inválida` (dos)
+  y `no-verifica · forma del cable: hex mal formado`, y `no-existe.json|1|ROJO: respuesta ilegible ·
+  no se lee el fichero`, el texto que dan los dos consumidores.
+- `spec/RPC.md`: la frase de los tres, con el sitio de cada regla, y la de `no-existe.json`; «da 23
+  de 23» pasa a «da 27 de 27 (⚠️ §850: decia 23 de 23, …)»; y `vectores.json` 500 → 503 y
+  `vectores.lineas` 1002 → 1012, cuentas mínimas de `check_superficie`, sin marca, como las movió el
+  §815.
+- `README.md:262` y `README_EN.md:276`: 519 → 522 ficheros en `spec/vectors/` (el ATADO E de
+  `check_publicadas`), sin marca, como el §809 y el §815.
+- `tools/segunda/README.md`, con «⚠️ §850», en ocho sitios. Los cinco «23 de 23» del cable de
+  `29b4442`: la línea «1 septies» (`:48`, hoy 27 de 27, con la línea de la marca debajo); «Contra el
+  manifiesto» (`:363-364`, hoy `:373-375`: 27 de 27 en los dos, «decía 23 de 23 en los dos»); en «Los
+  dos negativos que pidió», «los dos consumidores del árbol dan 23 de 23» (`:472`), crónica del §809,
+  que pasa a «del árbol del §809 daban 23 de 23», con lo que decía y la cifra de hoy (`:489-490`); y
+  «sigue dando 23 de 23» (`:480`), que pasa a 27 de 27 con «decía 23 de 23» (`:497-498`), lo medido
+  en el punto 9. Y además: un párrafo tras el del §815 con la salida nueva de `juez_cabezas.py` y por
+  qué da `OK` a los tres (`:119-126`); «hasta el §850» en la frase de los tres casos sin `ROJO:` del
+  punto 6 (`:402`) y un párrafo al final de éste con la salida de ahora (`:475-479`); y, en la lista
+  de lo no vigilado, la escritura mínima sale de la frase (`:500-502`) y un párrafo de marca
+  (`:504-519`) dice lo que ponía, con sus palabras, y lo que hay: vectores de un `index` con un cero
+  delante, de una QUANTITY con ceros delante y de un hex en mayúsculas, y ninguno todavía del `index`
+  no canónico (la cota del punto 3), con lo que da cada mutante.
+
+**Mutantes**, sobre copias del árbol en el directorio de la sesión (sin `target/` ni `.git/`). Los
+de Python, con la copia como raíz y `tools/conformidad.sh` de la copia; los de Rust, compilados desde
+la copia con el `CARGO_TARGET_DIR` común, dentro del cerrojo, y juzgados con el adaptador:
+
+- `cable.py`, sin el cero delante en `tipar` (la QUANTITY admite `0x05`): 25 de 27, exit 1, caen
+  `rechazo-index-no-minimo` y `rechazo-quantity-con-ceros` («exit 0, el manifiesto espera 1»).
+- `cable.py`, sin esa regla sólo para el `index`: 26 de 27, cae `rechazo-index-no-minimo`.
+- `cable.py`, sin esa regla sólo para `mmrSize`: 26 de 27, cae `rechazo-quantity-con-ceros`.
+- `cable.py`, `_hex` que admite `A-F`: 26 de 27, cae `rechazo-hex-mayusculas`.
+- Los tres primeros, con el manifiesto y los vectores de `29b4442`: 23 de 23, exit 0. Es lo que el
+  §809 dejó escrito.
+- `Q::deserialize` con `u64::from_str_radix` en lugar de `cantidad_canonica`: 25 de 27, exit 1; en
+  los dos de la QUANTITY, «no dice 'no-verifica · forma del cable: QUANTITY inválida'»: la forma pasa
+  y el testigo los rechaza después, con otro texto, al leerlos con `leer_q`.
+- `B32` leído con `bytes_de_hex`, que admite mayúsculas: 26 de 27, `rechazo-hex-mayusculas` con
+  «exit 0, el manifiesto espera 1».
+- El `?` desnudo de vuelta en la `:2710` (`std::fs::read_to_string(p)?`): 26 de 27, `no-existe.json`
+  con «0 lineas con ROJO:, el contrato pide una».
+
+Vivos, a propósito: el `index` leído sin la cota de `u64_canonico`, en los dos consumidores
+(`int(cab["index"], 16)` en `cable.py`; `cantidad_canonica` sin `u64_canonico` en la `:989` del
+testigo): 27 de 27. Ninguno de los tres vectores lo mira, y este sello no añade otro de esa clase.
+Los otros cuatro del punto 9 siguen vivos igual, como el §809 los dejó. Tras los mutantes de Rust,
+`cargo clean --release -p zk-ssl-cli -p zk-ssl-wire` con el mismo `CARGO_TARGET_DIR`, `touch` de los
+`.rs` y el cli recompilado desde el árbol, dentro del cerrojo: 27 de 27 otra vez. Las copias se
+borraron al acabar.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores --desde 29b4442` y
+`check_catalogo`, sobre el árbol con el cambio y antes del commit; también `check_tests`, en 2012, y
+`check_modulos`, en 207.
+
+**Lo que NO hace.**
+
+- No toca `tools/segunda/juez_cabezas.py`: sigue leyendo la escritura con laxitud, da `OK` a los tres
+  negativos y su exit no lo cuenta. Su README lo declara. Tampoco toca `nucleo.py` ni `cable.py`, que
+  ya rechazaban los tres.
+- No añade un vector para el `index` leído sin `u64_canonico`, el mutante vivo de arriba, ni otro de
+  la clase de `rechazo-n-no-canonico.json`.
+- No añade vectores de los límites del lector (anidamiento, sustitutos, rango del `f64`), de la clave
+  de más ni del OID: siguen sin vigilar, a propósito, como dice `tools/segunda/README.md`.
+- No mueve ningún pin ni el total de tests: el cambio del testigo no lleva test de Rust.
+- No reescribe ningún vector ni línea registrada: sólo ficheros nuevos y líneas añadidas al final.
+- No cambia la conducta del testigo en vivo: `leer_respuesta` sólo la usa `--respuesta`.
+
+**Lo que es del autor.** Si `juez_cabezas.py` debe juzgar la escritura del cable, o contar como
+ROJO un negativo del manifiesto cuyas cabezas verifican. Si el texto de `no-existe.json` pina
+también «no se lee el fichero» o sólo la clase. Si la tabla de «Codificación» de `spec/RPC.md` debe
+decir también que el hex va en minúsculas, como lo dicen sus esquemas.
+
+**Contadores.** El total de sello sigue en 1853, y la fila `zk-ssl-cli` en 153. `check_tests`, en
+2012 tests declarados y 20 instrumentos; `check_modulos`, en 207. Los vectores pasan de 500 a 503
+ficheros y de 1002 a 1012 líneas de manifiesto; `spec/vectors/`, de 519 a 522 ficheros. El cable,
+de 23 a 27 entradas. `BACKLOG.md` no cambia: 44 abiertas y 86 resueltas. Las marcas «⚠️ §850» en
+los ficheros del commit, sin este asiento, son nueve: una en `spec/RPC.md` y ocho en
+`tools/segunda/README.md`. `git grep --cached -n "§850" -- ':!AUDITORIA.md'` da dieciocho líneas:
+esas nueve; otras dos de `spec/RPC.md` y cuatro de `tools/segunda/README.md` en las mismas frases o
+en las que siguen a una marca; dos del comentario de `leer_respuesta` en `witness.rs`; y una del
+comentario nuevo de `MANIFIESTO.txt`. Crónica que no corrige nada sellado.

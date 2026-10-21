@@ -1570,15 +1570,24 @@ raiz del arbol vacio—; de ella derivan por mutacion sus dos negativos, sin `re
 `recepCount` + 1. Del mismo positivo v6 derivan los dos del §809: `rechazo-index-atrasado`, con el
 `index` declarado igual al embebido en la firma, y `rechazo-n-no-canonico`, con `n + p`, que recompone
 el mismo digest si el lector reduce en vez de rechazar (RFC-0016). El testigo ya los rechazaba, y un
-consumidor sin esas dos reglas pasaba las 21 entradas de antes.
+consumidor sin esas dos reglas pasaba las 21 entradas de antes. Del mismo positivo v6 derivan los tres
+del §850, una sola mutacion de la escritura cada uno y ninguna del valor: el `index` con un cero
+delante (`0x06`), la QUANTITY `mmrSize` con un cero delante (`0x05`) y el `epochDigest` en
+mayusculas. La QUANTITY va sin ceros delante (la seccion «Codificación») y el hex, en el canonico,
+`0x` y `[0-9a-f]` por pares (`hex_canonico`, en «La composición de `chain`», y los esquemas DATA,
+Digest y Q de «La lista de `zkssl/0.4`»); el testigo los rechaza al tipar, como `forma del cable`. Y
+una entrada sin fichero, `no-existe.json`: una respuesta que no se puede leer -el fichero no existe,
+es un directorio o no es UTF-8- tambien sale con `ROJO: respuesta ilegible · …` y exit `1`; hasta el
+§850 el testigo daba ahi el error de E/S, con exit `1` y sin linea `ROJO:`.
 `MANIFIESTO.txt` fija, por fichero, el codigo de salida y el texto que la salida tiene que contener;
 `tools/conformidad.sh tools/cable_respuesta.sh spec/vectors/cable/MANIFIESTO.txt` los corre —el
 mismo arnes que el paquete, sin doblar su contrato— y `tools/canon.sh` lo hace en cada canon.
 Una segunda implementacion del consumidor pone su ejecutable en lugar del adaptador. Desde el §809 la
-hay: `tools/segunda/cable.py`, en Python, sin una linea de Rust ni codigo de la referencia, da 23 de
-23; lo que esta seccion no escribe —que claves se exigen, en que orden se miran, con que texto se
-rechaza lo que el manifiesto no pina, y los limites del lector de la referencia: el anidamiento, el
-rango de los numeros y los sustitutos UTF-16 sueltos— lo fijo la conducta medida del testigo
+hay: `tools/segunda/cable.py`, en Python, sin una linea de Rust ni codigo de la referencia, da 27 de
+27 (⚠️ §850: decia 23 de 23, de antes de los tres negativos de la escritura y de `no-existe.json`); lo
+que esta seccion no escribe —que claves se exigen, en que orden se miran, con que texto se rechaza lo
+que el manifiesto no pina, y los limites del lector de la referencia: el anidamiento, el rango de los
+numeros y los sustitutos UTF-16 sueltos— lo fijo la conducta medida del testigo
 (`tools/segunda/README.md` §«El segundo consumidor del cable»).
 
 **Confianza residual, medida:** la clase no distingue la causa. Un `formatVersion` fuera del
@@ -1753,8 +1762,8 @@ acta.emite 1
 sobre.v 1 2
 sobre.tipo extension consumo conflicto rechazo edad cobro_pendiente pago_en_curso prenda completitud ancla ancla-cofirmada solapamiento
 kit.salida 0 1 2 3
-vectores.json 500
-vectores.lineas 1002
+vectores.json 503
+vectores.lineas 1012
 manifiesto 0.3/edad/MANIFIESTO.txt
 manifiesto 0.3/pago/MANIFIESTO.txt
 manifiesto 0.3/pendiente/MANIFIESTO.txt

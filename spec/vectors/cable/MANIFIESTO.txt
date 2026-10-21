@@ -36,3 +36,13 @@ rechazo-v6-recomposicion.json|1|no-verifica · los campos NO recomponen el epoch
 # (tools/segunda/cable.py): el testigo los rechaza, medido, y un consumidor sin cualquiera de las dos reglas pasaba las 21 entradas de antes.
 rechazo-index-atrasado.json|1|no-verifica · el indice declarado (5) no cuadra con el que va dentro de la firma (5)
 rechazo-n-no-canonico.json|1|no-verifica · QUANTITY "0xffffffff000005a1": 0xffffffff000005a1 no es canonico: no es menor que p = 2^64 - 2^32 + 1
+# Desde el §850: tres negativos mas de positivo-cabeza-v6.json (aaffc6ceee72f2fb), cada uno una sola mutacion de la escritura y ninguno del valor:
+# el index con un cero delante ("0x06"), la QUANTITY mmrSize con un cero delante ("0x05") y el epochDigest en mayusculas. La QUANTITY va sin
+# ceros delante (RPC.md, «Codificacion»; NUCLEO.md, §662) y el hex, en el canonico, 0x y [0-9a-f] por pares (RPC.md, hex_canonico en «La
+# composicion de chain» y los esquemas DATA, Digest y Q de «La lista de zkssl/0.4»; NUCLEO.md, §650): el testigo los rechaza al tiparlos,
+# medido, y un lector laxo los leeria como el positivo. Y no-existe.json, que no existe a proposito: un fichero que no se lee tambien sale con
+# una linea ROJO: y exit 1.
+rechazo-index-no-minimo.json|1|no-verifica · forma del cable: QUANTITY inválida
+rechazo-quantity-con-ceros.json|1|no-verifica · forma del cable: QUANTITY inválida
+rechazo-hex-mayusculas.json|1|no-verifica · forma del cable: hex mal formado
+no-existe.json|1|ROJO: respuesta ilegible · no se lee el fichero

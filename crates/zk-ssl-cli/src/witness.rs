@@ -2707,7 +2707,7 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
     // solo si la clase es `nueva`; si no, `ROJO: <clase> · <texto>` y exit 1. El
     // segundo canal (consistencia) NO se juzga: con memoria fresca no hay pareja.
     if let Some(p) = &a.respuesta {
-        let cuerpo: Value = serde_json::from_str(&std::fs::read_to_string(p)?)
+        let cuerpo: Value = serde_json::from_str(&leer_respuesta(p)?)
             .map_err(|e| anyhow::anyhow!("ROJO: respuesta ilegible · {e}"))?;
         let ver = match del_cuerpo(cuerpo) {
             Servido::SinRespuesta { motivo } => Veredicto::SinRespuesta { motivo },
@@ -3518,6 +3518,19 @@ impl Cofirmante {
         }
         Ok(())
     }
+}
+
+/// §850: el fichero de `witness --respuesta`, leido con el contrato del mando.
+/// Un fichero que no se lee -no existe, es un directorio- o que no es UTF-8
+/// tambien es `ROJO: respuesta ilegible`, con exit 1, como en
+/// `tools/segunda/cable.py`. Hasta el §850 un `?` desnudo sacaba el error de
+/// E/S sin linea `ROJO:`; lo pina la entrada `no-existe.json` de
+/// `spec/vectors/cable/MANIFIESTO.txt`. Va aqui, y no en el modo, para no
+/// mover las citas por linea de `run`.
+fn leer_respuesta(p: &std::path::Path) -> anyhow::Result<String> {
+    let crudo = std::fs::read(p)
+        .map_err(|e| anyhow::anyhow!("ROJO: respuesta ilegible · no se lee el fichero: {e}"))?;
+    String::from_utf8(crudo).map_err(|e| anyhow::anyhow!("ROJO: respuesta ilegible · {e}"))
 }
 
 #[cfg(test)]
