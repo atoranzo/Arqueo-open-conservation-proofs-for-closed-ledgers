@@ -56,6 +56,8 @@ del §650 al §655, y uno acotado—, y desde entonces los ocho están descritos
 [`SECURITY.md`](../SECURITY.md). Este documento no los describe, y por eso tampoco da su componente, su
 mecanismo ni su arreglo. Allí donde el expediente público mezclaba un hallazgo publicable con uno
 embargado, se publica solo lo que se sostiene sin el segundo, y se dice.
+⚠️ §815: de los «siete cerrados», el del §655 lo estaba a medias —paró el despacho, y el latido siguió
+firmando en PARADA—, y se cerró entero en el §815 (`SECURITY.md` §3.9 y §3.15).
 
 **Convención**: **MEDIDO** = hay una medida, con su fuente (la sesión, o el §N del registro) ·
 **ESTIMADO** = derivado, con su método al lado · **SUPUESTO** = sin método que lo sostenga todavía ·

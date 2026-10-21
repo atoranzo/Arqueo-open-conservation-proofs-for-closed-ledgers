@@ -12,6 +12,10 @@
 #     `rechazo-stale-declarada` (medido en la corrida del `--largo` de abajo);
 #   - DECLARADA, NO PROBADA: el mismo data, con una causa de las que el RFC-0007 dejo sin prueba
 #     portable (derivada por MUTACION: el nodo no produce hoy esas causas por esta via), salida 3;
+#     ⚠️ §815 (kit 0.4.3): y dos mas, `declarada-verification-failed` y `declarada-proof-failed`, el
+#     mismo data con esas causas, que la D-I del RFC-0007 declara y el kit hasta la 0.4.2 daba ROJO.
+#     De ellas, `VerificationFailed` SI la produce el nodo por esta via -una prueba basura con las
+#     raices publicas-; se deriva igual, para que la familia salga de UNA corrida;
 #   - con --largo, NO RESUELTA EN LA VENTANA: se espera a la cabeza de indice era + n + 1 -con
 #     n = 1.440 son unos 24 minutos a un latido por segundo- y el sobre sin resolucion sale ROJO
 #     NOMBRADO, que es el producto del hito;
@@ -162,6 +166,11 @@ try:
     mando('rechazo-stale-declarada', res({'tipo': 'rechazo', 'sobre': sobre_rechazo}),
           3, 'DECLARADA, NO PROBADA: resolucion.sobre: el operador resuelve por StaleState')
     mando('declarada', res({'tipo': 'declarada', 'data': declarada}), 3, 'DECLARADA, NO PROBADA')
+    # §815 (kit 0.4.3; RFC-0007 D-I, RFC-0010 D-G): VerificationFailed y ProofFailed se DECLARAN
+    for causa, nombre in (('VerificationFailed', 'declarada-verification-failed'),
+                          ('ProofFailed', 'declarada-proof-failed')):
+        mando(nombre, res({'tipo': 'declarada', 'data': dict(data, causa=causa)}), 3,
+              'DECLARADA, NO PROBADA: el operador declara %s, una causa que el RFC-0007 dejo sin prueba portable' % causa)
     # el cierre
     mando('neg-sin-cierre', sin(base, 'cierre'), 1, 'falta cierre')
     mando('neg-cierre-formatVersion-7', dict(base, cierre=dict(cierre, formatVersion='0x7')),

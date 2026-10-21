@@ -44,6 +44,25 @@
 //! hueco, del que la era da cuenta. Es el caso seguro, y es el mismo precio
 //! que §242 declaró benigno para los huecos de firma.
 //!
+//! ⚠️ CORRECCIÓN (§815), citada y no borrada: **entre reservar y anotar cae ahora el
+//! juicio entero de la capa.** Hasta el §815 el nodo anotaba ANTES de la capa, y una
+//! muerte entre anotar y aplicar dejaba una HOJA sin veredicto: el recibo entraba
+//! en la `recepRoot` firmada, la operación no estaba en el libro, y pasada la
+//! ventana el sobre de completitud daba ROJO contra un operador honrado (F1,
+//! MEDIDO en privado sobre 4d8017d). Desde el §815 el nodo reserva el `rx` y fija la
+//! era al recibir, la capa juzga, y la hoja se anota con `fsync` TRAS el veredicto
+//! y ANTES de responder (`juzgar_y_anotar` en `main.rs`). Esta sección sigue en
+//! pie -la entrada está en disco antes de responder-; lo que cambia es qué deja
+//! una evaluación cortada: el hueco de arriba, nunca una hoja que nadie puede
+//! resolver. Con `--ledger`, una hoja de una operación APLICADA nace tras el
+//! `flush` de su asiento. Sin él no: el libro vive en memoria y este registro en
+//! disco, y tras reiniciar la hoja queda sin su operación (la A8 de juicio0 y
+//! juicio2, DEDUCIDA; residuo en `SECURITY.md` §3.15).
+//!
+//! Y queda el residuo que ningún orden cierra: una muerte entre el `fsync` de la
+//! hoja de un RECHAZO y la escritura de la respuesta deja la hoja con un rechazo
+//! que nadie tiene (la misma clase que el titular que calla un rechazo vivo).
+//!
 //! ## ⚠️⚠️ Lo que NO es benigno: el registro por delante del contador
 //!
 //! Un hueco es declarable. Lo que rompe la propiedad es que el registro

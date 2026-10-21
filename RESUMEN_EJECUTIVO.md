@@ -31,7 +31,10 @@ conservación del dinero y la autoría de cada pago, hoy, sólo el nodo.
   que no la resolvió. Sus residuos, declarados: un operador que no emite recibo no deja rastro
   (RFC-0010); el lote y la prenda lo llevan desde el §611, y de ellos quedan el agregador que no
   reenvía el recibo y la prenda presentada sobre un estado viejo (RFC-0014). ⚠️ **Corregido en
-  el §794**: decía «y el lote y la prenda no lo llevan (RFC-0010)».
+  el §794**: decía «y el lote y la prenda no lo llevan (RFC-0010)». ⚠️ **§815**: el recibo lo deja
+  toda operación que el nodo JUZGA; una evaluación cortada —una caída, un pánico, un fallo del
+  almacén— deja su número hueco y ningún recibo, y la resolución puede ser también la declarada
+  por el operador sin prueba, el cuarto estado (`SECURITY.md` §3.15).
 
 ⚠️ **Corregido en el §589**: hasta entonces esta página decía aquí «la completitud de un periodo
 […] está listada como planeada, no como hecha», y en «Qué falta» pedía «la completitud de los
@@ -94,7 +97,7 @@ están revisados: [`doc/USE_CASES.md`](./doc/USE_CASES.md).
 |---|---|
 | El motor | 22 crates en Rust —19 propios y los tres del fork de winterfell—; cada cambio dice en su asiento qué compuertas pasó, y la mayor es el canon: los tests de los crates —19 en el sello, los 22 con `--completo`— y once herramientas que vigilan cifras, citas, dominios, el censo del núcleo, la geometría, que ninguna curva entre en los binarios de producción y que lo prometido del protocolo no se rompa sin que su lista lo diga. ⚠️ **Corregido en el §794**: decía «18 crates» (`Cargo.toml`:2-51 lista 22) y «cada cambio pasa por el canon (los tests de todos los crates …)»; el sello deja tres crates para `--largo` y `--completo` (`tools/canon.sh`:128-130), y `GENAI.md` §«Fuera del paso 4» dice que una sesión declara las compuertas que corrió, no siempre el canon entero. ⚠️ **Corregido en el §835**: decía que vigilan «que ninguna curva entre en los binarios de producción»; la de curvas no ve el TLS de `ureq`, que trae curvas al cli y al SDK para el transporte (la 122 de `BACKLOG.md`). ⚠️ **Corregido en el §838**: el §835 decía que no lo ve; desde el §838 lo ve, y lo admite solo como la excepción del §106 para el transporte del cli y del SDK, con su coste: la clave de vista viaja bajo un ECDHE clásico |
 | El protocolo | `zkssl/0.4`: 32 métodos JSON-RPC, vectores de conformidad por versión que desde el §692 no se reescriben, y una versión que no dice qué pruebas acepta un nodo (§699); RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 y 0014 aceptados; 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 y 0021 propuestos |
-| El verificador | `zk-ssl-verify` 0.4.2, publicada como `arqueo-verify-v0.4.2` y reproducible desde el commit que su `VERSION` nombra |
+| El verificador | `zk-ssl-verify` 0.4.3, cortada (§815), un arreglo de seguridad; la publicada es `arqueo-verify-v0.4.2`, reproducible desde el commit que su `VERSION` nombra |
 | El registro | [`AUDITORIA.md`](./AUDITORIA.md): un asiento por cambio verificado, con su commit; lo que se corrige se marca, no se borra |
 
 ## La decisión de fondo

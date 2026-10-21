@@ -12,13 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 43 abiertas, 86 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 44 abiertas, 86 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
-8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, y el §861, que no mueve ninguna.
+8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
+y el §815, que abre la 129.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -3430,6 +3431,39 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   la E4 del RFC-0001 (D-4, §812). **Qué la cierra**: que el nodo abra cifrado, con una frase de
   origen declarado y un test que no lea el libro sin ella; o una decisión del autor que lo deje como
   residuo de despliegue.
+
+- [ ] **129. El recibo de un rechazo depende de lo que nadie conserva, y la declarada no la ata nada
+  (§815).** Dos restos del sobre de completitud que el §815 encontró al arreglar el recibo de recepción
+  (`SECURITY.md` §3.15) y que no cierra. **(a) El rechazo que nadie conserva** (deducido, sin
+  medir). El nodo anota con `fsync` la hoja de un rechazo y no guarda su `data`: la causa, sus
+  campos y el `seq` del juicio viajan solo en la respuesta. Si el nodo muere entre el `fsync` de la
+  hoja y la respuesta, si la respuesta se pierde o si el titular la calla, el operador honrado no
+  tiene el sobre de rechazo que exhibir, y una causa con prueba —`StaleState`, la común cuando dos
+  titulares compiten— no se declara: pasada la ventana, ROJO contra él. Es anterior al §815. El orden
+  del §815 lo hace barato de cerrar —el veredicto ya se conoce al anotar, y la entrada local del
+  registro, que no viaja, podría llevarlo sin otro `fsync`—, pero exhibirlo choca con `exige_misma`
+  (pide una cabeza firmada con el `seq` exacto del juicio, que con tráfico puede no existir) y con
+  el disco: el registro no se poda (§580). **(b) La declarada no la ata nada** (medido en privado
+  sobre `4d8017d`, con el kit de entonces). El kit da 3 a una declarada con cualquier causa de su
+  lista, venga o no a cuento —`NotTheAccountHolder` sobre un envío—, y hasta sin cabeza vigente: lo
+  único que la ata al recibo es el `hashPrueba`, que el operador conoce, así que cualquier ROJO baja
+  a 3 con la palabra del operador. Es lo que la D-G del RFC-0010 llama «declarada, no probada», pero
+  nadie lo había dicho con todas sus letras; y por eso la 0.4.3, que añade `ProofFailed` y
+  `VerificationFailed` a la lista, no abre una puerta nueva. Lo cierra en parte el tren `zkssl/0.5`:
+  con el `digest_pi` bajo la firma (RFC-0019 E3), las dos de la prueba se podrán probar o refutar, y
+  saldrán de la lista; para las otras cuatro no hay nada planeado. Dos ataduras que ya existen y no
+  esperan al 0.5: `ProofFailed` no la produce hoy ningún brazo con recibo —la capa sólo la da al
+  probar; leído en el código, sin medir—, así que acotar por vía la sacaría de todas; y en el lote
+  el kit no cruza una causa declarada que no es de forma con `juzgar_forma`: `lote-declarada`
+  (publicado desde el §614) declara `NotTheIssuer` sobre una composición que repite la cuenta, que
+  la refuta sola, y un kit que ate la forma tendrá que mudar ese vector con su aviso (RFC-0021, R6
+  b). El vector del lote del §815 se derivó de una composición sin defecto de forma, para no repetirlo
+  (medido en una revisión del §815: con esa composición y la causa `DuplicateAccountInBatch`, la 0.4.3
+  lo da por resuelto por su forma). **Lo que pide**: (a) decidir si el nodo conserva el material de
+  sus rechazos, cuánto y cuánto tiempo; (b) decidir si la declarada se acota —por ejemplo, a las
+  causas que caben en cada vía— o si queda como la palabra del operador, dicho así en la D-G del
+  RFC-0010 y en el veredicto 4 de `spec/PAQUETE.md` 2.11. **Qué la cierra**: cada decisión, con su
+  test si se construye, o su frase en `SECURITY.md` §3.15.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

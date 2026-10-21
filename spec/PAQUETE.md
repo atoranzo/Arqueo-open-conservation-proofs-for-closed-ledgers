@@ -233,6 +233,14 @@ donde el valor es una respuesta del cable sin reescribir.
   §459), y el resto de la tabla D-D es E4 y E5. `StaleState`, `WrongRegulatoryLimit` y los
   duplicados de lote los añadió el §456, reuniendo un recibo real por el proxy de un banco (su
   banco no vive en el árbol, y se declara).
+  ⚠️ §815: `ProofFailed` y `VerificationFailed` tampoco tienen brazo aquí, y siguen rechazándose
+  con su nombre: la D-I del RFC-0007 las declara sin prueba portable —que la prueba no verificara
+  es la palabra del nodo hasta que el mando la re-verifique (RFC-0019 E3, el tren 0.5)—, y desde el
+  kit 0.4.3 su recibo se resuelve como `declarada` (2.11, veredicto 4), en el cuarto estado. Hasta
+  el §815 ni esto ni aquello las aceptaba, y un recibo rechazado por ellas no tenía resolución que
+  exhibir. El ROJO de este sobre con esas causas, «la causa … no la prueba este mando», dice que el
+  sobre no resuelve el recibo, y no es una acusación contra el operador: la resolución es la
+  `declarada`.
 - `InsufficientBalance` la añadió el §478, y es la única causa de este sobre que verifica un STARK.
   El `data` del sobre no trae el saldo —el mando rechaza el que traiga `available`—, y desde el
   §538 (RFC-0009 E3b-2) **la prueba de banda tampoco lo publica**: entre el §521 y el §538 abría sus
@@ -441,6 +449,24 @@ la hoja la ata a su camino pero no mide la ventana:
    (`CustodianSetExhausted`, `PendingTreeExhausted`, `NotTheIssuer`, `NotTheAccountHolder`) y atada
    al recibo por su `recepcion`: el **cuarto estado**, «resolución declarada, no probada», que
    sale con su propio código (D4). Una causa que sí tiene prueba se exhibe, no se declara.
+   ⚠️ §815 (kit 0.4.3): las causas son SEIS: las cuatro y `ProofFailed` y `VerificationFailed`, que
+   la D-I del RFC-0007 declara sin prueba portable y la D-G del RFC-0010 manda aquí. La lista de
+   cuatro salió de las filas de la tabla D-D del RFC-0007 marcadas «declarada sin prueba» y de la
+   corrección que el §460 escribió tras ella (`PendingTreeExhausted`), no de su D-I; y con ella un
+   recibo que el nodo rechazó por una prueba que no verificaba —la de un tercero sin cuenta que
+   manda bytes basura con las raíces públicas, por ejemplo— no tenía resolución: el sobre de
+   rechazo no la prueba (2.6) y la declarada salía ROJO, así que pasada la ventana el sobre
+   nombraba al operador honrado. Los vectores `completitud/declarada-verification-failed.json`,
+   `declarada-proof-failed.json` y `lote-declarada-verification-failed.json` lo fijan. Dos cosas
+   que la salida 3 no dice. **`ProofFailed` no la produce hoy ningún brazo con recibo**: la capa
+   sólo la da al PROBAR, y `applySend`, `applyClaim`, `applyMany` y `zkssl_pledge` sólo verifican
+   (leído en el código, sin medir). Una declarada con `ProofFailed` es, por tanto, siempre la
+   palabra del operador, sin un caso honrado detrás: está en la lista porque la D-I la declara, y
+   acotar la declarada a las causas que caben en cada vía es la 129 (b) del `BACKLOG.md`. Y **un
+   sobre de rechazo con `VerificationFailed` o `ProofFailed` sigue en ROJO**, «la causa … no la
+   prueba este mando» (2.6): ese ROJO dice que ESA resolución no resuelve, y no acusa a nadie
+   —cualquiera fabrica un sobre así sin nada que lo sostenga—. La resolución que el operador
+   honrado exhibe para esas causas es la `declarada`.
 5. **`lote`** (§612, RFC-0014 E4a, D-B): el recibo de un `zkssl_applyMany`, cuyo `hashPrueba` es
    la huella de su composición (§611). El mando recompone `hash_del_lote` con la `composicion`
    -la que el agregador reenvía a cada titular (D-C), en el orden del lote- y, si no es la del
@@ -1071,8 +1097,8 @@ el prefijo `DECLARADA, NO PROBADA: ` —la constante `DECLARADA_NO_PROBADA`—, 
 imprime **sin** `ROJO: ` delante y sale con `3` (`codigo_de_salida` y `main`; sección 6): ni
 VERDE ni ROJO.
 
-- `DECLARADA, NO PROBADA: el operador declara {causa}, una causa que el RFC-0007 dejo sin prueba portable: se cuenta aparte (RFC-0010, D-G)` — la declarada, con `{causa}` una de `CustodianSetExhausted`, `PendingTreeExhausted`, `NotTheIssuer` y `NotTheAccountHolder`, atada al recibo por su `data.recepcion`
-- `DECLARADA, NO PROBADA: el operador declara {causa} en la operacion {j} del lote, una causa que el RFC-0007 dejo sin prueba portable: se cuenta aparte (RFC-0010, D-G)` — el lote resuelto por `data`, con las mismas cuatro
+- `DECLARADA, NO PROBADA: el operador declara {causa}, una causa que el RFC-0007 dejo sin prueba portable: se cuenta aparte (RFC-0010, D-G)` — la declarada, con `{causa}` una de `CustodianSetExhausted`, `PendingTreeExhausted`, `NotTheIssuer` y `NotTheAccountHolder`, atada al recibo por su `data.recepcion`. ⚠️ §815: y `ProofFailed` y `VerificationFailed`, desde el kit 0.4.3: seis
+- `DECLARADA, NO PROBADA: el operador declara {causa} en la operacion {j} del lote, una causa que el RFC-0007 dejo sin prueba portable: se cuenta aparte (RFC-0010, D-G)` — el lote resuelto por `data`, con las mismas cuatro. ⚠️ §815: las mismas seis, desde el kit 0.4.3
 - `DECLARADA, NO PROBADA: {que}: el operador resuelve por StaleState. La causa se sostiene sobre el estado comprometido (cabeza de indice acreditado {s}), pero su atadura a ESTA operacion -los publicInputs del recibo del rechazo y su data- no va firmada: es la palabra del nodo (RFC-0019 E2)` — desde el §682 un `StaleState` no resuelve solo, ni en la vía directa ni en el lote (`{que}` es `resolucion.sobre`); sale después de que el sobre de rechazo verifique por sus reglas, para que uno mal formado siga siendo ROJO por lo suyo
 
 **El ancla** (§592, RFC-0012 E3)

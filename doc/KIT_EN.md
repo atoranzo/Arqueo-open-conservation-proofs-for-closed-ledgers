@@ -27,6 +27,51 @@ running its eleven catalogues from inside the tarball — in the `AUDITORIA.md` 
 this release (§671). It recomposes heads up to **v6**, the one the node signs today, and reads
 eleven families: the eleven of section 11 of the `spec/PAQUETE.md` that travels in its tarball, the eleventh being the co-signed anchor (§633, §634); the tree's section 11 already counts twelve, with rotation (§649), which no published release carries. ⚠️ **Corrected in §807**: it said «the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor»; section 11 at commit `a4e888d` names eleven families, the co-signed anchor among them, and the tree's names twelve (`FAMILIAS` in `tools/artefacto.sh`:31).
 
+⚠️ **0.4.3 is CUT and not published (§815), and it is a security fix.** The current release remains
+0.4.2 until the entry that registers 0.4.3 pins its fingerprint. It was drafted in private
+(`spec/rfc/PROCESO.md` §«Fallos de seguridad») and it changes verdicts within `0.4.x`, which rule
+R6 f of RFC-0021 allows with this notice and the list of what changes. **The defect it fixes:**
+0.4.2 accepts no resolution of a reception receipt that the node rejected with
+`VerificationFailed` or `ProofFailed`. No command proves its rejection envelope (2.6 of
+`spec/PAQUETE.md`), and the `declarada` one comes out RED, «no es de las que el RFC-0007 dejo sin
+prueba portable», although D-I of RFC-0007 declares them that way and D-G of RFC-0010 sends them to
+the fourth state. Measured in private before the fix: a third party **with no account** sends a
+garbage proof with the public roots, the node rejects it with `VerificationFailed` and hands it its
+receipt, and once the window —1,440 heads— is over the completeness envelope says «NO RESUELTA EN
+LA VENTANA», a RED that names an honest operator. Every release that reads that envelope has it:
+0.3.0, 0.4.0, 0.4.1 and 0.4.2 carry the same list of four causes (read at their commits,
+`65cabfb`, `65d1e89`, `ff1f06f` and `a4e888d`; measured with 0.4.2), and 0.2.0 does not read the
+envelope. 0.4.3 declares them: exit 3, «DECLARADA, NO PROBADA», on the direct path and in a batch;
+their rejection envelope is still unproven, because that the proof did not verify is the node's
+word until the kit re-verifies it (RFC-0019 E3, the 0.5 train). That rejection envelope still comes
+out RED, «la causa … no la prueba este mando», and that RED says the envelope does not resolve the
+receipt, not that the operator is to blame: the resolution an honest one shows is `declarada`. And
+no receipt-bearing path of the node produces `ProofFailed` today —the layer only gives it when
+proving; read in the code—, so a `declarada` with it is always the operator's word; it is in the
+list because D-I declares it (`SECURITY.md` §3.15; entry 129 of `BACKLOG.md`). **What changes,
+measured** with
+the published 0.4.2 (binary `7734376463d120b0…`) and the tree's 0.4.3 over the 500 vectors of
+`spec/vectors/`, exit code and last line of each:
+
+- of the 348 vectors that travel in the 0.4.2 tarball, 346 are still at their path with the same
+  bytes and the same code (of the 437 in the tree at its commit, 435); four change their text with
+  the same 1 —the window is named with the index the signature attests and its start (§681,
+  RFC-0019 E1)—; and the other two, GREEN under 0.4.2, give 3 and are kept, with their verdict of
+  then, under `spec/vectors/0.4/completitud/` (§682, RFC-0019 E2: a `StaleState` does not resolve on
+  its own);
+- of the 65 vectors the tree gained since `a4e888d`, fourteen give another code under 0.4.2: those
+  two, at their new path, from 0 to 3; the three of this fix, from 1 to 3
+  (`completitud/declarada-verification-failed.json`, `declarada-proof-failed.json`,
+  `lote-declarada-verification-failed.json`); the two §682 twins, from 0 to 3; the co-signature with
+  a version that does not fit in a byte, from 0 to 1 (§780,
+  `paquete/rechazo-cofirma-versionformato-0x103.json`); and six of the rotation family, from 1 to 0,
+  because 0.4.3 reads `actas` and the `solapamiento` envelope, which 0.4.2 does not know (§648,
+  §686: additive). And `completitud/neg-vigente-index-inflado.json` stays at 1, but under 0.4.2 it is
+  «NO RESUELTA EN LA VENTANA» —a RED against the operator that anyone could forge by inflating the
+  declared `index`— and under 0.4.3 «ventana ABIERTA» (§681).
+
+The records of the measurement and the full list, vector by vector, go in entry §815.
+
 **0.4.1 is still published and is no longer current** (`arqueo-verify-v0.4.1`, commit `ff1f06f`,
 tarball `505de994f243bc76…`). It has three defects that 0.4.2 fixes: it reads a `u64` of the
 envelope with a `+` or leading zeros (§662); it counts the same co-signature repeated as several

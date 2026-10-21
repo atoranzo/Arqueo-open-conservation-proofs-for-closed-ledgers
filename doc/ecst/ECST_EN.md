@@ -1185,6 +1185,14 @@ ROJO against an honest operator by deliberately sending an invalid proof, which 
 is an inference by the sceptic of block C, collected in the working material
 (`doc/ecst/borrador/refutacion-custody.json`) and **with no vector that exercises it**.
 
+⚠️ §815: the reading was right, and the gap wider: one does not need to be a holder. **[MEASURED]** in
+private on `4d8017d` (`AUDITORIA.md` §815): a third party with no account sends a garbage proof with the public
+roots, the node rejects it with `VerificationFailed` and hands it its receipt, the rejection envelope and the
+declared one come out ROJO, and once the window is over the completeness envelope says «NO RESUELTA EN LA
+VENTANA» against the honest operator. Kit 0.4.3 closes it (§815): both causes are declared, in the fourth
+state, and three vectors of `spec/vectors/completitud/` exercise it. They are still unproven
+(`spec/PAQUETE.md` 2.11, verdict 4).
+
 ### 8.3 Living documents that do not reflect RFC-0010
 
 §581 updated row 6 of the README and its lists of what is not claimed, but left without a caveat, in the

@@ -27,6 +27,49 @@ corriendo sus once catálogos desde dentro del tarball— en el asiento de `AUDI
 esta release (§671). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee once
 familias: las once de la sección 11 del `spec/PAQUETE.md` que viaja en su tarball, la undécima la del ancla cofirmada (§633, §634); la del árbol cuenta ya doce, con la rotación (§649), que ninguna release publicada lleva. ⚠️ **Corregido en el §807**: decía «las diez de la sección 11 de `spec/PAQUETE.md` y la del ancla cofirmada»; la sección 11 del commit `a4e888d` nombra once familias, el ancla cofirmada entre ellas, y la del árbol doce (`FAMILIAS` en `tools/artefacto.sh`:31).
 
+⚠️ **La 0.4.3 está CORTADA y no publicada (§815), y es un arreglo de seguridad.** La vigente sigue
+siendo la 0.4.2 hasta que el asiento que registre la 0.4.3 fije su huella. Se redactó en privado
+(`spec/rfc/PROCESO.md` §«Fallos de seguridad») y cambia veredictos dentro de `0.4.x`, que es lo que
+la R6 f del RFC-0021 permite con este aviso y la lista de lo que cambia. **El defecto que corrige:**
+la 0.4.2 no acepta ninguna resolución de un recibo de recepción que el nodo rechazó por
+`VerificationFailed` o `ProofFailed`. Su sobre de rechazo no lo prueba ningún mando (2.6 de
+`spec/PAQUETE.md`), y la `declarada` sale ROJO, «no es de las que el RFC-0007 dejo sin prueba
+portable», aunque la D-I del RFC-0007 las declara así y la D-G del RFC-0010 las manda al cuarto
+estado. Medido en privado antes del arreglo: un tercero **sin cuenta** manda una prueba basura con
+las raíces públicas, el nodo la rechaza con `VerificationFailed` y le da su recibo, y pasada la
+ventana —1.440 cabezas— el sobre de completitud sale «NO RESUELTA EN LA VENTANA», un ROJO que
+nombra a un operador honrado. Lo tienen todas las releases que leen ese sobre: la 0.3.0, la 0.4.0, la
+0.4.1 y la 0.4.2 llevan la misma lista de cuatro causas (leído en sus commits, `65cabfb`,
+`65d1e89`, `ff1f06f` y `a4e888d`; medido con la 0.4.2), y la 0.2.0 no lee el sobre. La 0.4.3 las
+declara: salida 3, «DECLARADA, NO PROBADA», en la vía directa y en el lote; su sobre de rechazo
+sigue sin probarse, porque que la prueba no verificara es la palabra del nodo hasta que el kit la
+re-verifique (RFC-0019 E3, el tren 0.5). Ese sobre de rechazo sigue saliendo ROJO, «la causa … no
+la prueba este mando», y ese ROJO dice que el sobre no resuelve el recibo, no acusa al operador:
+la resolución que el honrado exhibe es la `declarada`. Y `ProofFailed` no la produce hoy ningún
+brazo del nodo con recibo —la capa sólo la da al probar; leído en el código—, así que una
+declarada con ella es siempre la palabra del operador; entra porque la D-I la declara
+(`SECURITY.md` §3.15; la 129 del `BACKLOG.md`). **Lo que cambia, medido** con la 0.4.2 publicada
+(binario `7734376463d120b0…`) y la 0.4.3 del árbol sobre los 500 vectores de `spec/vectors/`,
+código de salida y última línea de cada uno:
+
+- de los 348 vectores que viajan en el tarball de la 0.4.2, 346 siguen en su ruta con los mismos
+  bytes y el mismo código (de los 437 del árbol en su commit, 435); cuatro cambian el texto con el
+  mismo 1 —la ventana se nombra con el índice que la firma acredita y su inicio (§681, RFC-0019
+  E1)—; y los otros dos, VERDE con la 0.4.2, dan 3 y se conservan, con su veredicto de entonces,
+  en `spec/vectors/0.4/completitud/` (§682, RFC-0019 E2: un `StaleState` no resuelve solo);
+- de los 65 vectores que el árbol ganó desde `a4e888d`, catorce dan otro código con la 0.4.2: esos
+  dos, en su ruta nueva, de 0 a 3; los tres de este arreglo, de 1 a 3
+  (`completitud/declarada-verification-failed.json`, `declarada-proof-failed.json`,
+  `lote-declarada-verification-failed.json`); los dos gemelos del
+  §682, de 0 a 3; la cofirma con una versión que no cabe en un byte, de 0 a 1 (§780,
+  `paquete/rechazo-cofirma-versionformato-0x103.json`); y seis de la rotación, de 1 a 0, porque la
+  0.4.3 lee `actas` y el sobre `solapamiento`, que la 0.4.2 no conoce (§648, §686: aditivo). Y
+  `completitud/neg-vigente-index-inflado.json` sigue en 1, pero con la 0.4.2 es «NO RESUELTA EN LA
+  VENTANA» —un ROJO contra el operador que cualquiera fabricaba inflando el `index` declarado— y
+  con la 0.4.3 «ventana ABIERTA» (§681).
+
+Los registros de la medida y la lista entera, vector a vector, van en el asiento §815.
+
 **La 0.4.1 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.1`, commit `ff1f06f`,
 tarball `505de994f243bc76…`). Tiene tres defectos que la 0.4.2 corrige: lee un `u64` del sobre con
 `+` o con ceros a la izquierda (§662); cuenta la misma cofirma repetida como varios testigos en el

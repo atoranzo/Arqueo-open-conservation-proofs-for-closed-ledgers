@@ -1169,6 +1169,13 @@ honrado enviando a propósito una prueba inválida, que sí consume recibo. Es u
 bloque C, recogida en el material de trabajo (`doc/ecst/borrador/refutacion-custody.json`) y **sin vector
 que la ejerza**.
 
+⚠️ §815: la lectura era correcta, y el hueco, mayor: no hace falta ser titular. **[MEDIDO]** en privado
+sobre `4d8017d` (`AUDITORIA.md` §815): un tercero sin cuenta manda una prueba basura con las raíces públicas, el
+nodo la rechaza con `VerificationFailed` y le da su recibo, el sobre de rechazo y la declarada salen ROJO, y
+pasada la ventana el sobre de completitud dice «NO RESUELTA EN LA VENTANA» contra el operador honrado. Lo
+cierra el kit 0.4.3 (§815): las dos causas se declaran, en el cuarto estado, y tres vectores de
+`spec/vectors/completitud/` lo ejercen. Siguen sin probarse (`spec/PAQUETE.md` 2.11, veredicto 4).
+
 ### 8.3 Documentos vivos que no recogen el RFC-0010
 
 El §581 puso al día la fila 6 del README y sus listas de lo que no se afirma, pero dejó sin salvedad, en los

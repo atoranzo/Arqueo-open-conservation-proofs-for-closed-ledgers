@@ -58084,3 +58084,564 @@ Las correcciones, sobre los ficheros STAGED de este commit:
 2. `CONTRIBUTING.md:119-120`, la misma nota y la misma marca.
 3. `doc/ROTACION_DE_CUENTAS.md:169-170`, la fila de `RecoveryClimbAir` en la suite de lo que revela
    una prueba: «⚠️ §842: decía `:1023-1030` y `:1060`», que ahora son `:1029-1036` y `:1066`.
+
+## §815 — el recibo de recepción ya no nombra en ROJO a un operador honrado: el nodo juzga antes de anotar, el latido no firma en PARADA, y el kit 0.4.3 declara `ProofFailed` y `VerificationFailed`, con su aviso. Redactado en privado
+
+El commit que lleva este asiento, sobre `4b9f14b` (el §842). Se redactó en privado
+(`spec/rfc/PROCESO.md` §«Fallos de seguridad»; la sección 5 de `SECURITY.md`): los tres fallos, su
+medida y su arreglo se escribieron fuera del árbol, en clones sin remoto, y entran de una vez en
+este sello, con la enmienda del RFC que tocan, el corte del kit que arregla uno de ellos y su aviso.
+Ningún sello anterior los nombra; el tercero lo anotaba por lectura, como posible hueco, la 8.2 del
+borrador `doc/ecst/ECST.md`. Toca el nodo —`crates/zk-ssl-node/src/main.rs`, `latido.rs` y
+`registro_recepcion.rs`—, y una marca en un comentario de `crates/zk-ssl/src/log.rs`; el kit
+—`crates/zk-ssl-verify/src/main.rs`, la `CLAUSURA_DEL_KIT` de su `lib.rs`, su `Cargo.toml` y el
+`Cargo.lock`, que pasan a 0.4.3—; tres vectores nuevos de `spec/vectors/completitud/`, con su
+manifiesto y sus huellas, y los dos bancos que los producen (`tools/banco_completitud.sh` y
+`tools/banco_recibo_agregado.sh`); el RFC-0010 —la D-E enmendada, y la D-D, la D-G y la D-H con su
+marca—, el RFC-0007 (dos marcas), el RFC-0011 (su E4), el RFC-0014 (su E3) y el RFC-0019 (su E3);
+`spec/RPC.md` y `spec/PAQUETE.md` (2.6, 2.11 y la sección 5); `SECURITY.md` —su sección 3.15, nueva,
+la corrección de la 3.9 y una marca en la 2—; la sección 0 de `doc/KIT.md` y de `doc/KIT_EN.md`, y
+la 8.2 de `doc/ecst/ECST.md` y de `doc/ecst/ECST_EN.md`; `doc/blueprint-v2.md` y
+`tools/segunda/README.md`; los pines del nodo y del kit en `tools/canon.sh`, con su crónica; las
+cifras de tests de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; la fila del verificador, la cuenta
+de vectores y una marca en la fila 6 de `README.md` y `README_EN.md`, y la fila del verificador y una
+marca en la completitud de `RESUMEN_BILINGUE.md` y `RESUMEN_EJECUTIVO.md`; el `BACKLOG.md` —la 129,
+nueva, y su cabecera—; y este asiento. No cambia el cable: `zkssl/0.4`, con la misma superficie
+(`check_superficie` en 0). Cambia lo que el nodo responde en tres fallos: el del almacén en
+`zkssl_publishConsumo` y en `zkssl_pledge`, que salían como una negativa dentro de un resultado
+(`accepted: false` con causa `Store`) y salen como la PARADA, como en los demás métodos desde el
+§655; y el del registro tras juzgar, que responde el veredicto sin `recepcion`. No mueve ni reescribe
+ningún vector publicado. No toca `crates/zk-ssl-guardian`, ni la zona de la migración de
+Winterfell, ni `crates/zk-ssl/src/persistence.rs`.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. Un agente que preparaba la decisión
+de la 19 dedujo el primer fallo leyendo el código, sin correr nada; otros tres midieron en privado
+los tres fallos, uno cada uno, y otro leyó qué declaraba el árbol de cada uno; tres diseños
+—repetir al arrancar la operación cortada, declarar la caída, cambiar el orden— y un prototipo del
+tercero, medido; tres revisiones independientes juzgaron los diseños y eligieron el orden, con
+complementos; el autor decidió (abajo); un agente construyó el arreglo del nodo y lo remidió con
+nodos de verdad y el binario de antes como falsador; otro cortó el kit 0.4.3 y lo remidió contra la
+0.4.2 publicada; otro escribió estos textos y corrió las herramientas del bucle; tres revisiones
+más juzgaron el sello entero —la seguridad del arreglo, los tests y las medidas, y los textos—, con
+mutantes y medidas propias; y otro arregló lo que encontraron, volvió a correr las suites, los
+mutantes, las dos re-medidas y las herramientas, y reescribió este asiento (abajo, «La revisión»).
+Se midió sobre `4d8017d` (el §813) y se construyó sobre `ff9d4fc`: entre los dos no cambia ninguna
+línea de `crates/` (`git diff --stat`), así que lo medido en `4d8017d` es lo de hoy. La sesión lo
+porta sobre `32b5b12` (el §861): de `ff9d4fc` a `32b5b12`, `crates/` sólo cambia en comentarios, los
+del §860 y el §861 (veintiuna líneas en seis ficheros, ninguna del nodo ni del kit). Y lo vuelve a
+portar sobre `4b9f14b` (el §842), cuando la otra sesión subió sus §839 a §842 antes que él: de
+`32b5b12` a `4b9f14b`, `crates/` sólo cambia en módulos de tests de la capa (`#[cfg(test)]`: el censo
+de los `native_leaf`, el nivel de producción, el instrumento de lo que revela una prueba y las
+constantes de las métricas) y en tres comentarios de `crates/stark-experiment`; ninguna línea que se
+compile fuera de los tests, y ninguna del nodo ni del kit (`git diff --stat` y `git diff`). El número es el
+siguiente del rango que el autor asignó (§800 a §829). En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+Los registros que este asiento cita por su nombre (`m-caida/`, `m-parada/`, `m-vf/`,
+`remedida-nodo/`, `remedida-kit/`, `fixrev/` y los demás) son de los clones privados de la
+redacción: se quedan fuera del árbol y no se publican. Lo que dicen va aquí, con su cifra.
+
+**De dónde sale.** La 19 del `BACKLOG.md` —sin log de escritura anticipada— descansa en una frase de
+`crates/zk-ssl/src/persistence.rs`: «Perder una operación es recuperable: se vuelve a enviar». Al
+preparar su decisión, un agente leyó el orden en que el nodo reserva, anota y aplica en sus cuatro
+vías con recibo, y vio que la hoja del recibo quedaba en el disco ANTES de que la capa juzgara: una
+muerte entre las dos dejaría un recibo firmado de una operación que el libro no tiene. Lo dejó
+DEDUCIDO, sin medir. Los otros dos salieron al diseñar y juzgar su arreglo: el latido que firma en
+PARADA, que los tres diseños vieron por lectura, y el rechazo por prueba inválida, que el borrador
+del ECST anotaba por lectura y una de las revisiones midió con un nodo de verdad. Los tres se
+midieron después en privado, de punta a punta. Es el patrón del §110.3 —«“Te pille mintiendo” y
+“acabas de perder tu clave” son indistinguibles para un observador externo»— aplicado al recibo, al
+que nunca se había aplicado: una caída honrada y un libro deshecho dejaban el mismo estado firmado.
+
+**Los defectos**, medidos en privado sobre `4d8017d` el 15-10-2026, con nodos que firman un latido
+por segundo, en 4 CPU:
+
+- **F1, la caída entre anotar y aplicar.** Con un aborto inyectado tras anotar (un parche de medida,
+  fuera del árbol) y con un SIGKILL inyectado por `strace`, sin parche: la hoja queda en el disco;
+  al rearrancar, «registro de recepcion y contador a la par en el rx 1», sin aviso; la primera
+  cabeza firmada la acredita (`recepCount` 1) y `zkssl_recepPath` la sirve; la operación no está en
+  el libro. El titular recibió un 502 del proxy de la medida y ningún recibo, y un oráculo que sólo
+  conocía su `hashPrueba` lo recuperó con `zkssl_recepPath` y el kit: 33 llamadas, 1 acierto. Sin
+  reenvío, pasada la ventana —la cabeza vigente de índice 1450, a los 2.875 s—, los tres sobres sin
+  resolución salieron «NO RESUELTA EN LA VENTANA». Con reenvío, cuando el estado ya se había movido,
+  `StaleState`. Registros: `m-caida/reg/` (`medida_f1.log`, `medida_f1_strace.log`,
+  `oraculo_titular.log`). Desde fuera es el estado que fabrica el mentiroso del §602 restaurando el
+  libro.
+- **F2, el latido en PARADA.** Con `ENOSPC` inyectado por `strace` en `ledger/conf` y `ledger/db`
+  durante el envío de un segundo titular: la respuesta es la PARADA, `-32603`, con causa `Store`; el
+  nodo rechaza toda petición; y el latido firma cabezas del `seq` 9 con el disco en el `seq` 8: diez
+  en 20 s en la corrida A y cinco en 10 s en la B. Tras rearrancar, el libro reabre en el `seq` 8 y,
+  en la B, el nodo firma otra cabeza del `seq` 9 con otra operación, una apertura de cuenta: dos
+  cabezas firmadas a la misma altura con historias distintas (deducido de que la operación es otra;
+  la medida no comparó su `chainDigest`, porque el diario guarda el `epochDigest`, que se mueve en
+  cada latido). El testigo, `--auditar` y `--ausentes` no dan ningún hallazgo. El rx del envío
+  fallido queda acreditado (`recepCount` 3) sin su operación en el libro: F1 por otra puerta (que su
+  hoja estaba en el registro se deduce del orden). Registros: `m-parada/reg/` (`salida.txt`,
+  `salida_b.txt`).
+- **F3, el rechazo sin resolución.** Un tercero sin cuenta (`sender` y `receiver` 0), con las raíces
+  de `zkssl_epochHead` y el límite de `zkssl_params`, manda un envío con 32 bytes `0xab` por prueba:
+  `-32000`, `VerificationFailed` («prueba mal formada»), con `data.recepcion` (rx 1, era 2) y la
+  hoja bajo la `recepRoot` firmada; el cobro con 32 bytes `0xcd`, igual (rx 2). Con el kit de
+  `4d8017d`: el sobre de rechazo, ROJO, «la causa VerificationFailed no la prueba este mando»; la
+  declarada, ROJO, «no es de las que el RFC-0007 dejo sin prueba portable»; sin resolución, con la
+  ventana abierta, ROJO prematuro, y pasada —la cabeza vigente de índice 1444, en unos 48 minutos—,
+  «NO RESUELTA EN LA VENTANA»; y declarando una mentira, `PendingTreeExhausted`, 3. Registros:
+  `m-vf/`, su registro y `run/`. Las revisiones lo midieron también con sobres fabricados
+  (`juicio1_kit.log`, `j2/medida.log`): la declarada con `ProofFailed`, también ROJO.
+
+Lo que el árbol decía de los tres, leído en una lectura aparte, sin correr nada: de F1, la D-E del
+RFC-0010 y el §569 declaraban sólo la muerte entre reservar y anotar, la D-H decía que sin respuesta
+«no hay objeto que oponer», y el plan de la E4 del RFC-0011 tomaba «parar el nodo entre el recibo y
+la resolución» por la manera de producir la mentira; F2 lo daba por CERRADO la sección 3.9 de
+`SECURITY.md` («§655 (c)»), con el comentario de `despachar` y el test del §655 diciendo lo
+contrario de lo medido; F3 sólo lo anotaba el borrador del ECST, y el kit y `spec/PAQUETE.md`
+contradecían la D-I del RFC-0007.
+
+**Las ventanas**, con `git log -S` y `git show`:
+
+- F1: en `applySend` y `applyClaim`, el orden es del §569 (`b6d29fb`), la hoja se firma desde el
+  §570 (`a522184`), se sirve desde el §571 (`391e2cb`) y el kit da el ROJO desde el §573
+  (`3179c3a`), los cuatro del 28-09-2026; en `applyMany` y `zkssl_pledge`, desde el §611 (`e9d61a4`,
+  30-09-2026).
+- F2: el nodo firma sus cabezas desde el §241-§243 (09-08-2026; `latir` nace en el §241, `9ae25f1`);
+  hasta el §655 (`84925a5`, 01-10-2026) un fallo del almacén ni paraba el despacho; desde él, la
+  sección 3.9 de `SECURITY.md` lo dio por cerrado. `zkssl_publishConsumo` devolvía el fallo dentro
+  de un resultado desde el §417 (`9d19cb7`, 06-09-2026).
+- F3: `CAUSAS_SIN_PRUEBA_PORTABLE` nace con cuatro en el §573 (`3179c3a`) y la usa el lote desde el
+  §612 (`686c8b3`). Las releases 0.3.0, 0.4.0, 0.4.1 y 0.4.2 llevan la misma lista de cuatro: leído
+  en sus commits, `65cabfb`, `65d1e89`, `ff1f06f` y `a4e888d`; medido sólo con la 0.4.2. La 0.2.0 no
+  lee el sobre.
+
+Las tres, hasta este sello.
+
+**Quién lo decide.**
+
+- **El autor**, el 15-10-2026, en el chat, a las dos preguntas de la sesión:
+  1. F1: el ORDEN, el que eligieron las tres revisiones. El nodo juzga primero y anota después,
+     siempre antes de responder; el `rx` y la era se fijan al recibir. Con la enmienda citada, sin
+     borrar, de la D-E del RFC-0010 y la reversión de la decisión (a) del §569, con su razón; y con
+     los complementos de las revisiones: (i) `latir` no compone ni firma con la PARADA puesta (F2);
+     (ii) `zkssl_publishConsumo` deja de devolver un fallo del almacén dentro de un resultado y pasa
+     a la PARADA; (iii) la marca de fallo en vuelo bajo el candado del estado, si con el orden nuevo
+     seguía haciendo falta, que dejó a la sesión; (iv) una línea de traza con el `rx` y el
+     `hashPrueba` antes de que corra la capa.
+  2. F3: el kit 0.4.3 con su aviso. `VerificationFailed` y `ProofFailed` se declaran, salida 3,
+     «DECLARADA, NO PROBADA», como dicen la D-I del RFC-0007 y la D-G del RFC-0010;
+     `spec/PAQUETE.md` dice la lista nueva; vectores nuevos que lo ejerzan, sin mover ninguno
+     publicado; el corte, como el del §665, que cortó la 0.4.2; y el aviso que pide la R6 f del
+     RFC-0021. La versión fuerte —que el kit re-verifique la prueba y el rechazo se pruebe— queda
+     para el tren 0.5 (RFC-0019 E3), y se dice.
+
+  El 21-10-2026, el autor lo confirmó: la otra sesión le recordó que tenía previsto el corte
+  siguiente del kit para una publicación, y eligió la 0.4.3 ya, con aviso, en este sello; su
+  publicación irá después, con el número siguiente.
+
+  Las revisiones descartaron, y el autor con ellas, repetir al arrancar la operación cortada
+  —guardaba en claro la última petición, y una petición que hiciera entrar en pánico a la capa
+  dejaría al nodo sin arrancar, o con un ROJO contra sí mismo— y declarar la caída —pedía otro tipo
+  en el kit, un RFC y vectores, y daba al mentiroso del §602 una frase firmada para su deshacer—.
+- **La sesión**, y reversible:
+  - que la marca de fallo en vuelo SÍ hace falta, (iii): sin ella, una petición que esperaba el
+    candado del estado evaluaba sobre la memoria rota y, con el orden nuevo, podía quedarse sin hoja
+    —la carrera A5 de la primera revisión, deducida entonces y medida después con hilos reales por
+    la revisión del sello—; y quedaba el instante entre soltar el candado y poner la PARADA, en el
+    que el latido podía firmar;
+  - la forma de revertir (a): el veredicto sale sin recibo y el nodo para, en vez de seguir
+    evaluando sin poder dar recibo;
+  - que un fallo del almacén no deja hoja: la operación puede estar o no en el libro tras reiniciar;
+  - los tres vectores, derivados por mutación de la causa de datos ya capturados y publicados, como
+    `declarada` y `lote-declarada`, y no capturados de un nodo vivo, aunque el nodo SÍ produce
+    `VerificationFailed` (medido); y el tercero, el del lote, que no se pedía, para que el cambio de
+    veredicto del lote tenga su vector;
+  - la 129 del `BACKLOG.md`, y declarar en la sección 3.15 de `SECURITY.md` lo que el sello no
+    cierra;
+  - las marcas en el RFC-0014, el RFC-0019, `doc/blueprint-v2.md`, la sección del formato v6 de
+    `spec/RPC.md`, los dos README y los dos resúmenes, que no se pedían;
+  - y, al arreglar lo que encontró la revisión del sello: que el criterio del desenlace desconocido
+    sea función del TIPO del juicio de cada brazo y no un cierre por brazo; que la marca se ponga y
+    se mire sólo con dos ayudantes que, en los tests, entran en pánico si el candado del estado no
+    está tomado; que el test de la carrera con hilos reales entre en el sello; y que el vector del
+    lote salga de una composición sin defecto de forma.
+
+**Por qué con aviso, y por qué en privado.** F3 alcanza al kit publicado. Por la sección 5 de
+`SECURITY.md` y por `spec/rfc/PROCESO.md`, con el arreglo salen la release que lo arregla y su aviso
+de seguridad, un GitHub Security Advisory que nombra las afectadas —la 0.3.0, la 0.4.0, la 0.4.1 y
+la 0.4.2— y la primera que lo arregla, la 0.4.3. El arreglo cambia veredictos dentro de `0.4.x`, y
+eso la R6 f del RFC-0021 lo permite con su aviso y con la lista de lo que cambia, que va en la
+sección 0 de `doc/KIT.md` y, entera, abajo. La release y el aviso los publica el autor: este sello
+no los publica, y hasta el asiento que registre la release la vigente sigue siendo la 0.4.2. F1 y F2
+son del nodo, que no tiene release: su aviso es la sección 3.15 de `SECURITY.md`, con lo que conviene
+hacer, y este asiento. La sección 5 define el fallo de solidez como crear saldo, gastar sin
+autorización o hacer que el verificador acepte una transición inválida, y una acusación falsa no
+está entre ellos. Se trató en privado igual: F3 daba a cualquiera, sin cuenta, un ROJO firmado
+contra un operador honrado, y está en el kit publicado; y F1 y F2 son de la misma familia y
+comparten el arreglo de los textos.
+
+**Lo que hace.**
+
+1. **El orden, en los cuatro brazos** (`applySend`, `applyClaim`, `applyMany` y `zkssl_pledge`).
+   `recibir` reserva el `rx`; `era_al_recibir` fija la era en el mismo punto que antes; y
+   `juzgar_y_anotar` corre la capa —en la prenda, el juez y la capa—, y sólo después llama a
+   `anotar`, con su `fsync`, y responde. Aplicada, la respuesta lleva el acuse y el recibo;
+   rechazada, el `-32000` con su causa y `data.recepcion`: un rechazo sigue dejando hoja, ahora con
+   su veredicto dado (D-E). Un fallo del almacén no anota: el criterio, `desenlace_desconocido`, lo
+   aplica el tipo de lo que devuelve la capa de cada brazo (el trait `Desenlace`, con un impl para
+   `Result<(), LayerError>` —envío y cobro—, otro para el lote, con su operación, y otro para
+   `JuicioPrenda`), y el brazo no puede elegir otro; su comentario escribe la invariante de la capa
+   de la que depende: un error de la capa que no es `Store` no deja nada durable. Si `anotar` falla
+   tras el veredicto, la petición recibe su veredicto sin recibo y `despachar` pone la PARADA. La
+   marca de fallo en vuelo (`App::fallo_en_vuelo`) se escribe sólo con `poner_marca_en_vuelo` y se
+   mira con `marca_en_vuelo_con_el_candado`, las dos con el candado del estado tomado —en
+   `bajo_el_estado`, para un fallo del almacén de cualquier brazo, y en `juzgar_y_anotar`—; en los
+   tests, las dos entran en pánico si el candado no está tomado (`try_lock`), y en el binario esa
+   comprobación no existe. `bajo_el_estado` la mira al entrar y devuelve la PARADA sin `recibir`.
+   La PARADA de un fallo del almacén, de la marca y de un pánico la pone `despachar`; la del
+   candado del estado envenenado, `bajo_el_estado` (lo hacía `dispatch` antes del §815: el «único
+   sitio que decide la PARADA» del comentario del §655 no lo era, y lleva su marca). La traza
+   `recepcion: la capa juzga metodo=… rx=… hash_prueba=…` sale antes de la capa, sin los
+   parámetros. Los dos puntos de corte (`PuntoDeCorte`) existen sólo en los tests: en el binario
+   `punto_de_corte` no hace nada, y ninguna variable de entorno lo enciende. El cuerpo de
+   `dispatch` pasa, sin cambios, a `dispatch_con_estado`.
+2. **El latido y el consumo.** `latir` no compone ni firma con la PARADA puesta, y, ya con el
+   candado del estado, tampoco con la marca de fallo en vuelo: devuelve el error con su causa y no
+   gasta índice XMSS. `zkssl_publishConsumo` devuelve el fallo del almacén como `Err`, y el nodo
+   para; la prenda, igual.
+3. **El kit 0.4.3.** `CAUSAS_SIN_PRUEBA_PORTABLE` pasa de cuatro a seis, con `ProofFailed` y
+   `VerificationFailed`, y su comentario lleva la marca; la misma constante gobierna la declarada
+   directa y el brazo `data` del lote, así que los dos dan 3. El sobre de rechazo con esas causas
+   sigue en ROJO, por el brazo genérico, como las otras cuatro. Tres vectores en
+   `spec/vectors/completitud/` —`declarada-verification-failed.json`, `declarada-proof-failed.json`
+   y `lote-declarada-verification-failed.json`—, salida 3, derivados por una mutación de la causa
+   sobre el `data` capturado que ya está publicado: los dos directos, del `StaleState` del envío de
+   ceros que publica `neg-declarada-con-prueba.json` (el mismo `data` que `declarada.json` lleva con
+   `NotTheIssuer`); y el del lote, del `StaleState` del lote de UNA operación que publica
+   `lote-rechazado-stale-declarada.json`, con su recibo y su composición, que no tiene defecto de
+   forma. Con quince líneas al final del manifiesto, registradas con
+   `tools/check_vectores.py --registrar`; los dos bancos los producen. Las dos líneas de comentario
+   de ese manifiesto que podrían llevar el marcador del número no lo llevan —dicen «el kit 0.4.3» y
+   «desde la 0.4.3»—: `HUELLAS.sha256` fija cada línea, también las de comentario, y numerar
+   después una línea registrada la rompería sin remedio, porque `--registrar` no sobrescribe. Las
+   huellas de esas quince líneas y de los tres vectores, que no estaban en ningún commit, se quitaron
+   antes de registrar las de ahora: al arreglar lo que halló la revisión, el vector del lote y el
+   comentario se rehicieron. Y la
+   lista de «Versionado y compatibilidad» de `spec/RPC.md`, como hizo el §809: `vectores.json` 497
+   -> 500 y `vectores.lineas` 987 -> 1002; `check_superficie` lo contaba como novedad aditiva, que no
+   es ROJO, y la lista no se pone al día sola. El corte, como el del §665: la versión del
+   `Cargo.toml` del kit y del `Cargo.lock`, la `CLAUSURA_DEL_KIT` que el §694 añadió después, la fila
+   del verificador de los dos README y de los dos resúmenes —«0.4.3, cortada (§815)…; la publicada es
+   `arqueo-verify-v0.4.2`»—, y la sección 0 de `doc/KIT.md` y de `doc/KIT_EN.md`, con el aviso de la
+   R6 f: que está cortada y no publicada, que es un arreglo de seguridad redactado en privado, el
+   defecto, las releases afectadas y los veredictos que cambian frente a la 0.4.2.
+4. **Los textos.** La D-E del RFC-0010, enmendada con cita, y la reversión de la decisión (a) del
+   §569 con su razón; la D-D, con la era que ya no cuenta `anotar`; la D-G, con las dos causas y con
+   lo que la declarada es —la palabra del operador—; la D-H, corregida con marca: sin respuesta sí
+   había objeto que oponer, y el residuo del nodo que firma sin `--ledger`. La E4 del RFC-0011:
+   parar el nodo bastaba, sin mentir, con las dos salvedades que el sello no cierra. La celda de la
+   E3 del RFC-0014 y la E3 del RFC-0019, que lleva también la versión fuerte. `spec/RPC.md`, en su
+   sección del recibo de recepción —«se puso a evaluarla» pasa a «la juzgó», la era se fija al
+   recibir, y el `-32603` del registro roto ya no existe—, con la línea para el titular: sin
+   respuesta, busca su `hashPrueba` entre los `proofDigest` de `zkssl_logEntries` antes de volver a
+   pagar —en un lote, el de cada una de sus pruebas; en una prenda, la entrada cuyo `compromiso` es
+   su consumo—, y que la PARADA de `applyMany` y `zkssl_pledge` no lleva su `rx`; la fila del
+   `-32603`, que no nombraba la PARADA; la negativa de `zkssl_publishConsumo`; la sección de la
+   prenda, con sus dos excepciones; y la cabeza v6, que lleva una hoja por cada operación que el
+   nodo JUZGÓ. En el código, con marca: el comentario del §655 en `despachar` —con lo deducido dicho
+   como deducido, y el «único sitio»—, el docstring de `un_fallo_del_almacen_para_el_nodo`, el de
+   `anotar`, `recibo_de_recepcion`, `con_recibo_de_recepcion`, el §611 del lote y de la prenda, el
+   §569 de `applySend`, el texto de `politica_del_registro`, la D-J de `registro_recepcion.rs` y el
+   `recep_root` de `crates/zk-ssl/src/log.rs`. `spec/PAQUETE.md` en 2.6, en el veredicto 4 de 2.11
+   —con lo que la salida 3 no dice: que `ProofFailed` no la produce hoy ningún brazo con recibo, y
+   que el ROJO del sobre de rechazo con esas causas no acusa a nadie— y en las dos entradas de la
+   sección 5; el RFC-0007 tras la corrección del §802 («cuatro») y tras la D-I; el 8.2 del ECST, en
+   los dos idiomas, con su marca **[MEDIDO]**: la lectura era correcta, y el hueco, mayor.
+   `SECURITY.md`: la sección 3.15, con su residuo —también el nodo sin `--ledger` y la traza que
+   cuesta bytes— y «Lo que conviene hacer»; la 3.9 corregida —«siete cerrados» eran seis y uno a
+   medias—, con su fila y la (a) del fallo del almacén, que ya no es «anotar antes de verificar»
+   aunque el `fsync` del contador antes de verificar sigue; y una marca en la sección 2, donde el
+   §602 nombra al que deshace el libro. `tools/segunda/README.md`, con las cifras que crecen.
+
+**La revisión.** Tres revisiones independientes juzgaron el sello entero, sin tocarlo, con
+mutantes y medidas propias sobre copias. Lo que encontraron y lo que se hizo, cada cosa con su
+fuente:
+
+- **Bloqueante: «un `Store` no deja hoja» no lo ataba ningún test por brazo.** MEDIDO por la
+  revisión de los tests: sus mutantes R1 a R4, uno por brazo, cambiaban el cierre `desconocido` de
+  cada brazo por `|_r| false` y la suite entera del nodo seguía en 226 de 226 (`rev1/`). Arreglado:
+  el cierre por brazo desaparece y el criterio es del tipo (`Desenlace`, arriba), con un test que
+  ata cada impl; sus mutantes, D1 a D3, caen (abajo).
+- **Bloqueante: el nodo que firma sin `--ledger`** (la A8 de dos de los juicios del diseño, que la
+  dieron por residuo aparte). DEDUCIDO de leer el código, sin medir: sin `--ledger` el libro vive en
+  memoria y el registro de recepción en disco, y tras reiniciar queda la hoja sin su operación, el
+  estado de F1. Varios textos decían sin condición que «la hoja de una operación aplicada nace tras
+  el `flush` de su asiento». Arreglado en el texto: «con `--ledger`» donde se afirma —la D-E y la D-H
+  del RFC-0010, `SECURITY.md` 3.15, `registro_recepcion.rs`, `juzgar_y_anotar`, la E4 del RFC-0011—,
+  y el residuo, declarado en la D-H y en la 3.15. Exigir `--ledger` a quien firma no se hace aquí.
+- **El orden de la marca respecto del candado no lo ataba ningún test.** MEDIDO por la revisión de
+  seguridad y por la de los tests: con la marca puesta después de soltar el candado (O1, R5) o
+  mirada fuera de él (O3), la suite seguía en verde. Arreglado: los ayudantes que entran en pánico
+  sin el candado tomado, y el test de la carrera con hilos reales de la revisión de seguridad, que
+  entra en el sello. El nombre del test que prometía el «antes de soltar el candado» lo cumple
+  ahora por esos ayudantes, y su docstring lo dice.
+- **El vector del lote declaraba `VerificationFailed` sobre una composición que lo refuta.** MEDIDO
+  por la revisión de seguridad: con esa composición —la cuenta 0x0 dos veces— y la causa
+  `DuplicateAccountInBatch`, la 0.4.3 lo da por resuelto por su forma. Arreglado: el vector se
+  rehízo desde el lote de una operación (arriba), y la 129 (b) nombra la atadura que el kit no hace
+  y que alcanzaría a `lote-declarada`, publicado desde el §614.
+- **El lote con `ProofFailed` no tenía test ni vector.** MEDIDO por la revisión de los tests (su
+  mutante K1 sobrevivía). Arreglado en el test del kit, que muta la causa del vector del lote; K1
+  cae.
+- **Que `ProofFailed` no la produce ningún brazo con recibo, y que el ROJO del sobre de rechazo con
+  esas causas no es una acusación**, que los textos no decían: escrito en `spec/PAQUETE.md` (2.6 y
+  2.11), en la sección 0 de `doc/KIT.md` y de `doc/KIT_EN.md`, en la 3.15 y en la 129.
+- **Textos que decían más de lo cierto**, y se corrigen: la PARADA con su `[receptionSeq=…]`, que
+  `applyMany` y `zkssl_pledge` no llevan; la sección de la prenda de `spec/RPC.md`, sin su marca;
+  el «único sitio que pone la PARADA»; cuatro textos vivos con la semántica de antes
+  (`crates/zk-ssl/src/log.rs`, la D-D del RFC-0010, `RESUMEN_EJECUTIVO.md` —y, con él, los dos
+  README y `RESUMEN_BILINGUE.md`, que decían lo mismo— y el `-32603` del registro roto de
+  `spec/RPC.md`); la (a) de la 3.9, que se quedaba corta; la PARADA por un consumo, a la que la 3.15
+  le atribuía la medida del rearranque, hecha sólo con el envío; la 3.15 sin «Lo que conviene
+  hacer»; la E4 del RFC-0011 sin la salvedad del rechazo que nadie conserva; el origen de la lista
+  de cuatro, que salió también de la corrección del §460 y no sólo de las filas de la D-D; y la
+  marca de `doc/blueprint-v2.md`, que reenvolvía líneas publicadas y ahora se añade al final.
+- **Lo que este asiento decía de sus propias medidas**: cifras de mutantes contadas sobre 19 tests
+  filtrados y un fuente anterior, el M2 descrito como si cambiara el binario, el falsador de
+  `caida-anotar`, lo deducido de `parada-consumo`, la suite citada de antes de los últimos cambios,
+  el libro de los tests de corte, que se lee de la memoria, y las rutas privadas sin decir que lo
+  son. Todo se rehízo abajo, con las corridas sobre el fuente final.
+- **No se arregla**, y por qué: la traza sin test (sale en el log de la re-medida, abajo; atarla
+  pide capturar el `tracing` en los tests, y se declara); el coste en bytes de esa traza, deducido
+  y menor, que va al residuo de la 3.15; y el número de la 129, que sigue siendo provisional (abajo,
+  «Contadores»).
+
+**Medido**, en release y con `--locked`, cada cargo bajo el `flock` de la sesión y cada suite
+fuera de él, desde una copia de su ejecutable, con su directorio y su `TMPDIR` propios
+(`fixrev/compilar_final.log`, `fixrev/correr_final_a.log`, `fixrev/correr_final_b.log`), el
+21-10-2026 sobre el árbol final:
+
+- **La suite del nodo**: 229 pasan, 0 fallan, 0 ignorados, 0 avisos del compilador (sus mensajes
+  JSON). Veinte tests nuevos, y uno que se va. Todos deterministas salvo el de la carrera con
+  hilos reales, que depende del planificador: pasó en la base y en las 19 suites de mutantes que no
+  lo tocan, y por construcción no puede fallar con el código del sello —si B o L llegaran tarde,
+  encontrarían la PARADA ya puesta y la recibirían igual—; lo único que el planificador puede
+  quitarle es, alguna vez, ver caer un mutante (deducido). El que se va:
+  `si_anotar_falla_tras_el_veredicto_se_responde_el_veredicto_sin_recibo_y_el_nodo_para` ocupa el
+  sitio de `si_anotar_falla_la_operacion_no_se_evalua_y_el_rx_queda_hueco`, que ataba la decisión
+  (a) del §569. Cortan por el brazo real, con un envío STARK de verdad, tras juzgar —sin hoja, con lo
+  aplicado en el libro y el arranque que avisa de HUECOS— y tras anotar —la hoja con su operación ya
+  en el libro—; en estos tests el libro se lee de la memoria, con el candado envenenado por el
+  corte, y lo durable lo da la re-medida con un nodo de verdad, abajo. El rechazo, el lote, la
+  prenda y el cobro, cortados en los dos puntos; la prueba basura de un tercero sin cuenta, que se
+  lleva su recibo ya juzgada, y que cortada tras juzgar no deja hoja; el latido en PARADA, que no
+  firma ni gasta índice; la marca, puesta con un fallo del almacén de un brazo que no es de los
+  cuatro, y el latido que no firma; la petición que esperaba el candado y no evalúa, con la marca
+  puesta a mano; la misma carrera A5 con hilos reales —A falla en el almacén reteniendo el candado
+  400 ms, B y L salen sin PARADA y esperan—; los ayudantes de la marca, que sin el candado entran en
+  pánico; cada impl de `Desenlace`; el fallo del almacén al publicar un consumo, con un control de
+  que `ConsumoRepetido` sigue siendo una negativa; la era fijada al recibir; y el pánico y el fallo
+  del almacén a media evaluación, sin hoja. Sin `dev`, `cargo check --release -p zk-ssl-node
+  --no-default-features` compila con 1 aviso, el de `podar` (pin 1).
+- **La suite del kit**: 127 de la biblioteca, 63 del binario y 1 doctest, 191 pasan, 0 fallan, 0
+  ignorados, 0 avisos. `las_causas_sin_prueba_portable_son_las_seis_del_rfc_0007` sustituye en el
+  nombre a la de las cuatro y fija las seis como literales;
+  `verification_failed_y_proof_failed_se_declaran_y_no_se_prueban`, nuevo: los tres vectores dan 3,
+  el del lote también con `ProofFailed` mutada en el test, y el sobre de rechazo con esas causas
+  sigue en 1.
+- **Los mutantes, sobre el fuente final y con la suite ENTERA** (`fixrev/mutar_final.py`; cada uno
+  compilado con el fuente mutado y restaurado en el acto, comprobado con `cmp`; al final los
+  fuentes, por `sha256sum -c`, son los del snapshot).
+  Del nodo, veintisiete, y caen veintiséis, cada uno por los tests que se nombran:
+  - el orden y su ayudante: el orden de antes en `juzgar_y_anotar` (M1), 8; la era leída al anotar
+    (M13), 1; `desenlace_desconocido` siempre falso (M3), 4; la sobrecorrección —todo rechazo de
+    envío y cobro como desconocido, sin hoja— (M10), 12, entre ellos
+    `una_recepcion_que_la_capa_rechaza_tambien_deja_hoja`; y el punto de corte de «tras anotar»
+    puesto antes de anotar (M2), 5: éste muta el ARNÉS de los tests, no el binario, donde
+    `punto_de_corte` no hace nada, y lo que dice es que los tests de corte miran dónde está el
+    corte;
+  - el criterio por tipo: cada impl de `Desenlace` que devuelve `false` —envío y cobro (D1), 2; el
+    lote (D2), 1; la prenda (D3), 1—; son los R1 a R4 de la revisión, que sobrevivían como cierres
+    por brazo y ya no existen como tales;
+  - los brazos con el orden de antes: el lote (M11), la prenda (M12) y el cobro (M14), 1 cada uno;
+  - la marca y la PARADA: `despachar` sin el brazo de la marca (M4), 3; `bajo_el_estado` sin mirarla
+    al entrar (M5), 2, entre ellos el de la carrera con hilos reales; sin ponerla (M6), 2; poniéndola
+    con cualquier error (R7), 13; poniéndola tras soltar el candado (R5), 2; soltando el candado
+    antes de ponerla, sin retardo (O1) y con 100 ms (O2), 2 cada uno; el ayudante que pone la marca
+    sin su comprobación (A1), 1, y el que la mira (A2), 1; R5, O1 y O2 caen por la comprobación de
+    `poner_marca_en_vuelo` en `un_fallo_del_almacen_deja_la_marca_antes_de_soltar_el_candado_y_el_latido_no_firma`
+    y por la carrera; antes de la revisión sobrevivían;
+  - el latido: sin la guarda de la PARADA (M7), 1; sin mirar la marca (M8), 2; mirándola con el
+    campo crudo y FUERA del candado, el O3 de la revisión, 1, la carrera; y mirándola con el
+    ayudante fuera del candado (O3b), 43, porque el ayudante entra en pánico en todo latido;
+  - el consumo y la prenda que se tragan el `Store` (M9, P1), 1 cada uno;
+  - y sobrevive uno, declarado: sin la línea de traza (R6), 229 de 229. Que la traza sale lo dice la
+    re-medida, abajo.
+
+  Del kit, once, y caen los once: quitar `VerificationFailed`, `ProofFailed` o las dos sin cambiar el
+  tamaño de la lista, 2 cada uno; quitarlas cambiando el tamaño, o volver a la lista de cuatro, caen
+  al compilar el test literal; el brazo del lote con la lista vieja, 1; el brazo del lote sin
+  `ProofFailed` (el K1 de la revisión, que sobrevivía), 1; la declarada directa con la lista vieja,
+  1; la declarada que admite cualquier causa (K2), 1; y la sobrecorrección que da por probado el
+  sobre de rechazo con esas causas, 1. Las cifras son de la suite entera (229 del nodo, 63 del
+  binario del kit); las de la primera redacción se habían contado sobre 19 tests filtrados y un
+  fuente anterior, y estas las sustituyen.
+- **El nodo de verdad, remedido** (`fixrev/remedida-nodo/`), con la misma inyección por `strace` y
+  sin parche de medida, con el binario final (`68d939fad5c908af…`, de `cargo build --release
+  --locked -p zk-ssl-node -p zk-ssl-verify`), el 21-10-2026 de las 01:38 a las 01:40 UTC, en cuatro
+  fases:
+  - **un SIGKILL en la primera escritura de la hoja, ya juzgada** (`caida-juzgar`): el rx 2 queda
+    HUECO, el arranque lo avisa («contador de recepcion 2 por delante del registro 1: 1 rx
+    reservado(s) SIN HOJA»), `zkssl_recepPath` lo da por hueco, el pago está en el libro con su
+    acuse (`zkssl_ackPath` del `seq` 3), y el reenvío del titular da `StaleState` con un recibo
+    nuevo; la traza «recepcion: la capa juzga metodo=zkssl_applySend rx=2 hash_prueba=0x2adb…»
+    quedó en el log a las 01:38:52.180, antes de la muerte, a las 01:38:52.192, con el mismo hash
+    del reenvío;
+  - **un SIGKILL tras los `fsync` de la hoja** (`caida-anotar`): la hoja del rx 2 está, el pago
+    también, y el sobre resuelto con el acuse de ESE pago —el `seq` 3, la entrada anterior a la
+    cabeza reabierta— sale VERDE, «RESUELTA como transicion aplicada»;
+  - **en PARADA por un envío con el disco lleno** (`parada-envio`): el diario no gana ninguna cabeza
+    en 10 s, el índice de firma queda quieto, 10 líneas «el latido fallo … nodo en PARADA: el latido
+    no compone ni firma», y tras rearrancar ninguna altura con dos `chainDigest` firmados distintos.
+    Una cabeza se firmó 17 ms antes de la PARADA, la del índice 5 con el `seq` 8, el del disco: la
+    que el latido ya había compuesto antes del fallo, que describe un estado que el disco tiene;
+  - **en PARADA por un consumo** (`parada-consumo`): `-32603`, la PARADA, ninguna cabeza en 10 s y
+    el índice quieto, sin rearrancar.
+  Los falsadores, con el binario sin el arreglo (`5ad24cad7c70ee8d`), son los del 15-10-2026
+  (`remedida-nodo/falsador/`), y no se repitieron. En `caida-anotar` la hoja está y el pago no
+  —alice sigue con 0xf4240, su saldo de antes de pagar, y el libro reabre en el `seq` 3—: eso es lo
+  que falsa. El sobre que se arma con el acuse de la entrada anterior a la cabeza reabierta resulta
+  ROJO, «acuse: RaizDistinta», pero ese acuse es el de OTRA entrada, porque el pago no está: no es
+  «el mismo sobre» que el del arreglo.
+  En `parada-consumo` el nodo de antes devolvió `accepted: false` con causa `Store` dentro del
+  resultado, siguió sirviendo y firmó 6 cabezas en 10 s, el índice de 2 a 8, todas del `seq` 2; que
+  salieran de la memoria y no del disco es DEDUCIDO, porque no se rearrancó para ver el disco en el
+  `seq` 1. `parada-envio` no tiene falsador en la re-medida: se apoya en la medida de F2, `m-parada`,
+  con cinco cabezas del `seq` 9 en 10 s. En las dos caídas, un preludio: un tercero sin cuenta
+  manda basura y se lleva el recibo rx 1, `VerificationFailed`, con su hoja en el disco.
+- **El kit, remedido** (`fixrev/remedida-kit/`, el 21-10-2026), sin cargo, con tres binarios: el del
+  árbol en `ff9d4fc` (`e795436e…`), la 0.4.2 publicada (`7734376463d120b0…`, copiada del tarball de
+  la release, cuya `VERSION` dice `a4e888d`) y la 0.4.3 final (`0a6416c32ba56493…`; el binario
+  cambia frente al `f5653dc29d85f61d…` de la primera remedida porque el fuente del kit ganó
+  comentarios y líneas, y con ellas las posiciones que el binario lleva; sobre los 500 `.json`, los
+  dos dan el mismo código y el mismo texto en 499, y en el del lote cambia sólo «operacion 1» por
+  «operacion 0», porque el vector es otro). Los sobres reales de la medida de F3: la declarada con
+  `VerificationFailed`, 1 con los dos de antes y 3 con la 0.4.3; el sobre de rechazo, 1 con los
+  tres. Los doce manifiestos de `FAMILIAS` con `tools/conformidad.sh`: VERDES con la 0.4.3,
+  `completitud` 81 de 81; con el kit de `ff9d4fc`, 78 de 81, que son los tres nuevos. Los 500 `.json`
+  de `spec/vectors/`: del kit de `ff9d4fc` a la 0.4.3 cambian sólo los tres nuevos, de 1 a 3; de la
+  0.4.2 publicada a la 0.4.3, catorce cambian de código y 36 de texto con el mismo código. De los 348
+  que viajan en el tarball de la 0.4.2, 346 siguen en su ruta con los mismos bytes y el mismo código
+  —cuatro con otro texto, el de la ventana del §681— y dos se mudaron a
+  `spec/vectors/0.4/completitud/` en el §682 y dan 3. Los catorce están entre los 65 `.json` que el
+  árbol ganó desde `a4e888d` —esos dos, en su ruta nueva, cuentan ahí—, y la lista entera, vector a
+  vector, va abajo. Registros: `fixrev/remedida-kit/comparacion.txt` y `remedida_kit.log`; el
+  tarball, en `remedida-kit/comparacion_042.txt` y `tarball_042.txt`, de la primera remedida.
+- **El artefacto**: `tools/artefacto.sh --check`, VERDE: el binario (`911c9b368eaf1702…`) y el
+  tarball (`05862447fc294b25…`) se reproducen entre rutas, y los doce manifiestos son VERDES por
+  fuera y por dentro del tarball (`fixrev/artefacto_check.log`). Son huellas de un árbol de trabajo,
+  y no las del sello: su `VERSION` nombra el commit `ff9d4fc`. Las de la release, las fija el
+  asiento que la registre.
+- **La segunda implementación**: `juez_nucleo` 34 de 34, `juez_cabezas` en 0 (488 de 540 cabezas,
+  409 ficheros) y `juez_stark` 34 de 34 pares. No lee la completitud (`NO_SOPORTADOS`), y no cambia.
+- **Las herramientas del bucle del canon** (`check_cifras`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `verificar_citas`, `check_dominios`, `check_publicadas`,
+  `check_nucleo`, `check_techo`, `check_curvas`, `check_superficie`) y `check_tests`,
+  `check_modulos`, `check_vectores` y `check_catalogo`, el 21-10-2026 (`fixrev/bucle_arbol/`,
+  `fixrev/bucle_copia/`; tras los últimos retoques de texto, otra vez sin `check_curvas`, que no
+  lee los textos: `fixrev/bucle_arbol2/` y `fixrev/bucle_copia2/`, con lo mismo).
+  Sobre el árbol tal cual, todas en 0 salvo dos, y las dos por el marcador sin numerar:
+  `check_cifras`, porque la crónica de las filas del nodo y del kit en `tools/canon.sh` acaba en el
+  marcador y no en el número del sello que mueve el pin, y `verificar_citas`, con 182 marcadores sin
+  número. Sobre una copia sin `target/` en la que el marcador pasa a un número de prueba en las líneas
+  que el sello añade o cambia y este asiento va al final de `AUDITORIA.md` con ese número, todas en 0:
+  `check_tests` 1992 tests declarados (sobre la base de entonces; sobre `4b9f14b`, con este sello,
+  1996); `check_cifras` 26 cifras de tests y 22 pines, ninguna contradice el canon; `verificar_citas` 0 marcadores sin número y 0 citas muertas;
+  `check_superficie` 28 comparaciones y 0 novedades que la lista no dice; `check_vectores` 500
+  `.json` y 1002 líneas de 18 manifiestos con su huella, 0 movidos; `check_catalogo` 226 textos del
+  kit en la sección 5 y 277 entradas que salen del kit; y `check_curvas`, bajo el `flock`, 213
+  crates en la clausura de las cuatro raíces y 194 fuentes de 15 crates de la casa (sobre `4b9f14b`,
+  con este sello, 196, medido: el §839 y el §840 añaden `nivel_de_produccion/censo.rs` y
+  `censo_de_hojas.rs`), sin curvas fuera del transporte declarado del §838. En la sesión del kit, el 15-10-2026,
+  `check_curvas` había salido ROJO por el entorno —`cargo tree --offline` sin crates de otros
+  destinos en la caché— y desde el 20-10-2026, con la caché completa, sale en 0. Y
+  `check_vectores --desde ff9d4fc`, en 0: respecto de `ff9d4fc`, `spec/vectors/` sólo gana, 18
+  huellas (3 `.json` y 15 líneas de manifiesto).
+
+**Los veredictos que cambian frente a la 0.4.2 publicada**, vector a vector, que es lo que la R6 f
+del RFC-0021 pide a la release y lo que la sección 0 de `doc/KIT.md` remite aquí. Medido con la
+0.4.2 publicada (`7734376463d120b0…`) y la 0.4.3 del árbol final sobre los 500 `.json` de
+`spec/vectors/`, código de salida y última línea; las rutas, bajo `spec/vectors/`:
+
+- **De código, catorce.** De 0 a 3, cuatro, por el §682 (RFC-0019 E2: un `StaleState` no resuelve
+  solo): `0.4/completitud/lote-rechazado-con-prueba.json` y
+  `0.4/completitud/resuelta-por-rechazo.json`, mudados allí con su veredicto de entonces, y sus
+  gemelos `completitud/rechazo-stale-declarada.json` y
+  `completitud/lote-rechazado-stale-declarada.json`. De 1 a 3, los tres de este sello:
+  `completitud/declarada-verification-failed.json`, `completitud/declarada-proof-failed.json` y
+  `completitud/lote-declarada-verification-failed.json`. De 0 a 1, uno, por el §780:
+  `paquete/rechazo-cofirma-versionformato-0x103.json`. De 1 a 0, seis, porque la 0.4.2 no lee
+  `actas` ni el sobre `solapamiento` (§648, §686: aditivo): `consumo/consumo-rotado.json`,
+  `rotacion/rotacion-dos-eslabones.json`, `rotacion/rotacion-sin-firma-de-la-vieja.json`,
+  `rotacion/rotacion-un-eslabon.json`, `rotacion/solapamiento-la-nueva-firma-antes.json` y
+  `rotacion/solapamiento-la-vieja-firma-despues.json`.
+- **De texto, con el mismo 1, treinta y seis.** Siete de `completitud/`:
+  `neg-acuse-fuera-de-ventana`, `neg-rechazo-fuera-de-ventana`, `neg-ventana-abierta` y
+  `no-resuelta`, que nombran la ventana por el índice acreditado y su inicio (§681, RFC-0019 E1);
+  `neg-vigente-index-inflado`, que pasa de «NO RESUELTA EN LA VENTANA» a «ventana ABIERTA» (§681);
+  `rotada-ventana-abierta`, de «claves DISTINTAS» a «ventana ABIERTA»; y
+  `neg-rotada-vigente-cadena-corta`, que dice además que las actas no unen las claves. Uno de
+  `consumo/`, `rechazo-cons-rotado-cadena-corta`, igual. Y 28 de `rotacion/`, que la 0.4.2 rechazaba
+  en bloque —19 con «las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante» y 9 con
+  «tipo desconocido: solapamiento»— y la 0.4.3 rechaza por su causa: `neg-acta-desde-no-minimo`,
+  `neg-acta-siguiente-corto`, `neg-acta-sin-firma-anterior`, `neg-acta-sin-procedencia`,
+  `neg-actas-no-es-lista`, `neg-anterior-ajena`, `neg-cadena-corta`, `neg-cadena-sin-genesis`,
+  `neg-clave-no-comprometida`, `neg-desde-no-crece`, `neg-desde-tocado`, `neg-esquema-ajeno`,
+  `neg-firma-de-la-vieja-tocada`, `neg-firma-tocada`, `neg-genesis-con-firma-anterior`,
+  `neg-genesis-repetida`, `neg-papeles-cambiados`, `neg-solapamiento-la-nueva-firma-antes` y
+  `neg-solapamiento-la-vieja-firma-despues`, los 19; y `neg-solap-actas-no-es-lista`,
+  `neg-solap-cabeza-v2`, `neg-solap-cadena-sin-genesis`, `neg-solap-clave-fuera-de-la-cadena`,
+  `neg-solap-la-nueva-en-su-tramo`, `neg-solap-la-ultima-en-su-tramo`,
+  `neg-solap-la-vieja-en-su-tramo`, `neg-solap-sin-actas` y `neg-solap-sin-cabeza`, los 9.
+
+Ningún vector de los 435 que ya estaban en `a4e888d` con los mismos bytes cambia de código. Los
+textos del kit de `ff9d4fc` a la 0.4.3 sólo cambian en los tres vectores nuevos.
+
+**Contadores.** `zk-ssl-node` 210 -> 229 (veinte nuevos y uno sustituido) y `zk-ssl-verify` 190 ->
+191, en sus filas de `tools/canon.sh`, con su crónica. TOTAL DE SELLO 1817 -> 1837 y TOTAL CON
+LARGOS 1954 -> 1974, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, y el desglose de
+`PRINCIPIOS.md` («229 del nodo», «191 del verificador independiente»). `check_tests` 1976 -> 1996.
+Las «1364 declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores. Vectores:
+497 -> 500 `.json` y 987 -> 1002 líneas de manifiesto en `spec/vectors/HUELLAS.sha256`, ninguno
+movido; la cuenta de `README.md` y `README_EN.md`, 516 -> 519 ficheros. `completitud` 78 -> 81
+entradas; la lista de la superficie de `spec/RPC.md`, 497 -> 500 y 987 -> 1002. El `BACKLOG.md`, de
+43 a 44 abiertas y 86 resueltas, contadas sobre `4b9f14b`: abre la 129; la 19, de la que sale todo,
+no se toca. La 129 no es la siguiente de la 127 a propósito: la 128 la reserva esta sesión para la
+entrada que abre la decisión de la 116, en un sello que espera a otro de la otra sesión sobre
+`nivel_de_produccion.rs`, y la otra sesión abre desde la 130; se acordó con ella.
+
+**Lo que NO hace.** No prueba `ProofFailed` ni `VerificationFailed`: se declaran, y probarlas es el
+tren `zkssl/0.5` (RFC-0019 E3). No ata la declarada a nada más que al `hashPrueba`: el kit sigue
+dando 3 a cualquier causa de la lista, venga o no a cuento, y en el lote no cruza la causa
+declarada con la forma de la composición (la 129, b). No conserva el `data` de un rechazo: una
+muerte entre el `fsync` de su hoja y la respuesta, una respuesta perdida o un titular que la calla
+dejan al operador honrado sin sobre que exhibir (la 129, a; deducido). No exige `--ledger` a quien
+firma: sin él, una caída deja la hoja sin su operación (deducido; residuo en la 3.15 y en la D-H).
+No quita el `fsync` del contador que paga cada petición antes de verificar, ni el de la hoja que paga
+cada petición que la capa juzga, también la de un tercero sin cuenta: un rechazo deja hoja, como
+quiere la D-E. No lee la prueba antes de reservar, que quitaría la variante de los bytes basura pero
+no la de una prueba bien formada que no verifica. No pone el `rx` en la PARADA de `applyMany` y
+`zkssl_pledge`: lo dice `spec/RPC.md`. No ata con un test la línea de traza (su mutante sobrevive,
+arriba), ni mide lo que cuesta en bytes. No mide la latencia de `applySend` antes y después —las
+mismas dos escrituras en otro orden: deducido—, ni el testigo frente a un nodo en PARADA, ni la
+ventana de 1.440 cabezas de punta a punta con el nodo del arreglo. No vuelve a correr los falsadores
+de la re-medida del nodo con el binario de antes: son los del 15-10-2026, abajo. No pasa
+`rustfmt`: el árbol de `ff9d4fc` tampoco lo pasa (294 diferencias en `crates/zk-ssl-node/src/`,
+`rustfmt --check`), y el código nuevo sigue el ancho de la casa a mano. No añade el banco
+`tools/banco_recibo_tras_caida.sh`: el guion de la remedida, con el SIGKILL real, el falsador y el
+sobre del kit, se queda fuera del árbol. No publica la release `arqueo-verify-v0.4.3` ni su aviso:
+los publica el autor, y el asiento que la registre fijará su huella y pasará la vigente a 0.4.3 en
+la sección 0 de `doc/KIT.md`, en `PREGUNTAS.md`, en `QUESTIONS.md` y en la 3.9 de `SECURITY.md`, como
+hizo el §671. No toca `doc/ecst/VERIFICACION.md`, registro generado, ni los preprints. Y en la
+redacción privada no se numeró el marcador —lo numera quien selle; las dos líneas de comentario del
+manifiesto de completitud no lo llevan, por lo dicho arriba—, ni se corrieron `tools/conservados.sh`
+entero (sólo `--en-seco`, el 15-10-2026, con su plan VERDE: cinco catálogos y dos kits) ni el canon
+con `--sello`.

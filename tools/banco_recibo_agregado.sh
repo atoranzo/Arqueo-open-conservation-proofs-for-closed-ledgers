@@ -12,7 +12,9 @@
 #     aplicado -un acuse por prueba, cada uno por `zkssl_ackPath`-, como LOTE rechazado con prueba,
 #     como LOTE rechazado por su FORMA, el cuarto estado (DERIVADO por MUTACION de la causa), y dos
 #     RECHAZOS SIN FUNDAMENTO, por cuenta y por posicion (DERIVADOS por MUTACION del `data`: un nodo
-#     honrado no los produce).
+#     honrado no los produce). ⚠️ §815 (kit 0.4.3): el cuarto estado, dos veces: con `NotTheIssuer` y,
+#     desde §815, con `VerificationFailed` sobre el lote de una operacion, que el kit hasta la 0.4.2
+#     daba ROJO.
 #   - LA PRENDA (dos nodos, latido de 3 s, cada uno con su siembra del sandbox del cli y una prenda
 #     DE VERDAD hecha por la boca del prendador): la prenda MUTADA se evalua y se rechaza -RESUELTA
 #     como PRENDA rechazada con prueba contra la cabeza JUZGADA-; la buena entra -RESUELTA como PRENDA
@@ -209,6 +211,12 @@ try:
           0, 'RESUELTA como LOTE rechazado por su FORMA')
     mando('lote-declarada', lote(base_b, {'composicion': comp_b, 'data': dict(db, causa='NotTheIssuer')}),
           3, 'DECLARADA, NO PROBADA')
+    # §815 (kit 0.4.3; RFC-0007 D-I, RFC-0014 D-B): VerificationFailed en el lote, el cuarto estado. Del
+    # lote de UNA operacion (`da`), cuya composicion no tiene defecto de forma: la de `lote-declarada`
+    # repite la cuenta, y una causa que no es de forma, declarada sobre ella, la refuta la composicion.
+    mando('lote-declarada-verification-failed',
+          lote(base_a, {'composicion': comp_a, 'data': dict(da, causa='VerificationFailed')}),
+          3, 'DECLARADA, NO PROBADA: el operador declara VerificationFailed en la operacion 0 del lote')
     mando('lote-sin-fundamento-cuenta', lote(base_b, {'composicion': comp_b, 'data': dict(db, campos={'index': '0x9'})}),
           1, 'RECHAZO SIN FUNDAMENTO')
     mando('lote-sin-fundamento-posicion', lote(base_b, {'composicion': comp_b, 'data': dict(db, causa='DuplicatePendingInBatch', campos={'position': '0x1'})}),

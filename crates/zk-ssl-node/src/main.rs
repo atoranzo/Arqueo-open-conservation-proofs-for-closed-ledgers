@@ -535,6 +535,23 @@ struct App {
     /// deja de servir y cada petición recibe la causa. Vacía mientras el nodo
     /// sirve; se escribe una vez y no se borra. Reiniciar lee el estado del disco.
     parada: std::sync::OnceLock<String>,
+    /// ⚠️ **§815 · LA MARCA DE FALLO EN VUELO**: un fallo que deja la memoria por delante de lo
+    /// que el disco o el registro pueden sostener -el almacén falló (`Store`, §655) o el registro
+    /// de recepción falló TRAS un veredicto-, puesta ANTES de soltar el candado del estado.
+    ///
+    /// ⚠️⚠️ **Se ESCRIBE solo con el candado del estado tomado** ([`poner_marca_en_vuelo`],
+    /// desde [`bajo_el_estado`] y [`juzgar_y_anotar`]), y quien decide con ella la LEE con ese
+    /// candado tomado ([`marca_en_vuelo_con_el_candado`]): [`bajo_el_estado`] al entrar, y
+    /// `latido::latir` al componer. En los tests, ponerla o mirarla sin el candado entra en
+    /// pánico. La PARADA de un fallo del almacén o de la marca la pone [`despachar`], DESPUÉS de
+    /// que el cuerpo suelte el candado (la del pánico también la pone él, y la del candado del
+    /// estado envenenado, [`bajo_el_estado`]): entre soltar el candado y la PARADA había un hueco
+    /// (el ataque A5 de juicio0, «la carrera de la PARADA»): una petición encolada en el candado
+    /// evaluaba sobre la memoria rota, y el latido podía tomar el candado y firmarla. La marca
+    /// cierra ese hueco (MEDIDO con hilos reales por la revisión rev0 del §815; el test
+    /// `a5_con_hilos_reales_la_peticion_que_espera_no_evalua_y_el_latido_no_firma`). Se escribe
+    /// una vez y no se borra; reiniciar lee el disco.
+    fallo_en_vuelo: std::sync::OnceLock<String>,
     /// **La cadena de actas de clave** (RFC-0015 E3b-2; §646), en el JSON del kit, como la sirve
     /// `zkssl_keyActs`. Se arma UNA vez al arrancar: las actas solo nacen al arrancar, y leer el
     /// diario entero en cada peticion costaria lo que el diario mide, una firma por latido.
@@ -1087,11 +1104,18 @@ fn politica_del_registro(r: &zk_ssl_guardian::Reconciliacion) -> DecisionDeArran
         zk_ssl_guardian::Reconciliacion::Coincide { indice } => DecisionDeArranque::Arranca(
             format!("registro de recepcion y contador a la par en el rx {indice}"),
         ),
+        // ⚠️ §815: el texto decia «el proceso murio entre reservar y anotar, o anotar fallo y la
+        // operacion no se evaluo». Con el ORDEN del §815 (juzgar y despues anotar) lo primero abarca
+        // el juicio entero, y lo segundo ya no es cierto: si anotar falla, la operacion YA se juzgo
+        // y su veredicto salio sin recibo.
         zk_ssl_guardian::Reconciliacion::ContadorAdelantado { contador, clave, huerfanos } => {
             DecisionDeArranque::ArrancaAvisando(format!(
                 "contador de recepcion {contador} por delante del registro {clave}: {huerfanos} \
-                 rx reservado(s) SIN HOJA. Son HUECOS declarados -el proceso murio entre \
-                 reservar y anotar, o anotar fallo y la operacion no se evaluo-, no hojas perdidas"
+                 rx reservado(s) SIN HOJA. Son HUECOS declarados -el proceso murio, la capa \
+                 entro en panico o fallo el almacen entre reservar y anotar (el juicio entero \
+                 cae ahi), o anotar fallo tras el veredicto, que salio sin recibo-, no hojas \
+                 perdidas: un hueco no promete nada, y una operacion que se aplico tiene su \
+                 acuse en el registro de transiciones"
             ))
         }
         zk_ssl_guardian::Reconciliacion::ClaveEnCero { contador, indeterminados } => {
@@ -1979,6 +2003,7 @@ async fn main() -> anyhow::Result<()> {
         indice_firma: std::sync::atomic::AtomicU64::new(indice_firma),
         consumos_ajenos,
         parada: std::sync::OnceLock::new(),
+        fallo_en_vuelo: std::sync::OnceLock::new(),
         actas_de_clave,
     });
 
@@ -2593,11 +2618,21 @@ impl RpcError {
     /// §571 (RFC-0010 E3): el recibo de recepción, como DATO, en el `data` del rechazo. Solo si
     /// hay `data`: el rechazo de la capa la lleva siempre, con su causa (§454). Un `-32603` de
     /// `anotar` NO lleva recibo, porque no hay hoja que prometer.
+    /// ⚠️ CORRECCIÓN (§815): `anotar` ya no da `-32603`; si falla, la capa ya juzgó y su veredicto
+    /// sale SIN recibo ([`RpcError::con_recibo_opcional`]). La regla sigue: sin hoja, sin recibo.
     fn con_recibo_de_recepcion(mut self, recibo: Value) -> Self {
         if let Some(d) = self.data.as_mut().and_then(|d| d.as_object_mut()) {
             d.insert("recepcion".into(), recibo);
         }
         self
+    }
+    /// §815: el recibo en el `data` del rechazo, si lo hay (el registro pudo fallar tras el
+    /// veredicto: entonces el rechazo va SIN recibo y el nodo para).
+    fn con_recibo_opcional(self, recibo: Option<Value>) -> Self {
+        match recibo {
+            Some(r) => self.con_recibo_de_recepcion(r),
+            None => self,
+        }
     }
     /// §611 (RFC-0014 D-B): la operacion del lote que la capa no admitio, su indice en `ops`,
     /// en el `data` del rechazo y al lado de la causa. Solo si hay `data`, como el recibo.
@@ -2777,11 +2812,43 @@ fn despachar(
         // disco no tiene. Es la misma clase que el candado envenenado: el nodo no sigue sirviendo.
         // La causa ya viaja como dato (RFC-0007 E2, `data.causa`), y este es el unico sitio que
         // decide la PARADA.
-        Ok(Err(e)) if e.data.as_ref().and_then(|d| d.get("causa")).and_then(|c| c.as_str()) == Some("Store") => {
+        //
+        // ⚠️ §815, y otra, citada y no borrada: «el unico sitio que decide la PARADA» no era exacto
+        // ni en el §655. `dispatch` la ponia tambien al encontrar envenenado el candado del estado
+        // (§530), y desde el §815 lo hace `bajo_el_estado`. Este es el unico sitio que la decide por
+        // un fallo del ALMACEN y por la marca de fallo en vuelo, y el del panico.
+        //
+        // ⚠️ CORRECCIÓN (§815), citada y no borrada: «el nodo no sigue sirviendo» era verdad del
+        // DESPACHO y falso del LATIDO. MEDIDO en privado sobre 4d8017d (m-parada, ENOSPC
+        // inyectado en el libro): con el nodo en PARADA y el disco en el seq 8, `latido::latir`
+        // siguio firmando cabezas del seq 9 desde la memoria -cinco en diez segundos-, y tras
+        // reiniciar el nodo firmo OTRA cabeza del seq 9, la de otra operacion: dos cabezas
+        // firmadas incompatibles contra un operador honrado (DEDUCIDO de que la operacion es
+        // otra: la medida no comparo su `chainDigest`). `latir` no miraba la PARADA. Desde el §815
+        // la mira, y mira tambien la marca de fallo en vuelo (`App::fallo_en_vuelo`), que se pone
+        // ANTES de soltar el candado del estado: sin ella quedaba el instante entre soltarlo y
+        // llegar aqui.
+        Ok(Err(e)) if es_fallo_del_almacen(&e) => {
             let _ = app.parada.set(format!("un fallo del almacen en {method}: {}", e.message));
             let causa = app.parada.get().map(String::as_str).unwrap_or("");
             tracing::error!(method = %method, causa = %causa, "PARADA: el nodo deja de servir");
             Err(RpcError::parada(causa))
+        }
+        // ⚠️ §815 · LA MARCA DE FALLO EN VUELO (`App::fallo_en_vuelo`): `dispatch` la puso con el
+        // candado del estado tomado. Dos casos, y en los dos el nodo PARA aqui, el unico sitio que
+        // la decide por la marca:
+        // - el registro de recepcion fallo TRAS el veredicto (ORDEN, `juzgar_y_anotar`): ESTA
+        //   peticion recibe su veredicto verdadero, SIN recibo -el residuo D-H: el titular lo ve
+        //   en la respuesta-, y las siguientes, la PARADA. Sin esto el nodo seguiria evaluando sin
+        //   poder dar recibo, que es lo que el registro existe para impedir (§569);
+        // - otra peticion dejo la marca mientras esta esperaba el candado: `dispatch` ya devolvio
+        //   la PARADA sin evaluar nada (A5, la carrera de la PARADA).
+        Ok(r) if app.fallo_en_vuelo.get().is_some() => {
+            let fallo = app.fallo_en_vuelo.get().map(String::as_str).unwrap_or("");
+            let _ = app.parada.set(fallo.to_string());
+            let causa = app.parada.get().map(String::as_str).unwrap_or("");
+            tracing::error!(method = %method, causa = %causa, "PARADA: el nodo deja de servir");
+            r
         }
         Ok(r) => r,
         Err(p) => {
@@ -2883,6 +2950,22 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
     // despacho. Si un pánico FUERA de `despachar` dejó el `estado` envenenado, el
     // nodo pasa a PARADA y la petición recibe la causa, sin tocar un estado que
     // puede haber quedado a medio mutar.
+    //
+    // §815: el candado, la marca de fallo en vuelo y el cuerpo, en `bajo_el_estado`.
+    bajo_el_estado(app, method, |guardia| dispatch_con_estado(app, method, params, guardia))
+}
+
+/// §815 · **El candado del estado y la marca de fallo en vuelo** (`App::fallo_en_vuelo`), alrededor
+/// del cuerpo de [`dispatch`]: toma el candado, mira la marca, corre el cuerpo y, si el cuerpo
+/// falló en el almacén, pone la marca ANTES de soltar el candado.
+///
+/// Recibe el cuerpo como cierre por la misma razón que [`despachar`] (§530): para que los tests
+/// le den un `Store` sin un camino nuevo en el binario.
+fn bajo_el_estado(
+    app: &App,
+    method: &str,
+    cuerpo: impl FnOnce(&mut Estado) -> Result<Value, RpcError>,
+) -> Result<Value, RpcError> {
     let mut guardia = match app.estado.lock() {
         Ok(g) => g,
         Err(_) => {
@@ -2892,7 +2975,45 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             return Err(RpcError::parada(causa));
         }
     };
-    let Estado { layer: l, reservas } = &mut *guardia;
+    // ⚠️ §815 · A5, LA CARRERA DE LA PARADA (juicio0; MEDIDA con hilos reales por la revision
+    // rev0 del §815, cuyo test esta en el sello, `a5_con_hilos_reales_...`): `despachar` mira la
+    // PARADA ANTES de llamar aqui, y una peticion puede quedarse esperando el candado mientras otra
+    // falla con el estado tomado. La PARADA se pone cuando esa otra ya solto el candado, asi que
+    // la que esperaba evaluaba sobre una memoria rota. Por eso la marca se mira AQUI, con el
+    // candado ya tomado, y la peticion recibe la PARADA sin `recibir` ni tocar la capa.
+    if let Some(fallo) = marca_en_vuelo_con_el_candado(app) {
+        return Err(RpcError::parada(fallo));
+    }
+    let r = cuerpo(&mut guardia);
+    // ⚠️ §815: la marca, ANTES de soltar el candado. Un fallo del almacen en CUALQUIER brazo deja
+    // la memoria por delante del disco (§655); `despachar` pondra la PARADA, pero solo despues
+    // de que el candado se suelte, y en ese instante ni la peticion que espera ni el latido
+    // pueden ver la memoria sin ver la marca.
+    if let Err(e) = &r {
+        if es_fallo_del_almacen(e) {
+            poner_marca_en_vuelo(app, format!("un fallo del almacen en {method}: {}", e.message));
+        }
+    }
+    drop(guardia);
+    r
+}
+
+/// ¿Es un rechazo de la capa con causa `Store`? (§655). La causa viaja como dato (RFC-0007 E2,
+/// `data.causa`). §815: un solo predicado para `despachar` y para la marca de `dispatch`.
+fn es_fallo_del_almacen(e: &RpcError) -> bool {
+    e.data.as_ref().and_then(|d| d.get("causa")).and_then(|c| c.as_str()) == Some("Store")
+}
+
+/// El cuerpo de [`dispatch`], con el candado del estado YA tomado (§815: separado para que
+/// `dispatch` mire la marca de fallo en vuelo al entrar y la ponga al salir, las dos cosas con el
+/// candado tomado; el cuerpo no cambia).
+fn dispatch_con_estado(
+    app: &App,
+    method: &str,
+    params: Value,
+    guardia: &mut Estado,
+) -> Result<Value, RpcError> {
+    let Estado { layer: l, reservas } = guardia;
 
     // ── Barrido PEREZOSO de reservas caducadas ────────────────────
     // Sin tarea de fondo a propósito: un temporizador disputaría este
@@ -3172,18 +3293,8 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     "otro libro firmo tener este consumo: no es doble uso probado, es motivo \
                      para no tramitarlo aqui" }));
             }
-            match l.apply_consumo(consumo) {
-                Ok(()) => Ok(json!({
-                    "accepted": true,
-                    "logSeq": Q(l.transition_log().len() as u64),
-                })),
-                // El texto es el de la CAPA, sin reescribir: `ConsumoRepetido`
-                // y `ConsumoColision` ya dicen cual de las dos cosas paso.
-                // RFC-0007 E2 (§454): y la causa viaja como DATO, la misma forma
-                // que la de un `-32000`, junto a `reason`.
-                Err(e) => Ok(json!({ "accepted": false, "reason": format!("{e}"),
-                                     "data": data_de(&e, seq_juicio) })),
-            }
+            let r = l.apply_consumo(consumo);
+            respuesta_de_consumo(r, l.transition_log().len() as u64, seq_juicio)
         }
 
         // ⚠️ §417 · EL CAMINO DEL CONSUMO bajo una cabeza que el titular YA
@@ -3418,46 +3529,36 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             // del cable (RFC-0010, D-E), y quien prenda vuelve a probar bajo la cabeza nueva. Es
             // el punto del §569: tras lo que no se evalua y ANTES del juez, asi que un rechazo
             // tambien deja hoja. `hashPrueba`, el digest de la prueba que llego (§116).
+            //
+            // ⚠️ CORRECCIÓN (§815), citada y no borrada: el recibo se RESERVA aqui (`rx` y la era,
+            // al recibir) y se ANOTA tras el veredicto (`juzgar_y_anotar`), no «ANTES del juez».
+            // Un rechazo sigue dejando hoja; una evaluacion cortada deja un hueco.
             let rx = recibir(app)?;
             let hash_prueba = zk_ssl::log::digest_of_proof(&p.prueba.0);
-            let era = anotar(app, rx, hash_prueba)?;
-            let recibo = recibo_de_recepcion(rx, era, hash_prueba);
+            let era = era_al_recibir(app);
             let af = zk_ssl_air::prenda::AfirmacionPrenda { receptor, marca };
             let cab = zk_ssl_air::prenda::CabezaPrenda { pending_root: raiz };
-            // El veredicto se BINDEA en vez de encadenarse: asi el falsador por mutacion del
-            // bloque puede anular la puerta con UNA linea y sin dejar nada sin usar.
-            let veredicto = zk_ssl_air::prenda::verificar_contra_cabeza(&p.prueba.0, &af, &cab);
-            if let Err(e) = veredicto {
-                return Ok(con_recibo(json!({
-                    "accepted": false,
-                    "reason": format!("la prueba de prenda no verifica contra la cabeza del seq {s}: {e}"),
-                }), recibo));
-            }
-            let v = match l.apply_consumo(marca) {
-                Ok(()) => json!({
-                    "accepted": true,
-                    "yaEstaba": false,
-                    "logSeq": Q(l.transition_log().len() as u64),
-                    "s": Q(s),
-                }),
-                // D-BB: la hoja ya estaba y es la MISMA. El sobre ya verifico, asi
-                // que el par existe lo escribiera quien lo escribiera.
-                Err(LayerError::ConsumoRepetido { .. }) => json!({
-                    "accepted": true,
-                    "yaEstaba": true,
-                    "logSeq": Q(l.transition_log().len() as u64),
-                    "s": Q(s),
-                }),
-                // §613 (RFC-0014 E4b): el recibo va TAMBIEN dentro del `data`, como en el rechazo
-                // del lote y en el de la via directa (§571): el sobre de rechazo se arma con ese
-                // `data` tal cual, y se ata al recibo por el (D3).
-                Err(e) => {
-                    let mut d = data_de(&e, seq_juicio);
-                    d["recepcion"] = recibo.clone();
-                    json!({ "accepted": false, "reason": format!("{e}"), "data": d })
-                }
-            };
-            Ok(con_recibo(v, recibo))
+            // §815: el JUICIO de la prenda -el juez y, si verifica, la capa- va entero dentro del
+            // cierre, y la hoja se anota DESPUES. Un fallo del almacen al asentar el consumo no
+            // deja hoja y va a la PARADA: antes volvia como `accepted: false` con causa `Store`
+            // DENTRO de un Ok, y `despachar` no lo veia (el hermano de la prenda, diseno2 §10.2).
+            let (juicio, recibo) = juzgar_y_anotar(
+                app,
+                method,
+                rx,
+                era,
+                hash_prueba,
+                || {
+                    // El veredicto se BINDEA en vez de encadenarse: asi el falsador por mutacion
+                    // del bloque puede anular la puerta con UNA linea y sin dejar nada sin usar.
+                    let veredicto = zk_ssl_air::prenda::verificar_contra_cabeza(&p.prueba.0, &af, &cab);
+                    match veredicto {
+                        Err(e) => JuicioPrenda::NoVerifica(e),
+                        Ok(_) => JuicioPrenda::Capa(l.apply_consumo(marca)),
+                    }
+                },
+            );
+            respuesta_de_prenda(juicio, recibo, s, seq_juicio, l.transition_log().len() as u64)
         }
 
         // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
@@ -3844,6 +3945,8 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let p: P = parse(params)?;
             // §569: el tipo va ANOTADO para leer la prueba ANTES de la capa, que
             // es donde se anota. La posicion se sigue leyendo despues.
+            // ⚠️ CORRECCIÓN (§815): la prueba se sigue leyendo antes de la capa -su digest va en
+            // la traza y en la hoja-, pero la hoja ya no se anota ahi: se anota tras el veredicto.
             let receipt: zk_ssl::two_phase::SendReceipt =
                 (&p.receipt).try_into().map_err(RpcError::wire)?;
             let state = (&p.sender_state).try_into().map_err(RpcError::wire)?;
@@ -3869,10 +3972,20 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             // esconderia un censor, alegando prueba invalida.
             let rx = recibir(app)?;
             let hash_prueba = zk_ssl::log::digest_of_proof(&receipt.proof);
-            let era = anotar(app, rx, hash_prueba)?;
+            let era = era_al_recibir(app);
+            // ⚠️ §815 · EL ORDEN: el numero y la era se fijan AQUI, al recibir; la capa juzga; y
+            // SOLO DESPUES se anota la hoja, antes de responder (`juzgar_y_anotar`). El contador
+            // sigue contando lo que la capa juzga TAMBIEN si rechaza (§253): la hoja se anota con
+            // el veredicto ya dado, y un rechazo sigue dejandola.
             // §571 (RFC-0010 E3): el recibo de recepcion, en el resultado Y en el error.
-            let recibo = recibo_de_recepcion(rx, era, hash_prueba);
-            let r = l.apply_send(&receipt, p.sender.0, &state, p.amount.0);
+            let (r, recibo) = juzgar_y_anotar(
+                app,
+                method,
+                rx,
+                era,
+                hash_prueba,
+                || l.apply_send(&receipt, p.sender.0, &state, p.amount.0),
+            );
             let pos = receipt.notice.position;
             reservas.remove(&pos);
             if let Err(e) = r {
@@ -3881,9 +3994,9 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 // importa es justo el rechazo.
                 return Err(RpcError::layer(e, seq_juicio)
                     .con_recepcion(rx)
-                    .con_recibo_de_recepcion(recibo));
+                    .con_recibo_opcional(recibo));
             }
-            Ok(con_recibo(con_rx(con_acuse(applied(l), l), rx), recibo))
+            Ok(con_recibo_opcional(con_rx(con_acuse(applied(l), l), rx), recibo))
         }
 
         "zkssl_claimMaterials" => {
@@ -3917,16 +4030,24 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 (&p.receipt).try_into().map_err(RpcError::wire)?;
             let state = (&p.receiver_state).try_into().map_err(RpcError::wire)?;
             let notice = (&p.notice).try_into().map_err(RpcError::wire)?;
+            // §815: el mismo ORDEN que `applySend`: recibir, juzgar, anotar, responder.
             let rx = recibir(app)?;
             let hash_prueba = zk_ssl::log::digest_of_proof(&receipt.proof);
-            let era = anotar(app, rx, hash_prueba)?;
-            let recibo = recibo_de_recepcion(rx, era, hash_prueba);
-            l.apply_claim(&receipt, p.receiver.0, &state, &notice).map_err(|e| {
-                RpcError::layer(e, seq_juicio)
+            let era = era_al_recibir(app);
+            let (r, recibo) = juzgar_y_anotar(
+                app,
+                method,
+                rx,
+                era,
+                hash_prueba,
+                || l.apply_claim(&receipt, p.receiver.0, &state, &notice),
+            );
+            if let Err(e) = r {
+                return Err(RpcError::layer(e, seq_juicio)
                     .con_recepcion(rx)
-                    .con_recibo_de_recepcion(recibo.clone())
-            })?;
-            Ok(con_recibo(con_rx(con_acuse(applied(l), l), rx), recibo))
+                    .con_recibo_opcional(recibo));
+            }
+            Ok(con_recibo_opcional(con_rx(con_acuse(applied(l), l), rx), recibo))
         }
 
         // ── lote: N operaciones contra UNA raiz de arranque ──────
@@ -4045,8 +4166,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 .collect();
             let rx = recibir(app)?;
             let hash_lote = zk_ssl_verify::recibos::hash_del_lote(&composicion);
-            let era = anotar(app, rx, hash_lote)?;
-            let recibo = recibo_de_recepcion(rx, era, hash_lote);
+            let era = era_al_recibir(app);
 
             // Las posiciones que el lote toca, para soltarlas si falla.
             let posiciones: Vec<u64> = propias
@@ -4081,7 +4201,19 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
 
             let antes = l.transition_log().len();
             let raiz_antes = digest_to_wire(&l.state_root());
-            let r = l.apply_many_con_operacion(&ops);
+            // ⚠️ §815 · EL ORDEN, en el lote: el `rx` y la era se fijaron al recibir; la capa juzga
+            // el lote ENTERO, y SOLO DESPUES se anota su recibo. Un fallo del almacen a mitad del
+            // paso 4 deja un lote parcial SIN hoja (y la PARADA): no se promete nada de el.
+            // ⚠️ CORRECCIÓN (§815) del comentario del §611 de arriba: «ANTES de la capa» vale para
+            // RECIBIR, no para anotar.
+            let (r, recibo) = juzgar_y_anotar(
+                app,
+                method,
+                rx,
+                era,
+                hash_lote,
+                || l.apply_many_con_operacion(&ops),
+            );
             drop(ops);
 
             // ⚠️ **Soltar las reservas pase lo que pase.** `apply_many`
@@ -4101,7 +4233,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 // §611 (RFC-0014 D-B): el recibo, y la operacion que el lote no admitio, en el
                 // `data` del rechazo. Esa atadura es la PALABRA del nodo, como en la via directa.
                 return Err(RpcError::layer(e, seq_juicio)
-                    .con_recibo_de_recepcion(recibo)
+                    .con_recibo_opcional(recibo)
                     .con_operacion(j));
             }
 
@@ -4124,7 +4256,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     })
                 })
                 .collect();
-            Ok(con_recibo(json!({
+            Ok(con_recibo_opcional(json!({
                 "batch": {
                     "size": Q(nuevas.len() as u64),
                     "fromSeq": nuevas.first().map(|e| Q(e.seq)),
@@ -4142,6 +4274,87 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
 
         other => Err(RpcError::method_not_found(other)),
     }
+}
+
+/// La respuesta de `zkssl_publishConsumo` a partir de lo que dijo la capa, PURA para que un test
+/// la ataque con cada desenlace -también con el fallo del almacén, que un test no sabe provocar
+/// en `sled`-. Las dos negativas de la capa siguen saliendo como antes.
+///
+/// ⚠️ **§815 · el hermano de la prenda (diseno2 §10.2; juicio0, pieza 3).** Hasta el §815, un `Store`
+/// de `apply_consumo` volvía aquí como `accepted: false` DENTRO de un `Ok`, y `despachar` no lo
+/// veía: la memoria quedaba por delante del disco (`consumo.rs`: la capa muta y después persiste)
+/// sin PARADA, y el latido la firmaba. Ahora es un `Err` con causa `Store` y el nodo para (§655).
+fn respuesta_de_consumo(
+    r: Result<(), LayerError>,
+    log_len: u64,
+    seq_juicio: u64,
+) -> Result<Value, RpcError> {
+    match r {
+        Ok(()) => Ok(json!({
+            "accepted": true,
+            "logSeq": Q(log_len),
+        })),
+        Err(e) if desenlace_desconocido(&e) => Err(RpcError::layer(e, seq_juicio)),
+        // El texto es el de la CAPA, sin reescribir: `ConsumoRepetido`
+        // y `ConsumoColision` ya dicen cual de las dos cosas paso.
+        // RFC-0007 E2 (§454): y la causa viaja como DATO, la misma forma
+        // que la de un `-32000`, junto a `reason`.
+        Err(e) => Ok(json!({ "accepted": false, "reason": format!("{e}"),
+                             "data": data_de(&e, seq_juicio) })),
+    }
+}
+
+/// §815: el juicio de una prenda que llegó al juez: o el juez dijo que no, o la capa habló.
+enum JuicioPrenda {
+    NoVerifica(String),
+    Capa(Result<(), LayerError>),
+}
+
+/// §815: la respuesta de `zkssl_pledge` a partir de su juicio, PURA para que un test la ataque
+/// con cada desenlace -también con el fallo del almacén, que un test no sabe provocar en `sled`-.
+fn respuesta_de_prenda(
+    juicio: JuicioPrenda,
+    recibo: Option<Value>,
+    s: u64,
+    seq_juicio: u64,
+    log_len: u64,
+) -> Result<Value, RpcError> {
+    let v = match juicio {
+        JuicioPrenda::NoVerifica(e) => json!({
+            "accepted": false,
+            "reason": format!("la prueba de prenda no verifica contra la cabeza del seq {s}: {e}"),
+        }),
+        JuicioPrenda::Capa(Ok(())) => json!({
+            "accepted": true,
+            "yaEstaba": false,
+            "logSeq": Q(log_len),
+            "s": Q(s),
+        }),
+        // D-BB: la hoja ya estaba y es la MISMA. El sobre ya verifico, asi
+        // que el par existe lo escribiera quien lo escribiera.
+        JuicioPrenda::Capa(Err(LayerError::ConsumoRepetido { .. })) => json!({
+            "accepted": true,
+            "yaEstaba": true,
+            "logSeq": Q(log_len),
+            "s": Q(s),
+        }),
+        // §815: el almacen fallo: desenlace desconocido, sin recibo, y a la PARADA (`despachar`
+        // la pone al ver la causa `Store`; `dispatch` deja antes la marca de fallo en vuelo).
+        JuicioPrenda::Capa(Err(e)) if desenlace_desconocido(&e) => {
+            return Err(RpcError::layer(e, seq_juicio));
+        }
+        // §613 (RFC-0014 E4b): el recibo va TAMBIEN dentro del `data`, como en el rechazo
+        // del lote y en el de la via directa (§571): el sobre de rechazo se arma con ese
+        // `data` tal cual, y se ata al recibo por el (D3).
+        JuicioPrenda::Capa(Err(e)) => {
+            let mut d = data_de(&e, seq_juicio);
+            if let Some(r) = &recibo {
+                d["recepcion"] = r.clone();
+            }
+            json!({ "accepted": false, "reason": format!("{e}"), "data": d })
+        }
+    };
+    Ok(con_recibo_opcional(v, recibo))
 }
 
 /// Respuesta común de las escrituras: qué entrada quedó en el registro.
@@ -4190,16 +4403,232 @@ fn pareja_de_recepcion_rpc(app: &App) -> Result<(zk_ssl_verify::acuses::Digest, 
 /// Evaluar sin hoja sería justo lo que el registro existe para impedir.
 ///
 /// Devuelve la ERA que anotó (§571): el recibo de recepción la lleva al titular.
-fn anotar(app: &App, rx: u64, hash_prueba: zk_ssl_verify::acuses::Digest) -> Result<u64, RpcError> {
-    let era = zk_ssl_verify::recibos::era_de_recibo(
-        app.indice_firma.load(std::sync::atomic::Ordering::Acquire),
-    );
-    let r = match app.registro.lock() {
-        Ok(mut g) => g.anotar(rx, era, hash_prueba).map_err(|e| format!("{e}")),
+///
+/// ⚠️ CORRECCIÓN (§815), citada y no borrada: los tres párrafos de arriba describen el orden de
+/// antes del §815, y dos ya no son ciertos. **Anotar va TRAS el veredicto de la capa y ANTES de
+/// responder** ([`juzgar_y_anotar`]): el registro sigue anotando lo que el nodo JUZGÓ, también si
+/// la capa lo rechaza (D-E intacta: el rechazo deja hoja), pero ya no lo que «se puso a evaluar»
+/// y no llegó a juzgar. Y **si anotar falla, la operación YA se evaluó**: su veredicto viaja sin
+/// recibo y el nodo pasa a PARADA (se revierte la decisión (a) del §569, REVERSIBLE; la razón,
+/// en `juzgar_y_anotar`). La era ya no se lee aquí: se FIJA al recibir ([`era_al_recibir`], D-D)
+/// y aquí solo se escribe. Este es solo el escritor.
+fn anotar(app: &App, rx: u64, era: u64, hash_prueba: zk_ssl_verify::acuses::Digest) -> Result<(), String> {
+    match app.registro.lock() {
+        Ok(mut g) => g.anotar(rx, era, hash_prueba).map_err(|e| format!("rx {rx}: {e}")),
         Err(_) => Err("candado del registro de recepcion envenenado".to_string()),
-    };
-    r.map(|()| era)
-        .map_err(|message| RpcError { code: -32603, message, data: None }.con_recepcion(rx))
+    }
+}
+
+/// §815 · La era del recibo, FIJADA AL RECIBIR (D-D, «computada en la recepción»): el índice de la
+/// última cabeza firmada más uno, leído en el mismo punto que antes del §815, justo tras `recibir`.
+/// Se fija ANTES del juicio y se escribe DESPUÉS: una firma que termine mientras la capa verifica
+/// no la mueve. La prenda la contrasta con la cabeza juzgada (`juzgada.index + 1 == era`, mando),
+/// así que leerla tras el juicio ensancharía esa carrera.
+fn era_al_recibir(app: &App) -> u64 {
+    zk_ssl_verify::recibos::era_de_recibo(app.indice_firma.load(std::sync::atomic::Ordering::Acquire))
+}
+
+/// §815 · El desenlace que NO se sabe. Un fallo del almacén deja la memoria por delante del disco
+/// (§655): la operación puede estar o no en el libro tras reiniciar, así que no se promete nada de
+/// ella. Es el ÚNICO criterio, y lo usan los cuatro brazos con recibo.
+///
+/// ⚠️ Descansa en una invariante de la CAPA, escrita aquí porque este criterio depende de ella
+/// (juicio1, A4): **un error de la capa que no es `Store` no deja nada durable**. `apply_many`
+/// valida todo o nada y en su paso 4 solo falla la persistencia, que es `Store`
+/// (`two_phase.rs`); `apply_send`, `apply_claim` y `apply_consumo` validan antes de mutar. Si la
+/// capa ganara un error que llega tras una mutación durable, este predicado tendría que nombrarlo.
+fn desenlace_desconocido(e: &LayerError) -> bool {
+    matches!(e, LayerError::Store(_))
+}
+
+/// §815 · **El juicio de un brazo con recibo, y si su desenlace es DESCONOCIDO**: el criterio de
+/// [`desenlace_desconocido`] es función del TIPO del juicio, no un cierre que cada brazo escribe.
+///
+/// ⚠️ Hasta la revisión del §815 cada brazo pasaba a [`juzgar_y_anotar`] su propio predicado, y un
+/// brazo que dejara de tratar el `Store` como desconocido -y anotara la hoja de un desenlace que no
+/// se sabe, F1 por la puerta del almacén- no tumbaba ningún test (MEDIDO por la revisión rev1: sus
+/// mutantes R1 a R4, uno por brazo, dieron la suite entera en verde). Ahora el brazo no elige: el
+/// tipo de lo que su capa devuelve lo decide, y cada impl tiene su test
+/// (`cada_juicio_con_recibo_trata_el_almacen_como_desenlace_desconocido`).
+trait Desenlace {
+    fn desconocido(&self) -> bool;
+}
+
+/// `applySend` y `applyClaim`: `apply_send` y `apply_claim` (`two_phase.rs`).
+impl Desenlace for Result<(), LayerError> {
+    fn desconocido(&self) -> bool {
+        matches!(self, Err(e) if desenlace_desconocido(e))
+    }
+}
+
+/// `applyMany`: `apply_many_con_operacion`, con la operación que el lote no admitió.
+impl Desenlace for Result<(), (usize, LayerError)> {
+    fn desconocido(&self) -> bool {
+        matches!(self, Err((_, e)) if desenlace_desconocido(e))
+    }
+}
+
+/// `zkssl_pledge`: el juez dijo que no (se sabe), o la capa habló.
+impl Desenlace for JuicioPrenda {
+    fn desconocido(&self) -> bool {
+        matches!(self, JuicioPrenda::Capa(Err(e)) if desenlace_desconocido(e))
+    }
+}
+
+/// Los tests que ejercen [`juzgar_y_anotar`] con un juicio sin resultado (un pánico, una firma de
+/// en medio): se sabe, porque no hay almacén de por medio.
+#[cfg(test)]
+impl Desenlace for () {
+    fn desconocido(&self) -> bool {
+        false
+    }
+}
+
+/// §815 · **La marca de fallo en vuelo se pone con el candado del estado TOMADO**
+/// (`App::fallo_en_vuelo`). Es lo único que la escribe.
+///
+/// ⚠️ En los tests, ponerla sin el candado tomado entra en pánico: el «antes de soltar el
+/// candado» queda atado por test y no solo por lectura (la revisión del §815 lo midió: con la marca
+/// puesta DESPUÉS de soltar el candado, sus mutantes O1 y R5, la suite entera seguía en verde). En
+/// el binario la comprobación no existe.
+fn poner_marca_en_vuelo(app: &App, fallo: String) {
+    #[cfg(test)]
+    assert!(
+        candado_del_estado_tomado(app),
+        "la marca de fallo en vuelo se pone con el candado del estado tomado: {fallo}"
+    );
+    let _ = app.fallo_en_vuelo.set(fallo);
+}
+
+/// §815 · **La marca de fallo en vuelo, mirada con el candado del estado TOMADO**: la miran así
+/// [`bajo_el_estado`] al entrar y `latido::latir` al componer. Solo [`despachar`] la lee sin el
+/// candado, y lo hace DESPUÉS de que el cuerpo devolvió: para entonces la marca, si la hay, ya
+/// está puesta, y se escribe una vez. En los tests, mirarla sin el candado entra en pánico (el
+/// mutante O3 de la revisión, la mirada del latido fuera del candado, dejaba la suite en verde).
+pub(crate) fn marca_en_vuelo_con_el_candado(app: &App) -> Option<&str> {
+    #[cfg(test)]
+    assert!(
+        candado_del_estado_tomado(app),
+        "la marca de fallo en vuelo se mira con el candado del estado tomado"
+    );
+    app.fallo_en_vuelo.get().map(String::as_str)
+}
+
+/// ¿Está tomado el candado del estado? Solo en los tests, y solo vale como comprobación de que
+/// ESTE hilo lo tiene cuando ningún otro puede tenerlo: `try_lock` no dice quién.
+#[cfg(test)]
+fn candado_del_estado_tomado(app: &App) -> bool {
+    matches!(app.estado.try_lock(), Err(std::sync::TryLockError::WouldBlock))
+}
+
+/// §815 · Los dos PUNTOS DE CORTE del orden, para los tests: tras el veredicto y antes de anotar, y
+/// tras anotar y antes de responder. Son el «parche de medida» de la medida privada (que abortaba
+/// el proceso tras anotar con una variable de entorno), hecho punto de inyección de TEST: en el
+/// binario [`punto_de_corte`] no hace nada, y ninguna variable de entorno lo enciende.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum PuntoDeCorte {
+    TrasJuzgar,
+    TrasAnotar,
+}
+
+#[cfg(test)]
+thread_local! {
+    /// El corte que un test pide, en SU hilo: `dispatch` corre entero en el hilo que lo llama.
+    static CORTE: std::cell::Cell<Option<PuntoDeCorte>> = const { std::cell::Cell::new(None) };
+}
+
+/// §815 · En un test, si el test pidió ESTE corte, entra en pánico aquí: con el candado del estado
+/// tomado, eso deja el nodo en PARADA (§530), que es lo que una muerte del proceso deja visto
+/// desde el disco. Fuera de los tests el cuerpo no existe.
+#[inline(always)]
+fn punto_de_corte(_punto: PuntoDeCorte) {
+    #[cfg(test)]
+    if CORTE.with(|c| c.get()) == Some(_punto) {
+        panic!("corte inyectado por el test en {_punto:?}");
+    }
+}
+
+/// §815 · **EL ORDEN: juzgar, y SOLO DESPUÉS anotar** (RFC-0010 D-E, enmendada en el §815).
+///
+/// La hoja del recibo se escribe con `fsync` TRAS el veredicto de la capa y ANTES de responder (la
+/// D-J pide «antes de responder», y se cumple). Lo que se gana: **sin veredicto no hay hoja**. Una
+/// evaluación cortada -SIGKILL, corte, OOM, un pánico de la capa, un fallo del almacén- deja su
+/// `rx` HUECO (reservado sin hoja, el caso benigno de `registro_recepcion.rs`), nunca una hoja que
+/// nadie puede resolver. Y, **con `--ledger`**, una hoja de una operación APLICADA nace después del
+/// `flush` de su asiento: quien tenga la hoja tiene el acuse.
+///
+/// ⚠️ Sin `--ledger` eso NO vale (la A8 de juicio0 y de juicio2; DEDUCIDO de leer el código, sin
+/// medir; residuo declarado en `SECURITY.md` §3.15): el libro vive en memoria y su `commit` no
+/// escribe nada (`persistence.rs`, sin almacén), mientras el contador y el registro de recepción
+/// van siempre a disco, y quien firma solo necesita `--diario` (§285). Tras reiniciar queda la hoja
+/// bajo una `recepRoot` firmada sin su operación: el estado de F1. El orden no lo empeora.
+///
+/// El hallazgo que lo motiva (F1, MEDIDO en privado sobre 4d8017d con un aborto tras anotar y con
+/// un SIGKILL inyectado por `strace`): con el orden de antes, una muerte entre anotar y la capa
+/// dejaba una hoja bajo la `recepRoot` firmada sin la operación en el libro, y si el titular no
+/// reenviaba, el sobre de completitud daba ROJO «NO RESUELTA EN LA VENTANA» contra un operador
+/// honrado.
+///
+/// Lo que se pierde, declarado: la decisión (a) del §569, «si anotar falla, la operación no se
+/// evalúa». Ahora ya se evaluó: la petición en vuelo recibe su veredicto SIN recibo (el residuo
+/// D-H: el titular lo sabe en la respuesta) y `despachar` pone la PARADA. La marca de fallo en
+/// vuelo (`App::fallo_en_vuelo`), puesta aquí con el candado del estado tomado, hace que la
+/// petición que espera el candado no evalúe: así es cierto que a lo sumo UNA evaluación queda sin
+/// hoja (sin la marca, la cota eran las peticiones en cola: A5 de juicio0).
+///
+/// ⚠️ La línea de traza va ANTES de la capa, con `(método, rx, hashPrueba)` y SIN `params`
+/// (juicio2): con el orden de antes, la petición que tumbaba el nodo dejaba su `hashPrueba` bajo
+/// una raíz firmada; ahora deja un hueco, y el rastro para depurar la «píldora» queda en el log,
+/// sin `fsync` y sin valor de evidencia, que es lo que debe tener. Los `params` no van: llevan lo
+/// que el RFC-0001 protege.
+///
+/// La capa va como cierre para que los tests inyecten el pánico y el fallo sin añadir un camino
+/// al binario (el molde de `despachar`, §530).
+fn juzgar_y_anotar<R: Desenlace>(
+    app: &App,
+    metodo: &str,
+    rx: u64,
+    era: u64,
+    hash_prueba: zk_ssl_verify::acuses::Digest,
+    juicio: impl FnOnce() -> R,
+) -> (R, Option<Value>) {
+    tracing::info!(
+        metodo = %metodo,
+        rx,
+        hash_prueba = %format!("0x{}", hex_de(&digest_to_wire(&hash_prueba).0)),
+        "recepcion: la capa juzga"
+    );
+    let r = juicio();
+    punto_de_corte(PuntoDeCorte::TrasJuzgar);
+    if r.desconocido() {
+        poner_marca_en_vuelo(
+            app,
+            format!("un fallo del almacen en {metodo} (rx {rx}): desenlace desconocido, sin hoja"),
+        );
+        return (r, None);
+    }
+    match anotar(app, rx, era, hash_prueba) {
+        Ok(()) => {
+            punto_de_corte(PuntoDeCorte::TrasAnotar);
+            (r, Some(recibo_de_recepcion(rx, era, hash_prueba)))
+        }
+        Err(fallo) => {
+            tracing::error!(metodo = %metodo, rx, fallo = %fallo, "el registro de recepcion fallo TRAS el veredicto");
+            poner_marca_en_vuelo(
+                app,
+                format!("el registro de recepcion fallo en {metodo} tras el veredicto: {fallo}"),
+            );
+            (r, None)
+        }
+    }
+}
+
+/// §815 · El recibo en la respuesta, si lo hay: no lo hay si el registro falló tras el veredicto.
+fn con_recibo_opcional(v: Value, recibo: Option<Value>) -> Value {
+    match recibo {
+        Some(r) => con_recibo(v, r),
+        None => v,
+    }
 }
 
 /// Añade el número de recepción a una respuesta.
@@ -4256,6 +4685,11 @@ fn con_rx(mut v: Value, rx: u64) -> Value {
 /// al cerrar la era, cuando `zkssl_recepPath` da el camino hasta la `recepRoot` de una cabeza
 /// firmada. ⚠️ Se llama `recepcion` y no `recibo`: `recibo` ya nombra en el cable los
 /// `publicInputs` del sobre de rechazo, y la casa no recicla un nombre.
+///
+/// ⚠️ CORRECCIÓN (§815), citada y no borrada: desde el §815 el recibo dice que el nodo la RECIBIÓ y
+/// la JUZGÓ, se aplicara o no: la hoja se anota tras el veredicto (`juzgar_y_anotar`), y una
+/// evaluación que no llegó a juzgarse no deja hoja. Y la `era` no la declara el nodo «al anotar»:
+/// la FIJA al recibir ([`era_al_recibir`]) y la escribe al anotar.
 fn recibo_de_recepcion(rx: u64, era: u64, hash_prueba: zk_ssl_verify::acuses::Digest) -> Value {
     json!({
         "rx": Q(rx),
@@ -4459,6 +4893,7 @@ mod tests {
             indice_firma: std::sync::atomic::AtomicU64::new(0),
             consumos_ajenos: BTreeSet::new(),
             parada: std::sync::OnceLock::new(),
+            fallo_en_vuelo: std::sync::OnceLock::new(),
             actas_de_clave: Vec::new(),
         }
     }
@@ -4483,6 +4918,14 @@ mod tests {
     /// §655 (SEG-06 c): un rechazo de la capa con causa `Store` (el disco fallo despues de mutar
     /// la memoria) pone el nodo en PARADA con esa causa, y la peticion siguiente no se ejecuta.
     /// Falsador: sin el brazo de `despachar`, el error se devolvia y el nodo seguia firmando.
+    ///
+    /// ⚠️ CORRECCIÓN (§815), citada y no borrada: «y el nodo seguia firmando» decia mas de lo que
+    /// este test mira. No llama a `latido::latir`: comprueba que la peticion siguiente no corre, no
+    /// que el latido deje de firmar. Y el latido SEGUIA firmando en PARADA: MEDIDO en privado sobre
+    /// 4d8017d (m-parada, ENOSPC inyectado en el libro), cabezas del seq 9 con el disco en el seq 8.
+    /// Lo de firmar lo atan desde el §815
+    /// `latido::tests::en_parada_el_latido_no_compone_ni_firma_y_el_indice_no_se_mueve` y
+    /// `un_fallo_del_almacen_deja_la_marca_antes_de_soltar_el_candado_y_el_latido_no_firma`.
     #[test]
     fn un_fallo_del_almacen_para_el_nodo() {
         let app = nodo(60);
@@ -4829,26 +5272,702 @@ mod tests {
         assert_eq!(seis[0].0, 2, "y el rx sigue su cuenta");
     }
 
-    #[test]
-    fn si_anotar_falla_la_operacion_no_se_evalua_y_el_rx_queda_hueco() {
-        // Un DIRECTORIO donde iria el fichero de la era 1: abrirlo para anadir
-        // falla, sin permisos ni medios raros.
-        let app = nodo(30);
+    /// §815: pone un DIRECTORIO donde iria el fichero de la era que la proxima recepcion
+    /// declara: abrirlo para anadir falla, sin permisos ni medios raros (el truco del §569).
+    fn registro_con_obstaculo(app: &App) -> std::path::PathBuf {
         let dir = tests_dir(&format!("reg_roto_{}", proximo_nodo()));
-        std::fs::create_dir_all(dir.join("era-1.bin")).expect("el obstaculo");
+        let era = era_al_recibir(app);
+        let obstaculo = dir.join(format!("era-{era}.bin"));
+        std::fs::create_dir_all(&obstaculo).expect("el obstaculo");
         *app.registro.lock().expect("registro") =
             registro_recepcion::RegistroRecepcion::abrir(&dir).expect("abrir");
-        let e = dispatch(&app, "zkssl_applySend", envio_de_ceros().0)
-            .expect_err("sin hoja no se evalua");
-        assert_eq!(e.code, -32603, "{}", e.message);
+        obstaculo
+    }
+
+    #[test]
+    fn si_anotar_falla_tras_el_veredicto_se_responde_el_veredicto_sin_recibo_y_el_nodo_para() {
+        // §815 · ORDEN. Antes (§569): -32603 y la operacion NO se evaluaba. Ahora la capa ya
+        // juzgo cuando el registro falla: la peticion recibe SU veredicto -aqui el rechazo de la
+        // capa, con su causa- SIN recibo, el rx queda HUECO y el nodo PARA.
+        // Falsador: devolver `anotar` a su sitio de antes (antes de la capa) da -32603: cae.
+        let app = nodo(30);
+        let obstaculo = registro_con_obstaculo(&app);
+        let e = despachar(&app, "zkssl_applySend", || {
+            dispatch(&app, "zkssl_applySend", envio_de_ceros().0)
+        })
+        .expect_err("la capa rechaza los ceros");
+        assert_ne!(e.code, -32603, "es el veredicto de la CAPA, no un fallo interno: {}", e.message);
+        let d = e.data.expect("el rechazo de la capa lleva data");
+        assert!(d["causa"].is_string(), "con su causa (§454): {d}");
+        assert!(d.get("recepcion").is_none(), "sin hoja no hay recibo que prometer: {d}");
         assert!(e.message.contains("receptionSeq=0x1"), "el numero viaja: {}", e.message);
+        assert!(
+            app.parada.get().expect("PARADA").contains("registro de recepcion"),
+            "el nodo no sigue evaluando sin poder dar recibo"
+        );
+        let corrio = std::cell::Cell::new(false);
+        let _ = despachar(&app, "zkssl_applySend", || {
+            corrio.set(true);
+            Ok(Value::Null)
+        });
+        assert!(!corrio.get(), "en PARADA la siguiente no se evalua");
         assert_eq!(app.recepcion.lock().expect("contador").actual(), 1, "el rx se QUEMO");
-        // Sin el obstaculo: con el, `mayor_anotado` tambien falla CERRADA.
-        std::fs::remove_dir(dir.join("era-1.bin")).expect("quitar el obstaculo");
+        std::fs::remove_dir(&obstaculo).expect("quitar el obstaculo");
         assert_eq!(
             app.registro.lock().expect("registro").mayor_anotado().expect("mayor"),
             0,
             "y quedo HUECO: el arranque lo vera como contador adelantado"
+        );
+    }
+
+    #[test]
+    fn el_lote_tambien_juzga_antes_de_anotar() {
+        // §815: el mismo obstaculo, por `zkssl_applyMany`. Falsador: anotar el lote antes de
+        // `apply_many_con_operacion` da -32603 y cae.
+        let app = nodo(30);
+        let _obstaculo = registro_con_obstaculo(&app);
+        let mut op = envio_de_ceros().0;
+        op["kind"] = json!("send");
+        let e = despachar(&app, "zkssl_applyMany", || {
+            dispatch(&app, "zkssl_applyMany", json!({ "ops": [op] }))
+        })
+        .expect_err("la capa rechaza el lote");
+        assert_ne!(e.code, -32603, "lo juzgo la CAPA: {}", e.message);
+        let d = e.data.expect("data");
+        assert_eq!(d["operacion"], json!(Q(0)), "nombra la que no admitio: {d}");
+        assert!(d.get("recepcion").is_none(), "sin hoja, sin recibo: {d}");
+        assert!(app.parada.get().is_some(), "y el nodo para");
+    }
+
+    #[test]
+    fn un_juicio_que_entra_en_panico_no_deja_hoja_y_el_rx_queda_hueco() {
+        // §815 · EL HALLAZGO, en su forma sin caida: la capa entra en panico CON el estado
+        // tomado (el nodo pasa a PARADA, §530) a media evaluacion. Antes la hoja ya estaba en
+        // disco y entraba en la primera cabeza tras el arranque: un recibo sin resolucion
+        // posible. Ahora el rx queda HUECO. Falsador: anotar ANTES del cierre: cae.
+        let app = nodo(30);
+        let d = zk_ssl::log::digest_of_proof(&[7u8; 32]);
+        let r = despachar(&app, "zkssl_applySend", || {
+            let _estado = app.estado.lock().expect("estado");
+            let rx = recibir(&app)?;
+            let era = era_al_recibir(&app);
+            let ((), _recibo) = juzgar_y_anotar(
+                &app,
+                "zkssl_applySend",
+                rx,
+                era,
+                d,
+                || -> () { panic!("la capa entra en panico a media evaluacion") },
+            );
+            Ok(Value::Null)
+        });
+        assert!(r.is_err());
+        assert!(app.parada.get().is_some(), "el estado envenenado PARA el nodo");
+        assert_eq!(app.recepcion.lock().expect("contador").actual(), 1, "el rx se reservo");
+        assert_eq!(
+            app.registro.lock().expect("registro").mayor_anotado().expect("mayor"),
+            0,
+            "y NO hay hoja: un HUECO, no un recibo que nadie puede resolver"
+        );
+    }
+
+    #[test]
+    fn un_fallo_del_almacen_en_el_juicio_no_deja_hoja_y_para_el_nodo() {
+        // §815: el desenlace DESCONOCIDO (§655: la memoria por delante del disco) no se anota.
+        // Falsador: `desenlace_desconocido` que devuelve false: aparece la hoja y cae.
+        let app = nodo(30);
+        let d = zk_ssl::log::digest_of_proof(&[8u8; 32]);
+        let r = despachar(&app, "zkssl_applySend", || {
+            // con el candado del estado tomado, como en un brazo: la marca lo exige
+            let _estado = app.estado.lock().expect("estado");
+            let rx = recibir(&app)?;
+            let era = era_al_recibir(&app);
+            let (r, recibo) = juzgar_y_anotar(
+                &app,
+                "zkssl_applySend",
+                rx,
+                era,
+                d,
+                || Err::<(), _>(LayerError::Store(zk_ssl::store::StoreError::Malformed("disco lleno".into()))),
+            );
+            assert!(recibo.is_none(), "sin hoja no hay recibo");
+            r.map(|()| Value::Null).map_err(|e| RpcError::layer(e, 0).con_recepcion(rx))
+        });
+        assert!(r.is_err());
+        assert!(app.parada.get().expect("PARADA").contains("almacen"));
+        assert_eq!(app.recepcion.lock().expect("contador").actual(), 1);
+        assert_eq!(app.registro.lock().expect("registro").mayor_anotado().expect("mayor"), 0);
+    }
+
+    #[test]
+    fn la_era_se_fija_al_recibir_y_no_al_anotar() {
+        // §815 · D-D: «computada en la recepcion». Una firma que termina mientras la capa
+        // juzga no mueve la era del recibo: la prenda la contrasta con la cabeza juzgada
+        // (`juzgada.index + 1 == era`, mando), y el reorden no puede ensanchar esa carrera.
+        // Falsador: leer la era dentro de `anotar`: sale 6 y cae.
+        let app = nodo(30);
+        let d = zk_ssl::log::digest_of_proof(&[9u8; 32]);
+        let rx = recibir(&app).expect("recibir");
+        let era = era_al_recibir(&app);
+        let ((), recibo) = juzgar_y_anotar(
+            &app,
+            "zkssl_applySend",
+            rx,
+            era,
+            d,
+            || app.indice_firma.store(5, std::sync::atomic::Ordering::Release),
+        );
+        assert_eq!(recibo.expect("recibo")["era"], json!(Q(1)), "la era de la RECEPCION");
+        let r = app.registro.lock().expect("registro");
+        assert_eq!(r.pares_de_era(1).expect("era 1").len(), 1);
+        assert!(r.pares_de_era(6).expect("era 6").is_empty(), "no la de la firma de en medio");
+    }
+
+    #[test]
+    fn un_fallo_del_almacen_en_la_prenda_va_a_la_parada_y_no_como_negativa() {
+        // §815 · hallazgo hermano: `zkssl_pledge` devolvia el `Store` de `apply_consumo` como
+        // `accepted: false` DENTRO de un Ok, y `despachar` (§655) no lo veia. Falsador: quitar
+        // el brazo del almacen en `respuesta_de_prenda`: sale Ok y cae.
+        let app = nodo(30);
+        let r = despachar(&app, "zkssl_pledge", || {
+            respuesta_de_prenda(
+                JuicioPrenda::Capa(Err(LayerError::Store(zk_ssl::store::StoreError::Malformed(
+                    "disco lleno".into(),
+                )))),
+                None,
+                1,
+                1,
+                1,
+            )
+        });
+        assert!(r.is_err(), "no es una negativa: {r:?}");
+        assert!(app.parada.get().expect("PARADA").contains("almacen"));
+    }
+
+    // ── §815 · F1, F2 y F3 del nodo: el ORDEN, la marca de fallo en vuelo y la PARADA ──
+
+    /// §815: corre `f` con el corte `p` pedido en ESTE hilo, y lo quita después pase lo que pase.
+    fn con_corte<T>(p: PuntoDeCorte, f: impl FnOnce() -> T) -> T {
+        CORTE.with(|c| c.set(Some(p)));
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
+        CORTE.with(|c| c.set(None));
+        match r {
+            Ok(v) => v,
+            Err(p) => std::panic::resume_unwind(p),
+        }
+    }
+
+    /// §815: el libro tal como quedó -cuántas entradas y el digest de prueba de la última-, aunque
+    /// el corte haya envenenado el candado del estado.
+    fn libro_tras_el_corte(app: &App) -> (usize, Option<zk_ssl_verify::acuses::Digest>) {
+        let e = app.estado.lock().unwrap_or_else(|p| p.into_inner());
+        let entradas = e.layer.transition_log().entries();
+        (entradas.len(), entradas.last().map(|x| x.proof_digest))
+    }
+
+    /// §815: un envío REAL (prueba STARK) de Alice a Bob, listo para `zkssl_applySend`, y el digest
+    /// de su prueba. El molde de `un_lote_aceptado_lleva_su_recibo_y_su_huella_recompone`.
+    fn envio_real(app: &App, semilla: u64) -> (Value, zk_ssl_verify::acuses::Digest) {
+        use zk_ssl::tests_support as ts;
+        let mut e = app.estado.lock().expect("mutex");
+        let ka = ts::wide_key(0xA000 + semilla);
+        let alice = ts::open_and_fund_wide(&mut e.layer, ka, 1_000_000);
+        let bob = ts::open_and_fund_wide(&mut e.layer, ts::wide_key(0xB000 + semilla), 0);
+        let id_bob = e.layer.public_id_of(bob).expect("bob");
+        let m = e.layer.send_materials(alice, id_bob, 7_000, ts::salt_de(semilla)).expect("materiales");
+        let r = zk_ssl::client::prove_send(&m, ka, zk_ssl::proof_options()).expect("probar");
+        let params = json!({
+            "receipt": wire::SendReceiptDto::from(&r),
+            "sender": Q(alice),
+            "senderState": wire::ClientStateDto::from(&ts::state_of(&e.layer, alice)),
+            "amount": Q(7_000),
+        });
+        (params, zk_ssl::log::digest_of_proof(&r.proof))
+    }
+
+    /// §815 · F3, por el cable y como lo hace un TERCERO SIN CUENTA (la medida privada m-vf):
+    /// las raíces PÚBLICAS de `zkssl_epochHead`, el límite de `zkssl_params` y una prueba de 32
+    /// bytes `0xab`, desde la cuenta 0 de un libro vacío. La capa llega a leer la prueba y la
+    /// rechaza con `VerificationFailed`.
+    fn basura_con_las_raices_publicas(app: &App) -> Value {
+        let h = dispatch(app, "zkssl_epochHead", json!({})).expect("epochHead");
+        let pr = dispatch(app, "zkssl_params", json!({})).expect("params");
+        let z = json!(format!("0x{}", "00".repeat(32)));
+        json!({
+            "receipt": {
+                "proof": format!("0x{}", "ab".repeat(32)),
+                "publicInputs": {
+                    "rootOld": h["accountsRoot"], "rootNew": z, "frozenRoot": h["frozenRoot"],
+                    "pendingRootOld": h["pendingRoot"], "pendingRootNew": z, "amount": "0x5",
+                    "regulatoryLimit": pr["regulatoryLimit"], "supplyOld": "0x0", "supplyNew": "0x0",
+                },
+                "commitment": z,
+                "notice": { "position": "0x0", "salt": z, "amount": "0x5" },
+            },
+            "sender": "0x0",
+            "senderState": { "publicId": z, "balance": "0x5", "nonce": "0x0" },
+            "amount": "0x5",
+        })
+    }
+
+    #[test]
+    fn un_corte_tras_juzgar_no_deja_hoja_y_lo_aplicado_queda_en_el_libro() {
+        // ⚠️⚠️ §815 · F1, EL HALLAZGO, por el BRAZO REAL y con una prueba DE VERDAD. El proceso
+        // «muere» -un panico con el estado tomado: PARADA, §530- entre el veredicto y la hoja.
+        // Con el orden de 4d8017d la hoja ya estaba en disco y la operacion NO en el libro: el
+        // ROJO falso (MEDIDO en privado con aborto y con SIGKILL). Ahora la operacion APLICADA
+        // esta en el libro con su prueba, y el rx queda HUECO, que el arranque declara: nada que
+        // acusar, y el acuse existe.
+        // Falsador: anotar ANTES del juicio en `juzgar_y_anotar` (el orden de antes): la hoja
+        // aparece y cae.
+        let app = nodo(30);
+        // Una recepcion ANTES, con su hoja (un rechazo): sin ninguna hoja el arranque diria
+        // `ClaveEnCero` (registro vacio sobre un contador vivo), no hueco.
+        let _ = dispatch(&app, "zkssl_applySend", envio_de_ceros().0);
+        let (params, h) = envio_real(&app, 0x61);
+        let (antes, _) = libro_tras_el_corte(&app);
+        let r = con_corte(PuntoDeCorte::TrasJuzgar, || {
+            despachar(&app, "zkssl_applySend", || dispatch(&app, "zkssl_applySend", params))
+        });
+        assert!(r.is_err(), "el corte no responde: {r:?}");
+        assert!(app.parada.get().is_some(), "el corte con el estado tomado PARA el nodo");
+        let (despues, ultima) = libro_tras_el_corte(&app);
+        assert_eq!(despues, antes + 1, "la capa JUZGO y aplico: la operacion esta en el libro");
+        assert_eq!(ultima, Some(h), "con SU prueba: su acuse existe");
+        assert_eq!(app.recepcion.lock().expect("contador").actual(), 2, "el rx 2 se reservo");
+        let mayor = app.registro.lock().expect("registro").mayor_anotado().expect("mayor");
+        assert_eq!(mayor, 1, "y el rx 2 NO tiene hoja: un HUECO, no un recibo sin veredicto");
+        let rec = app.recepcion.lock().expect("contador").reconciliar(mayor);
+        assert!(
+            matches!(politica_del_registro(&rec), DecisionDeArranque::ArrancaAvisando(m) if m.contains("HUECOS")),
+            "el arranque lo declara HUECO: {rec:?}"
+        );
+    }
+
+    #[test]
+    fn un_corte_tras_anotar_deja_la_hoja_con_su_veredicto_ya_en_el_libro() {
+        // ⚠️⚠️ §815 · la otra mitad: el proceso muere entre la hoja y la respuesta. La hoja esta, y
+        // su veredicto TAMBIEN: la operacion aplicada esta en el libro con la MISMA prueba que
+        // dice la hoja. Quien tiene la hoja tiene el acuse: se resuelve con el veredicto 1, y el
+        // titular sin respuesta encuentra su operacion en el registro de transiciones.
+        // Falsador: responder antes de que la hoja este en disco (el corte ANTES de `anotar`):
+        // no hay hoja y cae.
+        let app = nodo(30);
+        let (params, h) = envio_real(&app, 0x62);
+        let (antes, _) = libro_tras_el_corte(&app);
+        let r = con_corte(PuntoDeCorte::TrasAnotar, || {
+            despachar(&app, "zkssl_applySend", || dispatch(&app, "zkssl_applySend", params))
+        });
+        assert!(r.is_err(), "el corte no responde: {r:?}");
+        let (despues, ultima) = libro_tras_el_corte(&app);
+        assert_eq!(despues, antes + 1, "aplicada");
+        assert_eq!(ultima, Some(h), "con su prueba");
+        assert_eq!(
+            app.registro.lock().expect("registro").pares_de_era(1).expect("era 1"),
+            vec![(1, h)],
+            "la hoja, con el digest de la prueba que el libro YA tiene"
+        );
+    }
+
+    #[test]
+    fn un_rechazo_cortado_tras_juzgar_no_deja_hoja_y_tras_anotar_si_y_el_libro_no_cambia() {
+        // §815: lo mismo con un RECHAZO (los ceros). Tras juzgar, hueco; tras anotar, la hoja con
+        // el digest de la prueba rechazada, y el libro sin la operacion. Esa ultima rama es el
+        // residuo que ningun orden cierra (el rechazo que no se entrega), declarado en
+        // `registro_recepcion.rs`. Falsadores: los de los dos tests de arriba.
+        let (params, prueba) = envio_de_ceros();
+        let d = zk_ssl::log::digest_of_proof(&prueba);
+        let a = nodo(30);
+        let pa = params.clone();
+        let _ = con_corte(PuntoDeCorte::TrasJuzgar, || {
+            despachar(&a, "zkssl_applySend", || dispatch(&a, "zkssl_applySend", pa))
+        });
+        assert!(a.parada.get().is_some());
+        assert_eq!(a.recepcion.lock().expect("contador").actual(), 1);
+        assert_eq!(a.registro.lock().expect("registro").mayor_anotado().expect("mayor"), 0, "hueco");
+        let b = nodo(30);
+        let (antes, _) = libro_tras_el_corte(&b);
+        let _ = con_corte(PuntoDeCorte::TrasAnotar, || {
+            despachar(&b, "zkssl_applySend", || dispatch(&b, "zkssl_applySend", params))
+        });
+        assert_eq!(
+            b.registro.lock().expect("registro").pares_de_era(1).expect("era 1"),
+            vec![(1, d)],
+            "la hoja del rechazo"
+        );
+        assert_eq!(libro_tras_el_corte(&b).0, antes, "y el libro no la tiene: se rechazo");
+    }
+
+    #[test]
+    fn una_prueba_basura_de_un_tercero_sin_cuenta_se_lleva_su_recibo_ya_juzgada() {
+        // ⚠️⚠️ §815 · §253 SIGUE EN PIE: una prueba INVALIDA consume recibo -el censor no se
+        // esconde tras «prueba invalida»-. Lo que cambia es que la hoja se anota con el veredicto
+        // YA dado: cortado entre los dos, no hay hoja. Es la F3 de la medida privada (m-vf), del
+        // lado del nodo: el nodo anota y responde con el recibo en `data.recepcion`; que el kit
+        // no admitiera ninguna resolucion de `VerificationFailed` es del kit, no de aqui.
+        // Falsador: que solo deje hoja lo que se aplica (el desenlace «desconocido» para todo
+        // rechazo, en el brazo): la hoja desaparece y cae.
+        let app = nodo(30);
+        let envio = basura_con_las_raices_publicas(&app);
+        let e = despachar(&app, "zkssl_applySend", || dispatch(&app, "zkssl_applySend", envio))
+            .expect_err("32 bytes de basura no se aplican");
+        assert_eq!(e.code, -32000, "lo rechazo la CAPA: {}", e.message);
+        let d = e.data.expect("el rechazo de la capa lleva data");
+        assert_eq!(d["causa"], json!("VerificationFailed"), "la capa llego a la prueba: {d}");
+        let h = zk_ssl::log::digest_of_proof(&[0xab; 32]);
+        assert_eq!(d["recepcion"]["rx"], json!(Q(1)), "{d}");
+        assert_eq!(d["recepcion"]["hashPrueba"], json!(digest_to_wire(&h)), "{d}");
+        assert_eq!(
+            app.registro.lock().expect("registro").pares_de_era(1).expect("era 1"),
+            vec![(1, h)],
+            "la prueba invalida deja SU hoja"
+        );
+        assert!(app.parada.get().is_none(), "un rechazo no para el nodo");
+        let otro = nodo(30);
+        let envio = basura_con_las_raices_publicas(&otro);
+        let _ = con_corte(PuntoDeCorte::TrasJuzgar, || {
+            despachar(&otro, "zkssl_applySend", || dispatch(&otro, "zkssl_applySend", envio))
+        });
+        assert_eq!(otro.recepcion.lock().expect("contador").actual(), 1, "se recibio");
+        assert_eq!(
+            otro.registro.lock().expect("registro").mayor_anotado().expect("mayor"),
+            0,
+            "y la hoja no nace sin el veredicto anotado"
+        );
+    }
+
+    #[test]
+    fn con_la_marca_de_fallo_en_vuelo_la_peticion_que_esperaba_no_evalua() {
+        // ⚠️ §815 · A5, LA CARRERA DE LA PARADA (juicio0): otra peticion fallo en el almacen con el
+        // estado tomado y dejo la marca; esta esperaba el candado y `despachar` aun no habia
+        // puesto la PARADA. Antes evaluaba sobre la memoria rota; ahora recibe la PARADA sin
+        // `recibir`, y su `despachar` la pone. Falsador: quitar la mirada a la marca en
+        // `bajo_el_estado`: se reserva el rx y cae.
+        let app = nodo(30);
+        let _ = app.fallo_en_vuelo.set("un fallo del almacen en zkssl_applySend: (inyectado)".into());
+        let e = despachar(&app, "zkssl_applySend", || {
+            dispatch(&app, "zkssl_applySend", envio_de_ceros().0)
+        })
+        .expect_err("con la marca puesta no se evalua");
+        assert!(e.message.starts_with("nodo en PARADA: "), "{}", e.message);
+        assert_eq!(app.recepcion.lock().expect("contador").actual(), 0, "ni se recibio");
+        assert!(
+            app.parada.get().expect("la PARADA").contains("inyectado"),
+            "y la PARADA lleva la causa de la marca"
+        );
+    }
+
+    #[test]
+    fn un_fallo_del_almacen_deja_la_marca_antes_de_soltar_el_candado_y_el_latido_no_firma() {
+        // ⚠️⚠️ §815 · F2 sin el instante de en medio. `bajo_el_estado` pone la marca con el candado
+        // TOMADO cuando el cuerpo falla en el almacen -en CUALQUIER brazo: aqui uno que no es de
+        // los cuatro del recibo-, y `despachar` todavia no ha corrido: no hay PARADA. Aun asi el
+        // latido no compone ni firma, y no gasta indice XMSS.
+        // Falsadores: no poner la marca en `bajo_el_estado`, o no mirarla en `latir`: firma y cae.
+        // ⚠️ El «antes de soltar el candado» del nombre no lo miraba este test, que corre en un
+        // solo hilo (la revision rev1 del §815 lo midio: con la marca puesta DESPUES de soltarlo, su
+        // mutante R5, seguia en verde). Lo ata desde la revision `poner_marca_en_vuelo`, que en los
+        // tests entra en panico si el candado del estado no esta tomado: con la marca tras soltar
+        // el candado, `bajo_el_estado` entra en panico aqui y cae. La carrera con hilos de verdad,
+        // en `a5_con_hilos_reales_la_peticion_que_espera_no_evalua_y_el_latido_no_firma`.
+        let app = nodo(30);
+        let mut f = firmante("marca_y_latido");
+        crate::latido::latir(&app, Some(&mut f)).expect("sano, firma");
+        let antes = app.indice_firma.load(std::sync::atomic::Ordering::Acquire);
+        let r = bajo_el_estado(&app, "zkssl_openAccount", |_| {
+            Err(RpcError::layer(
+                LayerError::Store(zk_ssl::store::StoreError::Malformed("disco lleno".into())),
+                0,
+            ))
+        });
+        assert!(r.is_err());
+        assert!(app.parada.get().is_none(), "premisa: aun sin PARADA, `despachar` no ha corrido");
+        assert!(app.fallo_en_vuelo.get().expect("la marca").contains("almacen"));
+        let l = crate::latido::latir(&app, Some(&mut f));
+        assert!(l.is_err(), "con la marca puesta el latido no compone ni firma: {l:?}");
+        assert_eq!(
+            app.indice_firma.load(std::sync::atomic::Ordering::Acquire),
+            antes,
+            "y no se gasta indice"
+        );
+    }
+
+    #[test]
+    fn la_marca_de_fallo_en_vuelo_se_pone_y_se_mira_solo_con_el_candado_del_estado() {
+        // ⚠️ §815 (la revision): la comprobacion de los tests que ata el ORDEN de la marca respecto
+        // del candado. Sin el candado del estado tomado, ponerla o mirarla entra en panico, y no se
+        // pone; con el candado, se pone y se lee. Falsador: quitar la comprobacion de
+        // `poner_marca_en_vuelo` o de `marca_en_vuelo_con_el_candado`: no hay panico y cae.
+        let app = nodo(30);
+        let poner = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            poner_marca_en_vuelo(&app, "sin el candado".into())
+        }));
+        assert!(poner.is_err(), "sin el candado del estado, ponerla entra en panico");
+        assert!(app.fallo_en_vuelo.get().is_none(), "y no se puso");
+        let mirar = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            marca_en_vuelo_con_el_candado(&app).map(str::to_owned)
+        }));
+        assert!(mirar.is_err(), "sin el candado del estado, mirarla entra en panico");
+        assert!(!app.estado.is_poisoned(), "y el candado no queda envenenado: no estaba tomado");
+        let _g = app.estado.lock().expect("estado");
+        poner_marca_en_vuelo(&app, "con el candado".into());
+        assert_eq!(marca_en_vuelo_con_el_candado(&app), Some("con el candado"));
+    }
+
+    #[test]
+    fn a5_con_hilos_reales_la_peticion_que_espera_no_evalua_y_el_latido_no_firma() {
+        // ⚠️⚠️ §815 · A5, LA CARRERA DE LA PARADA, con HILOS REALES (el test de la revision rev0 del
+        // §815, que la midio asi). A falla en el almacen con el candado del estado tomado; mientras
+        // lo retiene, B -un `applySend`- y L -el latido- salen sin PARADA y se quedan esperando ese
+        // candado. Con la marca, B recibe la PARADA sin `recibir` y L no compone ni firma.
+        // Falsadores, MEDIDOS: sin la mirada a la marca al entrar en `bajo_el_estado`, B evalua
+        // sobre la memoria rota y deja el rx 1 con su hoja; sin la mirada en `latir`, o con ella
+        // fuera del candado, L firma el indice 2; y con la marca puesta tras soltar el candado y
+        // un respiro de 100 ms, los dos.
+        use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+        use std::time::{Duration, Instant};
+        let app = nodo(30);
+        let mut f = firmante(&format!("a5_hilos_{}", proximo_nodo()));
+        crate::latido::latir(&app, Some(&mut f)).expect("sano, firma");
+        let indice_antes = app.indice_firma.load(Ordering::Acquire);
+        let a_tiene = AtomicBool::new(false);
+        let lanzados = AtomicUsize::new(0);
+        let (ra, parada_al_lanzar, (rb, tb), (rl, tl)) = std::thread::scope(|s| {
+            let (app, a_tiene, lanzados) = (&app, &a_tiene, &lanzados);
+            let ha = s.spawn(move || {
+                despachar(app, "zkssl_openAccount", || {
+                    bajo_el_estado(app, "zkssl_openAccount", |_| {
+                        a_tiene.store(true, Ordering::Release);
+                        // B y L ya salieron hacia el candado; un respiro para que lleguen a el
+                        while lanzados.load(Ordering::Acquire) < 2 {
+                            std::thread::yield_now();
+                        }
+                        std::thread::sleep(Duration::from_millis(400));
+                        Err(RpcError::layer(
+                            LayerError::Store(zk_ssl::store::StoreError::Malformed("disco lleno (A5)".into())),
+                            0,
+                        ))
+                    })
+                })
+            });
+            while !a_tiene.load(Ordering::Acquire) {
+                std::thread::yield_now();
+            }
+            let parada_al_lanzar = app.parada.get().is_some();
+            let hb = s.spawn(move || {
+                let t = Instant::now();
+                lanzados.fetch_add(1, Ordering::AcqRel);
+                let r = despachar(app, "zkssl_applySend", || {
+                    dispatch(app, "zkssl_applySend", envio_de_ceros().0)
+                });
+                (r, t.elapsed())
+            });
+            let fr = &mut f;
+            let hl = s.spawn(move || {
+                let t = Instant::now();
+                lanzados.fetch_add(1, Ordering::AcqRel);
+                let r = crate::latido::latir(app, Some(fr)).map(|l| l.firma.map(|c| c.indice));
+                (r, t.elapsed())
+            });
+            (ha.join().expect("A"), parada_al_lanzar, hb.join().expect("B"), hl.join().expect("L"))
+        });
+        let contador = app.recepcion.lock().expect("contador").actual();
+        let mayor = app.registro.lock().expect("registro").mayor_anotado().expect("mayor");
+        let indice_despues = app.indice_firma.load(Ordering::Acquire);
+        eprintln!("A5 B espero={tb:?} B={rb:?} contador_rx={contador} mayor_anotado={mayor}");
+        eprintln!("A5 L espero={tl:?} L={rl:?} indice antes={indice_antes} despues={indice_despues}");
+        assert!(!parada_al_lanzar, "premisa: B y L salen sin PARADA");
+        assert!(tb >= Duration::from_millis(300), "premisa: B espero en el candado ({tb:?})");
+        assert!(tl >= Duration::from_millis(300), "premisa: L espero en el candado ({tl:?})");
+        assert!(ra.is_err(), "A fallo en el almacen");
+        let eb = rb.expect_err("B no evalua sobre la memoria rota");
+        assert!(eb.message.starts_with("nodo en PARADA"), "B recibe la PARADA: {}", eb.message);
+        assert_eq!(contador, 0, "B no llego a recibir: ninguna evaluacion de mas sin hoja");
+        assert_eq!(mayor, 0, "ni hoja");
+        assert!(rl.is_err(), "el latido que esperaba el candado no compone ni firma: {rl:?}");
+        assert_eq!(indice_despues, indice_antes, "y no gasta indice XMSS");
+    }
+
+    #[test]
+    fn cada_juicio_con_recibo_trata_el_almacen_como_desenlace_desconocido() {
+        // ⚠️ §815 (la revision, rev1 B1): el criterio es del TIPO del juicio (`Desenlace`), uno por
+        // cada forma que devuelven los cuatro brazos con recibo, y aqui se ata cada uno: el
+        // `Store` es desconocido -no deja hoja- y nada mas lo es. Falsador: cualquier impl que
+        // devuelva `false` (el `Store` anotaria su hoja) o que trate otro rechazo como
+        // desconocido (el rechazo no la dejaria): cae.
+        let almacen = || LayerError::Store(zk_ssl::store::StoreError::Malformed("disco lleno".into()));
+        // `applySend` y `applyClaim`
+        assert!(Err::<(), LayerError>(almacen()).desconocido(), "envio y cobro: el Store");
+        assert!(!Err::<(), LayerError>(LayerError::StaleState).desconocido(), "un rechazo se sabe");
+        assert!(
+            !Err::<(), LayerError>(LayerError::VerificationFailed("basura".into())).desconocido(),
+            "la basura de un tercero, tambien: deja hoja"
+        );
+        assert!(!Ok::<(), LayerError>(()).desconocido());
+        // `applyMany`
+        assert!(Err::<(), (usize, LayerError)>((1, almacen())).desconocido(), "el lote: el Store");
+        assert!(!Err::<(), (usize, LayerError)>((1, LayerError::StaleState)).desconocido());
+        assert!(!Ok::<(), (usize, LayerError)>(()).desconocido());
+        // `zkssl_pledge`
+        assert!(JuicioPrenda::Capa(Err(almacen())).desconocido(), "la prenda: el Store");
+        let repetido = LayerError::ConsumoRepetido { consumo: zk_ssl::log::digest_of_proof(&[1u8; 32]) };
+        assert!(!JuicioPrenda::Capa(Err(repetido)).desconocido(), "el consumo repetido se sabe");
+        assert!(!JuicioPrenda::NoVerifica("no verifica".into()).desconocido(), "el juez dijo que no");
+        assert!(!JuicioPrenda::Capa(Ok(())).desconocido());
+    }
+
+    #[test]
+    fn un_fallo_del_almacen_al_publicar_un_consumo_para_el_nodo() {
+        // ⚠️ §815 · el hermano de la prenda: `zkssl_publishConsumo` devolvia el `Store` como
+        // `accepted: false` DENTRO de un Ok, y `despachar` (§655) no lo veia. Ahora es PARADA, y
+        // las negativas de la capa siguen siendo negativas (el control, por el brazo real).
+        // Falsador: quitar el brazo del almacen en `respuesta_de_consumo`: sale Ok y cae.
+        let app = nodo(30);
+        let r = despachar(&app, "zkssl_publishConsumo", || {
+            respuesta_de_consumo(
+                Err(LayerError::Store(zk_ssl::store::StoreError::Malformed("disco lleno".into()))),
+                1,
+                0,
+            )
+        });
+        assert!(r.is_err(), "no es una negativa: {r:?}");
+        assert!(app.parada.get().expect("PARADA").contains("almacen"));
+        let control = nodo(30);
+        let c = json!({ "consumo": digest_to_wire(&zk_ssl::log::digest_of_proof(&[3u8; 32])) });
+        let v = despachar(&control, "zkssl_publishConsumo", || {
+            dispatch(&control, "zkssl_publishConsumo", c.clone())
+        })
+        .expect("entra");
+        assert_eq!(v["accepted"], json!(true), "{v}");
+        let v = despachar(&control, "zkssl_publishConsumo", || {
+            dispatch(&control, "zkssl_publishConsumo", c)
+        })
+        .expect("el repetido es una negativa, no un error");
+        assert_eq!(v["accepted"], json!(false), "{v}");
+        assert_eq!(v["data"]["causa"], json!("ConsumoRepetido"), "{v}");
+        assert!(control.parada.get().is_none(), "y una negativa no para el nodo");
+    }
+
+    #[test]
+    fn el_lote_cortado_tras_juzgar_no_deja_hoja_y_tras_anotar_si() {
+        // §815 · el lote, con el mismo ORDEN que la via directa. Falsador: anotar el lote antes de
+        // la capa en su brazo: la hoja aparece en el corte tras juzgar y cae.
+        let mut op = envio_de_ceros().0;
+        op["kind"] = json!("send");
+        let (_, prueba) = envio_de_ceros();
+        let huella = zk_ssl_verify::recibos::hash_del_lote(&[(zk_ssl::log::digest_of_proof(&prueba), 0, 0)]);
+        let a = nodo(30);
+        let oa = op.clone();
+        let _ = con_corte(PuntoDeCorte::TrasJuzgar, || {
+            despachar(&a, "zkssl_applyMany", || dispatch(&a, "zkssl_applyMany", json!({ "ops": [oa] })))
+        });
+        assert!(a.parada.get().is_some());
+        assert_eq!(a.recepcion.lock().expect("contador").actual(), 1, "el lote se recibio");
+        assert_eq!(a.registro.lock().expect("registro").mayor_anotado().expect("mayor"), 0, "hueco");
+        let b = nodo(30);
+        let _ = con_corte(PuntoDeCorte::TrasAnotar, || {
+            despachar(&b, "zkssl_applyMany", || dispatch(&b, "zkssl_applyMany", json!({ "ops": [op] })))
+        });
+        assert_eq!(
+            b.registro.lock().expect("registro").pares_de_era(1).expect("era 1"),
+            vec![(1, huella)],
+            "la hoja del lote juzgado, con la huella de su composicion"
+        );
+    }
+
+    #[test]
+    fn la_prenda_cortada_tras_juzgar_no_deja_hoja_y_tras_anotar_si() {
+        // §815 · la prenda, con el mismo ORDEN: el juez Y la capa dentro del juicio, la hoja
+        // despues. Una prenda de ceros llega al juez (cabeza firmada, `seq` bueno) y no verifica.
+        // Falsador: anotar la prenda antes del juez en su brazo: la hoja aparece y cae.
+        use winterfell::math::fields::f64::BaseElement as E;
+        let cero = digest_to_wire(&[E::new(0); 4]);
+        let ceros = zk_ssl::log::digest_of_proof(&[0u8; 32]);
+        let prenda = |app: &App, seq: u64| {
+            despachar(app, "zkssl_pledge", || {
+                dispatch(
+                    app,
+                    "zkssl_pledge",
+                    json!({ "prueba": wire::Blob(vec![0u8; 32]), "receptor": cero, "marca": cero, "seq": Q(seq) }),
+                )
+            })
+        };
+        let (a, _pv, la) = escena("prenda_corte_juzgar");
+        let rx_a = a.recepcion.lock().expect("contador").actual();
+        let mayor_a = a.registro.lock().expect("registro").mayor_anotado().expect("mayor");
+        let _ = con_corte(PuntoDeCorte::TrasJuzgar, || prenda(&a, la.seq));
+        assert!(a.parada.get().is_some());
+        assert_eq!(a.recepcion.lock().expect("contador").actual(), rx_a + 1, "la prenda se recibio");
+        assert_eq!(
+            a.registro.lock().expect("registro").mayor_anotado().expect("mayor"),
+            mayor_a,
+            "y no dejo hoja: hueco"
+        );
+        let (b, _pv, lb) = escena("prenda_corte_anotar");
+        let rx_b = b.recepcion.lock().expect("contador").actual() + 1;
+        let era_b = era_al_recibir(&b);
+        let _ = con_corte(PuntoDeCorte::TrasAnotar, || prenda(&b, lb.seq));
+        let pares = b.registro.lock().expect("registro").pares_de_era(era_b).expect("era");
+        assert_eq!(pares.last(), Some(&(rx_b, ceros)), "la hoja de la prenda juzgada");
+    }
+
+    /// §815: un cobro con prueba de CEROS: la conversion del cable pasa y la capa lo rechaza. El
+    /// gemelo de `envio_de_ceros` para `zkssl_applyClaim`.
+    fn cobro_de_ceros() -> (Value, Vec<u8>) {
+        use winterfell::math::fields::f64::BaseElement as E;
+        let cero = [E::new(0); 4];
+        let recibo = zk_ssl::two_phase::ClaimReceipt {
+            proof: vec![0u8; 32],
+            public_inputs: stark_experiment::circuit_claim::ClaimPublicInputs {
+                root_old: cero,
+                root_new: cero,
+                frozen_root: cero,
+                pending_root_old: cero,
+                pending_root_new: cero,
+                amount: E::new(5),
+                supply_old: E::new(0),
+                supply_new: E::new(0),
+            },
+        };
+        let aviso = zk_ssl::two_phase::PendingNotice { position: 0, salt: cero, amount: 5, x: None };
+        let estado = zk_ssl::commitment::ClientState { public_id: cero, balance: 0, nonce: E::new(0) };
+        (
+            json!({
+                "receipt": wire::ClaimReceiptDto::from(&recibo),
+                "receiver": Q(0),
+                "receiverState": wire::ClientStateDto::from(&estado),
+                "notice": wire::PendingNoticeDto::from(&aviso),
+            }),
+            recibo.proof,
+        )
+    }
+
+    #[test]
+    fn el_cobro_cortado_tras_juzgar_no_deja_hoja_y_tras_anotar_si() {
+        // §815 · el cuarto brazo, `zkssl_applyClaim`, con el mismo ORDEN que el envio. Falsador:
+        // anotar el cobro antes de la capa en su brazo: la hoja aparece en el corte tras juzgar y
+        // cae.
+        let (params, prueba) = cobro_de_ceros();
+        let d = zk_ssl::log::digest_of_proof(&prueba);
+        let a = nodo(30);
+        let pa = params.clone();
+        let _ = con_corte(PuntoDeCorte::TrasJuzgar, || {
+            despachar(&a, "zkssl_applyClaim", || dispatch(&a, "zkssl_applyClaim", pa))
+        });
+        assert!(a.parada.get().is_some());
+        assert_eq!(a.recepcion.lock().expect("contador").actual(), 1, "el cobro se recibio");
+        assert_eq!(a.registro.lock().expect("registro").mayor_anotado().expect("mayor"), 0, "hueco");
+        let b = nodo(30);
+        let e = despachar(&b, "zkssl_applyClaim", || dispatch(&b, "zkssl_applyClaim", params.clone()))
+            .expect_err("la capa rechaza los ceros");
+        assert_eq!(e.data.expect("data")["recepcion"]["rx"], json!(Q(1)), "sin corte, su recibo");
+        let _ = con_corte(PuntoDeCorte::TrasAnotar, || {
+            despachar(&b, "zkssl_applyClaim", || dispatch(&b, "zkssl_applyClaim", params))
+        });
+        assert_eq!(
+            b.registro.lock().expect("registro").pares_de_era(1).expect("era 1"),
+            vec![(1, d), (2, d)],
+            "y cortado tras anotar, la hoja del cobro juzgado"
         );
     }
 

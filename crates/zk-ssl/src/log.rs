@@ -669,6 +669,10 @@ pub struct EpochHead {
     /// no. Firmada desde el formato v6. ⚠️ La compone el NODO con su registro -la capa no
     /// tiene registro, y no debe: es politica del operador (D-I)-, asi que entra por
     /// parametro en `epoch_head`, como la pareja de acuses.
+    ///
+    /// ⚠️ §815, citada y no borrada: una hoja por cada operacion que el nodo JUZGO. Desde el §815 la
+    /// hoja se anota tras el veredicto de la capa, y una evaluacion cortada deja su numero hueco,
+    /// sin hoja (RFC-0010, la D-E enmendada).
     pub recep_root: Digest,
     /// `R`: las recepciones evaluadas al componer la cabeza, que es el ULTIMO `rx` reservado
     /// (§567). El limite inferior `Q` no se firma: es el `recep_count` de la cabeza anterior.

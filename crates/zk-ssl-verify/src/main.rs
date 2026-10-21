@@ -1777,8 +1777,28 @@ fn op_cuenta_y_posicion(op: &serde_json::Value, i: usize) -> Result<(u64, u64), 
 /// `NotTheIssuer`, `NotTheAccountHolder` (la autorizacion ausente no se puede exhibir). Un recibo que
 /// se resuelve por una de ellas no puede exhibir el veredicto 2: es la grieta de la D-G del RFC-0010,
 /// y el sobre la NOMBRA en vez de callarla.
-const CAUSAS_SIN_PRUEBA_PORTABLE: [&str; 4] =
-    ["CustodianSetExhausted", "PendingTreeExhausted", "NotTheIssuer", "NotTheAccountHolder"];
+///
+/// ⚠️ §815 (kit 0.4.3, arreglo de seguridad redactado en privado; RFC-0021 R6 f): hasta aqui la lista
+/// era de CUATRO y faltaban `ProofFailed` y `VerificationFailed`, que la D-I del RFC-0007 DECLARA sin
+/// prueba portable (`spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md`, D-I y su nota del §481)
+/// y que la D-G del RFC-0010 manda al cuarto estado. La lista salio de las filas de la tabla D-D
+/// marcadas «declarada sin prueba» -`CustodianSetExhausted`, `NotTheIssuer`, `NotTheAccountHolder`- y
+/// de la correccion que el §460 escribio tras ella, que dejo `PendingTreeExhausted` declarada sin
+/// prueba portable (en la tabla, «E3 la marca; E4 el hueco»); no de la D-I.
+/// MEDIDO en privado: un tercero sin cuenta manda una prueba basura con las raices publicas, el nodo
+/// la rechaza con `VerificationFailed` y le da su recibo, y el operador honrado no tenia resolucion
+/// que el kit aceptara -el sobre de rechazo no la prueba y la declarada salia ROJO-: pasada la
+/// ventana, «NO RESUELTA EN LA VENTANA» contra el. Desde §815 se declaran, salida 3, y siguen SIN
+/// probarse: que la prueba no verificara es la palabra del nodo hasta que el kit la re-verifique
+/// (el tren 0.5, RFC-0019 E3).
+const CAUSAS_SIN_PRUEBA_PORTABLE: [&str; 6] = [
+    "CustodianSetExhausted",
+    "PendingTreeExhausted",
+    "NotTheIssuer",
+    "NotTheAccountHolder",
+    "ProofFailed",
+    "VerificationFailed",
+];
 
 /// El prefijo del CUARTO estado (RFC-0010 D-G; decision D4 del autor, sesion 193): «resolucion
 /// declarada, no probada». Ni VERDE ni ROJO: `codigo_de_salida` lo cuenta aparte, con el 3.
@@ -3272,11 +3292,22 @@ mod tests {
 
     /// §573 · la grieta de la D-G, nombrada: las cuatro causas que el RFC-0007 dejo sin prueba
     /// portable, escritas como literales y no derivadas del propio `match`.
+    ///
+    /// ⚠️ §815: son SEIS -las cuatro y `ProofFailed` y `VerificationFailed`, que la D-I del RFC-0007
+    /// declara-; hasta aqui el test se llamaba `..._son_las_cuatro_del_rfc_0007` y fijaba la lista
+    /// de cuatro, la que dejaba sin salida al operador honrado (ver la constante).
     #[test]
-    fn las_causas_sin_prueba_portable_son_las_cuatro_del_rfc_0007() {
+    fn las_causas_sin_prueba_portable_son_las_seis_del_rfc_0007() {
         assert_eq!(
             CAUSAS_SIN_PRUEBA_PORTABLE,
-            ["CustodianSetExhausted", "PendingTreeExhausted", "NotTheIssuer", "NotTheAccountHolder"]
+            [
+                "CustodianSetExhausted",
+                "PendingTreeExhausted",
+                "NotTheIssuer",
+                "NotTheAccountHolder",
+                "ProofFailed",
+                "VerificationFailed",
+            ]
         );
     }
 
@@ -4080,6 +4111,69 @@ mod tests_marca_651 {
         }
         let r = correr(&format!("{raiz}/completitud/neg-rechazo-de-otra-operacion.json"));
         assert_eq!(codigo_de_salida(&r), 1, "mal atado, ROJO: {r:?}");
+    }
+
+    /// §815 (kit 0.4.3; RFC-0007 D-I, RFC-0010 D-G): un recibo que el nodo rechazo por
+    /// `VerificationFailed` o `ProofFailed` se resuelve DECLARADO, el cuarto estado, salida 3, en la
+    /// via directa y en el lote, sobre los tres vectores nuevos de `completitud/` y, en el lote, con
+    /// `ProofFailed` mutada aqui sobre el del lote, que no tiene vector propio. Y sigue SIN
+    /// probarse: el mismo sobre de rechazo, con esas causas, es ROJO por la causa, como el de las
+    /// otras cuatro. Controles: la declarada con `StaleState` sigue ROJO (`neg-declarada-con-prueba`),
+    /// y la de otra operacion tambien. Falsador, ensayado: sin `VerificationFailed` en
+    /// `CAUSAS_SIN_PRUEBA_PORTABLE`, la declarada sale 1, «no es de las que el RFC-0007 dejo sin
+    /// prueba portable», y este test cae; sin `ProofFailed`, igual, y sin ella solo en el brazo del
+    /// lote, tambien (el K1 de la revision rev1 del §815, que antes sobrevivia).
+    #[test]
+    fn verification_failed_y_proof_failed_se_declaran_y_no_se_prueban() {
+        let raiz = format!("{}/../../spec/vectors/completitud", env!("CARGO_MANIFEST_DIR"));
+        for (v, quiere) in [
+            ("declarada-verification-failed", "el operador declara VerificationFailed, una causa"),
+            ("declarada-proof-failed", "el operador declara ProofFailed, una causa"),
+            (
+                "lote-declarada-verification-failed",
+                "el operador declara VerificationFailed en la operacion 0 del lote",
+            ),
+        ] {
+            let r = correr(&format!("{raiz}/{v}.json"));
+            assert_eq!(codigo_de_salida(&r), 3, "{v}: {r:?}");
+            let e = r.unwrap_err();
+            assert!(e.starts_with(DECLARADA_NO_PROBADA) && e.contains(quiere), "{v}: {e}");
+        }
+        // el lote con `ProofFailed`, que no tiene vector propio: el mismo sobre con la causa mutada
+        // aqui (la revision del §815 lo midio: sin esto, el brazo del lote sin `ProofFailed` no caia)
+        let mut lote: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(format!("{raiz}/lote-declarada-verification-failed.json")).unwrap(),
+        )
+        .unwrap();
+        lote["resolucion"]["data"]["causa"] = serde_json::json!("ProofFailed");
+        let r = verificar_paquete(&lote);
+        assert_eq!(codigo_de_salida(&r), 3, "lote con ProofFailed: {r:?}");
+        let e = r.unwrap_err();
+        assert!(
+            e.starts_with(DECLARADA_NO_PROBADA)
+                && e.contains("el operador declara ProofFailed en la operacion 0 del lote"),
+            "lote con ProofFailed: {e}"
+        );
+        // sin probarse: el sobre de rechazo con esas causas no lo prueba este mando
+        let base: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(format!("{raiz}/rechazo-stale-declarada.json")).unwrap(),
+        )
+        .unwrap();
+        for causa in ["VerificationFailed", "ProofFailed"] {
+            let mut w = base.clone();
+            w["resolucion"]["sobre"]["data"]["causa"] = serde_json::json!(causa);
+            let r = verificar_paquete(&w);
+            assert_eq!(codigo_de_salida(&r), 1, "{causa}: {r:?}");
+            let e = r.unwrap_err();
+            assert!(
+                e.contains(&format!("la causa {causa} no la prueba este mando")),
+                "{causa}: {e}"
+            );
+        }
+        for v in ["neg-declarada-con-prueba", "neg-declarada-de-otra-operacion"] {
+            let r = correr(&format!("{raiz}/{v}.json"));
+            assert_eq!(codigo_de_salida(&r), 1, "{v}: {r:?}");
+        }
     }
 
     #[test]

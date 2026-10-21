@@ -194,6 +194,12 @@ identidades retiradas no van bajo la cabeza. Queda fuera del sobre de rechazo y 
 causas sin prueba portable no cambia. Es aditiva en el sentido de E2 —ningún vector ni el OpenRPC
 pina el objeto de error—: la versión no sube. Se redactó en privado y se publica con el arreglo
 (`spec/rfc/PROCESO.md` §«Fallos de seguridad»). La fila de E2 y la tabla de D-D no se reescriben.
+⚠️ §815: «la lista de las cuatro causas sin prueba portable» era la del kit, y no la de este RFC: la
+D-I declara también `ProofFailed` y `VerificationFailed`, y la lista de cuatro las dejaba fuera
+(salió de las filas de D-D marcadas «declarada sin prueba» y de la corrección que el §460 escribió
+tras la tabla, que dejó así `PendingTreeExhausted`; no de la D-I). Desde el §815, kit 0.4.3,
+son seis (`spec/PAQUETE.md` 2.11, veredicto 4); `IdentityUnavailable` sigue fuera, por lo que dice
+este párrafo.
 
 ### D-D — El sobre de rechazo, por caminos primero
 
@@ -511,6 +517,15 @@ prueba frente al operador, y la vara 4 prohibe venderlo como tal.
 **Confianza residual, en una frase:** que una prueba fallara al verificarse es hoy la PALABRA del
 nodo, sin testigo portable; el tercero solo puede comprobar que la transicion no esta en el
 registro, que es una ausencia y no una causa.
+
+⚠️ §815: el kit no cumplió esta D-I hasta la 0.4.3. Su lista de causas declarables era de cuatro, sin
+estas dos, y un recibo de recepción (RFC-0010) rechazado por `VerificationFailed` no tenía
+resolución: el sobre de rechazo no la prueba y la declarada salía ROJO, «no es de las que el
+RFC-0007 dejo sin prueba portable». Medido en privado antes del arreglo: un tercero sin cuenta
+manda una prueba basura con las raíces públicas, el nodo la rechaza, le da su recibo, y pasada la
+ventana el sobre de completitud nombra en ROJO al operador honrado. Desde el §815 se declaran, en el
+cuarto estado de la D-G del RFC-0010, y la confianza residual de arriba sigue en pie: siguen sin
+probarse. Lo que la cerraría es el `digest_pi` del RFC-0019 E3, en el tren 0.5.
 
 ## Lo que se DESCARTÓ al medir
 

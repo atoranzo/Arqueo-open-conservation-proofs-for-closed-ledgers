@@ -74,6 +74,13 @@ anotando la v2, el cable, el kit en 2.11 y la segunda en su verificador van con 
 números de familia y versión los da el registro de la D-G del RFC-0018. Cambiar esta forma, una vez
 publicada, es otra versión de la hoja, no reescribirla.
 
+⚠️ **§815: E3 lleva también la versión fuerte de `ProofFailed` y `VerificationFailed`**, por decisión
+del autor. Desde el kit 0.4.3 las dos se declaran —el cuarto estado, salida 3—, como pide la D-I
+del RFC-0007, y siguen sin probarse (`SECURITY.md` §3.15). Con `hash_prueba` y `digest_pi` bajo la
+firma, quien tenga la prueba la presenta, el kit la re-verifica con esas entradas y el rechazo se
+prueba o se refuta: la objeción de la D-I —el mando verificaría unos bytes que el nodo eligió—
+deja de valer, porque los ata la hoja que el nodo firmó. Hasta el corte, se declaran.
+
 ## Compatibilidad
 
 E1 no cambia el cable. Cambia el veredicto del kit solo cuando los índices declarados se apartan de

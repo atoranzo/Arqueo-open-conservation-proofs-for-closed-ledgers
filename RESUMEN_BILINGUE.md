@@ -23,6 +23,8 @@ sostiene sin el nodo. Que nada en vuelo es más viejo que una edad dada.
 Y la completitud, medida desde el RFC-0010: lo que el nodo evalúa por las vías del titular deja
 un recibo bajo su cabeza firmada y acaba aplicado, rechazado con causa, o señalado con un rojo
 nombrado; sus residuos, declarados. ⚠️ Corregido en el §589: aquí decía «Falta la completitud».
+⚠️ §815: lo que el nodo JUZGA; una evaluación cortada deja su número hueco, sin recibo, y la
+resolución puede ser también la declarada por el operador, sin prueba (`SECURITY.md` §3.15).
 
 Que cada pago conserva el dinero y que sólo el titular movió su cuenta van dentro de la prueba de
 cada pago, y esa prueba la comprueba el nodo, no un tercero: el registro guarda su resumen y el kit
@@ -58,7 +60,7 @@ contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CAS
 asiento qué compuertas pasó, la mayor el canon (⚠️ §794: decía «con canon en cada cambio»);
 protocolo `zkssl/0.4` con 32 métodos y vectores que no se reescriben desde el §692 (la versión no dice qué pruebas acepta un nodo: §699);
 RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 y 0014 aceptados, 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 y 0021 propuestos; verificador
-`zk-ssl-verify` 0.4.2 (publicada, `arqueo-verify-v0.4.2`, reproducible); registro con un asiento por
+`zk-ssl-verify` 0.4.3 (cortada, §815, un arreglo de seguridad; la publicada es `arqueo-verify-v0.4.2`, reproducible); registro con un asiento por
 cambio. Falta: auditoría externa, custodia de clave comprobada, y un ancla anterior al primer
 encuentro del testigo (⚠️ §589: esta lista pedía también «la completitud de los acuses»).
 
@@ -87,6 +89,8 @@ it holds without the node. That nothing in flight is older than a given age. And
 measured since RFC-0010: what the node evaluates through the holder's direct paths leaves a
 receipt under its signed head and ends applied, rejected with a cause, or flagged by a named red;
 its residues, declared. ⚠️ Corrected in §589: this read "Missing: completeness".
+⚠️ §815: what the node JUDGES; an evaluation cut short leaves its number as a hole, with no receipt,
+and the resolution may also be the one the operator declares, without proof (`SECURITY.md` §3.15).
 
 That each payment conserves money and that only the holder moved their account travel inside the
 proof of each payment, and that proof is checked by the node, not by a third party: the log keeps
@@ -123,7 +127,7 @@ in its entry which gates it passed, the largest being the canon (⚠️ §794: i
 every change»);
 protocol `zkssl/0.4` with 32 methods and vectors not rewritten since §692 (the version does not say which proofs a node accepts: §699);
 RFCs 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 and 0014 accepted, 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 and 0021 proposed;
-verifier `zk-ssl-verify` 0.4.2 (published, `arqueo-verify-v0.4.2`, reproducible); a record with one
+verifier `zk-ssl-verify` 0.4.3 (cut, §815, a security fix; the published one is `arqueo-verify-v0.4.2`, reproducible); a record with one
 entry per change. Missing: an external audit, a verified key custody, and an anchor prior to the
 witness's first encounter (⚠️ §589: this list also asked for "the completeness of
 acknowledgements").

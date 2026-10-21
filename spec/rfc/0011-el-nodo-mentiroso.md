@@ -179,6 +179,20 @@ además, justo lo que las defensas tienen que ver.
     esta vez con razón. Su control, contra el mismo nodo honrado, siembra el veredicto 1 en vivo
     por primera vez. El falsador -el operador que no restaura- pone ROJAS las dos comprobaciones
     que dicen que no hay resolución que exhibir.
+    ⚠️ **§815: parar el nodo bastaba, y sin mentir.** Hasta el §815 el nodo anotaba el recibo ANTES
+    de juzgar, y una caída honrada entre anotar y aplicar dejaba el mismo estado firmado que este
+    banco fabrica restaurando el libro -el recibo bajo la `recepRoot`, la operación fuera del
+    libro- y el mismo ROJO al expirar la ventana: medido en privado sobre `4d8017d`
+    (`SECURITY.md` §3.15). El «y esta vez con razón» era cierto de este banco, que deshace el
+    libro, pero no de todo ROJO de esa clase: desde fuera, la mentira y la caída no se
+    distinguían. Desde el §815 la hoja nace tras el veredicto (RFC-0010, la D-E enmendada), y parar
+    el nodo ya no lo produce con una operación APLICADA: deja un hueco, o la hoja con su operación
+    ya en el libro. Lo produce deshacer el libro, que es lo que este banco hace. Con dos salvedades,
+    que la D-H del RFC-0010 declara: una muerte entre el `fsync` de la hoja de un RECHAZO y la
+    respuesta deja una hoja cuyo sobre nadie tiene, y con una causa que tiene prueba
+    (`StaleState`) el mismo ROJO al expirar la ventana (DEDUCIDO; la 129 del `BACKLOG.md`); y un
+    nodo que firma sin `--ledger` pierde el libro al reiniciar y conserva las hojas, que es otra
+    vez este estado sin mentir (DEDUCIDO; `SECURITY.md` §3.15).
 
 ## Referencias
 

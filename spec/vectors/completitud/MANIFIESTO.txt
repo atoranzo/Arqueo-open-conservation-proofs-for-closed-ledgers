@@ -153,3 +153,18 @@ neg-n-no-canonico.json|1|n: 0xffffffff000005a1 no es canonico
 rotada-ventana-abierta.json|1|ventana ABIERTA: la cabeza vigente tiene indice acreditado 11 y la ventana empieza en 4
 neg-rotada-vigente-sin-actas.json|1|las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante
 neg-rotada-vigente-cadena-corta.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: la clave que llega no esta en la cadena: nadie la comprometio
+# ── el kit 0.4.3 (RFC-0021 R6 f, un arreglo de seguridad redactado en privado): `ProofFailed` y
+# `VerificationFailed` se DECLARAN, como dicen la D-I del RFC-0007 y la D-G del RFC-0010. TRES sobres
+# DERIVADOS por MUTACION de la causa, como `declarada` y `lote-declarada`, de datos capturados y ya
+# publicados, no de una corrida nueva: los dos `declarada-*`, del StaleState del envio de ceros de
+# `bash tools/banco_completitud.sh` (`neg-declarada-con-prueba.json`), y el del lote, del StaleState
+# del lote de UNA operacion de `bash tools/banco_recibo_agregado.sh` (`lote-rechazado-stale-declarada`),
+# sin defecto de forma: la composicion de `lote-declarada` repite la cuenta 0x0 y refutaria por si sola
+# una causa que no es de forma. Con el kit 0.4.2 los tres salen 1, «no es de las que el RFC-0007 dejo
+# sin prueba portable», y un operador honrado al que un tercero sin cuenta manda una prueba basura con
+# las raices publicas -el nodo la rechaza con VerificationFailed y le da su recibo- no tenia
+# resolucion: pasada la ventana, NO RESUELTA. Desde la 0.4.3, 3. Siguen SIN probarse: el sobre de
+# rechazo con esas causas es ROJO por la causa (seccion 2.6), y la palabra del nodo hasta el tren 0.5.
+declarada-verification-failed.json|3|DECLARADA, NO PROBADA: el operador declara VerificationFailed, una causa que el RFC-0007 dejo sin prueba portable
+declarada-proof-failed.json|3|DECLARADA, NO PROBADA: el operador declara ProofFailed, una causa que el RFC-0007 dejo sin prueba portable
+lote-declarada-verification-failed.json|3|DECLARADA, NO PROBADA: el operador declara VerificationFailed en la operacion 0 del lote

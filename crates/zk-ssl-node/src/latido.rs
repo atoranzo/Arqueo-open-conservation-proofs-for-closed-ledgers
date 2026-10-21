@@ -141,6 +141,17 @@ pub struct Latido {
 /// concurrencia real —las escrituras van en serie **a propósito**, porque
 /// en paralelo se mide rendimiento y no latencia—; y otra máquina.
 pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result<Latido> {
+    // ⚠️⚠️ §815 · EN PARADA NO SE COMPONE NI SE FIRMA (F2). La PARADA (§530, §655) dice que la
+    // memoria puede ir por delante del disco -un candado envenenado a medio mutar, o el almacen
+    // que fallo despues de que la capa mutara-, y una cabeza compuesta desde esa memoria acredita
+    // raices que el disco no tiene. MEDIDO en privado sobre 4d8017d (m-parada, ENOSPC inyectado
+    // en el libro): con el nodo en PARADA y el disco en el seq 8, este latido firmo cinco cabezas
+    // del seq 9 en diez segundos, y tras reiniciar el nodo firmo OTRA del seq 9. Antes del §815
+    // `latir` no miraba la PARADA: el «no sigue sirviendo» del §655 era del despacho, no de esto.
+    // Aqui se mira ANTES de todo, y el error lleva la causa; no se gasta indice XMSS.
+    if let Some(causa) = app.parada.get() {
+        anyhow::bail!("nodo en PARADA: el latido no compone ni firma: {causa}");
+    }
     // ── 0 · sin el candado del estado: el limite de la epoca en curso ──
     // `limite_de_epoca` toma `ultima_cabeza` (y lee el diario). Tomarlo
     // AQUI evita solapar los dos candados; el orden establecido
@@ -174,6 +185,13 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
             .estado
             .lock()
             .map_err(|_| anyhow::anyhow!("el candado del estado esta envenenado"))?;
+        // ⚠️ §815 · Y LA MARCA DE FALLO EN VUELO, con el candado YA tomado: `dispatch` la pone
+        // antes de soltarlo y `despachar` pone la PARADA despues. Mirar solo la PARADA dejaria el
+        // instante de en medio, en que este candado ya esta libre y la memoria ya esta rota.
+        // (`marca_en_vuelo_con_el_candado`: en los tests, mirarla sin el candado entra en panico.)
+        if let Some(fallo) = crate::marca_en_vuelo_con_el_candado(app) {
+            anyhow::bail!("fallo en vuelo: el latido no compone ni firma: {fallo}");
+        }
         let entradas = e.layer.transition_log().entries();
         let pagos_al_cruzar = if app
             .aviso_acumulacion
@@ -735,6 +753,31 @@ mod tests {
             latir(&app, Some(&mut f)).expect("latir");
             assert_eq!(app.indice_firma.load(std::sync::atomic::Ordering::Acquire), esperado);
         }
+    }
+
+    #[test]
+    fn en_parada_el_latido_no_compone_ni_firma_y_el_indice_no_se_mueve() {
+        // ⚠️⚠️ §815 · F2, MEDIDO en privado sobre 4d8017d: con el nodo en PARADA por un fallo del
+        // almacen, este latido siguio firmando cabezas desde la memoria (seq 9 con el disco en
+        // seq 8). Ahora, con la PARADA puesta, `latir` da error con la causa, la era de los
+        // recibos no se mueve y el guardian sigue en el mismo indice: no se gasta indice XMSS.
+        // Falsador: quitar la guarda de la PARADA al principio de `latir`: firma el 2 y cae.
+        let app = crate::tests::nodo(30);
+        let mut f = FirmanteCabeza::desde_semilla(&semilla(), en_disco("parada")).expect("abrir");
+        latir(&app, Some(&mut f)).expect("sano, firma el indice 1");
+        let _ = app.parada.set("un fallo del almacen en zkssl_applySend: (inyectado por el test)".into());
+        let e = latir(&app, Some(&mut f)).expect_err("en PARADA no se compone ni se firma");
+        assert!(format!("{e}").contains("PARADA"), "el error lleva la causa: {e}");
+        assert_eq!(
+            app.indice_firma.load(std::sync::atomic::Ordering::Acquire),
+            1,
+            "la era de los recibos no se mueve"
+        );
+        assert_eq!(
+            f.reconciliar().expect("reconciliar"),
+            Reconciliacion::Coincide { indice: 1 },
+            "y el guardian sigue en el 1: ningun indice XMSS gastado en PARADA"
+        );
     }
 
     #[test]

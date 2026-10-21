@@ -110,6 +110,11 @@ embebido) y `cable/rechazo-n-no-canonico.json` (`n + p`). Las de ahora son la sa
 406 ficheros, 57 con alguna que no verifica y 0 positivos, en 31 a 33 s con la máquina cargada (31,9 s
 de reloj y 30,1 de CPU en la última corrida). Y la línea «1 bis» de «Cómo se corre» decía «~25 s».
 
+⚠️ §815: el kit 0.4.3 trae tres vectores de completitud, cada uno con su cierre, y la salida de
+`python3 tools/segunda/juez_cabezas.py` sobre el árbol del §815 es 488 de 540 cabezas, 10 de 15
+cofirmas, 409 ficheros, 57 con alguna que no verifica y 0 positivos: tres cabezas más, y las tres
+verifican. Las cifras de arriba son las del §809.
+
 **El segundo verificador.** `verificador.py` pasa, con el mismo arnés y los mismos manifiestos
 que el binario de referencia, las seis familias que no exigen STARK (⚠️ §810: decía «las cinco»;
 la sexta, `ancla-cofirmada`, es del §810):
@@ -318,6 +323,9 @@ compilar el `.wasm`, y este sello no compila. Hoy esos diez manifiestos tienen 3
 `pendiente` 10, `prenda` 11 y `rechazo` 84—, y `FAMILIAS` (`tools/artefacto.sh:31`) tiene doce: con
 `ancla-cofirmada` 27 y `rotacion` 34, son 412. Que el `.wasm` de hoy las pase no está medido, ni las
 diez ni las doce; el bucle de arriba sigue siendo el de los diez que se midieron.
+⚠️ §815: `completitud` tiene 81 desde el §815, con los tres del kit 0.4.3: 354 entradas en los diez y 415
+en las doce. El segundo verificador no lee la completitud (`NO_SOPORTADOS`), y su juez STARK solo mira
+la prenda que va dentro: los tres nuevos no llevan prueba, así que ninguno de los dos cambia.
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 

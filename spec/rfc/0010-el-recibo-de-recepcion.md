@@ -197,6 +197,9 @@ los quemó: es lo único que se pierde. La `e` de la hoja sigue dentro de la hoj
 recibo a su camino; ya no mide la ventana. En un flujo honrado sin huérfanos el inicio es la era, o
 la era menos uno cuando el recibo llegó mientras se firmaba: a favor del operador, a lo sumo una
 cabeza. Los 74 vectores publicados del sobre de completitud dicen lo mismo con la regla nueva.
+⚠️ §815: la `e` de la hoja ya no la cuenta `anotar`. Desde el §815 se FIJA al recibir
+(`era_al_recibir`, en `crates/zk-ssl-node/src/main.rs`), antes de que la capa juzgue, y `anotar`
+sólo la escribe: es la misma lectura, en el mismo punto (la D-E, enmendada abajo).
 
 ### D-E — Cuenta lo que el nodo llegó a EVALUAR; ni el ruido ni lo aceptado
 
@@ -215,6 +218,39 @@ implementaciones del mismo problema pueden discrepar.
 número y antes de la capa, con la era del índice de la última firma (D-D). Si anotar falla, la
 operación **no se evalúa** y el número queda **hueco** —reservado sin hoja—, que el arranque
 declara al reconciliar el registro con el contador.
+
+⚠️ **ENMIENDA (§815), citada y no borrada: el nodo JUZGA primero y ANOTA después.** Decisión del
+autor, redactada en privado con su arreglo (`spec/rfc/PROCESO.md` §«Fallos de seguridad»;
+`SECURITY.md` §3.15). El párrafo de arriba fija el orden reservar, anotar y evaluar, y con él una
+muerte del proceso entre anotar y aplicar dejaba una hoja SIN veredicto: el recibo entraba en la
+`recepRoot` firmada, `zkssl_recepPath` lo servía, la operación no estaba en el libro y, si el
+titular no reenviaba, pasada la ventana el sobre de completitud daba ROJO, «NO RESUELTA EN LA
+VENTANA», contra un operador honrado. Medido en privado sobre `4d8017d` (el §813), con un aborto
+inyectado tras anotar y con un SIGKILL inyectado por `strace`: al rearrancar, el registro y el
+contador «a la par», sin aviso, y la hoja bajo la primera cabeza firmada. Rige desde el §815, en los
+cuatro brazos con recibo —`applySend`, `applyClaim`, `applyMany` y `zkssl_pledge`—: el nodo reserva
+el `rx` y fija la era AL RECIBIR, como pide la D-D («computada en la recepción»); la capa JUZGA; y
+la hoja se anota con `fsync` TRAS el veredicto y ANTES de responder (`juzgar_y_anotar`, en
+`crates/zk-ssl-node/src/main.rs`). La tabla de arriba no cambia: cuenta lo que la capa juzgó, y un
+rechazo deja hoja. Lo que cambia es qué deja una evaluación cortada —una muerte, un pánico de la
+capa, un fallo del almacén—: un HUECO, que no promete nada, y nunca una hoja que nadie puede
+resolver. Con `--ledger`, la hoja de una operación aplicada nace después del `flush` de su asiento;
+sin él no, porque el libro vive en memoria y el registro de recepción en disco (la D-H lo declara).
+Un fallo del almacén (`Store`) no deja hoja: la operación puede estar o no en el libro tras
+reiniciar, y el nodo para.
+
+**Y se revierte la decisión (a) del §569**, del asistente y REVERSIBLE: «si anotar falla, la
+operación NO se evalúa». Con el orden nuevo, cuando anotar falla la operación ya se juzgó: la
+petición recibe su veredicto verdadero SIN `recepcion` —la primera parte de la D-H: el titular lo
+sabe en su respuesta— y el nodo pasa a PARADA. La razón: (a) evitaba evaluar sin hoja, que el
+titular ve en su propia respuesta, al precio de dejar hojas sin veredicto, que nadie ve hasta que
+acusan a un honrado. Una marca de fallo en vuelo, escrita con el candado del estado tomado, hace que
+la petición que esperaba ese candado no se evalúe: a lo sumo UNA evaluación queda sin hoja por cada
+fallo. La carrera la midió con hilos reales una revisión del §815, y su test entra en el sello; que la
+marca se ponga y se mire con el candado tomado lo comprueban los tests, en los que ponerla o mirarla
+sin él entra en pánico. Y antes de que la capa juzgue sale una línea de traza con el método, el `rx`
+y el `hashPrueba`, sin los parámetros: la petición que tumba el nodo ya no deja su hoja, y su rastro
+queda en el log, sin valor de evidencia. Lo que este orden no cierra va en la D-H.
 
 ⚠️ **HUECO MEDIDO (sesión 193) —DECIDIDO en el §576, abajo—:** `applyMany` y `zkssl_pledge` evalúan
 pruebas y **no reservan número**. Por esta misma regla deberían; hasta que se decida, lo que entra
@@ -270,11 +306,49 @@ verificador responde «resolución declarada, no probada», que es un cuarto est
 aparte. Cerrar esa grieta es dar prueba portable a esas causas, y eso es del RFC-0007, no de
 aquí.
 
+⚠️ **§815 (kit 0.4.3): `ProofFailed` y `VerificationFailed`, en el cuarto estado.** La D-I del
+RFC-0007 las DECLARA sin prueba portable, y el kit, hasta la 0.4.2, sólo admitía como declaradas
+cuatro causas, sin ellas: un recibo que el nodo rechazó por una prueba que no verificaba no tenía
+resolución —el sobre de rechazo no la prueba y la declarada salía ROJO—, y pasada la ventana nombraba
+al operador honrado. Medido en privado: basta un tercero sin cuenta que mande bytes basura con las
+raíces públicas (`SECURITY.md` §3.15). Desde la 0.4.3 salen con la salida 3, y siguen sin probarse:
+probarlas es que el kit re-verifique la prueba contra lo que la hoja firma, y eso es del tren
+`zkssl/0.5` (RFC-0019 E3). Y se dice aquí lo que esta sección no decía: la declarada es la palabra
+del operador, y nada más. El kit da 3 a una declarada con cualquier causa de la lista, venga o no a
+cuento, y sin cabeza vigente; lo único que la ata al recibo es el `hashPrueba`, que el operador
+conoce (medido en privado sobre `4d8017d`, con una `NotTheAccountHolder` declarada sobre un envío).
+Por eso añadir las dos no abre ninguna puerta: cualquier ROJO ya bajaba a 3 declarando una de las
+cuatro. Queda abierto en la 129 del `BACKLOG.md`.
+
 ### D-H — El residuo, declarado
 
 Lo que este RFC **no cierra**: la operación para la que el nodo **nunca firmó un recibo**. Si no
 contesta, o contesta sin recibo, no hay objeto que oponer. El titular lo sabe al instante —su
 petición no trae recibo— y puede reintentar y publicar la ausencia, pero **no puede probarla**.
+
+⚠️ **CORRECCIÓN (§815), citada y no borrada.** «Si no contesta […] no hay objeto que oponer» no era
+cierto hasta el §815. Medido en privado sobre `4d8017d`: el nodo que murió entre anotar y aplicar no
+contestó —el titular recibió un 502 del proxy de la medida— y su hoja entró igual en la `recepRoot`
+de la cabeza firmada siguiente. El titular tenía, sin saberlo, un recibo que el oráculo de
+`zkssl_recepPath` y el kit le devolvieron (33 llamadas, 1 acierto), y que pasada la ventana daba
+ROJO contra un operador honrado. Desde el §815 (la D-E, enmendada) la hoja nace tras el veredicto. Si
+el nodo muere antes de anotar, el `rx` queda hueco y no hay objeto que oponer, como dice esta
+sección. Si muere después de anotar y antes de responder, la hoja lleva su veredicto: con
+`--ledger`, una operación aplicada está en el libro y su acuse la resuelve (VERDE, medido con el
+nodo del §815); un rechazo deja la hoja de un rechazo que nadie tiene. Eso es residuo, anterior al §815
+y que el §815 no cierra, de la misma clase que el titular que calla un rechazo vivo: el nodo no
+conserva el `data` de un rechazo, y sin él el operador honrado no tiene qué exhibir para una causa
+con prueba (DEDUCIDO; la 129 del `BACKLOG.md`). «Contesta sin recibo» incluye, desde el §815, el
+veredicto que sale cuando el registro falla tras juzgar: no hay hoja, y el nodo para. Quien se queda
+sin respuesta busca su `hashPrueba` entre los `proofDigest` de `zkssl_logEntries` antes de volver a
+pagar. Y queda un residuo que el §815 tampoco cierra ni empeora, nombrado por dos de las revisiones
+que juzgaron el orden (la A8): **un nodo que firma sin `--ledger`**. Basta `--diario` junto a
+`--clave` (§285), y entonces el libro vive en memoria y su `commit` no escribe nada, mientras el
+contador y el registro de recepción van siempre a disco. Tras reiniciar quedan las hojas de las
+operaciones aplicadas bajo una `recepRoot` firmada, sin su operación en el libro: el estado de F1, y
+el mismo ROJO al expirar la ventana. Es DEDUCIDO de leer el código, sin medir, y anterior al §815;
+quien firma recibos debería persistir el libro, y exigirlo en el arranque queda fuera del §815
+(`SECURITY.md` §3.15).
 
 **Medido en el §601** (RFC-0011, E3: `tools/banco_mentiroso_censura.sh`): un proxy del operador,
 delante de un nodo honesto, que no contesta o contesta sin recibo. El titular lo sabe al instante;

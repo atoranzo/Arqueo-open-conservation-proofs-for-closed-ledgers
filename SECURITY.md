@@ -124,7 +124,9 @@ atado al importe (§74). Ambas corregidas y medidas.
   sólo declarado: lo mide el §601 (`tools/banco_mentiroso_censura.sh`, el residuo D-H).
   La de después también está medida: un nodo que responde con recibo y deshace la
   operación queda nombrado al expirar la ventana (§602,
-  `tools/banco_mentiroso_sin_resolver.sh --largo`).
+  `tools/banco_mentiroso_sin_resolver.sh --largo`). ⚠️ §815: y hasta el §815 quedaba nombrado
+  igual un nodo HONRADO que se caía entre anotar el recibo y aplicar la operación, y uno al
+  que un tercero sin cuenta mandaba una prueba basura: los dos, en la 3.15.
 - **La custodia del registro está en manos del operador.** Sin observadores
   externos de sus cabezas, podría presentar historias distintas a partes
   distintas. **Desde §241-§243 el nodo firma, emite y sirve sus cabezas, y
@@ -619,7 +621,16 @@ reprodujeron con tests antes del arreglo; cada arreglo lleva falsadores que caen
 | `Proof::from_bytes` aceptaba bytes de cola | la huella de una prueba no identificaba una operación | P1 | §653 |
 | El reenvío sólo se paraba por la igualdad de raíces | tras un reembolso o un ciclo A→B→A, un recibo ya aplicado volvía a valer | P1 | §654 |
 | `zkssl_supply` publica sin credencial el total en tránsito | por diferencias da el importe de cada envío y cobro | P1 | **acotado**: ver abajo |
-| Un fallo del almacén no paraba el nodo | la memoria podía firmar raíces que el disco no tiene | P2 | §655 (c) |
+| Un fallo del almacén no paraba el nodo | la memoria podía firmar raíces que el disco no tiene | P2 | §655 (c); ⚠️ §815: el §655 paró el despacho y no el latido, que siguió firmando en PARADA; y `zkssl_publishConsumo` devolvía el fallo como una negativa. Cerrado entero en el §815 (3.15) |
+
+⚠️ **CORRECCIÓN (§815), citada y no borrada: «siete cerrados» no eran siete.** El fallo del almacén
+lo cerró el §655 en el despacho, no en el latido. Con el nodo en PARADA, `latido::latir` no miraba
+la PARADA y siguió firmando cabezas desde la memoria, la que va por delante del disco: medido en
+privado sobre `4d8017d`, cabezas del `seq` 9 con el disco en el `seq` 8, que es justo lo que la fila
+dice que se cerró. Y `zkssl_publishConsumo` devolvía el fallo del almacén dentro de un resultado, sin
+PARADA. Hasta el §815 eran seis cerrados, uno a medias y uno acotado; desde el §815, siete. El
+comentario de `despachar` («el nodo no sigue sirviendo») y el del test del §655 llevan su marca. Lo
+cuenta la 3.15.
 
 ⚠️ **Lo que conviene hacer si se usó el sistema con claves propias.** Las pruebas ocultas emitidas
 entre el §538 y el §652 protegen la clave de gasto y las de los custodios sólo a unas 2^74
@@ -637,6 +648,13 @@ su importe (son entradas públicas, RFC-0009); lo que el método añadía es dá
 
 Lo que queda abierto de estos ocho, y es decisión del autor: las partes (a) y (b) del fallo del
 almacén (anotar antes de verificar, y cachear la pareja de recepción), el cambio de cable de `zkssl_supply`.
+⚠️ §815: la (a) cambió de forma a medias. Desde el §815 la hoja se anota TRAS juzgar (3.15); pero el
+contador de recepción sigue reservando el `rx` con su `fsync` ANTES de verificar (`recibir`;
+RFC-0010, D-E), así que pagar un `fsync` por una petición sin credencial antes de verificar sigue
+siendo cierto. Cada petición que la capa juzga paga ahora dos, el del contador antes y el de la hoja
+después, también la de un tercero sin cuenta, porque un rechazo deja hoja (deducido de leer el
+orden; la latencia no está medida). Y era esa hoja la que le daba a un tercero un ROJO contra el
+operador honrado, hasta el kit 0.4.3 (3.15).
 La versión nueva del kit está publicada: `arqueo-verify-v0.4.0` (§658); la `v0.3.0` sigue afectada
 por los dos primeros y por la cola. ⚠️ **Y una variante de la cola, por dentro (§659)**: nodos de más
 dentro de un lote de Merkle no movían la raíz, así que la prueba verificaba con otros bytes y el
@@ -980,6 +998,171 @@ esta sección y el asiento §812, sin GHSA, por decisión del autor: el kit publ
 —no depende de la capa—, así que no lleva aviso ni release. Un marcador para distinguir los libros
 ya migrados no se pone; eso es de la sesión, y el autor no lo ha decidido: sería un formato nuevo y
 daría a entender que con eso basta; es reversible. `AUDITORIA.md` §812.
+
+### 3.15 El recibo de recepción nombraba en ROJO a un operador honrado, y en PARADA el nodo seguía firmando — ⚠️ MEDIDO, cerrado en el nodo y en el kit 0.4.3 (§815)
+
+Tres fallos de la misma familia: el recibo de recepción del RFC-0010, que existe para que un
+operador que censura quede nombrado, nombraba también al que no censura, y la PARADA del §655, que
+existe para que la memoria no firme lo que el disco no tiene, no paraba al que firma. El primero lo
+dedujo, leyendo el orden en que el nodo anota y aplica, quien preparaba la decisión de la 19 del
+`BACKLOG.md` (sin log de escritura anticipada); los otros dos salieron al diseñar y juzgar su
+arreglo, y el tercero lo anotaba ya por lectura el borrador `doc/ecst/ECST.md` §8.2. Los tres se
+midieron en privado, en un clon sin remoto, sobre `4d8017d` (el §813), con nodos de verdad que
+firman, inyectando la muerte y el disco lleno con `strace`. El código de `crates/` no cambia entre
+`4d8017d` y `ff9d4fc` (el §838; `git diff --stat`), así que lo medido es lo de hoy. Los registros
+de esas medidas se quedan fuera del árbol, en los clones privados, y no se publican; el asiento §815
+dice qué midió cada uno y con qué.
+
+**F1 — una caída entre anotar y aplicar dejaba una hoja sin veredicto.** Desde el §569 el nodo
+reservaba el `rx`, ANOTABA la hoja con `fsync` y sólo después la capa juzgaba. Medido: con el
+proceso muerto entre anotar y aplicar —un aborto inyectado tras anotar, y un SIGKILL inyectado por
+`strace`—, la hoja queda en el disco; al rearrancar, el registro y el contador están «a la par», sin
+aviso; la primera cabeza firmada la acredita (`recepCount` 1) y `zkssl_recepPath` la sirve; la
+operación no está en el libro. El titular recibió un 502 y ningún recibo, y aun así lo recuperó con
+`zkssl_recepPath` y el kit (33 llamadas, 1 acierto). Si no reenvía, pasada la ventana —1.440
+cabezas; 2.875 s en la medida— el sobre de completitud sale ROJO, «NO RESUELTA EN LA VENTANA»,
+contra un operador que no mintió; si reenvía cuando el estado ya se movió, `StaleState`. Visto desde
+fuera es el mismo estado firmado que el mentiroso del §602 fabrica restaurando el libro. Un pánico
+de la capa o un fallo del almacén después de anotar dejaban lo mismo (deducido de leer el orden; en
+la medida de F2, abajo, el `rx` del envío que paró el nodo quedó acreditado, `recepCount` 3, y su
+operación no estaba en el libro al rearrancar).
+**Ventana**: en `applySend` y `applyClaim` desde el §569, el §570 y el §573 (28-09-2026: la hoja, la
+hoja firmada y el veredicto del kit); en `applyMany` y `zkssl_pledge`, desde el §611 (30-09-2026);
+hasta el §815.
+
+**F2 — en PARADA, el latido seguía firmando.** Desde el §655 un fallo del almacén pone el nodo en
+PARADA, y el despacho deja de servir; pero `latido::latir` no miraba la PARADA. Medido con el disco
+lleno (`ENOSPC` inyectado en el libro) durante un envío: la respuesta es la PARADA, el nodo rechaza
+toda petición, y el latido firma cabezas desde la memoria, que lleva el envío que el disco no tiene:
+cabezas del `seq` 9 con el disco en el `seq` 8, diez en 20 s en una corrida y cinco en 10 s en otra.
+Tras rearrancar, el libro reabre en el `seq` 8, y en la segunda corrida el nodo vuelve a firmar un
+`seq` 9, el de otra operación: dos cabezas firmadas a la misma altura con historias distintas contra
+un operador honrado (deducido de que la operación es otra; la medida no comparó su `chainDigest`).
+El testigo, `--auditar` y `--ausentes` no dieron ningún hallazgo. Y `zkssl_publishConsumo` devolvía
+el fallo del almacén dentro de un resultado (`accepted: false`, causa `Store`), sin PARADA: medido
+con el binario de antes del arreglo, el nodo siguió sirviendo y firmó 6 cabezas en 10 s.
+**Ventana**: el nodo firma sus cabezas desde el §241-§243 (09-08-2026); hasta el §655 (01-10-2026)
+un fallo del almacén ni siquiera paraba el despacho, y desde él la 3.9 lo daba por cerrado;
+`zkssl_publishConsumo`, desde el §417 (06-09-2026). Hasta el §815.
+
+**F3 — un rechazo por prueba inválida no tenía resolución.** Un tercero **sin cuenta**, con las
+raíces de `zkssl_epochHead` y el límite de `zkssl_params` —lecturas públicas— y 32 bytes `0xab` por
+prueba, manda un envío. El nodo lo rechaza con `VerificationFailed` («prueba mal formada»), le da su
+recibo en `error.data.recepcion` y deja la hoja bajo la `recepRoot` firmada; el cobro, igual. El
+operador honrado no tenía ninguna resolución que el kit aceptara: el sobre de rechazo sale ROJO, «la
+causa VerificationFailed no la prueba este mando», y la declarada también, «no es de las que el
+RFC-0007 dejo sin prueba portable», aunque la D-I del RFC-0007 las declara así y la D-G del RFC-0010
+las manda al cuarto estado. Pasada la ventana —una cabeza vigente de índice 1444, en 48 minutos—, el
+sobre sin resolución sale «NO RESUELTA EN LA VENTANA»: el operador queda nombrado por la basura de
+un tercero. Sólo mintiendo la causa —declarando `PendingTreeExhausted`— bajaba a 3. Medido de punta
+a punta. Un cliente honrado de otro punto de la historia cuya prueba no verifica (RFC-0021, hecho 1)
+dejaba lo mismo (deducido). `ProofFailed` va con ella porque la D-I la declara igual; por lectura,
+la capa sólo la emite al probar, no al juzgar lo que llega. **Ventana**: en el árbol desde el §573
+(28-09-2026), y en el lote desde el §612; en las releases del kit que leen el sobre de completitud,
+la 0.3.0, la 0.4.0, la 0.4.1 y la 0.4.2, que llevan la misma lista de cuatro causas (leído en sus
+commits; medido con la 0.4.2); la 0.2.0 no lo lee.
+
+**Alcance.** Ninguno de los tres crea saldo, gasta sin autorización ni hace que el kit acepte una
+transición inválida: no son fallos de solidez en el sentido de la sección 5. Lo que rompían es la
+evidencia contra el operador. F1 y F3 daban un ROJO firmado, «NO RESUELTA EN LA VENTANA», contra un
+operador que no censuró: F1 con una caída en el instante justo, y F3 a voluntad de cualquiera, sin
+cuenta y con lecturas públicas, por cada envío o cobro basura que mande. F2 firmaba cabezas de un
+estado que el disco no tiene, y tras rearrancar el nodo firmaba otra a la misma altura con otra
+operación: dos cabezas firmadas incompatibles para un mismo `seq`, de un operador honrado
+(deducido: la medida no comparó sus `chainDigest`). F2 alcanza al nodo que firma sus cabezas; el
+ROJO de F1 y F3 lo da todo kit que lea el sobre de completitud del §573.
+
+**Lo que lo cierra** (§815), por decisión del autor:
+
+- **F1, en el nodo: juzgar primero y anotar después** (RFC-0010, la D-E enmendada). En los cuatro
+  brazos con recibo, el nodo reserva el `rx` y fija la era al recibir, la capa juzga, y la hoja se
+  anota con `fsync` tras el veredicto y antes de responder. Una evaluación cortada deja un hueco,
+  que no promete nada; con `--ledger`, la hoja de una operación aplicada nace tras el `flush` de su
+  asiento (sin él, no: abajo, el residuo). Un fallo del almacén no deja hoja y para el nodo. Si el
+  registro falla tras el veredicto, la petición recibe su veredicto sin recibo y el nodo para: se
+  revierte la decisión (a) del §569, con su razón en el RFC. Una marca de fallo en vuelo, escrita
+  con el candado del estado tomado, hace que la petición que esperaba ese candado no se evalúe (la
+  carrera, medida con hilos reales por una de las revisiones del §815, con su test en el sello). Y una
+  línea de traza con el método, el `rx` y el `hashPrueba` —sin los parámetros— sale antes de que la
+  capa juzgue.
+- **F2, en el nodo**: `latir` no compone ni firma con la PARADA puesta, ni con la marca de fallo en
+  vuelo, y no gasta índice XMSS; `zkssl_publishConsumo` devuelve el fallo del almacén como error, y
+  el nodo para.
+- **F3, en el kit 0.4.3**: `ProofFailed` y `VerificationFailed` se declaran —salida 3, «DECLARADA,
+  NO PROBADA»— en la vía directa y en el lote. Su sobre de rechazo sigue sin probarse. Tres vectores
+  nuevos de `spec/vectors/completitud/` lo fijan, y ningún vector publicado se mueve. `doc/KIT.md`
+  §0 dice qué veredictos cambian frente a la 0.4.2 publicada (RFC-0021, R6 f).
+
+**Medido después**, con el nodo y el kit del §815 y, como falsadores, los de antes:
+
+- con un SIGKILL tras el juicio y antes de anotar, el `rx` queda hueco, el arranque lo avisa,
+  `zkssl_recepPath` lo da por hueco, y el pago está en el libro, con su acuse;
+- con un SIGKILL tras el `fsync` de la hoja, la hoja está y el pago también, y el sobre resuelto con
+  su acuse sale VERDE; con el nodo de antes y la misma inyección, la hoja está, el pago no, y el
+  mismo sobre sale ROJO;
+- en PARADA por un envío con el disco lleno, el diario no gana ninguna cabeza en 10 s y el índice de
+  firma no se mueve, y tras rearrancar ninguna altura tiene dos cabezas firmadas distintas; en
+  PARADA por un consumo, ninguna cabeza en 10 s y el índice quieto, frente a las 6 cabezas del nodo
+  de antes (sin rearrancar: lo de las dos cabezas a la misma altura sólo se midió con el envío);
+- los sobres de la medida de F3, con el kit 0.4.3: la declarada con `VerificationFailed` sale 3, y
+  el sobre de rechazo, 1, como con la 0.4.2: sigue sin probarse. Sobre los 500 vectores de
+  `spec/vectors/`, frente al kit del árbol sin el arreglo, cambian sólo los tres nuevos.
+
+**Residuo**:
+
+- **`ProofFailed` y `VerificationFailed` siguen sin probarse.** Que la prueba no verificara es la
+  palabra del nodo hasta que el kit pueda re-verificarla contra lo que la hoja firma: con el
+  `hashPrueba` y el `digest_pi` bajo la firma, quien tenga la prueba la presenta y el rechazo se
+  prueba o se refuta. Es del tren `zkssl/0.5` (RFC-0019 E3), y así lo decidió el autor.
+- **La declarada no la ata nada.** Medido en privado sobre `4d8017d`: el kit da 3 a una declarada
+  con una causa de la lista que no viene a cuento —`NotTheAccountHolder` sobre un envío— y hasta sin
+  cabeza vigente; lo único que la ata al recibo es el `hashPrueba`, que el operador conoce. Por eso
+  añadir dos causas no abre una puerta: cualquier ROJO ya bajaba a 3 declarando una de las cuatro.
+  La salida 3 es la palabra del operador, y nada más (RFC-0010, D-G). `ProofFailed`, además, no la
+  produce hoy ningún brazo con recibo —la capa sólo la da al probar; leído en el código—, así que
+  una declarada con ella es siempre esa palabra. Y en el lote el kit no cruza la causa declarada
+  con la composición: `lote-declarada` (publicado desde el §614) declara `NotTheIssuer` sobre una
+  composición que repite la cuenta, que la refutaría sola. La 129 del `BACKLOG.md`.
+- **El rechazo que nadie conserva** (deducido, sin medir). El nodo no guarda el `data` de un
+  rechazo. Si muere entre el `fsync` de la hoja de un rechazo y la respuesta, si la respuesta se
+  pierde o si el titular la calla, el operador honrado no tiene el sobre que exhibir, y una causa
+  con prueba no se declara: pasada la ventana, ROJO. Es anterior al §815, y el §815 no lo abre ni lo
+  cierra. La 129.
+- **Sin `--ledger`, la hoja sin su operación** (deducido de leer el código, sin medir; la A8 de
+  dos de las revisiones que juzgaron el orden). Un nodo que firma sólo necesita `--diario` junto a
+  `--clave` (§285); sin `--ledger` el libro vive en memoria y su `commit` no escribe nada, mientras
+  el contador y el registro de recepción van siempre a disco. Tras reiniciar, las hojas de las
+  operaciones aplicadas siguen bajo una `recepRoot` firmada y sus operaciones no están en el libro:
+  el estado de F1, y el mismo ROJO al expirar la ventana. Es anterior al §815, que no lo empeora;
+  exigir `--ledger` a quien firma queda fuera de este sello.
+- **Más huecos.** Toda evaluación cortada deja ahora un hueco, que el arranque declara. El titular
+  sin respuesta no sabe si su operación se aplicó: **busca su `hashPrueba` entre los `proofDigest`
+  de `zkssl_logEntries` antes de volver a pagar** (`spec/RPC.md`). En `applyMany` y `zkssl_pledge`
+  la PARADA de un fallo del almacén no lleva su `rx` en el mensaje, al revés que en `applySend` y
+  `applyClaim` (leído en el código).
+- **La traza cuesta bytes.** La línea «recepcion: la capa juzga» sale por cada recepción juzgada,
+  también por la basura de un tercero sin cuenta; con la hoja y la línea de error del despacho,
+  suma log por petición y acerca un disco lleno, que lleva a la PARADA (deducido, sin medir; el
+  coste por petición ya existía, §253, y el destino del log es del despliegue).
+- **Sin medir**: la latencia de `applySend` antes y después (las mismas dos escrituras, en otro
+  orden: deducido); la muerte entre el `fsync` de la hoja de un rechazo y la respuesta; el testigo
+  frente a un nodo en PARADA; y la ventana de 1.440 cabezas de punta a punta con el nodo del §815.
+
+**Lo que conviene hacer.** Un ROJO «NO RESUELTA EN LA VENTANA» obtenido con la 0.3.0, la 0.4.0, la
+0.4.1 o la 0.4.2 sobre un recibo que el nodo rechazó por `VerificationFailed` o `ProofFailed` no
+acusa a nadie: se vuelve a juzgar con la 0.4.3 y la resolución `declarada`, que sale 3. Un ROJO de
+esa clase sobre un recibo de la ventana de F1 —en `applySend` y `applyClaim` desde el §569, en
+`applyMany` y `zkssl_pledge` desde el §611, hasta el §815— puede ser una caída honrada entre anotar y
+aplicar, que desde fuera no se distingue del mentiroso del §602: por sí solo no prueba censura.
+Quien firme cabezas debería arrancar el nodo con `--ledger`, que persiste el libro.
+
+Se redactó en privado y se publica de una vez con su arreglo, como pide la sección 5 y como la 3.14.
+A diferencia de la 3.13 y la 3.14, el kit publicado SÍ está afectado (F3): con este sello salen,
+como piden la sección 5 y `spec/rfc/PROCESO.md` §«Fallos de seguridad», la release
+`arqueo-verify-v0.4.3` y su aviso de seguridad, que nombra las afectadas —la 0.3.0, la 0.4.0, la
+0.4.1 y la 0.4.2— y la primera que lo arregla, la 0.4.3. Los publica el autor: hasta el asiento que
+registre la release, la vigente sigue siendo la 0.4.2 (`doc/KIT.md` §0). F1 y F2 son del nodo, que
+no tiene release: su aviso es esta sección y el asiento. `AUDITORIA.md` §815.
 
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 

@@ -173,7 +173,7 @@ para que un banco con nodo real pueda provocar `AccountFrozen` y capturar su cam
 | `-32000` | rechazo de la capa: `message` = `LayerError` (p. ej. `InsufficientBalance{…}`, `StaleState`, `OverRegulatoryLimit{…}`, `AccountFrozen(…)`); desde el §454, `data` = su causa (abajo) |
 | `-32004` | credencial inválida para la cuenta pedida (§261, «La credencial») |
 | `-32005` | límite de ritmo de una lectura cara (§678): `data.retryAfterSeconds` (Q) dice cuánto falta. Hoy solo `zkssl_verifyChain`, que recorre el registro entero con el candado del estado tomado |
-| `-32603` | fallo interno del nodo: un candado envenenado, una serialización, el contador de recepción |
+| `-32603` | fallo interno del nodo: un candado envenenado, una serialización, el contador de recepción. ⚠️ §815: y la PARADA (§530, §655), que esta fila no nombraba: un `-32603` cuyo `message` empieza por «nodo en PARADA: », con su causa. Desde ella el nodo no sirve ningún método, y desde el §815 tampoco firma cabezas (`SECURITY.md` §3.15) |
 
 `StaleState` es esperable bajo concurrencia: el estado declarado quedó
 atrás. El cliente refresca su vista y reintenta.
@@ -201,7 +201,10 @@ causa. El ejemplo es el de un pago sin saldo:
 - **`message` no cambia**: sigue siendo el `Debug` de `LayerError`, con `[receptionSeq=…]` si lo
   hay. Los demás códigos no llevan `data` y salen con las dos claves de siempre.
 - **`zkssl_publishConsumo` rechaza DENTRO de `result`** (`accepted: false`, `reason`): desde el
-  §454 su negativa lleva el mismo `data`, con `ConsumoRepetido` o `ConsumoColision`.
+  §454 su negativa lleva el mismo `data`, con `ConsumoRepetido` o `ConsumoColision`. ⚠️ §815: un
+  fallo del almacén (`Store`) ya no viaja así. Hasta el §815 salía como una negativa más, y el nodo
+  seguía sirviendo y firmando con la memoria por delante del disco; desde el §815 es la PARADA, como
+  en los demás métodos desde el §655.
 - **No es evidencia oponible**: es lo que el nodo dice, como `receptionSeq` (§253). La prueba de
   la causa es E3 y E5 del RFC-0007 (`spec/PAQUETE.md`, sección 2.6).
 
@@ -785,12 +788,16 @@ Las mismas dos vías del titular devuelven, junto al `acuse`, su hermano:
 y lo devuelven **también en el `error.data` de un rechazo de la capa**, al lado de la causa (§454):
 es el caso que importa, porque un censor se escondería rechazando. El acuse dice que la operación
 se APLICÓ; el recibo, que el nodo la RECIBIÓ y se puso a evaluarla, se aplicara o no (RFC-0010,
-D-A y D-E).
+D-A y D-E). ⚠️ §815: que la RECIBIÓ y la JUZGÓ. Desde el §815 la hoja se anota tras el veredicto de la
+capa y antes de responder (RFC-0010, la D-E enmendada): una evaluación que se corta a medias deja
+el número hueco, sin hoja.
 
 - **`rx`** es el número de recepción (el `receptionSeq` de siempre, ahora como dato): dentro de la
   era `(Q, R]` que lo cierre, la hoja es la `rx − Q − 1`.
 - **`era`** la declaró el nodo al anotar: el índice XMSS de la última cabeza firmada, más uno
-  (D-D, §567). Va DENTRO de la hoja.
+  (D-D, §567). Va DENTRO de la hoja. ⚠️ §815: la fija al RECIBIR, antes de que la capa juzgue, y la
+  escribe al anotar: una firma que termine mientras la capa verifica no la mueve. Es la misma
+  lectura que antes del §815, en el mismo punto.
 - **`n`** es el techo, el mismo del acuse, también dentro de la hoja.
 - **`hashPrueba`** es el digest de la prueba que llegó; el titular lo recomputa de la suya.
 
@@ -798,6 +805,25 @@ La hoja es `recibo_digest(hashPrueba, era, n)` (D-B). ⚠️ Como el acuse, **no
 hereda al cerrar la era, con `zkssl_recepPath`. Un `-32603` porque el nodo no pudo anotar **no
 lleva recibo**: no hay hoja que prometer, y la operación no se evaluó. ⚠️ La clave es `recepcion` y
 no `recibo`: `recibo` ya nombra en el cable los `publicInputs` del sobre de rechazo.
+
+⚠️ **§815: ese `-32603` ya no existe, y «la operación no se evaluó» ya no es cierto.** Desde el §815 el
+nodo anota TRAS juzgar, así que un registro roto ya no da un `-32603` propio: si falla después del
+veredicto, la petición recibe su veredicto —el resultado con su
+acuse, o el `-32000` con su causa— SIN `recepcion`, y el nodo pasa a PARADA; las peticiones
+siguientes reciben el `-32603` de la PARADA. Lo que sigue en pie es lo que importa: sin `recepcion`
+no hay hoja que prometer. Un fallo del almacén al aplicar tampoco deja hoja: la respuesta es la
+PARADA (`-32603`, «nodo en PARADA: …»), y la operación puede estar o no en el libro tras reiniciar.
+En `applySend` y `applyClaim` el `message` de esa PARADA lleva su `[receptionSeq=…]`; en
+`applyMany` y `zkssl_pledge` no, porque esos dos brazos no lo ponen en el `message` —su número
+viaja en `data.recepcion`, y la PARADA no lleva `data`—, así que quien se queda con esa respuesta
+no sabe su `rx` para preguntar a `zkssl_recepPath` si quedó hueco (leído en el código, sin
+medir). **Sin respuesta, o sin `recepcion`, antes de volver a pagar** el titular
+busca su `hashPrueba` entre los `proofDigest` de `zkssl_logEntries`: una muerte entre el juicio y la
+respuesta puede dejar la operación aplicada sin que nadie se lo haya dicho, y otro pago con otra
+prueba sería otro pago (`SECURITY.md` §3.15). Vale para un envío y un cobro, cuyo `proofDigest` es el
+digest de su prueba (tabla «Lo que asienta cada clase»); en un lote se busca el de cada una de sus
+pruebas, porque su `hashPrueba` es la huella de la composición; y una prenda asienta un `Consumo`,
+cuyo `proofDigest` es la prueba vacía: se busca la entrada cuyo `compromiso` es su consumo.
 
 ⚠️ **Desde el §611 (RFC-0014 E3) `zkssl_applyMany` y `zkssl_pledge` también llevan recibo**, con
 la misma regla: uno por cada cosa que el nodo EVALÚA, reservado en el mismo punto que la vía
@@ -899,6 +925,9 @@ aplicara o no— y `recepCount` —`R`, el último número de recepción reserva
 límite inferior `Q` **no viaja**: es el `recepCount` de la cabeza anterior. Viajan **firmadas**
 — `formatVersion: 6` — y con ellas un rechazo que el operador quisiera callar deja hoja bajo la
 firma: el árbol de acuses dice lo que se APLICÓ; éste, lo que se RECIBIÓ (RFC-0010, D-A y D-E).
+⚠️ §815: una hoja por cada operación que el nodo JUZGÓ. Desde el §815 la hoja se anota tras el veredicto
+de la capa, y una evaluación que se corta a medias deja su número hueco, sin hoja (arriba, «El
+recibo de recepción en la respuesta»; RFC-0010, la D-E enmendada).
 
 La composición, por envoltura como v4→v5 (la forma exacta en `spec/NUCLEO.md`, sección 6):
 ```text
@@ -1428,7 +1457,10 @@ que la sostiene: `{accepted: true, yaEstaba, logSeq, s}` si la prueba verifica, 
 el sobre (RFC-0008 D-AS)—, y este método es el único sitio donde las dos mitades se juntan: el
 juez de `zk-ssl-air` verifica el sobre contra un enunciado, y el árbol de consumos lo escribe el
 nodo. Lo que sale del prendador es `SobrePrenda {prueba, receptor, marca, seq, pendingRoot}`
-(§518); de ahí salen los cuatro parámetros, y `pendingRoot` **no viaja**.
+(§518); de ahí salen los cuatro parámetros, y `pendingRoot` **no viaja**. ⚠️ §815: «`{accepted:
+false, reason, data}` si no» tiene una excepción, el fallo del almacén al asentar el consumo
+(`Store`), que ya no sale como `accepted: false` dentro del resultado: es la PARADA, `-32603`, sin
+`data` y sin recibo, porque su desenlace no se sabe (abajo, «Lleva recibo»).
 
 - **La raíz la pone el nodo, nunca quien llama.** El enunciado se compone con `pendingRoot` de
   la cabeza firmada que el nodo custodia, no con la que traiga la petición: servir esa vara
@@ -1462,7 +1494,11 @@ nodo. Lo que sale del prendador es `SobrePrenda {prueba, receptor, marca, seq, p
   Las tres que no llegan -sin latido, cabeza sin firmar, `seq` viejo- no lo llevan ni consumen
   número: son ruido, y quien prenda vuelve a probar bajo la cabeza nueva. Desde el §613, la que
   rechaza la capa lo lleva además DENTRO de su `data`, como el rechazo del lote y el de la vía
-  directa: su sobre de rechazo se arma con ese `data` tal cual.
+  directa: su sobre de rechazo se arma con ese `data` tal cual. ⚠️ §815: «en TODAS» tiene desde el
+  §815 dos excepciones, las de la vía directa («El recibo de recepción en la respuesta»): un fallo
+  del almacén al asentar el consumo no deja hoja y responde la PARADA, sin recibo; y si el
+  registro falla tras el veredicto, la respuesta sale con su veredicto y sin `recepcion`, y el
+  nodo para.
 
 ⚠️ **Aditivo**: la superficie pasa de 29 a 30 métodos (`zkssl_pledge`) y `zkssl/0.3` NO sube: no
 cambia ningún valor que ya viajara.
@@ -1717,8 +1753,8 @@ acta.emite 1
 sobre.v 1 2
 sobre.tipo extension consumo conflicto rechazo edad cobro_pendiente pago_en_curso prenda completitud ancla ancla-cofirmada solapamiento
 kit.salida 0 1 2 3
-vectores.json 497
-vectores.lineas 987
+vectores.json 500
+vectores.lineas 1002
 manifiesto 0.3/edad/MANIFIESTO.txt
 manifiesto 0.3/pago/MANIFIESTO.txt
 manifiesto 0.3/pendiente/MANIFIESTO.txt
