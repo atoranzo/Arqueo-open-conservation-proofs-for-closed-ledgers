@@ -174,6 +174,40 @@ DIR_VECTORES = os.path.join(RAIZ, "spec", "vectors")
 SITIOS_VECTORES = ("README.md", "README_EN.md")
 CUENTA_VECTORES = re.compile(r"\((\d+)\s+(?:ficheros|files)\b")
 
+# ATADO G (§846, tarea 39 de la lista del autor) - el AUTOR y la ASISTENCIA GenAI en la cabecera
+# de cada RFC. GENAI.md dice que cada RFC declara en su cabecera, junto al autor, las sesiones en
+# las que se redacto, y hasta aqui ningun cerrojo lo miraba. Universo: spec/rfc/NNNN-*.md, el
+# mismo de `rfcs()`; la plantilla 0000, aparte, con su forma de plantilla, y si falta, ROJO.
+# Cabecera: las lineas antes del primer `## `. Cada RFC lleva en ella exactamente una «- **Autor:**
+# <nombre>», con un nombre de NOMBRES_AUTOR, y exactamente una «- **Asistencia GenAI:** ...», con
+# sus lineas de continuacion (las sangradas que la siguen). En esa vineta, ningun identificador de
+# modelo: MODELO reconoce la FORMA, un «claude-» seguido de palabras con guion y un digito, en
+# mayusculas o en minusculas, y «Claude», una palabra con mayuscula o ninguna, y un digito; no
+# nombra ninguna familia. La formula de la casa, «Claude, en una sesion de Claude Code en la
+# nube», pasa. Los nombres salen de GENAI.md («Autoria y responsabilidad»): si uno deja de estar
+# alli, ROJO, para que la lista no sobreviva a su fuente. Ceguera declarada: no mira el resto del
+# RFC, ni un identificador escrito de otra forma (una familia sin digito, «CLAUDE» en mayusculas
+# sin guion, un nombre en otra vineta); no exige el enlace a GENAI.md de la vineta, ni que diga
+# sesiones. Y no ve un RFC fuera de spec/rfc/ ni con otro nombre de fichero.
+NOMBRES_AUTOR = ("Ángel José Toranzo Portela", "Angel Jose Toranzo Portela",
+                 "Angel Toranzo Portela")
+GENAI = os.path.join(RAIZ, "GENAI.md")
+AUTOR_RFC = re.compile(r"^- \*\*Autor(es)?:\*\*\s*(.*)$")
+VINETA_GENAI = re.compile(r"^- \*\*Asistencia GenAI:\*\*\s*(.*)$")
+MODELO = re.compile(r"(?i:\bclaude-(?:[a-z]+-)*\d)|\bClaude(?:\s+[A-Z][a-z]+)?\s+\d")
+# Las excepciones, cada una con la frase del asiento que la explica y el asiento donde esta. La
+# frase tiene que seguir en AUDITORIA.md, dentro de su asiento, y la excepcion tiene que seguir
+# haciendo falta: si la cabecera cambia, ROJO, y se decide otra vez. El 0002 dice «(mesa)» y no
+# lleva vineta de GenAI desde antes de que GENAI.md existiera; el §564, que puso las vinetas en
+# las demas, no lo toco, y el autor decidio el 2026-10-15 dejarlo asi, declarado (§846).
+AUDITORIA = os.path.join(RAIZ, "AUDITORIA.md")
+EXCEPCIONES_G = {
+    "0002": ("§564", "El `0002`, que dice `(mesa)`, no se toco.",
+             "- **Autores:** (mesa)"),
+}
+# Lo medido al nacer, en el §846: 21 RFC sin la plantilla. Un suelo, como los del ATADO F.
+MINIMO_RFC_G = 21
+
 # ATADO F (§796, tarea 40 del plan) - las CIFRAS DE NIVEL publicadas contra las CONSTANTES de las
 # que salen. ⚠️ §796: hasta aqui ningun cerrojo las miraba. El §698 las corrigio a mano en diez
 # sitios, el §708 anadio la del termino DEEP, y los dos dejaron escrito lo mismo: «los tests del
@@ -1476,6 +1510,150 @@ def atado_e():
     return fallos, n, citas
 
 
+def _cabecera(ruta):
+    """Las lineas antes del primer `## `, numeradas desde 1."""
+    salida = []
+    with open(ruta, encoding="utf-8") as fh:
+        for i, linea in enumerate(fh.read().split("\n"), 1):
+            if linea.startswith("## "):
+                break
+            salida.append((i, linea))
+    return salida
+
+
+def _vinetas(cabecera):
+    """([(linea, nombre, plural)] de las vinetas de autor, [(linea, texto)] de las de GenAI, con las
+    lineas de continuacion unidas a la suya)."""
+    autores, genai = [], []
+    for k, (i, linea) in enumerate(cabecera):
+        m = AUTOR_RFC.match(linea)
+        if m:
+            autores.append((i, m.group(2).strip(), bool(m.group(1))))
+        m = VINETA_GENAI.match(linea)
+        if m:
+            partes = [m.group(1)]
+            for _, sig in cabecera[k + 1:]:
+                if not sig.strip() or not sig[0].isspace():
+                    break
+                partes.append(sig.strip())
+            genai.append((i, " ".join(partes).strip()))
+    return autores, genai
+
+
+def _problemas_g(autores, genai):
+    """Lo que le falta o le sobra a una cabecera de RFC: [(linea, clase, detalle)]."""
+    salida = []
+    if len(autores) != 1:
+        salida.append((0, "AUTOR", "%d vineta(s) de autor; se espera una «- **Autor:** <nombre>»"
+                       % len(autores)))
+    elif autores[0][2]:
+        salida.append((autores[0][0], "AUTOR", "dice «Autores»; el autor es uno, «- **Autor:**»"))
+    elif autores[0][1] not in NOMBRES_AUTOR:
+        salida.append((autores[0][0], "AUTOR", "dice «%s»; el autor es uno de %s (GENAI.md)"
+                       % (autores[0][1][:50], ", ".join("«%s»" % n for n in NOMBRES_AUTOR))))
+    if len(genai) != 1:
+        salida.append((0, "GENAI", "%d vineta(s) «- **Asistencia GenAI:**»; se espera una"
+                       % len(genai)))
+    for i, texto in genai:
+        if not texto:
+            salida.append((i, "GENAI", "la vineta de GenAI esta vacia"))
+        m = MODELO.search(texto)
+        if m:
+            salida.append((i, "MODELO", "la vineta de GenAI nombra un identificador de modelo "
+                           "(«%s…»); la formula de la casa es «Claude, en una sesion de Claude "
+                           "Code en la nube»" % m.group(0)))
+    return salida
+
+
+def _asiento(texto, numero):
+    """(linea donde empieza, cuerpo) del asiento `## <numero> —` de AUDITORIA.md, o None."""
+    lineas = texto.split("\n")
+    ini = next((k for k, l in enumerate(lineas) if l.startswith("## %s " % numero)), None)
+    if ini is None:
+        return None
+    fin = next((k for k in range(ini + 1, len(lineas)) if lineas[k].startswith("## ")),
+               len(lineas))
+    return ini + 1, lineas[ini:fin]
+
+
+def atado_g():
+    """Devuelve (fallos, RFC vistos, RFC con sus dos vinetas, excepciones con su cita, si esta la
+    plantilla)."""
+    fallos, vistos, completos, citas, plantilla = [], 0, 0, [], False
+    try:
+        with open(GENAI, encoding="utf-8") as fh:
+            genai_md = " ".join(fh.read().split())
+    except OSError as exc:
+        return [("GENAI.md", 0, "ILEGIBLE", str(exc))], 0, 0, [], False
+    for nombre in NOMBRES_AUTOR:
+        if nombre not in genai_md:
+            fallos.append(("GENAI.md", 0, "NOMBRE", "no da «%s», y NOMBRES_AUTOR lo acepta: la "
+                           "lista sale de GENAI.md" % nombre))
+    try:
+        with open(AUDITORIA, encoding="utf-8") as fh:
+            auditoria = fh.read()
+    except OSError as exc:
+        auditoria = None
+        fallos.append(("AUDITORIA.md", 0, "ILEGIBLE", str(exc)))
+    vistos_num = set()
+    for f in sorted(os.listdir(DIR_RFC)):
+        m = re.match(r"^(\d{4})-.*\.md$", f)
+        if not m:
+            continue
+        num, rel = m.group(1), "spec/rfc/" + f
+        cab = _cabecera(os.path.join(DIR_RFC, f))
+        autores, genai = _vinetas(cab)
+        if num == PLANTILLA:
+            plantilla = True
+            # La forma de plantilla: una vineta de autor con un hueco `<...>` y una de GenAI.
+            if len(autores) != 1 or not re.fullmatch(r"<[^<>]+>", autores[0][1]) \
+                    or len(genai) != 1:
+                fallos.append((rel, 0, "PLANTILLA", "la plantilla no da la forma: una «- "
+                               "**Autor:** <...>» y una «- **Asistencia GenAI:**»"))
+            continue
+        vistos += 1
+        vistos_num.add(num)
+        problemas = _problemas_g(autores, genai)
+        if num not in EXCEPCIONES_G:
+            if problemas:
+                fallos.extend((rel, i, clase, detalle) for i, clase, detalle in problemas)
+            else:
+                completos += 1
+            continue
+        asiento, frase, linea_autor = EXCEPCIONES_G[num]
+        if not problemas:
+            fallos.append((rel, 0, "EXCEPCION", "la cabecera ya lleva autor y vineta de GenAI: "
+                           "la excepcion esta rancia, sale de EXCEPCIONES_G"))
+        elif [l for _, l in cab if AUTOR_RFC.match(l)] != [linea_autor] or genai:
+            fallos.append((rel, 0, "EXCEPCION", "la excepcion declara «%s» y ninguna vineta de "
+                           "GenAI, y la cabecera ya no es esa: se decide otra vez" % linea_autor))
+        if auditoria is None:
+            continue
+        cuerpo = _asiento(auditoria, asiento)
+        if cuerpo is None:
+            fallos.append(("AUDITORIA.md", 0, "EXCEPCION", "la excepcion del RFC-%s cita el %s, "
+                           "que no esta" % (num, asiento)))
+            continue
+        ini, lineas = cuerpo
+        plano = " ".join(" ".join(lineas).split())
+        if frase not in plano:
+            fallos.append(("AUDITORIA.md", ini, "EXCEPCION", "el %s ya no dice «%s»: la "
+                           "excepcion del RFC-%s se queda sin su razon" % (asiento, frase, num)))
+            continue
+        primera = frase.split()[:3]
+        donde = next((ini + k for k, l in enumerate(lineas) if " ".join(primera) in l), ini)
+        citas.append((num, asiento, donde))
+    for num in sorted(set(EXCEPCIONES_G) - vistos_num):
+        fallos.append(("spec/rfc/", 0, "EXCEPCION", "EXCEPCIONES_G declara el RFC-%s, que no "
+                       "esta" % num))
+    if not plantilla:
+        fallos.append(("spec/rfc/", 0, "PLANTILLA", "no esta la plantilla %s-*.md" % PLANTILLA))
+    if vistos < MINIMO_RFC_G:
+        fallos.append(("spec/rfc/", 0, "VIDA", "%d RFC, y el minimo medido es %d: un censo que "
+                       "encoge se declara" % (vistos, MINIMO_RFC_G)))
+    return fallos, vistos, completos, citas, plantilla
+
+
 # ---- ATADO F: F.0, las constantes ----
 
 def _leer(ruta):
@@ -2496,6 +2674,15 @@ def main():
     print("  ATADO E: spec/vectors/ tiene %d ficheros; %d cita(s) de esa cuenta en %s"
           % (n_vec, citas_e, " y ".join(SITIOS_VECTORES)))
 
+    fallos_g, n_g, completos_g, citas_g, plantilla_g = atado_g()
+    print("  ATADO G: %d RFC %s; %d con su autor y su vineta de GenAI, sin "
+          "identificador de modelo, y %d por excepcion"
+          % (n_g, "y la plantilla" if plantilla_g else "y falta la plantilla", completos_g,
+             len(EXCEPCIONES_G)))
+    for num, asiento, linea in citas_g:
+        print("  excepcion (G) RFC-%s - «%s», sin vineta de GenAI: AUDITORIA.md:%d, en el %s"
+              % (num, EXCEPCIONES_G[num][2], linea, asiento))
+
     fallos_f, resumen_f, cifras_f = atado_f()
     for linea in resumen_f:
         print("  " + linea)
@@ -2559,6 +2746,18 @@ def main():
             print("  %-40s :%-5d %-10s %s" % (nombre, n, clase, detalle))
         print("")
         print("  La cuenta es la del arbol: todo fichero bajo spec/vectors/, recursivo.")
+        return 1
+
+    if fallos_g:
+        print("")
+        print("ROJO: %d fallo(s) del ATADO G (§846): el autor y la asistencia GenAI de los RFC"
+              % len(fallos_g))
+        for nombre, n, clase, detalle in fallos_g:
+            print("  %-40s :%-5d %-9s %s" % (nombre, n, clase, detalle))
+        print("")
+        print("  Cada spec/rfc/NNNN-*.md lleva antes de su primer `## ` una «- **Autor:**» con")
+        print("  un nombre de GENAI.md y una «- **Asistencia GenAI:**» sin identificador de")
+        print("  modelo. Una excepcion va a EXCEPCIONES_G con la frase de su asiento.")
         return 1
 
     if fallos_f:

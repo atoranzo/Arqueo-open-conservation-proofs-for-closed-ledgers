@@ -93,7 +93,10 @@ asiento por cambio verificado, con su commit, sus contadores, lo que el cambio
 mensaje de commit, y es el sitio donde mirar.
 
 Además, cada RFC de [`spec/rfc/`](./spec/rfc/) declara en su cabecera, junto al
-autor, las sesiones de trabajo en las que se redactó.
+autor, las sesiones de trabajo en las que se redactó. ⚠️ **Corregido en el
+§846**: decía «cada RFC», sin excepción; el RFC-0002 dice «Autores: (mesa)» y no
+lleva la línea de GenAI, y el §564 no lo tocó. `tools/check_publicadas.py`
+exige las dos líneas a los demás y declara esa excepción.
 
 ## Alcance
 
@@ -219,7 +222,10 @@ close and the lessons it left. It is substantially more detailed than a commit
 message, and it is the place to look.
 
 Each RFC under [`spec/rfc/`](./spec/rfc/) also states in its header, next to the
-author, the working sessions in which it was drafted.
+author, the working sessions in which it was drafted. ⚠️ **Corrected in §846**:
+it said «each RFC», with no exception; RFC-0002 says «Autores: (mesa)» and has
+no GenAI line, and §564 left it as it was. `tools/check_publicadas.py` requires
+both lines of the others and declares that exception.
 
 ## Scope
 
