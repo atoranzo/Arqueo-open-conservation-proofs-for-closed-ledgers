@@ -205,7 +205,7 @@ impl SovereignLayer {
         Self::desde_instantanea_en_claro(plano)
     }
 
-    /// Exporta el estado completo a un fichero.
+    /// Exporta el estado completo a un fichero, entero o nada (⚠️ §820: `escribir_entera`, al final).
     /// Exporta una instantánea.
     ///
     /// **Si la capa tiene clave, la instantánea va cifrada**, con la misma
@@ -301,9 +301,9 @@ impl SovereignLayer {
             }
         };
 
-        let mut f = std::fs::File::create(path).map_err(io_err)?;
-        f.write_all(&bytes).map_err(io_err)?;
-        f.sync_all().map_err(io_err)?;
+        // ⚠️ §820: hasta el §820, `File::create(path)`, que truncaba en sitio la anterior (la 120 del
+        // `BACKLOG.md`). Entera o nada: un temporal al lado y un cambio de nombre (al final).
+        escribir_entera(path, &bytes)?;
 
         Ok(SnapshotInfo {
             accounts: accounts.len() as u64,
@@ -1682,4 +1682,226 @@ fn ruta_del_borrado(resto: &str) -> std::borrow::Cow<'_, str> {
 #[cfg(test)]
 thread_local! {
     pub(crate) static FALLAR_BORRADO: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+// ── §820: la exportacion, entera o nada (la 120 del `BACKLOG.md`) ──
+// Va al final, como el §702 y el §812, para que las citas `snapshot.rs:linea` no se muevan.
+
+/// ⚠️ §820 · **El temporal de la exportacion**: `{instantanea}.exportando`, en su mismo directorio.
+/// Es un nombre reservado: la exportacion no crea ni borra uno que ya exista.
+pub(crate) const SUFIJO_EXPORTANDO: &str = ".exportando";
+
+/// ⚠️ §820 · **La instantanea, entera o nada.** Hasta el §820, `export_snapshot` abria el destino con
+/// `File::create`, que lo trunca, y escribia encima: un proceso que muriera a mitad dejaba en el
+/// sitio de la buena una a medias, que no importa, y la anterior ya no estaba. Ahora:
+///
+/// 1. El destino, si existe, tiene que ser un fichero regular que se pueda abrir para escribir,
+///    como lo pedia la escritura en sitio. Lo que no lo es se rehusa con su nombre, como el
+///    recifrado rehusa un enlace: un enlace no se sigue -el cambio de nombre lo sustituiria y
+///    dejaria su destino como estaba-, ni un FIFO, un socket o un dispositivo, que tambien
+///    sustituiria; ni un directorio, que el cambio de nombre rehusaria igual (`EISDIR`), como lo
+///    rehusaba `File::create`. Cambia lo que hacia `File::create` con los demas, que escribia a
+///    traves de ellos: `/dev/stdout` -un enlace- o un FIFO ya no son destinos de una exportacion
+///    (una copia por una tuberia).
+/// 2. El temporal `{path}.exportando`, en el MISMO directorio, se CREA (`create_new`; en Unix, con
+///    0600): exportar pide ahora poder escribir en el directorio del destino, aunque el destino se
+///    pueda escribir. Si el temporal ya existe no se toca, y se dice: es otra exportacion a ese
+///    destino en marcha o lo que dejo una que murio, y la biblioteca no sabe cual. Si no hay ninguna
+///    en marcha, se borra a mano; barrerlo sin saberlo romperia el entera o nada de la que siguiera
+///    viva. No barrerlo es de la sesion, reversible: falla cerrado.
+/// 3. Se escribe entero y se sincroniza. Lleva lo que llevaria la nueva: cifrado si la capa tiene
+///    clave, en claro si no. Con la capa que escribio la anterior no es un claro junto a una cifrada
+///    (la leccion del §774); una capa sin clave que exporta sobre una cifrada -la importada de una,
+///    que nace sin clave: la 121- deja un claro junto a ella, el mismo que dejaria si acabara
+///    (medido en la sesion con un test que no queda en el arbol: el destino, `0x02`; el temporal,
+///    `0x00` y el saldo en claro).
+/// 4. Si el destino existia, el temporal toma, con privilegios, su dueno, y su grupo y sus bits de
+///    modo (`dar_lo_de_la_anterior`); si no puede tomar su grupo, se queda sin los bits de grupo y
+///    de otros. Sus ACL POSIX y sus demas atributos extendidos, que la escritura en sitio
+///    conservaba, no los toma: ver `dar_lo_de_la_anterior`. Uno nuevo nace con 0600 en Unix; hasta
+///    el §820, con 0666 menos la umask.
+/// 5. Se cambia de nombre por el destino y se sincroniza el directorio, donde vive el nombre.
+///
+/// Un error antes del cambio de nombre borra el temporal y deja la anterior como estaba; uno al
+/// sincronizar el directorio deja la nueva en su sitio, entera, y lo dice. Una muerte antes del
+/// cambio de nombre deja la anterior entera y el temporal, quizas a medias: la importacion lee el
+/// destino y nunca el temporal, y uno a medias no importa -la verificacion o el sellado lo
+/// rechazan-. Lo miden `una_exportacion_que_falla_a_mitad_deja_la_anterior_entera` y
+/// `una_exportacion_muerta_a_mitad_deja_la_anterior_y_su_temporal_no_se_confunde`. No se mide un
+/// corte de corriente: quitar el `sync_all` del temporal o la sincronizacion del directorio no lo
+/// tumba ningun test (medido). Ni que un destino que no se puede abrir para escribir se rehuse: en
+/// la maquina de la sesion los tests corren como root, que lo abre igual. Un enlace duro que alguien
+/// hiciera a la anterior se queda con la anterior, que ya no se trunca.
+fn escribir_entera(path: &str, bytes: &[u8]) -> Result<(), LayerError> {
+    use std::io::ErrorKind;
+    let previo = match std::fs::symlink_metadata(path) {
+        Ok(m) if m.file_type().is_file() => {
+            // Lo que la escritura en sitio no podia abrir para escribir, esta no lo sustituye.
+            std::fs::OpenOptions::new()
+                .write(true)
+                .open(path)
+                .map_err(|e| io_err(format!("{path}: {e}; la exportacion no lo sustituye")))?;
+            Some(m)
+        }
+        Ok(_) => {
+            return Err(io_err(format!(
+                "{path}: no es un fichero regular -un enlace, un directorio u otra cosa-, y la \
+                 exportacion no lo toca: un enlace o un FIFO los sustituiria el cambio de nombre"
+            )))
+        }
+        Err(e) if e.kind() == ErrorKind::NotFound => None,
+        Err(e) => return Err(io_err(format!("{path}: {e}"))),
+    };
+    let tmp = format!("{path}{SUFIJO_EXPORTANDO}");
+    let mut o = std::fs::OpenOptions::new();
+    o.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        o.mode(0o600);
+    }
+    let f = o.open(&tmp).map_err(|e| {
+        if e.kind() == ErrorKind::AlreadyExists {
+            io_err(format!(
+                "{tmp}: ya existe: es otra exportacion a {path} en marcha, o lo que dejo una que murio \
+                 -lo que llevaria la nueva, quizas a medias-; no se toca, y si no hay ninguna en marcha \
+                 se borra a mano"
+            ))
+        } else {
+            io_err(format!("{tmp}: {e}"))
+        }
+    })?;
+    if let Err(e) = escribir_y_cambiar(f, &tmp, path, bytes, previo) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(io_err(format!(
+            "{path}: la exportacion no acabo ({e}); la instantanea anterior, si la habia, queda como estaba"
+        )));
+    }
+    sincronizar_directorio(path).map_err(|e| {
+        io_err(format!(
+            "{path}: la nueva esta en su sitio, entera, pero no se pudo sincronizar el directorio \
+             ({e}): tras un corte de corriente el nombre podria volver a la anterior"
+        ))
+    })
+}
+
+/// Los pasos 3 a 5 de `escribir_entera`, hasta el cambio de nombre: lo que, si falla, deja la
+/// anterior como estaba.
+fn escribir_y_cambiar(
+    mut f: std::fs::File,
+    tmp: &str,
+    path: &str,
+    bytes: &[u8],
+    previo: Option<std::fs::Metadata>,
+) -> std::io::Result<()> {
+    let mitad = bytes.len() / 2;
+    f.write_all(&bytes[..mitad])?;
+    punto_exportacion(1)?;
+    f.write_all(&bytes[mitad..])?;
+    if let Some(anterior) = previo {
+        dar_lo_de_la_anterior(&f, &anterior)?;
+    }
+    f.sync_all()?;
+    drop(f);
+    punto_exportacion(2)?;
+    std::fs::rename(tmp, path)
+}
+
+/// ⚠️ §820 · **Lo que la nueva toma de la anterior: su dueno, su grupo y sus bits de modo**, parte de
+/// lo que la escritura en sitio conservaba sin hacer nada. El cambio de nombre deja en el sitio un
+/// fichero nuevo, del usuario y del grupo del proceso -o del directorio, si tiene setgid-: con los
+/// permisos de la anterior y otro grupo, sus bits de grupo abririan la instantanea -en claro, si la
+/// capa no tiene clave- a quien antes no la leia. En Unix, primero el dueno y el grupo
+/// (`fchown`), y despues los permisos. Sin privilegios, cambiar el dueno falla, y se pone solo el
+/// grupo, que el dueno de un fichero puede poner si es uno de los suyos. Si tampoco se puede, la
+/// nueva se queda con los bits del dueno (`& 0o700`): sin los de grupo y sin los de otros, que con
+/// otro grupo tambien cambian a quien alcanzan. Fuera de Unix, los permisos. Lo mide
+/// `la_exportacion_guarda_los_permisos_de_la_anterior_y_no_sustituye_lo_que_no_es_un_fichero`, (e)
+/// y (f); el (e), como root.
+///
+/// Lo que NO toma: las ACL POSIX de la anterior y sus demas atributos extendidos, que la escritura
+/// en sitio conservaba. Con una ACL extendida, los bits de grupo del modo son su mascara, y la nueva,
+/// sin ACL, se los da al grupo dueno. Medido en la sesion con un test que no queda en el arbol: una
+/// anterior 0640 con `user:4242:r--`, `group::---` y `mask::r--` deja una nueva 0640 sin ACL, que el
+/// grupo dueno lee -en claro, si la capa no tiene clave- y antes no leia. Copiarlas pide
+/// `fgetxattr` y `fsetxattr`, una dependencia que la capa no tiene. Se declara, sin test.
+fn dar_lo_de_la_anterior(f: &std::fs::File, anterior: &std::fs::Metadata) -> std::io::Result<()> {
+    #[cfg(unix)]
+    let permisos = {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        let modo = anterior.permissions().mode();
+        let con_su_grupo = cambiar_dueno(f, Some(anterior.uid()), Some(anterior.gid())).is_ok()
+            || cambiar_dueno(f, None, Some(anterior.gid())).is_ok();
+        let modo = if con_su_grupo { modo } else { modo & 0o700 };
+        std::fs::Permissions::from_mode(modo)
+    };
+    #[cfg(not(unix))]
+    let permisos = anterior.permissions();
+    f.set_permissions(permisos)
+}
+
+/// `fchown`, y en los tests su gancho: si el hilo lo pidio en `FALLAR_DUENO`, falla como sin
+/// privilegios.
+#[cfg(all(unix, not(test)))]
+#[inline(always)]
+fn cambiar_dueno(f: &std::fs::File, uid: Option<u32>, gid: Option<u32>) -> std::io::Result<()> {
+    std::os::unix::fs::fchown(f, uid, gid)
+}
+
+#[cfg(all(unix, test))]
+fn cambiar_dueno(f: &std::fs::File, uid: Option<u32>, gid: Option<u32>) -> std::io::Result<()> {
+    if FALLAR_DUENO.with(|c| c.get()) {
+        return Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
+    }
+    std::os::unix::fs::fchown(f, uid, gid)
+}
+
+/// El paso 5, despues del cambio de nombre: el directorio, donde vive el nombre. Una ruta sin
+/// directorio (`copia.bin`) es del directorio actual.
+fn sincronizar_directorio(path: &str) -> std::io::Result<()> {
+    punto_exportacion(3)?;
+    #[cfg(unix)]
+    {
+        let p = std::path::Path::new(path);
+        let dir = match p.parent() {
+            Some(d) if !d.as_os_str().is_empty() => d,
+            _ => std::path::Path::new("."),
+        };
+        std::fs::File::open(dir)?.sync_all()?;
+    }
+    #[cfg(not(unix))]
+    let _ = path;
+    Ok(())
+}
+
+// §820 · Lo que inyectan los tests de la exportacion en el punto k: 1, con la mitad del temporal
+// escrita; 2, entero, sincronizado y cerrado, antes del cambio de nombre; 3, despues, al sincronizar
+// el directorio. `punto_exportacion(k)` entra en panico si el hilo lo pidio en
+// `MORIR_EN_EXPORTACION`, o devuelve un error si lo pidio en `FALLAR_EN_EXPORTACION`, que sigue el
+// camino de un error de verdad en ese punto. El panico es la aproximacion de la muerte de
+// `persistence::punto`: corre los `Drop`, y aqui lo unico abierto es el temporal, que se cierra sin
+// mas. Fuera de los tests no hace nada y no se compila nada. Y `FALLAR_DUENO` hace fallar el
+// `fchown` de `dar_lo_de_la_anterior`, como sin privilegios.
+#[cfg(test)]
+thread_local! {
+    pub(crate) static MORIR_EN_EXPORTACION: std::cell::Cell<Option<u8>> = const { std::cell::Cell::new(None) };
+    pub(crate) static FALLAR_EN_EXPORTACION: std::cell::Cell<Option<u8>> = const { std::cell::Cell::new(None) };
+    pub(crate) static FALLAR_DUENO: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(test)]
+fn punto_exportacion(k: u8) -> std::io::Result<()> {
+    if MORIR_EN_EXPORTACION.with(|m| m.get()) == Some(k) {
+        panic!("§820: muerte inyectada en el punto {k} de la exportacion");
+    }
+    if FALLAR_EN_EXPORTACION.with(|m| m.get()) == Some(k) {
+        return Err(std::io::Error::other(format!("§820: fallo inyectado en el punto {k} de la exportacion")));
+    }
+    Ok(())
+}
+
+#[cfg(not(test))]
+#[inline(always)]
+fn punto_exportacion(_: u8) -> std::io::Result<()> {
+    Ok(())
 }

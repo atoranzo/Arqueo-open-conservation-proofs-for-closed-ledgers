@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 86 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 43 abiertas, 87 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-y el §815, que abre la 129.
+el §815, que abre la 129, y el §820, que cierra la 120.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -3283,7 +3283,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   (simulado con el ruido medido: frente a una correlación verdadera de 0,7, el 83 %
   contra el 52 %). Cuesta 31 s en vez de 15.
 
-- [ ] **120. La exportación de la instantánea no es atómica: trunca en sitio la anterior (§812).**
+- [x] **120. La exportación de la instantánea no es atómica: trunca en sitio la anterior (§812).**
   `export_snapshot` abre el destino con `File::create` (`crates/zk-ssl/src/snapshot.rs:304`), que lo
   trunca, y escribe encima. Un proceso que muere a mitad deja en el sitio de la instantánea buena una
   a medias, que no importa —la importación verifica las raíces—, y la anterior ya no está. Y la
@@ -3295,6 +3295,41 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   keystore (`escribir_entero`, en `crates/zk-ssl-sdk/src/keystore.rs`), y que barra el temporal que
   deje un proceso muerto. **Qué la cierra**: un test que mata la exportación a mitad y encuentra en
   el destino la instantánea anterior, entera, que importa; con su mutante, la escritura en sitio.
+  ✅ **CERRADA EN EL §820.** `export_snapshot` escribe la instantánea entera en
+  `{instantánea}.exportando`, en su mismo directorio, la sincroniza, la cambia de nombre por el destino y sincroniza el
+  directorio (`escribir_entera`, al final de `snapshot.rs`). **Qué la cierra**, cumplido: con una
+  muerte inyectada a mitad (`una_exportacion_muerta_a_mitad_deja_la_anterior_y_su_temporal_no_se_confunde`)
+  y con un error inyectado a mitad (`una_exportacion_que_falla_a_mitad_deja_la_anterior_entera`), el
+  destino sigue siendo la anterior, byte a byte, e importa; y una que acaba deja la nueva. Su
+  mutante, la escritura en sitio otra vez con los mismos puntos de inyección, cae en los dos porque
+  la anterior se tocó. El temporal lleva lo que llevaría la nueva —cifrado si la capa tiene clave, en
+  claro si no: una capa sin clave que exporta sobre una cifrada, como la importada de una (la 121),
+  deja un claro junto a ella, el mismo que dejaría si acabara—, nace 0600 en Unix, y la importación
+  no lo lee. De lo que pide, una cosa no se hace así: el
+  temporal que deja una exportación muerta **no se barre**, porque la biblioteca no sabe si es de
+  una exportación viva, y borrarlo rompería el entera o nada de esa; la exportación siguiente a ese
+  destino rehúsa nombrándolo, y se borra a mano. No barrerlo es de la sesión, y reversible: falla
+  cerrado. Y dos que no pedía, porque el cambio de nombre las abriría: la nueva toma de la anterior,
+  con privilegios, su dueño —sin ellos, es del usuario del proceso—, y su grupo y sus bits de modo
+  —si no puede tomar su grupo, se queda sin los bits de grupo y de otros, que con otro grupo
+  abrirían la instantánea a quien antes no la leía; una nueva nace 0600, y hasta el §820 nacía con
+  0666 menos la umask—, y un enlace como destino se rehúsa
+  (`la_exportacion_guarda_los_permisos_de_la_anterior_y_no_sustituye_lo_que_no_es_un_fichero`); un
+  FIFO, un socket o un dispositivo, también, sin test. Un directorio también, por la misma guarda y
+  con test; ya lo rehusaba `File::create`, y lo rehusaría igual el cambio de nombre (`EISDIR`). Lo
+  que la escritura en sitio conservaba y la nueva no toma: las ACL POSIX de la anterior y sus demás
+  atributos extendidos. Con una ACL extendida, los bits de grupo del modo son su máscara, y la nueva,
+  sin ACL, se los da al grupo dueño: medido en la sesión con la capa, con un test que no queda en el
+  árbol, una anterior 0640 con `user:4242:r--`, `group::---` y `mask::r--` deja una nueva 0640 sin
+  ACL, que el grupo dueño lee —en claro, si la capa no tiene clave— y antes no leía. Copiarlas pide
+  `fgetxattr` y `fsetxattr`, una dependencia que la capa no tiene; se declara, sin test. Cambia lo
+  que hace la API en dos cosas más: exportar pide poder
+  escribir en el directorio del destino, para crear el temporal, y `/dev/stdout` —un enlace— o un
+  FIFO ya no son destinos (una copia por una tubería). Los bloques de la anterior se liberan al
+  borrarla como se liberaban al truncarla: lo que guarden no lo alcanza la biblioteca (`SECURITY.md`
+  §3.14). Sin medir: un corte de corriente —quitar el `sync_all` del temporal y la sincronización
+  del directorio no tumba ningún test de la capa, medido—, y que un destino que no se puede abrir
+  para escribir se rehúse (en la máquina de la sesión los tests corren como root).
 
 - [ ] **121. Una capa importada de una instantánea cifrada nace sin clave, y se reexporta en claro
   (§812).** `import_snapshot_with_key` descifra la instantánea con su frase, pero la capa que devuelve

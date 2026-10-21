@@ -25,7 +25,8 @@
   —también el que el nodo abre en claro—, `<libro>.recifrando` y `<libro>.retirado`, y la regla
   con que la apertura los lee. ⚠️ §816: y un tercero, `<libro>.cerrojo`: un fichero vacío que la capa
   crea junto a todo libro que abre y no borra nunca, el cerrojo del libro.
-- **Asiento(s) de AUDITORIA:** §702, §812, §816; el §819, que da test a la negativa del barrido y a su aviso.
+- **Asiento(s) de AUDITORIA:** §702, §812, §816; el §819, que da test a la negativa del barrido y a su aviso;
+  y el §820, que cierra la 120: la exportación de la instantánea, entera o nada.
 
 **Número.** El 0001 estaba reservado a esto desde el §206: la nota de numeración del RFC-0002 lo
 dice, y los RFC-0003 a 0006 lo repiten. Este RFC lo ocupa.
@@ -372,9 +373,12 @@ que la apertura los lee (⚠️ §816: y el tercero, el cerrojo del libro).
   suite); queda la ventana entre esa comprobación y la llamada que sigue, y fuera de Unix sólo se mira
   que el nombre siga siendo un fichero. Con un recifrado ya pasado su compromiso, el cerrojo de sled
   de su `.retirado` sigue excluyendo (medido por el revisor). No se borra mientras haya alguien.
-- **La instantánea.** `export_snapshot` trunca en sitio la anterior, y una capa importada de una
-  instantánea cifrada nace sin clave y, si se vuelve a exportar, sale en claro. Son de la E2, y
-  quedan fuera de esta etapa: son las entradas 120 y 121 del `BACKLOG.md`, que abre el §812.
+- **La instantánea.** ⚠️ §820: decía «`export_snapshot` trunca en sitio la anterior»; desde el §820 la
+  sustituye entera, con un temporal en su mismo directorio, `{instantánea}.exportando`, y un cambio de
+  nombre; el temporal que deja una exportación muerta lleva lo que llevaría el destino y no se barre.
+  Y una capa importada de una instantánea cifrada nace sin clave y, si se vuelve a exportar, sale en
+  claro. Son de la E2, y quedan fuera de esta etapa: son las entradas 120 y 121 del `BACKLOG.md`, que
+  abre el §812; la 120 la cierra el §820.
 
 **El remedio de un libro ya migrado.** Un libro que migró el código del §702 —desde `2ac6db4`, el
 07-10-2026, hasta el §812— puede llevar en sus ficheros el resto v1, y uno pequeño o quieto lo lleva
@@ -564,7 +568,9 @@ privado, y reversible, como lo de arriba, mientras este RFC no esté ACEPTADO.
   y no se promete: los bloques
   que el sistema de ficheros libera al borrar —también los del keystore v1 que la E3 reescribe con un
   `rename` (deducido, sin medir), los segmentos que sled trunca, y la instantánea anterior, que
-  `export_snapshot` trunca en sitio—; un SSD, un sistema copy-on-write o de log, sus instantáneas y
+  `export_snapshot` sustituye entera con un cambio de nombre (⚠️ §820: decía «que `export_snapshot`
+  trunca en sitio»; sus bloques se liberan igual, y una exportación muerta deja a su lado
+  `{instantánea}.exportando`)—; un SSD, un sistema copy-on-write o de log, sus instantáneas y
   el journal; las copias del directorio y las instantáneas exportadas antes, que siguen abriendo con
   la frase vieja; un enlace duro hecho fuera; y la memoria —swap, hibernación, volcados—. Y un
   `{instantánea}.tmp-descifrada`, EN CLARO, si un proceso murió a mitad de una importación entre

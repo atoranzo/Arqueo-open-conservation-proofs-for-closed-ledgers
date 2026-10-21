@@ -5993,3 +5993,235 @@ fn si_no_puede_barrer_el_claro_la_importacion_falla_sin_importar_nada() {
     let _ = std::fs::remove_file(&file);
     quitar_e4(&path);
 }
+
+/// El temporal de la exportacion a `file`, formado como lo forma la capa.
+fn exportando(file: &str) -> String {
+    format!("{file}{}", crate::snapshot::SUFIJO_EXPORTANDO)
+}
+
+/// Corre `f` con un ERROR inyectado en el punto `k` de la exportacion
+/// (`snapshot::FALLAR_EN_EXPORTACION`): 1, con la mitad del temporal escrita; 2, entero y
+/// sincronizado, antes del cambio de nombre; 3, despues, al sincronizar el directorio.
+fn fallar_exportacion_en<T>(k: u8, f: impl FnOnce() -> T) -> T {
+    use crate::snapshot::FALLAR_EN_EXPORTACION;
+    FALLAR_EN_EXPORTACION.with(|m| m.set(Some(k)));
+    let r = f();
+    FALLAR_EN_EXPORTACION.with(|m| m.set(None));
+    r
+}
+
+/// Corre `f` con una MUERTE inyectada en el punto `k` de la exportacion
+/// (`snapshot::MORIR_EN_EXPORTACION`). Dice si murio. Es la aproximacion de `morir_en`: el panico
+/// corre los `Drop`, y lo unico abierto es el temporal, que se cierra sin mas.
+fn morir_exportacion_en(k: u8, f: impl FnOnce()) -> bool {
+    use crate::snapshot::MORIR_EN_EXPORTACION;
+    MORIR_EN_EXPORTACION.with(|m| m.set(Some(k)));
+    let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
+    MORIR_EN_EXPORTACION.with(|m| m.set(None));
+    r.is_err()
+}
+
+/// ⚠️ §820 · **Una exportacion que falla a mitad deja la instantanea anterior entera y legible, y
+/// una que acaba deja la nueva** (la 120 del `BACKLOG.md`). Hasta el §820 `export_snapshot` truncaba
+/// el destino y escribia encima: un fallo a mitad dejaba una a medias y la anterior ya no estaba.
+/// Con un error inyectado (1) con la mitad del temporal escrita y (2) con el temporal entero, antes
+/// del cambio de nombre, el destino sigue byte a byte siendo la anterior, importa con su raiz, y no
+/// queda nada a su lado. (3) Uno al sincronizar el directorio, ya cambiado el nombre, deja la nueva
+/// y lo dice. (4) Sin fallos, el destino es la nueva y el temporal no queda.
+#[test]
+fn una_exportacion_que_falla_a_mitad_deja_la_anterior_entera() {
+    let file = format!("{}.instantanea", temp_path("export_falla"));
+    let tmp = exportando(&file);
+    let _ = std::fs::remove_file(&file);
+    let _ = std::fs::remove_file(&tmp);
+    let mut layer = new_layer();
+    open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+    layer.export_snapshot(&file).expect("la anterior");
+    let anterior = std::fs::read(&file).unwrap();
+    let raiz_anterior = layer.state_root();
+    open_and_fund(&mut layer, SK_BOB, 500);
+    let raiz_nueva = layer.state_root();
+    assert_ne!(raiz_nueva, raiz_anterior, "premisa: la nueva es otra");
+    let solo = junto_a(&file);
+    assert_eq!(solo.len(), 1, "premisa: solo el destino");
+
+    for k in [1u8, 2] {
+        let r = fallar_exportacion_en(k, || layer.export_snapshot(&file).map(|_| ()));
+        assert!(r.is_err(), "({k}) el fallo inyectado no llego a la exportacion");
+        assert_eq!(
+            std::fs::read(&file).ok().as_deref(),
+            Some(&anterior[..]),
+            "CRITICO: ({k}) una exportacion que fallo a mitad toco la anterior"
+        );
+        let l = SovereignLayer::import_snapshot(&file).expect("la anterior importa");
+        assert_eq!(l.state_root(), raiz_anterior, "({k})");
+        assert!(!hay(&tmp), "({k}) el fallo dejo el temporal");
+        assert_eq!(junto_a(&file), solo, "({k}) quedo algo junto al destino");
+    }
+
+    let e = fallar_exportacion_en(3, || layer.export_snapshot(&file).map(|_| ()))
+        .expect_err("(3) el fallo inyectado no llego a la exportacion")
+        .to_string();
+    assert!(e.contains("en su sitio"), "(3) no dice que la nueva esta en su sitio: {e}");
+    let l = SovereignLayer::import_snapshot(&file).expect("(3) la nueva importa");
+    assert_eq!(l.state_root(), raiz_nueva, "(3)");
+    assert!(!hay(&tmp), "(3)");
+
+    std::fs::write(&file, &anterior).unwrap();
+    layer.export_snapshot(&file).expect("(4) exportar");
+    let l = SovereignLayer::import_snapshot(&file).expect("(4) la nueva importa");
+    assert_eq!(l.state_root(), raiz_nueva, "(4) la exportacion no dejo la nueva");
+    assert_eq!(junto_a(&file), solo, "(4) quedo algo junto al destino");
+    let _ = std::fs::remove_file(&file);
+}
+
+/// ⚠️ §820 · **Una exportacion muerta a mitad deja la anterior entera, y su temporal no se confunde
+/// con ella.** Con una capa cifrada: (a) una muerte con la mitad del temporal escrita deja el
+/// destino byte a byte como estaba, importando con la frase; el temporal queda, con la misma marca y
+/// cabecera que el destino -cifrado como el, sin el saldo en claro-, 0600 en Unix, y no importa.
+/// (b) La exportacion siguiente lo encuentra, rehusa nombrandolo y no toca ni el destino ni el
+/// temporal: no sabe si es de una viva. (c) Borrado a mano, exporta; y una muerte con el temporal
+/// entero, antes del cambio de nombre, tampoco toca el destino.
+#[test]
+fn una_exportacion_muerta_a_mitad_deja_la_anterior_y_su_temporal_no_se_confunde() {
+    use crate::crypto::LedgerKey;
+    let (path, _, _) = libro_e4("export_muere");
+    let file = format!("{path}.instantanea");
+    let tmp = exportando(&file);
+    let _ = std::fs::remove_file(&file);
+    let _ = std::fs::remove_file(&tmp);
+    let key = LedgerKey::from_passphrase(FRASE_VIEJA_E4);
+    let mut layer = abrir_e4(&path, FRASE_VIEJA_E4).expect("abrir");
+    layer.export_snapshot(&file).expect("la anterior");
+    let anterior = std::fs::read(&file).unwrap();
+    let raiz_anterior = layer.state_root();
+    const SALDO: u64 = 0x05A3_B7C9;
+    open_and_fund(&mut layer, 0xC4A0, SALDO);
+
+    assert!(morir_exportacion_en(1, || drop(layer.export_snapshot(&file))), "(a) no murio");
+    assert_eq!(
+        std::fs::read(&file).ok().as_deref(),
+        Some(&anterior[..]),
+        "CRITICO: (a) una exportacion muerta a mitad toco la anterior"
+    );
+    let l = SovereignLayer::import_snapshot_with_key(&file, &key).expect("(a) la anterior importa");
+    assert_eq!(l.state_root(), raiz_anterior, "(a)");
+    let medio = std::fs::read(&tmp).expect("(a) la muerte no dejo el temporal");
+    let cabecera = 1 + crate::crypto::LARGO_CABECERA;
+    assert_eq!(medio[..cabecera], anterior[..cabecera], "(a) el temporal no va cifrado como el destino");
+    let patron = &SALDO.to_le_bytes()[..4];
+    assert!(!medio.windows(4).any(|w| w == patron), "CRITICO: (a) el temporal lleva el saldo en claro");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let modo = std::fs::metadata(&tmp).unwrap().permissions().mode() & 0o777;
+        assert_eq!(modo, 0o600, "(a) el temporal no nacio 0600");
+    }
+    assert!(
+        SovereignLayer::import_snapshot_with_key(&tmp, &key).is_err(),
+        "CRITICO: (a) el temporal a medias importo"
+    );
+
+    let e = layer.export_snapshot(&file).map(|_| ()).expect_err("(b) exporto con el temporal al lado");
+    let e = e.to_string();
+    assert!(e.contains(&tmp), "(b) el error no nombra el temporal: {e}");
+    assert_eq!(std::fs::read(&file).unwrap(), anterior, "(b) toco el destino");
+    assert_eq!(std::fs::read(&tmp).unwrap(), medio, "(b) toco el temporal");
+
+    std::fs::remove_file(&tmp).unwrap();
+    layer.export_snapshot(&file).expect("(c) exportar");
+    let actual = std::fs::read(&file).unwrap();
+    assert!(!hay(&tmp), "(c)");
+    open_and_fund(&mut layer, 0xC4A1, 1);
+    assert!(morir_exportacion_en(2, || drop(layer.export_snapshot(&file))), "(c) no murio");
+    assert_eq!(std::fs::read(&file).unwrap(), actual, "CRITICO: (c) la muerte antes del cambio de nombre toco el destino");
+    drop(layer);
+    let _ = std::fs::remove_file(&tmp);
+    let _ = std::fs::remove_file(&file);
+    quitar_e4(&path);
+}
+
+/// ⚠️ §820 · **La exportacion no abre lo que la escritura en sitio cerraba, salvo lo que cerrara una
+/// ACL.** Cambiar de nombre un
+/// temporal por el destino le daria el dueno, el grupo y los permisos del temporal, y sustituiria
+/// un enlace -o un FIFO, un socket o un dispositivo- en vez de escribir a traves de el; un
+/// directorio ya lo rehusa el cambio de nombre (`EISDIR`). En Unix: (a) una instantanea nueva nace
+/// 0600; (b) una que sustituye a otra se queda con los bits de modo de la anterior, como en sitio; (c)
+/// un enlace como destino se rehusa, el enlace se queda y su destino no se toca; (d) un directorio
+/// tampoco -lo rehusaria igual el cambio de nombre: (d) no distingue la guarda, y (c) si-; (e) con
+/// privilegios, la nueva se queda con el dueno y el grupo de la anterior; y (f) si no puede tomar su
+/// grupo (`snapshot::FALLAR_DUENO`), sin los bits de grupo ni de otros. (e) pide cambiar el dueno
+/// de un fichero: sin privilegios no se puede preparar, y lo dice por la salida de errores. No mide
+/// las ACL POSIX de la anterior, que la nueva no toma (`dar_lo_de_la_anterior`).
+#[test]
+fn la_exportacion_guarda_los_permisos_de_la_anterior_y_no_sustituye_lo_que_no_es_un_fichero() {
+    let file = format!("{}.instantanea", temp_path("export_modos"));
+    let _ = std::fs::remove_file(&file);
+    let _ = std::fs::remove_file(exportando(&file));
+    let mut layer = new_layer();
+    open_and_fund(&mut layer, SK_ALICE, 1_000);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let modo = |p: &str| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        layer.export_snapshot(&file).expect("(a) exportar");
+        assert_eq!(modo(&file), 0o600, "(a) una instantanea nueva no nacio 0600");
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o640)).unwrap();
+        layer.export_snapshot(&file).expect("(b) exportar");
+        assert_eq!(modo(&file), 0o640, "(b) la nueva no conserva los permisos de la anterior");
+
+        let destino = format!("{file}.destino");
+        let enlace = format!("{file}.enlace");
+        let _ = std::fs::remove_file(&enlace);
+        std::fs::write(&destino, b"del operador").unwrap();
+        std::os::unix::fs::symlink(&destino, &enlace).unwrap();
+        let e = layer.export_snapshot(&enlace).map(|_| ()).expect_err("CRITICO: (c) exporto sobre un enlace");
+        assert!(e.to_string().contains(&enlace), "(c) el error no nombra el enlace: {e}");
+        assert!(
+            std::fs::symlink_metadata(&enlace).map(|m| m.file_type().is_symlink()).unwrap_or(false),
+            "(c) el enlace no se quedo"
+        );
+        assert_eq!(std::fs::read(&destino).ok().as_deref(), Some(&b"del operador"[..]), "(c) se toco su destino");
+        assert!(!hay(&exportando(&enlace)), "(c) quedo un temporal");
+        let _ = std::fs::remove_file(&enlace);
+        let _ = std::fs::remove_file(&destino);
+    }
+    let dir = format!("{file}.dir");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir(&dir).unwrap();
+    let e = layer.export_snapshot(&dir).map(|_| ()).expect_err("(d) exporto sobre un directorio");
+    assert!(e.to_string().contains(&dir), "(d) el error no nombra el directorio: {e}");
+    assert!(std::fs::read_dir(&dir).map(|mut d| d.next().is_none()).unwrap_or(false), "(d) se toco el directorio");
+    assert!(!hay(&exportando(&dir)), "(d) quedo un temporal");
+    let _ = std::fs::remove_dir_all(&dir);
+    #[cfg(unix)]
+    {
+        use crate::snapshot::FALLAR_DUENO;
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        let modo = |p: &str| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        let dueno = |p: &str| {
+            let m = std::fs::metadata(p).unwrap();
+            (m.uid(), m.gid())
+        };
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o640)).unwrap();
+        if std::os::unix::fs::chown(&file, Some(4242), Some(4343)).is_ok() {
+            layer.export_snapshot(&file).expect("(e) exportar");
+            assert_eq!(dueno(&file), (4242, 4343), "CRITICO: (e) la nueva no es del dueno y del grupo de la anterior");
+            assert_eq!(modo(&file), 0o640, "(e)");
+        } else {
+            eprintln!("(e) sin medir: cambiar el dueno de un fichero pide privilegios");
+        }
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o644)).unwrap();
+        FALLAR_DUENO.with(|c| c.set(true));
+        let r = layer.export_snapshot(&file).map(|_| ());
+        FALLAR_DUENO.with(|c| c.set(false));
+        r.expect("(f) exportar");
+        assert_eq!(
+            modo(&file),
+            0o600,
+            "CRITICO: (f) sin poder tomar el grupo de la anterior, la nueva conserva bits de grupo u otros"
+        );
+        assert!(!hay(&exportando(&file)), "(f) quedo un temporal");
+    }
+    let _ = std::fs::remove_file(&file);
+}

@@ -1038,9 +1038,18 @@ prometer—. Se borra, y se dice lo que puede seguir guardando copias:
 - **los bloques que el sistema de ficheros libera** al borrar el directorio viejo; y los mismos
   bloques de otros restos: el inodo del keystore v1 que la E3 reescribe con un `rename` (deducido,
   sin medir: en la máquina de la sesión no se podía leer el dispositivo), los segmentos que sled
-  trunca, la instantánea anterior, que `export_snapshot` trunca en sitio (la entrada 120 del
-  `BACKLOG.md`), y los `{instantánea}.tmp-descifrada` que la importación escribía EN CLARO y
-  borraba, entre `5d2833e` (28-07-2026) y `c87d7d6` (§774, 08-10-2026);
+  trunca, la instantánea anterior, que `export_snapshot` sustituye entera con un cambio de nombre
+  (⚠️ §820: decía «que `export_snapshot` trunca en sitio (la entrada 120 del `BACKLOG.md`)»; la 120 la
+  cierra el §820, y los bloques de la anterior se liberan igual. Una exportación muerta deja junto al
+  destino `{instantánea}.exportando`, entero o a medias, con lo que llevaría el destino —sellado con
+  la clave que tenía la capa, o en claro si no tenía clave; uno entero de antes de un `recifrar` abre
+  con la frase vieja (deducido, sin medir), y uno a medias no se importa—; no se barre: la exportación
+  siguiente a ese destino rehúsa nombrándolo, y se borra a mano. La nueva toma de la anterior, con
+  privilegios, su dueño, y su grupo y sus bits de modo, pero no sus ACL POSIX ni sus demás atributos
+  extendidos: con una ACL extendida, los bits de grupo del modo son su máscara, y la nueva se los da
+  al grupo dueño, que lee así una instantánea —en claro, si la capa no tiene clave— que antes no
+  leía), y los `{instantánea}.tmp-descifrada` que la importación escribía EN CLARO y borraba, entre
+  `5d2833e` (28-07-2026) y `c87d7d6` (§774, 08-10-2026);
 - **un `.tmp-descifrada` entero, en claro**, si un proceso murió a mitad de una importación en esa
   ventana: el §774 quitó el escritor y no barría. Desde el §812, por decisión del autor, la
   importación de esa misma instantánea lo barre: si junto a ella hay un fichero con ese nombre, lo
@@ -1286,7 +1295,7 @@ sólo ata el sellado— y la 3.13 («Solo la cifrada las protege»), que llevan 
 instantánea está en claro y que, si se esperaba una cifrada, pudo ponerla quien escribe donde se
 guarda: `import_snapshot`, que no recibe clave, la importaría sin autenticar nada. Falla cerrado.
 Lo ata `con_clave_una_instantanea_en_claro_no_se_importa`, al final de `crates/zk-ssl/src/tests.rs`
-(⚠️ §819: ya no es el último: detrás va el del §819, en la 3.14): con la frase, con otra frase y con una
+(⚠️ §819: ya no es el último: detrás va el del §819, en la 3.14; ⚠️ §820: y detrás de ése, los tres del §820, también en la 3.14): con la frase, con otra frase y con una
 clave ya fijada a su KDF, una en claro no se importa; el mismo cuerpo tras una marca que no es de
 cifrado, tampoco; ni una v8 en claro; y sin clave, sí.
 
