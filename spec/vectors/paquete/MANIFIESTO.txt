@@ -8,6 +8,11 @@ posicion-v2-sin-acuse.json|0|3/3 sin acuse en el paquete: la cabeza sola queda d
 posicion-v2-cero-cofirmas.json|0|cofirmas: el paquete v2 no trae ninguna: la cabeza queda sola
 extension.json|0|VERDE: la extension se sostiene sin el nodo
 rechazo-json-ilegible.json|1|JSON ilegible
+rechazo-json-nan.json|1|JSON ilegible
+rechazo-json-infinity.json|1|JSON ilegible
+rechazo-json-menos-infinity.json|1|JSON ilegible
+rechazo-json-1e400.json|1|JSON ilegible
+rechazo-json-entero-401-cifras.json|1|JSON ilegible
 rechazo-v-ausente.json|1|el paquete no declara su version en `v`
 rechazo-v-cadena.json|1|el paquete no declara su version en `v`
 rechazo-v-0.json|1|el paquete declara v:0

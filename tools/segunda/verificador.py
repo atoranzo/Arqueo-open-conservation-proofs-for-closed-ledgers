@@ -22,6 +22,7 @@ traves de medio.py. Lo juzga tools/conformidad.sh con los manifiestos de spec/ve
 """
 import json
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -992,6 +993,67 @@ def ancla_cofirmada(doc):
     return salida
 
 
+# §852 · Los numeros que serde_json no lee y `json.loads` si. El kit lee el sobre con serde_json
+# (1.0.151, el del Cargo.lock, sin `float_roundtrip`): `NaN`, `Infinity` y `-Infinity` no son JSON, y
+# un numero que no cabe en un f64 es `number out of range`. `json.loads` acepta las tres constantes y
+# lee `1e400` como infinito y un entero de 401 cifras como un int de Python; en un campo que este
+# verificador no lee, el sobre salia VERDE. Ahora los tres son `JSON ilegible`. La regla del rango es
+# la de `_fuera_de_rango` en cable.py, copiada y no importada: cable.py importa juez_cabezas.py, y el
+# verificador no carga un juez. Como alli, no es el redondeo correcto: compone el f64 como serde_json,
+# y `1.7976931348623158e308`, que `float()` lee finito, aqui no se lee (medido contra el kit, §852).
+U64 = (1 << 64) - 1
+I32 = (1 << 31) - 1
+POW10 = tuple(float(f"1e{i}") for i in range(309))  # la tabla 1e0..1e308 del lector
+_NUMERO = re.compile(r"-?(\d+)(?:\.(\d+))?(?:[eE]([+-]?)(\d+))?")
+
+
+def _fuera_de_rango(literal):
+    """Si serde_json da `number out of range`: la mantisa en un u64 -las cifras que ya no caben se
+    dejan caer y, si son de la parte entera, suben el exponente-, el exponente en un i32 y una sola
+    potencia de 10 de la tabla; y el numero no se lee si sale infinito."""
+    entera, fraccion, signo, exp = _NUMERO.fullmatch(literal).groups()
+    mant, e, lleno = 0, 0, False
+    for c in entera:
+        if lleno or mant * 10 + int(c) > U64:
+            lleno, e = True, e + 1
+        else:
+            mant = mant * 10 + int(c)
+    for c in fraccion or "":
+        if mant * 10 + int(c) > U64:
+            break
+        mant, e = mant * 10 + int(c), e - 1
+    if exp is not None:
+        cifras = exp.lstrip("0") or "0"
+        if len(cifras) > 10 or int(cifras) > I32:  # el exponente no cabe en un i32
+            return mant != 0 and signo != "-"
+        e = max(-I32 - 1, min(I32, e - int(cifras) if signo == "-" else e + int(cifras)))
+    f = float(mant)
+    while True:
+        if -308 <= e <= 308:
+            return e >= 0 and f * POW10[e] == float("inf")
+        if f == 0.0:
+            return False
+        if e >= 0:
+            return True
+        f, e = f / 1e308, e + 308
+
+
+def _sin_constantes(nombre):
+    raise ValueError(f"{nombre} no es JSON")
+
+
+def _real(literal):
+    if _fuera_de_rango(literal):
+        raise ValueError(f"numero fuera del rango de un f64: {literal[:40]}")
+    return float(literal)
+
+
+def _entero(literal):
+    if _fuera_de_rango(literal):
+        raise ValueError(f"numero fuera del rango de un f64: {literal[:40]}")
+    return int(literal)
+
+
 def juzgar(ruta):
     try:
         with open(ruta, "rb") as f:
@@ -999,7 +1061,7 @@ def juzgar(ruta):
     except OSError as e:
         raise Rojo(f"no se puede leer {ruta}: {e.strerror} (os error {e.errno})")
     try:
-        doc = json.loads(crudo.decode("utf-8"))
+        doc = json.loads(crudo.decode("utf-8"), parse_constant=_sin_constantes, parse_float=_real, parse_int=_entero)
         # §810: una suplente sola (`\ud800`), que json.loads deja pasar y serde_json no: JSON ilegible, como el binario
         json.dumps(doc, ensure_ascii=False).encode("utf-8")
     except (ValueError, UnicodeDecodeError) as e:

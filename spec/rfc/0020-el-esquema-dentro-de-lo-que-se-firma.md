@@ -220,8 +220,9 @@ conservan su preámbulo y su veredicto. Lo que nace y lo que se muda:
 - **Se mudan siete líneas de manifiesto, con sus vectores**, porque pinan entera la enumeración del
   conjunto de versiones que se acepta, que derivan `VersionCabeza::texto()` y sus hermanas: con la
   v7 dentro, «v2, v3, v4, v5 o v6» pasa a decir otra cosa. Son
-  `spec/vectors/cable/MANIFIESTO.txt:17`, `:18` y `:21`, `spec/vectors/paquete/MANIFIESTO.txt:21` y
-  `:25`, `spec/vectors/rechazo/MANIFIESTO.txt:50` y `spec/vectors/rotacion/MANIFIESTO.txt:72`,
+  `spec/vectors/cable/MANIFIESTO.txt:17`, `:18` y `:21`, `spec/vectors/paquete/MANIFIESTO.txt:26` y
+  `:30` (⚠️ §852: decía `:21` y `:25`; las cinco líneas que el §852 intercala tras la `:10` las bajan
+  cinco), `spec/vectors/rechazo/MANIFIESTO.txt:50` y `spec/vectors/rotacion/MANIFIESTO.txt:72`,
   halladas con `grep` sobre los dieciocho manifiestos; que cambien es DERIVADO de leer quién compone
   su texto. Las que pinan sólo el comienzo —«exige una cabeza v5», «exige cabezas v4»— siguen
   valiendo, porque el manifiesto pide que la salida *contenga* su texto (`spec/RPC.md:1272`). Dos de

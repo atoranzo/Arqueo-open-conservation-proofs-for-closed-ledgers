@@ -6,7 +6,7 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 | fichero | qué es |
 |---|---|
 | `nucleo.py` | la **segunda implementación del NÚCLEO** (`spec/NUCLEO.md`, sección 6) en Python, sin dependencias: el campo de Goldilocks, la permutación Rescue-Prime `Rp64_256`, BLAKE3, la serialización, los dominios, los preámbulos y las composiciones, en el orden exacto de los merges; desde el §800, también los dos preámbulos v7 y el registro de esquemas del RFC-0020, con sus reglas, que el juez comprueba con un falsador |
-| `juez_nucleo.py` | el **juez**: corre los 34 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto. ⚠️ §797: hasta aquí decía «es el único llamador de `nucleo.py`», y ya no lo era: lo importan también `juez_cabezas.py:23`, `verificador.py:25` y `stark.py:30`, y desde el §797 `cable.py` y `juez_cadena.py` |
+| `juez_nucleo.py` | el **juez**: corre los 34 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto. ⚠️ §797: hasta aquí decía «es el único llamador de `nucleo.py`», y ya no lo era: lo importan también `juez_cabezas.py:23`, `verificador.py:31` y `stark.py:30`, y desde el §797 `cable.py` y `juez_cadena.py`. ⚠️ §852: decía `verificador.py:25`, rancia desde el §810, que llevó el `import` a la `:30`; el `import re` del §852 lo lleva a la `:31` |
 | `kat_xmss/xmss.py` | la **verificación XMSS^MT de RFC 8391** para `XMSSMT-SHA2_40/8_256`, el conjunto que la casa firma, escrita desde el texto del RFC y de ningún crate; solo verificar |
 | `juez_cabezas.py` | el **juez de las cabezas firmadas**: para cada cabeza y cofirma de los vectores recompone el `epochDigest` por versión, compara el preámbulo recuperado, verifica la firma con `kat_xmss/xmss.py` y comprueba el índice embebido (`PAQUETE.md`, 2/3 y sección 8); con un falsador que voltea un byte |
 | `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario; desde el §693 declara lo que no lee, en `NO_SOPORTADOS`, y lo dice con el texto reservado `NO SOPORTADO`; y desde el §810 lee el sobre del **ancla cofirmada** (RFC-0013 E4a), que no exige STARK sino el medio: la cabeza, la nota con su firma ML-DSA-44, las cofirmas y la inclusión, con `mldsa44.py` y `medio.py` |
@@ -33,8 +33,9 @@ python3 tools/segunda/juez_cabezas.py
 # 1 ter · el corpus KAT de XMSS^MT: dos implementaciones, los mismos bytes       -> 8 de 8
 python3 tools/segunda/kat_xmss/juez_xmss.py
 
-# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 201 de 201 (§810)
+# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 206 de 206 (§852)
 #   ⚠️ §810: decia 174 de 174 (§780), las cinco familias sin `ancla-cofirmada`, que salia NO SOPORTADO
+#   ⚠️ §852: decia 201 de 201 (§810); los cinco negativos `rechazo-json-*` de `paquete` la llevan a 206
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
 # 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 34 de 34 (§706)
@@ -131,7 +132,7 @@ la sexta, `ancla-cofirmada`, es del §810):
 
 | familia | entradas | segundo verificador |
 |---|---|---|
-| `paquete` (posición v1 y v2, extensión) | 84 | 84 de 84 |
+| `paquete` (posición v1 y v2, extensión; ⚠️ §852: decía 84 y 84 de 84, de antes de los cinco `rechazo-json-*`) | 89 | 89 de 89 |
 | `consumo` (desde el §771, también entre dos claves con `actas`) | 17 | 17 de 17 |
 | `conflicto` | 17 | 17 de 17 |
 | `ancla` | 22 | 22 de 22 |
@@ -171,18 +172,34 @@ letra y el código de salida también. Lo que el binario imprime antes del `ROJO
 seis formas.
 
 Desde el §810 `juzgar` rechaza también una suplente sola (`\ud800`) en una cadena, que serde_json no
-lee y `json.loads` sí: sale `ROJO: JSON ilegible: …`, con exit 1, como en el binario. No rechaza lo
-demás que `json.loads` acepta y serde_json no —`NaN`, `Infinity`, `-Infinity` y un número fuera del
-rango de un `f64` (`1e400`)—: en un campo que la segunda no lee siguen dando VERDE donde el kit dice
-«JSON ilegible», como ya pasaba en el §794 (medido con `"zz": NaN`, `Infinity` y `1e400` en
-`ancla/ancla-derivada.json`). Con el
-`verificador.py` del §794, `ancla/ancla-derivada.json` con un campo `"zz": "\ud800"` salía VERDE, y
+lee y `json.loads` sí: sale `ROJO: JSON ilegible: …`, con exit 1, como en el binario. ⚠️ §852: aquí
+seguía «No rechaza lo demás que `json.loads` acepta y serde_json no —`NaN`, `Infinity`, `-Infinity` y
+un número fuera del rango de un `f64` (`1e400`)—: en un campo que la segunda no lee siguen dando VERDE
+donde el kit dice “JSON ilegible”, como ya pasaba en el §794 (medido con `"zz": NaN`, `Infinity` y
+`1e400` en `ancla/ancla-derivada.json`)». Ya no es verdad para esas cuatro formas: lo dice el
+párrafo siguiente. Con el `verificador.py` del §794, `ancla/ancla-derivada.json` con un campo
+`"zz": "\ud800"` salía VERDE, y
 el binario da `ROJO: JSON ilegible: unexpected end of hex escape …`. Medido con `zk-ssl-verify`
 compilado en este sello, sobre ese sobre y dos de `ancla-cofirmada`, fuera del árbol
 —`cofirmada-un-testigo.json` con un testigo más, `x\ud800`, sin línea en la nota, y con un testigo
 `testigo.invalid/\ud800` que cofirma, firmado por el firmante de prueba de `juez_medio.py`—: en los
 tres, el binario y la segunda dan `JSON ilegible` con exit 1. La letra después de los dos puntos es
 otra (aquí, `'utf-8' codec can't encode …`), como en `paquete/rechazo-json-ilegible.json`.
+
+⚠️ §852 · **Los números que serde_json no lee.** Desde el §852 `juzgar` lee con `parse_constant`,
+`parse_float` y `parse_int`: `NaN`, `Infinity` y `-Infinity`, y un número que serde_json no lee porque
+no cabe en un `f64` —un real como `1e400`, un entero de 401 cifras—, salen `ROJO: JSON ilegible: …`,
+con exit 1. La regla del rango es la de `_fuera_de_rango` en `cable.py`, copiada y no importada
+(`cable.py` importa `juez_cabezas.py`): compone el `f64` como serde_json, sin el redondeo correcto, y
+por eso `1.7976931348623158e308`, que `float()` lee finito, no se lee. Medido con `zk-ssl-verify`
+compilado en el §852, con `"zz"` al final de `paquete/posicion-v2.json`, valor a valor: en 26
+—las tres constantes, reales y enteros a los dos lados del borde del `f64`, `1e-400`,
+`0e999999999999`, `1e2147483648`, `18446744073709551616`—, el binario y la segunda dan el mismo
+veredicto, VERDE o `JSON ilegible`; antes del §852, la segunda daba VERDE en los 17 que el binario
+rechaza. Cinco entran como vectores del manifiesto `paquete`: `rechazo-json-nan.json`,
+`rechazo-json-infinity.json`, `rechazo-json-menos-infinity.json`, `rechazo-json-1e400.json` y
+`rechazo-json-entero-401-cifras.json`. No se ha medido otro valor, ni un número en un campo que la
+segunda lee.
 
 **El verificador STARK** (§626). Las 58 pruebas de las seis familias que el kit verifica hoy van
 **ocultas** (la marca `arqueo:oculta:1` en el meta de la traza: L = 2T, una columna más, las
@@ -336,6 +353,8 @@ diez ni las doce; el bucle de arriba sigue siendo el de los diez que se midieron
 ⚠️ §815: `completitud` tiene 81 desde el §815, con los tres del kit 0.4.3: 354 entradas en los diez y 415
 en las doce. El segundo verificador no lee la completitud (`NO_SOPORTADOS`), y su juez STARK solo mira
 la prenda que va dentro: los tres nuevos no llevan prueba, así que ninguno de los dos cambia.
+⚠️ §852: `paquete` tiene 89 desde el §852, con los cinco `rechazo-json-*`: 359 entradas en los diez y
+420 en las doce. Lo medido del `.wasm` no cambia: que las pase no está medido, ni antes ni ahora.
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 
@@ -590,8 +609,9 @@ El `--sello` entero se corrió con el bloque dentro el 01-10-2026: VERDE, 1.054 
   el kit, y ninguno lo cambia la tabla de extensiones de la 16.0 frente a la 17.0. Así, un nombre
   con U+1FAE9, que está entre los 14.979, sale escapado aquí y en claro en el kit. Cambia la letra
   de la causa, no el veredicto: `debug_rust` solo escribe el texto de un rechazo ya decidido
-  (`tools/segunda/medio.py:451-452` y `tools/segunda/verificador.py:955-956`). Un `{:?}` exacto
-  pediría las tablas de Unicode del kit dentro de la segunda.
+  (`tools/segunda/medio.py:451-452` y `tools/segunda/verificador.py:956-957`). Un `{:?}` exacto
+  pediría las tablas de Unicode del kit dentro de la segunda. ⚠️ §852: decía `verificador.py:955-956`;
+  el `import re` del §852 baja una línea esas dos.
 - Las AIR como segunda opinión: `airs.py` las transcribe del `.rs`, la única fuente que existe.
   Lo que el juez del STARK mide es la maquinaria del verificador, no si una AIR restringe lo que
   dice restringir.

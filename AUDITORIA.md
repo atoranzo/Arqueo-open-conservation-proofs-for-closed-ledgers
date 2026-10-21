@@ -60829,3 +60829,193 @@ sin este asiento, son cuatro: una en `tools/canon.sh`, una en `juez_cadena.py`, 
 da nueve líneas: esas cuatro; la segunda línea del comentario de `tools/canon.sh`; la que sigue a la
 marca en `juez_cadena.py` y en `spec/RPC.md`; y dos más de `tools/segunda/README.md`, la primera
 frase de «En el canon» nueva y el final de la marca.
+
+## §852 — `tools/segunda/verificador.py` lee el sobre con `parse_constant`, `parse_float` y `parse_int`: `NaN`, `Infinity`, `-Infinity`, `1e400` y un entero de 401 cifras, que en un campo que no lee daban VERDE donde el kit da `JSON ilegible`, salen `ROJO: JSON ilegible`; y cinco negativos nuevos del paquete lo piden (lo descubierto 4a)
+
+El commit que lleva este asiento, sobre `6ce1773` (el §851). Toca `tools/segunda/verificador.py`: un
+`import re` (`:25`), un bloque nuevo antes de `juzgar` (`:996-1054`) y la llamada a `json.loads` de
+`juzgar` (`:1064`). Añade cinco vectores en `spec/vectors/paquete/`, sus cinco líneas en
+`MANIFIESTO.txt` (`:11-15`, tras la de `rechazo-json-ilegible.json`) y sus diez huellas en
+`spec/vectors/HUELLAS.sha256`, con `--registrar`. Toca `tools/segunda/README.md`, con marca en cada
+sitio; la cuenta de `spec/vectors/` en `README.md:262` y `README_EN.md:276` (de 522 a 527 ficheros);
+`vectores.json` y `vectores.lineas` en la lista de `spec/RPC.md` (`:1765-1766`); y dos citas por línea
+al manifiesto del paquete que el cambio desplaza, en `spec/rfc/0020-el-esquema-dentro-de-lo-que-se-firma.md:223-225`
+y `spec/rfc/0021-la-politica-de-compatibilidad.md:102-103`, con marca; y la fila «§5.2, tercer hito»
+de `doc/integracion-vertical-evaluacion.md:98`, con marca, por la cuenta del paquete. Y este asiento. Ni tests de
+Rust, ni pines, ni `BACKLOG.md`. No toca `tools/segunda/juez_cabezas.py`, `nucleo.py` ni `cable.py`.
+Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el
+autor asignó (§830 a §859).
+
+Del autor es la tarea: lo descubierto 4a de la lista que encargó, que el segundo verificador acepta
+`NaN`, `Infinity`, `1e400` y enteros de 401 cifras donde el kit da ROJO. La forma del arreglo —la
+regla del rango copiada de `cable.py`, y no `float()`— la propone la sesión, por lo medido en el
+punto 4. El canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su
+árbol limpio, con este asiento en su sitio y sin esta frase: VERDE, 1126 s de reloj (de su arranque
+a su salida) y 883 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de
+0,03 al empezar. Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los 275 `.rs` de
+`crates/` y de `tools/` (los mismos que en el §851: este sello no añade ninguno), y su log lo
+registra. Las 19 filas del nivel, en su pin, con 1853 tests que pasan (la suma de la columna
+«pasan»); la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (69 s)»;
+`check_tests` en 2012 y 20 instrumentos; `check_modulos` en 207; las once herramientas del bucle
+«2 ter»; la puerta de los vectores, en 508 ficheros y 1017 líneas; `check_catalogo`; el paquete,
+con «89 de 89 entradas dicen lo que deben (78 .json, 89 con entrada)»; el cable, en 27 de 27; la
+segunda implementación, con el paquete en 89 de 89, las otras cinco familias en 17, 17, 22, 34 y
+27, y sus pares STARK en 34 de 34; el «3 duodecies», con la cadena en 24 de 24 y el cable de la
+segunda en 27 de 27; y el artefacto reproducible, con el binario `3a01451fb51204ac`, los manifiestos
+con el paquete en 89/89, y el tarball `bb0aaf73a3e11f46`. Corrió con un `TMPDIR` propio y vacío, y
+al acabar no quedaba nada en él.
+
+**De dónde sale.** El §810 hizo que `juzgar` rechazara una suplente sola (`\ud800`), que
+`json.loads` lee y serde_json no, y dejó declarado lo demás: «No rechaza lo demás que `json.loads`
+acepta y serde_json no —`NaN`, `Infinity`, `-Infinity` y un número fuera del rango de un `f64`
+(`1e400`)—» (`tools/segunda/README.md:174-178` en `6ce1773`), y su asiento lo repetía en «Lo que NO
+hace». El kit lee el sobre con `serde_json::from_str` (`crates/zk-ssl-verify/src/main.rs:157`), y
+esas formas son `JSON ilegible`. La segunda no las rechazaba: en un campo que no lee, el sobre salía
+VERDE.
+
+**Medido**, en este orden, sobre `6ce1773` y después con el cambio:
+
+1. Las citas de la especificación, escrita sobre `669ee88`, remedidas. `verificador.py:1002` sigue en
+   la `:1002` (`json.loads(crudo.decode("utf-8"))`, sin `parse_*`), y la comprobación del §810, en la
+   `:1003-1004`. La ceguera declarada de `tools/segunda/README.md` no está en la `:159-163` sino en la
+   `:174-178`. `spec/vectors/paquete/MANIFIESTO.txt` tiene 97 líneas, con `rechazo-json-ilegible.json`
+   en la `:10`. `verificador.py` es el mismo en `29b4442` y en `6ce1773` (el mismo md5).
+2. El kit, compilado en este árbol: dentro del cerrojo de cargo de la sesión, `touch` de los
+   `.rs` de `crates/` y `tools/` y `cargo build --release --locked -p zk-ssl-verify`, exit 0, 11,4 s.
+   El arnés da de él la huella `b87724b089924934`.
+3. Cinco formas en un campo `"zz"` de `paquete/posicion-v2.json`, al principio y al final del objeto,
+   diez ficheros fuera del árbol: `NaN`, `Infinity`, `-Infinity`, `1e400` y un `1` seguido de 400
+   ceros. El kit da exit 1 en los diez, con «ROJO: JSON ilegible: expected value …» (`NaN`,
+   `Infinity`), «… invalid number …» (`-Infinity`) y «… number out of range …» (`1e400`, el entero).
+   `python3 tools/segunda/verificador.py` da exit 0 y «VERDE: el paquete se sostiene sin el nodo» en
+   los diez. Con `ancla/ancla-derivada.json`, al final, las cinco formas: el kit, `JSON ilegible` en
+   las cinco; la segunda de `6ce1773`, VERDE en las cinco.
+4. El borde. Con 21 valores más al final de `posicion-v2.json` —reales y enteros a los dos lados del
+   máximo de un `f64`, `-1e400`, `1E400`, `1e+400`, `1e-400`, `0e999999999999`, `1e2147483648`,
+   `0.0000000001e318`, `18446744073709551616`, `-9223372036854775809` y 400 unos con `e-100`—, el kit
+   frente a dos reglas: «`float()` da infinito» y `_fuera_de_rango` de `cable.py`, la que el §809
+   escribió para el lector del cable. `float()` se separa del kit en cuatro: `1.7976931348623158e308`,
+   `1.79769313486231580793e308` y los enteros de 309 cifras que empiezan por `17976931348623157` y por
+   `17976931348623158`, que `float()` lee finitos y el kit no. `_fuera_de_rango` coincide con el kit
+   en los 21. Por eso el cambio copia esa regla.
+5. Con el cambio, los 26 valores de los puntos 3 (al final) y 4: el kit y la segunda dan el mismo
+   veredicto en los 26, 17 `JSON ilegible` con exit 1 y 9 VERDE con exit 0. La segunda de `6ce1773`
+   da VERDE en los 26. En `ancla-derivada.json`, la nueva da `JSON ilegible` en las cinco formas.
+6. `python3 tools/check_vectores.py --registrar`: 5 vectores y 5 líneas nuevas; 508 vectores y 1017
+   líneas. Después, `check_vectores.py`, `--desde 29b4442` y `--desde 6ce1773`: exit 0 los tres.
+   Intercalar las líneas tras la `:10` no da ROJO.
+7. `bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/paquete/MANIFIESTO.txt`: «89
+   de 89 entradas dicen lo que deben (78 .json, 89 con entrada)», exit 0. El segundo verificador con
+   el bucle del «3 duodecies», en las seis familias: 89, 17, 17, 22, 34 y 27, 206 de 206, exit 0 en
+   las seis, 26,4 s de reloj; la segunda de `6ce1773`, 26,8 s, y en `paquete` 84 de 89: los cinco
+   `rechazo-json-*` con «exit 0, el manifiesto espera 1».
+8. `check_publicadas`, antes de mover la cuenta: ROJO del ATADO E, «README.md :262 VECTORES dice 522
+   y spec/vectors/ tiene 527 ficheros», y lo mismo en `README_EN.md:276`. Con la cuenta en 527, exit 0.
+   `check_superficie` pasaba con 503 y 1012 (son mínimos); la lista de `spec/RPC.md` se pone en 508 y
+   1017, como hizo el §850.
+9. Citas por línea que el cambio desplaza, fuera de `AUDITORIA.md`. `git grep` de
+   `verificador.py:[0-9]`: dos, ambas en `tools/segunda/README.md`. La `:9` decía `verificador.py:25`
+   para el `import nucleo`, que ya estaba en la `:30` desde el §810; con el `import re`, en la `:31`.
+   La `:593` de `6ce1773` (hoy la `:612`) decía `verificador.py:955-956`, que el `import re` baja a
+   la `:956-957`. `git grep` de
+   `paquete/MANIFIESTO.txt:[0-9]`: la `:21` y la `:25`, en el RFC-0020, y la `:21`, en el RFC-0021;
+   las cinco líneas nuevas las bajan a la `:26` y la `:30`, con el mismo texto. A
+   `tools/segunda/README.md` y a `HUELLAS.sha256` no las cita nadie por una línea que se mueva (las
+   `HUELLAS.sha256:1-8` y `:4-7` de los RFC 0020 y 0021 son la cabecera, que no cambia). Ninguna cita
+   por línea a los dos RFC.
+10. Cuentas vivas que el paquete mueve, fuera de `AUDITORIA.md`. `grep -vc '^#\|^$'` de cada
+   `MANIFIESTO.txt`: `ancla` 22, `completitud` 81, `conflicto` 17, `consumo` 17, `edad` 15, `pago` 13,
+   `paquete` 89, `pendiente` 10, `prenda` 11 y `rechazo` 84, 359 en los diez; con `ancla-cofirmada` 27
+   y `rotacion` 34, 420 en las doce de `FAMILIAS` (`tools/artefacto.sh:31`). En `6ce1773`, `paquete`
+   daba 84: 354 y 415, las de la marca del §815 en `tools/segunda/README.md:353-355`. Y
+   `git grep -nE "\b201\b[^|]{0,30}(familias|entradas)"`, fuera de `AUDITORIA.md`, da una sola línea
+   viva: `doc/integracion-vertical-evaluacion.md:98`, que dice «pasa hoy» con 201 en seis familias.
+   Las dos se corrigen con marca.
+
+**El cambio.**
+
+- `verificador.py`: `json.loads(…, parse_constant=_sin_constantes, parse_float=_real,
+  parse_int=_entero)`. `_sin_constantes` levanta `ValueError` («NaN no es JSON»). `_real` y
+  `_entero` levantan `ValueError` («numero fuera del rango de un f64: …») si `_fuera_de_rango` lo dice,
+  y si no devuelven `float(literal)` e `int(literal)`, lo mismo que `json.loads` daba: un entero sigue
+  siendo un `int` de Python. El `except (ValueError, UnicodeDecodeError)` que ya estaba los convierte en
+  `ROJO: JSON ilegible: …`. `_fuera_de_rango`, con `U64`, `I32`, `POW10` y `_NUMERO`, es la de
+  `cable.py:302-305` y `:311-340`, copiada con el mismo código y una docstring más corta, y no
+  importada: `cable.py` importa `juez_cabezas.py`, y el
+  verificador no carga un juez. El comentario del bloque lo dice, y dice el borde: no es el redondeo
+  correcto.
+- Cinco vectores, cada uno `posicion-v2.json` con `,"zz":<forma>` antes de la última llave, una sola
+  mutación: `rechazo-json-nan.json`, `rechazo-json-infinity.json`, `rechazo-json-menos-infinity.json`,
+  `rechazo-json-1e400.json` y `rechazo-json-entero-401-cifras.json`. Su línea pide `1|JSON ilegible`:
+  la letra después de los dos puntos no es la misma en el kit y en la segunda.
+- `tools/segunda/README.md`: el bloque de la ceguera del §810 se queda, citado en una marca que dice
+  que ya no es verdad, y un párrafo nuevo, con marca, dice qué rechaza ahora, con lo medido en los
+  puntos 4 y 5, y lo que no se ha medido: otro valor, o un número en un campo que la segunda lee.
+
+**Correcciones de lo sellado**, en los ficheros del commit: 1) `tools/segunda/README.md:9`, «⚠️ §852:
+decía `verificador.py:25`, rancia desde el §810 …»; 2) `tools/segunda/README.md:38`, «⚠️ §852: decia
+201 de 201 (§810)»; 3) `tools/segunda/README.md:135`, «⚠️ §852: decía 84 y 84 de 84»; 4)
+`tools/segunda/README.md:175-180`, «⚠️ §852: aquí seguía «No rechaza lo demás …»», que acota: ya no
+es verdad para esas cuatro formas; 5) `tools/segunda/README.md:613-614`, «⚠️ §852: decía
+`verificador.py:955-956`»; 6)
+`spec/rfc/0020-el-esquema-dentro-de-lo-que-se-firma.md:224-225`, «⚠️ §852: decía `:21` y `:25`»; 7)
+`spec/rfc/0021-la-politica-de-compatibilidad.md:102-103`, «⚠️ §852: decía `:21`»; 8)
+`tools/segunda/README.md:356-357`, «⚠️ §852: `paquete` tiene 89 …: 359 entradas en los diez y 420 en
+las doce», tras la del §815, que decía 354 y 415; lo medido del `.wasm` no cambia, porque esa cuenta
+no está medida; 9) `doc/integracion-vertical-evaluacion.md:98`, «⚠️ §852: `paquete` tiene 89 …: 206
+en seis familias», tras la del §810, que decía 84 y 201. La marca de
+`tools/segunda/README.md:189` abre el párrafo nuevo y no corrige nada. Las cifras de `README.md:262`,
+`README_EN.md:276` y `spec/RPC.md:1765-1766` cambian sin marca, como en el §850: son cuentas vivas que
+una puerta mira.
+
+**Mutantes**, sobre copias de `tools/segunda/` en el directorio de la sesión, cada una juzgada con
+`bash tools/conformidad.sh <copia>/verificador.py spec/vectors/paquete/MANIFIESTO.txt`:
+
+- m1 · sin `parse_constant`: 86 de 89, ROJO en `rechazo-json-nan.json`, `-infinity` y
+  `-menos-infinity`, «exit 0, el manifiesto espera 1».
+- m2 · `_real` sin la comprobación (`if False:`): 88 de 89, ROJO en `rechazo-json-1e400.json`.
+- m3 · `_entero` sin la comprobación: 88 de 89, ROJO en `rechazo-json-entero-401-cifras.json`.
+
+Vivo, a propósito: m4 · `_fuera_de_rango` cambiada por «`abs(float(literal))` es infinito»: 89 de 89.
+Sobre los 21 valores del punto 4 da VERDE en cuatro que el kit rechaza, los mismos cuatro del punto 4.
+Ningún vector pina el borde: es del lector de la referencia (serde_json sin `float_roundtrip`), no del
+formato, como dice `cable.py` de sus límites, y un vector lo haría normativo. Ningún mutante de Rust:
+no hubo que limpiar nada del `target` común. Las copias se borraron al acabar.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores --desde 29b4442` y
+`check_catalogo`, sobre el árbol con el cambio y antes del commit; también `check_tests`, en 2012, y
+`check_modulos`, en 207.
+
+**Lo que NO hace.**
+
+- No toca `tools/segunda/juez_cabezas.py`, `nucleo.py` ni `cable.py`, ni la interfaz de ninguno: el
+  verificador no importa nada nuevo de ellos. La regla del rango queda en dos sitios, `cable.py` y
+  `verificador.py`; unirla en un módulo pide tocar `cable.py`, y este sello no lo hace.
+- No iguala la letra del rechazo: el kit dice «expected value at line 1 column …» y la segunda «NaN no
+  es JSON». El manifiesto pide sólo `JSON ilegible`.
+- No pina el borde del `f64` con un vector (m4 vivo), ni mide otro valor que los 26, ni un número en
+  un campo que la segunda lee.
+- No toca el kit, ni `spec/PAQUETE.md`: la sección 5 ya dice `JSON ilegible: {e}`, y la 9 no cuenta
+  los negativos por regla.
+- No mira los demás `json.loads` de `tools/segunda/`.
+- No pone al día la fila de la `:96` de `doc/integracion-vertical-evaluacion.md`, una cadena con fecha
+  que acaba en «desde el §771, 396 vectores y 411 líneas». En las doce familias de `FAMILIAS` hay hoy
+  404 `.json` y 420 entradas; en `6ce1773`, 399 y 415. Ya no seguía la cuenta antes de este sello.
+
+**Lo que es del autor.** Si la regla del rango debe tener un solo productor en `tools/segunda/`, lo que
+pide tocar `cable.py`. Si el borde del `f64` se pina con un vector o se queda en lo medido. Si la letra
+del rechazo de la segunda debe ser la del kit.
+
+**Contadores.** El total de sello sigue en 1853, y ninguna fila cambia de pin. `check_tests`, en
+2012 tests declarados y 20 instrumentos; `check_modulos`, en 207. Los vectores pasan de 503 a 508
+ficheros y de 1012 a 1017 líneas de manifiesto; `spec/vectors/`, de 522 a 527 ficheros; el manifiesto
+del paquete, de 84 a 89 entradas; el segundo verificador, de 201 a 206 en las seis familias.
+`BACKLOG.md` no cambia: 44 abiertas y 86 resueltas. Las marcas «⚠️ §852» en los ficheros del commit,
+sin este asiento, son diez: siete en `tools/segunda/README.md` (las seis correcciones y la que abre el
+párrafo nuevo), una en cada RFC y una en `doc/integracion-vertical-evaluacion.md:98`.
+`git grep --cached -n "§852" -- ':!AUDITORIA.md'` da dieciséis líneas: esas diez; dos más de
+`tools/segunda/README.md` en el párrafo nuevo (`:195` y `:198`) y una en la fila «1 quater» (`:36`);
+la segunda línea de la marca de la `:613`; y dos de `verificador.py`, el comentario del bloque (`:996`
+y `:1003`). La cuenta de `tools/segunda/README.md:356` pasa de 354 a 359 entradas en los diez
+manifiestos del `.wasm`, y de 415 a 420 en las doce de `FAMILIAS`.

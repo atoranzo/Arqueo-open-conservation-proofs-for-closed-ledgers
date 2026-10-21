@@ -99,7 +99,8 @@ regla de ruptura escrita, y una compuerta que la haga cierta («Qué lo cierra»
    cuatro; `doc/KIT.md:78-80`, «sale 0 … 1 … 2».
 7. **Una cabeza v1 no la verifica el kit, la verifica la biblioteca.** El testigo y el paquete
    rechazan `formatVersion` 1 (`spec/vectors/cable/MANIFIESTO.txt:17`,
-   `spec/vectors/paquete/MANIFIESTO.txt:21`), y «una cabeza v1 se verifica con la biblioteca, no con
+   `spec/vectors/paquete/MANIFIESTO.txt:26`; ⚠️ §852: decía `:21`, y las cinco líneas que el §852
+   intercala tras la `:10` la bajan cinco), y «una cabeza v1 se verifica con la biblioteca, no con
    este mando» (`spec/PAQUETE.md:742-743`); la segunda implementación también la recompone
    (`tools/segunda/juez_cabezas.py:51-68`). Lo que la 90 llama «una cabeza v1 sigue verificando bajo
    binario v2» es cierto de la biblioteca y de la segunda, no del binario del kit.
