@@ -6,9 +6,11 @@ byte>>), y dice entrada a entrada si cuadra.
     python3 tools/segunda/juez_cadena.py [fichero.json ...]    (por defecto spec/vectors/zkssl-0.4.json)
 
 ⚠️ Esto juzga el CABLE, no el nucleo: `chain` es de la clase REGISTRO (NUCLEO.md, <<2. Las cuatro
-clases>>; RFC-0005 D-A), y este juez no esta en el canon ni cuenta en el censo del nucleo. Tampoco
+clases>>; RFC-0005 D-A), y este juez no cuenta en el censo del nucleo. Tampoco
 sustituye a `conformance --check`, que vuelve a correr el probador: aqui no se prueba nada, se
-recompone lo que el fichero ya trae.
+recompone lo que el fichero ya trae. ⚠️ §851: aqui decia «este juez no esta en el canon ni cuenta en
+el censo del nucleo»; desde el §851 el canon lo corre (tools/canon.sh, bloque «3 duodecies») sobre
+spec/vectors/zkssl-0.*.json, a pin cero.
 
 Lee dos formas, cada una con su grafia y ninguna mezclada:
   - el VECTOR de conformidad: un objeto con `spec` y `entradas` (`Entrada` y `Vectores` de

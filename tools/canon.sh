@@ -776,6 +776,35 @@ else
   grep '^FALLA' "$OUT/segunda_stark.txt" | sed 's/^/      /' >&2
   falla "la segunda implementacion NO juzga las pruebas STARK como el manifiesto ($(tail -n 1 "$OUT/segunda_stark.txt"))"
 fi
+# ⚠️ §851 · El CABLE en la segunda implementacion (tools/segunda/cable.py), que no es nucleo, sus dos
+# piezas. Hasta el §851 ninguna corria aqui: se corrian a mano (el §797 y el §809 lo dejaron dicho).
+# I · la CADENA del registro: juez_cadena.py recompone cada `chain` de los vectores del cable
+#     (spec/vectors/zkssl-0.*.json; el glob, para que un catalogo nuevo entre solo) desde sus
+#     entradas, con sus falsadores. Prueba de vida: el glob da al menos un fichero, y el juez dice
+#     haberlos leido todos. Sus lineas SIN EJERCITAR (las etiquetas y las filas de R6 que ninguna
+#     entrada contrasta) no son ROJO: el juez las calcula y las dice; quedan en su salida.
+# II · el segundo CONSUMIDOR: cable.py con el arnes y el manifiesto del cable, el mismo que el
+#     «3 bis cable» corre con el adaptador del testigo: los dos consumidores, la misma lista.
+# Pin cero, como los otros: cada ROJO entra por falla con su nombre. ~1 s y ~2 s.
+CATALOGOS=(spec/vectors/zkssl-0.*.json)
+if [ ! -e "${CATALOGOS[0]}" ]; then
+  falla "segunda cadena: el glob spec/vectors/zkssl-0.*.json no da ningun vector del cable"
+elif python3 tools/segunda/juez_cadena.py "${CATALOGOS[@]}" > "$OUT/segunda_cadena.txt" 2>&1; then
+  if tail -n 1 "$OUT/segunda_cadena.txt" | grep -q " - ${#CATALOGOS[@]} fichero(s) - "; then
+    msg "  OK  $(tail -n 1 "$OUT/segunda_cadena.txt" | sed 's/ - implementacion.*//')"
+  else
+    falla "segunda cadena: el juez sale con 0 y no dice haber leido los ${#CATALOGOS[@]} vectores ($(tail -n 1 "$OUT/segunda_cadena.txt"))"
+  fi
+else
+  grep '^ROJO' "$OUT/segunda_cadena.txt" | sed 's/^/      /' >&2
+  falla "la segunda implementacion NO recompone la cadena del registro ($(tail -n 1 "$OUT/segunda_cadena.txt"))"
+fi
+if bash tools/conformidad.sh tools/segunda/cable.py spec/vectors/cable/MANIFIESTO.txt > "$OUT/segunda_cable.txt" 2>&1; then
+  msg "  OK  segunda cable: $(tail -n 1 "$OUT/segunda_cable.txt" | sed 's/^conformidad: //; s/ - binario.*//')"
+else
+  while IFS= read -r L; do falla "segunda cable $L"; done < <(grep '^ROJO' "$OUT/segunda_cable.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/segunda_cable.txt" || falla "segunda cable: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/segunda_cable.txt"))"
+fi
 
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""

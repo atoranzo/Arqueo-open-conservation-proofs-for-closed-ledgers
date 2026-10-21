@@ -452,8 +452,8 @@ con el nombre del fichero, a un JSON que no se lee, a una raíz que no es ningun
 de las dos formas, a una clave repetida y a una que la cadena no ata. El
 `epoch_digest` del vector **no** se recompone desde el fichero, porque le
 faltan `pendingRoot` y `frozenRoot` (`conformance.rs:90`, `recolectar`, lo
-compone v2 con la cabeza entera). El juez no entra en el canon: se corre a
-mano.
+compone v2 con la cabeza entera). ⚠️ §851: decía «El juez no entra en el
+canon: se corre a mano»; desde el §851 lo corre el canon, en el «3 duodecies».
 
 ⚠️ **Lo que esa medida no cubre**, y el juez lo imprime en su salida:
 

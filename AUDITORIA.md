@@ -60674,3 +60674,158 @@ los ficheros del commit, sin este asiento, son nueve: una en `spec/RPC.md` y och
 esas nueve; otras dos de `spec/RPC.md` y cuatro de `tools/segunda/README.md` en las mismas frases o
 en las que siguen a una marca; dos del comentario de `leer_respuesta` en `witness.rs`; y una del
 comentario nuevo de `MANIFIESTO.txt`. Crónica que no corrige nada sellado.
+
+## §851 — el canon corre las dos piezas del cable de la segunda implementación: `juez_cadena.py` sobre los vectores `zkssl-0.*.json` y `cable.py` con el manifiesto del cable, en el «3 duodecies» y a pin cero; y la línea 9 de `juez_cadena.py` deja de decir que no está en el canon (lo descubierto 3b)
+
+El commit que lleva este asiento, sobre `fe3ec28` (el §850). Toca `tools/canon.sh`: 29 líneas nuevas
+al final del bloque «3 duodecies» (`:779-807`), entre el juez del STARK y el «3 ter», y ninguna
+cambiada. Toca `tools/segunda/juez_cadena.py`, en su cabecera (`:9-13`), con marca;
+`tools/segunda/README.md`, sólo en «En el canon» (`:564-572`), con marca; y `spec/RPC.md`, una
+frase de «Lo medido (§797)» en sus mismas dos líneas (`:455-456`), con marca. Y este asiento. Ni
+tests nuevos, ni pines, ni vectores, ni `BACKLOG.md`. No toca `tools/segunda/juez_cabezas.py`,
+`nucleo.py` ni `cable.py`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube,
+no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el
+siguiente del rango que el autor asignó (§830 a §859).
+
+Del autor es la tarea: lo descubierto 3b de la lista que encargó, que el canon corra
+`juez_cadena.py`. Que el mismo bloque corra también el segundo consumidor, `cable.py`, con el
+manifiesto del cable, lo recomendaba la especificación revisada de la tarea, y lo hace la sesión. La
+forma del bloque, la prueba de vida y los textos los propone la sesión. El canon de este commit,
+`bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su
+sitio y sin esta frase: VERDE, 1021 s de reloj (de su arranque a su salida) y 786 s de tests (la
+línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,09 al empezar. Antes, dentro del
+mismo cerrojo, la sesión tocó con `touch` los 275 `.rs` de `crates/` y de `tools/` (los mismos que
+en el §850: este sello no añade ninguno), y su log lo registra. Las 19 filas del nivel, en su pin,
+con 1853 tests que pasan (la suma de la columna «pasan»); la puerta de los binarios, con «OK 24
+objetivos en 8 paquetes, 12 con features (62 s)»; `check_tests` en 2012 y 20 instrumentos;
+`check_modulos` en 207; las once herramientas del bucle «2 ter»; la puerta de los vectores, en 503
+ficheros y 1012 líneas; `check_catalogo`; el paquete, en 84 de 84; el cable, en 27 de 27; la
+segunda implementación, con sus pares STARK en 34 de 34; el bloque nuevo del «3 duodecies», con
+«cadena: 24 de 24 cadenas recompuestas (era 1: 6, era 2: 18) - proof_digest: 12 recompuestos, 12
+declarados - 4 fichero(s)» y «segunda cable: 27 de 27 entradas dicen lo que deben (26 .json, 27
+con entrada)»; y el artefacto reproducible, con el binario `3a01451fb51204ac` y el tarball
+`859bf8859a2e0e1a`. Corrió con un `TMPDIR` propio y vacío, y al acabar no quedaba nada en él.
+
+**De dónde sale.** El §797 trajo `juez_cadena.py`, que recompone desde sus entradas cada `chain` de
+los vectores del cable con la parte I de `cable.py`, y su cabecera dijo «este juez no esta en el
+canon»; `tools/segunda/README.md` lo repetía bajo la tabla de la cadena («No entra en el canon: se
+corre a mano») y `spec/RPC.md` también («El juez no entra en el canon: se corre a mano»). El §809
+trajo la parte II, el segundo consumidor, y dejó escrito en «En el canon» que tampoco corría: «Ponerlo
+junto al segundo verificador es una fila más del «3 duodecies», a pin cero, y queda por hacer». Así,
+una errata en la etiqueta de una clase en `cable.py`, o un consumidor que perdiera la regla del
+`index`, no ponía rojo ningún sello: sólo lo veía quien corriera los dos a mano.
+
+**Medido**, en este orden, sobre `fe3ec28` y después con el cambio:
+
+1. Las citas de la especificación, escrita sobre `669ee88`, remedidas. `juez_cadena.py:9` sigue en
+   la `:9`. El «3 duodecies» va de la `:699` a la `:778` de `tools/canon.sh` (la `:779` es blanca y
+   el «3 ter» empieza en la `:780`), y corre `juez_nucleo.py`, `juez_cabezas.py`, el corpus y el juez
+   de `kat_xmss/`, `juez_medio.py`, el segundo verificador en seis familias y `juez_stark.py`; ni
+   `juez_cadena.py` ni `cable.py`. El «3 bis cable» va de la `:640` a la `:651` y corre el adaptador
+   del testigo, `tools/cable_respuesta.sh`. En `tools/segunda/README.md`, «En el canon» empieza en
+   la `:549`, la fila «1 septies» está en la `:48` y la frase «No entra en el canon» en la `:250`.
+2. `git grep -n 'segunda/cable.py\|juez_cadena' fe3ec28 -- 'tools/*.sh' 'tools/*.py'`: ninguna
+   línea de un `.sh`; en los `.py`, sólo comentarios y órdenes de uso, en `cable.py`, `juez_cadena.py`
+   y `nucleo.py`. `grep -rn 'import cable' tools/` da sólo `juez_cadena.py:99`: ningún juez del canon
+   importa `cable.py`. Lo que se rompa en `cable.py` no lo ve hoy el canon.
+3. `python3 tools/segunda/juez_cadena.py`: «cadena: 6 de 6 cadenas recompuestas (era 1: 0, era 2:
+   6)», exit 0, 0,35 s. Con `spec/vectors/zkssl-0.*.json`, que da cuatro ficheros: «cadena: 24 de 24
+   cadenas recompuestas (era 1: 6, era 2: 18) - proof_digest: 12 recompuestos, 12 declarados - 4
+   fichero(s)», exit 0, 0,66 s. Las dos líneas `SIN EJERCITAR` dicen «9 de las 13 etiquetas» y «R6
+   en 5 de las 7 clases».
+4. `bash tools/conformidad.sh tools/segunda/cable.py spec/vectors/cable/MANIFIESTO.txt`: «27 de 27
+   entradas dicen lo que deben (26 .json, 27 con entrada)», exit 0, 1,7 s.
+5. El bloque nuevo, sacado de `tools/canon.sh` con `sed` y corrido solo con un `falla` y un `msg` de
+   prueba, desde la raíz del árbol con el cambio: «OK  cadena: 24 de 24 …  - 4 fichero(s)» y «OK
+   segunda cable: 27 de 27 …», ningún fallo, 2,6 s de reloj, con carga 0,4 en 4 CPU.
+6. Citas por línea, fuera de `AUDITORIA.md`: a `tools/canon.sh`, ninguna de la `:779` en adelante
+   (la más alta es la `:723-741` de `BACKLOG.md:4831`, el corpus de `kat_xmss/`, que no se mueve); a
+   `juez_cadena.py` y a `tools/segunda/README.md`, ninguna. `spec/RPC.md` no cambia de largo: la
+   frase se reescribe en sus mismas dos líneas.
+
+**El cambio.**
+
+- `tools/canon.sh`, al final del «3 duodecies», con un comentario de diez líneas con marca. I · la
+  cadena: `CATALOGOS=(spec/vectors/zkssl-0.*.json)`, un glob, para que un catálogo nuevo entre sin
+  tocar el canon. Prueba de vida en dos sentidos: si el glob no da ningún fichero, ROJO; y si el
+  juez sale con 0 pero su última línea no dice haber leído tantos ficheros como da el glob, ROJO.
+  Con exit distinto de 0, sus líneas `ROJO` salen por la salida de error y entra un `falla` con su
+  última línea. Las `SIN EJERCITAR` no son ROJO: el juez las calcula y las dice, y quedan en
+  `segunda_cadena.txt`. II · el consumidor: `tools/conformidad.sh` con `cable.py` y el manifiesto
+  del cable, el mismo que el «3 bis cable» corre con el adaptador; cada `ROJO` del arnés entra por
+  `falla` con su nombre, como el bucle del segundo verificador.
+- `juez_cadena.py:9-13`: «este juez no esta en el canon ni cuenta en el censo del nucleo» pasa a
+  «este juez no cuenta en el censo del nucleo», y al final del párrafo, «⚠️ §851: aqui decia …;
+  desde el §851 el canon lo corre (tools/canon.sh, bloque «3 duodecies») sobre
+  spec/vectors/zkssl-0.*.json, a pin cero». Sólo comentario: el juez da lo mismo, con la misma
+  `implementacion abbcac0a45a9cff6`, que es la huella de `cable.py`.
+- `tools/segunda/README.md`, «En el canon»: la frase del §809 («`cable.py` tampoco …, y queda por
+  hacer») se sustituye por la de ahora, y la marca la cita entera. La misma marca declara que «No
+  entra en el canon: se corre a mano», en «Lo medido», vale hasta el §851: esa línea no se edita.
+- `spec/RPC.md:455-456`: «El juez no entra en el canon: se corre a mano.» pasa a «⚠️ §851: decía «El
+  juez no entra en el canon: se corre a mano»; desde el §851 lo corre el canon, en el «3 duodecies».»
+
+**Correcciones de lo sellado**, en los ficheros del commit: 1) `tools/segunda/juez_cadena.py:11-13`,
+«⚠️ §851: aqui decia «este juez no esta en el canon ni cuenta en el censo del nucleo»»; 2)
+`tools/segunda/README.md:568-572`, «⚠️ §851: aquí decía «`cable.py` tampoco (§809): …»», con la
+`:250` declarada en la misma marca; 3) `spec/RPC.md:455-456`, «⚠️ §851: decía «El juez no entra en
+el canon: se corre a mano»». La cuarta marca, `tools/canon.sh:779`, es crónica y no corrige nada.
+
+**Mutantes**, sobre seis copias del árbol con el cambio en el directorio de la sesión (sin
+`target/` ni `.git/`), cada una juzgada con el bloque nuevo sacado de su propio `tools/canon.sh` y
+corrido desde su raíz, como en el punto 5:
+
+- m1 · `cable.py`, la etiqueta de `Mint` de 2 a 3: ROJO, «la segunda implementacion NO recompone la
+  cadena del registro (ROJO cadena: 16 de 24 …)», las ocho entradas `Mint` de los cuatro vectores
+  con «R3: chain esperado … obtenido …». El consumidor sigue en 27 de 27.
+- m2 · `cable.py`, el merge final de `chain_v2` al revés (`merge(compromiso, chain_v1(…))`): ROJO,
+  «6 de 24»: caen las 18 de era 2 y quedan las 6 de era 1 de `zkssl-0.1.json`.
+- m4 · `cable.py`, sin la regla del `index` del §399 (`if False and declarado <= embebido`): ROJO,
+  «segunda cable rechazo-index-atrasado.json: exit 0, el manifiesto espera 1». La cadena sigue en
+  24 de 24.
+- m5 · los cuatro `zkssl-0.*.json` movidos a otro directorio: ROJO, «segunda cadena: el glob
+  spec/vectors/zkssl-0.*.json no da ningun vector del cable».
+- m6 · `tools/canon.sh` que pasa al juez sólo el primer fichero del glob: ROJO, «segunda cadena: el
+  juez sale con 0 y no dice haber leido los 4 vectores (cadena: 6 de 6 … - 1 fichero(s) …)».
+
+Por el punto 2, con el canon de `fe3ec28` m1, m2 y m4 no tocan ninguna línea que el canon corra.
+
+Vivo, a propósito: m3 · `cable.py`, la etiqueta de `Consumo` de 13 a 14: «24 de 24», ningún fallo.
+Ninguna entrada de los cuatro vectores trae un `Consumo`, y el juez lo dice en su línea `SIN
+EJERCITAR`; es el mismo mutante que `tools/segunda/README.md` y `spec/RPC.md` ya declaraban vivo
+desde el §797. Las copias se borraron al acabar. Ningún mutante de Rust: no hubo que limpiar nada
+del `target` común.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores --desde 29b4442` y
+`check_catalogo`, sobre el árbol con el cambio y antes del commit; también `check_tests`, en 2012, y
+`check_modulos`, en 207.
+
+**Lo que NO hace.**
+
+- No toca `tools/segunda/juez_cabezas.py`, `nucleo.py` ni `cable.py`. La cabecera de `cable.py`
+  (`:5-7`) da las órdenes de uso y no dice si el canon las corre: no hay nada que alinear.
+- No convierte en ROJO las líneas `SIN EJERCITAR`: nueve de las trece etiquetas y cinco de las siete
+  filas de R6 siguen sin contraste, y m3 sigue vivo. Hace falta un vector con esas clases, y este
+  sello no lo trae.
+- No quita el «3 bis cable»: el adaptador del testigo sigue corriendo el mismo manifiesto. Ahora lo
+  corren los dos consumidores.
+- No edita «Lo medido» de `tools/segunda/README.md` (la `:250`), ni la fila «1 septies» (`:48`), ni
+  la tabla de la cabecera: la marca de «En el canon» declara la `:250`.
+- No cambia `spec/README.md` ni la frase de `spec/RPC.md` sobre el segundo consumidor (`:1585-1591`),
+  que no dicen nada del canon.
+- No mueve ningún pin ni el total de tests, ni ningún vector o línea de manifiesto.
+
+**Lo que es del autor.** Si las líneas `SIN EJERCITAR` del juez de la cadena deben tener un pin en
+el canon, para que una etiqueta que pierde su contraste se vea. Si el «3 bis cable» debe correr
+también `cable.py`, en lugar del «3 duodecies». Si la `:250` de `tools/segunda/README.md` se marca en
+su sitio.
+
+**Contadores.** El total de sello sigue en 1853, y ninguna fila cambia de pin. `check_tests`, en
+2012 tests declarados y 20 instrumentos; `check_modulos`, en 207. Los vectores siguen en 503
+ficheros y 1012 líneas de manifiesto. `BACKLOG.md` no cambia: 44 abiertas y 86 resueltas. El
+«3 duodecies» corre dos cosas más, con unos 3 s. Las marcas «⚠️ §851» en los ficheros del commit,
+sin este asiento, son cuatro: una en `tools/canon.sh`, una en `juez_cadena.py`, una en
+`tools/segunda/README.md` y una en `spec/RPC.md`. `git grep --cached -n "§851" -- ':!AUDITORIA.md'`
+da nueve líneas: esas cuatro; la segunda línea del comentario de `tools/canon.sh`; la que sigue a la
+marca en `juez_cadena.py` y en `spec/RPC.md`; y dos más de `tools/segunda/README.md`, la primera
+frase de «En el canon» nueva y el final de la marca.

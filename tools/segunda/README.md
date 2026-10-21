@@ -561,9 +561,15 @@ que un vector nuevo tenga que pasar por los dos códigos; y desde el §626 el ju
 el mismo bloque, para que una prueba nueva de esas familias tenga que verificar también en Python.
 Desde el §810 corren también `juez_medio.py` y, en el bucle del segundo verificador, la sexta familia,
 `ancla-cofirmada`: unos 6 s más. `wasm_runner.py` no corre en el canon: necesita `wasmtime` de PyPI.
-`cable.py` tampoco (§809): ni `RPC.md` ni `spec/README.md`, que lo piden, dicen que el canon lo corra, y
-el bloque «3 bis cable» sigue corriendo el adaptador del testigo. Ponerlo junto al segundo verificador
-es una fila más del «3 duodecies», a pin cero, y queda por hacer.
+Desde el §851 corren también, en el mismo bloque y a pin cero, las dos piezas de `cable.py`: la
+cadena del registro, con `juez_cadena.py` sobre los vectores `spec/vectors/zkssl-0.*.json` (un glob:
+un catálogo nuevo entra solo), y el segundo consumidor, con `tools/conformidad.sh` y el manifiesto del
+cable, el mismo que el bloque «3 bis cable» corre con el adaptador del testigo: unos 3 s más. Las líneas
+`SIN EJERCITAR` del juez de la cadena no ponen el sello en rojo; quedan en su salida. ⚠️ §851: aquí
+decía «`cable.py` tampoco (§809): ni `RPC.md` ni `spec/README.md`, que lo piden, dicen que el canon
+lo corra, y el bloque «3 bis cable» sigue corriendo el adaptador del testigo. Ponerlo junto al segundo
+verificador es una fila más del «3 duodecies», a pin cero, y queda por hacer». Y en «Lo medido», bajo
+la tabla de la cadena del registro, «No entra en el canon: se corre a mano» vale hasta el §851.
 El `--sello` entero se corrió con el bloque dentro el 01-10-2026: VERDE, 1.054 s de tests.
 
 ## Lo que NO cubre
