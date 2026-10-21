@@ -26,7 +26,7 @@ contenido es el de aquí. Integrar no es aceptar: la aceptación de `GENAI.md` s
 |---|---|
 | `ECST.md` | el informe, en español |
 | `ECST_EN.md` | el mismo informe, en inglés |
-| `VERIFICACION.md` | el registro: cada afirmación de los borradores con su veredicto final (CONFIRMADA, PARCIAL, FALSA, SIN_FUENTE, NO_VERIFICABLE), lo que se puede afirmar y sus fuentes. Se genera entero de `borrador/final.json` |
+| `VERIFICACION.md` | el registro: cada afirmación de los borradores con su veredicto final (CONFIRMADA, PARCIAL, FALSA, SIN_FUENTE, NO_VERIFICABLE), lo que se puede afirmar y sus fuentes. Se genera entero de `borrador/final.json`. ⚠️ **Corregido en el §847**: decía que se genera entero; la línea «Lo que se puede afirmar» de M11 lleva el pin de `zk-ssl` a mano (ver su cabecera) |
 | `referencias.bib` | la bibliografía verificada: sólo entradas re-derivadas de metadatos consultados |
 | `borrador/` | el material de trabajo: el catálogo de afirmaciones, los resultados de cada verificador y de cada escéptico, la fusión, y la reproducción (`borrador/REPRODUCCION.md`) |
 

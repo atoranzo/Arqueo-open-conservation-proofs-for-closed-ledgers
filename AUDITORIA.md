@@ -59802,3 +59802,248 @@ un test. `BACKLOG.md` no cambia: ninguna entrada llevaba esto. Su cabecera sigue
 resueltas. Las marcas «⚠️ … §846» en los ficheros del commit, sin este asiento, son dos, en
 `GENAI.md:96-97` y `:225`, contadas con `git grep --cached -n "§846"`. Las cuatro líneas de
 `tools/check_publicadas.py` que nombran el §846 son crónica del atado, y no corrigen nada sellado.
+
+## §847 — `doc/ecst/VERIFICACION.md` es vivo en lo que afirma del canon: cita la fila, no la línea, y lleva el pin a mano; y `verificar_citas` gana la v5 bis, ninguna cita por línea a `tools/canon.sh` en cuatro documentos vivos, que daban seis rancias, y hoy cinco (lo descubierto 1g)
+
+El commit que lleva este asiento, sobre `b11f8b6` (el §846). Toca `tools/verificar_citas.py`: la v5
+bis en su cabecera (`:107-129`), la línea «Uso» (`:146`), su código tras el de la v3 bis
+(`:500-569`) y su línea de resumen (`:644-646`); y, con marca, la R2 de la v5 en la cabecera
+(`:86-92`) y la razón de `doc/ecst/VERIFICACION.md` en `EXCLUIDOS_LINEA` (`:283-289`). Toca cinco
+documentos, cada cambio en su misma línea, sin añadir ninguna: `README.md:143-144` y `:261`,
+`README_EN.md:145-147` y `:275`, `RESUMEN_EJECUTIVO.md:98`, `doc/ecst/VERIFICACION.md:6` y `:1549`,
+y `doc/ecst/README.md:29`. Y este asiento. Ni código de los
+crates, ni tests, ni vectores, ni `tools/canon.sh`, ni `doc/ecst/borrador/`, ni `BACKLOG.md`. Lo
+escribe y lo commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el
+autor asignó (§830 a §859).
+
+Del autor es la tarea: lo descubierto 1g de la lista que encargó, la cita `tools/canon.sh:109` de
+`doc/ecst/VERIFICACION.md`, con las de los documentos vivos que citan la tabla del canon por línea.
+Del autor es también la decisión, del 2026-10-15: `doc/ecst/VERIFICACION.md` es vivo en esto, con
+cita por fila y el pin a mano. La forma de la regla la propone la sesión. El canon de este commit,
+`bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su
+sitio y sin esta frase: VERDE, 1028 s de reloj (de su arranque a su salida) y 788 s de tests (la
+línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,16 al empezar. Antes, dentro del
+mismo cerrojo, la sesión tocó con `touch` los 274 `.rs` de `crates/` y de `tools/`, y su log lo
+registra. Las 19 filas del nivel, en su pin, con 1849 tests que pasan (la suma de la columna
+«pasan»); la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (63 s)»;
+`check_tests` en 2008 y 20 instrumentos; `check_modulos` en 207; las once herramientas del bucle «2
+ter», `verificar_citas` con su v5 bis entre ellas; la puerta de los vectores, en 500 ficheros y
+1002 líneas; `check_catalogo`; el paquete, en 84 de 84; el cable, en 23 de 23; la segunda
+implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`1515cc9e8518c627` y el tarball `f329f9c282164e67`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió, se midió y se commiteó (`1eba204`) sobre el §846 de antes
+(`ace3243`), y la cadena, sobre el §842 de antes (`77bca6c`), que no llevaba el §860 ni el §861.
+Después se rebasó sobre el §846 de ahora (`b11f8b6`), que va sobre el §845, el §844 y el §843 de
+ahora, el §818 (`69597f3`), el §817, el §816, el §815 y el §842 de ahora (`4b9f14b`), y éste, sobre
+el §860 y el §861, de otra sesión. El `cherry-pick` dio conflicto en tres ficheros. En `README.md` y
+`README_EN.md`, porque el §815 cambió la línea de debajo, la fila de los vectores (de 516 a 519
+ficheros): se quedan la de main y la del sello. En `doc/ecst/VERIFICACION.md:1549`, la línea de
+M11: el §816 ya había puesto la cita en `:132`, con su marca, y el pin en 496, y el §817, en 497. Se
+conserva lo de los dos: el pin, 497, y la marca del §816; la cita pasa a la fila, y la marca del
+§847 dice ahora que decía `:132`. Esa `:132` era la línea buena: de las seis citas rancias de
+`ace3243`, sobre `b11f8b6` quedan cinco, y la de `VERIFICACION.md` estaba al día, aunque por
+línea. Por eso cambian el encabezado y «De dónde sale». La cabecera, `VERIFICACION.md:6`, dice
+ahora dieciocho sellos y no dieciséis, con el §816 y el §817, y que el §816 llevó la cita a la
+`:132`.
+
+Se repitió «Medido» sobre `b11f8b6`, punto por punto. En `tools/canon.sh`, de `77bca6c` a
+`b11f8b6` cambian siete líneas en su sitio (pines y notas de la tabla, y dos más abajo), y ninguna
+entra ni sale: lo que cita este asiento sigue en las mismas líneas, la fila `zk-ssl` en la `:132`,
+las tres de `--largo` y `--completo` en la `:151-153`, `nivel_num` en la `:177-181`, el salto por
+nivel en la `:362` y el bloque «3 · conformidad» en la `:492-502`. El 1 da 67 líneas en 16
+ficheros: la de más es una de `BACKLOG.md`, que trajo el §861, y en los cuatro de este sello siguen
+2, 2, 1 y 5. El 2, lo dicho: cinco rancias y la de `VERIFICACION.md:1549`, en su sitio. El 3, las
+mismas cuatro «Fuentes:» en las mismas líneas. El 4, 19 commits: el que lo crea y 18, del §641 al
+§842, el §816 y el §817, que cambian cada uno esa línea y ninguna otra; el pin va de 424 a 497, y
+el §816 movió también la cita, de `:109` a `:132`. El 5, lo mismo, en las mismas líneas. El 6,
+`doc/ROTACION_DE_CUENTAS.md:111` y `:135`, que el §860 bajó seis líneas, a la misma `:1323`. El 7,
+antes exit 0 y 5 líneas, y después exit 0 y 6, con la nueva igual byte a byte; la del registro
+pasa de 778 encabezados, 8407 citas y 55 a números reservados a 779, 8482 y 56. Las otras diez
+herramientas del bucle dan la misma salida, byte a byte, sobre `b11f8b6` y con este sello (`cmp`).
+
+Las citas por línea de este asiento a `README.md`, `README_EN.md` y `RESUMEN_EJECUTIVO.md` se
+movieron: el §815 y el §818 alargaron esos ficheros por encima. Pasan de `README.md:139-140` y
+`:255` a `:143-144` y `:261`, de `README_EN.md:141-143` y `:269` a `:145-147` y `:275`, y de
+`RESUMEN_EJECUTIVO.md:95` a `:98`. En `tools/verificar_citas.py`, el §860 metió dos líneas en
+`RESERVADOS`, y las de debajo de su `:245` bajan dos. Los mutantes son los de `1eba204`, sobre
+`ace3243`, con las líneas de entonces; sobre `b11f8b6` no se rehicieron. Lo que cambió por el
+rebase: el encabezado, la apertura y «De dónde sale»; este párrafo y los dos de antes; las citas
+por línea; las correcciones 6 y 7, con la línea que se mueve en `tools/verificar_citas.py`; la
+línea de las herramientas rápidas, que se corrieron otra vez, con `--desde 69597f3`; «Lo que NO
+hace», con `BACKLOG.md`; y los contadores: `check_tests`, de 1976 a 2008, el total de sello, de
+1817 a 1849, y la cabecera de `BACKLOG.md`, de 48 abiertas y 79 resueltas a 44 y 86.
+
+**De dónde sale.** La tabla de `tools/canon.sh` crece por dentro, porque cada sello alarga la nota
+de su fila, y baja cuando crece lo que tiene encima: la fila `zk-ssl` estaba en la `:109` que
+citaba `VERIFICACION.md`, y hoy está en la `:132`, la que le puso el §816. Una cita por línea a
+una fila se queda atrás sin que nada lo vea: la v5 del §792 sólo mira las citas por línea a
+`BACKLOG.md`, y la v3 bis del §831, las de `spec/RPC.md`.
+
+**Medido**, en este orden, sobre `ace3243`:
+
+1. `git grep -cE 'canon\.sh`?:[0-9]' ace3243 -- ':!AUDITORIA.md'`: 66 líneas en 15 ficheros. En los
+   cuatro de este sello: `README.md` 2, `README_EN.md` 2, `RESUMEN_EJECUTIVO.md` 1 y
+   `doc/ecst/VERIFICACION.md` 5.
+2. Lo que hay hoy en cada línea citada, con `sed -n` sobre `tools/canon.sh`:
+   - `:109`, la que cita `VERIFICACION.md:1549`: `exit 2`. La fila `zk-ssl` está en la `:132`.
+   - `:128-130`, la que citan `README.md:255`, `README_EN.md:269` y `RESUMEN_EJECUTIVO.md:95`: el
+     comentario de la tabla («Medido en §224 …»). Las filas `halo2-experiment`, `plonk-experiment`
+     y `zk-core` están en la `:151-153`.
+   - `:154-158`: el cierre de la tabla y el arranque del bloque «lo que cubre el nivel --completo».
+     `nivel_num` está en la `:177-181`.
+   - `:271`: una línea de `estado_conservados`. El salto por nivel está en la `:362`, en el bloque
+     «1 · los tests, crate a crate».
+   - `:404-407`, la que citan `README.md:139` y `README_EN.md:141`: el comentario del bloque «2
+     ter». El bloque «3 · conformidad» está en la `:492-502`, y el 0.3 en la `:497-498`.
+
+   Ninguna de las seis caía en su sitio. `crates/zk-ssl-cli/src/conformance.rs:238-242`, la otra
+   cita de esas dos líneas, sí: es el `bail!` de «OTRA version».
+3. Las otras cuatro de `VERIFICACION.md` (`:864`, `:1550`, `:1574` y `:1606`) están en líneas
+   «Fuentes:», de 71c5aad, como dice su cabecera. Se quedan como están.
+4. `git log -- doc/ecst/VERIFICACION.md`: 17 commits. El primero, `b6c3e64` (S594), lo crea, con
+   «423 tests» en la línea «Lo que se puede afirmar» de M11, lo mismo que dice
+   `doc/ecst/borrador/final.json`. Los otros 16, del §641 al §842, cambian cada uno esa línea y
+   ninguna otra (`git show -U0` de cada uno): el pin, de 424 a 485, y el §697 (`9da6906`) también
+   la cita, de `:99` a `:109`. La fila `zk-ssl` estaba en la `:99` en `6fce6a4` (el §668), en la
+   `:109` en `9da6906`, `590caae` y `c87d7d6`, en la `:130` en `4f808cc` (el §802) y en la `:132` en
+   `b6994c3`: la cita estuvo bien del §697 al §774, y desde el §802 la fila bajó y la cita ya no se
+   movió. `final.json` sigue en 423. La cabecera decía que el registro «sale entero» de
+   `final.json`.
+5. `git grep -nE 'generad|entero|final\.json' ace3243`, sin `AUDITORIA.md` ni `doc/ecst/borrador/`,
+   y de eso lo que habla del registro: lo mismo lo dicen, sin marca, `doc/ecst/README.md:29` («Se
+   genera entero de `borrador/final.json`»), la R2 de la v5 de `tools/verificar_citas.py` («registro
+   generado entero») y su razón en `EXCLUIDOS_LINEA` («registro generado»). Las dos razones de
+   `tools/check_publicadas.py` (`:1039` y `:1232`) dicen «registro generado sobre el arbol de
+   71c5aad», y de las fuentes de cada fila: no se tocan (ver «Lo que NO hace»).
+6. `git grep -nE 'VERIFICACION\.md`?:[0-9]'`, sin `AUDITORIA.md`: `doc/ROTACION_DE_CUENTAS.md:105` y
+   `:129`, a la `:1323`. Por eso los cambios van en la misma línea: ninguna línea se mueve. Nadie
+   cita `doc/ecst/README.md` por línea.
+7. `python3 tools/verificar_citas.py`, antes: exit 0, 5 líneas. Después: exit 0, 6 líneas. La nueva:
+   «línea al canon en un documento vivo (v5 bis): 0 · 4 ficheros, que lo nombran en su ámbito
+   (README.md 3, README_EN.md 3, RESUMEN_EJECUTIVO.md 1, doc/ecst/VERIFICACION.md 1)». De las otras
+   cinco, cuatro salen iguales byte a byte; la del registro (v4) cuenta este asiento, y pasa de 772
+   encabezados, 7846 citas y 43 a números reservados a 773, 7878 y 44. Las otras diez herramientas
+   del bucle «2 ter» dan la misma salida, byte a byte, sobre `ace3243` y sobre este commit (`cmp`).
+
+**Qué hace la regla.**
+
+- `SIN_LINEA_AL_CANON` declara cada fichero con su ámbito: el fichero entero para `README.md`,
+  `README_EN.md` y `RESUMEN_EJECUTIVO.md`, y las líneas que empiezan por «- **Lo que se puede
+  afirmar:**» para `doc/ecst/VERIFICACION.md`.
+- En el ámbito, fuera de los bloques de numeración vieja, una cita «canon.sh:<número>», con o sin
+  comilla invertida antes de los dos puntos, es ROJO, CITA POR LINEA AL CANON. El patrón es el de la
+  v3 bis, `linea_a()`, con `tools/canon.sh`.
+- La marca que narra la cita vieja, «decía `:109`», no lleva el nombre del fichero y no cuenta.
+- Prueba de vida, como la v3 bis. El autotest siembra siete líneas: una cita por fila, una por
+  línea, una por línea fuera del ámbito, una dentro de un bloque y una marca. Exige `([1, 2], [2])`
+  con el ámbito de `VERIFICACION.md` y `[2, 3]` sin él. Exige también que el patrón vea cuatro
+  formas reales y no tome por cita cuatro que no lo son. Una lista vacía es ROJO, un fichero
+  declarado que no existe también, y uno que no nombra `tools/canon.sh` en su ámbito, también.
+
+**Mutantes**, sobre copias del árbol en el directorio de la sesión (sin `target/` ni `.git/`), con
+la herramienta de la copia y la copia como raíz:
+
+- M1, «(tools/canon.sh:109)» repuesto en `VERIFICACION.md:1549`: exit 1, CITA POR LINEA AL CANON
+  en `:1549`.
+- M2, «(`tools/canon.sh`:128-130)» repuesto en `RESUMEN_EJECUTIVO.md:95`: exit 1, en `:95`.
+- M3, `SIN_LINEA_AL_CANON` vacía: exit 1, dos PRUEBA DE VIDA: la lista vacía, y el autotest, que lee
+  de ella el ámbito de `VERIFICACION.md`.
+- M4, un fichero declarado que no existe: exit 1, SIN LINEA AL CANON SIN FICHERO.
+- M5, «`tools/canon.sh`:404-407» repuesto en `README.md:139`: exit 1, en `:139`.
+- M6, «`tools/canon.sh`:128-130» repuesto en `README_EN.md:269`: exit 1, en `:269`.
+- M7, el ámbito de `VERIFICACION.md` cambiado a un prefijo que no está: exit 1, el autotest y «no
+  nombra tools/canon.sh en su ámbito».
+- M8, la función no anota las citas: exit 1, las dos del autotest.
+- M9, la función sin el ámbito: exit 1, el autotest y las cuatro «Fuentes:» de `VERIFICACION.md`
+  (`:864`, `:1550`, `:1574`, `:1606`).
+- M10, la función sin los bloques de numeración vieja: exit 1, las dos del autotest.
+- M11, `SECURITY.md` declarado, que no nombra el canon: exit 1, «no nombra tools/canon.sh». Con esa
+  comprobación quitada (M11b, el control), exit 0: la mata ella sola.
+
+Vivos, y en la ceguera de la cabecera de la regla: V1, una cita por línea en una «Fuentes:» de
+`VERIFICACION.md`, VERDE; V2, una en `doc/KIT.md`, fuera de la lista, VERDE; V3, «la línea 132 de
+`tools/canon.sh`» en `README.md`, VERDE; V4, una dentro de un bloque de numeración vieja en
+`RESUMEN_EJECUTIVO.md`, VERDE, como manda la v4 R3; V5, `README.md` quitado de
+`SIN_LINEA_AL_CANON`, VERDE: sólo cambia la cuenta del resumen, «0 · 3 ficheros … (README_EN.md 3,
+RESUMEN_EJECUTIVO.md 1, doc/ecst/VERIFICACION.md 1)». En la v3 bis pasa lo mismo: con `doc/KIT.md`
+quitado de `SOLO_POR_ENCABEZADO`, exit 0, y el resumen baja de 9 ficheros y 37 citas a 8 y 36. Esa
+regla no se toca aquí. M1, rehecho tras la vuelta de revisión, da lo mismo que arriba. Las copias, el conductor y sus salidas se
+borraron al acabar.
+
+Sobre `b11f8b6` con este sello, salen con 0 las once herramientas del bucle «2 ter»,
+`check_vectores --desde 69597f3` y `check_catalogo`; también `check_tests` y `check_modulos`.
+
+**Correcciones**, sobre los ficheros STAGED de este commit:
+
+1. `README.md:143-144`, dentro de la marca del §794: «(`tools/canon.sh`:404-407; …)» pasa a «(su
+   bloque «3 · conformidad», en `tools/canon.sh`; …)», y al final del párrafo: «⚠️ **Corregido en
+   el §847**: citaba ese bloque del canon por línea, `:404-407`, y el fichero creció por encima: hoy
+   esas líneas son el comentario del bloque «2 ter». Se cita el bloque.»
+2. `README.md:261`, dentro de la marca del §794: «(`tools/canon.sh`:128-130, :154-158, :271)» pasa a
+   las tres filas, la función `nivel_num` y el salto por nivel del bloque «1 · los tests, crate a
+   crate», con «⚠️ **Corregido en el §847**: citaba esas tres cosas por línea, `:128-130`,
+   `:154-158` y `:271`, y la tabla las movió. …».
+3. `README_EN.md:145-147`, la gemela de la 1: «⚠️ **Corrected in §847**: it cited that block of the
+   canon by line, `:404-407`, …».
+4. `README_EN.md:275`, la gemela de la 2: «⚠️ **Corrected in §847**: it cited those three things by
+   line, …».
+5. `RESUMEN_EJECUTIVO.md:98`, dentro de la marca del §794: «(`tools/canon.sh`:128-130)» pasa a las
+   tres filas «por su columna `nivel`», con «⚠️ **Corregido en el §847**: decía `:128-130`, y la
+   tabla las movió».
+6. `doc/ecst/VERIFICACION.md:6`, al final de la cabecera: «⚠️ **Corregido en el §847**: decía, sin
+   excepción, que sale entero de `final.json`. …», con lo medido en el punto 4 y la regla.
+   Dice también que el §697 movió la cita, de `:99` a `:109`, que desde el §802 ya no se movió, y
+   que el §816 la llevó a la `:132`. Cuenta dieciocho sellos: del §641 al §842, el §816 y el §817.
+7. `doc/ecst/VERIFICACION.md:1549`: «(tools/canon.sh:132; ⚠️ §816: decía `:109`, la línea del
+   9da6906, que ya no era la del pin)» pasa a «(la fila `zk-ssl` de la tabla de `tools/canon.sh`;
+   ⚠️ §816: decía `:109`, la línea del 9da6906, que ya no era la del pin; ⚠️ §847: decía `:132`,
+   la de la fila, y la fila se mueve)». La marca del §816 se queda. El «497» no se toca: es el pin,
+   y lo mueve a mano el sello que mueva la fila.
+8. `doc/ecst/README.md:29`, al final de la celda: «⚠️ **Corregido en el §847**: decía que se genera
+   entero; la línea «Lo que se puede afirmar» de M11 lleva el pin de `zk-ssl` a mano (ver su
+   cabecera)».
+9. `tools/verificar_citas.py`, la R2 de la v5 en la cabecera: «registro generado entero de
+   `doc/ecst/borrador/final.json`» pasa a «registro generado de `doc/ecst/borrador/final.json`,
+   salvo sus líneas «Lo que se puede afirmar», que son vivas (v5 bis)», con «⚠️ §847: decía
+   «generado entero», y la de M11 lleva a mano el pin de `zk-ssl`».
+10. `tools/verificar_citas.py`, la razón de `doc/ecst/VERIFICACION.md` en `EXCLUIDOS_LINEA`: pasa a
+    «registro generado de doc/ecst/borrador/final.json salvo sus líneas «Lo que se puede afirmar»,
+    vivas (v5 bis); rutas de 71c5aad», con la marca en el comentario de encima: «⚠️ §847: la de
+    VERIFICACION decia «registro generado» sin mas». La razón no se imprime: la salida no cambia.
+
+Ninguna línea de esos cinco documentos se mueve. En `tools/verificar_citas.py`, contra `b11f8b6`, se
+mueven las de debajo de la 89 de antes, 2 líneas; las de debajo de la 104, 26; las de debajo de la
+256, 28; las de debajo de la 260, 29; las de debajo de la 470, 100; y las de debajo de la 543, 103.
+Nadie en el árbol, `AUDITORIA.md` incluido, cita `tools/verificar_citas.py` por línea.
+
+**Lo que NO hace.**
+
+- No mira los demás ficheros: `doc/METODO.md` cita `tools/canon.sh` por línea en once sitios, y
+  varios ya no caen en su sitio; `doc/blueprint-v2.md` en dos, el RFC-0005 en uno, y
+  `doc/ecst/borrador/` en 36. Tampoco `tools/`: `check_publicadas.py` en cinco y `conservados.sh`
+  en una. Ni `BACKLOG.md`, que lo cita por línea en una desde el §861.
+- No mira las «Fuentes:» de `VERIFICACION.md` (V1): son de 71c5aad, como dice su cabecera.
+- No ve «la línea 132 de `tools/canon.sh`» (V3): sólo la forma «:<número>».
+- No toca las razones de `doc/ecst/VERIFICACION.md` en `EXCLUIDOS_NIVEL` y `EXCLUIDOS_RETIRADAS`
+  de `tools/check_publicadas.py` (`:1039` y `:1232`): hablan de las fuentes de cada fila, y no dicen
+  «entero».
+- No cierra el vivo V5, ni el de la v3 bis: quitar un fichero de la lista se ve en el resumen, no es
+  ROJO.
+- No ata el pin de M11 a la fila: lo pone al día a mano el sello que mueva la fila, como hasta hoy.
+- No regenera `final.json`, ni lo toca.
+
+**Lo que es del autor.** Si la regla se extiende a `doc/METODO.md`, y cuándo. Si el pin de M11 se
+ata a la fila con una herramienta, o se queda a mano, como decidió. Y si `final.json` se regenera o
+se queda como el borrador de su fecha.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2008 tests declarados y 20 instrumentos, y
+`check_modulos` en 207. El total de sello sigue en 1849: la regla es de una herramienta del bucle,
+no un test. `BACKLOG.md` no cambia: su cabecera sigue en 44 abiertas y 86 resueltas. Las marcas «⚠️
+… §847» en los ficheros del commit, sin este asiento, son diez: siete en los cuatro documentos del
+principio, una en `doc/ecst/README.md` y dos en `tools/verificar_citas.py` (la R2 de la v5 y el
+comentario de `EXCLUIDOS_LINEA`). `git grep --cached -n "§847" -- ':!AUDITORIA.md'` da trece líneas:
+esas diez y otras tres de `tools/verificar_citas.py` (la cabecera de la v5 bis, el comentario de la
+regla y una línea del autotest), crónica de la regla, que no corrige nada sellado.

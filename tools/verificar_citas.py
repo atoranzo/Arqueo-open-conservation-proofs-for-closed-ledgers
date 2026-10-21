@@ -85,8 +85,10 @@ v5 (§792): ninguna cita por LÍNEA al `BACKLOG.md` en un documento vivo.
       `BACKLOG.md`»: su número no se reutiliza ni se renumera.
   R2  Fuera, declarados (EXCLUIDOS_LINEA): `AUDITORIA.md` —un asiento narra
       las líneas de su fecha y no se reescribe— y `doc/ecst/VERIFICACION.md`
-      —registro generado entero de `doc/ecst/borrador/final.json`, con las
-      rutas del árbol en 71c5aad, que él mismo dice que envejecen—. Y lo que
+      —registro generado de `doc/ecst/borrador/final.json`, salvo sus líneas
+      «Lo que se puede afirmar», que son vivas (v5 bis), con las rutas del
+      árbol en 71c5aad, que él mismo dice que envejecen—. ⚠️ §847: decía
+      «generado entero», y la de M11 lleva a mano el pin de `zk-ssl`. Y lo que
       vaya en un bloque de numeración vieja (v4 R3).
   R3  PRUEBA DE VIDA en los dos sentidos: el patrón reconoce las formas
       reales y no confunde la cita por entrada; y en los ficheros excluidos
@@ -101,6 +103,30 @@ v5 (§792): ninguna cita por LÍNEA al `BACKLOG.md` en un documento vivo.
   encabezado—. ⚠️ §831: salvo en los ficheros de la v3 bis, que la miran para
   su documento. Y solo `.md` y `.rs`: `doc/ecst/borrador/*.json` tiene
   decenas, generadas.
+
+v5 bis (§847): ninguna cita por LÍNEA a `tools/canon.sh` en los documentos vivos de la lista
+SIN_LINEA_AL_CANON. La tabla del canon crece por dentro —cada sello alarga la nota de su fila— y
+por encima de ella: en ace3243, seis líneas de cuatro documentos vivos lo citaban por línea, y
+ninguna caía en su sitio.
+  R1  En cada fichero de la lista, y en su ámbito, toda cita «canon.sh:<número>» —con o sin la
+      ruta delante y con o sin comilla invertida antes de los dos puntos— es ROJO. El ámbito es el
+      fichero entero o, en `doc/ecst/VERIFICACION.md`, las líneas «- **Lo que se puede afirmar:**»,
+      donde va a mano el pin de una fila: el autor decidió que el registro es vivo en esto, y el
+      ámbito lo propone la sesión. Se cita la fila («la fila `zk-ssl` de la tabla de
+      `tools/canon.sh`»), su columna o el bloque («el bloque «3 · conformidad»»). Fuera, como en
+      la v3 bis, lo que vaya en un bloque de numeración vieja (v4 R3), y la marca que narra la
+      cita vieja («decía `:109`»), que no lleva el nombre.
+  R2  PRUEBA DE VIDA, como la v3 bis: el autotest exige que el patrón vea las formas reales y no
+      tome por cita por línea la cita por fila, la marca ni la orden «bash tools/canon.sh
+      --sello», y siembra un texto con una de cada, una dentro de un bloque y una fuera del ámbito,
+      y exige que la función que mira el árbol vea solo la suya. Cada fichero declarado tiene que
+      nombrar `tools/canon.sh` en su ámbito al menos una vez: una declaración que no mira nada es
+      ROJO, y un fichero declarado que no existe y una lista vacía, también.
+  Ceguera declarada. Solo los ficheros de la lista y su ámbito. Las «Fuentes:» de
+  `doc/ecst/VERIFICACION.md` siguen siendo de 71c5aad, y las citas por línea al canon de
+  `doc/METODO.md`, `doc/blueprint-v2.md`, el RFC-0005, `doc/ecst/borrador/` y los comentarios
+  de `tools/` no se miran. Solo la forma «:<número>». Y quitar un fichero de la lista no es
+  ROJO: se ve en la cuenta del resumen, como en la v3 bis.
 
 v6 (§805): el número que falta. Un sello escribe «§» y la letra N como marcador del número
 que aún no tiene, y lo numera al sellar; el §802 se publicó con 91 líneas sin numerar, en
@@ -117,7 +143,7 @@ lo vio: la v4 solo mira «§» con cifras.
 Uso: python3 tools/verificar_citas.py [raíz] — sale con 1 si hay fantasmas,
 secciones muertas, encabezados muertos, citas del registro muertas, citas
 por línea al `BACKLOG.md` en un documento vivo, una cita por línea en un fichero de
-la v3 bis, un marcador sin número (v6),
+la v3 bis o al canon en uno de la v5 bis, un marcador sin número (v6),
 una marca rota o una prueba de vida que no ve.
 """
 import re
@@ -254,10 +280,13 @@ TOLERADAS = {
     (594, 0): "«§0-ECST»: el número provisional que, narra el asiento, pasó a ser §594",
 }
 # ⚠️ v5 R2: fuera de la regla de la cita por linea al BACKLOG, con su razon.
+# ⚠️ §847: la de VERIFICACION decia «registro generado» sin mas; sus lineas «Lo que se puede
+# afirmar» son vivas (v5 bis).
 EXCLUIDOS_LINEA = {
     "AUDITORIA.md": "registro: un asiento narra las líneas de su fecha y no se reescribe",
     "doc/ecst/VERIFICACION.md":
-        "registro generado de doc/ecst/borrador/final.json, rutas de 71c5aad",
+        "registro generado de doc/ecst/borrador/final.json salvo sus líneas «Lo que se puede "
+        "afirmar», vivas (v5 bis); rutas de 71c5aad",
 }
 
 
@@ -468,6 +497,77 @@ for rel, doc in SOLO_POR_ENCABEZADO.items():
         reg_rojo.append(f"PRUEBA DE VIDA  v3 bis: {rel} no cita {doc} por encabezado: "
                         "la declaración no mira nada")
 
+# ⚠️ v5 bis (§847): en un documento vivo de esta lista, ninguna cita por LINEA a `tools/canon.sh`.
+# (fichero, prefijo de las lineas que mira; None, el fichero entero): la razon va en la cabecera.
+CANON = "tools/canon.sh"
+SIN_LINEA_AL_CANON = {
+    "README.md": None,
+    "README_EN.md": None,
+    "RESUMEN_EJECUTIVO.md": None,
+    "doc/ecst/VERIFICACION.md": "- **Lo que se puede afirmar:**",
+}
+
+
+def al_canon(texto, rel, prefijo):
+    """v5 bis R1: (lineas que nombran el canon, lineas que lo citan por linea), en el ambito."""
+    pat, nombran, citan = linea_a(CANON), [], []
+    for i, linea in vivas(texto, rel, [], Counter()):
+        if prefijo is not None and not linea.startswith(prefijo):
+            continue
+        if Path(CANON).name in linea:
+            nombran.append(i)
+        if pat.search(linea):
+            citan.append(i)
+    return nombran, citan
+
+
+def autotest_v5bis():
+    mal = []
+    pat = linea_a(CANON)
+    sembrado = "\n".join(["- **Lo que se puede afirmar:** la fila `zk-ssl` de `tools/canon.sh`",
+                           "- **Lo que se puede afirmar:** fija 100 (tools/canon.sh:109)",
+                           "- **Fuentes:** `tools/canon.sh:89: pin actual`",
+                           "<!-- numeracion-vieja -->",
+                           "- **Lo que se puede afirmar:** `tools/canon.sh`:128-130",
+                           "<!-- /numeracion-vieja -->",
+                           "- **Lo que se puede afirmar:** ⚠️ §847: decía `:109`"])
+    prefijo = SIN_LINEA_AL_CANON.get("doc/ecst/VERIFICACION.md")
+    if al_canon(sembrado, "autotest", prefijo) != ([1, 2], [2]):
+        mal.append(f"v5 bis: el sembrado da {al_canon(sembrado, 'autotest', prefijo)}, "
+                   "se esperaba ([1, 2], [2])")
+    if al_canon(sembrado, "autotest", None)[1] != [2, 3]:
+        mal.append("v5 bis: sin prefijo, el sembrado no da las lineas [2, 3]")
+    for si in ("(tools/canon.sh:109)", "`tools/canon.sh`:404-407", "`tools/canon.sh:128-130`",
+               "canon.sh:97"):
+        if not pat.search(si):
+            mal.append(f"v5 bis: el patron no ve {si}")
+    for no in ("la fila `zk-ssl` de la tabla de `tools/canon.sh`", "decía `:128-130`, `:154-158`",
+               "bash tools/canon.sh --sello", "`tools/canon.sh`: la tabla"):
+        if pat.search(no):
+            mal.append(f"v5 bis: el patron toma por cita por linea {no}")
+    return mal
+
+
+for v in autotest_v5bis():
+    reg_rojo.append(f"PRUEBA DE VIDA  {v}")
+if not SIN_LINEA_AL_CANON:
+    reg_rojo.append("PRUEBA DE VIDA  v5 bis: SIN_LINEA_AL_CANON está vacía: la regla no mira nada")
+v5bis_lineas, v5bis_nombran = 0, {}
+for rel, prefijo in SIN_LINEA_AL_CANON.items():
+    p = RAIZ / rel
+    if not p.is_file():
+        reg_rojo.append(f"SIN LINEA AL CANON SIN FICHERO  {rel}: se quita de SIN_LINEA_AL_CANON")
+        continue
+    nombran, citan = al_canon(p.read_text(encoding="utf-8", errors="replace"), rel, prefijo)
+    for i in citan:
+        reg_rojo.append(f"CITA POR LINEA AL CANON  {rel}:{i}: se cita la fila, su columna o el "
+                        "bloque de tools/canon.sh, no la línea")
+        v5bis_lineas += 1
+    v5bis_nombran[rel] = len(nombran)
+    if not nombran:
+        reg_rojo.append(f"PRUEBA DE VIDA  v5 bis: {rel} no nombra {CANON} en su ámbito: "
+                        "la declaración no mira nada")
+
 # ⚠️ v6 (§805): el marcador sin número. El patrón se compone para que este fichero no lo lleve.
 SIN_NUMERO = re.compile("\u00a7" + r"N\b")
 EXTENSIONES_V6 = ("md", "rs", "py", "sh", "js", "toml")
@@ -541,6 +641,9 @@ print(f"línea al BACKLOG (v5): {en_vivos} en documentos vivos · "
 print(f"línea a un documento citado por encabezado (v3 bis): {v3bis_lineas} · "
       f"{len(v3bis_encab)} ficheros, {sum(v3bis_encab.values())} citas por encabezado a su "
       "documento (" + ", ".join(f"{r} {n}" for r, n in sorted(v3bis_encab.items())) + ")")
+print(f"línea al canon en un documento vivo (v5 bis): {v5bis_lineas} · {len(v5bis_nombran)} "
+      "ficheros, que lo nombran en su ámbito (" + ", ".join(f"{r} {n}" for r, n in
+                                                 sorted(v5bis_nombran.items())) + ")")
 print(f"marcador sin número (v6): {sin_numero_vivos} en el árbol · "
       f"{sum(legitimos_vistos.values())} que hablan del marcador, declarados")
 sys.exit(1 if fallos else 0)
