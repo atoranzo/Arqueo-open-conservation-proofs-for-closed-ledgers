@@ -60,7 +60,7 @@ contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CAS
 asiento qué compuertas pasó, la mayor el canon (⚠️ §794: decía «con canon en cada cambio»);
 protocolo `zkssl/0.4` con 32 métodos y vectores que no se reescriben desde el §692 (la versión no dice qué pruebas acepta un nodo: §699);
 RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 y 0014 aceptados, 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 y 0021 propuestos; verificador
-`zk-ssl-verify` 0.4.3 (cortada, §815, un arreglo de seguridad; la publicada es `arqueo-verify-v0.4.2`, reproducible); registro con un asiento por
+`zk-ssl-verify` 0.4.3 (publicada, `arqueo-verify-v0.4.3`, un arreglo de seguridad con su aviso, reproducible; ⚠️ §818: decía «cortada, §815, …; la publicada es `arqueo-verify-v0.4.2`»); registro con un asiento por
 cambio. Falta: auditoría externa, custodia de clave comprobada, y un ancla anterior al primer
 encuentro del testigo (⚠️ §589: esta lista pedía también «la completitud de los acuses»).
 
@@ -127,7 +127,7 @@ in its entry which gates it passed, the largest being the canon (⚠️ §794: i
 every change»);
 protocol `zkssl/0.4` with 32 methods and vectors not rewritten since §692 (the version does not say which proofs a node accepts: §699);
 RFCs 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 and 0014 accepted, 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 and 0021 proposed;
-verifier `zk-ssl-verify` 0.4.3 (cut, §815, a security fix; the published one is `arqueo-verify-v0.4.2`, reproducible); a record with one
+verifier `zk-ssl-verify` 0.4.3 (published, `arqueo-verify-v0.4.3`, a security fix with its advisory, reproducible; ⚠️ §818: it said «cut, §815, …; the published one is `arqueo-verify-v0.4.2`»); a record with one
 entry per change. Missing: an external audit, a verified key custody, and an anchor prior to the
 witness's first encounter (⚠️ §589: this list also asked for "the completeness of
 acknowledgements").

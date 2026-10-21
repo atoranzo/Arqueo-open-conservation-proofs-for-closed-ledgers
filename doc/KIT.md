@@ -16,19 +16,22 @@ dice?» es «descárguelo y córralo usted», y sólo vale si la descarga existe
 
 ## 0. Descargar, y comprobar la descarga antes de creerla
 
-La release vigente es `arqueo-verify-v0.4.2`, publicada en
-<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.2>,
-producida sobre el commit `a4e888d8b98ca6254904486f6ada8710c2a5fe08`:
-tarball `arqueo-verify-0.4.2-x86_64-unknown-linux-gnu.tar.gz`, sha256
-`33acdc9a8fe38f0355b4e49e11338a9a94b6f933d86eb5bde23ead315ae1831d` (16.677.910 B, 368 ficheros);
-binario `7734376463d120b0bbd47d3bde852da628557caf28b530cbe5076fce17a68ee2`. Las dos huellas están
+La release vigente es `arqueo-verify-v0.4.3`, publicada en
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.3>,
+producida sobre el commit `5fd5212b9f6e04c4c619655ffe969ab04116477a`:
+tarball `arqueo-verify-0.4.3-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`0bb21f4f5dfe7575264268f281c19648cbf3da38b4fd6809c4eea067592aa4b0` (21.737.865 B, 420 ficheros);
+binario `1b120e597897e00530508506b2ade934b042e3fc3f9c1138d895de25d37c8844`. Las dos huellas están
 medidas desde fuera —descarga por `curl`, el `digest` del asset en la API, el kit descargado
-corriendo sus once catálogos desde dentro del tarball— en el asiento de `AUDITORIA.md` que registra
-esta release (§671). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee once
-familias: las once de la sección 11 del `spec/PAQUETE.md` que viaja en su tarball, la undécima la del ancla cofirmada (§633, §634); la del árbol cuenta ya doce, con la rotación (§649), que ninguna release publicada lleva. ⚠️ **Corregido en el §807**: decía «las diez de la sección 11 de `spec/PAQUETE.md` y la del ancla cofirmada»; la sección 11 del commit `a4e888d` nombra once familias, el ancla cofirmada entre ellas, y la del árbol doce (`FAMILIAS` en `tools/artefacto.sh`:31).
+corriendo sus doce catálogos desde dentro del tarball— en el asiento de `AUDITORIA.md` que registra
+esta release (§818). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee doce
+familias: las doce de la sección 11 del `spec/PAQUETE.md` que viaja en su tarball, la duodécima la de la rotación (§649), y es la primera release publicada que la lleva. ⚠️ **Corregido en el §807**: decía «las diez de la sección 11 de `spec/PAQUETE.md` y la del ancla cofirmada»; la sección 11 del commit `a4e888d` nombra once familias, el ancla cofirmada entre ellas, y la del árbol doce (`FAMILIAS` en `tools/artefacto.sh`:31). ⚠️ **§818**: hasta aquí este párrafo daba como vigente la `arqueo-verify-v0.4.2`, publicada en <https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.2>, sobre el commit `a4e888d`, con sus dos huellas —abreviadas en su párrafo, abajo; enteras, con sus 16.677.910 B y sus 368 ficheros, en el asiento §671—, y decía «lee once familias: las once de la sección 11 del `spec/PAQUETE.md` que viaja en su tarball, la undécima la del ancla cofirmada (§633, §634); la del árbol cuenta ya doce, con la rotación (§649), que ninguna release publicada lleva», que era lo cierto de la 0.4.2.
 
-⚠️ **La 0.4.3 está CORTADA y no publicada (§815), y es un arreglo de seguridad.** La vigente sigue
-siendo la 0.4.2 hasta que el asiento que registre la 0.4.3 fije su huella. Se redactó en privado
+⚠️ ~~**La 0.4.3 está CORTADA y no publicada (§815), y es un arreglo de seguridad.** La vigente sigue
+siendo la 0.4.2 hasta que el asiento que registre la 0.4.3 fije su huella.~~ ⚠️ **§818: publicada y
+vigente.** El autor la publicó con su aviso de seguridad, `GHSA-6p4m-qg2w-8r6j` (<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/security/advisories/GHSA-6p4m-qg2w-8r6j>), que nombra
+afectadas la 0.3.0, la 0.4.0, la 0.4.1 y la 0.4.2 y arreglada la 0.4.3, y el §818 la registra con
+su huella, arriba. **Es un arreglo de seguridad.** Se redactó en privado
 (`spec/rfc/PROCESO.md` §«Fallos de seguridad») y cambia veredictos dentro de `0.4.x`, que es lo que
 la R6 f del RFC-0021 permite con este aviso y la lista de lo que cambia. **El defecto que corrige:**
 la 0.4.2 no acepta ninguna resolución de un recibo de recepción que el nodo rechazó por
@@ -70,18 +73,31 @@ código de salida y última línea de cada uno:
 
 Los registros de la medida y la lista entera, vector a vector, van en el asiento §815.
 
+**La 0.4.2 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.2`, commit `a4e888d`,
+tarball `33acdc9a8fe38f03…`, binario `7734376463d120b0…`). Tiene el defecto del aviso de arriba,
+que la 0.4.3 corrige (§815): no acepta ninguna resolución de un recibo de recepción que el nodo
+rechazó por `VerificationFailed` o `ProofFailed` —la `declarada` sale ROJO y el sobre de rechazo no
+lo prueba ningún mando—, así que, si cualquiera, sin cuenta, manda una prueba basura al nodo, el
+operador honrado no tiene con qué resolver ese recibo y, pasada la ventana, queda nombrado, «NO
+RESUELTA EN LA VENTANA». Y la lista de lo que cambia, arriba, mide otros que la 0.4.3 corrige: da
+VERDE a un `StaleState` que no resuelve (§682) y a una cofirma con una versión que no cabe en un
+byte (§780), y da «NO RESUELTA EN LA VENTANA», un ROJO contra el operador, a un sobre que cualquiera
+fabrica inflando el `index` declarado de la cabeza vigente (§681). Use la 0.4.3.
+
 **La 0.4.1 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.1`, commit `ff1f06f`,
 tarball `505de994f243bc76…`). Tiene tres defectos que la 0.4.2 corrige: lee un `u64` del sobre con
 `+` o con ceros a la izquierda (§662); cuenta la misma cofirma repetida como varios testigos en el
 paquete v2 (§663); y lee una clave XMSS con el OID alterno `0x00010005` como la publicada, con lo que
-da VERDE a un «conflicto entre dos libros» con un solo libro escrito dos veces (§664). Use la 0.4.2.
+da VERDE a un «conflicto entre dos libros» con un solo libro escrito dos veces (§664). ~~Use la 0.4.2.~~
+Use la 0.4.3 (§818).
 
 **La 0.4.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). Tiene un defecto que la 0.4.1 corrige: una prueba con nodos de más
 dentro de un lote de Merkle verifica igual, con otros bytes (§659). El veredicto sobre el enunciado
 no cambia —la prueba retocada prueba lo mismo que la original—, pero sus bytes dejan de identificar
-la operación. Use la 0.4.2. Las dos leen las mismas once familias y dan los mismos veredictos a
-todos los vectores publicados.
+la operación. ~~Use la 0.4.2.~~ Use la 0.4.3 (§818). Las dos leen las mismas once familias y dan los mismos veredictos a
+todos los vectores publicados. ⚠️ **§818**: «las dos» son la 0.4.0 y la 0.4.1; la 0.4.3 lee doce y
+cambia los veredictos que dice el aviso, arriba.
 
 **La 0.3.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.3.0`, commit `65cabfb`,
 tarball `06648502e0171fea…`). Tiene cuatro defectos que la 0.4.0 corrige, descritos en la sección 3.9
@@ -89,7 +105,7 @@ de `SECURITY.md`: un campo hex con un carácter multibyte, o una prueba oculta c
 hacen salir con **101** (pánico) en vez de ROJO (§650, §651); una prueba con bytes de cola se lee
 igual que sin ellos (§653); y acepta los cuatro negativos de la lectura canónica (RFC-0016, §640).
 Falla con un código que no es el suyo, nunca con un VERDE falso para esos casos; aun así, use la
-0.4.2.
+~~0.4.2~~ 0.4.3 (§818).
 
 ⚠️ **En la 0.3.0, una frase vieja viaja en su `NOTICE`, declarada; la 0.4.0 lleva el corregido.** El `NOTICE` de aquel tarball dice que la
 ocultación del testigo del fork de winterfell la enciende sólo `Prover::ocultacion`, «que ningún
