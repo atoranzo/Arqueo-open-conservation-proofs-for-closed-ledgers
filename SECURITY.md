@@ -1063,7 +1063,17 @@ prometer—. Se borra, y se dice lo que puede seguir guardando copias:
   una línea, sin test, y se declara; dejarlo así es de la sesión, reversible. El de una instantánea
   que no se vuelva a importar se busca junto a ella y se borra a mano; y borrarlo tampoco sobrescribe;
 - **la capa importada** de una instantánea cifrada nace sin clave y, si se vuelve a exportar, sale
-  en claro (la entrada 121 del `BACKLOG.md`);
+  en claro (la entrada 121 del `BACKLOG.md`; ⚠️ §821: ya no: desde el §821, por decisión del autor, la
+  capa que devuelve `import_snapshot_with_key` conserva la clave de la instantánea, fijada a su
+  cabecera, y se reexporta cifrada, con la misma frase; y por decisión de la sesión, reversible, la
+  de una v1, en la versión 2, con sal nueva; la 121 la cierra el §821, y la 3.16 lo dice. Lo que
+  exporta una capa sin clave, como la de `import_snapshot`, sigue en claro. Y la clave que conserva
+  es la de la instantánea, no la del libro: una copia de antes de un `recifrar`, importada con la
+  frase vieja y reexportada, sale cifrada con la frase vieja y con la cabecera de esa copia, no con
+  la del libro recifrado, y no abre con la nueva (medido en la sesión, con un test que no queda en
+  el árbol: el asiento del §821). Cada reexportación de una copia restaurada con la frase vieja es
+  una copia NUEVA bajo esa frase, con lo que lleve entonces la capa importada, y quien cambió la
+  frase porque se filtró la tiene que contar entre las copias que guardan la vieja);
 - **el hardware y el sistema de ficheros**: un SSD (su FTL, el nivelado de desgaste, TRIM), los
   sistemas copy-on-write o de log (btrfs, ZFS, APFS, F2FS) y sus instantáneas, las de LVM, de una
   máquina virtual o de la nube, y el journal con `data=journal`;
@@ -1295,7 +1305,7 @@ sólo ata el sellado— y la 3.13 («Solo la cifrada las protege»), que llevan 
 instantánea está en claro y que, si se esperaba una cifrada, pudo ponerla quien escribe donde se
 guarda: `import_snapshot`, que no recibe clave, la importaría sin autenticar nada. Falla cerrado.
 Lo ata `con_clave_una_instantanea_en_claro_no_se_importa`, al final de `crates/zk-ssl/src/tests.rs`
-(⚠️ §819: ya no es el último: detrás va el del §819, en la 3.14; ⚠️ §820: y detrás de ése, los tres del §820, también en la 3.14): con la frase, con otra frase y con una
+(⚠️ §819: ya no es el último: detrás va el del §819, en la 3.14; ⚠️ §820: y detrás de ése, los tres del §820, también en la 3.14; ⚠️ §821: y detrás de ésos, los dos del §821, abajo, en «Lo que no hace»): con la frase, con otra frase y con una
 clave ya fijada a su KDF, una en claro no se importa; el mismo cuerpo tras una marca que no es de
 cifrado, tampoco; ni una v8 en claro; y sin clave, sí.
 
@@ -1308,7 +1318,16 @@ con la sal de su cabecera, no cuál de las instantáneas selladas con ella es). 
 `BACKLOG.md`, la capa importada que nace sin clave y se reexporta en claro, sigue abierta; por ella,
 una capa importada con clave y vuelta a exportar sale en claro, y esa copia, que no se distingue
 de una puesta por otro, ya no se importa con clave: da el error nuevo. Falla cerrado, pero quien
-encadene importar, exportar e importar verá un error que antes no veía.
+encadene importar, exportar e importar verá un error que antes no veía. ⚠️ §821: la 121 la cierra
+el §821, por decisión del autor: la capa importada con clave conserva la clave de la instantánea,
+fijada a su cabecera, y se reexporta cifrada, con la misma frase; la reexportada se vuelve a
+importar con la frase, y quien encadena importar, exportar e importar ya no ve ese error (`una_capa_importada_de_una_cifrada_se_reexporta_cifrada_con_su_cabecera`
+y `una_capa_importada_de_una_v1_se_reexporta_en_la_version_2`, al final de `crates/zk-ssl/src/tests.rs`).
+Y dos decisiones de la sesión, reversibles: la de una v1 se reexporta en la versión 2, con sal
+nueva; y una v1 ya no se importa con una clave ya fijada (`LedgerKey::derivar`), que no lleva la
+frase, porque la sal nueva pide derivarla con la frase: quien la importe así verá un error que antes
+no veía, que lo dice y nombra `LedgerKey::from_passphrase`. Falla cerrado. Lo que exporta una capa
+sin clave, como la de `import_snapshot`, sigue en claro, y esa copia sigue sin importarse con clave.
 
 Se redactó en privado y se publica de una vez con su arreglo, como pide la sección 5, y como el §812
 y el §816, por decisión del autor: el aviso es esta sección y el asiento §817, sin GHSA ni release,

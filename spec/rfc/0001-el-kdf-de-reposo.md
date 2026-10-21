@@ -26,7 +26,8 @@
   con que la apertura los lee. ⚠️ §816: y un tercero, `<libro>.cerrojo`: un fichero vacío que la capa
   crea junto a todo libro que abre y no borra nunca, el cerrojo del libro.
 - **Asiento(s) de AUDITORIA:** §702, §812, §816; el §819, que da test a la negativa del barrido y a su aviso;
-  y el §820, que cierra la 120: la exportación de la instantánea, entera o nada.
+  el §820, que cierra la 120: la exportación de la instantánea, entera o nada; y el §821, que cierra la
+  121: la capa importada con clave conserva la clave.
 
 **Número.** El 0001 estaba reservado a esto desde el §206: la nota de numeración del RFC-0002 lo
 dice, y los RFC-0003 a 0006 lo repiten. Este RFC lo ocupa.
@@ -36,7 +37,7 @@ dice, y los RFC-0003 a 0006 lo repiten. Este RFC lo ocupa.
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — el KDF, con su versión | `zk_ssl::crypto::Kdf`: la versión 1 (SHA-256, sólo se lee) y la 2 (Argon2id con sal y coste); su cabecera de 29 bytes y su único lector, `Kdf::de_cabecera`; los dominios de cada uso; `argon2` clavada con `=0.5.3` en la capa y en ningún otro manifiesto | NO | sellada — §702 |
-| E2 — el libro y su instantánea | `meta:kdf` en claro en cada lote; la clave se fija al abrir; un libro de la versión 1 se verifica y se migra a la 2 en un lote atómico (⚠️ §812: el lote dejaba en los ficheros lo sellado con la v1; desde el §812 la migración va por el camino de la E4); la instantánea cifrada, con la marca `0x02` y la cabecera del libro detrás; la `0x01` se sigue importando | NO | sellada — §702 |
+| E2 — el libro y su instantánea | `meta:kdf` en claro en cada lote; la clave se fija al abrir; un libro de la versión 1 se verifica y se migra a la 2 en un lote atómico (⚠️ §812: el lote dejaba en los ficheros lo sellado con la v1; desde el §812 la migración va por el camino de la E4); la instantánea cifrada, con la marca `0x02` y la cabecera del libro detrás (⚠️ §821: o, si la exporta una capa importada con clave, la de la instantánea de la que viene, o una de sal nueva si venía de la v1: la 121); la `0x01` se sigue importando | NO | sellada — §702 |
 | E3 — el keystore | `zkssl-keystore/2`, con `kdf_sal` y `kdf_coste` en claro; un `zkssl-keystore/1` abierto con su frase se reescribe en la 2, entero o nada | NO | sellada — §702 |
 | E4 — el recifrado | `SovereignLayer::recifrar` cambia la frase y la sal del libro entero: lo copia, sellado con la clave nueva, a `<libro>.recifrando`, lo verifica en claro contra el original leyéndolo del disco, lo pone con un cambio de nombre en el sitio del libro y borra el viejo entero: entero o nada. La migración de la E2 va por el mismo camino, y toda apertura resuelve lo que deja una muerte a mitad: hacia atrás antes del compromiso, hacia delante después. ⚠️ §816: y la apertura y el recifrado toman el cerrojo del libro, `<libro>.cerrojo`: sin él, una apertura a la vez que un recifrado podía dejar un libro vacío o perder el libro | NO | construida — §812, redactada en privado; su carrera, arreglada en el §816, también en privado |
 
@@ -128,7 +129,9 @@ mueve ninguna arista de un paquete que ya estuviera. El kit no cambia.
 - Un libro con `meta:kdf` abierto sin clave da `ParameterMismatch` de «cifrado en reposo».
 - **La instantánea cifrada** lleva la marca `0x02`, la cabecera del libro detrás y el cuerpo sellado:
   se abre con la frase, sin el libro. La marca `0x01` —el cuerpo sellado con la clave de la versión 1—
-  se sigue importando y ya no se escribe.
+  se sigue importando y ya no se escribe. ⚠️ §821: «la cabecera del libro», o, si la exporta una capa
+  importada con clave, la de la instantánea de la que viene, o una de sal nueva si venía de la v1 (la
+  121, que cierra el §821).
 
 ### El keystore (E3)
 
@@ -378,7 +381,10 @@ que la apertura los lee (⚠️ §816: y el tercero, el cerrojo del libro).
   nombre; el temporal que deja una exportación muerta lleva lo que llevaría el destino y no se barre.
   Y una capa importada de una instantánea cifrada nace sin clave y, si se vuelve a exportar, sale en
   claro. Son de la E2, y quedan fuera de esta etapa: son las entradas 120 y 121 del `BACKLOG.md`, que
-  abre el §812; la 120 la cierra el §820.
+  abre el §812; la 120 la cierra el §820. ⚠️ §821: y la 121, el §821, por decisión del autor: la capa que
+  devuelve `import_snapshot_with_key` conserva la clave de la instantánea, fijada a su cabecera, y
+  se reexporta cifrada, con la misma frase; y por decisión de la sesión, reversible, la de una v1, en
+  la v2 con sal nueva, y con una clave ya fijada sin la frase no se importa (`SECURITY.md` §3.14 y §3.16).
 
 **El remedio de un libro ya migrado.** Un libro que migró el código del §702 —desde `2ac6db4`, el
 07-10-2026, hasta el §812— puede llevar en sus ficheros el resto v1, y uno pequeño o quieto lo lleva

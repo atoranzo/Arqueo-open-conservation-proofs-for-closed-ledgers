@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 43 abiertas, 87 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 42 abiertas, 88 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, y el §820, que cierra la 120.
+el §815, que abre la 129, el §820, que cierra la 120, y el §821, que cierra la 121.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -3303,7 +3303,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   destino sigue siendo la anterior, byte a byte, e importa; y una que acaba deja la nueva. Su
   mutante, la escritura en sitio otra vez con los mismos puntos de inyección, cae en los dos porque
   la anterior se tocó. El temporal lleva lo que llevaría la nueva —cifrado si la capa tiene clave, en
-  claro si no: una capa sin clave que exporta sobre una cifrada, como la importada de una (la 121),
+  claro si no: una capa sin clave que exporta sobre una cifrada, como la importada de una (la 121; ⚠️ §821: la importada con clave, ya no: desde el §821 conserva la clave, y la 121 está cerrada),
   deja un claro junto a ella, el mismo que dejaría si acabara—, nace 0600 en Unix, y la importación
   no lo lee. De lo que pide, una cosa no se hace así: el
   temporal que deja una exportación muerta **no se barre**, porque la biblioteca no sabe si es de
@@ -3331,7 +3331,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   del directorio no tumba ningún test de la capa, medido—, y que un destino que no se puede abrir
   para escribir se rehúse (en la máquina de la sesión los tests corren como root).
 
-- [ ] **121. Una capa importada de una instantánea cifrada nace sin clave, y se reexporta en claro
+- [x] **121. Una capa importada de una instantánea cifrada nace sin clave, y se reexporta en claro
   (§812).** `import_snapshot_with_key` descifra la instantánea con su frase, pero la capa que devuelve
   lleva `key: None` (`crates/zk-ssl/src/snapshot.rs:460-463`: «quien la persista decidirá con qué
   clave»), y `export_snapshot` exporta en claro, con la marca `0x00`, la capa que no tiene clave.
@@ -3343,6 +3343,30 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   cifrada se rehúse. Las dos cambian lo que hace la API. **Qué la cierra**: un test que importa una
   instantánea cifrada y la vuelve a exportar, y la encuentra cifrada —o la exportación rehusada—, con
   su mutante; y la marca en el RFC-0001 y en `SECURITY.md` §3.14.
+  ✅ **CERRADA EN EL §821**, con la primera de las dos: la decidió el autor el 21-10-2026, a la
+  pregunta de la sesión, «Conservar la clave»; la otra, rehusar exportar sin clave, no. La capa que
+  devuelve `import_snapshot_with_key` sale con la clave fijada a la cabecera de la instantánea, la
+  que `abrir_sellada` fija para abrirla (`conservar_la_clave`, al final de `snapshot.rs`), y
+  `export_snapshot` la reexporta cifrada, sin cambiar ningún formato: de una v2, con la marca `0x02`
+  y la misma cabecera, byte a byte, y sin otro Argon2id (se deduce del código, y sólo lo ve el
+  tiempo: medido en el asiento). De una v1 —la marca `0x01`, SHA-256 sin sal, que desde el §702 sólo
+  se lee— la sesión elige, reversible, lo que falla cerrado: la clave se fija a una versión 2 de sal
+  nueva, como `open_encrypted` migra un libro v1, y la reexportada lleva la marca `0x02`, con la
+  misma frase, a costa de un Argon2id al importar; con una clave ya fijada, que no lleva la frase,
+  no se puede, y la importación falla con un error que lo dice. Reexportarla en la v1 escribiría lo
+  que nada escribe desde el §702. **Qué la cierra**, cumplido:
+  `una_capa_importada_de_una_cifrada_se_reexporta_cifrada_con_su_cabecera` y
+  `una_capa_importada_de_una_v1_se_reexporta_en_la_version_2` importan una cifrada, de la v2 y de la
+  v1, la reexportan y la encuentran cifrada, en la v2, que abre con la misma frase y no sin clave ni
+  con otra frase, con los saldos, el suministro y las cinco raíces de la de partida; la de la v2,
+  también después de abrir una cuenta en la capa importada, y la de la v1, con otra sal en cada
+  importación. Su mutante, la capa importada otra vez sin clave, cae en los dos, con la marca
+  `0x00`; los demás, en el asiento. La marca, en el RFC-0001 («La instantánea.», y dos en la E2: su
+  fila de la tabla de etapas y su sección), en `SECURITY.md` §3.14 y dos en la §3.16. Cambia lo que
+  hace la API en dos cosas, que se declaran: una capa importada con clave y reexportada sale
+  cifrada, y no en claro; y una v1 ya no se importa con una clave fijada sin la frase. Lo que no
+  cambia: la capa de `import_snapshot`, sin clave, se reexporta en claro, y una capa sin clave que
+  exporta sobre una cifrada deja un claro, como dice la 120.
 
 - [x] **122. El TLS del cli y del SDK enlaza curvas, y `check_curvas` no lo ve (§835).** `ureq`
   2.12.1 entra en `zk-ssl-cli` y en `zk-ssl-sdk` con su `tls` por defecto, y trae `rustls` sobre

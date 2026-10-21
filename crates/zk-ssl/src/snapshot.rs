@@ -32,7 +32,7 @@
 //!   marca 0x01   el cuerpo va SELLADO con la clave de la version 1 del KDF (solo se lee, §702)
 //!   marca 0x02   (§702, RFC-0001) 29 B en claro, la cabecera del KDF del libro -version 2,
 //!                coste y sal-, y el cuerpo SELLADO con la clave que deriva. Con 0x01 y 0x02
-//!                los desplazamientos de abajo son DEL CUERPO, una vez abierto el sello.
+//!                los desplazamientos de abajo son DEL CUERPO, una vez abierto el sello. ⚠️ §821: «del libro», o, si la exporta una capa importada con clave, la de su instantanea, o una de sal nueva si venia de la v1 (la 121; `conservar_la_clave`, al final).
 //!
 //! cuerpo (desplazamiento desde su byte 0):
 //!
@@ -176,7 +176,7 @@ impl SovereignLayer {
     /// Importa una instantánea cifrada, y sólo una cifrada (⚠️ §817: hasta el §817 también una en claro; `rehusar_en_claro`, al final).
     ///
     /// Existe aparte porque `import_snapshot` no tiene forma de conocer la clave: es una función
-    /// asociada, no un método. §702: la fija al KDF de la instantánea (`abrir_sellada`, al final).
+    /// asociada, no un método. §702: la fija al KDF de la instantánea (`abrir_sellada`, al final). ⚠️ §821: y la capa que devuelve la conserva, y se reexporta cifrada; hasta el §821 nacía sin clave y se reexportaba en claro (la 121; `conservar_la_clave`, al final).
     pub fn import_snapshot_with_key(
         path: &str,
         key: &crate::crypto::LedgerKey,
@@ -188,7 +188,7 @@ impl SovereignLayer {
             .read_to_end(&mut buf)
             .map_err(io_err)?;
 
-        let plano = match buf.first() {
+        let (plano, fijada) = match buf.first() { // ⚠️ §821: y la clave fijada a su KDF
             Some(&SNAPSHOT_ENCRYPTED) | Some(&SNAPSHOT_ENCRYPTED_V2) => abrir_sellada(&buf, key)?,
             Some(&SNAPSHOT_PLAIN) => return Err(rehusar_en_claro()), // ⚠️ §817: la importaba sin mirar la clave
             _ => {
@@ -202,7 +202,7 @@ impl SovereignLayer {
         //    `{path}.tmp-descifrada`, junto a la instantanea cifrada, y se borraba despues: el
         //    estado entero en claro en disco durante la importacion, y para siempre si el proceso
         //    moria entre medias.
-        Self::desde_instantanea_en_claro(plano)
+        conservar_la_clave(Self::desde_instantanea_en_claro(plano)?, fijada, key) // ⚠️ §821: hasta el §821, la capa salía sin clave (la 121)
     }
 
     /// Exporta el estado completo a un fichero, entero o nada (⚠️ §820: `escribir_entera`, al final).
@@ -459,7 +459,7 @@ impl SovereignLayer {
             options: proof_options(),
             db: None,
             // Una capa importada arranca en memoria y sin cifrar: quien
-            // la persista decidira con que clave.
+            // la persista decidira con que clave. ⚠️ §821: la de `import_snapshot_with_key` ya no: sale con la de la instantanea (`conservar_la_clave`, al final).
             key: None,
             identidades: std::collections::HashSet::new(),
             retiradas: Vec::new(),
@@ -1542,12 +1542,12 @@ mod tests {
 // `snapshot.rs:línea` de los documentos que las llevan no se muevan.
 
 /// Marca de instantánea cifrada con la versión 2 del KDF: tras ella, la cabecera del KDF del libro
-/// en claro (29 B) y el cuerpo sellado. Es la que se escribe desde el §702.
+/// en claro (29 B) y el cuerpo sellado. Es la que se escribe desde el §702. ⚠️ §821: «del libro», o, si la exporta una capa importada con clave, la de su instantanea, o una de sal nueva si venia de la v1 (la 121; `conservar_la_clave`, al final).
 const SNAPSHOT_ENCRYPTED_V2: u8 = 0x02;
 
 /// La marca de una instantánea cifrada con la clave `k` y, con la versión 2, la cabecera del KDF
 /// detrás: la instantánea se abre con la frase, sin el libro. La versión 1 solo se vería aquí si
-/// la clave de la capa no se hubiera migrado, y `open_encrypted` la migra al abrir.
+/// la clave de la capa no se hubiera migrado, y `open_encrypted` la migra al abrir. ⚠️ §821: y la de una capa importada de una v1, `import_snapshot_with_key` (`conservar_la_clave`, abajo).
 fn marca_y_cabecera(k: &crate::crypto::LedgerKey) -> Vec<u8> {
     match k.kdf().and_then(|kdf| kdf.cabecera()) {
         Some(c) => {
@@ -1561,8 +1561,8 @@ fn marca_y_cabecera(k: &crate::crypto::LedgerKey) -> Vec<u8> {
 
 /// El cuerpo de una instantánea cifrada -marca 0x01 o 0x02-, con la clave fijada al KDF que dice
 /// su marca: la versión 1 sin cabecera, o la cabecera de la 2. Una cabecera que no es exactamente
-/// la de la versión 2 no se lee, y una sal cambiada deriva otra clave y no abre.
-fn abrir_sellada(buf: &[u8], key: &crate::crypto::LedgerKey) -> Result<Vec<u8>, LayerError> {
+/// la de la versión 2 no se lee, y una sal cambiada deriva otra clave y no abre. ⚠️ §821: devuelve también esa clave fijada, que la capa importada conserva (`conservar_la_clave`, abajo).
+fn abrir_sellada(buf: &[u8], key: &crate::crypto::LedgerKey) -> Result<(Vec<u8>, crate::crypto::LedgerKey), LayerError> {
     use crate::crypto::{Kdf, LARGO_CABECERA};
     let (kdf, cuerpo) = match buf.first() {
         Some(&SNAPSHOT_ENCRYPTED_V2) => {
@@ -1574,7 +1574,7 @@ fn abrir_sellada(buf: &[u8], key: &crate::crypto::LedgerKey) -> Result<Vec<u8>, 
         }
         _ => (Kdf::Sha256V1, buf.get(1..).unwrap_or(&[])),
     };
-    key.fijar(&kdf).and_then(|k| k.open(cuerpo)).map_err(LayerError::Store)
+    key.fijar(&kdf).and_then(|k| Ok((k.open(cuerpo)?, k))).map_err(LayerError::Store)
 }
 
 /// ⚠️ §812 · **Barre el `{path}.tmp-descifrada` que dejaba una importacion muerta.** Entre `5d2833e`
@@ -1714,7 +1714,7 @@ pub(crate) const SUFIJO_EXPORTANDO: &str = ".exportando";
 ///    (la leccion del §774); una capa sin clave que exporta sobre una cifrada -la importada de una,
 ///    que nace sin clave: la 121- deja un claro junto a ella, el mismo que dejaria si acabara
 ///    (medido en la sesion con un test que no queda en el arbol: el destino, `0x02`; el temporal,
-///    `0x00` y el saldo en claro).
+///    `0x00` y el saldo en claro). ⚠️ §821: «la importada de una, que nace sin clave», ya no: desde el §821 conserva la clave de la instantanea (la 121, `conservar_la_clave`, al final); lo deja una sin clave, como la de `import_snapshot` o una nueva.
 /// 4. Si el destino existia, el temporal toma, con privilegios, su dueno, y su grupo y sus bits de
 ///    modo (`dar_lo_de_la_anterior`); si no puede tomar su grupo, se queda sin los bits de grupo y
 ///    de otros. Sus ACL POSIX y sus demas atributos extendidos, que la escritura en sitio
@@ -1904,4 +1904,55 @@ fn punto_exportacion(k: u8) -> std::io::Result<()> {
 #[inline(always)]
 fn punto_exportacion(_: u8) -> std::io::Result<()> {
     Ok(())
+}
+
+// ── §821: la capa importada con clave conserva la clave (la 121 del `BACKLOG.md`) ──
+// Va al final, como el §702, el §812 y la 120, para que las citas `snapshot.rs:linea` no se muevan.
+
+/// ⚠️ §821 · **La capa que devuelve `import_snapshot_with_key` conserva la clave de la instantánea.**
+/// Hasta el §821 nacía sin clave (`key: None`, en `desde_instantanea_en_claro`), y `export_snapshot`,
+/// que sólo cifra si la capa tiene clave, la reexportaba EN CLARO, con la marca `0x00`: quien
+/// restauraba una copia cifrada y la volvía a guardar la dejaba en claro, y nada lo decía (la 121
+/// del `BACKLOG.md`). Desde el §821, por decisión del autor (21-10-2026), sale con la clave fijada a la
+/// cabecera de la instantánea, y `export_snapshot` la reexporta cifrada, sin cambiar ningún formato:
+///
+/// - **De la versión 2** (marca `0x02`): la clave que `abrir_sellada` fijó al KDF y a la sal de su
+///   cabecera para abrirla. `marca_y_cabecera` escribe con ella esa misma cabecera, byte a byte, y
+///   la reexportada abre con la misma frase. No cuesta otro Argon2id: se deduce del código, y lo
+///   mide sólo el tiempo —una capa que derivara otra vez la misma clave daría lo mismo, y ningún
+///   test lo ve—; lo midió la sesión, con un test que no queda en el árbol (el asiento del §821).
+/// - **De la versión 1** (marca `0x01`, SHA-256 sin sal, que desde el §702 sólo se lee): la clave se
+///   fija a una versión 2 de sal nueva, como `open_encrypted` migra un libro de la versión 1, y la
+///   reexportada lleva la marca `0x02` y esa cabecera; la frase es la misma. La sal es nueva en cada
+///   importación, y no una fija para toda v1, que haría que todas las copias llevadas a la v2
+///   compartieran sal y un mismo precálculo por frase sirviera para todas. Cuesta un Argon2id al
+///   importar (medido, en el asiento del §821). Si la clave ya está fijada y no lleva la frase, no
+///   puede derivarla, y la importación falla con un error que lo dice, sin devolver la capa:
+///   reexportada en la versión 1 escribiría lo que nada escribe desde el §702, y sin clave, en
+///   claro. Llevar la v1 a la v2, y fallar sin la frase, es de la sesión, reversible: falla cerrado.
+///
+/// Fuera de la reexportación, la clave no cambia nada: la capa importada no tiene libro (`db: None`),
+/// y `commit` no sella nada sin él, ni le quita la clave. Lo atan
+/// `una_capa_importada_de_una_cifrada_se_reexporta_cifrada_con_su_cabecera` -su (f), que la clave
+/// sigue tras operar- y `una_capa_importada_de_una_v1_se_reexporta_en_la_version_2` -su (f), que la
+/// sal es nueva en cada importación-, al final de `tests.rs`.
+fn conservar_la_clave(
+    mut capa: SovereignLayer,
+    fijada: crate::crypto::LedgerKey,
+    key: &crate::crypto::LedgerKey,
+) -> Result<SovereignLayer, LayerError> {
+    use crate::crypto::Kdf;
+    let clave = match fijada.kdf() {
+        Some(Kdf::Argon2idV2 { .. }) => fijada,
+        _ => key.fijar(&Kdf::nuevo()).map_err(|e| {
+            malformed(&format!(
+                "la instantanea es de la version 1 del KDF (SHA-256 sin sal), que ya no se escribe: la \
+                 capa importada se queda con una clave de la version 2 de sal nueva, y derivarla pide la \
+                 frase, que esta clave, ya fijada, no lleva ({e}); importala con \
+                 LedgerKey::from_passphrase"
+            ))
+        })?,
+    };
+    capa.key = Some(clave);
+    Ok(capa)
 }

@@ -63013,3 +63013,530 @@ importa, y lo ata el test de la muerte. La 121 sigue abierta: una capa importada
 cifrada nace sin clave, y su exportación, entera o nada, sale en claro.
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §821 — la capa importada con clave conserva la clave (la 121): la que devuelve `import_snapshot_with_key` sale con la clave fijada a la cabecera de la instantánea, y `export_snapshot` la reexporta cifrada, con la misma frase; la de una v1, en la versión 2 con sal nueva, y con una clave ya fijada que no lleva la frase no se importa
+
+El commit que lleva este asiento, sobre el §820. Toca `crates/zk-ssl/src/snapshot.rs` —en
+`import_snapshot_with_key`, su doc (`:179`), la línea que elige por la marca (`:191`), que toma
+también la clave, y la última (`:205`), que se la da a la capa; `abrir_sellada` devuelve, con el
+cuerpo, la clave que fijó (`:1564-1565` y `:1577`); llevan una marca, en su sitio, la tabla del
+formato, en la doc del módulo (`:35`), el comentario de `key: None` (`:462`), la doc de
+`SNAPSHOT_ENCRYPTED_V2` (`:1545`), la de `marca_y_cabecera` (`:1550`) y la de `escribir_entera`
+(`:1717`), del §820; y `conservar_la_clave`, al final, detrás de lo del §820—;
+`crates/zk-ssl/src/tests.rs`, con `lo_que_conserva` y los dos tests, al final, detrás de los del
+§820; `BACKLOG.md` —la 121, a `[x]`, con su cierre; una marca en el cierre de la 120; y la línea del
+estado—; `SECURITY.md` —una marca en la 3.14 y dos en la 3.16—; el RFC-0001 —su cabecera, una marca
+en la fila de la E2 de la tabla de etapas, otra en «El libro y su instantánea (E2)» y otra en «La
+instantánea.»—; `ARQUITECTURA.md` —una marca en «Orden determinista»—; el pin de la capa en
+`tools/canon.sh`, con su crónica; las cifras de `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`; la
+cifra del pin en la nota del §814 de `ARQUITECTURA.md` y de `CONTRIBUTING.md`, con marca; y este
+asiento. No cambia ningún formato: ni el cable, ni un vector, ni el kit, ni el `Cargo.lock`, ni las
+marcas ni la cabecera de la instantánea: la reexportada es una `0x02` como la que exporta un libro
+cifrado desde el §702. No toca `persistence.rs` ni `crypto.rs`, ni `crates/zk-ssl-guardian`, ni la
+zona de la migración de Winterfell, ni el nodo. `import_snapshot_with_key` no tiene llamadores fuera
+de los tests de la capa (`git grep` sobre los `.rs` del árbol).
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión lo escribió y lo revisó en
+su carril, en su propio árbol, sobre el §817 de antes del rebase (hoy `5fd5212`), detrás del §819 y
+del §820 de ese carril, aún sin número: una primera vuelta escribió el código, los tests, los
+mutantes y los textos; dos revisiones lo juzgaron —que el sello diga sólo lo cierto y lo ate, y los
+tests, las citas y las cifras—, y un escéptico intentó refutar cada hallazgo y no refutó ninguno:
+dieciocho, dos bloqueantes, que son el mismo —ningún test ataba que la sal de la v1 fuera nueva: con
+una sal fija, los dos tests pasaban—, y dieciséis menores. Ninguno era un fallo del código. Una
+segunda vuelta, enmendando el borrador, los hizo o los declara (abajo, «Lo que pidieron las
+revisiones»): da un paso más a cada test, con sus mutantes, mide lo que la primera dejaba «sin
+medir» o «deducido», y completa marcas y citas. El código de `snapshot.rs` es el de la primera
+vuelta; cambian sus comentarios. Lo portó luego sobre el §852 de `main`, que frente a la base del
+carril trae los §839-§842, el §815, el §816 y el §817 rebasados sobre ellos, el §818 y los
+§843-§852, con el §819 y el §820 de la pila delante, luego sobre el §858, con los §853-§858 delante
+también, y ahora sobre el §859, con el §859 delante también. Dos revisiones juzgaron también este
+porte cuando iba sobre el §849 (`29b4442`), y la sesión comprobó cada hallazgo contra el árbol: su
+bloqueante, el mismo en las dos —«Las líneas» daba por la cita más alta a `SECURITY.md` la `:585`, y
+es la `:728`, desde los README, escrita «(`SECURITY.md`:189, :728)», que el `git grep` del porte no
+veía—, se hizo, como sus menores ciertos: las marcas de la 3.14 y de la 3.16 de `SECURITY.md` y la
+de «La instantánea.» del RFC-0001 ponían, como el borrador, las dos decisiones de la sesión detrás
+de «por decisión del autor», y ahora las dicen de la sesión y reversibles, en las mismas líneas; y,
+en este asiento, la razón de correr la capa sobre `29b4442`, que daba `snapshot.rs` y `tests.rs` por
+cambiados en `main`, y no lo están; lo que `main` trae frente a la base del carril, que explica por
+qué las cifras de aquí no son las del carril más lo de la pila; la cita más alta al `BACKLOG.md`,
+que es la `:3076-3080`, y no la `:3077`; y las citas al asiento del §820, que dejaban fuera una
+línea de su lista y una de sus tres citas a la `:1298` de `SECURITY.md`. Dos, que no piden nada, se
+quedan: que en `SECURITY.md`, el `BACKLOG.md` y el RFC-0001 lo nuevo corre líneas dentro del
+fichero, que «Las líneas» declara, y que la `:728` que citan los README no dice lo que ellos le
+atribuyen, que el asiento del §820 deja para un sello propio. Y, como los del §819 y el §820, deja
+de nombrar el borrador del carril por su commit, que no está en la historia de `main`, y pega al
+último párrafo la frase del cierre, como en los asientos de `main`. Del §849 al §852 lo llevó un
+`cherry-pick`, sin conflicto (abajo, «El porte, hasta el §852»). Otra revisión juzgó el porte sobre
+el §852, sin hallar nada bloqueante, y la sesión comprobó contra el árbol cada uno de sus menores:
+eran ciertos, y se hicieron, todos en este asiento —en «Las líneas», a la lista de las citas de
+`AUDITORIA.md` que este sello corre le faltaban las líneas que el asiento del §820 da por «ahora en
+la …», la `:1288` del asiento del §819 y dos citas del §820 a la nota del §814, y el arranque de
+`SECURITY.md` no baja diez, sino diecinueve; y «la razón de correr aquí la capa» se leía como sobre
+`378e1fa`, donde no se corrió—; y las citas a líneas de los asientos del §819 y del §820 se
+renumeran, porque sus correcciones los alargaron por encima de ellas. Del §852 al §858 lo llevó otro
+`cherry-pick`, que entró entero, sin conflicto (abajo, «El porte, hasta el §858»), y del §858 al
+§859 otro más, también sin conflicto (abajo, «El porte, aquí»). Lo medido en el carril, lo medido
+sobre `29b4442`, lo medido sobre `378e1fa`, lo medido sobre `7ed7e17` y lo medido aquí van por
+separado (abajo, «Medido»).
+
+**Lo que faltaba.** La 121 del `BACKLOG.md`, que abrió el §812: `import_snapshot_with_key`
+descifraba la instantánea con su frase, pero la capa que devolvía llevaba `key: None`
+(`snapshot.rs:460-463`: «quien la persista decidira con que clave»), y `export_snapshot`, que cifra
+sólo si la capa tiene clave (`snapshot.rs:291-302`), la reexportaba en claro, con la marca `0x00`.
+Lo midió una de las revisiones de la E4 del RFC-0001 (§812), y lo declaraban el RFC-0001 y la 3.14
+de `SECURITY.md`. Desde el §817, esa copia en claro ya no se importa con clave: fallaba cerrado, y
+quien encadenaba importar, exportar e importar veía el error nuevo (la 3.16 y el asiento del §817).
+Lo que pedía, y lo decidía el autor: que la capa importada con clave conservara la clave, fijada a
+la cabecera de la instantánea, y exportara cifrada, o que exportar sin clave una capa que vino
+cifrada se rehusara. Y lo que la cerraba: un test que importara una cifrada y la volviera a exportar
+y la encontrara cifrada, con su mutante, y la marca en el RFC-0001 y en la 3.14.
+
+**Quién lo decide.**
+- **El autor**, el 21-10-2026, en el chat, a la pregunta de la sesión: «Conservar la clave». La capa
+  que devuelve `import_snapshot_with_key` lleva la clave de la instantánea, fijada a su cabecera —el
+  KDF y la sal que lee `abrir_sellada`—, y `export_snapshot` la reexporta cifrada. La otra, rehusar
+  exportar sin clave, no. Es la decisión que anotó el asiento del §817 («va en un sello propio,
+  detrás de éste»).
+- **La sesión**, y reversible:
+  - una instantánea de la versión 1 —la marca `0x01`, SHA-256 sin sal— no se reexporta en la v1,
+    sino en la v2, con una sal nueva que se fija al importarla, otra en cada importación. La v1 se
+    fuerza a la velocidad de un hash, y desde el §702 nada la escribe: lo dicen `Kdf::Sha256V1` («Se
+    lee para MIGRAR; nada la escribe», `crypto.rs:142-143`), la marca (`snapshot.rs:172`: «desde el
+    §702, solo se lee») y el RFC-0001 (la instantánea `0x01` «se sigue importando y ya no se
+    escribe»). Es lo que hace `open_encrypted` con un libro de la v1, que lo migra al abrirlo. Falla
+    cerrado: una copia más en la v1 sería una copia más que se fuerza a la velocidad de un hash; y
+    con una sal fija para toda v1, todas las copias llevadas a la v2 compartirían sal, y un mismo
+    precálculo por frase serviría para todas, que es lo que la sal por contenedor del §702 quita;
+  - con una clave ya fijada, que no lleva la frase (`LedgerKey::derivar`), una v1 no se importa: la
+    clave no puede fijarse a otra sal, y la capa saldría con la clave de la v1, que la reexportaría
+    en la v1, o sin clave, que la reexportaría en claro. El error lo dice y nombra
+    `LedgerKey::from_passphrase`. Falla cerrado;
+  - la sal nueva se fija al importar y no al exportar, porque una clave fijada ya no lleva la frase
+    (`crypto.rs:263-264`), y llevarla en la capa hasta que exportara sería tener la frase en memoria
+    lo que dure la capa. Cuesta un Argon2id al importar una v1 (medido en el carril, abajo: de 3,0 a
+    5,8 ms sin él, y de 262,2 a 328,2 ms con él);
+  - una de la versión 2 conserva la sal de su cabecera y no toma otra: lo pide la decisión del autor
+    («fijada a su cabecera»), y no cuesta otro Argon2id, porque la capa se queda con la clave que
+    `abrir_sellada` derivó para abrirla. Eso se deduce del código, y ningún test lo ve: un mutante
+    que la derive otra vez pasa los dos; lo ve sólo el tiempo, medido en el carril, abajo.
+
+**Lo que hace.** `abrir_sellada` devuelve, con el cuerpo, la clave que fijó al KDF de la marca y de
+la cabecera, y `import_snapshot_with_key` se la pasa, con la capa ya verificada, a
+`conservar_la_clave`, al final de `snapshot.rs`: si es de la v2, la capa se queda con ella; si es de
+la v1, con la frase fijada a un `Kdf::nuevo()`, y si la frase no está, la importación falla. Sin
+cambiar `export_snapshot`: `marca_y_cabecera` escribe con esa clave la marca `0x02` y su cabecera,
+la de la instantánea de partida o la de sal nueva. Fuera de la reexportación, la clave no cambia
+nada en la capa importada, que no tiene libro (`db: None`): `commit` vuelve sin sellar nada, y sin
+tocar la clave (`persistence.rs:774-777`). Los tests, al final de `tests.rs`:
+- `una_capa_importada_de_una_cifrada_se_reexporta_cifrada_con_su_cabecera`: un libro cifrado
+  (`libro_e4`) exporta su instantánea, `0x02` con la cabecera del libro; importada con la frase y
+  vuelta a exportar, (a) sale `0x02` con la misma cabecera, byte a byte, y no es la misma copia —el
+  sellado lleva nonce nuevo—; (b) sin clave no se importa, ni con otra frase; (c) con la frase se
+  importa con las cinco raíces —cuentas, congeladas, consumos, custodios y gobernanza—, el
+  suministro y los saldos de la capa que la exportó; (d) la importada de la reexportada se reexporta
+  otra vez igual, e importa; (e) con la clave ya fijada a ese KDF, sin la frase, también; y (f) la
+  capa importada abre una cuenta —lo que pasa por `commit`— y se reexporta otra vez `0x02`, con la
+  misma cabecera, e importa con la frase con las tres cuentas y lo de después;
+- `una_capa_importada_de_una_v1_se_reexporta_en_la_version_2`: una v1 fabricada con la regla
+  documentada, como en `una_instantanea_cifrada_de_la_version_1_se_sigue_importando`; importada con
+  la frase y vuelta a exportar, (a) sale `0x02`, con una cabecera de la v2 que se lee; (b) sin clave
+  no se importa, ni con otra frase; (c) con la frase, con las raíces, el suministro y los saldos de
+  partida; (d) otra exportación de la misma capa lleva la misma cabecera; (e) con la clave de la v1
+  ya fijada, la importación falla, dice que es la v1 y que falta la frase, y no toca la instantánea;
+  y (f) otra importación de la misma v1, reexportada, lleva OTRA cabecera —la sal es nueva en cada
+  importación—, e importa con la frase.
+La 121 pasa a `[x]` en el `BACKLOG.md`, con «✅ **CERRADA EN EL §821**», la decisión con su fecha y
+su «Qué la cierra» cumplido. La 3.14 de `SECURITY.md` —la viñeta de «la capa importada»—, la 3.16
+—«la 121 … sigue abierta», que deja falso— y el RFC-0001 —«La instantánea.», «la cabecera del libro»
+de la E2 y de su fila en la tabla de etapas— llevan marca, y su cabecera suma este asiento. El
+asiento del §817 no se toca, ni el del §820, que dice la 121 abierta, como estaba en su commit.
+Cambia lo que hace la API en dos cosas, que se declaran, en el `BACKLOG.md` y en la 3.16: una capa
+importada con clave y reexportada sale cifrada, y no en claro; y una v1 ya no se importa con una
+clave fijada sin la frase —antes se importaba: `fijar` devolvía esa misma clave y abría (deducido
+del código del §820; y con el mutante M4, abajo, que la conserva, se importa)—.
+
+**Los textos que el sello deja falsos, y sus marcas.** La 121 los nombraba: el RFC-0001 («La
+instantánea.», `spec/rfc/0001-el-kdf-de-reposo.md:384`, que en el §820 es la `:381`) y la 3.14
+(`SECURITY.md:1066`). Además: la 3.16, que decía que la 121 seguía abierta y que una capa importada
+con clave y reexportada salía en claro (`SECURITY.md:1321`, la `:1311` del §820), y la marca de su
+`:1308` (la `:1298` del §820), que lista los tests que van detrás del del §817 y se completa en su
+misma línea, como la completó el §820; «la cabecera del libro», que en una reexportada es la de la
+instantánea o una de sal nueva, en cuatro sitios: la E2 del RFC-0001 (la `:130`, con su marca en la
+`:132-134`), su fila en la tabla de etapas (`:40`), la tabla del formato (`snapshot.rs:35`) y la doc
+de `SNAPSHOT_ENCRYPTED_V2` (`snapshot.rs:1544-1545`); el comentario de `key: None`
+(`snapshot.rs:462`); la doc de `marca_y_cabecera` (`:1550`), que sólo nombraba a `open_encrypted`
+como quien migra una clave de la v1; y dos textos del §820, que eran ciertos en su commit: la doc de
+`escribir_entera` (`snapshot.rs:1714-1717`) y el cierre de la 120 (`BACKLOG.md:3306`), que ponían
+como ejemplo de capa sin clave «la importada de una, que nace sin clave». Y uno que ya era falso
+antes de esta pila, y que el (a) del primer test mide: «Dos instantáneas del mismo estado son **byte
+a byte idénticas**» (`ARQUITECTURA.md:212-213`), que vale para dos en claro y no para dos cifradas,
+porque el sellado lleva un nonce nuevo cada vez; lleva marca en su `:214`. Lo que sigue cierto y no
+se marca: que una capa sin clave que exporta sobre una cifrada deja un claro, como la de
+`import_snapshot` o una nueva.
+
+**El porte, hasta el §852.** Entre el §817 de antes del rebase y `378e1fa`, `snapshot.rs` y
+`tests.rs` no cambian (lo midió el §819), ni `persistence.rs` ni `crypto.rs`, de los que dependen
+los tests (sus sha256 son los mismos en el borrador del carril y en este árbol: `8c783c43dc64806e…`
+y `bdc756187a2eea77…`). El código de este sello es el del borrador del carril: frente a él, en esos
+dos ficheros sólo se numeran los marcadores, en 38 líneas: el del §819 en cinco y el del §820 en
+catorce, en lo que viene de ellos, y el de éste, «§821», en quince de `snapshot.rs` y cuatro de
+`tests.rs`, siempre en un comentario. Dos líneas de código del §820 cambian respecto al borrador
+sólo por eso, los textos del pánico y del error que inyecta `punto_exportacion` («§820: …»), que se
+midieron al portar el §820. Aun así, porque la capa de `main` no es la del carril —frente a su base,
+los §839, §840 y §842 le sumaron cuatro tests y le cambiaron seis fuentes (`git diff --stat 32b5b12
+4b9f14b -- crates/zk-ssl`): `nivel_de_produccion.rs` y su `censo.rs`, `censo_de_hojas.rs`, `lib.rs`,
+`instrumento_revela.rs` y `metrics.rs`—, y porque la pila numeró los marcadores de esos dos
+ficheros, se corrió la capa entera sobre `29b4442` (abajo). El `cherry-pick -n` del borrador, sobre
+el §820 de entonces, chocó en las cifras —`ARQUITECTURA.md`, `PAPER.md`, `PAPER_EN.md`,
+`PRINCIPIOS.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md`, `doc/ecst/VERIFICACION.md` y el pin
+de `tools/canon.sh`—, en la línea del estado del `BACKLOG.md`, en la marca de la 3.16 de
+`SECURITY.md` que lista los tests de detrás, y en el RFC-0001, en su cabecera y en «La
+instantánea.», que el §820 numerado no dejaba como el borrador los esperaba: se tomó en cada uno lo
+del §820 y se volvió a poner lo de este sello. `snapshot.rs`, `tests.rs`, el cierre de la 121 y la
+marca en el de la 120, la 3.14 y el «Lo que no hace» de la 3.16, la E2 del RFC-0001 y su fila, y
+«Orden determinista» entraron sin conflicto. El que lo llevó del §849 al §852, detrás del §820
+rebasado, entró entero sin conflicto: de los ficheros de este sello, los §850-§852 sólo tocan
+`AUDITORIA.md`, delante de los asientos de la pila, y `tools/canon.sh`, en el «3 duodecies», lejos
+de la fila `zk-ssl` de su tabla. Lo que cambia al portarlo:
+- las cifras se suman a las de `378e1fa`, las mismas en `7ed7e17`: 503, 1859, 1996 y 2018, no 499,
+  1851, 1988 y 2010, las del carril, cuya base no tenía los cuatro tests de la capa de los §839,
+  §840 y §842 (lo dice el §819) ni los cuatro de `zk-ssl-medio` del §848;
+- la entrada de la crónica del pin, «§821: 501 -> 503», va detrás de la del §820 (en el carril era
+  «497 -> 499»);
+- la nota del §814 de `ARQUITECTURA.md` y de `CONTRIBUTING.md`, «la fila de la capa en
+  `tools/canon.sh` fija hoy N pasan», no la tocaba el borrador: en la base del carril estaba rancia,
+  y en `main` la lleva con su marca cada sello desde el §839. Pasa a 503, con su marca, «⚠️ §821:
+  decía 501; los dos de la capa importada con clave, tampoco» —no se han corrido en depuración—, en
+  las líneas que ya estaban: la `:1606` de `ARQUITECTURA.md` y la `:115` de `CONTRIBUTING.md`
+  cambian la cifra, y se rehacen ocho en cada uno (`:1614-1621` y `:123-130`), sin mover ninguna;
+- en `doc/ecst/VERIFICACION.md`, desde el §847 la ficha cita la fila `zk-ssl` de la tabla de
+  `tools/canon.sh`, no su línea, y lleva el pin a mano: el borrador traía la cita por línea de antes
+  del §847, y aquí se toma la ficha de `main` y sólo cambia la cifra, a mano;
+- la marca del §819 en la 3.16 de `SECURITY.md`, completada por el §820, se completa con la de este
+  sello en su misma línea, la `:1308` (en el carril, la `:1303`): detrás de los tres del §820 van
+  los dos de éste, abajo, en «Lo que no hace»;
+- la cabecera del RFC-0001 decía, en su `:29`, «y el §820, que cierra la 120: la exportación de la
+  instantánea, entera o nada.», y este asiento va detrás: la `:29` pierde su «y» y su punto final, y
+  lo de este sello sigue en ella y en la `:30`, una línea nueva;
+- en «La instantánea.» del RFC-0001, la marca de este sello sigue a «la 120 la cierra el §820.», en
+  la `:384`;
+- la línea del estado del `BACKLOG.md` pasa de 43 abiertas y 87 resueltas a 42 y 88, como en el
+  carril, y suma este sello, «y el §821, que cierra la 121», detrás del §820. Las casillas, contadas
+  con `grep`: 43 `[ ]` y 87 `[x]` en el §820, y 42 y 88 con este sello;
+- y las herramientas que `main` trae nuevas o más estrictas —el ATADO G de `check_publicadas`
+  (§846), la v5 bis de `verificar_citas` (§847), la R8 de `check_superficie` (§849) y la causa de
+  `check_curvas` (§843)— no piden nada más de este sello: el RFC-0001 lleva ya su línea de autor y
+  la de asistencia, el sello no gana ninguna cita por línea a `tools/canon.sh` en los cuatro
+  documentos de la v5 bis —la de `VERIFICACION.md` que traía el borrador no entra: se toma la de
+  `main`—, no escribe una frase de conformidad y no toca ningún `Cargo.toml`. Los §850-§852 no
+  cambian ninguna de las quince (`git diff --stat 29b4442 378e1fa -- tools/` da `tools/canon.sh` y
+  `tools/segunda/`), y lo que cambian en el canon y en `tools/segunda/` no lee nada de este sello.
+Del kit, el sello sólo dice que no lo cambia: ningún texto suyo dice cuál es su versión vigente ni
+si está publicada, y lo que el §818 registró de la 0.4.3 no le toca.
+
+**El porte, hasta el §858.** Del §852 al §858 lo llevó un `cherry-pick` sobre el §820 rebasado, que
+entró entero, sin conflicto: en `AUDITORIA.md`, los asientos del §853 al §858 van delante de los de
+la pila, y éste, detrás del del §820, con una línea en blanco entre los dos, baja 1243 líneas: las
+1126 de esos seis, las 53 que su porte sumó al del §819 y las 64 que sumó al del §820. De los demás
+ficheros de este sello, los §853-§858 tocan cuatro, y `git` los juntó sin choque: `BACKLOG.md`,
+donde el §855 rehace en la 77 la cita a la huella del corpus KAT de `xmss`, que pasa de una línea a
+tres (la `:4831-4833` de `7ed7e17`, la `:4866-4868` en el §820), por debajo de la `:3344`, desde la
+que este sello baja 24: allí era la `:4890-4892`; `CONTRIBUTING.md`, donde el §855 añade su párrafo
+del canon en un clon recién hecho en la `:132`, detrás de la nota del §814, cuyas `:115` y
+`:123-130` rehace este sello sin mover ninguna; `doc/ecst/VERIFICACION.md`, donde el §857 rehace la
+línea de M8a, la `:1629`, y no la de M11, la `:1549`, que es la que rehace este sello; y
+`tools/canon.sh`, donde el §853 rehace la fila `zk-ssl-air` y el §855 añade su bloque del target
+detrás de la tabla y cambia el binario del «3 bis» y de las familias, lejos de la fila `zk-ssl`.
+`snapshot.rs`, `tests.rs`, `persistence.rs` y `crypto.rs` no cambian de
+`378e1fa` a `7ed7e17` (`git diff 378e1fa 7ed7e17 -- crates/zk-ssl`, vacío), y los trozos de este
+sello caen en las mismas líneas que sobre el §820 de `378e1fa` (`git diff -U0`, comparado: sólo
+cambian las líneas `index` de esos cuatro ficheros); ni las cifras de `main` ni el pin cambian del
+§852 al §858. Lo que las herramientas traen nuevo o más estricto no pide nada de este sello, y en su
+árbol no se arregla nada:
+- el ATADO G de `check_publicadas`, que desde el §856 busca el identificador de modelo en toda la
+  cabecera de cada RFC, hasta su primer «## »: con la línea que este sello le añade, la `:30`, la
+  del RFC-0001 va de la `:1` a la `:34`, y su primer «## », «Estado de las etapas», es la `:35`; ni
+  la `:30` ni la `:29`, que este sello rehace, nombran ningún modelo, y las tres marcas del cuerpo
+  —la de la fila de la E2, la de «El libro y su instantánea (E2)» y la de «La instantánea.»— quedan
+  fuera de la cabecera;
+- la v5 bis de `verificar_citas`, que el §854 amplía a `doc/METODO.md`, `doc/blueprint-v2.md`, el
+  RFC-0005 y `tools/check_publicadas.py`: el sello no toca ninguno de los cuatro, y no escribe en
+  el árbol, ni en este asiento, ninguna cita por línea a `tools/canon.sh`; en
+  `doc/ecst/VERIFICACION.md`, la línea de M11 sólo cambia de cifra, y cita la fila;
+- `check_publicadas`, que desde el §857 lee de esa ficha las mismas 305 líneas en el ATADO F y en
+  RETIRADAS: la de M11, con el pin de este sello, no dice nivel ni cifra retirada, y pasa;
+- la v3 bis con su mínimo (§858): sus nueve ficheros siguen en la lista, y el sello no toca ninguno;
+- y el §853 y el §855, en el canon, cambian timeouts y caminos, y avisan al empezar si
+  `check_curvas` no podrá leer el árbol: el sello no toca el `Cargo.lock`, ni de la fila `zk-ssl`
+  más que su pin y su crónica, y su timeout sigue en 900.
+Ninguna frase que escribieron los §853-§858 queda falsa con este sello: fuera de sus asientos, que
+narran su commit y no se reescriben, ninguna da el pin de la capa, el total de sello, la cuenta de
+`check_tests` ni la de las casillas del `BACKLOG.md`, ni dice nada de la 121, de
+`import_snapshot_with_key` ni de la capa importada (`git diff 378e1fa 7ed7e17`, sin `AUDITORIA.md`);
+de sus citas por línea, tres, de sus asientos, caen en lo que este sello mueve, las mismas tres que
+mueve el §820 (abajo, «Las líneas»). Y las citas que este asiento ya hacía a líneas de los asientos
+del §819 y del §820 se renumeraron, porque esos asientos pasaron detrás de los §853-§858 y sus
+portes los alargaron.
+
+**El porte, aquí.** Del §858 al §859 lo llevó un `cherry-pick` sobre el §820 rebasado, que entró
+entero, sin conflicto: en `AUDITORIA.md`, el asiento del §859 va delante de los de la pila, y éste,
+detrás del del §820, baja 209 líneas: las 152 del §859, las 23 que su porte sumó al del §819 y las
+34 que sumó al del §820. De los demás ficheros de este sello, el §859 toca dos, y `git` los juntó
+sin choque: `BACKLOG.md`, donde añade dos líneas a la nota del §810 de la 85 (`:763-764`), por
+encima de lo que toca este sello, que baja dos —su `:3304`, su `:3332` y su `:3344` sobre `7ed7e17`
+son aquí la `:3306`, la `:3334` y la `:3346`—; y `tools/canon.sh`, en el comentario del bloque del
+medio, lejos de la fila `zk-ssl`. Fuera del `BACKLOG.md`, los trozos de este sello caen en las
+mismas líneas que sobre el §820 de `7ed7e17` (`git diff -U0`, comparado), y ni las cifras de `main`
+ni el pin cambian del §858 al §859. Lo que el §859 cambia en `tools/segunda/` y en el canon no lee
+nada de este sello, y ninguna de las quince herramientas cambia con él. Ninguna frase que escribió
+el §859 queda falsa con este sello: fuera de su asiento, ninguna da el pin de la capa, el total de
+sello, la cuenta de `check_tests` ni la de las casillas del `BACKLOG.md`, ni dice nada de la 121, de
+`import_snapshot_with_key` ni de la capa importada; y las citas de su asiento al `BACKLOG.md`, la
+`:760` y la `:763-764`, quedan por encima de lo que este sello mueve. Las citas que este asiento
+hace a líneas de los asientos del §819 y del §820, y las del `BACKLOG.md` por debajo de la `:762`,
+se renumeran otra vez (abajo, «Las líneas»).
+
+**El marcador.** El de este sello va numerado, «§821», 44 veces en 37 líneas de ocho ficheros, sin
+`AUDITORIA.md`: las 42 del borrador, en sus 35 líneas —`ARQUITECTURA.md` 1, `BACKLOG.md` 4,
+`SECURITY.md` 8, `snapshot.rs` 18, `tests.rs` 4, el RFC-0001 6 y `tools/canon.sh` 1—, y las dos de
+la nota del §814, una en `ARQUITECTURA.md` y otra en `CONTRIBUTING.md`. En siete líneas se junta con
+el del §819 o el del §820, y quien las lea con `git blame` las tiene que mirar una a una: en
+`BACKLOG.md:22`, «que cierra la 120» es del §820, y «que cierra la 121», de éste; en
+`SECURITY.md:1308`, la primera marca es del §819, la segunda del §820 y la tercera, «y detrás de
+ésos», de éste; en `spec/rfc/0001-el-kdf-de-reposo.md:29`, «el §820, que cierra la 120» es del §820,
+y lo que sigue al punto y coma, de éste; en su `:384`, «la 120 la cierra el §820.» es del §820, y la
+marca que sigue, de éste; en la fila `zk-ssl`, las entradas «497 -> 498» y «498 -> 501» son del
+§819 y del §820, y la «501 -> 503», de éste; y `ARQUITECTURA.md:1614` y `CONTRIBUTING.md:123`
+empiezan con el final de la marca del §820, «los tres de la exportación, tampoco», y siguen con la
+de éste. `git blame` da además a este commit, sin marcador de nadie, las siete líneas que se rehacen
+detrás de cada una de esas dos (`ARQUITECTURA.md:1615-1621` y `CONTRIBUTING.md:124-130`).
+
+**Las líneas**, las del §820 (`git diff -U0` sobre él), las mismas que sobre el §820 de `7ed7e17` y
+de `378e1fa`, salvo las del `BACKLOG.md`, que van dos más abajo. En `snapshot.rs` nada se mueve: lo
+que cambia, cambia en su sitio (`:35`, `:179`, `:191`, `:205`, `:462`, `:1545`, `:1550`,
+`:1564-1565`, `:1577` y `:1717`), y lo nuevo empieza en la `:1908`, detrás de su última línea; en
+`tests.rs`, tampoco: lo nuevo empieza en la `:6228`. En `ARQUITECTURA.md`, la `:58`, la `:214`, la
+`:1185`, la `:1606` y la `:1614-1621` cambian en su sitio, y en `CONTRIBUTING.md` la `:115` y la
+`:123-130`: nada se mueve. En el `BACKLOG.md`, la `:15`, la `:22`, la `:3306` y la `:3334` cambian
+en su sitio, y desde la `:3346` entran 24, las del cierre de la 121: lo de debajo baja 24. En
+`SECURITY.md`, la `:1066` pasa a once líneas y desde la `:1067` corren diez; la `:1298`, que con
+ellas es la `:1308`, cambia en su sitio; y la `:1311`, ahora la `:1321`, pasa a diez, y desde la
+`:1312` corren diecinueve. En el RFC-0001, la `:29` pasa a dos, la `:39`, ahora la `:40`, cambia en
+su sitio, la `:131` pasa a tres y la `:381` a cuatro: corren una desde la `:30`, tres desde la
+`:132` y seis desde la `:382`. Las cifras de `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md`, `doc/ecst/VERIFICACION.md` y el pin de la fila
+`zk-ssl` cambian en su sitio. Ninguna cita por línea de los documentos vivos cae en lo que se mueve
+(`git grep` sobre este árbol, sin `AUDITORIA.md`; las de `212eca2` a estos ficheros son las de
+`7ed7e17`, y éstas las de `378e1fa`, menos la de `doc/METODO.md` a `CONTRIBUTING.md:171-172`, que el
+§855 pasó a «el pie de `CONTRIBUTING.md`»): a `SECURITY.md` la más alta es la `:728`, desde los
+README; al `BACKLOG.md`, la `:3076-3080`, de `doc/ecst/`; al RFC-0001, la `:12` y la `:21`, desde
+`doc/ROTACION_DE_CUENTAS.md`; a `ARQUITECTURA.md` y a `CONTRIBUTING.md` se les citan líneas, pero
+ninguna de las que se rehacen. Las que dan a líneas que cambian en su sitio siguen dando a lo que
+citan: `snapshot.rs:460-463`, desde la 121, sigue siendo el `key: None`, con su marca;
+`ARQUITECTURA.md:58`, desde los borradores de `doc/ecst/`, la cifra de la capa; y `PAPER_EN.md:33`,
+desde `tools/check_cifras.py`, el total. En `AUDITORIA.md`, las que caen en lo que este sello mueve
+son de asientos. Unas ya no caían en su sitio en el §820, y su asiento las nombra con la línea en
+que estaba entonces lo que citan (`AUDITORIA.md:62904-62921`): `SECURITY.md:1098` (el §841, de
+`AUDITORIA.md:57504`, «a la 1098», a `:57757`), por el arranque, que da en la `:1431`;
+`BACKLOG.md:3438-3442`, `:4601`, `:4608`, `:4613-4615`, `:4831` y `:4831-4833` (el §838, el §840, el
+§851, el §854 y el §855, `AUDITORIA.md:56146`, `:57192`, `:57448`, `:57443`, `:60742`, `:61256`,
+`:61401` y `:61630`), que da en la `:3970`, la `:4684`, la `:4691`, la `:4696`, la `:4868` y la
+`:4868-4870`; la `:1288` del asiento del §819 (`AUDITORIA.md:62489`), la 3.16 de `SECURITY.md`, que
+da en la `:1297`; y la de ese asiento a la cabecera del RFC-0001 (`AUDITORIA.md:62455-62456`), de la
+`:1` a la `:32` con su primer «## » en la `:33`, que en el §820 va de la `:1` a la `:33`, con el «##
+» en la `:34`. Esas líneas del asiento del §820 eran ciertas en él, y este sello las corre: la
+`:1431`, diecinueve, a la `:1450`; las del `BACKLOG.md`, veinticuatro, a la `:3994`, la `:4708`, la
+`:4715`, la `:4720`, la `:4892` y la `:4892-4894`, y la marca que guarda la `:723-741`, que ese
+asiento da en la `:4834`, la del §819, y que en el §820 es la `:4869`, es aquí la `:4893`; la
+`:1297`, diez, a la `:1307`; y la cabecera del RFC-0001, una: va de la `:1` a la `:34`, y el «## »
+es la `:35`. Lo mismo dice de esa cabecera el asiento del §820 en «El porte, hasta el §858»
+(`AUDITORIA.md:62832-62833`): su cabecera de la `:1` a la `:33`, con el «## » en la `:34`, va de la
+`:1` a la `:34`, con el «## » en la `:35`; de la 77 da allí la línea que tenía sobre `7ed7e17`,
+«allí era la `:4866-4868`» (`AUDITORIA.md:62819-62820`), que no es de su árbol y no se corre. Y las
+del asiento del §820 a `SECURITY.md:1298` (`AUDITORIA.md:62876`, y sus «la `:1298`» de «El porte,
+hasta el §852», `:62785`, y de «Las líneas», `:62888`), la línea de la 3.16 en que se juntan los
+marcadores, que con este sello es la `:1308`. Los dos asientos citan además la nota del §814: el del
+§819, `ARQUITECTURA.md:1613-1616` y `CONTRIBUTING.md:122-125` (`AUDITORIA.md:62425`), y el del §820,
+ésas (`AUDITORIA.md:62894`), `ARQUITECTURA.md:1613-1618` y `CONTRIBUTING.md:122-126`
+(`AUDITORIA.md:62779-62780` y `:62892-62893`, y la de `CONTRIBUTING.md` también en `:62821`), y
+`ARQUITECTURA.md:1613` y `CONTRIBUTING.md:122` (`AUDITORIA.md:62877`): la `:1613` y la `:122` no
+cambian, y las de detrás, rehechas ya por el §820, se rehacen otra vez. Son de asientos, que no se
+reescriben.
+
+**Medido en el carril**, en release, con `--locked`, sobre el §817 de antes del rebase más el §819 y
+el §820 de ese carril y este sello, con los marcadores sin numerar, en la máquina de la sesión (`id
+-u` da 0; 4 núcleos, `nproc`):
+- **El filtro «reexporta»**, los dos tests: 2 de 2, 504 fuera del filtro y 0 avisos (3,46 s de
+  tests).
+- **La capa entera**: 499 pasan, 0 fallan, 7 ignorados y 0 avisos (149,59 s de tests y 261 s de
+  corrida, compilación incluida, con la carga entre 1,2 y 4,3). Los sha256 de lo medido:
+  `snapshot.rs` `96f699ec1191bce0…` y `tests.rs` `bb95bd7057baec99…`, los del borrador del carril.
+  Tras la suite no queda en el directorio temporal ningún fichero de los dos tests (medido
+  comparando su listado antes y después).
+- **Los mutantes**, todos a la vez en un solo binario, cada uno tras un conmutador que lee en tiempo
+  de ejecución una variable de entorno de la sesión —en `conservar_la_clave` y en la última línea de
+  `import_snapshot_with_key`, y M6 en `commit`, en `persistence.rs`—, compilado sin avisos; cada
+  uno, con su variable puesta y el filtro «reexporta». Sin ninguna puesta, los dos pasan. Después se
+  restauraron `snapshot.rs`, `tests.rs` y `persistence.rs`, y sus sha256 volvieron a los de arriba
+  y, el de `persistence.rs`, a `8c783c43dc64806e…`, el del §820 del carril, que es también el de
+  este árbol. Caen los ocho primeros:
+  - M0, el código de antes en la `:205` —la capa sale de `desde_instantanea_en_claro`, sin clave—:
+    caen los dos, en «CRITICO: (a) la reexportada no va cifrada en la version 2: marca 0x00» y en
+    «CRITICO: (a) la reexportada de una v1 no va en la version 2: marca 0x00»;
+  - M1, el que pide la 121: la capa importada vuelve a nacer sin clave (`capa.key = None` en
+    `conservar_la_clave`). Caen los dos, igual que con M0;
+  - M2, la v1 se queda en la v1: cae el de la v1, en «… no va en la version 2: marca 0x01»;
+  - M3, la v2 toma una sal nueva en vez de la de su cabecera: cae el de la v2, en «CRITICO: (a) la
+    reexportada no lleva la cabecera de la instantanea: la clave no siguio fijada a su sal»;
+  - M4, sin la frase, la capa se queda con la clave de la v1: cae el de la v1, en «CRITICO: (e) con
+    la clave de la v1 ya fijada, sin la frase, se importo; reexportada, con la marca Some(1)»;
+  - M5, la sal de toda v1, de ceros (`Kdf::Argon2idV2 { sal: [0u8; LARGO_SAL] }` en vez de
+    `Kdf::nuevo()`), y MS, la sal fija `*b"sal-fija-rev-121"`, con el mismo error: cae el de la v1
+    con los dos, en «CRITICO: (f) dos importaciones de la misma v1, la misma cabecera: la sal no es
+    nueva». Con la primera vuelta, sin el (f), los dos pasaban (lo midieron las revisiones);
+  - M6, una capa sin libro pierde la clave en cuanto opera (`self.key = None` en la rama de `commit`
+    sin libro, `persistence.rs:775`): cae el de la v2, en «CRITICO: (f) tras operar, la reexportada
+    no va cifrada: marca 0x00». Con la primera vuelta pasaba la capa entera (lo midió una revisión);
+  - y M7, el equivalente: la v2 deriva otra vez la misma clave (`key.fijar` con el KDF de la
+    cabecera, en vez de quedarse con la de `abrir_sellada`). Pasan los dos, como se esperaba: sólo
+    cambia el tiempo (abajo).
+  Los que caen dejan sus ficheros en el directorio temporal, porque no llegan a limpiar: 28
+  entradas, de los dos tests, que se borraron, sólo ésas (el listado del directorio, antes y
+  después).
+- **El tiempo**, con un test que no queda en el árbol, en ese mismo binario: cuatro corridas —dos
+  sin mutante, una con M0 y otra con M7—, de cinco vueltas cada una, con `Instant`, y la carga de un
+  minuto entre 1,56 y 1,66 (`uptime`). En las cuatro, un Argon2id suelto, de 256,2 a 348,5 ms; la
+  clave de la v1, un SHA-256, de 0,0044 a 0,0086 ms; importar la instantánea en claro, de dos
+  cuentas, de 2,8 a 5,7 ms. Importar con la frase su v1 cuesta, sin mutante, de 262,2 a 328,2 ms, y
+  con M0, que es el código de antes, de 3,0 a 5,8: el Argon2id que paga la importación de una v1 es
+  nuevo. Importar su v2, sin mutante, de 261,3 a 329,5 ms, y con M7, de 562,9 a 597,7: un Argon2id,
+  y no dos.
+- **La frase vieja tras un `recifrar`**, con el mismo test: un libro cifrado exporta su instantánea
+  y se recifra a otra frase —su cabecera cambia—; la instantánea de antes, importada con la frase
+  vieja y reexportada, sale `0x02` con la cabecera de esa copia, no con la del libro recifrado; abre
+  con la frase vieja y no con la nueva, y la de antes, tampoco con la nueva; el libro abre con la
+  nueva y no con la vieja. Lo que la primera vuelta dejaba «deducido, sin medir», y lo dice ahora la
+  3.14.
+- **Las herramientas** del bucle del canon —`check_cifras`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `verificar_citas`, `check_dominios`, `check_publicadas`,
+  `check_nucleo`, `check_techo`, `check_curvas` y `check_superficie`—, más `check_tests`,
+  `check_modulos`, `check_vectores` y `check_catalogo`, sobre copias del índice del borrador, sin
+  `target`. Con el marcador sin numerar, sólo dos daban rojo, por lo que se esperaba:
+  `verificar_citas`, con las 69 líneas del marcador de los tres sellos del carril, y `check_cifras`,
+  con la crónica, que aún decía «§817: -> 493» con el pin en 499. En una copia con el marcador
+  cambiado por un número de prueba y un asiento simulado con ese número al final de `AUDITORIA.md`,
+  las quince daban 0; y también con el asiento del carril, numerado igual, en su sitio.
+  `check_tests` contaba 2010 tests declarados. `git diff --check`, limpio.
+
+**Lo que pidieron las revisiones, y se hizo**, en el carril:
+- Que un test atara la sal nueva de la v1 (los dos bloqueantes): el (f) del de la v1, con M5 y MS
+  (arriba). Las marcas que lo afirmaban quedan como estaban, ahora atadas, y la entrada de la
+  crónica del pin lo dice: «otra en cada importacion».
+- Que la clave se atara también tras operar en la capa importada: el (f) del de la v2, con M6.
+- Que «no cuesta otro Argon2id» dijera que se deduce, o se midiera: el doc de `conservar_la_clave` y
+  el cierre de la 121 dicen que se deduce del código y que no lo ve ningún test, y el tiempo se
+  midió, con M7 (arriba). Y que el coste de importar una v1 tuviera su cifra: arriba, con M0 como el
+  antes.
+- Que la 3.14 dijera lo de la frase vieja: una copia de antes de un `recifrar`, importada con la
+  vieja y reexportada, es una copia NUEVA bajo la vieja, con lo que lleve entonces la capa
+  importada, y quien cambió la frase porque se filtró la tiene que contar. Medido (arriba).
+- Que la 3.16 dijera que una v1 ya no se importa con una clave ya fijada, sin la frase, como dice el
+  RFC-0001 (`:384-387`), que lo atribuía a la 3.14 y la 3.16 sin que ninguna lo dijera: lo dice la
+  3.16, en su marca.
+- Que llevaran marca las dos «cabecera del libro» que no la llevaban: la doc de
+  `SNAPSHOT_ENCRYPTED_V2` (`snapshot.rs:1545`) y la fila de la E2 del RFC-0001 (`:40`).
+- Que «Las líneas» contara la cita del asiento del sello anterior a la línea de `SECURITY.md` en que
+  se juntan los marcadores, y que las citas de este asiento fueran precisas: `crypto.rs:142-143`,
+  `:263-264` y, de la E2 del RFC-0001, la `:130`, con su marca en la `:132-134`.
+- Que «Contadores» nombrara todos los sitios de la cifra de la capa.
+- Que el cierre de la 121 no tuviera una línea de 117 caracteres, y dijera dos marcas en la 3.16, no
+  una: se rehízo, y pasa de 21 líneas a 24.
+- Que «Dos instantáneas del mismo estado son byte a byte idénticas» (`ARQUITECTURA.md:212-213`), que
+  el test mide falso para las cifradas, llevara marca, aquí o en otro sello: aquí.
+- Que los tests que caen dejan restos en el directorio temporal: es así, como los demás de la capa,
+  que limpian al acabar, y se declara; con la suite en verde no queda ninguno (arriba).
+- Y que los hashes que citaba el asiento del carril —los de los borradores del §819 y del §820 y el
+  del §817 de antes del rebase— cambiarían al numerar y rebasar la pila: se reescriben aquí, y los
+  dos sellos de delante se nombran por su número, y el §817, por su commit de `main`, `5fd5212`.
+
+**Medido sobre `29b4442`**, el §849, más el §819, el §820 y este sello, con «§821» puesto. La capa
+entera (`cargo test -p zk-ssl --release --locked`, el 21-10-2026, en la máquina de la sesión, como
+root): 503 pasan, 0 fallan, 7 ignorados y 0 avisos, en 144,71 s de tests tras 1 min 32 s de
+compilación, con la carga de un minuto en 4,29 al acabar (`uptime`); entre ellos, los dos de este
+sello y los cuatro del §819 y el §820. El directorio temporal de la corrida, vacío antes, quedó
+vacío (`ls -A`). Los sha256 de lo medido: `snapshot.rs` `9463033c56a51013…` y `tests.rs`
+`70b5342d5ba8cdbe…`, los de este commit. Las herramientas del bucle «2 ter» de `tools/canon.sh` —las
+once, `check_curvas` bajo el cerrojo de cargo—, más `check_tests`, `check_modulos`, `check_vectores`
+y `check_catalogo`, desde la raíz del árbol, con este asiento en su sitio: las quince dan 0;
+`check_tests` cuenta 2018 tests declarados, `check_modulos` 207 ficheros, `check_vectores` 500
+vectores y 1002 líneas de manifiesto, `check_cifras` 26 cifras de tests en documentos vivos, ninguna
+contra el canon, y `verificar_citas`, 0 marcadores sin número en el árbol. `git diff --check`,
+limpio. Los mutantes y la medida del tiempo no se volvieron a correr: el código es el que se midió
+en el carril.
+
+**Medido sobre `378e1fa`**, el §852, más el §819, el §820 y este sello, con su asiento de entonces
+en su sitio. La capa no se volvió a correr a mano, por lo que dice el §819: los §850-§852 no tocan
+`crates/zk-ssl`, ni sus dependencias, ni el `Cargo.lock`, aunque su suite lee, al correr,
+`spec/RPC.md` y los fuentes de `crates/`, que sí cambian; la corrió el canon, el entero, `--sello`,
+sobre ese árbol, y salió VERDE. Los sha256 de `snapshot.rs` y `tests.rs` son los de arriba. Las
+quince herramientas, como arriba: dan 0; `check_tests` cuenta 2018 tests declarados, `check_modulos`
+207 ficheros, `check_vectores` 508 vectores y 1017 líneas de manifiesto, `check_cifras` 26 cifras de
+tests en documentos vivos, ninguna contra el canon, y `verificar_citas`, 0 marcadores sin número en
+el árbol. `git diff --check`, limpio. Tras la corrección de la revisión de ese porte, que sólo toca
+este asiento, y las del §819 y el §820, que sólo tocan los suyos, las quince se corrieron otra vez,
+con lo mismo.
+
+**Medido sobre `7ed7e17`**, el §858, más el §819, el §820 y este sello, con su asiento de entonces
+en su sitio. La capa no se volvió a correr a mano: los §853-§858 no tocan `crates/zk-ssl`, ni sus
+dependencias, ni el `Cargo.lock` (`git diff --stat 378e1fa 7ed7e17 -- crates/ Cargo.lock` da sólo
+los dos `rehacer*.sh` de `crates/zk-ssl-medio/tests/vectores/testigos/`, del §855, guiones y no
+fuentes), y `snapshot.rs`, `tests.rs`, `persistence.rs` y `crypto.rs` son byte a byte los del sello
+sobre `378e1fa`, con los sha256 de arriba; la corre el canon sobre este commit (abajo). Las quince
+herramientas, desde la raíz del árbol y `check_curvas` bajo el cerrojo de cargo, dan 0:
+`check_tests` cuenta 2018 tests declarados, `check_modulos` 207 ficheros, `check_vectores` 508
+vectores y 1017 líneas de manifiesto, `check_cifras` 26 cifras de tests en documentos vivos, ninguna
+contra el canon; `verificar_citas`, 0 marcadores sin número en el árbol, 0 en la v3 bis, con sus
+nueve ficheros y su mínimo de nueve, y 0 en la v5 bis, con sus ocho; y `check_publicadas`, en el
+ATADO G, los 21 RFC y la plantilla, y de `doc/ecst/VERIFICACION.md`, en el ATADO F y en RETIRADAS,
+sus 305 líneas «Lo que se puede afirmar». `git diff --check`, limpio. Tras la corrección de la
+revisión de ese porte, otra vez lo mismo.
+
+**Medido aquí**, sobre `212eca2` más el §819, el §820 y este sello, con este asiento en su sitio. La
+capa no se volvió a correr a mano: el §859 no toca `crates/` ni el `Cargo.lock` (`git diff --stat
+7ed7e17 212eca2 -- crates/ Cargo.lock`, vacío), y `snapshot.rs`, `tests.rs`, `persistence.rs` y
+`crypto.rs` son byte a byte los del sello sobre `7ed7e17`, con los sha256 de arriba; la corre el
+canon (abajo). Las quince herramientas, desde la raíz del árbol y `check_curvas` bajo el cerrojo de
+cargo, dan 0: `check_tests` cuenta 2018 tests declarados, `check_modulos` 207 ficheros,
+`check_vectores` 508 vectores y 1017 líneas de manifiesto, `check_cifras` 26 cifras de tests en
+documentos vivos, ninguna contra el canon; `verificar_citas`, 0 marcadores sin número en el árbol, 0
+en la v3 bis, con sus nueve ficheros y su mínimo de nueve, y 0 en la v5 bis, con sus ocho; y
+`check_publicadas`, en el ATADO G, los 21 RFC y la plantilla, y de `doc/ecst/VERIFICACION.md`, en el
+ATADO F y en RETIRADAS, sus 305 líneas «Lo que se puede afirmar». `git diff --check`, limpio.
+
+**Contadores.** +2 tests. La capa, 501 -> 503. TOTAL DE SELLO 1857 -> 1859 y CON LARGOS 1994 ->
+1996, en `PAPER.md` (`:36` y `:38`), `PAPER_EN.md` (`:33` y `:35`) y `PRINCIPIOS.md` (`:412`, con
+«—503 de la capa», y `:416`); las «1364 declarados» no se tocan; `check_tests` 2016 -> 2018. La
+cifra de la capa, en `PAPER.md:1057`, `PAPER_EN.md:1015`, `PRINCIPIOS.md:136`, `ARQUITECTURA.md`
+(`:58` y `:1185`, y la nota del §814, `:1606`, con marca), la misma nota de `CONTRIBUTING.md`
+(`:115`), con marca, `doc/INSTITUCIONAL.md:546`, `doc/INSTITUTIONAL.md:527` y
+`doc/ecst/VERIFICACION.md:1549`, a mano; el pin, en la fila `zk-ssl` de `tools/canon.sh`, con su
+entrada. `check_modulos` (207) y los vectores (508) no cambian. El `BACKLOG.md` cierra la 121: de 43
+abiertas y 87 resueltas a 42 y 88, contadas (`grep` de las casillas).
+
+**Lo que NO hace.** La importación con clave sigue sin atar la instantánea a un libro ni a un
+momento (el §817), y la capa importada lleva la clave de la instantánea, no la de ningún libro: si
+la frase del libro se cambió con `recifrar` después de exportarla, la reexportada abre con la frase
+vieja, como la copia de la que viene (medido en el carril; sin test en el árbol). La de una v2 lleva
+la misma sal que la de partida, que es la del libro que la exportó: la misma sal en dos copias y en
+el libro, como dos instantáneas del mismo libro desde el §702. Una capa sin clave que exporta sobre
+una cifrada sigue dejando un claro, y `import_snapshot` sigue importando una en claro: son la vía
+sin clave. La capa importada no se puede llevar a un libro —la API no tiene esa vía: `db` lo ponen
+la apertura (`persistence.rs:93`) y el recifrado (`:1477`)—, así que «quien la persista» sigue sin
+existir. Que no cueste otro Argon2id no lo ata ningún test: lo mide el tiempo, y M7 pasa. Y el doc
+de `export_snapshot` sigue diciendo que cifra «con la misma clave y el mismo cifrado autenticado que
+el ledger», que para una capa importada es la clave de la instantánea; no se marca: no es falso del
+cifrado, y la clave es la de la capa.
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.

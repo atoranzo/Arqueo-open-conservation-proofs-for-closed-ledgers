@@ -6225,3 +6225,188 @@ fn la_exportacion_guarda_los_permisos_de_la_anterior_y_no_sustituye_lo_que_no_es
     }
     let _ = std::fs::remove_file(&file);
 }
+
+/// ⚠️ §821 · Lo que una importacion tiene que conservar de la capa que exporto la instantanea: sus
+/// cinco raices -cuentas, congeladas, consumos, custodios y gobernanza-, su suministro y los saldos
+/// de `cuentas`.
+fn lo_que_conserva(l: &SovereignLayer, cuentas: &[AccountIndex]) -> (Vec<Digest>, u64, Vec<Option<u64>>) {
+    (
+        vec![l.state_root(), l.frozen_root(), l.cons_root(), l.custodian_set_root(), l.governance_set_root()],
+        l.total_supply(),
+        cuentas.iter().map(|&c| l.balance_of(c)).collect(),
+    )
+}
+
+/// ⚠️ §821 · **Una capa importada de una instantanea cifrada conserva su clave, y se reexporta
+/// cifrada, con la misma cabecera** (la 121 del `BACKLOG.md`). Hasta el §821 nacia sin clave, y
+/// `export_snapshot` la reexportaba en claro, con la marca `0x00`. Un libro cifrado exporta su
+/// instantanea, con la marca `0x02` y la cabecera del libro; importada con su frase y vuelta a
+/// exportar, (a) sale con la marca `0x02` y la MISMA cabecera, byte a byte -la del libro: la clave
+/// sigue fijada a su sal-; (b) sin clave no se importa, ni con otra frase; (c) con la misma frase se
+/// importa, con los saldos, el suministro y las raices de la capa que la exporto; y (d) la cadena
+/// sigue: la importada de la reexportada se reexporta otra vez cifrada y con la misma cabecera, e
+/// importa con la frase. (e) Con la clave ya fijada a ese KDF (`LedgerKey::derivar`), que no lleva la
+/// frase, tambien: no le hace falta, porque la clave que conserva la capa es la que abrio la
+/// instantanea. (f) Y la clave no se pierde al operar: la capa importada abre una cuenta -lo que
+/// pasa por `commit`, que sin libro no sella nada- y se reexporta otra vez cifrada, con la misma
+/// cabecera, e importa con la frase con la cuenta nueva.
+#[test]
+fn una_capa_importada_de_una_cifrada_se_reexporta_cifrada_con_su_cabecera() {
+    use crate::crypto::{LedgerKey, LARGO_CABECERA};
+    const MARCA_V2: u8 = 0x02; // `SNAPSHOT_ENCRYPTED_V2`, privada de snapshot.rs
+    let (path, alice, bob) = libro_e4("e4_reexporta_121");
+    let file = format!("{path}.instantanea");
+    let otra = format!("{path}.reexportada");
+    for f in [&file, &otra] {
+        let _ = std::fs::remove_file(f);
+        let _ = std::fs::remove_file(exportando(f));
+    }
+    let de_partida = {
+        let layer = abrir_e4(&path, FRASE_VIEJA_E4).expect("abrir");
+        layer.export_snapshot(&file).expect("exportar");
+        lo_que_conserva(&layer, &[alice, bob])
+    };
+    let cabecera = cabecera_de(&path);
+    let original = std::fs::read(&file).expect("leer");
+    assert_eq!(original[0], MARCA_V2, "la del libro va con la marca 0x02");
+    assert_eq!(&original[1..1 + LARGO_CABECERA], &cabecera[..], "y con la cabecera del libro");
+    let frase = || LedgerKey::from_passphrase(FRASE_VIEJA_E4);
+
+    let importada = SovereignLayer::import_snapshot_with_key(&file, &frase()).expect("importar");
+    assert_eq!(lo_que_conserva(&importada, &[alice, bob]), de_partida, "la importada");
+    importada.export_snapshot(&otra).expect("(a) reexportar");
+    let re = std::fs::read(&otra).expect("(a) leer");
+    assert_eq!(re[0], MARCA_V2, "CRITICO: (a) la reexportada no va cifrada en la version 2: marca {:#04x}", re[0]);
+    assert_eq!(
+        &re[1..1 + LARGO_CABECERA],
+        &cabecera[..],
+        "CRITICO: (a) la reexportada no lleva la cabecera de la instantanea: la clave no siguio fijada a su sal"
+    );
+    assert_ne!(re, original, "(a) la reexportada es la misma copia: el sellado lleva nonce nuevo");
+
+    assert!(SovereignLayer::import_snapshot(&otra).is_err(), "CRITICO: (b) la reexportada se importo sin clave");
+    assert!(
+        SovereignLayer::import_snapshot_with_key(&otra, &LedgerKey::from_passphrase(FRASE_NUEVA_E4)).is_err(),
+        "CRITICO: (b) la reexportada se importo con otra frase"
+    );
+    let r = SovereignLayer::import_snapshot_with_key(&otra, &frase()).expect("(c) con la frase se importa");
+    assert_eq!(lo_que_conserva(&r, &[alice, bob]), de_partida, "(c)");
+
+    r.export_snapshot(&otra).expect("(d) reexportar la importada de la reexportada");
+    let otra_vez = std::fs::read(&otra).expect("(d) leer");
+    assert_eq!(otra_vez[0], MARCA_V2, "CRITICO: (d) marca {:#04x}", otra_vez[0]);
+    assert_eq!(&otra_vez[1..1 + LARGO_CABECERA], &cabecera[..], "CRITICO: (d) otra cabecera");
+    let r = SovereignLayer::import_snapshot_with_key(&otra, &frase()).expect("(d) importar");
+    assert_eq!(lo_que_conserva(&r, &[alice, bob]), de_partida, "(d)");
+
+    let fijada = LedgerKey::derivar(FRASE_VIEJA_E4, &crate::crypto::Kdf::de_cabecera(&cabecera).unwrap()).unwrap();
+    let r = SovereignLayer::import_snapshot_with_key(&file, &fijada).expect("(e) con la clave ya fijada se importa");
+    r.export_snapshot(&otra).expect("(e) reexportar");
+    let con_fijada = std::fs::read(&otra).expect("(e) leer");
+    assert_eq!(con_fijada[0], MARCA_V2, "CRITICO: (e) marca {:#04x}", con_fijada[0]);
+    assert_eq!(&con_fijada[1..1 + LARGO_CABECERA], &cabecera[..], "CRITICO: (e) otra cabecera");
+    let r = SovereignLayer::import_snapshot_with_key(&otra, &frase()).expect("(e) importar con la frase");
+    assert_eq!(lo_que_conserva(&r, &[alice, bob]), de_partida, "(e)");
+
+    let mut op = SovereignLayer::import_snapshot_with_key(&file, &frase()).expect("(f) importar");
+    let carol = op.open_account(BaseElement::new(0xC121));
+    let tras = lo_que_conserva(&op, &[alice, bob, carol]);
+    assert_ne!(tras.0, de_partida.0, "(f) la cuenta nueva no movio ninguna raiz");
+    op.export_snapshot(&otra).expect("(f) reexportar tras operar");
+    let tras_operar = std::fs::read(&otra).expect("(f) leer");
+    assert_eq!(tras_operar[0], MARCA_V2, "CRITICO: (f) tras operar, la reexportada no va cifrada: marca {:#04x}", tras_operar[0]);
+    assert_eq!(&tras_operar[1..1 + LARGO_CABECERA], &cabecera[..], "CRITICO: (f) tras operar, otra cabecera");
+    let r = SovereignLayer::import_snapshot_with_key(&otra, &frase()).expect("(f) importar con la frase");
+    assert_eq!((lo_que_conserva(&r, &[alice, bob, carol]), r.account_count()), (tras, 3), "(f)");
+    for f in [&file, &otra] {
+        let _ = std::fs::remove_file(f);
+    }
+    quitar_e4(&path);
+}
+
+/// ⚠️ §821 · **Una capa importada de una instantanea cifrada de la version 1 se reexporta en la
+/// version 2, con sal nueva y la misma frase; con su clave ya fijada, que no lleva la frase, no se
+/// importa** (la 121 del `BACKLOG.md`; llevarla a la v2, y fallar sin la frase, es de la sesion,
+/// reversible). La v1 se fabrica con la regla documentada, como en
+/// `una_instantanea_cifrada_de_la_version_1_se_sigue_importando`: la marca `0x01` y el cuerpo sellado
+/// con la clave de SHA-256 sin sal. Importada con su frase y vuelta a exportar, (a) sale con la marca
+/// `0x02` y una cabecera de la version 2 que se lee; (b) sin clave no se importa, ni con otra frase;
+/// (c) con la misma frase se importa, con los saldos, el suministro y las raices de la de partida; y
+/// (d) otra exportacion de la misma capa lleva la misma cabecera: la sal se fija al importar, no en
+/// cada exportacion. (e) Con la clave de la v1 ya fijada (`LedgerKey::derivar`), que no lleva la
+/// frase, la importacion falla, lo dice, y no toca la instantanea. (f) Y la sal es NUEVA en cada
+/// importacion: otra importacion de la misma v1, reexportada, lleva otra cabecera, y abre con la
+/// frase; con una sal fija, todas las v1 llevadas a la v2 compartirian sal.
+#[test]
+fn una_capa_importada_de_una_v1_se_reexporta_en_la_version_2() {
+    use crate::crypto::{Kdf, LedgerKey, LARGO_CABECERA};
+    const MARCA_EN_CLARO: u8 = 0x00; // `SNAPSHOT_PLAIN`, privada de snapshot.rs
+    const MARCA_V1: u8 = 0x01; // `SNAPSHOT_ENCRYPTED`
+    const MARCA_V2: u8 = 0x02; // `SNAPSHOT_ENCRYPTED_V2`
+    const FRASE: &str = "la frase de una instantanea v1";
+    let file = format!("{}.instantanea", temp_path("v1_reexporta_121"));
+    let otra = format!("{file}.reexportada");
+    for f in [&file, &otra] {
+        let _ = std::fs::remove_file(f);
+        let _ = std::fs::remove_file(exportando(f));
+    }
+    let mut layer = new_layer();
+    let alice = open_and_fund(&mut layer, SK_ALICE, 121_121);
+    let bob = open_and_fund(&mut layer, SK_BOB, 0);
+    let de_partida = lo_que_conserva(&layer, &[alice, bob]);
+    layer.export_snapshot(&file).expect("exportar en claro");
+    let claro = std::fs::read(&file).expect("leer");
+    assert_eq!(claro[0], MARCA_EN_CLARO);
+    let v1 = LedgerKey::derivar(FRASE, &Kdf::Sha256V1).unwrap();
+    let mut viejo = vec![MARCA_V1];
+    viejo.extend_from_slice(&v1.seal(&claro[1..]).unwrap());
+    std::fs::write(&file, &viejo).unwrap();
+    let frase = || LedgerKey::from_passphrase(FRASE);
+
+    let importada = SovereignLayer::import_snapshot_with_key(&file, &frase()).expect("la v1 se importa con su frase");
+    assert_eq!(lo_que_conserva(&importada, &[alice, bob]), de_partida, "la importada");
+    importada.export_snapshot(&otra).expect("(a) reexportar");
+    let re = std::fs::read(&otra).expect("(a) leer");
+    assert_eq!(re[0], MARCA_V2, "CRITICO: (a) la reexportada de una v1 no va en la version 2: marca {:#04x}", re[0]);
+    let kdf = Kdf::de_cabecera(&re[1..1 + LARGO_CABECERA]).expect("(a) la cabecera no es de la version 2");
+    assert_eq!(kdf.version(), 2, "(a)");
+
+    assert!(SovereignLayer::import_snapshot(&otra).is_err(), "CRITICO: (b) la reexportada se importo sin clave");
+    assert!(
+        SovereignLayer::import_snapshot_with_key(&otra, &LedgerKey::from_passphrase("otra frase")).is_err(),
+        "CRITICO: (b) la reexportada se importo con otra frase"
+    );
+    let r = SovereignLayer::import_snapshot_with_key(&otra, &frase()).expect("(c) con la frase se importa");
+    assert_eq!(lo_que_conserva(&r, &[alice, bob]), de_partida, "(c)");
+
+    importada.export_snapshot(&otra).expect("(d) reexportar otra vez");
+    let otra_vez = std::fs::read(&otra).expect("(d) leer");
+    assert_eq!(otra_vez[..1 + LARGO_CABECERA], re[..1 + LARGO_CABECERA], "(d) otra exportacion de la misma capa, otra sal");
+
+    match SovereignLayer::import_snapshot_with_key(&file, &v1) {
+        Ok(l) => {
+            let marca = l.export_snapshot(&otra).ok().and_then(|_| std::fs::read(&otra).ok()).map(|v| v[0]);
+            panic!("CRITICO: (e) con la clave de la v1 ya fijada, sin la frase, se importo; reexportada, con la marca {marca:?}")
+        }
+        Err(e) => {
+            let e = e.to_string();
+            assert!(e.contains("version 1") && e.contains("frase"), "(e) el error no dice que es la v1 ni que falta la frase: {e}");
+        }
+    }
+    assert_eq!(std::fs::read(&file).expect("(e) leer"), viejo, "(e) la instantanea se toco");
+
+    let segunda = SovereignLayer::import_snapshot_with_key(&file, &frase()).expect("(f) importar otra vez");
+    segunda.export_snapshot(&otra).expect("(f) reexportar");
+    let de_la_segunda = std::fs::read(&otra).expect("(f) leer");
+    assert_eq!(de_la_segunda[0], MARCA_V2, "(f) marca {:#04x}", de_la_segunda[0]);
+    assert_ne!(
+        de_la_segunda[1..1 + LARGO_CABECERA],
+        re[1..1 + LARGO_CABECERA],
+        "CRITICO: (f) dos importaciones de la misma v1, la misma cabecera: la sal no es nueva"
+    );
+    let r = SovereignLayer::import_snapshot_with_key(&otra, &frase()).expect("(f) importar con la frase");
+    assert_eq!(lo_que_conserva(&r, &[alice, bob]), de_partida, "(f)");
+    for f in [&file, &otra] {
+        let _ = std::fs::remove_file(f);
+    }
+}
