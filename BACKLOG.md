@@ -839,6 +839,18 @@ instrumentacion) al grupo E.*
   log `0x06` y al menos dos con clave ML-DSA-44, y la dé el autor. QUEDA
   lo mismo, y el contraste local de E3 con `omniwitness` y una clave
   ML-DSA-44, leído y no corrido: sigue abierta.
+  ✅ a medias (§848): el contraste local de E3a con `omniwitness`, corrido.
+  `transparency-dev/witness` en `5397155` (la punta de su `main` el
+  2026-10-15), sin tocar, en `127.0.0.1`, con el log `0x06` del medio
+  configurado a mano (`--additional_logs`): uno con una clave ML-DSA-44 y
+  otro con una ML-DSA-44 y una Ed25519 del mismo nombre. El cliente del
+  §808, sin cambios, dice en los diez pasos lo que `tlog-witness` (`b2dd989`,
+  el mismo texto que el `main` de C2SP el 2026-10-21) pide, y el kit da
+  VERDE la nota cofirmada por los dos. Lo graba
+  `crates/zk-ssl-medio/tests/vectores/testigos/rehacer_omniwitness.sh`,
+  fuera del canon, y `tests/testigos_omniwitness.rs` lo relee en cada
+  canon. QUEDA lo que pide testigos reales, y el alta, que la da el autor
+  (§836): sigue abierta.
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro
   tiene dos eras (§281). **El esquema de firma no tiene ninguna de las

@@ -312,6 +312,14 @@ que custodiar, sin estado pero con custodia.
 > al menos dos testigos con clave ML-DSA-44. Son necesarias, no suficientes: el alta la da el autor.
 > Hasta el alta, E3 se mide en local: contra litewitness, como en el §808, y contra
 > `transparency-dev/witness` (`omniwitness` con una clave ML-DSA-44), que está leído y no corrido.
+> ⚠️ §848: decía «que está leído y no corrido». Corrido el 2026-10-21, en `127.0.0.1`: `omniwitness`
+> de `5397155`, sin tocar, con el log `0x06` del medio configurado a mano (`--additional_logs`),
+> uno con una clave ML-DSA-44 y otro con una ML-DSA-44 y una Ed25519 del mismo nombre. El cliente
+> del §808, sin cambios, dice en diez pasos lo que pide `tlog-witness` (`b2dd989`; su texto y el de
+> `tlog-cosignature` no cambiaron hasta el `main` de C2SP del 2026-10-21, `e5746a0`): el `404`, el
+> `409` con su reintento, el `409` con un tamaño mayor que el de la nota, los `422` y el `403`.
+> Lo graba y lo dice `crates/zk-ssl-medio/tests/vectores/testigos/README.md`. Es software de otra
+> mano en local: no dice qué testigo público lo corre ni con qué clave, y no adelanta el alta.
 >
 > Queda escrita, sin decidir, otra vía: testigos de una red que configuran a mano el log `0x06` y
 > cofirman con `0x04`. La casa no verificaría ni contaría esas líneas. Servirlas sin juzgar en la
@@ -331,6 +339,11 @@ que custodiar, sin estado pero con custodia.
 >   `omniwitness` cofirma con una clave Ed25519 o ML-DSA-44, o con varias
 >   (`cmd/omniwitness/monolith.go:46` y `:194-224`; en `formats` `340a9e5`,
 >   `note/note_cosigv1.go:218-232`). Que el kit verifique esas cofirmas no se ha medido.
+>   ⚠️ §848: decía que no se ha medido. Medido en local el 2026-10-21: las verifica. La nota
+>   cofirmada por dos `omniwitness` con ML-DSA-44 da VERDE en el kit, el juez del cli la ACREDITA
+>   con `k = 2` y no con `k = 3`, y la línea Ed25519 del que tiene dos claves se ignora. Y la
+>   `vkey` ML-DSA-44 que saca de una semilla el ML-DSA de Go que usa `formats` (`filippo.io/mldsa`
+>   v1.0.0) es la que saca `ml-dsa` de la misma.
 > - `https://github.com/FiloSottile/torchwood`, en `1cadf59`: litewitness solo cofirma con Ed25519
 >   (`cmd/litewitness/litewitness.go:294`).
 >

@@ -53,7 +53,7 @@
 //! con nombres de `signed-note`. [`nota`] se escribió aquí, y lo que la
 //! ata no es mtc-core sino una implementación de otra mano: torchwood.
 //!
-//! ## Cuatro corpus, de tres manos (y una grabación, §808)
+//! ## Cuatro corpus, de tres manos (y dos grabaciones, §808 y §848)
 //!
 //! - Los vectores acumulados del borrador del IETF: 65.058 casos sobre todo
 //!   subárbol de todo árbol hasta 130 hojas (`tests/vectores_ietf.rs`).
@@ -69,6 +69,11 @@
 //!   torchwood —el `add-checkpoint` de litewitness con ML-DSA-44 y
 //!   litewitness— a nueve pasos del publicador, que el cliente rehace byte
 //!   a byte (`tests/testigos_torchwood.rs`).
+//! - ⚠️ §848: y una segunda grabación, de otra mano: lo que contestó
+//!   `omniwitness` (`transparency-dev/witness` `5397155`), con el log
+//!   `0x06` del medio configurado a mano, a diez pasos del publicador, que
+//!   el cliente rehace byte a byte (`tests/testigos_omniwitness.rs`). El
+//!   título decía «y una grabación, §808».
 //!
 //! Procedencia y licencias, en `tests/vectores/README.md` y
 //! `tests/vectores/notas/README.md`; ⚠️ §808: y las de la grabación de los

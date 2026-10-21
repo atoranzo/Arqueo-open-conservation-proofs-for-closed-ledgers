@@ -79,6 +79,13 @@ crates/zk-ssl-medio/  (§631)
     (la misma licencia) a este crate, y un programa de este repositorio
     que los importa; de torchwood no se copia nada.
 
+    `tests/vectores/testigos/omniwitness.json` (§848) es lo que contestó,
+    en local, omniwitness de https://github.com/transparency-dev/witness
+    (commit 5397155, Apache License 2.0) a este crate, y
+    `omniwitness-local/main.go`, un programa de este repositorio que
+    importa transparency-dev/formats (Apache License 2.0) y
+    filippo.io/mldsa (BSD de 3 cláusulas); de ellos no se copia nada.
+
     Detalles y hashes en crates/zk-ssl-medio/tests/vectores/README.md,
     en crates/zk-ssl-medio/tests/vectores/notas/README.md y en
     crates/zk-ssl-medio/tests/vectores/testigos/README.md.

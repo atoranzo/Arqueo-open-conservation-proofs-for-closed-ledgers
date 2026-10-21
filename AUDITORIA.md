@@ -60047,3 +60047,219 @@ principio, una en `doc/ecst/README.md` y dos en `tools/verificar_citas.py` (la R
 comentario de `EXCLUIDOS_LINEA`). `git grep --cached -n "§847" -- ':!AUDITORIA.md'` da trece líneas:
 esas diez y otras tres de `tools/verificar_citas.py` (la cabecera de la v5 bis, el comentario de la
 regla y una línea del autotest), crónica de la regla, que no corrige nada sellado.
+
+## §848 — el cliente `add-checkpoint` del §808, contrastado en local con `omniwitness` de `transparency-dev/witness` en `5397155`, con el log `0x06` del medio configurado a mano: dice en diez pasos lo que pide `tlog-witness`, y el kit da VERDE la nota cofirmada; un guion en Go fuera del canon lo graba y un test de Rust lo relee en cada canon (la 7-c de la lista)
+
+El commit que lleva este asiento, sobre `9b26359` (el §847). Toca, en `crates/zk-ssl-medio/`:
+cuatro ficheros nuevos, `tests/testigos_omniwitness.rs` (4 tests),
+`tests/vectores/testigos/omniwitness.json` (la grabación, 792 líneas),
+`tests/vectores/testigos/rehacer_omniwitness.sh` (el guion) y
+`tests/vectores/testigos/omniwitness-local/main.go` (un programa en Go de este repositorio); y
+`Cargo.toml` (la entrada `[[test]]` y dos comentarios), `src/lib.rs` (un título y una viñeta de su
+cabecera), `tests/vectores/README.md` y `tests/vectores/testigos/README.md` (una sección nueva y
+una nota de licencias). Fuera del crate: la fila `zk-ssl-medio` de la TABLA de `tools/canon.sh`
+(`:144`, el pin de 58 a 62 y una nota «§848» al final de su crónica), los totales de sello de
+`PAPER.md:36` y `:38`, `PAPER_EN.md:33` y `:35` y `PRINCIPIOS.md:412` y `:416`, la 86 de
+`BACKLOG.md` (un párrafo, `:842-853`), la nota de la D-H del RFC-0013 (dos marcas,
+`spec/rfc/0013-el-medio-del-ancla.md:315-322` y `:342-346`), la fila del RFC-0013 en
+`spec/README.md:52` y `NOTICE` (`:82-88`). Y este asiento. Ni el cliente (`src/testigos.rs`), ni
+la nota (`src/nota.rs`), ni el kit, ni el cli, ni `Cargo.lock`, ni `rehacer.sh` ni
+`torchwood.json`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el
+siguiente del rango que el autor asignó (§830 a §859).
+
+Del autor es la tarea: la 7 de la lista que encargó, su parte c, «el contraste local de E3 con
+`transparency-dev/witness`». La parte b, el cliente y la nota cofirmada, la hizo el §808, y aquí no
+se toca. No es la entrada 7 de `BACKLOG.md`. El canon de este commit, `bash tools/canon.sh
+--sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y sin esta
+frase: VERDE, 1001 s de reloj (de su arranque a su salida) y 770 s de tests (la línea «total» de la
+tabla), en una máquina de 4 CPU con carga de 0,20 al empezar. Antes, dentro del mismo cerrojo, la
+sesión tocó con `touch` los 275 `.rs` de `crates/` y de `tools/` (uno más que en el §847: el test
+nuevo), y su log lo registra. Las 19 filas del nivel, en su pin, con 1853 tests que pasan (la suma
+de la columna «pasan»), y la de `zk-ssl-medio` en 62 pasan y 0 ignorados; la puerta de los
+binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (61 s)»; `check_tests` en 2012 y 20
+instrumentos; `check_modulos` en 207; las once herramientas del bucle «2 ter»; la puerta de los
+vectores, en 500 ficheros y 1002 líneas; `check_catalogo`; el paquete, en 84 de 84; el cable, en 23
+de 23; la segunda implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con
+el binario `133545ab21a4e02d` y el tarball `f8b8d8182d4c5950`. Corrió con un `TMPDIR` propio y
+vacío, y al acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió, se midió y se commiteó (`0bdf125`) sobre el §847 de antes
+(`1eba204`), y la cadena, sobre el §842 de antes (`77bca6c`), que no llevaba el §860 ni el §861.
+Después se rebasó sobre el §847 de ahora (`9b26359`), que va sobre el §846, el §845, el §844 y el
+§843 de ahora, el §818 (`69597f3`), el §817, el §816, el §815 y el §842 de ahora (`4b9f14b`), y
+éste, sobre el §860 y el §861, de otra sesión. El `cherry-pick` dio conflicto en tres ficheros:
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, en los totales de sello, que el §815 y el §816 habían
+subido de 1817 a 1849 y de 1954 a 1986, con la capa en 497, el nodo en 229 y el kit en 191. Se
+queda la línea de main, con los 4 de este sello sumados: 1853 y 1990. `tools/canon.sh` entra sin
+conflicto: la fila `zk-ssl-medio` sigue en la `:144`, en 58 en la base, y pasa a 62. De las citas
+por línea de este asiento, sólo se mueve la de la 86: el párrafo nuevo pasa de `:840-851` a
+`:842-853`, porque el §861 metió dos líneas encima. Las demás caen en las mismas líneas sobre
+`9b26359` (`git diff -U0`): `PAPER.md:36` y `:38`, `PAPER_EN.md:33` y `:35`, `PRINCIPIOS.md:412` y
+`:416`, el RFC-0013 en `:315-322` y `:342-346`, `spec/README.md:52`, `NOTICE:82-88`, `src/lib.rs:56`
+y `:72-76`, y `src/nota.rs:82` y `:330-331`, que ningún sello de en medio toca. Lo «Medido» y los
+mutantes son los de `0bdf125`, sobre `1eba204`; sobre `9b26359` no se rehicieron, ni se corrió
+otra vez el guion en Go. Lo que cambió por el rebase: la apertura; este párrafo; la cita de la 86 y
+el párrafo de las citas que se mueven, remedido; la línea de las herramientas rápidas, que se
+corrieron otra vez, con `--desde 69597f3`; la frase del canon, que se corrió sobre `9b26359` con
+este sello; y los contadores: el total de sello, de 1817 y 1821 a
+1849 y 1853, con los pines largos de 1954 y 1958 a 1986 y 1990, `check_tests`, de 1976 y 1980 a
+2008 y 2012, y la cabecera de `BACKLOG.md`, de 48 abiertas y 79 resueltas a 44 y 86.
+
+**De dónde sale.** El §808 midió el cliente contra testigos de una sola mano, la de torchwood. El
+§836 dejó escrito, en el RFC-0013 y en la 86, que el contraste con `omniwitness` y una clave
+ML-DSA-44 estaba «leído y no corrido», y que «que el kit verifique esas cofirmas no se ha medido».
+`omniwitness` es de otra mano: `transparency-dev/witness`, con las claves de
+`transparency-dev/formats`.
+
+**Lo que se contrasta.** `github.com/transparency-dev/witness` en `5397155`
+(`539715523ab9d0ee7d036926f9d1b00266e1c567`, la punta de su `main` el 2026-10-15; el módulo
+`v0.0.0-20261014123032-539715523ab9`, `h1:stSGpwkttvZrI5MHMcq7PluZdqpsulroZU9NvKWB8Bw=`). El
+`main` de witness es hoy otro, `ea1ba4f` (`git ls-remote`, 2026-10-21): el contraste es de
+`5397155`, el commit que se leyó. Sus claves son las de `formats` en `340a9e5`, que fija su
+`go.mod`. El protocolo es `tlog-witness` v1.1.0 de C2SP en `b2dd989`: medido el 2026-10-21 con un
+clon sin blobs de `github.com/C2SP/C2SP`, el último commit que toca el texto de `tlog-witness` es
+`b2dd989`, y entre `b2dd989` y su `HEAD`, `e5746a0`, ni ese texto ni el de `tlog-cosignature`
+cambian (`git log` y `git diff --stat` sobre los dos ficheros). Lo leído del código de witness, en `5397155`: el `409` lleva
+`text/x.tlog.size` y el tamaño con su salto (`witness/http.go:98`), el `404`, el `403` y los dos
+`422` salen de `:100`, `:102`, `:108` y `:110`, y el cuerpo se limita a 16 KiB (`:30`); el log se
+configura a mano con `--additional_logs` (`cmd/omniwitness/monolith.go:63`), que lee su clave con
+`note.NewVerifier` de `formats` (`omniwitness/configs.go:61`).
+
+**El guion**, `rehacer_omniwitness.sh`, como `rehacer.sh`: baja witness por el proxy de Go con
+`go mod download`, que lo comprueba contra `sum.golang.org`; compila `cmd/omniwitness` sin tocar y
+`omniwitness-local` dentro de una copia; compila en release el kit, el cli y el ejemplo
+`testigos_locales`, el cliente del §808 sin cambios, en `${CARGO_TARGET_DIR:-target}`; levanta dos
+`omniwitness` en `127.0.0.1`, sin métricas, sin distribuidor y sin la lista de una red de
+testigos; y comprueba al final que no ha tocado el árbol. `omniwitness-a` firma con una clave
+ML-DSA-44; `omniwitness-b`, con una ML-DSA-44 y detrás una Ed25519 del mismo nombre, dos
+`--private_key_path`, como en la rotación de su README. `omniwitness-local clave` escribe la clave
+privada que lee omniwitness a partir de una semilla de prueba, y su `vkey`; `comprobar` verifica
+una cofirma con el verificador de `formats`. Los diez pasos, en términos de `tlog-witness`:
+
+| paso | qué se envía | qué contestan los dos | qué dice el cliente |
+|---|---|---|---|
+| `desconocido` | 3 anclas, `old 0`, sin el log configurado | `404` | `OrigenDesconocido` |
+| (entre pasos) | se paran y se levantan con el log en `--additional_logs` y la misma base de datos | | |
+| `primera` | 3, `old 0` | `200` | cofirmada, `viejo 0` |
+| `sin-memoria` | 3, `old 0` | `409` con 3, y el reintento, `200` | cofirmada, `viejo 3` |
+| `crece` | 7, `old 3` y la prueba | `200` | cofirmada, `viejo 3` |
+| `atrasado` | 9, `old 0` | `409` con 7, y el reintento con la prueba de 7 a 9, `200` | cofirmada, `viejo 7` |
+| `nota-menor` | 5, `old 0` | `409` con 9, un tamaño mayor que el de la nota | `retroceso`, 9 y 5: no reintenta |
+| `prueba-invalida` | 11, `old 9`, con una prueba de consistencia que no verifica contra la raíz de 9 | `422` | `Inconsistente` |
+| `otra-raiz` | 9 con otra raíz, `old 9` | `422` | `Inconsistente` |
+| `impostor` | la nota de otra clave con el mismo origin | `403` | `Prohibida` |
+| `igual` | 9, `old 9` y la prueba vacía | `200` | cofirmada, `viejo 9` |
+
+En cada `200`, omniwitness-a da una línea y omniwitness-b dos: el cliente retiene la `0x06` e
+ignora la Ed25519 («ignoradas 1»). De punta a punta: la nota cofirmada de `primera` entra en el
+sobre `cofirmada-dos-testigos.json` del catálogo; el kit la da VERDE («la cofirman 2
+testigo(s)»); el juez del cli la ACREDITA con `k = 2` y sale con 1 con `k = 3`; `formats` lee las
+dos cofirmas retenidas; y la línea Ed25519 de omniwitness-b verifica con `formats`. Las hojas son
+las de `torchwood.json`, y la raíz de las tres primeras es la de la nota del catálogo.
+
+**Medido**, en este orden, en el worktree de la sesión, con el cerrojo de cargo tomado y
+`CARGO_TARGET_DIR=/home/user/arqueo-tareas/target`, y una caché de Go de la sesión, del
+2026-10-15 (`GOMODCACHE`, `GOCACHE` y `GOPATH` exportados).
+
+1. `bash crates/zk-ssl-medio/tests/vectores/testigos/rehacer_omniwitness.sh --guardar`: «OMNIWITNESS-LOCAL
+   VERDE», 28 comprobaciones OK y ninguna ROJA (veinte de los pasos, dos por paso, y ocho de punta a
+   punta), y escribe `omniwitness.json`. Unos 4 min, de las 05:37 a las 05:41 por las horas de los
+   ficheros, casi todos de compilar en release el kit y el cli. Go: `go mod download` cambia sola a go1.26.10 («requires go >= 1.26.0»), y la compilación,
+   dentro de la copia, usa go1.26.0, la que pide su `go.mod`: la grabación dice esta.
+2. `cargo test --locked -p zk-ssl-medio --test testigos_omniwitness`: 4 pasan, 0,36 s.
+3. `cargo fmt -p zk-ssl-medio -- --check`: limpio, tras pasar `rustfmt` por el test nuevo.
+4. Los mutantes, abajo.
+5. `cargo test -p zk-ssl-medio --release --locked`, la orden de la fila: 62 pasan y 0 ignorados en
+   nueve binarios, 7,0 s de reloj tras recompilar el crate. El pin pasa de 58 a 62, y el timeout de
+   60 s no cambia.
+6. El guion otra vez, sin `--guardar`: VERDE, las mismas 28, 16,8 s, y `omniwitness.json` byte a
+   byte igual (`cmp`).
+
+Cada grabación es otra: las cofirmas llevan la marca del reloj del testigo (aquí, 1792561278) y
+una firma con sal. La nota del publicador se firma en determinista, y el test vale con cualquier
+grabación que salga VERDE.
+
+**El test**, `tests/testigos_omniwitness.rs`, con la forma de `tests/testigos_torchwood.rs`:
+
+- `el_cliente_rehace_cada_paso_contra_lo_que_contesto_omniwitness`: la nota de cada paso, byte a
+  byte; cada petición, byte a byte la grabada; cada resultado, testigo a testigo; la nota
+  cofirmada; y 24 intercambios, ni uno más.
+- `cada_cofirma_ml_dsa_44_de_omniwitness_verifica_y_la_ed25519_es_de_la_otra_clave`: cada línea
+  ML-DSA-44 de cada `200` verifica aquí, con su `vkey`, sobre el checkpoint de la nota de su paso;
+  la Ed25519 de omniwitness-b tiene 4 + 8 + 64 bytes y el `key_id` de su otra clave, y no verifica
+  con la ML-DSA-44. Cinco de cada.
+- `la_vkey_ml_dsa_44_de_cada_omniwitness_sale_de_su_semilla`: la `vkey` que sacó de su semilla el
+  ML-DSA de Go que usa `formats` (`filippo.io/mldsa` v1.0.0) es la que saca `Cofirmante::determinista`
+  de la misma: la misma clave pública y el mismo `key_id`.
+- `el_sobre_del_banco_lleva_la_nota_cofirmada_por_omniwitness`: el sobre lleva la nota de
+  `primera`, sus dos cofirmas verifican, y el ancla de la posición 1 está incluida.
+
+**Mutantes**, sobre una copia del árbol en el directorio de la sesión, con el mismo
+`CARGO_TARGET_DIR`, cada uno con `cargo test --locked -p zk-ssl-medio --test testigos_omniwitness`
+y vuelto atrás antes del siguiente:
+
+- M1, un byte de la firma de la línea del publicador en la nota grabada de `primera`: ROJO, 1 de 4
+  (`el_cliente_rehace…`).
+- M2, la `ETIQUETA` de `src/nota.rs:82` con `subtree/v2`: ROJO, 3 de 4 (`el_cliente_rehace…`,
+  `cada_cofirma…` y `el_sobre…`). La etiqueta la usan también la línea del publicador y el
+  `Cofirmante`: el mutante no aísla la cofirma de omniwitness, y no queda vivo.
+- M3, la `vkey` de omniwitness-a con el byte de tipo `0x04`, en toda la grabación: ROJO, 4 de 4
+  (`leer_vkey`, `src/nota.rs:330-331`).
+- M4, el último byte de la semilla grabada de omniwitness-a: ROJO, 1 de 4 (`la_vkey…`).
+- M5, los `200` de omniwitness-b sin la línea Ed25519: ROJO, 2 de 4 (`el_cliente_rehace…`, por
+  «ignoradas», y `cada_cofirma…`).
+- M6, el `409` de `nota-menor` de omniwitness-a con 8 en lugar de 9: ROJO, 1 de 4
+  (`el_cliente_rehace…`).
+- M7, el sobre sin la cofirma de omniwitness-b: ROJO, 1 de 4 (`el_sobre…`).
+- La copia sin mutar: 4 de 4.
+
+Cada test nuevo mata al menos uno, y ninguno queda vivo. El guion en Go no se muta: no lo corre el
+canon. Después, `cargo clean -p zk-ssl-medio` y `cargo clean --release -p zk-ssl-medio` con el
+mismo `CARGO_TARGET_DIR` (733 y 109 ficheros), para que el canon no corra un binario de la copia; y
+la copia y sus salidas, borradas.
+
+**Las herramientas rápidas**, sobre el árbol con el cambio y antes del commit: las once del bucle
+«2 ter», `python3 tools/check_vectores.py --desde 69597f3` y `check_catalogo`, con 0.
+`verificar_citas` da 0 con este asiento; sin él, 1, la cita de la 86 al §848.
+
+**Correcciones de lo sellado**, sobre los ficheros del commit:
+
+1. `crates/zk-ssl-medio/src/lib.rs:56`: el título decía «y una grabación, §808»; dice «y dos
+   grabaciones, §808 y §848», y la viñeta nueva (`:72-76`) lo declara.
+2. `spec/rfc/0013-el-medio-del-ancla.md:315`: decía que el contraste con `omniwitness` «está leído
+   y no corrido».
+3. `spec/rfc/0013-el-medio-del-ancla.md:342`: decía que «que el kit verifique esas cofirmas no se
+   ha medido».
+
+Las citas por línea que se mueven: las del RFC-0013 que hay fuera de él (`:42-47`, `:129-132`)
+están antes de las líneas nuevas, y las de `NOTICE` (`:39-40`), también. Las de `BACKLOG.md` en
+`doc/ecst/VERIFICACION.md` y en `doc/ecst/borrador/*.json` son fuentes de una verificación fechada;
+las que pasan de la `:841` se mueven 12 líneas, y ya apuntaban a otras antes de este sello (la 52,
+que citan en `:1244` y `:1324` como `:3041-3053`, está en la `:4661` de `9b26359`, y en la `:4673`
+con este sello; en la `:4178` de `1eba204`). No se corrigen: la v5 de
+`verificar_citas` no mira `doc/ecst/VERIFICACION.md` («excluidos») ni los borradores.
+
+**Lo que NO hace.**
+
+- No habla con testigos reales, ni con la red de testigos: todo escucha en `127.0.0.1`. No mide
+  qué testigo público corre `5397155`, ni con qué clave.
+- No pide el alta ni manda correo. Las condiciones del §836 siguen como estaban, y el alta la da el
+  autor.
+- No cambia el cliente, la nota, el kit ni el cli: el contraste es del código del §808 tal cual.
+- No contrasta el `main` de witness de hoy (`ea1ba4f`), sino `5397155`.
+- No corre Go en el canon: el test relee la grabación.
+- No toca `rehacer.sh` ni `torchwood.json`.
+
+**Lo que es del autor.** Si el contraste se rehace cuando witness o `tlog-witness` cambien, y con
+qué cadencia. Si la segunda clave de omniwitness-b, Ed25519, se queda en el banco: el cliente la
+ignora, como manda la especificación con una clave que no conoce, y la D-H no cambia.
+
+**Contadores.** El pin de `zk-ssl-medio` pasa de 58 a 62. El total de sello, de 1849 a 1853, y con
+los pines de `--largo` y `--completo`, de 1986 a 1990; las «1364 declaradas» no se mueven (la 61
+va después). `check_tests` pasa de 2008 a 2012 tests declarados, con 20 instrumentos.
+`check_modulos` sigue en 207. `BACKLOG.md` no cierra ni abre ninguna: la 86 gana un párrafo y
+sigue abierta, y su cabecera sigue en 44 abiertas y 86 resueltas. Las marcas «⚠️ §848» en los
+ficheros del commit, sin este asiento, son siete: dos en `crates/zk-ssl-medio/Cargo.toml`, una en
+`src/lib.rs`, una en `tests/vectores/README.md`, una en `tests/vectores/testigos/README.md` y dos
+en el RFC-0013.

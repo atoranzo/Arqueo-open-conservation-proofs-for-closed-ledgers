@@ -4,7 +4,9 @@ Tres corpus de dos manos ajenas, copiados **byte a byte** (§631). Ninguno lo
 escribió Arqueo; lo que Arqueo añade está en los `.rs` de `tests/` y se dice
 allí. El cuarto, las notas `checkpoint` contrastadas con torchwood (§632),
 tiene su propio `notas/README.md`; y desde el §808, lo que contestaron en local
-litewitness y su motor al publicador, `testigos/README.md`.
+litewitness y su motor al publicador, `testigos/README.md`. ⚠️ §848: y en el
+mismo `testigos/README.md`, lo que contestó en local omniwitness, de
+`transparency-dev/witness`.
 
 ## 1. Los vectores acumulados del borrador del IETF
 

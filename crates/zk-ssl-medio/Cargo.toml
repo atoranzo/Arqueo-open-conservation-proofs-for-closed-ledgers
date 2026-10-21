@@ -70,6 +70,13 @@ required-features = ["firmar"]
 name = "testigos_torchwood"
 required-features = ["firmar"]
 
+# Lo que contestó omniwitness (transparency-dev/witness 5397155) al mismo
+# cliente, grabado por `tests/vectores/testigos/rehacer_omniwitness.sh`
+# (§848).
+[[test]]
+name = "testigos_omniwitness"
+required-features = ["firmar"]
+
 # El medio del banco del ancla cofirmada (§634): firma notas y cofirmas para
 # `tools/banco_ancla_cofirmada.sh`. No es el publicador (E3).
 [[example]]
@@ -79,7 +86,9 @@ required-features = ["firmar"]
 # El cliente del publicador contra testigos LOCALES (§808): lo que corre
 # `tests/vectores/testigos/rehacer.sh` contra el motor de litewitness y
 # litewitness mismo. Firma en determinista para que la grabación se pueda
-# rehacer byte a byte; no es el publicador de un operador.
+# rehacer byte a byte; no es el publicador de un operador. ⚠️ §848: y lo
+# que corre `tests/vectores/testigos/rehacer_omniwitness.sh` contra
+# omniwitness.
 [[example]]
 name = "testigos_locales"
 required-features = ["firmar"]
@@ -88,4 +97,5 @@ required-features = ["firmar"]
 # Solo el ejemplo del banco lee y escribe JSON. Ya está en el Cargo.lock.
 # ⚠️ §808: y desde el §808 también el ejemplo `testigos_locales` y
 # `tests/testigos_torchwood.rs`, que lee la grabación de los testigos.
+# ⚠️ §848: y `tests/testigos_omniwitness.rs`, que lee la de omniwitness.
 serde_json = "1"
