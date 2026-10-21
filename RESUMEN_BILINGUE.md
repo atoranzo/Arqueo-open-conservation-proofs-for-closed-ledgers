@@ -43,9 +43,10 @@ ni lo usa nadie con dinero real.
 ### Cómo se comprueba
 
 Con el kit del verificador: una descarga, cinco comprobaciones en tu máquina y sin red; el
-programa dice `VERDE` o nombra la regla rota, y se reproduce desde el commit que su `VERSION`
-declara ([`doc/KIT.md`](./doc/KIT.md)). ⚠️ Corregido en el §794: decía «cuatro»; desde la 0.3.0 son
-cinco.
+programa dice `VERDE` o nombra la regla rota, y se reconstruye desde el commit que su `VERSION`
+declara ([`doc/KIT.md`](./doc/KIT.md)); con la misma huella, sólo demostrado dentro de una misma
+máquina. ⚠️ Corregido en el §794: decía «cuatro»; desde la 0.3.0 son cinco. ⚠️ §823: decía «se
+reproduce desde el commit», sin la condición de la máquina.
 
 ### Dónde encaja
 
@@ -60,7 +61,8 @@ contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CAS
 asiento qué compuertas pasó, la mayor el canon (⚠️ §794: decía «con canon en cada cambio»);
 protocolo `zkssl/0.4` con 32 métodos y vectores que no se reescriben desde el §692 (la versión no dice qué pruebas acepta un nodo: §699);
 RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 y 0014 aceptados, 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 y 0021 propuestos; verificador
-`zk-ssl-verify` 0.4.3 (publicada, `arqueo-verify-v0.4.3`, un arreglo de seguridad con su aviso, reproducible; ⚠️ §818: decía «cortada, §815, …; la publicada es `arqueo-verify-v0.4.2`»); registro con un asiento por
+`zk-ssl-verify` 0.4.3 (publicada, `arqueo-verify-v0.4.3`, un arreglo de seguridad con su aviso, reconstruible desde su commit; ⚠️ §818: decía «cortada, §815, …; la publicada es `arqueo-verify-v0.4.2`»;
+⚠️ §823: decía «reproducible», y la 0.4.2, rehecha en otra máquina, sale con otra huella); registro con un asiento por
 cambio. Falta: auditoría externa, custodia de clave comprobada, y un ancla anterior al primer
 encuentro del testigo (⚠️ §589: esta lista pedía también «la completitud de los acuses»).
 
@@ -109,9 +111,10 @@ third parties, and nobody uses it with real money.
 ### How it is checked
 
 With the verifier kit: one download, five checks on your own machine, offline; the program prints
-`VERDE` or names the broken rule, and it is reproduced from the commit its `VERSION` declares
-([`doc/KIT_EN.md`](./doc/KIT_EN.md)). ⚠️ Corrected in §794: it said «four»; since 0.3.0 they are
-five.
+`VERDE` or names the broken rule, and it is rebuilt from the commit its `VERSION` declares
+([`doc/KIT_EN.md`](./doc/KIT_EN.md)); with the same hash, only shown within one same machine.
+⚠️ Corrected in §794: it said «four»; since 0.3.0 they are five. ⚠️ §823: it said «it is reproduced
+from the commit», without the machine condition.
 
 ### Where it fits
 
@@ -127,7 +130,8 @@ in its entry which gates it passed, the largest being the canon (⚠️ §794: i
 every change»);
 protocol `zkssl/0.4` with 32 methods and vectors not rewritten since §692 (the version does not say which proofs a node accepts: §699);
 RFCs 0002, 0003, 0004, 0006, 0007, 0008, 0009, 0010, 0011, 0012 and 0014 accepted, 0001, 0005, 0013, 0015, 0016, 0017, 0018, 0019, 0020 and 0021 proposed;
-verifier `zk-ssl-verify` 0.4.3 (published, `arqueo-verify-v0.4.3`, a security fix with its advisory, reproducible; ⚠️ §818: it said «cut, §815, …; the published one is `arqueo-verify-v0.4.2`»); a record with one
+verifier `zk-ssl-verify` 0.4.3 (published, `arqueo-verify-v0.4.3`, a security fix with its advisory, rebuildable from its commit; ⚠️ §818: it said «cut, §815, …; the published one is `arqueo-verify-v0.4.2`»;
+⚠️ §823: it said «reproducible», and 0.4.2, rebuilt on another machine, comes out with another hash); a record with one
 entry per change. Missing: an external audit, a verified key custody, and an anchor prior to the
 witness's first encounter (⚠️ §589: this list also asked for "the completeness of
 acknowledgements").

@@ -55,7 +55,7 @@ regla de ruptura escrita, y una compuerta que la haga cierta («Qué lo cierra»
 | un `tipo` desconocido se rechaza con nombre | `crates/zk-ssl-verify/src/main.rs:183-221` (§418) | sus tests y su catálogo |
 | ningún kit acepta dos versiones del cable | la D-E del RFC-0018, `spec/rfc/0018-el-tren-0-5.md:160-161` | nada todavía: es del corte |
 | una versión nueva de AIR, de perfil o de marca es versión nueva del cable | la «Regla de extensión» de la D-G, `spec/rfc/0018-el-tren-0-5.md:334-340` | nada todavía: es del corte |
-| un kit viejo sigue publicado y reproducible | `doc/KIT.md:19-63`: las 0.2.0, 0.3.0, 0.4.0, 0.4.1 y 0.4.2, todas publicadas | nada lo exige; `tools/artefacto.sh --check` comprueba en cada canon que el árbol reproduce su artefacto (el bloque «3 ter» de `tools/canon.sh`; ⚠️ §810: hasta aquí citaba sus líneas, la `:598-603`, que el §798, el §800 y el §804 ya habían corrido a la `:690-695`, y las catorce que el §810 mete en el «3 duodecies» las llevan a la `:704-709`: se cita por su bloque), no que los publicados sigan ahí |
+| un kit viejo sigue publicado y reconstruible desde su commit (⚠️ §823: decía «reproducible»: con la misma huella sólo está demostrado dentro de una misma máquina, y la 0.4.2 rehecha desde su commit en otra sale con 13 de sus 35 secciones distintas) | `doc/KIT.md:76-123` (⚠️ §823: decía `:19-63`; el §815 metió en medio el aviso de la 0.4.3, y el §818, que la da por vigente, el párrafo de la 0.4.2): las 0.2.0, 0.3.0, 0.4.0, 0.4.1 y 0.4.2, todas publicadas | nada lo exige; `tools/artefacto.sh --check` comprueba en cada canon que el árbol reproduce su artefacto en la máquina que lo corre y desde su misma ruta, en dos `target` (el bloque «3 ter» de `tools/canon.sh`; ⚠️ §810: hasta aquí citaba sus líneas, la `:598-603`, que el §798, el §800 y el §804 ya habían corrido a la `:690-695`, y las catorce que el §810 mete en el «3 duodecies» las llevan a la `:704-709`: se cita por su bloque), no que los publicados sigan ahí; ⚠️ §823: decía sólo «que el árbol reproduce su artefacto», sin decir en qué máquina ni desde qué ruta |
 
 **Lo que el §699 midió, y es el punto de partida.** La práctica no fue siempre la promesa:
 
@@ -82,11 +82,11 @@ regla de ruptura escrita, y una compuerta que la haga cierta («Qué lo cierra»
 4. **Dentro de `0.4.x` dos arreglos cambiaron veredictos.** La 0.4.2 rechaza lo que la 0.4.1 aceptaba:
    un `u64` con `+` o con ceros a la izquierda (§662), la misma cofirma contada varias veces (§663)
    y la clave con el OID alterno, que daba VERDE a un conflicto con un solo libro (§664)
-   (`doc/KIT.md:30-35`); y la 0.4.1 ya rechazaba la prueba con nodos de más dentro de un lote que la
-   0.4.0 verificaba (§659, `doc/KIT.md:36-41`). Es lo correcto, y ninguna regla lo dice. La línea
+   (`doc/KIT.md:87-93`; ⚠️ §823: decía `:30-35`, que corrieron el §815, con su aviso de la 0.4.3, y el §818); y la 0.4.1 ya rechazaba la prueba con nodos de más dentro de un lote que la
+   0.4.0 verificaba (§659, `doc/KIT.md:94-100`; ⚠️ §823: decía `:36-41`). Es lo correcto, y ninguna regla lo dice. La línea
    del kit tampoco ha seguido a la del cable: la 0.3.0 se cortó en el §619, con el cable en
    `zkssl/0.4` desde el §538, y la 0.4.0 (§657) rechaza lo que la 0.3.0 aceptaba
-   (`doc/KIT.md:43-49`) sin que el cable subiera.
+   (`doc/KIT.md:102-108`; ⚠️ §823: decía `:43-49`) sin que el cable subiera.
 5. **La versión del cable se escribe en cuatro sitios del código de producción, y nada los ata**:
    la respuesta del nodo (`crates/zk-ssl-node/src/main.rs:2822`), el OpenRPC dos veces
    (`crates/zk-ssl-wire/src/openrpc.rs:239` y `:269`) y la emisión de los vectores
@@ -96,7 +96,7 @@ regla de ruptura escrita, y una compuerta que la haga cierta («Qué lo cierra»
 6. **El contrato del kit tiene cuatro códigos de salida, y uno de sus documentos cuenta tres.**
    `codigo_de_salida` da 0, 1 o 3, y el uso incorrecto 2
    (`crates/zk-ssl-verify/src/main.rs:1789-1795` y `:2937`); `spec/PAQUETE.md:1187-1190` dice los
-   cuatro; `doc/KIT.md:78-80`, «sale 0 … 1 … 2».
+   cuatro; `doc/KIT.md:137-139` (⚠️ §823: decía `:78-80`), «sale 0 … 1 … 2».
 7. **Una cabeza v1 no la verifica el kit, la verifica la biblioteca.** El testigo y el paquete
    rechazan `formatVersion` 1 (`spec/vectors/cable/MANIFIESTO.txt:17`,
    `spec/vectors/paquete/MANIFIESTO.txt:26`; ⚠️ §852: decía `:21`, y las cinco líneas que el §852
@@ -118,7 +118,7 @@ Seis superficies. Cada una con lo que la forma, su identificador y su productor,
 | S3 | **lo firmado** | la cabeza (v2 a v6), la cofirma y el acta: sus preámbulos y sus composiciones, con sus KAT (31 en `spec/vectors/nucleo/`; 34 desde el §800, con los tres de la E2 del RFC-0020, apagados) | `formatVersion`; la versión de cofirma; `ACTA_VERSION`; el esquema, si se construye el RFC-0020 | `VersionCabeza` (`lib.rs:181-210`), `spec/NUCLEO.md` §6 |
 | S4 | **los sobres del kit** | las catorce formas de `spec/PAQUETE.md` §«2. Las catorce formas», con su catálogo (§5) y sus causas (§6.1) | `v` (1 o 2) y `tipo` (doce) | `crates/zk-ssl-verify/src/main.rs:171` y `:190-221` |
 | S5 | **los vectores** | todo fichero de `spec/vectors/`: 492 `.json` y 982 líneas de 18 manifiestos, cada uno con su huella (495 `.json` desde el §800, con los tres KAT de la E2 del RFC-0020) | su ruta, su línea de manifiesto y su huella | `spec/vectors/HUELLAS.sha256`; `tools/check_vectores.py` |
-| S6 | **el kit como binario** | `arqueo-verify-vX.Y.Z`: su tarball, su binario y el contrato de `spec/PAQUETE.md` §«6. El contrato del mando» —un argumento, cuatro códigos de salida, las líneas de VERDE y el ROJO con una causa de §6.1— | el tag, el commit y las dos huellas, juntos (`doc/KIT.md:66-68`) | `tools/artefacto.sh`; su `FAMILIAS`, `tools/artefacto.sh:31` |
+| S6 | **el kit como binario** | `arqueo-verify-vX.Y.Z`: su tarball, su binario y el contrato de `spec/PAQUETE.md` §«6. El contrato del mando» —un argumento, cuatro códigos de salida, las líneas de VERDE y el ROJO con una causa de §6.1— | el tag, el commit y las dos huellas, juntos (`doc/KIT.md:125-127`; ⚠️ §823: decía `:66-68`, que corrieron el §815, con su aviso de la 0.4.3, y el §818) | `tools/artefacto.sh`; su `FAMILIAS`, `tools/artefacto.sh:31` |
 
 **Fuera de la promesa**, y dicho para que nadie lo dé por prometido: los `dev_*`, que sólo existen
 con `--dev`; la API de Rust de los crates —el SDK, y `zk-ssl-verify` como biblioteca—; las opciones
@@ -167,9 +167,11 @@ privado y entra de una vez, con su aviso de `SECURITY.md` §5. Cuánto aviso es 
 
 **R6 — Lo que sigue verificando después de una ruptura.** Es lo que se promete:
 
-- **a. Ningún kit publicado se retira**, y cada uno sigue siendo reproducible desde su commit
-  (`doc/KIT.md` §«Reproducir el kit, para quien no se fíe de la descarga»). Lo que juzgaba, lo sigue
-  juzgando igual.
+- **a. Ningún kit publicado se retira**, y cada uno sigue siendo reconstruible desde su commit
+  (`doc/KIT.md` §«Reproducir el kit, para quien no se fíe de la descarga»); con la misma huella, sólo
+  demostrado dentro de una misma máquina. Lo que juzgaba, lo sigue juzgando igual. ⚠️ §823: decía
+  «reproducible desde su commit», sin la condición de la máquina: la 0.4.2 rehecha desde su commit en
+  otra sale con otra huella, y juzga igual sus once catálogos.
 - **b. Ningún vector se reescribe.** Uno cuyo veredicto o texto cambia se muda idéntico, con su
   línea de manifiesto, a `spec/vectors/<versión>/`, conserva allí el veredicto del kit publicado de
   su versión, y su ruta vieja no se reutiliza (regla 2; `spec/vectors/HUELLAS.sha256:4-7`). Es lo
@@ -232,14 +234,16 @@ que se propone:
 > una de (4); el kit pasa a `0.N.0` con el cable y no antes, y un `0.N.x` no rompe nada salvo por un
 > arreglo de seguridad. Las rupturas se juntan en un corte, y su RFC está en el árbol antes que él.
 >
-> **Después de una ruptura sigue verificando**: todo kit publicado, que no se retira y se reproduce
-> desde su commit; todo vector, que no se reescribe y, si su veredicto cambia, se muda a
-> `vectors/<versión>/` con el de su kit; toda cabeza que un kit aceptó, en todo kit posterior, porque
-> el conjunto de versiones de cabeza sólo crece, salvo la de un esquema de firma roto, que vale
-> contenida en algo firmado con uno aceptado; todo sobre, con el kit de su versión, y con uno
-> posterior o verifica o se rechaza como «fuera del contrato»; y toda prueba, con el kit de su
-> versión del cable, porque ningún kit acepta dos. Un arreglo de seguridad puede cambiar un
-> veredicto dentro de `0.N.x`, con su aviso y la lista de lo que cambia.
+> **Después de una ruptura sigue verificando**: todo kit publicado, que no se retira y se
+> reconstruye desde su commit (⚠️ §823: decía «y se reproduce desde su commit»; con la misma huella,
+> sólo demostrado dentro de una misma máquina, como dice ya `spec/RPC.md`); todo vector, que no se
+> reescribe y, si su veredicto cambia, se muda a `vectors/<versión>/` con el de su kit; toda cabeza
+> que un kit aceptó, en todo kit posterior, porque el conjunto de versiones de cabeza sólo crece,
+> salvo la de un esquema de firma roto, que vale contenida en algo firmado con uno aceptado; todo
+> sobre, con el kit de su versión, y con uno posterior o verifica o se rechaza como «fuera del
+> contrato»; y toda prueba, con el kit de su versión del cable, porque ningún kit acepta dos. Un
+> arreglo de seguridad puede cambiar un veredicto dentro de `0.N.x`, con su aviso y la lista de lo
+> que cambia.
 >
 > **Lo que la versión no identifica todavía** se declara aquí, con su asiento, hasta que lo
 > identifique.

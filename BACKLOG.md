@@ -621,6 +621,11 @@ instrumentacion) al grupo E.*
   ⚠️ **Por tanto el eslabon 4 NO es un sello: es una decision de arquitectura
   con dos precondiciones que viven fuera del protocolo.** Las lineas de arriba
   quedan corregidas aqui en vez de borrarlas (§247).
+  ⚠️ §823: **H6 da al eslabón 4 una precondición, no su cierre.** La vía de la
+  compilación reproducible tiene ya su medida: el binario sale idéntico dentro
+  de una misma máquina, y entre máquinas no está demostrado (la 88). Lo que no
+  cambia: el campo no está en la cabeza, y una huella reproducible no prueba
+  que el operador corra ese binario (la 54).
 
   **Cómo se cierra**: no se cierra de una vez. Cada eslabón es un sello
   o más, en el orden de arriba, y **ninguno se monta sin su terreno
@@ -969,6 +974,30 @@ instrumentacion) al grupo E.*
   primera, es del autor. La segunda, las construcciones reproducibles, este
   sello no la mira. Lo escribió una sesión y su aceptación es del autor.
   Sigue abierta.
+  ⚠️ §823: **la segunda pieza, medida y no hecha (H6).** En una misma máquina,
+  el nodo y el testigo de `b6994c3`, compilados con los flags de
+  `tools/artefacto.sh` desde dos árboles, en otro `target` y con otro `HOME` y
+  otro `CARGO_HOME`, salen idénticos byte a byte las cuatro veces (`rustc`
+  1.94.1; el nodo `ac27f9052c7f74c1…`, con `dev` y compilado junto al testigo,
+  y el testigo `07d659c6291ad68f…`); sin el remap salen iguales entre sí, pero
+  con otra huella y con las rutas de `$HOME` dentro. Lo que no sale desde otra
+  máquina es un kit publicado: la 0.4.2 rehecha desde `a4e888d` con su `rustc`
+  difiere en 13 de sus 35 secciones, y en 3 imitando su `rust-src`; la 0.4.3,
+  la vigente desde el §818, no consta rehecha con su `rustc` 1.97.1 fuera de la
+  máquina que la produjo —con el 1.94.1 sale con otra huella—, y lleva las
+  mismas once rutas de `rust-src` y la `.comment` del mismo GCC. Las dos causas
+  medidas —las rutas de `rust-src`, que ninguna regla de `b6994c3` lleva a
+  `/rustc/<commit-hash>`, y el código nativo que compila el host, blake3 en los
+  tres binarios y ring en el testigo, con la `.comment` que nombra su GCC—, una
+  dependencia que lo medido no toca —la regla del registry, que no
+  gana nunca con `CARGO_HOME=$HOME/.cargo` y por eso da los mismos bytes en las
+  dos máquinas (el publicado y la rehecha llevan las mismas 41 rutas
+  `/home/x/.cargo/registry/src/…`), pero con un `CARGO_HOME` fuera de `HOME` no
+  casaría y dejaría entrar sus rutas enteras (deducido, sin medir), porque el
+  script de `b6994c3` deriva sus reglas de `$HOME`— y lo medido están en
+  `doc/KIT.md` §«Reproducir el kit, para quien no se fíe de la descarga». En
+  `b6994c3` ninguna herramienta del árbol compila el nodo ni el testigo así, y
+  no hay huellas publicadas de ninguno de los dos. Sigue abierta.
 
 - [ ] **89. El proyecto sólo se ha auditado a SÍ MISMO.** `AUDITORIA.md`
   tiene más de 21.000 líneas y registra los errores del propio método
@@ -4107,6 +4136,13 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   **Depende de la entrada 55** (el AIR como datos) **o de compilacion
   reproducible**. Hashear el fuente al compilar NO vale: no prueba que el
   binario se construyera de ese fuente.
+  ⚠️ §823: **la compilación reproducible da una precondición, no el cierre
+  (H6).** El nodo y el testigo salen idénticos byte a byte dentro de una misma
+  máquina, y entre máquinas no está demostrado (`doc/KIT.md` §«Reproducir el
+  kit, para quien no se fíe de la descarga»). Y aunque lo estuviera, una
+  huella reproducible dice que un binario publicado sale de su fuente, no que
+  el operador corra ese binario: `hash_verificador_vigente` seguiría siendo
+  una declaración suya. Sigue abierta.
 
 - [x] **63. ✅ La contencion del anclaje: REGISTRADA (§123).**
   ✅ **Mecanismo comprobado (T5a)**: dos titulares que no comparten nada

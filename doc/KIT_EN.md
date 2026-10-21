@@ -12,7 +12,7 @@ travels inside. None of the five checks needs the repository, the author, a node
 
 It is a CLI and not a web page on purpose: the answer to "how do I know that program does what it
 says?" is "download it and run it yourself", and that only holds if the download exists and can be
-reproduced.
+rebuilt from its commit; with the same hash, that is only shown within one same machine (below, «Reproducing the kit, for whoever does not trust the download»). ⚠️ §823: it said «and can be reproduced», without the machine condition.
 
 ## 0. Download, and check the download before believing it
 
@@ -147,9 +147,13 @@ RFC-0021, fact 6).
 
 What of this is promised —what does not change within a `0.N.x` line, what breaks it and what
 keeps verifying after a break— is said in `spec/RPC.md` §«Versionado y compatibilidad» (§801): no
-published kit is withdrawn, each one is reproducible from its commit, and what it judged it keeps
+published kit is withdrawn, each one is rebuilt from its commit, and what it judged it keeps
 judging the same way; a security fix may change a verdict within `0.N.x`, with its notice and the
-list of what it changes, as 0.4.2 did.
+list of what it changes, as 0.4.2 did. ⚠️ §823: it said «each one is reproducible from its commit»,
+without the machine condition: with the same hash this is only shown on one same machine, and 0.4.2
+rebuilt from its commit on another one comes out with another hash (below, «Reproducing the kit, for
+whoever does not trust the download»). What it judged it does judge the same way: the rebuilt one
+passes its eleven catalogues.
 
 ## 1. A file that adds up
 
@@ -274,9 +278,55 @@ envelope and rejects the four files with `tipo desconocido`: it fails closed.
 
 The tarball is produced on the commit `VERSION` names: with the `rustc` `VERSION` declares,
 `git checkout <commit>` and `bash tools/artefacto.sh` yield the same binary (same hash, built with
-`--remap-path-prefix`) and the same tarball, and `tools/canon.sh` checks that property at every
-seal. The demonstrations with live nodes — bringing up two ledgers, publishing the same label in
-both, capturing the envelope — are the benches `tools/banco_dos_libros.sh`, `tools/banco_consumo.sh`
-and `tools/banco_apagado.sh`, and those of step 5, `tools/banco_completitud.sh`,
+`--remap-path-prefix`) and the same tarball **on the same machine**; the `--check` of
+`tools/artefacto.sh` that the canon runs at every seal, in `b6994c3`, builds the same tree twice, in
+two `target` directories, and looks in the binary only for the `$HOME` paths. ⚠️ §823: it said «yield
+the same binary (same hash, built with `--remap-path-prefix`) and the same tarball, and
+`tools/canon.sh` checks that property at every seal», without the machine condition. What was
+measured on 2026-10-15 (§823), except the 41 registry paths of (ii), compared on 2026-10-21:
+
+- **On one same machine, yes.** The node and the witness of `b6994c3`, built with the flags of
+  `tools/artefacto.sh` from two trees, in another `target` and with another `HOME` and another
+  `CARGO_HOME`, come out byte-identical all four times (`rustc` 1.94.1): the node
+  `ac27f9052c7f74c1…`, with `dev` and built together with the witness
+  (`-p zk-ssl-node -p zk-ssl-cli`), and the witness `07d659c6291ad68f…`. Without the remap, two
+  builds from two trees also come out equal to each other, but with another hash and with the
+  `$HOME` paths inside: what the remap removes is the dependency on `HOME`, with `CARGO_HOME` and
+  `RUSTUP_HOME` under it (outside it, their paths would enter whole, deduced from the rules and not
+  measured: below, (i) and (ii)); the one on the tree path does not show up, because cargo hands
+  `rustc` the paths of the workspace crates relative to its root.
+- **From another machine, 0.4.2 does not come out.** Rebuilt from `a4e888d` with its `rustc`
+  1.97.1, the binary is `14832a067f6dc4cf…` and not `7734376463d120b0…`: 13 of its 35 sections
+  differ. With `rust-src` installed, a toolchain named `stable` and `RUSTUP_HOME` under `HOME`, as the
+  paths inside the published one say, 3 remain (329 bytes): the `build-id`, 240 bytes of `.text`, all
+  in blake3's assembly functions, and `.comment`, which names GCC 15.2.0 in the published one and
+  13.3.0 here. 0.4.3, the current release since §818, is not on record as rebuilt with its `rustc`
+  1.97.1 outside the machine that produced it; built here from its code with 1.94.1, as the canon of
+  §817 built it, it comes out with another hash. Its published binary, `1b120e597897e005…`, carries
+  what set 0.4.2 apart from its rebuild: the same eleven `rust-src` paths and a `.comment` that
+  names GCC 15.2.0 (§823, read with `strings` and `readelf`, without running it).
+- **What the hash depends on, besides `rustc` and `Cargo.lock`.** (i) If `rust-src` is installed, the
+  standard library's paths enter the binary with its toolchain's name, because no rule of `b6994c3`
+  takes them to `/rustc/<commit-hash>`: with `RUSTUP_HOME` under `HOME`, the `$HOME` one only changes
+  their prefix, and with `RUSTUP_HOME` outside `HOME` they would enter whole (deduced); 0.4.2 carries
+  eleven `/home/x/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/…`. One
+  more remap, from `<sysroot>/lib/rustlib/src/rust` to `/rustc/<commit-hash>`, neutralises it: with
+  it, 0.4.2 built with `rust-src` comes out identical to the one built without it. (ii) With the
+  flags of `b6994c3`, the registry rule never wins: `rustc` applies the last matching rule, the
+  `$HOME` one goes last, and with `CARGO_HOME=$HOME/.cargo` the registry paths enter as
+  `/home/x/.cargo/registry/src/…`. That is not a cause of what was measured: with
+  `CARGO_HOME=$HOME/.cargo` on both machines it gives the same bytes, and the published one and the
+  rebuilt one carry the same 41 `/home/x/.cargo/registry/src/…` paths. It is a dependency the
+  measurement does not touch: the script of `b6994c3` derives three of its rules from `$HOME`, not
+  from `CARGO_HOME`, and with a `CARGO_HOME` outside `HOME` none would match, and its paths would
+  enter whole (deduced, not measured). (iii) The native code the host compiles —blake3's assembly in
+  the kit, the node and the witness, and ring's C and assembly in the witness— depends on its `cc`
+  and its `as`, which the `VERSION` of 0.4.2 does not name. That with the same `cc` and the same `as`
+  0.4.2 would come out identical is not measured: there is no machine here with theirs. The causes of
+  the 13 sections are two, (i) and (iii); (ii) did not weigh.
+
+The demonstrations with live nodes — bringing up two ledgers, publishing the same label in both,
+capturing the envelope — are the benches `tools/banco_dos_libros.sh`, `tools/banco_consumo.sh` and
+`tools/banco_apagado.sh`, and those of step 5, `tools/banco_completitud.sh`,
 `tools/banco_mentiroso_sin_resolver.sh` and `tools/banco_recibo_agregado.sh`; they do not travel in
 the kit because they spawn processes, and the vectors above are their captures.

@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # tools/artefacto.sh — el ARTEFACTO de H2 (§401): el verificador distribuible.
 #
-# Compila `zk-ssl-verify` en release con `--remap-path-prefix` (la huella del binario no
-# depende de la ruta del arbol ni del usuario: depende del toolchain y de `Cargo.lock`),
+# Compila `zk-ssl-verify` en release con `--remap-path-prefix` (la huella del binario no depende de la ruta del arbol ni de HOME DENTRO DE UNA MISMA MAQUINA, con CARGO_HOME y RUSTUP_HOME bajo HOME;
+# depende del toolchain, de `Cargo.lock` y de la maquina; ⚠️ §823: decia «no depende de la ruta del arbol ni del usuario: depende del toolchain y de `Cargo.lock`», sin la condicion de la maquina, y la 0.4.2 rehecha desde su commit en otra sale con 13 de sus 35 secciones distintas: doc/KIT.md §«Reproducir el kit, para quien no se fíe de la descarga»),
 # monta el juego que un tercero necesita —binario, el arnes `conformidad.sh` (§408),
 # `spec/PAQUETE.md`, los DOS manifiestos y sus vectores, las licencias, `NOTICE`, `THIRD-PARTY.txt`,
 # `VERSION`, `SHA256SUMS`— y lo
-# empaqueta en un tarball REPRODUCIBLE bajo `target/artefacto/` (ignorado por git).
+# empaqueta en un tarball reconstruible bajo `target/artefacto/` (ignorado por git), con la misma huella dentro de una misma maquina (⚠️ §823: decia «un tarball REPRODUCIBLE», sin la condicion de la maquina).
 #
 #     bash tools/artefacto.sh            # construye y deja target/artefacto/<nombre>.tar.gz
 #     bash tools/artefacto.sh --check    # la PROPIEDAD, para el canon (§401, 3 ter): dos
 #                                        # compilaciones en dos target dan la misma huella y
-#                                        # cero rutas de la maquina; dos tarballs, la misma
+#                                        # cero rutas de $HOME (⚠️ §823: decia «cero rutas de la maquina», y solo busca las de $HOME); dos tarballs, la misma
 #                                        # huella; el binario pasa los DOS manifiestos, y los
 #                                        # pasa igual DESDE DENTRO del tarball, sin repo (§425).
 #

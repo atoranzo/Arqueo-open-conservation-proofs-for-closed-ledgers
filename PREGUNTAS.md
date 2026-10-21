@@ -93,7 +93,10 @@ La segunda, un **kit** con el que un tercero comprueba en su máquina, sin red y
 un expediente que cuadra, uno manipulado que no cuadra —con la regla rota nombrada—, la misma
 etiqueta publicada en dos libros, y un intercambio de libros rechazado con su nombre
 ([`doc/KIT.md`](./doc/KIT.md)). No es una demo: son capturas reales de nodos que después se
-apagaron, y el binario se reproduce desde el commit que su `VERSION` nombra.
+apagaron, y el binario se reconstruye desde el commit que su `VERSION` nombra; con la misma huella,
+sólo demostrado dentro de una misma máquina. ⚠️ §823: decía «el binario se reproduce desde el
+commit», sin la condición de la máquina: rehecha en otra, la 0.4.2 sale con otra huella
+([`doc/KIT.md`](./doc/KIT.md) §«Reproducir el kit, para quien no se fíe de la descarga»).
 
 ---
 
@@ -234,7 +237,8 @@ con las dos cabezas y los dos nodos apagados; un intercambio de libros, rechazad
 lo que el nodo recibió bajo su firma, resuelto en su ventana o con el operador que no lo resolvió
 nombrado.
 Los catálogos enteros se comprueban con el arnés que viaja dentro del tarball, y el binario se
-reproduce desde el commit que su `VERSION` nombra.
+reconstruye desde el commit que su `VERSION` nombra; con la misma huella, sólo demostrado dentro de
+una misma máquina. ⚠️ §823: decía «el binario se reproduce desde el commit», sin esa condición.
 
 ---
 
@@ -319,8 +323,8 @@ proyecto: el camino es la responsabilidad demostrable, y sus piezas están const
 llevan recibo desde el §611.
 
 Lo que ya está: el formato como contrato público con vectores que desde el §692 no se reescriben, el
-verificador reproducible, y un kit con el que cualquiera puede comprobar lo anterior sin creerse
-esta página.
+verificador reconstruible desde su commit (⚠️ §823: decía «reproducible», sin la condición de la
+máquina), y un kit con el que cualquiera puede comprobar lo anterior sin creerse esta página.
 
 ---
 

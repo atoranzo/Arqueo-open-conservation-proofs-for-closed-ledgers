@@ -12,7 +12,7 @@ que va dentro del tarball y por qué está en
 repositorio, al autor, un nodo ni una conexión.
 
 Es una CLI y no una página web a propósito: la respuesta a «¿cómo sé que ese programa hace lo que
-dice?» es «descárguelo y córralo usted», y sólo vale si la descarga existe y se puede reproducir.
+dice?» es «descárguelo y córralo usted», y sólo vale si la descarga existe y se puede reconstruir desde su commit; con la misma huella, sólo está demostrado dentro de una misma máquina (abajo, «Reproducir el kit, para quien no se fíe de la descarga»). ⚠️ §823: decía «y se puede reproducir», sin la condición de la máquina.
 
 ## 0. Descargar, y comprobar la descarga antes de creerla
 
@@ -143,9 +143,12 @@ el mando da desde el §573 (`spec/PAQUETE.md` §«6. El contrato del mando»; RF
 
 Qué de esto se promete —qué no cambia dentro de una línea `0.N.x`, qué lo rompe y qué sigue
 verificando después de una ruptura— lo dice `spec/RPC.md` §«Versionado y compatibilidad» (§801):
-ningún kit publicado se retira, cada uno se reproduce desde su commit, y lo que juzgaba lo sigue
+ningún kit publicado se retira, cada uno se reconstruye desde su commit, y lo que juzgaba lo sigue
 juzgando igual; un arreglo de seguridad puede cambiar un veredicto dentro de `0.N.x`, con su aviso
-y la lista de lo que cambia, como la 0.4.2.
+y la lista de lo que cambia, como la 0.4.2. ⚠️ §823: decía «cada uno se reproduce desde su commit»,
+sin la condición de la máquina: con la misma huella sólo está demostrado en una misma máquina, y la
+0.4.2 rehecha desde su commit en otra sale con otra (abajo, «Reproducir el kit, para quien no se fíe
+de la descarga»). Lo que juzgaba sí lo juzga igual: la rehecha pasa sus once catálogos.
 
 ## 1. Un expediente que cuadra
 
@@ -266,9 +269,54 @@ rechaza los cuatro ficheros con `tipo desconocido`: falla cerrada.
 
 El tarball se produce sobre el commit que `VERSION` nombra: con el `rustc` que `VERSION` declara,
 `git checkout <commit>` y `bash tools/artefacto.sh` vuelven a dar el mismo binario (misma huella,
-compilado con `--remap-path-prefix`) y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad
-en cada sello. Las demostraciones con nodos vivos —levantar dos libros, publicar la misma etiqueta
-en los dos, capturar el sobre— son los bancos `tools/banco_dos_libros.sh`, `tools/banco_consumo.sh`
-y `tools/banco_apagado.sh`, y los del paso 5, `tools/banco_completitud.sh`,
+compilado con `--remap-path-prefix`) y el mismo tarball **en la misma máquina**; el `--check` de
+`tools/artefacto.sh` que corre el canon en cada sello, en `b6994c3`, compila el mismo árbol dos
+veces, en dos `target`, y busca en el binario sólo las rutas de `$HOME`. ⚠️ §823: decía «vuelven a dar
+el mismo binario (misma huella, compilado con `--remap-path-prefix`) y el mismo tarball, y
+`tools/canon.sh` comprueba esa propiedad en cada sello», sin la condición de la máquina. Lo medido el
+15-10-2026 (§823), salvo las 41 rutas del registry de (ii), contadas y comparadas el 21-10-2026:
+
+- **En una misma máquina, sí.** El nodo y el testigo de `b6994c3`, compilados con los flags de
+  `tools/artefacto.sh` desde dos árboles, en otro `target` y con otro `HOME` y otro `CARGO_HOME`,
+  salen idénticos byte a byte las cuatro veces (`rustc` 1.94.1): el nodo `ac27f9052c7f74c1…`, con
+  `dev` y compilado junto al testigo (`-p zk-ssl-node -p zk-ssl-cli`), y el testigo
+  `07d659c6291ad68f…`. Sin el remap, dos compilaciones desde dos árboles también salen iguales entre
+  sí, pero con otra huella y con las rutas de `$HOME` dentro: lo que el remap quita es la
+  dependencia de `HOME`, con `CARGO_HOME` y `RUSTUP_HOME` bajo él (fuera de él, sus rutas entrarían
+  enteras, deducido de las reglas y sin medir: abajo, (i) y (ii)); la de la ruta del árbol no
+  aparece, porque cargo le pasa a `rustc` las rutas de los crates del workspace relativas a su raíz.
+- **Desde otra máquina, la 0.4.2 no sale.** Rehecha desde `a4e888d` con su `rustc` 1.97.1, el
+  binario es `14832a067f6dc4cf…` y no `7734376463d120b0…`: 13 de sus 35 secciones distintas. Con
+  `rust-src` instalado, un toolchain llamado `stable` y `RUSTUP_HOME` bajo `HOME`, como dicen las
+  rutas que lleva el publicado, quedan 3 (329 bytes): el `build-id`, 240 bytes de `.text`, todos en
+  las funciones en ensamblador de blake3, y la `.comment`, que en el publicado nombra GCC 15.2.0 y
+  aquí 13.3.0. La 0.4.3, la vigente desde el §818, no consta rehecha con su `rustc` 1.97.1 fuera de
+  la máquina que la produjo; compilada aquí desde su código con el 1.94.1, como la compiló el canon
+  del §817, sale con otra huella. Su binario publicado, `1b120e597897e005…`, lleva lo mismo que
+  separó a la 0.4.2 de su rehecha: las mismas once rutas de `rust-src` y una `.comment` que nombra
+  GCC 15.2.0 (§823, leído con `strings` y `readelf`, sin ejecutarlo).
+- **De qué depende la huella, además del `rustc` y del `Cargo.lock`.** (i) Si `rust-src` está
+  instalado, las rutas de la biblioteca estándar entran en el binario con el nombre de su toolchain,
+  porque ninguna regla de `b6994c3` las lleva a `/rustc/<commit-hash>`: con `RUSTUP_HOME` bajo
+  `HOME`, la de `$HOME` sólo les cambia el prefijo, y con `RUSTUP_HOME` fuera de `HOME` entrarían
+  enteras (deducido, sin medir); la 0.4.2 lleva once
+  `/home/x/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/…`. Un remap más,
+  de `<sysroot>/lib/rustlib/src/rust` a `/rustc/<commit-hash>`, lo neutraliza: con él, la 0.4.2
+  compilada con `rust-src` sale idéntica a la compilada sin él. (ii) Con los flags de `b6994c3`, la
+  regla del registry no gana nunca: `rustc` aplica la última regla que casa, la de `$HOME` va la
+  última, y con `CARGO_HOME=$HOME/.cargo` las rutas del registry entran como
+  `/home/x/.cargo/registry/src/…`. Eso no es una causa de lo medido: con `CARGO_HOME=$HOME/.cargo` en
+  las dos máquinas da los mismos bytes, y el publicado y la rehecha llevan las mismas 41 rutas
+  `/home/x/.cargo/registry/src/…`. Es una dependencia que lo medido no toca: el script de `b6994c3`
+  deriva tres de sus reglas de `$HOME`, no de `CARGO_HOME`, y con un `CARGO_HOME` fuera de `HOME`
+  ninguna casaría con sus rutas, que entrarían enteras (deducido, sin medir). (iii) El código nativo
+  que compila el host —el ensamblador de blake3 en el kit, en el nodo y en el testigo, y el C y el
+  ensamblador de ring en el testigo— depende de su `cc` y de su `as`, que el `VERSION` de la 0.4.2 no
+  nombra. Que con el mismo `cc` y el mismo `as` la 0.4.2 saliera idéntica no está medido: aquí no hay
+  una máquina con los suyos. Las causas de las 13 secciones son dos, (i) y (iii); la (ii) no pesó.
+
+Las demostraciones con nodos vivos —levantar dos libros, publicar la misma etiqueta en los dos,
+capturar el sobre— son los bancos `tools/banco_dos_libros.sh`, `tools/banco_consumo.sh` y
+`tools/banco_apagado.sh`, y los del paso 5, `tools/banco_completitud.sh`,
 `tools/banco_mentiroso_sin_resolver.sh` y `tools/banco_recibo_agregado.sh`; no viajan en el kit
 porque levantan procesos, y los vectores de arriba son sus capturas.

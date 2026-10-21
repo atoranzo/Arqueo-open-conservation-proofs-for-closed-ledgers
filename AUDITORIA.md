@@ -64067,3 +64067,440 @@ canon entero no se corrió en el carril, ni sobre `4d8017d` ni sobre el §817 de
 sueltas, las filas de `zk-core`, `iso-bridge` y `settlement-layer`, y las herramientas de su bucle.
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §823 — H6, registro y corrección sin código: «reproducible desde su commit», «se puede reproducir» y «no depende de la máquina», corregidos con marca donde se decían sin la condición de la máquina; lo medido —el nodo y el testigo idénticos byte a byte en una misma máquina, la 0.4.2 publicada distinta desde otra, sus dos causas medidas y la regla del registry, una dependencia que lo medido no toca— en `doc/KIT.md` §«Reproducir el kit»; y en la 88, la 54 y el eslabón 4 de la 83, que H6 da una precondición y no el cierre
+
+El commit que lleva este asiento, sobre el §822. Es un sello de texto: no toca código. Toca
+`doc/KIT.md` y `doc/KIT_EN.md` —la frase de entrada, el párrafo del final de la sección 0 que dice
+qué se promete y la sección «Reproducir el kit, para quien no se fíe de la descarga», con lo
+medido—; `spec/PAQUETE.md` §11; `spec/RPC.md` §«Versionado y compatibilidad»; el RFC-0021 —la fila
+del hecho que dice que un kit viejo sigue publicado, la R6 a y el texto propuesto— y el RFC-0018
+§«Compatibilidad»; `README.md` y `README_EN.md`, en la fila del verificador; `RESUMEN_EJECUTIVO.md`
+(dos sitios) y `RESUMEN_BILINGUE.md` (cuatro); `PREGUNTAS.md` y `QUESTIONS.md` (tres cada uno); la
+cabecera de `tools/artefacto.sh`, en cuatro líneas, sin mover ninguna; tres marcas en el
+`BACKLOG.md` —la 88, la 54 y el eslabón 4 de la 83—; ocho citas por línea a los dos manuales que
+habían corrido el §815 y el §818, seis en el RFC-0021 y una en cada `README` (abajo, «Lo que
+corrieron el §815 y el §818»); y este asiento. No toca `crates/`, ni un vector, ni el kit, ni el
+`Cargo.lock`, ni `PAPER.md`, `PAPER_EN.md` o `PRINCIPIOS.md`, ni los pines de `tools/canon.sh`. De
+la sección 0 de los dos manuales sólo toca su último párrafo: lo demás es del §818, que registra la
+0.4.3 publicada y la da por vigente, y lo de H6 va donde iba.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión lo escribió y lo revisó en
+su carril y lo portó luego sobre el §852 de `main` y lo que iba delante en la pila: el §819, el
+§820, el §821 y el §822 (abajo, «El porte, hasta el §852»), luego sobre el §858, con los §853-§858
+delante también (abajo, «El porte, hasta el §858»), y ahora sobre el §859, con el §859 delante
+también (abajo, «El porte, aquí»). En el carril midió el 15-10-2026 (el censo de H6) sobre `b6994c3`
+(el §812), y escribió el sello y lo revisó sobre esa base, en un árbol de trabajo que no se empujó.
+Su revisión pidió cuatro cosas, que se hicieron antes de portarlo: (1) que la regla del registry no
+se contara entre las causas, porque el publicado y las dos rehechas llevan las mismas 41 rutas
+`/home/x/.cargo/registry/src/…` —la tentativa anterior decía «tres causas» en la 88, en su asiento y
+en su mensaje—; (2) que lo que el remap quita se dijera con su condición, «la dependencia de `HOME`,
+con `CARGO_HOME` y `RUSTUP_HOME` bajo él», y no «del usuario»; (3) que `spec/PAQUETE.md` §11 anclara
+«ninguna regla de `b6994c3`»; y (4) que la frase de entrada de los dos manuales llevara su condición
+y su marca. El carril lo portó después sobre su sello de la 75, que iba sobre el §817 de antes del
+rebase (hoy `5fd5212`), con el §815 y el §816 de entonces delante: diez ficheros entraron limpios y
+cuatro chocaron —`README.md`, `README_EN.md`, `RESUMEN_EJECUTIVO.md` y `RESUMEN_BILINGUE.md`, éste
+en sus dos lenguas—, todos en la fila del verificador, que el §815 había reescrito para la 0.4.3
+cortada; y dos revisiones de aquel porte pidieron lo que dice abajo «Lo que pidieron las revisiones
+del porte del carril», que se hizo. Para no correr las citas por línea a `doc/KIT.md` y a
+`doc/KIT_EN.md` que hacen los README, el RFC-0021 y `doc/integracion-vertical-evaluacion.md`, la
+frase de entrada de los dos manuales lleva su condición en la misma línea que la decía
+(`doc/KIT.md`:15, `doc/KIT_EN.md`:15): sobre `b6994c3` la corrección ocupaba tres líneas más en el
+primero y dos en el segundo, y corría las de debajo. Lo medido en el carril, lo medido sobre
+`378e1fa`, lo medido sobre `7ed7e17` y lo medido aquí van por separado.
+
+**El porte, hasta el §852.** Un `cherry-pick -n` del borrador del carril sobre el §822 de entonces,
+el de `378e1fa`. Diez ficheros entraron sin choque. Chocaron los mismos cuatro que en el carril,
+ahora con el §818: la fila del verificador, que el §818 reescribió para la 0.4.3 publicada, y, en
+`README.md`, también el párrafo del kit, donde el §818 añadió su marca en la línea que sigue a la de
+la cita `:40`. Se resolvieron a mano: se queda el texto del §818, y sólo su «reproducible», que dice
+ahora de la 0.4.3 publicada, pasa a «reconstruible», con la condición y su marca; la marca de los
+README dice lo medido con la 0.4.2 y que la 0.4.3 no consta rehecha con su `rustc` 1.97.1 fuera de
+la máquina que la produjo. Lo que el borrador escribía en esas cinco filas para la 0.4.3 cortada
+—«la publicada es `arqueo-verify-v0.4.2`, reconstruible…»— no entra: aquí es falso. Las ocho citas
+que el §815 había corrido se volvieron a medir en aquella punta, porque el §818 las corrió otra vez
+(abajo). La 88 decía de la 0.4.2 «el kit publicado», y dice «un kit publicado», con la 0.4.3 al
+lado; los dos manuales y la 88 ganan una frase de la 0.4.3, medida allí. Ninguna línea de código
+cambia frente al borrador: en `tools/artefacto.sh`, el único fichero de código que toca, `git diff`
+contra el borrador sólo da el «§823» de sus tres comentarios marcados, y `main` no lo había cambiado
+desde la base del carril (`git diff`, vacío); no se corrió `cargo` salvo el `cargo tree` de
+`check_curvas`.
+
+**Lo medido**, en el carril, en el censo de H6, el 15-10-2026, salvo las 41 rutas del registry de
+(3), contadas y comparadas el 21-10-2026; el contenedor: `rustc` 1.94.1, Ubuntu 24.04.4, gcc 13.3.0,
+GNU as 2.42, glibc 2.39.
+- **(1) En una misma máquina, sí.** El nodo y el testigo de `b6994c3` se compilaron juntos y con
+  `dev` (`-p zk-ssl-node -p zk-ssl-cli`), con los `RUSTFLAGS` de `tools/artefacto.sh`:29, desde dos
+  árboles, en otro `target` y con otro `HOME` y otro `CARGO_HOME`. Salen idénticos las cuatro veces:
+  el nodo `ac27f9052c7f74c17958993756aba19e459c4e9acb5a835a1b989fd89444d3b8` (12.736.008 B) y el
+  testigo `07d659c6291ad68fd7b76d78bfb826daaa8a8b1433fd8063d5231b88f7165a64` (14.600.408 B), de 400
+  a 516 s cada compilación en frío. Sin remap, las dos compilaciones —de 310 y 172 s, cada una de
+  los dos binarios juntos— salen iguales entre sí y con otra huella: el nodo
+  `fb52c27f2b68a0a67aeb24062200012ccd57134290f5114097c9cdc7a9864f05` y el testigo
+  `f6e046afa3fdabc33b84e76f20df666b1de6b4756de332205129a6333101a53e`, con 286 y 306 rutas `/root`
+  dentro. Con remap llevan 286 y 306 rutas `/home/x/.cargo/registry/src`: con
+  `CARGO_HOME=$HOME/.cargo`, la regla de `$HOME`, que es la última, gana siempre a la del registry.
+- **(2) Desde otra máquina, la 0.4.2 no sale.** El publicado: tarball
+  `33acdc9a8fe38f0355b4e49e11338a9a94b6f933d86eb5bde23ead315ae1831d`, binario
+  `7734376463d120b0bbd47d3bde852da628557caf28b530cbe5076fce17a68ee2`. Rehecho desde `a4e888d` con
+  `rustc` 1.97.1, su toolchain, con un `RUSTUP_HOME` propio:
+  - r1, sin `rust-src`: binario `14832a067f6dc4cfc5ababa914e22d0af50fcabb5c9bb84a8c14f53d01523916`,
+    tarball `072a2ce355d4e0564f41934c667d00279a660dd73a46f5090e49bf47b3359bba`; 13 de 35 secciones
+    distintas. Pasa sus once catálogos: paquete 73/73, consumo 14/14, conflicto 17/17, rechazo
+    84/84, edad 11/11, pendiente 9/9, pago 9/9, prenda 9/9, completitud 74/74, ancla 22/22 y ancla
+    cofirmada 27/27 (el registro de su `tools/artefacto.sh`).
+  - r2, con `rust-src`, el toolchain llamado `stable` y `RUSTUP_HOME` bajo `HOME`: binario
+    `406b601b7e976699471b608d45b149e1436a48d4385a4e1127697bdaf506502b`, tarball
+    `d01954012d4aa43baff5456468bab54248448732c5b73c0161e3c3e80e85fc88`; 3 de 35 secciones y 329
+    bytes: el `build-id`, 240 bytes de `.text` en seis funciones en ensamblador de blake3, y la
+    `.comment` (GCC 15.2.0 en el publicado, 13.3.0 aquí), con su tamaño en la tabla de secciones.
+  - r3, que es r2 más el remap `<sysroot>/lib/rustlib/src/rust=/rustc/<commit-hash>`: igual que r1,
+    0 de 35.
+
+  El publicado lleva 11 rutas de `rust-src`.
+- **(3) Las dos causas medidas.** Las rutas de `rust-src`, que ninguna regla de `b6994c3` lleva a
+  `/rustc/<commit-hash>`: imitar el `rust-src` del publicado baja de 13 secciones a 3. Y el código
+  nativo que compila el host: el ensamblador de blake3 en los tres binarios, y el C y el ensamblador
+  de ring en el testigo; depende de su `cc` y de su `as`, con la `.comment` que nombra su GCC, y el
+  `VERSION` de la 0.4.2 no los nombra. **La regla del registry no es una causa**: nunca gana con
+  `CARGO_HOME=$HOME/.cargo`, y por eso da los mismos bytes en las dos máquinas —el publicado, r1 y
+  r2 llevan las mismas 41 rutas `/home/x/.cargo/registry/src/…`, contadas y comparadas con `diff` el
+  21-10-2026 (abajo, «Medido en el carril, el 21-10-2026»)—. Es una dependencia que lo medido no
+  toca: el script de `b6994c3` deriva tres de sus reglas de `$HOME`, y con un `CARGO_HOME` fuera de
+  `HOME` ninguna casaría y sus rutas entrarían enteras; es deducido de las reglas, sin medir, y así
+  lo dicen los dos manuales, `spec/PAQUETE.md` §11 y la 88 (el §824 lo mide). Lo mismo, con
+  `RUSTUP_HOME` fuera de `HOME` y `rust-src` instalado: r1 tenía su `RUSTUP_HOME` fuera, pero sin
+  `rust-src`, y no lleva ninguna.
+
+**Medido en el carril, el 21-10-2026**, sobre los ficheros que dejó el censo y la copia del
+publicado que bajó la sesión, sin compilar nada:
+- las huellas, con `sha256sum`: el tarball publicado `33acdc9a…` (16.677.910 B, 368 ficheros) y su
+  binario `7734376463d120b0…` (2.757.008 B); r1, `14832a06…` y `072a2ce3…` (368 ficheros); r2,
+  `406b601b…` y `d0195401…`; y r3, `14832a06…`, el binario de r1. Las mismas del censo.
+- las secciones, con el comparador de secciones ELF del censo: el publicado y r1, 13 de 35; el
+  publicado y r2, 3 de 35 —`.note.gnu.build-id`, `.text` y `.comment`— y 329 bytes con `cmp -l`; r1
+  y r3, 0 de 35.
+- dónde caen los 329, con `nm`, `readelf -SW` y los desplazamientos de `cmp -l` sobre el publicado:
+  240 en `.text`, todos en blake3 —`blake3_hash_many_avx512` 100, `blake3_compress_xof_avx512` 43,
+  `blake3_hash_many_avx2` 36, `blake3_hash_many_sse41` 29, `blake3_hash_many_sse2` 25 y
+  `blake3_compress_in_place_sse2` 7—; 20 en el `build-id`; 68 en los 184 bytes que ocupa la
+  `.comment` de r2, que son los 177 de la del publicado y los 7 de relleno que la siguen antes de la
+  `.symtab`; y 1 en la tabla de cabeceras de sección, el tamaño de la `.comment` en su entrada, la
+  31: `0xb1` en el publicado y `0xb8` en r2.
+- la `.comment`, con `readelf -p`: «GCC: (Ubuntu 15.2.0-16ubuntu1) 15.2.0» en el publicado y «GCC:
+  (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0» en r2.
+- las rutas, con `strings` y `grep -o`: 41, 41 y 41 `/home/x/.cargo/registry/src/…` en el publicado,
+  r1 y r2, y con `diff` las tres listas son iguales; y 11
+  `/home/x/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/…` en el
+  publicado.
+- `tools/artefacto.sh` era el mismo en `b6994c3` y en el sello de la 75 del carril, sobre el que se
+  portó este (`git diff`, vacío), y la única herramienta del árbol con `--remap-path-prefix`; allí
+  tampoco compilaba nada el nodo ni el testigo así.
+- los sitios: `git grep` de «reproduc» y de «no depende de la máquina», fuera de `AUDITORIA.md` y de
+  `doc/ecst/`, en `b6994c3` y en el porte del carril. Lo único nuevo desde `b6994c3` que decía
+  «reproducible» sin la condición eran las cinco filas del verificador que reescribió el §815, las
+  que chocaron allí; lo demás nuevo —«reproduce el estado», de la réplica, en `doc/ESCALADO.md`, y
+  «la 18 se reproduce», en `tools/banco_reinicio.sh`— habla de otra cosa.
+
+**Medido sobre `378e1fa`**, el §852, el 21 y el 22-10-2026, más el §819, el §820, el §821, el §822 y
+este sello, con «§823» puesto, sin compilar nada:
+- las ocho citas, con un mapa de las líneas iguales de `doc/KIT.md` y de `doc/KIT_EN.md` (`difflib`)
+  entre el §861 (`32b5b12`), el §815 (`de216ae`) y aquella punta: abajo, «Lo que corrieron el §815 y
+  el §818».
+- los sitios: `git grep -n -i -I -E 'reproduc|rebuil|no depende de la máquina'`, fuera de
+  `AUDITORIA.md` y de `doc/ecst/`, en la base del carril y en el §822 de entonces, antes de este
+  sello: 283 líneas en los dos, y las únicas que cambian son las cinco filas del verificador, que el
+  §818 reescribió para la 0.4.3 publicada y son las que chocaron; del §843 al §852 no entra ninguna
+  frase nueva.
+- `tools/artefacto.sh` es el mismo en `b6994c3` y en el §822 de entonces (`git diff`, vacío), y este
+  sello sólo toca su cabecera; sigue siendo la única herramienta del árbol con `--remap-path-prefix`
+  (`git grep` en los `.sh`, `.py`, `.toml`, `.yml` y `.yaml`), y aquí tampoco compila nada el nodo
+  ni el testigo así; y el bloque «3 ter» de `tools/canon.sh` sigue corriendo su `--check`: lo que el
+  sello dice «de `b6994c3`» de sus reglas y de su `--check` vale igual en aquella punta.
+- la 0.4.3 publicada, la vigente desde el §818, en la copia que bajó la sesión para registrarla
+  (tarball `0bb21f4f…`): su binario es `1b120e597897e005…` (2.799.040 B) y su `VERSION` nombra
+  `rustc` 1.97.1. Con `strings`, `grep -o`, `sort -u`, `diff` y `readelf`, sin ejecutarlo: lleva 11
+  rutas `/home/x/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/…`, la
+  misma lista que el binario de la 0.4.2 publicada, recontado aquí (`7734376463d120b0…`, 11); 41
+  rutas `/home/x/.cargo/registry/src/…`, como el de la 0.4.2; 35 secciones, como él; y la misma
+  `.comment`, «GCC: (Ubuntu 15.2.0-16ubuntu1) 15.2.0». No consta rehecha con su `rustc` 1.97.1 fuera
+  de la máquina que la produjo: el §818 dice que la produjo el autor con `tools/artefacto.sh` sobre
+  su tag y que su canon, en su máquina, la dio reproducible entre rutas con ese binario. Compilada
+  fuera de ella con otro `rustc`, sí: el bloque «3 ter» de `tools/canon.sh` corre
+  `tools/artefacto.sh --check` en cada sello, sin condición, y en `5fd5212`, cuyo
+  `crates/zk-ssl-verify/Cargo.toml` dice 0.4.3, compila el kit de su árbol, que es el de la 0.4.3;
+  el canon del §817 se corrió en la nube y salió VERDE (su asiento), sin dejar la huella del kit en
+  el registro, y el `rustc` de la sesión es el 1.94.1. En este contenedor queda un kit que
+  `tools/artefacto.sh` compiló así, con `rustc` 1.94.1, desde un árbol del §817 de antes de su
+  último rebase con el código de `5fd5212` (`git diff` sólo cambia `ARQUITECTURA.md`, `AUDITORIA.md`
+  y `CONTRIBUTING.md`): su `VERSION` nombra ese `rustc` y las cuatro reglas de su
+  `tools/artefacto.sh`, y su binario es `a0ae4bfdddbaa207…` (2.587.048 B, con `sha256sum`), no
+  `1b120e597897e005…`. Por eso los dos README, los dos manuales y la 88 dicen que no consta rehecha
+  con su `rustc` 1.97.1 fuera de la máquina que la produjo, y los manuales y la 88, que con el
+  1.94.1 sale con otra huella.
+- el contenedor es el mismo: `rustc` 1.94.1, gcc 13.3.0, GNU as 2.42, glibc 2.39, Ubuntu 24.04.4.
+- las fuentes del nodo y del testigo que cambian desde `b6994c3`: `git log b6994c3..` de cada crate
+  de su cierre de dependencias por ruta, leído de sus `Cargo.toml`, y del `Cargo.lock` (abajo).
+
+**Medido sobre `7ed7e17`**, el 22-10-2026, el §858, más el §819, el §820, el §821, el §822 y
+este sello, con su asiento de entonces en su sitio, sin compilar nada:
+- las citas por línea de este asiento: de los ficheros que cita o en los que van las que cita, los
+  §853-§858 sólo tocan tres. El `BACKLOG.md`, en la `:4831` (el §855), por debajo de las líneas que
+  se citan de él, salvo las que citan esa misma (abajo, «El porte, hasta el §858»);
+  `doc/ecst/VERIFICACION.md`, en la `:1629`, la de M8a, que cambia en su sitio; y
+  `tools/verificar_citas.py` (el §854 y el §858), cuyos tres textos de prueba de «Las compuertas»
+  pasan de la `:359` a la `:370`. Los demás son, con este sello, los mismos que sobre `378e1fa`
+  (`git diff --stat` contra aquel sello, vacío). Cada una, vuelta a mirar en aquel árbol con
+  `sed -n` y con el mapa de abajo, cae donde caía allí: la `:15` de los dos manuales, la `:29` de
+  `tools/artefacto.sh` y las de abajo, «Lo que corrieron el §815 y el §818» y «Las compuertas».
+- los sitios: la misma orden da en `7ed7e17` las mismas 283 líneas que en `378e1fa`, con su fichero
+  y su texto (`md5sum` sin el `-n`, igual; con él cambian siete números de línea que corrió `main`),
+  y en el §822 de aquella base, antes de este sello, las mismas que en el §822 de entonces; con este
+  sello, 308 en los dos: del §853 al §858 no entra ninguna frase nueva. Y en las 305 líneas «Lo que
+  se puede afirmar» de `doc/ecst/VERIFICACION.md`, vivas desde el §847, la misma orden da ocho, y
+  ninguna habla del kit ni de rehacerlo desde su commit —el banco K.1 del §234, dos veces, dos tests
+  de la cabeza, una fórmula de la cadena, la recuperación, el nivel en que se valida la capa y una
+  re-ejecución de la conformidad—: el sello no toca la ficha, y en ellas no hay nada que corregir.
+- `tools/artefacto.sh` es el mismo en `b6994c3` y en el §822 de aquella base (`git diff`, vacío), y
+  este sello sólo toca su cabecera; sigue siendo la única herramienta del árbol con
+  `--remap-path-prefix` (`git grep`, igual), y el bloque «3 ter» de `tools/canon.sh` sigue corriendo
+  su `--check`, que compila en dos `target` propios, bajo `target/artefacto/`, y el §855 no lo toca.
+- las fuentes del nodo y del testigo: `git log b6994c3..` de los mismos crates y del `Cargo.lock` da
+  lo de `378e1fa` y, además, el §855 en `crates/zk-ssl-medio`, sólo en los dos `rehacer*.sh` de sus
+  `tests/vectores/testigos/`, guiones y no fuentes (abajo).
+- el contenedor es el mismo: `rustc` 1.94.1, gcc 13.3.0, GNU as 2.42, glibc 2.39, Ubuntu 24.04.4; y
+  en él sigue el kit del 1.94.1 de arriba, con el mismo binario (`sha256sum`: `a0ae4bfdddbaa207…`).
+
+**Medido aquí**, el 22-10-2026, sobre `212eca2`, el §859, más el §819, el §820, el §821, el §822 y
+este sello, con este asiento en su sitio, sin compilar nada:
+- las citas por línea de este asiento: de los ficheros que cita o en los que van las que cita, el
+  §859 sólo toca uno, el `BACKLOG.md`, en su `:763-764`: por debajo de la `:628-631` que cita
+  `doc/ecst/`, que no se mueve, y por encima de las demás que se citan de él, que bajan dos (abajo,
+  «El porte, aquí»). Los demás son, con este sello, los mismos que sobre `7ed7e17` (`git diff
+  --stat` contra aquel sello, vacío), y cada cita, vuelta a mirar en este árbol con `sed -n`, cae
+  donde caía allí, salvo las del `BACKLOG.md` por debajo de su `:762`, dos más abajo.
+- los sitios: la misma orden da en `212eca2` las mismas 283 líneas que en `7ed7e17`, con su fichero
+  y su texto (`md5sum` sin el `-n`, igual), y en el §822 de esta base, antes de este sello, las
+  mismas; con este sello, las mismas 308 que sobre `7ed7e17`: con el §859 no entra ninguna frase
+  nueva. Y en las 305 líneas «Lo que se puede afirmar» de `doc/ecst/VERIFICACION.md`, las mismas
+  ocho.
+- `tools/artefacto.sh` es el mismo en `b6994c3` y en el §822 de esta base (`git diff`, vacío); el
+  §859 no toca `crates/` ni el `Cargo.lock`, y el contenedor y el kit del 1.94.1 son los de arriba.
+
+No se volvió a medir, ni en el carril, ni sobre `378e1fa`, ni sobre `7ed7e17`, ni aquí, lo que pide
+compilar: las cuatro compilaciones del nodo y del testigo, de 400 a 516 s cada una en frío, y la
+0.4.2 rehecha con `rustc` 1.97.1. Las huellas del nodo y del testigo son las de `b6994c3`: en esta
+punta cambian sus fuentes —el nodo, en el §813, el §815 y el §849; `crates/zk-ssl`, del que dependen
+los dos, en el §815, el §816, el §817, el §819, el §820, el §821, el §832, el §839, el §840, el
+§842, el §860 y el §861; `crates/zk-ssl-verify`, en el §815 y el §833; `crates/zk-ssl-medio`, en el
+§835 y el §848 —el §855 sólo toca dos guiones de sus vectores—; `crates/zk-ssl-hash`, en el §849;
+`crates/stark-experiment`, en el §841; del testigo, `crates/zk-ssl-cli` en el §850 y
+`crates/zk-ssl-sdk` en el §861; y el `Cargo.lock`, en el §815—, y las suyas serían otras.
+
+**Corregido con marca**, «⚠️ §823: decía …», donde se decía «reproducible desde su commit», «se
+puede reproducir» o «no depende de la máquina» sin la condición de la máquina: `doc/KIT.md` —la
+frase de entrada, el párrafo de la sección 0 que dice qué se promete y la sección «Reproducir el
+kit, para quien no se fíe de la descarga»— y `doc/KIT_EN.md`; `spec/PAQUETE.md` §11; `spec/RPC.md`
+§«Versionado y compatibilidad»; el RFC-0021, PROPUESTO —la fila del hecho, la R6 a y el texto
+propuesto—; el RFC-0018 §«Compatibilidad»; `README.md` y `README_EN.md`, en la fila del verificador,
+que desde el §818 dice la 0.4.3 publicada; `RESUMEN_EJECUTIVO.md` (2 sitios) y `RESUMEN_BILINGUE.md`
+(4), con la misma fila; `PREGUNTAS.md` y `QUESTIONS.md` (3 cada uno); y la cabecera de
+`tools/artefacto.sh`, que además decía «un tarball REPRODUCIBLE» y que su `--check` da «cero rutas
+de la maquina», cuando sólo busca las de `$HOME`. Ahora dicen: reconstruible desde su commit; con la
+misma huella, sólo demostrado dentro de una misma máquina. Lo que quitan los flags de `b6994c3` se
+dice con su condición, «la dependencia de `HOME`, con `CARGO_HOME` y `RUSTUP_HOME` bajo él», en los
+dos manuales, en `spec/PAQUETE.md` §11 y en la cabecera; lo que pasaría con uno de los dos fuera de
+`HOME` va como deducido, sin medir, en los manuales, en `spec/PAQUETE.md` §11 y en la 88; y
+`spec/PAQUETE.md` §11 ancla «ninguna regla de `b6994c3`». Los dos manuales, en «Reproducir el kit»,
+y la 88 dicen además de la 0.4.3 que no consta rehecha con su `rustc` 1.97.1 fuera de la máquina que
+la produjo, que con el 1.94.1 sale con otra huella y que lleva las mismas once rutas de `rust-src` y
+la `.comment` del mismo GCC (arriba, «Medido sobre `378e1fa`»). En el `BACKLOG.md`, la 88 lleva la
+medida, con las dos causas y la dependencia aparte, y sigue abierta; la 54 y el eslabón 4 de la 83
+dicen que H6 da una precondición y no el cierre.
+
+**Lo que corrieron el §815 y el §818.** El aviso de la 0.4.3 que el §815 metió en la sección 0 de
+los manuales —43 líneas en `doc/KIT.md`, detrás de la 29, y 45 en `doc/KIT_EN.md`— corrió sin marca
+ocho citas por línea que caen debajo; y el §818, que da la 0.4.3 por vigente y a la 0.4.2 su propio
+párrafo, las corrió otra vez, de 14 a 16 líneas más en `doc/KIT.md` y de 14 a 15 en `doc/KIT_EN.md`
+—14 la única cita a éste, la de `README_EN.md`—, y lo dijo: «ya no caían en el suyo antes de este
+sello, y no se arreglan aquí». Medidas sobre `378e1fa` contra el §861 (`32b5b12`), que va antes que
+los dos, van corregidas, con «⚠️ §823: decía :X», en la misma línea que las lleva: en
+`README.md`:85, `:40` pasa a `:98`; en `README_EN.md`:86, `:41` pasa a `:100`; y en el RFC-0021, en
+su `:58`, `:19-63` pasa a `:76-123`, del párrafo de la 0.4.2 al de la 0.2.0, sin el aviso ni el
+párrafo de la vigente; en su `:85`, `:30-35` pasa a `:87-93`; en su `:86`, `:36-41`, a `:94-100`; en
+su `:89`, `:43-49`, a `:102-108`; en su `:99`, `:78-80`, a `:137-139`; y en su `:121`, `:66-68`, a
+`:125-127`. En el carril, sobre el §815 de antes del rebase, las mismas ocho iban a la `:83`, la
+`:86`, la `:19-29` y la `:73-106`, la `:73-78`, la `:79-84`, la `:86-92`, la `:121-123` y la
+`:109-111`: el §818 las dejó otra vez fuera de su sitio, y se llevan a las de esta punta, que son
+las de `378e1fa`: los §853-§859 no tocan esos ficheros (arriba, «Medido sobre `7ed7e17`» y «Medido
+aquí»). Las otras citas por línea a los manuales —`:27-28`, en los README, `:5-12`, en
+`RESUMEN_EJECUTIVO.md`, y `:19`, en `doc/integracion-vertical-evaluacion.md`— caen encima del aviso,
+y el §818 comprobó que la `:19` y la `:27-28` siguen en las suyas; este sello no mueve ninguna línea
+de los manuales por encima de su `:145`.
+
+**Lo que pidieron las revisiones del porte del carril y se hizo.** Dos revisiones, sin nada que
+bloqueara, pidieron: que los 310 y 172 s se dijeran de las dos compilaciones sin remap, cada una de
+los dos binarios, y no de cada binario; que las 41 rutas del registry llevaran su fecha, el
+21-10-2026, y no la del censo, en este asiento y en los dos manuales; que los 69 bytes «de la
+`.comment`» fueran 68 en ella y 1 en su tamaño, en la tabla de secciones; que lo de un `CARGO_HOME`
+o un `RUSTUP_HOME` fuera de `HOME` se dijera deducido en los manuales, porque no está medido —y así
+va también en `spec/PAQUETE.md` §11 y en la 88, que lo decían igual—; que la cabecera de
+`tools/artefacto.sh` corrigiera también su «tarball REPRODUCIBLE» y su «cero rutas de la maquina»;
+que la segunda marca de la fila del RFC-0021, que dice que el texto viejo no decía «en qué máquina
+ni desde qué ruta», tuviera debajo un texto que dice las dos; que este asiento no citara por su hash
+el borrador de la 75 ni el árbol sin empujar, nombrara los borradores de `doc/ecst/borrador/` entre
+las citas que corren, dijera todas las fuentes del nodo y del testigo que cambian desde `b6994c3`, y
+no atribuyera al §814, al §816 y al §817 más de lo que citan; y las ocho citas del §815, que aquí se
+volvieron a medir (arriba).
+
+**Lo que pidieron las revisiones del porte.** Dos revisiones juzgaron el porte sobre el §852, una
+con dos bloqueantes y seis menores y otra sin bloqueantes y con cuatro menores, y la sesión comprobó
+cada uno contra el árbol. Los dos bloqueantes eran ciertos y se hicieron. La frase nueva del porte
+de que la 0.4.3 «no se ha rehecho fuera de la máquina que la produjo», en los dos README, los dos
+manuales y la 88, y más fuerte en este asiento, era falsa: el canon compila el kit en cada sello, y
+el del §817, en la nube, compiló el de la 0.4.3 con otro `rustc`; lo que no consta es una rehecha
+con su `rustc` 1.97.1, el sentido que la sección da a las de la 0.4.2, y así lo dicen ahora los
+cinco y este asiento, con lo medido (arriba, «Medido sobre `378e1fa`»). Y «`tools/artefacto.sh` es
+el mismo en `b6994c3` y aquí» no valía con este sello, que corrige su cabecera: ahora dice el §822 y
+que este sello sólo toca su cabecera, y vuelve lo que el porte había quitado del carril, que aquí
+tampoco compila nada el nodo ni el testigo así; la frase del carril que decía lo mismo «en el porte
+del carril» dice ahora el sello de la 75 del carril. De los menores se hicieron: las 282 líneas de
+«los sitios», que con la orden que ahora se da son 283; el ejemplo `README.md:85-86` de las citas
+que corren, que no corre, cambiado por dos que sí; los 14 del §818 en `doc/KIT_EN.md`, que son de 14
+a 15; las 119 citas de «Las compuertas», que no salían con ningún recuento, cambiadas por las
+medidas, con el método; la frase del asiento del carril de que aquí no compila nada el nodo ni el
+testigo así, repuesta; y la línea de 81 columnas de la 88, rehecha con las de alrededor, sin mover
+las demás. La frase de la 0.4.3 en los dos manuales y en la 88, que no pedía la base, se queda,
+corregida. Que el sello meta líneas en medio de los ficheros, y no al final, era informativo: es la
+estructura del borrador, y ninguna cita viva se mueve (abajo, «Las compuertas»). Para no correr
+nada, la corrección de la 88 ocupa las mismas líneas, y la de los manuales, una más, en la sección
+«Reproducir el kit», por debajo de toda cita por línea a ellos.
+
+**El porte, hasta el §858.** Del §852 al §858 lo llevó un `cherry-pick` sobre el §822 rebasado, que
+entró entero, sin conflicto: en `AUDITORIA.md`, los asientos del §853 al §858 van delante de los de
+la pila, y éste, detrás del del §822, con una línea en blanco entre los dos, baja 1396 líneas: las
+1126 de esos seis y las 53, 64, 72 y 81 que sus portes sumaron a los del §819, el §820, el §821 y el
+§822. De los demás ficheros de este sello, los §853-§858 sólo tocan uno, el `BACKLOG.md`, y `git` lo
+juntó sin choque: el §855 rehace en la 77 la cita a la huella del corpus KAT de `xmss`, que pasa de
+una línea a tres (la `:4958-4960` en el §822), por debajo del último trozo de este sello, el que
+entra detrás de la `:4107`. Los trozos de este sello caen en las mismas líneas que sobre el §822 de
+`378e1fa` (`git diff -U0`, comparado: sólo cambia la línea `index` del `BACKLOG.md`), y su texto,
+fuera de este asiento, es el mismo. `cargo` no se corrió, salvo el `cargo tree` de `check_curvas`:
+el sello no toca código. Lo que las herramientas traen nuevo o más estricto no pide nada de este
+sello, y en su árbol no se arregla nada:
+- el ATADO G de `check_publicadas`, que desde el §856 busca el identificador de modelo en toda la
+  cabecera de cada RFC, hasta su primer «## »: el sello toca el RFC-0018 y el RFC-0021, pero no sus
+  cabeceras —su primer «## » es la `:18` del uno y la `:29` del otro, y los trozos del sello van de
+  la `:58` en adelante—, y no escribe en ellos ningún identificador de modelo;
+- la v5 bis de `verificar_citas`, que el §854 amplía a `doc/METODO.md`, `doc/blueprint-v2.md`, el
+  RFC-0005 y `tools/check_publicadas.py`: de sus ocho ficheros, el sello toca `README.md`,
+  `README_EN.md` y `RESUMEN_EJECUTIVO.md`, los mismos que sobre `378e1fa`, sin escribir en ellos
+  ninguna cita por línea a `tools/canon.sh`; y fuera de la lista, tampoco: las cuatro líneas suyas
+  que nombran el canon, en los dos manuales, `spec/PAQUETE.md` y el RFC-0021, lo nombran sin línea;
+- la v3 bis con su mínimo (§858): de sus nueve ficheros, el sello toca cinco —`README.md`,
+  `README_EN.md`, `doc/KIT.md`, `doc/KIT_EN.md` y el RFC-0018—, sin escribir en ninguno una cita por
+  línea a `spec/RPC.md`, y la lista sigue con sus nueve;
+- `check_publicadas`, que desde el §857 lee de `doc/ecst/VERIFICACION.md` sus 305 líneas «Lo que se
+  puede afirmar» en el ATADO F y en RETIRADAS: el sello no toca la ficha, ninguna de esas líneas
+  habla del kit ni de rehacerlo (arriba, «Medido sobre `7ed7e17`»), y de las citas de la ficha que
+  este sello corre o cambia de texto (abajo, «Las compuertas») ninguna va en ellas: todas van en sus
+  «Fuentes:», que siguen siendo de `71c5aad`;
+- y el §853 y el §855, en el canon, cambian un timeout y caminos, y avisan al empezar si
+  `check_curvas` no podrá leer el árbol: el sello no toca `tools/canon.sh`, y su bloque «3 ter»
+  sigue corriendo `tools/artefacto.sh --check` (arriba, «Medido sobre `7ed7e17`»). Ninguna frase que
+  escribieron los §853-§858 queda falsa con este sello: fuera de sus asientos, que narran su commit
+  y no se reescriben, ninguna habla del kit, de su reproducción, de `tools/artefacto.sh` ni de H6,
+  la 88, la 54 o la 83, ni da las cifras de este sello (`git diff 378e1fa 7ed7e17`, sin
+  `AUDITORIA.md`). De sus asientos, cuatro citas por línea caen en lo que este sello mueve, todas al
+  `BACKLOG.md`: la `:1637` del §854, que en el §822 seguía en su sitio y con este sello era allí la
+  `:1666`; y la `:4831` del §854 y la `:4831-4833` del §855, dos veces, que ya no daban su texto en
+  el §822 (allí, la `:4958-4960`) y con este sello eran allí la `:4994-4996`. Son de asientos, que
+  no se reescriben.
+
+**El porte, aquí.** Del §858 al §859 lo llevó un `cherry-pick` sobre el §822 rebasado, que entró
+entero, sin conflicto: en `AUDITORIA.md`, el asiento del §859 va delante de los de la pila, y éste,
+detrás del del §822, baja 287 líneas: las 152 del §859 y las 23, 34, 35 y 43 que sus portes sumaron
+a los del §819, el §820, el §821 y el §822. De los demás ficheros de este sello, el §859 sólo toca
+uno, el `BACKLOG.md`, y `git` lo juntó sin choque: añade dos líneas a la nota del §810 de la 85
+(`:763-764`), entre el primer trozo de este sello, el que entra detrás de la `:623`, que no se
+mueve, y los otros dos, que bajan dos: entran detrás de la `:971` y de la `:4109`, y no de la `:969`
+y de la `:4107`. Fuera del `BACKLOG.md`, los trozos de este sello caen en las mismas líneas que
+sobre el §822 de `7ed7e17` (`git diff -U0`, comparado), y su texto, fuera de este asiento, es el
+mismo. `cargo` no se corrió, salvo el `cargo tree` de `check_curvas`: el sello no toca código, y el
+§859 tampoco toca `crates/` ni el `Cargo.lock`. Lo que el §859 cambia en `tools/segunda/` y en el
+canon no lee nada de este sello, ninguna de las quince herramientas cambia con él, y fuera de
+`AUDITORIA.md` no añade ni quita ninguna línea con una cita de la forma `fichero:N`
+(`git diff 7ed7e17 212eca2`, sin `AUDITORIA.md`: ninguna línea `+` o `-` con `:N`); con lo que «Las
+compuertas» dicen del `BACKLOG.md`, sus cuentas son las de `7ed7e17`. Ninguna frase que escribió el
+§859 queda falsa con este sello: fuera de su asiento, ninguna habla del kit, de su reproducción, de
+`tools/artefacto.sh` ni de H6, la 88, la 54 o la 83, ni da las cifras de este sello. Pero su asiento
+cita dos líneas del `BACKLOG.md` que este sello mueve, la `:760` y la `:763-764`, la de su triaje y
+la de su nota: con este sello son la `:765` y la `:768-769`. Y las cuatro de los §854 y §855 de
+arriba, que el §859 baja dos, son con este sello la `:1668` —en el §822, la `:1639`— y la
+`:4996-4998` —en el §822, la `:4960-4962`—. Son de asientos, que no se reescriben.
+
+**Quién lo decide.** Decidido por delegación del autor, que pidió «HACER todo» (así lo citan el
+§814, el §816 y el §817). Lo que dejó fuera —un tercero que implemente (H3), un auditor (H7), los
+testigos reales y los avisos a NLnet— lo dijo a la sesión en el mismo encargo; no lo recoge ningún
+asiento sellado, y en el árbol sólo lo cita el cierre de la 75 en el `BACKLOG.md`, del §822. H6 no
+es nada de eso. La promesa de `spec/RPC.md` §«Versionado y compatibilidad» y de la R6 a del
+RFC-0021, que el autor aceptó en el §799, pasa de «reproducible» a «reconstruible», con la condición
+de la máquina. El principio es la sección 0 de `PRINCIPIOS.md`, decir primero lo que no es todavía,
+y su sección 9, los errores propios documentados, no borrados. Devolverle la fuerza —reproducible
+entre máquinas— o declararla deuda abierta con la 88 es del autor.
+
+**Las compuertas**, sobre `378e1fa`, sobre `7ed7e17` y aquí, sobre este árbol, con «§823» puesto y
+este asiento en su sitio: las herramientas del bucle «2 ter» de `tools/canon.sh` —`check_cifras`,
+`check_figures`, `check_columns`, `check_constraint_layout`, `verificar_citas`, `check_dominios`,
+`check_publicadas`, `check_nucleo`, `check_techo`, `check_curvas`, bajo el cerrojo de `cargo` porque
+lanza `cargo tree`, y `check_superficie`—, más `check_tests`, `check_modulos`, `check_vectores` y
+`check_catalogo`, en 0 las tres veces. `verificar_citas`, aquí: 0 fantasmas, 189 encabezados citados
+y 0 muertos, 0 citas § muertas en el registro, 0 citas por línea al `BACKLOG.md` en documentos
+vivos, 0 en la v3 bis, con sus nueve ficheros y su mínimo de nueve, 0 en la v5 bis, con sus ocho, 0
+marcadores sin número y los 8 declarados; sobre `378e1fa`, lo mismo, con las reglas de entonces: la
+v3 bis sin mínimo y la v5 bis en cuatro ficheros; sobre `7ed7e17`, lo mismo que aquí.
+`check_publicadas`, aquí, mira en el ATADO G los 21 RFC y la plantilla, y de
+`doc/ecst/VERIFICACION.md`, en el ATADO F y en RETIRADAS, sus 305 líneas «Lo que se puede afirmar».
+`git diff --check`, limpio. Sobre `378e1fa`, el canon entero, `--sello`, se corrió sobre aquel
+árbol, con el asiento de entonces en su sitio, y salió VERDE. Ninguna cita viva de la forma
+`fichero:línea` se mueve con este sello: se comprobó con `git diff -U0` y un mapa de las líneas de
+cada fichero que toca, antes y después, contra las citas de la forma `fichero:N` o `fichero:N-M` que
+nombran esos ficheros, con sus continuaciones «, :N», en todo el árbol del §822 salvo
+`AUDITORIA.md`, sobre `378e1fa` y otra vez sobre `7ed7e17`, con lo mismo —aquí se rehízo sólo para
+el `BACKLOG.md`, donde bajan dos trozos: ninguna de las que lo citan toca la `:622-625`, la
+`:968-972` ni la `:4106-4110` (arriba, «El porte, aquí»)—: 959 si el nombre no va precedido de otra
+ruta —sin esa frontera, 1131: 172 de `doc/ecst/` citan otros `README.md`, sobre todo el de
+`hbs-state`, de otro repositorio—, y 76 de ellas fuera de `doc/ecst/` y de los textos de prueba de
+`tools/verificar_citas.py`. Las únicas que corren son 69 del registro generado de `doc/ecst/`
+—`VERIFICACION.md` y los borradores `doc/ecst/borrador/*.json` de los que sale, que citan, por
+ejemplo, `BACKLOG.md:628-631`, que pasa a la `:633-636`, o `QUESTIONS.md:66, :239`, cuya `:239` pasa
+a la `:243`, y que ya no caían en lo que citaban—, que es fechado, `verificar_citas` deja fuera y no
+pide marca; y 3 de los textos de prueba de `tools/verificar_citas.py`, que no citan nada. Otras 12
+de `doc/ecst/` no corren, pero abarcan una línea que cambia de texto: 3 `README.md:85-86` y 9
+`doc/KIT.md:1-134` o `:1-45`, con la `:15` dentro. En el carril se corrieron las mismas, salvo
+`check_curvas`, en una copia con un número provisional en lugar del marcador, y salieron en 0.
+
+**Contadores.** Sin tests nuevos: no se mueve ninguno. El TOTAL DE SELLO sigue en 1859 y el CON
+LARGOS en 1999, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; la capa en 503, el nodo en 229 y el
+kit en 191, en `tools/canon.sh`; `check_tests`, 2021 declarados; `check_modulos`, 207; los vectores,
+508 ficheros y 1017 líneas de manifiesto. No cambian los pines ni su crónica. El `BACKLOG.md` no
+abre ni cierra ninguna entrada: su cabecera sigue en 41 abiertas y 89 resueltas, contadas con `grep`
+de las casillas. Las cifras de `212eca2` son las de `7ed7e17`, y éstas las de `378e1fa` —el total de
+sello en 1853, `check_tests` en 2012, 44 abiertas y 86 resueltas, 508 vectores y 1017 líneas—, así
+que las de este párrafo, que les suman las del §819 al §822, son aquí las mismas, contadas otra vez
+en este árbol.
+
+**Mutantes**: ninguno; es un sello de texto. Los de la herramienta van en el §824.
+
+**Lo que NO hace.** No está medido si dos máquinas con el mismo `rustc`, el mismo `cc` y el mismo
+`as` dan la misma huella: aquí hay una sola. Tampoco lo que pasa con un `CARGO_HOME` o un
+`RUSTUP_HOME` fuera de `HOME`: está deducido. La 0.4.2 publicada no se reproduce desde aquí, y este
+sello no rehace la 0.4.3: lee su binario publicado y la huella del kit que `tools/artefacto.sh`
+compiló en este contenedor con el 1.94.1. No hay huellas publicadas del nodo ni del testigo, y
+publicarlas es del autor. No cambia lo que hace `tools/artefacto.sh --check`, que sigue buscando en
+el binario sólo las rutas de `$HOME`: sólo su cabecera dice ahora eso; la herramienta es del §824.
+Devolver a `spec/RPC.md` y al RFC-0021 la promesa fuerte, o declararla deuda, es del autor. La 88,
+la 54 y la 83 siguen abiertas.
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.

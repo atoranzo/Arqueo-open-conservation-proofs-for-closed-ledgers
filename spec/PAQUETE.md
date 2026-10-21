@@ -1688,13 +1688,24 @@ SEIS hasta el §574: el pago (§509) y la prenda (§546) entraron en `FAMILIAS`,
 que ella lo dijera; el §574 lo corrige al sumar la novena, el §593 suma la décima, el ancla, y el
 §634 la undécima, el ancla cofirmada, y el §649 la duodécima, la rotación.
 
-La huella del binario **no depende de la máquina ni del usuario** —se compila con
-`--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
-nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
-binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
-compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los doce manifiestos desde el
-árbol y, desde §425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo
-veredicto). Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
+La huella del binario **no depende de la ruta del árbol ni de `HOME` dentro de una misma máquina,
+con `CARGO_HOME` y `RUSTUP_HOME` bajo `HOME`** —se compila con `--remap-path-prefix`; fuera de
+`HOME`, sus rutas entrarían enteras (deducido, sin medir), las de `RUSTUP_HOME` si `rust-src` está
+instalado—, y sí del toolchain, de `Cargo.lock` y de la máquina: con el
+`rustc` que `VERSION` nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve
+a producir el mismo binario y el mismo tarball en la misma máquina, y `tools/canon.sh` comprueba en
+cada sello lo que puede comprobar ahí (en `b6994c3`, dos compilaciones del mismo árbol en dos
+`target`, misma huella; dos tarballs, misma huella; los doce manifiestos desde el árbol y, desde
+§425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo veredicto). ⚠️
+§823: decía «**no depende de la máquina ni del usuario** —se compila con `--remap-path-prefix`—, pero
+sí del toolchain y de `Cargo.lock`», y que el canon comprobaba «esa propiedad» con «dos
+compilaciones en dos rutas». Medido el 15-10-2026: la 0.4.2 rehecha desde su commit con su `rustc`
+en otra máquina sale con 13 de sus 35 secciones distintas; la huella depende además de dónde está
+`rust-src` si está instalado —sus rutas entran en el binario con el nombre de su toolchain, porque
+ninguna regla de `b6994c3` las lleva a `/rustc/<commit-hash>`— y del código nativo que compilan el `cc` y el
+`as` del host (el ensamblador de blake3). Las dos rutas del canon eran dos
+`target` del mismo árbol. El detalle, en `doc/KIT.md` §«Reproducir el kit, para quien no se fíe de
+la descarga». Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
 declara (`glibc_max`); no es estático, y se dice.
 
 Lo que el artefacto NO es: no es una publicación en crates.io (el crate no lleva la spec ni los

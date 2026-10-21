@@ -96,7 +96,10 @@ Second, a **kit** with which a third party checks on their own machine, offline 
 repository, a file that adds up, a tampered one that does not — with the broken rule named —, the
 same label published in two ledgers, and a swap of ledgers rejected by name
 ([`doc/KIT_EN.md`](./doc/KIT_EN.md)). It is not a demo: they are real captures from nodes that were
-then shut down, and the binary is reproduced from the commit its `VERSION` names.
+then shut down, and the binary is rebuilt from the commit its `VERSION` names; with the same hash,
+only shown within one same machine. ⚠️ §823: it said «the binary is reproduced from the commit»,
+without the machine condition: rebuilt on another one, 0.4.2 comes out with another hash
+([`doc/KIT_EN.md`](./doc/KIT_EN.md) §«Reproducing the kit, for whoever does not trust the download»).
 
 ---
 
@@ -234,8 +237,9 @@ the **first** failure by name (`ROJO: …`) if not. Five steps: a file that adds
 that does not, with the broken rule named; the same label in two ledgers, detected from the two
 heads with both nodes off; a swap of ledgers, rejected by name; and what the node received under
 its signature, resolved within its window or with the operator that did not resolve it named. The whole catalogues are checked
-with the harness that travels inside the tarball, and the binary is reproduced from the commit its
-`VERSION` names.
+with the harness that travels inside the tarball, and the binary is rebuilt from the commit its
+`VERSION` names; with the same hash, only shown within one same machine. ⚠️ §823: it said «the binary
+is reproduced from the commit», without that condition.
 
 ---
 
@@ -319,7 +323,8 @@ pieces are built (question 7). ⚠️ **Corrected in §794**: the residue said �
 pledge (RFC-0010, D-H and D-E)», which carry a receipt since §611.
 
 What is already there: the format as a public contract with vectors that since §692 are not rewritten, the
-reproducible verifier, and a kit with which anyone can check the above without believing this page.
+verifier rebuildable from its commit (⚠️ §823: it said «reproducible», without the machine
+condition), and a kit with which anyone can check the above without believing this page.
 
 ---
 

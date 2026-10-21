@@ -1666,14 +1666,17 @@ aceptado; un código de salida del kit. **No rompe** lo aditivo que nadie emite 
 una de (4); el kit pasa a `0.N.0` con el cable y no antes, y un `0.N.x` no rompe nada salvo por un
 arreglo de seguridad. Las rupturas se juntan en un corte, y su RFC está en el árbol antes que él.
 
-**Después de una ruptura sigue verificando**: todo kit publicado, que no se retira y se reproduce
-desde su commit; todo vector, que no se reescribe y, si su veredicto cambia, se muda a
-`vectors/<versión>/` con el de su kit; toda cabeza que un kit aceptó, en todo kit posterior, porque
-el conjunto de versiones de cabeza sólo crece, salvo la de un esquema de firma roto, que vale
-contenida en algo firmado con uno aceptado; todo sobre, con el kit de su versión, y con uno
-posterior o verifica o se rechaza como «fuera del contrato»; y toda prueba, con el kit de su
-versión del cable, porque ningún kit acepta dos. Un arreglo de seguridad puede cambiar un
-veredicto dentro de `0.N.x`, con su aviso y la lista de lo que cambia.
+**Después de una ruptura sigue verificando**: todo kit publicado, que no se retira y se reconstruye
+desde su commit —con la misma huella, sólo demostrado dentro de una misma máquina: `doc/KIT.md`
+§«Reproducir el kit, para quien no se fíe de la descarga»—; todo vector, que no se reescribe y, si
+su veredicto cambia, se muda a `vectors/<versión>/` con el de su kit; toda cabeza que un kit aceptó,
+en todo kit posterior, porque el conjunto de versiones de cabeza sólo crece, salvo la de un esquema
+de firma roto, que vale contenida en algo firmado con uno aceptado; todo sobre, con el kit de su
+versión, y con uno posterior o verifica o se rechaza como «fuera del contrato»; y toda prueba, con
+el kit de su versión del cable, porque ningún kit acepta dos. Un arreglo de seguridad puede cambiar
+un veredicto dentro de `0.N.x`, con su aviso y la lista de lo que cambia. ⚠️ §823: decía «que no se
+retira y se reproduce desde su commit», sin la condición de la máquina: rehecha desde su commit en
+otra, la 0.4.2 sale con 13 de sus 35 secciones distintas, y juzga igual sus once catálogos.
 
 **Lo que la versión no identifica todavía** se declara aquí, con su asiento, hasta que lo
 identifique.
