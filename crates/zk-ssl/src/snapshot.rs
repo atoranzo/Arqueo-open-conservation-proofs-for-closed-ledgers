@@ -82,13 +82,13 @@
 //!   proyecto no aborda.
 //! - **Va cifrada si la capa tiene clave**, con el mismo cifrado
 //!   autenticado que el ledger y la cabecera de su KDF (§702). Sin clave va
-//!   en claro, y entonces quien tenga el fichero **ve todos los saldos**.
+//!   en claro, y entonces quien tenga el fichero **ve todos los saldos**. ⚠️ §817: con clave sólo se importa una cifrada (`rehusar_en_claro`, al final).
 //! - **⚠️ §802: en claro, las retiradas no van atadas a nada.** La cola de la
 //!   v9 no lleva raíz, y `SnapshotInfo` solo trae `state_root`, el
 //!   suministro y los recuentos: una cola cambiada importa, y la identidad
 //!   que una recuperación retiró vuelve a abrir (medido). El resto del cuerpo
 //!   lo atan `state_root` y la cadena del registro; la cola, solo el sellado
-//!   de una instantánea cifrada (`SECURITY.md` §3.13).
+//!   de una instantánea cifrada (`SECURITY.md` §3.13; ⚠️ §817: y, hasta el §817, ni ese: con clave se importaba también una en claro; §3.16).
 //! - **No hay copias incrementales.** Cada instantánea es completa.
 //! - **No lleva los pagos en vuelo.** El formato (v9, como la v8) no tiene hueco
 //!   para el árbol de pendientes ni su raíz: una copia de un ledger
@@ -173,7 +173,7 @@ const SNAPSHOT_PLAIN: u8 = 0x00;
 const SNAPSHOT_ENCRYPTED: u8 = 0x01;
 
 impl SovereignLayer {
-    /// Importa una instantánea cifrada.
+    /// Importa una instantánea cifrada, y sólo una cifrada (⚠️ §817: hasta el §817 también una en claro; `rehusar_en_claro`, al final).
     ///
     /// Existe aparte porque `import_snapshot` no tiene forma de conocer la clave: es una función
     /// asociada, no un método. §702: la fija al KDF de la instantánea (`abrir_sellada`, al final).
@@ -190,7 +190,7 @@ impl SovereignLayer {
 
         let plano = match buf.first() {
             Some(&SNAPSHOT_ENCRYPTED) | Some(&SNAPSHOT_ENCRYPTED_V2) => abrir_sellada(&buf, key)?,
-            Some(&SNAPSHOT_PLAIN) => buf[1..].to_vec(),
+            Some(&SNAPSHOT_PLAIN) => return Err(rehusar_en_claro()), // ⚠️ §817: la importaba sin mirar la clave
             _ => {
                 return Err(LayerError::Store(crate::store::StoreError::Malformed(
                     "instantanea sin marca de cifrado".into(),
@@ -1609,4 +1609,22 @@ pub(crate) fn barrer_descifrada(path: &str) -> Result<bool, LayerError> {
          en el disco (SECURITY.md §3.14)"
     );
     Ok(true)
+}
+
+/// ⚠️ §817 · **Con clave, una instantánea en claro no se importa.** Hasta el §817,
+/// `import_snapshot_with_key` importaba también la marca `0x00`, en claro, sin error y sin mirar la
+/// clave: si se autenticaba o no lo decidía la marca, que pone el fichero. Quien pudiera escribir
+/// donde se guarda la copia cifrada ponía en su sitio una en claro, hecha con esta biblioteca, y
+/// quien la restauraba con su frase recibía Ok y la capa de quien la puso, sus saldos incluidos
+/// (`SECURITY.md` §3.16). Una en claro no la autentica nadie: `import_snapshot`, que no recibe
+/// clave, la importa sin autenticar nada, y el error lo dice, porque quien esperaba una cifrada y
+/// encuentra una en claro puede tener delante la de quien escribe donde se guarda. Lo ata
+/// `con_clave_una_instantanea_en_claro_no_se_importa`, al final de `tests.rs`.
+fn rehusar_en_claro() -> LayerError {
+    LayerError::Store(crate::store::StoreError::Malformed(
+        "la instantanea esta en claro y no la autentica la clave: con clave solo se importa una \
+         cifrada; si esperabas una cifrada, pudo ponerla quien escriba donde se guarda, e \
+         import_snapshot la importaria sin autenticar nada: solo si sabes de donde sale"
+            .into(),
+    ))
 }

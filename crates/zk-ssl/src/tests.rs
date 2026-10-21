@@ -5831,3 +5831,90 @@ fn una_ruta_sin_nombre_no_abre_el_libro_sin_su_cerrojo() {
     rehusa("en claro", &claro, r, &antes);
     quitar_e4(&claro);
 }
+
+/// **§817: con clave, una instantanea en claro no se importa.** Hasta el §817,
+/// `import_snapshot_with_key` importaba la marca `0x00` sin mirar la clave (`rehusar_en_claro`, al
+/// final de `snapshot.rs`). (a) Una capa cifrada exporta su instantanea; quien puede escribir donde
+/// se guarda pone en su sitio una en claro, hecha con la biblioteca, con otro saldo: con la frase
+/// buena, la importacion falla con `Malformed`, y su error dice que esta en claro y nombra
+/// `import_snapshot`. (b) Con otra frase, o con una clave ya fijada a su KDF, tampoco. (c) La misma,
+/// sin clave, por `import_snapshot`, si: es la via a sabiendas. (d) Con la frase, el mismo cuerpo en
+/// claro tras una marca que no es de cifrado (0x03, 0xff) no se importa. (e) Y una v8 en claro, que
+/// sin clave se importa (la lectura de v3..v8 sigue, la 76), con la frase tampoco.
+#[test]
+fn con_clave_una_instantanea_en_claro_no_se_importa() {
+    use crate::crypto::LedgerKey;
+    const MARCA_EN_CLARO: u8 = 0x00; // `SNAPSHOT_PLAIN`, privada de snapshot.rs
+    let path = temp_path("claro_con_clave_817");
+    let file = format!("{path}.instantanea");
+    let _ = std::fs::remove_file(&file);
+    let frase = "una contrasena larga de prueba";
+    {
+        let mut layer = open_encrypted_retry(
+            &path,
+            custodian_root(),
+            governance_root(),
+            LIMIT,
+            MAX_SUPPLY,
+            MAX_ACCOUNTS,
+            Some(LedgerKey::from_passphrase(frase)),
+        )
+        .expect("abrir cifrada");
+        open_and_fund(&mut layer, SK_ALICE, 250_000);
+        layer.export_snapshot(&file).expect("exportar cifrada");
+    }
+    assert_ne!(std::fs::read(&file).expect("leer")[0], MARCA_EN_CLARO, "la exportada va cifrada");
+
+    let mut otra = new_layer();
+    let alice = open_and_fund(&mut otra, SK_ALICE, 999_999);
+    otra.export_snapshot(&file).expect("(a) la sustituye una en claro");
+    assert_eq!(std::fs::read(&file).expect("leer")[0], MARCA_EN_CLARO);
+    match SovereignLayer::import_snapshot_with_key(&file, &LedgerKey::from_passphrase(frase)) {
+        Ok(l) => panic!(
+            "CRITICO: (a) con la frase se importo una instantanea en claro: alice tiene {:?}",
+            l.balance_of(alice)
+        ),
+        Err(e) => assert!(
+            matches!(e, LayerError::Store(crate::store::StoreError::Malformed(ref m))
+                if m.contains("en claro") && m.contains("import_snapshot")),
+            "(a) el error no es Malformed, o no dice que esta en claro y la via sin clave: {e}"
+        ),
+    }
+    assert!(
+        SovereignLayer::import_snapshot_with_key(&file, &LedgerKey::from_passphrase("otra")).is_err(),
+        "CRITICO: (b) con otra frase se importo una instantanea en claro"
+    );
+    let fijada = LedgerKey::derivar(frase, &crate::crypto::Kdf::Sha256V1).expect("derivar");
+    assert!(
+        SovereignLayer::import_snapshot_with_key(&file, &fijada).is_err(),
+        "CRITICO: (b) con una clave ya fijada se importo una instantanea en claro"
+    );
+    let r = SovereignLayer::import_snapshot(&file).expect("(c) sin clave se importa");
+    assert_eq!(r.balance_of(alice), Some(999_999), "(c)");
+
+    let claro = std::fs::read(&file).expect("leer");
+    for marca in [0x03u8, 0xff] {
+        let mut v = claro.clone();
+        v[0] = marca;
+        std::fs::write(&file, &v).expect("escribir");
+        assert!(
+            SovereignLayer::import_snapshot_with_key(&file, &LedgerKey::from_passphrase(frase)).is_err(),
+            "CRITICO: (d) con la frase se importo un cuerpo en claro tras la marca {marca:#04x}"
+        );
+    }
+    // (e) La v8 es la v9 sin su cola de retiradas, que aqui va vacia: ocho ceros al final.
+    let n = claro.len();
+    assert_eq!(&claro[n - 8..], &[0u8; 8], "(e) sin retiradas");
+    let mut v8 = vec![MARCA_EN_CLARO];
+    v8.extend_from_slice(b"ZKSSL8\0\0");
+    v8.extend_from_slice(&claro[9..n - 8]);
+    std::fs::write(&file, &v8).expect("escribir la v8");
+    let r = SovereignLayer::import_snapshot(&file).expect("(e) la v8 en claro se importa sin clave");
+    assert_eq!(r.balance_of(alice), Some(999_999), "(e)");
+    assert!(
+        SovereignLayer::import_snapshot_with_key(&file, &LedgerKey::from_passphrase(frase)).is_err(),
+        "CRITICO: (e) con la frase se importo una v8 en claro"
+    );
+    let _ = std::fs::remove_file(&file);
+    quitar_libro(&path);
+}

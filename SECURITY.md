@@ -875,7 +875,8 @@ el libro lleno—.
   aparte;
 - una instantánea v9 en claro lleva las retiradas sin ninguna raíz que el receptor pueda comprobar:
   `SnapshotInfo` no la trae, y una cola cambiada importa (medido: la identidad retirada vuelve a abrir
-  en la capa importada). Solo la cifrada las protege;
+  en la capa importada). Solo la cifrada las protege (⚠️ §817: y, hasta el §817, ni ella: con su frase,
+  la importación aceptaba también una en claro, sin mirar la clave; §3.16);
 - un libro con recuperaciones escritas antes del §802 no abre: sin sus retiradas se ve igual que uno al
   que se las han borrado en reposo, y abrirlo vacío devolvería el robo. Solo lo fabrica la biblioteca,
   porque la recuperación no está en el cable; y lo mismo una instantánea v3..v8 con recuperaciones.
@@ -1249,6 +1250,52 @@ como piden la sección 5 y `spec/rfc/PROCESO.md` §«Fallos de seguridad», la r
 0.4.1 y la 0.4.2— y la primera que lo arregla, la 0.4.3. Los publica el autor: hasta el asiento que
 registre la release, la vigente sigue siendo la 0.4.2 (`doc/KIT.md` §0). F1 y F2 son del nodo, que
 no tiene release: su aviso es esta sección y el asiento. `AUDITORIA.md` §815.
+
+### 3.16 La importación con clave aceptaba una instantánea en claro — ⚠️ MEDIDO, cerrado en la biblioteca (§817)
+
+`SovereignLayer::import_snapshot_with_key`, que importa una instantánea con la frase del libro,
+aceptaba también una con la marca `0x00`, en claro: la importaba sin error ni aviso, sin mirar la
+clave. Lo anotó, leyendo el código, un revisor de los sellos de la instantánea que preparaba la
+sesión, y se midió en privado, en un clon sin remoto, sobre el §816: una capa cifrada exporta su
+instantánea; en su sitio se pone una en claro, hecha con la biblioteca, con otro saldo; y con la
+frase buena la importación da Ok, con el saldo de quien la puso. Lo mide el test del §817, que con
+el código de antes falla en eso mismo.
+
+**Alcance.** Quien pueda escribir donde se guarda la copia cifrada —un disco de copias, un almacén
+compartido— y quien la restaure con su frase: recibe Ok y una capa con las cuentas, los saldos, las
+congeladas y las retiradas que eligió quien la puso, y también con sus custodios y su gobernanza
+—las raíces de los dos conjuntos, que deciden quién emite, congela, recupera y cambia los
+custodios— y sus topes —el límite regulatorio, el suministro máximo y el máximo de cuentas—, y nada
+lo dice. La importación toma esos conjuntos y esos topes del fichero sin compararlos con nada
+(`crates/zk-ssl/src/snapshot.rs:391-392` y `:413-415`). El cifrado autenticado de la instantánea
+(§702) no protegía lo que se restaura, porque si se autentica o no lo decidía la marca, que pone el
+fichero. No alcanza al nodo, al cli ni al sdk, que no importan instantáneas con clave (la función
+sólo la llaman los tests de la capa; `git grep`), ni al kit, que no depende de la capa. La ventana
+va desde `5d2833e` (28-07-2026), donde nace la función, hasta el §817. Lo dejaban falso dos
+comentarios de la cabecera de `snapshot.rs` —la instantánea cifrada, y la cola de retiradas que
+sólo ata el sellado— y la 3.13 («Solo la cifrada las protege»), que llevan marca.
+
+**El arreglo.** Con clave, la marca `0x00` se rehúsa, con un `Malformed` cuyo texto dice que la
+instantánea está en claro y que, si se esperaba una cifrada, pudo ponerla quien escribe donde se
+guarda: `import_snapshot`, que no recibe clave, la importaría sin autenticar nada. Falla cerrado.
+Lo ata `con_clave_una_instantanea_en_claro_no_se_importa`, al final de `crates/zk-ssl/src/tests.rs`:
+con la frase, con otra frase y con una clave ya fijada a su KDF, una en claro no se importa; el
+mismo cuerpo tras una marca que no es de cifrado, tampoco; ni una v8 en claro; y sin clave, sí.
+
+**Lo que no hace.** `import_snapshot` sigue importando una en claro: es la vía de una capa sin clave,
+y quien la llama tiene que saber de dónde sale. La importación con clave no ata la instantánea a un
+libro ni a un momento: una cifrada con la misma frase se importa aunque sea de otro libro (medido
+fuera del árbol, en la revisión del §817: la de otro libro, puesta en el sitio de la buena, da Ok
+con sus saldos) o de antes (deducido: lo que el cifrado autentica es la clave que la frase deriva
+con la sal de su cabecera, no cuál de las instantáneas selladas con ella es). Y la 121 del
+`BACKLOG.md`, la capa importada que nace sin clave y se reexporta en claro, sigue abierta; por ella,
+una capa importada con clave y vuelta a exportar sale en claro, y esa copia, que no se distingue
+de una puesta por otro, ya no se importa con clave: da el error nuevo. Falla cerrado, pero quien
+encadene importar, exportar e importar verá un error que antes no veía.
+
+Se redactó en privado y se publica de una vez con su arreglo, como pide la sección 5, y como el §812
+y el §816, por decisión del autor: el aviso es esta sección y el asiento §817, sin GHSA ni release,
+porque el kit publicado no depende de la capa. `AUDITORIA.md` §817.
 
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 

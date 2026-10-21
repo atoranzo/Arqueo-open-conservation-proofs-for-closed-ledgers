@@ -58775,3 +58775,127 @@ escribir, sin `.cerrojo`, no abre hasta que alguien lo crea; con el padre en sol
 crearlo antes. Un `.cerrojo` ajeno con 0600 deja el libro sin abrir. No está probado en Windows ni en
 NFS. El nodo no traduce el `Io` del cerrojo. Un `drop` entre el gancho y `sled::open` no lo caza
 ningún test. Queda para el autor: el RFC-0001 a ACEPTADO, y con él la D-J.
+
+## §817 — con clave, una instantánea en claro ya no se importa: `import_snapshot_with_key` aceptaba la marca `0x00` sin mirar la clave, y quien pudiera escribir donde se guarda la copia cifrada ponía una en claro con sus saldos, sus custodios y su gobernanza. Redactado en privado
+
+El commit que lleva este asiento, sobre el §816. Se redactó en privado (`spec/rfc/PROCESO.md`
+§«Fallos de seguridad»; la sección 5 de `SECURITY.md`): el fallo, su medida y su arreglo se
+escribieron fuera del árbol, en un clon sin remoto, y entran de una vez en este sello. Ningún sello
+anterior lo nombra. Toca `crates/zk-ssl/src/snapshot.rs` —el arreglo, en la línea del brazo de la
+marca `0x00`; su error, `rehusar_en_claro`, al final; y tres marcas en líneas que ya estaban, para
+que no se mueva ninguna cita `snapshot.rs:línea`—; `crates/zk-ssl/src/tests.rs`, con el test, al
+final; `SECURITY.md` —la 3.16, nueva, y una marca en la 3.13—; el pin de la capa en
+`tools/canon.sh`, con su crónica; las cifras de `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`; la
+cifra del pin en la nota del §814 de `ARQUITECTURA.md` y de `CONTRIBUTING.md`, con marca; y este
+asiento. No cambia ningún formato: ni el cable, ni un vector, ni el kit, ni el `Cargo.lock`. No
+toca `crates/zk-ssl-guardian`, ni la zona de la migración de Winterfell, ni el nodo.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. Un revisor de los sellos de la
+instantánea que prepara la sesión —la 120 y la negativa del barrido del §812, que vienen detrás— lo
+anotó leyendo el código; la sesión lo comprobó en el código del §816, lo midió y escribió el arreglo
+y los textos en el clon privado. Una primera revisión pidió que el test no compartiera nombres
+temporales con el del §774 y que el arreglo no corriera las líneas que el árbol cita, y se hizo.
+Después, un agente lo remidió en una copia, con mutantes propios, y tres revisiones independientes
+—que el arreglo cierre el fallo entero, que el test y los textos digan sólo lo cierto, y las citas y
+las cifras— lo juzgaron; cada hallazgo de las revisiones pasó por un escéptico que intentó
+refutarlo: de diecisiete, refutó cuatro. Los trece que quedaron, todos menores, y los seis, también
+menores, del agente que lo remidió, se hicieron o se declaran antes de commitearlo (abajo). El número es el
+siguiente del rango que el autor asignó (§800 a §829). En la sesión se corrió el canon entero,
+`--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+**El defecto.** En `crates/zk-ssl/src/snapshot.rs`, `import_snapshot_with_key` elegía por la marca
+del fichero: `0x01` y `0x02`, descifrar con la clave; `0x00`, devolver el cuerpo tal cual. Con la
+clave en la mano importaba una instantánea en claro, sin error ni aviso. El cifrado autenticado de
+la instantánea (§702) protegía lo que se exporta, no lo que se restaura: si se autenticaba o no lo
+decidía la marca, que pone el fichero. Quien pueda escribir donde se guarda la copia cifrada pone en
+su sitio una en claro, hecha con esta misma biblioteca, y quien la restaura con su frase recibe Ok y
+la capa de quien la puso: sus cuentas, sus saldos, sus congeladas y sus retiradas, coherentes entre
+sí porque las fabricó la biblioteca, y también sus custodios, su gobernanza y sus topes, que la
+importación toma del fichero sin compararlos con nada (`snapshot.rs:391-392` y `:413-415`): sobre la
+capa restaurada, emitir, congelar y recuperar los autorizan los custodios de quien la puso. No crea
+saldo en un libro que ya existe; hace restaurar otro. La ventana va desde `5d2833e` (28-07-2026),
+donde nace la función con esa rama, hasta este sello. Lo dejaban falso dos comentarios de la cabecera
+de `snapshot.rs` —«Va cifrada si la capa tiene clave, con el mismo cifrado autenticado que el
+ledger», y que la cola de retiradas sólo la ata «el sellado de una instantánea cifrada»— y la 3.13
+de `SECURITY.md` («Solo la cifrada las protege»), que llevan marca. No alcanza al nodo, al cli ni al
+sdk, que no importan instantáneas con clave (`git grep`: la función sólo la llaman los tests de la
+capa), ni al kit, que no depende de la capa.
+
+**Quién lo decide.**
+- **El autor**: delegó el trabajo («HACER todo») y, en este sello, a la pregunta de la sesión, cómo
+  se publica: como el §812 y el §816, de una vez con el código y sin GHSA ni release (21-10-2026),
+  la respuesta que la sesión recomendaba. Y, a otra pregunta del mismo día, la 121: que la capa
+  importada con clave conserve la clave; va en un sello propio, detrás de éste.
+- **La sesión**, y reversible: rehusar la marca `0x00` con clave, en vez de importarla con un aviso,
+  porque un aviso por la salida de errores no lo ve quien restaura desde un programa, y una bandera
+  de «aceptar en claro» repetiría `import_snapshot`; que el error diga que está en claro y avise de
+  que `import_snapshot` la importaría sin autenticar nada, porque quien la encuentra puede tener
+  delante la de quien escribe donde se guarda; y no tocar `import_snapshot`, que es la vía de una
+  capa sin clave.
+
+**Por qué no lleva aviso de seguridad.** El fallo está en la capa, `zk-ssl`, y el kit publicado no
+depende de ella: los `[dependencies]` de `crates/zk-ssl-verify/Cargo.toml` no la nombran. Por la
+sección 5 de `SECURITY.md` no corresponde aviso ni release, y el autor eligió, como en el §812 y el
+§816, la 3.16 y este asiento, sin GHSA.
+
+**Lo que hace.** Con clave, la marca `0x00` da `Malformed` con el texto «la instantanea esta en claro
+y no la autentica la clave: con clave solo se importa una cifrada; si esperabas una cifrada, pudo
+ponerla quien escriba donde se guarda, e import_snapshot la importaria sin autenticar nada: solo si
+sabes de donde sale», sin abrir ni parsear el cuerpo: el fichero ya se ha leído entero a memoria
+(`snapshot.rs:184-188`) y antes se ha barrido el `.tmp-descifrada` (`:183`, §812). Las marcas `0x01`
+y `0x02`, y una que no es de ninguna, como antes. El error lo da `rehusar_en_claro`, al final de
+`snapshot.rs`, y el brazo de la marca sigue en su línea: el fichero no mueve ninguna de las suyas,
+y siguen válidas las citas que el `BACKLOG.md` y `doc/blueprint-v2.md` hacen por línea (la 120, la
+121, la 76, la 17).
+
+**Medido**, en release, en el clon privado y en copias suyas, con su propio target:
+- **El test nuevo**, `con_clave_una_instantanea_en_claro_no_se_importa`: una capa cifrada exporta su
+  instantánea; en su sitio se pone una en claro con Alice a 999 999; con la frase buena la
+  importación falla con `Malformed`, y su error dice que está en claro y nombra `import_snapshot`
+  (a); con otra frase y con una clave ya fijada a su KDF, también (b); sin clave, por
+  `import_snapshot`, se importa (c); con la frase, el mismo cuerpo tras la marca 0x03 o 0xff no se
+  importa (d); y una v8 en claro, que sin clave se importa, con la frase tampoco (e). Con el arreglo pasa, sin avisos; con el código de antes —el
+  falsador, M0 abajo— cae en (a): «CRITICO: (a) con la frase se importo una instantanea en claro:
+  alice tiene Some(999999)».
+- **La capa entera**: 493 pasan, 0 fallan, 7 ignorados y 0 avisos (146 s de tests), y el nuevo entre ellos,
+  sobre el §816 de antes de los §839 a §842; sobre esta base, con sus tests, 497.
+- **Los mutantes**, sobre copias, cada uno restaurado y comprobado con su sha256: caen los cinco. El código de antes (M0), en (a);
+  leer como en claro una marca que no es de ninguna (M3), en (d); otra variante de error con el mismo
+  texto (M4), en (a); rehusar sólo con una clave sin fijar (K1), en (b); y rehusar sólo la v9 (V1), en
+  (e). En la verificación cayeron además, con el test de entonces, el texto sin «en claro», rehusar
+  también sin clave —en (c)—, intentar descifrar la `0x00` y exportar en claro con clave.
+- **Las herramientas** del bucle del canon, más `check_vectores`, `check_catalogo`, `check_tests` y
+  `check_modulos`, en 0, con este asiento en su sitio; `check_tests` cuenta 2008 tests declarados.
+
+**Lo que pidió la verificación y se hizo.** Que el texto del error no mandara a `import_snapshot` a
+quien encuentra una en claro sin avisarle de que puede ser la puesta por otro; que la 3.16 dijera el
+alcance entero —custodios, gobernanza y topes, no sólo saldos—; que el test cazara tres mutantes que
+pasaban —rehusar sólo con una clave sin fijar, rehusar sólo la v9, leer como en claro una marca
+desconocida— y que atara la variante del error y la vía que nombra; la marca en la línea de la cola
+de retiradas de `snapshot.rs`; «sin abrir ni parsear el cuerpo», que es lo cierto, en vez de «antes
+de leer el cuerpo»; decir medido lo que se midió de otro libro; y quitar una cita falsa, «la sección
+0 de `PRINCIPIOS.md`», que no trata de fallar cerrado. La misma cita la llevaban el RFC-0001 y el
+asiento del §816, que aún no estaban en `main`, y se quitó de los dos antes de entregarlos.
+
+**Contadores.** La capa, 496 -> 497. TOTAL DE SELLO 1848 -> 1849 y CON LARGOS 1985 -> 1986, en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; las «1364 declarados» no se tocan; `check_tests` 2007 ->
+2008. La cifra de la capa, en `ARQUITECTURA.md` (dos veces, y la nota del §814, con marca), la misma nota
+de `CONTRIBUTING.md`, con marca, `doc/INSTITUCIONAL.md`,
+`doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`. El `BACKLOG.md` no abre ni cierra ninguna
+entrada: 44 abiertas y 86 resueltas.
+
+**Lo que NO hace.** `import_snapshot` sigue importando una en claro, y quien la llama tiene que saber
+de dónde sale. La importación con clave no ata la instantánea a un libro ni a un momento: una cifrada
+con la misma frase se importa aunque sea de otro libro (medido fuera del árbol, en la verificación:
+la de otro libro, en el sitio de la buena, da Ok con sus saldos) o de antes (deducido: lo que el
+cifrado autentica es la clave que la frase deriva con la sal de su cabecera, no cuál de las
+instantáneas selladas con ella es). Tampoco compara los custodios, la gobernanza ni los topes de una
+cifrada con los de nadie: quien restaura recibe los que se sellaron. La 121 del `BACKLOG.md` sigue
+abierta hasta su sello: una capa importada con clave y vuelta a exportar sale en claro, y desde este
+sello esa copia ya no se importa con clave; falla cerrado, pero quien encadene importar, exportar e
+importar ve un error que antes no veía. Una instantánea cifrada que no abre con la frase se sigue
+mostrando como «LEDGER CORRUPTO: la raiz reconstruida de 'dato cifrado: contrasena incorrecta o
+manipulacion' no coincide con la guardada»: el texto engaña y queda como estaba. No mide quién, fuera
+del árbol, llama a la función.
