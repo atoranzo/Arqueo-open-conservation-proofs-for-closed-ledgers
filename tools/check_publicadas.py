@@ -239,8 +239,9 @@ MINIMO_RFC_G = 21
 #           :141, antes de que ganara la subida de congelados y las longitudes medidas;
 #        b) con los KAT del fork, KAT_FORK: los 18 asserts de `mod tests` de security.rs con lote
 #           lineal, valores de la funcion real -el canon corre esos tests en el nivel sello, los
-#           49 de upstream (tools/canon.sh:123)-, fuera del regimen de produccion: extension
-#           cuadratica y cubica, blowup 2 a 16, plegado 2 a 8, traza de 2^8 a 2^22 filas;
+#           49 de upstream (la fila winter-air de tools/canon.sh; ⚠️ §854: decia :123)-, fuera
+#           del regimen de produccion: extension cuadratica y cubica, blowup 2 a 16, plegado 2 a
+#           8, traza de 2^8 a 2^22 filas;
 #        c) ANCLADA a su fuente, y SOLO en lo que aqui se dice. Las anclas son lo UNICO de este
 #           gate que lee el CODIGO del fork, crates/winter-air/src/ -a) compara la replica con
 #           constantes de los tests, y b), con KAT_FORK congelado; F.2 lee la prosa de los README
@@ -318,9 +319,9 @@ MINIMO_RFC_G = 21
 # esos ficheros actualiza CODIGO_FORMULA y CABLEADO en el MISMO sello. Que la replica siga siendo la
 # funcion NUEVA no lo dicen a) ni b), que no leen el fork y saldrian verdes igual: lo dicen los
 # tests de Rust que el canon corre en el nivel sello, los del §697 y el §708 en zk-ssl-air y los
-# 49 de upstream en winter-air (tools/canon.sh:122-123). Si cambian los asserts de `mod tests` de
-# security.rs, se copian otra vez a KAT_FORK; si cambia la formula, cambia la replica, y las cifras
-# publicadas con su asiento.
+# 49 de upstream en winter-air (las filas zk-ssl-air y winter-air de tools/canon.sh; ⚠️ §854:
+# decia :122-123). Si cambian los asserts de `mod tests` de security.rs, se copian otra vez a
+# KAT_FORK; si cambia la formula, cambia la replica, y las cifras publicadas con su asiento.
 #
 # Reglas de F.2, declaradas ANTES de mirar:
 #   - la unidad es la FRASE: un parrafo unido y cortado en punto o punto y coma ante mayuscula;
@@ -1002,9 +1003,10 @@ ANCLAS_LONGITUD = (
 )
 # F.1 b): los KAT del fork, los `assert_eq!` de `mod tests` de security.rs con lote LINEAL en las
 # dos fases, el unico que la replica sabe. Valores de la funcion real: el canon corre esos tests en
-# el nivel sello (tools/canon.sh:123). CONGELADOS aqui, copiados en el §796: la linea es la de su
-# assert hoy, y solo sirve para encontrarlo. (linea, cifra, valor, consultas, blowup, molienda,
-# grado de la extension, plegado, resto, log2 de la longitud de la traza)
+# el nivel sello (la fila winter-air de tools/canon.sh; ⚠️ §854: decia :123). CONGELADOS aqui,
+# copiados en el §796: la linea es la de su assert hoy, y solo sirve para encontrarlo. (linea,
+# cifra, valor, consultas, blowup, molienda, grado de la extension, plegado, resto, log2 de la
+# longitud de la traza)
 KAT_FORK = (
     (391, "udr", 100, 119, 4, 20, 2, 2, 127, 20),
     (392, "ldr", 69, 119, 4, 20, 2, 2, 127, 20),
@@ -1729,10 +1731,11 @@ def _codigo(src):
     return out
 
 
+# ⚠️ §854: el remedio citaba las dos filas por linea, :122-123, las suyas en el §796.
 REMEDIO_FORMULA = ("si cambio la formula, cambia la replica (y KAT_FORK, si cambian los "
                    "asserts); si solo su forma (rustfmt, migracion), el ancla se actualiza en el "
                    "MISMO sello, con los tests de Rust del canon en verde "
-                   "(tools/canon.sh:122-123)")
+                   "(las filas zk-ssl-air y winter-air de tools/canon.sh)")
 
 
 def _donde(codigo, bloque, sitios, veces):
@@ -2773,8 +2776,10 @@ def main():
         print("  es del codigo; uno NIVEL o TABLA, del documento. Un FORMULA tras un rustfmt")
         print("  o una migracion del fork que no cambia la formula se arregla actualizando")
         print("  CODIGO_FORMULA o CABLEADO en el MISMO sello que toco el fork; que la")
-        print("  replica siga siendo la funcion lo dicen los tests de Rust del canon")
-        print("  (tools/canon.sh:122-123), no los verdes REPLICA y KAT de aqui.")
+        print("  replica siga siendo la funcion lo dicen los tests de Rust del canon, los")
+        # ⚠️ §854: citaba las dos filas por linea, :122-123, las suyas en el §796.
+        print("  de las filas zk-ssl-air y winter-air de tools/canon.sh, no los verdes")
+        print("  REPLICA y KAT de aqui.")
         return 1
 
     if fallos_bf:

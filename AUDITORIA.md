@@ -61181,3 +61181,204 @@ El 600 de la fila del cli, que ya decidió (arriba).
 llevaba esto. Su cabecera sigue en 44 abiertas y 86 resueltas. Las marcas «⚠️ §853» en los ficheros
 del commit, sin este asiento, son cero: la nota de la TABLA es crónica, «§853: timeout …», en la
 forma de las de antes, y no corrige nada sellado.
+
+## §854 — las citas por línea a `tools/canon.sh` de `doc/METODO.md`, `doc/blueprint-v2.md`, el RFC-0005 y `tools/check_publicadas.py` pasan a citar la fila, la sección o el bloque: de veinte, dieciocho no caían en su sitio; y la v5 bis de `verificar_citas` mira también esos cuatro ficheros
+
+El commit que lleva este asiento, sobre `5b70f46` (el §853). Toca cuatro ficheros que citaban el
+canon por línea, cada cita con su marca: `doc/METODO.md` (`:33-34`, `:111-112`, `:200`, `:202`,
+`:213-219`, `:221-225`, `:227`, `:230-231`, `:242-243` y `:250-256`), `doc/blueprint-v2.md` (`:399` y
+`:673`, en su misma línea), `spec/rfc/0005-nucleo-congelado.md` (`:186-193`, el párrafo de E4) y
+`tools/check_publicadas.py` (tres comentarios, `:242-244`, `:322-324` y `:1006-1009`, el remedio
+`REMEDIO_FORMULA`, `:1734-1738`, y un mensaje que imprime, `:2779-2782`). Toca
+`tools/verificar_citas.py`: la cabecera de la v5 bis (`:125-133`), la lista `SIN_LINEA_AL_CANON`
+(`:512-516`) y su autotest (`:554-556`). Y este asiento. Ni código de los crates, ni tests, ni
+vectores, ni `tools/canon.sh`, ni `BACKLOG.md`. Lo escribe y lo commitea Claude, en una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a §859).
+
+Del autor es la tarea: las citas por línea rancias a `tools/canon.sh`, una de las cosas menores que
+el autor pidió hacer en una tanda el 2026-10-21. Son las que el §847 dejó en «Lo que NO hace»:
+`doc/METODO.md` en once líneas, `doc/blueprint-v2.md` en dos, el RFC-0005 en una y
+`tools/check_publicadas.py` en cinco. El §847 dejaba al autor si la regla se extiende a
+`doc/METODO.md`, y cuándo: este sello lo propone, y lo extiende también a los otros tres. Se
+deshace quitando cuatro líneas de la lista. La forma de cada cita la propone la sesión. El canon de
+este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este
+asiento en su sitio y sin esta frase: VERDE, 853 s de reloj (de su arranque a su salida) y 662 s de
+tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,04 al empezar. Antes,
+dentro del mismo cerrojo, la sesión tocó con `touch` los 275 `.rs` de `crates/` y de `tools/` (los
+mismos que en el §853: este sello no añade ninguno), y su log lo registra. Las 19 filas del nivel,
+en su pin, con 1853 tests que pasan (la suma de la columna «pasan»); la de `zk-ssl-air`, en 13 s; la
+puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (50 s)»; `check_tests`
+en 2012 y 20 instrumentos; `check_modulos` en 207; las once herramientas del bucle «2 ter», con la
+v5 bis de `verificar_citas` ya sobre los ocho ficheros; la puerta de los vectores, en 508 ficheros y
+1017 líneas; `check_catalogo`; el paquete, con «89 de 89 entradas dicen lo que deben (78 .json, 89
+con entrada)»; el cable, en 27 de 27; la segunda implementación, con el paquete en 89 de 89, las
+otras cinco familias en 17, 17, 22, 34 y 27, y sus pares STARK en 34 de 34; el «3 duodecies», con la
+cadena en 24 de 24 y el cable de la segunda en 27 de 27; y el artefacto reproducible, con el binario
+`3a01451fb51204ac`, los manifiestos con el paquete en 89/89, y el tarball `40559b8a733a6c24`. Corrió
+con un `TMPDIR` propio y vacío, y al acabar no quedaba nada en él.
+
+**De dónde sale.** El fichero del canon crece por encima de lo que se cita: la cabecera, la tabla,
+cuyas notas se alargan sello a sello, y los bloques que entran. Una cita por línea se queda atrás
+sin que nada lo vea. El §847 lo cerró en cuatro documentos vivos; en estos cuatro seguía abierto.
+
+**Medido**, en este orden, sobre `5b70f46`:
+
+1. `git grep -nE 'canon\.sh`?:[0-9]' 5b70f46 -- ':!AUDITORIA.md'`: 66 líneas en 14 ficheros. En los
+   cuatro de este sello, 19 líneas con 20 citas: `doc/METODO.md` 11 (con 12 citas: la `:214` lleva
+   dos), `doc/blueprint-v2.md` 2, `spec/rfc/0005-nucleo-congelado.md` 1 y
+   `tools/check_publicadas.py` 5.
+2. Qué citaba cada una cuando se escribió, con `git log -S'<cita>'` sobre el fichero que la lleva y
+   `git show <commit>:tools/canon.sh`, y qué hay hoy en esa línea, con `sed -n`:
+   - `tools/check_publicadas.py`, `:123` (dos veces) y `:122-123` (tres), del §796 (`12495dd`): la
+     fila `winter-air`, y las filas `zk-ssl-air` y `winter-air`. Hoy la `:122-123` son
+     `BANCOS_FILE` y `CONSERVADOS_FILE`; las dos filas están en la `:145-146`.
+   - `doc/blueprint-v2.md:399` y `:673`, `:150-153`, del §637 (`430c4f8`): la función
+     `miembros_del_workspace`, con su `sed`. Hoy son las filas `nova-experiment`,
+     `halo2-experiment`, `plonk-experiment` y `zk-core`. La función está en la `:183-186`, y desde
+     el §833 llama a `tools/miembros.py`.
+   - `spec/rfc/0005-nucleo-congelado.md:186`, `:291-296`, del §405 (`8932567`): el arranque del
+     bloque «3 bis · conformidad del PAQUETE», el que corría el binario contra el manifiesto. Hoy es
+     el bucle de nombres del bloque «0 · COHERENCIA»; el «3 bis» empieza en la `:626`.
+   - `doc/METODO.md`, diez del §793 (`8e78740`) y dos del §801 (`f0cc2c5`). Siguen en su sitio
+     dos: `:2-6`, la cabecera («La fuente unica»), y `:8-20`, la lista de órdenes (que hoy sigue
+     hasta la `:25`, con `--conservados`). No las otras diez: «Como se actualiza un pin», de `:77-79`
+     a `:99-101`; «2 quater», de `:343-352` a `:434-443`, su cabecera y su comentario; «Los TRES niveles», de `:49-60` a
+     `:54-65`; «El nivel `--completo` NO lo fuerza nadie», de `:62-67` a `:67-72`; el bloque «lo que
+     cubre el nivel --completo», de `:134-146` a `:157-169`, y la `:134-146` cae hoy en la tabla;
+     «Lo que lo hace ROBUSTO», de `:22-47` a `:27-52`; «2 ter», de `:401-430` a `:403-432`; su
+     comentario «hay que mirar algo», de `:413-419` a `:415-421`; «Los bancos, tampoco», de `:69-75`
+     a `:74-80`; y el bloque «§786 · los bancos compilan con --locked», de `:413-416` a `:504-507`.
+
+   De las 20 citas, 18 no caían en su sitio.
+3. Las otras líneas del punto 1 no son de este sello: las cuatro «Fuentes:» de
+   `doc/ecst/VERIFICACION.md`, de 71c5aad; las 36 de `doc/ecst/borrador/`, generadas; la de
+   `BACKLOG.md:4831`, `:723-741`, del §861, que sigue en su sitio; la de `tools/conservados.sh:23`,
+   que cita la línea de un commit, `41f765d:tools/canon.sh:453`; y las cinco de
+   `tools/verificar_citas.py`, el autotest de la v5 bis.
+4. `git grep -nE '(METODO|blueprint-v2|0005-nucleo-congelado)\.md`?:[0-9]|check_publicadas\.py`?:[0-9]'`,
+   sin `AUDITORIA.md`: fuera de `doc/ecst/`, `BACKLOG.md:1637` cita `doc/blueprint-v2.md:388`,
+   `tools/check_publicadas.py` cita `doc/blueprint-v2.md:308`, `:327` y `:557`, y
+   `doc/integracion-vertical-evaluacion.md:50` cita el RFC-0005 en la `:26`. Las de `doc/ecst/`
+   citan el RFC-0005 en la `:3-18` y `tools/check_publicadas.py` en la `:37-49`. Todas quedan por
+   encima de lo que este sello toca: `doc/blueprint-v2.md` cambia en su misma línea, y en los otros
+   ficheros sólo se mueven líneas de debajo.
+5. `python3 tools/verificar_citas.py`, con la regla nueva y los cuatro ficheros de `5b70f46`: exit 1,
+   19 CITA POR LINEA AL CANON, una por cada línea del punto 1. Con este sello: exit 0.
+
+**Qué cambia.** Cada cita pasa a nombrar lo que cita: la fila («la fila winter-air de
+tools/canon.sh»), la sección de la cabecera («Lo que lo hace ROBUSTO, y no es la tabla») o el bloque
+(«el bloque «2 quater» de `tools/canon.sh`»), con el nombre que lleva en el fichero. La marca dice
+qué línea citaba, sin el nombre del fichero delante, para que la regla no la tome por cita. En
+`tools/check_publicadas.py` cambian también dos textos que imprime: el remedio de un ROJO FORMULA y
+el pie de un ROJO de F.1. La marca va en un comentario encima, y no se imprime. En el RFC-0005, el
+párrafo de E4 se reparte en ocho líneas, una más. En `doc/METODO.md`, dos párrafos se reparten otra
+vez: el del bucle, hasta su marca del §801, que se queda en las líneas de antes, y el de los bancos.
+
+**La regla.** `SIN_LINEA_AL_CANON` gana cuatro ficheros, enteros: `doc/METODO.md`,
+`doc/blueprint-v2.md`, `spec/rfc/0005-nucleo-congelado.md` y `tools/check_publicadas.py`. En el
+`.py` mira las líneas como texto: los comentarios y las cadenas. La función y la prueba de vida son
+las del §847: cada uno tiene que nombrar `tools/canon.sh` al menos una vez, y lo nombran en 19, 5,
+5 y 6 líneas. El autotest gana un caso de lo que no es cita: la cita por fila y la marca de un comentario
+de `tools/`, sin tilde, «(la fila winter-air de tools/canon.sh; ⚠️ §854: decia :123)-». La
+cabecera de la regla dice la lista nueva, y su ceguera, con marca, ya no nombra estos cuatro.
+
+**Mutantes**, sobre copias de los ficheros que sigue git, con lo de este sello sin commitear, en el
+directorio de la sesión, con la herramienta de la copia y la copia como raíz:
+
+- M1, «(`tools/canon.sh:77-79`;» repuesto en `doc/METODO.md:33`: exit 1, CITA POR LINEA AL CANON
+  en la `:33`.
+- M2, «`tools/canon.sh:150-153`» repuesto en `doc/blueprint-v2.md:673`: exit 1, en la `:673`.
+- M3, «`tools/canon.sh:291-296` ya corre» repuesto en el RFC-0005: exit 1, en la `:186`.
+- M4, «"(tools/canon.sh:122-123)"» repuesto en `REMEDIO_FORMULA`: exit 1, en la `:1738`.
+- M5, «(tools/canon.sh:123;» repuesto en el comentario de `KAT_FORK`: exit 1, en la `:1006`.
+- M6, el patrón de `linea_a()` aflojado de «`?:\d» a «.{0,40}?:\d» tras el nombre: exit 1, el caso
+  nuevo del autotest («el patron toma por cita por linea …») y siete líneas del árbol que llevan una
+  marca o una cita por bloque junto al nombre.
+- M1c, el control de M1: lo mismo, con `doc/METODO.md` quitado de la lista: exit 0. A M1 lo mata la
+  extensión.
+
+Vivos, declarados: V1, «# (tools/canon.sh:123)» en `tools/check_cifras.py`, fuera de la lista:
+exit 0. V2, «la línea 100 de `tools/canon.sh`» en `doc/METODO.md`: exit 0, sólo la forma
+«:<número>», como en el §847. V3, `tools/check_publicadas.py` quitado de la lista: exit 0, y el
+resumen baja de 8 ficheros a 7, como el V5 del §847. V4, «(`tools/canon.sh:8-20`)» dentro de un
+bloque de numeración vieja en `doc/METODO.md`: exit 0, como manda la v4 R3. Las copias, el
+conductor y sus salidas se borraron al acabar.
+
+Sobre `5b70f46` con este sello, salen con 0 las once herramientas del bucle «2 ter»,
+`check_vectores --desde 378e1fa` y `check_catalogo`; también `check_tests` y `check_modulos`. Diez
+de las once dan la misma salida, byte a byte, sobre `5b70f46` y con este sello (`cmp`).
+`verificar_citas` cambia en tres líneas: la de la v5 bis pasa de «0 · 4 ficheros» a «0 · 8
+ficheros», con los cuatro nuevos; la del registro (v4) cuenta este asiento, de 785 encabezados, 8657
+citas y 62 a números reservados a 786, 8696 y 63; y la de la v5, en `AUDITORIA.md`, que está
+excluido, pasa de 18 a 20 con las dos citas por línea de este asiento a `BACKLOG.md`.
+
+**Correcciones**, sobre los ficheros STAGED de este commit:
+
+1. `doc/METODO.md:33-34`: «(`tools/canon.sh:77-79`)» pasa a la sección «Como se actualiza un pin»,
+   con «⚠️ §854: decía `:77-79`, y la cabecera creció por encima».
+2. `doc/METODO.md:111-112`: «`tools/canon.sh:343-352`, «2 quater»» pasa a «el bloque «2 quater» de
+   `tools/canon.sh`», con «⚠️ §854: decía `:343-352`, y el bloque bajó».
+3. `doc/METODO.md:200`, `:202` y `:213-219`: las cinco citas de la sección 6 hasta ahí (`:2-6`,
+   `:8-20`, `:49-60`, `:62-67` y `:134-146`) pasan a la cabecera, su lista de órdenes, la sección
+   «Los TRES niveles» y el bloque «lo que cubre el nivel --completo», con una marca al final del
+   párrafo que las enumera.
+4. `doc/METODO.md:221-225`: «(`tools/canon.sh:22-47`)» pasa a la sección «Lo que lo hace ROBUSTO, y
+   no es la tabla», con «⚠️ §854: decía `:22-47`, la del §793, y la sección bajó cinco líneas».
+5. `doc/METODO.md:227`, `:230-231` y `:242-243`: ««2 ter», `tools/canon.sh:401-430`» y
+   «`tools/canon.sh:413-419`» pasan al bloque «2 ter» y a su comentario, con «⚠️ §854: las otras dos
+   también: decían `:401-430` y `:413-419`» tras la marca del §810, que ya pasó a bloque la tercera.
+6. `doc/METODO.md:250-256`: «`tools/canon.sh:69-75`» y «`tools/canon.sh:413-416`» pasan a «Los
+   bancos, tampoco» y al bloque «§786 · los bancos compilan con --locked», con su marca.
+7. `doc/blueprint-v2.md:399`, la celda de ARQ-11: «`tools/canon.sh:150-153`» pasa a «la función
+   `miembros_del_workspace` de `tools/canon.sh`», con «⚠️ §854: decía `:150-153`; desde el §833
+   llama a `tools/miembros.py`».
+8. `doc/blueprint-v2.md:673`, el corte 2: la misma cita, con «⚠️ §854: decía `:150-153`; lo
+   estrechó el §833, y hoy la función llama a `tools/miembros.py`, el único lector de `members`».
+9. `spec/rfc/0005-nucleo-congelado.md:186-188`: «`tools/canon.sh:291-296` ya corre» pasa a «El
+   bloque «3 bis · conformidad del PAQUETE» de `tools/canon.sh` ya corre», con «⚠️ §854: decía
+   `:291-296`, sus líneas en el §405; desde E4, el bloque llama al arnés, `tools/conformidad.sh`».
+10. `tools/check_publicadas.py:242-244`, F.1 b): «(tools/canon.sh:123)» pasa a «(la fila winter-air
+    de tools/canon.sh; ⚠️ §854: decia :123)».
+11. `tools/check_publicadas.py:322-324`, el acoplamiento: «(tools/canon.sh:122-123)» pasa a «(las
+    filas zk-ssl-air y winter-air de tools/canon.sh; ⚠️ §854: decia :122-123)».
+12. `tools/check_publicadas.py:1006-1009`, el comentario de `KAT_FORK`: como la 10.
+13. `tools/check_publicadas.py:1734-1738`, `REMEDIO_FORMULA`: el texto que imprime pasa a «(las
+    filas zk-ssl-air y winter-air de tools/canon.sh)», con la marca en un comentario encima.
+14. `tools/check_publicadas.py:2779-2782`, el pie de F.1: lo mismo, en dos líneas de `print`, con
+    la marca en un comentario entre ellas.
+15. `tools/verificar_citas.py:130-133`, la ceguera de la v5 bis: deja de nombrar `doc/METODO.md`,
+    `doc/blueprint-v2.md` y el RFC-0005, y «los comentarios de `tools/`» pasa a «los demás ficheros
+    de `tools/`», con `BACKLOG.md`, y «⚠️ §854: decía también …».
+
+Las líneas que se mueven: en `doc/METODO.md`, contra `5b70f46`, las de debajo de la 33 bajan una;
+las de debajo de la 222, cinco; las de debajo de la 237, seis; y las de debajo de la 248, ocho. En el RFC-0005, las de debajo de la 192, una. En
+`tools/check_publicadas.py`, las de debajo de la 243, una; las de debajo de la 1007, dos; las de
+debajo de la 1731, tres; y las de debajo de la 2777, cinco. En `tools/verificar_citas.py`, las de
+debajo de la 124, tres; las de debajo de la 129, cuatro; las de debajo de la 507, nueve; y las de
+debajo de la 545, once. `doc/blueprint-v2.md` no mueve ninguna. Lo que el punto 4 encontró queda
+por encima; las citas de `AUDITORIA.md` a estos ficheros son de su fecha.
+
+**Lo que NO hace.**
+
+- No toca `tools/canon.sh`, ni sus líneas: sólo cambia cómo se le cita.
+- No mira `BACKLOG.md`, `doc/ecst/borrador/` ni los demás ficheros de `tools/`. La de `BACKLOG.md`
+  sigue en su sitio hoy; la de `tools/conservados.sh` cita un commit, y no se mueve.
+- No pone `--conservados` en la tabla de órdenes de `doc/METODO.md`, que no la tiene desde el §798.
+- No ve «la línea 100 de `tools/canon.sh`» (V2), ni cierra el V3: quitar un fichero de la lista se
+  ve en el resumen, no es ROJO.
+- No toca las citas por línea de estos ficheros a otros ficheros: `doc/METODO.md` cita
+  `tools/bancos.sh:7-30`, y `doc/blueprint-v2.md`, `Cargo.toml:47` en la misma celda de ARQ-11.
+
+**Lo que es del autor.** Si la v5 bis se queda con los cuatro ficheros nuevos, que el §847 le
+dejaba, y si un `.py` entra en una regla que hasta hoy miraba documentos. Si `--conservados` entra
+en la tabla de `doc/METODO.md`.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2012 tests declarados y 20 instrumentos, y
+`check_modulos` en 207. El total de sello sigue en 1853: la regla es de una herramienta del bucle,
+no un test. `BACKLOG.md` no cambia: su cabecera sigue en 44 abiertas y 86 resueltas. Las marcas «⚠️
+§854» en los ficheros del commit, sin este asiento, están en 19 líneas: 15 corrigen lo sellado
+(seis en `doc/METODO.md`, dos en `doc/blueprint-v2.md`, una en el RFC-0005, cinco en
+`tools/check_publicadas.py` y la de la ceguera en `tools/verificar_citas.py`), y cuatro de
+`tools/verificar_citas.py` son crónica de la regla (la línea de la cabecera que dice la lista nueva,
+el comentario de la lista y dos del autotest), que no corrigen nada.

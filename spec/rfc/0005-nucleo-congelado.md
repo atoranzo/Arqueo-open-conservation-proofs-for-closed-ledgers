@@ -183,13 +183,14 @@ linea, con `tools/cable_respuesta.sh` como adaptador al contrato del mando.
 
 ### E4 — El arnés de conformidad para cualquier binario
 
-`tools/canon.sh:291-296` ya corre el binario del árbol contra cada entrada del MANIFIESTO del
-paquete. E4 saca ese bucle a una herramienta que recibe **la ruta de un binario cualquiera** y
-el MANIFIESTO, y dice por entrada si el rc y el texto coinciden con lo esperado. Es lo que
-convierte E5 en comprobable: el día que exista una segunda implementación, el resultado
-publicable es la salida de ese arnés sobre su binario, no una afirmación. Hasta entonces, el
-arnés sobre el binario de referencia es un resultado publicable por sí mismo: el catálogo
-completo, corrido fuera del canon, por cualquiera.
+El bloque «3 bis · conformidad del PAQUETE» de `tools/canon.sh` ya corre el binario del árbol
+contra cada entrada del MANIFIESTO del paquete (⚠️ §854: decía `:291-296`, sus líneas en el §405;
+desde E4, el bloque llama al arnés, `tools/conformidad.sh`). E4 saca ese bucle a una herramienta
+que recibe **la ruta de un binario cualquiera** y el MANIFIESTO, y dice por entrada si el rc y el
+texto coinciden con lo esperado. Es lo que convierte E5 en comprobable: el día que exista una
+segunda implementación, el resultado publicable es la salida de ese arnés sobre su binario, no una
+afirmación. Hasta entonces, el arnés sobre el binario de referencia es un resultado publicable por
+sí mismo: el catálogo completo, corrido fuera del canon, por cualquiera.
 
 **Desde el §693** el arnés exige, además del código y del texto, la causa: «falla igual» es fallar
 por la misma, y un texto que sólo nombra el sujeto —`edad:`— lo pasaba también quien no verifica

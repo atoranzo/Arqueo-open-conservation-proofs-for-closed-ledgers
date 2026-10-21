@@ -30,7 +30,8 @@ asiento, y ninguna afirmación del repositorio descansa en el conocimiento del m
 Medir antes que afirmar es también la primera regla de `CONTRIBUTING.md` (`CONTRIBUTING.md:10-13`),
 y su sección 1 añade otra, aprendida en el §59.2: toda herramienta declara su cobertura y la
 declaración se comprueba (`CONTRIBUTING.md:24-27`). Un pin del canon se actualiza igual: «Se MIDE
-primero y se edita la tabla despues. Nunca al reves» (`tools/canon.sh:77-79`).
+primero y se edita la tabla despues. Nunca al reves» (`tools/canon.sh`, su sección «Como se
+actualiza un pin»; ⚠️ §854: decía `:77-79`, y la cabecera creció por encima).
 
 **Fuera del paso 4.** Una sesión de Claude Code no propone el bloque: lo ejecuta ella.
 `GENAI.md` §«Fuera del paso 4: la sesión de Claude Code» dice qué cambia, y es esto:
@@ -107,8 +108,8 @@ No se corrige en su sitio lo que no se reescribe:
 - los vectores publicados, que jamás se reescriben: si el cable se rompe, los viejos se conservan
   bajo su versión (`spec/rfc/PROCESO.md` §«Reglas», regla 2), y desde el §692 el canon fija la huella
   de cada uno: se puede añadir un vector, o moverlo con sus mismos bytes a `spec/vectors/<versión>/`,
-  y modificarlo o borrarlo es ROJO (`tools/check_vectores.py`; `tools/canon.sh:343-352`, «2
-  quater»);
+  y modificarlo o borrarlo es ROJO (`tools/check_vectores.py`; el bloque «2 quater» de
+  `tools/canon.sh`; ⚠️ §854: decía `:343-352`, y el bloque bajó);
 - y los informes del autor con la aceptación pendiente, que «no se reescriben ni se marcan sin él»
   (§710, «Lo que NO hace», sobre `doc/ecst/`).
 
@@ -196,9 +197,9 @@ con qué regla: es lo que la entrada 88 pide declarar, y este documento no lo de
 ## 6. El canon y los bancos
 
 **Una fuente.** `tools/canon.sh` es la única fuente de las compuertas desde el §224; antes, cada
-bloque las reescribía a mano (`tools/canon.sh:2-6`).
+bloque las reescribía a mano (la cabecera de `tools/canon.sh`, «La fuente unica»).
 
-**Los niveles** (`tools/canon.sh:8-20`):
+**Los niveles** (la lista de órdenes de la cabecera de `tools/canon.sh`):
 
 | orden | qué corre |
 |---|---|
@@ -209,23 +210,27 @@ bloque las reescribía a mano (`tools/canon.sh:2-6`).
 | `bash tools/canon.sh --bancos` | los bancos, todos (`tools/bancos.sh`); ⚠️ §804: menos el de los cortes, que se corre aparte |
 
 Son tres niveles porque meter `zk-core` en cada sello «garantizaria que alguien acabe saltandose la
-compuerta, y una compuerta que se salta no protege» (§225, `tools/canon.sh:49-60`). El `--completo`
-no lo fuerza nadie: deja constancia en `.canon/ultimo-completo`, y toda invocación dice cuándo fue y
-cuántos sellos han pasado (`tools/canon.sh:62-67`); qué rutas lo vencen, `tools/canon.sh:134-146`
-(§284).
+compuerta, y una compuerta que se salta no protege» (§225; `tools/canon.sh`, «Los TRES niveles, y
+por que tres»). El `--completo` no lo fuerza nadie: deja constancia en `.canon/ultimo-completo`, y
+toda invocación dice cuándo fue y cuántos sellos han pasado (la misma sección); qué rutas lo
+vencen, el bloque «lo que cubre el nivel --completo, y nadie mas» de `tools/canon.sh` (§284).
+⚠️ §854: las cinco citas de esta sección hasta aquí iban por línea: `:2-6`, `:8-20`, `:49-60`,
+`:62-67` y `:134-146`, las del §793. Las dos primeras seguían en su sitio; las otras tres, no: la
+cabecera creció por encima, y `:134-146` caía en la tabla. Se citan por su sección o su bloque.
 
-**Lo que lo hace robusto** (`tools/canon.sh:22-47`): los miembros del workspace se leen de
-`Cargo.toml`, y un crate sin fila pone la compuerta roja; los pines son exactos, no mínimos; no se
-para en el primer fallo; cada crate tiene su timeout; ningún `.rs` de `src/` queda sin declarar; y
-todo `cargo` de los niveles corre con `--locked` (§694).
+**Lo que lo hace robusto** (`tools/canon.sh`, «Lo que lo hace ROBUSTO, y no es la tabla»): los
+miembros del workspace se leen de `Cargo.toml`, y un crate sin fila pone la compuerta roja; los
+pines son exactos, no mínimos; no se para en el primer fallo; cada crate tiene su timeout; ningún
+`.rs` de `src/` queda sin declarar; y todo `cargo` de los niveles corre con `--locked` (§694).
+⚠️ §854: decía `:22-47`, la del §793, y la sección bajó cinco líneas.
 
-**El bucle de herramientas** («2 ter», `tools/canon.sh:401-430`): las de la lista de su `for`
+**El bucle de herramientas** (el bloque «2 ter» de `tools/canon.sh`): las de la lista de su `for`
 —`check_cifras`, `check_figures`, `check_columns`, `check_constraint_layout`, `verificar_citas`,
 `check_dominios`, `check_publicadas`, `check_nucleo`, `check_techo`, `check_curvas` y
-`check_superficie`—, a pin cero. Y estar en el bucle no basta, «hay que mirar algo» (§695,
-`tools/canon.sh:413-419`): `check_columns` corría ahí sin mirar ningún `.rs` y decía verde, y desde
-el §695 su universo y su prueba de vida viven en la herramienta. Fuera del bucle, cada una en su
-bloque, van otras puertas; entre ellas, los vectores (`tools/check_vectores.py`, «2 quater», que
+`check_superficie`—, a pin cero. Y estar en el bucle no basta, «hay que mirar algo» (§695, en el
+comentario del mismo bloque): `check_columns` corría ahí sin mirar ningún `.rs` y decía verde, y
+desde el §695 su universo y su prueba de vida viven en la herramienta. Fuera del bucle, cada una en
+su bloque, van otras puertas; entre ellas, los vectores (`tools/check_vectores.py`, «2 quater», que
 sale del bucle «para que cada ROJO entre con su nombre»), el catálogo de rechazos
 (`tools/check_catalogo.py`, «2 quinquies»), la conformidad del kit en sus familias («3 bis
 familias»), la segunda implementación (`tools/segunda/`, «3 duodecies») y el artefacto («3 ter»).
@@ -234,18 +239,21 @@ El veredicto es VERDE, o ROJO con la lista de fallos (el bloque «veredicto» de
 `:608-621`, las del §793; el fichero creció por delante del bucle y en el §799 ya estaban donde
 dicen ahora, con el mismo texto. ⚠️ §810: la tercera, la del veredicto, decía `:697-710`; el §804
 ya la había corrido dos líneas, y las catorce que el §810 mete en el «3 duodecies» la corren otras
-catorce: se cita por su bloque.
+catorce: se cita por su bloque. ⚠️ §854: las otras dos también: decían `:401-430` y `:413-419`, y
+el bloque ya había bajado dos líneas.
 
 **Los bancos.** `tools/banco_*.sh` arrancan el nodo, el testigo y el mando reales, y por eso viven
 fuera de los niveles (§582). `tools/bancos.sh` los corre todos: la lista se lee del directorio, cada
 banco tiene su timeout, el árbol tiene que quedar limpio antes y después de cada uno, y dos modos
 largos quedan fuera, declarados (`tools/bancos.sh:7-30`). Tampoco los fuerza nadie: cada pasada
 verde deja constancia en `.canon/ultimo-bancos`, y toda invocación del canon dice cuándo fue y si lo
-que ejercen cambió desde entonces (`tools/canon.sh:69-75`). Desde el §786 compilan con `--locked`, y
-una puerta del canon lo exige por llamada (`tools/canon.sh:413-416`). ⚠️ §804: los corre todos menos
-`tools/banco_cortes.sh`, que el punto 5 de `tools/bancos.sh` deja fuera por su nombre: repite la
-medida del §699 sobre seis commits fijos de la historia, no mide el árbol del sello, y compila seis
-veces. Se corre aparte, y cada pasada de los demás lo nombra.
+que ejercen cambió desde entonces (`tools/canon.sh`, «Los bancos, tampoco»). Desde el §786 compilan
+con `--locked`, y una puerta del canon lo exige por llamada (el bloque «§786 · los bancos compilan
+con --locked» de `tools/canon.sh`; ⚠️ §854: las dos citas decían `:69-75` y `:413-416`, y ninguna
+caía ya en su sitio). ⚠️ §804: los corre todos menos `tools/banco_cortes.sh`, que el punto 5 de
+`tools/bancos.sh` deja fuera por su nombre: repite la medida del §699 sobre seis commits fijos de la
+historia, no mide el árbol del sello, y compila seis veces. Se corre aparte, y cada pasada de los
+demás lo nombra.
 
 ## 7. Quién decide qué, en lo que hoy está escrito
 

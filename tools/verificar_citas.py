@@ -122,11 +122,15 @@ ninguna caía en su sitio.
       y exige que la función que mira el árbol vea solo la suya. Cada fichero declarado tiene que
       nombrar `tools/canon.sh` en su ámbito al menos una vez: una declaración que no mira nada es
       ROJO, y un fichero declarado que no existe y una lista vacía, también.
+  ⚠️ §854: la lista gana `doc/METODO.md`, `doc/blueprint-v2.md`, el RFC-0005 y
+  `tools/check_publicadas.py`, enteros: en diecinueve líneas citaban el canon por línea, veinte
+  citas y dieciocho rancias, y pasan a citar la fila, la sección o el bloque.
   Ceguera declarada. Solo los ficheros de la lista y su ámbito. Las «Fuentes:» de
   `doc/ecst/VERIFICACION.md` siguen siendo de 71c5aad, y las citas por línea al canon de
-  `doc/METODO.md`, `doc/blueprint-v2.md`, el RFC-0005, `doc/ecst/borrador/` y los comentarios
-  de `tools/` no se miran. Solo la forma «:<número>». Y quitar un fichero de la lista no es
-  ROJO: se ve en la cuenta del resumen, como en la v3 bis.
+  `doc/ecst/borrador/`, `BACKLOG.md` y los demás ficheros de `tools/` no se miran (⚠️ §854:
+  decía también `doc/METODO.md`, `doc/blueprint-v2.md` y el RFC-0005, y «los comentarios de
+  `tools/`»). Solo la forma «:<número>». Y quitar un fichero de la lista no es ROJO: se ve en
+  la cuenta del resumen, como en la v3 bis.
 
 v6 (§805): el número que falta. Un sello escribe «§» y la letra N como marcador del número
 que aún no tiene, y lo numera al sellar; el §802 se publicó con 91 líneas sin numerar, en
@@ -505,6 +509,11 @@ SIN_LINEA_AL_CANON = {
     "README_EN.md": None,
     "RESUMEN_EJECUTIVO.md": None,
     "doc/ecst/VERIFICACION.md": "- **Lo que se puede afirmar:**",
+    # ⚠️ §854: cuatro más, enteros; en el .py, los comentarios y los mensajes que imprime.
+    "doc/METODO.md": None,
+    "doc/blueprint-v2.md": None,
+    "spec/rfc/0005-nucleo-congelado.md": None,
+    "tools/check_publicadas.py": None,
 }
 
 
@@ -542,7 +551,9 @@ def autotest_v5bis():
         if not pat.search(si):
             mal.append(f"v5 bis: el patron no ve {si}")
     for no in ("la fila `zk-ssl` de la tabla de `tools/canon.sh`", "decía `:128-130`, `:154-158`",
-               "bash tools/canon.sh --sello", "`tools/canon.sh`: la tabla"):
+               "bash tools/canon.sh --sello", "`tools/canon.sh`: la tabla",
+               # ⚠️ §854: la cita por fila y la marca de un comentario de tools/, sin tilde
+               "(la fila winter-air de tools/canon.sh; ⚠️ §854: decia :123)-"):
         if pat.search(no):
             mal.append(f"v5 bis: el patron toma por cita por linea {no}")
     return mal
