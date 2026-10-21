@@ -413,7 +413,7 @@ sería faltar al principio de transparencia.
   circuitos, **229 del nodo**, 34 de la ceremonia, 17 de liquidación, **191
   del verificador independiente**, **153 del testigo**, y los del SDK, el
   cable, el puente ISO, el árbol del medio y el fork de winterfell—,
-  **1996 contando los pines de `--largo` y `--completo`**, y **1364 declarados**.
+  **1999 contando los pines de `--largo` y `--completo`**, y **1364 declarados**.
   0 fallos y 21 warnings **pinchados** (no crecen). Cada propiedad de
   seguridad con test discriminante.
 

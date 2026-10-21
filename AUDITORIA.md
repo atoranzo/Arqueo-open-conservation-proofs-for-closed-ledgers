@@ -63540,3 +63540,530 @@ el ledger», que para una capa importada es la clave de la instantánea; no se m
 cifrado, y la clave es la de la capa.
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §822 — la 75, cerrada: el `SimpleMerkleTree` de `zk-core` deja de rellenar hasta 2^20 hojas y da la raíz y los caminos del denso, con la raíz atada por un KAT sacado de él y los bits por su índice; `iso-bridge` pasa de ~55 s a ~4 y la biblioteca de `zk-core`, de 3.546 s a menos de un minuto, y «eso toca el circuito» no era cierto
+
+El commit que lleva este asiento, sobre el §821. Toca `crates/zk-core/src/merkle.rs`: el árbol,
+disperso, con su comentario corregido con marca y lo que decía, y tres tests nuevos en su módulo de
+tests; la 75 del `BACKLOG.md`, cerrada, con su nota, el tachado anotado de «eso toca el circuito»,
+la nota del `grep` y de las líneas que ya no rellenan, y la cabecera, recontada; en
+`tools/canon.sh`, el pin de `zk-core` con su crónica y su nota de tiempos, una nota en la fila de
+`iso-bridge`, una marca en dos líneas de la cabecera y un párrafo al pie, sin mover ninguna línea de
+arriba; una marca en la cabecera de `crates/settlement-layer/src/sparse_tree.rs` y otra al final de
+una línea de `ARQUITECTURA.md`, que decían del árbol de `zk-core` lo que este sello cambia; la cifra
+del total con largos de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y este asiento. Ni vectores, ni
+el kit, ni el `Cargo.lock`, ni el circuito, ni `TREE_DEPTH`. No toca `crates/zk-ssl-guardian`, ni la
+zona de la migración de Winterfell, ni `crates/zk-ssl` —ni `persistence.rs` ni `snapshot.rs`—, ni
+los árboles densos de `crates/halo2-experiment`, que se declaran abajo.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión lo escribió y lo revisó en
+su carril: sacó el KAT del árbol denso y escribió el disperso; un agente le añadió dos tests, corrió
+los mutantes y midió los tiempos antes y después, y otro escribió los documentos. Tres revisiones lo
+leyeron —una, que el disperso dé la raíz y los caminos del denso; otra, los tests; otra, los
+documentos— y pidieron arreglos —que el test atara los bits del camino, un test para el `assert` de
+`build`, la marca de `sparse_tree.rs` y varias frases—, que se hicieron y se volvieron a medir. Todo
+eso se escribió y se revisó sobre el §813 (`4d8017d`), en un árbol de trabajo sin commitear, y el
+carril lo portó después sobre el §817 de antes del rebase (hoy `5fd5212`), que llevaba delante el
+§815 y el §816 de entonces: un agente aplicó su diff, resolvió a mano los choques, que fueron todos
+de cifras, y volvió a medir allí lo barato; dos revisiones de aquel porte pidieron una marca en
+`ARQUITECTURA.md`, que seguía diciendo en presente lo que este sello deja falso; que lo medido allí
+fuera también al árbol, junto a lo de `4d8017d`; que la cita del autor se quedara en la que trae el
+registro; las fechas de dos marcas de `tools/canon.sh`; y varias precisiones del asiento: se
+hicieron. La sesión lo portó luego sobre el §852 de `main`, con el §819, el §820 y el §821 de la
+pila delante (abajo, «El porte, hasta el §852»), luego sobre el §858, con los §853-§858 delante
+también (abajo, «El porte, hasta el §858»), y ahora sobre el §859, con el §859 delante también
+(abajo, «El porte, aquí»). Lo medido en el carril sobre `4d8017d`, lo medido en el carril sobre el
+§817 de antes del rebase, lo medido sobre `378e1fa`, lo medido sobre `7ed7e17` y lo medido aquí van
+por separado.
+
+**El porte, hasta el §852.** Un `cherry-pick -n` del borrador del carril sobre el §821 de entonces,
+el de `378e1fa`. `merkle.rs`, `sparse_tree.rs` y `ARQUITECTURA.md` entraron sin choque. Chocaron
+cinco ficheros, todos por una cifra o por una fila vecina, y se resolvieron a mano sumando sólo lo
+de este sello: la cabecera del `BACKLOG.md`, que allí estaba en 42 abiertas y 88 resueltas y acababa
+su lista en el §820 y el §821; el total con largos de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`,
+que allí estaba en 1996; y, en `tools/canon.sh`, la fila de `iso-bridge`, vecina de la de
+`settlement-layer`, que el §845 alargó con su timeout medido: la de `settlement-layer` se queda como
+la trae `main`, y la de `iso-bridge` lleva la nota de este sello. Después, lo que pedía aquella
+base: el número, §822, en las marcas y en las crónicas; el §817 de antes del rebase, nombrado por su
+commit de `main`, `5fd5212`, en la nota de la 75 y en la nota de tiempos y el pie de
+`tools/canon.sh` —entre aquel commit y `5fd5212`, como entre él y el §821, no cambian
+`crates/zk-core`, `crates/iso-bridge`, `crates/ceremony`, `crates/settlement-prover` ni
+`crates/settlement-layer`, ni el `Cargo.toml` de la raíz ni el `Cargo.lock` (`git diff --stat`,
+vacío para los siete), y los tres sitios dicen que se midió antes del rebase, con el mismo código—;
+la delegación del autor, en la 75 y en este asiento, dicha sin comillas, porque su letra no se puede
+cotejar aquí con su mensaje, y lo que dejó fuera, dicho como de ese mensaje, que el registro no
+trae; «Las líneas», rehecha sobre aquella punta, porque `main` y los §819-§821 traen citas al
+`BACKLOG.md` que este sello corre; la línea del `assert_eq!` que señala `rustfmt`, que es la `:225`,
+y no la `:222` que daba el asiento del carril, que es donde empieza el trozo que `rustfmt` enseña; y
+tres precisiones al texto del carril. En el punto 8, la marca de `ARQUITECTURA.md` va «al final de
+la segunda línea del párrafo», donde decía «al final de esa misma línea», y el `git grep` «solo daba
+la primera línea de ese párrafo», donde decía «solo daba esa línea»: la frase que se marca ocupa dos
+líneas, y la marca va en la segunda. Y en el punto 6 se va su frase de que
+`doc/ecst/VERIFICACION.md` cita por su línea el pin de la capa en `tools/canon.sh`: desde el §847
+cita su fila. El código es el del borrador: de él a este commit, en `merkle.rs` y en
+`sparse_tree.rs`, cambian doce líneas de comentario, y en todas sólo el marcador sin número por
+«§822». Por eso no se corrió `cargo` allí (abajo, «Medido sobre `378e1fa`»).
+
+**Lo que pidieron las revisiones del porte.** Dos revisiones juzgaron el porte sobre el §852, sin
+bloqueantes, y la sesión comprobó contra el árbol cada uno de sus menores. Eran ciertos, y se
+hicieron, estos. Lo que la delegación del autor dejó fuera —H3, H7, los testigos reales y los avisos
+a NLnet— no lo trae el registro, que del autor recoge el encargo de hacerlo todo (el §814, el §816 y
+el §817); la 75 y este asiento lo daban junto a eso sin decir que no viene de allí, y este asiento
+decía que el carril la había dejado en lo que trae el registro: ahora la 75 y «Quién lo decide» lo
+dicen de su mensaje a la sesión, y la historia del carril dice lo que allí se pidió, que la cita del
+autor se quedara en la que trae el registro. «Esta punta», dicho en cuatro frases donde se quería
+decir el §821 —la del `git diff --stat` de «El porte, hasta el §852», la de la cita del §263, la del
+`git grep` de `ARQUITECTURA.md` y la de «Medido sobre `378e1fa`»—, que contra esta punta no valen,
+porque este sello cambia `merkle.rs` y `sparse_tree.rs`: ahora dicen el §821. La crónica de
+`zk-core` en su fila de `tools/canon.sh`, que iba delante de la nota de tiempos del §822, y ahora va
+al final de la fila. La línea 22 del `BACKLOG.md`, la última de la lista de la cabecera, de 110
+columnas frente a las 92 a 99 de las otras: con «y el §822, la 75» queda en 99, sin añadir una
+línea. Que lo de `5fd5212` se midió sobre el §817 de antes del rebase, que la nota de la 75 y
+`tools/canon.sh` no decían, y ahora dicen, en las mismas líneas. Las tres precisiones al texto del
+carril, que «El porte, hasta el §852» no nombraba. Y que el carril no corrió el canon entero, que su
+asiento decía y éste había perdido (abajo, «Lo que NO hace»). Se queda uno, declarado: la nota de la
+75 corre 68 líneas en medio del `BACKLOG.md`, y con ellas once citas de los asientos del §820 y del
+§821 que en el §821 daban su texto (sobre el §858, trece: el porte del §821 suma dos en la 77; sobre
+el §859, las mismas trece). La nota de un cierre va dentro de su entrada, como en el §815, el §840 y
+el §848 de `main` y en el §820 y el §821; llevarla al pie del `BACKLOG.md` la separaría de la 75, y
+«Las líneas» las declara una a una, con su línea nueva. Con los arreglos, las quince herramientas se
+corrieron otra vez, con lo mismo.
+
+**El porte, hasta el §858.** Del §852 al §858 lo llevó un `cherry-pick` sobre el §821 rebasado, que
+entró entero, sin conflicto: en `AUDITORIA.md`, los asientos del §853 al §858 van delante de los de
+la pila, y éste, detrás del del §821, con una línea en blanco entre los dos, baja 1315 líneas: las
+1126 de esos seis y las 53, 64 y 72 que sus portes sumaron a los del §819, el §820 y el §821. De los
+demás ficheros de este sello, los §853-§858 tocan dos, y `git` los juntó sin choque: `BACKLOG.md`,
+donde el §855 rehace en la 77 la cita a la huella del corpus KAT de `xmss`, que pasa de una línea a
+tres (la `:4890-4892` en el §821), por debajo de la `:1951`, desde la que este sello baja 68: allí
+era la `:4958-4960`; y `tools/canon.sh`, donde el §853 rehace la fila `zk-ssl-air`, de 60 a 180 s, y
+el §855 añade su bloque del target detrás de la tabla, antes de los tests, y cambia el binario del
+«3 bis» y de las familias: lejos de las dos líneas de la cabecera y de las filas de `iso-bridge` y
+de `zk-core` que este sello cambia en su sitio, y por encima del pie, detrás del que va el párrafo
+de este sello, que sigue siendo el último. `merkle.rs`, `sparse_tree.rs`, `ARQUITECTURA.md`,
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` no cambian de `378e1fa` a `7ed7e17` (`git diff --stat`,
+vacío), y los trozos de este sello caen en las mismas líneas que sobre el §821 de `378e1fa` (`git
+diff -U0`, comparado: sólo cambian las líneas `index` y la cabecera del trozo del pie de
+`tools/canon.sh`, que entra nueve líneas más abajo, las del bloque del §855); ni las cifras de
+`main` ni los pines cambian del §852 al §858: lo que cambia en la tabla es el timeout de
+`zk-ssl-air`. Lo que las herramientas traen nuevo o más estricto no pide nada de este sello, y en su
+árbol no se arregla nada:
+- el ATADO G de `check_publicadas`, que desde el §856 busca el identificador de modelo en toda la
+  cabecera de cada RFC, hasta su primer «## »: el sello no toca `spec/rfc/`;
+- la v5 bis de `verificar_citas`, que el §854 amplía a `doc/METODO.md`, `doc/blueprint-v2.md`, el
+  RFC-0005 y `tools/check_publicadas.py`: el sello no toca ninguno de los ocho ficheros que mira, y
+  fuera de este asiento no escribe en el árbol ninguna cita por línea a `tools/canon.sh` —sus marcas
+  del canon remiten «al pie», y la 75, `ARQUITECTURA.md` y `sparse_tree.rs` no citan el canon—; y la
+  que `doc/METODO.md` hace desde el §854 a la sección «Los TRES niveles, y por que tres» del canon,
+  por la razón del §225 para los tres niveles, sigue dando esa frase: la marca de este sello en esa
+  sección va en su sitio, en otra línea, la de «el coste es SINTETIZAR el circuito»;
+- `check_publicadas`, que desde el §857 lee de `doc/ecst/VERIFICACION.md` sus 305 líneas «Lo que se
+  puede afirmar» en el ATADO F y en RETIRADAS: el sello no toca la ficha, y ninguna de esas líneas
+  habla del árbol de `zk-core`, de `iso-bridge` ni de la 75, ni cita una línea de lo que este sello
+  mueve (abajo, «Las líneas»);
+- la v3 bis con su mínimo (§858): sus nueve ficheros siguen en la lista, y el sello no toca ninguno;
+- y el §853 y el §855, en el canon, cambian un timeout y caminos, y avisan al empezar si
+  `check_curvas` no podrá leer el árbol: el sello no toca ningún timeout —el de `iso-bridge` sigue
+  en 300 y el de `zk-core` en 3.600—, ni el `Cargo.lock`, y las siete filas que el §853 midió con un
+  núcleo, las de 60 s, no son las suyas.
+Ninguna frase que escribieron los §853-§858 queda falsa con este sello: fuera de sus asientos, que
+narran su commit y no se reescriben, ninguna habla del árbol de Merkle de `zk-core`, de la 75 ni de
+lo que tardan `zk-core` o `iso-bridge`, ni da el total con largos, la cuenta de `check_tests` ni la
+de las casillas del `BACKLOG.md` (`git diff 378e1fa 7ed7e17`, sin `AUDITORIA.md`); de sus citas por
+línea, tres, de los asientos del §854 y del §855 al `BACKLOG.md`, caen en lo que este sello mueve, y
+ya no daban su texto en el §821 (abajo, «Las líneas»). Y las citas que este asiento ya hacía a
+líneas de los asientos del §820 y del §821 se renumeraron, porque esos asientos pasaron detrás de
+los §853-§858 y sus portes los alargaron.
+
+**El porte, aquí.** Del §858 al §859 lo llevó un `cherry-pick` sobre el §821 rebasado, que entró
+entero, sin conflicto: en `AUDITORIA.md`, el asiento del §859 va delante de los de la pila, y éste,
+detrás del del §821, baja 244 líneas: las 152 del §859 y las 23, 34 y 35 que sus portes sumaron a
+los del §819, el §820 y el §821. De los demás ficheros de este sello, el §859 toca dos, y `git` los
+juntó sin choque: `BACKLOG.md`, donde añade dos líneas a la nota del §810 de la 85 (`:763-764`), por
+encima de la 75, que baja dos con todo lo que este sello toca en el fichero —su `:1907` sobre
+`7ed7e17` es aquí la `:1909`—; y `tools/canon.sh`, donde una línea más en el comentario del bloque
+del medio (`:756-757`) baja una el pie, y con él el párrafo de este sello, que sigue siendo el
+último: entra detrás de la `:902`, y no de la `:901`. Fuera de esos dos, los trozos de este sello
+caen en las mismas líneas que sobre el §821 de `7ed7e17` (`git diff -U0`, comparado); `merkle.rs`,
+`sparse_tree.rs`, `ARQUITECTURA.md`, `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` no cambian de
+`7ed7e17` a `212eca2` (`git diff --stat`, vacío), y ni las cifras de `main` ni los pines cambian del
+§858 al §859. Lo que el §859 cambia en `tools/segunda/` y en el canon no lee nada de este sello, y
+ninguna de las quince herramientas cambia con él. Ninguna frase que escribió el §859 queda falsa con
+este sello: fuera de su asiento, ninguna habla del árbol de Merkle de `zk-core`, de la 75 ni de lo
+que tardan `zk-core` o `iso-bridge`, ni da el total con largos, la cuenta de `check_tests` ni la de
+las casillas del `BACKLOG.md`; y las citas de su asiento al `BACKLOG.md`, la `:760` y la `:763-764`,
+y a `tools/canon.sh`, la `:756-757`, quedan fuera de lo que este sello mueve. Las citas que este
+asiento hace a líneas de los asientos del §820 y del §821, y las del `BACKLOG.md` por debajo de la
+`:762`, se renumeran otra vez (abajo, «Las líneas»).
+
+**De dónde sale.** El hallazgo es del §263, y la entrada la abrió el §264, que separó sus dos
+causas; la entrada da, de los bancos T.1 a T.4, que en el canon `--sello` `settlement-layer` costaba
+50 s e `iso-bridge` 45 de los 150 del nivel. La de `settlement-layer` -los dos setups Groth16
+pagados en cada test- la resolvió el §795 sin tocar producción, y dejó la entrada abierta por la
+otra: `SimpleMerkleTree::build` rellenaba hasta 2^TREE_DEPTH = 2^20 hojas con `F::zero()` y hasheaba
+el árbol entero, 1.048.575 hashes Poseidon para usar ocho, en cada `build`. Lo construyen el test de
+`iso-bridge` (`crates/iso-bridge/src/lib.rs`), los tests de `zk-core` -los de sus cinco
+`circuit_*.rs`, `circuit_audit.rs` entre ellos, y los de `settlement_prover_impl.rs`-, las dos
+medidas de `performance.rs` y la ceremonia de `tests/ceremony_integration.rs`. En el `--sello` de
+`0315b14` (el §813 sobre `b6994c3`, con la misma `zk-core`) la fila de `iso-bridge` tardó 52 s. La
+entrada decía que el arreglo era «no construir denso, y eso toca el circuito». No lo toca: el
+circuito recibe una raíz y un camino, y si son los mismos bits, no ve con qué árbol se calcularon.
+
+**Quién lo decide.** El autor delegó el trabajo —hacerlo todo, como lo recogen el §814, el §816 y el
+§817— y, en su mensaje a la sesión, que el registro no trae, dejó fuera un tercero que implemente
+(H3), un auditor (H7), los testigos reales y los avisos a NLnet; la 75 no es nada de eso, y lo
+decide la sesión por esa delegación, con el criterio que el autor escribió en el §609: «que se
+aplique al mayor número de casos de uso sin modificaciones significativas». La salida que se toma es
+la que no cambia nada fuera del árbol: la misma raíz, el mismo camino, la misma firma de `build`,
+`root` y `path_for`, y ningún llamador cambia. Las otras dos que asomaban en la entrada no lo
+cumplen: bajar `TREE_DEPTH` rompe la conformidad, y llevar los llamadores al `SparseMerkleTree` de
+`settlement-layer/src/sparse_tree.rs` los cambia a todos; y los de `zk-core` no podrían sin un
+ciclo, porque `settlement-layer` depende de `zk-core` (el de `iso-bridge` sí podría: depende solo de
+`zk-core`).
+
+**Lo que hace.**
+
+1. **El árbol, disperso.** `vacios[k]` es el hash de un subárbol vacío de altura `k`: `vacios[0]` es
+   el relleno de siempre, `F::zero()`, y `vacios[k + 1]` es `secure_hash(vacios[k], vacios[k])`,
+   como `empty_subtrees` en los tests de `plonk-experiment/src/merkle.rs` y el `empty` de
+   `settlement-layer/src/sparse_tree.rs`. `levels[k]` guarda solo los nodos que cubren alguna hoja
+   dada; un par incompleto se completa con `vacios[k]`, y `nodo(level, idx)` da el guardado o, si no
+   lo hay, `vacios[level]`. `root()` y `path_for` leen por `nodo`. Con ocho hojas, 44 hashes en vez
+   de 1.048.575: 20 de los subárboles vacíos y 24 de los nodos que cubren hojas. Contados, no solo
+   deducidos: el arnés de la revisión de la equivalencia (abajo) copia el `build` tal cual, cuenta
+   las llamadas al hash y da 20 con ninguna hoja, 40 con una, 43 con cinco y 44 con ocho; con el
+   árbol lleno, 1.048.595, veinte más que el denso, sin efecto en el resultado. Un subárbol vacío
+   tiene ese hash lo calcule quien lo calcule, así que la raíz y los caminos son los del árbol
+   denso.
+2. **`path_for` afirma `index < 2^TREE_DEPTH`.** El denso caía por el índice de su vector; el
+   disperso respondería con subárboles vacíos un camino que no existe, y por eso lo dice su
+   `assert`: «indice fuera del arbol: la profundidad configurada no lo alcanza».
+3. **Tres tests**, en el módulo de tests de `merkle.rs`, deterministas.
+   `el_arbol_disperso_da_las_raices_del_denso` fija como constantes las cuatro raíces del KAT del
+   denso (en `serialize_compressed`, hexadecimal) y exige, en cada caso, que `root()` dé la suya y
+   que el camino de los índices 0, 3, 4, 100 y 2^20 - 1 lleve los bits de su índice -en la salida
+   del denso son esos- y suba a ella con `secure_hash`, con la hoja dada o, si no la hay,
+   `F::zero()`. Los hermanos no se copian: con los bits y la raíz fijos, otros hermanos serían una
+   colisión de Poseidon. `el_camino_fuera_del_arbol_entra_en_panico` pide el camino de 2^20 y exige
+   un pánico que contenga ese texto (`should_panic(expected)` busca una subcadena: el mismo texto
+   con algo detrás también pasa). `el_arbol_con_mas_hojas_de_las_que_caben_entra_en_panico`
+   construye con 2^20 + 1 hojas y exige el pánico del `assert` de `build`, que no cambia y que
+   ningún test pedía. `native_path_verifies_against_root`, el test que ya estaba, no cambia.
+4. **Los comentarios**, con su marca. El de `SimpleMerkleTree` dice lo que decía su primera frase
+   («Árbol de Merkle simple y completo (no disperso)») y conserva la segunda, la de que un árbol
+   disperso indexado por el hash de la dirección sería lo apropiado para un ledger real, con una
+   marca: este no lo es, y es disperso solo en que no guarda el relleno. El del campo `levels` dice
+   lo que decía («levels[0] = hojas, levels[ultimo] = [root]»), que con el árbol vacío ya no vale. Y
+   el de `build`, lo que decía («Rellena hasta 2^TREE_DEPTH con un valor de relleno (F::zero()) si
+   hace falta»).
+5. **La 75**, cerrada con su nota «⚠️ §822»: las dos causas, resueltas -la de `settlement-layer` en
+   el §795, la de `iso-bridge` aquí-, lo medido con su fuente -sobre `4d8017d` y sobre el §817 de
+   antes del rebase, hoy `5fd5212`-, quién lo decidió y con qué criterio, y lo que no hace. «y eso
+   toca el circuito», tachado y anotado; y el `grep` de su «Comprobable», que ya no da nada, y las
+   líneas 67-84 de `merkle.rs` que cita, que eran el `build` de antes, también anotados. La misma
+   cita, `merkle.rs:67-84`, está en el registro, en `AUDITORIA.md:19868` (el §263, «Lo que este
+   asiento NO cierra»): en el §821, como en `5fd5212`, daba el `build` denso, y desde este sello
+   no; es un asiento, y no se marca. La cabecera pasa de 42 a 41 abiertas y de 88 a 89 resueltas,
+   contadas (`grep` de las casillas), con «y el §822, la 75» al final de su lista y en sus
+   mismas ocho líneas. La entrada crece 68 líneas en medio del `BACKLOG.md` -3 y 1 en sus dos
+   marcas, 64 en la nota-, y las de detrás se corren (abajo, «Las líneas»).
+6. **`tools/canon.sh`**: el pin de `zk-core`, con su crónica, y la nota de tiempos de la fila, con
+   lo medido el 15-10-2026 y el 21-10-2026, sobre `4d8017d` y sobre el §817 de antes del rebase, y
+   su marca con los dos días; una nota en la de `iso-bridge`; y dos marcas arriba -en el nivel
+   `--completo` («58 min», medidos con el árbol denso) y en «el coste es SINTETIZAR el circuito» de
+   «Los TRES niveles», que en la biblioteca no lo era, y cuyos 35 minutos se midieron con el árbol
+   denso- que remiten a un párrafo al pie, detrás del `exit` y del último párrafo del §811, para que
+   ninguna línea de arriba se mueva. El párrafo dice lo medido y lo que corrige: el §225 dedujo por
+   descarte que el coste de `zk-core` era sintetizar el circuito -generar la prueba añadía un 5 % y
+   rayon un 17 %- y no midió el árbol; en la biblioteca, el coste era construir el árbol denso. Su
+   encabezado lleva también los dos días, y cada cifra de debajo, el suyo.
+7. **`crates/settlement-layer/src/sparse_tree.rs`**, solo un comentario. Su cabecera («Por qué no
+   vale el árbol de `zk-core::merkle`») dice que aquel construye el árbol entero, con «unos dos
+   millones de invocaciones de Poseidon **cada vez que cambia un saldo**», y lo sigue diciendo. Una
+   marca debajo añade que desde este sello no lo construye entero; que con el denso no eran dos
+   millones, sino 1.048.575 por `build`; y que lo de fondo sigue: aquel no es mutable, y cambiar un
+   saldo es volver a construirlo desde la lista entera de hojas.
+8. **`ARQUITECTURA.md`**, solo una marca. En «Lo que la capa aporta y el circuito no puede», el
+   párrafo «Un árbol disperso viable» dice que el de `zk-core::merkle` «reconstruye 2^20 hojas en
+   cada cambio: sirve para tests, es inviable para un ledger», y lo sigue diciendo. La marca, al
+   final de la segunda línea del párrafo para no mover ninguna, como las del §860 y el §861 en ese
+   fichero, dice que desde este sello no reconstruye 2^20 hojas: no guarda el relleno, y con ocho
+   hojas un `build` son 44 hashes, con la raíz y los caminos del denso; y que lo de fondo sigue,
+   como en `sparse_tree.rs`: no es mutable, y cambiar un saldo es volver a construirlo desde la
+   lista entera de hojas. En el §821, `git grep -n 'reconstruye 2^20'` solo daba la primera línea
+   de ese párrafo, y fuera del registro y del `BACKLOG.md` ningún otro documento dice del árbol de
+   `zk-core` que rellene hasta 2^20 hojas.
+
+**Medido en el carril, sobre `4d8017d`**, por la sesión y sus agentes, antes de portarlo. En una
+máquina de 4 CPU compartida con otras sesiones (la carga de cada medida, con ella), todo en
+`--release`, un `cargo` cada vez (`flock`), con `nice -n 19` y `--locked`.
+
+- **El KAT del denso, antes de cambiarlo.** El 15-10-2026, sobre `0315b14`, con `zk-core`,
+  `iso-bridge`, `ceremony` y `settlement-prover` idénticos a los de `4d8017d` (`git diff --stat
+  0315b14 4d8017d` vacío para los cuatro), un test temporal, que no se queda, imprimió con el
+  `build` denso la raíz y los caminos -hermanos y bits- de los índices 0, 3, 4, 100 y 2^20 - 1 en
+  cuatro casos: ocho hojas (`0..8`), cinco (`1..6`), ninguna y una (`7`). Tardó 213,14 s. El mismo
+  test sobre el disperso imprimió lo mismo byte a byte: md5 `150177c071544af39422455482a2cdb9` las
+  dos salidas, y 0,03 s los dos tests de `merkle::` de entonces. Las cuatro raíces de esa salida son
+  las constantes del test (`08fc7426…`, `ce41bb85…`, `77b4c587…` y `5657ca70…`), y los bits de sus
+  20 caminos son los de su índice. Con el `merkle.rs` final, `cargo test --release --locked -p
+  zk-core --lib merkle::`: 4 de 4, 72 filtrados, 0,07 s, carga 4,3 (21-10-2026).
+- **La equivalencia, sin el KAT.** La revisión de la equivalencia la demostró por inducción sobre el
+  nivel y la rehízo en un arnés sin dependencias que copia tal cual el `build`, el `root` y el
+  `path_for` del denso y del disperso, con la profundidad como parámetro y el hash cambiado por un
+  constructor de términos: cada par distinto es un término nuevo, así que dos cálculos que dan el
+  mismo término dan el mismo valor con cualquier hash determinista, Poseidon incluido. Con toda
+  longitud de 0 a 2^D y todo índice, para D de 0 a 10 y siete patrones de hojas, 14.406 casos y
+  9.801.036 caminos enteros -hermanos y bits- iguales; para D de 11 a 14, por muestreo de
+  longitudes, 10.924.032 más; para D = 20, dieciocho longitudes, de 0 a 2^20, con unos 3.100 índices
+  cada una, la raíz y los caminos iguales. Fuera del árbol entran en pánico los dos (con D = 0, que
+  no se usa, solo el disperso). 21 de 21 en 8,28 s el 20-10-2026, carga 8,2; el recuento de hashes,
+  otra vez el 21-10-2026, igual.
+- **Que los tests caen**, veinte mutantes de `merkle.rs` aplicados uno a uno sobre el fichero final
+  y revertidos (`cmp` con la copia), cada uno con `merkle::`, el 21-10-2026, con carga de 2,4 a 8,2
+  al empezar cada uno: seis del agente que escribió los tests y catorce de la revisión de los tests.
+  Los seis del agente: los `vacios` todos `F::zero()`, sin hashear, cae el KAT (la raíz de las ocho
+  hojas); el par incompleto con `F::zero()` en vez de `vacios[k]`, caen el KAT y
+  `native_path_verifies_against_root`; `nodo` con `F::zero()` en vez de `vacios[level]`, caen los
+  dos; `is_right` al revés, caen los dos; `root()` que lee `levels[TREE_DEPTH][0]` sin caer a
+  `vacios`, cae el KAT (el árbol vacío no tiene ese nodo: índice fuera de rango); y `path_for` sin
+  su `assert`, cae el del camino fuera del árbol («did not panic as expected»). Los catorce de la
+  revisión: `vacios` desplazado un nivel, cae el KAT (la raíz de las ocho hojas); sin
+  `vacios[TREE_DEPTH]`, caen el KAT y el que ya estaba; el nivel 19 que cae a `F::zero()`, los dos;
+  los índices altos que caen a `F::zero()`, el KAT (el camino del índice 100); `is_right` a `false`
+  cuando la hoja y su hermano son relleno, el KAT, en los bits del índice 100 del caso ocho; el
+  `assert` de `path_for` con `<=`, el del camino fuera del árbol; con `< 2^20 - 1`, el KAT (el
+  índice 2^20 - 1 ya no tiene camino); el `assert` de `build` con `<`, ninguno; sin el `assert` de
+  `build`, el de las hojas de más («did not panic as expected», tras 33,68 s construyendo); el impar
+  a la derecha del vacío, el hermano `idx + 1` y `chunks_exact`, el KAT y el que ya estaba; el texto
+  del pánico recortado, el del camino fuera del árbol («panic did not contain expected string»); y
+  el texto con algo detrás, ninguno. Caen dieciocho, y cada test nuevo tumba alguno. Sobreviven dos,
+  y se declaran: el `assert` de `build` con `<`, que rechaza el árbol lleno, solo caería
+  construyendo 2^20 hojas, más de un millón de hashes; y el texto del pánico con algo detrás pasa
+  porque `expected` es una subcadena. Otros dos sobrevivían a los tests de antes de las revisiones,
+  y por ellos están los arreglos. `is_right` a `false` en el relleno -donde el orden no cambia el
+  hash- pasaba el KAT, que solo pedía que el camino subiera a la raíz, y la biblioteca entera, y 11
+  de los 20 caminos del KAT salían con otros bits que los del denso: lo encontraron dos revisiones,
+  y por eso el test exige los bits. Y sin el `assert` de `build`, un árbol con 2^20 + 1 hojas se
+  construía sin quejarse. Contra la biblioteca entera, con el fichero final: el de los bits cae, 75
+  de 76; el que rechaza el árbol lleno sobrevive, 76 de 76; y el que no tiene `assert` en `build`
+  cae, 75 de 76. Los seis del agente se corrieron antes, el 15-10-2026, sobre un `merkle.rs` con
+  tres líneas de comentario menos y sin los arreglos de las revisiones (carga de 9,0 a 12,7), y
+  cayeron igual; los catorce de la revisión, el 20 y el 21-10-2026, sobre el anterior a estos
+  arreglos.
+- **Los tiempos, antes y después.** La base es un árbol de trabajo de `4d8017d` limpio, con el árbol
+  denso; el nuevo, `4d8017d` con el `merkle.rs` disperso y sus dos primeros tests, el mismo código
+  que el final; cada uno con su `target`. Cada orden se compiló antes con `--no-run`, y el reloj y
+  la carga se tomaron al empezar a correr, no mientras esperaba a otras compilaciones de la máquina;
+  la CPU es user+sys del `time` de bash. El 15-10-2026:
+  - `cargo test --release --locked -p iso-bridge`, dos veces cada uno: la base, 53,31 y 57,64 s de
+    pared, 54,40 y 56,73 s de CPU; el nuevo, 3,43 y 4,33 s de pared, 5,60 y 6,56 de CPU. Carga de
+    7,6 a 8,3. Pasan los 3 en las cuatro, con 0 avisos.
+  - `cargo test --release --locked -p zk-core --lib`: la base, 3.546,07 s de pared y 4.958,61 de
+    CPU, 73 de 73, carga 8,9 al empezar, una sola vez (una hora de la máquina); el nuevo, 50,90 y
+    38,42 s de pared, 72,52 y 61,30 de CPU, 75 de 75, carga 10,0 y 8,0.
+  - `cargo test -p zk-core --release --locked`, como lo corre el canon, solo el nuevo: 76 de 76 (75
+    de la biblioteca y 1 de `tests/ceremony_integration.rs`), 0 fallos, 0 ignorados, 486,09 s de
+    pared -37,43 de la biblioteca y 448,24 de la ceremonia- y 586,20 de CPU, carga 8,2. Con el
+    denso, la suite entera no se midió.
+  - Los 10 avisos de `zk-core` son los mismos en la base y en el nuevo (la misma lista de `warning`
+    y `-->`), todos de `crates/ceremony`.
+
+  Con el `merkle.rs` final, el 21-10-2026, de la misma manera y con menos carga:
+  - `cargo test -p zk-core --release --locked`: 77 de 77 (76 de la biblioteca y 1 de la ceremonia),
+    0 fallos, 0 ignorados, 270,95 s de pared -15,04 de la biblioteca y 255,68 de la ceremonia- y
+    403,40 de CPU, carga 3,9 al empezar; los mismos 10 avisos.
+  - `cargo test --release --locked -p iso-bridge`: 3 de 3 en 1,33 s de pared y 4,11 de CPU, carga
+    4,0, con 0 avisos.
+  - `cargo test --release --locked -p settlement-layer`, por la marca de `sparse_tree.rs`: 17 de 17
+    en 18,03 s de pared, carga 3,4, con 0 avisos.
+- **Lo que eso dice.** En esta máquina, la biblioteca de `zk-core` con el árbol denso -3.546 s- casi
+  llena el timeout de la fila, 3.600 s, que cubre biblioteca y ceremonia; con el disperso, sus
+  tests, síntesis y pruebas incluidas, caben en menos de un minuto, y lo que pesa en la fila es la
+  ceremonia, 448 de 486 s (256 de 271 el 21-10-2026, con menos carga). El «el coste es SINTETIZAR el
+  circuito» de la cabecera del canon no lo era en la biblioteca: era el árbol.
+- **Las herramientas**, el 21-10-2026 sobre aquel árbol final, en 0 con el número puesto en una
+  copia, y `git diff --check` limpio.
+
+**Medido en el carril, sobre el §817 de antes del rebase**, el 21-10-2026, con este sello encima, en
+la misma máquina, cargada también por las otras sesiones: un `cargo` cada vez, con `flock`, `nice -n
+19` y `--locked`, en `--release`, con el `target` del árbol de trabajo en el que se escribió el
+sello sobre `4d8017d` (el del nuevo, no el de la base densa); los dos árboles tienen otra ruta, así
+que `zk-core`, `ceremony`, `settlement-prover` e `iso-bridge` se recompilaron desde aquel: 59,06 s y
+28,68 s, en el «Finished» de `cargo`, con `--no-run`, antes de correr. La carga, al empezar cada
+orden, dentro del cerrojo; la CPU, user+sys del `time` de bash. Entre `4d8017d` y aquel commit no
+cambian `crates/zk-core`, `crates/iso-bridge`, `crates/ceremony`, `crates/settlement-prover` ni
+`crates/settlement-layer`, y el `Cargo.lock` sólo cambia en la versión de `zk-ssl-verify`, 0.4.2 ->
+0.4.3, que ninguno de los cinco usa; el `merkle.rs` que se portó allí es el final de las revisiones,
+byte a byte (md5 `dcdfb125d71753f2d83564d7deb96936` en los dos árboles, con el marcador sin número).
+
+- `cargo test -p zk-core --release --locked --lib`: 76 de 76, 0 fallos, 0 ignorados, 47,27 s de
+  pared (46,93 s en el arnés) y 76,40 de CPU, carga 6,3 al empezar; 10 avisos, los de `ceremony`.
+  Los cuatro de `merkle::`, entre ellos.
+- `cargo test -p iso-bridge --release --locked`: 3 de 3 en 5,17 s de pared (4,46 en el arnés) y 6,91
+  de CPU, carga 7,7, con 0 avisos.
+- `cargo test -p zk-core --release --locked`, la fila entera, como la corre el canon y aunque su
+  nivel es `--completo`: 77 de 77 (76 de la biblioteca y 1 de `tests/ceremony_integration.rs`), 0
+  fallos, 0 ignorados, 555,13 s de pared -48,13 de la biblioteca y 506,34 de la ceremonia, en el
+  arnés- y 656,14 de CPU, carga 7,8 al empezar; 10 avisos, la misma lista de `warning` y `-->` que
+  la de la fila del 21-10-2026 sobre `4d8017d` (md5 `455c7bb1…` las dos). Cabe en sus 3.600 s, y lo
+  que pesa sigue siendo la ceremonia.
+- `cargo test -p settlement-layer --release --locked`, por la marca de `sparse_tree.rs`: 17 de 17 en
+  41,03 s de pared (40,68 en el arnés) y 112,49 de CPU, carga 4,2 al empezar, con 0 avisos; más que
+  los 18,03 s sobre `4d8017d`, con la máquina más cargada en los cinco minutos de antes (6,8), y el
+  crate es el mismo.
+- **Tres de los veinte mutantes**, otra vez, uno por cada test nuevo, aplicados uno a uno sobre el
+  `merkle.rs` de aquel árbol y revertidos (`cmp` con la copia, y al acabar el md5 del fichero, el de
+  antes), cada uno con `cargo test -p zk-core --release --locked --lib merkle::`, con carga de 4,0 a
+  8,7 al empezar: `is_right` a `false` cuando la hoja y su hermano son relleno cae en el KAT
+  (`el_arbol_disperso_da_las_raices_del_denso`, en su `assert` de los bits); el `assert` de
+  `path_for` con `<=`, en el del camino fuera del árbol («did not panic as expected»); y sin el
+  `assert` de `build`, en el de las hojas de más («did not panic as expected», tras 67,29 s
+  construyendo). Los tres, 3 de 4 en `merkle::`, como sobre `4d8017d`. Los otros diecisiete no se
+  repitieron: el fichero y el crate eran los mismos byte a byte.
+- **El KAT del denso, el arnés de la equivalencia y la base densa** no se rehicieron allí: el
+  `merkle.rs` denso y el disperso eran los mismos, y repetir la base cuesta una hora de máquina.
+- **Lo de allí, también en el árbol.** La nota de la fila de `zk-core` y el párrafo al pie de
+  `tools/canon.sh`, y la nota de la 75, daban del 21-10-2026 solo la corrida sobre `4d8017d`, la de
+  menos carga (271 s, carga 3,9); dan también la de aquel commit, la de más (555 s, carga 7,8), y el
+  pie y la nota, la biblioteca sola (47 s) e `iso-bridge` (5,2 s), con el commit nombrado por el de
+  `main`, `5fd5212`. Las dos son ciertas, con su carga, y la fila cabe con las dos en sus 3.600 s.
+- **Las herramientas**, allí, con el marcador sin número: ROJA solo `verificar_citas`, por los
+  marcadores sin número; en una copia, ya borrada, con un número de prueba y su encabezado al final
+  de `AUDITORIA.md`, las catorce en 0, con `check_tests` en 2007; `check_curvas` no se corrió allí.
+
+**Medido sobre `378e1fa`**, el §852, más el §819, el §820, el §821 y este sello, con «§822» puesto y
+su asiento de entonces en su sitio. `cargo` no se corrió: el código de `merkle.rs` y de
+`sparse_tree.rs` es el del borrador, salvo el número en doce comentarios (arriba, «El porte, hasta
+el §852»), y lo que compilan y corren las filas de `zk-core`, `iso-bridge` y `settlement-layer`
+—esos crates, `ceremony`, `settlement-prover`, el `Cargo.toml` de la raíz y el `Cargo.lock`— no
+cambia entre el §817 de antes del rebase y el §821 de entonces (`git diff --stat`, vacío), y sus
+tests no leen al correr ningún fichero del árbol: en esos cinco crates no hay `include_str!` ni más
+disco que los directorios temporales de `persistent_nullifier_registry.rs`. Los sha256 de lo que se
+commitea: `merkle.rs` `d531c9c44759650e…` y `sparse_tree.rs` `2572047059a84cfa…`. Las once
+herramientas del bucle «2 ter» de `tools/canon.sh` —`check_curvas` bajo el cerrojo de cargo—, más
+`check_tests`, `check_modulos`, `check_vectores` y `check_catalogo`, desde la raíz del árbol: las
+quince dan 0. `check_tests` cuenta 2021 tests declarados y 20 instrumentos; `check_modulos`, 207
+ficheros; `check_vectores`, 508 vectores y 1017 líneas de manifiesto; `check_cifras`, 26 cifras de
+tests en documentos vivos, ninguna contra el canon, con 22 pines leídos, 12 filas con crónica —una
+más, la de `zk-core`— y las tres citas del total con largos de acuerdo con el canon; y
+`verificar_citas`, 0 marcadores sin número en el árbol, 0 citas § muertas en `AUDITORIA.md` y el
+`BACKLOG.md` y 0 encabezados citados muertos. `git diff --check`, limpio. `rustfmt --edition 2021
+--check crates/zk-core/src/merkle.rs` solo marca un trozo, que empieza en la `:222`: la línea del
+`assert_eq!` de `native_path_verifies_against_root`, que es la `:225`, y que ya estaba así en
+`378e1fa` (allí, en la `:183`); el canon no corre `rustfmt`. El canon entero, `--sello`, se corrió
+sobre ese árbol, con ese asiento en su sitio, y salió VERDE.
+
+**Medido sobre `7ed7e17`**, el §858, más el §819, el §820, el §821 y este sello, con su asiento de
+entonces en su sitio. `cargo` no se corrió: el código de este sello es, byte a byte, el del sello
+sobre `378e1fa` (los sha256 de `merkle.rs` y de `sparse_tree.rs` son los de arriba), y lo que
+compilan y corren las filas de `zk-core`, `iso-bridge` y `settlement-layer` —esos crates,
+`ceremony`, `settlement-prover`, el `Cargo.toml` de la raíz y el `Cargo.lock`— no cambia de
+`378e1fa` a `7ed7e17` (`git diff --stat`, vacío), ni sus tests leen al correr ningún fichero del
+árbol (arriba): de `crates/`, los §853-§858 sólo tocan los dos `rehacer*.sh` de
+`crates/zk-ssl-medio/tests/vectores/testigos/`, del §855, guiones y no fuentes. Las quince
+herramientas, desde la raíz del árbol y `check_curvas` bajo el cerrojo de cargo, dan 0:
+`check_tests` cuenta 2021 tests declarados y 20 instrumentos; `check_modulos`, 207 ficheros;
+`check_vectores`, 508 vectores y 1017 líneas de manifiesto; `check_cifras`, 26 cifras de tests en
+documentos vivos, ninguna contra el canon, con 22 pines leídos, 12 filas con crónica —una más que en
+el §821, la de `zk-core`— y las tres citas del total con largos de acuerdo con el canon;
+`verificar_citas`, 0 marcadores sin número en el árbol, 0 citas § muertas en `AUDITORIA.md` y el
+`BACKLOG.md`, 0 encabezados citados muertos, 0 en la v3 bis, con sus nueve ficheros y su mínimo de
+nueve, y 0 en la v5 bis, con sus ocho; y `check_publicadas`, en el ATADO G, los 21 RFC y la
+plantilla, y de `doc/ecst/VERIFICACION.md`, en el ATADO F y en RETIRADAS, sus 305 líneas «Lo que se
+puede afirmar». `git diff --check`, limpio. `rustfmt --edition 2021 --check
+crates/zk-core/src/merkle.rs`, lo mismo que allí: un solo trozo, desde la `:222`, por la `:225`, que
+en `7ed7e17` es la `:183`.
+
+**Medido aquí**, sobre `212eca2` más el §819, el §820, el §821 y este sello, con este asiento en su
+sitio. `cargo` no se corrió: el código de este sello es, byte a byte, el del sello sobre `7ed7e17`
+(los sha256 de `merkle.rs` y de `sparse_tree.rs` son los de arriba), y el §859 no toca `crates/`, ni
+el `Cargo.toml` de la raíz, ni el `Cargo.lock` (`git diff --stat 7ed7e17 212eca2`, vacío para
+ellos). Las quince herramientas, desde la raíz del árbol y `check_curvas` bajo el cerrojo de cargo,
+dan 0: `check_tests` cuenta 2021 tests declarados y 20 instrumentos; `check_modulos`, 207 ficheros;
+`check_vectores`, 508 vectores y 1017 líneas de manifiesto; `check_cifras`, 26 cifras de tests en
+documentos vivos, ninguna contra el canon, con 22 pines leídos, 12 filas con crónica y las tres
+citas del total con largos de acuerdo con el canon; `verificar_citas`, 0 marcadores sin número en el
+árbol, 0 citas § muertas en `AUDITORIA.md` y el `BACKLOG.md`, 0 encabezados citados muertos, 0 en la
+v3 bis, con sus nueve ficheros y su mínimo de nueve, y 0 en la v5 bis, con sus ocho; y
+`check_publicadas`, en el ATADO G, los 21 RFC y la plantilla, y de `doc/ecst/VERIFICACION.md`, en el
+ATADO F y en RETIRADAS, sus 305 líneas «Lo que se puede afirmar». `git diff --check`, limpio.
+`rustfmt --edition 2021 --check crates/zk-core/src/merkle.rs`, lo mismo: un solo trozo, desde la
+`:222`, por la `:225`.
+
+**Las líneas**, las del §821 (`git diff -U0` sobre él), las mismas que sobre el §821 de `7ed7e17` y
+de `378e1fa`, salvo las del `BACKLOG.md`, que van dos más abajo, y la del pie de `tools/canon.sh`,
+una. En el `BACKLOG.md`, la `:15`, la `:22` y la `:1909` cambian en su sitio; la `:1920` pasa a
+cuatro y la `:1928-1929` a tres, y detrás de la `:1952` entran las 64 de la nota: desde la `:1921`
+corren tres, desde la `:1930` cuatro y desde la `:1953` sesenta y ocho. En `merkle.rs`, desde la
+`:55`, el comentario de `SimpleMerkleTree`, se rehacen el árbol y sus comentarios, y los tres tests
+entran desde la `:228`, detrás del que ya estaba: las líneas de detrás de la `:54` son otras. En
+`sparse_tree.rs`, la marca entra detrás de la `:14`, y desde la `:15` corren ocho. En
+`ARQUITECTURA.md` la `:1234`, en `PAPER.md` la `:38`, en `PAPER_EN.md` la `:35` y en `PRINCIPIOS.md`
+la `:416` cambian en su sitio; en `tools/canon.sh`, las dos líneas de la cabecera y las filas de
+`iso-bridge` y de `zk-core` cambian en su sitio, y el párrafo nuevo va detrás de la última línea,
+que el §855 bajó nueve y el §859 una: nada se mueve. Ninguna cita por línea de los documentos vivos
+cae en lo que se mueve (`git grep` sobre este árbol, sin `AUDITORIA.md`; las de `212eca2` al
+`BACKLOG.md`, a `merkle.rs` y a `sparse_tree.rs` son las de `7ed7e17`, y éstas las de `378e1fa`: los
+§853-§859 no añaden ni quitan ninguna): al `BACKLOG.md`, ninguna fuera de `doc/ecst/`
+(`verificar_citas`, v5), cuyas `fichero:línea` son del árbol en `71c5aad`, como declara
+`doc/ecst/VERIFICACION.md:24` («Las rutas `path:línea` son del árbol en 71c5aad»), y cuyo
+`borrador/` es el material de trabajo de la verificación, que «no se cita»; de esa ficha,
+`check_publicadas` lee como vivas desde el §857 sus 305 líneas «Lo que se puede afirmar», y ninguna
+cita una línea del `BACKLOG.md`, de `merkle.rs` ni de `sparse_tree.rs`: sus diez citas al
+`BACKLOG.md` van en sus «Fuentes:»; a `crates/zk-core/src/merkle.rs`, solo la `:67-84` de la propia
+75, que lleva su marca —las demás citas a un `merkle.rs:` son a
+`crates/stark-experiment/src/merkle.rs`—; y a `crates/settlement-layer/src/sparse_tree.rs`, ninguna
+—las de `sparse_tree.rs:` son a `crates/zk-ssl/src/sparse_tree.rs`—. En `AUDITORIA.md`, las que caen
+en lo que se mueve son de asientos. Unas ya no daban en el §821 el texto que citan, y bajan con lo
+demás: `BACKLOG:2017` (`AUDITORIA.md:27342`), `BACKLOG:3209` (`:27360` y `:27387`), la `:2880`
+(`:27647` y `:51000`), las del §838 (`:56146` y `:56148`), las del §840 (`:57192`, `:57443` y
+`:57448`), las del §841 (`:57504`, `:57641` y `:57719`), la del §851 (`:60742`), la del §854
+(`:61256`) y las del §855 (`:61401` y `:61630`) —la `:4831` y la `:4831-4833` de `7ed7e17`, que en
+el §821 son la `:4892` y la `:4892-4894`—, y las que el asiento del §820 da por «ahora en la …»
+(`:62904-62921`), que el §821 ya corrió —la `:4866-4868` que da en su «El porte, hasta el §858»
+(`:62819-62820`) es la de `7ed7e17`, y no se corre—; y la `merkle.rs:67-84` del §263 (`:19868`),
+arriba. Y otras daban en su sitio en el §821, y este sello las corre sesenta y ocho: del asiento del
+§820, la `:3286` y la `:3287` —la 120 y su cita de `snapshot.rs:304`— y la `:3298`, desde la que
+entraba el cierre de la 120 (`:62860`, `:62888-62889` y `:62903`); y del asiento del §821, la
+`:3306` —el cierre de la 120 (`:63171` y `:63322`)—, la `:3334` y la `:3346` —la 121 y su cierre
+(`:63322-63323`)—, las tres también en su «El porte, aquí» (`:63288-63289`), y la `:3994`, la
+`:4708`, la `:4715`, la `:4720`, la `:4892` y la `:4892-4894`, en las que el §821 dejó las de los
+§838, §840, §851, §854 y §855, y la `:4893`, la marca del §855 que guarda la `:723-741`
+(`:63350-63352`): ahora son la `:3354`, la `:3355`, la `:3366`, la `:3374`, la `:3402`, la `:3414`,
+la `:4062`, la `:4776`, la `:4783`, la `:4788`, la `:4960`, la `:4960-4962` y la `:4961`. Lo que
+esos dos asientos citan de la `:15` y de la `:22`, la línea del estado y la lista de la cabecera,
+cambia en su sitio, y lo sigue siendo. Son de asientos, que no se reescriben.
+
+**Contadores.** `zk-core` 74 -> 77, en su fila de `tools/canon.sh`, con su crónica; sus 0 ignorados
+y sus 10 avisos, igual. `iso-bridge` sigue en 3, y `settlement-layer` en 17. El TOTAL DE SELLO no
+cambia, 1859: `zk-core` es de `--completo`. El TOTAL CON LARGOS, 1996 -> 1999, en `PAPER.md:38`,
+`PAPER_EN.md:35` y `PRINCIPIOS.md:416`; las «1364 declarados» y las «1349 declared» no se tocan.
+`check_tests` 2018 -> 2021. `check_modulos` (207) y los vectores (508 y 1017) no cambian. El
+`BACKLOG.md` cierra la 75: de 42 abiertas y 88 resueltas a 41 y 89, contadas (`grep` de las
+casillas). Las cifras de `212eca2` son las de `7ed7e17`, y éstas las de `378e1fa` —el total de sello
+en 1853, `check_tests` en 2012, 44 abiertas y 86 resueltas, 508 vectores y 1017 líneas—, así que las
+de este párrafo, que les suman las del §819, el §820 y el §821, son aquí las mismas.
+
+**Lo que NO hace.** No toca los seis árboles densos de `halo2-experiment`, también a 2^20:
+`NativeMerkleTree` en su `merkle.rs`, el `NativeTree` de `compliance_real_proof.rs` y los de los
+tests de `settlement_prover_impl.rs`, `compliance_circuit.rs`, `circuit_double_entry.rs` e
+`iso_bridge.rs`; lo que cuestan no se ha medido. Tampoco el comentario de `NativeMerkleTree`
+(`crates/halo2-experiment/src/merkle.rs:243`), «análogo a `zk_core::merkle::SimpleMerkleTree`»: uno
+es denso y el otro ya no, pero lo sigue siendo en la interfaz y en la raíz y los caminos. No cambia
+`TREE_DEPTH`, que sigue en 20, ni el circuito, ni la firma de ningún método. No une los dos árboles
+dispersos -el de `zk-core` y el de `settlement-layer`-: la misma idea sigue escrita dos veces. No
+ata que el árbol lleno quepa, ni el texto exacto del pánico: son los dos mutantes que sobreviven. No
+toca ningún timeout: el de `iso-bridge`, 300 s, no hace falta bajarlo -es un tope para que una fila
+colgada no cuelgue el canon, no un pin-, y el de `zk-core` sigue en 3.600. No mueve `zk-core` de
+nivel: las razones de los tres niveles (§225) se apoyaban en parte en un coste que era el del árbol,
+pero decidir si `zk-core` entra en `--sello` no es de este sello. Los 35 minutos de `zk-core` y los
+58 de `--completo` de la cabecera del canon son los del §629, medidos con el árbol denso, y se
+quedan como su cifra. No mide la suite entera de `zk-core` con el denso, ni explica los 448 s de la
+ceremonia. La fila de `zk-core` no la corre el `--sello`, y ni sobre `378e1fa`, ni sobre `7ed7e17`,
+ni aquí se volvió a correr: su última medida es la del carril, sobre el §817 de antes del rebase. El
+canon entero no se corrió en el carril, ni sobre `4d8017d` ni sobre el §817 de antes del rebase: sí,
+sueltas, las filas de `zk-core`, `iso-bridge` y `settlement-layer`, y las herramientas de su bucle.
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.

@@ -1231,7 +1231,7 @@ anterior, con nonce y nullifier distintos. Verificado en
 `consecutive_transfers_chain_correctly`.
 
 **Un árbol disperso viable.** El de `zk-core::merkle` reconstruye 2^20
-hojas en cada cambio: sirve para tests, es inviable para un ledger.
+hojas en cada cambio: sirve para tests, es inviable para un ledger. ⚠️ §822: desde el §822 ya no reconstruye 2^20 hojas: no guarda el relleno, sólo los nodos que cubren alguna hoja dada, y cualquier otro es el hash de un subárbol vacío; con ocho hojas, un `build` son 44 hashes, y la raíz y los caminos son los del árbol denso (la 75 del `BACKLOG.md`). Lo de fondo sigue en pie: no es mutable, y cambiar un saldo es volver a construirlo desde la lista entera de hojas.
 `SparseMerkleTree<DEPTH>` guarda solo las ocupadas y actualiza en `DEPTH`
 hashes. La profundidad va en el tipo (20 para cuentas, 32 para
 nullifiers) porque mezclarlas ya provocó un fallo, y así lo impide el

@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 42 abiertas, 88 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 41 abiertas, 89 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, y el §821, que cierra la 121.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, y el §822, la 75.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1906,7 +1906,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   que §82.4 muestra que el paper no menciona pese a usar el criterio de los
   128 bits— y la unidad MiB/MB de la 22.
 
-- [ ] **75. El coste de la suite: dos tercios del nivel de sello, y con
+- [x] **75. ✅ (§795, §822) El coste de la suite: dos tercios del nivel de sello, y con
   dos causas distintas.** Medido en los bancos T.1 a T.4 y asentado en
   §263. En el canon `--sello`, `settlement-layer` cuesta **50 s** e
   `iso-bridge` **45 s** de los **150 s** del nivel.
@@ -1917,7 +1917,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `<32>`. En `iso-bridge` sí: `zk-core/src/merkle.rs:67-84` rellena hasta
   2^20 hojas y hashea el árbol entero, **1.048.575 hashes para usar ocho**.
   **Comprobable**: `grep -n "leaves.resize(target_len"
-  crates/zk-core/src/merkle.rs`.
+  crates/zk-core/src/merkle.rs`. ⚠️ §822: desde el §822 ese grep no da nada, y
+  las líneas 67-84 de `merkle.rs` que cita arriba eran el `build` de antes
+  del §822: hoy son otras, y ya nada rellena, porque el árbol es disperso,
+  abajo.
   ⚠️ **La constante no está mal**: 2^20 cuentas es lo correcto en
   producción. Lo que está mal es pagarlo en un test. Y **el arreglo ya vive
   en el repositorio**: `settlement-layer/src/sparse_tree.rs` es el mismo
@@ -1925,8 +1928,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **0,1 s**. Las dos implementaciones llevan conviviendo sin que nadie las
   pusiera una al lado de la otra.
   **No es un cambio de una línea**: bajar `TREE_DEPTH` rompería la
-  conformidad, así que el arreglo es **no construir denso**, y eso toca el
-  circuito. Sin urgencia declarada: cuesta minutos de suite, no corrección.
+  conformidad, así que el arreglo es **no construir denso**, ~~y eso toca el
+  circuito~~ (⚠️ §822: no lo toca; los caminos son los mismos, abajo). Sin
+  urgencia declarada: cuesta minutos de suite, no corrección.
   ⚠️ §795: **la mitad de `settlement-layer`, hecha; la de `iso-bridge`, no.**
   Los doce tests que arrancan una capa comparten ya las claves de los dos
   setups: `new_layer()`, en el módulo de tests de
@@ -1950,6 +1954,70 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   —cuadra con los ~2,4 s de pared del §263 en cuatro núcleos, sin medirlo
   aparte—. **Sigue abierta** por la otra causa: el árbol denso de
   `iso-bridge`, que no se ha tocado.
+  ✅ **CERRADA EN EL §822: la de `iso-bridge`, hecha**, y con la de
+  `settlement-layer` (§795) quedan resueltas las dos causas. Decidido por
+  delegación del autor, que encargó hacerlo todo (lo recogen el §814, el §816
+  y el §817) y, en su mensaje a la sesión, que el registro no trae, dejó fuera
+  un tercero que implemente (H3), un auditor (H7), los testigos reales y los
+  avisos a NLnet: la 75 no es nada de eso. Con el criterio del §609: «que se
+  aplique al mayor número de casos de uso sin modificaciones significativas».
+  `SimpleMerkleTree` (`crates/zk-core/src/merkle.rs`) ya no materializa el
+  relleno: el nivel `k` guarda solo los nodos que cubren alguna hoja dada, y
+  cualquier otro es `vacios[k]`, el hash de un subárbol vacío de altura `k`;
+  `vacios[0]` es el relleno de siempre, `F::zero()`. Con ocho hojas, 44 hashes
+  en vez de 1.048.575: 20 de los subárboles vacíos y 24 de los nodos que
+  cubren hojas. **Contados**, el 20-10-2026 y otra vez el 21-10-2026, en el
+  arnés de una revisión que copia el `build` tal cual y cuenta las llamadas
+  al hash: 20 con ninguna hoja, 40 con una, 43 con cinco y 44 con ocho; con
+  el árbol lleno, 1.048.595, veinte más que el denso. **No toca el
+  circuito**: un subárbol vacío tiene ese hash lo calcule quien lo calcule,
+  así que la raíz y los caminos son los del árbol denso, y ni el circuito, ni
+  `TREE_DEPTH`, ni ningún llamador cambian: los tests de `zk-core`, su
+  ceremonia, las dos medidas de `performance.rs` y el test de `iso-bridge`
+  siguen llamando a `build`, `root` y `path_for` igual. **Lo atan tres tests
+  nuevos, con un KAT sacado del denso antes de cambiarlo**: medido el
+  15-10-2026 sobre `0315b14` (su `zk-core` es el de `4d8017d`), un test
+  temporal, que no se queda, imprimió con el `build` denso la raíz y los
+  caminos —hermanos y bits— de los índices 0, 3, 4, 100 y 2^20 - 1 en cuatro
+  casos —ocho hojas, cinco, ninguna y una— (213,14 s en `--release`), y el
+  mismo test sobre el disperso imprimió lo mismo byte a byte (md5
+  `150177c071544af39422455482a2cdb9` las dos salidas). Las cuatro raíces
+  quedan como constantes en `el_arbol_disperso_da_las_raices_del_denso`, que
+  exige además que el camino de cada índice lleve los bits de su índice —los
+  de esa salida— y suba a su raíz: con esos bits y esa raíz, otros hermanos
+  serían una colisión de Poseidon. `el_camino_fuera_del_arbol_entra_en_panico`
+  ata que un índice que la profundidad no alcanza no tiene camino (el denso
+  caía por el índice de su vector; el disperso respondería con subárboles
+  vacíos), y `el_arbol_con_mas_hojas_de_las_que_caben_entra_en_panico`, el
+  `assert` de `build`, que no cambia y que ningún test pedía. La exigencia de
+  los bits la pidieron dos revisiones del sello, y el test de `build`, una:
+  con la primera versión del test, un `is_right` a `false` en el relleno
+  pasaba, y 11 de los 20 caminos del KAT salían con otros bits que los del
+  denso.
+  Veinte mutantes, uno a uno, sobre el `merkle.rs` final (21-10-2026): caen
+  dieciocho, y cada test nuevo tumba alguno; sobreviven dos, declarados: el
+  `assert` de `build` con `<`, que rechaza el árbol lleno —solo caería
+  construyendo 2^20 hojas—, y el texto del pánico con algo detrás
+  —`should_panic(expected)` busca una subcadena—.
+  **Medido** el 15-10-2026 en 4 CPU compartidas, con el binario ya
+  compilado (`nice -n 19 cargo test --release --locked`): `iso-bridge`, de
+  53,3 y 57,6 s de pared a 3,4 y 4,3, y de 54,4 y 56,7 s de CPU (user+sys) a
+  5,6 y 6,6, con carga de 7,6 a 8,3; los 3 pasan. La biblioteca de `zk-core`,
+  de 3.546 s de pared (73 tests, carga 8,9) a 38 y 51 (75 tests, carga 8,0 y
+  10,0). La suite entera de `zk-core`, como la corre el canon: 76 de 76 en
+  486 s, de los que la ceremonia se lleva 448. Con el `merkle.rs` final, el
+  21-10-2026 y con menos carga (3,9 al empezar): la suite entera, 77 de 77
+  en 271 s, 15 de la biblioteca y 256 de la ceremonia; `iso-bridge`, 3 de 3
+  en 1,3 s. Las dos, sobre `4d8017d`; el mismo día, sobre `5fd5212` (el §817,
+  medido antes del rebase, con el mismo código) con este cierre encima y más
+  carga: la suite entera, 77 de 77 en 555 s (carga 7,8), 48 de la biblioteca
+  y 506 de la ceremonia; la biblioteca sola, 76 de 76 en 47 s (carga 6,3);
+  `iso-bridge`, 3 de 3 en 5,2 s (carga 7,7). **Lo que NO hace**: los seis
+  árboles densos de `halo2-experiment`, también a 2^20 —`NativeMerkleTree` en
+  su `merkle.rs`, el `NativeTree` de `compliance_real_proof.rs` y los de los
+  tests de `settlement_prover_impl.rs`, `compliance_circuit.rs`,
+  `circuit_double_entry.rs` e `iso_bridge.rs`—, siguen como estaban, sin
+  medir lo que cuestan; y `TREE_DEPTH` sigue en 20.
 
 - [x] **76. El store anterior a D4: una entrada, no tres — fuera de alcance, porque este código
   no lo abre (⚠️ §860).** Funde lo que

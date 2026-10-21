@@ -35,7 +35,7 @@ corregido durante el trabajo.
 
 La implementación de referencia consta de **1859 pruebas ejecutables en la
 compuerta de sello** (55 son las de winterfell 0.13.1, que el fork del §533
-trae consigo) —1996 contando los pines de los niveles largo y completo, y
+trae consigo) —1999 contando los pines de los niveles largo y completo, y
 1364 declaradas—, con 18 ignoradas y declaradas, y
 está disponible públicamente. **No ha sido auditada por terceros y no
 implementa consenso distribuido**; discutimos en detalle las implicaciones

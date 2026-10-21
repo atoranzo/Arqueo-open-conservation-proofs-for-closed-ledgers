@@ -52,51 +52,93 @@ pub struct MerklePath<F: PrimeField> {
     pub is_right: Vec<bool>,
 }
 
-/// Árbol de Merkle simple y completo (no disperso), solo para
-/// pruebas/demostración de wiring. Un árbol disperso (sparse Merkle tree)
-/// sería lo apropiado para un ledger real con cuentas identificadas por
-/// hash de dirección, pero añade complejidad no esencial para validar la
-/// estructura del circuito.
+/// Árbol de Merkle simple, solo para pruebas/demostración de wiring. Un árbol
+/// disperso (sparse Merkle tree) sería lo apropiado para un ledger real con
+/// cuentas identificadas por hash de dirección, pero añade complejidad no
+/// esencial para validar la estructura del circuito. (⚠️ §822: ese árbol
+/// disperso es el que pone cada cuenta en la hoja del hash de su dirección, y
+/// este sigue sin serlo: lo es solo en que no guarda el relleno, abajo.)
+///
+/// ⚠️ §822 · **Disperso: no materializa el relleno** (la 75 del `BACKLOG.md`).
+/// Decía «Árbol de Merkle simple y completo (no disperso)», y lo era: hasta el
+/// §822 rellenaba hasta 2^TREE_DEPTH hojas y hasheaba el árbol entero:
+/// 1.048.575 hashes para usar ocho, en cada `build`. Ahora el nivel `k` guarda
+/// los nodos que cubren alguna hoja dada, y cualquier otro es `vacios[k]`, el
+/// hash de un subárbol vacío de altura `k`: `vacios[0]` es el relleno de
+/// siempre, `F::zero()`, y `vacios[k + 1]` es `secure_hash(vacios[k],
+/// vacios[k])`, como `empty_subtrees` en los tests de
+/// `plonk-experiment/src/merkle.rs`. Un subárbol vacío tiene ese hash lo
+/// calcule quien lo calcule, así que la raíz y los caminos son los del árbol
+/// denso. Lo atan los tests de abajo: la raíz, contra un KAT sacado del árbol
+/// denso antes de cambiarlo; los bits del camino, contra los de su índice, que
+/// son los del denso; y los hermanos, porque con esos bits el camino tiene que
+/// subir a esa raíz, y con otros hermanos sería una colisión de Poseidon. Ni el
+/// circuito ni `TREE_DEPTH` cambian.
 pub struct SimpleMerkleTree<F: PrimeField> {
-    levels: Vec<Vec<F>>, // levels[0] = hojas, levels[ultimo] = [root]
+    // ⚠️ §822: decía «levels[0] = hojas, levels[ultimo] = [root]». Con alguna hoja,
+    // el último nivel sigue siendo [root]; sin ninguna, todos los niveles quedan
+    // vacíos y la raíz es vacios[TREE_DEPTH].
+    levels: Vec<Vec<F>>, // levels[0] = las hojas dadas, levels[k] = los nodos del nivel k que las cubren
+    vacios: Vec<F>,      // vacios[k] = el hash de un subárbol vacío de altura k
 }
 
 impl<F: PrimeField + Absorb> SimpleMerkleTree<F> {
-    /// Construye el árbol a partir de una lista de hojas. Rellena hasta
-    /// 2^TREE_DEPTH con un valor de relleno (F::zero()) si hace falta.
-    pub fn build(mut leaves: Vec<F>) -> Self {
+    /// Construye el árbol a partir de una lista de hojas. Las que faltan hasta
+    /// 2^TREE_DEPTH son el relleno (F::zero()), y no se materializan (⚠️ §822:
+    /// decía «Rellena hasta 2^TREE_DEPTH con un valor de relleno (F::zero())
+    /// si hace falta»).
+    pub fn build(leaves: Vec<F>) -> Self {
         let target_len = 1usize << TREE_DEPTH;
         assert!(
             leaves.len() <= target_len,
             "demasiadas hojas para la profundidad configurada"
         );
-        leaves.resize(target_len, F::zero());
+
+        let mut vacios = Vec::with_capacity(TREE_DEPTH + 1);
+        vacios.push(F::zero());
+        for k in 0..TREE_DEPTH {
+            let v = vacios[k];
+            vacios.push(secure_hash(v, v));
+        }
 
         let mut levels = vec![leaves];
-        for _ in 0..TREE_DEPTH {
+        for k in 0..TREE_DEPTH {
             let prev = levels.last().unwrap();
-            let mut next = Vec::with_capacity(prev.len() / 2);
+            let mut next = Vec::with_capacity((prev.len() + 1) / 2);
             for pair in prev.chunks(2) {
-                next.push(secure_hash(pair[0], pair[1]));
+                let derecho = if pair.len() == 2 { pair[1] } else { vacios[k] };
+                next.push(secure_hash(pair[0], derecho));
             }
             levels.push(next);
         }
-        Self { levels }
+        Self { levels, vacios }
+    }
+
+    /// El nodo `idx` del nivel `level`: el guardado, o el de un subárbol vacío.
+    fn nodo(&self, level: usize, idx: usize) -> F {
+        self.levels[level]
+            .get(idx)
+            .copied()
+            .unwrap_or(self.vacios[level])
     }
 
     pub fn root(&self) -> F {
-        self.levels.last().unwrap()[0]
+        self.nodo(TREE_DEPTH, 0)
     }
 
     /// Genera el camino de Merkle para la hoja en `index`.
     pub fn path_for(&self, index: usize) -> MerklePath<F> {
+        assert!(
+            index < 1usize << TREE_DEPTH,
+            "indice fuera del arbol: la profundidad configurada no lo alcanza"
+        );
         let mut siblings = Vec::with_capacity(TREE_DEPTH);
         let mut is_right = Vec::with_capacity(TREE_DEPTH);
         let mut idx = index;
 
         for level in 0..TREE_DEPTH {
             let sibling_idx = idx ^ 1;
-            siblings.push(self.levels[level][sibling_idx]);
+            siblings.push(self.nodo(level, sibling_idx));
             is_right.push(idx % 2 == 1);
             idx /= 2;
         }
@@ -182,5 +224,94 @@ mod tests {
             }
             assert_eq!(current, root, "el path reconstruido no coincide con la raiz para la hoja {i}");
         }
+    }
+
+    // ⚠️ §822 · Las cuatro raíces del árbol DENSO, el de antes del §822, en
+    // `serialize_compressed` y hexadecimal. Medido el 15-10-2026 sobre 0315b14
+    // (zk-core idéntico a 4d8017d): un test temporal, que no se queda, imprimió
+    // con el `build` denso la raíz y los caminos -hermanos y bits- de los
+    // índices 0, 3, 4, 100 y 2^20 - 1 de estos cuatro casos (213,14 s en
+    // `--release`); el mismo test sobre el disperso imprimió lo mismo byte a
+    // byte (md5 150177c071544af39422455482a2cdb9 las dos salidas). Los caminos
+    // no se copian: en esa salida los bits de cada camino son los de su índice,
+    // y aquí se exigen así, y cada camino tiene que subir a su raíz de aquí.
+    const KAT_RAIZ_OCHO: &str = "08fc742690deecd06310fed5feafef610265cc7bc92a633b78de8083ec382869"; // hojas 0..8
+    const KAT_RAIZ_CINCO: &str = "ce41bb85254f7b38c0c5ffde39cb609636e1bab424acc89c8f67cc85c68baa5c"; // hojas 1..6
+    const KAT_RAIZ_VACIO: &str = "77b4c587eacd0344f92b4ddbd3d63caec93a72ed6b88b164225ec03a958a3c67"; // ninguna hoja
+    const KAT_RAIZ_UNA: &str = "5657ca70456bc0c8afbf4bdba8eec3b9b5dc4019ace023c56171c973a6887623"; // la hoja 7
+
+    fn hex_comprimido(x: Fr) -> String {
+        use ark_serialize::CanonicalSerialize;
+        let mut bytes = Vec::new();
+        x.serialize_compressed(&mut bytes).unwrap();
+        bytes.iter().map(|b| format!("{b:02x}")).collect()
+    }
+
+    /// ⚠️ §822 · El disperso da la raíz del denso en los cuatro casos del KAT, y
+    /// el camino de cada índice -dentro de las hojas dadas, en el relleno y en
+    /// la última hoja del árbol, 2^20 - 1- lleva los bits de su índice y sube
+    /// a ella. La hoja de un índice sin hoja dada es el relleno, `F::zero()`,
+    /// como en el denso.
+    #[test]
+    fn el_arbol_disperso_da_las_raices_del_denso() {
+        use ark_ff::Zero;
+        let casos: [(&str, Vec<Fr>, &str); 4] = [
+            ("ocho", (0..8u64).map(Fr::from).collect(), KAT_RAIZ_OCHO),
+            ("cinco", (1..6u64).map(Fr::from).collect(), KAT_RAIZ_CINCO),
+            ("vacio", Vec::new(), KAT_RAIZ_VACIO),
+            ("una", vec![Fr::from(7u64)], KAT_RAIZ_UNA),
+        ];
+        for (nombre, hojas, kat) in casos {
+            let tree = SimpleMerkleTree::build(hojas.clone());
+            assert_eq!(
+                hex_comprimido(tree.root()),
+                kat,
+                "la raiz del caso {nombre} no es la del arbol denso"
+            );
+            for i in [0, 3, 4, 100, (1usize << TREE_DEPTH) - 1] {
+                let path = tree.path_for(i);
+                assert_eq!(path.siblings.len(), TREE_DEPTH);
+                assert_eq!(path.is_right.len(), TREE_DEPTH);
+                let bits: Vec<bool> = (0..TREE_DEPTH).map(|l| (i >> l) & 1 == 1).collect();
+                assert_eq!(
+                    path.is_right, bits,
+                    "los bits del camino del indice {i} del caso {nombre} no son los de su indice"
+                );
+                let mut current = hojas.get(i).copied().unwrap_or_else(Fr::zero);
+                for level in 0..TREE_DEPTH {
+                    current = if path.is_right[level] {
+                        secure_hash(path.siblings[level], current)
+                    } else {
+                        secure_hash(current, path.siblings[level])
+                    };
+                }
+                assert_eq!(
+                    hex_comprimido(current),
+                    kat,
+                    "el camino del indice {i} del caso {nombre} no sube a la raiz del denso"
+                );
+            }
+        }
+    }
+
+    /// ⚠️ §822 · Un índice que la profundidad no alcanza no tiene camino. El
+    /// denso caía por el índice de su vector; el disperso respondería con
+    /// subárboles vacíos, y por eso lo dice su `assert`.
+    #[test]
+    #[should_panic(expected = "indice fuera del arbol: la profundidad configurada no lo alcanza")]
+    fn el_camino_fuera_del_arbol_entra_en_panico() {
+        let tree = SimpleMerkleTree::build((0..8u64).map(Fr::from).collect::<Vec<Fr>>());
+        let _ = tree.path_for(1usize << TREE_DEPTH);
+    }
+
+    /// ⚠️ §822 · Más hojas de las que caben en 2^TREE_DEPTH no hacen árbol. El
+    /// `assert` de `build` es el de antes del §822, sin cambiar, y ningún test lo
+    /// pedía. Que el árbol lleno, 2^20 hojas, sí cabe no se prueba aquí:
+    /// construirlo cuesta más de un millón de hashes, como el denso.
+    #[test]
+    #[should_panic(expected = "demasiadas hojas para la profundidad configurada")]
+    fn el_arbol_con_mas_hojas_de_las_que_caben_entra_en_panico() {
+        use ark_ff::Zero;
+        let _ = SimpleMerkleTree::build(vec![Fr::zero(); (1usize << TREE_DEPTH) + 1]);
     }
 }

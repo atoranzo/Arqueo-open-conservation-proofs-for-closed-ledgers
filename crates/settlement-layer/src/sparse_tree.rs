@@ -12,6 +12,14 @@
 //! reconstruye con los hashes de subárboles vacíos, precalculados una
 //! vez. Actualizar una hoja cuesta 20 hashes, no dos millones.
 //!
+//! ⚠️ §822: aquel ya no construye el árbol entero. Desde el §822 no guarda el
+//! relleno: guarda los nodos que cubren alguna hoja dada, y cualquier otro es
+//! el hash de un subárbol vacío; con ocho hojas, un `build` son 44 hashes
+//! (contados; el §822 dice cómo). Y con el árbol entero no eran los «dos
+//! millones» que dice dos veces arriba: eran 2^20 - 1 = 1.048.575 por
+//! `build`. Lo de fondo sigue en pie: aquel no es mutable, y cambiar un saldo
+//! es volver a construirlo desde la lista entera de hojas.
+//!
 //! ## Lo que esto permite y antes no
 //!
 //! - Actualizar una cuenta en tiempo logarítmico.
