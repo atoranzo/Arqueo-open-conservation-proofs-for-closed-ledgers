@@ -72,8 +72,8 @@
 //!
 //! ⚠️ Y la corrección **no la demuestra un argumento, la demuestran las
 //! compuertas que ya existen**: 297 tests de `stark-experiment`, 256 de la
-//! capa, los seis censos y **la conformidad `zkssl/0.2`, que pincha el
-//! `epoch_digest`**.
+//! capa, los seis censos y **la conformidad `zkssl/0.2`, que pincha el `epoch_digest`** (⚠️ §849:
+//! las compuertas del §254; hoy esa versión se rechaza, y la vigente no cruza ese digest).
 //!
 //! Como `native_merge` es **la primitiva del árbol y de `chain_digest`**,
 //! un corte mal hecho **revienta la conformidad inmediatamente**. No hay
@@ -94,9 +94,9 @@ pub const STATE_WIDTH: usize = Rp64_256::STATE_WIDTH;
 
 /// Hash 2-a-1 nativo, con la implementación **real** de `winter-crypto`.
 ///
-/// ⚠️ Es **la primitiva del árbol disperso y de `chain_digest`**: si esto
-/// cambiara, cambiarían todas las raíces del proyecto y la conformidad
-/// `zkssl/0.3` lo diría en el acto.
+/// ⚠️ Es **la primitiva del árbol disperso y de `chain_digest`**: si esto cambiara, cambiarían
+/// todas las raíces del proyecto, y la conformidad del catálogo vigente, que las cruza una a una
+/// (`zk-ssl-cli/src/conformance.rs`), lo diría en el acto (⚠️ §849: decía una versión rechazada).
 pub fn native_merge(left: Digest, right: Digest) -> Digest {
     let mut state = [BaseElement::ZERO; STATE_WIDTH];
     state[4..8].copy_from_slice(&left);

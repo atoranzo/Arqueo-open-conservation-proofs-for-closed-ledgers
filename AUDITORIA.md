@@ -60263,3 +60263,204 @@ sigue abierta, y su cabecera sigue en 44 abiertas y 86 resueltas. Las marcas «�
 ficheros del commit, sin este asiento, son siete: dos en `crates/zk-ssl-medio/Cargo.toml`, una en
 `src/lib.rs`, una en `tests/vectores/README.md`, una en `tests/vectores/testigos/README.md` y dos
 en el RFC-0013.
+
+## §849 — las cuatro frases de `zk-ssl-hash` y del nodo que daban por vigente la conformidad `zkssl/0.3`, falsas hoy porque la 0.3 se rechaza por versión, se redactan sin versión y remiten a `conformance.rs`; y `check_superficie` gana la R8: ROJO a una frase de conformidad con una versión que `conformance.rs` no da por vigente (lo descubierto 1b y 1c)
+
+El commit que lleva este asiento, sobre `1270f71` (el §848). Toca cuatro fuentes de Rust, sólo en
+comentarios `//!` y `///`, cada cambio en sus mismas líneas, sin añadir ni quitar ninguna:
+`crates/zk-ssl-hash/src/lib.rs:75-76` y `:97-99`, `crates/zk-ssl-node/src/main.rs:97-98`,
+`crates/zk-ssl-node/src/latido.rs:47-50` y `crates/zk-ssl-node/src/recepcion.rs:42-43`. Toca
+`tools/check_superficie.py`: la R8 en su cabecera (`:47-58`), una marca en la línea que contaba sus
+reglas (`:9-10`), la ceguera de la R8 (`:71-73`, en el párrafo repartido hasta la `:75`), su código
+tras `escrituras_del_cable` (`:223-312`), su llamada en `main` (`:651-662`) y una línea más en su
+salida (`:679-681`). Y este asiento. Ni código que se compile, ni tests, ni pines, ni vectores, ni
+`tools/canon.sh`, ni `BACKLOG.md`. Del nodo no toca nada más que esas tres frases. Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó
+(§830 a §859).
+
+Del autor es la tarea: lo descubierto 1b y 1c de la lista que encargó, las frases de conformidad de
+`zk-ssl-hash` y del nodo, con la regla que las vigile. La redacción y la forma de la regla las
+propone la sesión. El canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión
+sobre su árbol limpio, con este asiento en su sitio y sin esta frase: VERDE, 1029 s de reloj (de
+su arranque a su salida) y 794 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU
+con carga de 0,21 al empezar. Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los 275
+`.rs` de `crates/` y de `tools/` (los mismos que en el §848: este sello no añade ninguno), y su
+log lo registra. Las 19 filas del nivel, en su pin, con 1853 tests que pasan (la suma de la
+columna «pasan»), y las de `zk-ssl-hash` y `zk-ssl-node` en 56 y 229 pasan y 0 ignorados; la
+puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (61 s)»;
+`check_tests` en 2012 y 20 instrumentos; `check_modulos` en 207; las once herramientas del bucle
+«2 ter», con `check_superficie` y su R8; la puerta de los vectores, en 500 ficheros y 1002
+líneas; `check_catalogo`; el paquete, en 84 de 84; el cable, en 23 de 23; la segunda
+implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`3a01451fb51204ac` y el tarball `1bca08b7f739c209`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió, se midió y se commiteó (`cd0fcd6`) sobre el §848 de antes
+(`0bdf125`), y la cadena, sobre el §842 de antes (`77bca6c`), que no llevaba el §860 ni el §861.
+Después se rebasó sobre el §848 de ahora (`1270f71`), que va sobre el §847, el §846, el §845, el
+§844 y el §843 de ahora, el §818 (`69597f3`), el §817, el §816, el §815 y el §842 de ahora
+(`4b9f14b`), y éste, sobre el §860 y el §861, de otra sesión. El `cherry-pick` entra sin conflicto.
+Los seis ficheros del sello cambian en las mismas líneas que sobre `0bdf125` (`git diff -U0`): el
+§815 tocó `crates/zk-ssl-node/src/main.rs` desde la `:537` y `latido.rs` desde la `:143`, por
+debajo de las frases, y ningún sello de en medio toca `zk-ssl-hash/src/lib.rs`, `recepcion.rs`,
+`tools/check_superficie.py` ni `crates/zk-ssl-cli/src/conformance.rs`. Remedido sobre `1270f71`:
+`git grep -n 'zkssl/0\.3' -- crates/` da las mismas 14 líneas en 7 ficheros, y 10 con el sello;
+los `.rs` de `crates/` que nombran una versión del cable siguen en 15, y 13 con el sello; las citas
+a `tools/canon.sh:495-502` y `:497-498`, a `conformance.rs:106` y `:238-273`, a
+`crates/zk-ssl/src/log.rs:281-294` y a `doc/blueprint-v2.md` caen donde caían. Lo único que se
+mueve son las tres notas «`zkssl/0.3` no sube» del `main.rs`: de `:3149`, `:3256` y `:3276` a
+`:3270`, `:3367` y `:3387`: el §815 metió 121 líneas encima de la primera y quitó 10 entre ella
+y las otras dos. Y la R8, sobre lo que
+trajo el §815, da VERDE: 1 frase con versión, la exenta, y ninguna nueva; `check_superficie` sale
+con 0 y sus tres líneas, y la última sigue en «28 comparaciones». Lo «Medido», los mutantes y el
+`cargo test` de `zk-ssl-hash` y del nodo son los de `cd0fcd6`, sobre `0bdf125`; sobre `1270f71` no
+se rehicieron, y el nodo, que entonces daba 210, va en la base en 229 (el §815). Lo que cambió por
+el rebase: la apertura; este párrafo; las tres citas al `main.rs`; la línea de las herramientas
+rápidas, que se corrieron otra vez, con `--desde 69597f3`; la frase del canon, que se corrió
+sobre `1270f71` con este sello; y los contadores de la base: el total
+de sello, de 1821 a 1853, `check_tests`, de 1980 a 2012, y la cabecera de `BACKLOG.md`, de 48
+abiertas y 79 resueltas a 44 y 86.
+
+**De dónde sale.** El canon corre `conformance --check` con los cuatro catálogos, y sólo el vigente
+pasa: `tools/canon.sh:495-502`, con el 0.3 en la `:497-498`, que exige «OTRA version». La versión
+vigente la escribe `crates/zk-ssl-cli/src/conformance.rs:106`, `spec: "zkssl/0.4"`, y el `bail!`
+de «OTRA version» está en su `:238-242`. Cuatro comentarios citaban la conformidad de la 0.3 como
+si corriera: que vería un cambio del hash, que el digest de la cabeza está en sus vectores y que
+meter el contador en la cadena la rompería. Hoy no corre: se rechaza antes de mirar nada.
+
+**Medido**, en este orden, sobre `0bdf125`:
+
+1. `git grep -n 'zkssl/0\.3' -- crates/`: 14 líneas en 7 ficheros. Cuatro son frases de conformidad:
+   `crates/zk-ssl-hash/src/lib.rs:97-99`, `crates/zk-ssl-node/src/main.rs:96-98`, `latido.rs:47-48`
+   y `recepcion.rs:42-43`. Son las líneas que daba la especificación, escrita sobre `669ee88`: en
+   estos cuatro ficheros, nada se ha movido por encima. Las otras diez dicen que la versión «no
+   sube» al añadir algo, o narran una re-emisión: no son de la conformidad. Después de este commit
+   quedan esas diez.
+2. Lo que el `--check` del catálogo vigente exige y cruza, leído en `conformance.rs:238-273`.
+   Exige antes el mismo `spec` y el mismo `canon` (`:238-243`) y el mismo número de entradas
+   (`:244-249`). Después cruza `seq`, `kind`, `root_old`, `root_new` y `compromiso` de cada
+   entrada, y el suministro y el pendiente. El fichero de la 0.4, `spec/vectors/zkssl-0.4.json`,
+   lleva también `epoch_digest`, y cada entrada su `proof_digest` y su `chain`, pero el `--check`
+   no los compara (D-AI del RFC-0009, «no se reproducen», como dice también `spec/RPC.md`, en la
+   nota que sigue a «La composición de `chain`, byte a byte»). Por eso no basta con quitar la
+   versión. De las cuatro, sólo la de `zk-ssl-hash` sigue siendo verdad con el catálogo vigente: un
+   cambio de `native_merge` cambia las raíces, y las raíces se cruzan. Las del `main.rs` y
+   `latido.rs` decían que el digest de la cabeza «está en los vectores de conformidad» de la 0.3:
+   el de la 0.4 también lo lleva, pero el `--check` no lo compara, y quitar sólo la versión haría
+   creer que lo vigila. La de `recepcion.rs` decía que meter el contador rompería esa conformidad:
+   cambiaría la composición de `chain`, y el `--check` tampoco la compara.
+3. Las mismas formas, con cualquier versión, en los comentarios de los `.rs` de `crates/` que
+   nombran una versión del cable (15 ficheros sobre `0bdf125`; 13 después de este commit): cinco.
+   Las cuatro de arriba y `crates/zk-ssl-hash/src/lib.rs:75`, «la conformidad `zkssl/0.2`, que
+   pincha el `epoch_digest`», en la sección que narra el §254, el sello que creó el crate.
+4. `git grep -nE '(zk-ssl-hash/src/lib\.rs|latido\.rs|recepcion\.rs|zk-ssl-node/src/main\.rs):[0-9]'`,
+   sin `AUDITORIA.md`: hay citas por línea a los cuatro ficheros por debajo de las frases (por
+   ejemplo `latido.rs:262-265` y `recepcion.rs:96-101`, en `doc/blueprint-v2.md`). Por eso cada
+   cambio va en sus mismas líneas, y ninguna se mueve. Nadie cita `tools/check_superficie.py` por
+   línea.
+
+**Las frases**, sin versión, con su marca:
+
+- `zk-ssl-hash/src/lib.rs:97-99`: un cambio de `native_merge` cambiaría todas las raíces, «y la
+  conformidad del catálogo vigente, que las cruza una a una (`zk-ssl-cli/src/conformance.rs`), lo
+  diría en el acto».
+- `zk-ssl-node/src/main.rs:97-98`: sin semilla, la cabeza de época se calcula igual y lo que falta
+  es la firma. La marca dice que antes se leía que su digest está «en los vectores de conformidad»
+  de una versión rechazada, y que `conformance.rs` no lo cruza (es la D-AI).
+- `zk-ssl-node/src/latido.rs:47-50`: la cabeza «es útil por sí sola», y lo que la clave añade es la
+  firma. La marca dice lo mismo que la del `main.rs`.
+- `zk-ssl-node/src/recepcion.rs:42-43`: meter el contador en `chain_digest` «cambiaría la
+  composición de `chain` (`spec/RPC.md`) y rompería la propiedad retroactiva de §115».
+
+Y `zk-ssl-hash/src/lib.rs:75-76` no se reescribe: narra el §254 y sus compuertas de entonces. Lleva
+una marca que lo dice, y que hoy esa versión se rechaza y la vigente no cruza el digest de la
+cabeza. Ninguna frase nombra una versión futura.
+
+**Qué hace la regla (R8).**
+
+- Lee la versión vigente de `crates/zk-ssl-cli/src/conformance.rs`: el `spec: "zkssl/0.N".into()`
+  de su código, sin comentarios. Tiene que dar una y sólo una; si no, ROJO.
+- Busca en los comentarios de los `.rs` de `crates/` (src, tests y examples) que nombran una versión
+  del cable «conformidad `zkssl/0.N`», «conformidad de `zkssl/0.N`» y «conformance (of)
+  `zkssl/0.N`». El código se cambia por blancos, cadenas incluidas, con el lexer que ya usaban R1,
+  R3, R4 y R5. La frase puede ir partida entre dos líneas de comentario, como la de `lib.rs:98-99`.
+- Con otra versión que la vigente es ROJO, con su fichero y su línea. Una narración de su sello va
+  en `EXENTAS_R8`, con su razón, y tiene que casar una vez: hoy la de `lib.rs:75`, y nada más.
+- Prueba de vida, en cada pasada: la versión se lee de una copia de `conformance.rs` con otra
+  versión (la vigente más cien, calculada) y con la vigente en un comentario, que no cuenta. Y una
+  frase sembrada, partida entre dos líneas, sale ROJO con la otra versión y no con la vigente.
+- No coge «`zkssl/0.3` no sube» de `main.rs:3270`, `:3367` y `:3387`. Son notas de cuando entró
+  cada método y dicen que la versión no subió entonces. No son de la conformidad, y se quedan como
+  están.
+
+`python3 tools/check_superficie.py`, antes: exit 0, dos líneas. Después: exit 0, tres. La nueva, la
+segunda: «check_superficie R8: 1 frase(s) de conformidad con version en los comentarios de crates/,
+1 exenta(s) por EXENTAS_R8; la vigente, la de crates/zk-ssl-cli/src/conformance.rs: zkssl/0.4». La
+primera y la última no cambian, y la última sigue en «28 comparaciones».
+
+**Mutantes**, sobre copias del árbol en el directorio de la sesión (sin `target/` ni `.git/`), con
+la herramienta de la copia y la copia como raíz:
+
+- M1, «`zkssl/0.3`» repuesto en `latido.rs:48`, la frase de antes: exit 1, ROJO R8
+  `crates/zk-ssl-node/src/latido.rs:48`.
+- M2, los cuatro fuentes de `ff9d4fc`: exit 1, cuatro ROJO R8, en `zk-ssl-hash/src/lib.rs:99`,
+  `latido.rs:48`, `main.rs:98` y `recepcion.rs:43`. La exención casa una vez.
+- M3, la regla con la versión fija (`version_de_conformidad` devuelve la 0.4 sin leer): exit 1, la
+  prueba de vida, «la version de una copia de conformance.rs … no se lee».
+- M4, la versión de `conformance.rs` leída sin quitar los comentarios: exit 1, la prueba de vida,
+  que lee dos.
+- M5, la exención borrada: exit 1, ROJO R8 en `zk-ssl-hash/src/lib.rs:75`.
+- M6, la frase de `lib.rs:75` con otra palabra («la compuerta `zkssl/0.2`»): exit 1, la exención
+  «casa 0 veces».
+- M7, el separador de la frase sin saltos de línea: exit 1, las dos de la prueba de vida que usan la
+  frase sembrada.
+- M8, la búsqueda sobre el fuente sin comentarios en vez de sobre los comentarios: exit 1, la
+  exención y dos de la prueba de vida.
+- M9, la regla que no compara la versión: exit 1, la prueba de vida («no sale ROJO») y la exención.
+- M10, una segunda `spec: "zkssl/0.3".into()` en `conformance.rs`: exit 1, ROJO R8 «da 2 versiones
+  vigentes», y R1, por la escritura nueva.
+
+Vivos, a propósito: V1, `conformance.rs` con otra versión en su `spec:`: R8 no da ROJO, porque las
+frases ya no nombran versión, y la de `lib.rs:75` sigue exenta. El exit es 1, pero por R1, que
+cuenta esa escritura de la versión. V2, «conformidad de `zkssl/0.4`», la vigente, en `latido.rs`:
+VERDE; la regla no exige redactar sin versión, sólo que la versión sea la vigente. La primera
+redacción de la frase sembrada partía la línea antes de «conformidad», y M7 la dejaba VERDE: la
+frase sembrada se partió dentro de la forma, y M7 murió. Las copias se borraron al acabar.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores --desde 69597f3` y
+`check_catalogo`, sobre el árbol con el cambio y antes del commit; también `check_tests` y
+`check_modulos`. Sobre `0bdf125`, `cargo test --release --locked -p zk-ssl-hash -p zk-ssl-node`,
+con el `target` de fuera del árbol: exit 0, 56 tests de `zk-ssl-hash` y 210 del nodo, que pasan.
+
+**Lo que NO hace.**
+
+- No mira prosa fuera de `crates/`, ni cadenas de código, ni una frase de conformidad con otras
+  palabras entre «conformidad» y la versión.
+- No juzga lo que afirma una frase sin versión. Que el catálogo vigente cruza las raíces lo dice
+  la frase de `zk-ssl-hash` porque se leyó en `conformance.rs`, no porque lo compruebe la regla.
+- No corrige el «y nada más» de `recepcion.rs:41-42`: desde el §281 la cadena ata también el
+  compromiso (`chain_digest_v2`, `crates/zk-ssl/src/log.rs:281-294`). Es del nodo, y aquí sólo se
+  tocan las frases de conformidad.
+- No toca `main.rs:3270`, `:3367` y `:3387`, ni las otras frases que dicen que la versión «no sube».
+- No toca el RFC-0021, cuya D-D sigue con sus siete reglas: la R8 no es de la superficie, y su
+  cabecera lo dice.
+- No mueve ninguna línea de los `.rs`: cada frase cambia en sus mismas líneas, porque hay citas por
+  línea por debajo. Por eso se acepta en ellos alguna línea de comentario más larga que el ancho de
+  la casa: `recepcion.rs:43` tiene 103 caracteres, y las demás añadidas, 100 o menos. No hay
+  `rustfmt.toml` ni `cargo fmt` en el canon, y nada sale ROJO por eso. En
+  `tools/check_superficie.py`, los dos párrafos que tocan la R8 se reparten en las mismas líneas
+  que tenían (`:47-58` y `:71-75`), y ninguna línea añadida pasa de 100.
+
+**Lo que es del autor.** Si la R8 vive en `check_superficie` o en otra herramienta. Si se extiende a
+la prosa de `doc/` y `spec/`. Si `lib.rs:75` se queda como narración exenta. Y si el «y nada más»
+de `recepcion.rs` se corrige, y en qué sello.
+
+**Contadores.** Ninguno se mueve. El total de sello sigue en 1853, y `check_tests` en 2012 tests
+declarados y 20 instrumentos: la regla es de una herramienta del bucle, no un test. `check_modulos`
+sigue en 207. `BACKLOG.md` no cambia: su cabecera sigue en 44 abiertas y 86 resueltas. Las marcas
+«⚠️ §849» en los ficheros del commit, sin este asiento, son seis: dos en `zk-ssl-hash/src/lib.rs`,
+una en cada uno de los tres del nodo y una en `tools/check_superficie.py`.
+`git grep --cached -n "§849" -- ':!AUDITORIA.md'` da ocho líneas: esas seis y otras dos de
+`tools/check_superficie.py` (la cabecera de la R8 y la razón de su exención), crónica de la regla,
+que no corrige nada sellado.

@@ -94,8 +94,8 @@ struct Args {
     /// **Semilla de la clave de firma de cabezas** (96 bytes, en hex).
     ///
     /// ⚠️ **Sin esto el nodo NO FIRMA.** El latido sigue corriendo y la
-    /// cabeza de época se calcula igual —su digest está en los vectores
-    /// de conformidad de `zkssl/0.3`—; lo que falta es la firma.
+    /// cabeza de época se calcula igual; lo que falta es la firma (⚠️ §849: decía que su digest
+    /// está en los vectores de conformidad de una versión rechazada; `conformance.rs` no lo cruza).
     ///
     /// ⚠️ Y **una firma sin custodia declarada de la clave no tiene valor
     /// probatorio** (§236, §238). De dónde sale esta semilla y quién la

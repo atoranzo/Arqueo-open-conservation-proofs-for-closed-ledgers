@@ -44,10 +44,10 @@
 //!
 //! ## ⚠️ Calcular y firmar son cosas distintas
 //!
-//! La cabeza de época **es útil por sí sola**: su `epoch_digest` está en
-//! los vectores de conformidad de `zkssl/0.3`. Lo que la clave añade es la
-//! firma. Por eso el código los separa: sin clave **hay cabeza**, no hay
-//! firma.
+//! La cabeza de época **es útil por sí sola** (⚠️ §849: decía que su `epoch_digest` está en los
+//! vectores de conformidad de una versión ya rechazada; `zk-ssl-cli/src/conformance.rs` no lo
+//! cruza: D-AI). Lo que la clave añade es la firma. Por eso el código los separa: sin clave
+//! **hay cabeza**, no hay firma.
 //!
 //! ## ⚠️ El candado, y lo que NO se ha medido
 //!

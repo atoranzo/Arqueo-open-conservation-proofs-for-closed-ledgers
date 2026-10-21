@@ -6,7 +6,8 @@
 # que la haga cierta: lo declarado estable no cambia sin que el canon lo diga». Esta herramienta lee
 # cada superficie de su PRODUCTOR y la compara con la LISTA que la seccion fija para la version
 # vigente, en su bloque ```superficie```. Las cifras viven en la lista, no en la prosa (D-C). Reglas,
-# declaradas ANTES de mirar; son las siete de la D-D del RFC-0021:
+# declaradas ANTES de mirar; son las siete de la D-D del RFC-0021 (⚠️ §849: y la R8, que no es de
+# la D-D: decia «son las siete»):
 #
 #  R1  LA VERSION DEL CABLE. Sus escrituras de produccion -cada literal de cadena "zkssl/0.N" de
 #      crates/*/src fuera de todo item #[cfg(test)]- son las que la lista declara en
@@ -43,6 +44,18 @@
 #      productor sin una de las entradas de la lista: las tres tienen que salir ROJO. Una clave de
 #      la lista que falta, que se repite o que la herramienta no conoce, y una seccion sin bloque,
 #      son ROJO.
+#  R8  (§849, fuera de la D-D) LA CONFORMIDAD QUE CITA UN COMENTARIO. La version que da por vigente
+#      crates/zk-ssl-cli/src/conformance.rs -el `spec: "zkssl/0.N".into()` de su codigo, sin
+#      comentarios: una y solo una- es la unica que puede seguir a una frase de conformidad en los
+#      comentarios de los .rs de crates/ (src, tests, examples): «conformidad `zkssl/0.N`»,
+#      «conformidad de `zkssl/0.N`», «conformance (of) `zkssl/0.N`», tambien partida en dos lineas
+#      de comentario. Con otra version es ROJO, con su fichero y su linea: el canon rechaza por
+#      version los catalogos viejos, y una frase asi afirma una compuerta que ya no corre. Lo
+#      redactado sin version, que remite al catalogo vigente o a conformance.rs, no casa. Una
+#      narracion de su sello va en EXENTAS_R8, con su razon, y tiene que casar una vez. Prueba de
+#      vida: la version se lee de una copia de conformance.rs con otra version (una version fija no
+#      pasa), no se lee de un comentario, y una frase sembrada, partida en dos lineas, sale ROJO con
+#      otra version y no con la vigente. No coge «`zkssl/0.N` no sube»: no es de la conformidad.
 #
 # Ceguera declarada. Lo aditivo se cuenta y no es ROJO (R2 de la D-B), asi que la lista no se pone
 # al dia sola: un metodo que entra sin que la lista lo diga y sale despues, dentro de la misma
@@ -55,9 +68,11 @@
 # lectores de R1, R3, R4 y R5 son expresiones sobre el fuente de Rust SIN sus comentarios (el
 # lexer los quita: una variante, un brazo o un `=> 3` comentado no cuentan), pero no lo compilan:
 # una constante o un brazo de los que la lista fija, escritos de otra forma que la de hoy, no se
-# leen, y su comparacion sale ROJO, no verde. En los textos de R5, un digito suelto que no es un
-# codigo -un «(1)»- cuenta como uno. Del kit publicado -el tag, el commit y las huellas- no ve nada:
-# no hay red.
+# leen, y su comparacion sale ROJO, no verde. R8 solo ve sus formas, en comentarios de Rust: una
+# frase en ingles distinta, otra palabra entre «conformidad» y la version, una cadena de codigo o
+# un texto fuera de crates/ no se ven; y lo que afirma una frase sin version no se juzga. En los
+# textos de R5, un digito suelto que no es un codigo -un «(1)»- cuenta como uno. Del kit publicado
+# -el tag, el commit y las huellas- no ve nada: no hay red.
 #
 # Uso: python3 tools/check_superficie.py           # exit 0 si nada se rompe; 1 con cada ROJO
 #      python3 tools/check_superficie.py --lista   # imprime la lista que dan HOY los productores,
@@ -203,6 +218,96 @@ def escrituras_del_cable():
                     if clase == 'str' and re.fullmatch(r'zkssl/0\.\d+', val):
                         out.append((rel, val, ln))
     return out
+
+
+# ── R8: la conformidad que cita un comentario ───────────────────────
+CONFORMANCE = os.path.join('crates', 'zk-ssl-cli', 'src', 'conformance.rs')
+_SEP = r'(?:\s|//[/!]?|\*)+'
+FRASE_CONFORMIDAD = re.compile(r'\b(?:conformidad|conformance)' + _SEP + r'(?:(?:de|of)' + _SEP +
+                               r')?`?(zkssl/0\.\d+)\b')
+# (ruta bajo la raiz, version) -> por que no es ROJO. Cada una tiene que casar una sola vez.
+EXENTAS_R8 = {
+    ('crates/zk-ssl-hash/src/lib.rs', 'zkssl/0.2'):
+        'narra el §254, el sello que creo el crate, y sus compuertas de entonces; el §849 lo marca',
+}
+
+
+def version_de_conformidad(src):
+    """R8: las versiones que el codigo de conformance.rs escribe en `spec: "zkssl/0.N".into()`."""
+    return re.findall(r'\bspec:\s*"(zkssl/0\.\d+)"\.into\(\)', sin_comentarios(src))
+
+
+def solo_comentarios(src):
+    """El fuente con el codigo -cadenas incluidas- cambiado por blancos y los comentarios en su
+    sitio: lo contrario de sin_comentarios, con las lineas del fichero."""
+    tramos, trozos, prev = [], [], 0
+    lex(src, tramos)
+    for i, j in tramos:
+        trozos.append(re.sub(r'[^\n]', ' ', src[prev:i]))
+        trozos.append(src[i:j])
+        prev = j
+    trozos.append(re.sub(r'[^\n]', ' ', src[prev:]))
+    return ''.join(trozos)
+
+
+def frases_de_conformidad(src):
+    """R8: [(version, linea)] de cada frase de conformidad con version en los comentarios."""
+    c = solo_comentarios(src)
+    return [(m.group(1), c.count('\n', 0, m.start(1)) + 1) for m in FRASE_CONFORMIDAD.finditer(c)]
+
+
+def fuentes_de_crates():
+    """R8: [(ruta bajo la raiz, texto)] de cada .rs de crates/ que nombra una version del cable."""
+    out, base = [], os.path.join(RAIZ, 'crates')
+    for crate in sorted(os.listdir(base)):
+        for raiz, dirs, fs in os.walk(os.path.join(base, crate)):
+            dirs[:] = sorted(d for d in dirs if d != 'target')
+            for f in sorted(fs):
+                if f.endswith('.rs'):
+                    ruta = os.path.join(raiz, f)
+                    texto = open(ruta, encoding='utf-8').read()
+                    if 'zkssl/0.' in texto:
+                        out.append((os.path.relpath(ruta, RAIZ).replace(os.sep, '/'), texto))
+    return out
+
+
+def rojos_r8(fuentes, vigente, exentas):
+    """R8 -> (rojos, cuantas frases con version, cuantas exentas casaron)."""
+    rojos, n, vistas = [], 0, Counter()
+    for rel, texto in fuentes:
+        for v, ln in frases_de_conformidad(texto):
+            n += 1
+            if v == vigente:
+                continue
+            if (rel, v) in exentas:
+                vistas[(rel, v)] += 1
+                continue
+            rojos.append('%s:%d: una frase de conformidad con `%s`, y %s da por vigente `%s`: se '
+                         'redacta sin version, remitiendo al catalogo vigente o a conformance.rs'
+                         % (rel, ln, v, CONFORMANCE, vigente))
+    for (rel, v), por in sorted(exentas.items()):
+        if vistas[(rel, v)] != 1:
+            rojos.append('la exencion de %s con `%s` (%s) casa %d veces: tiene que casar una'
+                         % (rel, v, por, vistas[(rel, v)]))
+    return rojos, n, sum(vistas.values())
+
+
+def vida_r8(vigente):
+    """R8, prueba de vida -> lo que NO se cumple. Otra version, sacada de la vigente."""
+    otra = 'zkssl/0.%d' % (int(vigente.rsplit('.', 1)[1]) + 100)
+    copia = '// spec: "%s".into()\nfn f() -> V { V { spec: "%s".into() } }\n' % (vigente, otra)
+    sembrada = '//! su digest esta en los vectores de conformidad\n//! de `%s`.\nfn g() {}\n'
+    mal = []
+    if version_de_conformidad(copia) != [otra]:
+        mal.append('la version de una copia de conformance.rs con `%s` no se lee: sale %s'
+                   % (otra, version_de_conformidad(copia)))
+    if frases_de_conformidad(sembrada % otra) != [(otra, 2)]:
+        mal.append('la frase sembrada, partida en dos lineas, no se reconoce')
+    if not rojos_r8([('sembrado.rs', sembrada % otra)], vigente, {})[0]:
+        mal.append('la frase sembrada con `%s` no sale ROJO' % otra)
+    if rojos_r8([('sembrado.rs', sembrada % vigente)], vigente, {})[0]:
+        mal.append('la frase sembrada con la vigente sale ROJO')
+    return mal
 
 
 # ── los productores ──────────────────────────────────────────────────
@@ -543,6 +648,18 @@ def main():
     cmp.append(('R6', 'los manifiestos de spec/vectors/', 'crece', L('manifiesto'), p['manifiesto']))
     cmp.append(('R6', 'FAMILIAS de tools/artefacto.sh', 'crece', L('familia'), p['familia']))
 
+    # R8
+    vig = version_de_conformidad(leer(CONFORMANCE))
+    r8 = (0, 0)
+    if len(vig) != 1:
+        rojo.append('R8 %s da %d versiones vigentes (%s): tiene que dar una'
+                    % (CONFORMANCE, len(vig), ', '.join(vig) or 'ninguna'))
+    else:
+        r, n8, ex8 = rojos_r8(fuentes_de_crates(), vig[0], EXENTAS_R8)
+        rojo += ['R8 %s' % x for x in r]
+        vida += ['R8 prueba de vida: %s: la regla esta ciega' % x for x in vida_r8(vig[0])]
+        r8 = (n8, ex8)
+
     for regla, que, modo, fijado, producido, *quien in cmp:
         quien = quien[0] if quien else ('la lista', 'el productor')
         r, n = comparar(modo, fijado, producido, quien)
@@ -559,6 +676,9 @@ def main():
              len(p['escrituras']), ' '.join(p['cabeza.acepta']), ' '.join(p['cabeza.emite']),
              len(p['sobre.tipo']), ' '.join(p['sobre.v']), ' '.join(p['kit.salida']),
              p['vectores.json'][0], p['vectores.lineas'][0], len(p['manifiesto']), len(p['familia'])))
+    print('check_superficie R8: %d frase(s) de conformidad con version en los comentarios de '
+          'crates/, %d exenta(s) por EXENTAS_R8; la vigente, la de %s: %s'
+          % (r8[0], r8[1], CONFORMANCE, ', '.join(vig) or '?'))
     for x in nuevo:
         print('NUEVO %s (aditivo, R2 de la D-B: se cuenta y no es ROJO)' % x)
     rojo += vida
