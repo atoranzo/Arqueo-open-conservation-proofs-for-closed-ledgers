@@ -61019,3 +61019,165 @@ párrafo nuevo), una en cada RFC y una en `doc/integracion-vertical-evaluacion.m
 la segunda línea de la marca de la `:613`; y dos de `verificador.py`, el comentario del bloque (`:996`
 y `:1003`). La cuenta de `tools/segunda/README.md:356` pasa de 354 a 359 entradas en los diez
 manifiestos del `.wasm`, y de 415 a 420 en las doce de `FAMILIAS`.
+
+## §853 — las siete filas de `tools/canon.sh` con timeout de 60 s, medidas con un núcleo: la de `zk-ssl-air` pasa de 60 a 180 s, porque compilarla cuesta unos 50 s y con medio núcleo tarda 106 s, que en 60 dan `exit 124`; las otras seis se quedan en 60; y el autor ratifica el 600 de la fila `zk-ssl-cli` del §845
+
+El commit que lleva este asiento, sobre `378e1fa` (el §852). Toca `tools/canon.sh`, una línea de la
+TABLA, en su sitio: la `:145`, la fila de `zk-ssl-air`, con su timeout de 60 a 180 y una nota
+«§853» al final de su crónica. Y este asiento. En `tools/canon.sh` ninguna línea entra ni sale:
+ninguna cita por línea se mueve. Ni código de los crates, ni tests, ni vectores, ni otra fila, ni el
+bucle que corre la TABLA, ni `Cargo.toml`, ni `Cargo.lock`, ni `BACKLOG.md`. Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó
+(§830 a §859).
+
+Lleva dos cosas, y sólo la segunda es del autor. La primera extiende la 32 de la lista que encargó,
+«Medir con un núcleo los timeouts de las filas cli y settlement-layer, como hizo el §704», a lo que
+el §845 dejó abierto («No toca las demás filas»): medir en frío y con un núcleo las filas con
+timeout de 60 s, y subir la que no quepa con medio núcleo. La 32 nombra sólo esas dos filas, que
+cerró el §845; las de 60 s no están en la lista del autor, y medirlas lo propone la sesión. No es la
+entrada 32 de `BACKLOG.md`. La segunda es una decisión del autor, que este asiento registra (abajo).
+El margen de 180 lo propone la sesión. El canon de este commit, `bash tools/canon.sh --sello`,
+corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y otras cifras en esta
+frase, las de una corrida anterior: VERDE, 866 s de reloj (de su arranque a su salida) y 667 s de
+tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,09 al empezar. Antes,
+dentro del mismo cerrojo, la sesión tocó con `touch` los 275 `.rs` de `crates/` y de `tools/` (los
+mismos que en el §852: este sello no añade ninguno), y su log lo registra. Las 19 filas del nivel,
+en su pin, con 1853 tests que pasan (la suma de la columna «pasan»); la de `zk-ssl-air`, con 180, en
+12 s; la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (52 s)»;
+`check_tests` en 2012 y 20 instrumentos; `check_modulos` en 207; las once herramientas del bucle «2
+ter»; la puerta de los vectores, en 508 ficheros y 1017 líneas; `check_catalogo`; el paquete, con
+«89 de 89 entradas dicen lo que deben (78 .json, 89 con entrada)»; el cable, en 27 de 27; la segunda
+implementación, con el paquete en 89 de 89, las otras cinco familias en 17, 17, 22, 34 y 27, y sus
+pares STARK en 34 de 34; el «3 duodecies», con la cadena en 24 de 24 y el cable de la segunda en 27
+de 27; y el artefacto reproducible, con el binario `3a01451fb51204ac`, los manifiestos con el
+paquete en 89/89, y el tarball `69ca815bc955ee92`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él.
+
+**La decisión del autor sobre el §845.** El 2026-10-21 el autor ratificó el timeout de 600 s de la
+fila `zk-ssl-cli`, con la remedida sobre `69597f3` del §845 ya sellada: 163,4 s tras un cambio en
+`zk-ssl` y 268,7 s tras uno en `winter-air`, con un núcleo. El §845 lo dejaba en «Lo que es del
+autor» («El margen: 600 s»), con 480 como la propuesta anterior. Queda en 600. La fila no cambia en
+este commit: su timeout y su nota son los del §845.
+
+**Las filas.** Con 60 s en `378e1fa` hay siete: `zk-ssl-hash` (56 tests), `zk-ssl-guardian` (40),
+`zk-ssl-medio` (62), `zk-ssl-air` (44), `winter-air` (49), `winter-prover` (6) y `winter-verifier`
+(0). El plazo cubre compilar y correr: `timeout "${tmo}s" cargo test -p "$c" --release --locked`
+(`tools/canon.sh:364`). De la casa, según `cargo tree -p <crate> --locked -e normal,dev,build`:
+`zk-ssl-hash`, `zk-ssl-guardian`, `zk-ssl-medio` y `winter-air` no dependen de otro crate de la casa;
+`zk-ssl-air` depende de `winter-air`, `winter-verifier` y `zk-ssl-hash`; `winter-prover` y
+`winter-verifier`, de `winter-air`.
+
+**Medido**, sobre `378e1fa`, en este orden, en el worktree de la sesión, en una máquina de 4 CPU,
+con el cerrojo común de cargo tomado durante todas las corridas y nada más compilando. Antes, dentro
+del mismo cerrojo, un `touch` de los 275 `.rs` de `crates/` y de `tools/` y un `cargo test --release
+--locked --no-run` de los siete crates a la vez, con los cuatro núcleos (36,3 s), para que cargo los
+compilase desde este árbol. Cada orden es la de la fila suelta, con un solo núcleo: `taskset -c 3
+nice -n 10 timeout 3000s cargo test -p <crate> --release --locked`, medida con el `time` de bash.
+libtest lee la afinidad y corre con un hilo. «Compilar» es la línea `Finished` de cargo; «tests», la
+suma de los `finished in` de libtest. La carga, de `/proc/loadavg` cada 10 s, va de 1,9 al empezar
+(la cola del `--no-run` con cuatro núcleos) a 1,2 al acabar; la de la propia corrida es 1,0.
+
+| corrida | qué se toca antes | crates que recompila | reloj | CPU de usuario | compilar | tests |
+|---|---|---|---|---|---|---|
+| `zk-ssl-hash`, en frío | su `src/lib.rs` | 1 | 2,5 s | 1,8 s | 1,9 s | 0,38 s |
+| `zk-ssl-hash`, en caliente 1 y 2 | nada | 0 | 0,2 y 0,2 s | 0,1 s | 0,09 y 0,07 s | 0,04 y 0,03 s |
+| `zk-ssl-guardian`, en frío | su `src/lib.rs` | 1 | 4,0 s | 3,8 s | 3,8 s | 0,09 s |
+| `zk-ssl-guardian`, en caliente 1 y 2 | nada | 0 | 0,3 y 0,3 s | 0,1 s | 0,07 s | 0,10 y 0,11 s |
+| `zk-ssl-medio`, en frío | su `src/lib.rs` | 1 | 23,3 s | 21,3 s | 20,5 s | 2,7 s |
+| `zk-ssl-medio`, en caliente 1 y 2 | nada | 0 | 2,8 y 2,8 s | 1,7 y 1,8 s | 0,08 s | 2,5 y 2,6 s |
+| `zk-ssl-air`, en frío 1 | `crates/zk-ssl-hash/src/lib.rs` | 4 | 52,9 s | 51,9 s | 52,8 s | 0,01 s |
+| `zk-ssl-air`, en caliente 1 | nada | 0 | 0,2 s | 0,1 s | 0,08 s | 0,01 s |
+| `zk-ssl-air`, en frío 2 | `crates/winter-air/src/lib.rs` | 3 | 53,4 s | 52,5 s | 53,3 s | 0,01 s |
+| `zk-ssl-air`, en caliente 2 | nada | 0 | 0,2 s | 0,2 s | 0,09 s | 0,01 s |
+| `winter-air`, en frío | su `src/lib.rs` | 1 | 6,2 s | 5,7 s | 5,8 s | 0,24 s |
+| `winter-air`, en caliente 1 y 2 | nada | 0 | 0,3 y 0,3 s | 0,2 s | 0,08 y 0,09 s | 0,08 s |
+| `winter-prover`, en frío 1 | su `src/lib.rs` | 2 | 5,4 s | 4,9 s | 5,0 s | 0,18 s |
+| `winter-prover`, en caliente 1 | nada | 0 | 0,4 s | 0,4 s | 0,08 s | 0,18 s |
+| `winter-prover`, en frío 2 | `crates/winter-air/src/lib.rs` | 2 | 5,2 s | 4,9 s | 4,9 s | 0,18 s |
+| `winter-prover`, en caliente 2 | nada | 0 | 0,4 s | 0,4 s | 0,09 s | 0,18 s |
+| `winter-verifier`, en frío 1 | su `src/lib.rs` | 2 | 1,6 s | 1,4 s | 1,5 s | 0,00 s |
+| `winter-verifier`, en caliente 1 | nada | 0 | 0,2 s | 0,1 s | 0,09 s | 0,00 s |
+| `winter-verifier`, en frío 2 | `crates/winter-air/src/lib.rs` | 2 | 1,6 s | 1,4 s | 1,5 s | 0,00 s |
+| `winter-verifier`, en caliente 2 | nada | 0 | 0,2 s | 0,1 s | 0,08 s | 0,00 s |
+
+Todas salen con 0 y con su pin: 56, 40, 62, 44, 49, 6 y 0 tests. En la primera corrida en frío de
+`zk-ssl-air`, cargo recompila cuatro crates, `winter-air`, `winter-verifier`, `zk-ssl-hash` y
+`zk-ssl-air`, aunque sólo se tocó `zk-ssl-hash`: el `--no-run` de los siete a la vez había dejado
+`winter-air` compilado para otra combinación. En la de `winter-prover` y `winter-verifier` tras su
+propio `src/lib.rs`, cargo recompila también `winter-air`, que una corrida anterior había tocado.
+Son los dos casos de una fila que llega con algo de detrás por recompilar.
+
+**Medido otra vez, sólo `zk-ssl-air`**, con la misma orden, el mismo `taskset` y el mismo cerrojo,
+después de los mutantes de abajo, con carga de 1,0 a 1,2:
+
+| corrida | qué se toca antes | crates que recompila | reloj | CPU de usuario | compilar |
+|---|---|---|---|---|---|
+| `zk-ssl-air`, en frío 3 | `crates/zk-ssl-hash/src/lib.rs`, con `winter-air` por recompilar | 4 | 54,8 s | 53,6 s | 54,7 s |
+| `zk-ssl-air`, en frío 4 | `crates/zk-ssl-hash/src/lib.rs` | 2 | 52,5 s | 51,5 s | 52,4 s |
+| `zk-ssl-air`, en frío 5 | `crates/zk-ssl-hash/src/lib.rs` | 2 | 51,2 s | 50,3 s | 51,1 s |
+
+Las 44 pasan en las tres. Lo caro de la fila es compilar `zk-ssl-air`, unos 50 s: lo que tiene
+detrás añade de 1 a 4 s. Sus tests, en release y con un hilo, son 0,01 s.
+
+**Por qué 180 en `zk-ssl-air`, y por qué las otras seis se quedan en 60.** La peor medida de
+`zk-ssl-air` es 54,8 s. Cabe en 60 con un núcleo entero, con 5 s de holgura, y no con medio: medio
+núcleo pide 110 s, y el mutante M1 (abajo) lo confirma, `exit 124` a los 60 s. El criterio del §845
+es cubrir la peor medida con medio núcleo, y, en la fila del cli, la de un cambio en `zk-ssl` con un
+tercio. 120 cubre medio núcleo (110 s). La sesión añade un criterio suyo, que no es del §845:
+multiplicar por la deriva del 29 % que el §845 midió entre dos tandas sobre el mismo código. El §845
+usó esa deriva para justificar una remedida, no como multiplicador del margen. Con ella, medio
+núcleo pide 141 s, y 120 no basta. 180 cubre los dos criterios, y también un tercio de núcleo
+(164 s).
+
+La peor de las otras seis es la de `zk-ssl-medio`, 23,3 s: con medio núcleo, 47 s, que caben en 60;
+el mutante sobre su fila lo confirma (abajo). El criterio del §845 la cubre. El de la sesión no:
+23,3 × 2 × 1,29 = 60,1 s, que no caben en 60. Tampoco cubre la de `zk-ssl-verify`, en 120, con los
+49 s que midió el §845: 49 × 2 × 1,29 = 126 s. La sesión no sube ninguna de las dos por su criterio.
+Lo aplica sólo a la fila que ya no cabía con el del §845, para elegir su margen; que valga para todas
+las filas es del autor (abajo). Las otras cinco de 60 s no pasan de 6,2 s. Su timeout no cambia, y
+su fila no lleva nota.
+
+**Mutantes**, sobre copias de `tools/canon.sh` en el directorio de la sesión, cada una corrida con
+`CANON_RAIZ` sobre este árbol, `OUT` en el mismo directorio y `taskset -c 3 nice -n 10`. De cada
+copia se corre sólo el bucle de los tests, como en el §845: sus líneas 1 a 130 (el preámbulo), la
+TABLA reducida con `grep` a la fila del crate, las 171 a 181 (las utilidades) y las 352 a 376 (el
+bucle), extraídas con `sed`. Es el bucle del canon, con sus mismas comprobaciones de salida, pines y
+avisos. «Medio núcleo» es un bucle `while :; do :; done` de bash en el mismo núcleo, con el mismo
+`nice`, durante la corrida.
+
+- M1, la fila de `zk-ssl-air` de `378e1fa` (60 s), tras el `touch` de `winter-air`, con medio
+  núcleo: ROJO, «zk-ssl-air: exit 124» y «pasan 0, el canon dice 44», a los 60 s. Carga de 0,8 a
+  1,5.
+- La fila de este commit (180 s), lo mismo, con medio núcleo: VERDE, 44, 106 s.
+- La fila de `378e1fa` (60 s), tras el `touch` de `winter-air`, con un núcleo entero: VERDE, 44,
+  54 s. La de 60 sólo cae cuando la fila compila con el núcleo compartido.
+- La fila de `zk-ssl-medio`, con 60, tras el `touch` de su `src/lib.rs`, con medio núcleo: VERDE,
+  62, 47 s. No hay mutante que matar: el timeout no cambia.
+
+Ninguno queda vivo. Las copias y sus salidas se borraron al acabar. La fila de este commit, con 180,
+pasó por el bucle del canon en el segundo mutante, con medio núcleo.
+
+**Lo que NO hace.**
+
+- No mide con la máquina cargada de verdad: medio núcleo es un bucle en el mismo núcleo, no otro
+  cargo compilando. Con la caché del procesador y la memoria compartidas, el reloj puede crecer más.
+- No mide un cambio en `Cargo.lock` que recompile dependencias de fuera, ni un `target` vacío.
+- No separa compilar de correr: el §845 ya lo dejó al autor.
+- No toca la fila de `zk-ssl-medio`, aunque su margen es el más justo de las seis que se quedan: 47 s
+  con medio núcleo sobre 60; con la deriva del 29 %, el criterio de la sesión, 60,1 s, que no caben
+  en 60. Con un tercio de núcleo, 70 s, tampoco cabe.
+- No remide las filas de 120 s o más, salvo lo que ya hizo el §845. La de `zk-ssl-verify`, en 120,
+  no se tocó: el §845 la midió una vez, 49 s tras el `touch` de `winter-air`.
+- Las cifras son de la máquina de la sesión, de 4 CPU, en una tanda.
+
+**Lo que es del autor.** El margen de `zk-ssl-air`: 180 s, algo más de tres veces la peor medida con
+un núcleo, 54,8 s; 120 bastaba para el criterio del §845 sin la deriva. Si la deriva entra en el
+margen de todas las filas: con ella, la de `zk-ssl-medio` sube de 60 y la de `zk-ssl-verify` de 120.
+El 600 de la fila del cli, que ya decidió (arriba).
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2012 tests declarados y 20 instrumentos, y
+`check_modulos` en 207. El total de sello sigue en 1853. `BACKLOG.md` no cambia: ninguna entrada
+llevaba esto. Su cabecera sigue en 44 abiertas y 86 resueltas. Las marcas «⚠️ §853» en los ficheros
+del commit, sin este asiento, son cero: la nota de la TABLA es crónica, «§853: timeout …», en la
+forma de las de antes, y no corrige nada sellado.
