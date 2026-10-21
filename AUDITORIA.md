@@ -59006,3 +59006,224 @@ las retiradas, no el tag, el commit ni las huellas, y `check_superficie` lo decl
 (`tools/check_superficie.py`:59). Que cada documento diga la 0.4.3 lo comprobó `git grep`, a mano.
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §843 — `check_curvas` dice por qué no lee el árbol cuando a la caché de cargo le faltan fuentes: en un clon recién hecho daba ROJO R1 en las cuatro raíces con una línea de cargo que parecía de la puerta, y ahora da la causa y el remedio, `cargo fetch --locked` (lo descubierto por la otra sesión)
+
+El commit que lleva este asiento, sobre `69597f3` (el §818). Toca `tools/check_curvas.py`: una frase
+al final de R3 en la cabecera, con el párrafo de R3 recompuesto en sus mismas cuatro líneas; tres
+constantes nuevas, `FALTA`, `FALTA_SI` y `FALTA_NO`, con su comentario; el comentario de `arbol()`,
+con su marca; `arbol()`, que devuelve el error de cargo entero; y en `main()`, un autotest de R3, la
+causa del fallo de R1 y una línea con el remedio. Y este asiento. Ni código de los crates, ni tests,
+ni vectores, ni `tools/canon.sh`, ni `Cargo.toml`, ni `Cargo.lock`, ni `BACKLOG.md`. Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó
+(§830 a §859). No toca `crates/zk-ssl-guardian`.
+
+Del autor es el encargo: la lista y lo que se descubra por el camino. Esto lo descubrió la otra
+sesión que trabaja en este repositorio, en el §838, y lo dijo así: `tools/check_curvas.py` lee la
+clausura con `cargo tree --locked --offline ... --all-features --target all`; en un clon que solo ha
+compilado para su máquina sale ROJO R1 («attempting to make an HTTP request, but --offline was
+specified») hasta que se corre `cargo fetch --locked`, porque `cargo build` solo baja lo del target
+de la máquina y `--target all` pide también los crates de Windows, WASI o Redox; en la máquina del
+autor pasa en VERDE. La vía del arreglo la eligió la sesión que escribe este asiento, entre las que
+apuntaba el encargo. El canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión
+sobre su árbol limpio, con este asiento en su sitio y sin esta frase: VERDE, 1159 s de reloj (de su
+arranque a su salida) y 884 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con
+carga de 0,41 al empezar. Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los 274 `.rs`
+de `crates/` y de `tools/`, y su log lo registra. Las 19 filas del nivel, en su pin, con 1849 tests
+que pasan (la suma de la columna «pasan»), y la de `zk-ssl` en 497 pasan y 7 ignorados; la puerta
+de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (64 s)»; `check_tests` en 2008
+y 20 instrumentos; `check_modulos` en 207; las once herramientas del bucle «2 ter»; la puerta de los
+vectores, en 500 ficheros y 1002 líneas; `check_catalogo`; el cable, en 23 de 23; la segunda
+implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`1515cc9e8518c627` y el tarball `06ed99b1de383c4c`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió, se midió y se commiteó (`d1e9555`) sobre el §842 de antes
+(`77bca6c`), que no llevaba el §860 ni el §861. Después se rebasó sobre el §818 (`69597f3`), que va
+sobre el §817 (`5fd5212`), el §816 (`195ee5c`), el §815 (`de216ae`) y el §842 de ahora (`4b9f14b`),
+y éste sobre el §841, el §840 y el §839 de ahora y sobre el §860 (`1eee2c5`) y el §861 (`32b5b12`),
+de otra sesión. De `77bca6c` a `69597f3` no cambia `tools/check_curvas.py`. En lo que la
+herramienta lee, `Cargo.lock` cambia una línea, la versión del kit, de 0.4.2 a 0.4.3, como su
+`Cargo.toml`, y ningún `Cargo.toml` cambia una dependencia; y cambian dieciséis fuentes de los
+crates, de `zk-ssl`, del nodo, del SDK y del kit, ninguno nuevo ni borrado. El §818 es sólo texto.
+Sobre este árbol, la herramienta de este sello sigue en VERDE, con 4 raíces, 213 crates y 196
+fuentes de 15 crates de la casa, lo mismo que sobre `77bca6c`. El `cherry-pick` entró sin conflicto
+en `tools/check_curvas.py`, con las mismas líneas que en `d1e9555`; en este fichero chocó sólo por
+el sitio, y este asiento va detrás del §818, como los del §815 al §818 van detrás del §842, y los
+del §860 y del §861, antes que el del §839. Lo que cambió por el rebase: la apertura; este párrafo;
+la cita de `doc/AVISO_EN_ISO20022.md`, que el §861 movió de la línea 195 a la 211; la base de
+`check_vectores`; la cuenta de `check_tests`, de 1976 a 2008, y la cabecera de `BACKLOG.md`, de 48
+abiertas y 79 resueltas a 44 y 86. Las medidas de «Medido antes», «Medido después» y «Mutantes» son
+las de `77bca6c` y de sus copias, y no se rehicieron, salvo la corrida sobre este árbol.
+
+**Medido antes de tocar nada**, en este orden, en una máquina de 4 CPU con carga de 0,50, sobre una
+copia de `77bca6c` hecha con `git archive` y con un `CARGO_HOME` nuevo y vacío, los dos en un
+directorio de trabajo de la sesión:
+
+1. `cargo build --locked` en la copia, con su propio `CARGO_TARGET_DIR`, cortado al salir el primer
+   «Compiling»: cargo baja todo lo que va a compilar antes de compilar nada. Bajó 302 crates, y el
+   `CARGO_HOME` quedó en 189 MB.
+2. `python3 tools/check_curvas.py`, la de `77bca6c`: ROJO, 5. R1 en las cuatro raíces, «no se pudo
+   leer su clausura (  attempting to make an HTTP request, but --offline was specified)», y R3,
+   «R5 leyo 0 fuentes, menos de 150». Es lo descubierto. El error entero de cargo, en el nodo,
+   empieza por «error: failed to download `anstyle-wincon v3.0.11`»; en el SDK nombra
+   `bitflags v1.3.2`, y en el kit, `r-efi v6.0.0`. La herramienta solo daba su última línea.
+3. Las vías, en ese `CARGO_HOME`, sin bajar nada más:
+   - `cargo tree --locked --offline -e normal --all-features --target x86_64-unknown-linux-gnu`, en
+     las cuatro raíces: sale, con 149, 160, 136 y 53 crates. Con `--target all`, en la caché de la
+     sesión, son 160, 181, 154 y 57. Quitar `--target all` es perder lo que mata M12 del §838, una
+     dependencia de `[target.'cfg(windows)'.dependencies]`: el §838 lo midió («sin `--target
+     all`, M12 sale VERDE»). Se descarta.
+   - `cargo metadata --locked --offline --format-version 1`, con y sin `--filter-platform
+     x86_64-unknown-linux-gnu`: las dos salen con 101 y el mismo «attempting to make an HTTP
+     request». No sirve.
+   - El grafo de `Cargo.lock`, por las listas `dependencies` de sus paquetes, desde cada raíz: 186,
+     208, 179 y 90 crates. Contiene entera la clausura de `cargo tree --all-features --target all`
+     de cada raíz (0 que falten), y 26, 27, 25 y 33 crates más: dependencias de desarrollo y de
+     compilación (`cc`, `autocfg`, `version_check`, `winter-rand-utils`, y `zk-ssl-guardian` en el
+     kit) y opcionales tras features que ninguna raíz pide (`js-sys` y `wasm-bindgen`, por la `js`
+     de `getrandom` 0.2). Ninguno del patrón. Los padres de `ureq`, `rustls`, `rustls-webpki` y
+     `ring` en el lock son los que R4 admite. No pide red. Pero cambia lo que R1 declara («sin
+     dependencias de desarrollo ni de compilacion»), pide un lector nuevo, otros autotests (los de
+     R4 son árboles de `cargo tree`) y otra fuente para las rutas de R5. Es más superficie, y no
+     se adopta: «Lo que es del autor».
+   - `cargo fetch --locked`, con red, en ese `CARGO_HOME`: rc 0, 46 crates en 2,1 s, y el
+     `CARGO_HOME` pasa de 189 a 442 MB. El `Cargo.lock` no cambia (su `sha256sum`). Después, la
+     herramienta sale VERDE dentro de un espacio de red vacío (`unshare -rn`, donde un `curl` a
+     `index.crates.io` sale con 6): 4 raíces, 213 crates y 196 fuentes de 15 crates de la casa, lo
+     mismo que en la caché de la sesión. Entre los 46 hay crates de Windows, WASI, UEFI y Redox, y
+     también dependencias de desarrollo de Linux (`winter-rand-utils`, `rand` 0.9): `cargo build`
+     no baja ninguna de las dos clases.
+
+**La vía elegida.** La que no cambia lo que la herramienta lee: sigue con `cargo tree --locked
+--offline --all-features --target all`, y no pierde nada del §838. Cuando `cargo tree` falla porque
+a la caché le falta un fuente, la herramienta lo reconoce y lo dice. No sale VERDE sin red en un
+clon que solo ha compilado: una puerta que no ha leído el árbol no puede pasar. Sale ROJO, con la
+causa y el remedio, y sin ninguna frase que parezca una curva.
+
+**Lo que hace en `tools/check_curvas.py`.**
+
+- `FALTA`, el patrón del error de cargo cuando falta un fuente, con el crate que falta: «failed to
+  download `…`», seguido de «Caused by:» y de «attempting to make an HTTP request, but --offline was
+  specified». Solo con esa causa: un `.crate` roto en la caché da el mismo «failed to download» con
+  otra causa, y el remedio no lo arregla (abajo, «Medido después»). Cargo nombra solo el primero de
+  cada raíz.
+- R1, cuando `cargo tree` falla: si el error casa con `FALTA`, el ROJO dice «no se pudo leer su
+  clausura, y no es una curva: a la cache de cargo le falta el fuente de `anstyle-wincon v3.0.11`».
+  Si no, dice lo de antes: la última línea del error, entre paréntesis. Las dos van por el mismo
+  `rojo.append`, como antes.
+- Si alguna raíz falló así, antes del recuento sale una línea, que no es un ROJO más: «R1 lee
+  `cargo tree --offline --all-features --target all`, que pide el fuente de cada crate de la
+  clausura en todos los targets, y un `cargo build` solo baja los de esta maquina. Remedio: `cargo
+  fetch --locked`, una vez y con red; despues, la herramienta corre sin red».
+- R3, la prueba de vida, gana un autotest: `FALTA` tiene que sacar `anstyle-wincon v3.0.11` de
+  `FALTA_SI`, el error que dio cargo en la copia, byte a byte, y no casar con ninguno de `FALTA_NO`:
+  el de un `Cargo.lock` que pide cambios con `--locked`, y las siete primeras líneas del de un
+  `.crate` truncado, copiadas de cargo. Si no, «R3 R1 no reconoce el fallo de la cache de cargo: su
+  autotest falla».
+- `arbol()` devuelve el error de cargo entero, y `main()` decide qué decir.
+
+En la copia sin el remedio, con la herramienta de este sello: ROJO, 5, las cuatro R1 con su crate y
+«y no es una curva», la R3 de las fuentes, y la línea del remedio. Fuera de red da lo mismo. Con el
+remedio, VERDE, como en el punto 3. Sobre este árbol, en la caché de la sesión: VERDE, 4 raíces, 213
+crates y 196 fuentes de 15 crates de la casa. En cinco corridas alternas de cada una, con carga de
+0,33, la de este sello tarda de 1,41 a 1,54 s, con mediana de 1,48 s, y la de `77bca6c`, de 1,45 a
+1,70 s, con mediana de 1,50 s.
+
+**Medido después**, en la revisión, con un `CARGO_HOME` nuevo, sobre este árbol, en este orden:
+
+1. `cargo fetch --locked --target x86_64-unknown-linux-gnu`, que baja lo de Linux y nada más: 307
+   crates. La herramienta de este sello, sin red (`unshare -rn`): ROJO, 5, las cuatro R1 con su
+   crate y la R3 de las fuentes, y la línea del remedio, como en la copia. El `Cargo.lock` no
+   cambia.
+2. `cargo fetch --locked`: 41 crates más, y el `CARGO_HOME` en 442 MB. Sin red, VERDE: 4 raíces,
+   213 crates y 196 fuentes de 15 crates de la casa.
+3. `printf xx` sobre el `.crate` de `ureq v2.12.1` en `registry/cache`, y borrado su `src/`. `cargo
+   tree` en el cli da «failed to download `ureq v2.12.1`», y debajo «unable to get packages from
+   source», «failed to unpack package», «failed to iterate over archive» y «unexpected end of file».
+   Con `FALTA` sin la causa, como estaba antes de la revisión (N4, abajo), la herramienta decía de
+   ese error «a la cache de cargo le falta el fuente de `ureq v2.12.1`», con la línea del remedio.
+   Pero `cargo fetch --locked` sale con 101 y «unexpected end of file», y el ROJO sigue. Era un
+   diagnóstico falso, que la de `77bca6c` no daba. La de este sello da ROJO, 2: R1 en el cli y en el
+   SDK, con la última línea de cargo («unexpected end of file»), sin remedio, como `77bca6c`.
+
+Ese `CARGO_HOME` se borró al acabar.
+
+**Mutantes.** Sobre copias de `tools/check_curvas.py` corridas sobre este árbol con `CANON_RAIZ`, y,
+donde se dice, sobre la copia con el `CARGO_HOME` sin el remedio.
+
+- N1, `FALTA` busca «failed to fetch»: ROJO, 1, R3, el autotest. En la copia sin el remedio, ROJO,
+  6: el autotest, las cuatro R1 con la línea de antes y la R3 de las fuentes, sin remedio.
+- N2, `FALTA` casa también con «the lock file»: ROJO, 1, R3, el autotest.
+- N3, sin la línea del remedio: VERDE sobre este árbol, porque ninguna raíz falla. En la copia sin
+  el remedio, y en la caché del punto 1 de «Medido después», ROJO, 5, sin esa línea. Vivo en el
+  árbol, y se declara: la línea del remedio no tiene autotest.
+- N4, `FALTA` sin la causa, como estaba antes de la revisión («failed to download `…`» y nada más):
+  ROJO, 1, R3, el autotest, porque casa con el `.crate` truncado de `FALTA_NO`. En la caché del
+  punto 3 de «Medido después», ROJO, 3: el autotest y las dos R1 con el diagnóstico falso. Con N4 y
+  el autotest mirando solo el primero de `FALTA_NO`, VERDE: lo que mata a N4 es la entrada nueva de
+  `FALTA_NO`.
+
+N1, N2 y N3 se volvieron a correr en la revisión, con lo mismo.
+
+Los del §838 siguen dando lo mismo. Los de la herramienta, sobre copias de la de este sello: H1 a
+H16 dan ROJO, con las mismas cuentas que el §838 menos H2, que da 75 (tres R3 y 72 R5) sobre las 196
+fuentes de hoy; el §838 contó 72, con 69 R5, sobre 194. M10, la copia que envuelve `arbol()`, da
+ROJO, 4, R2. En la revisión se volvieron a correr H1, H9, H10 y H11, con lo mismo que en el §838: 1,
+1, 3 y 1; los demás, no, porque la revisión solo toca `FALTA`, `FALTA_NO` y su autotest. Los del
+árbol, sobre copias de `77bca6c` hechas con `git archive`, con la herramienta de este sello dentro y
+`cargo metadata --offline`, que pone al día el `Cargo.lock` de la copia, una línea cada vez que el
+mutante toca un `Cargo.toml`: M1, ROJO 1, R5; M2, 2, R5; M3, 1, R4; M4, 2; M5, 10; M6, en el kit, en
+el nodo y en el medio, 12, 5 y 12; M7, 5; M11, 1; M12, 1; M13, 5. La herramienta de `77bca6c` da lo
+mismo en cada una. M8, M9 y M14 siguen en VERDE, vivos y declarados como en el §838. En la copia de
+M3, antes de poner al día el lock, la herramienta da la R1 de antes, con la última línea de cargo
+(«help: to generate the lock file without accessing the network, …»): ese error no casa con `FALTA`.
+
+Las copias, las herramientas mutadas, el `CARGO_HOME` de la copia y su `CARGO_TARGET_DIR` se
+borraron al acabar.
+
+Salen con 0 las once herramientas del bucle «2 ter», `check_vectores --desde 69597f3` y
+`check_catalogo`; también `check_tests` y `check_modulos`.
+
+**Corrección.** El §838 escribió que las dos opciones «valen con `--locked --offline` y sin red: la
+herramienta sale VERDE dentro de un espacio de red vacío». Lo midió con la caché de la sesión, que
+tenía los fuentes de todos los targets. En un clon que solo ha compilado no vale: el punto 2. Los
+asientos no se reescriben; lo corrige éste. En el árbol, la marca va en el comentario de `arbol()`.
+La cabecera de la herramienta no queda falsa: R1 sigue diciendo que su clausura es la de `cargo tree
+--locked --offline`, y es lo que lee.
+
+Las correcciones, sobre los ficheros STAGED de este commit:
+
+1. `tools/check_curvas.py:139-144`, el comentario de `arbol()`, tras «Las dos opciones valen con
+   `--locked --offline`.»: «⚠️ §843: decia solo eso; valen sin red si la cache de cargo tiene el
+   fuente de cada crate de la clausura en todos los targets», y lo que pasaba en un clon recién
+   hecho y lo que hace ahora `main()`. Sin acentos, como el resto del fichero.
+
+La frase de R3 cierra su párrafo, recompuesto en sus mismas cuatro líneas (`:22-25`), y dice quién
+reconoce, `FALTA`, y con qué: con `FALTA_SI` y no con `FALTA_NO`. El crate que saca y lo que es cada
+`FALTA_NO` van en el comentario de las constantes: en la cabecera no caben sin otra línea. La
+cabecera sigue en 38 líneas de comentario, y la cita `tools/check_curvas.py:14-21` y `:44-50` de
+`doc/AVISO_EN_ISO20022.md:211` sigue cayendo en R1 y R2, y de `RAICES` al final de `CURVAS`. Las
+constantes nuevas, con su comentario, van de la 79 a la 91, y nadie cita por línea nada de este
+fichero por debajo de la 50.
+
+**Lo que NO hace.** No hace que la herramienta salga VERDE sin red en un clon que solo ha compilado:
+hace falta `cargo fetch --locked` una vez. No corre ese `cargo fetch` por su cuenta: una puerta que
+sale a la red no es la que el §838 midió. No toca `tools/canon.sh`: en un clon recién hecho, el
+canon baja con red lo que compila, y su bucle «2 ter» sigue dando ROJO en `check_curvas` hasta ese
+`cargo fetch`, ahora con la causa. No lee `Cargo.lock`, y por eso no cierra M14. No reconoce otros
+fallos de `cargo tree`, como un crate que falte en el índice o un `.crate` roto en la caché: esos
+dan la última línea de cargo, como antes, y sin la línea del remedio. No da todos los crates que
+faltan, solo el primero que nombra cargo en cada raíz.
+
+**Lo que es del autor.** Si el canon corre `cargo fetch --locked` antes de su bucle «2 ter», o si
+`CONTRIBUTING.md` lo pide para un clon nuevo. Si la herramienta lee el grafo de `Cargo.lock`: no
+pide red y ve M14 (medido sobre una copia con M14: la clausura del kit en el lock trae `ureq`,
+`rustls`, `rustls-webpki` y `ring`), pero también las dependencias de desarrollo y de compilación, y
+cambia R1. Y si la línea del remedio necesita autotest (N3).
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2008 tests declarados y 20 instrumentos, y
+`check_modulos` en 207. `BACKLOG.md` no cambia: ninguna entrada llevaba esto. Su cabecera sigue en
+44 abiertas y 86 resueltas. Las marcas «⚠️ §843» en los ficheros del commit, sin este asiento, son
+una, en `tools/check_curvas.py`, contada con `git grep --cached -c`.

@@ -19,10 +19,10 @@
 #  R2  NINGUN crate de esa clausura casa con CURVAS: las bibliotecas de curvas elipticas y de
 #      emparejamientos conocidas (arkworks, BLS12-381, BN254, Pasta, curve25519, secp256k1, P-256...),
 #      y las del TLS (`ring`, `aws-lc-*`, `rustls`, `rustls-webpki`, `webpki`), salvo R4.
-#  R3  PRUEBA DE VIDA: cada raiz tiene al menos MINIMO crates en su clausura (una clausura vacia es
-#      un instrumento ciego), el patron reconoce los nombres de su autotest, la regla de R4 y la
-#      busqueda de R5 dan ROJO en sus autotests, y R5 lee al menos MINIMO_FUENTES ficheros: si algo
-#      se rompe, la puerta no puede salir verde por no reconocer nada.
+#  R3  PRUEBA DE VIDA: cada raiz tiene al menos MINIMO crates en su clausura (una clausura vacia es un
+#      instrumento ciego), el patron reconoce los nombres de su autotest, la regla de R4 y la busqueda
+#      de R5 dan ROJO en sus autotests, y R5 lee al menos MINIMO_FUENTES ficheros: si algo se rompe, la
+#      puerta no puede salir verde por no reconocer nada. Y FALTA (R1) casa solo con FALTA_SI (§843).
 #  R4  EL TRANSPORTE, POR ARISTAS (§838): solo en las raices de TRANSPORTE_RAICES, y cada crate de
 #      TRANSPORTE solo con los padres que dice: `ureq` bajo el cli o el SDK; `rustls` bajo `ureq`;
 #      `rustls-webpki` bajo `rustls`; `ring` bajo `rustls` o `rustls-webpki`. `aws-lc-*`, nunca.
@@ -76,6 +76,19 @@ FUENTE_NO = ('let s = String::from("x");', 'o == Ordering::Less', '// ureq::rust
              '/* ring:: /* anidado */ webpki:: */', '//! `ring` por `rustls`', 'use ringbuf::X;',
              'let q = spring::a(); let w = rustls_x;', 'let s = r"\\"; // ring:: "', "let c = '\"'; // ring:: \"",
              "fn f<'a>(x: &'a str) -> &'a str { x } // ring::")
+# R1, cuando `cargo tree` no puede leer el arbol porque a la cache de cargo le falta un fuente (§843):
+# no es una curva, y el remedio es otro. Cargo nombra solo el primero que falta. FALTA casa solo si
+# la causa que sigue a «failed to download» es la de `--offline`: un `.crate` roto en la cache da el
+# mismo encabezado con otra causa, y `cargo fetch --locked` no lo arregla. El autotest de R3: FALTA
+# saca de FALTA_SI exactamente su crate, y no casa con ninguno de FALTA_NO: un `Cargo.lock` que pide
+# cambios con `--locked`, y un `.crate` truncado en la cache.
+FALTA = re.compile(r'failed to download `([^`]+)`\s+Caused by:\s+attempting to make an HTTP request, '
+                   r'but --offline was specified')
+FALTA_SI = ('error: failed to download `anstyle-wincon v3.0.11`\n\nCaused by:\n  attempting to make an HTTP '
+            'request, but --offline was specified\n', 'anstyle-wincon v3.0.11')
+FALTA_NO = ('error: the lock file /r/Cargo.lock needs to be updated but --locked was passed to prevent this\n',
+            'error: failed to download `ureq v2.12.1`\n\nCaused by:\n  unable to get packages from source\n\n'
+            'Caused by:\n  failed to unpack package `ureq v2.12.1`\n')
 
 
 def sin_comentarios(texto):
@@ -123,12 +136,17 @@ def arbol(raiz):
     # es la union de lo que enlaza un build de la raiz con sus propias features, en cualquier
     # target. No trae una feature de una dependencia que la raiz no pide (`--features
     # zk-ssl-medio/firmar`, o la unificacion con otro paquete del build): la ceguera de la cabecera.
-    # Las dos opciones valen con `--locked --offline`.
+    # Las dos opciones valen con `--locked --offline`. ⚠️ §843: decia solo eso; valen sin red si la
+    # cache de cargo tiene el fuente de cada crate de la clausura en todos los targets. Un `cargo
+    # build` baja solo los de la maquina, y en un clon recien hecho R1 salia ROJO en las cuatro raices
+    # con el ultimo renglon de cargo, «attempting to make an HTTP request, but --offline was
+    # specified», como si la puerta hubiera visto algo. Ahora main() reconoce ese fallo (FALTA), lo
+    # dice, y da el remedio: `cargo fetch --locked`, una vez y con red, que baja todos los targets.
     r = subprocess.run(['cargo', 'tree', '--locked', '--offline', '-q', '-p', raiz, '-e', 'normal',
                         '--all-features', '--target', 'all', '--prefix', 'depth'],
                        cwd=RAIZ, capture_output=True, text=True)
     if r.returncode != 0:
-        return None, r.stderr.strip().splitlines()[-1:] or ['cargo tree fallo']
+        return None, r.stderr
     return r.stdout, None
 
 
@@ -190,11 +208,18 @@ def main():
     for f in FUENTE_NO:
         if usos_tls(f):
             rojo.append('R3 la busqueda de R5 ve %r, que no es un uso' % f)
-    total, locales = set(), {}
+    falta = FALTA.search(FALTA_SI[0])
+    if not falta or falta.group(1) != FALTA_SI[1] or any(FALTA.search(n) for n in FALTA_NO):
+        rojo.append('R3 R1 no reconoce el fallo de la cache de cargo: su autotest falla')
+    total, locales, cache = set(), {}, False
     for raiz in RAICES:
         texto, error = arbol(raiz)
         if texto is None:
-            rojo.append('R1 %s: no se pudo leer su clausura (%s)' % (raiz, error[0]))
+            falta = FALTA.search(error)
+            cache = cache or bool(falta)
+            causa = (', y no es una curva: a la cache de cargo le falta el fuente de `%s`' % falta.group(1) if falta
+                     else ' (%s)' % (error.strip().splitlines() or ['cargo tree fallo'])[-1])
+            rojo.append('R1 %s: no se pudo leer su clausura%s' % (raiz, causa))
             continue
         crates, aristas, rutas = leer_arbol(texto)
         if len(crates) < MINIMO:
@@ -220,6 +245,10 @@ def main():
     if rojo:
         for r in rojo:
             print('ROJO %s' % r)
+        if cache:
+            print('check_curvas: R1 lee `cargo tree --offline --all-features --target all`, que pide el fuente de '
+                  'cada crate de la clausura en todos los targets, y un `cargo build` solo baja los de esta '
+                  'maquina. Remedio: `cargo fetch --locked`, una vez y con red; despues, la herramienta corre sin red')
         print('check_curvas: ROJO · %d fallo(s)' % len(rojo))
         return 1
     print('check_curvas: ninguna curva del patron en la clausura de produccion fuera del transporte declarado '
