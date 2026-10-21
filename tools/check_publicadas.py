@@ -173,14 +173,15 @@ CUENTA_VECTORES = re.compile(r"\((\d+)\s+(?:ficheros|files)\b")
 #        por cero, el NaN que `f64::min` descarta, la conversion saturada a u64), CONTRASTADA en
 #        tres frentes:
 #        a) con lo que los tests asiertan corriendo la funcion real. IGUALDAD solo hay en dos: la
-#           UDR, = UDR_ACTUAL (crates/zk-ssl-air/src/lib.rs:1040, nivel_de_produccion.rs:144), y el
+#           UDR, = UDR_ACTUAL (crates/zk-ssl-air/src/lib.rs:1040, nivel_de_produccion.rs:170), y el
 #           DEEP en decimas, = CONJETURADA_CON_DEEP (zk-ssl-air/src/lib.rs:1229), que alli da la
 #           replica del propio test, `bits_deep`, contrastada con la UDR real de dos variantes
 #           (:1206-1215). La LDR, el test solo la exige >= su piso (:1043), y la de las familias,
-#           >= LDR_MINIMA (nivel_de_produccion.rs:141): que cada piso sea la LDR exacta lo dice lo
+#           >= LDR_MINIMA (nivel_de_produccion.rs:167): que cada piso sea la LDR exacta lo dice lo
 #           MEDIDO en el §697 («Los pisos son los valores de hoy», AUDITORIA.md:48329), no el
 #           test. Aqui se exige la igualdad: si la funcion sube sobre un piso, el test pasa y este
-#           gate cae, y el piso sube con su asiento;
+#           gate cae, y el piso sube con su asiento. ⚠️ §839: las dos citas al test decian :144 y
+#           :141, antes de que ganara la subida de congelados y las longitudes medidas;
 #        b) con los KAT del fork, KAT_FORK: los 18 asserts de `mod tests` de security.rs con lote
 #           lineal, valores de la funcion real -el canon corre esos tests en el nivel sello, los
 #           49 de upstream (tools/canon.sh:123)-, fuera del regimen de produccion: extension
@@ -351,8 +352,8 @@ CUENTA_VECTORES = re.compile(r"\((\d+)\s+(?:ficheros|files)\b")
 #       :403-405), la llamada a Context::new del canal (crates/winter-prover/src/channel.rs:58-64,
 #       desde lib.rs:641-645), y TraceInfo::new y ::with_meta (air/trace_info.rs:53-69), que hacen
 #       la traza de dentro. Las opciones de la prueba real las mira, en Rust, el test de la capa
-#       (crates/zk-ssl/src/nivel_de_produccion.rs:58), no este gate; y 2T, la replica lo toma de lo
-#       que la capa EXIGE (ANCLAS_LONGITUD), y ese test se lo exige a sus pruebas reales (:59): una
+#       (crates/zk-ssl/src/nivel_de_produccion.rs:68), no este gate; y 2T, la replica lo toma de lo
+#       que la capa EXIGE (ANCLAS_LONGITUD), y ese test se lo exige a sus pruebas reales (:69): una
 #       prueba de otra longitud la rechaza la capa, y este gate no lo ve;
 #     . la ida y vuelta por bytes: Proof::to_bytes, ::from_bytes, ::write_into y ::read_from
 #       (proof/mod.rs:137-158 y :204-240), y los write_into y read_from de Context
@@ -360,7 +361,8 @@ CUENTA_VECTORES = re.compile(r"\((\d+)\s+(?:ficheros|files)\b")
 #       (options.rs:307-341), FieldExtension (:362-386, con su get_size_hint, :369-371) y
 #       BatchingMethod (:485-507). La replica da el nivel del contexto tal como se CONSTRUYE; que
 #       leido de bytes sea el mismo lo mira, en Rust, el test de la capa -las opciones
-#       (nivel_de_produccion.rs:58) y la forma (:59), no el modulo-, no este gate;
+#       (nivel_de_produccion.rs:68) y la forma (:69), no el modulo-, no este gate; ⚠️ §839: aqui
+#       y arriba decia :58 y :59, antes de que el modulo del test creciera en su cabecera
 #     . las definiciones de FieldExtension y BatchingMethod (options.rs:47-54 y :479-483), cuyos
 #       nombres leen F.0 y security.rs, y las de los struct ProofOptions (:95-105), Context
 #       (proof/context.rs:17-22), TraceInfo (air/trace_info.rs:24-30) y Proof (proof/mod.rs:56-76),

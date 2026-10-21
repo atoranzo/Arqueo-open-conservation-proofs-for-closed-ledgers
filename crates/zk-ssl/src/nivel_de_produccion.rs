@@ -4,13 +4,19 @@
 //! Hasta este sello ningun test fijaba el nivel: fuera del fork, `proven_security` solo lo llamaba
 //! `stark-experiment/src/compliance_real_proof.rs`, que imprime y no compara, y con otras opciones.
 //! Un cambio de [`proof_options`] o de la longitud de un circuito podia bajar la seguridad
-//! demostrable sin que nada se pusiera rojo. Este modulo la ata en dos tests:
+//! demostrable sin que nada se pusiera rojo. Este modulo la ata en tres tests (⚠️ §839: eran dos;
+//! el tercero, el censo de las longitudes, es del §839):
 //!
 //! - **Las familias de longitud fija**, sobre pruebas OCULTAS reales que genera el camino de
 //!   produccion con [`proof_options`]: el envio v2 (T = 1024, la traza mas larga de las familias
-//!   de longitud fija, la misma que la del cobro y la quema), el credito del reembolso (T = 512) y
-//!   la apertura del reembolso v2 (T = 64, la mas corta). Cada una exige conjeturada >= 127,
-//!   LDR >= 80 y UDR = 59. La UDR se fija en su valor de hoy: solo cambia con un asiento.
+//!   de longitud fija, la misma que la del cobro y la quema), el credito del reembolso (T = 512),
+//!   la subida de congelados (T = 256) y la apertura del reembolso v2 (T = 64, la mas corta).
+//!   Cada una exige conjeturada >= 127, LDR >= 80 y UDR = 59. La UDR se fija en su valor de hoy:
+//!   solo cambia con un asiento. ⚠️ §839: eran tres pruebas, sin la subida de congelados, y la
+//!   T = 256 era la unica longitud fija del cable sin prueba medida aqui.
+//! - **Cada longitud del cable, medida** (§839, el modulo [`censo`]): la T de cada AIR que
+//!   verifican la capa, la pareja umbral y el kit, sin la edad, va en [`LONGITUDES_MEDIDAS`], las
+//!   que prueba el primer test. Un AIR nuevo, o una T cambiada, sin su prueba aqui, cae.
 //! - **Ningun verificador acepta por nivel minimo.** Fuera del fork, ningun fuente usa las dos
 //!   variantes de `AcceptableOptions` que comparan bits calculados y no opciones. El batching y las
 //!   particiones no entran en el transcript (`ProofOptions::to_elements` lleva la extension, el
@@ -25,9 +31,9 @@
 //! lineal -lo que [`proof_options`] declara, y el test lo exige- la funcion no depende del ancho
 //! ni del numero de restricciones, solo de las opciones y de la longitud; por eso basta una prueba
 //! por longitud. El primer test prueba STARK reales: en depuracion se salta, como los del
-//! instrumento de D-B. El segundo solo lee fuentes.
+//! instrumento de D-B. Los otros dos solo leen fuentes (⚠️ §839: decia «El segundo»).
 
-use crate::tests_support::{new_layer, open_and_fund, salt_de, state_of};
+use crate::tests_support::{freeze_climb_proof, new_layer, open_and_fund, salt_de, state_of};
 use crate::{client, proof_options, Blake3};
 use std::path::{Path, PathBuf};
 use winterfell::math::fields::f64::BaseElement;
@@ -40,6 +46,10 @@ const CONJETURADA_MINIMA: u32 = 127;
 const LDR_MINIMA: u32 = 80;
 /// La UDR de hoy, fijada como valor y no como suelo: solo cambia con un asiento (§697).
 const UDR_ACTUAL: u32 = 59;
+/// Las T que mide el primer test, una prueba por longitud, fijadas como valor y no tomadas de los
+/// circuitos: solo cambian con un asiento (§839). El censo exige que la T de cada AIR de longitud
+/// fija del cable este aqui, y que las familias del primer test den estas y ninguna mas.
+const LONGITUDES_MEDIDAS: [usize; 4] = [64, 256, 512, 1024];
 
 // Claves estrechas y valores dentro del rango de la capa de test (limite 500_000, suministro
 // 100_000_000), como el reembolso v2 del instrumento de D-B.
@@ -64,13 +74,16 @@ fn nivel(nombre: &str, bytes: &[u8], ancho: usize, longitud: usize) -> (usize, u
 }
 
 /// **Las familias de longitud fija, sobre la prueba oculta real.** Un envio v2 de una cuenta a
-/// otra, aplicado, y el reembolso v2 de ese pendiente: tres pruebas del camino de produccion, de
-/// la traza mas larga de las familias de longitud fija a la mas corta. Cada una, con conjeturada
-/// >= 127, LDR >= 80 y UDR = 59.
+/// otra, aplicado, el reembolso v2 de ese pendiente y la subida de congelados de la cuenta
+/// receptora: cuatro pruebas del camino de produccion, una por cada T de [`LONGITUDES_MEDIDAS`],
+/// de la traza mas larga de las familias de longitud fija a la mas corta. Cada una, con
+/// conjeturada >= 127, LDR >= 80 y UDR = 59. ⚠️ §839: eran tres pruebas, sin la de T = 256.
 #[test]
 #[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
 fn el_nivel_de_las_familias_de_longitud_fija() {
-    use stark_experiment::{circuit_credit_climb, circuit_refund_v2, circuit_send_v2};
+    use stark_experiment::{
+        circuit_credit_climb, circuit_frozen_climb, circuit_refund_v2, circuit_send_v2,
+    };
 
     let o = proof_options();
     assert_eq!(
@@ -107,6 +120,9 @@ fn el_nivel_de_las_familias_de_longitud_fija() {
             DELTA,
         )
         .expect("el reembolso v2");
+    // §839: la subida del arbol de congelados, que la capa verifica al congelar por la via
+    // delegada (`freeze.rs`), sobre el arbol de esta capa.
+    let congelados = freeze_climb_proof(&l, b, true).to_bytes();
 
     let pruebas = [
         (
@@ -122,12 +138,22 @@ fn el_nivel_de_las_familias_de_longitud_fija() {
             circuit_credit_climb::TRACE_LENGTH,
         ),
         (
+            "subida de congelados (FrozenClimbAir)",
+            &congelados,
+            circuit_frozen_climb::TRACE_WIDTH,
+            circuit_frozen_climb::TRACE_LENGTH,
+        ),
+        (
             "apertura del reembolso v2 (RefundAirV2)",
             &reembolso.refund_proof,
             circuit_refund_v2::TRACE_WIDTH,
             circuit_refund_v2::TRACE_LENGTH,
         ),
     ];
+    let mut medidas: Vec<usize> = pruebas.iter().map(|p| p.3).collect();
+    medidas.sort_unstable();
+    medidas.dedup();
+    assert_eq!(medidas, LONGITUDES_MEDIDAS, "las T que mide el test no son las fijadas");
     let mut mal = Vec::new();
     for (nombre, bytes, ancho, longitud) in pruebas {
         let (filas, conjeturada, ldr, udr) = nivel(nombre, bytes, ancho, longitud);
@@ -219,3 +245,8 @@ fn ningun_verificador_acepta_por_nivel_minimo() {
     assert!(con_opciones >= 146, "solo {con_opciones} usos de OptionSet: el recorrido no ve el arbol");
     assert!(mal.is_empty(), "verificadores que aceptan por nivel minimo:\n{}", mal.join("\n"));
 }
+
+// §839: el censo de las longitudes del cable. En su propio fichero, porque nombra la T de cada
+// circuito de la capa, y `tools/check_publicadas.py` (ATADO F) lee de ESTE fichero las familias que
+// prueba el primer test.
+mod censo;

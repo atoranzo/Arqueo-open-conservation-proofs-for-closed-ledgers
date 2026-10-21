@@ -56797,3 +56797,311 @@ solo por el B11.2. La 12, cuando un test haga pasar un reembolso de `RefundTooEa
 porque pasan latidos y otro haga rebotar un Δ por debajo del suelo, con sus dos piezas de la capa y
 T3b-circuito (c) ya hechos. La 77, con el enlace del issue enviado, o cuando una versión publicada
 de `xmss` deje sin objeto sus cuatro partes.
+
+## §839 — la traza oculta de cada AIR del cable, en una longitud con nivel atado: el test del nivel prueba también la subida de congelados (T = 256), y un censo exige que la T de cada AIR que verifican la capa, la pareja umbral y el kit esté entre las que ese test mide (la 41 de la lista)
+
+El commit que lleva este asiento, sobre `32b5b12` (el §861). Toca
+`crates/zk-ssl/src/nivel_de_produccion.rs` (la cuarta prueba del test del nivel, la constante
+`LONGITUDES_MEDIDAS`, la cabecera y el `///` del test con sus marcas, y la línea `mod censo`);
+`crates/zk-ssl/src/nivel_de_produccion/censo.rs`, que nace con un test; `tools/canon.sh`, la fila de
+`zk-ssl`, con su pin de 481 a 482 y su crónica; `tools/check_publicadas.py`, seis citas por línea
+al test, de cuatro números, corregidas con marca, en dos comentarios; una frase de `SECURITY.md`
+§3.11; los totales de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y el «481» de la capa en
+`ARQUITECTURA.md` (tres: dos sin marca, el de la nota del §814 con la suya, y la cuenta de los
+`.rs`, con la suya), `CONTRIBUTING.md` (el de la misma nota, con su marca), `PAPER.md`,
+`PAPER_EN.md`, `PRINCIPIOS.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y
+`doc/ecst/VERIFICACION.md`. Y este asiento. Ni vectores, ni código de los crates fuera de
+`#[cfg(test)]`, ni `Cargo.toml`, ni `Cargo.lock`. Lo escribe y lo commitea Claude, en una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a §859). No toca
+`crates/zk-ssl-guardian`.
+
+Del autor es la tarea: la 41 de la lista que encargó, «la traza oculta de cada AIR, en una longitud
+con nivel atado». No es la entrada 41 de `BACKLOG.md`. Del autor es el orden: este sello va detrás
+del §838 y es el primero de los que mueven el pin de `zk-ssl`. La forma la propuso la sesión. El
+canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio,
+con este asiento en su sitio y sin esta frase: VERDE, 992 s de reloj (de su arranque a su salida)
+y 750 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,30 al
+empezar. Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los 273 `.rs` de `crates/` y
+de `tools/`, y su log lo registra. Las 19 filas del nivel, en su pin, con 1814 tests que pasan (la
+suma de la columna «pasan»), y la de `zk-ssl` en 482 pasan y 7 ignorados; la puerta de los
+binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (59 s)»; `check_tests` en 1973 y 20
+instrumentos; `check_modulos` en 206; las once herramientas del bucle «2 ter»; la puerta de los
+vectores, en 497 ficheros y 987 líneas; `check_catalogo`; el cable, en 23 de 23; la segunda
+implementación, con sus pares STARK en 34 de 34; y el artefacto reproducible, con el binario
+`473eb5f63e5b091d` y el tarball `a02fdf523f083ba9`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar no quedaba nada en él.
+
+**La base.** Este sello se escribió sobre otra versión del §838 (`7e83957`, de antes del arreglo de
+la revisión, que no está en la historia), detrás de otra versión del §837 (`fd384f7`, que tampoco
+está), las dos sobre el §813 (`4d8017d`). La sesión lo selló allí (`97c513a`, fuera de la historia)
+con el canon en VERDE. Después se rebasó sobre la entrega: el §837 (`e2b1019`) y el §838
+(`ff9d4fc`), que van sobre el §814 (`d4d6d45`), de otra sesión. El §814 cierra la entrada 41 de
+`BACKLOG.md`, que no es la 41 de la lista. En este fichero, los asientos del §814, del §837 y del
+§838 van antes y éste detrás. De `7e83957` a `ff9d4fc` cambian `ARQUITECTURA.md`, `BACKLOG.md`,
+`CONTRIBUTING.md`, `doc/AVISO_EN_ISO20022.md`, `doc/CONFIANZA_RESIDUAL.md`, `tools/check_curvas.py`
+y este fichero. Ningún fuente de los crates, ningún test, ni `tools/canon.sh`, ni `Cargo.toml`, ni
+`Cargo.lock`. De los ficheros que toca este sello, `ARQUITECTURA.md`, `CONTRIBUTING.md` y este. El
+§814 añade quince líneas a `ARQUITECTURA.md` en la 1557, por debajo de las dos de este sello en la
+1153, que no se mueven, y quince a `CONTRIBUTING.md` en la 111. En las dos, esas líneas son la misma
+nota, y la nota dice en presente que la fila de la capa en `tools/canon.sh` «fija hoy 481 pasan y 7
+ignorados», y que en depuración la capa da 443 pasan, sobre `0315b14`. El `cherry-pick` entró sin
+conflicto, pero dejaba las dos frases en 481. Este sello sube el pin a 482, y el censo corre
+también en depuración: con él, la cuenta de depuración sería uno más. La revisión del rebase lo
+vio. Las dos frases van ahora en 482, con su marca, que dice lo de depuración; la capa entera en
+depuración no se ha vuelto a correr. Cada marca alarga su párrafo tres líneas: en
+`ARQUITECTURA.md`, de la 1563 a la 1566; en `CONTRIBUTING.md`, de la 115 a la 118. El rebase
+cambia en este asiento la apertura; la frase del canon, arriba, que volvió a «no se ha corrido
+todavía» hasta el canon de este commit; este párrafo; la cita a la marca del §838 en este fichero, de `AUDITORIA.md:55908` a
+`:56114`, en dos sitios; la línea de `ARQUITECTURA.md` en que estaba el texto que cita
+`doc/ecst/VERIFICACION.md:1630`, de la 1594 a la 1609 antes de este sello; lo que de la nota del
+§814 dicen «Lo que NO hace» y las correcciones de abajo; y la cabecera de `BACKLOG.md` y la cuenta
+de las marcas en «Contadores». Las cifras de tests de la base no cambian: el §814 no toca ningún
+fuente ni ningún test. Pero su prosa lleva el pin de la capa y la cuenta en depuración, y este
+sello mueve las dos. En `ff9d4fc` el pin de `zk-ssl` es 481, los totales de
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` son 1813 y 1950, y `check_tests` y `check_modulos` dan
+1972 y 205, como en `7e83957`. Sobre `ff9d4fc`, medido otra vez: `python3 tools/check_publicadas.py`,
+VERDE, «en las 3 familias del test», con LDR 80-88. Sobre el commit de ese rebase (`4f60198`):
+`check_publicadas`, VERDE,
+«en las 4 familias del test»; `check_tests`, 1973 y 20 instrumentos; `check_modulos`, 206; las
+once herramientas del bucle «2 ter», `check_vectores --desde d4d6d45` y `check_catalogo`, con 0; y
+`cargo test -p zk-ssl --locked --lib nivel_de_produccion -- --nocapture`, en depuración: 2 pasan y
+1 ignorado, con la misma línea del censo que en el punto 5 de «Medido» y «210 ficheros fuera del
+fork». Lo demás de «Medido» y de «Mutantes» es del árbol de `7e83957`: el test del nivel en release
+y los mutantes no se repitieron, porque el rebase no cambia ningún fuente ni ninguna dependencia.
+Las cifras del canon corrido sobre `97c513a` no se copian aquí. El commit de ese rebase se selló
+con el canon en VERDE sobre `ff9d4fc`, y después se rebasó otra vez, sobre el §860 (`1eee2c5`) y el §861
+(`32b5b12`), de otra sesión. Son prosa y comentarios: cierran siete entradas de `BACKLOG.md`, abren
+la 126 y la 127, y la cabecera pasa a 43 abiertas y 86 resueltas; `tools/verificar_citas.py` gana
+en `RESERVADOS` el rango del §860 al §889; y tocan `SECURITY.md`, `ARQUITECTURA.md`, `PAPER.md`,
+`PAPER_EN.md`, trece documentos de `doc/` y de `spec/`, un comentario de `tools/check_publicadas.py`
+y comentarios de seis fuentes de los crates (`metrics.rs`, `client.rs`, `iso.rs`, `migration.rs` y
+`persistence.rs` de la capa, y `lib.rs` del SDK). Ningún test, ni `tools/canon.sh`, ni
+`Cargo.toml`, ni `Cargo.lock`. En este fichero, los asientos del §860 y del §861 van antes y éste
+detrás. El `cherry-pick` dio conflicto sólo aquí, porque los dos lados añadían al final; lo demás
+entró sin conflicto. De los ficheros que toca este sello, el §860 y el §861 cambian
+`ARQUITECTURA.md` (cuatro líneas en su sitio, la 333, la 540, la 552 y la 770), `PAPER.md` y
+`PAPER_EN.md` (una línea cada uno, en su sitio, que no es la de los totales),
+`tools/check_publicadas.py` (la 49, en su sitio), `SECURITY.md`, que crece 52 líneas, 47
+de ellas por encima de la frase de §3.11, que pasa de la 681 a la 728, y este fichero. Ninguna cita
+de este asiento a `ARQUITECTURA.md`, `CONTRIBUTING.md`, `tools/check_publicadas.py`,
+`tools/canon.sh`, `doc/ecst/VERIFICACION.md` ni a los fuentes de la capa se mueve: medidas otra
+vez, dan lo mismo. Las cifras de tests de la base no cambian: en `32b5b12` el pin de `zk-ssl` es
+481, los totales de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` son 1813 y 1950, y `check_tests` y
+`check_modulos` dan 1972 y 205. Este segundo rebase cambia en este asiento la apertura; la frase del
+canon, que vuelve a «no se ha corrido todavía» hasta el canon de este commit; este párrafo; en el
+punto 4 de «Medido» y en «Lo que NO hace», las citas por línea a `SECURITY.md`, porque el §860 y el
+§861 añaden 47 líneas por encima de la frase de este sello, y las de la entrada 41 de `BACKLOG.md`,
+que se mueven por lo que el §860 y el §861 añaden a ese fichero; y la cabecera de `BACKLOG.md` en
+«Contadores». Sobre `32b5b12`, medido: `python3 tools/check_publicadas.py`, VERDE, «en las 3
+familias del test», con LDR 80-88; `check_tests`, 1972 y 20 instrumentos; `check_modulos`, 205.
+Sobre este commit: `check_publicadas`, VERDE, «en las 4 familias del test»; `check_tests`, 1973
+y 20 instrumentos; `check_modulos`, 206; y las once herramientas del bucle «2 ter»,
+`check_vectores --desde 32b5b12` y `check_catalogo`, con 0.
+
+**De dónde sale.** El test del §697, `el_nivel_de_las_familias_de_longitud_fija`, prueba tres
+pruebas ocultas reales: el envío v2 (T = 1024), el crédito del reembolso (T = 512) y la apertura del
+reembolso v2 (T = 64). Con lote lineal, la función de `winter-air` sólo depende de las opciones y de
+la longitud, y basta una prueba por longitud: lo dice su cabecera. Pero el cable tiene cuatro T, no
+tres. La de la subida de congelados, `FrozenClimbAir`, que la capa verifica al congelar por la vía
+delegada (`freeze.rs`), es T = 256, con una traza oculta de 512 filas, y ninguna prueba la medía: su
+fila de la tabla de `SECURITY.md` §3.11, «512 filas · 84 · 114,8», la derivaba la réplica del ATADO
+F, no un test. Y nada exigía que cada T del cable tuviera su prueba: un circuito nuevo con otra T, o
+un `TRACE_LENGTH` cambiado en uno que el test no prueba, dejaban el test en VERDE.
+
+**Lo que hace.**
+
+1. El test del nivel gana una cuarta prueba: la subida de congelados de la cuenta receptora, sobre
+   el árbol de congelados de la capa del test, con `freeze_climb_proof` de `tests_support.rs` y las
+   opciones de producción. Pasa por la misma `nivel`: las opciones, la forma oculta que la capa
+   exige y el nivel, con conjeturada ≥ 127, LDR ≥ 80 y UDR = 59.
+2. `LONGITUDES_MEDIDAS = [64, 256, 512, 1024]`: las T que el test mide, fijadas como valor, como
+   `UDR_ACTUAL`, y no tomadas de los circuitos. Sólo cambian con un asiento. El test exige que las T
+   de sus pruebas sean esas y ninguna más.
+3. El censo, `cada_longitud_del_cable_tiene_su_nivel_medido`, en `nivel_de_produccion/censo.rs`. No
+   prueba STARK: corre también en depuración. Lee de los fuentes qué AIR verifica cada camino y toma
+   su T del compilador:
+   - la capa: cada `crate::comprobar_forma(...)` de `crates/zk-ssl/src`, fuera del módulo del nivel,
+     con su longitud escrita como `stark_experiment::circuit_<x>::TRACE_LENGTH`, que resuelve una
+     tabla de trece circuitos, y la AIR del primer `verify::<...>` que la sigue. Otra forma de
+     escribir la longitud, o un circuito que la tabla no tiene, es ROJO;
+   - la pareja umbral: `verify_threshold_pair` tiene que comparar la longitud con
+     `2 * TRACE_LENGTH`, y su T es la del circuito;
+   - el kit: cada `impl Air for` de `crates/zk-ssl-air/src`, con la `TRAZA` de su fichero. La edad,
+     `EdadAir`, queda fuera: su longitud depende de `m` y tiene su test, `tests_nivel`.
+   Exige cuatro cosas. Cada T vista está en `LONGITUDES_MEDIDAS`. Las AIR vistas, con la edad, son
+   las filas `true` del censo D-L, `FILAS` en `instrumento_revela.rs`, ni más ni menos. Las familias
+   del primer test, leídas de su fuente como las lee el ATADO F, dan exactamente
+   `LONGITUDES_MEDIDAS`. Y la prueba de vida: al menos quince guardas de la capa, la pareja umbral y
+   cuatro AIR del kit. Las agujas se arman por partes, para que el fuente del censo no las contenga.
+4. El censo vive en su propio fichero porque nombra la T de los trece circuitos, y el ATADO F de
+   `tools/check_publicadas.py` lee de `nivel_de_produccion.rs` las familias que prueba el test. En
+   ese fichero sólo entra `circuit_frozen_climb`, la familia nueva. El ATADO F pasa de «las 3
+   familias del test» a «las 4».
+5. `SECURITY.md` §3.11 gana una frase tras «Lo fijan tests desde el §697»: desde este sello, cada
+   fila de la primera tabla tiene su prueba en ese test, la de 512 filas era derivada, y el censo
+   exige que cada AIR del cable, salvo la edad, tenga una de esas longitudes. Ninguna cifra de la
+   tabla cambia.
+
+**Medido y leído**, en este orden, en el worktree de la sesión, con 4 CPU y carga de 0,04 al
+empezar; los puntos 5 y 6, al final, tras los mutantes:
+
+1. Sobre `7e83957`, `python3 tools/check_publicadas.py`: VERDE, «en las 3 familias del test». Las
+   once herramientas del bucle «2 ter», `check_vectores --desde 4d8017d`, `check_catalogo`,
+   `check_tests` (1972) y `check_modulos` (205): las quince con 0.
+2. Las T de las quince guardas, leídas en los fuentes: 64 en las cuatro de las dos aperturas del
+   reembolso; 256 en la subida de congelados; 512 en el crédito, las subidas de emisión, de emisión a
+   pendiente y de recuperación, y la auditoría; 1024 en envío, cobro (las dos versiones de cada uno)
+   y quema. La pareja umbral, 64. Las cuatro `TRAZA` del kit, 512. `MerkleAir` y `SolvencyAir`, de
+   `stark-experiment`, son T = 256, y en el censo D-L van con `false`: fuera del cable.
+3. Con el cambio, `python3 tools/check_publicadas.py`: VERDE, «en las 4 familias del test»; el
+   rango, LDR 80-88 y DEEP 112,8-116,8, no cambia. `check_tests`: 1973. `check_modulos`: 206.
+4. Las citas por línea al test: `git grep -nE 'nivel_de_produccion(\.rs)?:[0-9]+'`, fuera de este
+   fichero, da cuatro líneas de `tools/check_publicadas.py`, y la :356 cita «(:69)» sin repetir el
+   nombre. Son seis citas, de cuatro números, en cinco líneas: :176 (`:170`), :180 (`:167`), :355
+   (`:68`), :356 (`:69`) y :364 (`:68` y `:69`). Las seis se movieron: `:144` es `:170`, `:141` es
+   `:167`, `:58` es `:68` y `:59` es `:69`. Van corregidas con su marca. `ARQUITECTURA.md` crece dos
+   líneas en la 1153; las citas por línea a ese fichero que caen más abajo se declaran en «Lo que NO
+   hace». `SECURITY.md` crece dos líneas en la 729 (en la 682 sobre `7e83957`). Las citas por
+   línea a ese fichero que pasan de ella, buscadas con `git grep` como `SECURITY.md` seguido de un
+   número, y como «, :» y un número tras un `SECURITY.md`, y remedidas en el rebase sobre
+   `32b5b12`: fuera de `AUDITORIA.md`, ninguna, porque la `:728` de `README.md:59` y
+   `README_EN.md:60` queda ahora por encima; en los asientos desde el §830, dos: la
+   `SECURITY.md:1039` del punto 6 del §838 (`AUDITORIA.md:56114`), su marca, que en `32b5b12` está
+   en la 1091 y pasa a la 1093, y la `:777` del §860 (`AUDITORIA.md:56554`), la viñeta de ML-DSA,
+   que pasa a la 779. Las dos, y la de `README.md`, se declaran en «Lo que NO hace». `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `tools/canon.sh` y los demás no cambian de
+   número de líneas.
+5. Tras los mutantes y la limpieza de abajo, sobre el árbol final, con carga de 4,09 al empezar:
+   `cargo test -p zk-ssl --release --locked --lib nivel_de_produccion -- --nocapture`. 3 pasan en
+   2,71 s, tras 58 s de compilar la capa. Las cuatro líneas del nivel: el envío v2, T = 1024, 2048
+   filas, conjeturada 127, LDR 80, UDR 59; el crédito, T = 512, 1024 filas, 127, 82 y 59; la subida
+   de congelados, T = 256, 512 filas, 127, 84 y 59; la apertura del reembolso v2, T = 64, 128 filas,
+   127, 88 y 59. La de 512 filas da los 84 que la tabla publicaba. La línea del censo: «15 guardas
+   de forma en la capa, 1 pareja umbral y 4 AIR del kit; 19 AIR con la edad, las 19 del cable de
+   D-L; por T (T, verificadores): [(64, 5), (256, 1), (512, 9), (1024, 5)]; las del primer test:
+   [64, 256, 512, 1024]». Y «210 ficheros fuera del fork» en el otro test del §697: uno más que los
+   209 `.rs` de `crates/` fuera del fork en `7e83957`, el del censo.
+6. Lo mismo en depuración, sin `--release`: 2 pasan y 1 ignorado, el de las pruebas STARK, como
+   antes; la misma línea del censo, tras 25 s de compilar.
+
+**Mutantes.** Sobre una copia del árbol de este commit hecha con `tar`, sin `target` ni `.git`, en
+un directorio de la sesión; antes de cada mutante, los ficheros que tocan los demás vuelven a su
+estado limpio. Con el `CARGO_TARGET_DIR` del worktree. En depuración, `cargo test -p zk-ssl --locked
+--lib nivel_de_produccion::censo`; en release, `cargo test -p zk-ssl --release --locked --lib
+nivel_de_produccion`. Y sobre cada uno, `python3 tools/check_publicadas.py` de la copia. La copia sin
+mutar: el censo y `check_publicadas`, VERDE. Mueren todos; ninguno vive.
+
+- M1, `circuit_frozen_climb::TRACE_LENGTH` de 256 a 128, con la aserción de compilación de
+  `ROW_ROOT` cambiada para que compile: el censo, ROJO por dos, «FrozenClimbAir con T = 128, una
+  traza oculta de 256 filas sin nivel medido» y «las familias del primer test dan T = [64, 128, 512,
+  1024]». El ATADO F, ROJO TABLA: la familia de T = 128 no tiene fila.
+- M10, `circuit_audit::TRACE_LENGTH` de 512 a 2048, un circuito que el primer test no prueba: el
+  censo, ROJO sólo por la T, «AuditAir con T = 2048, una traza oculta de 4096 filas sin nivel
+  medido». El ATADO F, VERDE: no lo mira.
+- M2, una guarda de forma más en `burn.rs`, con la longitud escrita como `2048`: ROJO, «una guarda
+  de forma con longitud Some("2048"), que el censo no resuelve».
+- M2b, la misma con la longitud de `circuit_governance`, que no va por el cable: ROJO, lo mismo con
+  su nombre.
+- M3, sin la cuarta prueba en el test del nivel: el censo, ROJO, «las familias del primer test dan
+  T = [64, 512, 1024]». En release, ROJO también el test del nivel: «las T que mide el test no son
+  las fijadas», con [64, 512, 1024] frente a [64, 256, 512, 1024].
+- M9, `LONGITUDES_MEDIDAS` sin el 256: ROJO por dos, la subida de congelados «con T = 256 … sin
+  nivel medido» y las familias del primer test.
+- M4, `UDR_ACTUAL` de 59 a 60: en release, ROJO el test del nivel, con las cuatro pruebas, «UDR 59,
+  y la fijada es 60». El ATADO F, ROJO, 41 cifras o constantes, la primera «UDR_ACTUAL = 59 en la
+  edad y 60 en la capa». El censo, VERDE: no mira el nivel.
+- M6, una fila `("NuevaAir", …, true)` en `FILAS`: ROJO sólo por el censo D-L.
+- M7, el fichero de la prenda mal escrito en la tabla del kit: ROJO por tres, «PrendaAir sin T en el
+  censo», el censo D-L y la prueba de vida, con 3 AIR del kit.
+- M8, `TRACE_LENGTH * 2` en lugar de `2 * TRACE_LENGTH` en `verify_threshold_pair`: ROJO por tres,
+  «no se ve que compare la longitud con 2 * su T», el censo D-L y la prueba de vida. Es un ROJO de
+  la lectura por texto: el código hace lo mismo.
+- M11, la pareja sin su guarda de longitud: fuera la línea `&& i.length() == 2 * TRACE_LENGTH` de
+  `verify_threshold_pair` (`circuit_threshold_single_nullifier.rs:745`). Es el mutante real de esa
+  comprobación, y entró tras una revisión, sobre una copia nueva del árbol, con el código de este
+  commit. En depuración, tras 20,5 s de compilar: ROJO por tres, «verify_threshold_pair: no se ve
+  que compare la longitud con 2 * su T»; el censo D-L, sin `NullifierThresholdAir` (18 AIR con la
+  edad, de 19); y la prueba de vida, «0 pareja umbral (1)». Por T, (64, 4) y no (64, 5).
+  `check_publicadas`, VERDE: no lo mira.
+- M5, el recorrido de los fuentes, vacío: ROJO por el censo D-L y por la prueba de vida, con 0
+  guardas de la capa y 0 AIR del kit.
+- M5c, el mismo con la comprobación del censo D-L apagada: ROJO sólo por la prueba de vida.
+
+Cada comprobación nueva mata al menos uno: la T entre las medidas, M10; la forma de la guarda, M2 y
+M2b; las familias del primer test, M3; el censo D-L, M6; la tabla del kit, M7; la pareja umbral, M11
+(M8 también, pero es el falso ROJO declarado abajo);
+la prueba de vida, M5c; y la de las T en el test del nivel, M3 en release. Los mutantes de la copia
+corrieron la primera vez antes de un cambio en el test del nivel, que pasó la comprobación de las T
+de un `mal.push` a un `assert_eq!` propio; se repitieron todos sobre el árbol final y dan lo que
+aquí se escribe. Al acabar, con el mismo `CARGO_TARGET_DIR`, `cargo clean --release -p zk-ssl`,
+`cargo clean -p zk-ssl` y `cargo clean -p stark-experiment`: en release sólo se mutó la capa, y los
+mutantes de `stark-experiment` corrieron en depuración. La copia se borró.
+
+**Lo que NO hace.** No cambia ningún nivel, ninguna opción, ningún `TRACE_LENGTH` ni `UDR_ACTUAL`.
+No mira `MerkleAir` ni `SolvencyAir`: no van por el cable. No mira la edad: tiene su test por `m`.
+No ve una guarda escrita sin el prefijo `crate::`, ni una AIR del cable que no esté en `FILAS`: las
+dos cosas las tendría que añadir quien las cambie, y `tests_sal` sigue contando los quince `verify`.
+La pareja umbral la lee por texto: `TRACE_LENGTH * 2` en lugar de `2 * TRACE_LENGTH` da ROJO aunque
+sea lo mismo (M8). No toca la nota «⚠️ Actualizado (§697)» de `doc/blueprint-v2.md`, que dice «tres
+pruebas ocultas reales»: es lo que construyó el §697, con su fecha. No corrige las citas por línea a
+`ARQUITECTURA.md` que este sello desplaza dos líneas tras la 1153 y cinco tras la 1566:
+`doc/ecst/VERIFICACION.md:1630` cita `:1568-1571`, y ese texto ya estaba en la 1609 antes de este
+sello, y ahora está en la 1614; los JSON de `doc/ecst/borrador/`, que citan `:1564-1567` y
+`:1568-1571`, también en el tramo de cinco, son el registro de su fecha; y
+`tools/check_publicadas.py:447`, que cita `:1423` y se mueve dos, es el registro de un mutante de su
+fecha. No corrige la cita del §838 a su marca, `SECURITY.md:1039` (`AUDITORIA.md:56114`), que el §860 y
+el §861 llevaron a la 1091 y este sello lleva a la 1093: el asiento es el registro de su fecha. Ni,
+por lo mismo, la `:777` del §860 (`AUDITORIA.md:56554`), la viñeta de ML-DSA, que este sello lleva
+a la 779. Ni la `:728` de `README.md:59` y `README_EN.md:60`, que nombra ML-DSA: ya no daba en su
+línea antes de este sello (en `4d8017d` y en el §838, la 728 es la de los nonces del reposo, y
+ML-DSA está en la 730; en el §861, la 728 es la de «Lo fijan tests desde el §697», y ML-DSA está en
+la 777), y ahora ML-DSA está en la 779. Ni las citas por línea a `CONTRIBUTING.md` que pasan de la 115, que este sello corre tres
+líneas: `doc/METODO.md:115` cita `:171-172`, «el código gana», que el §814 llevó a la 187 y este
+sello a la 190; y `doc/ecst/VERIFICACION.md` cita `:147-151` y `:149-154` para «No encaja sin
+discusión previa», que ya no daban antes del §814 y ahora está en la 177; y
+`doc/integracion-vertical-evaluacion.md:115` cita `:159-167` (desde el §793) para la misma frase,
+que daba hasta el §814, que la llevó a la 174-182, y este sello la lleva a la 177-185. Tampoco toca
+la entrada 41 de `BACKLOG.md`, cerrada en el §814: su «443 pasan» (`:59`, `:3674` y `:3721`) y su
+«fija 481 pasan y 7 ignorados: son los 443 y los 38» (`:3731`) son la medida de su fecha, sobre
+`0315b14`. Con este sello serían 444 en depuración, y 482 en release: los 444 y los 38. Ni el
+«(tools/canon.sh:109)» de `doc/ecst/VERIFICACION.md:1549`, la frase cuyo 481 pasa a 482: la fila de
+`zk-ssl` está en la :132, y ya no estaba en la 109 antes de este sello. Es de la 1g,
+`VERIFICACION.md` vivo, que el autor decidió que cite por fila. No mueve «1364 declaradas», «1349
+declared» ni «18 ignoradas»: son la 61, que va después, para no mover la cifra en cada sello
+mientras haya trabajo en curso que la cambia.
+
+**Lo que es del autor.** Si las longitudes medidas se quedan como valor fijado, que cambia con un
+asiento, o se derivan de los circuitos. Si el censo debe mirar también las AIR experimentales que no
+van por el cable. Y si la lectura de la pareja umbral por texto le vale, o prefiere que la guarda de
+forma de la pareja pase por `comprobar_forma`.
+
+**Contadores.** El pin de `zk-ssl` pasa de 481 a 482. El total de sello, de 1813 a 1814, y con
+largos, de 1950 a 1951, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`. `check_tests` pasa de 1972 a
+1973 tests declarados, con 20 instrumentos, y `check_modulos` de 205 a 206 ficheros. Las marcas
+«⚠️ §839» en los ficheros del commit, sin este asiento, son nueve, contadas con `git grep --cached
+-c`: cuatro en `crates/zk-ssl/src/nivel_de_produccion.rs`, dos en `tools/check_publicadas.py`, dos en
+`ARQUITECTURA.md` y una en `CONTRIBUTING.md`. `BACKLOG.md` no cambia: ninguna entrada llevaba esto.
+Su cabecera sigue en 43 abiertas y 86 resueltas, las de la base.
+
+Las correcciones, sobre los ficheros STAGED de este commit:
+
+1. `ARQUITECTURA.md:1154-1155`, tras la cuenta de todos los `.rs` de `src/`, que pasa a 36 frente a
+   2: «⚠️ §839: decía 35», y que el 36 es `censo.rs`, un submódulo, y no un `mod` de `lib.rs`.
+2. `ARQUITECTURA.md:1563-1566`, en la nota del §814, que fija hoy 482 pasan y 7 ignorados:
+   «⚠️ §839: decía 481», y que el 482.º es el censo, que corre también en depuración, donde serían
+   444 pasan; los 443 son de `0315b14`, y la capa entera no se ha vuelto a correr ahí.
+3. `CONTRIBUTING.md:115-118`, la misma nota y la misma marca.
+4. `crates/zk-ssl/src/nivel_de_produccion.rs:7-8`, la cabecera, que ata el nivel en tres tests:
+   «⚠️ §839: eran dos», y que el tercero, el censo, es de este sello.
+5. El mismo fichero, `:15-16`, en las familias de longitud fija: «⚠️ §839: eran tres pruebas, sin
+   la subida de congelados», y que la T = 256 era la única longitud fija del cable sin prueba medida.
+6. El mismo, `:34`, al final de la cabecera: «⚠️ §839: decia «El segundo»», donde ahora dice que
+   los otros dos solo leen fuentes.
+7. El mismo, `:80`, el `///` del primer test: «⚠️ §839: eran tres pruebas, sin la de T = 256».
+8. `tools/check_publicadas.py:183-184`, en el contraste a) del ATADO F: «⚠️ §839: las dos citas al
+   test decian :144 y :141», que ahora son :170 y :167.
+9. El mismo, `:364-365`, en la ida y vuelta por bytes: «⚠️ §839: aqui y arriba decia :58 y :59»,
+   que ahora son :68 y :69, aquí y en :355-356.
+
+La frase nueva de `SECURITY.md` §3.11 no lleva marca: la escribe este commit, y no corrige nada
+sellado.

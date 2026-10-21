@@ -726,7 +726,9 @@ Conjeturada 127 y UDR 59 en todas; la fila «con el DEEP» es la conjeturada con
 DEEP (abajo). Con `m = 24`, que el enunciado admite, la prueba no se puede generar hoy.
 
 Lo fijan tests desde el §697: en las familias de longitud fija, conjeturada ≥ 127, LDR ≥ 80 y
-UDR = 59 sobre pruebas ocultas reales; en la edad, el piso de cada `m`. **El nivel que se
+UDR = 59 sobre pruebas ocultas reales; en la edad, el piso de cada `m`. Desde el §839, cada fila
+de la primera tabla tiene su prueba en ese test —la de 512 filas era derivada, no medida—, y un
+censo exige que cada AIR del cable, salvo la edad, tenga una de esas longitudes. **El nivel que se
 declara —el piso de LDR, el umbral de UDR y el rango de `m`— lo decide el autor**
 (`BACKLOG.md`, entrada 116); hasta entonces, lo que vale son estas tablas. La conjeturada se
 apoya en conjeturas sobre la proximidad a códigos Reed-Solomon que no están demostradas; la
