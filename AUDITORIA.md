@@ -69455,4 +69455,72 @@ este sello salen con 0 `verificar_citas`, `check_publicadas`, `check_cifras` y `
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
 `check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
 y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
+
+## §894 — los puntos 1, 3 y 15 de la lista de cosas menores, con la autorización del autor: dieciocho marcas en `doc/ecst/VERIFICACION.md`, sin reescribir nada, que dicen de qué árbol es cada cita que no cae en su sitio en el que el registro declara, una que fecha una frase de `71c5aad` que se leía como de hoy, y una nota en su cabecera
+
+El commit que lleva este asiento, sobre el §893. Toca `doc/ecst/VERIFICACION.md` en dieciocho
+líneas, todas en su sitio y sin añadir ninguna: la cabecera (`:6`) y las `:872`, `:1105`, `:1114`,
+`:1130`, `:1170`, `:1220`, `:1268`, `:1316`, `:1380`, `:1452`, `:1470`, `:1550`, `:1558`, `:1574`,
+`:1646`, `:1678` y `:1920`. Y este asiento. Ni `ECST.md`, ni `ECST_EN.md`, ni `doc/ecst/borrador/`,
+ni código, ni tests, ni vectores. Lo escribe y lo commitea Claude, en una sesión de Claude Code en
+la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número
+es el siguiente del rango §890 a §899. El canon de este commit, `bash tools/canon.sh --sello`,
+corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y sin esta frase: VERDE,
+380 s de reloj y 224 s de tests, en una máquina de 4 CPU con carga de 1,04 al empezar. Las 19 filas
+en su pin, con 1872 tests que pasan, y las 55 líneas «OK» de sus compuertas, entre ellas el
+artefacto reproducible, con el binario `803ee230ea9d737b` y el tarball `cd70b4a77ca91b32`.
+
+**Quién lo decide.** `doc/ecst/` es un informe con la aceptación del autor pendiente, y el §710
+dice que sus ficheros «no se reescriben ni se marcan sin él». El autor lo autorizó hoy, 22 de
+octubre, en esta sesión, a la pregunta de si se marcaban, «sin reescribir nada», las citas rancias
+de los puntos 1, 3 y 15. En la misma respuesta decidió que la marca del §847 en la `:6`, el punto
+17, se queda como crónica, y no se toca. La forma, una marca que dice el árbol en vez de una cita
+corregida, la propone esta sesión: es un registro generado, y lo que dijo cada verificador es de
+su árbol.
+
+**Medido.**
+
+1. **Las 107 citas por línea a `README.md`, `README_EN.md` y `BACKLOG.md` de este repositorio** que
+   hay en `VERIFICACION.md`, `ECST.md` y `ECST_EN.md`, extraídas con un patrón y cotejadas una a una
+   con `git show 71c5aad` y `git show d531c80` por un agente de lectura de esta sesión, que no
+   escribió en el árbol; tres de sus resultados los comprobó la sesión a mano (la `:1130`, la
+   `:1646` y la `:1678`). Sin duplicados: 72 caen en su sitio en `71c5aad`, siete son del README de
+   otro repositorio (`hbs-state` y `xmss-reference`) y quince no. Las trece a `BACKLOG.md` caen en
+   su sitio: el fichero es idéntico en los dos árboles. Fuera de la lista extraída, dos números
+   sueltos tampoco: el «`:143`» de la `:1268` y el «`:141`» de la `:1316`.
+2. **De las diecisiete, quince caen en su sitio en `d531c80`**, el árbol de la sesión del
+   2026-09-28 que `doc/ecst/borrador/README.md` declara junto a `71c5aad`. Muchas líneas «Fuentes»
+   llevan las dos citas, la de cada sesión: la `:1114`, por ejemplo, `README.md:152-155` y
+   `README.md:157-162`, que es la de `71c5aad`. Las otras dos, la `:1646` y la `:1678`, no caen en
+   su sitio en ninguno de los dos árboles.
+3. **El punto 1.** La `:1550` cita «`tools/canon.sh:89`: pin actual de zk-ssl en release = 421
+   pasan, 7 ignorados»: es la fila `zk-ssl` de `d531c80`. En `71c5aad` está en la `:99`, con 423.
+   La línea viva de encima, la `:1549`, ya cita la fila por su nombre, con la cifra de hoy.
+4. **El punto 15.** La `:1105`, una línea «Lo que se puede afirmar» que `check_publicadas` lee como
+   viva desde el §857, dice «El artefacto del árbol actual, con nueve familias y el crate aún
+   numerado 0.2.0, no se ha publicado como release». Es de `71c5aad`. El kit 0.4.3 se publicó y se
+   registró en el §818.
+
+**Qué cambia.** Una marca entre paréntesis detrás de cada cita, fuera de su código: «⚠️ §894: de
+`d531c80`», con la línea de allí cuando no es la misma; en la `:1646` y la `:1678`, dónde está lo
+citado en cada árbol. La `:1105` fecha «el árbol actual» en `71c5aad` y nombra el §818. La
+cabecera dice en una frase qué se marcó y por qué. Ningún texto cambia, y ningún fichero cambia de
+número de líneas.
+
+**Comprobado.** `verificar_citas` dio ROJO sobre el árbol sin este asiento, «AUDITORIA §894 no es
+ningún encabezado», por la cita de la cabecera: con el asiento en su sitio sale con 0, y también
+`check_publicadas`, `check_cifras` y `check_figures`.
+
+**Lo que NO hace.**
+
+- No toca `ECST.md` ni `ECST_EN.md`: en ellos no hay ninguna de las diecisiete.
+- No toca `doc/ecst/borrador/`: es material intermedio, declarado de los dos árboles, que «no se
+  cita, no se deposita y no se toma como fuente».
+- No coteja las citas a otros ficheros de este repositorio, ni a otros repositorios.
+- No corrige ninguna cita: dice de qué árbol es.
+- No toca la marca del §847 de la `:6`, por decisión del autor.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
+`check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
+y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
 resueltas.
