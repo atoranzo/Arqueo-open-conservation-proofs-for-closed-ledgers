@@ -68240,3 +68240,696 @@ hace falta porque el kit no cambia, y el vector.
 
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §864 — la 94, decidida por clase y cerrada: el canon pasa lo que un tercero compila sin el probador —el kit, su clausura y el guardián del testigo— con las aserciones de depuración encendidas, con un perfil `aserciones`, los pines de release y el JSON de cargo como prueba de que el perfil las enciende, en `--sello`; cada miembro del workspace va en una clase de lo que el canon no ve, comprobada; el nodo sin `dev` pasa a pin exacto; y lo que queda ciego, declarado al pie de `tools/canon.sh` (la 94, por delegación)
+
+El commit que lleva este asiento, sobre el §863. Un sello de código del canon y de documentos, el
+C-94 de la crítica de coherencia de la tanda, en un solo sello: la decisión, el perfil, la pasada y
+el cierre; es el §864, el número libre que sigue al §863 en el segundo rango que el autor asignó, el
+§860-§889. Toca el `Cargo.toml` raíz, con un perfil nuevo detrás de `[profile.release]`, al final
+del fichero; `tools/canon.sh`, con dos bloques nuevos —el «0 bis», la clasificación, y el «1 bis»,
+la pasada—, el contador del bloque del §784, una línea del bloque 1 que anota el tiempo de cada
+fila, dos líneas de la cabecera —la 8, con una marca, y la 26— y el pie «Ceguera declarada», al
+final del fichero; la 94 del `BACKLOG.md`, que pasa a `[x]` con su nota, la línea «Estado» de su
+cabecera y una marca en la 125; dos marcas en `CONTRIBUTING.md`, en §2 y en §4; una cláusula en la
+tabla de los niveles de `doc/METODO.md` §6; una marca en una línea del comentario de módulo de
+`crates/zk-ssl-verify/src/consumos.rs`; y este asiento. Seis ficheros fuera de él, ninguno nuevo,
+con 270 inserciones y 16 borrados (`git diff --stat`). No cambia código de Rust —el único `.rs` gana
+una marca en un `//!`—, ni un test, ni un pin, ni un vector, ni un KAT, ni el `Cargo.lock`, ni el
+binario del kit: el `zk-ssl-verify` de release que sale de este árbol es, byte a byte, el que da el
+§863 (abajo, «Medido aquí»). Esa línea `//!` del kit la toca después de publicada la 0.4.3, que sale
+de `5fd5212` (el §817) y el §818 registra: hasta el §863, `crates/zk-ssl-verify` es, fichero a
+fichero, el de la 0.4.3 (`git diff 5fd5212` del §863 en `crates/zk-ssl-verify`, vacío), y desde este
+sello lo separa de ella ese comentario y nada más. Es sólo un comentario del kit: no cambia su
+código ni su binario, su versión sigue en 0.4.3, y lo llevará la 0.4.4. No toca
+`crates/zk-ssl-guardian`, ni la zona de la migración de Winterfell (`winter-*`, `crates/zk-ssl-air`,
+`crates/stark-experiment`), ni `crates/ceremony`, ni `tools/check_constraint_layout.py`, ni
+`crates/zk-ssl/src/snapshot.rs` ni `crates/zk-ssl/src/nivel_de_produccion.rs`; del kit,
+`crates/zk-ssl-verify`, solo esa línea de comentario: ni `CAUSAS_SIN_PRUEBA_PORTABLE` de su
+`main.rs`, ni la `CLAUSURA_DEL_KIT` de su `lib.rs`, ni su `Cargo.toml`. La pasada corre los tests de
+`zk-ssl-guardian`, de `zk-ssl-air` y del kit en otro perfil, sin tocar su código. De
+`tools/canon.sh` toca lo imprescindible y nada de la tabla: ni los timeouts de los §845 y §853, ni
+`MIN_CON_FEATURES` ni `check_curvas` (§837, §838), ni lo que el §855 puso delante del bloque 1.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión lo escribió y lo revisó en
+su carril, sobre el C-90v de la tanda —el §863 de esta punta—, y allí los dos iban detrás de un
+sello de la E3 del RFC-0020 que no va en esta cadena, porque cambia la biblioteca del kit y queda
+para después de la 0.4.4; los tres, sobre el §816 (`195ee5c`; en el carril, el mismo sello antes del
+rebase). Lo porta sobre el §863, que va sobre el §829, la punta de `main` (abajo, «El porte»); «la
+base del carril», en este asiento, es lo que el sello tenía debajo en el carril. En el carril lo
+escribió y lo midió un agente sobre las decisiones de la tanda; tres revisiones lo leyeron, con
+mutantes y medidas propias, y pidieron arreglos; y otro agente los hizo y volvió a medir (abajo, «La
+revisión»). Lo medido en el carril y lo medido aquí van por separado. El canon `--sello` entero no
+se corrió en el carril; desde este sello imprime él mismo la razón que decide el nivel (abajo,
+«Medido en el carril», por qué la medida es de un arnés y no del canon entero).
+
+**De dónde sale.** El autor pidió, para diecinueve entradas del `BACKLOG.md`, «resuelvelas aplicando
+los principios». La 94 tuvo una recomendación y un escéptico, que no la sostuvo, y el juez final de
+su grupo la reescribió sobre `main` en tres puntos: la (b) y la (c) ya las había cerrado el §834; la
+(a) tiene que poner en una clase a los 22 miembros del workspace, no a 12; y lo que queda de la (a)
+en los crates con probador se decide en la 94, para que no dependa de la 41. La crítica de
+coherencia la llama C-94, la deja en un solo sello —«Decisión, perfil `aserciones`, pasada y cierre
+en un solo sello»—, la pone detrás del sello de la 41 y de los cambios de la otra sesión en
+`tools/canon.sh`, y dice qué superficie toca: «ninguna de S1 a S6» (su C21). El sello de la 41 es el
+§814, en `main`. Los cambios de la otra sesión en `tools/canon.sh` que había en la base del carril
+eran el §833, el §834 y el §837 (`git log -- tools/canon.sh`; el §838 toca `tools/check_curvas.py`,
+que el canon corre en su bucle); en esta punta van además, de la otra sesión, el §839, el §840, el
+§842, el §844, el §845, el §848, el §851, el §853, el §855 y el §859, y de ésta, el §817, el §819,
+el §820, el §821, el §822, el §824, el §828 y el §863, con el §815 y el §816 rebasados (`git log --
+tools/canon.sh`). Este sello va encima de todos y no toca nada suyo: las líneas que edita en su
+sitio, la 8, la 26, la 375 y las 545 y 549 a 551, son del §811 (la 8), del §224 (la 26 y la 375) y
+del §784 (las demás), según `git blame`.
+
+**Quién lo decide.** Por delegación del autor («resuelvelas aplicando los principios»), con el
+criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. La decisión es por
+clase, y cada parte dice cuándo se reabre: la pasada baja a `--completo` si una corrida posterior da
+una razón mayor que 2 en uno de los dos escenarios que fijaron el nivel —en caliente, o tras tocar
+`zk-ssl-hash`—, y gana pin propio si un test de los cinco tiene que gatearse en depuración; los
+crates con probador, cuando la migración de Winterfell decida sus marcas, o ante un defecto medido
+en release que un `debug_assert!` del probador habría cazado; los de arkworks y los otros, si uno
+entra en la clausura del kit o del nodo; los forks del juez, cuando aterrice la migración; la (b) y
+la (c), si la puerta del §834 sale de `--sello` o aparece una instancia del residuo; el código que
+solo compila con una feature que no enciende nadie, si una fila o una puerta la enciende, si su
+crate entra en la clausura del kit o del nodo, o cuando la migración decida los forks; la (d), cada
+vez que una subclase gane productor. No adelanta lo que el §834 dejó al autor —si su puerta sigue en
+`--sello`, `MIN_CON_FEATURES`, el `Cargo.lock` de `kat_xmss` y el pin del nodo—.
+
+Son elecciones de la sesión, que el autor puede revisar porque la decisión no las da, o las da de
+otro modo:
+
+- **Contraria a la letra de la decisión, y pide su aceptación expresa:** el bloque «Ceguera
+  declarada» va al pie de `tools/canon.sh`, detrás del `exit` y al final del fichero, detrás del pie
+  del §811 y del del §822, y no en su cabecera, que es donde lo ponen la decisión («La cabecera de
+  `tools/canon.sh` gana un bloque») y su §6; la cabecera lo nombra en su línea 26, que era un `#` en
+  blanco. La razón, abajo, punto 5.
+- **El guardián, dentro.** La decisión lo pone en la clausura sin probador con una condición: «Si la
+  reserva cubre también su fila del canon, entra cuando se levante». La reserva es de
+  `crates/zk-ssl-guardian`, su código, y la fila y la pasada están en `tools/canon.sh`; el bloque 1
+  ya corría sus tests en cada sello. Por eso entra ya. La consecuencia: desde este sello, quien
+  trabaje en el guardián queda atado a que sus 40 tests pasen también con las aserciones encendidas.
+  Si la reserva cubría la fila, sacarlo es pasarlo de `ASERCIONES_PASADA` a una de las clases
+  ciegas, en una línea, y el «0 bis» lo vigila.
+- **La reapertura, acotada a los escenarios de la decisión.** La decisión dice «si una corrida
+  posterior da una razón mayor que 2» y fija el nivel con dos escenarios, en caliente y tras tocar
+  `zk-ssl-hash`, «en frío se mide y se informa, pero no decide». El texto del árbol lo dice así en
+  sus tres sitios —el comentario del «1 bis», su línea de la razón y el pie— y en la nota de la 94:
+  la corrida que compila un solo perfil —en frío, o con release al día y la pasada por compilar— se
+  informa y no decide. Sin esa salvedad, la primera corrida del canon tras este sello en un clon con
+  release al día ya obligaba a bajar de nivel (medido en el carril: 3,00 y 3,60, abajo).
+- **La prueba de vida del perfil**, en el JSON de cargo, que la decisión no da: pide que «todo
+  «Running» sale de `target/aserciones/`, y corren los cinco», y eso no miraba si el perfil enciende
+  las aserciones (abajo, «La revisión»).
+- La clasificación y la pasada van detrás del «3 bis nodo», con los nombres «0 bis» y «1 bis» por lo
+  que hacen; los nombres `CIEGA_PROBADOR`, `CIEGA_FORKS` y `CIEGA_OTROS`; el orden de
+  `ASERCIONES_PASADA`, de las hojas al kit; que la razón se tome de un fichero, `$OUT/tiempos.txt`,
+  que escribe el bloque 1 en una línea que ya existía; que las marcas de §2 y §4 de
+  `CONTRIBUTING.md` vayan en la misma línea que el texto que marcan; que el pie declare también los
+  `#[ignore]` sin condición, que la decisión no nombra, sin decidir nada de ellos, y el código que
+  solo compila con una feature que no enciende nadie, que la decisión no midió; la marca del
+  comentario de `consumos.rs`; y dos falsadores cambiados, el F3 y el F4 (abajo, «Medido en el
+  carril»).
+
+**Lo que hace.**
+
+1. **El perfil.** `[profile.aserciones]` en el `Cargo.toml` raíz, detrás de `[profile.release]` y
+   fuera del `[patch.crates-io]` del fork: `inherits = "release"` y `debug-assertions = true`.
+   Hereda opt 3 y los `overflow-checks` del §669, y deja lo suyo, dice su comentario, en
+   `target/aserciones/`, sin pisar `target/release`, que usan los bancos: con el target por defecto;
+   con otro —el que da `tools/target_dir.sh` desde el §855—, en su `aserciones/` y sin pisar su
+   `release/`. Lo que se publica sale de `[profile.release]` y no cambia: con el perfil en el
+   `Cargo.toml`, `cargo build --release --locked -p zk-ssl-verify --bin zk-ssl-verify` da el mismo
+   binario que el sello de delante, medido en el carril y aquí. Va con su comentario «⚠️ §864», que
+   dice que el canon mira en el JSON de cargo que cada artefacto lleve las aserciones, y que sin la
+   línea, o con ella en `false`, da ROJO: el `Cargo.toml` lo tocan otras sesiones. Las once líneas,
+   con la de separación, van al final del fichero, detrás de la `:93`, y no mueven ninguna de las de
+   antes, que algunos textos citan por línea (`RESUMEN_EJECUTIVO.md`, `doc/blueprint-v2.md` y
+   `doc/ecst/VERIFICACION.md`, como mucho la `:72`).
+2. **La clasificación, el «0 bis».** Cuatro listas: `ASERCIONES_PASADA` —`zk-ssl-hash`,
+   `zk-ssl-guardian`, `zk-ssl-medio`, `zk-ssl-air` y `zk-ssl-verify`: el kit, su clausura y el
+   guardián del testigo, lo que un tercero compila sin el probador—; `CIEGA_PROBADOR` —`zk-ssl`,
+   `zk-ssl-node`, `zk-ssl-cli`, `zk-ssl-sdk`, `zk-ssl-wire`, `stark-experiment`, `settlement-prover`
+   y `winter-prover`—; `CIEGA_FORKS` —`winter-air` y `winter-verifier`—; y `CIEGA_OTROS` —`zk-core`,
+   `ceremony`, `settlement-layer`, `iso-bridge`, `halo2-experiment`, `plonk-experiment` y
+   `nova-experiment`—. Cinco, ocho, dos y siete: los 22 de `members`. Cada miembro, el `MIEMBROS`
+   que el bloque 0 lee con `tools/miembros.py` (§833), tiene que estar en exactamente una, y cada
+   nombre de una lista tiene que ser un miembro; si no, ROJO con el nombre y cuántas clases tiene.
+   Sin miembros, ROJO. Medido en el carril con `cargo tree --locked -e normal`: los seis primeros de
+   `CIEGA_PROBADOR` llevan `winter-prover`, y `settlement-prover` no, pero es dependencia de
+   `stark-experiment`, y el comentario lo dice así; `zk-core`, `settlement-layer` e `iso-bridge`
+   llevan los 14 paquetes `ark-*` del `Cargo.lock`, y `ceremony`, 13 de ellos (contados sin repetir;
+   las líneas de la salida de `cargo tree --prefix none` con un `ark-*` son de 44 a 54, con las
+   repeticiones); y `halo2-experiment`, `plonk-experiment` y `nova-experiment`, ninguno. El guardián
+   no está en la clausura normal del kit —`cargo tree --locked -e normal -p zk-ssl-verify` no lo
+   lista; el kit lo usa en sus tests—: es el crate que un testigo compila sin el nodo
+   (`Cargo.toml:29-31`), y por eso los textos de este sello dicen «lo que un tercero compila sin el
+   probador» y no «la clausura del kit».
+3. **La pasada, el «1 bis».** Para cada crate de `ASERCIONES_PASADA`, en su orden, `timeout <el
+   doble del de su fila>s cargo test -p <crate> --profile aserciones --locked`, a
+   `$OUT/aserciones_<crate>.txt`, con el perfil en una variable, `PERFIL_AS`, que usan las dos
+   órdenes del bloque. Pasan, ignorados y avisos se cuentan como en el bloque 1 y se comparan con
+   los de su fila de la tabla: ROJO si difieren, con un texto por causa —un ignorado de más dice que
+   un test gateado en depuración gana su pin propio—; un exit 124 dice el timeout, y otro exit, el
+   suyo. La prueba de vida tiene dos partes. La de la ruta: cada línea «Running» de la salida tiene
+   que acabar en `(<target>/aserciones/deps/<binario>)`, cada crate tiene que correr al menos una,
+   tienen que correr con el perfil todos los de la lista, y la lista no puede estar vacía. Y la del
+   perfil: detrás de la pasada, la misma orden con `--no-run --message-format=json`, que sale fresca
+   —todo está compilado—, a `$OUT/aserciones_<crate>.json`; cada `compiler-artifact` tiene que traer
+   `"debug_assertions":true` en su `profile`, y cada «Running» de la pasada tiene que ser uno de los
+   ejecutables del JSON, con las rutas resueltas. La lee un `python3 -c` en línea, como las de la
+   puerta del §834. Si la pasada acabó por el timeout, el JSON no se pide: su ROJO ya está. Cada
+   fila de la pasada imprime, al lado, los segundos de su fila de release y cuántos artefactos del
+   JSON llevan las aserciones de cuántos («24/24»). Y la razón: la pared de la pasada contra la suma
+   de las filas de release de los mismos crates en la misma corrida, que el bloque 1 anota en
+   `$OUT/tiempos.txt` —«<crate> <segundos>», en la misma línea en la que ya sumaba `T_TOTAL`—. Se
+   imprime en cada corrida, «razon R (el tope, 2, en caliente o tras tocar; en frio o con un solo
+   perfil por compilar, no decide; no es compuerta)», con las dos sumas. El nivel es `--sello`, en
+   `NIVEL_ASERCIONES`, con la medida de abajo. El orden de la lista va de las hojas al kit para que,
+   en frío, cada crate compile lo suyo dentro de su timeout y el kit no cargue con toda la clausura.
+   En esta punta los timeouts de la pasada son 120 s para `zk-ssl-hash`, `zk-ssl-guardian` y
+   `zk-ssl-medio`, 360 para `zk-ssl-air`, cuya fila tiene 180 desde el §853, y 240 para el kit.
+4. **El nodo sin `dev`, a pin exacto.** El bloque del §784 contaba con `grep -cE '^warning:
+   (unused|field|function|method|variable|value|constant|struct|enum|associated|type)'` y aceptaba
+   `-le 1`: una cota sobre once clases de aviso, que no veía que el de `podar` desapareciera (el
+   mutante M4 del §834) ni un aviso de otra clase. Ahora cuenta como la puerta del §834 —toda línea
+   `^warning` menos el resumen «generated N warning(s)»— y exige 1. Tres líneas cambiadas en su
+   sitio y un «⚠️ §864» al final del comentario de arriba, sin mover ninguna línea.
+5. **«Ceguera declarada».** Al pie de `tools/canon.sh`, detrás del `exit`, al final del fichero: la
+   (a), clase de miembros por clase, con su razón y cuándo se reabre, y los `#[ignore]` sin
+   condición, que ningún nivel corre —la tabla cuenta sus ignorados y `check_tests` exige que cada
+   uno se declare instrumento de medida—, con el del vecino remitido a la 125, sin decidir nada de
+   él; la (b) y la (c), cerradas, con su residuo, y fuera del build normal, el código que solo
+   compila con una feature que no enciende ninguna fila ni ninguna puerta, con sus cinco instancias
+   (punto 7); la (d), PERMANENTE; la (e), cerrada en el §789; y la (f), como la dejó el §582. La
+   cabecera lo nombra en su línea 26, que era un `#` en blanco y pasa a «⚠️ §864: y lo que NO ve
+   ninguno, clase por clase, con su razon y cuando se reabre: «Ceguera declarada», al pie (la 94)»;
+   queda pegada a «## Lo que lo hace ROBUSTO», sin el blanco de antes, porque meter otra línea
+   correría todas las de abajo. Va al pie y no en la cabecera porque un bloque de sesenta y dos
+   líneas arriba correría todas las de abajo, y el árbol cita `tools/canon.sh` por línea:
+   `AUDITORIA.md`, hasta la `:779`, y fuera de él las líneas «Fuentes» de
+   `doc/ecst/VERIFICACION.md`, los borradores de `doc/ecst/borrador/` y
+   `spec/rfc/0004-paquete-de-evidencia.md`, de la `:8` a la `:334`; `tools/conservados.sh:23`, que
+   cita la `:453` de un commit fijo, `41f765d`; y las cadenas del autotest de la v5 bis en
+   `tools/verificar_citas.py`, de la `:89` a la `:404`, que no son citas. Y va al final, detrás de
+   los pies del §811 y del §822, para no mover ninguna línea con él (abajo, «El porte», punto 4).
+   Los dos bloques nuevos van detrás del «3 bis nodo», como él, y las otras ediciones son en su
+   sitio: ninguna de las líneas 1 a 839 del fichero se mueve. La v5 bis de `verificar_citas` (§847 y
+   §854) da 0 líneas al canon en los documentos vivos de su lista, en su ámbito, y las de fuera de
+   él —las «Fuentes» de `doc/ecst/VERIFICACION.md`, sus borradores, el RFC-0004, la de
+   `tools/conservados.sh` y las cadenas del autotest— caen todas antes de la `:839`.
+6. **La cabecera, el tiempo de `--sello`.** Su línea 8, «470 a 926 s de reloj (⚠️ §811,
+   14-10-2026)», no cuenta el «1 bis»: gana, en la misma línea, «⚠️ §864: sin el «1 bis», que les
+   suma de 16 a 26 s en caliente, de 61 a 69 tras tocar `zk-ssl-hash` y unos 100 en frio, medidos en
+   el carril donde se escribio el §864, que era otro arbol; y de 7 a 8 en caliente y de 39 a 41 tras
+   tocar, medidos al portarlo encima del §863; su razon la imprime el». La marca dice qué es el
+   carril, porque `tools/canon.sh` no lo dice en ningún otro sitio. Las del carril son las de su
+   tabla (abajo, «Medido en el carril»): las cinco corridas en caliente, de 16 a 26; las cinco tras
+   tocar `zk-ssl-hash`, de 61 a 69 —el borrador decía «de 60 a 69», y el mínimo de su tabla es 61—;
+   y la de frío, 100, con cuatro núcleos. Las de aquí son las de «Medido aquí», sobre otro árbol,
+   con otro `target` y otra carga: tres corridas en caliente y dos tras tocar; en frío, aquí no se
+   midió.
+7. **El código que solo compila con una feature que no enciende nadie**, una clase que la decisión
+   no midió (la halló una revisión, abajo). Medido en el carril con `cargo tree --locked -e
+   features` por crate: ninguna fila, ninguna puerta y ningún nivel encienden `parallel` de
+   `ceremony` —4 `#[cfg(feature = "parallel")]`, en `parallel_utils.rs:13` y `:47`,
+   `single/phase1.rs:162` y `single/phase2.rs:73`; `zk-core` la usa sin features
+   (`crates/zk-core/Cargo.toml:28`)—, `test-setup` de `nova-experiment` —el módulo de sus 3 tests,
+   `folding_chain.rs:119`, que su fila de la tabla declara—, `concurrent` de `winter-prover` —18
+   `#[cfg(feature = "concurrent")]`; el paraguas `winterfell` va sin features en todos sus usos— ni
+   el `no_std` de `winter-air` —4 `cfg(not(feature = "std"))` en `proof/security.rs`; `std` va por
+   defecto—. Las cuatro cuentas y las cuatro líneas, contadas otra vez aquí con `grep`, son las
+   mismas. Y hay una quinta, que la medida del carril no vio, la halló una revisión del porte y se
+   midió aquí: `async` de `winter-prover` —8 `#[maybe_async]` y 9 `maybe_await!` en su `src/lib.rs`,
+   que solo con ella son `async fn` y `.await`— (abajo, «El porte», 8). Las demás features de los
+   miembros sí se compilan en algún sitio: `firmar` de `zk-ssl-medio`, con ella en los tests y sin
+   ella en los binarios del kit de la puerta del §834; `dev` del nodo, con ella y sin ella (el
+   §784); `sandbox` de la capa; y `std`, por defecto, en los forks. De ese código, el canon no ve ni
+   los avisos, ni los errores, ni los tests. Queda declarado en el residuo de la (b), con las cinco
+   instancias y su reapertura, y la lista dice de sí misma que es la medida de hoy y no una
+   comprobación: una feature nueva que no encienda nadie no la pone ROJA nada. No se monta una
+   pasada: las dos primeras son de `CIEGA_OTROS` y las de los forks, de la migración.
+8. **Los documentos.** La 94 del `BACKLOG.md` pasa a `[x]`, con «decididas por clase y declaradas;
+   la (a) de lo que se compila sin el probador, vista en el canon (⚠️ §864)» en su título y su nota
+   al final: la nota de la decisión que dio el juez, con lo que el sello construyó —el «1 bis», con
+   su prueba de vida en el JSON de cargo, el «0 bis», el pie y el pin exacto del §784—, la
+   reapertura en los dos escenarios, la clase del código bajo una feature que no enciende nadie, la
+   frase de la 41 que la decisión pedía si su sello ya estaba dentro, y los `#[ignore]` sin
+   condición. No lleva ninguna cifra de tests. La línea «Estado» pasa de 41 abiertas y 89 resueltas
+   a 40 y 90, y nombra «el §864, que cierra la 94». La 125 decía que el instrumento del vecino es
+   «una ceguera de la clase de la 94, que ninguno de sus apartados nombra»: gana, en la misma línea,
+   «⚠️ §864: desde el §864 la nombran la nota de la 94 y el pie «Ceguera declarada» de
+   `tools/canon.sh`, que declaran los `#[ignore]` sin condición y remiten este a la 125, sin decidir
+   nada de él». En `CONTRIBUTING.md` §2, «y hoy lo hace» gana «⚠️ §864: no del todo»: el canon
+   pincha los avisos que quedan a la vista a propósito —los nueve de `ceremony`, deuda, cuyo pin,
+   11, cuenta además las dos líneas de resumen de cargo, y el de `podar` en el binario del nodo, con
+   `dev` y sin él (§580)—, y ninguno nuevo pasa en lo que el canon compila, porque cada pin es
+   exacto; lo que no compila ningún nivel, el código bajo una feature que no enciende nadie, lo
+   declara el pie. En §4, al final de la última línea del párrafo de la 41, los cinco crates que un
+   tercero compila sin el probador —el kit, su clausura y el guardián— se comprueban también con las
+   aserciones encendidas, con la orden, y el resto del workspace no se mide en depuración, como
+   declara el pie. En `doc/METODO.md` §6, la fila de `--sello` de la tabla de los niveles nombra el
+   «1 bis». En `crates/zk-ssl-verify/src/consumos.rs`, el comentario de módulo decía que `path_root`
+   «lleva un `debug_assert_eq!` de longitudes y **el canon corre en RELEASE**: alli no dispara»: su
+   última línea gana «⚠️ §864: «el canon corre en RELEASE» es su bloque 1, y es el binario que se
+   publica, que es lo que esto justifica; desde el §864 el canon corre ademas estos tests con las
+   aserciones encendidas (el «1 bis» de `tools/canon.sh`, la 94), y alli el `debug_assert_eq!` si
+   existe y dispararia con un camino descuadrado». Es prosa medida —el F1 de abajo lo hace
+   disparar—, y la (d) manda corregirla con marca. Todas las marcas van en la misma línea que lo que
+   marcan, como las del §861, para no mover las citas por línea de esos ficheros.
+
+**Superficie.** Ninguna de S1 a S6, como dice la crítica (C21): ni el cable, ni un vector, ni el
+kit, ni lo firmado, ni su binario, que sale igual byte a byte; el perfil nuevo no cambia ningún
+veredicto, y la pasada corre los mismos tests en otro perfil.
+
+**Medido en el carril**, sobre el C-90v de la tanda con este sello encima, sin commitear, en la
+máquina de la sesión (4 CPU), cada `cargo` con `--locked`, `nice -n 19` y bajo el `flock` de la
+sesión, y con el `target` del árbol. Las medidas de la primera redacción, sobre el «1 bis» de
+entonces, y las de la segunda, sobre el del borrador, van separadas: los falsadores que tocan el «1
+bis» se volvieron a correr todos contra el bloque final. Los pines de entonces eran los de esa base:
+56, 40, 58, 44 y 196; el kit llevaba allí los cinco tests de la E3 del RFC-0020, que no va en esta
+cadena, y aquí tiene 191.
+
+- **El arnés.** El canon entero no se corrió: compila el workspace entero en release y el disco de
+  la máquina estaba en menos de 5 GB libres, con otras sesiones trabajando. La medida es de un arnés
+  que compone, sacados de `tools/canon.sh` TAL CUAL por sus marcas —un guion de la sesión, fuera del
+  árbol—, la cabecera hasta las utilidades, la línea de `MIEMBROS`, el bloque 1 con la tabla
+  reducida a las filas de los cinco crates, y los bloques 0 bis y 1 bis; los mutantes del bloque son
+  sustituciones de texto en el arnés, que casan una vez. La razón sale de las cinco filas de release
+  y de la pasada en la misma corrida, como pide la decisión, pero sin las filas de delante. Y eso
+  importa en un caso: tras tocar `zk-ssl-hash`, en el canon entero las filas de la capa, del cable,
+  del mando y del nodo recompilan antes las bibliotecas de release de los cinco, y sus filas pagan
+  menos. Para no medirlo a favor, en la primera redacción ese escenario se corrió de dos maneras:
+  tal cual, y precompilando antes, sin cronometrar, `cargo build --release --locked --lib -p
+  zk-ssl-hash -p zk-ssl-air -p zk-ssl-guardian -p zk-ssl-medio -p zk-ssl-verify`, lo que harían esas
+  filas.
+- **La razón**, el tope de 2 fijado antes de medir (la decisión, su punto 6). Segundos de pared, en
+  enteros como los del bloque 1; la carga es la media de un minuto al empezar y al acabar.
+
+  | escenario | pasada | filas de release | razón | carga |
+  |---|---|---|---|---|
+  | en frío: el perfil por compilar entero | 100 | 59 | 1,69 | 0,19 → 3,80 |
+  | en caliente, 1 | 16 | 17 | 0,94 | 2,85 → 2,60 |
+  | en caliente, 2 | 18 | 17 | 1,06 | 2,60 → 2,57 |
+  | en caliente, 3 | 18 | 16 | 1,12 | 3,79 → 3,34 |
+  | en caliente, 4 | 26 | 28 | 0,93 | 3,71 → 5,64 |
+  | tras tocar `zk-ssl-hash`, tal cual | 62 | 57 | 1,09 | 2,00 → 3,43 |
+  | tras tocar `zk-ssl-hash`, con la precompilación, 1 | 62 | 48 | 1,29 | 3,19 → 3,62 |
+  | tras tocar `zk-ssl-hash`, con la precompilación, 2 | 63 | 51 | 1,24 | 2,17 → 3,79 |
+  | tras tocar `zk-ssl-hash`, con la precompilación, 3 | 69 | 47 | 1,47 | 3,35 → 3,58 |
+  | bloque final, en caliente | 18 | 17 | 1,06 | 2,89 → 2,49 |
+  | bloque final, tras tocar `zk-ssl-hash` (al restaurar el F3) | 61 | 54 | 1,13 | 3,22 → 3,54 |
+  | bloque final, tras tocar el kit (esta marca y el `Cargo.toml`) | 28 | 26 | 1,08 | 0,25 → 2,38 |
+  | bloque final, tras restaurar el `Cargo.toml` del F7 | 23 | 21 | 1,10 | 2,10 → 1,99 |
+
+  Las cuatro últimas filas son de la segunda redacción, con el «1 bis» del borrador, cuyo paso por
+  el JSON sale fresco: 0,18 s el de `zk-ssl-hash`, medido aparte. En los dos escenarios que deciden,
+  la razón no pasó de 1,47: **`--sello`**. En frío, que se informa y no decide, cada crate compiló
+  dentro de su timeout con holgura —`zk-ssl-hash` 6 s, `zk-ssl-guardian` 3, `zk-ssl-medio` 24,
+  `zk-ssl-air` 30 y `zk-ssl-verify` 37, con timeouts de 120, 120, 120, 120 y 240—, y
+  `target/aserciones/` quedó en 151 MB. Y un caso que la decisión no mide, hallado midiendo: con el
+  `target` de release al día y el de las aserciones no, la razón sale **3,00** (72 s contra 24,
+  carga 0,93 → 3,17): la corrida del F4 de la primera redacción recompiló release y no las
+  aserciones, y la de después encontró la pasada por compilar y las filas, no. Las corridas de los
+  mutantes del perfil de la segunda redacción son el mismo caso, con el perfil mutado por compilar:
+  **3,60** (90 contra 25, el F7) y **2,58** (62 contra 24, el F7b). Es el caso de quien prueba a
+  mano en release antes del canon: la pasada no cuesta más que en el escenario de tocar, pero la
+  razón sube porque el denominador no compiló. Por eso la reapertura, en el árbol, es la de la
+  decisión: una corrida posterior en uno de los dos escenarios; la que compila un solo perfil se
+  informa y no decide. Si el autor la quiere de otro modo, es una frase en tres sitios.
+- **Las salidas de la pasada.** En todas las corridas sin mutante, los cinco con exit 0 y los pines
+  de su fila: 56, 40, 58, 44 y 196 pasan, 0 ignorados y 0 avisos. Cargo dice «Finished `aserciones`
+  profile [optimized]»; las «Running» salen de `target/aserciones/deps/`: una por crate, siete del
+  medio y dos del kit, `src/lib.rs` y `src/main.rs`. En el JSON, con el bloque final, todos los
+  artefactos llevan las aserciones: 24 de 24 en `zk-ssl-hash`, 2 de 2 en `zk-ssl-guardian`, 48 de 48
+  en `zk-ssl-medio`, 34 de 34 en `zk-ssl-air` y 81 de 81 en `zk-ssl-verify`, incluidos los scripts
+  de compilación de las dependencias, que van a opt 0 y también con ellas. Las aserciones que la
+  pasada enciende en esos crates, contadas con `grep`: 11 `debug_assert!` en `zk-ssl-air`, y uno en
+  `zk-ssl-hash` (`path_root`, `src/lib.rs:225`), en `zk-ssl-medio` (`src/subtree.rs:102`) y en el
+  kit (`src/mmr.rs:64`), y 3 en el fork `winter-air`; ninguna `cfg(debug_assertions)` y ninguna
+  marca `cfg_attr(debug_assertions, ignore)` en los cinco. Las 59 marcas de los crates con probador,
+  contadas igual: 38 en `zk-ssl`, 18 en `stark-experiment` y 3 en `zk-ssl-sdk`.
+- **Los falsadores**, cada uno aplicado en el árbol o en el arnés, corrido, restaurado desde una
+  copia buena fuera del árbol y comprobado con `cmp`; todos caen, y en lo que les toca. Los que
+  tocan el «1 bis» se corrieron, en la segunda redacción, contra el bloque del borrador; en la
+  primera, el F1 y el F2 corrieron contra un «1 bis» anterior, con un único texto para los exit, que
+  en el borrador son dos ramas, la del 124 y la de los demás.
+  - **F1, el discriminante de la clase:** `debug_assert!(false, "falsador 94")` al principio de
+    `path_root`. Las cinco filas de release, VERDES con sus pines; la pasada, ROJA: `zk-ssl-hash`
+    exit 101 con 54 de 56 y el kit exit 101 con 97 de 196 —en la primera redacción, 35 caen en su
+    biblioteca, y cargo para ahí—; los otros tres, verdes, y la prueba de vida del perfil, verde: el
+    ROJO es del aserto. Es la propiedad: un aserto de depuración que dispara en la clausura ya no
+    pasa el canon.
+  - **F2, su control:** `assert!(false, "falsador 94, el control")` en el mismo sitio. ROJO en las
+    dos: las filas de release de `zk-ssl-verify` y `zk-ssl-hash` caen igual que su pasada, ocho
+    fallos. El ROJO de F1 es del perfil.
+  - **F3, los pines reusados:** `#[cfg_attr(debug_assertions, ignore = "falsador 94")]` sobre
+    `v3_no_es_v2_ni_con_la_pareja_de_genesis`, de `zk-ssl-hash`. La fila de release, VERDE, 56 y 0
+    ignorados; la pasada, ROJA, «pasan 55» y «ignorados 1, su fila dice 0», con el texto que dice
+    que gana su pin propio. La decisión lo ponía en un test de `zk-ssl-air`, que es zona de la
+    migración; aquí va en `zk-ssl-hash`, que la pasada corre igual.
+  - **F4, la prueba de vida:** la pasada en release. Dos formas: `PERFIL_AS=release`, que cambia las
+    dos órdenes, y solo la orden de los tests con `--release`, que es el F4 de la primera redacción.
+    Los cinco con exit 0 y los mismos pines, y ROJO por la prueba de vida: en las dos, cada crate
+    con sus «Running» fuera de `<target>/aserciones/deps/` y «corrieron con el perfil 0 de los 5»;
+    en la primera, además, el JSON con 0 de 24, 0 de 2, 0 de 48, 0 de 34 y 0 de 81 artefactos con
+    las aserciones; en la segunda, cada «Running» que no es un ejecutable del JSON. La decisión
+    quitaba el perfil y corría en `target/debug/`; con `--release` el mutante es más fino —en
+    depuración, opt 0, el kit pasa de su timeout y caería también por el exit—, y no compila otro
+    `target` entero.
+  - **F5, la clasificación**, con un arnés sin `cargo` —la cabecera, `MIEMBROS` y el 0 bis, tal
+    cual—: `zk-ssl-medio` fuera de `ASERCIONES_PASADA`, «esta en 0 clases»; en `CIEGA_OTROS` además,
+    «esta en 2 clases»; `winter-fri`, que no es miembro, en `CIEGA_FORKS`, «tiene clase y no es
+    miembro del workspace». En la primera redacción, además, la lista vacía, los cinco «en 0
+    clases», y un miembro nuevo, `crates/zk-falsador94` con su `Cargo.toml` y en `members`
+    —`tools/miembros.py --con-crates` da 23, sin ROJO—, «esta en 0 clases»; el crate de prueba se
+    borró y el `Cargo.toml` se restauró con `cmp`.
+  - **F6, el §784** (primera redacción; el bloque no cambió después): `let _falsador_94 = (1u8);` en
+    `raices_sin_banderas`, del nodo, que solo compila sin `dev` (`#[cfg(not(feature = "dev"))]`):
+    unos paréntesis de más, «unnecessary parentheses», que no es ninguna de las once clases. Con el
+    bloque de antes, VERDE, «1 aviso(s)»; con el de este sello, ROJO, «da 2 avisos (pin 1, el de
+    podar)».
+  - **M4, el del §834, otra vez** (primera redacción): `#[allow(dead_code)]` sobre `podar`. Con el
+    bloque de antes, VERDE, «0 aviso(s), el de podar (pin 1)»; con el de este sello, ROJO, «da 0
+    avisos».
+  - **F7, el perfil sin las aserciones:** `debug-assertions = false` en el `[profile.aserciones]`
+    del `Cargo.toml`. Con el «1 bis» de la primera redacción, sobre el mismo árbol mutado, VERDE:
+    56, 40, 58, 44 y 196 pasan, las «Running» en `target/aserciones/deps/`, y «OK 5 crates con las
+    aserciones de depuracion encendidas», que no lo estaban; es el bloqueante de la revisión,
+    reproducido. Con el del borrador, ROJO: «24 de los 24 artefactos del JSON de cargo van sin
+    debug_assertions», y lo mismo en los cinco, con «corrieron con el perfil 0 de los 5».
+  - **F7b, un override por paquete:** `[profile.aserciones.package.zk-ssl-hash]` con
+    `debug-assertions = false`, añadido al final del `Cargo.toml`. ROJO en los tres que compilan
+    `zk-ssl-hash`: 22 de 24 en el suyo —su biblioteca y su test—, 33 de 34 en `zk-ssl-air` y 80 de
+    81 en el kit; `zk-ssl-guardian` y `zk-ssl-medio`, que no lo usan, verdes.
+  - **F7c, la variable:** el arnés entero con `CARGO_PROFILE_ASERCIONES_DEBUG_ASSERTIONS=false`.
+    ROJO como el F7, por el JSON, en los cinco.
+  - **F8, el timeout:** el de la fila del kit a 1 s en el arnés, 2 s en la pasada. ROJO por la rama
+    del 124: «exit 124, el timeout de 2 s, el doble del de su fila», «pasan 0» y «corrieron con el
+    perfil 4 de los 5»; el JSON del kit no se pide. La otra rama, la de los demás exit, es la del
+    F1: «exit 101».
+  - **F9, lo que corrió no es lo que describe el JSON:** la variable del F7c solo en la orden de los
+    tests, y no en la del JSON. Las «Running» siguen en `target/aserciones/deps/` y el JSON da 24 de
+    24 con las aserciones; ROJO solo por ««Running» que no son ejecutables del JSON de cargo», en
+    los cinco.
+  Sin mutante, el bloque del §784 de este sello da «1 aviso(s), el de podar (pin 1, exacto)», y el
+  de antes, «1 aviso(s)»: la salida de `cargo check --release --locked -p zk-ssl-node
+  --no-default-features` trae dos líneas `^warning`, el aviso de `podar` y el resumen. Los mutantes
+  del perfil dejaron en `target/aserciones/` 449 entradas nuevas de artefactos —de los perfiles
+  mutados, unos 170 MB—: se borraron por su censo, el de antes del F7 menos el de después, y el
+  censo volvió a ser el de antes, 152 MB; la corrida siguiente salió VERDE.
+- **La suite del kit en release**, la del `Cargo.toml` tocado y del `consumos.rs` marcado: el test
+  `las_fijaciones_son_exactas` lee el `Cargo.toml` raíz, y la fila de `zk-ssl-verify` dio 196 pasan,
+  0 ignorados y 0 avisos en cada corrida, como las otras cuatro filas, con el perfil nuevo dentro.
+  El binario del kit, `cargo build --release --locked -p zk-ssl-verify --bin zk-ssl-verify` con la
+  marca de `consumos.rs` puesta: `880f53cda12d737f`, el del sello de delante.
+- **Los nueve avisos de `ceremony`**, los de la marca de `CONTRIBUTING.md`, contados con `cargo
+  check --release --locked -p ceremony --lib --tests`: nueve, y las dos líneas de resumen de cargo,
+  «(lib) generated 9 warnings» y «(lib test) generated 9 warnings (9 duplicates)», once en total, el
+  pin de su fila.
+- **Las herramientas del bucle del canon** y `check_tests`, `check_modulos`, `check_vectores` y
+  `check_catalogo`: en un clon del árbol sin `target`, con el marcador sin número puesto como número
+  de prueba solo en las líneas que escriben los tres sellos de la tanda sobre el §816 —122, de ellas
+  23 de este— y un encabezado de prueba al final de `AUDITORIA.md`, las quince en 0; y con este
+  asiento, numerado, en vez del encabezado, también las quince. `check_tests`, 2009 tests declarados
+  y 20 instrumentos, como antes; `check_modulos`, 205 ficheros `.rs`; `check_vectores`, 501 `.json`
+  y 1024 líneas de 19 manifiestos; `check_cifras`, 26 cifras de tests en documentos vivos y 22
+  pines. `bash -n` y `--lista`, limpios. `git diff --check`, limpio. Los clones se borraron.
+- **`cargo`** se corrió con `-p` de los cinco crates de la pasada, en release y en el perfil nuevo
+  —y en los perfiles mutados de los falsadores—; con `-p zk-ssl-verify --bin zk-ssl-verify`, en
+  release; en la primera redacción, con `-p zk-ssl-node --no-default-features` y con `-p ceremony`,
+  en `check`; y `cargo tree` y `cargo metadata`, que no compilan. No construyó la capa, ni los
+  circuitos, ni el mando: la capa solo se tipó, en el `check` del nodo.
+
+**La revisión**, en el carril. Tres revisiones independientes juzgaron el sello, sin tocarlo o con
+mutantes que restauraron con `cmp`, con medidas propias. Lo que encontraron y lo que se hizo, cada
+cosa con su fuente:
+
+- **Bloqueante: la prueba de vida no miraba el perfil.** MEDIDO por la revisión de la propiedad: con
+  el `debug_assert!(false)` del F1 y `debug-assertions = false` en el perfil, la pasada salía de
+  `target/aserciones/deps/`, daba los mismos pines y decía «encendidas». Reproducido en el carril,
+  el F7. Arreglado: la prueba de vida del perfil, en el JSON de cargo (punto 3), con sus mutantes
+  F7, F7b, F7c, F4 y F9, que caen.
+- **Bloqueante: una clase sin declarar, y una frase falsa en `CONTRIBUTING.md`.** MEDIDO por la
+  revisión de los textos: el código bajo `parallel` de `ceremony` y `test-setup` de
+  `nova-experiment` no lo compila ningún nivel, y «ninguno nuevo pasa, porque cada pin es exacto» no
+  es cierto de él. Medido en el carril con `cargo tree -e features`, con dos instancias más, en los
+  forks. Arreglado: declarado al pie con sus cuatro instancias —aquí cinco: una revisión del porte
+  halló otra (abajo, «El porte», 8)— y su reapertura (punto 7), y la frase de §2 acotada a lo que el
+  canon compila.
+- **La reapertura se disparaba sola en la primera corrida.** Lo vieron las tres, y la primera lo
+  midió: con release al día y la pasada por compilar, 4,17. Arreglado: la reapertura de la decisión,
+  en sus escenarios, en los cuatro textos (arriba, «Quién lo decide»).
+- **«Del kit» para el guardián**, que no está en la clausura del kit. MEDIDO con `cargo tree`.
+  Arreglado en `CONTRIBUTING.md`, `doc/METODO.md`, el `BACKLOG.md`, el rótulo y el comentario del «1
+  bis», el del «0 bis» y el del `Cargo.toml`.
+- **El guardián, sin decir cómo se resolvió la condición de la decisión.** Dicho arriba, «Quién lo
+  decide».
+- **La 125, sin marca**, decía que ningún apartado de la 94 nombra su ceguera. Marcada (punto 8).
+- **El pie fuera de la cabecera, el F3 y el F4 cambiados.** Ya declarados; el pie se dice contrario
+  a la letra de la decisión, con la aceptación expresa del autor (arriba).
+- **El comentario de `consumos.rs`**, que el «1 bis» deja medio rancio. Marcado en su línea, sin
+  mover ninguna y sin cambiar el binario (medido). El comentario del test
+  `un_camino_descuadrado_no_da_raiz` (`:154-156`), «el `debug_assert` de `path_root` no dispara en
+  RELEASE», sigue siendo cierto tal cual, y no se toca.
+- **La cabecera de `--sello`, sin el «1 bis».** Marcada en su línea (punto 6).
+- **Los nueve de `ceremony` contra el «DEUDA: 11 warnings» de su fila.** La marca de §2 dice que el
+  pin, 11, cuenta además las dos líneas de resumen.
+- **Asiento: «el §834, el §837 y el §838»**, que era «el §833, el §834 y el §837»; y **«de 44 a 54
+  `ark-*`»**, que eran líneas con repeticiones y no paquetes. Corregidos (arriba, «De dónde sale», y
+  punto 2).
+- **El F1 y el F2 corrieron contra un «1 bis» anterior**, y ningún falsador ejercía la rama del 124.
+  Vueltos a correr contra el bloque final, con el F8 para el 124 (arriba, «Medido en el carril»).
+- **Al integrar.** MEDIDO por la revisión de las regresiones con `git merge-tree --write-tree`
+  contra las puntas de los otros dos carriles: con el que traía la 75 y la H6 —aquí, entre otros, el
+  §822 y el §824— chocaban la cabecera de `tools/canon.sh`, sus líneas 8 a 10, la tabla de los
+  niveles de `doc/METODO.md` §6 y la línea «Estado» del `BACKLOG.md`; con el que traía la 120 y la
+  121 —aquí, el §820 y el §821—, la línea «Estado». Son los choques que salieron en el porte
+  (abajo), y uno más, de `CONTRIBUTING.md` §4, que la revisión no podía ver: el párrafo de la 41 lo
+  rehízo `main` después de la base del carril (abajo, «El porte»).
+- **De diseño, sin cambio:** el «0 bis» va detrás del bloque 1, y un miembro sin clase solo se ve al
+  acabar los tests, aunque el bloque 0 hace la comprobación análoga con la tabla al principio: lo
+  deja así no mover las líneas que citan otros textos. Y una revisión anotó que su directorio de
+  trabajo se vació a mitad de su pasada, quizá por otro agente con el mismo nombre; no afectó al
+  árbol del carril, que todas dejaron limpio.
+
+**El porte.** El borrador del carril, sobre el §863: dos ficheros entran sin conflicto, el
+`Cargo.toml` raíz y `crates/zk-ssl-verify/src/consumos.rs`, y cuatro con conflicto (`git merge-tree`
+contra la base del carril, cinco trozos), resueltos a mano: `tools/canon.sh`, en las líneas 8 a 10
+de su cabecera, donde el §824 marcó la 9 y el §822 la 10 —se quedan las tres, cada una con lo suyo—;
+`doc/METODO.md` §6, las filas de `--sello` y de `--largo`, contiguas, la segunda con la marca del
+§824 —se quedan las dos—; la línea «Estado» del `BACKLOG.md`, en sus dos trozos; y `CONTRIBUTING.md`
+§4, cuyo párrafo de la 41 rehicieron con sus marcas el §839, el §840, el §842, el §816, el §817, el
+§819, el §820, el §821 y el §828, y detrás del cual el §855 puso el suyo. Lo que cambió el porte, y
+por qué:
+
+1. **El código es el del borrador.** Contra el borrador, el `Cargo.toml` y `consumos.rs` solo
+   cambian en el número, §864. En `tools/canon.sh`, el número —quince veces, las mismas que el
+   borrador—, las líneas 9 y 10 de la cabecera, que son del §824 y del §822, la 8 (abajo, 5), el
+   comentario del «0 bis» (abajo, 3), el sitio del pie (abajo, 4), los saltos de línea de seis
+   párrafos de comentario (abajo, 7) y lo de esta punta en las líneas que no son del sello; el
+   código del «0 bis», el del «1 bis», el bloque del §784 y la línea del bloque 1 son los del
+   borrador, byte a byte salvo el número (comparadas las líneas que el sello añade y quita, con `git
+   diff`, contra las del borrador). Pero debajo de la pasada cambió `main`: `zk-ssl-medio` gana los
+   cuatro tests del §848, con su `Cargo.toml` —su fila pasa de 58 a 62, y la pasada los corre con
+   las aserciones—, `zk-ssl-hash` dos comentarios del §849, y la fila de `zk-ssl-air` tiene timeout
+   180 desde el §853, que la pasada dobla a 360; el kit, que en la base del carril llevaba en
+   `lib.rs` y `actas.rs` la E3 del RFC-0020, es aquí el de la 0.4.3, y su fila tiene 191 y no 196; y
+   el §855 puso delante del bloque 1 el target de cargo de `tools/target_dir.sh`, que la prueba de
+   vida no lee: casa «Running» con cualquier ruta que acabe en `aserciones/deps/`. Por eso aquí se
+   corrió la pasada, con las filas de release de los cinco, y se comparó el binario del kit (abajo,
+   «Medido aquí»).
+2. **La 0.4.3 está publicada.** El asiento del carril decía que el `Cargo.toml` del kit «sigue en
+   0.4.3, cortada en el §815 y sin publicar». Aquí es falso: la 0.4.3 se publicó el 21-10-2026 desde
+   `5fd5212`, el §817, y el §818 la registra. Este asiento lo dice así, arriba —con la línea `//!`
+   del kit que el sello toca después de publicada, sólo un comentario, que llevará la 0.4.4— y en
+   «Lo que NO hace». Por lo mismo, el punto del comentario de `consumos.rs` en «La revisión» pierde
+   la mitad que traía en el carril —que una redacción anterior lo dejaba sin marcar «por la 0.4.3
+   cortada», razón que la revisión no casaba con un carril en el que la E3 del RFC-0020 ya cambiaba
+   el kit sin tocar su versión—: aquí la 0.4.3 está publicada y esa E3 no está, y la marca va por lo
+   que dice arriba. Ningún texto del sello en el árbol hablaba de la 0.4.3.
+3. **El comentario del «0 bis».** Decía que va detrás del «3 bis nodo» «para no mover las lineas de
+   este fichero que otros textos citan (:723-741)». Desde el §855, la 77 (original) del `BACKLOG.md`
+   (`:5155` en el §863, `:5191` con este sello) cita ese tramo por el nombre del bloque, el «3
+   duodecies», y no por línea, y la v5 bis de `verificar_citas` no deja citar `tools/canon.sh` por
+   línea en los documentos vivos de su lista; la cita se quita y el comentario dice «para no mover
+   las lineas de los bloques de delante», como el del «3 bis nodo» desde el §863, en las mismas dos
+   líneas.
+4. **«Ceguera declarada», al final del fichero.** En el carril iba detrás del `exit` y delante del
+   pie del §811, para no chocar con el carril de la 75, que añadía su pie detrás de ese. Ese pie es
+   el del §822, que ya está en el árbol, detrás del del §811: la razón se fue, y la regla de la casa
+   —lo nuevo, al final del fichero, para que ninguna línea se mueva por ello— lo pone detrás del pie
+   del §822. Sus dos primeras líneas lo dicen («Va despues del `exit`, al final del fichero, detras
+   de los pies del §811 y del §822, como ellos»), y su párrafo de cabeza, rehecho a 100 columnas,
+   pasa de seis líneas, una de ellas más larga, a siete: el pie tiene sesenta y dos (abajo, 7 y 8),
+   y una en blanco delante; la cabecera, que dice «al pie», sigue siendo cierta. Los dos pies de
+   antes no se mueven por él: se mueven por las 144 líneas de los dos bloques nuevos, arriba, que
+   ningún texto del árbol cita por línea.
+5. **Las cifras son las de esta punta.** El `BACKLOG.md`, de 41 abiertas y 89 resueltas a 40 y 90,
+   donde el carril tenía 44 y 86 a 43 y 87, y la lista de la línea «Estado» nombra el §864 detrás
+   del §822. Los pines de la pasada son los de las filas de esta punta, 56, 40, 62, 44 y 191, donde
+   el carril tenía 58 en el medio y 196 en el kit; sus timeouts, 120, 120, 120, 360 y 240, donde el
+   carril tenía 120 en `zk-ssl-air`. Ningún test, ningún pin: TOTAL DE SELLO 1872 y CON LARGOS 2012,
+   como en el §863, donde el carril tenía 1850 y 1987. Y la línea 8 de la cabecera, que en el carril
+   decía «de 16 a 26 s en caliente, de 60 a 69 tras tocar `zk-ssl-hash` y unos 100 en frio», dice lo
+   que la tabla del carril da y lo medido aquí, cada cosa con su sitio (arriba, «Lo que hace», 6).
+6. **Las citas del asiento**, a lo que cayó en otro sitio: la frase de `README.md` sobre `--release`
+   y la depuración, `:116-117` en el carril, es aquí la `:128-129`; la `:723-741` de
+   `tools/canon.sh` que citaba el `BACKLOG.md`, que ya no se cita por línea (arriba, 3); y la del
+   pie del §811 como el final del fichero. Las de `Cargo.toml`, `consumos.rs:154-156`,
+   `zk-ssl-hash/src/lib.rs:225`, `subtree.rs:102`, `mmr.rs:64`, `folding_chain.rs:119`,
+   `crates/zk-core/Cargo.toml:28` y las de `ceremony`, comprobadas aquí, caen donde caían. Y los
+   hashes de antes del rebase, por su número: el §816 por `195ee5c` y el C-90v por el §863. Las
+   líneas de `BACKLOG.md` y de `tools/canon.sh` que el asiento da, recontadas en esta punta (abajo,
+   «Las citas por línea que se mueven»).
+7. **Los comentarios nuevos, a 100 columnas.** Once líneas de comentario que el sello añade a
+   `tools/canon.sh` pasaban de 100 columnas, de 101 a 104: una del «0 bis», cinco del «1 bis» y
+   cinco del pie. Sus seis párrafos se rehacen a 100 con las mismas palabras —comparadas quitando
+   los `#`—; el de `CIEGA_PROBADOR`, en el «0 bis», y el del código bajo una feature que no enciende
+   nadie, en el pie, ganan una línea cada uno: los dos bloques pasan de 143 líneas a 144, y el pie,
+   de sesenta a sesenta y una, y a sesenta y dos con la quinta instancia (abajo, 8). Las líneas de
+   código y los rótulos de los bloques se quedan como estaban, como las de antes del sello, que
+   también pasan de 100. Y en «Son elecciones de la sesión», «tres falsadores cambiados, el F3 y el
+   F4», que nombraba dos, dice «dos». Y en la nota de la 94 del `BACKLOG.md`, una línea nueva que
+   pasaba de 100 columnas, de 105, pasa su última palabra a la siguiente y queda en 99, sin que la
+   nota gane ninguna.
+8. **La quinta instancia del código que no compila nadie.** Una revisión del porte halló que la
+   lista del pie se dejaba una, y aquí se midió: ninguna fila, ninguna puerta y ningún nivel
+   encienden `async` de `winter-prover` (su feature de `crates/winter-prover/Cargo.toml:40`). En el
+   árbol de este sello, `cargo tree --locked --workspace -e features -i winter-prover --prefix none`
+   da de sus features solo `default` y `std`, y con `-i winter-maybe-async`, solo `default`; ningún
+   `Cargo.toml` del workspace la pide; y la puerta del §834 solo pasa las features que piden los
+   binarios y los ejemplos, y `winter-prover` no tiene ninguno. Con ella, los 8 `#[maybe_async]` y
+   los 9 `maybe_await!` de su `src/lib.rs` —en las funciones de las líneas 181, 194, 214, 238, 257,
+   289, 508 y 538— se compilan como `async fn` y `.await`; sin ella, esa forma no la compila nadie.
+   Es la clase del punto 7 de «Lo que hace», y la frase de que las demás features de los miembros se
+   compilan en algún sitio era falsa de ella. Entra como la quinta en el pie, que gana una línea al
+   final del fichero; en la nota de la 94, «`concurrent`, `async` y el `no_std`», en la misma línea;
+   y en este asiento. Es de los forks, y la decide la migración. Las features que declaran los
+   `Cargo.toml` de los 22 miembros —`parallel`, `test-setup`, `sandbox`, `dev`, `firmar`, `std`,
+   `async` y `concurrent`— y los nombres de feature de los `cfg` de su código, contados con `grep`,
+   no dan otra.
+
+**Medido aquí**, sobre el §863 con este sello encima, sin commitear, en la máquina de la sesión (4
+CPU), cada `cargo` bajo el cerrojo de `cargo` de la sesión, con `nice -n 19`, `--locked`, el
+`target` de la sesión y su propio `TMPDIR`; nada de lo medido aquí viene del carril ni de otro
+árbol.
+
+- **El arnés**, el del carril rehecho sobre el `tools/canon.sh` de este árbol, con sus comentarios
+  ya rehechos (abajo, «El porte», 7): sacados de él TAL CUAL por sus marcas, con un guion fuera del
+  árbol, la cabecera hasta las utilidades, con la tabla reducida a las filas de los cinco crates, la
+  línea de `MIEMBROS`, el bloque 1 entero —con el trozo del §855 de delante—, el «0 bis» y el «1
+  bis», y el veredicto. Seis corridas seguidas: la primera con el `target` como lo había dejado el
+  trabajo de antes en la sesión, sobre otros árboles, y en él cargo recompiló, en los dos perfiles,
+  las siete bibliotecas de los miembros que la pasada compila —los cinco crates y los dos forks del
+  juez—; la segunda y la tercera, en caliente; la cuarta y la quinta, cada una tras tocar
+  `crates/zk-ssl-hash/src/lib.rs` con `touch`, que no cambia su contenido (comprobado con `git diff`
+  contra `HEAD`), y cargo recompiló en cada perfil `zk-ssl-hash`, `zk-ssl-air` y el kit; y la sexta,
+  en caliente. En frío no se midió aquí: habría que borrar el `aserciones/` del `target` de la
+  sesión, y el frío lo da el carril.
+
+  | corrida | pasada | filas de release | razón | carga |
+  |---|---|---|---|---|
+  | 1, con los siete miembros por recompilar en los dos perfiles | 65 | 49 | 1,33 | 2,20 → 3,73 |
+  | 2, en caliente | 7 | 8 | 0,88 | 3,73 → 3,56 |
+  | 3, en caliente | 7 | 7 | 1,00 | 3,56 → 3,59 |
+  | 4, tras tocar `zk-ssl-hash` | 39 | 36 | 1,08 | 3,59 → 3,31 |
+  | 5, tras tocar `zk-ssl-hash` | 41 | 37 | 1,11 | 3,31 → 3,60 |
+  | 6, en caliente | 8 | 7 | 1,14 | 3,60 → 3,23 |
+
+  En los dos escenarios que deciden, en caliente y tras tocar `zk-ssl-hash`, la razón no pasa de
+  1,14: el nivel sigue en **`--sello`**. La 1 compila los dos perfiles, como el escenario de tocar,
+  pero más; se informa. Como en el carril, la razón sale sin las filas de delante: tras tocar
+  `zk-ssl-hash`, en el canon entero las filas de release de los cinco pagarían menos, porque la
+  capa, el cable, el mando y el nodo recompilan antes sus bibliotecas (en el carril, con la
+  precompilación, de 1,24 a 1,47). `aserciones/` quedó en 153 MB en el `target` de la sesión.
+- **Las salidas.** En las seis corridas, la pasada VERDE: los cinco con exit 0 y los pines de su
+  fila, 56, 40, 62, 44 y 191 pasan, 0 ignorados y 0 avisos; cargo dice «Finished `aserciones`
+  profile [optimized]»; las «Running» salen de `aserciones/deps/` del `target` de la sesión, una por
+  crate, ocho del medio —siete en el carril: el §848 añade un fichero de tests— y dos del kit; y en
+  el JSON, todos los artefactos llevan las aserciones: 24 de 24 en `zk-ssl-hash`, 2 de 2 en
+  `zk-ssl-guardian`, 49 de 49 en `zk-ssl-medio` —48 en el carril—, 34 de 34 en `zk-ssl-air` y 81 de
+  81 en `zk-ssl-verify`. Las cinco filas de release, VERDES con los mismos pines: el kit, 191, sin
+  la E3 del carril, pasa también con las aserciones encendidas. El «0 bis», OK: «los 22 miembros,
+  cada uno en una clase: 5 en la pasada de las aserciones, 8 con el probador, 2 forks del juez y 7
+  fuera de la clausura».
+- **El binario del kit**, `cargo build --release --locked -p zk-ssl-verify --bin zk-ssl-verify`,
+  tres veces seguidas: con el árbol del sello; con el `Cargo.toml` raíz y `consumos.rs` del §863
+  puestos en su sitio, que es el árbol del §863 en lo que el kit compila; y con los dos del sello
+  restaurados y comprobados con `cmp`. Las tres compilan el kit y dan el mismo binario,
+  `a30377d9f1e34ca4`: el perfil nuevo y la marca no lo cambian. El del carril, `880f53cda12d737f`,
+  salió de otro árbol y con otro `target`, y no se compara con éste. Y el kit está en el §863 como
+  en `5fd5212`, el commit de la 0.4.3 (`git diff`, vacío): la marca es lo único que lo separa de la
+  publicada, y es un comentario.
+- **Las herramientas**, con el número puesto y este asiento en su sitio, desde la raíz del árbol
+  como las corre el canon: las once del bucle «2 ter» —`check_curvas` bajo el cerrojo de `cargo`,
+  con `nice` y con el `target` de la sesión— y `check_tests`, `check_modulos`, `check_vectores` y
+  `check_catalogo`, las quince en 0. `check_tests` cuenta 2034 tests declarados y 20 instrumentos,
+  como en el §863; `check_modulos`, 207 ficheros; `check_vectores`, 509 `.json` y 1039 líneas de 19
+  manifiestos, cada uno con su huella, y `--desde` el §829 (`3a4176c`) y `--desde` el §863, OK;
+  `check_cifras`, 26 cifras de tests en documentos vivos y 22 pines, ninguna contra el canon;
+  `check_nucleo`, 172 filas, como en el §863; `check_catalogo`, los 226 textos del kit y las 277
+  entradas de §5; `check_superficie`, 28 comparaciones y 0 novedades, y su R8 en 0; `check_curvas`,
+  4 raíces de producción y 213 crates en su clausura normal, sin curvas fuera del transporte
+  declarado; `check_techo`, N = 1440; `check_columns`, 48 ficheros y 323 columnas;
+  `check_constraint_layout`, 32 circuitos; y `verificar_citas`, 0 marcadores sin número en el árbol,
+  0 líneas al `BACKLOG.md` en documentos vivos (v5), 0 en la v3 bis, con sus nueve ficheros, y 0 en
+  la v5 bis, con sus ocho. Con este asiento en su sitio solo quedan los marcadores de las frases
+  finales del §863 y de éste, que ninguna rechaza. `bash -n tools/canon.sh` y `bash tools/canon.sh
+  --lista`, limpios. `git diff --check`, limpio.
+- **`cargo`** se corrió con `-p` de los cinco crates de la pasada, en release y en el perfil nuevo,
+  dentro del arnés; con `-p zk-ssl-verify --bin zk-ssl-verify`, en release; el `cargo tree` de
+  `check_curvas`; y, para la quinta instancia, `cargo tree --locked --workspace -e features -i`, que
+  no compila. No se corrieron aquí los falsadores, ni el bloque del §784, ni `ceremony`: el código
+  del sello es el del borrador, y lo que cambió debajo es lo que corre la pasada; el nodo del bloque
+  del §784 enlaza el kit, que aquí no lleva la E3, y su pin lo juzga el canon entero.
+
+**Contadores.** Ningún test, ningún pin, ningún vector: `check_tests` sigue en 2034, el TOTAL DE
+SELLO en 1872 y CON LARGOS en 2012, y no se tocan `PAPER.md`, `PAPER_EN.md` ni `PRINCIPIOS.md`; las
+«1364 declarados» y las «1349 declared», tampoco. El `BACKLOG.md` pasa de 41 abiertas y 89 resueltas
+a 40 y 90, contadas con `grep -c` de las casillas a principio de línea, como su línea «Estado»:
+cierra la 94 y no abre ninguna entrada. En el carril eran 2009, 1850, 1987 y 44 y 86 a 43 y 87.
+
+**Las citas por línea que se mueven.** En `BACKLOG.md`, de 5393 líneas a 5429: el título de la 94
+gana una línea tras la `:3210`, y su nota, treinta y cinco tras la `:3272`, la línea en blanco que
+sigue a la 94; desde la `:3211` todo baja una, y desde la `:3273`, treinta y seis. Ningún documento
+vivo cita una línea suya (`verificar_citas`, v5); las que caen ahí son de asientos de
+`AUDITORIA.md`, de su commit, como la `:5155` de la 77 (original) que cita el §863, aquí la `:5191`.
+En `tools/canon.sh`, de 1006 a 1213: los dos bloques entran tras la `:839`, el final del «3 bis
+nodo», y bajan 144 las del «3 ter» en adelante, con el veredicto y los pies del §811 y del §822; el
+pie nuevo, sesenta y dos líneas y una en blanco delante, va al final. La v5 bis da 0 líneas al canon
+en su ámbito, las de fuera de él no pasan de la `:334`, salvo la `:453` de `41f765d` que cita
+`tools/conservados.sh` y las cadenas del autotest de `tools/verificar_citas.py`, hasta la `:404`, y
+en `AUDITORIA.md` la más alta es la `:779`. En el `Cargo.toml`, de 93 a 104, al final. En
+`CONTRIBUTING.md`, `doc/METODO.md` y `consumos.rs` no se mueve ninguna línea: las marcas van en las
+que ya estaban (`git diff -U0`).
+
+**Lo que NO hace.** No pasa con las aserciones los crates con probador, ni los de arkworks, ni los
+tests de upstream de los forks: es la decisión, y sus condiciones de reapertura están en el pie. No
+toca las 59 marcas `cfg_attr(debug_assertions, ignore)` ni los forks, que son de la migración de
+Winterfell; ella tiene que saber que la pasada ejerce `zk-ssl-air` y el fork `winter-air` con las
+aserciones encendidas, y que `concurrent` y `async` de `winter-prover` y el `no_std` de `winter-air`
+quedan declarados como código que no compila nadie. No monta una pasada para el código bajo una
+feature que no enciende nadie, ni una comprobación de que la lista del pie esté completa: la lista
+es la medida de hoy. No decide nada de los `#[ignore]` sin condición: el del vecino es de la 125. No
+toca la puerta del §834, ni `MIN_CON_FEATURES`, ni el `Cargo.lock` de `kat_xmss`, ni el pin del
+nodo, que el §834 dejó al autor. No añade ningún nivel, ni ninguna herramienta, ni ninguna columna a
+la tabla, que `check_cifras` lee con expresiones fijas, ni toca un timeout. No toca la (f), los
+bancos. No toca `README.md:128-129`, que sigue en pie mientras sigan las marcas, ni el comentario
+del test de `consumos.rs:154-156`, que sigue siendo cierto. No toca la versión del kit: la 0.4.3
+publicada sale de `5fd5212` y no lleva esta marca, que el kit del árbol lleva con la misma versión;
+es sólo un comentario, y lo llevará la 0.4.4. No marca los otros sitios que dan el reloj de
+`--sello` del §811 —`doc/KIT.md`, en «El nodo y el testigo, desde dos raíces», `doc/KIT_EN.md`, en
+«The node and the witness, from two roots», y el comentario del «3 ter binarios» de
+`tools/canon.sh`—: comparan con esa medida, que el pie del §811 conserva, y lo que el «1 bis» le
+suma lo dice la línea 8. No corre el canon entero en el carril. No toca la 19.
+
+**Lo que NO cierra.** La 94 se cierra con este sello, con lo que su decisión pedía: el bloque, la
+clasificación comprobada y la pasada, con sus falsadores. Quedan ciegas, declaradas y con su
+reapertura escrita, las clases PERMANENTES: la (a) en los crates con probador y en los de arkworks,
+y la (d); y el código bajo una feature que no enciende nadie, con sus cinco instancias. La razón de
+la pasada se mide de verdad en el canon entero, que la imprime en cada corrida; si en uno de los dos
+escenarios de la decisión pasa del doble, la pasada baja a `--completo`, con su foto y
+`COMPLETO_CUBRE` ampliado, en otro sello.
+
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.

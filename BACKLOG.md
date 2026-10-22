@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 41 abiertas, 89 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 40 abiertas, 90 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, y el §822, la 75.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, y el §864, que cierra la 94.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -3206,8 +3206,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   miente con la clave, con un fichero o con un proxy, y la única que no ve nada -la censura antes
   del recibo- tiene su silencio asertado. Lo que sigue vive en la 109 y la 110.
 
-- [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
-  instrumento, medidas.** El canon corre en release y cuenta los
+- [x] **94. Clases de resultado que el canon NO VE: las cegueras del
+  instrumento, medidas — decididas por clase y declaradas; la (a) de lo que se
+  compila sin el probador, vista en el canon (⚠️ §864).** El canon corre en release y cuenta los
   warnings de la compilación de TESTS; fuera de su vista quedan clases
   enteras de resultado, y ya hay CUATRO medidas más la que la 81 tenía:
   **(a)** los `debug_assert` sólo viven en DEBUG — hay tests de
@@ -3269,6 +3270,41 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   estuvo ROJO del §337 al §579 sin que nada lo dijera. ✅ **VIGILADA desde el §582, no
   cerrada**: `canon.sh --bancos` los corre todos, y TODA invocacion dice cuando pasaron
   VERDES y si lo que ejercen cambio desde entonces; nada obliga a correrlos.
+
+  ⚠️ **§864: decidida POR CLASE, por delegación del autor («resuelvelas aplicando los principios»),
+  con el criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. Y se
+  CIERRA en el mismo sello, con lo que pedía: en el canon, el bloque «Ceguera declarada», la
+  clasificación comprobada contra `members` y la pasada `aserciones`, en `--sello`, con sus
+  falsadores; la razón medida, en el asiento.** **(b)** y **(c)**, CERRADAS por el §834: cada
+  `bin` y cada `example`, en release con `--locked`, con sus features y pin exacto de avisos por
+  paquete; las bibliotecas ya las compilaba `cargo test` en su perfil normal —la fila de
+  `ceremony` cuenta sus avisos «(lib)»—; fuera, declarado allí, el generador de `kat_xmss`; y el
+  nodo sin `dev`, el del §784, cuyo contador pasa en este sello de cota sobre una lista de clases
+  a pin exacto. Fuera del build normal queda, declarado al pie de `tools/canon.sh` con sus
+  instancias medidas, el código que solo compila con una feature que no enciende ninguna fila ni
+  ninguna puerta: `parallel` de `ceremony`, `test-setup` de `nova-experiment`, y en los forks,
+  `concurrent`, `async` y el `no_std`. **(a)**: lo que un tercero compila sin el probador —el kit,
+  `zk-ssl-verify`; su clausura, `zk-ssl-hash`, `zk-ssl-air` y `zk-ssl-medio`; y el guardián del
+  testigo, `zk-ssl-guardian`— gana una pasada, el «1 bis» de `tools/canon.sh`, con un perfil
+  `aserciones` del `Cargo.toml` raíz, que hereda de release y enciende `debug-assertions` en su
+  propio `target/aserciones/`, con los pines de su fila y ROJO si difieren, y ROJO también si el
+  JSON de cargo da un artefacto de la pasada sin las aserciones. Entra en `--sello` porque, en la
+  medida del asiento, no pasó del doble de esas cinco filas en la misma corrida, ni en caliente ni
+  tras tocar `zk-ssl-hash`; si una corrida posterior pasa del doble en uno de esos dos escenarios,
+  baja a `--completo`, y la que compila un solo perfil —en frío, o con release al día y la pasada
+  por compilar— se informa y no decide. Es lo que `CONTRIBUTING.md` §4 manda correr en depuración y
+  nadie comprobaba fuera de la capa. La premisa de la (a), «hay tests de la capa que caen hoy en
+  depuración», la retiró la 41 en su §814. En los crates con probador y en los de arkworks,
+  PERMANENTE y declarada: no son la clausura del estándar, costaría como poco otra vez la fila más
+  cara del sello (§225), y las marcas `cfg_attr(debug_assertions, ignore)` del probador son de la
+  migración de Winterfell, que la reabre cuando las decida; los forks del juez los ejerce la pasada
+  como dependencias, sin sus tests de upstream. Los `#[ignore]` sin condición, que no corre ningún
+  nivel, quedan declarados; el del vecino es de la 125. **(d)** PERMANENTE: la prosa no admite un
+  test discriminante (PRINCIPIOS §9); lo que tiene productor ya tiene herramienta, y lo demás se
+  corrige con marca, como «y hoy lo hace» de `CONTRIBUTING.md` §2 en este sello. **(e)**, cerrada
+  en el §789. **(f)**, como la dejó el §582. Todo, en «Ceguera declarada», al pie de
+  `tools/canon.sh` —su cabecera lo nombra—, y cada miembro del workspace en una clase, comprobado
+  en su bloque «0 bis»: ROJO si falta o sobra uno (`CONTRIBUTING.md` §1).
 
 - [x] **100. Un nodo que ha firmado no vuelve a arrancar.** ⚠️ **RESUELTA
   en el §335.** La clave se resincroniza al contador al arrancar, y el
@@ -3716,7 +3752,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   (04-08-2026), que solo toca `accounts.rs`: es el candidato natural para bisecar, y no se ha
   bisecado. Ese «verde» del §157 queda sin respaldo medido. El canon no lo ve: corre la capa sin
   `--ignored`, y los ignorados de su fila no corren; es una ceguera de la clase de la 94, que
-  ninguno de sus apartados nombra. **Lo que pide**: decidir si se reescribe para un atacante que sí
+  ninguno de sus apartados nombra (⚠️ §864: desde el §864 la nombran la nota de la 94 y el pie «Ceguera declarada» de `tools/canon.sh`, que declaran los `#[ignore]` sin condición y remiten este a la 125, sin decidir nada de él). **Lo que pide**: decidir si se reescribe para un atacante que sí
   sea vecino de alguien en el árbol de hoy, o si se retira con marca; y decir qué deja eso a la 50,
   que se cerró en el §266 con sus testigos y cita el ataque que este instrumento midió, el de los
   10,84 s, como el que con sal no acierta. Para esa decisión pesa un dato: el testigo nativo que la

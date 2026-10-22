@@ -205,7 +205,7 @@ bloque las reescribía a mano (la cabecera de `tools/canon.sh`, «La fuente unic
 
 | orden | qué corre |
 |---|---|
-| `bash tools/canon.sh --sello` | cada bloque: los tests de cada crate en release y el resto de compuertas; es el de cada sello |
+| `bash tools/canon.sh --sello` | cada bloque: los tests de cada crate en release —⚠️ §864: y los de los cinco crates que un tercero compila sin el probador, otra vez, con las aserciones de depuración (el «1 bis»)— y el resto de compuertas; es el de cada sello |
 | `bash tools/canon.sh --largo` | lo de `--sello`, y además halo2 y plonk, y el nodo y el testigo compilados desde dos raíces (`tools/artefacto.sh --binarios`, «3 ter binarios»); ⚠️ §824: decía «lo de `--sello`, y además halo2 y plonk» |
 | `bash tools/canon.sh --completo` | lo de `--largo`, y además `zk-core` |
 | `bash tools/canon.sh --lista` | sólo enseña la tabla; no ejecuta |

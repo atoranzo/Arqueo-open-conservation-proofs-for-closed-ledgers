@@ -34,7 +34,7 @@
 //! en RELEASE**: alli no dispara. Y `zip` trunca en silencio al mas corto,
 //! de modo que un camino de un solo nivel subiria un nivel y devolveria
 //! algo con cara de raiz. Por eso la profundidad es un `Option`, no un
-//! aviso de depuracion.
+//! aviso de depuracion. ⚠️ §864: «el canon corre en RELEASE» es su bloque 1, y es el binario que se publica, que es lo que esto justifica; desde el §864 el canon corre ademas estos tests con las aserciones encendidas (el «1 bis» de `tools/canon.sh`, la 94), y alli el `debug_assert_eq!` si existe y dispararia con un camino descuadrado.
 
 use zk_ssl_hash::as_digest;
 // El mando no importa `zk-ssl-hash` por su cuenta: los tipos y las piezas

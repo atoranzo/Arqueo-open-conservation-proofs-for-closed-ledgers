@@ -30,7 +30,7 @@ decir a qué parte es peor que ninguna, porque parece cobertura.
 
 - **Lenguaje**: Rust, edición estable actual.
 - **Compilación**: el código debe compilar **sin advertencias de `rustc`**, y
-  hoy lo hace.
+  hoy lo hace. ⚠️ **§864: no del todo.** El canon pincha los avisos que quedan a la vista a propósito —los nueve de `ceremony` (contados en el §864), deuda pinchada en su fila de `tools/canon.sh`, cuyo pin, 11, cuenta además las dos líneas de resumen de cargo, y el de `podar` en el binario del nodo, con `dev` y sin él (§580)—, y ninguno nuevo pasa en lo que el canon compila, porque cada pin es exacto. Lo que no compila ningún nivel —el código bajo una feature que no enciende ninguna fila ni ninguna puerta— lo declara «Ceguera declarada», al pie de `tools/canon.sh`, con sus instancias.
 
 ### Formato y linting
 
@@ -127,7 +127,7 @@ pasan los 38. Ya no hay fallos que atribuir al límite de grados, y con esta med
 entrada 41 de `BACKLOG.md`. Sigue en pie: esos 38 solo los corre release, y la capa se mide con
 `--release`. Si la orden de arriba, el workspace entero con `--all-features`, da rojo hoy no se
 sabe: no se ha remedido. Y el «307» de release no era del 26-08-2026: aquel día fueron 287 (§366),
-y los sellos lo subieron con el pin hasta el §394 sin tocar la fecha.
+y los sellos lo subieron con el pin hasta el §394 sin tocar la fecha. ⚠️ **§864: y los cinco crates que un tercero compila sin el probador** —el kit, `zk-ssl-verify`; su clausura, `zk-ssl-hash`, `zk-ssl-air` y `zk-ssl-medio`; y el guardián del testigo, `zk-ssl-guardian`— se comprueban también con las aserciones de depuración encendidas: `cargo test -p <crate> --profile aserciones --locked`, el perfil del `Cargo.toml` raíz, que hereda de release; el canon lo corre en `--sello` con los pines de release de cada uno. El resto del workspace no se mide en depuración, y lo declara «Ceguera declarada», al pie de `tools/canon.sh`.
 
 ⚠️ **§855: el canon, en un clon recién hecho.** Se corre desde la raíz con
 `bash tools/canon.sh --sello`; los niveles y lo que cubre cada uno, en

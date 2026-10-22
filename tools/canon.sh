@@ -5,7 +5,7 @@
 # a mano, y por eso `zk-ssl-wire` paso SEIS sellos sin que nadie corriera
 # sus tests.
 #
-#     bash tools/canon.sh --sello      # cada bloque · **470 a 926 s** de reloj (⚠️ §811, 14-10-2026)
+#     bash tools/canon.sh --sello      # cada bloque · **470 a 926 s** de reloj (⚠️ §811, 14-10-2026) (⚠️ §864: sin el «1 bis», que les suma de 16 a 26 s en caliente, de 61 a 69 tras tocar `zk-ssl-hash` y unos 100 en frio, medidos en el carril donde se escribio el §864, que era otro arbol; y de 7 a 8 en caliente y de 39 a 41 tras tocar, medidos al portarlo encima del §863; su razon la imprime el)
 #     bash tools/canon.sh --largo      # + halo2 y plonk, y el nodo y el testigo desde dos raices (⚠️ §824: decia «+ halo2 y plonk») · sin medir (⚠️ §811, 14-10-2026)
 #     bash tools/canon.sh --completo   # + zk-core · **58 min** de tests, §629 (⚠️ §811, 14-10-2026) (⚠️ §822, 15-10-2026: con el arbol denso de zk-core; al pie)
 #
@@ -23,7 +23,7 @@
 #     bash tools/canon.sh --conservados  # spec/vectors/<version>/, cada uno con el kit de SU
 #                                        # commit (tools/conservados.sh) · **~2 min** (§798)
 #     bash tools/canon.sh --conservados --en-seco  # su plan, sin construir nada · ~1 s
-#
+# ⚠️ §864: y lo que NO ve ninguno, clase por clase, con su razon y cuando se reabre: «Ceguera declarada», al pie (la 94).
 # ## Lo que lo hace ROBUSTO, y no es la tabla
 #
 # 1. **Los miembros del workspace se LEEN de Cargo.toml.** Un crate nuevo
@@ -372,7 +372,7 @@ while read -r c niv pasan ign warn tmo resto; do
   T0=$(date +%s)
   timeout "${tmo}s" cargo test -p "$c" --release --locked > "$OUT/$c.txt" 2>&1
   RC=$?
-  T1=$(date +%s); T_TOTAL=$((T_TOTAL + T1 - T0))
+  T1=$(date +%s); T_TOTAL=$((T_TOTAL + T1 - T0)); echo "$c $((T1 - T0))" >> "$OUT/tiempos.txt"  # ⚠️ §864: la razon del «1 bis» (la 94)
   P=$(grep -oE "[0-9]+ passed" "$OUT/$c.txt" | grep -oE "[0-9]+" | paste -sd+ | bc 2>/dev/null); P=${P:-0}
   I=$(grep -oE "[0-9]+ ignored" "$OUT/$c.txt" | grep -oE "[0-9]+" | paste -sd+ | bc 2>/dev/null); I=${I:-0}
   W=$(grep -c "^warning" "$OUT/$c.txt")
@@ -542,13 +542,13 @@ fi
 # Hasta el §784 ese build no lo compilaba nadie (`default = ["dev"]`), y su unica rama sin `dev`
 # decia «pendiente de flags». Es `cargo check`: compila y tipa, sin generar el binario, para no
 # pisar el `target/release/zk-ssl-node` con `dev` que usan los bancos. El aviso que queda es el de
-# `podar` (§580), a la vista a proposito: el pin es 1, y uno mas es ROJO.
+# `podar` (§580), a la vista a proposito: el pin es 1, y uno mas es ROJO. ⚠️ §864: y uno menos tambien, y cuenta todo aviso, no los de una lista de clases: es el contador del §834 (la 94).
 msg ""
 msg "== CANON · el nodo sin dev (ARQ-02) =="
 if cargo check --release --locked -p zk-ssl-node --no-default-features > "$OUT/sin_dev.txt" 2>&1; then
-  AV=$(grep -cE '^warning: (unused|field|function|method|variable|value|constant|struct|enum|associated|type)' "$OUT/sin_dev.txt" || true)
-  if [ "${AV:-0}" -le 1 ]; then
-    msg "  OK  zk-ssl-node --no-default-features compila: ${AV:-0} aviso(s), el de podar (pin 1)"
+  AV=$(grep -E '^warning' "$OUT/sin_dev.txt" | grep -cvE 'generated [0-9]+ warnings?')  # ⚠️ §864: era una cota (-le 1) sobre once clases de aviso
+  if [ "${AV:-0}" = 1 ]; then
+    msg "  OK  zk-ssl-node --no-default-features compila: ${AV:-0} aviso(s), el de podar (pin 1, exacto)"
   else
     falla "el nodo sin dev da ${AV} avisos (pin 1, el de podar): $(grep -E '^warning: ' "$OUT/sin_dev.txt" | head -3 | tr '\n' ' ')"
   fi
@@ -837,6 +837,150 @@ else
   falla "nodo: el test $NODO_T no paso en la fila zk-ssl-node ($OUT/zk-ssl-node.txt): nadie juzga spec/vectors/nodo/"
 fi
 
+# ── 0 bis · cada miembro, en una clase de lo que el canon NO ve (⚠️ §864, la 94) ──
+# Lo que el canon no ve, clase por clase, con su razon y cuando se reabre, lo declara «Ceguera
+# declarada», al pie. Una lista en prosa de que crates ve cada pasada envejeceria sin que nada se
+# pusiera rojo, que es la (d) de la misma 94; por eso la clasificacion es CODIGO: cada miembro del
+# workspace, el MIEMBROS que el bloque 0 lee con tools/miembros.py, va en exactamente una de estas
+# cuatro clases, y cada nombre de una clase es un miembro. Un crate nuevo sin clase, o uno en dos,
+# es ROJO, como un crate sin fila en la tabla (punto 1 de la cabecera). Es un 0 bis por lo que hace,
+# la coherencia con el workspace, y va aqui, detras del 3 bis nodo, por lo mismo que el: para no
+# mover las lineas de los bloques de delante.
+#   ASERCIONES_PASADA  lo que un tercero compila sin el probador -el kit, su clausura y el guardian
+#                      del testigo-: la pasada del 1 bis. Va de las hojas al kit, para que en frio
+#                      cada crate compile lo suyo.
+#   CIEGA_PROBADOR     el probador y su clausura: los que llevan `winter-prover`, y
+#                      `settlement-prover`, que es dependencia de `stark-experiment`: ciega,
+#                      PERMANENTE.
+#   CIEGA_FORKS        los forks del juez: el 1 bis los ejerce como dependencias, no sus tests.
+#   CIEGA_OTROS        los experimentos de arkworks y los otros, fuera de la clausura del kit y
+#                      del nodo: ciega, PERMANENTE.
+ASERCIONES_PASADA="zk-ssl-hash zk-ssl-guardian zk-ssl-medio zk-ssl-air zk-ssl-verify"
+CIEGA_PROBADOR="zk-ssl zk-ssl-node zk-ssl-cli zk-ssl-sdk zk-ssl-wire stark-experiment settlement-prover winter-prover"
+CIEGA_FORKS="winter-air winter-verifier"
+CIEGA_OTROS="zk-core ceremony settlement-layer iso-bridge halo2-experiment plonk-experiment nova-experiment"
+msg ""
+msg "== CANON · cada miembro, en una clase de lo que el canon no ve (la 94) =="
+F_CL0=${#fallos[@]}
+CLASES=" $ASERCIONES_PASADA $CIEGA_PROBADOR $CIEGA_FORKS $CIEGA_OTROS "
+[ -n "$MIEMBROS" ] || falla "ceguera declarada: no hay miembros que clasificar (tools/miembros.py no dio ninguno)"
+for c in $MIEMBROS; do
+  n=0; for x in $CLASES; do [ "$x" = "$c" ] && n=$((n + 1)); done
+  [ "$n" = 1 ] || falla "ceguera declarada: el miembro '$c' esta en $n clases, y va en una  ->  tools/canon.sh, bloque 0 bis"
+done
+for x in $CLASES; do
+  grep -qx "$x" <<< "$MIEMBROS" || falla "ceguera declarada: '$x' tiene clase y no es miembro del workspace  ->  tools/canon.sh, bloque 0 bis"
+done
+[ "${#fallos[@]}" != "$F_CL0" ] \
+  || msg "  OK  los $(wc -w <<< "$MIEMBROS") miembros, cada uno en una clase: $(wc -w <<< "$ASERCIONES_PASADA") en la pasada de las aserciones, $(wc -w <<< "$CIEGA_PROBADOR") con el probador, $(wc -w <<< "$CIEGA_FORKS") forks del juez y $(wc -w <<< "$CIEGA_OTROS") fuera de la clausura"
+
+# ── 1 bis · lo que un tercero compila sin el probador, con las aserciones de depuracion (⚠️ §864, la 94) ──
+# El bloque 1 corre cada crate en release, y en release no vive ningun `debug_assert!` ni nada de lo
+# que va bajo `cfg(debug_assertions)`: el canon era ciego a esa clase entera. Quien integra el kit
+# como dependencia lo compila con su perfil de desarrollo, con las aserciones encendidas, y
+# CONTRIBUTING.md §4 manda correr en depuracion. Esta pasada corre otra vez los tests de
+# ASERCIONES_PASADA -el kit, su clausura y el guardian del testigo, lo que un tercero compila sin el
+# probador-, con el perfil `aserciones` del Cargo.toml raiz: hereda de release -opt 3 y los
+# `overflow-checks` del §669- y enciende `debug-assertions`, en su propio `<target>/aserciones/`,
+# sin pisar el `target/release` de los bancos. Las features son las de la fila: en los cinco, las
+# por defecto son todas. Los pines son los de la fila de cada crate en la TABLA -pasan, ignorados y
+# avisos, contados como en el bloque 1-, y el timeout, el doble del suyo.
+# Prueba de vida: cada «Running» sale de `<target>/aserciones/deps/`, cada crate corre al menos uno,
+# corren todos los de la lista, y la lista no esta vacia. Y la del PERFIL: el JSON de cargo de la
+# misma orden con `--no-run`, que sale fresco, da cada artefacto con `"debug_assertions":true`, y
+# cada «Running» es uno de sus ejecutables. Sin ella, un perfil con `debug-assertions = false` -o
+# sin esa linea, que hereda el false de release- corria en el mismo directorio, con los mismos
+# pines, y decia «encendidas»; con ella es ROJO, y tambien si las apaga un override por paquete o
+# una variable CARGO_PROFILE_ASERCIONES_* (los tres, medidos en el §864).
+# Y la razon: la pared de la pasada contra la suma de las filas de release de los mismos crates en
+# ESTA corrida (`$OUT/tiempos.txt`, del bloque 1). Se imprime en cada corrida, para que se vea si
+# deriva, y no es compuerta: bajo carga seria intermitente. El nivel lo fijo la razon medida en el
+# §864, con el tope del doble fijado antes de medir (su asiento). Se reabre si una corrida posterior
+# da mas en uno de los dos escenarios que lo decidieron -en caliente, o tras tocar `zk-ssl-hash`,
+# que recompila la clausura en los dos perfiles-: entonces baja a --completo, con su foto y
+# COMPLETO_CUBRE ampliado. La que compila uno solo de los dos perfiles -en frio, o con release al
+# dia y la pasada por compilar, el 3,00 del §864- se informa y no decide.
+# Es un 1 bis por lo que hace, los tests crate a crate, y va aqui por lo mismo que el 0 bis.
+NIVEL_ASERCIONES=sello
+PERFIL_AS=aserciones
+msg ""
+msg "== CANON · lo que un tercero compila sin el probador, con las aserciones de depuracion (la 94) =="
+if [ "$(nivel_num "$NIVEL_ASERCIONES")" -gt "$PEDIDO" ]; then
+  msg "  --  nivel $NIVEL_ASERCIONES, fuera de $NIVEL"
+else
+  F_AS0=${#fallos[@]}; T_AS=0; T_REL=0; N_AS=0
+  [ -n "$ASERCIONES_PASADA" ] || falla "aserciones: ASERCIONES_PASADA esta vacia y la pasada no mira nada"
+  msg "   crate                exit  pasan(pin) ignor(pin) warn(pin)   seg  release  aserc(json)"
+  for c in $ASERCIONES_PASADA; do
+    FILA=$(awk -v c="$c" '$1 == c' <<< "$TABLA")
+    read -r _ _ pasan ign warn tmo _ <<< "$FILA"
+    if [ -z "$tmo" ]; then falla "aserciones: '$c' no tiene fila en la tabla, y sus pines salen de ella"; continue; fi
+    A="$OUT/aserciones_${c//-/_}.txt"; AJ="$OUT/aserciones_${c//-/_}.json"
+    T0=$(date +%s)
+    timeout "$((2 * tmo))s" cargo test -p "$c" --profile "$PERFIL_AS" --locked > "$A" 2>&1
+    RC=$?
+    : > "$AJ"
+    [ "$RC" = "124" ] \
+      || timeout "${tmo}s" cargo test -p "$c" --profile "$PERFIL_AS" --locked --no-run --message-format=json > "$AJ" 2> "$AJ.txt"
+    T1=$(date +%s); T_AS=$((T_AS + T1 - T0))
+    P=$(grep -oE "[0-9]+ passed" "$A" | grep -oE "[0-9]+" | paste -sd+ | bc 2>/dev/null); P=${P:-0}
+    I=$(grep -oE "[0-9]+ ignored" "$A" | grep -oE "[0-9]+" | paste -sd+ | bc 2>/dev/null); I=${I:-0}
+    W=$(grep -c "^warning" "$A")
+    TR=$(awk -v c="$c" '$1 == c {print $2}' "$OUT/tiempos.txt" 2>/dev/null); T_REL=$((T_REL + ${TR:-0}))
+    read -r NR NF <<< "$(awk '/^ +Running /{n++; if ($0 !~ /\((.*\/)?aserciones\/deps\/[^\/]+\)$/) f++} END{print n+0, f+0}' "$A")"
+    # La del perfil: artefactos del JSON, cuantos van sin debug_assertions, y «Running» que no son
+    # ejecutables del JSON: lo que corrio no es lo que el JSON describe. Las rutas se comparan
+    # resueltas: cargo las da relativas a la raiz.
+    read -r NJ NSA NX <<< "$(python3 -c '
+import json, os, re, sys
+ejec, nj, nsa = set(), 0, 0
+for l in open(sys.argv[1], encoding="utf-8", errors="replace"):
+    try:
+        m = json.loads(l)
+    except ValueError:
+        continue
+    if m.get("reason") != "compiler-artifact":
+        continue
+    nj += 1
+    if (m.get("profile") or {}).get("debug_assertions") is not True:
+        nsa += 1
+    if m.get("executable"):
+        ejec.add(os.path.realpath(m["executable"]))
+nx = 0
+for l in open(sys.argv[2], encoding="utf-8", errors="replace"):
+    r = re.match(r" +Running .*\((.+)\)$", l.rstrip("\n"))
+    if r and os.path.realpath(r.group(1)) not in ejec:
+        nx += 1
+print(nj, nsa, nx)
+' "$AJ" "$A" 2>/dev/null)"
+    NJ=${NJ:-0}; NSA=${NSA:-?}; NX=${NX:-?}
+    printf "   %-20s %4s %6s(%s) %6s(%s) %5s(%s) %5s %8s  %s/%s\n" "$c" "$RC" "$P" "$pasan" "$I" "$ign" "$W" "$warn" "$((T1-T0))" "${TR:-?}" "$((NJ - ${NSA//\?/0}))" "$NJ" >&2
+    [ "$RC" != "124" ]  || falla "aserciones $c: exit 124, el timeout de $((2 * tmo)) s, el doble del de su fila  ->  $A"
+    [ "$RC" = "0" ] || [ "$RC" = "124" ] || falla "aserciones $c: exit $RC  ->  $A"
+    [ "$P" = "$pasan" ] || falla "aserciones $c: pasan $P, su fila dice $pasan: algo cae o no corre con las aserciones  ->  $A"
+    [ "$I" = "$ign" ]   || falla "aserciones $c: ignorados $I, su fila dice $ign: un test gateado en depuracion gana su pin propio (la 94)"
+    [ "$W" = "$warn" ]  || falla "aserciones $c: warnings $W, su fila dice $warn  ->  $A"
+    VIDA=1
+    if [ "$NR" -gt 0 ] && [ "$NF" = 0 ]; then :; else
+      VIDA=0; falla "aserciones $c: prueba de vida: $NR «Running», $NF fuera de <target>/aserciones/deps/: no corrio con el perfil aserciones"
+    fi
+    if [ "$RC" = "124" ]; then
+      VIDA=0  # sin JSON: la pasada no acabo, y su ROJO ya esta arriba
+    elif [ "$NJ" -gt 0 ] && [ "$NSA" = 0 ]; then :; else
+      VIDA=0; falla "aserciones $c: prueba de vida del perfil: $NSA de los $NJ artefactos del JSON de cargo van sin debug_assertions: el perfil $PERFIL_AS no las enciende (Cargo.toml raiz, [profile.aserciones])  ->  $AJ"
+    fi
+    [ "$RC" = "124" ] || [ "$NX" = 0 ] \
+      || { VIDA=0; falla "aserciones $c: prueba de vida del perfil: $NX «Running» que no son ejecutables del JSON de cargo: lo que corrio no es lo que el JSON describe  ->  $AJ"; }
+    [ "$VIDA" = 0 ] || N_AS=$((N_AS + 1))
+  done
+  [ "$N_AS" = "$(wc -w <<< "$ASERCIONES_PASADA")" ] \
+    || falla "aserciones: prueba de vida: corrieron con el perfil $N_AS de los $(wc -w <<< "$ASERCIONES_PASADA") crates de ASERCIONES_PASADA"
+  RAZON=$(awk -v a="$T_AS" -v r="$T_REL" 'BEGIN { if (r > 0) printf "%.2f", a / r; else print "sin denominador" }')
+  msg "   ── total: ${T_AS} s; sus filas de release en esta corrida, ${T_REL} s: razon ${RAZON} (el tope, 2, en caliente o tras tocar; en frio o con un solo perfil por compilar, no decide; no es compuerta)"
+  [ "${#fallos[@]}" != "$F_AS0" ] \
+    || msg "  OK  $N_AS crates con las aserciones de depuracion encendidas -cada artefacto, en el JSON de cargo-, con los pines de su fila"
+fi
+
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 # ⚠️ §824: desde aqui el --check compila el kit en DOS RAICES -el arbol y su copia en
 # target/artefacto/raiz2-, no dos target del mismo arbol; comprueba que cada binario salio de las
@@ -1004,3 +1148,66 @@ exit $rojo
 #   biblioteca y ceremonia; en la maquina del autor, la fila entera tardo
 #   2.103 s (§629). El timeout no se toca, y tampoco el de `iso-bridge`
 #   (300 s), ni el nivel de ninguna fila: eso no lo decide este sello.
+
+# ── CEGUERA DECLARADA (⚠️ §864, la 94): lo que el canon NO ve, clase por clase ────────
+# Va despues del `exit`, al final del fichero, detras de los pies del §811 y del §822, como ellos,
+# para no mover las lineas que otros textos citan; la cabecera la nombra. «toda herramienta,
+# ayudante o barrido declara su cobertura, y la declaración se comprueba» (CONTRIBUTING.md §1). La
+# parte que se comprueba es la clasificacion de los miembros, que es codigo -el bloque 0 bis: cada
+# miembro en una clase, y ROJO si falta o sobra uno-; lo demas es esta declaracion. Decidido por
+# delegacion del autor en el §864, REVERSIBLE (§642): cada clase dice donde se vigila y cuando se
+# reabre.
+#
+# (a) Las aserciones de depuracion: `debug_assert!` y lo que vive bajo `cfg(debug_assertions)`, que
+#     en release no existen. Por clases de miembros:
+#     - ASERCIONES_PASADA, lo que un tercero compila sin el probador -el kit, `zk-ssl-verify`; su
+#       clausura, `zk-ssl-hash`, `zk-ssl-air` y `zk-ssl-medio`; y el guardian del testigo,
+#       `zk-ssl-guardian`-: la VE el 1 bis, en --sello, y comprueba en el JSON de cargo que el
+#       perfil las enciende. Se reabre si una corrida posterior da una razon mayor que 2 en uno de
+#       los dos escenarios que fijaron el nivel -en caliente, o tras tocar `zk-ssl-hash`-: baja a
+#       --completo, con su foto y COMPLETO_CUBRE ampliado; la que compila un solo perfil -en frio, o
+#       con release al dia y la pasada por compilar- se informa y no decide. Y se reabre si un test
+#       de los cinco tiene que gatearse en depuracion: gana su pin propio.
+#     - CIEGA_PROBADOR: PERMANENTE, nunca en --sello. Costaria como poco otra vez sus filas de
+#       release, y la de la capa es la mas cara del sello (§225); y las 59 marcas
+#       `cfg_attr(debug_assertions, ignore)` -38 en `zk-ssl`, 18 en `stark-experiment` y 3 en
+#       `zk-ssl-sdk`- son de la migracion de Winterfell: hoy la pasada mediria las marcas, no el
+#       codigo. Se reabre cuando la migracion las decida, o ante un defecto medido en release que un
+#       `debug_assert!` propio del probador habria cazado: se mide con el perfil `aserciones` y, si
+#       se monta, va en --completo.
+#     - CIEGA_FORKS: el 1 bis los ejerce como dependencias, con las aserciones encendidas; sus tests
+#       de upstream no corren ahi. Se reabre cuando aterrice la migracion.
+#     - CIEGA_OTROS: PERMANENTE. No son la clausura del kit ni la del nodo, y hoy ninguno entra en
+#       ellas; se reabre si uno entra.
+#     Y los tests con `#[ignore]` sin condicion no los corre ningun nivel: la tabla cuenta sus
+#     ignorados, no los ejecuta, y check_tests exige que cada uno se declare instrumento de medida.
+#     Uno, el instrumento del vecino, no corre en ningun perfil; lo que se hace con el lo decide la
+#     125, no esto.
+# (b) Los avisos del build normal y (c) los de los ejemplos: CERRADAS. Los binarios y los ejemplos,
+#     la puerta del §834; las bibliotecas, `cargo test`, que ya las compila en su perfil normal -la
+#     fila de `ceremony` cuenta sus avisos «(lib)»-; el nodo sin `dev`, el bloque del §784, con su
+#     pin exacto desde el §864. Residuo declarado: el generador de `kat_xmss` (§834), y los avisos
+#     que solo saldrian sin las features que encienden las dependencias de desarrollo -con el
+#     resolver 2, `cargo test` las unifica-, sin instancia conocida. Se reabre si la puerta del §834
+#     sale de --sello -y entonces esto dice en que nivel se ven- o si aparece una instancia del
+#     residuo, que gana su pasada.
+#     Y fuera del build normal, el codigo que solo compila con una feature que no enciende ninguna
+#     fila ni ninguna puerta, en ningun nivel: de el no ve el canon ni los avisos, ni los errores,
+#     ni los tests. Con instancia, medidas con `cargo tree --locked -e features` en el §864:
+#     `parallel` de `ceremony` (4 `cfg(feature = "parallel")`; `zk-core` la usa sin features);
+#     `test-setup` de `nova-experiment` (el modulo de sus 3 tests, `folding_chain.rs`, que su fila
+#     declara); y en los forks, `concurrent` de `winter-prover` (18 `cfg(feature = "concurrent")`) y
+#     su `async` (8 `#[maybe_async]` y 9 `maybe_await!`, que solo con ella son `async`), y el
+#     `no_std` de `winter-air` (4 `cfg(not(feature = "std"))`; `std` va por defecto). Declarada, no
+#     vista: las dos primeras son de CIEGA_OTROS, y las de los forks, de la migracion de Winterfell.
+#     Se reabre si una fila o una puerta enciende una de esas features, si uno de esos crates entra
+#     en la clausura del kit o del nodo, o cuando la migracion decida los forks. La lista es la
+#     medida de hoy, no una comprobacion: una feature nueva que no encienda nadie no la pone ROJA
+#     nada.
+# (d) La prosa que envejece: PERMANENTE. Una afirmacion semantica no admite un test discriminante
+#     (PRINCIPIOS §9). Lo que tiene productor ya tiene herramienta -check_cifras, check_figures,
+#     verificar_citas, check_catalogo (§777), check_superficie (§801) y check_publicadas-; lo demas
+#     se corrige con marca cuando se mide. Se reabre cada vez que una subclase gana productor: gana
+#     su herramienta, como la (e).
+# (e) Los dominios que viajan como cadena: CERRADA en el §789 (R6 de check_dominios).
+# (f) Los bancos: VIGILADOS desde el §582, no obligados (`--bancos` y `estado_bancos`).

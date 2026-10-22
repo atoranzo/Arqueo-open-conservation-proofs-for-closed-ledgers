@@ -91,3 +91,14 @@ winter-verifier = { path = "crates/winter-verifier" }
 # dependencias; lo que envuelve a proposito usa `wrapping_*`.
 [profile.release]
 overflow-checks = true
+
+# ⚠️ §864: el perfil de la pasada de las aserciones (la 94). Es release -opt 3 y los
+# `overflow-checks` de arriba- con `debug-assertions`, y deja lo suyo en `target/aserciones/`: no
+# pisa `target/release`, que usan los bancos. Lo corre el canon sobre lo que un tercero compila sin
+# el probador -el kit, su clausura y el guardian- (`tools/canon.sh`, el «1 bis»): `cargo test -p
+# <crate> --profile aserciones --locked`, y mira en el JSON de cargo que cada artefacto lleve las
+# aserciones: sin la linea de abajo, o con ella en false, el canon da ROJO.
+# Lo que se publica sale de `[profile.release]`, sin aserciones, y este perfil no lo toca.
+[profile.aserciones]
+inherits = "release"
+debug-assertions = true
