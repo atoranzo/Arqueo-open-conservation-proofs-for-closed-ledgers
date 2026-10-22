@@ -110,7 +110,7 @@ pub struct Latido {
 /// medidos (S.3), y retener el candado durante ese tiempo pararía todas
 /// las escrituras del nodo — un latido de 144 ms cada 60 s es un 0,24 %
 /// del reloj, pero **retenido es un 0,24 % de parada total**, y no hace
-/// falta: la cabeza ya está leída.
+/// falta: la cabeza ya está leída. ⚠️ §892: el 0,24 % es de la firma sola; `latir` entera dura unos 804 ms medidos sin carga, y el RPC no contesta mientras dura (BACKLOG 123, §829).
 ///
 /// ## ⚠️ MEDIDO en M.1 (§252), y hasta entonces solo afirmado
 ///
@@ -129,7 +129,7 @@ pub struct Latido {
 ///
 /// **Nueve firmas solapadas, CERO escrituras afectadas.** El pico de la
 /// fase con firma quedó **+6,9 ms** sobre el p99 del control — muy lejos
-/// de los **144,5 ms** que costaría una firma bloqueante.
+/// de los **144,5 ms** que costaría una firma bloqueante. ⚠️ §892: M.1 midió escrituras en serie; las sondas de lectura del RPC sí se paran mientras dura `latir` (BACKLOG 123, §829).
 ///
 /// ⚠️ **Si el candado se retuviera, se vería en el MÁXIMO, no en la
 /// media**: las escrituras van en serie, así que se retrasaría **una por

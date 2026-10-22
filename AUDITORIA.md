@@ -69344,4 +69344,61 @@ que dice qué decían, de qué árbol eran y dónde está hoy lo citado.
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
 `check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
 y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
+
+## §892 — los puntos 16 y 5 de la lista de cosas menores: dos comentarios de `crates/zk-ssl-node/src/latido.rs` que se leían como vigentes ganan su marca con la medida de la 123, y el de `NativeMerkleTree` en `crates/halo2-experiment/src/merkle.rs` dice en qué es «análogo» desde el §822; todo en la misma línea, sin mover ninguna
+
+El commit que lleva este asiento, sobre el §891. Toca `crates/zk-ssl-node/src/latido.rs`, el final
+de la `:113` y de la `:132`, y `crates/halo2-experiment/src/merkle.rs`, el final de la `:243`. Y
+este asiento. Ni código que se compile, ni tests, ni vectores, ni `BACKLOG.md`. Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango §890 a §899. El canon de
+este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este
+asiento en su sitio y sin esta frase: VERDE, 399 s de reloj y 232 s de tests, en una máquina de 4
+CPU con carga de 1,26 al empezar. Las 19 filas en su pin, con 1872 tests que pasan, y las 55 líneas
+«OK» de sus compuertas, entre ellas el artefacto reproducible, con el binario `803ee230ea9d737b` y
+el tarball `d42c4de633ae4e3a`.
+
+Del autor es la tarea, la misma del §890. Los dos puntos los dejó escritos la sesión del §860 a
+§889: el 16, en el «Lo que NO hace» de su §829, y el 5, en el de su §822. Las marcas van al final de
+la línea que corrigen, y no en líneas nuevas, porque a `latido.rs` lo citan por línea documentos
+vivos —en `BACKLOG.md`, la nota de la 123 cita la `:72`, la `:413-421` y la `:429-431`, la 12 la
+`:72` y la `:473`, y la 77 la `:72`; `doc/blueprint-v2.md`, la `:262-265`, la `:425-451` y la
+`:461-469`— y una línea nueva en la `:113` los correría a todos. Así lo propuso la misma sesión para
+los comentarios de `snapshot.rs`, que se quedó ella.
+
+**Medido**, sobre el árbol del §829:
+
+1. **`latido.rs:111-113`** decía, y dice, que firmar cuesta 144,5 ms, que «un latido de 144 ms cada
+   60 s es un 0,24 % del reloj» y que retener el candado sería un 0,24 % de parada total. La nota de
+   la 123 en `BACKLOG.md`, sellada en el §829, dice que el `ms=` de un latido mide `latir` entera, y
+   que en 100 sondas sin carga su mediana es de 804 ms, con el RPC sin contestar mientras dura; y
+   que con un latido cada 60 s eso da el 1,32 %, deducido y no medido. La frase sigue siendo cierta
+   de la firma sola, pero se leía como si fuera el coste del latido.
+2. **`latido.rs:130-132`** decía, y dice, «Nueve firmas solapadas, CERO escrituras afectadas»: lo
+   que midió M.1 (§252), escrituras en serie con el nodo firmando cada segundo. Lo que la 123 midió
+   son sondas `zkssl_supply`, de lectura, por el RPC. Las dos medidas no se contradicen, pero la
+   frase se leía como si el latido no afectara a nada.
+3. **`halo2-experiment/src/merkle.rs:243`** decía, y dice, «análogo a
+   `zk_core::merkle::SimpleMerkleTree`». Desde el §822 aquél no materializa el relleno y este sí. El
+   §822 lo dejó escrito en su «Lo que NO hace»: «análogo» se sostiene por la interfaz, la raíz y los
+   caminos.
+
+**Qué cambia.** Tres marcas «⚠️ §892» al final de esas tres líneas, que dicen lo que el punto 1, el
+2 y el 3 miden, y citan la 123 y el §829. Las líneas pasan de 100 columnas, como otras doce de
+`latido.rs`: `rustfmt` no envuelve comentarios. Ningún fichero cambia de número de líneas.
+
+**Comprobado.** Sobre el árbol con este sello salen con 0 `verificar_citas`, `check_publicadas`,
+`check_cifras`, `check_figures`, `check_tests` (2033 tests declarados, 20 instrumentos) y
+`check_modulos`.
+
+**Lo que NO hace.**
+
+- No arregla `latir`: es la 123, y el autor decidió que espere a que se mida el mecanismo.
+- No mide nada: las cifras son las de la nota de la 123.
+- No toca los comentarios de `snapshot.rs`, el punto 2 de la lista: los lleva la otra sesión.
+- No toca los seis árboles densos de `halo2-experiment`.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
+`check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
+y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
 resueltas.

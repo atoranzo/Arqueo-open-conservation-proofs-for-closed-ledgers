@@ -240,7 +240,7 @@ fn native_hash(a: Fp, b: Fp) -> Fp {
         .hash([a, b])
 }
 
-/// Árbol de Merkle nativo simple, análogo a `zk_core::merkle::SimpleMerkleTree`
+/// Árbol de Merkle nativo simple, análogo a `zk_core::merkle::SimpleMerkleTree` (⚠️ §892: en la interfaz, la raíz y los caminos; desde el §822 aquél no guarda el relleno y este sí)
 /// pero con el Poseidon real de `halo2_gadgets`, solo para generar datos
 /// de prueba.
 pub struct NativeMerkleTree {
