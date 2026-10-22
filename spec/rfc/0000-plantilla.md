@@ -2,7 +2,11 @@
 
 - **Estado:** BORRADOR
 - **Autor:** <quién>
-- **Asistencia GenAI:** <modelo y versión, o «ninguna»> — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** <«ninguna», o «Claude, en una sesión de Claude Code en la nube», con los
+  asientos y lo que hizo; nunca el identificador de un modelo> — ver [`GENAI.md`](../../GENAI.md)
+  ⚠️ §856: decía «<modelo y versión, o «ninguna»>». Seguido al pie de la letra, ponía el
+  identificador de un modelo, que `GENAI.md` no da y que el ATADO G de `tools/check_publicadas.py`
+  rechaza en toda la cabecera. Esta marca no pasa al RFC nuevo.
 - **Fecha:** <aaaa-mm-dd>
 - **Versión del protocolo afectada:** zkssl/0.1
 - **Asiento(s) de AUDITORIA:** <## NNN. al sellar>

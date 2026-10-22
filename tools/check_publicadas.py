@@ -189,12 +189,19 @@ CUENTA_VECTORES = re.compile(r"\((\d+)\s+(?:ficheros|files)\b")
 # RFC, ni un identificador escrito de otra forma (una familia sin digito, «CLAUDE» en mayusculas
 # sin guion, un nombre en otra vineta); no exige el enlace a GENAI.md de la vineta, ni que diga
 # sesiones. Y no ve un RFC fuera de spec/rfc/ ni con otro nombre de fichero.
+# ⚠️ §856: decia que MODELO solo miraba la vineta de GenAI, y que un nombre en otra vineta pasaba.
+# Ahora mira TODA la cabecera, del titulo al primer `## `: cada linea que no esta sangrada, con sus
+# lineas de continuacion unidas a ella. En cada RFC, en el 0002 de la excepcion y en la plantilla.
+# El CUERPO sigue sin mirarse, a proposito: un RFC puede nombrar un modelo ajeno al citar. Y la
+# plantilla da en su vineta de GenAI FORMULA_CASA, la formula de la casa: si deja de darla, ROJO
+# PLANTILLA.
 NOMBRES_AUTOR = ("Ángel José Toranzo Portela", "Angel Jose Toranzo Portela",
                  "Angel Toranzo Portela")
 GENAI = os.path.join(RAIZ, "GENAI.md")
 AUTOR_RFC = re.compile(r"^- \*\*Autor(es)?:\*\*\s*(.*)$")
 VINETA_GENAI = re.compile(r"^- \*\*Asistencia GenAI:\*\*\s*(.*)$")
 MODELO = re.compile(r"(?i:\bclaude-(?:[a-z]+-)*\d)|\bClaude(?:\s+[A-Z][a-z]+)?\s+\d")
+FORMULA_CASA = "Claude, en una sesión de Claude Code en la nube"
 # Las excepciones, cada una con la frase del asiento que la explica y el asiento donde esta. La
 # frase tiene que seguir en AUDITORIA.md, dentro de su asiento, y la excepcion tiene que seguir
 # haciendo falta: si la cabecera cambia, ROJO, y se decide otra vez. El 0002 dice «(mesa)» y no
@@ -1559,11 +1566,32 @@ def _problemas_g(autores, genai):
     for i, texto in genai:
         if not texto:
             salida.append((i, "GENAI", "la vineta de GenAI esta vacia"))
-        m = MODELO.search(texto)
-        if m:
-            salida.append((i, "MODELO", "la vineta de GenAI nombra un identificador de modelo "
-                           "(«%s…»); la formula de la casa es «Claude, en una sesion de Claude "
-                           "Code en la nube»" % m.group(0)))
+    return salida
+
+
+def _modelos(cabecera):
+    """⚠️ §856: cada identificador de modelo de TODA la cabecera, y no solo de la vineta de GenAI:
+    [(linea, "MODELO", detalle)]. Cada linea sin sangrar se mira con sus lineas de continuacion
+    unidas a ella, como la de GenAI en `_vinetas`, y la linea que se da es la del identificador."""
+    salida, k = [], 0
+    while k < len(cabecera):
+        tramo = [cabecera[k]]
+        k += 1
+        while k < len(cabecera) and cabecera[k][1].strip() and cabecera[k][1][0].isspace():
+            tramo.append(cabecera[k])
+            k += 1
+        texto, inicios = "", []
+        for i, linea in tramo:
+            texto += " " if texto else ""
+            inicios.append((len(texto), i))
+            texto += linea.strip()
+        donde = ("la vineta de GenAI" if VINETA_GENAI.match(tramo[0][1])
+                 else "la cabecera, fuera de la vineta de GenAI,")
+        for m in MODELO.finditer(texto):
+            i = [n for pos, n in inicios if pos <= m.start()][-1]
+            salida.append((i, "MODELO", "%s nombra un identificador de modelo («%s…»); la "
+                           "formula de la casa es «Claude, en una sesion de Claude Code en la "
+                           "nube»" % (donde, m.group(0))))
     return salida
 
 
@@ -1605,6 +1633,10 @@ def atado_g():
         num, rel = m.group(1), "spec/rfc/" + f
         cab = _cabecera(os.path.join(DIR_RFC, f))
         autores, genai = _vinetas(cab)
+        # ⚠️ §856: el identificador de modelo se busca en toda la cabecera, y en todos: tambien en
+        # la plantilla y en una excepcion, que hasta aqui no lo miraban.
+        modelos = _modelos(cab)
+        fallos.extend((rel, i, clase, detalle) for i, clase, detalle in modelos)
         if num == PLANTILLA:
             plantilla = True
             # La forma de plantilla: una vineta de autor con un hueco `<...>` y una de GenAI.
@@ -1612,6 +1644,11 @@ def atado_g():
                     or len(genai) != 1:
                 fallos.append((rel, 0, "PLANTILLA", "la plantilla no da la forma: una «- "
                                "**Autor:** <...>» y una «- **Asistencia GenAI:**»"))
+            # ⚠️ §856: y su hueco de GenAI da la formula de la casa. Hasta aqui pedia «<modelo y
+            # version, o «ninguna»>», y seguido al pie de la letra daba ROJO MODELO.
+            elif FORMULA_CASA not in " ".join(genai[0][1].split()):
+                fallos.append((rel, genai[0][0], "PLANTILLA", "la vineta de GenAI de la "
+                               "plantilla no da la formula de la casa, «%s»" % FORMULA_CASA))
             continue
         vistos += 1
         vistos_num.add(num)
@@ -1619,7 +1656,7 @@ def atado_g():
         if num not in EXCEPCIONES_G:
             if problemas:
                 fallos.extend((rel, i, clase, detalle) for i, clase, detalle in problemas)
-            else:
+            elif not modelos:
                 completos += 1
             continue
         asiento, frase, linea_autor = EXCEPCIONES_G[num]
@@ -2679,7 +2716,7 @@ def main():
 
     fallos_g, n_g, completos_g, citas_g, plantilla_g = atado_g()
     print("  ATADO G: %d RFC %s; %d con su autor y su vineta de GenAI, sin "
-          "identificador de modelo, y %d por excepcion"
+          "identificador de modelo en la cabecera, y %d por excepcion"
           % (n_g, "y la plantilla" if plantilla_g else "y falta la plantilla", completos_g,
              len(EXCEPCIONES_G)))
     for num, asiento, linea in citas_g:
@@ -2759,8 +2796,9 @@ def main():
             print("  %-40s :%-5d %-9s %s" % (nombre, n, clase, detalle))
         print("")
         print("  Cada spec/rfc/NNNN-*.md lleva antes de su primer `## ` una «- **Autor:**» con")
-        print("  un nombre de GENAI.md y una «- **Asistencia GenAI:**» sin identificador de")
-        print("  modelo. Una excepcion va a EXCEPCIONES_G con la frase de su asiento.")
+        print("  un nombre de GENAI.md y una «- **Asistencia GenAI:**», y ningun identificador")
+        print("  de modelo en toda esa cabecera, ni en la de la plantilla (§856). Una excepcion")
+        print("  va a EXCEPCIONES_G con la frase de su asiento.")
         return 1
 
     if fallos_f:

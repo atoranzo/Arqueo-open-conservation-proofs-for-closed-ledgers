@@ -61682,3 +61682,164 @@ una en `tools/cable_respuesta.sh`, una en cada `rehacer*.sh`, una en `doc/METODO
 `BACKLOG.md` y una en `tools/check_curvas.py`. Hay una novena que ese patrón no ve, por los
 asteriscos: «⚠️ **§855: el canon, en un clon recién hecho.**», en `CONTRIBUTING.md:132`. Es la
 cabecera de un párrafo nuevo, no una corrección.
+
+## §856 — la plantilla de RFC deja de pedir «modelo y versión» en su línea de GenAI y da la fórmula de la casa, con su marca; y el ATADO G de `check_publicadas` busca el identificador de modelo en toda la cabecera de cada RFC, hasta su primer `## `, también en la plantilla y en el RFC-0002 de la excepción, y no sólo en la línea de GenAI: el V1 del §846 muere
+
+El commit que lleva este asiento, sobre `62e41e8` (el §855). Toca `spec/rfc/0000-plantilla.md`: su
+línea de GenAI, la `:5`, pasa a dos (`:5-6`), y una marca de tres líneas la continúa (`:7-9`).
+Toca `tools/check_publicadas.py`: una marca en el comentario del ATADO G (`:192-197`); la constante
+`FORMULA_CASA` (`:204`); `_problemas_g()` deja de buscar el modelo (`:1566-1569`), y una función
+nueva, `_modelos()`, lo busca en toda la cabecera (`:1572-1595`); en `atado_g()`, la llamada para
+cada RFC (`:1636-1639`), la fórmula de la plantilla (`:1647-1651`) y la cuenta de los completos
+(`:1659`); en `main()`, el resumen del atado (`:2719`) y el pie de su ROJO (`:2799-2801`). Y este
+asiento. Ni código de los crates, ni tests, ni vectores, ni otro RFC, ni `GENAI.md`, ni
+`tools/canon.sh`, ni `BACKLOG.md`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en
+la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El
+número es el siguiente del rango que el autor asignó (§830 a §859).
+
+Del autor es la tarea: la plantilla de RFC que pide «modelo y versión», una de las cosas menores
+que el autor pidió hacer en una tanda el 2026-10-21. Junta las dos cosas que el §846 dejó en «Lo
+que es del autor»: el hueco de la plantilla, que seguido al pie de la letra da ROJO MODELO, y si el
+atado mira la cabecera entera (V1). La forma del hueco, la de la búsqueda y la comprobación de la
+fórmula en la plantilla las propone la sesión. El canon de este commit, `bash tools/canon.sh
+--sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y sin esta
+frase: VERDE, 889 s de reloj (de su arranque a su salida) y 682 s de tests (la línea «total» de la
+tabla), en una máquina de 4 CPU con carga de 0,29 al empezar. Antes, dentro del mismo cerrojo, la
+sesión tocó con `touch` los 275 `.rs` de `crates/` y de `tools/` (este sello no añade ninguno), y
+su log lo registra. El aviso del §855 no salió: la caché de la sesión está completa. Las 19 filas
+del nivel, en su pin, con 1853 tests que pasan (la suma de la columna «pasan»); la puerta de los
+binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (52 s)»; `check_tests` en 2012 y 20
+instrumentos; `check_modulos` en 207; las once herramientas del bucle «2 ter», con el ATADO G nuevo
+de `check_publicadas`; la puerta de los vectores, en 508 ficheros y 1017 líneas; `check_catalogo`;
+el paquete, con «89 de 89 entradas dicen lo que deben (78 .json, 89 con entrada)», y el binario
+`b87724b089924934`; el cable, en 27 de 27, con el adaptador `6908b722db271b19`; las once familias,
+cada una en lo suyo; la segunda implementación, con el paquete en 89 de 89, las otras cinco
+familias en 17, 17, 22, 34 y 27, y sus pares STARK en 34 de 34; el «3 duodecies», con la cadena en
+24 de 24 y el cable de la segunda en 27 de 27; y el artefacto reproducible, con el binario
+`3a01451fb51204ac`, los manifiestos con el paquete en 89/89, y el tarball `af18a9e409f5162a`.
+Corrió con un `TMPDIR` propio, y no dejó nada en él.
+
+**De dónde sale.** `spec/rfc/0000-plantilla.md:5` decía «- **Asistencia GenAI:** <modelo y versión,
+o «ninguna»>». `GENAI.md:14-15` nombra el modelo y no da la versión: «La versión concreta ha
+cambiado a lo largo del proyecto». Quien siguiera el hueco escribiría un
+identificador de modelo, y el ATADO G del §846 lo rechaza en la línea de GenAI. Pero sólo ahí: un
+identificador en otra línea de la cabecera, la del Estado o la de la Fecha, pasaba VERDE (V1 del
+§846).
+
+**Medido**, en este orden, sobre `62e41e8`:
+
+1. `git grep -n 'modelo y versión' 62e41e8`: dos líneas. La `:5` de la plantilla y
+   `AUDITORIA.md:59794`, el «Lo que es del autor» del §846.
+2. `ls spec/rfc/`: 23 ficheros, los mismos del §846: la plantilla, del 0001 al 0021 y `PROCESO.md`.
+   Las cabeceras de los 22 `NNNN-*.md`, hasta su primer `## ` (un `awk`): 506 líneas. Las más
+   largas, la del 0010 (46 líneas, con un Estado de 21) y la del 0008 (44).
+3. El patrón `MODELO` del atado, sobre cada línea de los 23 ficheros, cabecera y cuerpo: 0 líneas.
+4. `git grep -c 'Claude, en una sesión de Claude Code en la nube' -- spec/rfc`: siete RFC, el 0001
+   (tres veces) y del 0016 al 0021 (una vez cada uno). La plantilla, 0.
+5. `python3 tools/check_publicadas.py`, antes: exit 0, 38 líneas. Después: exit 0, 38 líneas. Cambia
+   una, la del resumen del atado, que añade «en la cabecera»: «ATADO G: 21 RFC y la plantilla; 20
+   con su autor y su vineta de GenAI, sin identificador de modelo en la cabecera, y 1 por
+   excepcion». Las otras 37, iguales byte a byte.
+
+**Qué cambia.**
+
+- **La plantilla.** El hueco pasa a «<«ninguna», o «Claude, en una sesión de Claude Code en la
+  nube», con los asientos y lo que hizo; nunca el identificador de un modelo>», en dos líneas, con
+  el enlace a `GENAI.md` como antes. Es la forma de los siete RFC del punto 4. La marca dice lo que
+  decía y por qué cambia, y que no pasa al RFC nuevo.
+- **La búsqueda.** `_modelos()` recorre la cabecera entera, del título al primer `## `. Cada línea
+  sin sangrar se mira con sus líneas de continuación unidas a ella, como ya se unían las de la línea
+  de GenAI en `_vinetas()`. Así, un «Claude» al final de una línea y un dígito al principio de la
+  siguiente casan. La línea que da el ROJO es la del identificador, y el texto dice si está en la
+  línea de GenAI o fuera de ella.
+- **En todos.** La búsqueda corre en cada RFC, en el 0002 de la excepción y en la plantilla. Antes,
+  en la plantilla y en el 0002 no se buscaba.
+- **La fórmula en la plantilla.** Si la línea de GenAI de la plantilla, con sus continuaciones y los
+  espacios normalizados, no contiene `FORMULA_CASA`, ROJO PLANTILLA. Sin esto, volver al hueco
+  viejo pasaba VERDE: no tiene dígito.
+- **Los completos.** Un RFC con un identificador en la cabecera ya no cuenta entre los completos
+  del resumen.
+- **El cuerpo no se mira**, a propósito: un RFC puede nombrar un modelo ajeno al citar.
+
+**Para los RFC que vienen.** La otra sesión prepara los RFC-0022 y 0023. Tendrán que pasar esta
+regla: una línea de autor con un nombre de `GENAI.md`, una línea de GenAI, y ningún identificador de
+modelo en ninguna línea de la cabecera, la del Estado y la de la Fecha incluidas. La fórmula de la
+casa pasa.
+
+**Mutantes**, sobre una copia del árbol en el directorio de la sesión (sin `target/` ni `.git/`),
+con lo de este sello sin commitear. Cada uno se aplica, se corre la herramienta entera con
+`CANON_RAIZ` sobre la copia (su exit y sus líneas ROJO y del ATADO G) y se deshace. El
+identificador de las copias es inventado, con la forma del patrón, y no es el de ningún modelo.
+
+- V1 del §846, el identificador en la línea de Fecha del 0005: ROJO, MODELO en `:6`, «la cabecera,
+  fuera de la vineta de GenAI». Con el código de `62e41e8`, VERDE.
+- N1, el identificador en una línea de continuación del Estado del 0010: ROJO, MODELO en `:4`.
+- N2, en el título del 0005: ROJO, MODELO en `:1`.
+- N3, «Claude» al final de la `:3` del 0010 y un dígito al principio de la `:4`: ROJO, MODELO en
+  `:3`.
+- N4, en la línea de Fecha del 0002, el de la excepción: ROJO, MODELO en `:7`.
+- N5, en el hueco de GenAI de la plantilla: ROJO, MODELO en `:6`.
+- N6, la plantilla con el hueco viejo: ROJO, PLANTILLA en `:5`, «no da la formula de la casa».
+- N7, «Claude», una palabra con mayúscula y un dígito en el Estado de la plantilla: ROJO, MODELO en
+  `:3`.
+- Con el código de `62e41e8`, de N1 a N7 salen todos VERDE.
+- De control, que no cambian: R1, el identificador en la línea de GenAI del 0005, ROJO, MODELO en
+  `:5`, con el código de antes y con el de ahora; M14 del §846, en la continuación de la línea de
+  GenAI del 0010, ROJO, MODELO en `:26`; y C1, en el cuerpo del 0005, tras su primer `## `, VERDE,
+  como se quiere.
+- Sobre el código: K1, `modelos = []`, con V1: VERDE. K2, `_modelos()` sin las líneas de
+  continuación, con N3: VERDE. K3, sin la comprobación de la fórmula, con N6: VERDE. K4, los
+  completos sin mirar los modelos, con N1: ROJO, como debe, pero el resumen dice 20 completos donde
+  el código de este sello dice 19. Cada comprobación nueva mata al menos uno.
+
+Vivos, los del §846 que este sello no toca: V2, «Claude» y una palabra con mayúscula, sin dígito;
+V3, la línea de GenAI sin su enlace a `GENAI.md`; V4, «CLAUDE» en mayúsculas, un espacio y un
+dígito, sin guion. Ahora valen en cualquier línea de la cabecera, no sólo en la de GenAI. La copia,
+el conductor y sus salidas se borraron al acabar.
+
+Sobre `62e41e8` con este sello, salen con 0 las once herramientas del bucle «2 ter»,
+`check_vectores --desde 378e1fa` y `check_catalogo`.
+
+**Correcciones**, sobre los ficheros STAGED de este commit:
+
+1. `spec/rfc/0000-plantilla.md:7-9`, tras la línea de GenAI: «⚠️ §856: decía «<modelo y versión, o
+   «ninguna»>». Seguido al pie de la letra, ponía el identificador de un modelo, que `GENAI.md` no
+   da y que el ATADO G de `tools/check_publicadas.py` rechaza en toda la cabecera. Esta marca no
+   pasa al RFC nuevo.»
+2. `tools/check_publicadas.py:192-197`, tras la ceguera declarada del ATADO G: «⚠️ §856: decia que
+   MODELO solo miraba la vineta de GenAI, y que un nombre en otra vineta pasaba. Ahora mira TODA la
+   cabecera, …».
+
+Las otras tres «⚠️ §856» del fichero, en `:1573`, `:1636` y `:1647`, acompañan código nuevo y dicen
+lo mismo en su sitio. Las cinco, contadas con `git grep --cached -c '⚠️ §856'`, sin este asiento:
+una en la plantilla y cuatro en `tools/check_publicadas.py`.
+
+**Las citas por línea que se mueven.** En la plantilla, las líneas por debajo de la 5 bajan cuatro.
+Nadie en el árbol cita la plantilla por línea. Los RFC-0005 (`:289`) y 0006 (`:361`) dan su huella y
+su cuenta, `488e7055cbfcad09` / 29, medidas sobre `9ae055c` y `2080e5a`, como dicen: es registro de
+su fecha, y ya no era la huella de hoy. En `tools/check_publicadas.py`, las líneas por debajo de la
+191 se mueven. Fuera de `AUDITORIA.md`, el árbol sólo cita las de su docstring (`:37-48`, `:38-42`,
+`:44-48` y `:44-49`, en `doc/ecst/`), que no se mueven. Los asientos que citan líneas más bajas
+son registro de su fecha: el §846 (`:177-209`, `:1513-1654`, `:2677-2684` y `:2751-2761`, ahora
+`:177-216`, `:1520-1691`, `:2714-2721` y `:2788-2798`) y el §854 (`:242-244`, `:322-324`,
+`:1006-1009`, `:1734-1738` y `:2779-2782`, ahora siete, siete, siete, treinta y siete y treinta y
+ocho más abajo). El `:468` que citan el §841 y el §842 está ahora en la `:475`.
+
+**Lo que NO hace.**
+
+- No mira el cuerpo de los RFC (C1), a propósito.
+- No amplía el patrón: V2 y V4 siguen vivos, ahora en toda la cabecera.
+- No exige el enlace a `GENAI.md` (V3), ni que la línea de GenAI de un RFC diga la fórmula de la
+  casa: la fórmula se pide sólo a la plantilla. Trece RFC dicen «Claude (sesión N)» o parecido, y
+  pasan.
+- No toca ningún RFC más que la plantilla, ni el 0002, ni `GENAI.md`.
+- No ve un RFC fuera de `spec/rfc/` ni con otro nombre de fichero, como antes.
+- No corrige el §846, que decía que V1 vivía: es registro de su fecha, y este asiento lo dice.
+
+**Lo que es del autor.** Si la fórmula de la casa se pide también a la línea de GenAI de cada RFC
+nuevo, y desde qué número. Si el patrón se amplía para V2 y V4. Y, como en el §846, si el 0002 se
+completa.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2012 tests declarados y 20 instrumentos, y
+`check_modulos` en 207: el atado es una herramienta del bucle, no un test. El total de sello sigue
+en 1853. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 44 abiertas y 86 resueltas.
