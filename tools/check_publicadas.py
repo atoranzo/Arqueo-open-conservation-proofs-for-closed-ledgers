@@ -90,7 +90,8 @@ RETIRADAS (§841). Cifras que el arbol publico y que se retiraron por rancias o 
 fuente: RETIRADAS. Solo pueden quedar como cita de lo que se decia: en la misma linea o
 en la misma frase, antes de la cifra, un «decia», «decian», «it said» o la marca ⚠️.
 Universo: el del ATADO F sin sus .rs, mas los comentarios de todos los .rs de crates/.
-Fuera, con su razon impresa, EXCLUIDOS_RETIRADAS y PREFIJOS_EXCLUIDOS_RETIRADAS; y las
+Fuera, con su razon impresa, EXCLUIDOS_RETIRADAS y PREFIJOS_EXCLUIDOS_RETIRADAS; de un
+fichero de SOLO_LINEAS, todo menos las lineas de su prefijo (§857); y las
 frases de CITAS_RETIRADAS, cada una con su ancla y su razon: un ancla que ya no casa es
 ROJO, para que la excepcion no sobreviva a su frase. Ceguera declarada: no ve una cifra
 en el codigo de un .rs (solo sus comentarios de linea entera), ni dentro de un bloque de
@@ -364,7 +365,8 @@ MINIMO_RFC_G = 21
 #
 # El universo es el del ATADO C sin CITATION.cff, mas los comentarios de FUENTES_RS_NIVEL, y hereda
 # las exclusiones del C -AUDITORIA.md, BACKLOG.md y doc/preprints/-, que se imprimen con la razon
-# de este atado (HEREDADOS_NIVEL); si las del C cambian y estas no, es ROJO.
+# de este atado (HEREDADOS_NIVEL); si las del C cambian y estas no, es ROJO. De un fichero de
+# SOLO_LINEAS solo se leen las lineas de su prefijo, cada una suelta (§857).
 #
 # Ceguera declarada:
 #   - una cifra demostrable sin UDR ni LDR al lado no se mira: «128 bits demostrables» es casi
@@ -1045,8 +1047,20 @@ FUENTES_RS_NIVEL = ("crates/zk-ssl/src/lib.rs",)
 EXCLUIDOS_NIVEL = {
     "doc/blueprint-v2.md": "el debate del plan: cita niveles de OTRAS opciones -q = 33, 34 y 46, "
                            "UDR 52 o 49- como propuestas, no lo que se publica",
-    "doc/ecst/VERIFICACION.md": "registro generado sobre el arbol de 71c5aad (S582): cada fila "
-                                "cita sus fuentes con el texto de esa fecha, y envejece declarado",
+}
+# ⚠️ §857: hasta aqui EXCLUIDOS_NIVEL y EXCLUIDOS_RETIRADAS dejaban fuera doc/ecst/VERIFICACION.md
+# entero, con la razon «registro generado sobre el arbol de 71c5aad (S582): cada fila cita sus
+# fuentes con el texto de esa fecha». Desde el §847 sus lineas «Lo que se puede afirmar» son vivas.
+# De un fichero de esta lista, la prosa del ATADO F y RETIRADAS leen SOLO las lineas que empiezan
+# por su prefijo, cada una como una unidad suelta; lo demas -la cabecera, las tablas, el
+# «Borrador:» y las «Fuentes:»- queda fuera, con la razon impresa. Prueba de vida: cada regla lee
+# al menos una linea de cada fichero, o es ROJO VIDA.
+SOLO_LINEAS = {
+    "doc/ecst/VERIFICACION.md": (
+        "- **Lo que se puede afirmar:**",
+        "registro generado sobre el arbol de 71c5aad (S582): el borrador, las tablas y las "
+        "«Fuentes:» citan el texto de esa fecha y envejecen declarados; las lineas «Lo que se "
+        "puede afirmar», vivas desde el §847, se leen"),
 }
 PREFIJOS_EXCLUIDOS_NIVEL = {
     "doc/comparativa/": "comparativas superadas por FIVE_BACKENDS.md, conservadas como historia "
@@ -1238,8 +1252,6 @@ MARCA_RETIRADA = re.compile(r"\bdec[ií]an?\b|\bit said\b|\u26a0")
 EXCLUIDOS_RETIRADAS = {
     "doc/blueprint-v2.md": "el debate del plan: su tabla contrasta lo publicado en su fecha con "
                            "lo medido en la sesion, y lo dice",
-    "doc/ecst/VERIFICACION.md": "registro generado sobre el arbol de 71c5aad (S582): cada fila "
-                                "cita sus fuentes con el texto de esa fecha",
 }
 PREFIJOS_EXCLUIDOS_RETIRADAS = {
     "doc/comparativa/": "comparativas superadas por FIVE_BACKENDS.md, conservadas como historia "
@@ -1287,11 +1299,13 @@ def retiradas():
     """Devuelve (fallos, citas marcadas, citas por excepcion, ficheros recorridos)."""
     anclas = [(rel, " ".join(_limpia(a).split()), razon, [0]) for rel, a, razon in CITAS_RETIRADAS]
     fallos, marcadas, por_excepcion, recorridos = [], 0, 0, 0
+    leidas = {}
     for rel in documentos_retiradas():
         recorridos += 1
-        for texto, mapa, es_fila, _ in _unidades(rel):
+        for texto, mapa, es_fila, _ in _unidades(rel, SOLO_LINEAS.get(rel, (None,))[0]):
             if not texto:
                 continue
+            leidas[rel] = leidas.get(rel, 0) + 1
             for etiqueta, patron in RETIRADAS:
                 for m in patron.finditer(texto):
                     p = m.start()
@@ -1315,7 +1329,8 @@ def retiradas():
         if not usos[0]:
             fallos.append((rel, 0, "EXCEPCION", "el ancla «%s» ya no casa con ninguna cifra "
                            "retirada: quita la excepcion" % ancla[:60]))
-    return fallos, marcadas, por_excepcion, recorridos
+    fallos += _vida_solo_lineas(leidas, "RETIRADAS")
+    return fallos, marcadas, por_excepcion, recorridos, leidas
 
 
 def documentos():
@@ -2153,10 +2168,18 @@ def _limpia(linea):
     return re.sub(r"(?<![\w`])_(?=\w)|(?<=\w)_(?![\w`])", "", linea)
 
 
-def _unidades(rel):
+def _vida_solo_lineas(leidas, regla):
+    """Prueba de vida de SOLO_LINEAS (§857): cada fichero acotado da al menos una linea leida."""
+    return [(rel, 0, "VIDA", "la regla %s no lee ninguna linea «%s»: la acotacion no mira nada, "
+             "o el fichero salio del universo" % (regla, prefijo))
+            for rel, (prefijo, _) in sorted(SOLO_LINEAS.items()) if not leidas.get(rel)]
+
+
+def _unidades(rel, prefijo=None):
     """(texto, [(desplazamiento, linea)], es_fila, abre_seccion) de un documento: los parrafos
     unidos, cada fila de tabla una unidad; de un .rs, solo los comentarios, y cada linea de codigo
-    cierra el contexto."""
+    cierra el contexto. Con `prefijo` (SOLO_LINEAS, §857), de un .md solo las lineas que empiezan
+    por el, cada una suelta: las demas cierran el parrafo, y un encabezado abre seccion."""
     lineas = _leer(os.path.join(RAIZ, rel)).split("\n")
     es_rs = rel.endswith(".rs")
     out, buf, mapa = [], [], []
@@ -2187,6 +2210,11 @@ def _unidades(rel):
                 en_codigo = not en_codigo
                 continue
             if en_codigo:
+                continue
+            if prefijo is not None and not linea.startswith(prefijo):
+                cierra()
+                if re.match(r"^#{1,6}\s", linea):
+                    out.append(("", [], False, True))
                 continue
             if re.match(r"^#{1,6}\s", linea):
                 cierra()
@@ -2350,9 +2378,10 @@ def atado_f_prosa(d):
     por_sitio = {}
     usadas = set()
     filas = d["comparacion"]
+    leidas = {}
     for rel in documentos_nivel():
         try:
-            unidades = _unidades(rel)
+            unidades = _unidades(rel, SOLO_LINEAS.get(rel, (None,))[0])
         except OSError as exc:
             fallos.append((rel, 0, "ILEGIBLE", str(exc)))
             continue
@@ -2361,6 +2390,8 @@ def atado_f_prosa(d):
             if abre:
                 estado = None
                 continue
+            if texto:
+                leidas[rel] = leidas.get(rel, 0) + 1
             grupos = []
             # Las citas entre «»: otro texto, cualquier configuracion; y no marcan la frase.
             limpio = texto
@@ -2440,7 +2471,8 @@ def atado_f_prosa(d):
         if rel not in por_sitio:
             fallos.append((rel, 0, "SIN NIVEL", "sitio conocido que ya no publica el nivel de "
                            "produccion: si es a proposito, sale de SITIOS_NIVEL con su razon"))
-    return fallos, cifras, frases, saltadas, por_sitio, solas
+    fallos += _vida_solo_lineas(leidas, "nivel")
+    return fallos, cifras, frases, saltadas, por_sitio, solas, leidas
 
 
 def _celdas(linea):
@@ -2586,7 +2618,7 @@ def atado_f():
     fallos, d, cuentas = derivacion()
     if d is None:
         return fallos, ["ATADO F: sin derivacion; ver los rojos"], 0
-    fallos_p, cifras, frases, saltadas, por_sitio, solas = atado_f_prosa(d)
+    fallos_p, cifras, frases, saltadas, por_sitio, solas, leidas = atado_f_prosa(d)
     fallos_t, celdas = atado_f_tablas(d)
     o = d["opc"]
     # «casa» solo si la derivacion no tiene ningun rojo -REPLICA, KAT, FORMULA, ILEGIBLE...-; si
@@ -2625,6 +2657,9 @@ def atado_f():
     for rel, razon in sorted(EXCLUIDOS_NIVEL.items()) + sorted(PREFIJOS_EXCLUIDOS_NIVEL.items()) \
             + heredados:
         resumen.append("excluido (nivel) %s - %s" % (rel, razon))
+    for rel, (prefijo, razon) in sorted(SOLO_LINEAS.items()):
+        resumen.append("acotado (nivel) %s - solo las %d linea(s) «%s»: %s"
+                       % (rel, leidas.get(rel, 0), prefijo, razon))
     for rel, n, detalle in saltadas:
         resumen.append("SALTADA  %-18s :%-5d %s" % (rel, n, detalle))
     fallos = fallos + fallos_p + fallos_t
@@ -2731,13 +2766,16 @@ def main():
     print("  ATADO B, las filas: %d de %d filas de tabla llevan su banda de metrics.rs"
           % (filas_b - len([f for f in fallos_bf if f[2] == "BANDA"]), len(FILAS_BANDA)))
 
-    fallos_r, marcadas_r, excepcion_r, recorridos_r = retiradas()
+    fallos_r, marcadas_r, excepcion_r, recorridos_r, leidas_r = retiradas()
     print("  RETIRADAS: %d fichero(s); %d cita(s) de %s tras su marca y %d por excepcion"
           % (recorridos_r, marcadas_r, ", ".join("«%s»" % e for e, _ in RETIRADAS), excepcion_r))
     for nombre, razon in sorted(EXCLUIDOS_RETIRADAS.items()):
         print("  excluido (RETIRADAS) %s - %s" % (nombre, razon))
     for nombre, razon in sorted(PREFIJOS_EXCLUIDOS_RETIRADAS.items()):
         print("  excluido (RETIRADAS) %s - %s" % (nombre, razon))
+    for nombre, (prefijo, razon) in sorted(SOLO_LINEAS.items()):
+        print("  acotado (RETIRADAS) %s - solo las %d linea(s) «%s»: %s"
+              % (nombre, leidas_r.get(nombre, 0), prefijo, razon))
     for nombre, _, razon in CITAS_RETIRADAS:
         print("  excepcion (RETIRADAS) %s - %s" % (nombre, razon))
 

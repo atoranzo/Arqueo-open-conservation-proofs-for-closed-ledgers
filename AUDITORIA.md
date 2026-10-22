@@ -61843,3 +61843,180 @@ completa.
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 2012 tests declarados y 20 instrumentos, y
 `check_modulos` en 207: el atado es una herramienta del bucle, no un test. El total de sello sigue
 en 1853. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 44 abiertas y 86 resueltas.
+
+## §857 — `check_publicadas` deja de excluir entero `doc/ecst/VERIFICACION.md` de la prosa del ATADO F y de RETIRADAS: lee sus 305 líneas «Lo que se puede afirmar», vivas desde el §847, con su prueba de vida, y deja fuera el resto, que es de 71c5aad; y la línea de M8a cambia el «~125,6 KB» retirado por los 127.274 B del §806, con su marca
+
+El commit que lleva este asiento, sobre `8f7e25e` (el §856). Toca `tools/check_publicadas.py`: el
+docstring de RETIRADAS (`:93-94`) y el comentario del universo del ATADO F (`:368-369`); la entrada
+de `VERIFICACION.md` sale de `EXCLUIDOS_NIVEL` y de `EXCLUIDOS_RETIRADAS`, y una constante nueva,
+`SOLO_LINEAS`, con su marca, la acota (`:1051-1064`); en `retiradas()`, la cuenta de lo leído y la
+llamada con el prefijo (`:1302-1308`) y la prueba de vida (`:1332-1333`); una función nueva,
+`_vida_solo_lineas()` (`:2171-2175`); `_unidades()` gana el argumento `prefijo` (`:2178-2182`) y el
+filtro (`:2214-2218`); en `atado_f_prosa()`, la cuenta, la llamada y la prueba de vida (`:2381`,
+`:2384`, `:2393-2394` y `:2474-2475`); y las líneas «acotado» del resumen, en `atado_f()`
+(`:2660-2662`) y en `main()` (`:2776-2778`). Toca una línea de `doc/ecst/VERIFICACION.md`, la
+`:1629`, la de M8a. Y este asiento. Ni código de los crates, ni tests, ni vectores, ni
+`tools/canon.sh`, ni `tools/verificar_citas.py`, ni `BACKLOG.md`. Lo escribe y lo commitea Claude,
+en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a §859).
+
+Del autor es la tarea: `EXCLUIDOS_NIVEL` y `EXCLUIDOS_RETIRADAS` dejaban fuera `VERIFICACION.md`
+entero, una de las cosas menores que el autor pidió hacer en una tanda el 2026-10-21. La forma de
+la acotación, por prefijo de línea y con prueba de vida, la propone la sesión. Es la misma que ya
+usa la v5 bis de `verificar_citas` (§847) para esas líneas: `SIN_LINEA_AL_CANON` da el mismo
+prefijo. El canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su
+árbol limpio, con este asiento en su sitio y sin esta frase: VERDE, 1095 s de reloj (de su arranque
+a su salida) y 828 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de
+0,96 al empezar. Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los 275 `.rs` de
+`crates/` y de `tools/` (este sello no añade ninguno), y su log lo registra. El aviso del §855 no
+salió: la caché de la sesión está completa. Las 19 filas del nivel, en su pin, con 1853 tests que
+pasan (la suma de la columna «pasan»); la puerta de los binarios, con «OK 24 objetivos en 8
+paquetes, 12 con features (56 s)»; `check_tests` en 2012 y 20 instrumentos; `check_modulos` en 207;
+las once herramientas del bucle «2 ter», con la acotación nueva de `check_publicadas`; la puerta de
+los vectores, en 508 ficheros y 1017 líneas; `check_catalogo`; el paquete, con «89 de 89 entradas
+dicen lo que deben (78 .json, 89 con entrada)», y el binario `b87724b089924934`; el cable, en 27 de
+27, con el adaptador `6908b722db271b19`; las once familias, cada una en lo suyo; la segunda
+implementación, con el paquete en 89 de 89, las otras cinco familias en 17, 17, 22, 34 y 27, y sus
+pares STARK en 34 de 34; el «3 duodecies», con la cadena en 24 de 24 y el cable de la segunda en 27
+de 27; y el artefacto reproducible, con el binario `3a01451fb51204ac`, los manifiestos con el
+paquete en 89/89, y el tarball `e0a1700f9ee641ca`. Corrió con un `TMPDIR` propio, y no dejó nada en
+él.
+
+**De dónde sale.** Las dos exclusiones decían «registro generado sobre el árbol de 71c5aad (S582):
+cada fila cita sus fuentes con el texto de esa fecha». Desde el §847, las líneas «Lo que se puede
+afirmar» son vivas: citan el canon por fila y llevan el pin a mano. Excluido el fichero entero, una
+cifra de nivel falsa o una cifra retirada en una de ellas pasaba VERDE.
+
+**Medido**, en este orden, sobre `8f7e25e`:
+
+1. `python3 tools/check_publicadas.py`: exit 0, 38 líneas. «ATADO F: 157 cifras de nivel en 53
+   frases; de produccion en 11 sitio(s)»; «RETIRADAS: 365 fichero(s); 20 cita(s) … tras su marca y
+   4 por excepcion».
+2. Una copia de la herramienta sin las dos entradas, con `CANON_RAIZ` en el árbol: exit 1. ROJO
+   NIVEL, cinco cifras, todas en la `:1630`, que es la «Fuentes:» de M8a: «29/63 demostrables»,
+   «120 queries», «grinding 20», «extensión cúbica» y «sin extensión», leídas como de producción. Es
+   el texto de la tabla de `FIVE_BACKENDS.md` en 71c5aad. El ATADO F contaría 185 cifras en 62
+   frases, en 12 sitios. RETIRADAS recorre 366 ficheros.
+3. La herramienta para en la primera clase de ROJO, y el de nivel va antes que el de RETIRADAS. Lo
+   de RETIRADAS se midió aparte, con `_unidades()` y los patrones de `RETIRADAS` sobre el fichero
+   entero: cuatro cifras sin marca. La `:1380` («0,67 ms»), la `:1470` («61.966 B») y la `:1630`
+   («125,6 KB») son «Fuentes:». La `:1629` («~125,6 KB») es una línea «Lo que se puede afirmar».
+4. `grep -c '^- \*\*Lo que se puede afirmar:\*\*' doc/ecst/VERIFICACION.md`: 305. Un `awk` sobre la
+   línea que sigue a cada una: todas son de una sola línea, y la siguiente es otra viñeta.
+5. De los nueve hallazgos del fichero entero, uno solo cae en una línea viva: el de la `:1629`.
+6. Con la acotación y sin tocar la `:1629`: exit 1, ROJO RETIRADA en `doc/ecst/VERIFICACION.md:1629`,
+   «125,6 KB» sin marca. Con la `:1629` corregida: exit 0, 38 líneas.
+
+**Qué cambia.**
+
+- **La acotación.** `SOLO_LINEAS` da, por fichero, un prefijo y una razón. De un fichero de la
+  lista, la prosa del ATADO F y RETIRADAS leen sólo las líneas que empiezan por el prefijo. Cada una
+  es una unidad suelta: las demás cierran el párrafo, y un encabezado abre sección. Así una
+  «Fuentes:» o un «Borrador:» no se pegan a la línea viva, que en el fichero van seguidas, sin línea
+  en blanco. Hoy la lista tiene `VERIFICACION.md`, con «- **Lo que se puede afirmar:**».
+- **La prueba de vida.** Si una de las dos reglas no lee ninguna línea de un fichero de la lista, es
+  ROJO VIDA, con la regla y el prefijo. Lo da un prefijo que no casa y lo da el fichero excluido
+  otra vez entero.
+- **El resumen.** Las dos líneas «excluido (nivel)» y «excluido (RETIRADAS)» de `VERIFICACION.md`
+  pasan a «acotado (nivel)» y «acotado (RETIRADAS)», con las líneas leídas, 305, el prefijo y la
+  razón.
+- **La línea de M8a.** «Alcanzar 128 bits demostrables cuesta ~125,6 KB por prueba» pasa a «cuesta
+  127.274 B por prueba en esa comparación», con la marca. Es la cifra de la última fila de la tabla
+  de `FIVE_BACKENDS.md` §4, remedida en el §806.
+
+Después, la herramienta da exit 0 y 38 líneas. Cambian cinco. «ATADO F: 169 cifras de nivel en 58
+frases; de produccion en 12 sitio(s)»: las 12 cifras y las 5 frases de más son de las líneas vivas
+de `VERIFICACION.md`, y la de M8a publica el nivel de producción. «9 frase(s) de una cifra sola»,
+antes 7. «RETIRADAS: 366 fichero(s); 21 cita(s) … tras su marca»: la de más es la marca de la
+`:1629`. Y las dos «excluido» pasan a «acotado», detrás de las demás exclusiones de su regla.
+Las otras 33, iguales byte a byte.
+
+**Mutantes**, sobre una copia del árbol en el directorio de la sesión (los ficheros de `git
+ls-files`, sin `target/` ni `.git/`), con lo de este sello sin commitear. Cada uno se aplica, se
+corre la herramienta entera en la copia y se deshace.
+
+- M1, «la vía de un paso pesaba 61.966 B» al final de una frase de la línea viva `:1589`: ROJO,
+  RETIRADA en `:1589`.
+- M2, «41 consultas» por «42 consultas» en la línea viva `:1629`: ROJO, NIVEL en `:1629`, «produccion
+  da 42».
+- M3, la `:1629` como estaba, con «~125,6 KB» sin marca: ROJO, RETIRADA en `:1629`.
+- M4, el prefijo cambiado a uno que no casa: ROJO, VIDA de la regla de nivel. Sin la VIDA de nivel,
+  la de RETIRADAS da su ROJO VIDA.
+- M5, `VERIFICACION.md` de vuelta en `EXCLUIDOS_RETIRADAS`: ROJO, VIDA de RETIRADAS. De vuelta en
+  `EXCLUIDOS_NIVEL`: ROJO, VIDA de nivel.
+- M6, `_unidades()` sin el filtro: ROJO, las cinco NIVEL de la `:1630`.
+- M7, `retiradas()` sin el prefijo: ROJO, tres RETIRADA, en la `:1380`, la `:1470` y la `:1630`.
+- Cada comprobación nueva mata al menos uno: el filtro, M6 y M7; la acotación, M1, M2 y M3; la
+  prueba de vida, M4 y M5.
+
+Vivos, y se declaran:
+
+- V1, «61.966 B» en la «Fuentes:» de la `:1590`: VERDE, a propósito. Las «Fuentes:» son de 71c5aad.
+- V2, «61.966 B» en la cabecera del fichero (`:6`, la nota del §847): VERDE. La cabecera no es una
+  línea «Lo que se puede afirmar».
+- V3, sin las dos pruebas de vida y con el prefijo que no casa: VERDE. Los suelos no lo ven:
+  `MINIMO_CIFRAS_F` está en 154, y sin `VERIFICACION.md` el censo vuelve a 157.
+- De control, C1: la misma cifra en la `:1589` con «decía» delante: VERDE, como se quiere.
+
+La copia, el conductor y sus salidas se borraron al acabar.
+
+Sobre `8f7e25e` con este sello, salen con 0 las once herramientas del bucle «2 ter»,
+`check_vectores --desde 378e1fa` (508 ficheros y 1017 líneas) y `check_catalogo`; también
+`check_tests` y `check_modulos`.
+
+**Correcciones**, sobre los ficheros STAGED de este commit:
+
+1. `doc/ecst/VERIFICACION.md:1629`, la línea «Lo que se puede afirmar» de M8a: «(⚠️ §857: decía
+   «~125,6 KB»; `FIVE_BACKENDS.md` §4 lo remidió en el §806)». Es la cifra que el §841 retiró.
+2. `tools/check_publicadas.py:1051-1057`, sobre `SOLO_LINEAS`: «⚠️ §857: hasta aqui
+   EXCLUIDOS_NIVEL y EXCLUIDOS_RETIRADAS dejaban fuera doc/ecst/VERIFICACION.md entero, con la razon
+   …».
+
+**Las citas por línea que se mueven.** `VERIFICACION.md` no cambia de líneas. En
+`tools/check_publicadas.py`, las líneas de la 1 a la 92 no se mueven, y las de debajo bajan entre
+una y 38. Fuera de `AUDITORIA.md`, el árbol sólo cita las de su docstring (`:37-48`, `:38-42`,
+`:44-48` y `:44-49`, en `doc/ecst/`), que no se mueven. Los asientos que citan líneas más bajas son
+registro de su fecha. Cada cita se buscó por su contenido en `8f7e25e`, y de ahí se llevó a este
+commit con `difflib`:
+
+- El §856, sobre su árbol, que es `8f7e25e`: `:192-197` pasa a `:193-198`; `:204`, a `:205`;
+  `:1566-1569`, a `:1581-1584`; `:1572-1595`, a `:1587-1610`; `:1636-1639`, a `:1651-1654`;
+  `:1647-1651`, a `:1662-1666`; `:1659`, a `:1674`; `:2719`, a `:2754`; y `:2799-2801`, a
+  `:2837-2839`.
+- El §846, con los números que el §856 le dio en `8f7e25e`: `:177-216` pasa a `:178-217`;
+  `:1520-1691`, a `:1535-1706`; `:2714-2721`, a `:2749-2756`; y `:2788-2798`, a `:2826-2836`.
+- El §854 cita, sobre `e6d243b`, `:242-244`, `:322-324`, `:1006-1009`, `:1734-1738` y
+  `:2779-2782`. En `8f7e25e` estaban en `:249-251`, `:329-331`, `:1013-1016`, `:1771-1775` y
+  `:2817-2820`. Ahora están en `:250-252`, `:330-332`, `:1015-1018`, `:1786-1790` y `:2855-2858`.
+- El comentario que cita `ARQUITECTURA.md:1423`, el `:447` del §839 y del §840 y el `:468` del
+  §841, estaba en la `:510` de `8f7e25e`, no en la `:475` que da el §856. Ahora está en la `:512`.
+
+**Lo que NO hace.**
+
+- No lee de `VERIFICACION.md` la cabecera (V2), las tablas, los «Borrador:» ni las «Fuentes:».
+- No ve una línea viva partida en dos: sólo la primera empieza por el prefijo. Hoy no hay ninguna
+  (punto 4).
+- No corrige las cifras rancias de las líneas vivas que no están en `RETIRADAS`. Las dos reglas
+  sólo ven lo suyo: el nivel que se deriva de `proof_options()` y las cuatro cifras retiradas.
+- No sube los suelos: `MINIMO_CIFRAS_F` sigue en 154 (hoy 169) y `MINIMO_RETIRADAS` en 20 (hoy
+  21).
+- No pone `VERIFICACION.md` en `SITIOS_NIVEL`.
+- No toca `tools/verificar_citas.py`: su v5 bis ya mira esas líneas.
+- No mira otras exclusiones enteras de las dos reglas: `doc/blueprint-v2.md`, `doc/comparativa/` y
+  `doc/historia/` siguen como estaban.
+- No corrige la cita «(FIVE_BACKENDS.md:146)» de la propia línea de M8a, la `:1629`. Hoy esa línea
+  de `FIVE_BACKENDS.md` dice que el defecto «no es comparable», y los 29/63 demostrables están en
+  la tabla de su §4 (`:151-157`). Tampoco corrige el «36,7 KB» de la línea viva `:1589`:
+  `FIVE_BACKENDS.md:153` da 39.048 B desde el §806. Las dos son deuda que no ve ninguna de las dos
+  reglas.
+- No da a la VIDA una cabecera propia. Un ROJO VIDA entra en la cuenta de la cabecera de su regla:
+  «cifra(s) o constante(s) de nivel no cuadran» o «cifra(s) retirada(s) publicada(s)». La clase
+  está en la línea del detalle, «VIDA».
+
+**Lo que es del autor.** Si `VERIFICACION.md` entra en `SITIOS_NIVEL`. Si los dos suelos suben a lo
+de hoy. Y si la cabecera del fichero, viva desde el §847, se lee también.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2012 tests declarados y 20 instrumentos, y
+`check_modulos` en 207: el cambio es de una herramienta del bucle, no de un test. El total de sello
+sigue en 1853. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 44 abiertas y 86
+resueltas.
