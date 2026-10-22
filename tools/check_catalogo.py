@@ -99,6 +99,7 @@ TABLA_E = {
                                                  (A + 'lib.rs', 'fn:comprobar_marca')]),
     'operacion_nombrada::{}: {}: el rechazo de un lote nombra su operacion (§611)': ('kit', 'u64_de'),
     'resolver_lote::resolucion.data.campos: {}': ('kit', 'u64_de'),
+    'bifurcacion_del_ancla::rama: {}': ('kit', 'u64_de'),   # §714: el formatVersion de la rama
     'resolver_prenda::resolucion.sobre: {}': ('kit', 'enunciado_de_prenda'),
     'verificar_ancla::cabeza: {}': ('opaco', [(V + 'lib.rs', 'Display:VerificaError')]),
     'verificar_ancla::contraria: {}': ('opaco', [(V + 'lib.rs', 'Display:VerificaError')]),

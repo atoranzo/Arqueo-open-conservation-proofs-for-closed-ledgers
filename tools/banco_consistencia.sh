@@ -27,6 +27,12 @@
 #               `por-detras`, **descarta lo pendiente** y NO se detiene.
 #               Es la decision D1 del §294 y la fe de erratas del §295,
 #               las dos demostradas de una vez.
+#               §714: y no se detiene PORQUE el nodo reseteado, sin
+#               trafico, vuelve a firmar los MISMOS digests en cada mmrSize que
+#               ya firmo: el banco lo comprueba en el diario del testigo. Si
+#               firmara otra cosa en un tamaño ya visto, el testigo se detendria
+#               con `bifurcacion` -bifurcacion o reinicio sin diario-: eso lo
+#               demuestra la escena 5 de tools/banco_bifurcacion.sh.
 #
 # ⚠️ El proxy es TONTO A PROPOSITO: reenvia todo tal cual y solo toca
 #    `camino[0]` de `zkssl_consistencyProof`. Vive EMBEBIDO —nace en
@@ -182,6 +188,19 @@ if pregunta == "acaba-en-no-extiende":
           % (clases[-1] if clases else None, clases))
     sys.exit(1)
 
+if pregunta == "un-digest-por-tamano":
+    # §714: cada mmrSize que el testigo vio, con UN digest, y ninguna `bifurcacion`.
+    por_t = {}
+    for l in ls:
+        if l.get("signature") and l.get("mmrSize"):
+            por_t.setdefault(int(l["mmrSize"], 16), set()).add(l["epochDigest"])
+    dobles = sorted(t for t, ds in por_t.items() if len(ds) > 1)
+    if dobles or "bifurcacion" in clases:
+        print("mmrSize con dos digests: %s; clases: %s" % (dobles, clases)); sys.exit(1)
+    print("%d mmrSize vistos, cada uno con UN digest: el reseteo sin trafico vuelve a firmar lo mismo"
+          % len(por_t))
+    sys.exit(0)
+
 if pregunta == "hay-por-detras":
     if "por-detras" in clases:
         print("`por-detras` anotado, y el testigo siguio; clases: %s" % clases)
@@ -243,5 +262,8 @@ set +e; wait "$TPID"; RC=$?; set -e
 SAL=$(python3 "$DIR/mira.py" "$DIR/d3.jsonl" hay-por-detras) \
   || fallo "$SAL"
 msg "NEGATIVO-B: exit 0 — $SAL"
+SAL=$(python3 "$DIR/mira.py" "$DIR/d3.jsonl" un-digest-por-tamano) \
+  || fallo "$SAL"
+msg "NEGATIVO-B (§714): $SAL"
 
 msg "BANCO-CONSISTENCIA VERDE: el testigo juzga la historia, se detiene cuando debe y aguanta un reseteo"

@@ -465,6 +465,12 @@ pub fn conservar(app: &App, l: Latido) {
     // diario — cache y diario avanzan juntos, y tras un reinicio la
     // siembra del diario reconstruye exactamente esta serie (P-doctrina:
     // el diario manda; la memoria es cache).
+    // ⚠️ CORRECCIÓN (§714): «exactamente» no, si `diario::anotar` falla
+    // arriba: la hoja entra igual y la linea no. Tras un reinicio la siembra
+    // trae una hoja de menos, y el nodo vuelve a firmar un tamaño servido
+    // (`si_anotar_falla_el_nodo_repite_un_mmr_size`). Declarado, no
+    // cerrado: cerrarlo (fallar cerrado si no puede anotar) va al trabajo
+    // del nodo de fallar cerrado, y choca con la doctrina de arriba.
     let hoja = l.cabeza.digest();
     if let Ok(mut u) = app.ultima_cabeza.lock() {
         *u = Some(l);

@@ -24,7 +24,8 @@
   pareja firmada), §399 (el índice embebido, el único que la firma acredita), §567 (el reloj es
   el índice XMSS, no el `seq`), §580 (la casa no cría código sin llamador); y los de esta serie:
   §590 (E1), §591 (E2), §592 (E3), §593 (E4); y §607 (la aceptación); el §712 lleva el reloj de
-  D-C a la extensión, al consumo, al ancla del modo 3 y al testigo, con nueve vectores nuevos.
+  D-C a la extensión, al consumo, al ancla del modo 3 y al testigo, con nueve vectores nuevos; y el
+  §714 añade a D-E el modo 5, la bifurcación con el mismo `mmrSize`, con veintiún vectores nuevos.
 - **Backlog:** B10.6 (el formato del ancla + `M`) y B10.7 (el verificador en cliente) del
   backlog de `doc/CONFIANZA_RESIDUAL.md`; la mitad portable de B10.2 (la prueba de fraude); y
   compone con las entradas 83 y 86 del BACKLOG (el ancla acota la ventana del primer encuentro).
@@ -123,6 +124,20 @@ objeto portable. Entra aquí y no en una familia propia porque es la otra cara d
 ancla obliga al operador a elegir UNA historia; este sobre es lo que le espera si eligió dos.
 Es la mitad portable de B10.2, y el sobre la imprime como DETECCIÓN con salida 0, el molde del
 conflicto de libros (§430): el sobre que la exhibe no falla — delata.
+
+§714: el hermano de la vista dividida. Dos cabezas del mismo operador con el mismo `mmrSize` y
+digests distintos son dos cabezas en el mismo sitio de su historia: con hojas distintas no reusan
+ningún índice, y la vista dividida no las ve. El sobre del ancla gana un modo 5, con `rama`: la
+otra cabeza, entera, del mismo operador —la misma clave, o claves que unen las `actas`, con el juez
+de la continuidad—; el mismo `mmrSize`, con cualquier cima y también en el génesis; y digests
+distintos. Sale DETECCIÓN con salida 0, como el modo 4: «bifurcación o reinicio sin diario». No
+distingue las dos, y no hace falta: un nodo honesto con su diario no repite un `mmrSize`. Tiene
+dos huecos declarados en el nodo honesto: un corte de corriente antes de que la línea llegue al
+disco, y un `anotar` del diario que falla (`PAQUETE.md` 2.12). El testigo lo detiene con su clase,
+`bifurcacion`, y `--auditar` y `--comparar` arman el sobre. Veintiún vectores nuevos en `ancla/`
+(`PAQUETE.md` sección 9); ninguno se reescribe, y el cable no se mueve. El arreglo se hizo en
+privado (`SECURITY.md` §5, `PROCESO.md` §«Fallos de seguridad»), y este párrafo se redactó también
+en privado, al portarlo.
 
 ### D-F — La cadencia `M` se declara en prosa; la constante espera a su llamador
 

@@ -33,10 +33,11 @@ python3 tools/segunda/juez_cabezas.py
 # 1 ter · el corpus KAT de XMSS^MT: dos implementaciones, los mismos bytes       -> 8 de 8
 python3 tools/segunda/kat_xmss/juez_xmss.py
 
-# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 215 de 215 (§712)
+# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 236 de 236 (§714)
 #   ⚠️ §810: decia 174 de 174 (§780), las cinco familias sin `ancla-cofirmada`, que salia NO SOPORTADO
 #   ⚠️ §852: decia 201 de 201 (§810); los cinco negativos `rechazo-json-*` de `paquete` la llevan a 206
 #   ⚠️ §712: decia 206 de 206 (§852); los nueve vectores del reloj, cinco de `paquete`, tres de `consumo` y uno de `ancla`, la llevan a 215
+#   ⚠️ §714: decia 215 de 215 (§712); los veintiun vectores de la bifurcacion en `ancla` la llevan a 236
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
 # 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 39 de 39 (§713)
@@ -139,7 +140,7 @@ la sexta, `ancla-cofirmada`, es del §810):
 | `paquete` (posición v1 y v2, extensión; ⚠️ §852: decía 84 y 84 de 84, de antes de los cinco `rechazo-json-*`; ⚠️ §712: decía 89 y 89 de 89, de antes de los cinco del reloj) | 94 | 94 de 94 |
 | `consumo` (desde el §771, también entre dos claves con `actas`; ⚠️ §712: decía 17 y 17 de 17, de antes de los tres del reloj) | 20 | 20 de 20 |
 | `conflicto` | 17 | 17 de 17 |
-| `ancla` (⚠️ §712: decía 22 y 22 de 22, de antes de `neg-ancla-bifurcada-mismo-mmrSize`) | 23 | 23 de 23 |
+| `ancla` (⚠️ §712: decía 22 y 22 de 22, de antes de `neg-ancla-bifurcada-mismo-mmrSize`; ⚠️ §714: decía 23 y 23 de 23, de antes de los veintiún de la bifurcación) | 44 | 44 de 44 |
 | `rotacion` (la extensión entre dos claves, con `actas`; §649; y el sobre del solapamiento, §686) | 34 | 34 de 34 |
 | `ancla-cofirmada` (la nota del medio con su firma ML-DSA-44, las cofirmas y la inclusión; §810) | 27 | 27 de 27 |
 
@@ -270,7 +271,25 @@ mayor. `verificador.py` tiene el mismo juez, con el mismo nombre y los mismos te
 (`extension: mismo mmrSize y digest distinto` y `extension: el indice embebido no crece`), y lo
 llama en el mismo sitio: la extensión, el consumo y el modo 3 del ancla, donde el ancla hace de
 vieja. Lo fijan los nueve vectores del §712 en `paquete/`, `consumo/` y `ancla/`, y por eso la
-tabla de arriba cuenta 94, 20 y 23.
+tabla de arriba contaba 94, 20 y 23 (en `ancla`, 44 desde el §714).
+
+**La bifurcación, como el kit (§714).** Desde el §714 el sobre del ancla tiene un modo 5: `rama`,
+otra cabeza firmada del mismo operador con el mismo `mmrSize` y otro digest, que sale DETECCIÓN con
+salida 0 (`spec/PAQUETE.md` 2.12). `verificador.py` lo juzga en `bifurcacion`, con los mismos textos
+y en el mismo orden que el kit. La forma y el modo los decide la PRESENCIA de la clave, como en la
+referencia: `"rama": null` es una rama, y `"ancla": null`, un ancla. Antes, `doc.get(k) is not None`
+tomaba un `null` por ausente, y en cinco sobres la segunda daba VERDE donde el kit daba ROJO. En
+los sobres que leen la cabeza con `leer_cabeza_de` (el ancla, el consumo, el conflicto y el
+solapamiento), una cabeza que no es un objeto sale `{sujeto}: no es una cabeza (objeto)`, sin
+traceback. El de extensión no pasa por ahí: con `"vieja": 7` la segunda aún revienta, con salida 1,
+donde el kit da ROJO con su texto. El de la nota del medio (`ancla-cofirmada`, §810) tampoco pasa
+por ahí, y no revienta: con una cabeza que no es un objeto da `falta formatVersion o no es cadena
+0x`, el texto del kit. Ningún vector fija esa guarda común. Y
+`verificar_cabeza` comprueba ya la firma antes que el preámbulo, como el kit: una firma válida de
+otra cabeza es `la firma es VALIDA pero de otro mensaje`, el texto del kit, y no «el preambulo
+recuperado no es el esperado». Sobre los 225 vectores de las seis familias que lee, ese cambio de
+orden mueve la salida de uno, `ancla/neg-rama-firma-de-otra-cabeza`. Lo demás lo fijan los veintiún
+vectores del §714 en `ancla/`, y por eso la tabla de arriba cuenta 44 en `ancla`.
 
 **El resto FRI, atado como en el kit (§713).** El último compromiso FRI es el hash del resto, y
 `winter-fri` 0.13.1 no lo comprueba al verificar. Desde el §713 lo comprueba el canal del fork
@@ -415,6 +434,8 @@ está medido, ni antes ni ahora.
 diez y 434 en las doce. Lo medido del `.wasm` no cambia: que las pase no está medido, ni antes ni
 ahora; el vector, suelto, da bajo `wasmtime` la misma causa que en nativo, medido sobre el árbol en
 que se hizo el arreglo y no sobre éste (el asiento del §713).
+⚠️ §714: `ancla` tiene 44 desde el §714, con los veintiún de la bifurcación: 394 entradas en los diez
+y 455 en las doce. Lo medido del `.wasm` no cambia: que las pase no está medido, ni antes ni ahora.
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 

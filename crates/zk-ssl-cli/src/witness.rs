@@ -74,12 +74,31 @@
 //! | **anclando** | primera cabeza v3: se fija la pareja de partida | anota y **sigue** |
 //! | **consistencia-pendiente** | el camino espera a la cabeza que lo firma | anota y **sigue** |
 //! | **extiende** | la nueva contiene a la custodiada | anota y **sigue** |
-//! | ⚠️ **no-extiende** | **la historia se bifurcó o se recortó**; o, desde el §712, una cabeza en un `mmrSize` ya visto con otro digest | **SE DETIENE** |
+//! | ⚠️ **no-extiende** | **la historia se bifurcó o se recortó**; o, desde el §712, una cabeza posterior a la custodiada que firma por debajo | **SE DETIENE** |
+//! | ⚠️ **bifurcacion** | **una cabeza del operador en un `mmrSize` ya visto con otro digest**: bifurcación o reinicio sin diario (§714) | **SE DETIENE** |
 //! | **por-detras** | el acumulador del nodo va detrás: reseteo VISIBLE | anota y **sigue** |
+//!
+//! ⚠️ CORRECCIÓN (§714): la fila de `no-extiende` decía «o, desde el §712, una cabeza en un
+//! `mmrSize` ya visto con otro digest». Esa cabeza tiene clase propia, `bifurcacion`, y la
+//! `DIARIO_VERSION` sube a 5.
 //!
 //! ⚠️ **`por-detras` no detiene a propósito**: es el nodo **diciendo la
 //! verdad** sobre su reinicio sin diario (§292 lo prometió visible, §293 lo
 //! hizo cable). Detener ahí quemaría al testigo en cada reinicio legítimo.
+//!
+//! ⚠️⚠️ §714 · **Pero el reinicio sin diario ya no es inocente si FIRMA OTRA COSA donde ya
+//! firmó.** Que el `mmrSize` baje sigue sin detener. Lo que detiene es una cabeza en un `mmrSize` ya
+//! visto con otro digest, vaya o no por detrás y tenga la cima que tenga: `bifurcacion`. Un nodo
+//! honesto con su diario no repite un `mmrSize`: la hoja del MMR entra donde se anota el diario, y al
+//! arrancar el diario siembra el MMR (`zk-ssl-node`, `latido.rs`, `conservar`). Salvo un hueco
+//! declarado: si `anotar` falla, `conservar` lo avisa y sigue (§272), y la cabeza se sirve sin su
+//! linea; tras un reinicio el nodo repite un tamaño, y con otro digest si despues anoto otra
+//! (`si_anotar_falla_el_nodo_repite_un_mmr_size`, en el nodo). Uno que reinicia sin
+//! diario y sin tráfico vuelve a firmar los MISMOS digests en cada tamaño, y no detiene. Con tráfico
+//! firma otra historia en los mismos sitios, y quien guardaba la primera tiene una historia que el
+//! operador ya no sirve. El testigo no distingue eso de una bifurcación —DETECTAR NO ES DISTINGUIR—,
+//! y es oponible igual: las dos cabezas van firmadas. Hasta el §714, con otra cima y por detrás, era
+//! `por-detras`.
 //!
 //! ⚠️⚠️ **Y el juicio NO es síncrono.** La pareja firmada es el acumulador
 //! ANTES de cada cabeza, así que **el camino de tamaño `t` lo firma la
@@ -240,6 +259,15 @@ pub enum Consistencia {
     Extiende { de_t: u64, a_t: u64, camino: Vec<String> },
     /// ⚠️⚠️ **La nueva NO extiende a la custodiada.** Se DETIENE.
     NoExtiende { de_t: u64, a_t: u64, camino: Vec<String> },
+    /// ⚠️⚠️ §714 · **BIFURCACION O REINICIO SIN DIARIO.** Una cabeza del operador en un
+    /// `mmrSize` ya visto, `t`, con otro digest: dos cabezas en el mismo sitio de su historia. Se
+    /// DETIENE. `digest_previo` es el de la primera cabeza que se vio con ese tamaño; `digest_nuevo`,
+    /// el de esta.
+    ///
+    /// ⚠️ CORRECCIÓN (§714): el §712 la anotaba `NoExtiende { de_t: t, a_t: t, camino: [] }`, y solo
+    /// con la misma cima o sin ir por detrás. Ahora detiene con cualquier cima, por detrás también, y
+    /// tiene clase propia.
+    Bifurcacion { t: u64, digest_previo: String, digest_nuevo: String },
     /// El acumulador del nodo va POR DETRAS de lo custodiado. Anota y sigue.
     PorDetras { t_nodo: u64, pedido: u64 },
     /// El servicio no dio camino, con su razon. Anota y sigue.
@@ -261,8 +289,12 @@ impl Consistencia {
     /// sobre su propio reseteo —§292 lo prometio VISIBLE y §293 lo hizo
     /// cable—. Detener ahi quemaria al testigo en cada reinicio legitimo,
     /// que es el argumento de §242 por el que `Hueco` no es una alarma.
+    ///
+    /// ⚠️ CORRECCIÓN (§714): «Solo una detiene» ya no es verdad. Desde el §714 detiene
+    /// tambien [`Consistencia::Bifurcacion`], la otra hermana de la vista dividida: dos cabezas en el
+    /// mismo sitio de la historia.
     pub fn detiene(&self) -> bool {
-        matches!(self, Consistencia::NoExtiende { .. })
+        matches!(self, Consistencia::NoExtiende { .. } | Consistencia::Bifurcacion { .. })
     }
 
     /// Nombre **estable** de la clase, para el diario. Mismo criterio que
@@ -273,6 +305,8 @@ impl Consistencia {
             Consistencia::Pendiente { .. } => "consistencia-pendiente",
             Consistencia::Extiende { .. } => "extiende",
             Consistencia::NoExtiende { .. } => "no-extiende",
+            // §714: una clase nueva; por eso `DIARIO_VERSION` sube a 5.
+            Consistencia::Bifurcacion { .. } => "bifurcacion",
             Consistencia::PorDetras { .. } => "por-detras",
             Consistencia::SinCamino { .. } => "sin-camino",
             Consistencia::SinRespuesta { .. } => "consistencia-sin-respuesta",
@@ -335,17 +369,20 @@ fn juzgar(p: &Pendiente, cima_nueva: &str, t_nueva: u64) -> bool {
     mmr::verificar_consistencia(vieja, p.de_t, nueva, t_nueva, &camino)
 }
 
-/// ⚠️ §712 · **La regla del reloj sobre una cabeza que llega** (RFC-0012 D-C): `vista` es
-/// la `(mmrRoot, epochDigest)` de la primera cabeza que se vio con el mismo `mmrSize`, si se vio.
-/// Bifurca si el digest es otro y, o la cima es la misma -dos cabezas en el mismo sitio de la
-/// MISMA historia: nada honesto la produce-, o el nodo no va por detras de lo custodiado -otra
-/// historia en un tamaño ya visto, sin el reseteo visible del §295 que la explique-. Pura: la
-/// usan la vuelta viva y `--auditar`, con su propio «por detras».
-pub fn bifurca(vista: Option<&(String, String)>, cima: &str, digest: &str, detras: bool) -> bool {
-    match vista {
-        Some((raiz, dg)) => dg != digest && (raiz == cima || !detras),
-        None => false,
-    }
+/// ⚠️ §712 · **La regla del reloj sobre una cabeza que llega** (RFC-0012 D-C): `previo` es
+/// el `epochDigest` de la primera cabeza del operador que se vio con el mismo `mmrSize`, si se vio.
+/// Pura: la usan la vuelta viva y `--auditar`.
+///
+/// ⚠️ CORRECCIÓN (§714): decía «Bifurca si el digest es otro y, o la cima es la misma
+/// -dos cabezas en el mismo sitio de la MISMA historia: nada honesto la produce-, o el nodo no va
+/// por detras de lo custodiado -otra historia en un tamaño ya visto, sin el reseteo visible del §295
+/// que la explique-», y tomaba la cima y el «por detras». Desde el §714 bifurca con el digest otro,
+/// sin mas. Un nodo honesto con su diario no repite un `mmrSize`, por detras tampoco (medido con un
+/// nodo real en el §714). El reseteo visible del §295 sin trafico vuelve a firmar los mismos digests, y
+/// no bifurca. Con trafico firma otra historia en los mismos sitios: bifurcacion o reinicio sin
+/// diario, y el testigo no distingue cual. El §712 lo dejaba pasar como `por-detras`.
+pub fn bifurca(previo: Option<&str>, digest: &str) -> bool {
+    previo.map_or(false, |p| p != digest)
 }
 
 /// ⚠️ §300 · **COFIRMA ⇔ `Nueva` ∧ `Extiende`. NADA MAS.** La razon, entera, donde se usa (el
@@ -381,15 +418,26 @@ pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
     // -con el mismo tamaño es la identidad- y el retroceso de abajo la anotaba `por-detras`,
     // vuelta tras vuelta, mientras el nodo recortado volvia a crecer. Medido con el banco de la
     // bifurcacion: el testigo de antes la vio 18 lineas despues, y solo porque el nodo volvio a
-    // pasar de lo custodiado. Con otra cima, solo si el nodo NO va por detras: por detras es el
-    // reseteo VISIBLE del §295, que no detiene. Va ANTES del retroceso por eso mismo: una cabeza
-    // recortada siempre va por detras.
+    // pasar de lo custodiado. Va ANTES del retroceso por eso mismo: una cabeza recortada siempre va
+    // por detras.
+    //
+    // ⚠️⚠️ §714 · CORRECCIÓN: el §712 seguia «Con otra cima, solo si el nodo NO va por
+    // detras: por detras es el reseteo VISIBLE del §295, que no detiene», y se saltaba el genesis
+    // (`t > 0`). Desde el §714 detiene con cualquier cima, vaya o no por detras, y en el genesis
+    // tambien: `bifurcacion`, «bifurcacion o reinicio sin diario». Un nodo honesto con su diario no
+    // repite un `mmrSize` (`zk-ssl-node`, `latido.rs`, `conservar`: la hoja del MMR entra donde se
+    // anota el diario, y el diario siembra el MMR al arrancar; salvo si `anotar` falla, un hueco
+    // declarado en el nodo). Uno que reinicia sin diario y sin
+    // trafico vuelve a firmar los MISMOS digests, y no detiene. La historia es del OPERADOR: una
+    // rotacion juzgada no la borra, y una cabeza de la clave nueva en un tamaño que firmo la vieja
+    // se compara igual (las claves que las actas unen).
     let digest = v["epochDigest"].as_str().unwrap_or_default().to_string();
-    if t > 0 {
-        let detras = m.pareja.as_ref().map_or(false, |(_, pt)| t < *pt);
-        if bifurca(m.historia.get(&t), &cima, &digest, detras) {
-            return Some(Consistencia::NoExtiende { de_t: t, a_t: t, camino: Vec::new() });
-        }
+    if let Some(previo) = m.historia.get(&t).filter(|p| bifurca(Some(p.as_str()), &digest)) {
+        return Some(Consistencia::Bifurcacion {
+            t,
+            digest_previo: previo.clone(),
+            digest_nuevo: digest,
+        });
     }
 
     // ⚠️⚠️ §712 · **EL RELOJ, LA OTRA MITAD DE LA REGLA.**
@@ -413,10 +461,8 @@ pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
         }
     }
     let reloj = embebido.map(|e| (clave, e));
-    if t > 0 {
-        // La PRIMERA cabeza de cada tamaño: la evidencia es la que se vio antes.
-        m.historia.entry(t).or_insert_with(|| (cima.clone(), digest));
-    }
+    // La PRIMERA cabeza de cada tamaño: la evidencia es la que se vio antes. §714: el genesis tambien.
+    m.historia.entry(t).or_insert(digest);
 
     // ⚠️⚠️ §295 · **EL RETROCESO MANDA SOBRE LO PENDIENTE**, y va ANTES
     // que nada. Si el acumulador del nodo va POR DETRAS de lo custodiado,
@@ -556,7 +602,12 @@ pub fn al_llegar_camino(m: &mut Memoria, r: &Value) -> Consistencia {
 /// `actas` con la cadena que el nodo sirvio. Y otra vez **no es solo un valor mas**: el
 /// significado de `cambio-de-clave` se ESTRECHA, porque deja de cubrir el cambio que la cadena
 /// explica. Un auditor v3 no sabe rejuzgar una rotacion, y lo dice en vez de leerla a medias.
-pub const DIARIO_VERSION: u8 = 4;
+/// ⚠️ **4 -> 5 en el §714**: nace la clase `bifurcacion` del canal de la historia, con su
+/// `t` y su `digestPrevio`: una cabeza del operador en un `mmrSize` ya visto con otro digest.
+/// Tampoco es solo un valor mas: el §712 anotaba ese caso `no-extiende` con `deT` igual a `aT` y el
+/// camino vacio, y ahi `no-extiende` se ESTRECHA otra vez. Un auditor v4 no sabe leer la clase nueva,
+/// y lo dice (`version-desconocida`).
+pub const DIARIO_VERSION: u8 = 5;
 
 /// Una línea del diario: **lo suficiente para que un tercero reverifique
 /// sin el nodo**, meses después.
@@ -701,6 +752,29 @@ pub fn sobre_de_vista_dividida(una: &Value, otra: &Value) -> Option<Value> {
     }))
 }
 
+/// ⚠️ §714 · **El sobre de la bifurcacion, armado desde el diario** (`spec/PAQUETE.md` 2.12,
+/// modo 5): dos cabezas del mismo operador con el mismo `mmrSize` y digests distintos, la `cabeza` y
+/// la `rama`. Con dos claves, la cadena de actas que las une va en el sobre: sin ella el kit lo
+/// rechazaria por «claves DISTINTAS». `None` si no son el mismo tamaño, si son la misma cabeza o si
+/// las claves difieren y no hay cadena: queda el hallazgo, y no se arma un sobre que el kit
+/// rechazaria. Un productor para `--auditar --sobres` y `--comparar --sobres`.
+pub fn sobre_de_bifurcacion(una: &Value, otra: &Value, actas: Option<&Value>) -> Option<Value> {
+    let t = leer_q(&una["mmrSize"]).ok()?;
+    if leer_q(&otra["mmrSize"]).ok()? != t || una["epochDigest"] == otra["epochDigest"] {
+        return None;
+    }
+    let mut sobre = json!({
+        "v": 1,
+        "tipo": "ancla",
+        "cabeza": cabeza_de_linea(una),
+        "rama": cabeza_de_linea(otra),
+    });
+    if una["publicKey"] != otra["publicKey"] {
+        sobre["actas"] = actas?.clone();
+    }
+    Some(sobre)
+}
+
 /// La linea con **los dos canales** (§294).
 ///
 /// ⚠️ [`linea_de_diario`] se conserva **con su firma intacta**: es la que
@@ -737,6 +811,12 @@ pub fn linea_de_diario_con(
             o["deT"] = q(*de_t);
             o["aT"] = q(*a_t);
             o["camino"] = json!(camino);
+        }
+        // §714: el tamaño y el digest de la primera cabeza que se vio con el. El de esta va
+        // en la propia linea (`epochDigest`): repetirlo aqui serian dos marcadores que pueden discrepar.
+        Consistencia::Bifurcacion { t, digest_previo, .. } => {
+            o["t"] = q(*t);
+            o["digestPrevio"] = json!(digest_previo);
         }
         Consistencia::PorDetras { t_nodo, pedido } => {
             o["tNodo"] = q(*t_nodo);
@@ -813,9 +893,13 @@ pub struct Memoria {
     /// ⚠️ §712: el MAYOR índice embebido visto, no el último. Un índice que retrocede no mueve la
     /// cuenta de los huecos hacia atrás.
     ultimo: Option<u64>,
-    /// ⚠️ §712: por `mmrSize`, la `(mmrRoot, epochDigest)` de la primera cabeza que
-    /// verificó con ese tamaño. La regla del reloj sobre cada cabeza que llega: [`bifurca`].
-    historia: BTreeMap<u64, (String, String)>,
+    /// ⚠️ §712: por `mmrSize`, el `epochDigest` de la primera cabeza que verificó con ese
+    /// tamaño. La regla del reloj sobre cada cabeza que llega: [`bifurca`].
+    ///
+    /// ⚠️ §714: guardaba tambien la cima, y ya no la mira nadie: bifurca con cualquiera. Es
+    /// la historia del OPERADOR: [`Memoria::rotar`] no la borra, y una clave que las actas unen a la
+    /// fijada se juzga contra lo que firmo la anterior.
+    historia: BTreeMap<u64, String>,
     /// ⚠️ **EL ANCLA.** La clave pública que se vio la primera vez.
     clave_fijada: Option<String>,
     /// ⚠️ **EL ANCLA DE LA HISTORIA** (§294): la pareja del MMR de la
@@ -1333,9 +1417,13 @@ pub enum Hallazgo {
     /// nombre que en [`Veredicto`].
     Solapamiento { linea: usize, indice: u64, desde: u64 },
     /// ⚠️ §712 · **Una cabeza en un `mmrSize` ya visto con otro digest** (la regla del
-    /// reloj, [`bifurca`]): dos cabezas en el mismo sitio de la historia. El mismo nombre que la
-    /// clase de la vuelta viva, [`Consistencia::NoExtiende`].
-    NoExtiende { linea: usize, t: u64, digest_a: String, digest_b: String },
+    /// §712, [`bifurca`]): dos cabezas en el mismo sitio de la historia.
+    ///
+    /// ⚠️ §714: **bifurcacion o reinicio sin diario**, con cualquier cima y vaya o no por
+    /// detras, entre las cabezas del MISMO operador -la clave fijada y las que una rotacion juzgada
+    /// le une-. El §712 la llamaba `NoExtiende`, con el nombre de la clase que la vuelta viva usaba
+    /// entonces; desde el §714 las dos se llaman `bifurcacion`.
+    Bifurcacion { linea: usize, t: u64, digest_a: String, digest_b: String },
 }
 
 impl Hallazgo {
@@ -1352,7 +1440,7 @@ impl Hallazgo {
             Hallazgo::VistaDividida { .. } => "vista-dividida",
             Hallazgo::RotacionInvalida { .. } => "rotacion-invalida",
             Hallazgo::Solapamiento { .. } => "solapamiento",
-            Hallazgo::NoExtiende { .. } => "no-extiende",
+            Hallazgo::Bifurcacion { .. } => "bifurcacion",
         }
     }
 }
@@ -1377,7 +1465,8 @@ pub struct Auditoria {
     pub hallazgos: Vec<Hallazgo>,
     /// ⚠️ §687: un sobre del solapamiento por cada solapamiento que el diario delata, con la linea
     /// del hallazgo: la cabeza fuera de su tramo y la cadena que fijo el tramo. Y desde el §688, uno
-    /// de la vista dividida -el modo 4 del ancla- por cada vista que el kit pueda juzgar.
+    /// de la vista dividida -el modo 4 del ancla- por cada vista que el kit pueda juzgar. Y desde el
+    /// §714, uno de la bifurcacion -el modo 5- por cada una.
     pub sobres: Vec<(usize, Value)>,
     /// ⚠️ §770: por clave -el hex de su `publicKey`, como va en la linea-, la hoja embebida mas
     /// alta entre las cabezas que REVERIFICAN. Es el `--desde-minimo` del nodo (RFC-0015 D-G, paso
@@ -1415,15 +1504,20 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
     //    `cambio-de-clave`. En vivo el mapa va solo por hoja y dice lo mismo: la clave esta fijada,
     //    y una rotacion juzgada deja a la sucesora por encima de todo lo que firmo la anterior.
     let mut vistos: BTreeMap<(String, u64), (String, usize)> = BTreeMap::new();
-    // ⚠️ §712: la regla del reloj en frio. Por `mmrSize`, la (cima, digest) de la primera
-    //    cabeza que REVERIFICO con ese tamaño.
-    let mut historia: BTreeMap<u64, (String, String)> = BTreeMap::new();
-    // ⚠️ §712: «por detras» es la pareja custodiada, la MISMA que la vuelta viva,
-    //    reconstruida del diario: la cabeza de la ultima linea anotada `anclando` o `extiende` -las
-    //    dos unicas que la mueven en vivo-, y sin anotaciones, la primera con historia, como el
-    //    anclaje de la vuelta viva. No el MAYOR tamaño visto: la pareja va por detras de lo visto, y
-    //    con el mayor la vuelta viva se detendria en un tamaño entre los dos y el auditor callaria.
-    let mut pareja_t: Option<u64> = None;
+    // ⚠️ §712: la regla del reloj en frio. Por `mmrSize`, el digest de la primera cabeza que
+    //    REVERIFICO con ese tamaño.
+    // ⚠️ §714: y la posicion de su linea, para armar el sobre de la bifurcacion -el modo 5
+    //    del ancla- releyendola, como la vista dividida. Solo las cabezas del OPERADOR: la clave
+    //    fijada y las que una rotacion juzgada le une (`operador`, abajo). Una clave que nadie explica
+    //    ya es `cambio-de-clave`, y su cabeza no es de esta historia.
+    let mut historia: BTreeMap<u64, (String, usize)> = BTreeMap::new();
+    // ⚠️ §714: las claves del operador: la primera que firma una linea (el TOFU de la vuelta
+    //    viva) y cada una a la que una rotacion juzgada lleva.
+    let mut operador: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    // ⚠️ CORRECCIÓN (§714): aqui vivia `pareja_t`, el «por detras» del §712 -la pareja
+    //    custodiada, reconstruida de las lineas `anclando` y `extiende`-. Lo usaba la regla con otra
+    //    cima, que el §714 quita: la bifurcacion ya no depende de quien va por detras, y el auditor ya
+    //    no confia en lo que el diario anota.
     // ⚠️ §647: la misma memoria del tramo que el testigo vivo, para rejuzgar sus rotaciones.
     let mut m = Memoria::nueva();
     // ⚠️ §687: lo que hace falta para ARMAR el sobre del solapamiento sin el nodo: la cadena de la
@@ -1530,6 +1624,7 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
                 match juzgar_cambio(&mut m, &f, &k, &v) {
                     Ok(Veredicto::Rotada { .. }) => {
                         clave = Some(k.clone());
+                        operador.insert(k.clone());
                         actas_vigentes = Some(v["actas"].clone());
                         cumbre = None;
                     }
@@ -1556,13 +1651,16 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
         let de_la_fijada = clave.as_deref().map_or(true, |f| f == k);
         let de_quien = k.clone();
         match &clave {
-            None => clave = Some(k),
+            None => {
+                operador.insert(k.clone());
+                clave = Some(k.clone());
+            }
             Some(f) if *f == k => {}
             Some(f) => {
                 a.hallazgos.push(Hallazgo::CambioDeClave {
                     linea: n,
                     fijada: f.clone(),
-                    recibida: k,
+                    recibida: k.clone(),
                 });
             }
         }
@@ -1571,41 +1669,37 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
             Ok(()) => {
                 a.reverificadas += 1;
                 // ⚠️ §712: la regla del reloj en frio, solo sobre lo que REVERIFICO -el
-                //    `mmrSize` y la cima los cubre la firma porque se recompusieron-. La misma
-                //    `bifurca` que la vuelta viva, y el mismo «por detras»: por debajo de la pareja
-                //    custodiada ANTES de esta linea. Un tamaño 0 no se juzga: el genesis no tiene
-                //    historia (§295).
-                if let (Some(cima), Ok(t)) = (v["mmrRoot"].as_str(), leer_q(&v["mmrSize"])) {
+                //    `mmrSize` lo cubre la firma porque se recompuso-. La misma `bifurca` que la vuelta
+                //    viva.
+                // ⚠️ §714: con cualquier cima, por detras tambien, y en el genesis. El §712
+                //    decia «Un tamaño 0 no se juzga: el genesis no tiene historia (§295)»: no tiene
+                //    historia que EXTENDER, pero dos cabezas que dicen «ninguna antes» con contenidos
+                //    distintos son dos historias. Solo entre cabezas del operador.
+                if let (true, Ok(t)) = (operador.contains(&k), leer_q(&v["mmrSize"])) {
                     let dg = v["epochDigest"].as_str().unwrap_or_default().to_string();
-                    if t > 0 {
-                        let detras = pareja_t.map_or(false, |x| t < x);
-                        match historia.get(&t) {
-                            Some(vista) if bifurca(Some(vista), cima, &dg, detras) => {
-                                a.hallazgos.push(Hallazgo::NoExtiende {
-                                    linea: n,
-                                    t,
-                                    digest_a: vista.1.clone(),
-                                    digest_b: dg,
+                    match historia.get(&t) {
+                        Some((previo, j)) if bifurca(Some(previo), &dg) => {
+                            a.hallazgos.push(Hallazgo::Bifurcacion {
+                                linea: n,
+                                t,
+                                digest_a: previo.clone(),
+                                digest_b: dg,
+                            });
+                            // La evidencia portable: el modo 5 del ancla, con la cadena si las dos
+                            // claves no son la misma.
+                            if let Some(sobre) = serde_json::from_str::<Value>(&lineas[*j])
+                                .ok()
+                                .and_then(|primera| {
+                                    sobre_de_bifurcacion(&primera, &v, actas_vigentes.as_ref())
                                 })
-                            }
-                            Some(_) => {}
-                            None => {
-                                historia.insert(t, (cima.to_string(), dg));
+                            {
+                                a.sobres.push((n, sobre));
                             }
                         }
-                    }
-                    // La pareja se mueve DESPUES de juzgar la linea, como en vivo.
-                    let mueve = matches!(
-                        v["consistencia"]["clase"].as_str(),
-                        Some("anclando") | Some("extiende")
-                    );
-                    let sin_ancla = match pareja_t {
-                        None => true,
-                        Some(0) => t > 0,
-                        Some(_) => false,
-                    };
-                    if mueve || (sin_ancla && v["consistencia"].is_null()) {
-                        pareja_t = Some(t);
+                        Some(_) => {}
+                        None => {
+                            historia.insert(t, (dg, i));
+                        }
                     }
                 }
                 // ⚠️ §647: la cabeza verificada, contra el tramo de su clave (regla 4), y su hoja
@@ -1671,16 +1765,12 @@ pub struct Comparacion {
     /// otro en B: el operador sirvió dos cabezas para el mismo sitio de su historia. `indice` es
     /// aquí el `mmrSize`.
     ///
-    /// ⚠️ Solo con la MISMA cima, la regla de [`bifurca`] que no depende de quién va por detrás.
-    /// Con otra cima va a [`Comparacion::otra_cima`].
+    /// ⚠️ §714: **bifurcacion o reinicio sin diario**, con cualquier cima, y solo entre
+    /// cabezas del MISMO operador: la misma clave, o dos que una cadena de actas de los diarios une
+    /// (`misma_clave` dice cual). Dos operadores en el mismo `mmrSize` no bifurcan nada.
     pub bifurcaciones: Vec<Divergencia>,
-    /// ⚠️ §712 · **informativo**: el mismo `mmrSize` con OTRA cima en
-    /// cada diario. Es el reseteo visible del §295 o una bifurcación, y entre dos diarios no se sabe
-    /// quién iba por detrás: no da la salida 1 ni hace `interna`. Lo decide `--auditar` con la
-    /// pareja custodiada de cada diario.
-    pub otra_cima: Vec<Divergencia>,
     /// El diario A se contradice a sí mismo: el mismo índice embebido o, desde el §712, el
-    /// mismo `mmrSize` y la misma cima con dos digests.
+    /// mismo `mmrSize` del mismo operador con dos digests.
     pub interna_a: bool,
     /// El diario B se contradice a sí mismo.
     pub interna_b: bool,
@@ -1706,12 +1796,13 @@ pub struct Comparacion {
 /// primera cabeza de ese índice en cada diario. Una por índice, en su orden; la que el kit no
 /// podría juzgar (otro índice embebido) no se arma.
 pub fn sobres_de_divergencias(a: &[String], b: &[String], c: &Comparacion) -> Vec<(u64, Value)> {
-    // ⚠️ §712: por el indice EMBEBIDO, como `comparar_lineas`.
+    // ⚠️ §712: por el indice EMBEBIDO, como `comparar_lineas`. §714: y solo
+    //    las cabezas que el testigo verifico, como alli: la primera de cada indice es la del mapa.
     let primeras = |ls: &[String]| -> BTreeMap<u64, Value> {
         let mut m = BTreeMap::new();
         for l in ls {
             if let Ok(v) = serde_json::from_str::<Value>(l) {
-                if let Some(e) = embebido_de_linea(&v) {
+                if let Some(e) = embebido_verificado_de_linea(&v) {
                     m.entry(e).or_insert(v);
                 }
             }
@@ -1738,82 +1829,192 @@ fn embebido_de_linea(v: &Value) -> Option<u64> {
     leer_hex(&v["signature"]).ok().and_then(|f| indice_de_firma(&f).ok())
 }
 
+/// ⚠️ §714 · Las clases de una linea cuya cabeza el testigo
+/// VERIFICO antes de anotarla: la clave era la fijada y la firma valia ([`una_vuelta`], pasos 1 a 5).
+const CLASES_CON_CABEZA_VERIFICADA: [&str; 4] = ["nueva", "repetida", "hueco", "vista-dividida"];
+
+/// ⚠️ §714 · [`embebido_de_linea`], solo si el testigo verifico
+/// la cabeza de la linea ([`CLASES_CON_CABEZA_VERIFICADA`]). `--comparar` cree lo que el diario dice,
+/// sin reverificar, y [`linea_de_diario`] guarda los campos de TODA cabeza `available:true`, tambien
+/// la que no verifico. Un tercero en el camino podia inyectar al testigo honesto una cabeza falsa con
+/// la `publicKey` del operador y un `mmrSize` o un indice ya vistos: el testigo la anotaba
+/// `no-verifica`, y `--comparar` acusaba al operador -«BIFURCACION … bifurcacion o reinicio sin
+/// diario», o la divergencia por indice- sin una firma valida suya. Se queda fuera tambien `rotada`:
+/// lleva la cabeza ANTES de juzgarla con la clave nueva, y la linea siguiente la trae otra vez si
+/// verifica. Y `cambio-de-clave` y `solapamiento`: el testigo ya se detuvo en ellas, y `--auditar`
+/// las reverifica. Una clase que este binario no conoce tampoco cuenta.
+///
+/// ⚠️ Una linea SIN `clase` cuenta, como antes: es la del diario del NODO (`zk-ssl-node`,
+/// `diario::linea`), lo que el nodo firmo y no lo que un testigo recibio, y comparar con ella es la
+/// deteccion a posteriori del reuso de un indice que ese modulo promete. `--ausentes` no usa este
+/// filtro: una firma servida que el nodo no tiene es su hallazgo, verifique o no.
+fn embebido_verificado_de_linea(v: &Value) -> Option<u64> {
+    match v["clase"].as_str() {
+        None if v["clase"].is_null() => {}
+        Some(c) if CLASES_CON_CABEZA_VERIFICADA.contains(&c) => {}
+        _ => return None,
+    }
+    embebido_de_linea(v)
+}
+
+/// ⚠️ §714 · Las cadenas de actas que traen las lineas de un diario -la de cada rotacion que
+/// el testigo vio, y la que acompaño a un cambio que no se explico (§647)-: las claves que lista cada
+/// una, y la cadena tal cual, para el sobre. Leer no es juzgar: `--comparar` no reverifica, y la
+/// cadena que va en el sobre de la bifurcacion la juzga el kit.
+fn cadenas_de(ls: &[String]) -> Vec<(Vec<String>, Value)> {
+    ls.iter()
+        .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+        .filter_map(|v| {
+            let lista = v["actas"].as_array()?;
+            let claves = lista
+                .iter()
+                .filter_map(|a| a["acta"]["clave"].as_str().map(str::to_ascii_lowercase))
+                .collect();
+            Some((claves, v["actas"].clone()))
+        })
+        .collect()
+}
+
+/// ⚠️ §714 · **¿El mismo operador?** `None` si no; `Some(None)` con la misma clave;
+/// `Some(Some(actas))` con dos claves que una cadena de los diarios lista juntas. Las mayusculas del
+/// hex no cuentan.
+fn mismo_operador<'a>(ka: &str, kb: &str, cadenas: &'a [(Vec<String>, Value)]) -> Option<Option<&'a Value>> {
+    let (ka, kb) = (ka.to_ascii_lowercase(), kb.to_ascii_lowercase());
+    if ka == kb {
+        return Some(None);
+    }
+    cadenas
+        .iter()
+        .find(|(claves, _)| claves.contains(&ka) && claves.contains(&kb))
+        .map(|(_, actas)| Some(actas))
+}
+
 pub fn comparar_lineas(a: &[String], b: &[String]) -> Comparacion {
-    // Un trio (digest, clave, cima) por clave del mapa: la PRIMERA linea que la trae. `interna` dice
-    // si el diario se contradice a si mismo.
-    type Mapa = BTreeMap<u64, (String, String, String)>;
-    // ⚠️ §712: con `mirar_cima`, el mismo `mmrSize` con OTRA cima no contradice al diario.
-    //    Es el reseteo VISIBLE del §295 -diario y libro nuevos con el mismo contador-, o una
-    //    bifurcacion: decidirlo pide saber quien iba por detras, y eso lo dice la pareja custodiada
-    //    que `--auditar` reconstruye del diario. Sin esto, un diario que cruza un reseteo honesto
-    //    sale «VISTA DIVIDIDA INTERNA» (medido).
-    fn anotar(m: &mut Mapa, k: u64, trio: (String, String, String), mirar_cima: bool, interna: &mut bool) {
+    // Un par (digest, clave) por clave del mapa: la PRIMERA linea que la trae. `interna` dice si el
+    // diario se contradice a si mismo. §714: era un trio con la cima, y ya no la mira nadie.
+    type Mapa = BTreeMap<u64, (String, String)>;
+    fn anotar(m: &mut Mapa, k: u64, par: (String, String), interna: &mut bool) {
         match m.get(&k) {
             None => {
-                m.insert(k, trio);
+                m.insert(k, par);
             }
             // ⚠️ Repetir un indice es NORMAL; cambiar su digest, no.
-            Some(p) if p.0 == trio.0 => {}
-            Some(p) if mirar_cima && p.2 != trio.2 => {}
+            Some(p) if p.0 == par.0 => {}
             Some(_) => *interna = true,
         }
     }
+    // ⚠️ §714: por `mmrSize`, la PRIMERA linea de cada par (digest, clave), y no solo la
+    //    primera del tamaño: una cabeza de otro operador en el mismo tamaño no tapa a las del
+    //    operador. El §712 llevaba aqui un mapa como el del indice y saltaba la OTRA cima con
+    //    `mirar_cima` -«Es el reseteo VISIBLE del §295 -diario y libro nuevos con el mismo
+    //    contador-, o una bifurcacion: decidirlo pide saber quien iba por detras»-. El §714 no lo
+    //    pregunta: con el mismo operador, el mismo `mmrSize` con dos digests es «bifurcacion o
+    //    reinicio sin diario», tenga la cima que tenga.
+    type PorTamano = BTreeMap<u64, Vec<(String, String)>>;
     // ⚠️ §712: dos mapas por diario. Por indice EMBEBIDO -el que la firma acredita; el
     //    declarado lo cambia quien sirve la cabeza (RFC-0012 D-C)- y por `mmrSize` -la regla del
-    //    reloj: el mismo sitio de la historia con dos digests-. Un tamaño 0 no cuenta: el genesis no
-    //    tiene historia (§295). Como las divergencias de siempre, esto no reverifica: la evidencia
-    //    son las dos cabezas, y `--auditar` y el kit las juzgan.
-    let mapas = |ls: &[String]| -> (Mapa, Mapa, bool) {
-        let (mut por_indice, mut por_tamano, mut interna) = (Mapa::new(), Mapa::new(), false);
+    //    §712: el mismo sitio de la historia con dos digests-. Como las divergencias de siempre, esto
+    //    no reverifica: la evidencia son las dos cabezas, y `--auditar` y el kit las juzgan.
+    // ⚠️ §714: el genesis tambien cuenta. El §712 decia «Un tamaño 0 no cuenta: el genesis
+    //    no tiene historia (§295)»: no tiene historia que extender, pero dos cabezas que dicen
+    //    «ninguna antes» con contenidos distintos son dos historias.
+    let mapas = |ls: &[String]| -> (Mapa, PorTamano, bool) {
+        let (mut por_indice, mut por_tamano, mut interna) = (Mapa::new(), PorTamano::new(), false);
         for l in ls {
             let v: Value = match serde_json::from_str(l) {
                 Ok(v) => v,
                 Err(_) => continue,
             };
-            let e = match embebido_de_linea(&v) {
+            // §714: solo las cabezas que el testigo verifico.
+            let e = match embebido_verificado_de_linea(&v) {
                 Some(e) => e,
                 None => continue,
             };
-            let trio = (
+            let par = (
                 v["epochDigest"].as_str().unwrap_or_default().to_string(),
                 v["publicKey"].as_str().unwrap_or_default().to_string(),
-                v["mmrRoot"].as_str().unwrap_or_default().to_string(),
             );
             if let Ok(t) = leer_q(&v["mmrSize"]) {
-                if t > 0 {
-                    anotar(&mut por_tamano, t, trio.clone(), true, &mut interna);
+                let vistos = por_tamano.entry(t).or_default();
+                if !vistos.contains(&par) {
+                    vistos.push(par.clone());
                 }
             }
-            anotar(&mut por_indice, e, trio, false, &mut interna);
+            anotar(&mut por_indice, e, par, &mut interna);
         }
         (por_indice, por_tamano, interna)
     };
-    // Lo que difiere entre los dos mapas, en dos montones: con la misma cima y con otra.
-    let cruzar = |x: &Mapa, y: &Mapa| -> (Vec<Divergencia>, Vec<Divergencia>) {
-        let (mut misma, mut otra) = (Vec::new(), Vec::new());
-        for (i, (da, ka, ca)) in x {
-            if let Some((db, kb, cb)) = y.get(i) {
-                if da != db {
-                    let d = Divergencia {
-                        indice: *i,
-                        digest_a: da.clone(),
-                        digest_b: db.clone(),
-                        misma_clave: ka == kb,
-                    };
-                    if ca == cb { misma.push(d) } else { otra.push(d) }
-                }
-            }
-        }
-        (misma, otra)
-    };
     let ((ia_a, ta_a, ia), (ib_b, tb_b, ib)) = (mapas(a), mapas(b));
+    // La interna por tamaño se mira aqui abajo: pide las cadenas de los DOS diarios.
+    let cadenas: Vec<(Vec<String>, Value)> = cadenas_de(a).into_iter().chain(cadenas_de(b)).collect();
+    // Dos cabezas del mismo tamaño se contradicen si el digest es otro y el operador, el mismo.
+    let choca = |x: &(String, String), y: &(String, String)| {
+        x.0 != y.0 && mismo_operador(&x.1, &y.1, &cadenas).is_some()
+    };
+    let interna_por_tamano = |m: &PorTamano| {
+        m.values().any(|ps| ps.iter().enumerate().any(|(i, x)| ps[i + 1..].iter().any(|y| choca(x, y))))
+    };
     // Por indice embebido la cima no cuenta: dos contenidos bajo una hoja de un solo uso son la
     // vista dividida con cualquier cima.
-    let (mut divergencias, otras) = cruzar(&ia_a, &ib_b);
-    divergencias.extend(otras);
-    divergencias.sort_by_key(|d| d.indice);
-    let (bifurcaciones, otra_cima) = cruzar(&ta_a, &tb_b);
-    Comparacion { divergencias, bifurcaciones, otra_cima, interna_a: ia, interna_b: ib }
+    let mut divergencias = Vec::new();
+    for (i, (da, ka)) in &ia_a {
+        if let Some((db, kb)) = ib_b.get(i) {
+            if da != db {
+                divergencias.push(Divergencia {
+                    indice: *i,
+                    digest_a: da.clone(),
+                    digest_b: db.clone(),
+                    misma_clave: ka == kb,
+                });
+            }
+        }
+    }
+    // §714: una bifurcacion por tamaño, la primera pareja que choca, en el orden de cada diario.
+    let mut bifurcaciones = Vec::new();
+    for (t, xs) in &ta_a {
+        if let Some(ys) = tb_b.get(t) {
+            let par = xs.iter().find_map(|x| ys.iter().find(|y| choca(x, y)).map(|y| (x, y)));
+            if let Some((x, y)) = par {
+                bifurcaciones.push(Divergencia {
+                    indice: *t,
+                    digest_a: x.0.clone(),
+                    digest_b: y.0.clone(),
+                    misma_clave: x.1.eq_ignore_ascii_case(&y.1),
+                });
+            }
+        }
+    }
+    Comparacion {
+        divergencias,
+        bifurcaciones,
+        interna_a: ia || interna_por_tamano(&ta_a),
+        interna_b: ib || interna_por_tamano(&tb_b),
+    }
+}
+
+/// ⚠️ §714 · **Los sobres de las bifurcaciones entre dos diarios**: por cada `mmrSize` que
+/// los dos testigos vieron con contenidos distintos del mismo operador, el sobre del ancla, modo 5,
+/// con la cabeza de cada diario y, si las claves difieren, la cadena que las une. Uno por tamaño, en
+/// su orden.
+pub fn sobres_de_bifurcaciones(a: &[String], b: &[String], c: &Comparacion) -> Vec<(u64, Value)> {
+    let primera = |ls: &[String], t: u64, dg: &str| -> Option<Value> {
+        ls.iter()
+            .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+            .find(|v| {
+                embebido_verificado_de_linea(v).is_some()
+                    && leer_q(&v["mmrSize"]).ok() == Some(t)
+                    && v["epochDigest"].as_str() == Some(dg)
+            })
+    };
+    let cadenas: Vec<(Vec<String>, Value)> = cadenas_de(a).into_iter().chain(cadenas_de(b)).collect();
+    c.bifurcaciones
+        .iter()
+        .filter_map(|d| {
+            let (x, y) = (primera(a, d.indice, &d.digest_a)?, primera(b, d.indice, &d.digest_b)?);
+            let actas = mismo_operador(x["publicKey"].as_str()?, y["publicKey"].as_str()?, &cadenas)?;
+            Some((d.indice, sobre_de_bifurcacion(&x, &y, actas)?))
+        })
+        .collect()
 }
 
 /// **La comprobación DIRIGIDA**: índices del testigo ausentes del diario
@@ -1899,9 +2100,10 @@ pub struct WitnessArgs {
     /// ⚠️ Con un solo operador **no prueba nada**. Es la pieza que activa
     /// la propiedad de §248 cuando exista un segundo testigo.
     ///
-    /// §712: el índice EMBEBIDO, y el mismo `mmrSize` con la misma
-    /// cima y dos digests (la bifurcación). Con OTRA cima lo dice y no lo
-    /// cuenta: reseteo visible del §295 o bifurcación, que decide `--auditar`.
+    /// §712: el índice EMBEBIDO, y el mismo `mmrSize` con dos
+    /// digests (la bifurcación). §714: con cualquier cima, del mismo
+    /// operador -la misma clave, o dos que una cadena de los diarios une-:
+    /// bifurcación o reinicio sin diario. Con `--sobres`, el modo 5 del ancla.
     #[arg(long, value_name = "DIARIO", num_args = 2)]
     comparar: Option<Vec<PathBuf>>,
 
@@ -2791,13 +2993,20 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         }
         for h in &r.hallazgos {
             println!("  ⚠️ {} · {h:?}", h.clase());
+            // §714: lo que la clase abrevia, dicho entero.
+            if let Hallazgo::Bifurcacion { t, .. } = h {
+                println!("     bifurcacion o reinicio sin diario: el operador firmo DOS cabezas con el \
+                          mmrSize {t}, y un nodo con su diario no repite un mmrSize");
+            }
         }
         // ⚠️ §687: la deteccion, portable. Cada sobre lo verifica el kit sin el nodo ni el testigo.
         if let Some(dir) = &a.sobres {
             std::fs::create_dir_all(dir).map_err(|e| anyhow::anyhow!("{}: {e}", dir.display()))?;
             for (n, sobre) in &r.sobres {
-                let que = match sobre["tipo"].as_str() {
-                    Some("ancla") => "vista-dividida",
+                // §714: el modo 5 del ancla lleva `rama`; el 4, `contraria`.
+                let que = match (sobre["tipo"].as_str(), sobre.get("rama").is_some()) {
+                    (Some("ancla"), true) => "bifurcacion",
+                    (Some("ancla"), false) => "vista-dividida",
                     _ => "solapamiento",
                 };
                 let ruta = dir.join(format!("{que}-linea-{n}.json"));
@@ -2809,7 +3018,7 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
                 );
             }
             if r.sobres.is_empty() {
-                println!("ni solapamiento ni vista dividida que el kit juzgue: ningun sobre");
+                println!("ni solapamiento, ni vista dividida, ni bifurcacion que el kit juzgue: ningun sobre");
             }
         }
         if r.hallazgos.is_empty() {
@@ -2900,19 +3109,16 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             if mal {
                 println!("  ⚠️⚠️ {} CONTIENE UNA VISTA DIVIDIDA INTERNA: el mismo",
                          n.display());
-                // §712: o el mismo mmrSize y la misma cima, que `--auditar` nombra `no-extiende`.
-                println!("     indice, o el mismo mmrSize y la misma cima, con dos digests. Mirar con \
-                          --auditar.");
+                // §712: o el mismo mmrSize, que `--auditar` nombra; desde el §714, `bifurcacion`, del
+                // mismo operador y con cualquier cima.
+                println!("     indice, o el mismo mmrSize del mismo operador, con dos digests. Mirar \
+                          con --auditar.");
             }
         }
-        // ⚠️ §712: el mismo mmrSize con OTRA cima se DICE y no cuenta:
-        //    reseteo visible del §295 o bifurcacion, y entre dos diarios no se sabe quien iba por
-        //    detras. Sin «misma clave» en el texto: no es una divergencia.
-        for v in &c.otra_cima {
-            println!("  ⚠️ mmrSize {}: OTRA cima en cada diario ({} != {}): reseteo visible (§295) o \
-                      bifurcacion; no se sabe quien iba por detras. Mirar cada diario con --auditar.",
-                     v.indice, v.digest_a, v.digest_b);
-        }
+        // ⚠️ CORRECCIÓN (§714): aqui el §712 DECIA, sin contarlo, el mismo mmrSize con OTRA
+        //    cima en cada diario: «reseteo visible (§295) o bifurcacion; no se sabe quien iba por
+        //    detras». Desde el §714 no hace falta saberlo: del mismo operador, es una bifurcacion o un
+        //    reinicio sin diario, y cuenta abajo con las demas.
         if c.divergencias.is_empty() && c.bifurcaciones.is_empty() {
             if c.interna_a || c.interna_b {
                 anyhow::bail!("hay una vista dividida INTERNA: usar --auditar");
@@ -2925,20 +3131,29 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             println!("  ⚠️⚠️ VISTA DIVIDIDA en el indice embebido {}: {} != {} (misma clave: {})",
                      v.indice, v.digest_a, v.digest_b, v.misma_clave);
         }
-        // ⚠️ §712: la regla del reloj entre los dos diarios, con la misma cima.
+        // ⚠️ §712: la regla del reloj entre los dos diarios. §714: con cualquier cima y del
+        //    mismo operador; «misma clave: false» es el de dos claves que una cadena une.
         for v in &c.bifurcaciones {
-            println!("  ⚠️⚠️ BIFURCACION en el mmrSize {}: {} != {} (misma clave: {})",
+            println!("  ⚠️⚠️ BIFURCACION en el mmrSize {}: {} != {} (misma clave: {}) - bifurcacion o \
+                      reinicio sin diario",
                      v.indice, v.digest_a, v.digest_b, v.misma_clave);
         }
-        // ⚠️ §689: cada divergencia de la misma clave, como el sobre del ancla, modo 4.
+        // ⚠️ §689: cada divergencia de la misma clave, como el sobre del ancla, modo 4. Y desde el
+        //    §714, cada bifurcacion, como el modo 5.
         if let Some(dir) = &a.sobres {
             std::fs::create_dir_all(dir).map_err(|e| anyhow::anyhow!("{}: {e}", dir.display()))?;
-            for (i, sobre) in sobres_de_divergencias(&x, &y, &c) {
-                let ruta = dir.join(format!("vista-dividida-indice-{i}.json"));
+            let modo_4 = sobres_de_divergencias(&x, &y, &c)
+                .into_iter()
+                .map(|(i, s)| ("vista-dividida", format!("indice-{i}"), s));
+            let modo_5 = sobres_de_bifurcaciones(&x, &y, &c)
+                .into_iter()
+                .map(|(t, s)| ("bifurcacion", format!("mmrsize-{t}"), s));
+            for (que, cual, sobre) in modo_4.chain(modo_5) {
+                let ruta = dir.join(format!("{que}-{cual}.json"));
                 std::fs::write(&ruta, serde_json::to_string_pretty(&sobre)?)
                     .map_err(|e| anyhow::anyhow!("{}: {e}", ruta.display()))?;
                 println!(
-                    "sobre de vista-dividida: {} (zk-ssl-verify lo juzga)",
+                    "sobre de {que}: {} (zk-ssl-verify lo juzga)",
                     ruta.display()
                 );
             }
@@ -3375,7 +3590,16 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         if veredicto.detiene() || para_la_historia {
             // ⚠️ SE DETIENE. Seguir seria sobrescribir el hallazgo con ruido.
             eprintln!();
-            if para_la_historia {
+            if let Some(Consistencia::Bifurcacion { t, digest_previo, digest_nuevo }) = &cons {
+                // §714: la clase nueva, con su nombre entero.
+                eprintln!("⚠️⚠️ EL TESTIGO SE DETIENE: bifurcacion o reinicio sin diario en el mmrSize {t}");
+                eprintln!("   El operador firmo DOS cabezas en el mismo sitio de su historia:");
+                eprintln!("   {digest_previo} y {digest_nuevo}.");
+                eprintln!("   Un nodo con su diario no repite un mmrSize: o la historia se");
+                eprintln!("   bifurco, o el nodo arranco sin el diario y firmo otra cosa donde ya");
+                eprintln!("   habia firmado. Quien guardo la primera tiene una historia que el");
+                eprintln!("   operador ya no sirve.");
+            } else if para_la_historia {
                 eprintln!("⚠️⚠️ EL TESTIGO SE DETIENE: {:?}", cons.as_ref().expect("comprobado"));
                 eprintln!("   La cima nueva NO extiende a la custodiada: la historia se");
                 eprintln!("   bifurco o se recorto POR DEBAJO de una cabeza ya firmada.");
@@ -4351,7 +4575,8 @@ mod tests {
         let c = Consistencia::Extiende { de_t: 3, a_t: 4, camino: vec![cima(9)] };
         let l = linea_de_diario_con(&v, &servido, 1000, Some(&c));
         // §647: 3 -> 4 con la rotacion (RFC-0015 E4); la linea de cabeza no cambia de forma.
-        assert_eq!(l["v"], json!(4), "la version del diario SUBE");
+        // §714: 4 -> 5 con la clase `bifurcacion`; tampoco cambia la linea de cabeza.
+        assert_eq!(l["v"], json!(5), "la version del diario SUBE");
         assert_eq!(l["clase"], json!("nueva"), "la clase de la CABEZA no se pierde");
         assert_eq!(l["mmrRoot"], json!(cima(1)));
         assert_eq!(l["mmrSize"], json!("0x4"));
@@ -4711,8 +4936,9 @@ mod tests {
                    "lo que vio el cliente va en `motivo`");
         assert!(a["reason"].is_null(),
                 "el nodo no dijo nada: no se le atribuye un `reason`");
-        // §647: la clase nacio en el v3 y sigue en el v4 de la rotacion.
-        assert_eq!(a["v"], json!(4), "la clase nueva vive en el formato v3 y siguientes");
+        // §647: la clase nacio en el v3 y sigue en el v4 de la rotacion. §714, cambio
+        // declarado: y en el v5 de la bifurcacion; el test pinaba el 4.
+        assert_eq!(a["v"], json!(5), "la clase nueva vive en el formato v3 y siguientes");
     }
 
     #[test]
@@ -5291,7 +5517,10 @@ mod tests {
             "{:?}",
             r.hallazgos
         );
-        assert_eq!(r.sobres.len(), 1);
+        // §714, cambio declarado: el par lleva ademas el mismo mmrSize, y sale tambien el
+        // sobre de la bifurcacion, el modo 5. El test pinaba un sobre; son dos, el del modo 4 primero.
+        assert_eq!(r.sobres.len(), 2);
+        assert!(r.sobres[1].1.get("rama").is_some(), "el segundo, el modo 5");
         let sobre = &r.sobres[0].1;
         assert_eq!(sobre["tipo"], json!("ancla"));
         assert_eq!(sobre["cabeza"]["signature"], par["cabeza"]["signature"]);
@@ -6608,6 +6837,9 @@ mod tests {
     /// §712: **el diario_B**, declarado 0x2 y 0x3, embebido 1 y 1: la vista dividida de la hoja 1 y
     /// la bifurcacion del mmrSize 1, con su sobre. Y la MISMA cabeza con dos declarados no es
     /// hallazgo: es la misma firma sobre el mismo mensaje.
+    ///
+    /// ⚠️ §714, cambio declarado: la bifurcacion se llama `Bifurcacion` (era `NoExtiende`),
+    /// y arma tambien su sobre, el modo 5 del ancla: dos sobres, y no uno.
     #[test]
     fn el_auditor_cuenta_el_embebido_aunque_el_declarado_crezca() {
         let (a, b) = par_indice();
@@ -6628,12 +6860,14 @@ mod tests {
             r.hallazgos
         );
         assert!(
-            r.hallazgos.contains(&Hallazgo::NoExtiende { linea: 2, t: 1, digest_a: da, digest_b: db }),
+            r.hallazgos.contains(&Hallazgo::Bifurcacion { linea: 2, t: 1, digest_a: da, digest_b: db }),
             "{:?}",
             r.hallazgos
         );
-        assert_eq!(r.sobres.len(), 1, "el sobre del ancla, modo 4, se arma por el embebido");
-        assert_eq!(r.sobres[0].1["tipo"], json!("ancla"));
+        assert_eq!(r.sobres.len(), 2, "el modo 4 por el embebido, y el modo 5 por el mmrSize");
+        assert!(r.sobres.iter().all(|(n, s)| *n == 2 && s["tipo"] == json!("ancla")));
+        assert!(r.sobres[0].1.get("contraria").is_some() && r.sobres[1].1.get("rama").is_some());
+        assert!(r.sobres[1].1.get("actas").is_none(), "la misma clave no lleva cadena");
         let r = auditar_lineas(&[linea_indice(&a), linea_indice(&declarada(&a, "0x3"))]);
         assert!(r.hallazgos.is_empty(), "{:?}", r.hallazgos);
     }
@@ -6653,6 +6887,10 @@ mod tests {
         let s = sobres_de_divergencias(&x, &y, &c);
         assert_eq!(s.len(), 1);
         assert_eq!(s[0].0, 1);
+        // §714: y el de la bifurcacion, el modo 5, por el mmrSize.
+        let s = sobres_de_bifurcaciones(&x, &y, &c);
+        assert_eq!(s.len(), 1);
+        assert_eq!((s[0].0, s[0].1["rama"]["epochDigest"].clone()), (1, b["epochDigest"].clone()));
     }
 
     /// §712: **la vuelta viva** clasifica por el embebido: la contraria, servida con el declarado
@@ -6668,31 +6906,42 @@ mod tests {
     }
 
     /// §712: **la regla del reloj en el canal de la historia.** La contraria tiene el mismo mmrSize y
-    /// la misma cima que la cabeza, y otro digest: `no-extiende` en el 1, sin mover el ancla. La
-    /// cabeza otra vez no es hallazgo.
+    /// la misma cima que la cabeza, y otro digest: un hallazgo en el 1 que detiene, sin mover el
+    /// ancla. La cabeza otra vez no es hallazgo.
+    ///
+    /// ⚠️ §714, cambio declarado: el hallazgo era `NoExtiende { de_t: 1, a_t: 1 }`, y el test
+    /// se llamaba `un_mmr_size_ya_visto_con_otro_digest_no_extiende`. Ahora es `Bifurcacion`, con los
+    /// dos digests.
     #[test]
-    fn un_mmr_size_ya_visto_con_otro_digest_no_extiende() {
+    fn un_mmr_size_ya_visto_con_otro_digest_es_bifurcacion() {
         let (a, b) = par_indice();
         let mut m = Memoria::nueva();
         assert_eq!(al_llegar_cabeza(&mut m, &a), Some(Consistencia::Anclando { t: 1 }));
         let c = al_llegar_cabeza(&mut m, &b).expect("hallazgo");
-        assert_eq!(c, Consistencia::NoExtiende { de_t: 1, a_t: 1, camino: Vec::new() });
+        assert_eq!(
+            c,
+            Consistencia::Bifurcacion {
+                t: 1,
+                digest_previo: a["epochDigest"].as_str().unwrap().into(),
+                digest_nuevo: b["epochDigest"].as_str().unwrap().into(),
+            }
+        );
         assert!(c.detiene());
         assert_eq!(m.pareja().map(|(_, t)| t), Some(1), "el ancla no se mueve ante un hallazgo");
         assert_eq!(al_llegar_cabeza(&mut m, &a), None);
     }
 
-    /// §712: `bifurca`, la regla pura. Con la misma cima, siempre; con otra, solo si el nodo no va
-    /// por detras de lo custodiado: por detras es el reseteo visible del §295.
+    /// §712: `bifurca`, la regla pura.
+    ///
+    /// ⚠️ §714, cambio declarado: el test se llamaba
+    /// `bifurca_con_la_misma_cima_siempre_y_con_otra_si_no_va_por_detras`, y la regla tomaba la cima
+    /// y el «por detras». Ahora toma el digest de la primera cabeza del tamaño y el de esta: la cima y
+    /// quien va por detras ya no deciden (lo dicen, con cabezas, los tests de la vuelta viva).
     #[test]
-    fn bifurca_con_la_misma_cima_siempre_y_con_otra_si_no_va_por_detras() {
-        let v = ("0xc1".to_string(), "0xd1".to_string());
-        assert!(!bifurca(None, "0xc1", "0xd2", false), "un tamaño no visto no bifurca");
-        assert!(!bifurca(Some(&v), "0xc1", "0xd1", true), "la misma cabeza otra vez");
-        assert!(bifurca(Some(&v), "0xc1", "0xd2", false));
-        assert!(bifurca(Some(&v), "0xc1", "0xd2", true), "la misma cima, aunque vaya por detras");
-        assert!(bifurca(Some(&v), "0xc2", "0xd2", false), "otra historia en un tamaño visto");
-        assert!(!bifurca(Some(&v), "0xc2", "0xd2", true), "el reseteo visible no detiene");
+    fn bifurca_con_el_digest_otro_y_nada_mas() {
+        assert!(!bifurca(None, "0xd2"), "un tamaño no visto no bifurca");
+        assert!(!bifurca(Some("0xd1"), "0xd1"), "la misma cabeza otra vez");
+        assert!(bifurca(Some("0xd1"), "0xd2"), "otra cabeza en un tamaño visto");
     }
 
     fn cabeza_indice(cima: &str, t: u64, dg: &str) -> Value {
@@ -6705,31 +6954,48 @@ mod tests {
         })
     }
 
-    /// §712: **el recorte detiene aunque vaya por detras; el reseteo visible, no.** El testigo vio
-    /// los tamaños 1 a 4 y custodia el 4. El nodo vuelve con el 2 y OTRA cima -un reseteo: sigue
-    /// siendo `por-detras`, como desde el §295-; con el 3 y la MISMA cima de antes y otro digest -un
-    /// recorte de su diario-, `no-extiende`. Y en el 4, el custodiado, otra cima es `no-extiende` en
-    /// esa misma vuelta: antes se pedia camino y se esperaba a la cabeza siguiente.
+    /// §712: **el recorte detiene aunque vaya por detras.** El testigo vio los tamaños 1 a 4 y
+    /// custodia el 4. Con el 3 y la MISMA cima de antes y otro digest -un recorte de su diario-, un
+    /// hallazgo que detiene. Y en el 4, el custodiado, otra cima es un hallazgo en esa misma vuelta:
+    /// antes se pedia camino y se esperaba a la cabeza siguiente.
+    ///
+    /// ⚠️ §714, cambio declarado: el test se llamaba
+    /// `el_recorte_detiene_aunque_vaya_por_detras_y_el_reseteo_visible_no`, y fijaba que el nodo que
+    /// vuelve con el 2 y OTRA cima y otro digest seguia siendo `por-detras` -«un reseteo»-. Desde el
+    /// §714 eso es `bifurcacion`: bifurcacion o reinicio sin diario. Lo que sigue siendo `por-detras`
+    /// es el reseteo que vuelve a firmar los MISMOS digests -el del §295, sin trafico- y el tamaño que
+    /// no se vio. Los dos hallazgos de antes, `no-extiende` con `deT` igual a `aT`, son ahora
+    /// `bifurcacion`.
     #[test]
-    fn el_recorte_detiene_aunque_vaya_por_detras_y_el_reseteo_visible_no() {
+    fn el_recorte_y_el_reinicio_sin_diario_detienen_y_el_reseteo_que_repite_no() {
         let mut m = Memoria::nueva();
         for t in 1..=4u64 {
             let _ = al_llegar_cabeza(&mut m, &cabeza_indice(&format!("0xc{t}"), t, &format!("0xd{t}")));
         }
         m.pareja = Some(("0xc4".into(), 4));
         m.pendiente = None;
+        let bif = |t: u64, previo: &str, nuevo: &str| {
+            Some(Consistencia::Bifurcacion {
+                t,
+                digest_previo: previo.into(),
+                digest_nuevo: nuevo.into(),
+            })
+        };
         assert_eq!(
-            al_llegar_cabeza(&mut m, &cabeza_indice("0xe2", 2, "0xf2")),
-            Some(Consistencia::PorDetras { t_nodo: 2, pedido: 4 })
+            al_llegar_cabeza(&mut m, &cabeza_indice("0xc2", 2, "0xd2")),
+            Some(Consistencia::PorDetras { t_nodo: 2, pedido: 4 }),
+            "el reseteo sin trafico vuelve a firmar lo mismo: no detiene"
         );
         assert_eq!(
-            al_llegar_cabeza(&mut m, &cabeza_indice("0xc3", 3, "0xf3")),
-            Some(Consistencia::NoExtiende { de_t: 3, a_t: 3, camino: Vec::new() })
+            al_llegar_cabeza(&mut m, &cabeza_indice("0xc0", 0, "0xd0")),
+            Some(Consistencia::PorDetras { t_nodo: 0, pedido: 4 }),
+            "un tamaño que no se vio, tampoco"
         );
-        assert_eq!(
-            al_llegar_cabeza(&mut m, &cabeza_indice("0xe4", 4, "0xf4")),
-            Some(Consistencia::NoExtiende { de_t: 4, a_t: 4, camino: Vec::new() })
-        );
+        assert_eq!(al_llegar_cabeza(&mut m, &cabeza_indice("0xe2", 2, "0xf2")), bif(2, "0xd2", "0xf2"));
+        assert_eq!(al_llegar_cabeza(&mut m, &cabeza_indice("0xc3", 3, "0xf3")), bif(3, "0xd3", "0xf3"));
+        assert_eq!(al_llegar_cabeza(&mut m, &cabeza_indice("0xe4", 4, "0xf4")), bif(4, "0xd4", "0xf4"));
+        assert_eq!(al_llegar_cabeza(&mut m, &cabeza_indice("0xe0", 0, "0xf0")), bif(0, "0xd0", "0xf0"));
+        assert_eq!(m.pareja().map(|(_, t)| t), Some(4), "el ancla no se mueve ante un hallazgo");
     }
 
     /// §712: **los huerfanos de un nodo honesto son un hueco, y no detienen** -medido con el banco
@@ -6880,14 +7146,17 @@ mod tests {
         }
     }
 
-    /// §712: **un diario que cruza el reseteo visible del §295 no es una bifurcacion.** A ve los
-    /// tamaños 1 a 5 y, tras el reseteo -diario y libro nuevos, el mismo contador-, otra historia en
-    /// el 1 al 3 con la hoja creciendo; B empezo despues. El mismo `mmrSize` con OTRA cima se dice
-    /// y no cuenta: ni bifurcacion ni `interna`. Contarlo con cualquier cima daba tres
-    /// bifurcaciones y «A CONTIENE UNA VISTA DIVIDIDA INTERNA» (medido con estos mismos diarios).
-    /// Con la MISMA cima y otro digest sigue siendo bifurcacion.
+    /// §712: un diario que cruza un reseteo del §295: A ve los tamaños 1 a 5 y, tras el reseteo
+    /// -diario y libro nuevos, el mismo contador-, otra historia en el 1 al 3 con la hoja creciendo;
+    /// B empezo despues.
+    ///
+    /// ⚠️ §714, cambio declarado: el test se llamaba
+    /// `comparar_no_llama_bifurcacion_al_reseteo_visible` y fijaba lo contrario -«El mismo `mmrSize`
+    /// con OTRA cima se dice y no cuenta: ni bifurcacion ni `interna`»-. Desde el §714, del mismo
+    /// operador, es «bifurcacion o reinicio sin diario» con cualquier cima: tres bifurcaciones, y A se
+    /// contradice a si mismo. Lo que no cuenta es OTRO operador en los mismos tamaños.
     #[test]
-    fn comparar_no_llama_bifurcacion_al_reseteo_visible() {
+    fn comparar_cuenta_la_bifurcacion_con_cualquier_cima_del_mismo_operador() {
         let l = |hoja: u64, t: u64, cima: &str, dg: &str| {
             let mut v: Value = serde_json::from_str(&dia_con(&format!("{hoja:#x}"), hoja, dg, "0xdead"))
                 .expect("linea");
@@ -6899,25 +7168,32 @@ mod tests {
         a.extend((1..=3).map(|t| l(5 + t, t, &format!("0xf{t}"), &format!("0xe{t}"))));
         let b: Vec<String> = (1..=3).map(|t| l(5 + t, t, &format!("0xf{t}"), &format!("0xe{t}"))).collect();
         let c = comparar_lineas(&a, &b);
-        assert!(c.bifurcaciones.is_empty() && !c.interna_a && !c.interna_b, "{c:?}");
+        assert_eq!(c.bifurcaciones.iter().map(|d| d.indice).collect::<Vec<_>>(), vec![1, 2, 3], "{c:?}");
+        assert!(c.bifurcaciones.iter().all(|d| d.misma_clave));
+        assert!(c.interna_a && !c.interna_b, "A lleva las dos historias: {c:?}");
         assert!(c.divergencias.is_empty(), "{c:?}");
-        assert_eq!(c.otra_cima.iter().map(|d| d.indice).collect::<Vec<_>>(), vec![1, 2, 3]);
         let b = vec![l(9, 2, "0xc2", "0xe9")];
         let c = comparar_lineas(&a, &b);
         assert_eq!(c.bifurcaciones.iter().map(|d| d.indice).collect::<Vec<_>>(), vec![2]);
-        assert!(c.otra_cima.is_empty(), "{c:?}");
+        // OTRO operador en los mismos tamaños no bifurca nada.
+        let otro: Vec<String> = (1..=3)
+            .map(|t| l(t, t, &format!("0xa{t}"), &format!("0xb{t}")).replace("0xdead", "0xbeef"))
+            .collect();
+        let c = comparar_lineas(&a[..5], &otro);
+        assert!(c.bifurcaciones.is_empty() && !c.interna_b, "{c:?}");
     }
 
-    /// §712: **el «por detras» del auditor es la pareja custodiada**, la misma que la vuelta viva,
-    /// reconstruida del diario: la cabeza de la ultima linea `anclando` o
-    /// `extiende`. Cuatro lineas reales: A en el 4 (anclando), A en el 5, A en el 6 y D en el 5,
-    /// otra cima. Con la pareja en el 4, D no va por detras: `no-extiende` en el 5, lo que la
-    /// vuelta viva habria dicho. Con el mayor tamaño visto (el 6), el auditor callaria.
-    /// Si la linea del 6 es `extiende`, la pareja esta en el 6 y D va por detras: es el reseteo
-    /// visible, y no hay `no-extiende`. En los dos casos la hoja de D (5) baja de la mayor vista
-    /// (12): `indice-retrocede`, el reloj en frio.
+    /// §712: cuatro lineas reales: A en el 4 (anclando), A en el 5, A en el 6 y D en el 5, otra cima.
+    /// En los dos casos la hoja de D (5) baja de la mayor vista (12): `indice-retrocede`, el reloj en
+    /// frio.
+    ///
+    /// ⚠️ §714, cambio declarado: el test se llamaba
+    /// `el_auditor_juzga_por_detras_con_la_pareja_del_diario` y fijaba que, con la linea del 6
+    /// anotada `extiende`, D iba por detras y no habia hallazgo -«es el reseteo visible»-. Desde el
+    /// §714 el auditor no pregunta quien va por detras, ni lee las anotaciones para saberlo: D en el 5
+    /// es una bifurcacion con las dos, y su sobre, el modo 5, sale de las dos lineas.
     #[test]
-    fn el_auditor_juzga_por_detras_con_la_pareja_del_diario() {
+    fn el_auditor_no_pregunta_quien_va_por_detras() {
         let reloj = reloj_indice();
         let (a4, d5) = (reloj["vieja"].clone(), reloj["nueva"].clone());
         let a5 = sobre_indice(include_str!(
@@ -6931,8 +7207,8 @@ mod tests {
         let con = |c: &Value, k: Option<Consistencia>| linea_de_diario_con(&nueva, c, 0, k.as_ref()).to_string();
         let ext = Consistencia::Extiende { de_t: 4, a_t: 6, camino: Vec::new() };
         let pend = Consistencia::Pendiente { de_t: 4, esperando_t: 6 };
-        let no_ext = |r: &Auditoria| r.hallazgos.iter().filter(|h| h.clase() == "no-extiende").count();
-        for (seis, esperado) in [(pend, 1), (ext, 0)] {
+        let no_ext = |r: &Auditoria| r.hallazgos.iter().filter(|h| h.clase() == "bifurcacion").count();
+        for (seis, esperado) in [(pend, 1), (ext, 1)] {
             let r = auditar_lineas(&[
                 con(&a4, Some(Consistencia::Anclando { t: 4 })),
                 con(&a5, None),
@@ -6946,6 +7222,9 @@ mod tests {
                 "{:?}",
                 r.hallazgos
             );
+            assert_eq!(r.sobres.len(), 1, "{:?}", r.sobres);
+            assert_eq!(r.sobres[0].1["rama"]["epochDigest"], d5["epochDigest"]);
+            assert_eq!(r.sobres[0].1["cabeza"]["epochDigest"], a5["epochDigest"]);
         }
     }
 
@@ -6958,5 +7237,227 @@ mod tests {
         assert!(ausentes(&[dia_con("0x3", 1, "0xaa", "0xdead")], &nodo).is_empty());
         let nodo = vec![dia_con("0x2", 5, "0xaa", "0xdead")];
         assert_eq!(ausentes(&[dia_con("0x2", 1, "0xaa", "0xdead")], &nodo), vec![1]);
+    }
+
+    // ── §714: la bifurcacion con el mismo mmrSize ──
+    //
+    // Cabezas de verdad del catalogo. De la corrida del sello de `tools/banco_bifurcacion.sh`
+    // (semilla '39'): la de A en el 5 (hoja 11) y en el 6 (hoja 12), y la de D -el operador
+    // restaurado de antes de los huerfanos- en el 5, hoja 5, con OTRA cima. De la cabeza v6 del
+    // cable, una de OTRA clave en el 5. Y dos genesis de la clave de la suite, de dos corridas de
+    // `tools/banco_completitud.sh`: el mmrSize 0, la hoja 0, dos digests.
+
+    fn a5_a6_d5() -> (Value, Value, Value) {
+        let bif = sobre_indice(include_str!(
+            "../../../spec/vectors/paquete/rechazo-ext-bifurcada-mismo-mmrSize.json"
+        ));
+        let huerfanos =
+            sobre_indice(include_str!("../../../spec/vectors/paquete/extension-sobre-huerfanos.json"));
+        (bif["vieja"].clone(), huerfanos["nueva"].clone(), reloj_indice()["nueva"].clone())
+    }
+
+    fn dg_de(c: &Value) -> String {
+        c["epochDigest"].as_str().expect("epochDigest").to_string()
+    }
+
+    /// ⚠️ §714: **la vuelta viva detiene la bifurcacion con OTRA cima aunque vaya por detras.** El
+    /// testigo vio A en el 5 y en el 6, y custodia el 6. Llega D en el 5: otra cima, y una hoja que
+    /// no vio (la 5), asi que `clasificar` la da `Nueva`. El §712 la dejaba en `por-detras`, el
+    /// reseteo visible. Desde el §714 es `bifurcacion` en el 5, con los dos digests: detiene, no se
+    /// cofirma y el ancla no se mueve.
+    #[test]
+    fn la_vuelta_viva_detiene_la_bifurcacion_con_otra_cima_aunque_vaya_por_detras() {
+        let (a5, a6, d5) = a5_a6_d5();
+        assert_ne!(a5["mmrRoot"], d5["mmrRoot"], "premisa: otra cima");
+        let mut m = Memoria::nueva();
+        assert!(matches!(una_vuelta(&a5, &mut m), Veredicto::Nueva { indice: 11, .. }));
+        assert_eq!(al_llegar_cabeza(&mut m, &a5), Some(Consistencia::Anclando { t: 5 }));
+        assert!(matches!(una_vuelta(&a6, &mut m), Veredicto::Nueva { indice: 12, .. }));
+        assert_eq!(al_llegar_cabeza(&mut m, &a6), None, "sin camino pendiente: lo pide el bucle");
+        // Como si la extension del 5 al 6 se hubiera juzgado: la pareja, en el 6.
+        m.pareja = Some((a6["mmrRoot"].as_str().expect("cima").into(), 6));
+        let v = una_vuelta(&d5, &mut m);
+        assert!(matches!(v, Veredicto::Nueva { indice: 5, .. }), "una hoja no vista: {v:?}");
+        let c = al_llegar_cabeza(&mut m, &d5);
+        assert_eq!(
+            c,
+            Some(Consistencia::Bifurcacion { t: 5, digest_previo: dg_de(&a5), digest_nuevo: dg_de(&d5) })
+        );
+        assert!(c.as_ref().map_or(false, Consistencia::detiene));
+        assert!(!cofirmable(&v, c.as_ref()), "una bifurcacion no se cofirma");
+        assert_eq!(m.pareja().map(|(_, t)| t), Some(6), "el ancla no se mueve ante un hallazgo");
+    }
+
+    /// ⚠️ §714: **la historia es del operador.** Una rotacion juzgada no la borra: una cabeza de la
+    /// clave nueva en un tamaño que firmo la vieja, con el mismo digest, no dice nada; con otro, es
+    /// `bifurcacion` (las claves que las actas unen).
+    #[test]
+    fn la_rotacion_no_borra_la_historia_del_operador() {
+        let mut m = Memoria::nueva();
+        for t in 1..=3u64 {
+            let c = cabeza_reloj(&format!("0xc{t}"), t, &format!("0xd{t}"), "0xvieja", t);
+            let _ = al_llegar_cabeza(&mut m, &c);
+        }
+        m.rotar("0xnueva", Rotacion { desde: 10, hasta: None, eslabones: 1 });
+        assert_eq!(al_llegar_cabeza(&mut m, &cabeza_reloj("0xc2", 2, "0xd2", "0xnueva", 11)), None);
+        assert_eq!(
+            al_llegar_cabeza(&mut m, &cabeza_reloj("0xc3", 3, "0xe3", "0xnueva", 12)),
+            Some(Consistencia::Bifurcacion { t: 3, digest_previo: "0xd3".into(), digest_nuevo: "0xe3".into() })
+        );
+    }
+
+    /// ⚠️ §714: **la linea de la bifurcacion**: clase `bifurcacion`, su tamaño y el digest de la
+    /// primera cabeza que se vio con el. El de esta va en la propia linea, una sola vez. Y la version
+    /// del diario es la 5.
+    #[test]
+    fn la_linea_de_la_bifurcacion_lleva_su_tamano_y_el_digest_previo() {
+        let v = Veredicto::Nueva { indice: 8, digest: "0xbb".into() };
+        let s = json!({"available": true, "index": "0x9", "epochDigest": "0xbb", "mmrSize": "0x5"});
+        let c = Consistencia::Bifurcacion {
+            t: 5,
+            digest_previo: "0xaa".into(),
+            digest_nuevo: "0xbb".into(),
+        };
+        let l = linea_de_diario_con(&v, &s, 1000, Some(&c));
+        assert_eq!(l["v"], json!(5));
+        assert_eq!(l["consistencia"], json!({"clase": "bifurcacion", "t": "0x5", "digestPrevio": "0xaa"}));
+        assert_eq!(l["epochDigest"], json!("0xbb"), "el digest nuevo, en su sitio");
+        assert!(c.detiene());
+    }
+
+    /// ⚠️ §714: **el auditor agrupa por operador, y el genesis cuenta.** A en el 5 y una cabeza de
+    /// OTRA clave en el 5: `cambio-de-clave`, y no bifurcacion -no es el mismo operador-. A en el 5 y
+    /// D en el 5: bifurcacion, con su sobre sin cadena. Dos genesis de la clave de la suite:
+    /// bifurcacion en el 0, que el §712 no juzgaba («Un tamaño 0 no se juzga»).
+    #[test]
+    fn el_auditor_agrupa_por_operador_y_juzga_el_genesis() {
+        let (a5, _, d5) = a5_a6_d5();
+        let otra = sobre_indice(include_str!("../../../spec/vectors/cable/positivo-cabeza-v6.json"))
+            ["result"]
+            .clone();
+        assert_eq!(otra["mmrSize"], a5["mmrSize"], "premisa: el mismo tamaño");
+        let clases = |r: &Auditoria| r.hallazgos.iter().map(|h| h.clase()).collect::<Vec<_>>();
+        let r = auditar_lineas(&[linea_indice(&a5), linea_indice(&otra)]);
+        assert_eq!(r.reverificadas, 2);
+        assert!(clases(&r).contains(&"cambio-de-clave"), "{:?}", clases(&r));
+        assert!(!clases(&r).contains(&"bifurcacion"), "otro operador: {:?}", clases(&r));
+        assert!(r.sobres.is_empty());
+
+        let r = auditar_lineas(&[linea_indice(&a5), linea_indice(&d5)]);
+        assert!(
+            r.hallazgos.contains(&Hallazgo::Bifurcacion {
+                linea: 2,
+                t: 5,
+                digest_a: dg_de(&a5),
+                digest_b: dg_de(&d5)
+            }),
+            "{:?}",
+            r.hallazgos
+        );
+        assert_eq!(r.sobres.len(), 1);
+        assert_eq!(r.sobres[0].1["rama"]["signature"], d5["signature"]);
+        assert!(r.sobres[0].1.get("actas").is_none());
+
+        let g1 = sobre_indice(include_str!(
+            "../../../spec/vectors/0.4/completitud/lote-rechazado-con-prueba.json"
+        ))["resolucion"]["sobre"]["cabeza"]
+            .clone();
+        let g2 = sobre_indice(include_str!("../../../spec/vectors/completitud/prenda-aceptada.json"))
+            ["resolucion"]["sobre"]["cabeza"]
+            .clone();
+        let r = auditar_lineas(&[linea_indice(&g1), linea_indice(&g2)]);
+        assert_eq!(r.reverificadas, 2);
+        assert!(
+            r.hallazgos.contains(&Hallazgo::Bifurcacion {
+                linea: 2,
+                t: 0,
+                digest_a: dg_de(&g1),
+                digest_b: dg_de(&g2)
+            }),
+            "{:?}",
+            r.hallazgos
+        );
+    }
+
+    /// ⚠️ §714: **`--comparar` une dos claves con la cadena de un diario.** A con la clave k1 en
+    /// los tamaños 1 y 2; B con la k2 en el 2, otro digest. Sin cadena son dos operadores: nada. Con
+    /// una linea de B que trae las actas que listan k1 y k2 -la de una rotacion-, el mismo operador:
+    /// bifurcacion con «misma clave: false», y su sobre lleva la cadena. Las mayusculas del hex no
+    /// cuentan.
+    #[test]
+    fn comparar_une_dos_claves_con_la_cadena_de_un_diario() {
+        let l = |hoja: u64, t: u64, dg: &str, k: &str| {
+            let mut v: Value =
+                serde_json::from_str(&dia_con(&format!("{hoja:#x}"), hoja, dg, k)).expect("linea");
+            v["mmrSize"] = json!(format!("{t:#x}"));
+            v["mmrRoot"] = json!("0xc");
+            v.to_string()
+        };
+        let a = vec![l(1, 1, "0xd1", "0xaa"), l(2, 2, "0xd2", "0xaa")];
+        let b = vec![l(9, 2, "0xe2", "0xbb")];
+        let c = comparar_lineas(&a, &b);
+        assert!(c.bifurcaciones.is_empty(), "dos operadores: {c:?}");
+        assert!(sobres_de_bifurcaciones(&a, &b, &c).is_empty());
+        let actas = json!([{"acta": {"clave": "0xAA"}}, {"acta": {"clave": "0xbb"}}]);
+        let rotada = json!({"v": DIARIO_VERSION, "clase": "rotada", "actas": actas}).to_string();
+        let b = vec![rotada, b[0].clone()];
+        let c = comparar_lineas(&a, &b);
+        assert_eq!(c.bifurcaciones.len(), 1, "{c:?}");
+        assert_eq!((c.bifurcaciones[0].indice, c.bifurcaciones[0].misma_clave), (2, false));
+        let s = sobres_de_bifurcaciones(&a, &b, &c);
+        assert_eq!(s.len(), 1);
+        assert_eq!(s[0].1["actas"], actas, "la cadena va en el sobre: sin ella el kit lo rechazaria");
+        assert_eq!(s[0].1["rama"]["epochDigest"], json!("0xe2"));
+    }
+
+    /// ⚠️ §714 · **`--comparar` solo cree las cabezas que el
+    /// testigo verifico.** A, honesto: la clave 0xdead en los tamaños 1 y 2 (hojas 1 y 2). B es otro
+    /// testigo honesto al que un tercero en el camino inyecto una cabeza FALSA con la clave del
+    /// operador, el `mmrSize` 2 y la hoja 2, y otro digest. B la anoto con la clase que le toca, y
+    /// luego vio la de verdad. Con `no-verifica` -y con las demas clases cuya cabeza no se verifico-,
+    /// ni bifurcacion, ni divergencia por indice, ni B contradiciendose, ni sobre. La misma linea
+    /// anotada `nueva` si cuenta: el filtro es la clase, no la linea. Una linea SIN clase -la del
+    /// diario del nodo- cuenta como antes. Y el sobre de la divergencia toma la primera cabeza
+    /// VERIFICADA del indice, la misma que el mapa: no la inyectada que va delante.
+    #[test]
+    fn comparar_no_cree_la_cabeza_que_el_testigo_no_verifico() {
+        let l = |hoja: u64, t: u64, dg: &str, clase: Option<&str>| {
+            let mut v: Value =
+                serde_json::from_str(&dia_con(&format!("{hoja:#x}"), hoja, dg, "0xdead")).expect("linea");
+            v["mmrSize"] = json!(format!("{t:#x}"));
+            v["mmrRoot"] = json!("0xc");
+            match clase {
+                Some(c) => v["clase"] = json!(c),
+                None => {
+                    v.as_object_mut().expect("objeto").remove("clase");
+                }
+            }
+            v.to_string()
+        };
+        let a = vec![l(1, 1, "0xd1", Some("nueva")), l(2, 2, "0xd2", Some("nueva"))];
+        for clase in ["no-verifica", "rotada", "cambio-de-clave", "solapamiento", "sin-firma", "otra"] {
+            let b = vec![l(2, 2, "0xe2", Some(clase)), l(2, 2, "0xd2", Some("nueva"))];
+            let c = comparar_lineas(&a, &b);
+            assert!(c.bifurcaciones.is_empty(), "{clase}: {c:?}");
+            assert!(c.divergencias.is_empty(), "{clase}: {c:?}");
+            assert!(!c.interna_a && !c.interna_b, "{clase}: {c:?}");
+            assert!(sobres_de_bifurcaciones(&a, &b, &c).is_empty(), "{clase}");
+        }
+        for clase in [Some("nueva"), None] {
+            let b = vec![l(2, 2, "0xe2", clase)];
+            let c = comparar_lineas(&a, &b);
+            assert_eq!(c.bifurcaciones.len(), 1, "{clase:?}: {c:?}");
+            assert_eq!(c.divergencias.len(), 1, "{clase:?}: {c:?}");
+        }
+        // B vio la de otra rama, 0xe2, y antes la inyectada, 0xf2: el sobre lleva la verificada.
+        let b = vec![l(2, 2, "0xf2", Some("no-verifica")), l(2, 2, "0xe2", Some("nueva"))];
+        let c = comparar_lineas(&a, &b);
+        assert_eq!((c.divergencias.len(), c.divergencias[0].digest_b.as_str()), (1, "0xe2"), "{c:?}");
+        let s = sobres_de_divergencias(&a, &b, &c);
+        assert_eq!(s.len(), 1, "{c:?}");
+        assert_eq!(s[0].1["contraria"]["epochDigest"], json!("0xe2"));
+        let s = sobres_de_bifurcaciones(&a, &b, &c);
+        assert_eq!(s.len(), 1, "{c:?}");
+        assert_eq!(s[0].1["rama"]["epochDigest"], json!("0xe2"));
     }
 }

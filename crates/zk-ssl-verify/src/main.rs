@@ -2593,7 +2593,7 @@ fn hex_de_digest(d: &Digest) -> String {
 
 /// **El sobre del ANCLA** (RFC-0012 E3, §586): una cabeza firmada y, si
 /// viajan, el ancla publicada en el medio y lo que la une a la cabeza.
-/// Cuatro modos:
+/// Cuatro modos; desde el §714, cinco:
 ///
 /// 1. La cabeza SOLA: el mando DERIVA el ancla y su huella y las imprime —
 ///    el productor de B10.6. Lo impreso es lo que se publica; quien
@@ -2610,12 +2610,17 @@ fn hex_de_digest(d: &Digest) -> String {
 ///    misma clave con el MISMO indice embebido y contenidos distintos.
 ///    DETECCION con salida 0, el molde del conflicto (§430): el sobre que
 ///    la exhibe no falla — delata, y solo el operador pudo producirla.
+/// 5. ⚠️ §714 · Con `rama`: la BIFURCACION ([`bifurcacion_del_ancla`]) — dos cabezas
+///    firmadas del MISMO operador (la misma clave, o claves que las `actas` unen) con el MISMO
+///    `mmrSize` y digests distintos. DETECCION con salida 0, como el modo 4.
 ///
 /// El indice del ancla es el EMBEBIDO (D-C): el declarado solo esta
 /// acotado por abajo (§399), y dos cabezas honestas pueden compartirlo.
 fn verificar_ancla(p: &serde_json::Value) -> Result<(), String> {
     // Las reglas de FORMA, antes de tocar la criptografia: que combinacion
     // de claves es un sobre y cual no.
+    // ⚠️ §714: decide la PRESENCIA de la clave, tambien con `null`: `get` da
+    //    `Some(Null)`. Lo fijan los vectores `*-null` de `ancla/`; la segunda lo imita con `in`.
     if p.get("ancla").is_some() && p.get("contraria").is_some() {
         return Err(err(
             "un sobre con contraria no lleva ancla: la vista dividida se demuestra con las \
@@ -2625,6 +2630,15 @@ fn verificar_ancla(p: &serde_json::Value) -> Result<(), String> {
     }
     if p.get("camino").is_some() && p.get("ancla").is_none() {
         return Err(err("camino sin ancla: no hay nada que extender".into()));
+    }
+    // §714: la rama va sola con la cabeza, como la contraria. Despues de las dos de arriba:
+    // sus rojos siguen siendo los suyos.
+    if p.get("rama").is_some() && (p.get("ancla").is_some() || p.get("contraria").is_some()) {
+        return Err(err(
+            "un sobre con rama no lleva ancla ni contraria: la bifurcacion se demuestra con las \
+             dos cabezas solas"
+                .into(),
+        ));
     }
     let c = p
         .get("cabeza")
@@ -2649,6 +2663,9 @@ fn verificar_ancla(p: &serde_json::Value) -> Result<(), String> {
         "1/3 la cabeza (v{version}) recompone su digest y su firma verifica \
          (indice embebido {embebido})"
     );
+    if let Some(rama) = p.get("rama") {
+        return bifurcacion_del_ancla(p, (c, &clave_hex, t, cima, epoch_digest, embebido), rama);
+    }
 
     match (p.get("ancla"), p.get("contraria")) {
         (None, None) => {
@@ -2819,6 +2836,96 @@ fn verificar_ancla(p: &serde_json::Value) -> Result<(), String> {
         }
         (Some(_), Some(_)) => unreachable!("la regla de forma corta antes"),
     }
+}
+
+/// ⚠️ §714 · **El modo 5 del ancla: la BIFURCACION.** Dos cabezas firmadas del MISMO
+/// operador con el MISMO `mmrSize` y digests distintos: dos cabezas en el mismo sitio de la
+/// historia. Un nodo honesto con su diario no repite un `mmrSize`: la hoja del MMR entra en el mismo
+/// sitio que anota el diario, y al arrancar el diario siembra el MMR (`zk-ssl-node`, `latido.rs`,
+/// `conservar`, y la siembra en `main.rs`). Las dos solo salen de una bifurcacion o de un reinicio
+/// sin el diario -o con uno que perdio lineas-. DETECTAR NO ES DISTINGUIR: este sobre no dice cual
+/// de las dos, y no hace falta. Las dos ramas existen firmadas, y quien guardaba una tiene una
+/// historia que el operador ya no sirve.
+///
+/// Hasta aqui no habia sobre que lo DELATARA. El de extension la RECHAZA con su causa (§712: «mismo
+/// mmrSize y digest distinto»), y un rechazo no es una delacion. El modo 4 solo la ve si ademas se
+/// repite la hoja. DETECCION con salida 0, el molde del modo 4 y del conflicto.
+///
+/// - La `rama` se verifica ENTERA, como la cabeza: dos firmas de verdad o no hay delacion.
+/// - **El mismo operador**: la misma `publicKey`, o claves distintas que las `actas` unen, con el
+///   juez de los ocho sitios que exigen continuidad ([`misma_continuidad`]). Dos operadores en el
+///   mismo `mmrSize` no bifurcan nada: cada uno lleva su historia.
+/// - **El mismo `mmrSize`**, con cualquier cima: con la misma, las dos ramas divergen en esta
+///   cabeza; con otra, antes. El genesis (`mmrSize` 0) cuenta: dos cabezas que dicen «ninguna
+///   cabeza antes» con contenidos distintos son dos historias desde el principio.
+/// - **Digests distintos**: el mismo digest es la misma cabeza, aunque la firmen dos hojas.
+fn bifurcacion_del_ancla(
+    p: &serde_json::Value,
+    (c, clave_hex, t, cima, epoch_digest, embebido): (&serde_json::Value, &str, u64, Digest, Digest, u64),
+    rama: &serde_json::Value,
+) -> Result<(), String> {
+    // ⚠️ §714: la rama es el SUJETO de sus rojos. Un `"rama": null`, una cadena o
+    //    una rama sin `formatVersion` decian «falta formatVersion o no es cadena 0x», sin nombrarla, y
+    //    la segunda decia otra cosa, o revento con la cadena (medido). El orden es el de siempre: que
+    //    sea un objeto, su version, y despues la cabeza entera (available, recomposicion, firma).
+    if !rama.is_object() {
+        return Err(err("rama: no es una cabeza (objeto)".into()));
+    }
+    let version_r = u64_de(rama, "formatVersion").map_err(|e| format!("rama: {e}"))?;
+    match VersionCabeza::try_from(version_r) {
+        Ok(v) if v.lleva_mmr() => {}
+        _ => {
+            return Err(err(format!(
+                "rama: formatVersion {version_r}: el ancla lee cabezas {}: la pareja del MMR \
+                 viaja firmada desde ellas",
+                VersionCabeza::texto_con_mmr()
+            )))
+        }
+    }
+    let (cima_r, t_r, clave_r, _) = cabeza_v3_verificada(rama, "rama")?;
+    let embebido_r = indice_embebido(rama, "rama")?;
+    let operador = match misma_continuidad(p, (c, clave_hex), (rama, &clave_r))? {
+        None => "misma publicKey: el mismo firmante".to_string(),
+        Some(r) => format!(
+            "claves distintas que las actas unen ({} eslabon(es), la posterior desde la hoja {}): \
+             el mismo OPERADOR",
+            r.eslabones, r.desde
+        ),
+    };
+    println!(
+        "2/3 la rama recompone su digest y su firma verifica (indice embebido {embebido_r}); \
+         {operador}"
+    );
+    if t_r != t {
+        return Err(err(format!(
+            "bifurcacion: mmrSize distinto ({t}, {t_r}) - dos cabezas en sitios distintos de la \
+             historia no la bifurcan: el orden entre ellas lo juzga la extension"
+        )));
+    }
+    let digest_r = digest_de(rama, "epochDigest")?;
+    if digest_r == epoch_digest {
+        return Err(err(format!(
+            "bifurcacion: las dos cabezas son LA MISMA (mmrSize {t} y el mismo digest): no hay \
+             bifurcacion"
+        )));
+    }
+    let donde = if cima_r == cima {
+        "la MISMA cima: las dos ramas divergen en esta cabeza"
+    } else {
+        "OTRA cima: las dos ramas divergen antes de esta cabeza"
+    };
+    let tambien = if embebido_r == embebido {
+        format!(" (y la misma hoja {embebido}: tambien es la vista dividida del modo 4)")
+    } else {
+        String::new()
+    };
+    println!("3/3 el mismo mmrSize {t} y digests DISTINTOS, con {donde}{tambien}");
+    println!(
+        "VERDE: BIFURCACION - el operador firmo DOS cabezas distintas con el mmrSize {t}: \
+         bifurcacion o reinicio sin diario. Es DETECCION del operador: un nodo con su diario no \
+         repite un mmrSize, y solo quien tiene la clave pudo firmarlas"
+    );
+    Ok(())
 }
 
 /// ⚠️ §686 · **El sobre del SOLAPAMIENTO** (RFC-0015 E5c; D-C, reglas 3 y 4): una cabeza firmada y
@@ -3807,6 +3914,115 @@ mod tests {
         otra["ancla"]["mmrRoot"] = otra["ancla"]["epochDigest"].clone();
         let e = verificar_paquete(&otra).unwrap_err();
         assert!(e.contains("NO extiende el ancla"), "la consistencia va antes: {e}");
+    }
+
+    /// ⚠️ §714 · **el modo 5 del ancla DELATA la bifurcacion.** Los doce sobres nuevos de
+    /// `ancla/`, derivados de cabezas ya capturadas: los tres positivos -la misma cima, otra cima y
+    /// el genesis- son VERDE, y cada negativo cae con su causa. Y lo que los vectores no dicen: la
+    /// delacion no depende de que cabeza vaya en `cabeza` y cual en `rama`, tampoco con las actas
+    /// (la continuidad la ordena el indice embebido).
+    #[test]
+    fn el_modo_5_del_ancla_delata_la_bifurcacion() {
+        let leer = |t: &str| -> serde_json::Value { serde_json::from_str(t).unwrap() };
+        let cambiada = |t: &str| {
+            let mut s = leer(t);
+            let (c, r) = (s["cabeza"].clone(), s["rama"].clone());
+            s["cabeza"] = r;
+            s["rama"] = c;
+            s
+        };
+        for sobre in [
+            include_str!("../../../spec/vectors/ancla/bifurcacion-misma-cima.json"),
+            include_str!("../../../spec/vectors/ancla/bifurcacion-otra-cima.json"),
+            include_str!("../../../spec/vectors/ancla/bifurcacion-genesis.json"),
+        ] {
+            assert_eq!(verificar_paquete(&leer(sobre)), Ok(()));
+            assert_eq!(verificar_paquete(&cambiada(sobre)), Ok(()), "con los papeles cambiados");
+        }
+        let distinto = "bifurcacion: mmrSize distinto";
+        for (sobre, causa) in [
+            (
+                include_str!("../../../spec/vectors/ancla/neg-rama-con-ancla.json"),
+                "un sobre con rama no lleva ancla ni contraria",
+            ),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-rama-con-contraria.json"),
+                "un sobre con rama no lleva ancla ni contraria",
+            ),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-rama-v2.json"),
+                "rama: formatVersion 2: el ancla lee cabezas",
+            ),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-rama-firma-de-otra-cabeza.json"),
+                "rama: cabeza: la firma es VALIDA pero de otro mensaje",
+            ),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-rama-de-otra-clave.json"),
+                "las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante",
+            ),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-rama-actas-que-no-unen.json"),
+                "las cabezas llevan claves DISTINTAS y las actas no las unen",
+            ),
+            (include_str!("../../../spec/vectors/ancla/neg-rama-otro-mmrSize.json"), distinto),
+            (include_str!("../../../spec/vectors/ancla/neg-rama-otro-mmrSize-con-actas.json"), distinto),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-rama-la-misma-cabeza.json"),
+                "bifurcacion: las dos cabezas son LA MISMA",
+            ),
+        ] {
+            let e = verificar_paquete(&leer(sobre)).unwrap_err();
+            assert!(e.starts_with(causa), "se esperaba «{causa}» y salio: {e}");
+        }
+        // Con las actas y los papeles cambiados, el operador se sigue aceptando y cae el mmrSize.
+        let e = verificar_paquete(&cambiada(include_str!(
+            "../../../spec/vectors/ancla/neg-rama-otro-mmrSize-con-actas.json"
+        )))
+        .unwrap_err();
+        assert!(e.starts_with("bifurcacion: mmrSize distinto (4, 2)"), "{e}");
+    }
+
+    /// ⚠️ §714 · **la forma la decide la PRESENCIA, y la rama
+    /// es el sujeto de sus rojos.** Los nueve sobres nuevos de `ancla/`. Cinco con una clave en
+    /// `null`: la referencia la cuenta como presente (`get` da `Some(Null)`), y la segunda la tomaba
+    /// por ausente y daba VERDE. Cuatro con la rama mal formada: `null`, una cadena, sin
+    /// `formatVersion` y una v2 no disponible -la version antes que `available`-; los tres primeros
+    /// decian «falta formatVersion o no es cadena 0x», sin nombrar la rama.
+    #[test]
+    fn la_forma_por_presencia_y_la_rama_como_sujeto() {
+        let leer = |t: &str| -> serde_json::Value { serde_json::from_str(t).unwrap() };
+        let rama_con = "un sobre con rama no lleva ancla ni contraria";
+        let no_objeto = "rama: no es una cabeza (objeto)";
+        for (sobre, causa) in [
+            (include_str!("../../../spec/vectors/ancla/neg-rama-con-ancla-null.json"), rama_con),
+            (include_str!("../../../spec/vectors/ancla/neg-rama-con-contraria-null.json"), rama_con),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-contraria-con-ancla-null.json"),
+                "un sobre con contraria no lleva ancla",
+            ),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-camino-null-sin-ancla.json"),
+                "camino sin ancla: no hay nada que extender",
+            ),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-ancla-exacta-con-camino-null.json"),
+                "el ancla declara un indice (6) que no es ANTERIOR",
+            ),
+            (include_str!("../../../spec/vectors/ancla/neg-rama-null.json"), no_objeto),
+            (include_str!("../../../spec/vectors/ancla/neg-rama-cadena.json"), no_objeto),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-rama-sin-formatVersion.json"),
+                "rama: falta formatVersion o no es cadena 0x",
+            ),
+            (
+                include_str!("../../../spec/vectors/ancla/neg-rama-v2-no-disponible.json"),
+                "rama: formatVersion 2: el ancla lee cabezas",
+            ),
+        ] {
+            let e = verificar_paquete(&leer(sobre)).unwrap_err();
+            assert!(e.starts_with(causa), "se esperaba «{causa}» y salio: {e}");
+        }
     }
 
     /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.

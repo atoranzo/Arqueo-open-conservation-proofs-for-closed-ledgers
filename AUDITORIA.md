@@ -70402,3 +70402,307 @@ bancos.
 - **La lista de los módulos de tests que el censo de las bandas salta es a mano.** Un módulo de
   tests nuevo que oculte sin banda sale ROJO en el censo hasta que entra en `SOLO_DE_TESTS`; y lo
   que entra en ella tiene que seguir siendo de sólo tests, o vuelve a salir ROJO.
+
+## §714 — la bifurcación con el mismo mmrSize es detección: el modo 5 del ancla, y el testigo que la detiene con cualquier cima
+
+El commit que lleva este asiento, sobre `4f199a5` (el §713). Un solo sello: en el kit
+(`crates/zk-ssl-verify/src/main.rs`), el modo 5 del sobre del ancla, `bifurcacion_del_ancla`, y la
+forma decidida por la presencia de la clave; en `tools/segunda/verificador.py`, el mismo modo con
+los mismos textos, la presencia como en el kit, y la firma antes que el preámbulo en
+`verificar_cabeza`; en `tools/segunda/README.md`, su párrafo, su tabla, la cifra del párrafo del
+§712, la chuleta de órdenes y la cuenta de los manifiestos bajo `wasmtime`, y la misma cuenta en la
+fila del tercer hito de `doc/integracion-vertical-evaluacion.md`; en el testigo
+(`crates/zk-ssl-cli/src/witness.rs`), la clase `bifurcacion` en la vuelta viva, en `--auditar` y en
+`--comparar`, con `DIARIO_VERSION` 5, y su versión en la D-A del RFC-0021; en el nodo
+(`crates/zk-ssl-node/src/main.rs` y `latido.rs`), la siembra del MMR sacada a `hojas_mmr_iniciales`
+y el hueco de `diario::anotar`, declarado con su test; veintiún vectores nuevos en `ancla/`, con
+líneas añadidas al final de su manifiesto y sus huellas; `tools/banco_bifurcacion.sh`, con una
+escena 5 nueva, y `tools/banco_consistencia.sh` y `tools/banco_mentiroso_vista.sh`, adaptados;
+`spec/PAQUETE.md` (2.12, las secciones 3, 4, 5, 6, 6.1, 9 y 10), con la fila de su texto nuevo en
+la tabla de `tools/check_catalogo.py`; el RFC-0012, en su D-E; los pines de `tools/canon.sh`; las
+cifras de tests de los documentos vivos; el recuento de `spec/vectors/` en los dos README y en la
+lista de la superficie de `spec/RPC.md`; y este asiento. Lo escribe y lo comprueba una sesión de
+Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: un operador que firmaba dos cabezas distintas en el
+mismo sitio de su historia no tenía sobre que lo delatara, y el testigo lo dejaba pasar si iba por
+detrás. Sale con los demás arreglos de la publicación conjunta. Lo midió en privado una sesión de
+Claude Code, sobre `161a233` con los arreglos del §711 al §713; se escribió sobre `e4eb764`, con el
+§711 al §713 encima, este sello lo lleva a `4f199a5` («Al portar», abajo), y lo que se volvió a
+correr aquí está en «Medido sobre este árbol». El canon entero se corre sobre la punta de la serie,
+no sobre cada sello.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), con el §711 al
+§713 encima, y los lleva a `4f199a5` —el §713 ya llevado a `7dd6409`, el §895, sobre el §711 y el
+§712 llevados— una sesión de Claude Code, no el autor: primero sobre el §713 llevado a `3a4176c`
+(el §829), y de ahí, con lo resuelto contra esos, sobre los tres sellos del §863 al §865, y luego
+sobre los seis del §890 al §895, que git funde sin choque con este sello («Al portar», en el §711).
+Lo que git no fundía, o fundía y quedaba falso, se resolvió a mano:
+
+- **El catálogo de rechazos, del §777 de `main`.** `tools/check_catalogo.py` salía ROJO con el sello
+  solo: el envoltorio `bifurcacion_del_ancla::rama: {}` —el `formatVersion` de la rama leído con
+  `u64_de`— no tenía fila en su `TABLA_E`, y su texto, `rama: {e}`, no tenía entrada en la sección
+  5. La fila entra como la de `resolucion.data.campos` (`'kit', 'u64_de'`), y la entrada, con su
+  glosa: `rama: falta formatVersion o no es cadena 0x`, que la sección 5 ya traía entre lo que se
+  exige de una cabeza, es su ejemplo. El código no se toca: el código manda.
+- **`anotar`, después del §815 de `main`.** El hueco que el sello declara es el de
+  `diario::anotar`, el diario de cabezas, que falla abierto (§272). El `anotar` de
+  `crates/zk-ssl-node/src/main.rs` es el del registro de recepción, y desde el §815, si falla, el
+  nodo pasa a PARADA: «si `anotar` falla» decía lo contrario según cuál se leyera. Los comentarios del sello en
+  el nodo, su fila de `tools/canon.sh`, el modo 5 de `spec/PAQUETE.md` 2.12 y la D-E del RFC-0012
+  nombran el del diario; el test conserva su nombre.
+- **El diario del testigo en el RFC-0021.** Su D-A, que el autor aceptó en el §799, decía «del
+  testigo (4, `crates/zk-ssl-cli/src/witness.rs:478`)», fuera de la promesa. El sello lo sube a 5:
+  la frase gana la versión y la línea nuevas, con su marca.
+- **`tools/segunda/README.md`.** La chuleta de órdenes de `main` y del §712 llevado (215, con el
+  bucle de seis familias, `ancla-cofirmada` incluida) sube a 236 con su marca, y la fila de `ancla`,
+  a 44. El párrafo del sello decía «los 189 vectores de las cinco familias que lee»: la segunda lee
+  seis desde el §810, y medido sobre este árbol son 225, con el mismo único movido. Dice también
+  que el sobre del ancla cofirmada no pasa por `leer_cabeza_de` y no revienta (medido con tres
+  sondas). La cuenta de los manifiestos bajo `wasmtime`, que el sello no tocaba, sube con su marca,
+  tras la del §713, y la de las seis familias en la fila del tercer hito de
+  `doc/integracion-vertical-evaluacion.md`, tras la del §712.
+- **`spec/PAQUETE.md`.** Las cabezas «v2, v3, v4, v5 y v6» de `main` (§780) se quedan, y el párrafo
+  del modo 5 va delante.
+- **Los contadores**: el valor de `4f199a5` más lo que suma este sello, y medido; y sin marca, como
+  en el §711 al §713, la lista de la superficie de `spec/RPC.md` (`vectores.json` y
+  `vectores.lineas`), sin la que `check_superficie` daba dos novedades aditivas.
+- **Los tres sellos del §863 al §865**, sobre `3a4176c`. El §863 sube el nodo a 230, el TOTAL DE
+  SELLO a 1872 y `check_tests` a 2034, que el §711 al §713 llevados dejan en 234, 1914 y 2076, y
+  `spec/vectors/` a 529 ficheros, 509 vectores y 1039 líneas, con la familia `nodo/`, que dejan en
+  543, 523 y 1104; el §865 marca las «1364 declaradas» y las «1349 declared». Chocaban los totales
+  de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, con el desglose de éste, las filas del testigo,
+  del nodo y del kit en `tools/canon.sh`, el recuento de los dos README y la lista de la superficie
+  de `spec/RPC.md`, y llevan el valor de `4f199a5` más lo de este sello: 1924 y 2064, 236 del nodo,
+  564 ficheros, 544 vectores y 1164 líneas; la crónica del nodo dice `234 -> 236`, y las marcas del
+  §865 se quedan. `check_tests`, 2086. El test del §863 que juzga `spec/vectors/nodo/`, el «3 bis
+  nodo» del canon, corre en la fila del nodo, que este sello toca, y sigue pasando. El «1 bis» del
+  §864 corre `zk-ssl-verify` con las aserciones de depuración y los pines de su fila: con el perfil
+  `aserciones`, 203, como en release (abajo). Este sello no añade ninguna marca
+  `cfg_attr(debug_assertions, ignore)`, y el pie de `tools/canon.sh`, «Ceguera declarada», no se
+  mueve.
+
+**De dónde sale.** Dos cabezas del mismo operador con el mismo `mmrSize` y distinto `epochDigest`
+son dos cabezas en el mismo sitio de su historia. El testigo del §712 sólo las detenía con la
+misma cima, o con otra si el nodo no iba por detrás de la pareja custodiada. Con otra cima y por
+detrás eran `por-detras`, el reseteo visible del §295. Se saltaba el génesis. `--auditar` juzgaba
+«por detrás» con las anotaciones `anclando` y `extiende` del propio diario, y `--comparar` decía la
+otra cima sin contarla. Y ningún sobre DELATABA la bifurcación: el de extensión la rechaza con su
+causa (§712), y un rechazo no es una delación; el modo 4 del ancla sólo la ve si además se repite
+la hoja.
+
+**Lo que hace.**
+
+1. **El modo 5 del ancla, en el kit.** `{ "v": 1, "tipo": "ancla", "cabeza": {…}, "rama": {…},
+   "actas": [ … ] }`, con `actas` opcional. Es un modo del ancla y no un `tipo` nuevo: el modo 4 es
+   su hermano, y los vectores caben en `ancla/`, que la segunda implementación ya corre. En orden:
+   la forma (una `rama` no lleva `ancla` ni `contraria`), detrás de las dos reglas de forma que ya
+   había; la cabeza (`1/3`); la `rama`, un objeto con la pareja del MMR, verificada ENTERA, y el
+   mismo operador —la misma clave, o claves que las `actas` unen, con el juez de la continuidad—
+   (`2/3`); el mismo `mmrSize`; digests distintos; y `3/3`, que dice si la cima es la misma u otra,
+   y si la hoja coincide. Sale `VERDE: BIFURCACION - el operador firmo DOS cabezas distintas con el
+   mmrSize {t}: bifurcacion o reinicio sin diario`, con salida 0. El génesis cuenta: dos cabezas
+   que dicen «ninguna antes» con contenidos distintos son dos historias. La rama es el sujeto de
+   sus rojos: `rama: no es una cabeza (objeto)`, `rama: formatVersion …`. Y la forma la decide la
+   PRESENCIA de la clave, también con `null`.
+2. **La segunda implementación**, `bifurcacion`, con los mismos textos y en el mismo orden. Las
+   reglas de forma y el reparto de modos del ancla pasan a la presencia (`k in doc`): con
+   `doc.get(k) is not None`, un `"ancla": null` o un `"camino": null` pasaban por ausentes, y en
+   cinco sobres daba VERDE donde el kit daba ROJO. En los sobres que leen la cabeza con
+   `leer_cabeza_de` —el ancla, el consumo, el conflicto y el solapamiento—, una cabeza que no es un
+   objeto sale `{sujeto}: no es una cabeza (objeto)`, sin traceback. El de extensión no pasa por ahí
+   (abajo, «Lo que NO cierra»).
+3. **El testigo detiene la bifurcación con cualquier cima**, vaya o no el nodo por detrás, y en el
+   génesis. La clase es nueva, `bifurcacion`, detiene y no se cofirma; la línea del diario lleva su
+   `t` y el `digestPrevio`. `DIARIO_VERSION` sube de 4 a 5: es una clase nueva, y `no-extiende` se
+   estrecha. `Memoria::historia` guarda el digest de la primera cabeza de cada tamaño, y `rotar`
+   no la borra: es la historia del operador. `--auditar` agrupa por operador —la primera clave y
+   cada una a la que lleva una rotación juzgada—, cuenta el génesis y ya no reconstruye la pareja
+   del diario; `Hallazgo::NoExtiende` pasa a `Hallazgo::Bifurcacion`. `--comparar` cuenta por
+   `mmrSize` cada par (digest, clave) de los dos diarios, con cualquier cima, cuando el operador es
+   el mismo —la misma clave, o dos que una cadena de actas de un diario lista juntas—, y sólo cree
+   las cabezas que el testigo verificó (`nueva`, `repetida`, `hueco`, `vista-dividida`, y las líneas
+   sin clase del diario del nodo). Con `--sobres`, los dos arman el modo 5.
+4. **El nodo.** La siembra del MMR sale de `main` a `hojas_mmr_iniciales`, sin cambiarla, para que
+   un test la ate: con su diario, el nodo no repite un `mmrSize`. Y un segundo test MIDE el hueco
+   que queda: si `diario::anotar` falla, el nodo honesto repite un `mmrSize` (abajo, «Lo que NO
+   cierra»). El comentario de `conservar`, que decía que la siembra «reconstruye exactamente esta
+   serie», lleva su corrección, sin borrar lo que decía.
+5. **Veintiún vectores nuevos en `ancla/`**, con los mismos bytes con que se derivaron en privado,
+   sin otra corrida, de cabezas ya capturadas en el catálogo. Tres positivos, salida 0: la
+   bifurcación del §712 (la misma cima), la de A contra el operador restaurado de antes de los
+   huérfanos (otra cima) y dos cabezas del génesis de la clave de la suite, de dos corridas de
+   `tools/banco_completitud.sh`. Nueve negativos, uno por regla del modo 5 y por sitio. Y nueve más:
+   cinco fijan la forma por presencia, con `null`, y cuatro la rama como sujeto. Sus líneas van al
+   final del manifiesto, y sus huellas, en `spec/vectors/HUELLAS.sha256` (§692). Los textos nuevos
+   entran en la 6.1 (§693): `no es una cabeza (objeto)` en «campo ausente, de más o mal escrito», y
+   `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` en «la regla no se
+   sostiene»; los demás ya tenían su clase.
+6. **Los bancos.** `tools/banco_bifurcacion.sh`: la escena 1 exige `bifurcacion`, y la escena 5,
+   nueva, reinicia un operador con su diario dos veces —SIGTERM y SIGKILL—, con un consumo antes de
+   cada reinicio, bajo un testigo vivo; después pierde el diario y conserva libro, registro y
+   contador. `tools/banco_mentiroso_vista.sh`: `--comparar` cuenta los `mmrSize` con dos digests con
+   cualquier cima, y arma un sobre del modo 5 por cada uno. `tools/banco_consistencia.sh`: el
+   reseteo sin tráfico deja UN digest por `mmrSize` en el diario del testigo, y por eso no lo
+   detiene. Van fuera del canon.
+7. **Al portarlo, la segunda comprueba la firma antes que el preámbulo.** En privado, el vector
+   `neg-rama-firma-de-otra-cabeza` —una rama con los campos de una cabeza y la firma de otra— pinaba
+   el sujeto solo, `rama: cabeza:`, porque el kit dice `la firma es VALIDA pero de otro mensaje` y la
+   segunda decía `el preambulo recuperado no es el esperado`. Sobre este árbol el arnés del §693 no
+   cuenta un negativo que pina el sujeto solo: el vector salía `SIN CAUSA`. `verificar_cabeza` de la
+   segunda verifica ya la firma y después compara el preámbulo, en el orden y con el texto del kit
+   (`VerificaError::PreambuloDistinto`), y el manifiesto pina la causa: `rama: cabeza: la firma es
+   VALIDA pero de otro mensaje`. Los bytes del vector no cambian.
+8. **El RFC-0012, puesto al día al portar.** El arreglo hecho en privado no tocaba el RFC; su D-E
+   gana un párrafo con el modo 5, y su cabecera, este asiento. Se redactó también en privado, al
+   llevar el arreglo al árbol de la serie, y entra en el mismo sello que el código.
+9. **Lo que se renombró al portar.** Los nombres de los tests nuevos y los de sus directorios
+   temporales, y los textos que citaban el trabajo privado, pasan a este sello; los tests nuevos
+   del testigo usan los ayudantes del §712 (`linea_indice`, `par_indice`, `cabeza_indice`,
+   `sobre_indice` y `reloj_indice`). El doc de `hojas_mmr_iniciales` traía una frase y su
+   corrección, escritas las dos en privado; aquí entra ya corregido.
+
+**Medido en privado**, sobre `161a233` con los arreglos del §711 al §713 (los binarios de antes,
+compilados antes de tocar nada y guardados aparte):
+
+- **Antes, ante un nodo que pierde el diario** (`tools/banco_bifurcacion.sh`, escena 5): el nodo
+  vuelve a firmar desde el `mmrSize` 0 con otro contenido. El testigo de antes anotó
+  `nueva/por-detras` doce veces —doce cabezas firmadas en tamaños que ya había visto, con otro
+  contenido— y sólo se detuvo con `no-extiende` cuando el nodo volvió a pasar de lo custodiado, tras
+  34 consultas. No había sobre del modo 5 que armar ni que juzgar. El banco entero con los binarios
+  de antes: 5 fallos.
+- **Con el arreglo**, el mismo banco: 0 fallos. Escena 1: el testigo se detiene con `bifurcacion`
+  en el `mmrSize` 5. Escena 5: sin diario, se detiene con `bifurcacion` en el `mmrSize` 0, sin
+  esperar a que el nodo pase de lo custodiado; su `--auditar --sobres` arma un sobre del modo 5, y
+  el mando lo juzga «VERDE: BIFURCACION».
+- **Un nodo honesto con su diario no repite un `mmrSize`.** En vivo, en la escena 5: trece
+  tamaños, del 0 al 12, con dos reinicios y un consumo antes de cada uno; cada tamaño, con UN
+  digest, el de su línea del diario. El testigo no se detuvo.
+- **Falsos positivos**, con los binarios nuevos: `banco_consistencia.sh` VERDE (el reseteo con
+  diario y libro nuevos y el mismo contador sigue `por-detras`, y el testigo sigue);
+  `banco_rotacion.sh`, `banco_cofirma.sh`, `banco_mentiroso_censura.sh`,
+  `banco_mentiroso_ausentes.sh`, `banco_reutilizacion.sh`, `banco_evidencia_v2.sh` y
+  `banco_completo.sh`, VERDE. `banco_mentiroso_vista.sh`, adaptado, VERDE: 19 índices divididos y
+  19 `mmrSize` bifurcados, con 19 sobres del modo 4 y 19 del modo 5, todos VERDE; el testigo del
+  §712 contaba 1 de esos tamaños y decía los otros 18 sin contarlos.
+- **Falsadores**, cada pieza quitada por separado y la suite entera de su crate en release: en el
+  kit, la regla del `mmrSize`, la del digest, la del operador, la de forma y la rama como objeto
+  y sujeto; en el testigo, la vuelta
+  viva con el «por detrás» de antes o sin el génesis, el auditor sin agrupar por operador,
+  `--comparar` sin las cadenas o sin el mismo operador, la rotación que borra la historia, la clase
+  vieja en el diario y el filtro de las cabezas verificadas; en el nodo, la siembra vacía. Cae al
+  menos un test de su crate en cada uno. En la segunda, la presencia y la comprobación previa de la
+  rama, quitadas a mano, hacen caer los vectores de `ancla/` que las fijan. La guarda común de
+  `leer_cabeza_de` no la fija ningún vector: sin ella `ancla/` sigue entera, porque la rama la cubre
+  la comprobación previa.
+- **El hueco de `diario::anotar`**, medido con un test: la ruta del diario es un directorio, y
+  `diario::anotar` falla también como root. El nodo sirve los tamaños 0 a 3 y el 2 se queda sin
+  línea. Reiniciado justo después, vuelve a firmar el 2 con el mismo digest; reiniciado después
+  del 3, vuelve a firmar el 3 con OTRO digest, sin tráfico.
+
+**Medido sobre este árbol**, `4f199a5` con este sello, en release, con el `target` compartido con
+otras tareas y cada `cargo` bajo un cerrojo, en una máquina de 4 CPU compartida:
+
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `zk-ssl-verify` 203 (127 + 75 + 1); `zk-ssl-cli` 173, en 4 s de tests; `zk-ssl-node` 236, en
+  28 s de tests, con el test del §863 que juzga `spec/vectors/nodo/`. Con el perfil `aserciones`
+  del «1 bis» del §864, `zk-ssl-verify` 203 (127 + 75 + 1), 0 fallos y 0 warnings, como en release;
+  los otros cuatro de su lista no los toca este sello ni dependen del kit. El workspace entero pasa
+  `cargo check --locked --workspace --all-targets`, sin errores y con los avisos de siempre (los 9
+  de `ceremony` y el del nodo).
+- **La conformidad**, con `tools/conformidad.sh` y el binario de este árbol (`c649e4694bce115b`,
+  compilado con `cargo build --release --locked -p zk-ssl-verify`, la orden del canon), las doce
+  familias enteras: paquete 94 de 94, consumo 20, conflicto 17, rechazo 84, edad 18,
+  pendiente 10, pago 15, prenda 11, completitud 81, ancla 44 de 44, ancla cofirmada 27 y rotación
+  34. La familia `nodo/` del §863 no la corre `tools/conformidad.sh` sino el test del nodo, arriba.
+  La segunda, `tools/segunda/verificador.py`: paquete 94, consumo 20, conflicto 17, ancla 44 de
+  44, rotación 34 y ancla cofirmada 27, 236 de 236. El cable, con `tools/cable_respuesta.sh`: 27 de
+  27.
+- **Antes de este sello**, sobre el mismo `ancla/`: el kit de `4f199a5` (`8d0be7401ddb09d5`, el
+  que el asiento del §713 da para su árbol, guardado aparte), 26 de 44: no lee la `rama`, y da VERDE
+  en los tres positivos, sin su texto, y en doce de los quince negativos de la rama; los otros tres
+  caen con otro texto. Pasa los tres de la contraria y del camino. La segunda de `4f199a5`, 23 de
+  44: los 23 de antes. La segunda de este sello sin el cambio de orden de `verificar_cabeza`, 43 de
+  44: cae `neg-rama-firma-de-otra-cabeza`. Ese cambio de orden mueve la salida de la segunda en uno
+  de los 225 vectores de las seis familias que lee, ese mismo.
+- **Los positivos nuevos**, `bifurcacion-misma-cima`, `-otra-cima` y `-genesis`: la salida del kit y
+  la de la segunda, idénticas línea a línea.
+- **La guarda común de la segunda.** Sin ella, la segunda sigue en 236 de 236: ningún vector la
+  fija. Con `"contraria": "x"` en `neg-contraria-de-otra-clave.json`, la segunda sin la guarda
+  revienta con un traceback; con ella da `contraria: no es una cabeza (objeto)`, y el kit, `falta
+  formatVersion o no es cadena 0x`. Con `"vieja": 7` en `paquete/extension.json`, la segunda de este
+  sello revienta con un traceback y salida 1, y el kit da `ROJO: vieja: la cabeza no era
+  available:true`. Con `7`, `"x"` o `null` en la `cabeza` del sobre del ancla cofirmada, las dos dan
+  `falta formatVersion o no es cadena 0x`, con salida 1.
+- **`tools/segunda/juez_cabezas.py`**: 553 de 608 cabezas verifican, 15 de 20 cofirmas, en 452
+  ficheros; 60 ficheros con alguna que no verifica, y ninguno positivo según su manifiesto. Los
+  jueces que este sello no toca: `juez_nucleo`, 34 de 34; `stark.py`, autotest OK, y `juez_stark`,
+  39 de 39 pares y 33 de 33 falsadores callados; `juez_cadena` sobre los cuatro catálogos, 24 de
+  24; `tools/segunda/cable.py`, 27 de 27; `juez_medio`, 92 de 92; y `juez_xmss`, 8 de 8.
+- **Los bancos tocados**, sólo su sintaxis (`bash -n`), y la puerta del §786: 59 llamadas a cargo en
+  `tools/banco_*.sh`, todas con `--locked`. No se corrieron aquí.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2086
+  declarados; `check_modulos`, 210 ficheros; `check_vectores`, 544 vectores y 1164 líneas con su
+  huella, ninguno movido, también desde `7dd6409`; `check_cifras`, 26 cifras y ninguna contradice el canon;
+  `check_publicadas`, con 564 ficheros en `spec/vectors/`; `check_catalogo`, 235 textos del kit y
+  287 entradas de §5; `verificar_citas`, 0 muertos; `check_superficie`, la lista de `zkssl/0.4` en
+  28 comparaciones y 0 novedades aditivas; y `check_columns`, `check_constraint_layout`,
+  `check_curvas`, `check_dominios`, `check_figures`, `check_nucleo` y `check_techo`. Todas salen
+  con 0.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `zk-ssl-cli` 167 -> 173, `zk-ssl-node` 234 ->
+236 y `zk-ssl-verify` 201 -> 203. TOTAL DE SELLO 1914 -> 1924 y TOTAL CON LARGOS 2054 -> 2064, en
+`PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; el desglose de `PRINCIPIOS.md`, 236 del nodo, 203 del
+kit y 173 del testigo. Las «1364 declaradas» y las «1349 declared» no se tocan, como en los sellos
+anteriores (5.A-319). `check_tests`, de 2076 a 2086. `spec/vectors/`, de 543 a 564 ficheros, en
+`README.md` y `README_EN.md`. `check_vectores`, de 523 a 544 vectores y de 1104 a 1164 líneas, y lo
+mismo en la lista de la superficie de `spec/RPC.md`. La segunda, de 215 a 236 entradas; su tabla,
+`ancla` de 23 a 44; y bajo `wasmtime`, de 373 a 394 entradas en los diez manifiestos y de 434 a 455
+en las doce familias. `check_catalogo`, de 229 a 235 textos del kit y de 280 a 287 entradas de §5.
+
+**Lo que NO hace.** No cambia el cable ni la versión `zkssl/0.4`, ni la cabeza. No reescribe ni
+cambia el veredicto de ningún vector anterior: `rama` es una clave que ningún sobre anterior traía.
+No distingue una bifurcación de un reinicio sin diario: el sobre lo dice, y no hace falta. No
+publica un kit: el corte va al final de la serie. No corre el canon entero ni los bancos.
+
+**Lo que NO cierra.**
+
+- **El nodo honesto repite un `mmrSize` si `diario::anotar` falla.** Es un límite declarado, medido
+  con su test (`si_anotar_falla_el_nodo_repite_un_mmr_size`). Su causa es pública desde el §272:
+  `conservar` avisa y sigue, la hoja entra en el MMR y la cabeza se sirve sin su línea. Tras un
+  reinicio, la siembra trae una hoja de menos. No da un VERDE falso: el testigo que vio el tamaño
+  se detiene con `bifurcacion`. Cerrarlo —que el nodo falle cerrado si no puede anotar— va al
+  trabajo del nodo de fallar cerrado, después de esta publicación. Choca con la doctrina del §272:
+  cambiar un problema pequeño por uno grande. Los comentarios del código dicen lo mismo. El §815 de
+  `main` hizo fallar cerrado al registro de recepción, no al diario de cabezas: este hueco sigue.
+- **Sin `fsync` del diario, una caída del sistema puede detener a los testigos de un operador
+  honesto.** `diario::anotar` no hace `fsync`, a propósito. Si la página se pierde en un corte de
+  corriente, el nodo vuelve a firmar en ese tamaño con otra cabeza. No se midió con un corte real;
+  SIGKILL se midió y no pierde nada. Cerrarlo pide `fsync` de la línea antes de servir la cabeza, con
+  su coste medido.
+- **Una línea ilegible del diario cuesta una hoja** (`diario::digests` la salta, §292 y §666), con el
+  mismo efecto. Declarado, no medido en vivo.
+- **No hay vector positivo con `actas`**: ninguna pareja capturada tiene dos claves de un operador
+  con el mismo `mmrSize`. El camino lo cubren un negativo —`neg-rama-otro-mmrSize-con-actas`: el
+  operador se acepta y cae el tamaño— y el juez de la continuidad, compartido con la extensión. El
+  auditor a través de una rotación sólo se probó con cabezas sintéticas.
+- **La segunda revienta aún con una cabeza que no es un objeto en el sobre de extensión.** Con
+  `"vieja": 7`, un traceback y salida 1; el kit da ROJO con su texto. Ese sobre no pasa por
+  `leer_cabeza_de`. Viene de antes de este sello, y no se tocó. Es robustez de la segunda: el
+  veredicto ya es un fallo, sin su causa.
+- **`--comparar` cree lo que el diario dice**: sus cadenas, sin juzgarlas, y su clase. Un diario
+  fabricado puede unir dos claves o anotar `nueva` una cabeza falsa. El sobre que arma lleva lo que
+  leyó, y el kit lo juzga.
+- **El testigo sólo ve lo que vio, y al reiniciarse arranca de cero**: la historia, la clave
+  fijada, los índices vistos y la pareja. No detiene la bifurcación de un tamaño anterior a su
+  reinicio. La ve `--auditar`, que lee el diario entero, o otro testigo con `--comparar`.
+- **`DIARIO_VERSION` 5**: un auditor de la versión 4 da `version-desconocida` en cada línea de un
+  diario nuevo. Es el contrato.
+- **La contraria y la cabeza como sujeto de sus rojos**, en el kit y en la segunda. Con un `null`
+  o una cadena en `contraria` o en `cabeza`, los dos dan ROJO con salida 1, con textos distintos.
+- **La lista de VERDE de PAQUETE 6** no trae el del solapamiento (§686), y sigue sin traerlo:
+  «dieciséis» cuenta lo que la lista trae.
+- **No se corrieron** `banco_mentiroso_sin_resolver.sh` ni `banco_ancla.sh`, tampoco en privado: los
+  vectores se derivan sin corrida.

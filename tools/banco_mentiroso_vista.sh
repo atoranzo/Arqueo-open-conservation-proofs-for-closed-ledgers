@@ -26,7 +26,9 @@
 # `--comparar` nombra ademas cada mmrSize que los dos diarios vieron con dos digests (la regla del
 # reloj); los dos se cuentan de los diarios crudos. Con la MISMA cima es bifurcacion y cuenta; con
 # OTRA cima se dice y no cuenta -reseteo visible o bifurcacion, que entre dos diarios no se
-# distingue-.
+# distingue-. §714: eso era el §712. Desde el §714 cuenta con cualquier cima, del mismo
+# operador -aqui, la misma semilla-, y el genesis tambien: «bifurcacion o reinicio sin diario». Y
+# `--comparar --sobres` arma ademas un sobre del ancla, modo 5, por cada mmrSize bifurcado.
 # Claves de prueba siempre (D-E): semillas deterministas de la suite, nunca un keystore.
 #
 # FUERA del canon: levanta procesos y espera latidos. NO ESCRIBE EN EL ARBOL: todo vive en un
@@ -128,13 +130,14 @@ def digests(ls):
             if v['epochDigest'] not in ds:
                 ds.append(v['epochDigest'])
     return m
-def primeras_por_tamano(ls):
-    # §712: mmrSize -> (digest, cima) de la PRIMERA linea con cabeza
-    # firmada que lo trae, sin el tamaño 0 del genesis: lo que `--comparar` cruza.
+def digests_por_tamano(ls):
+    # §714: mmrSize -> los digests de las lineas con cabeza firmada que lo traen, el genesis
+    # incluido: lo que `--comparar` cruza. El §712 tomaba la PRIMERA linea de cada tamaño, sin el 0, y
+    # su cima.
     m = {}
     for v in ls:
-        if v.get('signature') and v.get('index') and int(v.get('mmrSize') or '0x0', 16) > 0:
-            m.setdefault(int(v['mmrSize'], 16), (v['epochDigest'], v.get('mmrRoot')))
+        if v.get('signature') and v.get('index') and v.get('mmrSize'):
+            m.setdefault(int(v['mmrSize'], 16), set()).add(v['epochDigest'])
     return m
 def cli(*args):
     p = subprocess.run([CLI, 'witness'] + list(args) + ['--no-color'], capture_output=True, text=True)
@@ -173,22 +176,20 @@ try:
     exigir(len(divididos) > 0, 'los diarios crudos traen %d indice(s) embebido(s) con dos digests: %s'
            % (len(divididos), divididos),
            'testigo-1: %s\ntestigo-2: %s' % (sorted(g1), sorted(g2)))
-    # §712: y la regla del reloj entre los dos diarios, por mmrSize: con la misma cima,
-    # bifurcacion; con otra, informativo.
-    t1, t2 = primeras_por_tamano(l1), primeras_por_tamano(l2)
-    comunes = [t for t in sorted(set(t1) & set(t2)) if t1[t][0] != t2[t][0]]
-    bifurcados = [t for t in comunes if t1[t][1] == t2[t][1]]
-    otras = [t for t in comunes if t1[t][1] != t2[t][1]]
+    # §712: y la regla del reloj entre los dos diarios, por mmrSize. §714: con cualquier cima
+    # -la misma semilla es el mismo operador-, y el genesis tambien.
+    t1, t2 = digests_por_tamano(l1), digests_por_tamano(l2)
+    bifurcados = [t for t in sorted(set(t1) & set(t2)) if any(a != b for a in t1[t] for b in t2[t])]
     rc, out = cli('--comparar', d1 + '/diario.jsonl', d2 + '/diario.jsonl')
     nombrados = sorted(int(x) for x in re.findall(r'VISTA DIVIDIDA en el indice embebido (\d+):', out))
     tamanos = sorted(int(x) for x in re.findall(r'BIFURCACION en el mmrSize (\d+):', out))
-    dichas = sorted(int(x) for x in re.findall(r'mmrSize (\d+): OTRA cima en cada diario', out))
-    exigir(rc != 0 and nombrados == divididos and divididos and tamanos == bifurcados and dichas == otras
+    exigir(rc != 0 and nombrados == divididos and divididos and tamanos == bifurcados and bifurcados
+           and 'OTRA cima en cada diario' not in out
            and out.count('(misma clave: true)') == len(divididos) + len(bifurcados)
+           and out.count('bifurcacion o reinicio sin diario') == len(bifurcados)
            and '%d divergencia(s) y %d bifurcacion(es)' % (len(divididos), len(bifurcados)) in out,
-           '--comparar: ROJO, nombra los %d indices embebidos divididos y los %d mmrSize bifurcados -la '
-           'misma cima-, todos de la MISMA clave; y dice, sin contarlos, los %d con OTRA cima'
-           % (len(divididos), len(bifurcados), len(otras)), out[-1500:])
+           '--comparar: ROJO, nombra los %d indices embebidos divididos y los %d mmrSize bifurcados, '
+           'con cualquier cima, todos de la MISMA clave' % (len(divididos), len(bifurcados)), out[-1500:])
     # §689: cada indice dividido, como el sobre del ancla, modo 4, armado de los dos diarios.
     rc, out = cli('--comparar', d1 + '/diario.jsonl', d2 + '/diario.jsonl', '--sobres', DIR + '/sobres-1')
     sobres = sorted(glob.glob(DIR + '/sobres-1/vista-dividida-indice-*.json'))
@@ -197,6 +198,14 @@ try:
     veredictos = [subprocess.run([MANDO, x], capture_output=True, text=True) for x in sobres]
     exigir(sobres and all(q.returncode == 0 and 'VERDE: VISTA DIVIDIDA' in q.stdout for q in veredictos),
            'el mando los juzga sin los nodos ni los testigos: VERDE, VISTA DIVIDIDA, los %d' % len(sobres),
+           '\n'.join((q.stdout + q.stderr)[-300:] for q in veredictos))
+    # §714: y un sobre del ancla, modo 5, por cada mmrSize bifurcado.
+    sobres5 = sorted(glob.glob(DIR + '/sobres-1/bifurcacion-mmrsize-*.json'))
+    veredictos = [subprocess.run([MANDO, x], capture_output=True, text=True) for x in sobres5]
+    exigir(len(sobres5) == len(bifurcados)
+           and all(q.returncode == 0 and 'VERDE: BIFURCACION' in q.stdout for q in veredictos),
+           '--comparar --sobres arma %d sobre(s) del modo 5, uno por mmrSize bifurcado, y el mando los '
+           'juzga: VERDE, BIFURCACION' % len(sobres5),
            '\n'.join((q.stdout + q.stderr)[-300:] for q in veredictos))
 
     # ── ESCENA 2 · el contador restaurado, bajo un testigo VIVO ──

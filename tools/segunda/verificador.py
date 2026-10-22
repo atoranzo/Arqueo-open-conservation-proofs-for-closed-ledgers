@@ -174,10 +174,16 @@ def verificar_cabeza(cab, sujeto=""):
     firma, mensaje = cab["firmado"][:largo], cab["firmado"][largo:]
     if len(firma) != largo:
         raise Rojo(p + f"la firma tiene {len(firma)} bytes y RFC 8391 pide {largo}")
-    if mensaje != N.preambulo(cab["v"], cab["digest"]):
-        raise Rojo(p + "el preambulo recuperado no es el esperado")
+    # §714: primero la firma y despues el preambulo, en el orden y con el texto del kit
+    # (`VerificaError::PreambuloDistinto`). Antes comparaba el preambulo primero y decia «el preambulo
+    # recuperado no es el esperado»: una firma valida de OTRA cabeza -`ancla/neg-rama-firma-de-otra-cabeza`-
+    # fallaba en las dos implementaciones con textos distintos, y su manifiesto no podia pinar la causa.
     if not xmss.verificar(cab["pk"], mensaje, firma):
         raise Rojo(p + "la firma no verifica")  # §693: la causa con el texto del mando (seccion 6.1)
+    esperado = N.preambulo(cab["v"], cab["digest"])
+    if mensaje != esperado:
+        raise Rojo(p + f"la firma es VALIDA pero de otro mensaje (preambulo esperado {len(esperado)} bytes, "
+                   f"recibido {len(mensaje)}). Verificar sin comparar no prueba nada.")
     embebido = xmss.indice_embebido(oid, firma)
     if cab["index"] <= embebido:
         raise Rojo(p + f"el indice declarado ({cab['index']}) no cuadra con el que va dentro de la firma ({embebido})")
@@ -727,6 +733,10 @@ def leer_cabeza_de(doc, cual, versiones, mensaje_version, sujeto=None):
     if c is None:
         raise Rojo(f"falta {cual}")
     sujeto = cual if sujeto is None else sujeto
+    # §714: una cabeza que no es un objeto -una cadena, un numero- reventaba
+    # en `c.get` con un traceback, y la salida 1 no nombraba la causa. Ahora es un ROJO con nombre.
+    if not isinstance(c, dict):
+        raise Rojo(f"{sujeto}: no es una cabeza (objeto)")
     try:
         fv = u64_de(c, "formatVersion") if c.get("available") is True else None
     except Rojo as e:
@@ -838,22 +848,75 @@ def huella_como_digest(huella):
     return N.digest_from_bytes(huella)
 
 
+def bifurcacion(doc, cab, salida):
+    """§714, PAQUETE.md 2.12, modo 5: la BIFURCACION. Dos cabezas firmadas del MISMO operador -la
+    misma clave, o claves que las `actas` unen, con el juez de la extension- con el MISMO mmrSize y digests
+    distintos: DETECCION con salida 0, como la vista dividida. Un nodo con su diario no repite un mmrSize:
+    las dos solo salen de una bifurcacion o de un reinicio sin el diario. Los textos son los de la referencia
+    (`bifurcacion_del_ancla`), en el mismo orden: la rama entera, el operador, el mmrSize y el digest."""
+    msg_v = lambda s, fv: f"{s}: formatVersion {fv}: el ancla lee cabezas v3, v4, v5 o v6: la pareja del MMR viaja firmada desde ellas"
+    # §714: la rama, sujeto de sus rojos y en el orden de la referencia -que sea un
+    # objeto, su formatVersion, la version, y despues la cabeza entera-. `leer_cabeza_de` solo lee la
+    # version si la cabeza es available:true, y aqui el orden era otro: con una v2 no disponible la
+    # referencia decia «rama: formatVersion 2» y esta «la cabeza no era available:true» (medido).
+    r = doc.get("rama")
+    if not isinstance(r, dict):
+        raise Rojo("rama: no es una cabeza (objeto)")
+    try:
+        fv = u64_de(r, "formatVersion")
+    except Rojo as e:
+        raise Rojo(f"rama: {e}")
+    if fv not in (3, 4, 5, 6):
+        raise Rojo(msg_v("rama", fv))
+    rama = leer_cabeza_de(doc, "rama", (3, 4, 5, 6), msg_v)
+    r = misma_continuidad(doc, (cab["pk"], cab["embebido"]), (rama["pk"], rama["embebido"]))
+    operador = ("misma publicKey: el mismo firmante" if r is None else
+                f"claves distintas que las actas unen ({r[2]} eslabon(es), la posterior desde la hoja {r[0]}): el mismo "
+                f"OPERADOR")
+    salida.append(f"2/3 la rama recompone su digest y su firma verifica (indice embebido {rama['embebido']}); {operador}")
+    t, t_r = cab["mmrSize"], rama["mmrSize"]
+    if t_r != t:
+        raise Rojo(f"bifurcacion: mmrSize distinto ({t}, {t_r}) - dos cabezas en sitios distintos de la historia no la "
+                   f"bifurcan: el orden entre ellas lo juzga la extension")
+    if rama["digest"] == cab["digest"]:
+        raise Rojo(f"bifurcacion: las dos cabezas son LA MISMA (mmrSize {t} y el mismo digest): no hay bifurcacion")
+    donde = ("la MISMA cima: las dos ramas divergen en esta cabeza" if rama["mmrRoot"] == cab["mmrRoot"] else
+             "OTRA cima: las dos ramas divergen antes de esta cabeza")
+    tambien = (f" (y la misma hoja {cab['embebido']}: tambien es la vista dividida del modo 4)"
+               if rama["embebido"] == cab["embebido"] else "")
+    salida.append(f"3/3 el mismo mmrSize {t} y digests DISTINTOS, con {donde}{tambien}")
+    salida.append(f"VERDE: BIFURCACION - el operador firmo DOS cabezas distintas con el mmrSize {t}: bifurcacion o "
+                  f"reinicio sin diario. Es DETECCION del operador: un nodo con su diario no repite un mmrSize, y solo "
+                  f"quien tiene la clave pudo firmarlas")
+    return salida
+
+
 def ancla(doc):
     salida = []
-    an, cam, contraria = doc.get("ancla"), doc.get("camino"), doc.get("contraria")
-    if contraria is not None and an is not None:
+    an = doc.get("ancla")
+    # ⚠️ §714: la FORMA y el modo los decide la PRESENCIA de la clave, como en la
+    #    referencia (`p.get(k).is_some()`, verdadero tambien con null). Con `doc.get(k) is not None` un
+    #    `"ancla": null` o un `"camino": null` pasaban por ausentes: con una rama, una contraria o sin
+    #    ancla el kit daba ROJO y esta VERDE (medido; la contraria y el camino ya divergian antes del §714).
+    tiene = lambda k: k in doc
+    if tiene("contraria") and tiene("ancla"):
         raise Rojo("un sobre con contraria no lleva ancla: la vista dividida se demuestra con las dos cabezas solas")
-    if cam is not None and an is None:
+    if tiene("camino") and not tiene("ancla"):
         raise Rojo("camino sin ancla: no hay nada que extender")
+    # §714: la rama va sola con la cabeza, como la contraria; despues de las dos de arriba.
+    if tiene("rama") and (tiene("ancla") or tiene("contraria")):
+        raise Rojo("un sobre con rama no lleva ancla ni contraria: la bifurcacion se demuestra con las dos cabezas solas")
     if doc.get("cabeza") is None:
         raise Rojo("falta cabeza (la firmada que el ancla compromete)")
     msg_v = lambda s, fv: f"{s}: formatVersion {fv}: el ancla lee cabezas v3, v4, v5 o v6: la pareja del MMR viaja firmada desde ellas"
     cab = leer_cabeza_de(doc, "cabeza", (3, 4, 5, 6), msg_v)
     emb = cab["embebido"]
     salida.append(f"1/3 la cabeza (v{cab['v']}) recompone su digest y su firma verifica (indice embebido {emb})")
+    if tiene("rama"):
+        return bifurcacion(doc, cab, salida)
     huella = N.huella_de_clave(cab["pk"])
     hd = lambda indice, dig, root, size: N.ancla_digest(huella_como_digest(huella), indice, dig, root, size)
-    if contraria is not None:
+    if tiene("contraria"):
         otra = leer_cabeza_de(doc, "contraria", (3, 4, 5, 6), msg_v)
         if otra["pk"] != cab["pk"]:
             raise Rojo("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante")
@@ -867,7 +930,7 @@ def ancla(doc):
         salida.append(f"VERDE: VISTA DIVIDIDA - la clave firmo DOS cabezas con el indice embebido {emb}. Es DETECCION del "
                       f"operador: dos historias, y solo quien tiene la clave pudo producirlas")
         return salida
-    if an is None:
+    if not tiene("ancla"):
         derivada = hd(emb, cab["digest"], cab["mmrRoot"], cab["mmrSize"])
         salida.append("2/3 el ancla, derivada de la cabeza sola: lo que se publica en el medio")
         salida.append('   { "v": 1, "clave": "0x%s", "indice": "0x%x", "epochDigest": "0x%s", "mmrRoot": "0x%s", "mmrSize": "0x%x" }'
@@ -888,7 +951,7 @@ def ancla(doc):
     size = u64_de(an, "mmrSize")
     if clave != huella:
         raise Rojo("el ancla es de OTRA clave: su clave no es la huella de la publicKey de la cabeza")
-    if cam is None:
+    if not tiene("camino"):
         for campo, a, b in (("indice", indice, emb), ("epochDigest", dig, cab["digest"]), ("mmrRoot", root, cab["mmrRoot"]),
                             ("mmrSize", size, cab["mmrSize"])):
             if a != b:

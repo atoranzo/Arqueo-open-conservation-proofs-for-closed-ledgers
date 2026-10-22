@@ -123,7 +123,8 @@ Seis superficies. Cada una con lo que la forma, su identificador y su productor,
 **Fuera de la promesa**, y dicho para que nadie lo dé por prometido: los `dev_*`, que sólo existen
 con `--dev`; la API de Rust de los crates —el SDK, y `zk-ssl-verify` como biblioteca—; las opciones
 de línea de mando de `zk-ssl-cli` y del testigo; los diarios del nodo (`DIARIO_VERSION` 1,
-`crates/zk-ssl-node/src/diario.rs:67`) y del testigo (4, `crates/zk-ssl-cli/src/witness.rs:478`); el
+`crates/zk-ssl-node/src/diario.rs:67`) y del testigo (5, `crates/zk-ssl-cli/src/witness.rs:610`;
+⚠️ §714: decía 4, en la `:478`; la clase `bifurcacion` del §714 la sube); el
 libro en disco y sus instantáneas; los límites de operación, como el del cuerpo de una petición
 (`spec/RPC.md`, «Transporte y sobre»); los tiempos y los tamaños; y `doc/`. La decisión 2 la tomó
 el autor en el §799: estas seis superficies, y fuera de la promesa lo que aquí se enumera, el diario

@@ -548,13 +548,18 @@ suya: sección 9. Las formas 5 y 6 tienen su propio banco, `tools/banco_recibo_a
              "mmrRoot": "0x…", "mmrSize": "0x…" },
   "camino": ["0x…", …],                 OPCIONAL: la consistencia MMR del lote anclado a la cabeza
                                         (RFC 6962), la lista plana del sobre de extensión
-  "contraria": {…} }                    OPCIONAL: una segunda cabeza firmada -- la vista dividida
+  "contraria": {…},                     OPCIONAL: una segunda cabeza firmada -- la vista dividida
+  "rama": {…},                          OPCIONAL (§714): otra cabeza firmada del mismo operador con
+                                        el mismo mmrSize -- la bifurcacion
+  "actas": [ … ] }                      OPCIONAL, solo con rama: la cadena de zkssl_keyActs (2.3)
 ```
 
 El orden: primero la FORMA —`contraria` y `ancla` no conviven, y un `camino` sin `ancla` no
-tiene nada que extender—; después la `cabeza`, ENTERA —recompone su digest, su firma verifica, y
+tiene nada que extender—; ⚠️ la decide la PRESENCIA de la clave, también con `null`: un
+`"ancla": null` es un ancla (§714: la segunda implementación lo tomaba
+por ausente y daba VERDE donde el kit daba ROJO). Después la `cabeza`, ENTERA —recompone su digest, su firma verifica, y
 el índice que cuenta es el **EMBEBIDO** en la firma (§399; RFC-0012, D-C)—. Con eso, cuatro
-modos:
+modos, y desde el §714, cinco:
 
 1. **La cabeza sola**: el mando DERIVA el ancla y su huella
    (`ancla_digest(huella_de_clave(publicKey), indice_embebido, epochDigest, mmrRoot, mmrSize)`,
@@ -579,6 +584,25 @@ modos:
    un solo uso, que sólo quien tiene la clave puede producir (§248)—. Sale **DETECCIÓN**, con
    salida 0, el molde del conflicto (2.5): el sobre que la exhibe no falla — delata. Dos
    cabezas con índices embebidos DISTINTOS no dividen ninguna vista y se rechazan con su nombre.
+5. ⚠️ **§714 · Con `rama`: la BIFURCACIÓN.** Dos cabezas firmadas del MISMO operador con
+   el MISMO `mmrSize` y digests distintos: dos cabezas en el mismo sitio de su historia. Un nodo
+   honesto con su diario no repite un `mmrSize` —la hoja del MMR entra donde se anota el diario, y
+   al arrancar el diario siembra el MMR—, así que el par solo sale de una bifurcación o de un
+   reinicio sin el diario, o con uno que perdió líneas: un corte de corriente sin `fsync`, o un
+   `anotar` del diario que falló —el nodo lo avisa y sigue sirviendo (§272), y la cabeza queda sin su línea—.
+   Esos dos son huecos declarados del nodo honesto, no cerrados. DETECTAR NO ES DISTINGUIR: el sobre no dice
+   cuál de las dos, y no hace falta. Sale **DETECCIÓN**, con salida 0, como el modo 4. El orden:
+   la `rama` no convive con `ancla` ni con `contraria`, y esa regla va detrás de las dos de forma
+   de arriba; la `rama` es un objeto, lleva la pareja del MMR (v3 a v6) —su `formatVersion` se lee
+   antes que su `available`, como el de la cabeza— y se verifica ENTERA, como la cabeza —dos
+   firmas de verdad o no hay delación—; el operador es el mismo —la misma `publicKey`, o claves
+   distintas que las `actas` unen, con el juez de 2.3, `juzgar_continuidad`: dos operadores en el
+   mismo tamaño no bifurcan nada—; el `mmrSize` es el mismo, con cualquier cima —con la misma, las
+   dos ramas divergen en esa cabeza; con otra, antes—, y el génesis (`mmrSize` 0) también cuenta;
+   y los digests difieren —el mismo digest es la misma cabeza, aunque la firmen dos hojas—. Hasta
+   el §714 ningún sobre DELATABA la bifurcación: el de extensión la rechaza con su causa (§712), y un
+   rechazo no es una delación; el modo 4 solo la veía si además se repetía la hoja. Con la misma
+   hoja el par es las dos cosas, y el `3/3` lo dice.
 
 ⚠️ Lo que este sobre NO dice: que el ancla estuviera PUBLICADA, ni desde cuándo — eso es del
 medio elegido, y la confianza en el medio queda desplazada y declarada (RFC-0012, D-H). El
@@ -597,15 +621,29 @@ vuelve con el contador restaurado. ⚠️ Y el testigo aplica el reloj de 2.3 a 
 (§712): un `mmrSize` ya visto con otro digest
 —con la misma cima siempre; con otra, si el nodo no va por detrás de la pareja custodiada— y una
 cabeza posterior a la custodiada, de la misma clave, que firma en su hoja o por debajo, son
-`no-extiende`, que detiene y no se cofirma. La cuenta de índices es una por operador en las tres
+`no-extiende`, que detiene y no se cofirma. ⚠️ §714: el `mmrSize` ya visto con otro digest
+detiene con **cualquier** cima, vaya o no el nodo por detrás, y en el génesis también, con clase
+propia en el diario —`bifurcacion`, «bifurcación o reinicio sin diario»; `DIARIO_VERSION` 5—, entre
+las cabezas del mismo operador: la clave fijada y las que una rotación juzgada le une. Lo de entre
+rayas era la regla del §712, que dejaba pasar como `por-detras` al nodo que reinicia sin diario y
+firma otra cosa donde ya había firmado. El reseteo visible del §295 que vuelve a firmar los MISMOS
+digests sigue sin detener. La cuenta de índices es una por operador en las tres
 rutas —la vuelta viva, `--auditar`, que en frío da el reloj como `indice-retrocede`, y
 `--ausentes`—, y «por detrás» es en las dos primeras la pareja custodiada, que `--auditar`
 reconstruye de las líneas `anclando` y `extiende` del diario. `--comparar` cuenta como
 bifurcación el mismo `mmrSize` con la misma cima y otro digest; con OTRA cima lo dice y no lo
 cuenta: es el reseteo visible del §295 o una bifurcación, y entre dos diarios no se sabe quién iba
-por detrás. Y desde el §689, `--comparar DIARIO_A DIARIO_B --sobres DIR` arma
+por detrás. ⚠️ §714: eso era el §712. Desde el §714 `--auditar` ya no reconstruye la pareja
+—la bifurcación no depende de quién va por detrás— y `--comparar` cuenta el mismo `mmrSize` con
+otro digest con cualquier cima, del mismo operador —la misma clave, o dos que una cadena de actas
+de los diarios une—; dos operadores en los mismos tamaños no bifurcan nada. ⚠️ Y solo cuenta las
+cabezas que el testigo VERIFICÓ —las líneas `nueva`, `repetida`, `hueco` y `vista-dividida`, y las
+del diario del nodo, que no llevan clase—: una cabeza inyectada en el camino que el testigo anotó
+`no-verifica` ya no acusa al operador (§714). Y desde el §689,
+`--comparar DIARIO_A DIARIO_B --sobres DIR` arma
 uno por cada índice que DOS testigos vieron dividido —cada uno, solo, no ve nada—, con la cabeza de
-cada diario.
+cada diario. Desde el §714, `--auditar --sobres` y `--comparar --sobres` arman también el modo 5 de
+cada bifurcación, con la cadena de actas cuando las dos claves difieren.
 
 ### 2.13 El sobre del ancla cofirmada (§633, RFC-0013 E4a)
 
@@ -705,6 +743,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | edad | `enunciado` → `t`, `k`, `emisor`; `subraices` → `pendientes`, `meta`; `prueba` | este documento, sección 2.7 |
 | cobro pendiente | `enunciado` → `receptor`, `nacido`, `inferior`; `prueba` | este documento, sección 2.8 |
 | pago en curso | `enunciado` → `receptor`, `importe`, `t`, `nacido`; `prueba` | este documento, sección 2.9 |
+| ancla (§592) | `ancla` → `v`, `clave`, `indice`, `epochDigest`, `mmrRoot`, `mmrSize`; `camino`; `contraria`; y desde el §714 `rama` y, con ella, `actas` | este documento, sección 2.12 |
 | ancla cofirmada | `nota`, `publicador`, `testigos`, `posicion`, `inclusion`, y la `cabeza` de 2.12 | este documento, sección 2.13 (§633) |
 | solapamiento | `cabeza` y `actas`, las de 2.3 | este documento, sección 2.14 (§686) |
 
@@ -806,6 +845,13 @@ leídas una a una) y la versión de la cabeza · `1/3` la cabeza recompone su di
 verifica, y se lee su índice embebido · `2/3` la cadena vale entera, eslabón a eslabón, y la clave
 de la cabeza entra en ella · `3/3` el índice cae fuera de todos los tramos de su clave: VERDE,
 SOLAPAMIENTO, la detección.
+
+**Sobre del ancla, modo 5: la bifurcación** (§714): antes de tocar la criptografía, la
+forma (la `rama` sin `ancla` ni `contraria`, detrás de las dos reglas de forma del ancla) · `1/3` la
+cabeza recompone su digest y su firma verifica · `2/3` la `rama` lleva la pareja del MMR, recompone
+su digest y su firma verifica, y las dos son del mismo operador —la misma `publicKey`, o claves que
+las `actas` unen— · `3/3` el mismo `mmrSize`, con cualquier cima, y digests distintos: VERDE,
+BIFURCACIÓN, la detección.
 
 Cabezas **v2, v3, v4, v5 y v6** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
@@ -1188,10 +1234,27 @@ VERDE ni ROJO.
   necesita la segunda cabeza —basta una de la vieja por encima del `desde` de su sucesora, con la
   cadena—, es el de la sección 2.14 (§686). Tampoco el modo 3 con un ancla de la clave que se
   fue: esa costura es la del medio (RFC-0015, E6)
+- ⚠️ §714, el modo 5, la bifurcación:
+  - `un sobre con rama no lleva ancla ni contraria: la bifurcacion se demuestra con las dos
+    cabezas solas`
+  - `rama: no es una cabeza (objeto)` — un `"rama": null` o una cadena
+  - `rama: {e}` — `{e}`, el rechazo de `u64_de` del `formatVersion` de la rama, antes que
+    `available`: `rama: falta formatVersion o no es cadena 0x`, si falta o no es una cadena
+  - `rama: formatVersion {version}: el ancla lee cabezas v3, v4, v5 o v6: la pareja del MMR viaja
+    firmada desde ellas` — el de la cabeza, con `rama:` como sujeto, y antes que `available`; y lo
+    que se exige de una cabeza, también con `rama` como sujeto: `rama: la cabeza no era
+    available:true`, `rama: cabeza: …`
+  - `las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante`, y con `actas`, `las
+    cabezas llevan claves DISTINTAS y las actas no las unen: {regla}` — los de la extensión, letra
+    por letra: aquí **sí** se leen las `actas`, porque la bifurcación es del operador y no de una
+    clave
+  - `bifurcacion: mmrSize distinto ({t}, {t_r}) - dos cabezas en sitios distintos de la historia no
+    la bifurcan: el orden entre ellas lo juzga la extension`
+  - `bifurcacion: las dos cabezas son LA MISMA (mmrSize {t} y el mismo digest): no hay bifurcacion`
 
 Lo que el sobre exige de una cabeza —`available:true`, la recomposición del digest, la firma—
-y la lectura del `camino` son los de la extensión, con `cabeza` o `contraria` como sujeto: viven
-en su bloque y no se repiten aquí.
+y la lectura del `camino` son los de la extensión, con `cabeza` o `contraria` como sujeto —y desde
+el §714, `rama`—: viven en su bloque y no se repiten aquí.
 
 **El ancla cofirmada** (§633, RFC-0013 E4a)
 
@@ -1242,7 +1305,7 @@ extensión, con `cabeza` como sujeto.
   de rechazo, de edad, de cobro pendiente, de pago en curso, de prenda y del ancla; `1/5` a
   `5/5` en el
   de consumo; `1/4` a `4/4` en el de conflicto y en el del ancla cofirmada—, la de cofirmas
-  cuando el sobre es v2, y al final el VERDE de su forma, uno de estos quince; los seis del cuarto al noveno siguen en una segunda
+  cuando el sobre es v2, y al final el VERDE de su forma, uno de estos dieciséis —quince hasta el §714—; los seis del cuarto al noveno siguen en una segunda
   línea, el del cobro llega a una tercera, y los del pago y la prenda a una cuarta:
   - `VERDE: el paquete se sostiene sin el nodo`
   - `VERDE: la extension se sostiene sin el nodo`
@@ -1260,6 +1323,9 @@ extensión, con `cabeza` como sujeto.
   - `VERDE: la cabeza extiende el ancla: la historia anclada es un prefijo, y se sostiene sin el nodo` (§592)
   - `VERDE: VISTA DIVIDIDA - la clave firmo DOS cabezas con el indice embebido {i}. Es
     DETECCION del operador: dos historias, y solo quien tiene la clave pudo producirlas` (§592)
+  - `VERDE: BIFURCACION - el operador firmo DOS cabezas distintas con el mmrSize {t}: bifurcacion
+    o reinicio sin diario. Es DETECCION del operador: un nodo con su diario no repite un mmrSize,
+    y solo quien tiene la clave pudo firmarlas` (§714; una sola línea)
   - `VERDE: la cabeza estaba publicada en el medio {origen}, en la posicion {p}, y la cofirman
     {k} testigo(s) con clave en el sobre. Que testigos valen y cuantos hacen falta lo decide
     quien verifica (RFC-0013 D-D): este mando reporta, no juzga` (§633; una sola línea, y
@@ -1305,13 +1371,13 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 |---|---|
 | **ilegible** — el fichero no se lee, o no es JSON | `no se puede leer` · `JSON ilegible` |
 | **fuera del contrato** — una versión o un tipo que el mando no lee | `el paquete no declara su version` · `el paquete declara v:` · `tipo desconocido` · `version {cv} desconocida` · `kind desconocido` · `el ancla no declara v 1` |
-| **campo ausente, de más o mal escrito** | `falta {campo}` · `no es cadena` · `no es lista` · `no booleano` · `sin 0x` · `hex impar` · `hex: cifra no admitida` · `cantidad hex no minima` · `bytes, se esperaban 32` · `no es canonico` · `no lleva {ajeno}` |
+| **campo ausente, de más o mal escrito** | `falta {campo}` · `no es cadena` · `no es lista` · `no booleano` · `sin 0x` · `hex impar` · `hex: cifra no admitida` · `cantidad hex no minima` · `bytes, se esperaban 32` · `no es canonico` · `no lleva {ajeno}` · `no es una cabeza (objeto)` (§714: la `rama` del ancla que no es un objeto) |
 | **cabeza fuera de su familia** | `no era available:true` · `formatVersion {v}:` · `exige una cabeza v5` · `exige cabezas v4` |
 | **recomposición** — los campos no dan el digest firmado | `NO recomponen` |
 | **firma inválida** | `la firma no verifica` · `la firma es VALIDA pero de otro mensaje` · `el indice declarado ({d}) no cuadra con el que va dentro de la firma` |
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
 | **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
-| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) |
+| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) |
 | **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
 | **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido | `InconsistentOodConstraintEvaluations` |
@@ -1600,6 +1666,25 @@ la primera cabeza posterior a la custodiada. El de `ancla/`, `neg-ancla-bifurcad
 es el ancla que el mando deriva de la cabeza vieja de la bifurcación contra la nueva, con el camino
 vacío, DERIVADO sin otra corrida; también daba VERDE en el kit y en la segunda de antes (medido).
 
+**Desde el §714 cubre la BIFURCACIÓN como detección** (2.12, modo 5): doce sobres nuevos en
+`spec/vectors/ancla/`, con sus líneas al final de su `MANIFIESTO.txt`, DERIVADOS sin otra corrida de
+cabezas ya capturadas en el catálogo. Tres positivos, salida 0: las dos cabezas de la bifurcación
+del §712 (`mmrSize` 5, la misma cima); la de A en el 5 contra la del operador restaurado de antes de
+los huérfanos (`mmrSize` 5, OTRA cima: un reinicio con un diario que no era el último); y dos
+cabezas del génesis de la clave de la suite, de dos corridas de `tools/banco_completitud.sh` —cada
+corrida es un nodo nuevo con la misma clave y sin el diario de la anterior: el reinicio sin diario,
+literal—. Y nueve negativos, uno por regla del modo 5 y por sitio, el de dos claves que las actas
+SÍ unen con otro `mmrSize` incluido —el operador se acepta y cae el tamaño—. Ningún vector anterior
+cambia de veredicto: `rama` es una clave que ningún sobre anterior traía. Y nueve negativos más,
+derivados igual: cinco fijan que la forma la decide la PRESENCIA de la clave, también con `null`
+—la rama con `"ancla": null` o `"contraria": null`, la vista dividida con `"ancla": null`, el ancla
+derivada y la exacta con `"camino": null`—, en los que la segunda implementación daba VERDE (tres,
+ya antes del §714); y cuatro fijan la `rama` como sujeto de sus rojos —`null`, una cadena, sin
+`formatVersion`, y una v2 no disponible: la versión antes que `available`—. El kit de antes del §714
+pasa 26 de las 44 entradas de la familia: las 23 de antes y los tres sobres de la contraria y del
+camino. Ignora la `rama`: da VERDE en los tres positivos, sin su texto, y en doce de los quince
+negativos de la rama; los otros tres caen con otro texto.
+
 **Desde §649 cubre la ROTACIÓN de la clave del operador** (RFC-0015, E5b): `spec/vectors/rotacion/`
 trae TRES positivos CAPTURADOS de UN nodo real que rota dos veces sobre el mismo diario —A, su
 génesis comprometiendo a B; B, con la firma de A; C, sin la de B— y sobres de extensión con la
@@ -1782,6 +1867,13 @@ implementación. Ahora es ROJO con salida 1, y el manifiesto pina la causa,
   entra en la clase «consulta que no casa con el compromiso» de la 6.1; un vector nuevo en `edad/`,
   capturado de un nodo real con un probador que se compromete con otro resto; ninguno reescrito
   (sección 9).
+- §714 — la bifurcación con el mismo `mmrSize` es DETECCIÓN: el modo 5 del sobre del ancla, con
+  salida 0, para dos cabezas del mismo operador con el mismo `mmrSize` y digests distintos, en el
+  kit y en la segunda implementación (2.12). Y el testigo la detiene con cualquier cima, vaya o no
+  el nodo por detrás, con su clase en el diario —`bifurcacion`, «bifurcación o reinicio sin
+  diario», `DIARIO_VERSION` 5—, en la vuelta viva, en `--auditar` y en `--comparar`, que arman su
+  sobre. Sus textos de rechazo entran en la 6.1; veintiún vectores nuevos en `ancla/`, ninguno
+  reescrito (sección 9).
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

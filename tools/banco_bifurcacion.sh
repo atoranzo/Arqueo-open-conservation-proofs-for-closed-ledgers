@@ -14,7 +14,8 @@
 #   ESCENA 1   LA BIFURCACION. El diario de A recortado a T lineas y el MISMO contador: la cabeza
 #              de mmrSize T vuelve con otra hoja, otro contenido -un consumo publicado- y la misma
 #              cima. El testigo vivo SE DETIENE con `no-extiende` en T. Sobres de extension y de
-#              consumo: ROJO, «mismo mmrSize y digest distinto».
+#              consumo: ROJO, «mismo mmrSize y digest distinto». §714: la clase es
+#              `bifurcacion`, con su `t` y el digest de la primera cabeza de ese tamaño.
 #   ESCENA 2   LA VISTA DIVIDIDA, con el contador restaurado a la hoja de A en T: el mismo mmrSize y
 #              el mismo indice embebido. Sobre de consumo: ROJO, por la misma causa.
 #   ESCENA 3   EL RELOJ QUE RETROCEDE. El diario y el contador restaurados de antes de los
@@ -28,6 +29,16 @@
 #              --cofirmar, la cofirmaba. Su --auditar lo ve en frio: `indice-retrocede`.
 #   ESCENA 4   LA RECUPERACION DEL §690 bajo un testigo vivo: A ('41') rota a B ('42') con
 #              `--desde-minimo`, por encima de todo lo que A pudo firmar. El testigo rota y sigue.
+#   ESCENA 5   §714 · EL REINICIO, CON Y SIN DIARIO, bajo un testigo VIVO. Con su diario un
+#              nodo honesto no repite un mmrSize: la hoja del MMR entra donde se anota el diario, y
+#              la cabeza se sirve despues (`zk-ssl-node`, latido.rs, `conservar`). Dos reinicios con
+#              trafico entre medias, uno con SIGTERM y otro con SIGKILL: el testigo no se detiene, y
+#              lo que el nodo sirvio lleva UN digest por mmrSize. Despues, el mismo libro y el mismo
+#              contador con el diario PERDIDO: el nodo vuelve a firmar desde el mmrSize 0 con el
+#              libro de ahora, otra cosa donde ya firmo. El testigo SE DETIENE con `bifurcacion` en
+#              un tamaño que ya habia visto, sin esperar a que el nodo pase de lo custodiado -el del
+#              §712 lo anotaba `por-detras`-, y su --auditar --sobres arma el modo 5 del ancla, que el
+#              mando juzga VERDE: BIFURCACION.
 #   Y los dos sentidos de la vista dividida del ancla (`spec/vectors/ancla/vista-dividida.json`) como
 #   sobre de extension, recombinados sin otra corrida: ROJO, «mismo mmrSize y digest distinto».
 #
@@ -68,7 +79,7 @@ else
 fi
 
 python3 - "$DIR" "${GUARDAR:-}" "$BIN" <<'PY'
-import json, os, shutil, struct, subprocess, sys, time, urllib.request
+import glob, json, os, shutil, struct, subprocess, sys, time, urllib.request
 DIR, GUARDAR, BIN = sys.argv[1], sys.argv[2], sys.argv[3]
 NODO, CLI, MANDO = BIN + '/zk-ssl-node', BIN + '/zk-ssl-cli', BIN + '/zk-ssl-verify'
 P, P2 = 8851, 8852
@@ -174,10 +185,34 @@ b = bytearray(32)
 for i, v in ((3, 0x3B), (11, 0x6E), (19, 0x2D), (27, 0x5A)):
     b[i] = v
 CONSUMO = '0x' + b.hex()
-def publicar(port):
-    r = rpc(port, 'zkssl_publishConsumo', {'consumo': CONSUMO}).get('result', {})
+def publicar(port, consumo=CONSUMO):
+    r = rpc(port, 'zkssl_publishConsumo', {'consumo': consumo}).get('result', {})
     if not r.get('accepted'):
         rojo('publishConsumo no acepto el consumo: %s' % json.dumps(r)[:300])
+def consumo_n(k):
+    # §714: otro consumo canonico por cada k, con el mismo molde que CONSUMO.
+    c = bytearray(b)
+    c[3] = 0x10 + k
+    return '0x' + c.hex()
+def mirar(port, hasta, todas, que):
+    # §714: TODO lo que el nodo sirve, por mmrSize -no solo la primera cabeza de cada tamaño-,
+    # hasta que sirve una de mmrSize >= hasta.
+    for _ in range(400):
+        try:
+            r = rpc(port, 'zkssl_signedEpochHead', {}).get('result', {})
+            if r.get('available'):
+                todas.setdefault(q(r['mmrSize']), set()).add(r['epochDigest'])
+                if q(r['mmrSize']) >= hasta:
+                    return r
+        except Exception:
+            pass
+        time.sleep(0.25)
+    rojo('ninguna cabeza firmada: ' + que)
+def matar_ya(p):
+    # SIGKILL: el reinicio por caida, sin que el nodo cierre nada.
+    if p.poll() is None:
+        p.kill(); p.wait()
+    time.sleep(0.5)
 entradas = {'paquete': [], 'consumo': []}
 def mando(familia, nombre, sobre, codigo, texto):
     global fallos
@@ -295,15 +330,18 @@ try:
     lw = diario_de(dw)
     ultima = lw[-1] if lw else {}
     cons = ultima.get('consistencia', {})
-    exigir(rw not in (None, 0) and cons.get('clase') == 'no-extiende'
-           and cons.get('deT') == '0x%x' % T and cons.get('aT') == '0x%x' % T,
-           'el testigo vivo SE DETIENE con no-extiende en el mmrSize %d (exit %s)' % (T, rw),
+    # §714: la clase es `bifurcacion`, con su tamaño y el digest de la PRIMERA cabeza que el
+    # testigo vio con el (la de A). El §712 la anotaba `no-extiende` con deT y aT en T.
+    exigir(rw not in (None, 0) and cons.get('clase') == 'bifurcacion'
+           and cons.get('t') == '0x%x' % T and cons.get('digestPrevio') == a_de[T]['epochDigest']
+           and 'bifurcacion o reinicio sin diario' in open(dw + '/salida.txt').read(),
+           'el testigo vivo SE DETIENE con bifurcacion en el mmrSize %d (exit %s)' % (T, rw),
            open(dw + '/salida.txt').read()[-800:] + '\nclases: ' + clases(lw))
     if w.poll() is None:
         w.kill(); w.wait()
     p = subprocess.run([CLI, 'witness', '--auditar', dw + '/diario.jsonl', '--no-color'],
                        capture_output=True, text=True)
-    exigir(p.returncode != 0 and 'no-extiende' in p.stdout,
+    exigir(p.returncode != 0 and 'bifurcacion o reinicio sin diario' in p.stdout,
            '--auditar del diario del testigo ve la bifurcacion SIN el nodo', (p.stdout + p.stderr)[-800:])
     ext = {'v': 1, 'tipo': 'extension', 'vieja': a_de[T], 'nueva': b_t, 'camino': []}
     mando('paquete', 'rechazo-ext-bifurcada-mismo-mmrSize.json', ext, 1,
@@ -453,6 +491,82 @@ try:
                        capture_output=True, text=True)
     exigir(p.returncode == 0 and 'sin hallazgos' in p.stdout,
            '--auditar del diario de la recuperacion: sin hallazgos', (p.stdout + p.stderr)[-800:])
+
+    # ── ESCENA 5 · §714: el reinicio, CON y SIN diario, bajo un testigo VIVO ──
+    F = DIR + '/f'
+    w5, d5w = testigo('testigo-reinicio', P, 0)
+    todas = {}
+    nodo = levantar('E', F, P, 1)
+    try:
+        mirar(P, 3, todas, 'F, mmrSize >= 3')
+        publicar(P, consumo_n(1))
+        mirar(P, 6, todas, 'F, tras el primer consumo')
+    finally:
+        parar(nodo)
+    nodo = levantar('E', F, P, 1)
+    try:
+        responde(P)
+        publicar(P, consumo_n(2))
+        mirar(P, 9, todas, 'F tras el reinicio con SIGTERM')
+        time.sleep(1)
+    finally:
+        matar_ya(nodo)
+    nodo = levantar('E', F, P, 1)
+    try:
+        responde(P)
+        publicar(P, consumo_n(3))
+        mirar(P, 12, todas, 'F tras el reinicio con SIGKILL')
+        time.sleep(2)
+    finally:
+        parar(nodo)
+    l5 = diario_de(d5w)
+    por_t = {}
+    for v in l5:
+        if v.get('signature') and v.get('mmrSize'):
+            por_t.setdefault(q(v['mmrSize']), set()).add(v['epochDigest'])
+    repetidos = sorted(t for t, ds in todas.items() if len(ds) > 1)
+    # La cabeza de mmrSize t es la linea t del diario del nodo: la hoja t del MMR (§292).
+    dn = [json.loads(l) for l in lineas(F + '/diario.jsonl')]
+    casan = all(t < len(dn) and ds == {dn[t]['epochDigest']} for t, ds in todas.items())
+    exigir(w5.poll() is None and not repetidos and casan and all(len(ds) == 1 for ds in por_t.values()),
+           'CON su diario y con trafico, dos reinicios (SIGTERM y SIGKILL): el testigo no se detiene; '
+           'el nodo sirvio %d mmrSize, del 0 al %d, cada uno con UN digest, el de la linea t de su '
+           'diario (%d lineas); el testigo vio %d' % (len(todas), max(todas), len(dn), len(por_t)),
+           'repetidos: %s, casan: %s\n%s\nclases: %s'
+           % (repetidos, casan, open(d5w + '/salida.txt').read()[-800:], clases(l5)))
+    t_max = max(por_t)
+    os.replace(F + '/diario.jsonl', F + '/diario-perdido.jsonl')
+    msg('ESCENA 5: el diario se pierde; el libro, el registro y el contador, no. El testigo vio hasta '
+        'el mmrSize %d' % t_max)
+    nodo = levantar('E', F, P, 1)
+    try:
+        r5 = esperar(w5, 40)
+    finally:
+        parar(nodo)
+    if w5.poll() is None:
+        w5.kill(); w5.wait()
+    l5 = diario_de(d5w)
+    ultima = l5[-1] if l5 else {}
+    cons = ultima.get('consistencia', {})
+    t5 = q(cons.get('t', '0x0')) if cons.get('t') else None
+    sal5 = open(d5w + '/salida.txt').read()
+    exigir(r5 not in (None, 0) and cons.get('clase') == 'bifurcacion' and t5 is not None
+           and t5 <= t_max and cons.get('digestPrevio') in por_t.get(t5, ())
+           and ultima.get('epochDigest') != cons.get('digestPrevio')
+           and 'bifurcacion o reinicio sin diario' in sal5,
+           'SIN su diario: el testigo vivo SE DETIENE con bifurcacion en el mmrSize %s, que ya habia '
+           'visto -el mayor que vio, %d-, sin esperar a que el nodo pase de lo custodiado (exit %s)'
+           % (t5, t_max, r5), sal5[-800:] + '\nclases: ' + clases(l5))
+    p = subprocess.run([CLI, 'witness', '--auditar', d5w + '/diario.jsonl', '--sobres', d5w + '/sobres',
+                        '--no-color'], capture_output=True, text=True)
+    sobres5 = sorted(glob.glob(d5w + '/sobres/bifurcacion-*.json'))
+    exigir(p.returncode != 0 and 'bifurcacion o reinicio sin diario' in p.stdout and len(sobres5) >= 1,
+           '--auditar --sobres del diario del testigo la ve SIN el nodo y arma %d sobre(s) del modo 5'
+           % len(sobres5), (p.stdout + p.stderr)[-800:])
+    veredictos = [subprocess.run([MANDO, x], capture_output=True, text=True) for x in sobres5]
+    exigir(sobres5 and all(v.returncode == 0 and 'VERDE: BIFURCACION' in v.stdout for v in veredictos),
+           'el mando los juzga sin el nodo ni el testigo: VERDE, BIFURCACION, los %d' % len(sobres5),
+           '\n'.join((v.stdout + v.stderr)[-300:] for v in veredictos))
 finally:
     for p in procesos:
         if p.poll() is None:

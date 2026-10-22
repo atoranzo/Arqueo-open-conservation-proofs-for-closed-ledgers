@@ -923,6 +923,27 @@ fn aviso_de_agotamiento(contador: u64, latido_s: u64) -> Option<String> {
     })
 }
 
+/// §292 · **La siembra del MMR al arrancar**: las hojas que el diario conserva, en su orden; sin
+/// diario, ninguna. El diario manda, la memoria es cache.
+///
+/// ⚠️ §714: sale de `main` a su funcion, sin cambiarla, para que un test la ate. Es una
+/// mitad de lo que el testigo da por hecho -un nodo honesto con su diario no repite un `mmrSize`-; la
+/// otra es [`crate::latido::conservar`], que anota la linea en el diario y empuja la hoja en el mismo
+/// sitio, y sirve la cabeza despues. Si `diario::anotar` no falla, una cabeza servida tiene su linea:
+/// tras un reinicio, la siguiente firma en el tamaño siguiente. Quien firma, anota
+/// (`firma_sin_diario`): el reinicio sin diario de un nodo que firma es el de un diario perdido,
+/// cambiado o con lineas de menos, y vuelve a firmar en tamaños que ya firmo. El testigo lo detiene:
+/// «bifurcacion o reinicio sin diario».
+///
+/// ⚠️ **El hueco, declarado**: si `diario::anotar` falla -disco lleno, EIO-, `conservar` lo avisa
+/// con un `warn` y sigue (§272), la hoja entra en el MMR y la cabeza se sirve sin su linea. Tras un
+/// reinicio la siembra trae una hoja de menos y el nodo honesto vuelve a firmar un tamaño servido;
+/// si despues se anoto otra linea, con otro digest, aun sin trafico. Lo mide
+/// `si_anotar_falla_el_nodo_repite_un_mmr_size`. Queda declarado, no cerrado.
+pub(crate) fn hojas_mmr_iniciales(diario: Option<&str>) -> Vec<zk_ssl_verify::acuses::Digest> {
+    diario.map(crate::diario::digests).unwrap_or_default()
+}
+
 /// «Quien firma, anota» (nota 80, segunda mitad; §285): la decision de
 /// arranque, PURA para poder probarse en frio — los tests de este binario
 /// no ejercitan `Args`, asi que el predicado se prueba solo y el cableado
@@ -1935,11 +1956,7 @@ async fn main() -> anyhow::Result<()> {
         .map(|f| f.clave_publica())
         .unwrap_or_default();
     // §292: la siembra del MMR — el diario manda, la memoria es cache.
-    let hojas_mmr_iniciales = args
-        .diario
-        .as_ref()
-        .map(crate::diario::digests)
-        .unwrap_or_default();
+    let hojas_mmr_iniciales = hojas_mmr_iniciales(args.diario.as_deref());
 
     // §436 · E4b — LOS LIBROS AJENOS, FAIL-CLOSED. El `?` ES la puerta: si un
     // solo libro no acredita lo que dice, **el nodo NO ARRANCA**. Sin
@@ -6259,6 +6276,102 @@ mod tests {
             1,
             "sin memoria, Q sale de la ultima linea del diario"
         );
+    }
+
+    /// ⚠️ §714 · **Con su diario, el nodo no repite un `mmrSize`; sin el, si.** Es lo que
+    /// el testigo da por hecho para detenerse con `bifurcacion` sin quemarse ante un nodo honesto.
+    /// A, con diario: tres latidos con un envio entre medias. B, el reinicio, con la siembra de `main`
+    /// ([`hojas_mmr_iniciales`]): dos latidos mas, en el 3 y el 4. La cabeza de cada tamaño es la
+    /// linea de su numero en el diario. C, el reinicio SIN diario (aqui sin firmar: un nodo que firma
+    /// siempre lleva diario, y lo que se mide es la siembra): vuelve a firmar el 0 -con el mismo
+    /// contenido, porque nada cambio todavia: el reseteo sin trafico no detiene a nadie- y el 1 con
+    /// OTRO, porque no lleva el envio que A recibio antes del suyo: dos cabezas en el mismo sitio,
+    /// «bifurcacion o reinicio sin diario». Falsador: con la siembra vacia, B firma en el 0 y el 1.
+    #[test]
+    fn con_su_diario_el_nodo_no_repite_un_mmr_size() {
+        let ruta = tests_dir(&format!("diario_mmr_{}", proximo_nodo())).join("diario.jsonl");
+        let ruta_s = ruta.to_str().expect("ruta en utf-8").to_string();
+        let latir = |app: &App| {
+            let l = crate::latido::latir(app, None).expect("latir");
+            let (t, d) = (l.cabeza.mmr_t, l.cabeza.digest());
+            crate::latido::conservar(app, l);
+            (t, d)
+        };
+        let mut a = nodo(30);
+        a.diario = Some(ruta.clone());
+        let mut vistas = vec![latir(&a)];
+        let _ = dispatch(&a, "zkssl_applySend", envio_de_ceros().0);
+        vistas.push(latir(&a));
+        vistas.push(latir(&a));
+        let mut b = nodo(30);
+        b.diario = Some(ruta.clone());
+        b.hojas_mmr = Mutex::new(hojas_mmr_iniciales(Some(&ruta_s)));
+        // El registro de recepcion sobrevive al reinicio (§569): aqui, el mismo envio otra vez.
+        let _ = dispatch(&b, "zkssl_applySend", envio_de_ceros().0);
+        vistas.push(latir(&b));
+        vistas.push(latir(&b));
+        assert_eq!(vistas.iter().map(|(t, _)| *t).collect::<Vec<_>>(), vec![0, 1, 2, 3, 4]);
+        assert_eq!(
+            crate::diario::digests(&ruta),
+            vistas.iter().map(|(_, d)| *d).collect::<Vec<_>>(),
+            "la cabeza de mmrSize t es la linea t del diario"
+        );
+        let c = nodo(30);
+        assert!(hojas_mmr_iniciales(None).is_empty(), "sin diario, la siembra es vacia");
+        let (t0, d0) = latir(&c);
+        let (t1, d1) = latir(&c);
+        assert_eq!((t0, d0), vistas[0], "sin trafico, el reinicio sin diario firma lo mismo");
+        assert_eq!(t1, vistas[1].0);
+        assert_ne!(d1, vistas[1].1, "y con el, otra cosa en el mismo mmrSize");
+    }
+
+    /// ⚠️ §714 · **Si `diario::anotar` falla, el nodo honesto repite un `mmrSize`.** Es el diario de
+    /// cabezas; el `anotar` del registro de recepcion, que desde el §815 falla cerrado, es otro.
+    /// `conservar` lo avisa con un `warn` y sigue (§272): la hoja entra en el MMR y la cabeza se sirve
+    /// sin su linea. Aqui el disco que no admite la linea es una ruta que es un DIRECTORIO: falla
+    /// tambien como root. A sirve los tamaños 0 a 3, y el 2 se queda sin linea. Dos reinicios con la
+    /// siembra de `main` ([`hojas_mmr_iniciales`]):
+    ///
+    /// - C, justo despues del 2 perdido: la siembra trae dos hojas y C vuelve a firmar el 2, con el
+    ///   MISMO digest -la misma cima, y sin trafico nada mas cambio-. No detiene a nadie.
+    /// - B, despues del 3, que si se anoto: la siembra trae tres hojas (las del 0, el 1 y el 3) y B
+    ///   vuelve a firmar el 3 con OTRO digest, aun sin trafico: su cima no es la de A. El testigo que
+    ///   vio el 3 de A se detiene con `bifurcacion`.
+    ///
+    /// Es un hueco DECLARADO, no cerrado: cerrarlo (fallar cerrado si no puede anotar: dejar de servir
+    /// o de firmar) va al trabajo del nodo de fallar cerrado, y choca con la doctrina del §272.
+    #[test]
+    fn si_anotar_falla_el_nodo_repite_un_mmr_size() {
+        let dir = tests_dir(&format!("diario_anotar_{}", proximo_nodo()));
+        let ruta = dir.join("diario.jsonl");
+        let ruta_s = ruta.to_str().expect("ruta en utf-8").to_string();
+        let latir = |app: &App| {
+            let l = crate::latido::latir(app, None).expect("latir");
+            let (t, d) = (l.cabeza.mmr_t, l.cabeza.digest());
+            crate::latido::conservar(app, l);
+            (t, d)
+        };
+        let mut a = nodo(30);
+        a.diario = Some(ruta.clone());
+        let mut vistas = vec![latir(&a), latir(&a)];
+        // El disco deja de admitir la linea: el 2 se sirve igual.
+        a.diario = Some(dir.clone());
+        vistas.push(latir(&a));
+        assert_eq!(crate::diario::digests(&ruta).len(), 2, "el 2 se sirvio sin su linea");
+        let mut c = nodo(30);
+        c.hojas_mmr = Mutex::new(hojas_mmr_iniciales(Some(&ruta_s)));
+        assert_eq!(latir(&c), vistas[2], "el 2 otra vez, con la misma cima y sin trafico: lo mismo");
+        // El disco vuelve: el 3 si se anota, y la siembra ya no es la serie que A firmo.
+        a.diario = Some(ruta.clone());
+        vistas.push(latir(&a));
+        assert_eq!(vistas.iter().map(|(t, _)| *t).collect::<Vec<_>>(), vec![0, 1, 2, 3]);
+        let hojas = hojas_mmr_iniciales(Some(&ruta_s));
+        assert_eq!(hojas, vec![vistas[0].1, vistas[1].1, vistas[3].1], "falta la hoja del 2");
+        let mut b = nodo(30);
+        b.hojas_mmr = Mutex::new(hojas);
+        let (t, d) = latir(&b);
+        assert_eq!(t, vistas[3].0, "vuelve a firmar el 3");
+        assert_ne!(d, vistas[3].1, "con otro digest, aun sin trafico: otra cima en el mismo mmrSize");
     }
 
     #[test]

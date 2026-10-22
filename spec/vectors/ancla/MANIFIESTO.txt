@@ -60,3 +60,63 @@ neg-ancla-cero-escrito-como-p.json|1|chainDigest: 0xffffffff00000001 no es canon
 # identidad: daba VERDE -«la historia anclada es un prefijo»- en el kit y en la segunda de antes del
 # §712 (medido). Ningun vector anterior se reescribe ni cambia de veredicto.
 neg-ancla-bifurcada-mismo-mmrSize.json|1|extension: mismo mmrSize y digest distinto
+# §714 · el MODO 5 del sobre del ancla: la BIFURCACION (spec/PAQUETE.md 2.12). Dos cabezas
+# firmadas del MISMO operador -la misma clave, o claves que las `actas` unen- con el MISMO mmrSize y
+# digests distintos: DETECCION con salida 0, el molde de la vista dividida. Un nodo honesto con su
+# diario no repite un mmrSize; las dos solo salen de una bifurcacion o de un reinicio sin el diario.
+# DOCE sobres nuevos, DERIVADOS sin otra corrida de cabezas ya capturadas en este catalogo, escritos
+# como los de banco_ancla.sh. Los TRES positivos:
+#   - `bifurcacion-misma-cima`: las dos cabezas de `paquete/rechazo-ext-bifurcada-mismo-mmrSize.json`
+#     (semilla '39', mmrSize 5, hojas 11 y 17, la MISMA cima: el diario recortado);
+#   - `bifurcacion-otra-cima`: la de A en el 5 (hoja 11) y la del operador restaurado de antes de los
+#     huerfanos, `paquete/rechazo-ext-reloj-retrocede.json` (mmrSize 5, hoja 5, OTRA cima: un reinicio
+#     con un diario que no era el ultimo). El testigo del §712 no la detenia si iba por detras;
+#   - `bifurcacion-genesis`: dos cabezas del mmrSize 0, hoja 0, de la clave de la suite, de dos
+#     corridas de tools/banco_completitud.sh (`0.4/completitud/lote-rechazado-con-prueba.json` y
+#     `completitud/prenda-aceptada.json`): cada corrida es un nodo nuevo con la MISMA clave y sin el
+#     diario de la anterior -el reinicio sin diario, literal-. Es tambien la vista dividida (hoja 0).
+# Los NUEVE negativos, uno por regla del modo 5 y por sitio: la forma (rama con ancla, con
+# contraria), la version de la rama, una rama con los campos de una cabeza y la firma de OTRA (su
+# digest recompone; el preambulo no: la firma es VALIDA pero de otro mensaje, con el mismo texto en
+# el kit y en la segunda implementacion desde este sello), otra clave sin actas, otra clave con
+# actas que no la unen (la cadena de `rotacion/rotacion-un-eslabon.json`), otro mmrSize con la misma
+# clave, otro mmrSize con dos claves que las actas SI unen -el operador se acepta, y cae el mmrSize:
+# la cadena no excusa la regla- y la MISMA cabeza dos veces. Ningun vector anterior se reescribe ni cambia de veredicto: la
+# rama es una clave que ningun sobre anterior traia.
+bifurcacion-misma-cima.json|0|VERDE: BIFURCACION - el operador firmo DOS cabezas distintas con el mmrSize 5: bifurcacion o reinicio sin diario
+bifurcacion-otra-cima.json|0|VERDE: BIFURCACION - el operador firmo DOS cabezas distintas con el mmrSize 5: bifurcacion o reinicio sin diario
+bifurcacion-genesis.json|0|VERDE: BIFURCACION - el operador firmo DOS cabezas distintas con el mmrSize 0: bifurcacion o reinicio sin diario
+neg-rama-con-ancla.json|1|un sobre con rama no lleva ancla ni contraria
+neg-rama-con-contraria.json|1|un sobre con rama no lleva ancla ni contraria
+neg-rama-v2.json|1|rama: formatVersion 2: el ancla lee cabezas
+neg-rama-firma-de-otra-cabeza.json|1|rama: cabeza: la firma es VALIDA pero de otro mensaje
+neg-rama-de-otra-clave.json|1|las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante
+neg-rama-actas-que-no-unen.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen
+neg-rama-otro-mmrSize.json|1|bifurcacion: mmrSize distinto (5, 6)
+neg-rama-otro-mmrSize-con-actas.json|1|bifurcacion: mmrSize distinto (2, 4)
+neg-rama-la-misma-cabeza.json|1|bifurcacion: las dos cabezas son LA MISMA
+# §714 · NUEVE sobres nuevos mas, DERIVADOS sin otra corrida de vectores de este catalogo, escritos
+# como los de arriba. Ningun vector anterior se reescribe ni cambia de veredicto.
+# CINCO fijan que la FORMA y el modo los decide la PRESENCIA de la clave, tambien con `null`, como la
+# referencia (`p.get(k).is_some()`). La segunda miraba `doc.get(k) is not None` y un `null` pasaba por
+# ausente: en los cinco el kit daba ROJO y la segunda VERDE (medido). Los tres de la contraria y del
+# camino ya divergian antes de este sello, sin la rama:
+#   - `neg-rama-con-ancla-null`, `neg-rama-con-contraria-null`: `bifurcacion-misma-cima` con la otra
+#     clave en null (la segunda daba VERDE: BIFURCACION);
+#   - `neg-contraria-con-ancla-null`: `vista-dividida` con `"ancla": null` (VERDE: VISTA DIVIDIDA);
+#   - `neg-camino-null-sin-ancla`: `ancla-derivada` con `"camino": null` (VERDE del modo 1);
+#   - `neg-ancla-exacta-con-camino-null`: `ancla-exacta` con `"camino": null`: es el modo 3, y su
+#     ancla no es ANTERIOR (la segunda daba el VERDE del modo 2).
+# CUATRO fijan la rama como SUJETO de sus rojos, en el orden de la referencia: que sea un objeto
+# (`null`; una cadena, con la que la segunda revento con un traceback), su formatVersion (la rama de
+# `bifurcacion-otra-cima` sin el campo) y su version antes que available (la misma, v2 y
+# available:false: la segunda decia «la cabeza no era available:true»).
+neg-rama-con-ancla-null.json|1|un sobre con rama no lleva ancla ni contraria
+neg-rama-con-contraria-null.json|1|un sobre con rama no lleva ancla ni contraria
+neg-contraria-con-ancla-null.json|1|un sobre con contraria no lleva ancla
+neg-camino-null-sin-ancla.json|1|camino sin ancla: no hay nada que extender
+neg-ancla-exacta-con-camino-null.json|1|no es ANTERIOR
+neg-rama-null.json|1|rama: no es una cabeza (objeto)
+neg-rama-cadena.json|1|rama: no es una cabeza (objeto)
+neg-rama-sin-formatVersion.json|1|rama: falta formatVersion o no es cadena 0x
+neg-rama-v2-no-disponible.json|1|rama: formatVersion 2: el ancla lee cabezas
