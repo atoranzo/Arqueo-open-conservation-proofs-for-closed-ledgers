@@ -96,8 +96,8 @@ msg "el VERDE que se exige, DERIVADO del MANIFIESTO: <<$ESPERADO>>"
 msg "compilando nodo y verificador en RELEASE (aqui se firma y se congela de verdad)"
 cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
   || cargo build --locked --release -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
-NODO="${CARGO_TARGET_DIR:-target}/release/zk-ssl-node"
-VER="${CARGO_TARGET_DIR:-target}/release/zk-ssl-verify"
+TD=$(bash tools/target_dir.sh) || fallo "no se donde deja cargo los binarios (tools/target_dir.sh)"; NODO="$TD/release/zk-ssl-node"
+VER="$TD/release/zk-ssl-verify"
 python3 -c "print('41'*96, end='')" > "$DIR/semilla.hex"
 chmod 600 "$DIR/semilla.hex"
 

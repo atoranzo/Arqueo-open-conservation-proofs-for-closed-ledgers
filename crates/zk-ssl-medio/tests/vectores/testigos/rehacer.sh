@@ -40,6 +40,8 @@ huella(){ { git status --porcelain=v1 -uall | grep -v " $AQUI/torchwood.json\$";
 ANTES=$(huella)
 GO="${GO:-$(command -v go || echo /usr/local/go/bin/go)}"
 [ -x "$GO" ] || fallo "sin Go: GO=/ruta/al/go"
+# Los binarios de Rust, donde los deja cargo: lo dice tools/target_dir.sh (§855).
+T=$(bash tools/target_dir.sh) || fallo "no se donde deja cargo los binarios (tools/target_dir.sh)"
 DIR=$(mktemp -d "$HOME/.testigos_locales.XXXXXX")
 trap 'chmod -R u+w "$DIR" 2>/dev/null; rm -rf "$DIR"' EXIT INT TERM HUP QUIT
 # Los modulos y la cadena de Go, en el temporal salvo que quien llama exporte los suyos.
@@ -62,12 +64,13 @@ msg "compilando el kit, el cli y el cliente del medio en RELEASE"
     && cargo build --locked --release -q -p zk-ssl-medio --example testigos_locales; } \
   || fallo "no compila"
 
-python3 - "$DIR" "$AQUI" "${GUARDAR:-}" "$VERSION_GO" <<'PY'
+python3 - "$DIR" "$AQUI" "${GUARDAR:-}" "$VERSION_GO" "$T" <<'PY'
 import atexit, hashlib, json, os, re, socket, subprocess, sys, time
-DIR, AQUI, GUARDAR, VERSION_GO = sys.argv[1:5]
+DIR, AQUI, GUARDAR, VERSION_GO, T = sys.argv[1:6]
 BIN = DIR + '/bin/'
-MANDO, JUEZ = 'target/release/zk-ssl-verify', 'target/release/zk-ssl-cli'
-CLIENTE = 'target/release/examples/testigos_locales'
+# ⚠️ §855: las tres decian 'target/release/', sin mirar donde deja cargo los binarios
+MANDO, JUEZ = T + '/release/zk-ssl-verify', T + '/release/zk-ssl-cli'
+CLIENTE = T + '/release/examples/testigos_locales'
 CAT = 'spec/vectors/ancla-cofirmada/'
 def msg(m): print('TESTIGOS-LOCALES| ' + m, file=sys.stderr, flush=True)
 fallos = 0

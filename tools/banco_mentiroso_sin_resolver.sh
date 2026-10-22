@@ -68,7 +68,7 @@ msg "compilando nodo, cli, verificador y el ejemplo e2e del sdk en RELEASE (aqui
 python3 - "$DIR" "$LARGO" "${GUARDAR:-}" <<'PY'
 import json, os, re, shutil, subprocess, sys, threading, time, urllib.request
 DIR, LARGO, GUARDAR = sys.argv[1], sys.argv[2] == '1', sys.argv[3]
-TD = os.environ.get('CARGO_TARGET_DIR') or 'target'; NODO, CLI, MANDO = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-cli', TD + '/release/zk-ssl-verify'
+TD = subprocess.check_output(['bash', 'tools/target_dir.sh'], text=True).strip(); NODO, CLI, MANDO = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-cli', TD + '/release/zk-ssl-verify'
 E2E = TD + '/release/examples/e2e'
 PN = 8818
 def msg(m): print('BANCO-MENT-SINRES| ' + m, file=sys.stderr, flush=True)

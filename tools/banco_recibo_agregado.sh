@@ -57,7 +57,7 @@ msg "compilando cli, nodo, verificador y el ejemplo d2_lote_rpc en RELEASE (aqui
 python3 - "$DIR" "${GUARDAR:-}" <<'PY'
 import json, os, shutil, subprocess, sys, threading, time, urllib.request
 DIR, GUARDAR = sys.argv[1], sys.argv[2]
-T = (os.environ.get('CARGO_TARGET_DIR') or 'target') + '/release/'
+T = subprocess.check_output(['bash', 'tools/target_dir.sh'], text=True).strip() + '/release/'
 CLI, NODO, MANDO, D2 = T + 'zk-ssl-cli', T + 'zk-ssl-node', T + 'zk-ssl-verify', T + 'examples/d2_lote_rpc'
 def msg(m): print('BANCO-AGREG| ' + m, file=sys.stderr, flush=True)
 fallos = hechos = 0

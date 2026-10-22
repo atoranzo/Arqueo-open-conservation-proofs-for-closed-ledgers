@@ -62,8 +62,8 @@ cd "$(dirname "$0")/.." || fallo "no encuentro la raiz"
 msg "compilando nodo y cli (release: el testigo FIRMA)"
 cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli \
   || cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli || fallo "no compila"
-NB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-node"
-CB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-cli"
+TD=$(bash tools/target_dir.sh) || fallo "no se donde deja cargo los binarios (tools/target_dir.sh)"; NB="$TD/release/zk-ssl-node"
+CB="$TD/release/zk-ssl-cli"
 [ -x "$NB" ] || fallo "falta $NB"
 [ -x "$CB" ] || fallo "falta $CB"
 

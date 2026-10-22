@@ -353,6 +353,15 @@ fi
 PEDIDO=$(nivel_num "${NIVEL#--}")
 OUT="${OUT:-/tmp/canon}"
 rm -rf "$OUT"; mkdir -p "$OUT"
+# ── §855 · antes de los tests: donde deja cargo los binarios, y si check_curvas podra leer el arbol ──
+# El target lo da tools/target_dir.sh, de `cargo metadata`: sigue CARGO_TARGET_DIR,
+# CARGO_BUILD_TARGET_DIR y build.target-dir, como cargo. Lo usan el 3 bis y las familias. Y en un clon
+# recien hecho a la cache de cargo le faltan fuentes que lee check_curvas (§843), o hasta el indice
+# si esta vacia: se avisa aqui, con el remedio, sin bajar nada. El ROJO, si lo hay, lo da el 2 ter.
+DIR_TARGET=$(bash tools/target_dir.sh 2> "$OUT/target_dir.txt") \
+  || falla "no se donde deja cargo los binarios: tools/target_dir.sh en rojo ($(tail -n 1 "$OUT/target_dir.txt"))"
+python3 tools/check_curvas.py --cache > "$OUT/check_curvas_cache.txt" 2>&1 \
+  || { msg ""; sed 's/^/  ⚠️  /' "$OUT/check_curvas_cache.txt" >&2; }
 msg ""
 msg "== CANON $NIVEL · tests =="
 msg "   crate                exit  pasan(pin) ignor(pin) warn(pin)   seg"
@@ -630,7 +639,7 @@ cargo build --release -q --locked -p zk-ssl-verify > "$OUT/paquete_build.txt" 2>
 # UN solo productor del bucle del manifiesto: tools/conformidad.sh, el mismo que un tercero corre
 # sobre cualquier binario y el que artefacto.sh corre sobre el binario con remap. Cada ROJO del
 # arnes entra aqui con su nombre; la prueba de vida (manifiesto vacio, vector sin entrada) es suya.
-if bash tools/conformidad.sh "${CARGO_TARGET_DIR:-target}/release/zk-ssl-verify" > "$OUT/paquete.txt" 2>&1; then  # ⚠️ §844: decia target/release/, sin CARGO_TARGET_DIR
+if bash tools/conformidad.sh "$DIR_TARGET/release/zk-ssl-verify" > "$OUT/paquete.txt" 2>&1; then  # ⚠️ §844: decia target/release/, sin CARGO_TARGET_DIR; ⚠️ §855: decia ${CARGO_TARGET_DIR:-target}
   msg "  OK  paquete: $(tail -n 1 "$OUT/paquete.txt" | sed 's/^conformidad: //')"
 else
   while IFS= read -r L; do falla "paquete $L"; done < <(grep '^ROJO' "$OUT/paquete.txt" | sed 's/^ROJO //')
@@ -681,7 +690,7 @@ for F in $FAMILIAS; do
     continue
   fi
   O="$OUT/${F//-/_}.txt"
-  if bash tools/conformidad.sh "${CARGO_TARGET_DIR:-target}/release/zk-ssl-verify" "$M" > "$O" 2>&1; then  # ⚠️ §844: decia target/release/
+  if bash tools/conformidad.sh "$DIR_TARGET/release/zk-ssl-verify" "$M" > "$O" 2>&1; then  # ⚠️ §844: decia target/release/; ⚠️ §855: decia ${CARGO_TARGET_DIR:-target}
     msg "  OK  $F: $(tail -n 1 "$O" | sed 's/^conformidad: //')"
   else
     while IFS= read -r L; do falla "$F $L"; done < <(grep '^ROJO' "$O" | sed 's/^ROJO //')

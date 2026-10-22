@@ -89,6 +89,27 @@ FALTA_SI = ('error: failed to download `anstyle-wincon v3.0.11`\n\nCaused by:\n 
 FALTA_NO = ('error: the lock file /r/Cargo.lock needs to be updated but --locked was passed to prevent this\n',
             'error: failed to download `ureq v2.12.1`\n\nCaused by:\n  unable to get packages from source\n\n'
             'Caused by:\n  failed to unpack package `ureq v2.12.1`\n')
+# Con la cache de cargo vacia, la de una maquina nueva, `cargo tree --offline` no llega a bajar nada:
+# falla antes, al resolver, porque no tiene el indice de crates.io (§855). Cargo nombra el primer
+# crate que no encuentra y anade la nota de `--offline`. SIN_INDICE casa con eso; el remedio es el
+# mismo. Un nombre que no existe en un indice completo daria el mismo texto, pero tampoco compilaria.
+# El autotest de R3: SIN_INDICE saca de SIN_INDICE_SI su crate y no casa con FALTA_SI ni con FALTA_NO,
+# y FALTA no casa con SIN_INDICE_SI.
+SIN_INDICE = re.compile(r'no matching package named `([^`]+)` found\s+location searched: [^\n]*index'
+                        r'[\s\S]*?offline mode \(via `--offline`\)')
+SIN_INDICE_SI = ('error: no matching package named `ark-bls12-381` found\nlocation searched: crates.io index\n'
+                 'required by package `zk-core v0.1.0 (/r/crates/zk-core)`\nnote: offline mode (via `--offline`) '
+                 'can sometimes cause surprising resolution failures\nhelp: if this error is too confusing you '
+                 'may wish to retry without `--offline`\n', 'ark-bls12-381')
+# Un fallo que no es de la cache, con la linea que ultima() saca de el: un `Cargo.lock` que pide cambios.
+OTRA_SI = ('error: cannot update the lock file /r/Cargo.lock because --locked was passed to prevent this\n'
+           'help: to generate the lock file without accessing the network, remove the --locked flag and use '
+           '--offline instead.\n', 'error: cannot update the lock file /r/Cargo.lock because --locked was passed '
+           'to prevent this')
+# El remedio, el mismo en el ROJO de R1 y en `--cache` (§855).
+REMEDIO = ('R1 lee `cargo tree --offline --all-features --target all`, que pide el fuente de cada crate de la '
+           'clausura en todos los targets, y un `cargo build` solo baja los de esta maquina. Remedio: `cargo '
+           'fetch --locked`, una vez y con red; despues, la herramienta corre sin red')
 
 
 def sin_comentarios(texto):
@@ -189,6 +210,66 @@ def usos_tls(texto):
     return [(limpio.count('\n', 0, m.start()) + 1, m.group(0)) for m in USO_TLS.finditer(limpio)]
 
 
+def de_la_cache(error):
+    """Lo que le falta a la cache de cargo segun el error de `cargo tree`: el fuente de un crate (FALTA,
+    §843) o el indice que lo resuelve (SIN_INDICE, §855). None si la causa es otra."""
+    m = FALTA.search(error)
+    if m:
+        return 'el fuente de `%s`' % m.group(1)
+    m = SIN_INDICE.search(error)
+    return 'el indice de `%s`' % m.group(1) if m else None
+
+
+def ultima(error):
+    """La linea del error de cargo que dice la causa: la ultima que empieza por «error:», y si no hay,
+    la ultima. ⚠️ §855: main() daba siempre la ultima, y con un `Cargo.lock` que pide cambios es la
+    del «help:» de cargo, no la causa (OTRA_SI)."""
+    lineas = error.strip().splitlines() or ['cargo tree fallo']
+    return ([l for l in lineas if l.startswith('error:')] or lineas)[-1]
+
+
+def faltan(lecturas):
+    """De (raiz, texto, error) por raiz, lo que dice `--cache`: lo que le falta a la cache en cada raiz
+    cuyo `cargo tree` fallo por ella. Un arbol leido, o un fallo por otra causa, no da nada. Su autotest
+    va en R3, con FALTA_SI, SIN_INDICE_SI y FALTA_NO."""
+    return ['%s (%s)' % (de_la_cache(e), r) for r, t, e in lecturas if t is None and de_la_cache(e)]
+
+
+def otras(lecturas):
+    """Las raices cuyo `cargo tree` fallo por otra causa que la cache, con la ultima linea de cargo
+    (§855). Su autotest va en R3, con lo mismo que el de faltan()."""
+    return ['%s (%s)' % (r, ultima(e)) for r, t, e in lecturas if t is None and not de_la_cache(e)]
+
+
+def aviso(lecturas):
+    """Las lineas del aviso de `--cache`, de (raiz, texto, error) por raiz: una con lo que le falta a la
+    cache y el remedio, si algo falta; otra con las raices que fallan por otra causa y la linea de cargo
+    que la dice, sin el remedio, que no es el suyo. Ninguna si se leyeron todas. Su autotest va en R3."""
+    falta, otra = faltan(lecturas), otras(lecturas)
+    lineas = []
+    if falta:
+        lineas.append('check_curvas no podra leer el arbol: a la cache de cargo le falta %s. %s'
+                      % (', '.join(falta), REMEDIO))
+    if otra:
+        lineas.append('check_curvas no podra leer el arbol de %s: no es de la cache de cargo, y R1 lo dira '
+                      'en el 2 ter' % ', '.join(otra))
+    return lineas
+
+
+def cache():
+    """`--cache` (§855): solo R1. Lo corre el canon al empezar, antes de los tests, para avisar con el
+    remedio en un clon recien hecho, sin esperar al 2 ter. Exit 1, con aviso(), si alguna raiz no se
+    lee: por la cache de cargo (FALTA o SIN_INDICE) o por otra causa. 0 solo si se leen las cuatro.
+    No baja nada."""
+    lineas = aviso([(raiz,) + arbol(raiz) for raiz in RAICES])
+    for linea in lineas:
+        print(linea)
+    if lineas:
+        return 1
+    print('check_curvas --cache: R1 lee las %d raices: a la cache de cargo no le falta nada' % len(RAICES))
+    return 0
+
+
 def main():
     rojo = []
     for n in AUTOTEST_SI:
@@ -211,14 +292,26 @@ def main():
     falta = FALTA.search(FALTA_SI[0])
     if not falta or falta.group(1) != FALTA_SI[1] or any(FALTA.search(n) for n in FALTA_NO):
         rojo.append('R3 R1 no reconoce el fallo de la cache de cargo: su autotest falla')
+    if (faltan([('x', None, FALTA_SI[0]), ('y', 'arbol', None)]) != ['el fuente de `%s` (x)' % FALTA_SI[1]]
+            or faltan([('x', None, n) for n in FALTA_NO])):
+        rojo.append('R3 --cache no reconoce el fallo de la cache de cargo: su autotest falla (§855)')
+    sin = SIN_INDICE.search(SIN_INDICE_SI[0])
+    if (not sin or sin.group(1) != SIN_INDICE_SI[1] or FALTA.search(SIN_INDICE_SI[0])
+            or any(SIN_INDICE.search(n) for n in (FALTA_SI[0],) + FALTA_NO)):
+        rojo.append('R3 R1 no reconoce la cache de cargo sin indice: su autotest falla (§855)')
+    leidas = [('x', None, FALTA_SI[0]), ('y', 'arbol', None), ('z', None, SIN_INDICE_SI[0])]
+    if (faltan(leidas) != ['el fuente de `%s` (x)' % FALTA_SI[1], 'el indice de `%s` (z)' % SIN_INDICE_SI[1]]
+            or otras(leidas) or otras([('w', None, OTRA_SI[0])]) != ['w (%s)' % OTRA_SI[1]]
+            or faltan([('w', None, OTRA_SI[0])]) or aviso([('y', 'arbol', None)])
+            or [l.endswith(REMEDIO) for l in aviso(leidas + [('w', None, OTRA_SI[0])])] != [True, False]):
+        rojo.append('R3 --cache no separa la cache de cargo de otra causa: su autotest falla (§855)')
     total, locales, cache = set(), {}, False
     for raiz in RAICES:
         texto, error = arbol(raiz)
         if texto is None:
-            falta = FALTA.search(error)
+            falta = de_la_cache(error)
             cache = cache or bool(falta)
-            causa = (', y no es una curva: a la cache de cargo le falta el fuente de `%s`' % falta.group(1) if falta
-                     else ' (%s)' % (error.strip().splitlines() or ['cargo tree fallo'])[-1])
+            causa = ', y no es una curva: a la cache de cargo le falta %s' % falta if falta else ' (%s)' % ultima(error)
             rojo.append('R1 %s: no se pudo leer su clausura%s' % (raiz, causa))
             continue
         crates, aristas, rutas = leer_arbol(texto)
@@ -246,9 +339,7 @@ def main():
         for r in rojo:
             print('ROJO %s' % r)
         if cache:
-            print('check_curvas: R1 lee `cargo tree --offline --all-features --target all`, que pide el fuente de '
-                  'cada crate de la clausura en todos los targets, y un `cargo build` solo baja los de esta '
-                  'maquina. Remedio: `cargo fetch --locked`, una vez y con red; despues, la herramienta corre sin red')
+            print('check_curvas: ' + REMEDIO)
         print('check_curvas: ROJO · %d fallo(s)' % len(rojo))
         return 1
     print('check_curvas: ninguna curva del patron en la clausura de produccion fuera del transporte declarado '
@@ -258,4 +349,6 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    if sys.argv[1:] not in ([], ['--cache']):
+        sys.exit('uso: python3 tools/check_curvas.py [--cache]')
+    sys.exit(cache() if sys.argv[1:] == ['--cache'] else main())

@@ -129,6 +129,23 @@ mide con `--release`. Si la orden de arriba, el workspace entero con
 release no era del 26-08-2026: aquel día fueron 287 (§366), y los sellos lo
 subieron con el pin hasta el §394 sin tocar la fecha.
 
+⚠️ **§855: el canon, en un clon recién hecho.** Se corre desde la raíz con
+`bash tools/canon.sh --sello`; los niveles y lo que cubre cada uno, en
+[`doc/METODO.md`](doc/METODO.md). Antes, una vez y con red:
+
+```bash
+cargo fetch --locked
+```
+
+`tools/check_curvas.py`, una de las herramientas del canon, lee la clausura de
+los binarios de producción con `cargo tree --offline --target all`, que pide el
+fuente de cada crate en todos los targets, y un `cargo build` sólo baja los de
+tu máquina (§843). Sin ese paso, o con la caché de cargo vacía, el canon avisa
+al empezar, con el remedio, y `check_curvas` sale ROJO en su bloque. No baja
+nada. Los binarios los busca donde los deja cargo: lo dice `tools/target_dir.sh`,
+que lo lee de `cargo metadata` y sigue `CARGO_TARGET_DIR`,
+`CARGO_BUILD_TARGET_DIR` y el `build.target-dir` de un `.cargo/config.toml`.
+
 Y para los circuitos:
 
 ```bash

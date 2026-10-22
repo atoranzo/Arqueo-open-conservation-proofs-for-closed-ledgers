@@ -4828,7 +4828,9 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   nombraba las dos decisiones como suyas —«enviarlo es del autor», «marcarlo es del autor»—;
   actuar fuera del árbol, no.
   (1) **El KAT ya no falta**: lo cerró el §623 (`tools/segunda/kat_xmss/`, juzgado en el canon
-  por la implementación de RFC 8391), y el §786 le fijó la huella (`tools/canon.sh:723-741`).
+  por la implementación de RFC 8391), y el §786 le fijó la huella (el bloque del corpus KAT de
+  `xmss` en el «3 duodecies» de `tools/canon.sh`; ⚠️ §855: decía `:723-741`, y el §855 añade
+  líneas por encima).
   «KAT ausente», arriba, valía hasta entonces. Y la versión de `xmss` está fijada exacta en tres
   crates —`zk-ssl-cli`, `zk-ssl-node` y `zk-ssl-verify`— y en el generador del KAT, no «en los dos
   que la usan». La cabecera de la casilla cerrada, arriba, lleva su marca: el issue de esta entrada

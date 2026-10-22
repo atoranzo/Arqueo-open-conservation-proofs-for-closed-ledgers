@@ -84,9 +84,9 @@ msg "compilando nodo, cli y verificador (release: el testigo FIRMA)"
 cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify \
   || cargo build --locked --release -p zk-ssl-node -p zk-ssl-cli -p zk-ssl-verify \
   || fallo "no compila"
-NB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-node"
-CB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-cli"
-VB="${CARGO_TARGET_DIR:-target}/release/zk-ssl-verify"
+TD=$(bash tools/target_dir.sh) || fallo "no se donde deja cargo los binarios (tools/target_dir.sh)"; NB="$TD/release/zk-ssl-node"
+CB="$TD/release/zk-ssl-cli"
+VB="$TD/release/zk-ssl-verify"
 [ -x "$NB" ] || fallo "falta $NB"
 [ -x "$CB" ] || fallo "falta $CB"
 [ -x "$VB" ] || fallo "falta $VB"

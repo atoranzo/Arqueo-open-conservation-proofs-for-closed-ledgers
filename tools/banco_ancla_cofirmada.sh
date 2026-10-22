@@ -39,7 +39,7 @@ msg "compilando nodo, verificador y el medio del banco en RELEASE (aqui se firma
 python3 - "$DIR" "${GUARDAR:-}" <<'PY'
 import json, os, shutil, subprocess, sys, time, urllib.request
 DIR, GUARDAR = sys.argv[1], sys.argv[2]
-TD = os.environ.get('CARGO_TARGET_DIR') or 'target'; NODO, MANDO = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-verify'
+TD = subprocess.check_output(['bash', 'tools/target_dir.sh'], text=True).strip(); NODO, MANDO = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-verify'
 MEDIO = TD + '/release/examples/medio'
 def msg(m): print('BANCO-ANCLA-COFIRMADA| ' + m, file=sys.stderr, flush=True)
 def levantar(nombre, semilla, port):

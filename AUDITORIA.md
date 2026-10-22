@@ -61382,3 +61382,303 @@ no un test. `BACKLOG.md` no cambia: su cabecera sigue en 44 abiertas y 86 resuel
 `tools/check_publicadas.py` y la de la ceguera en `tools/verificar_citas.py`), y cuatro de
 `tools/verificar_citas.py` son crónica de la regla (la línea de la cabecera que dice la lista nueva,
 el comentario de la lista y dos del autotest), que no corrigen nada.
+
+## §855 — el target de cargo lo da un solo guion, `tools/target_dir.sh`, que lo lee de `cargo metadata` y sigue también `CARGO_BUILD_TARGET_DIR` y `build.target-dir`: lo usan el canon, el adaptador del cable, los 25 bancos que buscaban sus binarios y los dos `rehacer*.sh` del medio, y `rehacer.sh` deja sus rutas fijas a `target/release/`; y el canon avisa al empezar, con el remedio, si a la caché de cargo le faltan los fuentes que lee `check_curvas`, como en un clon recién hecho, y `CONTRIBUTING.md` pide `cargo fetch --locked` antes del primer canon
+
+El commit que lleva este asiento, sobre `e6d243b` (el §854). Toca un fichero nuevo,
+`tools/target_dir.sh` (32 líneas, ejecutable). Toca `tools/canon.sh`: un bloque nuevo de nueve líneas antes de
+los tests (`:356-364`), y las dos líneas del arnés, la `:642` (el 3 bis) y la `:693` (las
+familias), en su sitio y con su marca. Toca `tools/cable_respuesta.sh`, la `:7` (el comentario) y la
+`:9-10` (una línea que resuelve el target y la ruta, con su marca). Toca 25 de los 26
+`tools/banco_*.sh`, 44 líneas, todas en su sitio. Toca
+`crates/zk-ssl-medio/tests/vectores/testigos/rehacer.sh` (`:43-44`, `:67`, `:69` y `:71-73`, con su
+marca) y `rehacer_omniwitness.sh` (`:50-51`, con su marca). Toca `tools/check_curvas.py`: el
+patrón `SIN_INDICE`, los casos `SIN_INDICE_SI` y `OTRA_SI` y la constante `REMEDIO` (`:92-112`), las
+funciones `de_la_cache()`, `ultima()`, `faltan()`, `otras()`, `aviso()` y `cache()` (`:213-271`),
+tres autotests de R3 (`:295-307`), el R1 de `main()` (`:312-314`), el ROJO de R1, que imprime
+`REMEDIO` (`:342`), y la entrada (`:351-354`). Toca
+`CONTRIBUTING.md`, un párrafo nuevo en el §4 (`:132-147`). Corrige dos citas por línea que este
+sello desplaza: `doc/METODO.md:116-118` y `BACKLOG.md:4831-4833`. Y este asiento. Ni código de los
+crates, ni tests de Rust, ni vectores, ni `tools/conformidad.sh`, ni `tools/artefacto.sh`, ni
+`tools/bancos.sh`, ni `tools/banco_cortes.sh`, ni `Cargo.toml`, ni `Cargo.lock`. Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango que el autor asignó
+(§830 a §859).
+
+Del autor es la tarea: el directorio de target y el clon nuevo, una de las cosas menores que el
+autor pidió hacer en una tanda el 2026-10-21. Junta tres que habían quedado abiertas: `rehacer.sh`
+con rutas fijas y la lectura de `target_directory`, las dos en «Lo que es del autor» del §844, y el
+`cargo fetch --locked` de un clon recién hecho, del §843. La forma del guion, el nombre y el aviso
+los propone la sesión. El canon de este commit, `bash tools/canon.sh --sello`,
+corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y otras cifras en esta
+frase, las de una corrida anterior: VERDE, 878 s de reloj (de su arranque a su salida) y 673 s de
+tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,00 al empezar. Antes,
+dentro del mismo cerrojo, la sesión tocó con
+`touch` los 275 `.rs` de `crates/` y de `tools/` (este sello no añade ninguno), y su log lo
+registra. El aviso nuevo no salió: la caché de la sesión está completa. Las 19 filas del nivel, en
+su pin, con 1853 tests que pasan (la suma de la columna «pasan»); la de `zk-ssl-air`, en 12 s; la
+puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (52 s)»; `check_tests`
+en 2012 y 20 instrumentos; `check_modulos` en 207; las once herramientas del bucle «2 ter», con el
+autotest nuevo de `check_curvas`; la puerta de los vectores, en 508 ficheros y 1017 líneas;
+`check_catalogo`; el paquete, con «89 de 89 entradas dicen lo que deben (78 .json, 89 con
+entrada)», y el binario `b87724b089924934`, buscado con `DIR_TARGET`; el cable, en 27 de 27, con el
+adaptador `6908b722db271b19`; las once familias, cada una en lo suyo; la segunda implementación, con
+el paquete en 89 de 89, las otras cinco familias en 17, 17, 22, 34 y 27, y sus pares STARK en 34 de
+34; el «3 duodecies», con la cadena en 24 de 24 y el cable de la segunda en 27 de 27; y el
+artefacto reproducible, con el binario `3a01451fb51204ac`, los manifiestos con el paquete en 89/89,
+y el tarball `ca8390da60f3fe1a`. Corrió con un `TMPDIR` propio, y no dejó nada en él.
+
+**De dónde sale.** El §844 llevó el canon, el adaptador y los bancos a `${CARGO_TARGET_DIR:-target}`
+y, en Python, a `os.environ.get('CARGO_TARGET_DIR') or 'target'`. Cargo mira más: también
+`CARGO_BUILD_TARGET_DIR` y el `build.target-dir` de un `.cargo/config.toml`, y un valor relativo lo
+lee desde la raíz. Con cualquiera de los dos últimos, cargo deja los binarios en un sitio y estas
+rutas los buscaban en otro. Y `rehacer.sh` no miraba ni `CARGO_TARGET_DIR`: sus tres rutas eran
+`target/release/…`. Del §843 quedaba que `check_curvas` sale ROJO en un clon que solo ha compilado,
+hasta un `cargo fetch --locked` con red, y el canon no lo decía hasta su bloque 2 ter, con los
+tests ya corridos.
+
+**Lo que hace.**
+
+- `tools/target_dir.sh` imprime, en una línea, el `target_directory` de `cargo metadata
+  --format-version 1 --no-deps --locked --offline`: una ruta absoluta. Si cargo falla o no da una
+  ruta absoluta, no imprime nada, deja el error en stderr y sale con 2. Resuelve la raíz desde su
+  propio fichero, así que vale desde cualquier directorio.
+- El canon resuelve el target una vez, antes de los tests, en `DIR_TARGET`; si el guion falla, es un
+  ROJO con su texto. El 3 bis y las familias usan `"$DIR_TARGET/release/zk-ssl-verify"`.
+- `tools/cable_respuesta.sh`: si no hay `ZK_SSL_CLI`, llama al guion de su mismo directorio; si
+  falla, `ROJO: no se donde deja cargo el binario` y exit 2, el del contrato del mando para lo que
+  no es un juicio. `ZK_SSL_CLI` sigue mandando.
+- Los bancos. En los 16 que nombran el binario en bash, la primera ruta lleva delante, en su misma
+  línea, `TD=$(bash tools/target_dir.sh) || fallo "…"`, y cada ruta es `"$TD/release/…"` (o
+  `debug/`). En `un_proceso`, la línea que anclaba en `$RAIZ` una ruta relativa queda en eso mismo:
+  la del guion ya es absoluta. En los 9 que las nombran en Python, `TD` (y en `recibo_agregado`, su
+  `T`) es `subprocess.check_output(['bash', 'tools/target_dir.sh'], text=True).strip()`; todos ya
+  importaban `subprocess`. `cortes` fija su propio `CARGO_TARGET_DIR`, que manda sobre las otras
+  dos, y no se toca. Ninguna línea entra ni sale: la cita de `doc/blueprint-v2.md:494` a
+  `tools/banco_completo.sh:84` sigue en su sitio.
+- `rehacer.sh` y `rehacer_omniwitness.sh` resuelven `T` con el guion, tras su `cd` a la raíz, y su
+  Python lo recibe por argumento: `rehacer.sh` pasa así de las rutas fijas a la forma de
+  `rehacer_omniwitness.sh`, y los dos, a la del guion. La forma intermedia, la del §844, no llegó a
+  escribirse en `rehacer.sh`.
+- `python3 tools/check_curvas.py --cache` lee solo la clausura de las cuatro raíces de R1. Busca dos
+  causas de la caché: la del §843, `FALTA`, un fuente que no está; y `SIN_INDICE`, la de una caché
+  vacía, en la que `cargo tree --offline` no llega a bajar nada: falla al resolver, con «no matching
+  package named `…` found», «location searched: crates.io index» y la nota de `--offline`. Si a
+  alguna raíz le falta algo, dice qué, en cuál, y el remedio, y sale con 1. Si alguna falla por otra
+  causa, lo dice con la línea de cargo que la da, sin el remedio, y sale con 1. Sólo sale con 0, y
+  sólo entonces dice que a la caché no le falta nada, si lee las cuatro. No baja nada. El canon lo
+  corre tras resolver el target y, si sale con 1, lo imprime como aviso, con «⚠️», no como ROJO: el
+  ROJO lo sigue dando `check_curvas` en el 2 ter. El remedio es una constante, `REMEDIO`, la misma
+  en el aviso y en el ROJO de R1, que con `FALTA` imprime lo de antes byte a byte; con
+  `SIN_INDICE`, el R1 de `main()` dice también «y no es una curva» y da el remedio. Lo que falta lo
+  da `faltan()`; lo que falla por otra causa, `otras()`; las líneas del aviso, `aviso()`. Tienen
+  tres autotests en R3: `SIN_INDICE` saca su crate de `SIN_INDICE_SI` y no casa con `FALTA_SI` ni
+  con `FALTA_NO`, y `FALTA` no casa con `SIN_INDICE_SI`; `faltan()` da `FALTA_SI` y `SIN_INDICE_SI`
+  y nada de un árbol leído, de `FALTA_NO` ni de `OTRA_SI`, y `otras()`, sólo `OTRA_SI`, con su
+  línea; y `aviso()` no da nada de un árbol leído, y da una línea con el remedio y otra sin él.
+- `ultima()`, la línea de la causa: la última que empieza por «error:», y si no hay, la última. El
+  R1 de `main()` daba siempre la última, y con un `Cargo.lock` que pide cambios es la del «help:» de
+  cargo, que no dice la causa (corrección 8).
+- `CONTRIBUTING.md`, en el §4: cómo se corre el canon, que antes, una vez y con red, va `cargo fetch
+  --locked`, por qué, lo que pasa sin él, y dónde busca el canon los binarios.
+
+**Medido**, en este orden, en una máquina de 4 CPU con carga de 0,06 al empezar. Una revisión
+encontró que `--cache` callaba con la caché vacía; lo de los puntos 7 y 8, y lo último del 1, es
+de después del arreglo, con carga de 0,28.
+
+1. `cargo metadata --format-version 1 --no-deps --offline`, cinco veces: de 0,050 a 0,074 s. El
+   guion, tres: de 73 a 96 ms. Su `target_directory`, en el worktree: sin variables, el `target/`
+   de la raíz; con `CARGO_TARGET_DIR=rel/a`, `<raíz>/rel/a`; con `CARGO_BUILD_TARGET_DIR=/x/y`,
+   `/x/y`; con `CARGO_BUILD_TARGET_DIR=x/y`, `<raíz>/x/y`; con las dos, la de `CARGO_TARGET_DIR`.
+   Con un `CARGO_HOME` nuevo y vacío y sin red (`unshare -rn`): sale, con el `target/` de la raíz, y
+   el `CARGO_HOME` sigue vacío. Sin `cargo` en el `PATH`: exit 2, nada en stdout. Tras el arreglo,
+   el guion, cinco veces, de 68 a 71 ms, y tres en el `CARGO_HOME` vacío, de 68 a 72 ms: menos de
+   0,1 s, lo que dice su comentario. Con `--locked` y un `Cargo.lock` que pide cambios (en la copia
+   del punto 2, `version = "9.9.9"` en `crates/zk-ssl-verify/Cargo.toml`): exit 0 y el `target` de
+   la copia. Con `--no-deps`, cargo no resuelve, y `--locked` no muerde.
+2. La copia: los ficheros que sigue git del worktree con este cambio, más el guion, con `tar`, sin
+   `target` ni `.git`, en el directorio de la sesión, con un `git init` y un commit propios para que
+   los bancos y los `rehacer*.sh` vean un árbol limpio. Sus 275 `.rs` de `crates/` y `tools/`, con
+   `touch`, y el kit y el cli compilados desde ella en release, en 69 s, con
+   `CARGO_BUILD_TARGET_DIR` al `target` del worktree y sin `CARGO_TARGET_DIR`. En lo que sigue, «con
+   `CARGO_BUILD_TARGET_DIR` fuera» es eso. En la copia, el guion da el `target` del worktree; la
+   forma vieja de bash y la de Python, `target`, que en la copia no existe. Con un
+   `.cargo/config.toml` de `build.target-dir = "/z/conf"` y sin variables, el guion da `/z/conf`, y
+   la forma vieja, `target`.
+3. El trozo del canon del 3 bis a las familias (del «3 bis · conformidad del PAQUETE» al «3
+   duodecies»), con su preámbulo (`set`, la raíz, `msg`, `falla`, `fallos`, `OUT`) y, en el de este
+   sello, el bloque nuevo, extraído con `sed`, sobre la copia:
+   - con `CARGO_BUILD_TARGET_DIR` fuera, el de este sello: VERDE, 0 ROJO, en 13 s; trece filas OK:
+     paquete 89 de 89, cable 27 de 27, consumo 17, conflicto 17, rechazo 84, edad 15, pendiente 10,
+     pago 13, prenda 11, completitud 81, ancla 22, ancla-cofirmada 27 y rotación 34;
+   - igual, con el canon y el adaptador de `378e1fa`: ROJO, 39: el paquete, 1, «el binario no existe
+     o no es ejecutable: target/release/zk-ssl-verify»; el cable, 27, «exit 2, el manifiesto espera
+     …»; y las familias, 11, una por familia. Es lo que este sello arregla;
+   - con `CARGO_TARGET_DIR` al `target` del worktree, el de este sello: VERDE, las trece;
+   - sin ninguna variable, con un `target` en la copia que es un enlace al del worktree: VERDE con el
+     de este sello y VERDE con el de `378e1fa`.
+
+   La huella que el arnés da del adaptador, `tools/cable_respuesta.sh`, pasa a `6908b722db271b19`
+   con este cambio; la del kit compilado desde la copia es `b87724b089924934`.
+4. Tres bancos, con `CARGO_BUILD_TARGET_DIR` fuera, cada uno con la forma de este sello y con la de
+   `378e1fa`, commiteada en la copia antes de correrlo:
+   - `banco_reutilizacion`, bash: VERDE en 80 s; el de `378e1fa`, exit 1, «ROJO: faltan los
+     binarios»;
+   - `banco_mentiroso_ausentes`, Python: VERDE en 34 s; el de `378e1fa`, exit 1, `FileNotFoundError`
+     de `target/release/zk-ssl-node` y «ROJO: alguna defensa no dijo lo que debia»;
+   - `banco_un_proceso`, el de `$RAIZ`: VERDE en 8 s; el de `378e1fa`, exit 1, «ROJO: faltan los
+     binarios».
+5. Los dos `rehacer*.sh`, con `CARGO_BUILD_TARGET_DIR` fuera, con Go y red, todo en 127.0.0.1:
+   `rehacer.sh`, sin `--guardar`: TESTIGOS-LOCALES VERDE, 37 OK y
+   0 ROJO, en 54 s, con torchwood v0.10.0 y la cadena de Go 1.27 que pide; `rehacer_omniwitness.sh`,
+   sin `--guardar`: OMNIWITNESS-LOCAL VERDE, 28 OK y 0 ROJO, en 53 s. Los dos comprueban al final que
+   no han tocado el árbol de la copia, y no lo tocaron.
+6. Los bancos, con `bash tools/bancos.sh` entero, sobre la copia, con `CARGO_BUILD_TARGET_DIR`
+   fuera: VERDE, 25 de 25, en 1066 s de bancos y 1067 s de reloj.
+   Los tres de `debug/` (`apagado`, `consistencia` y `extension`) pasan, y los nueve de Python también.
+7. `check_curvas --cache`, sobre el worktree, salvo donde se dice la copia.
+   - En la caché de la sesión: exit 0, «R1 lee las 4 raices: a la cache de cargo no le falta nada».
+   - En un `CARGO_HOME` nuevo y vacío, sin red (`unshare -rn`): exit 1 en 0,24 s, «check_curvas no
+     podra leer el arbol: a la cache de cargo le falta el indice de `ark-bls12-381` (zk-ssl-node)»,
+     lo mismo en las otras tres raíces, y el remedio. El `CARGO_HOME` queda con `registry/` y su
+     `CACHEDIR.TAG`, sin índice ni fuentes. Antes del arreglo daba exit 0 y «la cache de cargo
+     tiene los fuentes que R1 lee en las 4 raices», en 0,26 s: es lo que encontró la revisión. En
+     ese `CARGO_HOME`, `check_curvas` entero da ROJO, 5: las cuatro R1, «no se pudo leer su
+     clausura, y no es una curva: a la cache de cargo le falta el indice de `ark-bls12-381`», y «R3
+     R5 leyo 0 fuentes», con la línea del remedio.
+   - En la copia, con el `Cargo.lock` que pide cambios del punto 1: exit 1 en 0,61 s, «check_curvas
+     no podra leer el arbol de zk-ssl-node (error: cannot update the lock file … because --locked
+     was passed to prevent this)», lo mismo en las otras tres, «no es de la cache de cargo, y R1 lo
+     dira en el 2 ter», sin el remedio. `check_curvas` entero, ROJO, 5, con esa línea de cargo en
+     cada R1; antes del arreglo, R1 daba la del «help:».
+   - Antes del arreglo, en un `CARGO_HOME` nuevo con `cargo fetch --locked --target
+     x86_64-unknown-linux-gnu` (307 crates en 5 s, 191 MB), que baja lo de Linux y nada más, y sin
+     red, sobre la copia: exit 1 en 0,99 s, «check_curvas no podra leer el arbol: a la cache de
+     cargo le falta el fuente de `anstyle-wincon v3.0.11` (zk-ssl-node), `anstyle-wincon v3.0.11`
+     (zk-ssl-cli), `bitflags v1.3.2` (zk-ssl-sdk), `r-efi v6.0.0` (zk-ssl-verify)», y el remedio; y
+     `check_curvas` entero, ROJO, 5, como en el §843, con la línea del remedio de antes. Tras el
+     arreglo, sobre el worktree, en otro `CARGO_HOME` igual (307 crates en 4,5 s, 191 MB) y sin
+     red: exit 1 en 0,54 s, la misma lista con «el fuente de» delante de cada crate, y el remedio;
+     `check_curvas` entero, ROJO, 5, las cuatro R1 con «a la cache de cargo le falta el fuente de
+     `…`», como antes byte a byte, y la de R5; y el bloque del canon del punto 8, el aviso y
+     `rojo=0`.
+8. El bloque nuevo del canon, con su preámbulo, extraído con `sed`: en el `CARGO_HOME` vacío y sin
+   red, imprime el aviso, con «⚠️» y el remedio, y sigue sin ROJO (`rojo=0`, y `DIR_TARGET`, el
+   `target` del worktree); en la caché de la sesión, no imprime nada. Antes del arreglo, en el
+   `CARGO_HOME` del `cargo fetch` de Linux, imprimía el aviso, y sin `cargo` en el `PATH`, ROJO, «no
+   se donde deja cargo los binarios: tools/target_dir.sh en rojo (…)», y el aviso lleva la traza de
+   Python de `check_curvas`, que no encuentra `cargo`; tras el arreglo, lo mismo (`rojo=1` y
+   `FileNotFoundError: … 'cargo'` en el aviso).
+9. Sobre el worktree, las once herramientas del bucle «2 ter», `check_vectores --desde 378e1fa` y
+   `check_catalogo`: 0. `check_curvas`, con el autotest nuevo: VERDE, 4 raíces, 213 crates y 196
+   fuentes de 15 crates de la casa, como antes. `bash -n` del canon, del adaptador, del guion, de los
+   26 bancos y de los dos `rehacer*.sh`: 0.
+
+**Mutantes**, sobre la copia o sobre copias de los ficheros en el directorio de la sesión, con
+`CARGO_BUILD_TARGET_DIR` fuera donde se dice, cada uno deshecho después:
+
+- K1, la `:642` del canon con `${CARGO_TARGET_DIR:-target}`: ROJO, 1, el paquete.
+- K2, la `:693` con `${CARGO_TARGET_DIR:-target}`: ROJO, 11, las familias.
+- K3, `tools/cable_respuesta.sh` de `378e1fa` con el canon de este sello: ROJO, 27, el cable.
+- K4, `DIR_TARGET=${CARGO_TARGET_DIR:-target}` en el bloque nuevo, con la llamada al guion detrás
+  sin usar: ROJO, 12, el paquete y las familias.
+- B1, B2 y B3: los tres bancos del punto 4 con su forma de `378e1fa`: exit 1 los tres.
+- R1, `rehacer.sh` de `378e1fa`, con las rutas fijas: exit 1, `FileNotFoundError` de
+  `target/release/zk-ssl-verify` y «ROJO: algun paso no dijo lo que debia».
+- R2, `rehacer_omniwitness.sh` de `378e1fa`, con `${CARGO_TARGET_DIR:-target}`: lo mismo.
+- C1 a C7, sobre `tools/check_curvas.py` de este sello en la copia, tras el arreglo. Cada uno, con
+  tres corridas: `check_curvas` entero en la caché de la sesión; `--cache` en el `CARGO_HOME` vacío
+  y sin red; y `--cache` con el `Cargo.lock` que pide cambios. El de este sello da 0; 1, con el
+  remedio; y 1, con la línea «error: cannot update the lock file».
+  - C1, `faltan()` sin nada (`and False`): ROJO, 2, «R3 --cache no reconoce el fallo de la cache de
+    cargo» y «R3 --cache no separa la cache de cargo de otra causa»; con la caché vacía, exit 0.
+  - C2, `aviso()` sin la línea de lo que falta: ROJO, 1, «no separa»; con la caché vacía, exit 0.
+    Es el C2 de antes del arreglo, `cache()` con la lista vacía, que quedaba vivo: ya no lo está.
+  - C3, `de_la_cache()` sin `SIN_INDICE`: ROJO, 1, «no separa»; con la caché vacía, exit 1, pero
+    como otra causa y sin el remedio.
+  - C4, `SIN_INDICE` que no casa («no matching packages»): ROJO, 2, «R3 R1 no reconoce la cache de
+    cargo sin indice» y «no separa»; con la caché vacía, como C3.
+  - C5, `otras()` sin nada: ROJO, 1, «no separa»; con el `Cargo.lock` que pide cambios, exit 0 y
+    «a la cache de cargo no le falta nada»: la frase falsa que encontró la revisión.
+  - C6, `aviso()` sin la línea de otra causa: lo mismo que C5.
+  - C7, `ultima()` con la última línea: ROJO, 1, «no separa»; con el `Cargo.lock` que pide cambios,
+    exit 1 con la línea del «help:».
+
+Vivo, declarado: C8, `cache()` que nunca sale con 1 (`if lineas:` por `if False:`): `check_curvas`
+en la caché de la sesión, VERDE; `--cache` en el `CARGO_HOME` vacío imprime el aviso y además «a la
+cache de cargo no le falta nada», y sale con 0, y el canon no lo enseña. Lo ve el punto 7, a mano:
+ninguna comprobación del canon lo ve, porque en una caché completa el aviso no tiene que salir. Las copias, el conductor, sus salidas y el `CARGO_HOME` se borraron al acabar.
+
+Las compilaciones de la copia fueron al `target` del worktree, desde los fuentes de la copia, que
+son los de este commit: los binarios que quedan en él son de la copia, que ya no existe, el caso
+que describe el §844. El canon de este commit los rehace, con su `touch` dentro del cerrojo.
+
+**Correcciones**, sobre los ficheros STAGED de este commit:
+
+1. `tools/canon.sh:642`: el binario del 3 bis decía `"${CARGO_TARGET_DIR:-target}/release/zk-ssl-verify"`,
+   con «⚠️ §855: decia ${CARGO_TARGET_DIR:-target}» tras la marca del §844.
+2. `tools/canon.sh:693`: lo mismo, en el bucle de las familias.
+3. `tools/cable_respuesta.sh:7` y `:10`: el comentario y la ruta decían `${CARGO_TARGET_DIR:-target}`,
+   con la marca en la línea de la ruta.
+4. `crates/zk-ssl-medio/tests/vectores/testigos/rehacer.sh:71`: «⚠️ §855: las tres decian
+   'target/release/'», encima de las tres rutas.
+5. `crates/zk-ssl-medio/tests/vectores/testigos/rehacer_omniwitness.sh:51`: decía
+   `T="${CARGO_TARGET_DIR:-target}"`, con su marca; el comentario de la `:50` dice ya el guion.
+6. `doc/METODO.md:116-118`: «el código gana» citaba `CONTRIBUTING.md:171-172`, sus líneas en el
+   §793, que desde el §814 ya no caían en su sitio (en `378e1fa`, la frase estaba en la `:192-193`,
+   y con este sello, en la `:209-210`). Pasa a citar «el pie de `CONTRIBUTING.md`», con su marca.
+7. `BACKLOG.md:4831-4833`, en la 77: la huella del corpus KAT de `xmss` citaba
+   `tools/canon.sh:723-741`, que el bloque nuevo baja nueve líneas. Pasa a citar el bloque, en el
+   «3 duodecies», con su marca.
+8. `tools/check_curvas.py:223-228`, `ultima()`: el R1 de `main()` daba la última línea del error
+   de cargo, desde el §843, y con un `Cargo.lock` que pide cambios es la del «help:», no la causa.
+   La marca, «⚠️ §855: main() daba siempre la ultima», va en su docstring.
+
+Los bancos van sin marca, como en el §844: son 44 líneas con el mismo cambio, y `git diff e6d243b
+HEAD -- 'tools/banco_*.sh'` las da.
+
+Las líneas que se mueven: en `tools/canon.sh`, las de debajo de la 355, nueve; en
+`tools/cable_respuesta.sh`, las de debajo de la 9, una; en `rehacer.sh`, las de debajo de la 42,
+dos, y las de debajo de la 70, tres; en `tools/check_curvas.py`, las de debajo de la 91, veintiuna, y
+más abajo otras; en `CONTRIBUTING.md`, las de debajo de la 131, diecisiete; en `doc/METODO.md`, las
+de debajo de la 116, dos; en `BACKLOG.md`, las de debajo de la 4831, dos. `git grep` de citas por
+línea a esos ficheros, sin `AUDITORIA.md`: la de `BACKLOG.md` al canon y la de `doc/METODO.md` a
+`CONTRIBUTING.md`, corregidas arriba; `doc/AVISO_EN_ISO20022.md:211` cita `tools/check_curvas.py:14-21`
+y `:44-50`, que no se mueven; y `doc/integracion-vertical-evaluacion.md:76` y `:115` citan
+`CONTRIBUTING.md:149-157` y `:159-167`, «el criterio general» del §6, que ya no caían en su sitio en
+`378e1fa` (estaba en la `:180-185`) y este sello baja diecisiete más. Las de `doc/ecst/` a
+`CONTRIBUTING.md` son de su fecha. Las dos de `doc/integracion-vertical-evaluacion.md` no se tocan:
+quedan en «Lo que NO hace».
+
+**Lo que NO hace.**
+
+- No guarda contra un binario de otro árbol en un `target` compartido: el guion dice dónde está, no
+  de qué árbol es. Lo que el §844 dejaba al autor sigue ahí.
+- No baja nada: el canon avisa, y el remedio lo corre quien lo lee, con red.
+- El aviso no para el canon: los tests corren, y `check_curvas` da su ROJO en el 2 ter.
+- Sin `cargo`, `--cache` da la traza de Python en el aviso, como la daría `check_curvas` en el 2 ter;
+  sin `cargo` no hay canon que correr.
+- `SIN_INDICE` no distingue una caché sin índice de un nombre que no está en un índice completo: un
+  crate mal escrito en un `Cargo.toml` da el mismo texto. Tampoco compilaría, y `cargo fetch
+  --locked`, con red, diría la causa.
+- Sólo reconoce el texto de los errores de esta versión de cargo, la del canon: otra versión que
+  los escriba de otra forma sale como otra causa, sin el remedio, pero con su línea y exit 1.
+- No toca `tools/artefacto.sh`, `tools/conservados.sh` ni `tools/banco_cortes.sh`: los tres fijan
+  su propio `CARGO_TARGET_DIR`, que manda sobre `CARGO_BUILD_TARGET_DIR` y sobre `build.target-dir`.
+- No toca las órdenes para el lector de `doc/ecst/` que nombran `target/release/`, ni las citas de
+  `doc/integracion-vertical-evaluacion.md` a `CONTRIBUTING.md`, rancias desde antes de este sello.
+- El canon no corre los `rehacer*.sh` ni los bancos: lo de los puntos 4, 5 y 6 se midió a mano.
+
+**Lo que es del autor.** Si el aviso del clon nuevo se queda en aviso o pasa a parar el canon antes
+de los tests, que es lo que este sello no hace. El `--locked` del guion se queda: con un `Cargo.lock`
+que pide cambios no muerde (punto 1).
+
+**Contadores.** `check_tests` sigue en 2012 tests declarados y 20 instrumentos, y `check_modulos`
+en 207: el guion es de `tools/`, y el autotest nuevo es de una herramienta del bucle, no un test.
+El total de sello sigue en 1853. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 44
+abiertas y 86 resueltas. Las marcas «⚠️ §855» en los ficheros del commit, sin este asiento, son
+ocho, contadas con `git grep --cached -c '⚠️ §855'`, el patrón literal: dos en `tools/canon.sh`,
+una en `tools/cable_respuesta.sh`, una en cada `rehacer*.sh`, una en `doc/METODO.md`, una en
+`BACKLOG.md` y una en `tools/check_curvas.py`. Hay una novena que ese patrón no ve, por los
+asteriscos: «⚠️ **§855: el canon, en un clon recién hecho.**», en `CONTRIBUTING.md:132`. Es la
+cabecera de un párrafo nuevo, no una corrección.

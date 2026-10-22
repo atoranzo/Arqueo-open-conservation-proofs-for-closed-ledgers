@@ -113,7 +113,9 @@ No se corrige en su sitio lo que no se reescribe:
 - y los informes del autor con la aceptación pendiente, que «no se reescriben ni se marcan sin él»
   (§710, «Lo que NO hace», sobre `doc/ecst/`).
 
-Cuando un documento y el código dejan de coincidir, «el código gana» (`CONTRIBUTING.md:171-172`).
+Cuando un documento y el código dejan de coincidir, «el código gana» (el pie de `CONTRIBUTING.md`;
+⚠️ §855: decía `:171-172`, sus líneas en el §793; el §814 y los que le siguieron añadieron líneas
+por encima, y el §855 otras diecisiete).
 
 ## 4. El BACKLOG
 

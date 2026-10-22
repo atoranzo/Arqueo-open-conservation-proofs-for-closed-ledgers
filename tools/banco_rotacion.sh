@@ -52,7 +52,7 @@ cargo build --locked --release -q -p zk-ssl-node -p zk-ssl-verify -p zk-ssl-cli 
 python3 - "$DIR" "${GUARDAR:-}" <<'PY'
 import copy, glob, json, os, shutil, subprocess, sys, time, urllib.request
 DIR, GUARDAR = sys.argv[1], sys.argv[2]
-TD = os.environ.get('CARGO_TARGET_DIR') or 'target'; NODO, MANDO, CLI = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-verify', TD + '/release/zk-ssl-cli'
+TD = subprocess.check_output(['bash', 'tools/target_dir.sh'], text=True).strip(); NODO, MANDO, CLI = TD + '/release/zk-ssl-node', TD + '/release/zk-ssl-verify', TD + '/release/zk-ssl-cli'
 P = 8831
 def msg(m): print('BANCO-ROTACION| ' + m, file=sys.stderr, flush=True)
 def rojo(m): msg('ROJO: ' + m); sys.exit(1)

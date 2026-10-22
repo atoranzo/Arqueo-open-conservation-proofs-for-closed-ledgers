@@ -47,8 +47,8 @@ huella(){ { git status --porcelain=v1 -uall | grep -v " $AQUI/$GRAB\$"; \
 ANTES=$(huella)
 GO="${GO:-$(command -v go || echo /usr/local/go/bin/go)}"
 [ -x "$GO" ] || fallo "sin Go: GO=/ruta/al/go"
-# Los binarios de Rust, donde los deja cargo (§844).
-T="${CARGO_TARGET_DIR:-target}"
+# Los binarios de Rust, donde los deja cargo (§844): lo dice tools/target_dir.sh (§855).
+T=$(bash tools/target_dir.sh) || fallo "no se donde deja cargo los binarios (tools/target_dir.sh)"  # ⚠️ §855: decia ${CARGO_TARGET_DIR:-target}
 DIR=$(mktemp -d "$HOME/.omniwitness_local.XXXXXX")
 trap 'chmod -R u+w "$DIR" 2>/dev/null; rm -rf "$DIR"' EXIT INT TERM HUP QUIT
 # Los modulos y la cadena de Go, en el temporal salvo que quien llama exporte los suyos.
