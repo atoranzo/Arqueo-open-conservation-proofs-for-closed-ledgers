@@ -169,9 +169,11 @@ aplica.
   revela una prueba (`crates/zk-ssl/src/instrumento_revela.rs:1029-1036` y `:1066`; ⚠️ §842:
   decía `:1023-1030` y `:1060`, que la banda de bytes de cada prueba desplazó seis líneas).
 - **El mando**: `crates/zk-ssl-cli/src/commands.rs:374`.
-- **Un código de operación nuevo**: una línea `REGISTRO` en
-  `crates/zk-ssl-hash/src/lib.rs:1708-1745`, su fila en `spec/NUCLEO.md:228-231` y lo que vigila
-  `tools/check_nucleo.py`.
+- **Un código de operación nuevo**: una línea `// REGISTRO:` en el bloque «EL REGISTRO DE
+  DOMINIOS (§286)» de `crates/zk-ssl-hash/src/lib.rs`, su fila de la familia REGISTRO en el censo
+  de `spec/NUCLEO.md` (sección 4) y lo que vigila `tools/check_nucleo.py` (⚠️ §890: decía
+  `crates/zk-ssl-hash/src/lib.rs:1708-1745` y `spec/NUCLEO.md:228-231`, que en el §791 eran las
+  líneas de los `OP_*` en los dos ficheros y en `212eca2` ya no; se citan por su nombre).
 - **Un `OpKind` nuevo**: `log.rs:117` y `:136`, el recuento de `persistence.rs:634`, la derivación
   del cupo (`log.rs:520-538`), la tabla de clases del reverificador (`reverificacion.rs:30-52`) y
   los `kind` del cable (`spec/RPC.md:102-105`), que ya es protocolo.

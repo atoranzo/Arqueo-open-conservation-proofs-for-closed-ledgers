@@ -282,8 +282,10 @@ MINIMO_CITAS = {"AUDITORIA.md": 5000, "BACKLOG.md": 800}  # medido en 8c02941: 5
 #              de la sesion que lo escribe (§830): lo que queda de el
 #   860-889    «§860 a §889», el segundo rango que el autor asigno a la sesion del §800 (§860):
 #              lo que queda de el
+#   890-899    «§890 a §899», el rango que el autor pidio acordar con la sesion del §860 para la
+#              sesion que escribe el §890: lo que queda de el
 RESERVADOS = {630} | set(range(711, 740)) | set(range(741, 770)) | set(range(790, 800)) | \
-    set(range(800, 830)) | set(range(830, 860)) | set(range(860, 890))
+    set(range(800, 830)) | set(range(830, 860)) | set(range(860, 890)) | set(range(890, 900))
 # ⚠️ TOLERADAS: (seccion que la lleva, numero citado). Citas que no nombran una seccion del
 # registro, en asientos, que no se reescriben.
 TOLERADAS = {

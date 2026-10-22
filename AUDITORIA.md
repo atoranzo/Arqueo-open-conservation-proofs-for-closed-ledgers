@@ -69207,3 +69207,91 @@ ficheros no ganan ni pierden ninguna línea: cada trozo de `git diff -U0` cambia
 
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §890 — cinco citas por línea que la otra sesión del día dejó en la lista de cosas menores, su punto 11: el RFC-0005 y el RFC-0006 ganan una nota que fecha las suyas en el árbol que cada uno declara, donde caen en su sitio, y `doc/ROTACION_DE_CUENTAS.md` y `doc/blueprint-v2.md` pasan tres a citas por nombre, con su marca
+
+El commit que lleva este asiento, sobre `6c33d2a`, la punta de `main` sobre la que se rebasó. Toca
+`spec/rfc/0005-nucleo-congelado.md`: una nota de seis líneas al final de la D-A (`:117-122`).
+`spec/rfc/0006-consumo-publicado.md`: una nota de seis líneas al final de la Motivación
+(`:103-108`). `doc/ROTACION_DE_CUENTAS.md`: la viñeta «Un código de operación nuevo» de la sección
+1.5 (`:172-176`). `doc/blueprint-v2.md`: el final de la D3 (`:486-487`) y una celda de la tabla de
+lo descartado (`:1230`). `tools/verificar_citas.py`: la lista `RESERVADOS` gana el rango §890 a
+§899, con su comentario (`:285-288`). Y este asiento. Ni código de los crates, ni tests, ni
+vectores, ni `BACKLOG.md`, ni `spec/RPC.md`. Lo escribe y lo commitea Claude, en una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el primero del rango §890 a §899, que el autor pidió acordar con la sesión
+que lleva el §860 a §889, y que esa sesión anotó. El canon de este commit, `bash tools/canon.sh
+--sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y sin esta
+frase: VERDE, 850 s de reloj y 525 s de tests, en una máquina de 4 CPU con carga de 0,33 al empezar.
+Las 19 filas en su pin, con 1872 tests que pasan, y las 55 líneas «OK» de sus compuertas, entre
+ellas el artefacto reproducible, con el binario `803ee230ea9d737b` y el tarball `ecdf7139ea68140f`.
+
+Del autor es la tarea: cerrar hoy, 22 de octubre, las cosas menores que quedan. La lista la sacó
+esa otra sesión de los informes de sus agentes del 21 y el 22, comprobada contra la punta de su
+pila, y el reparto lo acordaron las dos sesiones: esta se queda con lo que cae en ficheros que la
+otra no lleva en vuelo. El punto 11 de la lista nombraba seis sitios; este sello hace cinco. El
+sexto, `spec/RPC.md:294-295`, es de un fichero que la otra sesión toca en su carril B, y queda
+para ella o para después. La forma, una nota que fecha en vez de un número que cambia, la propone
+esta sesión por lo medido en el punto 1.
+
+**Medido**, sobre `212eca2` y, para cada cita, sobre el árbol donde se escribió, con `git show`:
+
+1. **El RFC-0005 y el RFC-0006 no estaban rancios: están fechados.** Los dos declaran en su
+   cabecera el árbol de sus medidas, `2080e5a` (con `9ae055c`) y `2298e61`. En `2080e5a` caen en su
+   sitio todas las citas por línea de la D-A del RFC-0005: `Conjunto` (`verify/lib.rs:109`), los dos
+   `DOMINIO` (`:113`, `:125`), `VERSION_FORMATO` (`:132`), `preambulo` y `preambulo_cofirma`
+   (`:276-331`), `indice_de_firma` a `ANCHO_INDICE` (`:348-370`), el apaño del OID (`:399-415`),
+   `native_merge`, `as_digest` y `path_root` (`hash/lib.rs:100-181`), las tres `epoch_digest`
+   (`:200-272`), `digest_to_bytes` (`:444-452`), las líneas del REGISTRO (`:743-757`) y el campo
+   `canon` (`conformance.rs:121`). En `2298e61` caen en su sitio las de las dos viñetas del
+   RFC-0006: `load` (`persistence.rs:456-680`), los `need()` (`:484-562`), el `commit` (`:774-783`),
+   `epoch_digest_v3` (`hash/lib.rs:257`), el byte de versión en `preambulo` (`verify/lib.rs:329`),
+   `VersionCabeza` (`:142`) y `TODAS` (`:151`). En `212eca2` ninguna de las dos listas cae ya en su
+   sitio: `preambulo` está en la `:537`, y la `:329` es `pub clave_bytes: usize,`.
+2. **`doc/ROTACION_DE_CUENTAS.md:173` sí estaba rancia.** Es un documento vivo, aceptado como
+   análisis en el §799, con marcas propias (la del §842). En `d81d9a8`, el §791 que la escribió,
+   `hash/lib.rs:1708-1745` y `spec/NUCLEO.md:228-231` eran las líneas de los `OP_*`; en
+   `212eca2`, la `:1708` es otra línea del REGISTRO y la `:228-231` de `NUCLEO.md` son filas de
+   la familia LIBRO. Las otras catorce citas por línea de su sección 1.5 caen en su sitio en
+   `212eca2`, cotejadas una a una.
+3. **`doc/blueprint-v2.md`.** La `:486` decía «está en la línea 1484»: lo era en `bf7065e`, el §694,
+   y en `212eca2` el test está en la `:1818`. La `:1229` citaba `spec/NUCLEO.md:248` por la
+   permutación: en `430c4f8`, el §637 que la escribió, la permutación estaba en la `:252`, así que
+   la cita no era exacta ni entonces. En `212eca2` está en la `:300`, en la sección 6.
+
+**Qué cambia.**
+
+- **El RFC-0005 y el RFC-0006** no cambian ninguna cita. Una nota al final de la sección dice de
+  qué árbol son, que allí caen en su sitio, un ejemplo de dónde están hoy, y por qué no se cambian:
+  el siguiente sello que toque `zk-ssl-verify/src/lib.rs` las volvería a mover. La del RFC-0006 dice
+  además que las demás citas de su Motivación no se cotejaron.
+- **`doc/ROTACION_DE_CUENTAS.md`** cita por nombre el bloque «EL REGISTRO DE DOMINIOS (§286)» de
+  `crates/zk-ssl-hash/src/lib.rs` y la familia REGISTRO del censo de `spec/NUCLEO.md`, sección 4,
+  con la marca que dice qué decía.
+- **`doc/blueprint-v2.md`**: la `:486` pasa a «se encuentra por su nombre», con la marca; la celda
+  de la `:1230` cita `spec/NUCLEO.md` §6, «La permutación», con la marca que dice que la `:248` no
+  era exacta.
+
+**Comprobado.** Las líneas de prosa nuevas tienen como mucho 100 columnas; la celda de la tabla,
+como las demás de su fila, no. `verificar_citas` dio ROJO sobre el primer borrador de este asiento,
+«§899 no es ningún encabezado de AUDITORIA.md», por el rango que nombra la apertura: el remedio es
+el de los rangos anteriores, declararlo en `RESERVADOS`. Sobre el árbol con este sello salen con 0
+`verificar_citas`, `check_publicadas`, `check_cifras`, `check_figures`, `check_nucleo`,
+`check_tests` y `check_modulos`.
+
+**Lo que NO hace.**
+
+- No toca `spec/RPC.md:294-295`, el sexto sitio del punto 11.
+- No coteja las demás citas por línea del RFC-0006 fuera de esas dos viñetas, ni las de la D-B del
+  RFC-0005 (`verify/main.rs:128`, `witness.rs:828`), que cuentan el árbol de `2080e5a` con «hoy».
+- No barre las citas por línea del resto del árbol: es el punto 7 de la lista, y va detrás de la
+  entrega de la otra sesión.
+- No enseña a ninguna herramienta a ver una cita por línea fechada ni una rancia.
+
+**Lo que es del autor.** Si los RFC aceptados y propuestos que declaran su árbol de medida se
+dejan así, fechados, o se ponen al día con cada sello.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
+`check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
+y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
+resueltas.

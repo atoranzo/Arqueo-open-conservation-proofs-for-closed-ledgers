@@ -114,6 +114,13 @@ segunda implementación con una biblioteca XMSS correcta no debe replicarlos; el
 del vector del cable (`conformance.rs:121`) es una foto de cifras de tests, no un valor del
 protocolo; y todo lo que el verificador no recompone.
 
+⚠️ §890: las citas por línea de esta sección son de `2080e5a`, el árbol que este documento
+declara (arriba, «Todas las medidas…»), y allí caen en su sitio: el §890 las cotejó una a una. En
+`212eca2` ya no: `preambulo` y `preambulo_cofirma` están en `zk-ssl-verify/src/lib.rs:537` y
+`:574`, no en `:276-331`, y a las demás les pasa lo mismo. No se cambian por las de hoy, que el
+siguiente sello volvería a mover: cada pieza se encuentra por el nombre que da la primera columna,
+y la norma de los bytes es `spec/NUCLEO.md` (E1, §407), no esta tabla.
+
 ### D-B — La regla de extensión, en dos mitades
 
 **Primera mitad — lo que se firma crece sólo por versión.** Toda composición que entra bajo una

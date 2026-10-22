@@ -100,6 +100,13 @@ Y lo que falta, también medido: no existe en el árbol un objeto que dos operad
 por separado a partir de un dato acordado, ni una raíz que lo acumule, ni una cabeza que la firme,
 ni un lector que compare dos cabezas. Las cuatro piezas son este RFC.
 
+⚠️ §890: las citas por línea de las viñetas de las cinco raíces y del coste de un campo firmado
+son de `2298e61`, el árbol que este documento declara (arriba, «Todas las medidas…»), y allí caen
+en su sitio: el §890 las cotejó. En `212eca2` ya no: `zk-ssl-verify/src/lib.rs:329` es un campo de
+un `struct`, no el byte de versión que escribe `preambulo`, y `TODAS` lleva cinco versiones, no
+dos. Se conservan como la medida de su fecha. Las demás citas por línea de esta sección no se
+cotejaron.
+
 ## Diseño
 
 ### D-1 — El nombre: consumo publicado
