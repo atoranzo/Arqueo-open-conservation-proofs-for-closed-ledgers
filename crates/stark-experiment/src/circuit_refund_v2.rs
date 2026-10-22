@@ -570,4 +570,44 @@ mod tests {
         );
         assert!(mal.is_err(), "otro f NO debe abrir el C2: el retorno es del emisor");
     }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción está vacía.**
+    ///
+    /// Si ninguna perturbación de una celda hace que una restricción se
+    /// vuelva no nula, esa restricción no impone nada, y ningún test normal
+    /// lo detecta: el testigo honesto la cumple y los adversariales caen
+    /// antes por otras. Este circuito es el que produce la capa y no lo
+    /// tenía.
+    ///
+    /// Todas las filas, sin muestrear, también las del acolchado.
+    ///
+    /// ⚠️ Un resultado limpio no significa que el circuito sea correcto:
+    /// significa que no tiene este fallo concreto.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let (receptor, salt, importe) = (digest_from(1000), digest_from(2000), 250_000u64);
+        let (f, delta) = (digest_from(9000), 40u64);
+        let trace = build_trace(receptor, salt, importe, f, delta);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let air = RefundAirV2::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            RefundPublicInputs {
+                commitment: native_refund_commitment_v2(receptor, salt, importe, f, delta),
+                amount: BaseElement::new(importe),
+            },
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }

@@ -884,4 +884,35 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits más altos**
+    /// (RFC-0017). Si el selector `first_s` perdiera la segunda fila de un
+    /// segmento, el rango ganaría un bit y, en los de 64 filas, la resta que
+    /// envuelve volvería a caber. El control es el tercer bit, que el rango
+    /// admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+        use winterfell::Prover;
+
+        let s = valid_scenario(1_000_000, 250_000, 500_000);
+        let trace = build_trace(s.account_id, s.balance, s.nonce, s.amount, s.limit, &s.path);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let pub_inputs = ComplianceProver::new(default_options()).get_pub_inputs(&trace);
+        let air = ComplianceAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            pub_inputs,
+            default_options(),
+        );
+        // Los cuatro segmentos de `build_trace` (no hay constante).
+        for seg in 0..4 {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: los tres bits mas altos, rechazados"
+            );
+        }
+    }
 }

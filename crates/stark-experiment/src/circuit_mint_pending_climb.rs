@@ -14,8 +14,11 @@
 //! - **La posicion estaba libre**: el carril A sube la hoja CERO, el B el
 //!   compromiso, con los mismos hermanos.
 //! - **El tope**: un segmento de 64 filas descompone
-//!   `tope - suministro_nuevo` en 63 bits. Si el suministro se pasara, esa
-//!   resta envuelve en el campo y da un valor de 64 bits que no cabe.
+//!   `tope - suministro_nuevo` en 62 bits: sus dos primeras filas fuerzan a
+//!   cero los bits 63 y 62 (RFC-0017). Si el suministro se pasara, esa resta
+//!   envuelve en el campo y da `p - exceso`, que no cabe. Con 63 bits cabia
+//!   un margen de la ventana `[2^62, 2^63)`: un suministro nuevo «negativo»,
+//!   `tope - margen + p`, verificaba.
 //!
 //! ## Por que el tope sobrevive a quitar los segmentos
 //!
@@ -96,10 +99,20 @@ pub const TRACE_WIDTH: usize = 39;
 ///
 /// Va DESPUES de `ROW_PENDING_ROOT` (311), en filas que estaban vacias.
 const CAP_START: usize = 320;
-/// Longitud del segmento: 64 filas dan **63 bits**, no 64.
+/// Longitud del segmento: 64 filas. `cont` cubre 63 transiciones y el
+/// selector de arranque fuerza a cero las dos primeras filas, los bits 63 y
+/// 62: el rango es de **62 bits** (RFC-0017).
 ///
-/// Ese margen de un bit es lo que hace que el tope se imponga. Ver
+/// Con el tope y el suministro nuevo por debajo de `2^62`, un suministro que
+/// se pasa del tope da `p - exceso > 2^62`, porque `2 * 2^62 < p`: no cabe.
+/// Con 63 bits cabia cualquier margen de la ventana `[2^62, 2^63)`. Ver
 /// `AUDITORIA.md` 13.
+///
+/// ⚠️ El circuito no acota el suministro nuevo ni el importe. Con un tope
+/// menor que `2^62 - 1`, un suministro «negativo» cuyo margen queda entre el
+/// tope y `2^62` cabe en el segmento. Lo fija
+/// `con_un_tope_pequeno_el_segmento_no_acota_el_suministro`, que dice por qué
+/// no muerde: la capa calcula el suministro en nativo.
 const CAP_LENGTH: usize = 64;
 
 // ===== Filas =====
@@ -288,12 +301,12 @@ pub fn build_trace(
 
     // ===== SEGMENTO DEL TOPE DE EMISION =====
     //
-    // Descompone `tope - suministro_nuevo` en 63 bits. Si el suministro se
-    // pasara del tope, esa resta ENVUELVE en el campo y da un valor de 64
-    // bits que no cabe en 63: la descomposicion seria imposible y la
-    // prueba no se generaria.
+    // Descompone `tope - suministro_nuevo` en 62 bits (RFC-0017): los bits
+    // 63 y 62 van a cero. Si el suministro se pasara del tope, esa resta
+    // ENVUELVE en el campo y da `p - exceso`, que no cabe en 62 bits: la
+    // descomposicion seria imposible y la prueba no se generaria.
     //
-    // El margen de un bit es lo que impone el tope. Ver `AUDITORIA.md` 13.
+    // Ver `AUDITORIA.md` 13.
     let supply_new = supply_old + supply_delta;
     let margen = max_supply.wrapping_sub(supply_new);
     for p in 1..CAP_LENGTH {
@@ -471,12 +484,16 @@ impl Air for MintPendingClimbAir {
 
         // ===== SEGMENTO DEL TOPE =====
         //
-        // `cont` marca CAP_LENGTH-1 = 63 transiciones, no 64. De ese unico
-        // bit de margen depende que el tope se imponga.
+        // `cont` marca CAP_LENGTH-1 = 63 transiciones, no 64, y `first`
+        // las dos primeras filas: los bits 63 y 62 van a cero y el rango es
+        // de 62 bits. ⚠️ Con solo la primera fila el rango era de 63 y un
+        // margen de la ventana [2^62, 2^63) cabia: un suministro nuevo
+        // «negativo» verificaba (RFC-0017).
         let mut cap_first = vec![zero; TRACE_LENGTH];
         let mut cap_cont = vec![zero; TRACE_LENGTH];
         let mut cap_link = vec![zero; TRACE_LENGTH];
         cap_first[CAP_START] = one;
+        cap_first[CAP_START + 1] = one; // RFC-0017: 62 bits, no 63 (bit 62 a cero)
         for p in 0..CAP_LENGTH - 1 {
             cap_cont[CAP_START + p] = one;
         }
@@ -611,10 +628,10 @@ impl Air for MintPendingClimbAir {
 
         // ===== EL TOPE DE EMISION =====
         //
-        // El acumulador reconstruye `tope - suministro_nuevo` desde 63
-        // bits. Si el suministro se pasara, esa resta envuelve y da un
-        // valor de 64 bits: no cabe, y no hay descomposicion que satisfaga
-        // el enlace final.
+        // El acumulador reconstruye `tope - suministro_nuevo` desde 62
+        // bits. Si el suministro se pasara, esa resta envuelve y da
+        // `p - exceso`: no cabe, y no hay descomposicion que satisfaga el
+        // enlace final.
         //
         // **Mecanismo propio, no un segmento**: por eso quitar los tres
         // segmentos de rango no se lleva por delante el tope (68.3).
@@ -778,7 +795,7 @@ mod tests {
     use super::*;
     use crate::native::derive_public_id;
     use crate::merkle::native_merge;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, VerifierError};
 
     const SUPPLY_OLD: u64 = 10_000_000;
     const MAX_SUPPLY: u64 = 100_000_000;
@@ -1101,7 +1118,7 @@ mod tests {
     #[test]
     // **NO SE EJECUTA EN MODO DEPURACION, y no por estar mal.**
     //
-    // Alcanza el tope exactamente, asi que el margen vale **cero** y los 63
+    // Alcanza el tope exactamente, asi que el margen vale **cero** y los
     // bits del segmento son todos cero. Las restricciones booleanas sobre
     // ellos tienen grado real 0 en esta traza concreta, y winterfell
     // comprueba en depuracion que el grado declarado se realice.
@@ -1144,6 +1161,141 @@ mod tests {
             informe.total,
             informe.celdas,
             informe.nunca_disparadas
+        );
+    }
+
+    /// **El segmento del tope fuerza a cero sus dos bits mas altos**
+    /// (RFC-0017). Es un mecanismo propio, no uno de los segmentos de
+    /// `first_s`, y tiene su propio selector: si `cap_first` perdiera la
+    /// segunda fila, el rango volveria a ser de 63 bits y un margen de la
+    /// ventana `[2^62, 2^63)` cabria. El control es el bit 61, que el rango
+    /// admite.
+    #[test]
+    fn el_tope_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let (trace, inputs) = caso(AMOUNT);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let air = MintPendingClimbAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            inputs,
+            default_options(),
+        );
+        assert_eq!(
+            bits_altos_rechazados(&air, &rows, COL_CBIT, COL_CACC, CAP_START, CAP_LENGTH),
+            [true, true, false],
+            "segmento del tope: [bit 63, bit 62, bit 61] rechazados"
+        );
+    }
+
+    /// Una emision cuyo suministro nuevo es «negativo»: `tope - margen + p`.
+    ///
+    /// El importe es `suministro_nuevo - SUPPLY_OLD`, asi que la conservacion
+    /// se cumple. El segmento del tope se rehace con el margen EN EL CAMPO,
+    /// `tope - suministro_nuevo = margen`, y no con la resta en `u64` que
+    /// hace `build_trace`. Todo lo demas es la traza honesta de ese importe.
+    fn suministro_negativo(margen: u64) -> (TraceTable<BaseElement>, MintPendingClimbPublicInputs) {
+        const P: u64 = 0xFFFF_FFFF_0000_0001;
+        let supply_new = MAX_SUPPLY + P - margen;
+        let amount = supply_new - SUPPLY_OLD;
+        let mut trace = build_trace(
+            SUPPLY_OLD, amount, MAX_SUPPLY, amount, receiver_id(), salt(), &pending_path(),
+        );
+        let en_el_campo = BaseElement::new(MAX_SUPPLY) - BaseElement::new(supply_new);
+        assert_eq!(en_el_campo.as_int(), margen, "el margen, en el campo");
+        let mut acc = BaseElement::ZERO;
+        trace.set(COL_CBIT, CAP_START, BaseElement::ZERO);
+        trace.set(COL_CACC, CAP_START, BaseElement::ZERO);
+        for p in 1..CAP_LENGTH {
+            let bit = BaseElement::new((margen >> (CAP_LENGTH - 1 - p)) & 1);
+            acc = acc + acc + bit;
+            trace.set(COL_CBIT, CAP_START + p, bit);
+            trace.set(COL_CACC, CAP_START + p, acc);
+        }
+        let inputs = MintPendingClimbPublicInputs {
+            supply_old: BaseElement::new(SUPPLY_OLD),
+            supply_new: BaseElement::new(supply_new),
+            max_supply: BaseElement::new(MAX_SUPPLY),
+            amount: BaseElement::new(amount),
+            pending_root_old: climb_pending([BaseElement::ZERO; 4]),
+            pending_root_new: climb_pending(commitment_de(amount)),
+        };
+        (trace, inputs)
+    }
+
+    /// **Un suministro «negativo» con el margen en la ventana alta no se
+    /// prueba** (RFC-0017, en el segmento del tope).
+    ///
+    /// Margen `2^62 + 5` y `2^63 - 1`: con el rango de 63 bits los dos
+    /// verificaban, y el suministro nuevo envolvia por debajo de cero. Con el
+    /// de 62, el bit 62 del margen esta a uno y cae su fila, la 321
+    /// (`CAP_START + 1`). La causa se nombra: es esa fila, en depuracion y en
+    /// release, porque el probador oculto comprueba la traza antes de probar.
+    #[test]
+    fn un_suministro_negativo_de_la_ventana_alta_no_se_prueba() {
+        for margen in [(1u64 << 62) + 5, (1u64 << 63) - 1] {
+            let (trace, inputs) = suministro_negativo(margen);
+            assert_eq!(
+                correr(trace, inputs),
+                Err("prove Err: UnsatisfiedTransitionConstraintError(321)".to_string()),
+                "CRITICO: un margen de {margen} en el tope es un suministro negativo"
+            );
+        }
+    }
+
+    /// **Y el verificador tambien lo rechaza.** El de arriba lo para el
+    /// probador honesto; uno malicioso se salta esa comprobacion. Con la
+    /// ocultacion apagada (`SinOcultar`) la traza mala se prueba sin queja,
+    /// y lo unico que queda es `verify`.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "en depuracion winterfell valida la traza y hace panico antes de probar"
+    )]
+    fn un_suministro_negativo_de_la_ventana_alta_no_verifica() {
+        use crate::sin_ocultar::SinOcultar;
+
+        let (trace, inputs) = suministro_negativo((1u64 << 62) + 5);
+        let proof = SinOcultar(MintPendingClimbProver::new(default_options()))
+            .prove(trace)
+            .expect("sin ocultacion, en release el probador no comprueba la traza");
+        let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+        let r = verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            proof, inputs, &min_opts,
+        );
+        assert_eq!(
+            r,
+            Err(VerifierError::InconsistentOodConstraintEvaluations),
+            "CRITICO: el verificador acepta un suministro negativo"
+        );
+    }
+
+    /// **Lo que el segmento del tope NO cierra: con un tope pequeño, el
+    /// suministro.** Fija un limite conocido, no una propiedad deseada.
+    ///
+    /// La misma construccion con margen `2^61`: cabe en 62 bits, asi que el
+    /// segmento la admite y la prueba verifica con un suministro nuevo de
+    /// `1e8 - 2^61 + p`. Es el control de los dos de arriba -lo que los
+    /// rechaza es la ventana, no la construccion- y es tambien el limite: el
+    /// circuito no acota ni el suministro nuevo ni el importe, y un margen
+    /// entre el tope y `2^62` es un suministro negativo. Con el tope de
+    /// produccion, `2^62 - 1`, ese intervalo esta vacio.
+    ///
+    /// Por que no muerde: la capa calcula el suministro en nativo antes de
+    /// verificar (`apply_mint_pending_delegated`: `saturating_add`, el tope y
+    /// `checked_add`) y le pasa al verificador el suyo, no el de la prueba. Y
+    /// el suministro nuevo y el importe son entradas publicas: quien verifica
+    /// los ve. Si un segmento propio llegara a acotar el importe, este test
+    /// se pone rojo y cambia de signo.
+    #[test]
+    fn con_un_tope_pequeno_el_segmento_no_acota_el_suministro() {
+        let (trace, inputs) = suministro_negativo(1u64 << 61);
+        assert!(inputs.supply_new.as_int() > MAX_SUPPLY, "el suministro nuevo envuelve");
+        assert_eq!(
+            correr(trace, inputs),
+            Ok(()),
+            "el segmento del tope admite un margen de 2^61: si ya no, el \
+             importe esta acotado y este test cambia de signo"
         );
     }
 

@@ -21,7 +21,8 @@
   ⚠️ §826: con la política del RFC-0021, eso es romper la superficie S2, las pruebas que viajan, sin
   subir la versión; lo paga el corte `zkssl/0.5` del RFC-0018 (ver «Compatibilidad»).
 - **Asiento(s) de AUDITORIA:** §641 (la propuesta y sus cuatro etapas); §699 (lo que la E2 cambió en
-  las pruebas que viajan, medido, y la corrección de la cabecera); §778 (las citas heredadas del
+  las pruebas que viajan, medido, y la corrección de la cabecera); §719 (completa la E2: el segmento
+  del tope de la emisión a pendiente y `solvency`, a 62 bits); §778 (las citas heredadas del
   RFC-0015 y del §631, corregidas); §826 (su compatibilidad, escrita, y su sección de seguridad).
   ⚠️ §826: decía «§641.».
 
@@ -30,7 +31,7 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — la capa no confía | `validate_send` ata `amount == pi.amount`, el estado del remitente a la hoja del árbol y `pi.amount <= límite`, y resta con `checked_sub`; el cobro ata `notice.amount == pi.amount` y suma con `checked_add`; la quema deriva el suministro nativo (`checked_sub`) en vez de copiar `pi.supply_new`, y ata su estado a la hoja | NO | sellada — §641 |
-| E2 — el rango a 62 bits en los AIR de la capa | los diecisiete circuitos de `stark-experiment` fuerzan a cero **dos** bits altos (63 y 62) de cada segmento de rango, no uno: el rango demostrado baja a `[0, 2^62)` y una resta que envuelve en Goldilocks ya no cabe. `MAX_VALUE` de `compliance_circuit`, `double_entry` y `range_check` a `2^62 - 1` | **sí**: S2, las pruebas que viajan; una de envío del §640 no verifica con el AIR del §641, ni al revés (§699). ⚠️ §826: decía «NO» | sellada — §641 |
+| E2 — el rango a 62 bits en los AIR de la capa | los diecisiete circuitos de `stark-experiment` fuerzan a cero **dos** bits altos (63 y 62) de cada segmento de rango, no uno: el rango demostrado baja a `[0, 2^62)` y una resta que envuelve en Goldilocks ya no cabe. `MAX_VALUE` de `compliance_circuit`, `double_entry` y `range_check` a `2^62 - 1` | **sí**: S2, las pruebas que viajan; una de envío del §640 no verifica con el AIR del §641, ni al revés (§699). ⚠️ §826: decía «NO» | sellada — §641; completada — §719. ⚠️ **Completado en el §719**: el segmento del tope de `MintPendingAir` y de su subida, `MintPendingClimbAir`, tiene su propio selector, `cap_first`, y seguía con una sola fila: 63 bits. `solvency`, fuera de los diecisiete, también. El §719 los baja a 62 bits. Como el resto de la E2, una prueba de esos AIR hecha antes no verifica después; pero ninguno de los tres viaja, con el criterio de la E3 (ver «Compatibilidad»): ningún método del OpenRPC los lleva, y `MintPendingClimbAir`, el único que juzga la capa, sólo lo verifica `apply_mint_pending_delegated`, API de la capa, fuera de la promesa. No rompe S2 |
 | E3 — la auditoría ata la identidad y acota la banda | `circuit_audit::get_assertions` ata `COL_ID` (la cuenta del testigo) al `public_id` público, y `verify_audit` exige `lower <= upper <= 2^62 - 1` antes de tocar la prueba | NO | sellada — §641 |
 | E4 — el saldo del cliente, canónico en el cable | `zk-ssl-wire` lee `balance` con la regla de RFC-0016 (`u64` canónico, `< p`) en los dos DTO de estado, antes de que la capa lo sume o reste | NO | sellada — §641 |
 
@@ -81,6 +82,14 @@ Con el probador y el verificador reales (perfil release), sobre la capa:
    restricciones, ni los grados, ni el conteo de aserciones, ni las columnas. `MAX_VALUE` de
    `compliance_circuit`, `double_entry` y `range_check` baja a `2^62 - 1` (en `circuit_audit` ya lo
    era), y `range_check` fija además el bit 62 a cero con una aserción (5 -> 6).
+   ⚠️ **Completado en el §719**: dos sitios de `stark-experiment` no tenían la segunda fila. El
+   segmento del tope de `MintPendingAir` y de su subida, `MintPendingClimbAir`, descompone
+   `tope - suministro_nuevo` con su propio selector, `cap_first`; y el rango de `solvency` tenía
+   `first[0]` y no `first[1]`. Seguían en 63 bits: en la subida, con un tope de `1e8`, un
+   suministro nuevo «negativo» (`tope - margen + p`, con un margen de `2^62 + 5`) verificaba. El
+   §719 pone la segunda fila en los tres AIR (`cap_first[CAP_START + 1]` y `first[1]`), baja
+   `EFFECTIVE_BITS` a 62 y `MAX_VALUE` a `2^62 - 1` en `solvency`, y da a cada segmento de rango,
+   el del tope incluido, un test que mira sus dos bits altos.
 3. **La auditoría** (E3). `circuit_audit::get_assertions` ata las cuatro ranuras de `COL_ID` en la
    fila 0 al `public_id` de las entradas públicas (17 -> 21 aserciones): el probador acreditaba SU
    cuenta y declaraba el `public_id` de otra, y el verificador atribuía la banda a la víctima.
@@ -145,6 +154,17 @@ importe real alcanza (D-2: el techo sano baja a `2^62 - 1`); un estado que no es
 de la auditoría, que no viaja: ningún método del OpenRPC la lleva, y la API de la capa está fuera
 de la promesa (D-A del RFC-0021). Ni un método, ni un campo, ni un KAT, ni una cabeza firmada se
 mueven, y los AIR del kit no se tocan (D-3), así que sus vectores portables tampoco.
+⚠️ §719: lo que el §719 completa de la E2 —el segmento del tope de `MintPendingAir` y de su subida,
+`MintPendingClimbAir`, y el rango de `solvency`, a 62 bits— cambia tres AIR que tampoco viajan, por
+lo mismo que la de la auditoría: ningún método del OpenRPC los lleva y el nodo no verifica ninguno.
+`MintPendingClimbAir` sólo lo verifica `apply_mint_pending_delegated`, API de la capa, y la entrada
+`MintToPending` del registro lleva el digest del sello de su autorización, no el de esa prueba
+(`spec/RPC.md`, la tabla de `proofDigest`); `MintPendingAir` y `solvency` no los verifica ningún
+juez de producción. El censo de `crates/zk-ssl/src/instrumento_revela.rs` marca la subida, como la
+auditoría, porque la verifica la capa, y la D-G del RFC-0018, en propuesta, la cuenta entre las
+catorce familias que juzga la capa, que el corte versionaría con su marca v2; ni lo uno ni lo otro
+las hace viajar bajo `zkssl/0.4`. No rompe S1 ni S2, y no se suma a las rupturas de `zkssl/0.4` que
+declaran `spec/RPC.md` y los README.
 
 ## Seguridad
 

@@ -299,13 +299,15 @@ binario difieren un ~9 % (`AUDITORIA.md` §131), y **no son comparables con medi
   uno aplica y los otros tres se rechazan (§123, §230). Con un solo emisor por raíz el desperdicio
   es cero.
 - **Otros dos**: el árbol de pendientes se agota a los 2³² pagos simultáneos en vuelo, y el conjunto
-  de custodios, que hoy cabe en 16 hojas (`CUSTODIAN_DEPTH = 4`), tiene su techo en 128, el que deja
-  el segmento de rango del orden estricto (§13; el árbol y su test, en
-  `crates/stark-experiment/src/circuit_threshold.rs`:76-77 y :1108). El límite de la colisión de
+  de custodios, que hoy cabe en 16 hojas (`CUSTODIAN_DEPTH = 4`), tiene su techo en 64, el que dejan
+  los segmentos de rango de los índices y del orden estricto (§13; el árbol, su cota y su test, en
+  `crates/stark-experiment/src/circuit_threshold.rs`:76-77, :89 y :1124). El límite de la colisión de
   *nullifiers* de la vía antigua **no se resolvió, se evitó**: la vía se retiró (§32, §36), y el
   encadenamiento que la sustituye exige un orden total que un nodo único da y un sistema
   distribuido no. ⚠️ **Corregido en el §794**: decía «el conjunto de custodios tope en 128», sin
-  decir que el de hoy es de 16.
+  decir que el de hoy es de 16. ⚠️ §719: decía «tiene su techo en 128» y citaba el test en :1108;
+  desde el RFC-0017 (§641) el segmento de 8 filas admite 6 bits, hasta 63, y el techo es 64
+  (`CUSTODIAN_DEPTH` <= 6), que el compilador exige desde el §719.
 
 ### 22. ¿Cuánto falta para que sea usable?
 

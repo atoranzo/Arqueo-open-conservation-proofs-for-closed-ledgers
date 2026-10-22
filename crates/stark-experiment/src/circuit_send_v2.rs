@@ -304,7 +304,7 @@ pub fn build_trace(
     }
 
     // Rangos. El quinto segmento impone `importe <= limite`: si lo
-    // superara, la resta envuelve y no cabe en los 63 bits.
+    // superara, la resta envuelve y no cabe en los 62 bits (RFC-0017).
     let segment_values = [
         c_bal.as_int(),
         c_amt.as_int(),
@@ -1241,7 +1241,7 @@ mod tests {
         derive_leaf_salt_wide, derive_public_id, derive_public_id_wide, native_climb,
         native_leaf_salted,
     };
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, VerifierError};
 
     const SK: u64 = 0xA11CE;
 
@@ -1394,6 +1394,19 @@ mod tests {
     }
 
     fn run(s: &Scenario, key: Digest, supply_delta: u64) -> Result<(), String> {
+        run_con_limite(s, key, supply_delta, TEST_LIMIT)
+    }
+
+    /// `run` con el limite regulatorio que se pida, en la traza y en las
+    /// entradas publicas a la vez.
+    fn run_con_limite(
+        s: &Scenario,
+        key: Digest,
+        supply_delta: u64,
+        limite: u64,
+    ) -> Result<(), String> {
+        let mut pi = s.public_inputs.clone();
+        pi.regulatory_limit = BaseElement::new(limite);
         let trace = build_trace(
             key,
             s.account_id,
@@ -1403,7 +1416,7 @@ mod tests {
             &s.path,
             &s.frozen_path,
             s.amount,
-            TEST_LIMIT,
+            limite,
             s.supply_old,
             supply_delta,
             s.receiver_id,
@@ -1432,7 +1445,7 @@ mod tests {
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
         verify::<SendV2Air, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
-            s.public_inputs.clone(),
+            pi,
             &min_opts,
         )
         .map_err(|e| format!("verificacion fallo: {e:?}"))
@@ -1754,5 +1767,165 @@ mod tests {
         let mut casi = unos.clone();
         casi[FROZEN_DEPTH - 1] = false;
         assert_ne!(horner(&casi), horner(&unos), "el ULTIMO nivel mueve el acumulador");
+    }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción está vacía.**
+    ///
+    /// Si ninguna perturbación de una celda hace que una restricción se
+    /// vuelva no nula, esa restricción no impone nada, y ningún test normal
+    /// lo detecta: el testigo honesto la cumple y los adversariales caen
+    /// antes por otras. El gemelo v1 lo tiene (`circuit_send.rs`); este, que
+    /// es el que produce la capa, no lo tenía.
+    ///
+    /// Todas las filas, sin muestrear: con muestreo, una restricción activa
+    /// en una sola fila aparece como vacía sin serlo.
+    ///
+    /// ⚠️ Un resultado limpio no significa que el circuito sea correcto:
+    /// significa que no tiene este fallo concreto.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt, s.sobre,
+            &s.pending_path,
+        );
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let air = SendV2Air::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
+
+    /// **Cada segmento de rango fuerza a cero los bits 63 y 62** (RFC-0017).
+    ///
+    /// Si el selector `first_s` perdiera la segunda fila de un segmento, el
+    /// rango volvería a ser de 63 bits y la resta que envuelve volvería a
+    /// caber. El control es el bit 61, que el rango admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt, s.sobre,
+            &s.pending_path,
+        );
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let air = SendV2Air::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: [bit 63, bit 62, bit 61] rechazados"
+            );
+        }
+    }
+
+    /// **La acuñación por envoltura no vuelve** (RFC-0017, el caso medido).
+    ///
+    /// Saldo 0 e importe `2^63 - 1`, con un límite que lo admite: el saldo
+    /// nuevo envuelve a `p - (2^63 - 1)`, que cabe en 63 bits. Con el rango
+    /// de 63 bits esta prueba verificaba y el envío acuñaba valor. Con el de
+    /// 62, el importe y el saldo nuevo tienen el bit 62 a uno y no caben.
+    ///
+    /// ⚠️ Lo para el probador honesto, no el verificador: oculta, y comprueba
+    /// la traza antes de probar, en depuración y en release. La causa es la
+    /// fila 65, el bit 62 del segmento 1 (el importe). El verificador lo mide
+    /// `el_verificador_rechaza_un_envio_que_envuelve`.
+    #[test]
+    fn un_envio_que_envuelve_no_verifica() {
+        let importe = (1u64 << 63) - 1;
+        let s = scenario(0, importe, 10_000_000);
+        let r = run_con_limite(&s, s.key, 0, importe);
+        assert_eq!(
+            r,
+            Err("prove Err: UnsatisfiedTransitionConstraintError(65)".to_string()),
+            "CRITICO: un envio con saldo 0 e importe 2^63 - 1 acunaria valor"
+        );
+    }
+
+    /// **Y el verificador también lo rechaza.** El de arriba lo para el
+    /// probador honesto; uno malicioso se salta esa comprobación. Con la
+    /// ocultación apagada (`SinOcultar`) la traza mala se prueba sin queja, y
+    /// lo único que queda es `verify`.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "en depuracion winterfell valida la traza y hace panico antes de probar"
+    )]
+    fn el_verificador_rechaza_un_envio_que_envuelve() {
+        use crate::sin_ocultar::SinOcultar;
+
+        let importe = (1u64 << 63) - 1;
+        let s = scenario(0, importe, 10_000_000);
+        let mut pi = s.public_inputs.clone();
+        pi.regulatory_limit = BaseElement::new(importe);
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, importe, s.supply_old, 0, s.receiver_id, s.salt, s.sobre,
+            &s.pending_path,
+        );
+        let proof = SinOcultar(SendV2Prover::new(default_options()))
+            .prove(trace)
+            .expect("sin ocultacion, en release el probador no comprueba la traza");
+        let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+        let r = verify::<SendV2Air, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            proof, pi, &min_opts,
+        );
+        assert_eq!(
+            r,
+            Err(VerifierError::InconsistentOodConstraintEvaluations),
+            "CRITICO: el verificador acepta un envio que acuna valor"
+        );
+    }
+
+    /// **Un importe de `2^62` no se envía aunque el saldo lo cubra.**
+    ///
+    /// Aquí no envuelve nada: saldo `2^62 + 5`, importe `2^62`, saldo nuevo
+    /// 5. Lo único que lo rechaza es que el saldo y el importe están en la
+    /// ventana `[2^62, 2^63)`. Cae la fila 1, el bit 62 del segmento 0 (el
+    /// saldo), en el probador honesto.
+    #[test]
+    fn un_importe_de_2_62_no_verifica() {
+        let importe = 1u64 << 62;
+        let s = scenario(importe + 5, importe, 10_000_000);
+        let r = run_con_limite(&s, s.key, 0, importe);
+        assert_eq!(
+            r,
+            Err("prove Err: UnsatisfiedTransitionConstraintError(1)".to_string()),
+            "un importe de 2^62 debe quedar fuera del rango"
+        );
+    }
+
+    /// **Y el techo del rango sí se envía.** Sin este control, los dos de
+    /// arriba pasarían igual con un circuito que rechazara todo importe
+    /// grande: saldo `2^62 - 1`, importe `2^61` con un límite de `2^61`.
+    #[test]
+    fn un_importe_grande_dentro_del_rango_verifica() {
+        let importe = 1u64 << 61;
+        let s = scenario((1u64 << 62) - 1, importe, 10_000_000);
+        let r = run_con_limite(&s, s.key, 0, importe);
+        assert!(r.is_ok(), "2^61 desde un saldo de 2^62 - 1 cabe en el rango: {r:?}");
     }
 }

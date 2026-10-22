@@ -1817,7 +1817,7 @@ mod tests {
     /// **NO SE PUEDE DESTRUIR MÁS DE LO QUE HAY.**
     ///
     /// El saldo resultante daría la vuelta en el campo y no cabría en el
-    /// rango de 64 bits.
+    /// rango de 62 bits (RFC-0017).
     #[test]
     fn sending_more_than_the_balance_is_rejected() {
         let s = scenario(100_000, 250_000, 10_000_000);
@@ -2711,5 +2711,49 @@ mod tests {
         let mut casi = unos.clone();
         casi[FROZEN_DEPTH - 1] = false;
         assert_ne!(horner(&casi), horner(&unos), "el ULTIMO nivel mueve el acumulador");
+    }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits más altos**
+    /// (RFC-0017). Si el selector `first_s` perdiera la segunda fila de un
+    /// segmento, el rango ganaría un bit y, en los de 64 filas, la resta que
+    /// envuelve volvería a caber. El control es el tercer bit, que el rango
+    /// admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            s.leaf_salt,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            TEST_LIMIT,
+            s.supply_old,
+            0,
+            s.receiver_id,
+            s.salt,
+            &s.pending_path,
+        );
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = SendAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: los tres bits mas altos, rechazados"
+            );
+        }
     }
 }

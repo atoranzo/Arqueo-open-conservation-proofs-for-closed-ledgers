@@ -1045,7 +1045,7 @@ mod tests {
         native_leaf, native_leaf_salted,
     };
     use crate::merkle::native_merge;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, VerifierError};
 
     const SK: u64 = 0xA11CE;
 
@@ -1135,7 +1135,9 @@ mod tests {
                 root_new: native_climb(leaf_new, &path),
                 amount: BaseElement::new(amount),
                 supply_old: BaseElement::new(supply_old),
-                supply_new: BaseElement::new(supply_old - amount),
+                // En el campo, no en `u64`: la quema que envuelve (RFC-0017)
+                // tiene que poder escribirse para que el test la rechace.
+                supply_new: BaseElement::new(supply_old) - BaseElement::new(amount),
                 frozen_root,
             },
             key,
@@ -1279,7 +1281,7 @@ mod tests {
     /// **NO SE PUEDE DESTRUIR MÁS DE LO QUE HAY.**
     ///
     /// El saldo resultante daría la vuelta en el campo y no cabría en el
-    /// rango de 64 bits.
+    /// rango de 62 bits (RFC-0017).
     #[test]
     fn burning_more_than_the_balance_is_rejected() {
         let s = scenario(100_000, 250_000, 10_000_000);
@@ -1763,5 +1765,110 @@ mod tests {
         let mut casi = unos.clone();
         casi[FROZEN_DEPTH - 1] = false;
         assert_ne!(horner(&casi), horner(&unos), "el ULTIMO nivel mueve el acumulador");
+    }
+
+    /// **Cada segmento de rango fuerza a cero los bits 63 y 62** (RFC-0017).
+    /// El control es el bit 61, que el rango admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, s.supply_old, s.amount,
+        );
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let air = BurnAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: [bit 63, bit 62, bit 61] rechazados"
+            );
+        }
+    }
+
+    /// **La quema que envuelve no vuelve** (RFC-0017, el caso medido).
+    ///
+    /// Saldo `1e6`, suministro `1e8`, importe `2^63 - 1`: el saldo nuevo y el
+    /// suministro nuevo envuelven a valores por debajo de `2^63`. Con el
+    /// rango de 63 bits esta prueba verificaba. Con el de 62, no caben.
+    ///
+    /// ⚠️ Lo para el probador honesto, no el verificador: oculta, y comprueba
+    /// la traza antes de probar, en depuración y en release. La causa es la
+    /// fila 65, el bit 62 del segmento 1 (el importe). El verificador lo mide
+    /// `el_verificador_rechaza_una_quema_que_envuelve`.
+    #[test]
+    fn una_quema_que_envuelve_no_verifica() {
+        let s = scenario(1_000_000, (1u64 << 63) - 1, 100_000_000);
+        assert_eq!(
+            run(&s, s.key, s.amount),
+            Err("prove Err: UnsatisfiedTransitionConstraintError(65)".to_string()),
+            "CRITICO: una quema de 2^63 - 1 sobre un saldo de 1e6 no debe verificar"
+        );
+    }
+
+    /// **Y el verificador también la rechaza.** La de arriba la para el
+    /// probador honesto; uno malicioso se salta esa comprobación. Con la
+    /// ocultación apagada (`SinOcultar`) la traza mala se prueba sin queja, y
+    /// lo único que queda es `verify`.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "en depuracion winterfell valida la traza y hace panico antes de probar"
+    )]
+    fn el_verificador_rechaza_una_quema_que_envuelve() {
+        use crate::sin_ocultar::SinOcultar;
+
+        let s = scenario(1_000_000, (1u64 << 63) - 1, 100_000_000);
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, s.supply_old, s.amount,
+        );
+        let proof = SinOcultar(BurnProver::new(default_options()))
+            .prove(trace)
+            .expect("sin ocultacion, en release el probador no comprueba la traza");
+        let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+        let r = verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            proof,
+            s.public_inputs.clone(),
+            &min_opts,
+        );
+        assert_eq!(
+            r,
+            Err(VerifierError::InconsistentOodConstraintEvaluations),
+            "CRITICO: el verificador acepta una quema que envuelve"
+        );
+    }
+
+    /// **Una quema de `2^62` no verifica aunque el saldo y el suministro la
+    /// cubran.** Nada envuelve: saldo `2^62 + 5`, suministro `2^62 + 7`. Lo
+    /// único que la rechaza es la ventana `[2^62, 2^63)`. Cae la fila 1, el
+    /// bit 62 del segmento 0 (el saldo), en el probador honesto.
+    #[test]
+    fn una_quema_de_2_62_no_verifica() {
+        let importe = 1u64 << 62;
+        let s = scenario(importe + 5, importe, importe + 7);
+        assert_eq!(
+            run(&s, s.key, s.amount),
+            Err("prove Err: UnsatisfiedTransitionConstraintError(1)".to_string()),
+            "un importe de 2^62 debe quedar fuera del rango"
+        );
+    }
+
+    /// **Y una quema grande dentro del rango sí verifica.** Es el control de
+    /// los dos de arriba: saldo y suministro `2^62 - 1`, importe `2^61`.
+    #[test]
+    fn una_quema_grande_dentro_del_rango_verifica() {
+        let s = scenario((1u64 << 62) - 1, 1u64 << 61, (1u64 << 62) - 1);
+        let r = run(&s, s.key, s.amount);
+        assert!(r.is_ok(), "2^61 desde 2^62 - 1 cabe en el rango: {r:?}");
     }
 }

@@ -784,4 +784,65 @@ mod tests {
             "una subida con salt ajeno NO debe verificar contra la raíz del titular"
         );
     }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits más altos**
+    /// (RFC-0017). Si el selector `first_s` perdiera la segunda fila de un
+    /// segmento, el rango ganaría un bit y la resta que envuelve volvería a
+    /// caber. El control es el tercer bit, que el rango admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let s = scenario(1_000, 500);
+        let rows = rows_of(&build(&s), TRACE_WIDTH, TRACE_LENGTH);
+        let air = CreditClimbAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: los tres bits mas altos, rechazados"
+            );
+        }
+    }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción está vacía.**
+    ///
+    /// Si ninguna perturbación de una celda hace que una restricción se
+    /// vuelva no nula, esa restricción no impone nada, y ningún test normal
+    /// lo detecta: el testigo honesto la cumple y los adversariales caen
+    /// antes por otras. La capa lo usa en el reembolso
+    /// (`zk-ssl/src/two_phase.rs`) y no lo tenía.
+    ///
+    /// Todas las filas, sin muestrear.
+    ///
+    /// ⚠️ Un resultado limpio no significa que el circuito sea correcto:
+    /// significa que no tiene este fallo concreto.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let s = scenario(1_000, 500);
+        let rows = rows_of(&build(&s), TRACE_WIDTH, TRACE_LENGTH);
+        let air = CreditClimbAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }

@@ -28,8 +28,8 @@
 //! **Solución aplicada** (RFC-0017, §641): forzar los bits 63 Y 62 a cero
 //! mediante dos aserciones, de modo que el rango demostrado es [0, 2^62),
 //! de p. La traza conserva 64 filas (requisito de potencia de dos de
-//! Winterfell). Para el caso de uso no hay pérdida práctica: 2^63 es
-//! aproximadamente 9,2 x 10^18 unidades mínimas, un techo muy por encima
+//! Winterfell). Para el caso de uso no hay pérdida práctica: 2^62 es
+//! aproximadamente 4,6 x 10^18 unidades mínimas, un techo muy por encima
 //! de cualquier importe monetario real.
 //!
 //! ## Diseño de la traza (3 columnas x 64 filas)
@@ -71,10 +71,10 @@ use winterfell::{
 
 /// Filas de la traza. Debe ser potencia de dos (requisito de Winterfell).
 pub const TRACE_ROWS: usize = 64;
-/// Bits efectivamente demostrados: 63, no 64. Ver la advertencia sobre el
+/// Bits efectivamente demostrados: 62, no 64. Ver la advertencia sobre el
 /// tamaño del campo Goldilocks en la cabecera de este módulo.
 pub const EFFECTIVE_BITS: usize = 62; // RFC-0017 (§641): 62 bits, no 63
-/// Valor máximo que este range check puede demostrar: 2^63 - 1.
+/// Valor máximo que este range check puede demostrar: 2^62 - 1.
 pub const MAX_VALUE: u64 = (1u64 << EFFECTIVE_BITS) - 1;
 
 const TRACE_WIDTH: usize = 3; // bit, power, acc
@@ -86,7 +86,7 @@ type Blake3 = Blake3_256<BaseElement>;
 fn value_to_bits_le(value: u64) -> Vec<bool> {
     assert!(
         value <= MAX_VALUE,
-        "este range check solo cubre valores hasta 2^63 - 1 sobre el campo Goldilocks"
+        "este range check solo cubre valores hasta 2^62 - 1 sobre el campo Goldilocks"
     );
     (0..TRACE_ROWS).map(|i| (value >> i) & 1 == 1).collect()
 }
@@ -332,8 +332,8 @@ mod tests {
         );
     }
 
-    /// Valores límite, ajustados al rango real de 63 bits sobre Goldilocks
-    /// (ya no se puede usar `u64::MAX`, que no cabe en el campo).
+    /// Valores límite, ajustados al rango real de 62 bits sobre Goldilocks
+    /// (RFC-0017; ya no se puede usar `u64::MAX`, que no cabe en el campo).
     ///
     /// NOTA: `value = 0` NO está en esta lista — ver
     /// `zero_value_only_works_in_release_mode` justo debajo.
@@ -503,5 +503,78 @@ mod tests {
             informe.celdas,
             informe.nunca_disparadas
         );
+    }
+
+    /// La traza de `value` sin la guarda de `build_trace`: la que escribiría
+    /// un probador que no la respeta.
+    fn traza_sin_guarda(value: u64) -> TraceTable<BaseElement> {
+        let mut columnas = vec![Vec::with_capacity(TRACE_ROWS); TRACE_WIDTH];
+        let mut acc = BaseElement::ZERO;
+        let mut power = BaseElement::ONE;
+        for i in 0..TRACE_ROWS {
+            let bit = BaseElement::new((value >> i) & 1);
+            if i > 0 {
+                power = power + power;
+            }
+            acc += bit * power;
+            columnas[0].push(bit);
+            columnas[1].push(power);
+            columnas[2].push(acc);
+        }
+        TraceTable::init(columnas)
+    }
+
+    /// Prove + verify de una traza contra `value`. `false` si el probador
+    /// entra en pánico (en depuración comprueba las aserciones), devuelve
+    /// `Err` o la prueba no verifica.
+    fn verifica(trace: TraceTable<BaseElement>, value: u64) -> bool {
+        let prover = RangeCheckProver::new(default_options());
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
+        let Ok(Ok(proof)) = r else {
+            return false;
+        };
+        let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+        verify::<RangeCheckAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            proof,
+            public_inputs_for(value),
+            &min_opts,
+        )
+        .is_ok()
+    }
+
+    /// **NEGATIVO del rango de 62 bits** (RFC-0017).
+    ///
+    /// `2^62`, `2^62 + 1` y `2^63 - 1` tienen el bit 62 a uno y el 63 a
+    /// cero: con el rango de 63 bits los tres verificaban. Lo único que los
+    /// rechaza es la aserción del bit 62. Los tests de arriba solo prueban
+    /// valores válidos.
+    #[test]
+    fn un_valor_en_la_ventana_alta_no_verifica() {
+        for value in [1u64 << 62, (1u64 << 62) + 1, (1u64 << 63) - 1] {
+            assert!(
+                !verifica(traza_sin_guarda(value), value),
+                "CRITICO: {value} esta en [2^62, 2^63) y no debe verificar"
+            );
+        }
+    }
+
+    /// **Y la traza sin guarda no es la que falla.** El control del de
+    /// arriba: con `MAX_VALUE` y con un valor cualquiera, la misma traza
+    /// verifica.
+    #[test]
+    fn la_traza_sin_guarda_verifica_dentro_del_rango() {
+        for value in [123_456_789u64, MAX_VALUE] {
+            assert!(
+                verifica(traza_sin_guarda(value), value),
+                "{value} cabe en el rango y debe verificar"
+            );
+        }
+    }
+
+    /// La guarda de `build_trace` corta `2^62` antes de construir nada.
+    #[test]
+    #[should_panic(expected = "hasta 2^62 - 1")]
+    fn build_trace_no_acepta_2_62() {
+        let _ = build_trace(1u64 << 62);
     }
 }

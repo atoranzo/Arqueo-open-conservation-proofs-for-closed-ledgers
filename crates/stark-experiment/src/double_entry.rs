@@ -73,7 +73,8 @@ pub const TRACE_LENGTH: usize = 1024;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: s_bal, r_bal, amount, limit, s_bal_new, limit-amount, r_bal_new.
 pub const NUM_SEGMENTS: usize = 7;
-/// Rango efectivo: 63 bits (techo del campo Goldilocks, ver `range_check.rs`).
+/// Rango efectivo: 62 bits (RFC-0017: los dos bits altos de cada segmento,
+/// forzados a cero, y `2 · 2^62 < p`; ver `range_check.rs`).
 pub const MAX_VALUE: u64 = (1u64 << 62) - 1; // RFC-0017 (§641): 62 bits, no 63
 
 // ===== Columnas =====
@@ -715,7 +716,8 @@ impl Air for DoubleEntryAir {
 
         result[C_SBIT_BOOL] = sbit_cur * (sbit_cur - E::ONE);
         result[C_SBIT_BOOL + 1] = sbit_next * (sbit_next - E::ONE);
-        // El MSB de cada segmento es cero (rango de 63 bits sobre Goldilocks).
+        // Los dos bits altos de cada segmento son cero (rango de 62 bits,
+        // RFC-0017).
         result[C_FIRST_S] = first_s * sbit_cur;
         result[C_FIRST_S + 1] = first_s * sacc_cur;
         result[C_HORNER] = cont_s * (sacc_next - (sacc_cur + sacc_cur + sbit_next));
@@ -1170,5 +1172,35 @@ mod tests {
             informe.celdas,
             informe.nunca_disparadas
         );
+    }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits más altos**
+    /// (RFC-0017). Si el selector `first_s` perdiera la segunda fila de un
+    /// segmento, el rango ganaría un bit y, en los de 64 filas, la resta que
+    /// envuelve volvería a caber. El control es el tercer bit, que el rango
+    /// admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+        use winterfell::Prover;
+
+        let s = scenario(1_000_000, 250_000, 250_000, 500_000);
+        let trace = build_trace(&s.sender, &s.receiver, s.amount, s.credited, s.limit);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let pub_inputs = DoubleEntryProver::new(default_options()).get_pub_inputs(&trace);
+        let air = DoubleEntryAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            pub_inputs,
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: los tres bits mas altos, rechazados"
+            );
+        }
     }
 }

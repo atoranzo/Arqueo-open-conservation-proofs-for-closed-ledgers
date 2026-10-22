@@ -140,6 +140,10 @@ mod falsadores_resto;
 // defensa. Solo tests.
 #[cfg(test)]
 mod falsadores_aperturas;
+// §719, la ventana alta del rango (RFC-0017): el probador de un circuito con la
+// ocultacion apagada, para que una traza mala llegue al verificador. Solo tests, en release.
+#[cfg(test)]
+mod sin_ocultar;
 
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, MerkleTree};
 use winterfell::math::{fields::f128::BaseElement, FieldElement};

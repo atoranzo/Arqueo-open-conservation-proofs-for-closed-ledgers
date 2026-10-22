@@ -77,6 +77,14 @@ pub const SEGMENT_LENGTH: usize = 8;
 /// Segmentos: índice A, índice B, y `B − A − 1`.
 pub const NUM_SEGMENTS: usize = 3;
 
+// ⚠️ Los índices de custodio y su diferencia van a segmentos de `SEGMENT_LENGTH`
+// filas, que desde el RFC-0017 admiten `SEGMENT_LENGTH - 2` bits (los dos altos,
+// forzados a cero). Si el índice máximo no cupiera, el circuito rechazaría
+// autorizaciones legítimas. Lo para el compilador, en cada circuito con sus
+// propias constantes: el test de acoplamiento de `circuit_threshold` solo mira
+// las suyas. La diferencia `B - A - 1` es menor que el índice máximo: basta este.
+const _: () = assert!((1usize << CUSTODIAN_DEPTH) - 1 <= (1usize << (SEGMENT_LENGTH - 2)) - 1);
+
 // ===== Columnas =====
 const LANE_B: usize = STATE_WIDTH; // 12
 /// Bits de dirección de la subida al árbol de CONGELADOS. Ambos carriles
@@ -1197,5 +1205,42 @@ mod tests {
             "[§130] freeze gemelo: prove {ms:.1} ms, proof {} bytes",
             proof.to_bytes().len()
         );
+    }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits más altos**
+    /// (RFC-0017). Si el selector `first_s` perdiera la segunda fila de un
+    /// segmento, el rango ganaría un bit y, en los de 64 filas, la resta que
+    /// envuelve volvería a caber. El control es el tercer bit, que el rango
+    /// admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let path = frozen_path();
+        let trace = build_trace(&valid_auth(), false, true, &path, COUNT_OLD, 1);
+        let esperada_old = frozen_climb(frozen_leaf(false), &path);
+        let esperada_new = frozen_climb(frozen_leaf(true), &path);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = FreezeAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            FreezePublicInputs {
+                custodian_set_root: build_custodian_set(&custodian_keys()).0,
+                frozen_root_old: esperada_old,
+                frozen_root_new: esperada_new,
+                freeze_count_old: BaseElement::new(COUNT_OLD),
+                freeze_count_new: BaseElement::new(COUNT_OLD + 1),
+            },
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: los tres bits mas altos, rechazados"
+            );
+        }
     }
 }

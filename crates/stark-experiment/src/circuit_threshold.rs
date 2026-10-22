@@ -80,6 +80,14 @@ pub const SEGMENT_LENGTH: usize = 8;
 /// Segmentos: índice A, índice B, y `B − A − 1`.
 pub const NUM_SEGMENTS: usize = 3;
 
+// ⚠️ Los índices de custodio y su diferencia van a segmentos de `SEGMENT_LENGTH`
+// filas, que desde el RFC-0017 admiten `SEGMENT_LENGTH - 2` bits (los dos altos,
+// forzados a cero). Si el índice máximo no cupiera, el circuito rechazaría
+// autorizaciones legítimas. Lo para el compilador, en cada circuito con sus
+// propias constantes: el test de acoplamiento de `circuit_threshold` solo mira
+// las suyas. La diferencia `B - A - 1` es menor que el índice máximo: basta este.
+const _: () = assert!((1usize << CUSTODIAN_DEPTH) - 1 <= (1usize << (SEGMENT_LENGTH - 2)) - 1);
+
 // ===== Columnas =====
 const LANE_B: usize = STATE_WIDTH; // 12
 /// Bits de dirección: **uno por carril**, porque los custodios están en
@@ -264,7 +272,8 @@ pub fn build_trace(
     // Rangos: los dos indices y la diferencia menos uno.
     //
     // Si los indices fueran iguales o estuvieran en orden inverso, la
-    // resta daria la vuelta en el campo y no cabria en 8 bits.
+    // resta daria la vuelta en el campo y no cabria en el segmento: 8 filas,
+    // 6 bits desde el RFC-0017 (los dos altos, forzados a cero).
     let diff = BaseElement::new(index_b) - BaseElement::new(index_a) - BaseElement::ONE;
     let segment_values = [index_a, index_b, diff.as_int()];
     for (seg, value) in segment_values.iter().enumerate() {
@@ -1096,17 +1105,24 @@ mod tests {
     /// |---|---|
     /// | `CUSTODIAN_DEPTH = 4` | 16 custodios, índices 0..15 |
     /// | Diferencia máxima legítima | 14 |
-    /// | `SEGMENT_LENGTH = 8` | 7 bits, hasta 127 |
+    /// | `SEGMENT_LENGTH = 8` | 6 bits, hasta 63 |
     ///
-    /// Hay holgura, pero **subir la profundidad a 8** —256 custodios— daría
-    /// diferencias de hasta 254, que **no caben en 7 bits**.
+    /// Hay holgura, pero **subir la profundidad a 7** —128 custodios— daría
+    /// diferencias de hasta 126, que **no caben en 6 bits**.
+    ///
+    /// ⚠️ Eran 7 bits hasta el RFC-0017 (§641), que fuerza a cero los DOS
+    /// bits altos de cada segmento, también en los de 8 filas. Este test
+    /// siguió contando 7: con 128 custodios habría dado verde y el circuito
+    /// no habría admitido las autorizaciones legítimas de índices lejanos.
+    /// Los bits que el segmento admite los mide
+    /// `cada_segmento_fuerza_a_cero_sus_dos_bits_altos`.
     ///
     /// Nada más comprueba esta relación, y el fallo no sería de solidez
     /// sino de disponibilidad: el circuito dejaría de admitir
     /// autorizaciones válidas.
     #[test]
     fn the_custodian_set_size_fits_the_range_segment() {
-        let bits = (SEGMENT_LENGTH - 1) as u32;
+        let bits = (SEGMENT_LENGTH - 2) as u32;
         let maximo_representable = (1u64 << bits) - 1;
 
         let custodios = 1u64 << CUSTODIAN_DEPTH;
@@ -1120,5 +1136,44 @@ mod tests {
              representa hasta {maximo_representable}. Subir \
              CUSTODIAN_DEPTH exige subir SEGMENT_LENGTH"
         );
+        // Los índices también van a un segmento, y el último es mayor que la
+        // diferencia: es la cota que muerde primero.
+        let indice_maximo = custodios - 1;
+        assert!(
+            indice_maximo <= maximo_representable,
+            "con {custodios} custodios el indice llega a {indice_maximo}, y \
+             el segmento de {bits} bits solo representa hasta \
+             {maximo_representable}"
+        );
+    }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits más altos**
+    /// (RFC-0017). Si el selector `first_s` perdiera la segunda fila de un
+    /// segmento, el rango ganaría un bit y, en los de 64 filas, la resta que
+    /// envuelve volvería a caber. El control es el tercer bit, que el rango
+    /// admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let trace = build_trace(keys[0], 0, &paths[0], keys[2], 2, &paths[2]);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = ThresholdAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            ThresholdPublicInputs { custodian_set_root: root },
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: los tres bits mas altos, rechazados"
+            );
+        }
     }
 }

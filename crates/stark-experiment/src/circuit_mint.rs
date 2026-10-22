@@ -1482,28 +1482,31 @@ mod tests {
         );
     }
 
-    /// **EL RANGO ES DE 63 BITS, Y DE ESO DEPENDE QUE EL TOPE SE IMPONGA.**
+    /// **EL SEGMENTO NO LLEGA A 64 BITS, Y DE ESO DEPENDE QUE EL TOPE SE
+    /// IMPONGA.**
     ///
     /// El tope se comprueba descomponiendo `tope − suministro_nuevo` en
     /// bits. Si el suministro se pasara del tope, esa resta **envuelve** en
-    /// el campo y da un valor cercano a `p ≈ 2^64`.
+    /// el campo y da `p − exceso`.
     ///
-    /// Que ese valor envuelto sea rechazado depende de que el segmento dé
-    /// **63 bits y no 64**:
+    /// Que ese valor envuelto sea rechazado depende del ancho del segmento.
+    /// Desde el RFC-0017 es de **62 bits**: `cont_s` cubre
+    /// `SEGMENT_LENGTH − 1 = 63` transiciones (eso mide este test) y `first_s`
+    /// fuerza a cero las dos primeras filas, los bits 63 y 62 (eso lo mide
+    /// `cada_segmento_fuerza_a_cero_sus_dos_bits_altos`):
     ///
     /// | | |
     /// |---|---|
-    /// | Máximo con 63 bits | 9.223.372.036.854.775.807 |
-    /// | Valor envuelto | ~18.446.744.069.xxx.xxx.xxx |
-    /// | ¿Cabe? | **No** — por eso se rechaza |
+    /// | Máximo con 62 bits | 4.611.686.018.427.387.903 |
+    /// | Valor envuelto, con operandos de 62 bits | más de `p − 2^62`, ~1,38e19 |
+    /// | ¿Cabe? | **No**, porque `2 · 2^62 < p` |
     ///
-    /// **Con 64 bits sí cabría**, el tope dejaría de imponerse, y ningún
-    /// test lo notaría: los testigos honestos pasan igual y los
+    /// **Con 64 bits cabría cualquier valor**, el tope dejaría de imponerse,
+    /// y ningún test lo notaría: los testigos honestos pasan igual y los
     /// adversariales fallan antes por otras restricciones.
     ///
-    /// El margen sale de que `cont_s` cubre `SEGMENT_LENGTH − 1 = 63`
-    /// transiciones, no 64. Es un invariante de **un solo bit** que nada
-    /// más comprueba.
+    /// ⚠️ Con 63 bits tampoco bastaba: un exceso mayor que `p − 2^63` deja el
+    /// valor envuelto por debajo de `2^63`, y cabía (RFC-0017).
     #[test]
     fn the_range_segment_is_63_bits_not_64() {
         let air = MintAir::new(
@@ -1707,5 +1710,34 @@ mod tests {
             "[§130] mint gemelo: prove {ms:.1} ms, proof {} bytes",
             proof.to_bytes().len()
         );
+    }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits más altos**
+    /// (RFC-0017). Si el selector `first_s` perdiera la segunda fila de un
+    /// segmento, el rango ganaría un bit y, en los de 64 filas, la resta que
+    /// envuelve volvería a caber. El control es el tercer bit, que el rango
+    /// admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let s = scenario(1000, 500_000, 10_000_000);
+        let trace = build(&s, &s.auth, s.amount);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = MintAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: los tres bits mas altos, rechazados"
+            );
+        }
     }
 }

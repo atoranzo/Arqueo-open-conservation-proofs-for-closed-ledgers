@@ -546,4 +546,42 @@ mod tests {
         );
         assert!(mal.is_err(), "otro compromiso NO debe verificar");
     }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción está vacía.**
+    ///
+    /// Si ninguna perturbación de una celda hace que una restricción se
+    /// vuelva no nula, esa restricción no impone nada, y ningún test normal
+    /// lo detecta: el testigo honesto la cumple y los adversariales caen
+    /// antes por otras. La capa lo usa al des-emitir
+    /// (`apply_deissue`, `zk-ssl/src/two_phase.rs`), y no lo tenía.
+    ///
+    /// Todas las filas, sin muestrear.
+    ///
+    /// ⚠️ Un resultado limpio no significa que el circuito sea correcto:
+    /// significa que no tiene este fallo concreto.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let (receptor, salt, importe) = (digest_from(1000), digest_from(2000), 250_000u64);
+        let rows = rows_of(&build_trace(receptor, salt, importe), TRACE_WIDTH, TRACE_LENGTH);
+        let air = RefundAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            RefundPublicInputs {
+                commitment: native_refund_commitment(receptor, salt, importe),
+                amount: BaseElement::new(importe),
+            },
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }

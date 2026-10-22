@@ -71925,3 +71925,259 @@ serie. No corre el canon entero ni los bancos.
   y `persistence.rs` —entre ellas las de la cabecera del ATADO F de `tools/check_publicadas.py` y
   la de `tools/check_catalogo.py`— no se rehacen, como en los sellos anteriores. Ninguna cambia un
   veredicto.
+
+## §719 — la vacuidad de las AIR vivas y la ventana [2^62, 2^63) del RFC-0017: el segmento del tope de la emisión a pendiente y solvency, a 62 bits, y cada segmento de rango con su falsador
+
+El commit que lleva este asiento, sobre `cae2188` (el §718). Un solo sello, todo en
+`crates/stark-experiment`: el segmento del tope de `circuit_mint_pending.rs` y de
+`circuit_mint_pending_climb.rs`, y el rango de `solvency.rs`, a 62 bits; `bits_altos_rechazados` y
+dos arreglos de `buscar_vacias` en `src/mutation.rs`; `src/sin_ocultar.rs`, nuevo, sólo tests; la
+cota de los custodios en compilación en cuatro circuitos; tests en 23 ficheros de `src/`; los
+comentarios que el RFC-0017 dejó desfasados; la cifra de `circuit_threshold` en `ARQUITECTURA.md`;
+el pin de `tools/canon.sh` y la cuenta de las marcas de su pie «Ceguera declarada»; las cifras de
+tests de los documentos vivos; el techo de los custodios en `PREGUNTAS.md` y `QUESTIONS.md`; una
+nota en el RFC-0017 y otra en su «Compatibilidad»; y este asiento. Lo escribe
+y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera
+del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: el segmento del tope de la emisión a pendiente, en la
+subida que verifica la capa, seguía en 63 bits, y con un tope de `1e8` un suministro nuevo
+«negativo» verificaba. Sale con los demás arreglos de la publicación conjunta. Lo midió en privado
+una sesión de Claude Code, sobre `161a233` con los arreglos del §711 al §718 tal como se hicieron en
+privado; se escribió sobre `e4eb764`, con el §711 al §718 encima, este sello lo lleva a `cae2188`
+(«Al portar», abajo), y lo que se volvió a correr aquí está en «Medido sobre este árbol». El canon
+entero se corre sobre la punta de la serie, no sobre cada sello.
+
+**De dónde sale.** El RFC-0017 (§641) bajó el rango de los AIR a 62 bits: el selector `first_s`
+pone a uno las DOS primeras filas de cada segmento, y los bits 63 y 62 van a cero. Así una resta que
+envuelve en el campo, `p - exceso`, no cabe. Ningún test lo medía: con las 17 líneas
+`first_s[seg * SEGMENT_LENGTH + 1] = one` y la aserción del bit 62 de `range_check` quitadas a la
+vez, los módulos de esos circuitos seguían en verde. Y dos sitios no tenían la segunda fila:
+
+- **El segmento del tope de la emisión a pendiente.** `MintPendingAir` y su subida,
+  `MintPendingClimbAir`, que la capa verifica en `apply_mint_pending_delegated`, descomponen
+  `tope - suministro_nuevo` en un segmento con su propio selector, `cap_first`, sin la segunda
+  fila: 63 bits. En la subida, con el tope `1e8`, un suministro nuevo `tope - margen + p` con margen
+  `2^62 + 5` o `2^63 - 1` verificaba (`Ok(())`). Por la capa no se llegaba: calcula el suministro en
+  nativo y exige el tope antes de verificar (`saturating_add` y `checked_add`, §668). Lo que
+  faltaba era la defensa en el circuito.
+- **`solvency`**, con `first[0]` y sin `first[1]`: 63 bits. Con saldo 0 e importe y límite
+  `2^63 - 1` la prueba salía (`Ok(())`). Sólo la usa el instrumento `instrumento_revela.rs` de la
+  capa, con valores fijos pequeños.
+
+**Lo que hace.**
+
+1. **El tope y `solvency`, a 62 bits.** `cap_first[CAP_START + 1] = one` en
+   `circuit_mint_pending.rs` y en `circuit_mint_pending_climb.rs`; en `solvency.rs`,
+   `first[1] = ONE`, `EFFECTIVE_BITS = 62` y `MAX_VALUE = 2^62 - 1`. Cambian esos tres AIR: una
+   prueba de ellos hecha antes no verifica después, porque la columna periódica entra en la
+   composición. Ningún KAT ni vector las fija: los KAT de `kat_probador.rs` son de otros
+   circuitos, y `git grep -i 'mint_pending\|solvency' -- spec/vectors tools/segunda` no da nada.
+   No cambia ningún byte de cabeza ni de cable.
+2. **`bits_altos_rechazados`** (`mutation.rs`, nueva). En un segmento de rango pone a uno uno de sus
+   tres bits más altos, rehace el acumulador de Horner para que bit y acumulador sigan coherentes, y
+   evalúa las transiciones del segmento sin la del enlace. Devuelve qué bits rechaza. Lo correcto es
+   `[true, true, false]`: los dos altos, forzados; el tercero, admitido, de control. El rango de 63
+   bits da `[true, false, false]`. Lo usan `cada_segmento_fuerza_a_cero_sus_dos_bits_altos`, uno
+   por cada uno de los 17 circuitos con segmentos de rango y otro en `solvency`, y
+   `el_tope_fuerza_a_cero_sus_dos_bits_altos`, en los dos del tope.
+3. **Falsadores de extremo a extremo, con su causa exacta y su control.** En el envío v2 (la
+   acuñación por envoltura, saldo 0 e importe `2^63 - 1`, y un importe de `2^62`), en el cobro v2
+   (un importe y un saldo de `2^62`) y en la quema (la que envuelve, `1e6 / 1e8 / 2^63 - 1`, y una
+   de `2^62`). Cada uno espera `UnsatisfiedTransitionConstraintError` con la fila del bit 62 que lo
+   para: 1 (el segmento 0) o 65 (el segmento 1). En la subida del pendiente, márgenes `2^62 + 5` y
+   `2^63 - 1`, fila 321, `CAP_START + 1`. En `solvency`, fila 65. En `range_check`, `2^62`,
+   `2^62 + 1` y `2^63 - 1`, con una traza escrita sin la guarda de `build_trace`, su control y la
+   guarda que no acepta `2^62`. Para escribir el falsador, `run` del envío v2 delega en
+   `run_con_limite`, y el escenario de la quema calcula `supply_new` en el campo.
+4. **El verificador, no sólo el probador.** Los probadores del envío v2, el cobro v2, la quema y la
+   subida del pendiente ocultan (`ocultacion_encendida`), y el probador oculto del fork comprueba la
+   traza contra el AIR antes de probar, también en release (D-AH). Un falsador escrito con él mide
+   al probador honesto, y un probador malicioso se salta esa comprobación. `SinOcultar<P>`
+   (`sin_ocultar.rs`) envuelve el probador de un circuito y lo delega todo salvo `ocultacion`, que
+   da `None`: la prueba es la de winterfell, que en release no comprueba la traza, y lo único que
+   puede rechazarla es `verify`. Cuatro falsadores lo usan, uno por circuito, y un quinto, en
+   `MintPendingAir`, usa su propio probador, que no oculta. Los cinco esperan
+   `VerifierError::InconsistentOodConstraintEvaluations`. Corren sólo en release: en depuración
+   winterfell valida la traza al probar y hace pánico antes; su `ignore` lo dice.
+5. **La vacuidad.** `no_constraint_is_vacuous`, todas las filas, sin muestrear, en el envío, el
+   cobro y la apertura v2 que produce la capa, en la subida del crédito y en la apertura v1 que usa
+   al des-emitir, y en la edad (con un emisor nombrado y con todos). En la edad mira las 110
+   restricciones principales: `evaluar` y `buscar_vacias` cuentan con
+   `num_main_transition_constraints()`, que en un AIR de un solo tramo coincide con la cuenta de
+   antes. Y `buscar_vacias` comprueba su referencia con `assert!` y no con `debug_assert!`: en
+   release, como corre el canon, una referencia rota pasaba sin aviso. Las seis, limpias.
+6. **Un hallazgo de severidad baja: la cota de los custodios.** En los cuatro circuitos con
+   segmentos de 8 filas (`circuit_threshold`, `circuit_freeze`, `circuit_governance` y
+   `circuit_mint_pending`) el rango es de 6 bits, hasta 63, desde el RFC-0017.
+   `the_custodian_set_size_fits_the_range_segment` seguía con 7 y sólo miraba la diferencia. Con
+   `CUSTODIAN_DEPTH = 7` habría dado verde y el circuito habría rechazado autorizaciones legítimas.
+   Es disponibilidad, no solidez, y hoy no muerde: `CUSTODIAN_DEPTH = 4`. El test pasa a
+   `SEGMENT_LENGTH - 2` y mira también el índice máximo, y los cuatro circuitos llevan la cota en
+   compilación con sus propias constantes.
+7. **Comentarios.** Los que el RFC-0017 dejó desfasados («63 bits», «64 bits», `MAX_VALUE`, la
+   tabla de `the_range_segment_is_63_bits_not_64`) en `circuit_audit`, `circuit_burn`,
+   `circuit_mint`, `circuit_mint_climb`, `circuit_mint_pending`, `circuit_recovery_climb`,
+   `circuit_send`, `circuit_send_v2`, `circuit_threshold`, `double_entry` y `range_check`. El nombre
+   de ese test no cambia: lo que mide, 63 transiciones de `cont_s`, sigue siendo cierto. Y
+   `ARQUITECTURA.md` dice 14 tests de `circuit_threshold`, no 13.
+8. **Al portarlo.** El comentario que declara `sin_ocultar` en `lib.rs` y la entrada del pin pasan a
+   este sello. El conflicto de `tools/canon.sh` se resolvió conservando la fila de la capa de los
+   sellos anteriores de la serie y sumando la entrada nueva a la de `stark-experiment`.
+9. **El RFC-0017, al día.** Desde el §641 dice que los AIR de `stark-experiment` demuestran el
+   rango `[0, 2^62)`. Para el segmento del tope de la emisión a pendiente y para `solvency` no era
+   así hasta este sello. El RFC lleva una nota «Completado en el §719» en la fila E2 y en el punto 2
+   de «Lo que hace», con el patrón de la del §699, y el §719 en sus asientos. La nota se redactó en
+   privado, al portar este sello, como pide `spec/rfc/PROCESO.md` §«Fallos de seguridad»: el
+   arreglo hecho en privado no tocaba el RFC.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), con el §711 al §718
+encima, y los lleva a `cae2188` —el §718 ya llevado a `7dd6409`, el §895, sobre el §711 al §717
+llevados— una sesión de Claude Code, no el autor: primero sobre el §718 llevado a `6c33d2a` (el
+§865), y de ahí sobre los seis sellos del §890 al §895, que git funde sin choque con este sello («Al
+portar», en el §711). El código entra como se escribió: `main` no tocó ninguno de los ficheros de
+`crates/stark-experiment` que toca el sello, salvo `lib.rs`, que lleva además la línea de comentario
+del §841, y los demás quedan byte a byte como en el sello. Lo que git no fundía, o fundía y quedaba
+falso, se resolvió a mano:
+
+- **El RFC-0017 y su compatibilidad (§826).** Desde el §826 la fila E2 dice que rompe el cable
+  —S2, las pruebas que viajan, del RFC-0021— y la cabecera lista sus asientos con lo que hizo cada
+  uno. La nota «Completado en el §719» va en la columna del estado y la de la ruptura se queda como
+  la dejó el §826. Lo que este sello cambia, ¿rompe S2? Con el criterio que la «Compatibilidad» del
+  mismo RFC aplica a la E3, no: los tres AIR no viajan. Ningún método del OpenRPC los lleva (los 32,
+  leídos); el nodo no verifica ninguno (`grep -rn mint_pending crates/zk-ssl-node/src` no da nada);
+  `MintPendingClimbAir` sólo lo verifica `apply_mint_pending_delegated`, API de la capa, fuera de la
+  promesa (D-A del RFC-0021), y la entrada `MintToPending` del registro lleva el digest del sello de
+  su autorización, no el de esa prueba; `MintPendingAir` y `solvency` no los verifica ningún juez de
+  producción. La nota de la fila lo dice, y una marca al final del párrafo de la «Compatibilidad»
+  que trata la E3 lo dice con sus razones: el censo de `crates/zk-ssl/src/instrumento_revela.rs`
+  marca la subida, como la auditoría, porque la verifica la capa, y la D-G del RFC-0018 la cuenta
+  entre las catorce familias que juzga la capa, y ninguna de las dos cosas la hace viajar. Por eso
+  no se tocan las listas de rupturas de S2 bajo `zkssl/0.4` —`spec/RPC.md` (su línea bajo el título y
+  §«Lo que `zkssl/0.4` no identifica todavía»), la `info.description` de `spec/openrpc.json` que
+  genera `crates/zk-ssl-wire/src/openrpc.rs`, `README.md`, `README_EN.md` y `spec/README.md`—, que
+  siguen con el §641, el §680 y el §684: leído como ruptura de S2, el §719 tendría que entrar en
+  ellas, y no lo es. La E3b del RFC-0021 llama «familia que viaja» a las catorce que juzga la capa,
+  la subida y la auditoría entre ellas: esa frase es del §790, en el RFC que el autor aceptó en el
+  §799; ya la contradecía la «Compatibilidad» del §826 para la auditoría, y no se toca aquí. El §719
+  entra en la lista de asientos de la cabecera, en su orden. Lo que este asiento llama «el cable»,
+  en el punto 1 y en «Lo que NO hace», es S1 y S2 del RFC-0021: un método, un campo, la versión, y
+  las pruebas que viajan, que no son las de estos tres AIR.
+- **El techo de los custodios (§794).** El §794 reescribió en `main` la pregunta de los límites de
+  `PREGUNTAS.md` y `QUESTIONS.md`: el conjunto de custodios «tiene su techo en 128», con el test en
+  `circuit_threshold.rs`:1108. El punto 6 de este sello mide lo contrario: desde el RFC-0017 un
+  segmento de 8 filas admite 6 bits, hasta 63, y el techo es 64 (`CUSTODIAN_DEPTH` <= 6), que la
+  cota en compilación nueva (`:89`) exige; y el sello baja el test a la `:1124`. Los dos ficheros
+  dicen 64 y citan `:76-77`, `:89` y `:1124`, con su marca «⚠️ §719» al final de la cadena.
+  Los preprints depositados (`doc/preprints/ZK-SSL-policy-note.md:227` y
+  `doc/preprints/ZK-SSL-residual-trust.md:176`) dicen también «128»; se conservan verbatim
+  (`doc/preprints/ERRATA.md`), y su errata no va en este sello. La entrada 14 de `BACKLOG.md`, cerrada
+  el 30-07-2026, habla del segmento de 7 bits de entonces, y tampoco se toca.
+- **Las bandas de bytes (§842).** `MintPendingClimbAir` y `SolvencyAir` tienen banda en
+  `instrumento_revela.rs`, y el sello cambia su columna periódica, no sus columnas ni sus
+  restricciones: las pruebas de las dos siguen en su banda, con los tests de la capa en verde
+  (abajo).
+- **Los contadores**, los del §718 llevado más los de este sello: el pin de `stark-experiment`, los
+  totales y las cifras de los documentos vivos (abajo, «Contadores»). Las cifras en prosa que
+  ninguna herramienta lee, buscadas por cada valor viejo con `git grep -n -w` fuera de este
+  fichero, de `spec/vectors` y de los `.rs`: 428 sólo sale en la crónica del pin y en una cuenta de
+  entradas de `tools/segunda/README.md` que no es ésta; 1992, 2132 y 2154, en ningún sitio. El
+  «fija hoy» de `ARQUITECTURA.md` y `CONTRIBUTING.md` es el de la capa, y sin vectores nuevos no se
+  mueven la lista de la superficie de `spec/RPC.md` ni los resultados de `tools/segunda/README.md`.
+  Dos cifras en prosa que no son pines de tests sí cambian: el techo de los custodios (arriba) y la
+  cuenta del pie «Ceguera declarada» de `tools/canon.sh`, cuyo (a) CIEGA_PROBADOR cuenta las marcas
+  `cfg_attr(debug_assertions, ignore)`, a las que el sello suma cinco (abajo, «Contadores»).
+
+**Medido en privado**, sobre `161a233` con los arreglos del §711 al §718 tal como se hicieron en
+privado:
+
+- **Antes del arreglo**, en la subida del pendiente con el tope `1e8`: `Ok(())` con márgenes
+  `2^62 + 5` y `2^63 - 1`, y `bits_altos_rechazados` sobre el tope daba `[true, false, false]` en
+  los dos circuitos. `solvency` con saldo 0 e importe `2^63 - 1`: `Ok(())`. Lo midió una revisión
+  adversarial de sólo lectura de la primera versión del trabajo, que sólo miraba los 17 circuitos y
+  no el tope.
+- **Esa revisión** dejó además: que los falsadores de extremo a extremo de la primera versión no
+  llegaban al verificador, sino al probador oculto, y sólo miraban `is_err()` (de ahí el punto 4);
+  que la edad no tenía prueba de vacuidad y que `buscar_vacias` no podía tomarla (punto 5); el
+  límite de la subida con un tope pequeño (abajo, «Lo que NO cierra»); la cota en compilación del
+  punto 6; y los comentarios del punto 7. Lo de los puntos 4 a 7 se corrigió antes de portar. El
+  límite de la subida no se corrigió: queda como límite declarado, con su test.
+- **Las suites**, en release: `stark-experiment` 475 pasan y 13 ignorados; `zk-ssl` 462 y 7
+  ignorados; `zk-ssl-cli` 160; `zk-ssl-verify` 205. En depuración, los falsadores del probador
+  honesto dan la misma causa exacta que en release.
+- **La mutación**: con las 20 líneas de selector (las 17 `first_s`, las dos `cap_first` y la
+  `first[1]` de `solvency`) y la aserción de `range_check` quitadas a la vez, 34 tests en rojo y al
+  menos uno por cada sitio; con los ficheros de antes del arreglo y lo que en ellos existía
+  quitado (las 17 `first_s` y la aserción), todo en verde.
+
+**Medido sobre este árbol**, `cae2188` con este sello, en release, con el directorio de compilación
+compartido, `flock` y `nice -n 19`, en una máquina de 4 CPU compartida con otras tareas:
+
+- **`stark-experiment`**, con `cargo test --release --locked`: 475 pasan, 13 ignorados, 0 fallos y
+  0 warnings, en 18 s de tests.
+- **Los crates que usan estos circuitos**, con la misma orden, 0 fallos y 0 warnings: `zk-ssl` 546
+  y 7 ignorados, en 124 s de tests (la capa verifica la subida del pendiente y usa `solvency` en
+  su instrumento, con las bandas de bytes del §842); `zk-ssl-air` 56; `zk-ssl-verify` 215 (130 + 84
+  + 1); `zk-ssl-cli` 175; `zk-ssl-node` 239; `zk-ssl-sdk` 22 (21 + 1); `zk-ssl-wire` 27. Son las
+  cifras de sus pines: no cambian.
+- **La mutación, otra vez**, con un guion que restaura los ficheros y compara sus huellas después.
+  Con este sello y las 20 líneas de selector y la aserción de `range_check` quitadas —y su cuenta
+  de aserciones en `AirContext::new`, de 6 a 5, sin la que la AIR no se construye—, sobre los
+  módulos de los 20 ficheros: 266 pasan, **34 fallan**, 10 ignorados. Los rojos: los 17
+  `cada_segmento_*` y el de `solvency`; los dos `el_tope_*`; los seis falsadores del probador
+  honesto; los tres del verificador con `SinOcultar` en el envío, el cobro y la quema, y los dos de
+  la subida y el de `MintPendingAir`; y los de `range_check` y `solvency`. Con los ficheros de
+  `cae2188` y sus 17 líneas y la aserción quitadas, con la misma cuenta: 256 pasan, 0 fallan. Las
+  huellas de los `.rs` de `src/`, iguales antes y después en las dos corridas.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2201
+  declarados; `check_modulos`, 214 ficheros; `check_vectores`, 580 vectores y 1273 líneas con su
+  huella, ninguno movido; `check_cifras`, 26 cifras y ninguna contradice el canon;
+  `check_constraint_layout`, 32 circuitos sin colisión; `check_publicadas`, con 600 ficheros en
+  `spec/vectors/`; `check_catalogo`, 235 textos del kit y 290 entradas de §5; `check_nucleo`, 175
+  filas; `verificar_citas`, 0 fantasmas y 0 muertos; `check_superficie`, la lista de `zkssl/0.4` en
+  29 comparaciones y 0 novedades aditivas; y `check_columns`, `check_curvas`, `check_dominios`,
+  `check_figures` y `check_techo`. Todas salen con 0. Sin vectores ni cambios en `tools/segunda`,
+  la conformidad no se volvió a correr en este sello.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `stark-experiment` 428 -> 475, los ignorados en
+13. TOTAL DE SELLO 1992 -> 2039 y TOTAL CON LARGOS 2132 -> 2179, en `PRINCIPIOS.md`, `PAPER.md` y
+`PAPER_EN.md`; los 428 de circuitos, a 475, en `PRINCIPIOS.md`, `PAPER.md`, `PAPER_EN.md`,
+`doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`. Las «1364 declaradas» y las «1349 declared» no se
+tocan, como en los sellos anteriores (5.A-319). `check_tests`, de 2154 a 2201. Sin vectores:
+`spec/vectors/` sigue con 600 ficheros. La cifra de «10 tests» del circuito de emisión completo en
+`ARQUITECTURA.md` no se toca: ya no cuadraba antes de este sello y `check_figures` no la atribuye a
+ningún crate. En el pie «Ceguera declarada» de `tools/canon.sh`, las marcas
+`cfg_attr(debug_assertions, ignore)` de su (a) CIEGA_PROBADOR, de 60 a 66, contadas como las contó
+el §864 (las de una línea y las de varias): 39 en `zk-ssl`, 24 en `stark-experiment` y 3 en
+`zk-ssl-sdk`, con su marca «⚠️ §719». Las cinco de `stark-experiment` son los falsadores del
+verificador de este sello, sólo en release; la de `zk-ssl` es la del §718 llevado,
+`la_prueba_de_un_emisor_no_verifica_con_su_alias`, que su sello no contó. Los ignorados de los
+pines no cambian: esas marcas sólo ignoran en depuración, y el canon corre en release. En
+`PREGUNTAS.md` y `QUESTIONS.md`, el techo de los custodios de 128 a 64 y la cita del test de
+`:1108` a `:1124`.
+
+**Lo que NO hace.** No cambia el cable, la versión `zkssl/0.4`, la cabeza ni el formato de una
+prueba. No toca el código de la capa, el kit, el nodo, el testigo ni la segunda implementación;
+la capa verifica la subida del pendiente con el AIR de este sello. No añade vectores ni mueve
+ningún KAT. No publica un kit: el corte va al final de la serie. No corre el canon entero ni los
+bancos.
+
+**Lo que NO cierra.**
+
+- **La subida del pendiente no acota el importe ni el suministro nuevo.** Con un tope menor que
+  `2^62 - 1`, un margen entre el tope y `2^62` es un suministro negativo que el segmento de 62 bits
+  admite: `con_un_tope_pequeno_el_segmento_no_acota_el_suministro` lo fija con margen `2^61` y tope
+  `1e8`, y es el control de los dos falsadores del tope. Con el tope de producción, `2^62 - 1`, ese
+  intervalo está vacío, y la capa lo para en nativo. Suministro nuevo e importe son entradas
+  públicas. Atar el importe con un segmento propio es otra disposición de la traza.
+- **`bits_altos_rechazados` mira el segmento, no el valor**: no prueba que el enlace ate el
+  segmento al saldo o al importe que dice. Tienen falsador de extremo a extremo el envío v2, el
+  cobro v2, la quema, la subida del pendiente, `MintPendingAir`, `solvency` y `range_check`; los
+  demás, los gemelos v1 incluidos, sólo el test local.
+- **La mutación corre por módulo**, no sobre todo el workspace: no dice si algo de la capa también
+  lo habría visto.
+- **`buscar_vacias` no ve** restricciones que sólo reaccionan a varias celdas a la vez, las que se
+  disparan pero imponen otra cosa, las aserciones de frontera ni las auxiliares: en la edad, las 9
+  del multiconjunto quedan sin cubrir, y lo dicen el test y la cabecera de `mutation.rs`. Un
+  resultado limpio significa que no tienen ese fallo, no que sean correctas.

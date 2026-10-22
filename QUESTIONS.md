@@ -299,13 +299,15 @@ another session**.
   saw, so two concurrent issuers serialise; with four clients at once, one applies and the other
   three are rejected (§123, §230). With a single issuer per root the waste is zero.
 - **Two more**: the pending tree runs out at 2³² simultaneous payments in flight, and the custodian
-  set, which today fits in 16 leaves (`CUSTODIAN_DEPTH = 4`), has its ceiling at 128, the one the
-  range segment of the strict order leaves (§13; the tree and its test, in
-  `crates/stark-experiment/src/circuit_threshold.rs`:76-77 and :1108). The *nullifier* collision
-  limit of the old path **was not solved, it was avoided**: the path was retired (§32, §36), and the
-  chaining that replaces it requires a total order that a single node provides and a distributed
-  system does not. ⚠️ **Corrected in §794**: it said «the custodian set caps at 128», without saying
-  that today's is 16.
+  set, which today fits in 16 leaves (`CUSTODIAN_DEPTH = 4`), has its ceiling at 64, the one the
+  range segments of the indices and of the strict order leave (§13; the tree, its bound and its
+  test, in `crates/stark-experiment/src/circuit_threshold.rs`:76-77, :89 and :1124). The *nullifier*
+  collision limit of the old path **was not solved, it was avoided**: the path was retired (§32,
+  §36), and the chaining that replaces it requires a total order that a single node provides and a
+  distributed system does not. ⚠️ **Corrected in §794**: it said «the custodian set caps at 128»,
+  without saying that today's is 16. ⚠️ §719: it said «has its ceiling at 128» and cited the test at
+  :1108; since RFC-0017 (§641) the 8-row segment admits 6 bits, up to 63, and the ceiling is 64
+  (`CUSTODIAN_DEPTH` <= 6), which the compiler enforces since §719.
 
 ### 22. How far is it from being usable?
 

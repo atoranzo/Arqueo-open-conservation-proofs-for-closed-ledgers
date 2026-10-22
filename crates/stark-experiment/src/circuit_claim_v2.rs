@@ -1180,7 +1180,7 @@ mod tests {
     use crate::native::{derive_leaf_salt_wide, derive_public_id_wide, native_climb,
         native_leaf_salted};
     use winterfell::math::ToElements;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, ProverError, VerifierError};
 
     const SK: u64 = 0xA11CE;
 
@@ -1658,5 +1658,139 @@ mod tests {
         let mut casi = unos.clone();
         casi[FROZEN_DEPTH - 1] = false;
         assert_ne!(horner(&casi), horner(&unos), "el ULTIMO nivel mueve el acumulador");
+    }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción está vacía.**
+    ///
+    /// Si ninguna perturbación de una celda hace que una restricción se
+    /// vuelva no nula, esa restricción no impone nada, y ningún test normal
+    /// lo detecta: el testigo honesto la cumple y los adversariales caen
+    /// antes por otras. El gemelo v1 lo tiene (`circuit_claim.rs`); este, que
+    /// es el que produce la capa, no lo tenía.
+    ///
+    /// Todas las filas, sin muestrear.
+    ///
+    /// ⚠️ Un resultado limpio no significa que el circuito sea correcto:
+    /// significa que no tiene este fallo concreto.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let rows = rows_of(&trace_de(&s), TRACE_WIDTH, TRACE_LENGTH);
+        let air = ClaimAirV2::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
+
+    /// **Cada segmento de rango fuerza a cero los bits 63 y 62** (RFC-0017).
+    /// El control es el bit 61, que el rango admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let rows = rows_of(&trace_de(&s), TRACE_WIDTH, TRACE_LENGTH);
+        let air = ClaimAirV2::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: [bit 63, bit 62, bit 61] rechazados"
+            );
+        }
+    }
+
+    /// **Un cobro de `2^62` no verifica** (RFC-0017).
+    ///
+    /// Saldo 0 e importe `2^62`: nada envuelve, y el saldo nuevo es `2^62`.
+    /// Con el rango de 63 bits esta prueba verificaba. Lo único que la
+    /// rechaza es que el importe y el saldo nuevo están en la ventana
+    /// `[2^62, 2^63)`.
+    ///
+    /// ⚠️ Lo para el probador honesto, no el verificador: oculta, y comprueba
+    /// la traza antes de probar, en depuración y en release. La causa es la
+    /// fila 65, el bit 62 del segmento 1 (el importe). El verificador lo mide
+    /// `el_verificador_rechaza_un_cobro_de_2_62`.
+    #[test]
+    fn un_cobro_de_2_62_no_verifica() {
+        let s = scenario(0, 1u64 << 62, 10_000_000);
+        let r = ClaimV2Prover::new(default_options()).prove(trace_de(&s)).map(|_| ());
+        assert!(
+            matches!(r, Err(ProverError::UnsatisfiedTransitionConstraintError(65))),
+            "un importe de 2^62 debe quedar fuera del rango: {r:?}"
+        );
+    }
+
+    /// **Y el verificador también lo rechaza.** El de arriba lo para el
+    /// probador honesto; uno malicioso se salta esa comprobación. Con la
+    /// ocultación apagada (`SinOcultar`) la traza mala se prueba sin queja, y
+    /// lo único que queda es `verify`.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "en depuracion winterfell valida la traza y hace panico antes de probar"
+    )]
+    fn el_verificador_rechaza_un_cobro_de_2_62() {
+        use crate::sin_ocultar::SinOcultar;
+
+        let s = scenario(0, 1u64 << 62, 10_000_000);
+        let proof = SinOcultar(ClaimV2Prover::new(default_options()))
+            .prove(trace_de(&s))
+            .expect("sin ocultacion, en release el probador no comprueba la traza");
+        let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+        let r = verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            proof,
+            s.public_inputs.clone(),
+            &min_opts,
+        );
+        assert_eq!(
+            r,
+            Err(VerifierError::InconsistentOodConstraintEvaluations),
+            "el verificador acepta un cobro de 2^62"
+        );
+    }
+
+    /// **Un saldo en la ventana alta no cobra**, ni con un importe pequeño:
+    /// saldo `2^62`, importe 1. Cae la fila 1, el bit 62 del segmento 0 (el
+    /// saldo), en el probador honesto.
+    #[test]
+    fn un_saldo_de_2_62_no_cobra() {
+        let s = scenario(1u64 << 62, 1, 10_000_000);
+        let r = ClaimV2Prover::new(default_options()).prove(trace_de(&s)).map(|_| ());
+        assert!(
+            matches!(r, Err(ProverError::UnsatisfiedTransitionConstraintError(1))),
+            "un saldo de 2^62 debe quedar fuera del rango: {r:?}"
+        );
+    }
+
+    /// **Y el techo del rango sí cobra.** Sin este control, los dos de arriba
+    /// pasarían con un circuito que rechazara todo valor grande: saldo
+    /// `2^61`, importe `2^61 - 1`, saldo nuevo `2^62 - 1`.
+    #[test]
+    fn un_cobro_hasta_el_techo_del_rango_verifica() {
+        let s = scenario(1u64 << 61, (1u64 << 61) - 1, 10_000_000);
+        assert!(
+            prueba_verifica(&s, trace_de(&s)),
+            "un saldo nuevo de 2^62 - 1 cabe en el rango"
+        );
     }
 }

@@ -87,6 +87,14 @@ pub const SEGMENT_LENGTH: usize = 8;
 /// Segmentos: índice A, índice B, y `B − A − 1`.
 pub const NUM_SEGMENTS: usize = 3;
 
+// ⚠️ Los índices de custodio y su diferencia van a segmentos de `SEGMENT_LENGTH`
+// filas, que desde el RFC-0017 admiten `SEGMENT_LENGTH - 2` bits (los dos altos,
+// forzados a cero). Si el índice máximo no cupiera, el circuito rechazaría
+// autorizaciones legítimas. Lo para el compilador, en cada circuito con sus
+// propias constantes: el test de acoplamiento de `circuit_threshold` solo mira
+// las suyas. La diferencia `B - A - 1` es menor que el índice máximo: basta este.
+const _: () = assert!((1usize << CUSTODIAN_DEPTH) - 1 <= (1usize << (SEGMENT_LENGTH - 2)) - 1);
+
 // ===== Columnas =====
 const LANE_B: usize = STATE_WIDTH; // 12
 const COL_BIT_A: usize = 24;
@@ -1039,5 +1047,33 @@ mod tests {
             informe.celdas,
             informe.nunca_disparadas
         );
+    }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits más altos**
+    /// (RFC-0017). Si el selector `first_s` perdiera la segunda fila de un
+    /// segmento, el rango ganaría un bit y, en los de 64 filas, la resta que
+    /// envuelve volvería a caber. El control es el tercer bit, que el rango
+    /// admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let trace = build_trace(&valid_auth(), COUNT_OLD, 1);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = GovernanceAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            declared_inputs(),
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: los tres bits mas altos, rechazados"
+            );
+        }
     }
 }

@@ -723,4 +723,48 @@ mod tests {
         let af = afirmacion(&pi);
         assert!(verificar_contra_cabeza(&bytes, &af, &cabeza).is_err(), "una m de mas se enlazo");
     }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción principal está vacía.**
+    ///
+    /// La edad es un AIR vivo: la capa la produce y el kit la juzga. Las otras
+    /// cuatro del kit (banda, cobro pendiente, pago en curso, prenda) ya lo
+    /// tenían. Todas las filas, sin muestrear, y los dos modos del enunciado:
+    /// un emisor nombrado y todos.
+    ///
+    /// ⚠️ Mira las 110 restricciones PRINCIPALES. Las 9 del tramo auxiliar (el
+    /// multiconjunto) quedan sin cubrir: `buscar_vacias` no construye ese
+    /// tramo.
+    ///
+    /// ⚠️ Un resultado limpio no significa que el circuito sea correcto:
+    /// significa que no tiene este fallo concreto.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::buscar_vacias;
+        use winterfell::Air;
+
+        let (hojas, meta) = libro();
+        for (t, emisor, todos) in [(50u64, 1u64, false), (50, 0, true)] {
+            let traza = construir(&hojas, &meta, &en(t, emisor, todos)).expect("traza");
+            let filas = traza.principal.num_rows();
+            let rows: Vec<Vec<BaseElement>> = (0..filas)
+                .map(|r| (0..ANCHO).map(|c| traza.principal.get(c, r)).collect())
+                .collect();
+            let air = EdadAir::new(traza.info.clone(), traza.pi.clone(), opciones());
+            let informe = buscar_vacias(&air, &rows, 1);
+
+            assert_eq!(
+                informe.total,
+                air.context().num_main_transition_constraints(),
+                "solo las principales"
+            );
+            assert!(
+                informe.nunca_disparadas.is_empty(),
+                "emisor {emisor}, todos {todos}: restricciones que NINGUNA perturbacion activa \
+                 (de {} principales, {} celdas probadas): {:?}",
+                informe.total,
+                informe.celdas,
+                informe.nunca_disparadas
+            );
+        }
+    }
 }

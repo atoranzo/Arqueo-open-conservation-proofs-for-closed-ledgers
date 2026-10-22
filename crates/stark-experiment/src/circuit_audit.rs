@@ -81,9 +81,10 @@ pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, saldo − inferior, superior − saldo.
 pub const NUM_SEGMENTS: usize = 3;
-/// Valor máximo representable en 63 bits: el techo del campo Goldilocks
-/// para comprobaciones de rango. Ver la nota sobre el techo de 63 bits en
-/// `FIVE_BACKENDS.md`.
+/// Valor máximo representable en 62 bits (RFC-0017): cada segmento fuerza a
+/// cero sus dos bits altos, y como `2 · 2^62 < p`, una resta de dos valores
+/// de 62 bits que envuelve da `p - exceso`, que no cabe. Con 63 bits cabía.
+/// La nota sobre el techo del campo, en `FIVE_BACKENDS.md`.
 pub const MAX_VALUE: u64 = (1u64 << 62) - 1;
 
 // ===== Columnas =====
@@ -1219,5 +1220,34 @@ mod tests {
             "[§470] audit CASA: prove {ms:.1} ms, proof {} bytes",
             proof.to_bytes().len()
         );
+    }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits más altos**
+    /// (RFC-0017). Si el selector `first_s` perdiera la segunda fila de un
+    /// segmento, el rango ganaría un bit y, en los de 64 filas, la resta que
+    /// envuelve volvería a caber. El control es el tercer bit, que el rango
+    /// admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let (w, root, id) = scenario(1_000_000);
+        let trace = build_trace(&w, 900_000, 1_100_000);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = AuditAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            pi(root, id, 900_000, 1_100_000),
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_SBIT, COL_SACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: los tres bits mas altos, rechazados"
+            );
+        }
     }
 }

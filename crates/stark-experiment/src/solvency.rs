@@ -38,9 +38,15 @@
 //! - Segmento 2 (filas 128..191): `diff_balance = balance - amount`
 //! - Segmento 3 (filas 192..255): `diff_limit = limit - amount`
 //!
-//! Que las dos diferencias quepan en 63 bits es EXACTAMENTE lo que
+//! Que las dos diferencias quepan en 62 bits es EXACTAMENTE lo que
 //! demuestra `amount <= balance` y `amount <= limit`: si amount fuera
-//! mayor, la resta en el campo daría un valor enorme que no cabe.
+//! mayor, la resta en el campo daría `p - exceso`, que no cabe.
+//!
+//! ⚠️ **62 bits, no 63, desde el RFC-0017.** El selector `first` cubre las
+//! dos primeras filas de cada segmento: los bits 63 y 62 van a cero. Con 63
+//! bits, saldo 0 e importe y límite `2^63 - 1` verificaban: la resta envuelve
+//! a `p - (2^63 - 1) < 2^63` y cabía. Con 62 y operandos por debajo de
+//! `2^62`, `p - exceso > 2^62` porque `2 · 2^62 < p`.
 //!
 //! ## Los "links" (atar cada acumulador a la aritmética)
 //!
@@ -55,9 +61,9 @@
 //!
 //! En `range_check.rs` anclamos la fila 0 con aserciones sobre un valor
 //! PÚBLICO y documentamos que no serviría con privados. Aquí: selector
-//! periódico `first` (ciclo 64, 1 en posición 0) activa `acc = 0` y
-//! `bit = 0` (el MSB) sobre la fila inicial de cada segmento — sin
-//! revelar nada.
+//! periódico `first` (ciclo 64, 1 en las posiciones 0 y 1) activa
+//! `acc = 0` y `bit = 0` (los bits 63 y 62) sobre las dos filas iniciales de
+//! cada segmento — sin revelar nada.
 
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin};
 use zk_ssl_air::sal::MerkleConSal;
@@ -76,10 +82,10 @@ pub const SEGMENT_LENGTH: usize = 64;
 pub const NUM_SEGMENTS: usize = 4;
 /// Longitud total: 256 filas (potencia de dos ✓).
 pub const TRACE_LENGTH: usize = NUM_SEGMENTS * SEGMENT_LENGTH;
-/// Bits efectivos por valor: 63 (límite del campo Goldilocks, ver
-/// `range_check.rs`).
-pub const EFFECTIVE_BITS: usize = 63;
-/// Valor máximo demostrable: 2^63 - 1.
+/// Bits efectivos por valor: 62 (RFC-0017: los dos bits altos de cada
+/// segmento, forzados a cero; ver `range_check.rs`).
+pub const EFFECTIVE_BITS: usize = 62;
+/// Valor máximo demostrable: 2^62 - 1.
 pub const MAX_VALUE: u64 = (1u64 << EFFECTIVE_BITS) - 1;
 
 const TRACE_WIDTH: usize = 5; // bit, acc, c_bal, c_amt, c_lim
@@ -92,8 +98,8 @@ const COL_LIM: usize = 4;
 type Blake3 = Blake3_256<BaseElement>;
 
 /// Bits en BIG-ENDIAN (MSB primero): el bit en la posición p del segmento
-/// es el bit (63 - p) del valor. La posición 0 es el bit 63, que siempre
-/// es cero para valores <= MAX_VALUE.
+/// es el bit (63 - p) del valor. Las posiciones 0 y 1 son los bits 63 y 62,
+/// que siempre son cero para valores <= MAX_VALUE.
 fn value_to_bits_be(value: u64) -> Vec<bool> {
     (0..SEGMENT_LENGTH)
         .map(|p| (value >> (SEGMENT_LENGTH - 1 - p)) & 1 == 1)
@@ -110,7 +116,7 @@ pub fn build_trace(balance: u64, amount: u64, limit: u64) -> TraceTable<BaseElem
 
     // Las diferencias se calculan EN EL CAMPO (con wrap si amount es
     // mayor) y se descomponen en bits desde su representación entera. Si
-    // no caben en 63 bits, la reconstrucción no cuadra y los "links"
+    // no caben en 62 bits, la reconstrucción no cuadra y los "links"
     // fallan — precisamente el mecanismo de solidez.
     let diff_bal = (c_bal - c_amt).as_int();
     let diff_lim = (c_lim - c_amt).as_int();
@@ -221,9 +227,10 @@ impl Air for SolvencyAir {
         &self.context
     }
 
-    /// 7 columnas periódicas:
-    /// - `first` (ciclo 64): 1 en la posición 0 — ancla la fila inicial
-    ///   de cada segmento (acc = 0, bit = 0 al ser el MSB).
+    /// 6 columnas periódicas:
+    /// - `first` (ciclo 64): 1 en las posiciones 0 y 1 — ancla las dos
+    ///   filas iniciales de cada segmento (acc = 0, bit = 0: los bits 63 y
+    ///   62). Con solo la 0 el rango era de 63 bits (RFC-0017).
     /// - `cont` (ciclo 64): 1 en 0..62 — activa Horner dentro del
     ///   segmento, se apaga en el borde.
     /// - `link_*` (ciclo 256): un único 1 en la posición 62 del segmento
@@ -231,6 +238,7 @@ impl Air for SolvencyAir {
     fn get_periodic_column_values(&self) -> Vec<Vec<Self::BaseField>> {
         let mut first = vec![BaseElement::ZERO; SEGMENT_LENGTH];
         first[0] = BaseElement::ONE;
+        first[1] = BaseElement::ONE; // RFC-0017: 62 bits, no 63 (bit 62 a cero)
 
         let mut cont = vec![BaseElement::ONE; SEGMENT_LENGTH];
         cont[SEGMENT_LENGTH - 1] = BaseElement::ZERO;
@@ -280,10 +288,10 @@ impl Air for SolvencyAir {
         result[3] = next[COL_AMT] - current[COL_AMT];
         result[4] = next[COL_LIM] - current[COL_LIM];
 
-        // 5-6: anclaje de la fila inicial de cada segmento — ¡con valores
-        // privados, sin aserciones! El MSB (primer bit en big-endian)
-        // debe ser cero (rango de 63 bits sobre Goldilocks), y Horner
-        // arranca exactamente en ese bit.
+        // 5-6: anclaje de las dos filas iniciales de cada segmento — ¡con
+        // valores privados, sin aserciones! Los dos bits más altos (63 y 62)
+        // deben ser cero (rango de 62 bits, RFC-0017), y Horner arranca en
+        // cero.
         result[5] = first * bit_cur;
         result[6] = first * acc_cur;
 
@@ -456,7 +464,7 @@ mod tests {
 
     /// EL TEST DE SOLIDEZ MÁS IMPORTANTE: gastar más del saldo debe
     /// fallar. La resta en el campo produce un valor gigante que no cabe
-    /// en 63 bits, y el link del segmento diff_balance no cuadra.
+    /// en 62 bits, y el link del segmento diff_balance no cuadra.
     #[test]
     fn insufficient_balance_fails() {
         let result = run_proof(100_000, 250_000, 500_000); // amount > balance
@@ -581,5 +589,54 @@ mod tests {
             informe.celdas,
             informe.nunca_disparadas
         );
+    }
+
+    /// **Cada segmento fuerza a cero sus dos bits más altos** (RFC-0017). Si
+    /// `first` perdiera la segunda fila, el rango volvería a 63 bits y una
+    /// resta que envuelve cabría. El control es el bit 61, que el rango
+    /// admite.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+
+        let trace = build_trace(1_000_000, 250_000, 500_000);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let air = SolvencyAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            SolvencyPublicInputs { regulatory_limit: BaseElement::new(500_000) },
+            default_options(),
+        );
+        for seg in 0..NUM_SEGMENTS {
+            assert_eq!(
+                bits_altos_rechazados(
+                    &air, &rows, COL_BIT, COL_ACC, seg * SEGMENT_LENGTH, SEGMENT_LENGTH
+                ),
+                [true, true, false],
+                "segmento {seg}: [bit 63, bit 62, bit 61] rechazados"
+            );
+        }
+    }
+
+    /// **El valor acuñado no vuelve** (RFC-0017). Saldo 0, importe y límite
+    /// `2^63 - 1`: la resta del saldo envuelve a `p - (2^63 - 1)`, que cabe en
+    /// 63 bits, y con ese rango la prueba verificaba. Con el de 62 cae la fila
+    /// 65, el bit 62 del segmento 1 (el importe), en el probador honesto, que
+    /// oculta y comprueba la traza antes de probar.
+    #[test]
+    fn un_importe_en_la_ventana_alta_no_se_prueba() {
+        let r = run_proof(0, (1u64 << 63) - 1, (1u64 << 63) - 1);
+        assert_eq!(
+            r,
+            Err("prove devolvio Err: UnsatisfiedTransitionConstraintError(65)".to_string()),
+            "CRITICO: un importe de 2^63 - 1 sobre un saldo de 0 verificaria"
+        );
+    }
+
+    /// **Y el techo del rango sí se prueba.** El control del de arriba: saldo
+    /// `2^62 - 1`, importe y límite `2^61`.
+    #[test]
+    fn un_importe_grande_dentro_del_rango_verifica() {
+        let r = run_proof(MAX_VALUE, 1u64 << 61, 1u64 << 61);
+        assert_eq!(r, Ok(()), "2^61 desde 2^62 - 1 cabe en el rango");
     }
 }
