@@ -50,10 +50,35 @@
 //! 1 el contador de recuperaciones se deriva contando las anteriores, asi
 //! que hace falta el genesis. En era 2 el compromiso esta en la entrada y
 //! **un tramo de `zkssl_logEntries` basta** — que era el caso normal.
+//!
+//! ## Un compromiso repetido, desde el §716 (el reenvio de una emision delegada)
+//!
+//! Un compromiso que lleva contador no se repite nunca en un registro honrado: cada entrada
+//! consume un valor del contador. Si se repite, la entrada miente, y es ROJO
+//! ([`ReverificacionError::CompromisoRepetido`]). Llevan contador desde antes de la era 2
+//! `Freeze`, `Governance` y `Recovery`. `Mint` y `MintToPending` lo llevan desde el arreglo del
+//! reenvio, y el registro no dice desde que entrada: lo declara quien llama
+//! ([`EmisionConContador`]).
+//!
+//! ⚠️ Sin contador, un compromiso repetido NO es ROJO: puede ser una reautorizacion legitima de
+//! la misma emision desde el mismo estado, que da el mismo compromiso. Marcarla ROJO acusaria a
+//! un operador honrado. Sale `Parcial`, con lo que falta dicho: un reenvio y una reautorizacion
+//! no se distinguen.
+//!
+//! ⚠️ Solo ve lo que se le da: con un tramo, un compromiso repetido fuera del tramo no se ve.
+//!
+//! ⚠️ Solo ve un reenvio que se asienta como tal, con el MISMO compromiso. Los pares de los
+//! custodios no se guardan (ECST §5.11): un nodo deshonesto puede asentar la emision reenviada
+//! con un compromiso nuevo y su sello, y sale `Verificada`. Un compromiso fabricado no se
+//! distingue aqui de uno firmado.
+//!
+//! ⚠️ [`reverificar`] no declara el contador ([`EmisionConContador::No`]): con el, una `Mint` o
+//! una `MintToPending` repetidas salen `Parcial`, no ROJO. El ROJO de una emision pide
+//! [`reverificar_con`] con la `seq` desde la que el libro lleva contador.
 
 use zk_ssl_hash::{
-    commit_operation, digest_of_proof, sello_de_autorizacion, sello_sin_prueba, Digest,
-    COMPROMISO_AUSENTE, OP_RECOVERY,
+    commit_operation, digest_of_proof, digest_to_bytes, sello_de_autorizacion, sello_sin_prueba,
+    Digest, COMPROMISO_AUSENTE, OP_RECOVERY,
 };
 use winter_math::fields::f64::BaseElement;
 
@@ -103,7 +128,24 @@ pub enum ReverificacionError {
     /// La entrada lleva un sello reservado a otra clase — la regresion
     /// que §278 cerro, detectada.
     SelloReservadoAjeno { seq: u64 },
+    /// §716 (el reenvio de una emision delegada): la entrada `seq` repite el compromiso de
+    /// la entrada `primera`, y su compromiso lleva contador. Una autorizacion se aplico dos veces.
+    CompromisoRepetido { seq: u64, primera: u64 },
 }
+
+/// §716 (el reenvio de una emision delegada): desde que entrada el compromiso de `Mint` y
+/// de `MintToPending` lleva el contador de emisiones. El registro no lo dice; lo declara quien
+/// reverifica, que sabe que libro mira.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EmisionConContador {
+    /// No lo lleva, o no se sabe. Un compromiso de emision repetido no es ROJO.
+    No,
+    /// Lo lleva desde esta `seq`, inclusive. Un libro nacido con el arreglo: `DesdeSeq(0)`.
+    DesdeSeq(u64),
+}
+
+/// Las delegadas cuyo compromiso lleva contador desde antes de la era 2.
+const CON_CONTADOR: [&str; 3] = ["Freeze", "Recovery", "Governance"];
 
 /// Las vias delegadas: las que deben llevar sello de AUTORIZACION.
 const DELEGADAS: [&str; 5] = ["Mint", "Freeze", "Recovery", "Governance", "MintToPending"];
@@ -115,8 +157,29 @@ const DELEGADAS: [&str; 5] = ["Mint", "Freeze", "Recovery", "Governance", "MintT
 /// anteriores. Un registro de **era 2** no lo necesita —el compromiso
 /// viaja en la entrada—, asi que un TRAMO (`fromSeq`, limite 1000) vale.
 /// La condicion es **por entrada**, no del registro entero.
+///
+/// §716 (el reenvio de una emision delegada): es [`reverificar_con`] sin declarar el
+/// contador de las emisiones, [`EmisionConContador::No`].
 pub fn reverificar(entradas: &[EntradaLog]) -> Result<Vec<Veredicto>, ReverificacionError> {
+    reverificar_con(entradas, EmisionConContador::No)
+}
+
+/// §716 (el reenvio de una emision delegada): [`reverificar`], con el contador de las
+/// emisiones declarado. Un compromiso repetido es ROJO cuando la entrada que lo repite lleva
+/// contador.
+pub fn reverificar_con(
+    entradas: &[EntradaLog],
+    emision: EmisionConContador,
+) -> Result<Vec<Veredicto>, ReverificacionError> {
     let completo = entradas.first().map(|e| e.seq == 0).unwrap_or(false);
+    // §716 (el reenvio de una emision delegada): cada compromiso de una delegada visto, con
+    // la primera entrada que lo llevo
+    let mut vistos: std::collections::HashMap<[u8; 32], u64> = std::collections::HashMap::new();
+    let lleva_contador = |e: &EntradaLog| {
+        CON_CONTADOR.contains(&e.kind.as_str())
+            || (matches!(e.kind.as_str(), "Mint" | "MintToPending")
+                && matches!(emision, EmisionConContador::DesdeSeq(d) if e.seq >= d))
+    };
     let vacio = digest_of_proof(&[]);
     let declarado = digest_of_proof(&sello_sin_prueba());
 
@@ -162,6 +225,19 @@ pub fn reverificar(entradas: &[EntradaLog]) -> Result<Vec<Veredicto>, Reverifica
                 if e.kind == "Recovery" {
                     recuperaciones += 1;
                 }
+                // §716 (el reenvio de una emision delegada): el compromiso repetido.
+                if let Some(&primera) = vistos.get(&digest_to_bytes(&c)) {
+                    if lleva_contador(e) {
+                        return Err(ReverificacionError::CompromisoRepetido { seq: e.seq, primera });
+                    }
+                    fuera.push(Veredicto::Parcial {
+                        seq: e.seq,
+                        comprobado: "el sello es el de su compromiso",
+                        falta: "repite un compromiso sin contador: reenvio o reautorizacion, no se sabe",
+                    });
+                    continue;
+                }
+                vistos.insert(digest_to_bytes(&c), e.seq);
                 fuera.push(Veredicto::Verificada { seq: e.seq });
                 continue;
             }
@@ -358,6 +434,55 @@ mod tests {
             Err(ReverificacionError::SelloReservadoAjeno { seq: 7 }),
             "el centinela no es de una delegada"
         );
+    }
+
+    /// §716 (el reenvio de una emision delegada): un compromiso repetido. ROJO donde lleva
+    /// contador -una congelacion siempre; una emision, desde la entrada que se declara-, y sin
+    /// contador, `Parcial`.
+    #[test]
+    fn un_compromiso_con_contador_repetido_es_rojo() {
+        let declarado = digest_of_proof(&sello_sin_prueba());
+        let c = as_digest(0xF1);
+        let log = vec![
+            entrada_v2(0, "OpenAccount", declarado, COMPROMISO_AUSENTE),
+            entrada_v2(1, "Freeze", sello(c), c),
+            entrada_v2(2, "Freeze", sello(c), c),
+        ];
+        assert_eq!(
+            reverificar(&log),
+            Err(ReverificacionError::CompromisoRepetido { seq: 2, primera: 1 }),
+            "una congelacion lleva contador: repetir su compromiso es aplicarla dos veces"
+        );
+    }
+
+    #[test]
+    fn un_compromiso_de_emision_repetido_es_rojo_solo_con_contador() {
+        let declarado = digest_of_proof(&sello_sin_prueba());
+        let c = as_digest(0xE1);
+        let log = vec![
+            entrada_v2(0, "OpenAccount", declarado, COMPROMISO_AUSENTE),
+            entrada_v2(1, "Mint", sello(c), c),
+            entrada_v2(2, "Burn", digest_of_proof(b"prueba-de-quema"), COMPROMISO_AUSENTE),
+            entrada_v2(3, "Mint", sello(c), c),
+        ];
+
+        // Sin contador: puede ser una reautorizacion legitima. No es ROJO, y no es Verificada.
+        let v = reverificar(&log).expect("sin contador no acusa");
+        assert_eq!(censo(&v), (2, 2, 0), "la apertura y la primera; la quema y la repetida, parciales");
+        assert!(matches!(v[3], Veredicto::Parcial { seq: 3, .. }), "{:?}", v[3]);
+
+        // Con contador desde el genesis: la autorizacion se aplico dos veces.
+        assert_eq!(
+            reverificar_con(&log, EmisionConContador::DesdeSeq(0)),
+            Err(ReverificacionError::CompromisoRepetido { seq: 3, primera: 1 })
+        );
+        // Y con el contador declarado desde la repetida: lo decide la entrada que repite.
+        assert_eq!(
+            reverificar_con(&log, EmisionConContador::DesdeSeq(3)),
+            Err(ReverificacionError::CompromisoRepetido { seq: 3, primera: 1 })
+        );
+        // Declarado despues: nada cambia respecto a `reverificar`.
+        assert_eq!(reverificar_con(&log, EmisionConContador::DesdeSeq(4)), Ok(v));
     }
 
     /// **Era 2 en un TRAMO**: sin genesis y aun asi verificable, porque el

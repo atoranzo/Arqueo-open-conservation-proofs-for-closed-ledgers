@@ -55,7 +55,7 @@ custodios distintos**, no una clave; y el flujo documentado es el de
 hallazgo propio. Corregido en §361; el error se registra en vez de
 borrarse.
 
-`crates/zk-ssl` — **522 tests** (7 ignorados, declarados). Material para
+`crates/zk-ssl` — **530 tests** (7 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
 El backend STARK añade **18 circuitos** verificados por separado.
 
@@ -755,11 +755,17 @@ transferencia oscilaron entre 180 y 620 ms según el contexto de caché.».
 |---|---|
 | Transferir más de lo debitado | Conservación (partida doble) |
 | Abrir cuenta con saldo | Apertura siempre a cero |
-| Emitir sin autorización | Dos custodios demostrados en circuito (también frente al operador desde el §538: §523, §538) |
+| Emitir sin autorización | Dos custodios demostrados en circuito (también frente al operador desde el §538: §523, §538); una autorización emite una vez |
 | Emisión encubierta | Suministro público atado en el circuito |
 | Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 | Gastar sin ser el titular | Autoridad de gasto |
-| Reenviar una operación válida | Encadenamiento de raíces en la capa |
+| Reenviar una operación válida | Encadenamiento de raíces; la huella de la prueba del titular ya aplicada (§654); en las vías delegadas, el contador del compromiso que firman los custodios |
+
+⚠️ §716 (el reenvío de una emisión delegada): la última fila decía solo «Encadenamiento
+de raíces en la capa», y no bastaba. Una quema o una desemisión devuelven la raíz y el suministro
+a los de antes de emitir, y los mismos materiales de una emisión delegada volvían a emitir. Las
+dos emisiones llevan ahora el contador de emisiones, `(n, n + 1)`, en lo que firman los custodios,
+como congelar, gobernar y recuperar. Por eso una autorización emite una sola vez.
 
 Cada una con su test discriminante — un testigo internamente coherente
 que solo viola la restricción concreta. Tres veces durante el proyecto un
@@ -1160,6 +1166,11 @@ comprueba que transferir no altera el suministro.
 | Gastar sin ser el titular | Autoridad de gasto |
 | Reenviar una operación válida | Encadenamiento de raíces en la capa |
 
+⚠️ La última fila es la de entonces y no se sostuvo: en cuanto la raíz vuelve a la de antes, el
+encadenamiento no para el reenvío. Lo midió el §654 para las pruebas del titular y,
+el §716 (el reenvío de una emisión delegada), para la emisión delegada de la capa de hoy. La
+tabla viva está en «Ninguna vía para crear dinero», arriba.
+
 17 tests en `settlement-layer`, 9 en `circuit_settlement`, 8 en
 `circuit_mint`.
 
@@ -1182,7 +1193,7 @@ comprueba que transferir no altera el suministro.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 35 módulos y **522 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 35 módulos y **530 tests**, frente a
 > los 2 módulos y 17 de este.
 >
 > ⚠️ §778: aquí decía **33 módulos**, la cuenta del §531, y son **34** desde
@@ -1603,7 +1614,7 @@ rojo si corres esa orden tal cual. **La capa se mide con
 `cargo test --locked -p zk-ssl` en depuración da 443 pasan, 0 fallan y 45
 ignorados, sobre `0315b14` (el §813), en 3.253,94 s con otro trabajo en la
 máquina (4 CPU, carga de 9,2 a 18,6). En release, la fila de la capa en
-`tools/canon.sh` fija hoy 522 pasan y 7 ignorados (⚠️ §839: decía 481; el 482.º
+`tools/canon.sh` fija hoy 530 pasan y 7 ignorados (⚠️ §839: decía 481; el 482.º
 es el censo de las longitudes, que corre también en depuración, donde serían
 444 pasan: los 443 son de `0315b14`, y la capa entera no se ha vuelto a correr
 ahí. ⚠️ §840: decía 482; los dos de más, el censo de los `native_leaf`, corren
@@ -1612,7 +1623,7 @@ bytes, también: serían 447. ⚠️ §816: decía 485; los once de más, los de
 se han corrido en depuración. ⚠️ §817: decía 496; el de más, el de la instantánea en claro,
 tampoco. ⚠️ §819: decía 497; el de más, el de la negativa del barrido, tampoco. ⚠️ §820: decía 498;
 los tres de la exportación, tampoco. ⚠️ §821: decía 501; los dos de la capa importada con clave,
-tampoco. ⚠️ §828: decía 503; los doce del recifrado y la migración del libro de otro dueño, tampoco. ⚠️ §711: decía 515; los tres de más, los de la red de la capa, tampoco. ⚠️ §715: decía 518; los cuatro de más, los del reenvío con la prueba maleada, tampoco). De los 45, 7 son instrumentos de medida, ignorados en todo perfil, y 38 llevan
+tampoco. ⚠️ §828: decía 503; los doce del recifrado y la migración del libro de otro dueño, tampoco. ⚠️ §711: decía 515; los tres de más, los de la red de la capa, tampoco. ⚠️ §715: decía 518; los cuatro de más, los del reenvío con la prueba maleada, tampoco. ⚠️ §716: decía 522; los ocho de más, los del reenvío de una emisión delegada, tampoco). De los 45, 7 son instrumentos de medida, ignorados en todo perfil, y 38 llevan
 `cfg_attr(debug_assertions, ignore = …)`: en depuración no corren, y corridos ahí con `--ignored`
 pasan los 38. Ya no hay fallos que atribuir al límite de grados, y con esta medida se cierra la
 entrada 41 de `BACKLOG.md`. Sigue en pie: esos 38 solo los corre release, y la capa se mide con

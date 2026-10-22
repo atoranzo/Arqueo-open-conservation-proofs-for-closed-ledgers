@@ -346,6 +346,7 @@ pub fn delegated_pair(
 
 /// El compromiso de emisión delegada: estado ANTES y DESPUÉS de abonar
 /// `amount` en `idx`, sellado con `OP_MINT`. Calcado del molde de mint.
+/// §716 (el reenvio de una emision delegada): con el contador de emisiones, `(n, n + 1)`.
 pub fn mint_commitment(layer: &SovereignLayer, idx: AccountIndex, amount: u64) -> Digest {
     let rec = layer.records.get(&idx).expect("cuenta").clone();
     let mut t = layer.accounts.clone();
@@ -364,6 +365,8 @@ pub fn mint_commitment(layer: &SovereignLayer, idx: AccountIndex, amount: u64) -
     v.push(BaseElement::new(layer.total_supply()));
     v.push(BaseElement::new(layer.total_supply() + amount));
     v.push(BaseElement::new(layer.max_supply()));
+    v.push(BaseElement::new(layer.mint_count()));
+    v.push(BaseElement::new(layer.mint_count() + 1));
     auth::commit_operation(auth::OP_MINT, &v)
 }
 
@@ -531,6 +534,8 @@ pub fn recover_delegated(layer: &mut SovereignLayer, idx: AccountIndex, nueva: D
 /// El compromiso de emisión-a-pendiente delegada: raíz del árbol de
 /// pendientes ANTES/DESPUÉS de colocar el compromiso del receptor,
 /// suministro atado y tope leído de la capa. Calcado del molde.
+/// §716 (el reenvio de una emision delegada): con el contador de emisiones, `(n, n + 1)`,
+/// el mismo de `mint`.
 pub fn mint_pending_commitment(
     layer: &SovereignLayer,
     receiver_id: Digest,
@@ -547,6 +552,8 @@ pub fn mint_pending_commitment(
     v.push(BaseElement::new(layer.total_supply()));
     v.push(BaseElement::new(layer.total_supply() + amount));
     v.push(BaseElement::new(layer.max_supply()));
+    v.push(BaseElement::new(layer.mint_count()));
+    v.push(BaseElement::new(layer.mint_count() + 1));
     auth::commit_operation(auth::OP_MINT_PENDING, &v)
 }
 

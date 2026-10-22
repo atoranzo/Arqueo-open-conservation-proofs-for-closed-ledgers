@@ -1,0 +1,70 @@
+{
+  "spec": "zkssl/0.5",
+  "sellado": "§716",
+  "escenario": "open+fund(seed 0xA11CE, +1000000) x2 · send v2 250000 (salt 7, delta 96) · claim",
+  "canon": [
+    427,
+    530,
+    1955,
+    40
+  ],
+  "entradas": [
+    {
+      "seq": "0x0",
+      "kind": "OpenAccount",
+      "root_old": "0xcef7062263b5c3db053e011286d1b34ed498c9e6f69bc9a558246553819539bb",
+      "root_new": "0x6590b0bf234a2761348e2b6f7bab35039c9e923e431a9883d44650770ebb7b1a",
+      "proof_digest": "0x0d6032dfb7f7f4849af034829d53e1aa6f6c4856736daba11a08c57f24fa3fc3",
+      "chain": "0xeaf18d1547995138061ec14c3dc95c2966f4182ef731b419b8ed2d015367fdff",
+      "compromiso": "0x8122a9c0000000008122a9c0000000008122a9c0000000008122a9c000000000"
+    },
+    {
+      "seq": "0x1",
+      "kind": "Mint",
+      "root_old": "0x6590b0bf234a2761348e2b6f7bab35039c9e923e431a9883d44650770ebb7b1a",
+      "root_new": "0xf3fca118e57f2d2d40a8df6dc6290b9e64e155cce6eea9cbc7e59f9b3ebc0ad6",
+      "proof_digest": "0x3a98d649f40263686d33400b17f9b335b276009a539999b07e8d6f5f5c2f15db",
+      "chain": "0x36d60874d330606c3f782f3348404db4e2195305828d3a71fd6b83425291d357",
+      "compromiso": "0x605f1ef3785d132b41f93a20936dd2d764f5faa5befa955b507cca9df4211dd1"
+    },
+    {
+      "seq": "0x2",
+      "kind": "OpenAccount",
+      "root_old": "0xf3fca118e57f2d2d40a8df6dc6290b9e64e155cce6eea9cbc7e59f9b3ebc0ad6",
+      "root_new": "0xbee1fa003cc2da4eb950271b72b57050d2ec2e8dbe787bb65c1f444cbca74c5d",
+      "proof_digest": "0x0d6032dfb7f7f4849af034829d53e1aa6f6c4856736daba11a08c57f24fa3fc3",
+      "chain": "0x9c1dd46c227994fcfd47847784c3ef69447b322f1ad3ae49b73175353d18a0b2",
+      "compromiso": "0x8122a9c0000000008122a9c0000000008122a9c0000000008122a9c000000000"
+    },
+    {
+      "seq": "0x3",
+      "kind": "Mint",
+      "root_old": "0xbee1fa003cc2da4eb950271b72b57050d2ec2e8dbe787bb65c1f444cbca74c5d",
+      "root_new": "0x75418f6b7f9f18f7eff20bb30a1a2da5a4dbbe43f691fa3d612a6833a592ea0b",
+      "proof_digest": "0xbbc04e733907d9cec983109da96ff875bdd656b7f89fca4591dbed2a98aad088",
+      "chain": "0xb2ed56e475e3a67a28d9026f7c3e90161db7fbe59f711172e6f1e32f6d5db00c",
+      "compromiso": "0x041d61237f1aae1fcff11e4fabb1dfc9c4896200a08454065db4f183b1b88acb"
+    },
+    {
+      "seq": "0x4",
+      "kind": "Send",
+      "root_old": "0x75418f6b7f9f18f7eff20bb30a1a2da5a4dbbe43f691fa3d612a6833a592ea0b",
+      "root_new": "0xd44542e01c8f055048242d571cad197371950e0817c2666824cafcaf6088e69e",
+      "proof_digest": "0xe5508ab07dfa52838dfca483ddeac6b7747995ba09c6a9b3235729ad277d55c7",
+      "chain": "0xe21fe3c5799abc0a28ac76e14118f8263aaa1e0d82d3d004df92f080f2cc7560",
+      "compromiso": "0x8122a9c0000000008122a9c0000000008122a9c0000000008122a9c000000000"
+    },
+    {
+      "seq": "0x5",
+      "kind": "Claim",
+      "root_old": "0xd44542e01c8f055048242d571cad197371950e0817c2666824cafcaf6088e69e",
+      "root_new": "0x84f8f0dbd0c02e0f5d0730065522e17914cc5a3bb5b957d9756c518995c51a39",
+      "proof_digest": "0xd4c4e1c30d775a6587bcb5cbe20aa9c4b30e32d8cab9e937725815bfffd57e17",
+      "chain": "0x02c70622bcc6ce51f4ef6f30b2bc0ba5ca878d7935ea7e743511febd120e230e",
+      "compromiso": "0x8122a9c0000000008122a9c0000000008122a9c0000000008122a9c000000000"
+    }
+  ],
+  "epoch_digest": "0x117050df8134404d3cd8cac239d222eeb325d89cdf8cae9b158ce931a41e933a",
+  "supply": "0x1e8480",
+  "pending": "0x0"
+}

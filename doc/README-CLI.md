@@ -27,10 +27,13 @@ la capa, con sumideros intercambiables (trait `Tracer`).
 Matiz sobre "los nullifiers": en la capa STARK, el doble gasto de pagos
 se cierra con nonce + hoja + árbol de pendientes ("no-pertenencia
 demostrable"), no con nullifiers de nota; los nullifiers que SÍ existen
-aquí son los anti-replay de las autorizaciones de custodios/gobernanza, y
-`simulate` los imprime en cada emisión. Los nullifiers de nota clásicos
-(`nullifier.rs`, `persistent_nullifier_registry.rs`) viven en el backend
-experimental Halo2, no en la capa.
+aquí son los de las autorizaciones de custodios/gobernanza, y `simulate`
+los imprime en cada emisión. ⚠️ No son un anti-replay: dicen que los dos
+custodios de un par son distintos, y la capa no los guarda. Lo que
+impide reenviar una autorización es el contador que va en su compromiso.
+Los nullifiers de nota clásicos (`nullifier.rs`,
+`persistent_nullifier_registry.rs`) viven en el backend experimental
+Halo2, no en la capa.
 
 ## Estructura
 
@@ -70,7 +73,7 @@ cargo run -p zk-ssl-cli -- inspect-state --ledger ./ledger --accounts
 
 # Conformidad del protocolo: re-ejecuta el escenario canónico y compara
 # campo a campo contra los vectores fijados — la 2ª implementación empieza aquí:
-cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.4.json
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.5.json
 
 # Eventos como JSON Lines (datos por stdout, diagnóstico por stderr):
 cargo run -p zk-ssl-cli -- --json simulate | jq .
@@ -85,6 +88,12 @@ OTRA version: zkssl/0.3 …`, que es lo que el canon exige de él (`tools/canon.
 conformidad»). Con `zkssl-0.4.json` sale con 0 y `CONFORMIDAD: 6 entradas + suministro +
 pendiente, todo IDENTICO en lo que el circuito fija`: `proof_digest`, `chain` y `epoch_digest` no
 se reproducen con la ocultación (RFC-0009, D-AI), así que «campo a campo» no es cada campo.
+
+⚠️ **Corregido en el §716**: la orden apuntaba a `spec/vectors/zkssl-0.4.json`. Desde el §716 el
+compromiso de las dos emisiones lleva el contador de emisiones, y el escenario sube a `zkssl/0.5`
+con el cable en `zkssl/0.4` hasta el corte (RFC-0018): con `zkssl-0.4.json` el binario sale con 1
+y `los vectores son de OTRA version: zkssl/0.4 …`, como con la 0.3, y lo que el párrafo de arriba
+dice de la 0.4 lo da desde el §716 `zkssl-0.5.json`.
 
 Salida típica de `simulate` (abreviada; una corrida en release del 2026-10-07):
 

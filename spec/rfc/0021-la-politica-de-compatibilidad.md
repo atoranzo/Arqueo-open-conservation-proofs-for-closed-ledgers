@@ -18,7 +18,7 @@
 - **Asiento(s) de AUDITORIA:** §209 (el `0.2`) y §275, §278 y §281 (sus re-emisiones), §290 (lo
   custodiado no caduca), §418 (el `tipo` desconocido, con nombre), §641, §680 y §684 (las pruebas
   que cambiaron bajo `zkssl/0.4`), §662 a §664 (la 0.4.2), §682 (la primera mudanza a `0.4/`), §692
-  (las huellas), §699 (lo que `zkssl/0.4` no identifica, medido), §707 (la D-G), §790 (este
+  (las huellas), §699 (lo que `zkssl/0.4` no identifica, medido), §707 (la D-G), §716 (la emisión de los vectores, que escribe desde entonces la versión del escenario, con su marca en el hecho 5), §790 (este
   borrador), §799 (la aceptación del autor, con sus ocho decisiones), §800 (las cifras de S3 y S5 en la D-A, con la E2 del RFC-0020), §801 (la E2 y la E3a), §807 (las frases rancias, con su marca), §810 (la cita del bloque «3 ter» de `tools/canon.sh`), §823 (la condición de la máquina en «reproducible», y las citas de `doc/KIT.md` que el §815 y el §818 habían corrido, con sus marcas), §826 (desde cuándo rige la promesa, precisado, y qué verificador juzga las positivas de la E3b), §852 (la cita de `spec/vectors/paquete/MANIFIESTO.txt` del hecho 7, que sus cinco negativos corrieron, con su marca). ⚠️ §826: la lista acababa en el §799, y callaba el §800, el §801, el §807, el §810, el §823 y el §852, que tocaron este fichero: el §801 lo nombra su línea de estado; el §800, sus cifras de la D-A; y el §807, el §810, el §823 y el §852, sus marcas.
 - **Backlog:** la **90** (la política de compatibilidad, como promesa), que este RFC no cierra hasta
   que se construya; con la **85** (una segunda implementación necesita contra qué comprometerse),
@@ -92,7 +92,7 @@ regla de ruptura escrita, y una compuerta que la haga cierta («Qué lo cierra»
    (`crates/zk-ssl-wire/src/openrpc.rs:239` y `:269`) y la emisión de los vectores
    (`crates/zk-ssl-cli/src/conformance.rs:106`). Los tests que la comprueban la escriben otra vez
    como literal (`crates/zk-ssl-node/src/main.rs:5129` y `:5162`; `openrpc.rs:355` y `:403`). Medido
-   con `grep` del literal en `crates/` y `tools/`.
+   con `grep` del literal en `crates/` y `tools/`. ⚠️ §716: la emisión de los vectores dejó de ser una escritura del cable: desde el §716 escribe la versión del escenario de conformidad, `zkssl/0.5`, que sube antes que el cable porque el compromiso de las dos emisiones lleva el contador de emisiones (RFC-0018, «Cómo se construye»). La lista de `spec/RPC.md` la fija aparte, en `escenario`, y `tools/check_superficie.py` la compara en su R1; las escrituras del cable quedan en tres.
 6. **El contrato del kit tiene cuatro códigos de salida, y uno de sus documentos cuenta tres.**
    `codigo_de_salida` da 0, 1 o 3, y el uso incorrecto 2
    (`crates/zk-ssl-verify/src/main.rs:1789-1795` y `:2937`); `spec/PAQUETE.md:1187-1190` dice los
@@ -113,7 +113,7 @@ Seis superficies. Cada una con lo que la forma, su identificador y su productor,
 
 | | superficie | lo que la forma | su identificador | su productor, hoy |
 |---|---|---|---|---|
-| S1 | **el cable** | los 29 métodos `zkssl_*`, sus parámetros, sus resultados, sus errores con la causa en `data`, y la codificación (`spec/RPC.md`) | `zkssl/0.N`, la respuesta de `zkssl_protocolVersion` | cuatro escrituras sin atar (hecho 5); `spec/openrpc.json`: `info.version` `zkssl/0.4`, 32 métodos, 29 `zkssl_*` y 3 `dev_*` |
+| S1 | **el cable** | los 29 métodos `zkssl_*`, sus parámetros, sus resultados, sus errores con la causa en `data`, y la codificación (`spec/RPC.md`) | `zkssl/0.N`, la respuesta de `zkssl_protocolVersion` | cuatro escrituras sin atar (hecho 5; ⚠️ §716: tres, con la del escenario aparte); `spec/openrpc.json`: `info.version` `zkssl/0.4`, 32 métodos, 29 `zkssl_*` y 3 `dev_*` |
 | S2 | **las pruebas que viajan** | los bytes que juzgan el nodo y el kit | ninguno bajo `zkssl/0.4` (§699); la marca v2 desde `zkssl/0.5`, si se construye la D-G | los 23 probadores con fila |
 | S3 | **lo firmado** | la cabeza (v2 a v6), la cofirma y el acta: sus preámbulos y sus composiciones, con sus KAT (31 en `spec/vectors/nucleo/`; 34 desde el §800, con los tres de la E2 del RFC-0020, apagados) | `formatVersion`; la versión de cofirma; `ACTA_VERSION`; el esquema, si se construye el RFC-0020 | `VersionCabeza` (`lib.rs:181-210`), `spec/NUCLEO.md` §6 |
 | S4 | **los sobres del kit** | las catorce formas de `spec/PAQUETE.md` §«2. Las catorce formas», con su catálogo (§5) y sus causas (§6.1) | `v` (1 o 2) y `tipo` (doce) | `crates/zk-ssl-verify/src/main.rs:171` y `:190-221` |
@@ -193,7 +193,7 @@ privado y entra de una vez, con su aviso de `SECURITY.md` §5. Cuánto aviso es 
   que lo muestran entran con rutas nuevas.
 
 **R7 — Cada superficie, un identificador y un productor.** Dos marcadores que pueden discrepar
-valen menos que uno (§236). Hoy faltan tres: la versión del cable tiene cuatro escrituras (hecho 5);
+valen menos que uno (§236). Hoy faltan tres: la versión del cable tiene cuatro escrituras (hecho 5; ⚠️ §716: tres, desde que la emisión de los vectores escribe la del escenario);
 una prueba de `zkssl/0.4` no tiene identificador (la D-G del RFC-0018, la 118); y una firma no dice
 su esquema (el RFC-0020, la 87). Mientras falten, la sección los declara.
 

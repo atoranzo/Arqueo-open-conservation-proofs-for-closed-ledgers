@@ -103,7 +103,7 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         })
         .collect();
     Vectores {
-        spec: "zkssl/0.4".into(),
+        spec: "zkssl/0.5".into(),
         // Re-emitido en §278: las cuatro entradas delegadas del escenario
         // —dos OpenAccount y dos Mint— dejan de asentar la prueba vacia,
         // asi que cambian sus digests, TODA la cadena y la cabeza.
@@ -126,10 +126,20 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         // root_old, root_new, compromiso, supply y pending si. Lo mide el
         // PASTE-538-M (dos --emit, campo a campo) y lo que un --check puede exigir en
         // 0.4 lo decide el asiento.
-        sellado: "§538".into(),
+        // Re-emitido como zkssl/0.5 en el §716 (el reenvio de una emision delegada): el
+        // compromiso de `Mint` y de `MintToPending` lleva el contador de emisiones, `(n, n + 1)`,
+        // y cambia el de las dos Mint del escenario (seq 1 y 3); el resto de lo que se fija, no
+        // (medido con --check contra la 0.4). La 0.4 se conserva y se rechaza por version. El
+        // escenario sube antes que el cable: el cable sigue diciendo zkssl/0.4 hasta el corte del
+        // tren (RFC-0018 D-E). `canon` es la foto al emitir: circuitos, capa, suma de la
+        // compuerta de sello y el censo de `impl Air for` en crates/.
+        // ⚠️ Por eso el corte del tren NO re-emite este vector: los vectores no se reescriben, y
+        // `--check` exige este `canon`. Si el corte cambia algo de lo que el escenario fija, el
+        // escenario sube a zkssl/0.6; si no, este vector sigue valiendo para la 0.5.
+        sellado: "§716".into(),
         escenario: ESCENARIO.into(),
         // §207 sumo tres tests al arbol disperso: 242 -> 245.
-        canon: [403, 421, 1412, 39],
+        canon: [427, 530, 1955, 40],
         entradas,
         // ⚠️ §292: el vector SELLADO pina LA COMPOSICION V2 — es un artefacto
         // congelado y su significado no se mueve con el formato vivo. Por eso

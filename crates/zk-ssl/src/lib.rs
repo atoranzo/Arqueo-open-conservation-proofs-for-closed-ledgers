@@ -43,11 +43,18 @@
 //! |---|---|
 //! | Transferir más de lo debitado | Conservación (partida doble) |
 //! | Abrir cuenta con saldo | Apertura siempre a cero |
-//! | Emitir sin autorización | Dos custodios demostrados en circuito (ante el operador: §538) |
+//! | Emitir sin autorización | Dos custodios demostrados en circuito (ante el operador: §538); una autorización emite una vez |
 //! | Emisión encubierta | Suministro público atado en el circuito |
 //! | Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 //! | Gastar sin ser el titular | Autoridad de gasto |
-//! | Reenviar una operación válida | Encadenamiento de raíces en la capa |
+//! | Reenviar una operación válida | Encadenamiento de raíces; la huella de la prueba del titular ya aplicada (§654); en las vías delegadas, el contador del compromiso que firman los custodios |
+//!
+//! ⚠️ §716 (el reenvío de una emisión delegada): la última fila decía solo
+//! «Encadenamiento de raíces en la capa», y no bastaba. Una quema o una desemisión devuelven la
+//! raíz y el suministro a los de antes de emitir, y los mismos materiales de una emisión delegada
+//! volvían a emitir. Las dos emisiones llevan ahora el contador de emisiones, `(n, n + 1)`, en lo
+//! que firman los custodios, como congelar, gobernar y recuperar. Por eso una autorización emite
+//! una sola vez.
 //!
 //! ## El modelo de operación
 //!
@@ -371,6 +378,10 @@ pub enum LayerError {
     /// vuelve a abrir ninguna. Sin campos, a proposito: no dice cual de las
     /// dos.
     IdentityUnavailable,
+    /// §716 (el reenvio de una emision delegada): la autorizacion de custodios para este
+    /// compromiso ya se consumio. Unos materiales de emision ya aplicados, reenviados despues de
+    /// que la raiz y el suministro volvieran a los de antes de emitir.
+    AutorizacionConsumida { compromiso: Digest },
 }
 
 impl From<StoreError> for LayerError {
@@ -481,6 +492,11 @@ impl std::fmt::Display for LayerError {
                 f,
                 "la identidad no esta disponible: ya tiene cuenta o una recuperacion la retiro"
             ),
+            AutorizacionConsumida { .. } => write!(
+                f,
+                "la autorizacion de custodios de esta emision ya se consumio: una \
+                 autorizacion emite una vez"
+            ),
         }
     }
 }
@@ -507,7 +523,7 @@ pub struct Causa {
 pub enum Campo {
     /// Un numero: cantidades, alturas, indices, topes.
     Cantidad(u64),
-    /// Un digest: los consumos del RFC-0006.
+    /// Un digest: los consumos del RFC-0006 y el compromiso de una emision ya consumida.
     Digest(Digest),
     /// Un texto: el de las dos variantes que lo llevan y el fallo del almacen.
     Texto(String),
@@ -581,6 +597,9 @@ impl LayerError {
                 vec![("consumo", Campo::Digest(*consumo)), ("ocupante", Campo::Digest(*ocupante))],
             ),
             IdentityUnavailable => ("IdentityUnavailable", vec![]),
+            AutorizacionConsumida { compromiso } => {
+                ("AutorizacionConsumida", vec![("compromiso", Campo::Digest(*compromiso))])
+            }
         };
         Causa { nombre, campos }
     }
@@ -624,6 +643,7 @@ mod tests_causa {
             LayerError::ConsumoRepetido { consumo: d(22) },
             LayerError::ConsumoColision { consumo: d(23), ocupante: d(24) },
             LayerError::IdentityUnavailable,
+            LayerError::AutorizacionConsumida { compromiso: d(25) },
         ]
     }
 

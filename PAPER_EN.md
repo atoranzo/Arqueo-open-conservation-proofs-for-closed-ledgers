@@ -30,9 +30,9 @@ identical conditions, and we document a methodological error of our own —
 mixing debug and release build figures — that was detected and corrected
 during the work.
 
-The reference implementation comprises **1944 executable tests in the seal
+The reference implementation comprises **1955 executable tests in the seal
 gate** (55 of them are winterfell 0.13.1's own, brought in by the fork of
-§533) —2084 counting the pins of the long and complete levels, and 1349
+§533) —2095 counting the pins of the long and complete levels, and 1349
 declared (⚠️ §865: from §493; today `tools/check_tests.py` counts them, by another rule)—, with 18 ignored and declared, and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
@@ -335,12 +335,19 @@ money, and the constraint closing each:
 |---|---|
 | Transferring more than debited | Conservation (double entry) |
 | Opening an account with a balance | Accounts always open at zero |
-| Issuing without authorization | Two custodians proven in-circuit (against the operator too from §538: §523, §538) |
+| Issuing without authorization | Two custodians proven in-circuit (against the operator too from §538: §523, §538); one authorization issues once |
 | Issuance without supply update | Public supply bound in-circuit |
 | Exceeding the issuance cap | Range check on `cap − supply` |
 | Double spending | Root chaining (total order of the single node) |
 | Spending without being the holder | Proven spend authority |
-| Replaying a valid operation | Root chaining |
+| Replaying a valid operation | Root chaining; the fingerprint of a holder's proof already applied (§654); on the delegated paths, the counter inside the commitment the custodians sign |
+
+⚠️ §716 (the replay of a delegated issuance): the last row said
+only «Root chaining», and it was not enough. A burn or a de-issuance
+returns the root and the supply to their values before the issuance, and
+the same materials of a delegated issuance issued again. Both issuance
+paths now carry an issuance counter in what the custodians sign, as
+freezing, governance and recovery do: one authorization issues once.
 
 ### 5.3 Threshold authority: the guarantee and its limit
 
@@ -1012,7 +1019,7 @@ non-stable compilers are used.
 # Or all at once, with the canon's pinned counts checked:
 bash tools/canon.sh --sello
 
-cargo test -p zk-ssl --release              # layer: 522 tests (7 ignored)
+cargo test -p zk-ssl --release              # layer: 530 tests (7 ignored)
 cargo test -p stark-experiment --release    # circuits: 427 tests (13 ignored)
 cargo test -p zk-ssl-node --release         # node: 115
 cargo test -p zk-ssl --release metrics -- --nocapture

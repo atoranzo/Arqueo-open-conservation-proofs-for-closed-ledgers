@@ -12,7 +12,8 @@
   (4 → 5), como pasó de 2 a 3 (§292) y de 3 a 4 (§415).
 - **Asiento(s) de AUDITORIA:** §178, §211, §246, §253, §275, §292, §321, §379, §387, §388,
   §404, §406, §413, §414, §415, §441; el §450, que lo adopta; §451–§456 y §458–§479, las
-  etapas; el §480, la spec al día; y el §481, este giro a ACEPTADO.
+  etapas; el §480, la spec al día; y el §481, este giro a ACEPTADO. El §716 escribe la
+  corrección de `AutorizacionConsumida`, una causa nueva de la capa, tras las del §802 y el §815.
 - **Hito:** H4 de la propuesta enviada a NLnet Restack (140 h), en sus palabras: *«Rejection
   with proof and the ageing proof. Circuits over the committed state: proof of the cause of a
   refusal; age distribution of what is in flight with its empty-box form and its concentration
@@ -200,6 +201,23 @@ D-I declara también `ProofFailed` y `VerificationFailed`, y la lista de cuatro 
 tras la tabla, que dejó así `PendingTreeExhausted`; no de la D-I). Desde el §815, kit 0.4.3,
 son seis (`spec/PAQUETE.md` 2.11, veredicto 4); `IdentityUnavailable` sigue fuera, por lo que dice
 este párrafo.
+
+**CORRECCIÓN (§247, escrita por el §716).** El catálogo pasa de veintiséis a veintisiete causas:
+`AutorizacionConsumida`, con el campo `compromiso` —una autorización de custodios ya consumida: los
+materiales de una emisión delegada ya aplicada, reenviados cuando la raíz y el suministro han
+vuelto a los de antes—, que emiten `apply_mint_delegated` y `apply_mint_pending_delegated`. Hoy
+ningún método del cable la emite: el nodo no expone la emisión delegada, salvo `dev_fund`, que sólo
+existe compilado con la feature `dev`. No tiene prueba portable: la sostiene la entrada del
+registro que lleva ese compromiso, que la cabeza compromete sólo por `chainDigest`, como el cupo de
+`CustodianSetExhausted`, y no revela nada que no sea público, porque el compromiso ya viaja en la
+entrada. No entra en la tabla de D-D ni en las seis causas sin prueba portable del kit
+(`spec/PAQUETE.md` 2.11, veredicto 4), que salieron de las filas de esa tabla (⚠️ §815, arriba):
+sin un método que la emita, ningún sobre de rechazo ni ninguna completitud la llevan, y el mando la
+rechaza por su nombre. Si un método del cable llega a emitirla, entra en la tabla y en esa lista en
+el mismo sello. Es aditiva en el sentido de E2, y la versión del cable no sube. Se publica con el
+arreglo, que se redactó en privado (`spec/rfc/PROCESO.md` §«Fallos de seguridad»): el arreglo
+añadía una fila a la D-D, y al llevarlo a `main` se escribe en su lugar esta corrección, como la
+del §802. La fila de E2 y la tabla de D-D no se reescriben.
 
 ### D-D — El sobre de rechazo, por caminos primero
 

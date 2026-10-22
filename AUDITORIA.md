@@ -71043,3 +71043,302 @@ serie. No corre el canon entero ni los bancos.
 - **La tabla del kit bajo wasmtime de `tools/segunda/README.md`** es la medida del S623, con diez
   manifiestos y 316 entradas, y no se rehízo aquí: la cuenta de hoy va en su marca del §715. Que el
   `.wasm` de este árbol pase los veintiséis no está medido; en privado, sí (arriba).
+
+## §716 — una emisión delegada no se reenvía cuando el estado vuelve atrás: el contador de emisiones en lo que firman los custodios, y la causa AutorizacionConsumida
+
+El commit que lleva este asiento, sobre `ecc09f5` (el §715). Un solo sello: el contador de
+emisiones en la capa (`zk-ssl/src/log.rs`, `mint.rs`, `two_phase.rs`, `lib.rs`, `iso.rs` y
+`tests_support.rs`); la causa `LayerError::AutorizacionConsumida`, con su fila en el catálogo de
+`spec/RPC.md`; el reverificador del kit (`zk-ssl-verify/src/reverificacion.rs` y `lib.rs`), con
+dos filas en `spec/NUCLEO.md`; el aviso de longitud de `commit_operation` y su test
+(`zk-ssl-hash/src/lib.rs`); los textos que prometían una protección que no había
+(`stark-experiment/src/circuit_threshold_single_nullifier.rs`, `zk-ssl-cli/src/sandbox.rs` y
+`trace.rs`, `doc/README-CLI.md`, la tabla de garantías de `ARQUITECTURA.md`, `PAPER.md` y
+`PAPER_EN.md`, y el mapa de correcciones de `doc/ESCALADO.md`); el escenario de conformidad en
+`zkssl/0.5` (`zk-ssl-cli/src/conformance.rs` y `spec/vectors/zkssl-0.5.json`, nuevo, con su huella
+en `spec/vectors/HUELLAS.sha256`); la versión del escenario en la lista de la superficie de
+`spec/RPC.md`, con su clave nueva en `tools/check_superficie.py` y una marca en el hecho 5 del
+RFC-0021; una corrección en el RFC-0007 y otra en el RFC-0018; los pines de `tools/canon.sh` y su
+bloque de conformidad; las cifras de tests de los documentos vivos, y la de la capa en la prosa de
+`ARQUITECTURA.md` y `CONTRIBUTING.md`; el recuento de `spec/vectors/` en los dos README y en la
+lista de la superficie, y la fila de `spec/README.md`; la cifra del juez de la cadena en
+`tools/segunda/README.md`; y este asiento. Lo escribe y lo comprueba una sesión de Claude Code, y
+lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: con los mismos materiales de una emisión delegada ya
+aplicada —la subida y el par de los custodios— se volvía a emitir en cuanto la raíz y el
+suministro volvían a los de antes. Sale con los demás arreglos de la publicación conjunta. Lo midió
+en privado una sesión de Claude Code, sobre `161a233` con los arreglos del §711 al §715; se
+escribió sobre `e4eb764`, con el §711 al §715 encima, este sello lo lleva a `ecc09f5` («Al
+portar», abajo), y lo que se volvió a correr aquí está en «Medido sobre este árbol». El canon
+entero se corre sobre la punta de la serie, no sobre cada sello.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), con el §711 al §715
+encima, y los lleva a `ecc09f5` —el §715 ya llevado a `7dd6409`, el §895, sobre el §711 al §714
+llevados— una sesión de Claude Code, no el autor: primero sobre el §715 llevado a `3a4176c` (el
+§829), y de ahí, con lo resuelto contra esos, sobre los tres sellos del §863 al §865, y luego sobre
+los seis del §890 al §895. De esos seis chocaba sólo la ficha M11 de `doc/ecst/VERIFICACION.md`,
+como en el §711 («Al portar»): el §894 marca su línea «Fuentes» y este sello sube el 522 de la de al
+lado a 530; quedan las dos, cada una con lo suyo. Lo que git no fundía, o fundía y quedaba falso, se
+resolvió a mano:
+
+- **La causa nueva, detrás de la de `main`.** El §802 puso `IdentityUnavailable` como última
+  variante de `LayerError`, en los mismos cuatro sitios de `zk-ssl/src/lib.rs` (el enum, `Display`,
+  `causa` y `una_de_cada`), en el brazo de `iso.rs` y como última fila de la tabla de causas de
+  `spec/RPC.md`, donde este sello pone `AutorizacionConsumida`. Va detrás en los seis sitios, en el
+  mismo orden: `tests_causa` compara la tabla con `una_de_cada()` fila a fila.
+- **`apply_mint_pending_delegated`.** El §779 reescribió el párrafo de `SupplyCapExceeded`, porque
+  la vía antigua que nombraba ya no existe. Queda el de `main`, y debajo la sección del contador.
+- **Los borrados del libro.** Desde el §816 el libro deja `<libro>.cerrojo` al lado, y los tests lo
+  borran con `quitar_libro`. Los dos `remove_dir_all` de `el_reenvio_tras_el_reinicio_tambien_cae`
+  pasan a `quitar_libro`.
+- **El escenario en `zkssl/0.5` y la compuerta de la superficie (§801).** La R1 de
+  `tools/check_superficie.py` contaba el `spec:` de `conformance.rs` como una escritura del cable y
+  exigía que dijera la versión de la lista, `zkssl/0.4`: con este sello salía ROJO. Ese `spec:` es
+  la versión del escenario, que sube antes que el cable hasta el corte (RFC-0018). Sale de
+  `cable.escrituras`, que queda en tres, y se compara aparte con una clave nueva de la lista,
+  `escenario zkssl/0.5`, con su prueba de vida (R7). Lo dicen una marca en la cabecera de la
+  herramienta, otra en `spec/RPC.md` §«Lo que `zkssl/0.4` no identifica todavía», una fila en la
+  tabla de claves y, en el RFC-0021, una en el hecho 5, que contaba cuatro escrituras, y otra en
+  cada frase que repite la cuenta: la fila S1 de la D-A y la R7.
+- **El vector, emitido otra vez sobre este árbol.** La foto `canon` del escenario es una constante
+  de `conformance.rs` que `--check` exige igual, y la del arreglo hecho en privado, `[427, 462,
+  1804, 40]`, no es la de aquí. Antes de registrar nada se quitaron el vector privado y su línea de
+  `HUELLAS.sha256`, que nunca se publicaron; `conformance --emit` lo escribió con `[427, 530, 1955,
+  40]`, y `check_vectores.py --registrar` añadió su huella. El `compromiso` de las dos `Mint` es el
+  mismo que el de la emisión privada; `proof_digest`, `chain` y `epoch_digest` no se reproducen
+  entre emisiones (§538).
+- **El RFC-0007, sin fila nueva en la D-D.** El §802 escribió la causa que añadía en una
+  corrección, «La fila de E2 y la tabla de D-D no se reescriben», y el §815 dijo que las seis
+  causas sin prueba portable del kit salieron de las filas de la D-D marcadas así. Con la fila del
+  arreglo, la tabla pediría una séptima al kit, y ningún método del cable la emite. Va en su lugar
+  una «CORRECCIÓN (§247, escrita por el §716)» detrás de las del §802 y el §815, y la cabecera lo
+  anota.
+- **El RFC-0018.** La línea de asistencia nombraba el modelo; desde el §805 ninguna lo nombra, y el
+  ATADO G de `check_publicadas` lo da ROJO: va con la fórmula de la casa. La corrección del §716 y
+  las dos anotaciones de la cabecera van en las líneas que ya había, al final de cada una, para no
+  mover las líneas del RFC que otros documentos citan, como hizo el §826 con su tabla.
+- **La guía rápida.** `main` ya la había llevado de la 0.3 a la 0.4 (§794, §807). Pasa a la 0.5,
+  con una marca en `README.md`, `README_EN.md` y `doc/README-CLI.md`; y la cita de
+  `conformance.rs:238-242` que el §794 escribió, y que las diez líneas de comentario de este sello
+  corren, pasa a `:248-252` en la misma marca.
+- **Los contadores**: el valor de `ecc09f5` más lo que suma este sello, y medido; con su marca, la
+  cifra de la capa en la prosa de `ARQUITECTURA.md` y `CONTRIBUTING.md`, y la del juez de la cadena
+  en «1 sexies» de `tools/segunda/README.md`; y sin marca, como en los sellos anteriores, la lista de
+  la superficie de `spec/RPC.md` (`vectores.json`).
+- **`dev_fund`.** El arreglo decía «con `--dev`»; desde el §784 la emisión del nodo sólo existe
+  compilada con la feature `dev`, y así lo dicen la corrección del RFC-0007 y «Lo que NO cierra».
+- **Los tres sellos del §863 al §865**, sobre `3a4176c`. El §863 sube el nodo a 230, el TOTAL DE
+  SELLO a 1872 y `check_tests` a 2034, y `spec/vectors/` a 529 ficheros, 509 vectores y 1039
+  líneas, con la familia `nodo/`; el §865 marca las «1364 declaradas» y las «1349 declared». El
+  §711 al §715 llevados los dejan en `ecc09f5` en 237 del nodo, 1944 y 2084, 2106, y 590
+  ficheros, 570 vectores y 1223 líneas. Chocaban los totales de `PAPER.md`, `PAPER_EN.md` y
+  `PRINCIPIOS.md`, con el desglose de éste, la fila del nodo junto a las del kit y de
+  `zk-ssl-hash` en `tools/canon.sh`, el recuento de los dos README, que nombra ya `nodo`, y la lista
+  de la superficie de `spec/RPC.md`, y llevan el valor de `ecc09f5` más lo de este sello: 1955 y
+  2095, 237 del nodo, que este sello no mueve, 591 ficheros con cinco `zkssl-0.N.json`, y 1223
+  líneas; las marcas del §865 se quedan. **`vectores.json` git lo fundía sin choque y quedaba
+  falso**: los dos lados lo llevaban de 569 a 570, este sello por `zkssl-0.5.json` y el §863 por su
+  vector, y son 571. `check_tests`, 2117.
+- **La foto `canon` del escenario, otra vez.** Con el TOTAL DE SELLO en 1955, la de
+  `zkssl-0.5.json` emitida sobre `3a4176c`, `[427, 530, 1954, 40]`, no es la de este árbol, y
+  `--check` la daba igual, porque el vector y la constante de `conformance.rs` venían del mismo
+  commit. Como allí, se quitaron ese vector y su línea de `HUELLAS.sha256`, que tampoco se
+  publicaron, antes de registrar nada; la constante pasa a `[427, 530, 1955, 40]`, `conformance
+  --emit` lo escribió otra vez y `check_vectores.py --registrar` añadió su huella. Frente al de
+  `3a4176c` cambian sólo la foto y los tres digests que no se reproducen. El test del §863 que juzga
+  `spec/vectors/nodo/`, el «3 bis nodo» del canon, corre en la fila del nodo, que emite por
+  `dev_fund` con el compromiso nuevo, y sigue pasando. El «1 bis» del §864 corre con las
+  aserciones de depuración, y con los pines de su fila, dos crates que este sello toca,
+  `zk-ssl-hash` y `zk-ssl-verify`: con el perfil `aserciones`, las mismas cuentas que en release
+  (abajo). Este sello no añade ninguna marca `cfg_attr(debug_assertions, ignore)`.
+
+**De dónde sale.** La capa verificaba la emisión delegada (`Mint`) y la emisión a pendiente
+(`MintToPending`) contra un compromiso que sólo ata el estado: las raíces de antes y de después, el
+importe, el suministro y el tope. Ni contador ni registro de lo ya aplicado. Una quema, o una
+desemisión, devuelve la raíz y el suministro a los de antes de emitir, y entonces los mismos
+materiales vuelven a valer. La guarda de las pruebas ya aplicadas (§654, §715) no lo cubría: la
+consultan la quema y las vías del titular en `two_phase.rs`, no `mint.rs`, y el registro sólo
+indexaba `Send`, `Claim`, `Burn` y `Refund`. El §654 dejó fuera las vías delegadas porque «atan
+raíz y suministro en su compromiso», y dijo que eso bastase era «SUPUESTO, no medido». **No
+bastaba** en las dos emisiones: lo corrige este sello, sin tocar aquel asiento, y el comentario de
+`log.rs` que repetía ese supuesto se corrige en el código. Congelar, gobernar y recuperar ya
+llevaban su contador en el compromiso (§56, §57).
+
+**Lo que hace.**
+
+1. **El contador, derivado del registro.** `TransitionLog` lleva `emisiones`, cuántas entradas
+   `Mint` y `MintToPending` tiene el registro, y `emisiones_consumidas`, el sello de cada una
+   (`digest_of_proof(sello_de_autorizacion(compromiso))`). Los dos se derivan en `from_entries` y
+   se mantienen en `append_con_compromiso`, como `aplicadas` (§654) y `usos_custodiados` (§394): ni
+   clave en disco ni campo en la instantánea. Dos métodos: `emisiones_delegadas()` y
+   `autorizacion_consumida(&compromiso)`.
+2. **El compromiso de las dos emisiones pasa de doce a catorce elementos**, con `(n, n + 1)` detrás
+   del tope, donde `n = mint_count()`, pública y nueva. Es el molde de congelar, gobernar y
+   recuperar. El contador es uno para las dos vías. El nulificador lleva el contador sin tocar el
+   circuito, porque la operación que firma es el compromiso.
+3. **La causa con nombre.** Antes de verificar nada, si el compromiso de uno de los dos custodios ya
+   se consumió, el rechazo es `LayerError::AutorizacionConsumida { compromiso }`, con su `Display`,
+   su `causa`, su instancia en `tests_causa`, `AM05` en `iso.rs` (la misma duplicación que
+   `ConsumoRepetido`) y su fila en `spec/RPC.md`. Sin la guarda, el contador basta para la
+   seguridad, y el reenvío cae con `StaleState`; la guarda le da el nombre.
+4. **El formato de lo que firman los custodios cambia.** Una autorización firmada con el formato de
+   doce elementos ya no emite: `StaleState`. Los dos formatos no colisionan: `commit_operation`
+   rellena con ceros el último bloque de ocho, y el nuevo lleva `n + 1 ≥ 1` en la sexta casilla. Lo
+   fijan `una_autorizacion_sin_contador_no_emite` y, en `zk-ssl-hash`,
+   `las_emisiones_de_doce_y_de_catorce_no_colisionan`, que fija también lo contrario: con `[0, 0]`
+   detrás sí colisionan. La doc del aviso de longitud de `commit_operation` nombra la excepción.
+   `spec/RPC.md` gana un párrafo, «El contador de emisiones»: cómo se deriva de `zkssl_logEntries`
+   y cómo entra en lo que firman los custodios.
+5. **El reverificador.** `ReverificacionError::CompromisoRepetido { seq, primera }` es ROJO cuando
+   una entrada repite el compromiso de otra y la que repite lleva contador. Quien reverifica declara
+   desde qué entrada lo llevan las emisiones, con `EmisionConContador::{No, DesdeSeq(n)}` y
+   `reverificar_con`, nuevos y exportados; congelar, gobernar y recuperar lo llevan siempre. Sin
+   contador, un compromiso repetido no es ROJO: puede ser una reautorización legítima. Sale
+   `Parcial`, con lo que falta dicho. `reverificar` es `reverificar_con(.., No)`.
+6. **Los textos.** La fila «Reenviar una operación válida» de la tabla de garantías decía
+   «Encadenamiento de raíces» en la doc de `zk-ssl`, en `ARQUITECTURA.md`, en `PAPER.md` y en
+   `PAPER_EN.md`. Pasa a nombrar también la huella de la prueba del titular (§654) y, en las vías
+   delegadas, el contador; la de emitir gana «una autorización emite una vez». Debajo de cada una,
+   un ⚠️ dice qué decía la fila y por qué no bastaba. La tabla histórica de `ARQUITECTURA.md`
+   conserva su fila, con un ⚠️ debajo. `doc/ESCALADO.md` es verbatim (§120): la corrección va en el
+   mapa de su cabecera, detrás de las del §779 y el §860. Y el circuito del umbral, el sandbox, el
+   trazador y `doc/README-CLI.md` decían que el nulificador era el anti-replay: no lo es, porque la
+   capa no lo guarda.
+7. **El escenario de conformidad, en `zkssl/0.5`.** Cambia lo que la conformidad compara: el
+   `compromiso` de las dos `Mint` del escenario. La 0.4 se conserva y se rechaza por versión, como
+   las anteriores, y el escenario se fija en `spec/vectors/zkssl-0.5.json`. El cable sigue diciendo
+   `zkssl/0.4` hasta el corte del tren (RFC-0018 D-E). **Se decidió por delegación del autor**: la
+   regla 2 del PROCESO pide que la versión suba y la vieja se conserve; dejar la 0.4 como «ROTA
+   esperada» hasta el corte dejaría a la referencia suspendiendo su propio vector. El corte no
+   re-emite este vector; si cambia lo que el escenario fija, el escenario sube a `zkssl/0.6`. Que
+   el corte no lo cambie es SUPUESTO, no medido: el corte no está construido.
+8. **Al portarlo, el RFC-0007 y el RFC-0018.** El arreglo hecho en privado añadía al RFC-0007 una
+   fila en la tabla de la D-D, declarada sin prueba portable; aquí va, en su lugar, una corrección
+   detrás de las del §802 y el §815 («Al portar», arriba), escrita al portar. El RFC-0018 gana una
+   corrección, citada y no borrada: «los vectores de 0.4 siguen IDENTICOS» dejó de ser cierto antes
+   del corte. Se redactó en privado, con el arreglo, y entra en este sello; la cabecera del RFC-0018
+   lo dice.
+9. **Lo que se renombró al portar.** Las marcas que citaban el trabajo privado pasan a este sello.
+   El comentario de `from_entries` en `log.rs` conserva el «§715» de `main`. El vector se volvió a
+   emitir aquí con `sellado` «§716» y con el `canon` de este árbol, `[427, 530, 1955, 40]`:
+   circuitos, capa, suma de la compuerta de sello y censo de `impl Air for` al principio de línea
+   en `crates/`. El bloque de conformidad del canon lleva `--locked`, como el de `main`.
+10. **La guía rápida, a la 0.5.** `README.md`, `README_EN.md` y `doc/README-CLI.md` mandaban
+    `conformance --check` contra la 0.3 en la base del arreglo, y esperaban «todo IDENTICO»; `main`
+    ya la había llevado a la 0.4 (§794, §807). Con este sello la 0.4 da «OTRA version» y sale con
+    1, así que las tres guías apuntan a `zkssl-0.5.json`, con su marca.
+
+**Medido en privado**, sobre `161a233` con los arreglos del §711 al §715, con dos guiones de medida
+injertados en el árbol y retirados después:
+
+- **Antes.** Emitir 250.000, quemar y reenviar: `Ok`, con saldo 250.000, dos entradas `Mint` y una
+  sola autorización. Emitir 9.999 a pendiente, desemitir, reenviar y cobrar: el reenvío se acepta y
+  Bob cobra 9.999. En bucle, con un tercero quieto en el libro: tres reenvíos aceptados, 750.000
+  redimidos y 250.000 en saldo con una autorización. A pendiente, con cobro, tráfico ajeno y quema
+  entre medias: el reenvío se acepta y Bob cobra otra vez. En los dos primeros guiones se anotó que
+  el agregado cuadraba: el fallo era de autorización, no de conservación. En los otros dos no se
+  anotó.
+- **Con el arreglo**, los mismos guiones: cada reenvío es `AutorizacionConsumida`, y el saldo y el
+  suministro no se mueven. Reautorizar la misma operación desde el mismo estado da otro compromiso,
+  otro sello y otros nulificadores.
+- **Falsadores**, por mutación sobre los ocho tests del reenvío, restaurando cada fichero después:
+  sin guarda y sin contador, 0 de 8, y los seis reenvíos dan `Ok(())`; sólo con la guarda, 3 de 8,
+  porque la reautorización legítima no vale; sólo con el contador, 2 de 8, porque los reenvíos caen
+  con `StaleState` y no con su causa.
+- **La conformidad**, con el arreglo y el `spec` de antes: la 0.4 daba `conformidad ROTA: 2
+  diferencia(s)`, exactamente el `compromiso` de las dos `Mint` (seq 1 y 3).
+- **Una revisión adversarial** de sólo lectura midió en una copia del árbol lo que los tests no
+  fijaban: el reverificador sobre un registro real de 13 entradas no da
+  ROJO falso con `DesdeSeq(0)`, y una `Mint`, una `MintToPending` o una `Freeze` reales repetidas
+  dan `CompromisoRepetido`. Sus dos hallazgos importantes —la tabla de garantías y la versión del
+  escenario— y sus menores están en «Lo que hace».
+
+**Medido sobre este árbol**, `ecc09f5` con este sello, en release, con el `target` compartido con
+otras tareas y cada `cargo` bajo un cerrojo, en una máquina de 4 CPU compartida:
+
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `zk-ssl-hash` 57; `zk-ssl-verify` 210 (129 + 80 + 1); `zk-ssl` 530 y 7 ignorados, en 133 s de
+  tests, con los ocho de `mint::tests_reenvio` en verde; `zk-ssl-cli` 173; `zk-ssl-node` 237, en
+  36 s de tests, que emite por `dev_fund` con el compromiso nuevo, con el test del «3 bis nodo» en
+  verde; `stark-experiment` 427 y 13 ignorados; y `zk-ssl-sdk` 22 (21 + 1). Con el perfil
+  `aserciones` del «1 bis», `cargo test --locked --profile aserciones -p <crate>`: `zk-ssl-hash`
+  57 y `zk-ssl-verify` 210 (129 + 80 + 1), 0 ignorados y 0 warnings, los pines de su fila. El
+  workspace entero pasa `cargo check --locked --workspace --all-targets`, sin errores y con los
+  avisos de siempre (los 9 de `ceremony` y el del nodo).
+- **La conformidad del escenario**, con el binario de este árbol (`target/release/zk-ssl-cli`,
+  `0ba34765e7395b15`): `--emit` escribe `zkssl-0.5.json`; `--check` de la 0.5 da «todo IDENTICO», y
+  la 0.4, la 0.3, la 0.2 y la 0.1, «OTRA version» con salida 1. Frente a la 0.4, de lo que el
+  escenario fija sólo cambia el `compromiso` de las seq 1 y 3; frente a la emisión privada, el
+  `canon` y los tres digests que no se reproducen. La guía rápida pide ahora el `--check` de la 0.5.
+- **La segunda implementación.** `tools/segunda/juez_cadena.py` sobre `spec/vectors/zkssl-0.*.json`,
+  el glob del canon: 30 de 30 cadenas en cinco ficheros, y 6 de 6 en `zkssl-0.5.json` sola.
+- **La compuerta de la superficie, con su clave nueva**, sobre una copia del árbol: con
+  `escenario zkssl/0.4` en la lista, con `zkssl/0.6` en `conformance.rs` y sin la clave, ROJO las
+  tres; con una escritura `"zkssl/0.5"` sembrada en otro fichero del cli, ROJO como escritura del
+  cable.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2117
+  declarados; `check_modulos`, 212 ficheros; `check_vectores`, 571 vectores y 1223 líneas con su
+  huella, ninguno movido; `check_cifras`, 26 cifras y ninguna contradice el canon;
+  `check_publicadas`, con 591 ficheros en `spec/vectors/`; `check_catalogo`, 235 textos del kit y
+  287 entradas de §5; `check_nucleo`, 175 filas; `verificar_citas`, 0 muertos; `check_superficie`, la
+  lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas; y `check_columns`,
+  `check_constraint_layout`, `check_curvas`, `check_dominios`, `check_figures` y `check_techo`.
+  Todas salen con 0.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `zk-ssl` 522 -> 530, `zk-ssl-verify` 208 ->
+210 y `zk-ssl-hash` 56 -> 57. TOTAL DE SELLO 1944 -> 1955 y TOTAL CON LARGOS 2084 -> 2095, en
+`PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; el desglose de `PRINCIPIOS.md`, 530 de la capa y 210
+del kit; los 522 de la capa, a 530, en `ARQUITECTURA.md`, `PRINCIPIOS.md`, `PAPER.md`,
+`PAPER_EN.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`, y con su
+marca en la prosa de `ARQUITECTURA.md` y `CONTRIBUTING.md`. Las «1364 declaradas» y las «1349
+declared» no se tocan, como en los sellos anteriores (5.A-319). `check_tests`, de 2106 a 2117.
+`spec/vectors/`, de 590 a 591 ficheros y de cuatro a cinco `zkssl-0.N.json`, en `README.md` y
+`README_EN.md`. `check_vectores`, de 570 a 571 vectores, y lo mismo en la lista de la superficie;
+las líneas de manifiesto no cambian, 1223. `spec/NUCLEO.md`, de 109 a 111 elementos de `zk-ssl-verify` y
+de 16 a 18 en REGISTRO. El juez de la cadena sobre el glob, de cuatro ficheros y 24 cadenas a cinco
+y 30.
+
+**Lo que NO hace.** No cambia el cable ni la versión `zkssl/0.4` que dice; cambia el VALOR del
+`compromiso` que sirve `zkssl_logEntries` en las entradas de emisión, con los mismos campos. No
+cambia el circuito del umbral ni la quema. No reescribe ningún vector: la 0.4 se conserva. No añade
+vectores negativos ni toca la sección 6.1 de `spec/PAQUETE.md`. No añade entrada a `SECURITY.md`.
+No publica un kit: el corte va al final de la serie. No corre el canon entero ni los bancos.
+
+**Lo que NO cierra.**
+
+- **Volver atrás el almacén entero**, registro incluido, devuelve el contador y los sellos, y el
+  reenvío vuelve a valer. Es la clase de la bifurcación y del ancla (§714), no de esta capa: la
+  capa no puede saber que su disco es viejo.
+- **Una autorización vale para un solo valor del contador**, y el contador es de las dos vías: si
+  otra emisión lo consume antes, hay que firmar de nuevo. Es un límite declarado en
+  `apply_mint_delegated` y en `apply_mint_pending_delegated`, con su test.
+- **La cuota de custodios** sigue sin autorización: el operador la cambia (`governance.rs`). Ya no
+  es el tope de este reenvío, pero el límite sigue.
+- **Los nulificadores no se guardan.** La unicidad la da el contador en la operación.
+- **Congelar, gobernar y recuperar** no ganan la guarda con causa: su reenvío tras la vuelta atrás
+  cae con `StaleState`.
+- **El reverificador no sabe desde cuándo** una emisión lleva contador: lo declara quien llama.
+  Sólo ve un reenvío asentado con el mismo compromiso: un compromiso nuevo, fabricado y sellado,
+  sale `Verificada`, porque los pares no se guardan. Ningún llamante del árbol usa todavía
+  `reverificar` ni `reverificar_con`, y el mando del kit no los expone.
+- **El kit no tiene regla para `AutorizacionConsumida`** en un sobre de rechazo, y ningún método del
+  nodo la emite hoy: el nodo no expone la emisión delegada, salvo `dev_fund`, que sólo existe
+  compilado con la feature `dev`.
+- **Textos que no se tocan aquí**: `doc/ecst/VERIFICACION.md:1026` y los borradores de
+  `doc/ecst/borrador/` (`final.json`, `verificacion-history.json`, `refutacion-custody.json`)
+  describen el compromiso de emisión sin contador. El primero es un registro generado de una
+  verificación, con sus fuentes por línea; los demás son borradores.
+- **Las citas por línea que este sello corre** en los documentos vivos —a `log.rs`, `lib.rs`,
+  `mint.rs`, `two_phase.rs`, `iso.rs`, `tests_support.rs` y `reverificacion.rs` de la capa y del
+  kit, y a `spec/RPC.md`, que gana el párrafo del contador— no se rehacen, como en los sellos
+  anteriores; sólo la de `conformance.rs` en la guía rápida, que va en su marca. Muchas ya no
+  casaban en `ecc09f5`.
+- **El juez de la cadena sin argumentos** sigue mirando `zkssl-0.4.json` (`POR_DEFECTO`), que se
+  conserva y se recompone igual; el canon le pasa el glob, con la 0.5 dentro.
+- **La capa retirada** (`settlement-layer`): su `apply_mint` tampoco guarda contra el reenvío. No
+  se toca: está retirada y nada publicado la usa.
+- **Exponer en un nodo la emisión con la quema, o la desemisión**, sigue siendo una decisión
+  aparte. Con este arreglo, la condición se cumple en la capa.

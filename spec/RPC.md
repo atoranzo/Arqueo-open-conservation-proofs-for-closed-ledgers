@@ -242,6 +242,7 @@ cable, y por qué métodos, está medido en el asiento §454 de `AUDITORIA.md`, 
 | `ConsumoRepetido` | `consumo` |
 | `ConsumoColision` | `consumo`, `ocupante` |
 | `IdentityUnavailable` | — |
+| `AutorizacionConsumida` | `compromiso` |
 
 ## Qué afirma el registro de transiciones
 
@@ -273,6 +274,19 @@ que va a cambiar.
 
 Estas cuatro se mantienen con lotes o sin ellos. `zkssl_verifyChain` las
 comprueba.
+
+**El contador de emisiones.** Desde el §716 (el reenvío de una emisión
+delegada), el compromiso de umbral de las dos emisiones, `Mint` y
+`MintToPending`, lleva detrás del tope el contador de emisiones,
+`(n, n + 1)`, como los de congelar, gobernar y recuperar llevan el suyo.
+`n` es el número de entradas `Mint` y `MintToPending` del registro
+anteriores a la emisión, de las dos clases juntas. Ningún método lo
+sirve: lo deriva quien lea `zkssl_logEntries` desde la `seq` 0, y entra
+como `(n, n + 1)` en lo que firman los custodios. Con él, una
+autorización emite una sola vez, aunque la raíz y el suministro vuelvan
+a los de antes; reenviarla es, en la capa, `AutorizacionConsumida`. Las
+emisiones asentadas antes de este cambio no lo llevan, y el registro no
+dice desde qué entrada lo lleva.
 
 ### La composición de `chain`, byte a byte (§797)
 
@@ -1690,7 +1704,11 @@ escrituras (R7 del RFC-0021). Hoy faltan tres:
   del nodo a `zkssl_protocolVersion`, el OpenRPC, dos veces, y la emisión de los vectores de
   conformidad; los tests que la comprueban la escriben otra vez (RFC-0021, hecho 5, medido en el
   §790). La lista de abajo nombra cada escritura de producción, y la compuerta exige que todas
-  digan la misma. Cuando la versión suba, pasa a tener uno (R3 del RFC-0021).
+  digan la misma. Cuando la versión suba, pasa a tener uno (R3 del RFC-0021). ⚠️ §716: la emisión
+  de los vectores ya no escribe la del cable, sino la del escenario de conformidad, `zkssl/0.5`, que
+  sube antes que el cable porque el compromiso de las dos emisiones lleva desde el §716 el contador
+  de emisiones (RFC-0018, «Cómo se construye»). La lista la fija aparte, en `escenario`, y las
+  escrituras del cable son tres.
 - **Una prueba de `zkssl/0.4` no dice de qué AIR es** (§699): las que viajan cambiaron en el §641,
   el §680 y el §684 sin subir la versión, y lo que las identifica hoy es el commit; el detalle, en
   «Versionado», en «Notas operativas». La marca que las identificará es la D-G del RFC-0018 (la 118
@@ -1712,6 +1730,7 @@ los productores, en esta misma forma, y no escribe nada.
 | clave | superficie | su productor |
 |---|---|---|
 | `cable`, `cable.escrituras` | (1) | las escrituras de producción de la versión, en `crates/` (hoy sin un productor) |
+| `escenario` | (5) | el `spec:` de `crates/zk-ssl-cli/src/conformance.rs`: la versión del escenario de conformidad, que desde el §716 va por delante del cable hasta el corte (RFC-0018) |
 | `metodo`, `esquema` | (1) | `openrpc.json`, que `zk-ssl-wire` genera; los `dev_*` no entran |
 | `cabeza.acepta`, `cabeza.emite`, `cofirma.emite`, `cofirma.lee-hasta`, `acta.emite` | (3) | `VersionCabeza::TODAS`, `VERSION_FORMATO`, `COFIRMA_VERSION`, `COFIRMA_V_MAX` y `ACTA_VERSION`, en `zk-ssl-verify` |
 | `sobre.v`, `sobre.tipo` | (4) | el despacho del kit, `verificar_paquete`, frente a `PAQUETE.md` §2 |
@@ -1722,7 +1741,8 @@ La superficie (2) no tiene entrada: no tiene identificador (arriba).
 
 ```superficie
 cable zkssl/0.4
-cable.escrituras zk-ssl-cli/src/conformance.rs zk-ssl-node/src/main.rs zk-ssl-wire/src/openrpc.rs×2
+cable.escrituras zk-ssl-node/src/main.rs zk-ssl-wire/src/openrpc.rs×2
+escenario zkssl/0.5
 metodo zkssl_protocolVersion() -> ProtocolVersion
 metodo zkssl_params() -> Params
 metodo zkssl_epochHead() -> EpochHead
@@ -1765,7 +1785,7 @@ acta.emite 1
 sobre.v 1 2
 sobre.tipo extension consumo conflicto rechazo edad cobro_pendiente pago_en_curso prenda completitud ancla ancla-cofirmada solapamiento
 kit.salida 0 1 2 3
-vectores.json 570
+vectores.json 571
 vectores.lineas 1223
 manifiesto 0.3/edad/MANIFIESTO.txt
 manifiesto 0.3/pago/MANIFIESTO.txt

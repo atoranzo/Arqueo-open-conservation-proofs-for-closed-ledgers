@@ -131,8 +131,10 @@ fn fund_traced(
     });
 
     // Autorizaciones de umbral (custodios 1 y 3, índices estrictos §51).
-    // Sus public inputs llevan el NULLIFIER que cada uno consume: el
-    // anti-replay de `circuit_threshold_single_nullifier`.
+    // Sus public inputs llevan el NULLIFIER de cada uno para ESTA operación:
+    // la capa exige que los dos difieran, y no los guarda. ⚠️ No es un
+    // anti-replay. Lo que impide reenviar la emisión es el contador de
+    // emisiones del compromiso, que `ts::mint_commitment` ya lleva.
     let (pa, ia, pb, ib) = ts::delegated_pair(op, 1, 3);
     tr.emit(&TraceEvent::CustodianAuth {
         custodian_index: 1,

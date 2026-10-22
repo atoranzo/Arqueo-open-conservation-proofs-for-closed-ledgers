@@ -140,6 +140,9 @@ pub use zk_ssl_hash::{
 // comprobar un tercero del registro **sin el nodo**.
 mod reverificacion;
 pub use reverificacion::{censo, EntradaLog, ReverificacionError, Veredicto, reverificar};
+// §716 (el reenvio de una emision delegada): el compromiso repetido, ROJO solo donde el
+// compromiso lleva contador.
+pub use reverificacion::{reverificar_con, EmisionConContador};
 
 /// El conjunto de parámetros: 2⁴⁰ firmas, ~35.000 años a una por segundo.
 pub type Conjunto = XmssMtSha2_40_8_256;

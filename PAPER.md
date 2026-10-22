@@ -33,9 +33,9 @@ obtenidas en condiciones idénticas, y documentamos un error metodológico
 propio —mezcla de compilaciones de depuración y optimizadas— detectado y
 corregido durante el trabajo.
 
-La implementación de referencia consta de **1944 pruebas ejecutables en la
+La implementación de referencia consta de **1955 pruebas ejecutables en la
 compuerta de sello** (55 son las de winterfell 0.13.1, que el fork del §533
-trae consigo) —2084 contando los pines de los niveles largo y completo, y
+trae consigo) —2095 contando los pines de los niveles largo y completo, y
 1364 declaradas (⚠️ §865: del §497; hoy las cuenta, con otra regla, `tools/check_tests.py`)—, con 18 ignoradas y declaradas, y
 está disponible públicamente. **No ha sido auditada por terceros y no
 implementa consenso distribuido**; discutimos en detalle las implicaciones
@@ -363,12 +363,19 @@ dinero, y la restricción que cierra cada una:
 |---|---|
 | Transferir más de lo debitado | Conservación (partida doble) |
 | Abrir cuenta con saldo | Apertura siempre a cero |
-| Emitir sin autorización | Dos custodios demostrados en circuito (también frente al operador desde el §538: §523, §538) |
+| Emitir sin autorización | Dos custodios demostrados en circuito (también frente al operador desde el §538: §523, §538); una autorización emite una vez |
 | Emisión sin reflejo en el suministro | Suministro público atado en el circuito |
 | Superar el tope de emisión | Rango sobre `tope − suministro` |
 | Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 | Gastar sin ser titular | Autoridad de gasto demostrada |
-| Reenviar una operación válida | Encadenamiento de raíces |
+| Reenviar una operación válida | Encadenamiento de raíces; la huella de la prueba del titular ya aplicada (§654); en las vías delegadas, el contador del compromiso que firman los custodios |
+
+⚠️ §716 (el reenvío de una emisión delegada): la última fila decía
+solo «Encadenamiento de raíces», y no bastaba. Una quema o una desemisión
+devuelven la raíz y el suministro a los de antes de emitir, y los mismos
+materiales de una emisión delegada volvían a emitir. Las dos emisiones
+llevan ahora un contador de emisiones en lo que firman los custodios, como
+congelar, gobernar y recuperar: una autorización emite una sola vez.
 
 ### 5.3 Autoridad de umbral: la garantía y su límite
 
@@ -1054,7 +1061,7 @@ herramientas externas ni compiladores no estables.
 # O de una vez, con los pines del canon comprobados:
 bash tools/canon.sh --sello
 
-cargo test -p zk-ssl --release              # capa: 522 tests (7 ignorados)
+cargo test -p zk-ssl --release              # capa: 530 tests (7 ignorados)
 cargo test -p stark-experiment --release    # circuitos: 427 tests (13 ignorados)
 cargo test -p zk-ssl-node --release         # nodo: 115
 cargo test -p zk-ssl --release metrics -- --nocapture

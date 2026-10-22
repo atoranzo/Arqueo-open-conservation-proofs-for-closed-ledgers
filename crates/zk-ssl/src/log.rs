@@ -302,7 +302,13 @@ pub struct TransitionLog {
     /// SI se repite: tras un reembolso, o tras un ciclo A->B->A, las raices vuelven a las de antes y
     /// una prueba ya aplicada volvia a valer. Se DERIVA del registro (sin persistencia ni raiz
     /// propias: la instantanea ya lleva el registro) y se mantiene en `append_con_compromiso`. Las
-    /// vias delegadas quedan fuera: atan raiz y suministro en su compromiso (`mint.rs`).
+    /// vias delegadas quedan fuera de este conjunto.
+    ///
+    /// ⚠️ §716 (el reenvio de una emision delegada): decia que las emisiones no lo
+    /// necesitaban porque «atan raiz y suministro en su compromiso». Era falso. Una quema o una
+    /// desemision devuelven la raiz y el suministro a los de antes de emitir, y los mismos
+    /// materiales volvian a emitir. Las emisiones tienen ahora su propia guarda:
+    /// [`Self::emisiones_delegadas`] y [`Self::autorizacion_consumida`].
     aplicadas: std::collections::HashSet<[u8; 32]>,
     /// §715 (la maleabilidad de los bytes de la prueba): la huella del CONTENIDO -los
     /// compromisos, [`zk_ssl_air::huella_del_contenido`]- de cada prueba del titular aplicada en
@@ -315,11 +321,33 @@ pub struct TransitionLog {
     /// ([`Self::from_entries`]) este conjunto empieza vacio. Tras un reinicio queda solo
     /// `aplicadas`, con el lector canonico detras.
     aplicadas_por_contenido: std::collections::HashSet<[u8; 32]>,
+    /// §716 (el reenvio de una emision delegada): cuantas entradas `Mint` y
+    /// `MintToPending` lleva el registro. Es el CONTADOR de emisiones: entra en el compromiso que
+    /// firman los custodios como `(n, n + 1)`, igual que los de congelar, gobernar y recuperar.
+    /// Solo sube, porque el registro solo crece. Una autorizacion firmada para `n` deja de valer
+    /// en cuanto se aplica, aunque la raiz y el suministro vuelvan a los de antes.
+    ///
+    /// Se DERIVA del registro, como `usos_custodiados`: ni clave en disco ni campo en la
+    /// instantanea. La puerta de la reapertura ya verifica el registro entero.
+    emisiones: u64,
+    /// §716 (el reenvio de una emision delegada): el sello de cada emision delegada
+    /// aplicada, el `proof_digest` de su entrada
+    /// (`digest_of_proof(sello_de_autorizacion(compromiso))`). Son los identificadores ya
+    /// consumidos. Con el contador en el compromiso no se repiten nunca; se guardan para que el
+    /// reenvio caiga con su causa, `AutorizacionConsumida`, antes de verificar nada. Tambien se
+    /// derivan del registro.
+    emisiones_consumidas: std::collections::HashSet<[u8; 32]>,
 }
 
 /// §654: las clases cuya prueba es del titular y no puede aplicarse dos veces.
 fn es_del_titular(kind: OpKind) -> bool {
     matches!(kind, OpKind::Send | OpKind::Claim | OpKind::Burn | OpKind::Refund)
+}
+
+/// §716 (el reenvio de una emision delegada): las dos emisiones delegadas, las que cuentan
+/// para el contador de emisiones.
+fn es_emision_delegada(kind: OpKind) -> bool {
+    matches!(kind, OpKind::Mint | OpKind::MintToPending)
 }
 
 impl TransitionLog {
@@ -339,8 +367,37 @@ impl TransitionLog {
                 .filter(|e| es_del_titular(e.kind))
                 .map(|e| zk_ssl_hash::digest_to_bytes(&e.proof_digest))
                 .collect();
+        // §716 (el reenvio de una emision delegada): el contador y los sellos de las
+        // emisiones, derivados como `aplicadas`
+        let emisiones = entries.iter().filter(|e| es_emision_delegada(e.kind)).count() as u64;
+        let emisiones_consumidas = entries
+            .iter()
+            .filter(|e| es_emision_delegada(e.kind))
+            .map(|e| zk_ssl_hash::digest_to_bytes(&e.proof_digest))
+            .collect();
         // §715: el contenido no se guarda; ver `aplicadas_por_contenido`
-        Self { entries, aplicadas, aplicadas_por_contenido: Default::default() }
+        Self {
+            entries,
+            aplicadas,
+            aplicadas_por_contenido: Default::default(),
+            emisiones,
+            emisiones_consumidas,
+        }
+    }
+
+    /// §716 (el reenvio de una emision delegada): el contador de emisiones delegadas, `n`.
+    /// La proxima emision, por cualquiera de las dos vias, se autoriza con `(n, n + 1)` en su
+    /// compromiso.
+    pub fn emisiones_delegadas(&self) -> u64 {
+        self.emisiones
+    }
+
+    /// §716 (el reenvio de una emision delegada): ¿ya se aplico una emision autorizada con
+    /// este compromiso? Mira el sello que su entrada asento. Es la causa con nombre del reenvio:
+    /// unos materiales ya aplicados traen en sus entradas publicas el compromiso que se consumio.
+    pub fn autorizacion_consumida(&self, compromiso: &Digest) -> bool {
+        let sello = digest_of_proof(&sello_de_autorizacion(compromiso));
+        self.emisiones_consumidas.contains(&zk_ssl_hash::digest_to_bytes(&sello))
     }
 
     /// §654 (SEG-03): ¿esta prueba del titular ya se aplico? Sobre la huella de sus bytes, que el
@@ -414,6 +471,12 @@ impl TransitionLog {
             if let Some(h) = zk_ssl_air::huella_del_contenido(proof) {
                 self.aplicadas_por_contenido.insert(h);
             }
+        }
+        if es_emision_delegada(kind) {
+            // §716 (el reenvio de una emision delegada): el contador sube y el sello queda
+            // consumido, en el mismo acto
+            self.emisiones += 1;
+            self.emisiones_consumidas.insert(zk_ssl_hash::digest_to_bytes(&proof_digest));
         }
         let previous = self.head();
         let chain =

@@ -93,6 +93,13 @@ MAPA DE CORRECCIONES (cifra desfasada → dónde está la corrección):
   reproduce el estado. La réplica es la 17, cerrada en el §860: la alta
   disponibilidad del operador no se construye ni se prescribe; y la
   réplica entre partes independientes es la 23, cerrada sin emprenderse.
+· §8 «Reenviar una operación válida | Encadenamiento de raíces», como lo
+  que lo cierra hoy  → §654 y
+  §716 (el reenvío de una emisión delegada): no bastaba. Con la
+  raíz de vuelta a la de antes -un reembolso, un ciclo A→B→A, una quema-
+  volvían a valer una prueba del titular ya aplicada y los materiales de
+  una emisión delegada. Hoy lo cierran la huella de la prueba aplicada y
+  el contador en lo que firman los custodios.
 ============================================================ -->
 
 # ESCALADO — de un nodo a la escala mundial con los cambios mínimos

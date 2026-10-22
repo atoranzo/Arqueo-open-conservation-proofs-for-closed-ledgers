@@ -44,8 +44,9 @@ pub enum TraceEvent {
         pending_position: Option<u64>,
         ms: u128,
     },
-    /// Autorización de umbral: el nullifier que ese custodio consume para
-    /// ESTA operación. Es el anti-replay de `circuit_threshold_single_nullifier`.
+    /// Autorización de umbral: el nullifier de ese custodio para ESTA
+    /// operación. Dice que los dos custodios son distintos; ⚠️ no impide
+    /// reenviar la operación: eso lo hace el contador del compromiso.
     CustodianAuth {
         custodian_index: usize,
         nullifier: String,

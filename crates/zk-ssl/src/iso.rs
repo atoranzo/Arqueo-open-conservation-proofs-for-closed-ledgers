@@ -201,6 +201,9 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         // mensaje, la misma duplicacion que las dos de arriba; §802: y la identidad con cuenta o retirada.
         LayerError::ConsumoRepetido { .. } => ("AM05", err.to_string()),
         LayerError::ConsumoColision { .. } | LayerError::IdentityUnavailable => ("AM05", err.to_string()),
+        // §716 (el reenvio de una emision delegada): reenviar una emision ya aplicada es,
+        // para el mensaje, la misma duplicacion.
+        LayerError::AutorizacionConsumida { .. } => ("AM05", err.to_string()),
         LayerError::AccountLimitReached { .. } => ("FF10", err.to_string()),
         LayerError::CustodianSetExhausted { .. } => ("FF10", err.to_string()),
         LayerError::ProofFailed(_) => ("FF10", err.to_string()),

@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 109 elementos alcanzables en `zk-ssl-verify` y 64 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 138, REFERENCIA 14, REGISTRO 16). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 111 elementos alcanzables en `zk-ssl-verify` y 64 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 138, REFERENCIA 14, REGISTRO 18). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`, `actas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -242,11 +242,13 @@ real de sus llaves, no por la primera marca.
 | `huella_de_contenido` | `hash/lib.rs` | REGISTRO | REGISTRO | `fn` |
 | `sello_de_autorizacion` | `hash/lib.rs` | REGISTRO | REGISTRO | `fn` |
 | `sello_sin_prueba` | `hash/lib.rs` | REGISTRO | REGISTRO | `fn` |
+| `EmisionConContador` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `enum` |
 | `EntradaLog` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `struct` |
 | `ReverificacionError` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `enum` |
 | `Veredicto` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `enum` |
 | `censo` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `fn` |
 | `reverificar` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `fn` |
+| `reverificar_con` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `fn` |
 
 ## 5. Por qué no puede cambiar, por familia
 

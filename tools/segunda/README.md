@@ -48,8 +48,9 @@ python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las r
 python3 tools/segunda/juez_stark.py
 
 # 1 sexies · la cadena del registro del cable (NO es núcleo: spec/RPC.md)       -> cadena: 6 de 6
+#   ⚠️ §716: el glob decia «los cuatro: 24 de 24»; `zkssl-0.5.json`, el escenario del §716, lo lleva a cinco y 30 de 30
 python3 tools/segunda/juez_cadena.py                          # spec/vectors/zkssl-0.4.json
-python3 tools/segunda/juez_cadena.py spec/vectors/zkssl-0.*.json   # los cuatro: 24 de 24
+python3 tools/segunda/juez_cadena.py spec/vectors/zkssl-0.*.json   # los cinco: 30 de 30
 python3 tools/segunda/juez_cadena.py respuesta.json   # o el `result` de zkssl_logEntries, desde seq 0
 # 1 septies · el segundo consumidor del cable, con el arnes y el manifiesto del testigo     -> 27 de 27 (§850)
 #   ⚠️ §850: decia 23 de 23 (§809), de antes de los tres negativos de la escritura y de `no-existe.json`

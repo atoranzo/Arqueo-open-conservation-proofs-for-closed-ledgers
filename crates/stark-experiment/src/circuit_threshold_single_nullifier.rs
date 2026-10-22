@@ -38,10 +38,18 @@
 //!
 //! Esa sola atadura cierra dos cosas que parecían separadas:
 //!
-//! ✅ **No hay reproducción.** La prueba solo autoriza *esta* operación: sus
-//! entradas públicas la nombran, y la capa comprueba que coincide con la que
+//! ✅ **No se lleva a OTRA operación.** La prueba solo autoriza *esta* operación:
+//! sus entradas públicas la nombran, y la capa comprueba que coincide con la que
 //! está ejecutando. Antes, dos autorizaciones para emitir 1.000 a Alicia
 //! servían para emitir 1.000.000 a Bob (§54.4).
+//!
+//! ⚠️ **Eso no impide repetir la MISMA operación.** Si el estado que el compromiso
+//! ata vuelve a ser el de antes, la operación es otra vez la misma, y el par vale
+//! otra vez. Este circuito no lo impide, ni el nulificador: la capa no guarda los
+//! nulificadores, solo exige que los dos de un par difieran. Lo impide el contador
+//! que la capa mete en el compromiso, `(n, n + 1)`: congelar, gobernar y recuperar
+//! lo llevaban; las dos emisiones, desde el §716 (el reenvío de una emisión
+//! delegada). Antes, emitir, quemar y reenviar los mismos materiales volvía a emitir.
 //!
 //! ⚠️ **El nulificador no enlaza; la clave enlazaba.** Cambia con cada operación, y
 //! hasta el §538 la prueba publicaba la clave del custodio (§523): agrupar «el custodio

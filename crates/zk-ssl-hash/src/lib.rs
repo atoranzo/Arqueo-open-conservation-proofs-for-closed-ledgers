@@ -1758,6 +1758,14 @@ pub const OP_GOVERNANCE: u64 = 0x474F5652; // "GOVR"
 /// colisiones ENTRE operaciones—. **Si alguna operacion pasa a tener
 /// parametros de longitud variable, esto necesita una regla de relleno antes
 /// de usarse.** Queda escrito porque es la clase de suposicion que se olvida.
+///
+/// ⚠️ Una excepcion, desde el §716 (el reenvio de una emision delegada):
+/// `OP_MINT` y `OP_MINT_PENDING` pasaron de doce a catorce elementos, con el
+/// contador de emisiones `(n, n + 1)` detras del tope, y las dos longitudes
+/// conviven en los registros. No colisionan: el segundo bloque de doce acaba
+/// en `[.., 0, 0, 0, 0]`, y el de catorce lleva `n + 1`, que nunca es cero, en
+/// su sexta casilla. Con `[0, 0]` detras SI colisionarian. Lo fija
+/// `las_emisiones_de_doce_y_de_catorce_no_colisionan`.
 pub fn commit_operation(domain: u64, elements: &[BaseElement]) -> Digest {
     let zero = BaseElement::ZERO;
     let mut state = [zero; STATE_WIDTH];
@@ -1952,6 +1960,30 @@ mod tests_sello_movido {
 
         let otro_dominio = commit_operation(OP_FREEZE, &[BaseElement::new(5)]);
         assert_ne!(uno, otro_dominio, "el dominio separa operaciones");
+    }
+
+    /// §716 (el reenvio de una emision delegada): las dos emisiones tienen dos
+    /// longitudes vivas, doce elementos sin contador y catorce con `(n, n + 1)`. No colisionan
+    /// porque `n + 1` nunca es cero; con `[0, 0]` detras si, y es lo que el aviso de
+    /// [`commit_operation`] dice.
+    #[test]
+    fn las_emisiones_de_doce_y_de_catorce_no_colisionan() {
+        let doce: Vec<BaseElement> = (1..=12u64).map(BaseElement::new).collect();
+        let con = |extra: [u64; 2]| {
+            let mut v = doce.clone();
+            v.extend(extra.map(BaseElement::new));
+            v
+        };
+        for op in [OP_MINT, OP_MINT_PENDING] {
+            let viejo = commit_operation(op, &doce);
+            assert_ne!(viejo, commit_operation(op, &con([0, 1])), "contador 0: (0, 1)");
+            assert_ne!(viejo, commit_operation(op, &con([7, 8])), "contador 7: (7, 8)");
+            assert_eq!(
+                viejo,
+                commit_operation(op, &con([0, 0])),
+                "sin relleno, [0, 0] detras colisiona: por eso la segunda casilla es n + 1"
+            );
+        }
     }
 }
 /// **Centinela de compromiso ausente** (§281, mudado aqui en §282).

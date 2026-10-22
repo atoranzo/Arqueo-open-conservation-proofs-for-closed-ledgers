@@ -1679,6 +1679,12 @@ impl SovereignLayer {
     /// -`mint_to_pending` y `apply_mint_to_pending`- no existe, y lo que hoy
     /// queda justo arriba es `apply_many_con_operacion`, que no emite. No hay
     /// divergencia que anotar: esta es la unica emision a pendiente de la capa.
+    ///
+    /// ## El contador de emisiones, desde el §716 (el reenvio de una emision delegada)
+    ///
+    /// El compromiso lleva el contador de [`Self::mint_count`], el mismo que la emision a cuenta,
+    /// y el limite es el que declara [`Self::apply_mint_delegated`]: una autorizacion vale para un
+    /// valor del contador.
     #[allow(clippy::too_many_arguments)]
     pub fn apply_mint_pending_delegated(
         &mut self,
@@ -1698,6 +1704,14 @@ impl SovereignLayer {
         use stark_experiment::circuit_threshold_single_nullifier::{
             commit_operation, verify_threshold_pair, PairRejection, OP_MINT_PENDING,
         };
+
+        // §716 (el reenvio de una emision delegada): como en `mint`, unos materiales ya
+        // aplicados traen el compromiso que se consumio, y se rechazan con su causa.
+        for c in [&inputs_a.operation, &inputs_b.operation] {
+            if self.log.autorizacion_consumida(c) {
+                return Err(LayerError::AutorizacionConsumida { compromiso: *c });
+            }
+        }
 
         let would_be = self.total_supply.saturating_add(amount);
         if would_be > self.max_supply {
@@ -1756,12 +1770,22 @@ impl SovereignLayer {
         // El compromiso cubre TODO lo que la emision decide: de que raiz de
         // pendientes a cual -lo que fija posicion Y compromiso-, cuanto, y
         // contra que suministro y que tope.
+        //
+        // ⚠️ §716 (el reenvio de una emision delegada): y el contador de emisiones,
+        // `(n, n + 1)`, el mismo que `mint`. Esta via solo ata la raiz de PENDIENTES y el
+        // suministro, y los dos vuelven mas facil que la de cuentas: el cobro vacia la hoja, un
+        // arbol sin pagos en vuelo tiene siempre la misma raiz, y cualquier quema que sume el
+        // importe devuelve el suministro. Sin el contador, emitir a pendiente, cobrar, quemar y
+        // reenviar volvia a emitir.
+        let count_old = self.mint_count();
         let mut params: Vec<BaseElement> = root_old.to_vec();
         params.extend_from_slice(&root_new);
         params.push(BaseElement::new(amount));
         params.push(BaseElement::new(supply_old));
         params.push(BaseElement::new(supply_new));
         params.push(BaseElement::new(self.max_supply));
+        params.push(BaseElement::new(count_old));
+        params.push(BaseElement::new(count_old + 1));
         let operation = commit_operation(OP_MINT_PENDING, &params);
 
         verify_threshold_pair(
@@ -2270,6 +2294,9 @@ mod tests_delegada {
         v.push(BaseElement::new(layer.total_supply()));
         v.push(BaseElement::new(layer.total_supply() + amount));
         v.push(BaseElement::new(MAX_SUPPLY));
+        // §716 (el reenvio de una emision delegada): el contador de emisiones
+        v.push(BaseElement::new(layer.mint_count()));
+        v.push(BaseElement::new(layer.mint_count() + 1));
         auth::commit_operation(auth::OP_MINT_PENDING, &v)
     }
 

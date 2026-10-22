@@ -15,6 +15,11 @@
 #      `cable`; la dicen tambien spec/openrpc.json (info.version y el `const` de ProtocolVersion),
 #      la respuesta del nodo a zkssl_protocolVersion, el titulo de spec/RPC.md y su fila de
 #      zkssl_protocolVersion. Y el kit es 0.N.x con el cable 0.N (R3 de la D-B).
+#      ⚠️ §716: el `spec: "zkssl/0.N".into()` de crates/zk-ssl-cli/src/conformance.rs ya no es una
+#      escritura del cable: es la version del ESCENARIO de conformidad, que desde el §716 (el
+#      contador de emisiones cambia el compromiso de las dos Mint del escenario) va por delante del
+#      cable hasta el corte (RFC-0018). Sale de `cable.escrituras` y se compara aparte, igual, con
+#      `escenario`, con su prueba de vida (R7). El hecho 5 del RFC-0021 lo contaba como escritura.
 #  R2  LOS METODOS. Cada `metodo` de la lista esta en spec/openrpc.json con sus parametros -nombre,
 #      esquema y si es opcional- y su resultado: uno que falta, que cambia de nombre o de tipo, o un
 #      parametro que pasa a obligatorio es ROJO; un zkssl_* nuevo, o un parametro opcional nuevo,
@@ -95,8 +100,8 @@ CANON = os.path.join('tools', 'canon.sh')
 ARTEFACTO = os.path.join('tools', 'artefacto.sh')
 VECTORES = os.path.join('spec', 'vectors')
 SECCION = 'Versionado y compatibilidad'
-CLAVES = ('cable', 'cable.escrituras', 'metodo', 'esquema', 'cabeza.acepta', 'cabeza.emite',
-          'cofirma.emite', 'cofirma.lee-hasta', 'acta.emite', 'sobre.v', 'sobre.tipo',
+CLAVES = ('cable', 'cable.escrituras', 'escenario', 'metodo', 'esquema', 'cabeza.acepta',
+          'cabeza.emite', 'cofirma.emite', 'cofirma.lee-hasta', 'acta.emite', 'sobre.v', 'sobre.tipo',
           'kit.salida', 'vectores.json', 'vectores.lineas', 'manifiesto', 'familia')
 REPETIBLES = ('metodo', 'esquema', 'manifiesto')
 FANTASMA = 'fantasma-de-la-prueba-de-vida'
@@ -200,7 +205,8 @@ def sin_tests(toks):
 
 
 def escrituras_del_cable():
-    """R1: cada literal "zkssl/0.N" de produccion -> [(ruta bajo crates/, version, linea)]."""
+    """R1: cada literal "zkssl/0.N" de produccion -> [(ruta bajo crates/, version, linea)]. El
+    `spec:` de conformance.rs no cuenta: es la version del escenario (§716), `escenario`."""
     out = []
     base = os.path.join(RAIZ, 'crates')
     for crate in sorted(os.listdir(base)):
@@ -214,14 +220,19 @@ def escrituras_del_cable():
                 texto = open(ruta, encoding='utf-8').read()
                 if 'zkssl/0.' not in texto:
                     continue
-                for clase, val, ln in sin_tests(lex(texto)):
+                toks = sin_tests(lex(texto))
+                for k, (clase, val, ln) in enumerate(toks):
                     if clase == 'str' and re.fullmatch(r'zkssl/0\.\d+', val):
+                        if (rel == ESCENARIO_DE and k >= 2
+                                and [t[1] for t in toks[k - 2:k]] == ['spec', ':']):
+                            continue
                         out.append((rel, val, ln))
     return out
 
 
 # ── R8: la conformidad que cita un comentario ───────────────────────
 CONFORMANCE = os.path.join('crates', 'zk-ssl-cli', 'src', 'conformance.rs')
+ESCENARIO_DE = 'zk-ssl-cli/src/conformance.rs'   # R1 (§716): su `spec:` es la del escenario
 _SEP = r'(?:\s|//[/!]?|\*)+'
 FRASE_CONFORMIDAD = re.compile(r'\b(?:conformidad|conformance)' + _SEP + r'(?:(?:de|of)' + _SEP +
                                r')?`?(zkssl/0\.\d+)\b')
@@ -346,6 +357,7 @@ def productores():
     cuenta = Counter(rel for rel, _, _ in esc)
     p['cable.escrituras'] = [r if k == 1 else '%s×%d' % (r, k) for r, k in sorted(cuenta.items())]
     p['cable'] = sorted({v for _, v, _ in esc})
+    p['escenario'] = version_de_conformidad(leer(CONFORMANCE))
     lib = sin_comentarios(leer(VERS))
     enum = lib.find('pub enum VersionCabeza')
     variantes = dict(re.findall(r'\n\s*(V\d+)\s*=\s*(\d+),', lib[enum:])) if enum >= 0 else {}
@@ -578,6 +590,8 @@ def main():
     cmp.append(('R1', 'la version de las escrituras de produccion', 'igual', L('cable'), p['cable']))
     cmp.append(('R1', 'las escrituras de produccion de la version', 'igual', L('cable.escrituras'),
                 p['cable.escrituras']))
+    cmp.append(('R1', 'la version del escenario de conformidad, el `spec:` de conformance.rs (§716)',
+                'igual', L('escenario'), p['escenario']))
     sch = orpc['components']['schemas'].get('ProtocolVersion', {})
     cmp.append(('R1', 'la version de spec/openrpc.json (info.version y ProtocolVersion)', 'igual',
                 L('cable'), sorted({orpc['info'].get('version', ''), sch.get('const', '')} - {''})))
