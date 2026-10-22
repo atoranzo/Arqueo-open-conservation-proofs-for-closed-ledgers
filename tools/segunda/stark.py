@@ -146,6 +146,18 @@ CONSULTAS = "prueba mal formada: consultas fuera de rango"
 MARCO_OOD = "prueba mal formada: marco OOD fuera de rango"
 FRI = "prueba mal formada: FRI fuera de rango"
 LOTE = "prueba mal formada: lote fuera de rango"
+# §715, la maleabilidad de los bytes: un `usize` que no esta en su escritura minima. La
+# misma, letra a letra, que `USIZE` de `crates/winter-air/src/causa.rs`.
+USIZE = "prueba mal formada: usize no canonico"
+
+
+def largo_minimo(v):
+    """Cuantos bytes ocupa `v` en la escritura de `write_usize` de winter-utils 0.13.1: siete bits
+    utiles por byte hasta ocho bytes, y nueve (un cero y el `u64`) para lo que no cabe en 56."""
+    for n in range(1, 9):
+        if v < (1 << (7 * n)):
+            return n
+    return 9
 
 
 def opciones_validas(o):
@@ -206,15 +218,26 @@ class Lector:
         return int.from_bytes(self.tomar(8), "little")
 
     def usize(self):
-        """vint64 (`read_usize`): la longitud es trailing_zeros(primer byte) + 1."""
+        """vint64 (`read_usize`): la longitud es trailing_zeros(primer byte) + 1. En su escritura
+        minima: `leer_vint_canonico` del fork. Sin cota: una longitud que no cabe en lo que queda
+        es fin de bytes al tomarla, como en el kit en toda plataforma."""
         if self.resto() < 1:
             raise deser("unexpected EOF")
         b0 = self.b[self.p]
         largo = 9 if b0 == 0 else ((b0 & -b0).bit_length())
         if largo == 9:
             self.tomar(1)
-            return self.u64()
-        return int.from_bytes(self.tomar(largo), "little") >> largo
+            v = self.u64()
+        else:
+            v = int.from_bytes(self.tomar(largo), "little") >> largo
+        # §715: un `usize` tiene UNA escritura, la minima. Sin esto, cada longitud de la
+        # prueba se podia escribir con mas bytes y la prueba verificaba igual, con otros bytes y
+        # otra huella. El fork la exige en su lector (`leer_usize_canonico`).
+        minimo = largo_minimo(v)
+        if largo != minimo:
+            raise deser(f"{USIZE}: {v} escrito en {largo} bytes, y su escritura minima tiene "
+                        f"{minimo}")
+        return v
 
 
 def base_de(b):
@@ -303,6 +326,10 @@ def leer_prueba(b):
         raise deser(FRI)
     p.fri_particiones = 1
     p.nonce = r.u64()
+    # §715: una prueba son SUS bytes, y ninguno mas (el §653 en el kit, `Proof::from_bytes`
+    # del fork). Sin esto, una prueba valida con un byte de cola verificaba aqui y no en el kit.
+    if r.resto():
+        raise deser("UnconsumedBytes")
     return p
 
 
@@ -449,6 +476,16 @@ def leer_lote(r):
     return lote
 
 
+def leer_lote_entero(b):
+    """El lote de una capa FRI, y nada detras: `FriProofLayer::parse` rechaza los bytes que sobran
+    (`UnconsumedBytes`, que se imprime «not all bytes were consumed») antes de mirar el dominio."""
+    r = Lector(b)
+    lote = leer_lote(r)
+    if r.resto():
+        raise deser("not all bytes were consumed")
+    return lote
+
+
 class Invalida(Exception):
     pass
 
@@ -526,12 +563,21 @@ def raiz_del_lote(lote, indices, hojas):
             i += 1
     if 1 not in v:
         raise Invalida()
+    # SEG-03b (§659): cada vector del lote trae exactamente los nodos que la reconstruccion
+    # consume. `get_root` no mira si sobran, y el kit lo exige en `MerkleConSal::verify_many`
+    # (`ErrorSal::NoCanonico`); aqui faltaba, y un nodo de mas verificaba.
+    if any(pt != len(n) for pt, n in zip(punteros, lote.nodos)):
+        raise Invalida()
     return v[1]
 
 
 def verificar_con_sal(compromiso, indices, items, lote):
     """`MerkleConSal::verify_many`: hojas = merge(item, sal), y el arbol de debajo."""
     if len(items) != len(lote.sales):
+        raise Invalida()
+    # §715: tantos items como indices. `get_root` recorre los indices y no mira si sobran
+    # hojas: una fila (o un grupo FRI) y una sal de mas verificaban, con otros bytes.
+    if len(items) != len(indices):
         raise Invalida()
     hojas = [merge(it, s) for it, s in zip(items, lote.sales)]
     if raiz_del_lote(lote, indices, hojas) != compromiso:
@@ -680,6 +726,9 @@ def verificar(prueba, air, opciones_aceptadas=OPCIONES_KIT):
         lote = leer_lote(r)
         if (1 << lote.profundidad) != ctx.lde:
             raise deser("queries domain")
+        # §715: en el orden de `Queries::parse`, el dominio y despues la cola
+        if r.resto():
+            raise deser("not all bytes were consumed")
         filas = [leer(q.valores[i * bytes_por * ancho:(i + 1) * bytes_por * ancho])
                  for i in range(nq)]
         return filas, lote
@@ -704,7 +753,7 @@ def verificar(prueba, air, opciones_aceptadas=OPCIONES_KIT):
         if len(valores) % (16 * plegado) or not valores:
             raise deser("capa FRI")
         vs = e2s(valores)  # los valores antes que el lote, como `FriProofLayer::parse`
-        lote = leer_lote(Lector(caminos))
+        lote = leer_lote_entero(caminos)
         if (1 << lote.profundidad) != dom // plegado:
             raise deser("capa FRI domain")
         capas.append(([vs[i:i + plegado] for i in range(0, len(vs), plegado)], lote))
@@ -992,6 +1041,7 @@ def autotest():
             assert str(e) == f"marca de la ocultacion {lectura}; el enunciado pide m = 64", str(e)
     pares_fijos_del_orden()
     resto_atado()
+    una_sola_escritura()
     return True
 
 
@@ -1090,7 +1140,41 @@ def resto_atado():
             assert str(e) == causa, f"{que}: pide {causa}, da {e}"
 
 
+def una_sola_escritura():
+    """§715, la maleabilidad de los bytes de la prueba: una prueba tiene UNA escritura.
+    Ocho pares fijos, los vectores de `spec/vectors/edad/` que salen de `edad-todos.json`, medidos
+    contra el kit; con la segunda de antes, los ocho daban VERDE:
+
+    1. un `usize` del lote de la traza escrito con un byte de mas: el kit da la causa del `usize`;
+    2. el numero de restricciones escrito con un byte de mas: la misma causa, al leer la prueba;
+    3. una fila de mas en cada tabla con su sal: `TraceQueryDoesNotMatchCommitment`;
+    4. un nodo de mas en el lote de la traza (§659): `TraceQueryDoesNotMatchCommitment`;
+    5. un byte de cola (§653): `UnconsumedBytes`;
+    6. a 8. un byte de cola DENTRO de la apertura de la traza, de la del cociente y del lote de la
+       capa FRI 0: `not all bytes were consumed`, el mismo error de winter-utils con su `Display`."""
+    import json
+    import juez_stark as J  # aqui y no arriba: juez_stark importa este modulo
+    S = J.S  # el modulo que juez_stark carga, con SU `Rechazo`
+    for nombre, causa in [
+        ("neg-prueba-lote-usize-no-minimo.json", S.USIZE),
+        ("neg-prueba-usize-no-minimo.json", S.USIZE),
+        ("neg-prueba-fila-de-mas.json", "TraceQueryDoesNotMatchCommitment"),
+        ("neg-prueba-nodo-de-mas.json", "TraceQueryDoesNotMatchCommitment"),
+        ("neg-prueba-cola.json", "UnconsumedBytes"),
+        ("neg-prueba-cola-apertura-traza.json", "not all bytes were consumed"),
+        ("neg-prueba-cola-apertura-cociente.json", "not all bytes were consumed"),
+        ("neg-prueba-cola-lote-fri.json", "not all bytes were consumed"),
+    ]:
+        with open(os.path.join(J.VECTORES, "edad", nombre)) as f:
+            [(_, prueba, air)] = J.par_edad(json.load(f))
+        try:
+            S.verificar(prueba, air)
+            raise AssertionError(f"{nombre}: verifica, y pide {causa}")
+        except S.Rechazo as e:
+            assert causa in str(e), f"{nombre}: pide {causa}, da {e}"
+
+
 if __name__ == "__main__":
     autotest()
     print("stark.py: autotest OK (extension, INV_MDS calculada = tabla de winter-crypto, raices, "
-          "marca, el orden de Rust, el resto atado)")
+          "marca, el orden de Rust, el resto atado, una sola escritura)")

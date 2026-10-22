@@ -40,10 +40,11 @@ python3 tools/segunda/kat_xmss/juez_xmss.py
 #   ⚠️ §714: decia 215 de 215 (§712); los veintiun vectores de la bifurcacion en `ancla` la llevan a 236
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
-# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 39 de 39 (§713)
+# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 65 de 65 (§715)
 #   ⚠️ §711: decia 34 de 34 (§706); los cuatro negativos de la prueba mal formada, dos de la edad y dos del pago, la llevan a 38
 #   ⚠️ §713: decia 38 de 38 (§711); el negativo capturado del resto FRI, `edad/neg-prueba-resto-ajeno`, la lleva a 39
-python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca, el orden de Rust, el resto atado
+#   ⚠️ §715: decia 39 de 39 (§713); los veintiseis negativos de una sola escritura, quince de la edad y once del pago, la llevan a 65
+python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca, el orden de Rust, el resto atado, una sola escritura
 python3 tools/segunda/juez_stark.py
 
 # 1 sexies · la cadena del registro del cable (NO es núcleo: spec/RPC.md)       -> cadena: 6 de 6
@@ -230,7 +231,7 @@ ya dice. La fila de la causa del binario, par a par, no se ha vuelto a medir: pi
 compilado.
 
 Esa tabla es la medida del §626 y no se ha rehecho. Los párrafos que siguen dicen lo que cambió
-cada sello; la cifra de hoy es la del §713: 39 de 39 pares.
+cada sello; la cifra de hoy es la del §715: 65 de 65 pares.
 
 Lo que la medida fijó al escribirlo: que la semilla de Fiat-Shamir es el contexto **más las
 entradas públicas**, de modo que un enunciado mal compuesto no llega ni a la autenticación Merkle;
@@ -300,6 +301,20 @@ fija con dos pares (`resto_atado`): el negativo capturado de la edad, `neg-prueb
 `edad-todos.json` con un bit del resto. Con el `stark.py` anterior el juez da 38 de 39 pares, y el
 que falla es ese negativo, VERDE; con este, 39 de 39, 53 pruebas juzgadas, 35 vectores que caen
 antes del juez y 33 de 33 falsadores callados.
+
+**Una sola escritura, como el kit (§715).** Desde el §715 el lector del fork exige la escritura
+mínima de cada `usize` de la prueba, y el canal, una fila por posición consultada y un grupo por
+posición plegada. `stark.py` hace lo mismo: `Lector.usize` exige la escritura mínima, con la misma
+causa y el mismo detalle (`prueba mal formada: usize no canonico`); `leer_prueba` rechaza la cola de
+la prueba (`UnconsumedBytes`, el §653); la apertura de cada tabla y el lote de cada capa FRI rechazan
+sus bytes de sobra, en el orden de Rust; `verificar_con_sal` exige tantos items como índices, y el
+lote, que cada vector se consuma entero (el §659, que faltaba aquí). `juez_stark.py` cuenta
+`UnconsumedBytes` y `not all bytes were consumed` entre los mensajes del juez. El autotest gana
+`una_sola_escritura`: ocho pares fijos sobre los vectores nuevos de `edad/`. Lo fijan los veintiséis
+negativos del §715 en `edad/` y `pago/`: con el `stark.py` y el `juez_stark.py` anteriores, el juez da
+48 de 57 pares —los seis `usize` escritos de más y el nodo de más en la edad y el pago, y la fila
+de más en la edad, VERDE—, y las ocho colas caen antes del juez, sin comparar; con estos, 65 de
+65, 79 pruebas juzgadas, 35 vectores que caen antes del juez y 33 de 33 falsadores callados.
 
 **La cadena del registro** (§797). ⚠️ Esto mide el **cable**, no el núcleo: `chain` es de la clase
 REGISTRO (`spec/NUCLEO.md` §«2. Las cuatro clases»), su composición no tiene KAT (sus piezas sí:
@@ -436,6 +451,11 @@ ahora; el vector, suelto, da bajo `wasmtime` la misma causa que en nativo, medid
 que se hizo el arreglo y no sobre éste (el asiento del §713).
 ⚠️ §714: `ancla` tiene 44 desde el §714, con los veintiún de la bifurcación: 394 entradas en los diez
 y 455 en las doce. Lo medido del `.wasm` no cambia: que las pase no está medido, ni antes ni ahora.
+⚠️ §715: `edad` tiene 33 y `pago` 26 desde el §715, con los veintiséis negativos de una sola
+escritura: 420 entradas en los diez y 481 en las doce. Lo medido del `.wasm` no cambia: que las pase
+no está medido, ni antes ni ahora; los manifiestos del kit, con esos veintiséis, dan bajo `wasmtime`
+las mismas líneas que en nativo, medido sobre el árbol en que se hizo el arreglo y no sobre éste (el
+asiento del §715).
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 

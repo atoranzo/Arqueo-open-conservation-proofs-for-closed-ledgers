@@ -3953,6 +3953,292 @@ mod tests_verificacion {
         assert_eq!(state_of(&layer, alice).balance, 1_000_000, "nadie debita dos veces");
     }
 
+    // ── §715: la maleabilidad de los bytes de la prueba ──
+    // Sin el testigo ni la clave, de los bytes de una prueba salian otros que verificaban igual y
+    // tenian otra huella: un `usize` escrito de mas (el lector de winter-utils acepta cualquier
+    // escritura del mismo valor) o un grupo de mas en una capa FRI (`get_root` no mira si sobran
+    // hojas). La capa indexa por esa huella las pruebas ya aplicadas (§654), y tras un ciclo
+    // A->B->A el reenvio maleado volvia a debitar a Alicia (medido: `Ok`, y Alicia en 700.000).
+    // Dos defensas: el lector y el canal del fork, que rechazan esas escrituras, y la huella del
+    // CONTENIDO -los compromisos- que la capa guarda de cada prueba aplicada en esta vida del
+    // proceso.
+
+    /// Donde va cada pieza de una prueba de la casa, en el orden de `Proof::write_into` del fork:
+    /// el numero de restricciones, la longitud de la apertura de cada `Queries`, el marco OOD y el
+    /// `u32` de valores de cada capa FRI. Si el formato cambia, los tests que lo usan caen.
+    struct Piezas {
+        restricciones: usize,
+        aperturas: Vec<usize>,
+        ood: usize,
+        capas: Vec<usize>,
+    }
+
+    fn u16_en(b: &[u8], i: usize) -> usize {
+        u16::from_le_bytes([b[i], b[i + 1]]) as usize
+    }
+
+    fn u32_en(b: &[u8], i: usize) -> usize {
+        u32::from_le_bytes(b[i..i + 4].try_into().expect("cuatro bytes")) as usize
+    }
+
+    fn piezas(b: &[u8]) -> Piezas {
+        let mut i = 4;
+        i += 2 + u16_en(b, i); // meta
+        i += 1 + b[i] as usize; // nombre del campo
+        i += 10; // ProofOptions
+        let restricciones = i;
+        i = leer_usize_de(b, i).1;
+        i += 1; // consultas unicas
+        i += 2 + u16_en(b, i); // compromisos
+        let mut aperturas = Vec::new();
+        for _ in 0..2 + usize::from(b[1] != 0) {
+            let (valores, j) = leer_usize_de(b, i);
+            i = j + valores;
+            aperturas.push(i);
+            let (largo, j) = leer_usize_de(b, i);
+            i = j + largo;
+        }
+        let ood = i;
+        for _ in 0..2 {
+            i += 2 + u16_en(b, i);
+        }
+        let mut capas = Vec::new();
+        let n = b[i] as usize;
+        i += 1;
+        for _ in 0..n {
+            capas.push(i);
+            i += 4 + u32_en(b, i);
+            i += 4 + u32_en(b, i);
+        }
+        assert_eq!(b.len() - i, 2 + u16_en(b, i) + 1 + 8, "el recorrido acaba en el resto");
+        Piezas { restricciones, aperturas, ood, capas }
+    }
+
+    /// La escritura de `v` en `largo` bytes, minima o no: la de winter-utils con otro largo.
+    fn escribir_usize_en(v: usize, largo: usize) -> Vec<u8> {
+        if largo == 9 {
+            let mut o = vec![0u8];
+            o.extend_from_slice(&(v as u64).to_le_bytes());
+            return o;
+        }
+        ((((v as u64) << 1) | 1) << (largo - 1)).to_le_bytes()[..largo].to_vec()
+    }
+
+    /// Donde va el `u32` de las sales de un lote con sal: tras `depth`, la cuenta de vectores y
+    /// cada vector con su cuenta.
+    fn sales_del_lote(op: &[u8]) -> usize {
+        let (vectores, mut i) = leer_usize_de(op, 1);
+        for _ in 0..vectores {
+            let (k, j) = leer_usize_de(op, i);
+            i = j + 32 * k;
+        }
+        i
+    }
+
+    /// El numero de restricciones del contexto, escrito con un byte de mas.
+    fn con_las_restricciones_escritas_de_mas(b: &[u8]) -> Vec<u8> {
+        let i = piezas(b).restricciones;
+        let (v, j) = leer_usize_de(b, i);
+        let mut o = b[..i].to_vec();
+        o.extend(escribir_usize_en(v, j - i + 1));
+        o.extend_from_slice(&b[j..]);
+        o
+    }
+
+    /// La cuenta de vectores del lote de la primera apertura de la traza, escrita con un byte de
+    /// mas (y la longitud de la apertura, en su escritura minima, con un byte mas que contar).
+    fn con_una_cuenta_del_lote_escrita_de_mas(b: &[u8]) -> Vec<u8> {
+        let i = piezas(b).aperturas[0];
+        let (largo, j) = leer_usize_de(b, i);
+        let op = &b[j..j + largo];
+        let (vectores, e) = leer_usize_de(op, 1);
+        let mut nueva = op[..1].to_vec();
+        nueva.extend(escribir_usize_en(vectores, e));
+        nueva.extend_from_slice(&op[e..]);
+        let mut o = b[..i].to_vec();
+        o.extend(escribir_usize(nueva.len()));
+        o.extend(nueva);
+        o.extend_from_slice(&b[j + largo..]);
+        o
+    }
+
+    /// Un grupo de valores de mas en la primera capa FRI -una copia del primero: el plegado de la
+    /// casa es 8, en la extension cuadratica, 128 bytes- y su sal de mas en el lote.
+    fn con_un_grupo_fri_de_mas(b: &[u8]) -> Vec<u8> {
+        let c = piezas(b).capas[0];
+        let nv = u32_en(b, c);
+        let valores = &b[c + 4..c + 4 + nv];
+        let np = u32_en(b, c + 4 + nv);
+        let caminos = &b[c + 8 + nv..c + 8 + nv + np];
+        let s = sales_del_lote(caminos);
+        let ns = u32_en(caminos, s);
+        let mut nuevos = caminos[..s].to_vec();
+        nuevos.extend_from_slice(&(ns as u32 + 1).to_le_bytes());
+        nuevos.extend_from_slice(&caminos[s + 4..]);
+        nuevos.extend_from_slice(&caminos[s + 4..s + 4 + 32]);
+        let mut o = b[..c].to_vec();
+        o.extend_from_slice(&(nv as u32 + 128).to_le_bytes());
+        o.extend_from_slice(valores);
+        o.extend_from_slice(&valores[..128]);
+        o.extend_from_slice(&(nuevos.len() as u32).to_le_bytes());
+        o.extend(nuevos);
+        o.extend_from_slice(&b[c + 8 + nv + np..]);
+        o
+    }
+
+    /// Alicia paga a Bob, Bob cobra, Bob le devuelve lo mismo y Alicia cobra: las raices vuelven
+    /// a las del principio (la premisa del §654). Devuelve la capa, Alicia, su estado de antes y
+    /// el primer recibo, ya aplicado.
+    fn tras_un_ciclo_de_ida_y_vuelta(
+    ) -> (crate::SovereignLayer, crate::AccountIndex, crate::commitment::ClientState, SendReceipt)
+    {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let ea = state_of(&layer, alice);
+        let raices = (layer.accounts.root(), layer.pending.root());
+        let a_bob = layer.public_id_of(bob).expect("bob");
+        let ida = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, a_bob, salt_de(0x6541), 300_000)
+            .expect("ida");
+        layer.apply_send(&ida, alice, &ea, 300_000).expect("aplicar ida");
+        let eb = state_of(&layer, bob);
+        let c = layer.claim(BaseElement::new(SK_BOB), bob, &eb, &ida.notice).expect("cobro");
+        layer.apply_claim(&c, bob, &eb, &ida.notice).expect("aplicar cobro");
+        let a_alice = layer.public_id_of(alice).expect("alice");
+        let eb2 = state_of(&layer, bob);
+        let vuelta = layer
+            .send(BaseElement::new(SK_BOB), bob, &eb2, a_alice, salt_de(0x6542), 300_000)
+            .expect("vuelta");
+        layer.apply_send(&vuelta, bob, &eb2, 300_000).expect("aplicar vuelta");
+        let ea2 = state_of(&layer, alice);
+        let c2 = layer.claim(BaseElement::new(SK_ALICE), alice, &ea2, &vuelta.notice).expect("cobro 2");
+        layer.apply_claim(&c2, alice, &ea2, &vuelta.notice).expect("aplicar cobro 2");
+        assert_eq!(
+            (layer.accounts.root(), layer.pending.root()),
+            raices,
+            "premisa del ataque: las raices han vuelto a las de antes del envio"
+        );
+        let control = layer.apply_send(&ida, alice, &ea, 300_000);
+        assert!(matches!(control, Err(LayerError::StaleState)), "los mismos bytes: {control:?}");
+        (layer, alice, ea, ida)
+    }
+
+    /// §715: EL REENVIO CON UN `usize` ESCRITO DE MAS. En el numero de restricciones lo
+    /// rechaza el lector del fork al leer la prueba (`usize no canonico`); en la cuenta de un lote,
+    /// que el lector de la prueba no ve, la huella del contenido lo para antes del verificador
+    /// (`StaleState`, la causa de todo reenvio). Antes, los dos daban `Ok` y Alicia quedaba en
+    /// 700.000.
+    #[test]
+    fn un_reenvio_con_un_usize_escrito_de_mas_no_vale() {
+        let (mut layer, alice, ea, mut maleada) = tras_un_ciclo_de_ida_y_vuelta();
+        let honesta = std::mem::take(&mut maleada.proof);
+        maleada.proof = con_las_restricciones_escritas_de_mas(&honesta);
+        assert_eq!(maleada.proof.len(), honesta.len() + 1, "un byte de mas, y nada mas");
+        let r = layer.apply_send(&maleada, alice, &ea, 300_000);
+        assert!(
+            matches!(&r, Err(LayerError::VerificationFailed(m)) if m.contains(zk_ssl_air::causa::USIZE)),
+            "las restricciones: {r:?}"
+        );
+        maleada.proof = con_una_cuenta_del_lote_escrita_de_mas(&honesta);
+        assert_eq!(maleada.proof.len(), honesta.len() + 1, "un byte de mas, y nada mas");
+        let r = layer.apply_send(&maleada, alice, &ea, 300_000);
+        assert!(matches!(r, Err(LayerError::StaleState)), "el lote: {r:?}");
+        assert_eq!(state_of(&layer, alice).balance, 1_000_000, "nadie debita dos veces");
+    }
+
+    /// §715: EL REENVIO CON UN GRUPO DE MAS EN UNA CAPA FRI. La huella del contenido lo
+    /// para (`StaleState`). Antes daba `Ok`.
+    #[test]
+    fn un_reenvio_con_un_grupo_fri_de_mas_no_vale() {
+        let (mut layer, alice, ea, mut maleada) = tras_un_ciclo_de_ida_y_vuelta();
+        let honesta = std::mem::take(&mut maleada.proof);
+        maleada.proof = con_un_grupo_fri_de_mas(&honesta);
+        assert_eq!(maleada.proof.len(), honesta.len() + 128 + 32, "un grupo y una sal, y nada mas");
+        let r = layer.apply_send(&maleada, alice, &ea, 300_000);
+        assert!(matches!(r, Err(LayerError::StaleState)), "{r:?}");
+        assert_eq!(state_of(&layer, alice).balance, 1_000_000, "nadie debita dos veces");
+    }
+
+    /// §715: LAS DOS DEFENSAS, POR SEPARADO. La huella del contenido reconoce las tres
+    /// pruebas maleadas que el lector de la prueba deja pasar -la cuenta del lote, el grupo FRI y
+    /// el nodo de mas del §659- como la ya aplicada; y no persiste: tras rehacer el registro desde
+    /// sus entradas, como al arrancar, ya no las reconoce, y entonces las para el verificador del
+    /// fork, cada una con su causa. La prueba de verdad se reconoce siempre, por sus bytes.
+    #[test]
+    fn la_huella_del_contenido_para_el_reenvio_y_el_verificador_tambien() {
+        let (mut layer, alice, ea, mut maleada) = tras_un_ciclo_de_ida_y_vuelta();
+        let honesta = std::mem::take(&mut maleada.proof);
+        let formas: [(&str, fn(&[u8]) -> Vec<u8>, &str); 3] = [
+            ("la cuenta del lote", con_una_cuenta_del_lote_escrita_de_mas, zk_ssl_air::causa::USIZE),
+            ("un grupo FRI", con_un_grupo_fri_de_mas, "LayerCommitmentMismatch"),
+            ("un nodo", con_un_nodo_de_mas, "TraceQueryDoesNotMatchCommitment"),
+        ];
+        let d0 = zk_ssl_air::huella_del_contenido(&honesta).expect("la prueba de verdad se lee");
+        for (que, malear, _) in formas {
+            let m = malear(&honesta);
+            assert_ne!(m, honesta, "{que}: otros bytes");
+            assert_eq!(zk_ssl_air::huella_del_contenido(&m), Some(d0), "{que}: el mismo contenido");
+            assert!(layer.log.ya_aplicada(&m), "{que}: la huella del contenido la reconoce");
+        }
+        // como al arrancar: el registro desde sus entradas, sin el contenido
+        layer.log = crate::log::TransitionLog::from_entries(layer.log.entries().to_vec());
+        assert!(layer.log.ya_aplicada(&honesta), "la de verdad, por sus bytes");
+        for (que, malear, causa) in formas {
+            maleada.proof = malear(&honesta);
+            assert!(!layer.log.ya_aplicada(&maleada.proof), "{que}: el contenido no persiste");
+            let r = layer.apply_send(&maleada, alice, &ea, 300_000);
+            assert!(
+                matches!(&r, Err(LayerError::VerificationFailed(m)) if m.contains(causa)),
+                "{que}: lo para el verificador con su causa: {r:?}"
+            );
+        }
+        assert_eq!(state_of(&layer, alice).balance, 1_000_000, "nadie debita dos veces");
+    }
+
+    /// §715 (el hermano de la maleabilidad): tres bytes de la prueba que hacian entrar en
+    /// panico al lector -las particiones de las opciones a cero, el marco OOD de la traza con 3
+    /// filas, las particiones FRI a 64- son `VerificationFailed` con la causa del fork, sin pasar
+    /// por la red, y el libro no se toca. Medido en 161a233: los tres, panico; en el
+    /// nodo, PARADA. Lo cerro el §711; esto lo vigila en la capa.
+    #[test]
+    fn los_bytes_que_hacian_entrar_en_panico_al_lector_son_rechazo_con_causa() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let ea = state_of(&layer, alice);
+        let a_bob = layer.public_id_of(bob).expect("bob");
+        let mut envio = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, a_bob, salt_de(0x7431), 300_000)
+            .expect("envio");
+        let honesta = envio.proof.clone();
+        let p = piezas(&honesta);
+        let antes = (layer.state_root(), layer.transition_log().len());
+        for (que, en, valor, causa) in [
+            ("particiones = 0", p.restricciones - 2, 0u8, zk_ssl_air::causa::OPCIONES),
+            ("marco OOD de 3 filas", p.ood + 2, 3, zk_ssl_air::causa::MARCO_OOD),
+            ("particiones FRI = 64", honesta.len() - 9, 64, zk_ssl_air::causa::FRI),
+        ] {
+            envio.proof = honesta.clone();
+            assert_ne!(envio.proof[en], valor, "{que}: el byte cambia");
+            envio.proof[en] = valor;
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                layer.apply_send(&envio, alice, &ea, 300_000)
+            }))
+            .unwrap_or_else(|_| panic!("CRITICO: {que} hace entrar en panico a la capa"));
+            match r {
+                Err(LayerError::VerificationFailed(m)) => {
+                    assert!(m.contains(causa), "{que}: {m}");
+                    assert!(!m.contains(zk_ssl_air::PANICO_RECOGIDO), "{que}: lo recogio la red: {m}");
+                }
+                otro => panic!("{que}: se esperaba VerificationFailed, y dio {otro:?}"),
+            }
+            assert_eq!((layer.state_root(), layer.transition_log().len()), antes, "{que}: el libro");
+        }
+        envio.proof = honesta;
+        assert!(layer.apply_send(&envio, alice, &ea, 300_000).is_ok(), "el envio honesto se aplica");
+    }
+
     /// §654 (SEG-03): EL REENVIO TRAS UN CICLO A->B->A. Alicia paga a Bob, Bob cobra, Bob le
     /// devuelve lo mismo y Alicia cobra: el envio no sube el nonce, asi que las raices vuelven a
     /// las del principio, y el primer recibo de Alicia volvia a valer.

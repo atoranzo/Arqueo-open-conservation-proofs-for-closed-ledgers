@@ -55,6 +55,12 @@ MENSAJES_DEL_JUEZ = (
     "forma de traza",
     # §711: las causas de una prueba mal formada, que pone el fork y repite `stark.py`
     "prueba mal formada",
+    # §715: la cola de una prueba (§653), con el nombre que le da winter-utils; el kit
+    # la imprime como `la prueba no se deserializa: UnconsumedBytes`
+    "UnconsumedBytes",
+    # §715: la cola DENTRO de una apertura o del lote de una capa FRI. Es el mismo error de
+    # winter-utils, por su `Display`: el kit la imprime dentro de `ProofDeserializationError(...)`
+    "not all bytes were consumed",
 )
 
 

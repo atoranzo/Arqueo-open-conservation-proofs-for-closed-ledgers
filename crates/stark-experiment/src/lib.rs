@@ -135,6 +135,11 @@ mod falsadores_oculta;
 // WorkAir y sobre la prueba de edad de la casa. Solo tests.
 #[cfg(test)]
 mod falsadores_resto;
+// §715, la maleabilidad de los bytes de la prueba: una fila o un grupo FRI de mas, con el
+// compromiso de Merkle de upstream (`MerkleTree`, sin sal), donde el canal del fork es la unica
+// defensa. Solo tests.
+#[cfg(test)]
+mod falsadores_aperturas;
 
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, MerkleTree};
 use winterfell::math::{fields::f128::BaseElement, FieldElement};

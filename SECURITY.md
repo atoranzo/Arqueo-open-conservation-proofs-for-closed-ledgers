@@ -479,6 +479,34 @@ aplicado volvía a valer. Desde el §654 la capa guarda además la huella de cad
 prueba del titular ya aplicada y rechaza la que vuelva, y desde el §659 también
 la que sólo cambie en nodos de más dentro de un lote de Merkle (§3.9).
 
+⚠️ **Matiz (§715): la huella de los bytes no bastaba.** La guarda del §654 reconoce una prueba ya
+aplicada por la huella de sus bytes, y el §659 le quitó una forma de esquivarla. Esa huella solo
+identifica la operación si cada prueba tiene una sola escritura, y no la tenía. Sin el testigo ni
+la clave, de los bytes de una prueba salían otros que verificaban igual: una longitud escrita con
+más bytes de los necesarios, una fila o un grupo de más en una apertura, una capa FRI de más, o el
+número de restricciones con un múltiplo de `2^32` sumado. Con una longitud escrita de más o con un
+grupo de más en una capa FRI, una prueba ya aplicada volvía a valer en las mismas condiciones del
+§654: las raíces que recurren tras un reembolso o un ciclo A→B→A. Lo que el §659 dio por «ahora ya
+única» no lo era.
+
+**Cerrado, en dos sitios.** El lector del fork y el canal del verificador exigen una sola
+escritura: la longitud mínima, una fila por posición consultada y un grupo por posición plegada
+(§715); el número de restricciones y el de capas FRI, en su rango (§711). Una prueba que no lo
+cumple se rechaza con su causa. Y la capa guarda además, de cada prueba del titular aplicada, la huella
+de su contenido: sus compromisos, que no dependen de cómo se escriban las aperturas. `ya_aplicada`
+mira las dos huellas.
+
+**Lo que no cierra.**
+
+- **La huella del contenido no persiste.** Tras reiniciar el nodo, la guarda mira solo los bytes, y
+  la defensa es el lector y el canal del fork.
+- **Los recibos y los acuses** siguen identificando la prueba por sus bytes. Con el lector canónico,
+  esos bytes son únicos en las formas medidas. En los recibos no se ha medido.
+- **El cierre de fondo** sigue siendo el que dice el §659: el nonce en toda transición deudora, que
+  pide el tren `zkssl/0.5`.
+- **Los kits publicados hasta la 0.4.3** aceptan esas escrituras. Las rechaza el kit compilado
+  desde el §715.
+
 ⚠️ **El problema existió y se retiró con su camino.** La vía de un paso
 derivaba la posición del marcador del propio marcador, con colisión por
 cumpleaños alrededor de **sesenta y cinco mil pagos** frente a los cuatro mil

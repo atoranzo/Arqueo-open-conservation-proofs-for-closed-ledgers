@@ -225,6 +225,17 @@ where
     ) -> Result<(Table<E::BaseField>, Option<Table<E>>), VerifierError> {
         let queries = self.trace_queries.take().expect("already read");
 
+        // ARQUEO (§715, la maleabilidad de los bytes de la prueba): una fila por posicion
+        // consultada, ni una mas. La prueba declara sus consultas unicas y la tabla trae esas
+        // filas, pero `verify_many` -el `get_root` de `winter-crypto` 0.13.1- recorre las
+        // posiciones y no mira si sobran hojas: con una fila (y una sal) de mas la prueba
+        // verificaba, con otros bytes y otra huella. La misma causa que una fila que no casa.
+        if queries.main_states.num_rows() != positions.len()
+            || queries.aux_states.as_ref().is_some_and(|t| t.num_rows() != positions.len())
+        {
+            return Err(VerifierError::TraceQueryDoesNotMatchCommitment);
+        }
+
         // make sure the states included in the proof correspond to the trace commitment
         let items: Vec<H::Digest> = queries
             .main_states
@@ -266,6 +277,11 @@ where
         positions: &[usize],
     ) -> Result<Table<E>, VerifierError> {
         let queries = self.constraint_queries.take().expect("already read");
+
+        // ARQUEO (§715): una fila por posicion consultada, como en la traza.
+        if queries.evaluations.num_rows() != positions.len() {
+            return Err(VerifierError::ConstraintQueryDoesNotMatchCommitment);
+        }
 
         let items: Vec<H::Digest> = queries
             .evaluations
@@ -315,6 +331,33 @@ where
 
     fn take_fri_remainder(&mut self) -> Vec<E> {
         self.fri_remainder.take().expect("already read")
+    }
+
+    /// ARQUEO (§715, la maleabilidad de los bytes de la prueba): el de `winter-fri`
+    /// 0.13.1 (`verifier/channel.rs:83-108`), con UNA comprobacion antes: tantos grupos de `N`
+    /// valores como posiciones plegadas. Aquel agrupa los valores de la capa, los hashea y llama a
+    /// `verify_many`, y el `get_root` de `winter-crypto` no mira si sobran hojas: un grupo (y una
+    /// sal) de mas en una capa verificaba, con otros bytes y otra huella. Se sobrescribe aqui
+    /// porque `winter-fri` no se bifurca; la variante es la de una capa que no casa con su
+    /// compromiso. Lo demas, tal cual.
+    fn read_layer_queries<const N: usize>(
+        &mut self,
+        positions: &[usize],
+        commitment: &H::Digest,
+    ) -> Result<Vec<[E; N]>, fri::VerifierError> {
+        let layer_proof = self.take_next_fri_layer_proof();
+        let layer_queries = self.take_next_fri_layer_queries();
+        // `group_slice_elements` exige un multiplo de `N` con `assert!`; `parse_layers` ya lo
+        // exige con su plegado, y aqui se comprueba sin panico de todos modos
+        if layer_queries.len() != positions.len().saturating_mul(N) {
+            return Err(fri::VerifierError::LayerCommitmentMismatch);
+        }
+        let leaf_values = utils::group_slice_elements::<E, N>(&layer_queries);
+        let hashed_values: Vec<H::Digest> =
+            leaf_values.iter().map(|seg| H::hash_elements(seg)).collect();
+        <V as VectorCommitment<H>>::verify_many(*commitment, positions, &hashed_values, &layer_proof)
+            .map_err(|_| fri::VerifierError::LayerCommitmentMismatch)?;
+        Ok(leaf_values.to_vec())
     }
 
     /// ARQUEO (§713): el resto, ATADO a su compromiso.

@@ -114,9 +114,9 @@ witness hiding in the winterfell fork is switched on only by `Prover::ocultacion
 prover returns", and that the fork touches "eight files and two new ones". That was the description
 of §534; since §538 every ARQUEO prover switches it on, and since §575 the fork touches eleven files
 and three new ones (⚠️ §711: since §711, nineteen and five, with the up-front validation of what is
-read from a proof; the tree's `NOTICE` says so). It does not change what the verifier checks — it
-verifies proofs with hiding on, and its catalogues measure it — but it is a false description of the
-fork. A published tarball
+read from a proof; the tree's `NOTICE` says so. ⚠️ §715: nineteen and six, with a single encoding
+for each proof). It does not change what the verifier checks — it verifies proofs with hiding
+on, and its catalogues measure it — but it is a false description of the fork. A published tarball
 is not corrected: the tree's `NOTICE` was corrected in §623, and the next release carries it.
 
 **Release 0.2.0 is still published and is no longer the current one** (`arqueo-verify-v0.2.0`,

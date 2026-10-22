@@ -40,10 +40,15 @@ crates/winter-air/, crates/winter-prover/, crates/winter-verifier/
     una prueba: se rechaza con su causa, sin pánico. Con ella el fork
     acepta menos que upstream: una sola partición FRI, la única que
     escribe `winter-fri` 0.13.1, y las capas FRI que el dominio exige, ni
-    una más; una capa de más que antes verificaba se rechaza. Diecinueve
-    ficheros tocados y cinco nuevos (`src/air/oculta.rs`, `src/marca.rs`,
-    `src/proof/acotado.rs`, `src/causa.rs`,
-    `src/proof/tests_sin_panico.rs`), listados en el README de cada
+    una más; una capa de más que antes verificaba se rechaza. Desde el
+    §713, el resto FRI va atado a su compromiso; y, desde el §715, cada
+    prueba tiene una sola escritura: la mínima de cada `usize`, una fila
+    por posición consultada y un grupo por posición plegada. Un `usize`
+    escrito con más bytes, una fila de más o un grupo FRI de más, que
+    antes verificaban, se rechazan. Diecinueve ficheros tocados y seis
+    nuevos (`src/air/oculta.rs`, `src/marca.rs`, `src/proof/acotado.rs`,
+    `src/causa.rs`, `src/proof/tests_sin_panico.rs`,
+    `src/proof/tests_canonica.rs`), listados en el README de cada
     crate. Con la ocultación apagada cada prueba sale byte a byte
     como la de winterfell, y `crates/stark-experiment/src/kat_probador.rs`
     lo comprueba en cada canon.
@@ -56,6 +61,9 @@ crates/winter-air/, crates/winter-prover/, crates/winter-verifier/
     ⚠️ §711: decía «Once ficheros tocados y tres nuevos», sin los dos
     últimos de la lista, y la modificación funcional acababa en el
     lector acotado del §575.
+    ⚠️ §715: decía «cinco nuevos», sin `src/proof/tests_canonica.rs`, y
+    la modificación funcional acababa en el §711, sin el resto FRI del
+    §713.
 
 crates/zk-ssl-medio/  (§631)
 

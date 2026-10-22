@@ -34,3 +34,8 @@ pub const MARCO_OOD: &str = "prueba mal formada: marco OOD fuera de rango";
 /// La prueba FRI no tiene las capas que el dominio exige, o declara particiones que `winter-fri`
 /// 0.13.1 no escribe nunca.
 pub const FRI: &str = "prueba mal formada: FRI fuera de rango";
+
+/// Un `usize` de la prueba que no esta en su escritura minima (vint64 de winter-utils). Upstream
+/// lee cualquier escritura del mismo valor, y la prueba verificaba igual con otros bytes y otra
+/// huella. ARQUEO (§715, la maleabilidad de los bytes de la prueba).
+pub const USIZE: &str = "prueba mal formada: usize no canonico";

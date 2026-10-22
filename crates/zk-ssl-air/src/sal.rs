@@ -56,7 +56,8 @@ pub struct VariasConSal<H: Hasher> {
 pub enum ErrorSal<X> {
     /// lo que dijo `MerkleTree`
     Arbol(X),
-    /// `verify_many` con tantas sales como items o nada: falla cerrado
+    /// `verify_many` con tantas sales como items, y tantos items como indices, o nada: falla
+    /// cerrado
     Longitud,
     /// SEG-03b: el lote trae nodos que la reconstruccion de la raiz no consume
     NoCanonico,
@@ -152,11 +153,15 @@ fn leer_lote<H: Hasher, R: ByteReader>(
             "{LOTE_FUERA_DE_RANGO}: un lote de {depth} niveles; caben {PROFUNDIDAD_MAXIMA}"
         )));
     }
-    let vectores = source.read_usize()?;
+    // §715 (la maleabilidad de los bytes de la prueba): cada cuenta en su escritura
+    // MINIMA. `winter-fri`, sin bifurcar, lee el lote de cada capa con un `SliceReader`, cuyo
+    // `read_usize` acepta el mismo valor escrito en mas bytes: la prueba verificaba igual, con
+    // otros bytes y otra huella. La regla es la del lector del fork, una sola.
+    let vectores = winter_air::proof::leer_usize_canonico(source)?;
     caben(source, vectores)?;
     let mut nodes = Vec::with_capacity(vectores);
     for _ in 0..vectores {
-        let k = source.read_usize()?;
+        let k = winter_air::proof::leer_usize_canonico(source)?;
         caben(source, k)?;
         let mut digests = Vec::with_capacity(k);
         for _ in 0..k {
@@ -253,6 +258,13 @@ impl<H: Hasher> VectorCommitment<H> for MerkleConSal<H> {
         proof: &Self::MultiProof,
     ) -> Result<(), Self::Error> {
         if items.len() != proof.sales.len() {
+            return Err(ErrorSal::Longitud);
+        }
+        // §715: y tantos items como indices. `get_root` de winter-crypto 0.13.1 recorre
+        // los indices y no mira si sobran hojas: una fila de la traza, o un grupo de una capa FRI,
+        // con su sal de mas, verificaba con otros bytes y otra huella. El canal del fork lo exige
+        // tambien (`winter-verifier/src/channel.rs`); aqui, para todo el que juzgue con sal.
+        if items.len() != indexes.len() {
             return Err(ErrorSal::Longitud);
         }
         let hojas = con_sal::<H>(items, &proof.sales);
@@ -557,6 +569,67 @@ mod tests {
             b.write_usize(1 << 40); // los `values` de la primera `Queries`
         });
         assert!(es_eof(Proof::from_bytes(&b)));
+    }
+
+    /// §715 (la maleabilidad de los bytes de la prueba): un item de mas, con su sal, no
+    /// verifica. `get_root` recorre los indices y no mira si sobran hojas, y antes este lote
+    /// verificaba con otros bytes: es la fila de mas de la traza, o el grupo de mas de una capa
+    /// FRI. Falsador: sin la comprobacion de `verify_many`, las cinco formas verifican.
+    #[test]
+    fn un_item_de_mas_con_su_sal_no_verifica() {
+        let (it, c) = con_sal();
+        let formas = [vec![1usize, 3, 6], vec![0, 1], vec![2, 3, 4], (0..7).collect(), vec![7]];
+        for idx in formas {
+            let (_, lote) = c.open_many(&idx).expect("abrir");
+            let mut abiertos: Vec<_> = idx.iter().map(|&k| it[k].clone()).collect();
+            ConSal::verify_many(c.commitment(), &idx, &abiertos, &lote).expect("el honesto pasa");
+            let mut maleado =
+                VariasConSal::<Blake3>::read_from(&mut SliceReader::new(&lote.to_bytes()))
+                    .expect("el lote se lee de sus bytes");
+            abiertos.push(abiertos[0].clone());
+            maleado.sales.push(maleado.sales[0].clone());
+            assert!(
+                matches!(
+                    ConSal::verify_many(c.commitment(), &idx, &abiertos, &maleado),
+                    Err(ErrorSal::Longitud)
+                ),
+                "un item de mas sobre {idx:?} tiene que fallar cerrado"
+            );
+        }
+    }
+
+    /// §715: la cuenta de vectores y la de nodos de un lote, escritas con un byte de mas
+    /// o con nueve, son error con la causa del `usize`, y no se leen. Antes se leian igual, y la
+    /// prueba que las llevaba verificaba con otros bytes. Falsador: con `read_usize` en
+    /// `leer_lote`, las cuatro se leen.
+    #[test]
+    fn un_lote_con_una_cuenta_escrita_de_mas_no_se_lee() {
+        let (_, c) = con_sal();
+        let (_, lote) = c.open_many(&[1usize, 3, 6]).expect("abrir");
+        let buena = lote.to_bytes();
+        // `depth`, la cuenta de vectores (un byte: son pocos) y la de nodos del primero (otro)
+        assert!(buena[1] & 1 == 1 && buena[2] & 1 == 1, "dos cuentas de un byte");
+        for (que, en) in [("vectores", 1usize), ("nodos", 2)] {
+            let v = (buena[en] >> 1) as u64;
+            for largo in [2usize, 9] {
+                let escrita = if largo == 9 {
+                    let mut o = vec![0u8];
+                    o.extend_from_slice(&v.to_le_bytes());
+                    o
+                } else {
+                    ((((v << 1) | 1) << (largo - 1)).to_le_bytes())[..largo].to_vec()
+                };
+                let mut b = buena[..en].to_vec();
+                b.extend(escrita);
+                b.extend_from_slice(&buena[en + 1..]);
+                match VariasConSal::<Blake3>::read_from(&mut SliceReader::new(&b)) {
+                    Err(DeserializationError::InvalidValue(m)) => {
+                        assert!(m.starts_with(winter_air::causa::USIZE), "{que} en {largo}: {m}")
+                    },
+                    otro => panic!("{que} en {largo}: se esperaba la causa, y dio {:?}", otro.err()),
+                }
+            }
+        }
     }
 
     /// §711: un lote de mas de 31 niveles es error con su causa, y no un panico. Antes:

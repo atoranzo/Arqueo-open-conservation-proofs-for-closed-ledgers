@@ -203,6 +203,28 @@ pub fn sin_panico<T, E>(
     }
 }
 
+/// **La huella del CONTENIDO de una prueba STARK**: la de sus compromisos -los de la traza, el
+/// del cociente y los de FRI, con el del resto-, sin sus aperturas ni su codificacion. `None` si
+/// la prueba no se lee. El resumen es [`zk_ssl_hash::huella_de_contenido`], con su dominio de bytes
+/// propio en el registro de dominios.
+///
+/// §715 (la maleabilidad de los bytes de la prueba). La huella de una operacion es la de
+/// los bytes de su prueba (`digest_of_proof`), y unos bytes distintos de la misma prueba -una
+/// longitud escrita de mas, una fila o un grupo FRI de mas, un nodo de mas en un lote- verificaban
+/// con otra huella: el reenvio tras un ciclo A->B->A volvia a debitar (medido en la capa). El
+/// lector y el canal del fork rechazan hoy todas las formas medidas; esta huella es la defensa de
+/// ESTRUCTURA para las que no se midieron. Los compromisos son lo que el probador manda ANTES de
+/// las consultas: dos pruebas con los mismos compromisos son la misma prueba para quien la aplica,
+/// y sin el testigo -la traza entera- nadie abre otros compromisos que verifiquen. La sal de cada
+/// hoja (`MerkleConSal`) los hace distintos en cada prueba honesta, aunque el enunciado se repita.
+///
+/// Se lee dentro de [`sin_panico`]: la llama quien todavia no ha juzgado la prueba.
+pub fn huella_del_contenido(prueba: &[u8]) -> Option<[u8; 32]> {
+    let p = sin_panico(|| Proof::from_bytes(prueba).map_err(|_| ()), |_| ()).ok()?;
+    let compromisos = winter_verifier::Serializable::to_bytes(&p.commitments);
+    Some(zk_ssl_hash::digest_to_bytes(&zk_ssl_hash::huella_de_contenido(&compromisos)))
+}
+
 /// **Las opciones que el juez ACEPTA, y solo esas** (decision D-4). Son las `proof_options()` de
 /// la capa; un test de la capa las ata (dos literales son dos productores si nadie los cruza).
 pub fn opciones() -> ProofOptions {

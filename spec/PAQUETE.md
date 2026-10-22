@@ -1378,10 +1378,10 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
 | **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
 | **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) |
-| **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) |
+| **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) · `prueba mal formada: usize no canonico` (§715: un `usize` de la prueba que no está en su escritura mínima; la pone el lector del fork, `crates/winter-air/src/proof/acotado.rs`, con el texto de `causa.rs`) · `UnconsumedBytes` y `not all bytes were consumed` (§715: bytes de sobra tras la prueba, o dentro de una apertura o del lote de una capa FRI; son el mismo error de winter-utils, `DeserializationError::UnconsumedBytes`, por su `Debug` y por su `Display`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
 | **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido | `InconsistentOodConstraintEvaluations` |
-| **consulta que no casa con el compromiso** | `TraceQueryDoesNotMatchCommitment` · `ConstraintQueryDoesNotMatchCommitment` · `FriVerificationFailed(RemainderCommitmentMismatch)` (§713: el resto FRI que no es el comprometido; la pone el canal del fork, `crates/winter-verifier/src/channel.rs`) |
+| **consulta que no casa con el compromiso** | `TraceQueryDoesNotMatchCommitment` · `ConstraintQueryDoesNotMatchCommitment` · `FriVerificationFailed(RemainderCommitmentMismatch)` (§713: el resto FRI que no es el comprometido; la pone el canal del fork, `crates/winter-verifier/src/channel.rs`) · `FriVerificationFailed(LayerCommitmentMismatch)` (§715: un grupo de más en una capa FRI; la pone el canal del fork, que exige tantos grupos como posiciones plegadas, y desde el §715 también una fila de la traza o del cociente de más da la variante de la tabla) |
 
 Cualquier otra variante de `VerifierError` nombra su causa por su nombre, como estas. `NO
 SOPORTADO` no es ninguna de ellas: dice algo de la implementación, no del sobre. Si
@@ -1755,6 +1755,19 @@ produce `tools/vectores/resto_ajeno.sh`. Antes del §713 daba VERDE en el kit y 
 implementación. Ahora es ROJO con salida 1, y el manifiesto pina la causa,
 `FriVerificationFailed(RemainderCommitmentMismatch)` (sección 6.1).
 
+**Desde el §715 una prueba tiene una sola escritura.** Hasta el §715, de los bytes de una prueba
+salían otros, sin el testigo ni la clave, que verificaban igual y tenían otra huella: un `usize`
+escrito con más bytes de los necesarios, una fila de más en las tablas o un grupo de más en una
+capa FRI. La edad gana quince negativos y el pago once, de la clave `prueba` de `edad-todos.json` y
+`pago-t-frontera.json`, cada uno con UNA mutación; los produce `tools/vectores/maleabilidad.py`. Con
+el kit de antes del §715, el `usize` escrito de más (en tres sitios), el grupo FRI de más y la fila
+de más daban VERDE con salida 0; en el pago no cabe la fila de más. Los demás fijan formas de la
+misma clase que el kit ya rechazaba: el número de restricciones más `2^32`, una capa FRI de más, un
+nodo de más en un lote (§659), un byte de cola (§653), tres colas dentro de una apertura o de un
+lote, y en la edad tres bytes que antes del §711 hacían entrar en pánico al lector. Los manifiestos
+pinan la causa: `prueba mal formada: usize no canonico`, la variante de `winter-verifier` de una
+apertura que no casa con su compromiso, y la cola con sus dos nombres (sección 6.1).
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1873,6 +1886,13 @@ implementación. Ahora es ROJO con salida 1, y el manifiesto pina la causa,
   el nodo por detrás, con su clase en el diario —`bifurcacion`, «bifurcación o reinicio sin
   diario», `DIARIO_VERSION` 5—, en la vuelta viva, en `--auditar` y en `--comparar`, que arman su
   sobre. Sus textos de rechazo entran en la 6.1; veintiún vectores nuevos en `ancla/`, ninguno
+  reescrito (sección 9).
+- §715 — una prueba tiene una sola escritura: el lector del fork exige la escritura mínima de cada
+  `usize`, y el canal, una fila por posición consultada y un grupo por posición plegada, en el kit
+  y en la segunda implementación. Hasta aquí, un `usize` escrito de más, una fila de más o un grupo
+  FRI de más verificaban con otros bytes. `prueba mal formada: usize no canonico` y la cola entran en
+  la clase «prueba mal formada» de la 6.1, y `FriVerificationFailed(LayerCommitmentMismatch)` en
+  «consulta que no casa con el compromiso»; veintiséis vectores nuevos en `edad/` y `pago/`, ninguno
   reescrito (sección 9).
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 

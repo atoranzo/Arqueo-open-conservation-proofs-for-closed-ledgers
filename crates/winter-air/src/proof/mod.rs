@@ -35,6 +35,10 @@ pub use table::Table;
 // ARQUEO (§575): el lector que no reserva lo que sus bytes no traen.
 mod acotado;
 use acotado::LectorAcotado;
+// ARQUEO (§715): la regla del `usize` canonico, una sola, tambien para el lote con sal de
+// la casa (`zk-ssl-air/src/sal.rs`); y la escritura minima sin la cota de la plataforma, para el
+// numero de restricciones del contexto, que se acota el mismo.
+pub use acotado::{leer_usize_canonico, leer_vint_canonico};
 
 #[cfg(test)]
 mod tests;
@@ -42,6 +46,10 @@ mod tests;
 // ARQUEO (§711): los testigos de que una prueba ajena se rechaza sin panico.
 #[cfg(test)]
 mod tests_sin_panico;
+
+// ARQUEO (§715): los testigos de que una prueba tiene una sola escritura de sus `usize`.
+#[cfg(test)]
+mod tests_canonica;
 
 // PROOF
 // ================================================================================================

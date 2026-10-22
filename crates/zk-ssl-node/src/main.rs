@@ -4992,6 +4992,95 @@ mod tests {
         assert!(r2.is_ok(), "el envio honesto se aplica despues: {r2:?}");
     }
 
+    /// §715 (la maleabilidad de los bytes de la prueba), por el cable: tras un ciclo
+    /// A->B->A las raices vuelven a las del principio (§654), y el primer recibo de Alicia,
+    /// reenviado por `zkssl_applySend` con el numero de restricciones de su prueba escrito con un
+    /// byte de mas, volvia a debitarla (medido en la capa: `Ok`, y Alicia en 700.000). Ahora es un
+    /// error con la causa del `usize`, sin PARADA, y Alicia no se mueve. Y el hermano: las
+    /// particiones de las opciones a cero llevaban el nodo a PARADA en 161a233 (medido);
+    /// hoy, error con su causa, sin PARADA.
+    #[test]
+    fn un_reenvio_maleado_por_el_cable_no_debita_y_el_nodo_no_para() {
+        use winterfell::math::fields::f64::BaseElement as E;
+        use zk_ssl::tests_support as ts;
+        let app = nodo(60);
+        let (params, alice) = {
+            let mut e = app.estado.lock().expect("mutex");
+            let l = &mut e.layer;
+            let alice = ts::open_and_fund(l, ts::SK_ALICE, 1_000_000);
+            let bob = ts::open_and_fund(l, ts::SK_BOB, 0);
+            let ea = ts::state_of(l, alice);
+            let raices = (l.state_root(), l.pending_root());
+            let a_bob = l.public_id_of(bob).expect("bob");
+            let ida = l
+                .send(E::new(ts::SK_ALICE), alice, &ea, a_bob, ts::salt_de(0x6541), 300_000)
+                .expect("ida");
+            l.apply_send(&ida, alice, &ea, 300_000).expect("aplicar ida");
+            let eb = ts::state_of(l, bob);
+            let c = l.claim(E::new(ts::SK_BOB), bob, &eb, &ida.notice).expect("cobro");
+            l.apply_claim(&c, bob, &eb, &ida.notice).expect("aplicar cobro");
+            let a_alice = l.public_id_of(alice).expect("alice");
+            let eb2 = ts::state_of(l, bob);
+            let vuelta = l
+                .send(E::new(ts::SK_BOB), bob, &eb2, a_alice, ts::salt_de(0x6542), 300_000)
+                .expect("vuelta");
+            l.apply_send(&vuelta, bob, &eb2, 300_000).expect("aplicar vuelta");
+            let ea2 = ts::state_of(l, alice);
+            let c2 = l.claim(E::new(ts::SK_ALICE), alice, &ea2, &vuelta.notice).expect("cobro 2");
+            l.apply_claim(&c2, alice, &ea2, &vuelta.notice).expect("aplicar cobro 2");
+            assert_eq!((l.state_root(), l.pending_root()), raices, "premisa: las raices vuelven");
+            let params = json!({
+                "receipt": wire::SendReceiptDto::from(&ida),
+                "sender": Q(alice),
+                "senderState": wire::ClientStateDto::from(&ea),
+                "amount": Q(300_000),
+            });
+            (params, alice)
+        };
+        let saldo = || {
+            let e = app.estado.lock().expect("mutex");
+            ts::state_of(&e.layer, alice).balance
+        };
+        assert_eq!(saldo(), 1_000_000);
+        // el control: los mismos bytes ya no valen (§654)
+        let r = despachar(&app, "zkssl_applySend", || dispatch(&app, "zkssl_applySend", params.clone()));
+        assert!(r.is_err(), "los mismos bytes: {r:?}");
+        let h = params["receipt"]["proof"].as_str().expect("la prueba en hex");
+        let b = zk_ssl_hash::hex_canonico(h).expect("la prueba en hex canonico");
+        // las restricciones van tras la cabecera de la traza, el meta, el modulo y las opciones
+        let meta = u16::from_le_bytes([b[4], b[5]]) as usize;
+        let opciones = 6 + meta + 1 + b[6 + meta] as usize;
+        let i = opciones + 10;
+        // su escritura (vint de winter-utils: el largo en los ceros finales del primer byte), y
+        // la misma con un byte mas
+        let n = b[i].trailing_zeros() as usize + 1;
+        assert!(n < 8, "las restricciones de la casa caben en menos de ocho bytes");
+        let mut v = [0u8; 8];
+        v[..n].copy_from_slice(&b[i..i + n]);
+        let v = u64::from_le_bytes(v) >> n;
+        let mut maleada = b[..i].to_vec();
+        maleada.extend_from_slice(&((((v << 1) | 1) << n).to_le_bytes())[..n + 1]);
+        maleada.extend_from_slice(&b[i + n..]);
+        let mut particiones = b.clone();
+        particiones[opciones + 8] = 0;
+        for (que, bytes, causa) in [
+            ("las restricciones en dos bytes", maleada, zk_ssl_air::causa::USIZE),
+            ("las particiones a cero", particiones, zk_ssl_air::causa::OPCIONES),
+        ] {
+            let mut malo = params.clone();
+            let hex: String = bytes.iter().map(|x| format!("{x:02x}")).collect();
+            malo["receipt"]["proof"] = json!(format!("0x{hex}"));
+            let r = despachar(&app, "zkssl_applySend", || dispatch(&app, "zkssl_applySend", malo));
+            let e = r.expect_err("no puede dar Ok");
+            assert_ne!(e.code, -32603, "{que}: no es un panico: {}", e.message);
+            assert!(e.message.contains(causa), "{que}: {}", e.message);
+            assert!(!e.message.contains(zk_ssl_air::PANICO_RECOGIDO), "{que}: {}", e.message);
+            assert!(app.parada.get().is_none(), "{que}: el nodo NO puede quedar en PARADA");
+            assert!(!app.estado.is_poisoned(), "{que}: el candado sano");
+            assert_eq!(saldo(), 1_000_000, "{que}: nadie debita dos veces");
+        }
+    }
+
     /// §711: el codigo de PRODUCCION de un fuente del nodo, sin sus `mod` de test. Un `mod ... {`
     /// en la columna 0 que sigue a un `#[cfg(test)]` (con sus docs y atributos en medio) se salta
     /// hasta su `}` en la columna 0, que es donde lo cierra rustfmt.

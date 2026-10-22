@@ -11,7 +11,12 @@ lee con el lector acotado, para que una prueba malformada no aborte el proceso- 
 no con un panico- `src/options.rs`, `src/air/trace_info.rs`, `src/proof/context.rs` (`Context::new`
 devuelve `Result`), `src/proof/queries.rs`, `src/proof/table.rs`, `src/proof/ood_frame.rs`,
 `src/proof/mod.rs` (las consultas unicas y la particion FRI), `src/causa.rs` (nuevo: las causas con
-nombre) y `src/proof/tests_sin_panico.rs` (nuevo: sus testigos); todo lo demas es upstream byte a
+nombre) y `src/proof/tests_sin_panico.rs` (nuevo: sus testigos), y desde el §715 -un `usize` de
+la prueba tiene una sola escritura, la minima, y la misma causa en toda plataforma-
+`src/proof/acotado.rs` (`leer_vint_canonico`, `leer_usize_canonico`, y el lector acotado que los
+usa), `src/proof/context.rs` (el numero de restricciones, en su escritura minima y acotado antes de
+pasar a `usize`), `src/proof/mod.rs` (los reexporta), `src/causa.rs` (`USIZE`) y
+`src/proof/tests_canonica.rs` (nuevo: sus testigos); todo lo demas es upstream byte a
 byte. Entra por
 `[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
 y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream

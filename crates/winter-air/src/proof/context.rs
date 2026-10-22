@@ -195,7 +195,19 @@ impl Deserializable for Context {
         let options = ProofOptions::read_from(source)?;
 
         // read total number of constraints
-        let num_constraints = source.read_usize()?;
+        // ARQUEO (§715, la maleabilidad de los bytes de la prueba): en su escritura minima
+        // y acotado a `1..=u32::MAX` como `u64`, ANTES de pasar a `usize`. Con `read_usize`, en
+        // `wasm32` un valor desde `2^32` caia en el rechazo de la plataforma, sin causa, y en 64
+        // bits en la del contexto: los mismos bytes, dos causas. Ahora es la del contexto en las
+        // dos. `to_elements` lo escribe `as u32`, y `n + 2^32` daba el mismo transcript.
+        let num_constraints = super::leer_vint_canonico(source)?;
+        if num_constraints > u64::from(u32::MAX) {
+            return Err(DeserializationError::InvalidValue(format!(
+                "{}: number of constraints is too big",
+                crate::causa::CONTEXTO
+            )));
+        }
+        let num_constraints = num_constraints as usize;
 
         // ARQUEO (§711): el contexto que trae la prueba cumple lo que `new` exige. Upstream no lo
         // miraba, y un dominio de extension que no cabe en 32 bits llegaba al verificador.

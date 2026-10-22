@@ -304,6 +304,17 @@ pub struct TransitionLog {
     /// propias: la instantanea ya lleva el registro) y se mantiene en `append_con_compromiso`. Las
     /// vias delegadas quedan fuera: atan raiz y suministro en su compromiso (`mint.rs`).
     aplicadas: std::collections::HashSet<[u8; 32]>,
+    /// §715 (la maleabilidad de los bytes de la prueba): la huella del CONTENIDO -los
+    /// compromisos, [`zk_ssl_air::huella_del_contenido`]- de cada prueba del titular aplicada en
+    /// ESTA vida del proceso. `aplicadas` mira los bytes, y unos bytes distintos de la misma
+    /// prueba tenian otra huella: el reenvio maleado tras un ciclo A->B->A volvia a debitar. El
+    /// lector y el canal del fork rechazan hoy las formas medidas; esto es la defensa de
+    /// estructura para las que no se midieron.
+    ///
+    /// ⚠️ NO persiste: el registro guarda la huella de los bytes, no las pruebas, y al arrancar
+    /// ([`Self::from_entries`]) este conjunto empieza vacio. Tras un reinicio queda solo
+    /// `aplicadas`, con el lector canonico detras.
+    aplicadas_por_contenido: std::collections::HashSet<[u8; 32]>,
 }
 
 /// §654: las clases cuya prueba es del titular y no puede aplicarse dos veces.
@@ -328,13 +339,20 @@ impl TransitionLog {
                 .filter(|e| es_del_titular(e.kind))
                 .map(|e| zk_ssl_hash::digest_to_bytes(&e.proof_digest))
                 .collect();
-        Self { entries, aplicadas }
+        // §715: el contenido no se guarda; ver `aplicadas_por_contenido`
+        Self { entries, aplicadas, aplicadas_por_contenido: Default::default() }
     }
 
     /// §654 (SEG-03): ¿esta prueba del titular ya se aplico? Sobre la huella de sus bytes, que el
     /// §653 hizo canonica: una cola ya no da otra huella de la misma prueba.
+    ///
+    /// §715: y sobre la huella de su CONTENIDO, la de sus compromisos, si se aplico en
+    /// esta vida del proceso. Una codificacion distinta de la misma prueba -un `usize` escrito de
+    /// mas, una fila, un grupo o un nodo de mas- tiene otros bytes pero los mismos compromisos.
     pub fn ya_aplicada(&self, proof: &[u8]) -> bool {
         self.aplicadas.contains(&zk_ssl_hash::digest_to_bytes(&digest_of_proof(proof)))
+            || zk_ssl_air::huella_del_contenido(proof)
+                .is_some_and(|h| self.aplicadas_por_contenido.contains(&h))
     }
 
     pub fn len(&self) -> usize {
@@ -391,6 +409,11 @@ impl TransitionLog {
         let proof_digest = digest_of_proof(proof);
         if es_del_titular(kind) {
             self.aplicadas.insert(zk_ssl_hash::digest_to_bytes(&proof_digest));
+            // §715: la huella del contenido, si la prueba se lee (las de los tests que
+            // asientan unos bytes cualesquiera no se leen, y se quedan con la de los bytes)
+            if let Some(h) = zk_ssl_air::huella_del_contenido(proof) {
+                self.aplicadas_por_contenido.insert(h);
+            }
         }
         let previous = self.head();
         let chain =

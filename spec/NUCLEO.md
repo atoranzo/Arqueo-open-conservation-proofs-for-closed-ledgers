@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 109 elementos alcanzables en `zk-ssl-verify` y 63 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 138, REFERENCIA 14, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 109 elementos alcanzables en `zk-ssl-verify` y 64 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 138, REFERENCIA 14, REGISTRO 16). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`, `actas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -239,6 +239,7 @@ real de sus llaves, no por la primera marca.
 | `OP_RECOVERY` | `hash/lib.rs` | REGISTRO | REGISTRO | `const` |
 | `commit_operation` | `hash/lib.rs` | REGISTRO | REGISTRO | `fn` |
 | `digest_of_proof` | `hash/lib.rs` | REGISTRO | REGISTRO | `fn` |
+| `huella_de_contenido` | `hash/lib.rs` | REGISTRO | REGISTRO | `fn` |
 | `sello_de_autorizacion` | `hash/lib.rs` | REGISTRO | REGISTRO | `fn` |
 | `sello_sin_prueba` | `hash/lib.rs` | REGISTRO | REGISTRO | `fn` |
 | `EntradaLog` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `struct` |

@@ -4678,40 +4678,21 @@ mod tests_cola_653 {
     }
 }
 
-/// **§711 · LA PUERTA DE REGRESION: una prueba ajena se rechaza con `Err`, nunca con un panico.**
-///
-/// Medido antes del arreglo: el byte 34 de las pruebas de edad y de pago a cero hacia salir al
-/// kit con 101 en `winter-air/src/options.rs:143`, y el byte 46 a cero, en `proof/queries.rs:97`,
-/// dentro de `verify`. Tres barridos sobre cuatro pruebas de `spec/vectors/` -edad, pago, prenda y
-/// cobro pendiente: el mismo fork y cuatro jueces-, contra el juez que el mando llama con cada una
-/// -la firma de la cabeza no toca la prueba: la comprueban los manifiestos, con el vector entero-,
-/// y cada mutacion tiene que ser `Err`, sin panico y sin la red de `zk_ssl_air::sin_panico` (que no
-/// puede esconder lo que tiene que arreglar el verificador):
-///
-/// 1. la cabecera: los bytes 0 a 49 con cada uno de `00 01 03 40 FF`, el 46 a cero incluido;
-/// 2. la forma: cada byte que da forma a la prueba -cuentas, longitudes, profundidades, el marco,
-///    las capas FRI y su particion-, leido de sus propios bytes, con los mismos cinco valores;
-/// 3. el azar: de uno a tres bytes de CUALQUIER sitio de la prueba, con semilla fija y presupuesto
-///    (`ARQUEO_SIN_PANICO_PRESUPUESTO`, 1.000 por prueba si no se dice).
-///
-/// Una mutacion de esas, de uno a tres bytes, que VERIFICA tambien cae: seria una prueba con otros
-/// bytes y la misma validez. ⚠️ Lo que cambia la estructura de la prueba no se barre aqui: la
-/// puerta mide el panico.
+/// Lo que comparten las puertas de la prueba STARK del mando: las cuatro pruebas de `spec/vectors/`
+/// que barren -edad, pago, prenda y cobro pendiente: el mismo fork y cuatro jueces- y el juez que
+/// el mando llama con cada una. La firma de la cabeza no toca la prueba: la comprueban los
+/// manifiestos, con el vector entero.
 #[cfg(test)]
-mod tests_sin_panico {
+mod tests_puerta {
     use super::*;
-    use std::sync::{Mutex, Once};
     use zk_ssl_air::pago_en_curso::verificar_contra_cabeza as juez_pago;
 
-    const VALORES: [u8; 5] = [0x00, 0x01, 0x03, 0x40, 0xFF];
     pub(super) const VECTORES: [&str; 4] = [
         "edad/edad-todos.json",
         "pago/pago-t-frontera.json",
         "prenda/prenda.json",
         "pendiente/cobro-inferior-importe.json",
     ];
-    const SEMILLA: u64 = 0x701701;
-    const PRESUPUESTO: usize = 1_000;
 
     pub(super) fn vector(nombre: &str) -> serde_json::Value {
         let ruta = format!("{}/../../spec/vectors/{nombre}", env!("CARGO_MANIFEST_DIR"));
@@ -4780,6 +4761,36 @@ mod tests_sin_panico {
             Juez::Cobro(af, c) => enlazar_cobro(prueba, af, c).map(|_| ()),
         }
     }
+}
+
+/// **§711 · LA PUERTA DE REGRESION: una prueba ajena se rechaza con `Err`, nunca con un panico.**
+///
+/// Medido antes del arreglo: el byte 34 de las pruebas de edad y de pago a cero hacia salir al
+/// kit con 101 en `winter-air/src/options.rs:143`, y el byte 46 a cero, en `proof/queries.rs:97`,
+/// dentro de `verify`. Tres barridos sobre cuatro pruebas de `spec/vectors/` -edad, pago, prenda y
+/// cobro pendiente: el mismo fork y cuatro jueces-, contra el juez que el mando llama con cada una
+/// -la firma de la cabeza no toca la prueba: la comprueban los manifiestos, con el vector entero-,
+/// y cada mutacion tiene que ser `Err`, sin panico y sin la red de `zk_ssl_air::sin_panico` (que no
+/// puede esconder lo que tiene que arreglar el verificador):
+///
+/// 1. la cabecera: los bytes 0 a 49 con cada uno de `00 01 03 40 FF`, el 46 a cero incluido;
+/// 2. la forma: cada byte que da forma a la prueba -cuentas, longitudes, profundidades, el marco,
+///    las capas FRI y su particion-, leido de sus propios bytes, con los mismos cinco valores;
+/// 3. el azar: de uno a tres bytes de CUALQUIER sitio de la prueba, con semilla fija y presupuesto
+///    (`ARQUEO_SIN_PANICO_PRESUPUESTO`, 1.000 por prueba si no se dice).
+///
+/// Una mutacion de esas, de uno a tres bytes, que VERIFICA tambien cae: seria una prueba con otros
+/// bytes y la misma validez. ⚠️ Lo que cambia la estructura de la prueba no se barre aqui: la
+/// puerta mide el panico.
+#[cfg(test)]
+mod tests_sin_panico {
+    use super::tests_puerta::{juez_de, juzgar, vector, VECTORES};
+    use super::*;
+    use std::sync::{Mutex, Once};
+
+    const VALORES: [u8; 5] = [0x00, 0x01, 0x03, 0x40, 0xFF];
+    const SEMILLA: u64 = 0x701701;
+    const PRESUPUESTO: usize = 1_000;
 
     /// Donde entro en panico cada hilo: lo apunta un gancho que se pone una vez y llama despues al
     /// que habia, para que los panicos de los demas tests se sigan viendo.
@@ -5111,7 +5122,8 @@ mod tests_sin_panico {
 /// prueba sin tocar el probador viven en `stark-experiment` (`falsadores_resto.rs`); aqui, el kit.
 #[cfg(test)]
 mod tests_resto {
-    use super::tests_sin_panico::{juez_de, juzgar, recorrer, vector, VECTORES};
+    use super::tests_puerta::{juez_de, juzgar, vector, VECTORES};
+    use super::tests_sin_panico::recorrer;
     use super::*;
 
     const CAUSA: &str = "FriVerificationFailed(RemainderCommitmentMismatch)";
@@ -5143,6 +5155,373 @@ mod tests_resto {
             let i = recorrer(&b).resto_en + 2;
             b[i] ^= 1;
             assert_eq!(juzgar(&j, &b), Err(CAUSA.to_string()), "{nombre}");
+        }
+    }
+}
+
+/// §715 (la maleabilidad de los bytes de la prueba): una prueba tiene UNA escritura. Sin
+/// el testigo, de los bytes de una prueba salian otros que verificaban igual: cada `usize` escrito
+/// de mas (el `read_usize` de winter-utils acepta cualquier escritura del mismo valor), una fila
+/// de mas en las tablas o un grupo de mas en una capa FRI (`get_root` no mira si sobran hojas).
+/// Medido con el kit de antes de este arreglo: VERDE y salida 0, con otros bytes y otra huella.
+/// Estos testigos reescriben las cuatro pruebas de la puerta (`tests_puerta`) pieza a pieza -con
+/// un lector que recuerda cuantos bytes ocupa cada `usize`- y exigen ROJO con su causa en cada
+/// forma.
+#[cfg(test)]
+mod tests_maleabilidad {
+    use super::tests_puerta::{juez_de, juzgar, vector, Juez, VECTORES};
+    use super::*;
+
+    /// Un `usize` de la prueba: su valor y cuantos bytes de mas lleva sobre su escritura minima.
+    #[derive(Clone)]
+    struct Vint {
+        v: u64,
+        de_mas: usize,
+    }
+
+    fn largo_minimo(v: u64) -> usize {
+        (1..9).find(|n| v < (1u64 << (7 * n))).unwrap_or(9)
+    }
+
+    impl Vint {
+        fn de(v: u64) -> Self {
+            Vint { v, de_mas: 0 }
+        }
+
+        fn leer(b: &[u8], i: &mut usize) -> Self {
+            let n = b[*i].trailing_zeros() as usize + 1;
+            let v = if n == 9 {
+                u64::from_le_bytes(b[*i + 1..*i + 9].try_into().unwrap())
+            } else {
+                let mut a = [0u8; 8];
+                a[..n].copy_from_slice(&b[*i..*i + n]);
+                u64::from_le_bytes(a) >> n
+            };
+            *i += n;
+            Vint { v, de_mas: n - largo_minimo(v) }
+        }
+
+        fn escribir(&self, o: &mut Vec<u8>) {
+            let n = (largo_minimo(self.v) + self.de_mas).min(9);
+            if n == 9 {
+                o.push(0);
+                o.extend_from_slice(&self.v.to_le_bytes());
+            } else {
+                o.extend_from_slice(&((((self.v << 1) | 1) << (n - 1)).to_le_bytes())[..n]);
+            }
+        }
+    }
+
+    fn tomar<'a>(b: &'a [u8], i: &mut usize, n: usize) -> &'a [u8] {
+        *i += n;
+        &b[*i - n..*i]
+    }
+
+    fn u16_de(b: &[u8], i: &mut usize) -> usize {
+        u16::from_le_bytes(tomar(b, i, 2).try_into().unwrap()) as usize
+    }
+
+    fn u32_de(b: &[u8], i: &mut usize) -> usize {
+        u32::from_le_bytes(tomar(b, i, 4).try_into().unwrap()) as usize
+    }
+
+    /// El lote con sal (`VariasConSal`): `depth`, los vectores de nodos con sus cuentas y las sales.
+    #[derive(Clone)]
+    struct Lote {
+        depth: u8,
+        vectores: Vint,
+        nodos: Vec<(Vint, Vec<u8>)>,
+        sales: Vec<u8>,
+    }
+
+    impl Lote {
+        fn leer(b: &[u8]) -> Self {
+            let mut i = 0;
+            let depth = tomar(b, &mut i, 1)[0];
+            let vectores = Vint::leer(b, &mut i);
+            let mut nodos = Vec::new();
+            for _ in 0..vectores.v {
+                let k = Vint::leer(b, &mut i);
+                let n = 32 * k.v as usize;
+                nodos.push((k, tomar(b, &mut i, n).to_vec()));
+            }
+            let n = u32_de(b, &mut i);
+            let sales = tomar(b, &mut i, 32 * n).to_vec();
+            assert_eq!(i, b.len(), "el lote acaba donde dice");
+            Lote { depth, vectores, nodos, sales }
+        }
+
+        fn escribir(&self) -> Vec<u8> {
+            let mut o = vec![self.depth];
+            let mut vectores = self.vectores.clone();
+            vectores.v = self.nodos.len() as u64;
+            vectores.escribir(&mut o);
+            for (k, nodos) in &self.nodos {
+                let mut k = k.clone();
+                k.v = (nodos.len() / 32) as u64;
+                k.escribir(&mut o);
+                o.extend_from_slice(nodos);
+            }
+            o.extend_from_slice(&((self.sales.len() / 32) as u32).to_le_bytes());
+            o.extend_from_slice(&self.sales);
+            o
+        }
+
+        fn sitios(&mut self) -> Vec<&mut Vint> {
+            let mut s = vec![&mut self.vectores];
+            s.extend(self.nodos.iter_mut().map(|(k, _)| k));
+            s
+        }
+    }
+
+    /// Unas consultas (`Queries`): los valores y la apertura, cada uno con su longitud.
+    #[derive(Clone)]
+    struct Consultas {
+        largo_valores: Vint,
+        valores: Vec<u8>,
+        largo_apertura: Vint,
+        lote: Lote,
+    }
+
+    /// Una prueba de la casa, en el orden de `Proof::write_into` del fork.
+    #[derive(Clone)]
+    struct Prueba {
+        cabeza: Vec<u8>,
+        restricciones: Vint,
+        unicas: u8,
+        compromisos: Vec<u8>,
+        consultas: Vec<Consultas>,
+        ood: Vec<u8>,
+        capas: Vec<(Vec<u8>, Lote)>,
+        cola: Vec<u8>,
+    }
+
+    impl Prueba {
+        fn leer(b: &[u8]) -> Self {
+            let mut i = 4;
+            i += 2 + u16::from_le_bytes([b[4], b[5]]) as usize; // meta
+            i += 1 + b[i] as usize; // el modulo
+            i += 10; // las opciones
+            let cabeza = b[..i].to_vec();
+            let restricciones = Vint::leer(b, &mut i);
+            let unicas = tomar(b, &mut i, 1)[0];
+            let desde = i;
+            let n = u16_de(b, &mut i);
+            tomar(b, &mut i, n);
+            let compromisos = b[desde..i].to_vec();
+            let mut consultas = Vec::new();
+            for _ in 0..2 + usize::from(b[1] != 0) {
+                let largo_valores = Vint::leer(b, &mut i);
+                let valores = tomar(b, &mut i, largo_valores.v as usize).to_vec();
+                let largo_apertura = Vint::leer(b, &mut i);
+                let lote = Lote::leer(tomar(b, &mut i, largo_apertura.v as usize));
+                consultas.push(Consultas { largo_valores, valores, largo_apertura, lote });
+            }
+            let desde = i;
+            for _ in 0..2 {
+                let n = u16_de(b, &mut i);
+                tomar(b, &mut i, n);
+            }
+            let ood = b[desde..i].to_vec();
+            let mut capas = Vec::new();
+            for _ in 0..tomar(b, &mut i, 1)[0] {
+                let n = u32_de(b, &mut i);
+                let valores = tomar(b, &mut i, n).to_vec();
+                let n = u32_de(b, &mut i);
+                capas.push((valores, Lote::leer(tomar(b, &mut i, n))));
+            }
+            let cola = b[i..].to_vec();
+            Prueba { cabeza, restricciones, unicas, compromisos, consultas, ood, capas, cola }
+        }
+
+        fn escribir(&self) -> Vec<u8> {
+            let mut o = self.cabeza.clone();
+            self.restricciones.escribir(&mut o);
+            o.push(self.unicas);
+            o.extend_from_slice(&self.compromisos);
+            for c in &self.consultas {
+                let mut lv = c.largo_valores.clone();
+                lv.v = c.valores.len() as u64;
+                lv.escribir(&mut o);
+                o.extend_from_slice(&c.valores);
+                let lote = c.lote.escribir();
+                let mut la = c.largo_apertura.clone();
+                la.v = lote.len() as u64;
+                la.escribir(&mut o);
+                o.extend(lote);
+            }
+            o.extend_from_slice(&self.ood);
+            o.push(self.capas.len() as u8);
+            for (valores, lote) in &self.capas {
+                o.extend_from_slice(&(valores.len() as u32).to_le_bytes());
+                o.extend_from_slice(valores);
+                let lote = lote.escribir();
+                o.extend_from_slice(&(lote.len() as u32).to_le_bytes());
+                o.extend(lote);
+            }
+            o.extend_from_slice(&self.cola);
+            o
+        }
+
+        /// Todos los `usize` de la prueba, en su orden: las restricciones, las dos longitudes de
+        /// cada `Queries` con las cuentas de su lote, y las cuentas del lote de cada capa FRI.
+        fn sitios(&mut self) -> Vec<&mut Vint> {
+            let mut s = vec![&mut self.restricciones];
+            for c in &mut self.consultas {
+                let Consultas { largo_valores, largo_apertura, lote, .. } = c;
+                s.push(largo_valores);
+                s.push(largo_apertura);
+                s.extend(lote.sitios());
+            }
+            for (_, lote) in &mut self.capas {
+                s.extend(lote.sitios());
+            }
+            s
+        }
+    }
+
+    /// Cada prueba de la puerta, con su juez; y el lector de arriba, fiel: escribe los mismos
+    /// bytes que lee, y la prueba sin tocar verifica.
+    fn pruebas() -> Vec<(&'static str, Juez, Vec<u8>, Prueba)> {
+        VECTORES
+            .iter()
+            .map(|nombre| {
+                let p = vector(nombre);
+                let j = juez_de(&p);
+                let b = hex_a_bytes(p["prueba"].as_str().unwrap()).unwrap();
+                let leida = Prueba::leer(&b);
+                assert_eq!(leida.escribir(), b, "{nombre}: el lector escribe lo que lee");
+                assert_eq!(juzgar(&j, &b), Ok(()), "{nombre}: la prueba sin tocar verifica");
+                (*nombre, j, b, leida)
+            })
+            .collect()
+    }
+
+    /// Juzga `m` y exige ROJO con `causa`, sin panico y sin la marca de la red.
+    fn exigir_rojo(j: &Juez, m: &[u8], buena: &[u8], que: &str, causa: &str) {
+        assert_ne!(m, buena, "{que}: la mutacion cambia los bytes");
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| juzgar(j, m)))
+            .unwrap_or_else(|_| panic!("CRITICO: {que} entra en panico"));
+        match r {
+            Ok(()) => panic!("{que}: VERIFICA, con otros bytes"),
+            Err(e) => {
+                assert!(e.contains(causa), "{que}: pide {causa}, da {e}");
+                assert!(!e.contains(zk_ssl_air::PANICO_RECOGIDO), "{que}: lo recogio la red: {e}");
+            }
+        }
+    }
+
+    /// Cada `usize` de las cuatro pruebas, escrito con un byte de mas y con nueve: ROJO con la
+    /// causa del `usize`. Con el kit de 161a233, todas VERDE (medido con su binario: 1.320 de
+    /// 1.320 recodificaciones de un sitio en `edad-todos.json`, 1.363 de 1.363 en `pago-t-seq`).
+    /// Falsador: con `read_usize` de upstream en el lector del fork y en el lote con sal, todas
+    /// verifican.
+    #[test]
+    fn cada_usize_escrito_de_mas_es_rojo_con_su_causa() {
+        let mut n = 0;
+        for (nombre, j, buena, leida) in pruebas() {
+            let sitios = leida.clone().sitios().len();
+            for k in 0..sitios {
+                for de_mas in [1usize, 8] {
+                    let mut p = leida.clone();
+                    {
+                        let mut sitios = p.sitios();
+                        let s = &mut sitios[k];
+                        if largo_minimo(s.v) == 9 {
+                            continue;
+                        }
+                        s.de_mas = de_mas;
+                    }
+                    let que = format!("{nombre}, usize {k} con {de_mas} bytes de mas");
+                    exigir_rojo(&j, &p.escribir(), &buena, &que, zk_ssl_air::causa::USIZE);
+                    n += 1;
+                }
+            }
+        }
+        eprintln!("maleabilidad: {n} usize escritos de mas, todos ROJO con su causa");
+        assert!(n > 1000, "{n}");
+    }
+
+    /// El numero de restricciones mas 2^32, en su escritura minima: `Context::to_elements` lo
+    /// escribe `as u32`, y daba el mismo transcript. ROJO con la causa del contexto, que ya puso
+    /// el §711; aqui se vigila como forma de la maleabilidad.
+    #[test]
+    fn las_restricciones_mas_dos_a_la_32_son_rojo_con_su_causa() {
+        for (nombre, j, buena, leida) in pruebas() {
+            let mut p = leida.clone();
+            p.restricciones = Vint::de(p.restricciones.v + (1u64 << 32));
+            let que = format!("{nombre}, restricciones + 2^32");
+            exigir_rojo(&j, &p.escribir(), &buena, &que, zk_ssl_air::causa::CONTEXTO);
+        }
+    }
+
+    /// Una fila de mas -una copia de la primera- en cada tabla, con su sal, y una consulta unica
+    /// mas, donde cabe (las unicas no pasan de las 42 de las opciones). ROJO: la fila no casa con
+    /// ninguna posicion consultada. Antes, VERDE en `edad-todos.json` (40 unicas): medido con el
+    /// kit de antes de este arreglo, 75.947 -> 77.051 bytes.
+    #[test]
+    fn una_fila_de_mas_es_rojo() {
+        let mut n = 0;
+        for (nombre, j, buena, leida) in pruebas() {
+            if leida.unicas >= 42 {
+                continue;
+            }
+            let mut p = leida.clone();
+            p.unicas += 1;
+            for c in &mut p.consultas {
+                let fila = c.valores.len() / leida.unicas as usize;
+                let primera = c.valores[..fila].to_vec();
+                c.valores.extend(primera);
+                let sal = c.lote.sales[..32].to_vec();
+                c.lote.sales.extend(sal);
+            }
+            let que = format!("{nombre}, una fila de mas");
+            exigir_rojo(&j, &p.escribir(), &buena, &que, "TraceQueryDoesNotMatchCommitment");
+            n += 1;
+        }
+        assert!(n >= 1, "al menos edad-todos.json tiene sitio para una fila");
+    }
+
+    /// Un grupo de mas -una copia del primero- en cada capa FRI, con su sal. ROJO con la causa de
+    /// una capa que no casa con su compromiso. Antes, VERDE en edad y en pago (medido).
+    #[test]
+    fn un_grupo_fri_de_mas_es_rojo() {
+        for (nombre, j, buena, leida) in pruebas() {
+            for capa in 0..leida.capas.len() {
+                let mut p = leida.clone();
+                let (valores, lote) = &mut p.capas[capa];
+                let grupo = valores[..8 * 16].to_vec(); // el plegado de la casa, en la cuadratica
+                valores.extend(grupo);
+                let sal = lote.sales[..32].to_vec();
+                lote.sales.extend(sal);
+                let que = format!("{nombre}, un grupo de mas en la capa FRI {capa}");
+                exigir_rojo(&j, &p.escribir(), &buena, &que, "LayerCommitmentMismatch");
+            }
+        }
+    }
+
+    /// Un nodo de mas al final del primer vector de cada lote (§659, SEG-03b), en las tablas y en
+    /// las capas FRI: ROJO, cada uno con la causa de lo que abre.
+    #[test]
+    fn un_nodo_de_mas_en_cualquier_lote_es_rojo() {
+        for (nombre, j, buena, leida) in pruebas() {
+            let causas = ["TraceQueryDoesNotMatchCommitment", "ConstraintQueryDoesNotMatchCommitment"];
+            let n = leida.consultas.len();
+            for k in 0..n + leida.capas.len() {
+                let mut p = leida.clone();
+                let lote = if k < n { &mut p.consultas[k].lote } else { &mut p.capas[k - n].1 };
+                let Some((_, nodos)) = lote.nodos.first_mut() else { continue };
+                if nodos.is_empty() {
+                    continue;
+                }
+                let otro = nodos[..32].to_vec();
+                nodos.extend(otro);
+                let causa = if k + 1 < n { causas[0] } else if k + 1 == n { causas[1] } else {
+                    "LayerCommitmentMismatch"
+                };
+                let que = format!("{nombre}, un nodo de mas en el lote {k}");
+                exigir_rojo(&j, &p.escribir(), &buena, &que, causa);
+            }
         }
     }
 }

@@ -66,3 +66,25 @@ neg-marca-m32-y-opciones.json|1|pago: marca de la ocultacion Ok(Some(Marca { m: 
 # fuente) y repite la segunda implementacion. No se reescriben (regla 2 del PROCESO).
 neg-prueba-opciones-cero.json|1|prueba mal formada: opciones fuera de rango
 neg-prueba-consultas-cero.json|1|prueba mal formada: consultas fuera de rango
+# §715 (spec/PAQUETE.md, seccion 6.1), la maleabilidad de los bytes de la prueba: ocho negativos
+# NUEVOS que salen de `pago-t-frontera.json` por UNA mutacion de su prueba cada uno, con
+# `tools/vectores/maleabilidad.py`; las mismas formas que en `edad/` salvo la fila de
+# mas, que no cabe (las consultas unicas de esta prueba ya son las 42 de las opciones). Con el kit
+# de antes de este arreglo, VERDE y salida 0 en los tres `usize` escritos de mas y en el grupo FRI
+# de mas (medido); la segunda implementacion daba VERDE ademas en el nodo de mas y en la cola. Jamas
+# se reescriben (regla 2 del PROCESO).
+neg-prueba-usize-no-minimo.json|1|prueba mal formada: usize no canonico
+neg-prueba-lote-usize-no-minimo.json|1|prueba mal formada: usize no canonico
+neg-prueba-fri-usize-no-minimo.json|1|prueba mal formada: usize no canonico
+neg-prueba-restricciones-alias.json|1|prueba mal formada: contexto fuera de rango
+neg-prueba-capa-fri-de-mas.json|1|prueba mal formada: FRI fuera de rango
+neg-prueba-grupo-fri-de-mas.json|1|pago: FriVerificationFailed(LayerCommitmentMismatch)
+neg-prueba-nodo-de-mas.json|1|pago: TraceQueryDoesNotMatchCommitment
+neg-prueba-cola.json|1|UnconsumedBytes
+# §715 (spec/PAQUETE.md, seccion 6.1), la cola dentro de una apertura: las tres colas de `edad/`
+# -un byte 0x00 al final dentro de la apertura de la traza, de la del cociente y del lote de la capa
+# FRI 0, con su longitud corregida-, sobre `pago-t-frontera.json`. El kit ya las rechazaba; la
+# segunda implementacion las aceptaba (medido). Jamas se reescriben (regla 2 del PROCESO).
+neg-prueba-cola-apertura-traza.json|1|not all bytes were consumed
+neg-prueba-cola-apertura-cociente.json|1|not all bytes were consumed
+neg-prueba-cola-lote-fri.json|1|not all bytes were consumed

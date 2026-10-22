@@ -7,7 +7,10 @@ hasta esta correccion aqui decia <<que ningun probador de ARQUEO devuelve>>, cie
 `src/lib.rs` (spike-b-p4r3, sesiones 166 a 172) y, desde el §711, `src/channel.rs` -las capas FRI
 que el dominio exige, ni una menos ni una mas, y la cuenta de segmentos como error- y el `expect` de
 los aleatorios de `src/lib.rs`, que pasa a `RandomCoinError`; desde el §713, `src/channel.rs` ata ademas el
-resto FRI a su compromiso (`read_remainder`: `winter-fri` 0.13.1 no lo comprueba); todo lo demas es
+resto FRI a su compromiso (`read_remainder`: `winter-fri` 0.13.1 no lo comprueba); y desde el §715,
+`src/channel.rs` exige tantas filas de la traza y del cociente, y tantos grupos de cada capa FRI
+(`read_layer_queries`), como posiciones consultadas: `get_root` de `winter-crypto` no mira si sobran
+hojas, y una fila o un grupo de mas verificaban con otros bytes; todo lo demas es
 upstream byte a byte. Entra por
 `[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
 y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream

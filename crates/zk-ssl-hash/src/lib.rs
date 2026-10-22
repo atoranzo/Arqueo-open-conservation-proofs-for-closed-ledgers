@@ -1735,6 +1735,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: bytes ZK-SSL-ledger-key-v2
 // REGISTRO: bytes ZK-SSL-keystore-v2
 // REGISTRO: bytes ZK-SSL-public-inputs-v1
+// REGISTRO: bytes ZK-SSL-proof-content-v1
 
 /// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
 /// congelacion no pueda reutilizarse como autorizacion de emision.
@@ -1798,6 +1799,11 @@ const DOMINIO_LOTE: &[u8] = b"ZK-SSL-batch-v1";
 /// entradas, y de longitud distinta.
 const DOMINIO_PI: &[u8] = b"ZK-SSL-public-inputs-v1";
 
+/// **Dominio de la huella del contenido de una prueba** (§715, la maleabilidad de los bytes
+/// de la prueba): la familia bytes, como [`DOMINIO_PRUEBA`], del que se separa. La huella de los
+/// compromisos de una prueba no es la de unos bytes de prueba.
+const DOMINIO_CONTENIDO: &[u8] = b"ZK-SSL-proof-content-v1";
+
 /// El molde compartido de los resumenes de bytes: dominio y **longitud
 /// codificada** por delante (§116: dos entradas que difieran en ceros
 /// finales no colisionan). UN productor para [`digest_of_proof`] y
@@ -1835,6 +1841,15 @@ fn resumen_con_dominio(dominio: &[u8], datos: &[u8]) -> Digest {
 /// colisionan).
 pub fn digest_of_proof(proof: &[u8]) -> Digest {
     resumen_con_dominio(DOMINIO_PRUEBA, proof)
+}
+
+/// **La huella del CONTENIDO de una prueba** (§715, la maleabilidad de los bytes de la
+/// prueba): el molde de [`digest_of_proof`] con su dominio propio, sobre los bytes de los
+/// compromisos de la prueba (`Commitments`: los de la traza, el del cociente y los de FRI), sin
+/// sus aperturas ni su codificacion. La compone `zk_ssl_air::huella_del_contenido`, que lee la
+/// prueba; la usa la capa para reconocer una prueba ya aplicada aunque llegue con otros bytes.
+pub fn huella_de_contenido(compromisos: &[u8]) -> Digest {
+    resumen_con_dominio(DOMINIO_CONTENIDO, compromisos)
 }
 
 /// **Huella de la clave del operador** (RFC-0012, D-B; §591): el molde de
