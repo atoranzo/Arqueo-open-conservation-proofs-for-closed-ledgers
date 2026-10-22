@@ -34,7 +34,7 @@
 | E2 — la sección normativa | la sección «Versionado y compatibilidad» de `spec/RPC.md`, con el texto de la D-C, y las remisiones desde `spec/PAQUETE.md` §6, `spec/NUCLEO.md` §3, `doc/KIT.md` §0 y la fila «Estado» de los dos README | no (texto) | **construida (§801)** ⚠️ §801: hasta aquí decía «sin construir» |
 | E3a — la compuerta de la superficie | una herramienta del bucle del canon que deriva cada superficie de su productor y la compara con la lista de la sección (D-D) | no | **construida (§801)**: `tools/check_superficie.py`, nombre provisional que confirma el autor ⚠️ §799: hasta aquí decía «propuesta, no escrita» ⚠️ §801: hasta aquí decía «sin construir; **decidida (§799), no escrita**» |
 | E3b — la compuerta de las pruebas que viajan | una prueba positiva por familia que viaja, juzgada en cada canon por el verificador del nodo y del kit (D-D) ⚠️ §826: el del kit, sólo en las cinco familias del kit; las de la capa las juzga el del nodo, porque el kit no verifica pruebas de envío, cobro, quema ni umbral (`spec/rfc/0018-el-tren-0-5.md:110`), como dice la «Compatibilidad» del RFC-0017 | no por sí misma | sin construir; con la E3 de la D-G del RFC-0018, en el corte |
-| E4 — el corte, bajo la política | el corte `zkssl/0.5` con su aviso, sus mudanzas y el kit 0.5.0, como primera ruptura que la cumple | **sí**: la del RFC-0018, y con ella las del RFC-0017, el RFC-0019 y el RFC-0020; qué superficie rompe cada etapa lo dice la tabla de su RFC ⚠️ §826: decía «**sí** (la del RFC-0018)» | sin construir |
+| E4 — el corte, bajo la política | el corte `zkssl/0.5` con su aviso, sus mudanzas y el kit 0.5.0, como primera ruptura que la cumple | **sí**: la del RFC-0018, y con ella las del RFC-0017, el RFC-0019 y el RFC-0020; qué superficie rompe cada etapa lo dice la tabla de su RFC ⚠️ §826: decía «**sí** (la del RFC-0018)» ⚠️ §865: y la del RFC-0023 si llega construido, como propone su decisión 9, sin acordar con quien lleva el tren | sin construir |
 
 ## Motivación
 
@@ -304,7 +304,7 @@ su estado en la cabecera, y eso cumpliría la R5 para lo que ya tiene construido
 aquí decía «sería». ⚠️ §826: no la cumplía entera. La R5 pide también la tabla de etapas con la
 superficie que rompe cada una, y ni el RFC-0018 ni el RFC-0019 tenían tabla; la tienen desde el
 §826; y desde entonces la del RFC-0017 nombra la superficie de su E2, que decía «NO», y la del
-RFC-0020, la de su E4.
+RFC-0020, la de su E4. ⚠️ §865: el RFC-0023, si viaja en él, la tiene desde el §827.
 
 ## Decisiones (del autor, §799)
 

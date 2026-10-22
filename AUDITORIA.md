@@ -68933,3 +68933,277 @@ escenarios de la decisión pasa del doble, la pasada baja a `--completo`, con su
 
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §865 — cinco menores de la pila, con marca y sin mover citas: los «al final» de `snapshot.rs` que ya no lo están, los dos tests de la 121 que limpian también si caen, el §258 en la lista de asientos del RFC-0016, el RFC-0023 en el corte del tren `zkssl/0.5` con su condición y sin acuerdo, y de qué sello son las «1364 declaradas» y las «1349 declared»
+
+El commit que lleva este asiento, sobre el §864. Un sello de arreglos menores, sin un cambio en lo
+que hace la biblioteca: seis marcas en comentarios de `crates/zk-ssl/src/snapshot.rs`; en
+`crates/zk-ssl/src/tests.rs`, una marca en un comentario, una guarda nueva al final del fichero y su
+uso en dos líneas que ya estaban; cinco marcas en cuatro RFC —una en el 0016, una en el 0018, dos en
+el 0021 y una en el 0023—; una en `PAPER.md`, otra en `PAPER_EN.md` y otra en `PRINCIPIOS.md`; y
+este asiento. Nueve ficheros fuera de él, ninguno nuevo, con 60 inserciones y 17 borrados
+(`git diff --stat`). No cambia ningún contador, ni un pin, ni un vector, ni un KAT, ni el
+`Cargo.lock`, ni el kit. Es el §865, el número libre que sigue al §864 en el rango del autor, el
+§860-§889.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión lo escribió y lo revisó
+sobre el §864 de otra pila, que llevaba debajo un sello de la E3 del RFC-0020 que no va en esta
+cadena, porque cambia la biblioteca del kit y queda para después de la 0.4.4; lo porta sobre el §864
+de esta punta (abajo, «El porte»).
+
+**De dónde sale.** De la lista de menores que dejaron las revisiones de los §819 a §829 y las de los
+borradores del §863, del §864 y de la E3 del RFC-0020, por fichero y línea, con los números del
+§829, que en estos nueve ficheros son los de `3a4176c`. De esa punta a la del §864 no entra ni sale
+ninguna línea de los nueve ficheros (`git diff` del §829 al §864): sólo cambian en su sitio, en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, las cifras de los totales, y en `PRINCIPIOS.md`, la del
+nodo en el desglose (`:413`, de 229 a 230); así que las líneas de la lista son las de hoy. Son cinco
+de la lista, por su número en ella: el 2, el 4, el 9, el 10 y el 13. El 2 y el 4 vienen de las
+revisiones del §819 al §821; el 9 y el 10, de las del §825 y del §827; y el 13, de las de los
+borradores del §863 y de la E3 del RFC-0020. Lo que hace cada arreglo, y por qué, es de la sesión.
+Las revisiones de este mismo sello dejaron una frase falsa en este asiento —el §551 por el §553,
+abajo, en «Lo que NO hace»— y menores que se arreglan aquí, cada uno en su punto: una séptima frase
+del 2, partida en dos líneas; hasta dónde cubre la guarda del 4, y en cuál de los dos tests va el
+libro; la marca del RFC-0023 del 10, que no decía que lo nombran sin acordar; la regla de las marcas
+del 13; y números de línea y citas de este asiento que no eran exactos. La revisión del porte dejó
+cuatro frases de este asiento que no eran del todo exactas —una de este párrafo, dos de «El porte» y
+una de «La caída»—, arregladas en su sitio, y una cita rancia que no es de este sello (abajo, en «Lo
+que NO hace»).
+
+**Lo que hace.**
+
+1. **El 2: los «al final» de `snapshot.rs`.** La lista: `crates/zk-ssl/src/snapshot.rs:85` y `:176`,
+   «`rehusar_en_claro`, al final»; la `:184`, «(al final)», de `barrer_descifrada`; y con el mismo
+   patrón, la `:179`, «`abrir_sellada`, al final», y la `:208`, «`escribir_entera`, al final». Ya no
+   están al final. El fichero acaba hoy, en este orden, en el bloque del §702 (su cabecera en la
+   `:1540`, con `abrir_sellada` en la `:1565`), `barrer_descifrada` (§812, `:1597`),
+   `rehusar_en_claro` (§817, `:1630`), lo del §819 (`avisar_del_barrido` y `ruta_del_borrado`, de la
+   `:1639` a la `:1685`), lo del §820 (su cabecera en la `:1687`, con `escribir_entera` en la
+   `:1735` y sus ayudantes detrás) y lo del §821 (su cabecera en la `:1909`, con
+   `conservar_la_clave` en la `:1939`), que es lo último. Cada una gana en su línea «⚠️ §865: ya no
+   está al final» —o «ya no», en las dos de `//`—, con lo que va detrás. Con `grep -n 'al final'`
+   salió una sexta del mismo patrón, que la lista no traía: la `:305`, «Entera o nada: un temporal
+   al lado y un cambio de nombre (al final)», que es `escribir_entera`; lleva la misma marca. Y una
+   séptima, en `tests.rs`, que ese `grep` no ve porque está partida en dos líneas: el comentario del
+   test del §817 dice «(`rehusar_en_claro`, al / final de `snapshot.rs`)», en la `:5836-5837`. Sale
+   buscando un «al» a final de línea seguido de un «final» al principio de la siguiente, y en
+   `snapshot.rs` y `tests.rs` no hay otra del patrón: la otra que sale, la `tests.rs:4428-4429`,
+   «solo al / final del paso 4», es de otra cosa. Gana «; ⚠️ §865: ya no lo está», dentro de su
+   paréntesis, en la `:5837`. Las demás que dicen «al final» se quedan: la `:35`, la `:179` en su
+   «`conservar_la_clave`, al final», la `:462`, la `:1545` y la `:1717`, que nombran
+   `conservar_la_clave` y siguen siendo ciertas; la `:1629` y la `:1938`, que hablan del final de
+   `tests.rs` y ya marcó el §828; la `:1128`, que habla del registro dentro de la instantánea, no
+   del fuente; la `:1663`, «con una barra al final», que es de una ruta; y los encabezados de bloque
+   (abajo, «Lo que NO hace»). Es sólo comentario: no hace falta mutante, y no lo hay. **Las
+   huellas.** Ninguna del árbol fija el sha256 de `snapshot.rs`: `git grep` de sus dieciséis
+   primeras cifras da 0, en el §864 y aquí. Lo que el §819, el §820, el §821 y el §828 cambiaron a
+   mano en `doc/ecst/VERIFICACION.md`, en la línea de M11 (la `:1549`), es la cifra de tests de
+   `zk-ssl` que fija el canon, 515 desde el §828, no una huella, y este sello no mueve ningún test.
+   `check_publicadas` y `check_cifras` dan la misma salida que en el §864, byte a byte (abajo,
+   «Medido aquí»).
+2. **El 4: los dos tests de la 121 limpian también si caen.** La lista:
+   `una_capa_importada_de_una_cifrada_se_reexporta_cifrada_con_su_cabecera` y
+   `una_capa_importada_de_una_v1_se_reexporta_en_la_version_2` (`tests.rs:6254` y `:6341`) borran al
+   empezar la instantánea, la reexportada y sus `.exportando`, y al acabar, pero no al caer: dejan
+   en el directorio temporal `zkssl_e4_reexporta_121_*` y `zkssl_v1_reexporta_121_*`, como declaró
+   el §821. Antes de tocar, las citas vivas: `git grep` de `tests.rs:` seguido de un número, fuera
+   de `AUDITORIA.md`, da citas en `BACKLOG.md`, `doc/ROTACION_DE_CUENTAS.md`,
+   `doc/ecst/VERIFICACION.md` y los JSON de `doc/ecst/borrador/`. La más alta es la `:2987`: la
+   citan los borradores y `doc/ecst/VERIFICACION.md:1212`, un documento vivo, que la da suelta
+   («`tests.rs:2706 (…) y :2987 (…)`»), así que allí ese `grep` no la ve; las dos, muy por debajo de
+   la `:5837` y de la `:6254`. Así que cabe sin mover ninguna. La guarda, `QuitarAlSalir`, con su
+   `Drop`, y su constructor, `quitar_al_salir`, van al final del fichero, detrás de lo del §828
+   (tras la `:7974`, hasta la `:8017`), con un comentario que dice por qué y hasta dónde cubre; y
+   cada test la declara en la línea que ya formaba la ruta de su reexportada (`:6259` y `:6348`),
+   detrás de esa sentencia, sin añadir líneas: la del libro cifrado, con el libro, que borra con
+   `quitar_e4` —el libro, sus hermanos y su cerrojo—, y la de la v1, sin él. El test la declara
+   después de sus rutas y antes de sus capas, así que se suelta la última, con las capas ya
+   soltadas. Cubre lo que cae después de declararla, no antes: si cae `libro_e4`, que en el del
+   libro cifrado abre el libro antes de la guarda (`:6257`), el libro se queda; lo dice el
+   comentario del final. Es el molde de `Temporal`, la guarda de
+   `publicar_no_retrocede_ni_se_bifurca` en `crates/zk-ssl-medio/src/testigos.rs`. El canon no corre
+   `rustfmt` —`tools/canon.sh` no lo nombra; lo recomienda `CONTRIBUTING.md`—, y `tests.rs` ya no
+   estaba formateado: `rustfmt --edition 2021 --check`, sobre una copia, da 292 diferencias en el
+   del §864 y 294 en éste, con la última en la `:7968`. Las dos nuevas son las dos líneas de uso,
+   que `rustfmt` partiría en dos, moviendo todo lo de debajo; el bloque del final, ninguna. Dos
+   sentencias en una línea a cambio de no mover ninguna es de la sesión, y reversible.
+3. **El 9: el §258 en la lista de asientos del RFC-0016.** La lista: «Asiento(s) de AUDITORIA»
+   (`spec/rfc/0016-un-valor-una-escritura.md:45-49`) no lleva el §258, que la D-E cita (`:127-129`:
+   «la cabecera de `embeber` las censaba desde el §258»). La marca va al final de la lista, en su
+   `:49`, detrás de la del §825: «⚠️ §865: y callaba el §258, que cita la D-E.». El §258 es «La
+   hoja, componible sin el probador» (`## 258.` en este registro), y la cabecera de `embeber` lo
+   nombra (`crates/zk-ssl-hash/src/lib.rs:118`).
+4. **El 10: el RFC-0023 en el corte del tren `zkssl/0.5`, con su condición.** La lista: la fila «el
+   corte» del RFC-0018 (`spec/rfc/0018-el-tren-0-5.md:467`) nombra lo que entra en él —la E3 del
+   RFC-0019, la E4 del RFC-0020, la E3b y la E4 del RFC-0021 y la ruptura de la E2 del RFC-0017— y
+   no el RFC-0023, una ruptura R1 que viaja en el corte «si llega construido»
+   (`spec/rfc/0023-el-reloj-de-la-caducidad.md:26-28`); y la otra mitad, en el RFC-0021. Comprobado
+   en el texto del RFC-0023: su cabecera dice «Viaja en el corte del RFC-0018 si llega construido;
+   si no, en el corte siguiente (decisión 9)»; su decisión 9 (`:392-396`), «Sí, si la E2 y la E3
+   llegan construidas», y que si viaja «lo acuerda quien lo lleva (RFC-0018), y queda por coordinar:
+   la fila del corte del RFC-0018 no lo nombra todavía, ni la Compatibilidad del RFC-0021, que
+   cuenta qué RFC del corte cumplen ya la R5»; y su «Lo que NO hace», que no lo acuerda. Su tabla de
+   etapas da la superficie: la E3 rompe «S3, lo firmado», y la E4 es el corte. Así que las marcas
+   nombran la propuesta, con su condición, y no un acuerdo que no hay:
+   - en la fila del corte del RFC-0018, en la celda de lo que entrega, detrás de la ruptura del
+     RFC-0017: «⚠️ §865: y la E3 y la E4 del RFC-0023 (S3, lo firmado), si llega construido, como
+     propone su decisión 9; que viaje lo acuerda quien lleva el tren, y no está acordado»;
+   - en el RFC-0021 caben dos, y van las dos: la fila de su E4 (`:37`), que enumera las rupturas del
+     corte, «⚠️ §865: y la del RFC-0023 si llega construido, como propone su decisión 9, sin acordar
+     con quien lleva el tren»; y su «Compatibilidad» (`:307`), la que cuenta qué RFC del corte
+     tienen ya la tabla de etapas que pide la R5, «⚠️ §865: el RFC-0023, si viaja en él, la tiene
+     desde el §827.»: el RFC-0023 nace en el §827 con ella, y sólo el §827 lo toca (`git log`);
+   - y en el RFC-0023, cuya decisión 9 dejaba de ser cierta en eso, «⚠️ §865: lo nombran sin
+     acordar.», en la `:396`: las dos lo nombran como propuesta, y su «queda por coordinar» (`:394`)
+     sigue en pie. Esto no lo traía la lista: lo que este sello deja falso, lleva marca.
+5. **El 13: de qué sello son las «1364 declaradas» y las «1349 declared».** La lista: `PAPER.md:39`,
+   `PAPER_EN.md:35-36` y `PRINCIPIOS.md:416` dicen «1364 declaradas», «1349 declared» y «1364
+   declarados»; nadie las mantiene desde el §497, y los asientos sólo repetían que no se tocan. Con
+   `git log -S`: «1364 declaradas» y «1364 declarados» entran en el §497 (`8d064c6`, su `-B`), y el
+   «1349» de `PAPER_EN.md`, en el §493 (`7bb3942`, su `-B`); el §495 y el §497 movieron las dos
+   españolas y no la inglesa. Las dos eran una suma de los pines del canon: el §493 dice «declarados
+   **1345 -> 1349** (1331 + 18)», los pines con largos más los 18 ignorados, y el §497, «**1357 ->
+   1364**», con la suma con largos en 1346 (1346 + 18 = 1364); esos dos días `check_tests` contaba
+   1351 y 1366 (sus asientos). Cada una gana una marca en su línea, detrás de «declaradas»,
+   «declared» y «declarados»: «(⚠️ §865: del §497; hoy las cuenta, con otra regla,
+   `tools/check_tests.py`)» en `PAPER.md`; «(⚠️ §865: from §493; today `tools/check_tests.py` counts
+   them, by another rule)» en `PAPER_EN.md`; y «(⚠️ §865: del §497; hoy los cuenta, con otra regla,
+   `tools/check_tests.py`)» en `PRINCIPIOS.md`. «Con otra regla», porque `check_tests` no cuenta lo
+   que contaban esas cifras, ni lo contaba entonces (abajo, «Deducido»). Sin la cifra de hoy, que
+   envejecería en el sello siguiente. Antes de tocarlas, lo que las fija: ni `check_cifras` ni
+   `check_figures` las leen —`git grep` de «1364», «1349» y «declarad» en `tools/` sólo da, de esto,
+   el ejemplo de ruido del comentario de `check_cifras.py:143`—, y las dos dan con las marcas la
+   misma salida que sin ellas. En los dos papers la marca va dentro del inciso, delante de su raya
+   de cierre, y en `PRINCIPIOS.md`, detrás de la cifra, fuera del desglose; ninguna añade una raya
+   ni un «N de» que lea el desglose de `check_cifras`.
+6. **Este asiento.**
+
+**Las columnas.** Lo nuevo de `tests.rs` y este asiento, salvo su título, como los de antes, no
+pasan de 100. Las marcas van en la misma línea, como las de la casa, y varias la dejan por encima:
+en `snapshot.rs`, las seis —la `:85`, la `:176`, la `:179` y la `:208` ya pasaban; la `:184` tenía
+99 y queda en 185, y la `:305`, 94 y 164—; en `tests.rs`, las dos de uso, que tenían 45 y quedan en
+159 y 152, y la de la `:5837`, que tenía 100 y queda en 124; las filas de tabla del RFC-0018 y del
+RFC-0021, que ya pasaban; y la de cada paper y la de `PRINCIPIOS.md`, que tenían 50, 47 y 81 y
+quedan en 126, 127 y 157. Las del RFC-0016, de la «Compatibilidad» del RFC-0021 y del RFC-0023
+quedan en 82, 84 y 100.
+
+**El porte.** `git cherry-pick -n` del sello sobre el §864 de esta punta: siete ficheros entran sin
+conflicto —`snapshot.rs`, `tests.rs`, los cuatro RFC y `AUDITORIA.md`, con este asiento al final,
+tras el del §864—, y tres con conflicto, `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, porque la
+marca del 13 cae en la línea de CON LARGOS en `PRINCIPIOS.md` (`:416`) y, en los dos papers, en la
+que la sigue (`PAPER.md:38-39` y `PAPER_EN.md:35-36`), y los totales aquí son otros: el TOTAL DE
+SELLO en 1872 y CON LARGOS en 2012, con la fila del kit en 191 y no en 196, sin los cinco tests de
+la E3 del RFC-0020. Se resolvieron a mano: se quedan las líneas de esta punta, y la del 13 gana su
+marca, la misma. El código es el del borrador: `crates/zk-ssl` sale idéntico, y la guarda, sus dos
+usos y las marcas de `snapshot.rs` caen en las mismas líneas. En el RFC-0021, la cabecera y la R2
+son las de esta punta, sin lo que les ponía la E3 del RFC-0020, y las dos marcas del 10 van en las
+mismas líneas, la `:37` y la `:307`. Las cifras de este asiento se volvieron a sacar aquí; cambian
+`check_tests`, la suma de los pines y sus totales, las cuentas de `verificar_citas`, los tiempos de
+la capa entera, las líneas de `AUDITORIA.md`, la de la nota de la 120 del `BACKLOG.md` y los sellos
+que no lleva la lista de `doc/KIT.md` (abajo, «Medido aquí» y «Lo que NO hace»); las demás salen
+iguales.
+
+**Medido aquí**, sobre el §864 con este sello, con `cargo` bajo el cerrojo de la sesión, con `nice`
+y con un directorio temporal propio, vacío al empezar:
+
+- **Los dos de la 121, en release** (`cargo test -p zk-ssl --release --locked reexporta`), sobre los
+  bytes de este sello: 2 de 2, 520 fuera del filtro, 0 avisos, y el directorio temporal, vacío
+  después.
+- **La caída**, medida al escribir el sello y no aquí, sobre el §864 de la otra pila, que en
+  `crates/zk-ssl`, en sus dependencias, en el `Cargo.toml` raíz y en el `Cargo.lock` es el de aquí
+  —de `crates/`, el `Cargo.toml` raíz y el `Cargo.lock`, entre los dos sólo cambia
+  `crates/zk-ssl-verify`, del que la capa no depende, ni en sus tests, y que los dos de la 121 no
+  leen; fuera de ellos, cambian documentos y `tools/`, que esos dos tampoco leen—. Con un `assert!`
+  temporal en la línea del «(c)» de cada test, en esa misma línea, que cae si está puesta una
+  variable de entorno: con la variable, caen los dos («§865: caida forzada en el (c)», en
+  `tests.rs:6293` y `:6380`) y el directorio queda vacío; sin ella, pasan los dos. El control, sin
+  las dos sentencias de la guarda y con la variable: caen igual y dejan diez entradas —seis arriba:
+  el libro `zkssl_e4_reexporta_121_<pid>`, su `.cerrojo`, su `.instantanea` y su `.reexportada`, y
+  la `.instantanea` y la `.instantanea.reexportada` de la v1; y cuatro dentro del libro—, que se
+  borraron, sólo ésas. Después se restauró `tests.rs`, y su sha256 volvió al de antes del `assert!`.
+  La guarda se midió con su constructor en una línea, y luego se partió en cuatro, como lo pide
+  `rustfmt`, sin otro cambio; después, `tests.rs` sólo cambió en comentarios —la marca de la `:5837`
+  y dos líneas del comentario del final—. La caída no se volvió a medir sobre estos bytes, ni allí
+  ni aquí; los dos tests y la capa entera, sí, aquí.
+- **La capa entera, en release** (`cargo test -p zk-ssl --release --locked`, sobre los bytes de este
+  sello): 515 pasan, 0 fallan, 7 ignorados y 0 avisos, en 143,66 s de tests y 32 s de compilación.
+  El directorio temporal, vacío antes y después.
+- **Las herramientas**, desde la raíz, como las corre `tools/canon.sh`: `check_cifras`,
+  `check_figures`, `check_columns`, `check_constraint_layout`, `verificar_citas`, `check_dominios`,
+  `check_publicadas`, `check_nucleo`, `check_techo`, `check_curvas` —bajo el cerrojo de `cargo`—,
+  `check_superficie`, `check_tests`, `check_modulos`, `check_vectores` y `check_catalogo`, las
+  quince en 0. Sin este asiento, las catorce que no son `check_curvas` dan la misma salida que en el
+  §864, byte a byte; con él, las mismas, salvo `verificar_citas`, que cuenta este asiento: un
+  encabezado más en el registro (805) y uno más citado (219, el «El nodo y el testigo, desde dos
+  raíces» de `doc/KIT.md`), 90 citas de sección más miradas (11500) y una más a un número reservado
+  (22: el 889 del rango). `check_tests`, 2034 tests declarados y 20 instrumentos; `check_cifras`, 26
+  cifras de tests en documentos vivos y 22 pines, ninguna contra el canon; `check_modulos`, 207
+  ficheros; `check_vectores`, 509 `.json` y 1039 líneas de 19 manifiestos. `git diff --check`,
+  limpio.
+- **Lo que no se corrió**: el canon, que corre la sesión; los bancos; `tools/artefacto.sh`; y los
+  tests de ningún otro crate.
+
+**Deducido, sin medir.**
+
+- Que las marcas de `snapshot.rs` no cambian el código que compila: sólo tocan comentarios —`//`,
+  `///` y `//!`, en `git diff -U0`—. Que sí cambian la huella del nodo y del testigo, que compilan
+  `crates/zk-ssl`, se deduce de lo que `doc/KIT.md` §«El nodo y el testigo, desde dos raíces» midió
+  con una línea de comentario en `crates/zk-ssl/src/lib.rs`; no se compilaron con
+  `tools/artefacto.sh`. El kit no depende de `crates/zk-ssl` —su `Cargo.toml` no lo lleva, ni en las
+  dependencias de sus tests—, y no cambia.
+- Que la guarda se suelta después de las capas del test, por el orden de las declaraciones: Rust
+  suelta las variables de un ámbito al revés de como se declararon, también al desenrollar un
+  pánico, y ningún `Cargo.toml` del árbol pone `panic = "abort"` (`git grep`). Lo medido es que el
+  directorio queda vacío. Y que los comentarios que `tests.rs` ganó después de medir la caída no
+  cambian lo medido: no compilan.
+- Que «declaradas» no era entonces, ni es hoy, la cuenta de `check_tests`: con la regla del §493,
+  los pines con largos más los ignorados, salía 1364 el día que `check_tests` contaba 1366, y
+  saldría hoy 2012 + 20 = 2032 —sumados de la tabla de `tools/canon.sh`—, frente a los 2034 de
+  `check_tests`; la diferencia es la misma, 2. Por eso las marcas dicen «con otra regla»: dicen
+  dónde se cuentan hoy los tests declarados, como pide la lista, y no qué cifra publicar.
+
+**Contadores.** Ninguno se mueve, y se dice: ni un test —`check_tests` sigue en 2034 tests
+declarados y 20 instrumentos, y la fila `zk-ssl` en 515, 7 y 0—, ni un pin de `tools/canon.sh`, que
+no se toca y no gana crónica; el TOTAL DE SELLO sigue en 1872 y CON LARGOS en 2012, en `PAPER.md`,
+`PAPER_EN.md` y `PRINCIPIOS.md`, que sólo ganan la marca del 13; `check_modulos`, 207;
+`check_vectores`, 509 y 1039 de 19 manifiestos; y el `BACKLOG.md`, que no se toca, en 40 abiertas y
+90 resueltas, contadas con `grep -c` de las casillas a principio de línea, como su línea «Estado».
+La guarda no es un test: es un `struct` y su `Drop`.
+
+**Las citas por línea que se mueven.** Ninguna del árbol vivo. En `crates/zk-ssl/src/tests.rs`, de
+7974 líneas a 8017: las 43 nuevas van al final, detrás de la `:7974`, y las dos de uso y la marca de
+la `:5837`, en su sitio. En `AUDITORIA.md`, de 68901 a 69175, con este asiento al final. Los demás
+ficheros no ganan ni pierden ninguna línea: cada trozo de `git diff -U0` cambia una línea por una.
+
+**Lo que NO hace.**
+
+- No limpia al caer los demás tests de la capa, que limpian al acabar, como dijo el §821: el 4 de la
+  lista era de estos dos. Ni cubre lo que cae antes de la guarda, como `libro_e4`.
+- No marca los encabezados de bloque de `snapshot.rs` que dicen dónde se puso cada uno —«Va al final
+  del fichero, detrás de los tests», del §702, en la `:1541`, y «Va al final, como el §702 y el
+  §812», del §820, en la `:1688`—: dicen dónde se puso cada bloque y por qué, no dónde buscar algo,
+  y el bloque siguiente lo dice de sí mismo. Ni la nota cerrada de la 120 del `BACKLOG.md`
+  («`escribir_entera`, al final de `snapshot.rs`», en su `:3529`), que cuenta su sello.
+- No toca la lista de `doc/KIT.md` y `doc/KIT_EN.md` de los sellos que cambian las fuentes del nodo
+  y del testigo desde `b6994c3`: la escribió el §824, y no lleva los de después que las cambian —el
+  §827 y el §828 (`crates/zk-ssl`), el §864 (`crates/zk-ssl-verify`) y éste, las de los dos, y el
+  §863 (`crates/zk-ssl-node`), las del nodo—, contados con `git diff --name-only` de cada uno y las
+  dependencias por ruta de sus `Cargo.toml`; no se ha mantenido sello a sello, y éste no la empieza
+  a mantener.
+- No marca la cita de la R2 del RFC-0021 (`:148`), «`crates/zk-ssl-verify/src/lib.rs:308-314`», por
+  el molde de `COFIRMA_V_MAX`, que hoy está en la `:419-425`: ya no caía en su sitio en `3a4176c`, y
+  en la otra pila la marcaba la E3 del RFC-0020, que no va aquí. Es de la clase del 11 de la lista,
+  citas por línea rancias y sin marca, para un barrido.
+- No pone en los papers la cifra de hoy, ni decide qué cuenta es «declaradas»: es la deuda que
+  apuntó el §551 y que el §553 dejó por decidir («antes hay que decidir que cuenta son»). Ni toca
+  las «18 ignoradas» y «18 ignored» de las mismas frases de los dos papers, que entran en el §490 y
+  no estaban en la lista; los pines de `tools/canon.sh` suman hoy 20 ignorados.
+- No acuerda que el RFC-0023 viaje en el corte, ni cambia el estado de ningún RFC: el RFC-0018, el
+  RFC-0021 y el RFC-0023 siguen PROPUESTOS, y el RFC-0016, ACEPTADO.
+- No cambia código de la biblioteca, ni un test de lo que mide, ni un pin, ni un vector. No toca
+  `crates/zk-ssl-guardian`, ni `winter-*`, ni `crates/zk-ssl-air`, ni `crates/stark-experiment`, ni
+  `crates/ceremony`, ni `tools/check_constraint_layout.py`. No reescribe ningún asiento: lo que el
+  §821 declaró de estos dos tests es de su fecha.
+
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.

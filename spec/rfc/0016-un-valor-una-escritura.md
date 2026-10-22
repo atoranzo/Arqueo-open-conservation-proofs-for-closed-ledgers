@@ -46,7 +46,7 @@
   que matiza una frase de «Lo que NO cierra»); §662 (la escritura mínima de `Q` en el cable, que «Lo
   que NO cierra» cita); §775 (el testigo y el SDK leen con la regla); §782 (la E6); §825 (la
   aceptación). ⚠️ §825: decía «§640.»: callaba la E6, los otros dos asientos que «Lo que NO cierra»
-  cita —el §662 y el §775— y el §641.
+  cita —el §662 y el §775— y el §641. ⚠️ §865: y callaba el §258, que cita la D-E.
 
 ## Estado de las etapas
 

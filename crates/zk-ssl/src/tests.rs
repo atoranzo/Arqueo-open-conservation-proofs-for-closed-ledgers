@@ -5834,7 +5834,7 @@ fn una_ruta_sin_nombre_no_abre_el_libro_sin_su_cerrojo() {
 
 /// **§817: con clave, una instantanea en claro no se importa.** Hasta el §817,
 /// `import_snapshot_with_key` importaba la marca `0x00` sin mirar la clave (`rehusar_en_claro`, al
-/// final de `snapshot.rs`). (a) Una capa cifrada exporta su instantanea; quien puede escribir donde
+/// final de `snapshot.rs`; ⚠️ §865: ya no lo está). (a) Una capa cifrada exporta su instantanea; quien puede escribir donde
 /// se guarda pone en su sitio una en claro, hecha con la biblioteca, con otro saldo: con la frase
 /// buena, la importacion falla con `Malformed`, y su error dice que esta en claro y nombra
 /// `import_snapshot`. (b) Con otra frase, o con una clave ya fijada a su KDF, tampoco. (c) La misma,
@@ -6256,7 +6256,7 @@ fn una_capa_importada_de_una_cifrada_se_reexporta_cifrada_con_su_cabecera() {
     const MARCA_V2: u8 = 0x02; // `SNAPSHOT_ENCRYPTED_V2`, privada de snapshot.rs
     let (path, alice, bob) = libro_e4("e4_reexporta_121");
     let file = format!("{path}.instantanea");
-    let otra = format!("{path}.reexportada");
+    let otra = format!("{path}.reexportada"); let _quitar = quitar_al_salir(Some(&path), &[&file, &otra]); // ⚠️ §865: y si cae, también (al final del fichero)
     for f in [&file, &otra] {
         let _ = std::fs::remove_file(f);
         let _ = std::fs::remove_file(exportando(f));
@@ -6345,7 +6345,7 @@ fn una_capa_importada_de_una_v1_se_reexporta_en_la_version_2() {
     const MARCA_V2: u8 = 0x02; // `SNAPSHOT_ENCRYPTED_V2`
     const FRASE: &str = "la frase de una instantanea v1";
     let file = format!("{}.instantanea", temp_path("v1_reexporta_121"));
-    let otra = format!("{file}.reexportada");
+    let otra = format!("{file}.reexportada"); let _quitar = quitar_al_salir(None, &[&file, &otra]); // ⚠️ §865: y si cae, también (al final del fichero)
     for f in [&file, &otra] {
         let _ = std::fs::remove_file(f);
         let _ = std::fs::remove_file(exportando(f));
@@ -7970,5 +7970,48 @@ fn hijo_de_la_sonda(papel: &str) {
             let l = resultado.unwrap_or_else(|e| panic!("CRITICO: (c) con {con} en el nombre de la sonda {n}, su dueño no recifró: {e}"));
             assert_eq!(l.total_supply(), 777_777, "(c) el libro no tiene su suministro");
         }
+    }
+}
+
+// -----------------------------------------------------------------
+// ⚠️ §865: lo que dejan los dos tests de la 121, borrado también si caen
+// -----------------------------------------------------------------
+// Al final del fichero, como los del §812, el §816, la 120, la 121 y el §828: ninguna cita
+// `tests.rs:linea` se mueve, y cada test declara su guarda en la línea que ya formaba la ruta
+// de su reexportada, sin añadir ninguna. Hasta el §865,
+// `una_capa_importada_de_una_cifrada_se_reexporta_cifrada_con_su_cabecera` y
+// `una_capa_importada_de_una_v1_se_reexporta_en_la_version_2` limpiaban al empezar y al acabar,
+// y no al caer: un `assert!` que fallaba dejaba en el directorio temporal la instantánea, la
+// reexportada, sus `.exportando` y, en el del libro cifrado, el libro con sus hermanos y su
+// cerrojo (el §821 lo declaró). Los demás tests de la capa siguen como estaban: limpian al acabar.
+// La guarda cubre lo que cae después de declararla: si cae `libro_e4`, que va antes, el libro se
+// queda donde lo dejó.
+
+/// ⚠️ §865 · Al soltarse, borra cada fichero y su temporal de exportación, y, si hay libro, el
+/// libro con sus hermanos y su cerrojo (`quitar_e4`). Un test que cae la suelta igual, porque el
+/// pánico corre los `Drop`; y como el test la declara después de sus rutas y antes de sus capas,
+/// se suelta cuando ya no queda ninguna capa abierta.
+struct QuitarAlSalir {
+    libro: Option<String>,
+    ficheros: Vec<String>,
+}
+
+impl Drop for QuitarAlSalir {
+    fn drop(&mut self) {
+        for f in &self.ficheros {
+            let _ = std::fs::remove_file(f);
+            let _ = std::fs::remove_file(exportando(f));
+        }
+        if let Some(libro) = &self.libro {
+            quitar_e4(libro);
+        }
+    }
+}
+
+fn quitar_al_salir(libro: Option<&str>, ficheros: &[&str]) -> QuitarAlSalir {
+    let ficheros = ficheros.iter().map(|f| f.to_string()).collect();
+    QuitarAlSalir {
+        libro: libro.map(str::to_owned),
+        ficheros,
     }
 }

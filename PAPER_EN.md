@@ -33,7 +33,7 @@ during the work.
 The reference implementation comprises **1872 executable tests in the seal
 gate** (55 of them are winterfell 0.13.1's own, brought in by the fork of
 §533) —2012 counting the pins of the long and complete levels, and 1349
-declared—, with 18 ignored and declared, and is
+declared (⚠️ §865: from §493; today `tools/check_tests.py` counts them, by another rule)—, with 18 ignored and declared, and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
 limitations in detail.

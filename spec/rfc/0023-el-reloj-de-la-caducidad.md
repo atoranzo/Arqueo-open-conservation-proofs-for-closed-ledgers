@@ -393,7 +393,7 @@ diseño de la D-D y de la D-K—; la 8 y la 11 son preguntas para el autor, abie
    ruptura se paga una vez, R4); si no, en el corte siguiente. **Tomada: así**, en lo que toca a
    este RFC. Si viaja en el tren lo acuerda quien lo lleva (RFC-0018), y queda por coordinar: la
    fila del corte del RFC-0018 no lo nombra todavía, ni la Compatibilidad del RFC-0021, que cuenta
-   qué RFC del corte cumplen ya la R5. Descartado: un corte propio.
+   qué RFC del corte cumplen ya la R5. Descartado: un corte propio. ⚠️ §865: lo nombran sin acordar.
 10. **¿Desde qué latido cuenta el suelo lo nacido antes?** Desde el `mmr_t` de la primera cabeza
     que firma la cadencia (recomendada: está firmado, es uno solo para todo el libro y nunca da un
     suelo más corto que contarlo desde el nacimiento); o desde la cabeza que cubrió el nacimiento

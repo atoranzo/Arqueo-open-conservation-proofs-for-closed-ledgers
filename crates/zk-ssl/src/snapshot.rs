@@ -82,7 +82,7 @@
 //!   proyecto no aborda.
 //! - **Va cifrada si la capa tiene clave**, con el mismo cifrado
 //!   autenticado que el ledger y la cabecera de su KDF (§702). Sin clave va
-//!   en claro, y entonces quien tenga el fichero **ve todos los saldos**. ⚠️ §817: con clave sólo se importa una cifrada (`rehusar_en_claro`, al final).
+//!   en claro, y entonces quien tenga el fichero **ve todos los saldos**. ⚠️ §817: con clave sólo se importa una cifrada (`rehusar_en_claro`, al final). ⚠️ §865: ya no está al final; detrás va lo del §819 (`avisar_del_barrido`, `ruta_del_borrado`), lo del §820 (`escribir_entera`) y lo del §821 (`conservar_la_clave`).
 //! - **⚠️ §802: en claro, las retiradas no van atadas a nada.** La cola de la
 //!   v9 no lleva raíz, y `SnapshotInfo` solo trae `state_root`, el
 //!   suministro y los recuentos: una cola cambiada importa, y la identidad
@@ -173,15 +173,15 @@ const SNAPSHOT_PLAIN: u8 = 0x00;
 const SNAPSHOT_ENCRYPTED: u8 = 0x01;
 
 impl SovereignLayer {
-    /// Importa una instantánea cifrada, y sólo una cifrada (⚠️ §817: hasta el §817 también una en claro; `rehusar_en_claro`, al final).
+    /// Importa una instantánea cifrada, y sólo una cifrada (⚠️ §817: hasta el §817 también una en claro; `rehusar_en_claro`, al final). ⚠️ §865: ya no está al final; detrás va lo del §819 (`avisar_del_barrido`, `ruta_del_borrado`), lo del §820 (`escribir_entera`) y lo del §821 (`conservar_la_clave`).
     ///
     /// Existe aparte porque `import_snapshot` no tiene forma de conocer la clave: es una función
-    /// asociada, no un método. §702: la fija al KDF de la instantánea (`abrir_sellada`, al final). ⚠️ §821: y la capa que devuelve la conserva, y se reexporta cifrada; hasta el §821 nacía sin clave y se reexportaba en claro (la 121; `conservar_la_clave`, al final).
+    /// asociada, no un método. §702: la fija al KDF de la instantánea (`abrir_sellada`, al final). ⚠️ §821: y la capa que devuelve la conserva, y se reexporta cifrada; hasta el §821 nacía sin clave y se reexportaba en claro (la 121; `conservar_la_clave`, al final). ⚠️ §865: `abrir_sellada` ya no está al final; detrás van `barrer_descifrada` (§812), `rehusar_en_claro` (§817), lo del §819, lo del §820 (`escribir_entera`) y `conservar_la_clave` (§821), que sí es lo último.
     pub fn import_snapshot_with_key(
         path: &str,
         key: &crate::crypto::LedgerKey,
     ) -> Result<Self, LayerError> {
-        barrer_descifrada(path)?; // ⚠️ §812: el claro que dejaba una importacion muerta (al final)
+        barrer_descifrada(path)?; // ⚠️ §812: el claro que dejaba una importacion muerta (al final) ⚠️ §865: ya no; detrás van `rehusar_en_claro` (§817) y lo del §819, el §820 y el §821
         let mut buf = Vec::new();
         std::fs::File::open(path)
             .map_err(io_err)?
@@ -205,7 +205,7 @@ impl SovereignLayer {
         conservar_la_clave(Self::desde_instantanea_en_claro(plano)?, fijada, key) // ⚠️ §821: hasta el §821, la capa salía sin clave (la 121)
     }
 
-    /// Exporta el estado completo a un fichero, entero o nada (⚠️ §820: `escribir_entera`, al final).
+    /// Exporta el estado completo a un fichero, entero o nada (⚠️ §820: `escribir_entera`, al final). ⚠️ §865: ya no está al final; detrás de lo del §820 va `conservar_la_clave` (§821).
     /// Exporta una instantánea.
     ///
     /// **Si la capa tiene clave, la instantánea va cifrada**, con la misma
@@ -302,7 +302,7 @@ impl SovereignLayer {
         };
 
         // ⚠️ §820: hasta el §820, `File::create(path)`, que truncaba en sitio la anterior (la 120 del
-        // `BACKLOG.md`). Entera o nada: un temporal al lado y un cambio de nombre (al final).
+        // `BACKLOG.md`). Entera o nada: un temporal al lado y un cambio de nombre (al final). ⚠️ §865: ya no; detrás de lo del §820 va `conservar_la_clave` (§821).
         escribir_entera(path, &bytes)?;
 
         Ok(SnapshotInfo {

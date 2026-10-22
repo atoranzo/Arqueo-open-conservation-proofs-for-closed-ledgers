@@ -413,7 +413,7 @@ sería faltar al principio de transparencia.
   circuitos, **230 del nodo**, 34 de la ceremonia, 17 de liquidación, **191
   del verificador independiente**, **153 del testigo**, y los del SDK, el
   cable, el puente ISO, el árbol del medio y el fork de winterfell—,
-  **2012 contando los pines de `--largo` y `--completo`**, y **1364 declarados**.
+  **2012 contando los pines de `--largo` y `--completo`**, y **1364 declarados** (⚠️ §865: del §497; hoy los cuenta, con otra regla, `tools/check_tests.py`).
   0 fallos y 21 warnings **pinchados** (no crecen). Cada propiedad de
   seguridad con test discriminante.
 
