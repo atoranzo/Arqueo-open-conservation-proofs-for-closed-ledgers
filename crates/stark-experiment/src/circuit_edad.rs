@@ -278,7 +278,10 @@ impl Trace for TrazaEdad {
 /// **La traza auxiliar**: por ciclo, los inversos de los cinco terminos de la fila 0 (cuatro
 /// lecturas y la hoja de pendientes) y de los tres de la fila 6 (los dos nodos y la hoja de meta,
 /// con los valores de la fila 7), y la suma acumulada que el AIR comprueba fila a fila.
-fn construir_auxiliar<E: FieldElement<BaseField = BaseElement>>(
+///
+/// §713: `pub(crate)` para el probador del falsador del resto (`falsadores_resto.rs`), que es este
+/// mismo con otro hasher.
+pub(crate) fn construir_auxiliar<E: FieldElement<BaseField = BaseElement>>(
     m: &ColMatrix<BaseElement>,
     r: &[E],
 ) -> ColMatrix<E> {

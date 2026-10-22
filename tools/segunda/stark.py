@@ -296,6 +296,7 @@ def leer_prueba(b):
     p.capas_en = r.p  # donde va la cuenta de capas FRI: la usa el autotest
     capas = r.u8()
     p.fri = [(r.tomar(r.u32()), r.tomar(r.u32())) for _ in range(capas)]
+    p.resto_en = r.p  # donde va la longitud del resto FRI: la usa el autotest (§713)
     p.resto = r.tomar(r.u16())
     # §711: `winter-fri` 0.13.1 escribe siempre UNA particion; el fork rechaza otra al leer
     if r.u8() != 0:
@@ -893,6 +894,13 @@ def verificar_fri(ctx, posiciones, evaluaciones, capas, comp_fri, alfas, resto, 
         dominio //= N
         posiciones = plegadas
         evaluaciones = nuevas
+    # §713: el resto, ATADO a su compromiso, el ultimo de los FRI. El probador mete en la moneda
+    # `hash_elements(resto)`, con los coeficientes en el orden en que viajan, y el canal del fork
+    # (`crates/winter-verifier/src/channel.rs`, `read_remainder`) lo comprueba antes del grado y
+    # del plegado. `winter-fri` 0.13.1 no lo comprueba: sin esto, un compromiso con OTRO resto
+    # verificaba.
+    if hash_e2(resto) != comp_fri[-1]:
+        raise Rechazo("FriVerificationFailed(RemainderCommitmentMismatch)")
     if len(resto) > max_mas_1:
         raise Rechazo(f"FriVerificationFailed(RemainderDegreeMismatch({max_mas_1 - 1}))")
     for pos, ev in zip(posiciones, evaluaciones):
@@ -983,6 +991,7 @@ def autotest():
         except Rechazo as e:
             assert str(e) == f"marca de la ocultacion {lectura}; el enunciado pide m = 64", str(e)
     pares_fijos_del_orden()
+    resto_atado()
     return True
 
 
@@ -1047,6 +1056,41 @@ def pares_fijos_del_orden():
                 assert not any(c in str(e) for c in sin_nombre), f"otro orden que el de Rust: {e}"
 
 
+def resto_atado():
+    """§713: el resto FRI, atado a su compromiso, en el sitio de Rust (el canal del fork,
+    `read_remainder`: antes del grado y del plegado). Dos pares fijos, medidos contra el kit y
+    contra la segunda de antes del §713:
+
+    1. `spec/vectors/edad/neg-prueba-resto-ajeno.json`: su ultimo compromiso FRI es el hash de OTRO
+       resto y la prueba lleva el de verdad. El kit da `FriVerificationFailed(
+       RemainderCommitmentMismatch)`; aqui, la misma. Antes del §713, VERDE en los dos: el falsador
+       de la demo, en Python.
+    2. `edad-todos.json` con el bit bajo del primer byte del resto volteado: el kit da la misma
+       causa, porque el compromiso se mira antes que el plegado. Antes del §713, en los dos,
+       `FriVerificationFailed(InvalidRemainderFolding)`."""
+    import json
+    import juez_stark as J  # aqui y no arriba: juez_stark importa este modulo
+    S = J.S  # el modulo que juez_stark carga, con SU `Rechazo`
+    causa = "FriVerificationFailed(RemainderCommitmentMismatch)"
+    pares = []
+    with open(os.path.join(J.VECTORES, "edad", "neg-prueba-resto-ajeno.json")) as f:
+        [(_, prueba, air)] = J.par_edad(json.load(f))
+    pares.append(("el vector del resto ajeno", prueba, air))
+    with open(os.path.join(J.VECTORES, "edad", "edad-todos.json")) as f:
+        [(_, prueba, air)] = J.par_edad(json.load(f))
+    S.verificar(prueba, air)  # el de partida verifica: lo que cae, cae por el bit
+    b = bytearray(prueba)
+    b[S.leer_prueba(prueba).resto_en + 2] ^= 1
+    pares.append(("un bit del resto", bytes(b), air))
+    for que, prueba, air in pares:
+        try:
+            S.verificar(prueba, air)
+            raise AssertionError(f"{que}: verifica, y pide {causa}")
+        except S.Rechazo as e:
+            assert str(e) == causa, f"{que}: pide {causa}, da {e}"
+
+
 if __name__ == "__main__":
     autotest()
-    print("stark.py: autotest OK (extension, INV_MDS calculada = tabla de winter-crypto, raices, marca)")
+    print("stark.py: autotest OK (extension, INV_MDS calculada = tabla de winter-crypto, raices, "
+          "marca, el orden de Rust, el resto atado)")

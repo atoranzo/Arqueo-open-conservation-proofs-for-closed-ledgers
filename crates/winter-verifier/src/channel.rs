@@ -44,6 +44,8 @@ pub struct VerifierChannel<
     fri_layer_proofs: Vec<V::MultiProof>,
     fri_layer_queries: Vec<Vec<E>>,
     fri_remainder: Option<Vec<E>>,
+    // ARQUEO (§713): el ultimo compromiso FRI, el del resto; `read_remainder` ata el resto a el
+    fri_remainder_commitment: H::Digest,
     fri_num_partitions: usize,
     // out-of-domain frame
     ood_trace_frame: Option<TraceOodFrame<E>>,
@@ -125,6 +127,15 @@ where
                 num_fri_layers
             )));
         }
+        // ARQUEO (§713): el compromiso del resto es el ultimo de los FRI. `parse` lee exactamente
+        // `num_fri_layers + 1` (el `+ 1` es el del resto), asi que siempre hay uno; si faltara, es
+        // error y no panico.
+        let fri_remainder_commitment = *fri_commitments.last().ok_or_else(|| {
+            VerifierError::ProofDeserializationError(format!(
+                "{}: the proof has no FRI remainder commitment",
+                air::causa::FRI
+            ))
+        })?;
 
         // --- parse out-of-domain evaluation frame -----------------------------------------------
         let (ood_trace_frame, ood_constraint_evaluations) = ood_frame
@@ -155,6 +166,7 @@ where
             fri_layer_proofs,
             fri_layer_queries,
             fri_remainder: Some(fri_remainder),
+            fri_remainder_commitment,
             fri_num_partitions,
             // out-of-domain evaluation
             ood_trace_frame: Some(ood_trace_frame),
@@ -303,6 +315,28 @@ where
 
     fn take_fri_remainder(&mut self) -> Vec<E> {
         self.fri_remainder.take().expect("already read")
+    }
+
+    /// ARQUEO (§713): el resto, ATADO a su compromiso.
+    ///
+    /// ⚠️ `winter-fri` 0.13.1 no lo ata: su `read_remainder` devuelve el resto tal cual
+    /// (`verifier/channel.rs:112-116`) y `verify_generic` lo usa sin mirarlo
+    /// (`verifier/mod.rs:306-327`). El probador SI se compromete con el: `set_remainder` mete en
+    /// la moneda `H::hash_elements(resto)`, con los coeficientes en el mismo orden inverso en que
+    /// viajan en la prueba (`prover/mod.rs:230-240`). Si nadie lo comprueba, ese compromiso solo
+    /// siembra la moneda: quien prueba puede comprometerse con un digest cualquiera, ver las
+    /// consultas y enviar DESPUES el resto que le convenga.
+    ///
+    /// La variante es la que `winter-fri` 0.13.1 define y no usa, `RemainderCommitmentMismatch`:
+    /// el kit imprime `FriVerificationFailed(RemainderCommitmentMismatch)`. Se comprueba aqui, en
+    /// el canal del fork, porque `winter-fri` no se bifurca; es lo primero que se mira del resto,
+    /// antes de su grado y de su plegado.
+    fn read_remainder(&mut self) -> Result<Vec<E>, fri::VerifierError> {
+        let remainder = self.take_fri_remainder();
+        if H::hash_elements(&remainder) != self.fri_remainder_commitment {
+            return Err(fri::VerifierError::RemainderCommitmentMismatch);
+        }
+        Ok(remainder)
     }
 }
 

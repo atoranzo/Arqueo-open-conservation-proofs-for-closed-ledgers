@@ -1263,29 +1263,69 @@ fn alguna_prueba_mira(texto: &str, air: &str) -> bool {
     })
 }
 
+/// §713: **los modulos de SOLO tests de `crates/stark-experiment/src` que ocultan sin banda.**
+/// Sus pruebas no salen al cable ni a un sobre: las fabrica un falsador y las juzga el
+/// verificador dentro del mismo test. `falsadores_resto.rs` (§713) prueba con la ocultacion de
+/// produccion encendida, y tiene dos `type Air`, WorkAir y EdadAir. El censo los salta, y prueba
+/// que siguen siendo de solo tests: cada uno es un fichero de esa carpeta que oculta, y
+/// `stark-experiment/src/lib.rs` lo declara una sola vez, `mod <x>;` sin `pub`, en la linea que
+/// sigue a `#[cfg(test)]`. Asi un probador de produccion no se esconde en esta lista.
+const SOLO_DE_TESTS: &[&str] = &["falsadores_resto"];
+
 /// El censo de las bandas, leido de los fuentes y no tecleado: cada fichero de
 /// `crates/stark-experiment/src` cuyo probador oculta tiene banda, y una sola AIR, la de la
 /// banda; cada banda nombra un fichero que oculta, una AIR con fila en `FILAS` y una prueba de
 /// este modulo que la mira (`alguna_prueba_mira`); y ninguna AIR ni ningun fichero tiene dos.
 /// No prueba STARK: corre tambien en depuracion.
+///
+/// ⚠️ §713: salta los modulos de `SOLO_DE_TESTS`, la lista de los modulos de tests que ocultan
+/// sin banda, y exige que cada uno siga siendo de solo tests.
 #[test]
 fn el_censo_de_las_bandas_da_banda_a_cada_familia_oculta() {
     let zk = Path::new(env!("CARGO_MANIFEST_DIR"));
     let src = zk.parent().expect("la carpeta crates").join("stark-experiment/src");
     let oculta = "crate::ocultacion_encendida(";
     let mut ocultos = std::collections::BTreeMap::new();
+    let mut saltados = Vec::new();
     for (nombre, texto) in fuentes(&src) {
         if texto.contains(oculta) {
             let fichero = nombre.trim_end_matches(".rs").to_string();
+            if SOLO_DE_TESTS.contains(&fichero.as_str()) && src.join(&nombre).is_file() {
+                saltados.push(fichero);
+                continue;
+            }
             ocultos.insert(fichero, nombres_tras(&texto, "type Air ="));
         }
     }
     let modulo = std::fs::read_to_string(zk.join("src/instrumento_revela.rs"))
         .expect("el censo lee este modulo");
-    println!("BANDA censo | {} probadores que ocultan ; {} bandas", ocultos.len(), BANDAS.len());
+    println!(
+        "BANDA censo | {} probadores que ocultan ; {} bandas ; {} de solo tests, saltados",
+        ocultos.len(),
+        BANDAS.len(),
+        saltados.len()
+    );
     let mut mal = Vec::new();
     if ocultos.is_empty() {
         mal.push(format!("el censo no ve ningun probador que oculte en {}", src.display()));
+    }
+    // §713: cada modulo de la lista sigue ocultando y sigue siendo de solo tests.
+    let raiz = std::fs::read_to_string(src.join("lib.rs")).expect("el censo lee lib.rs");
+    let lineas: Vec<&str> = raiz.lines().map(str::trim).collect();
+    for &x in SOLO_DE_TESTS {
+        if !saltados.iter().any(|s| s == x) {
+            let d = src.display();
+            mal.push(format!("{x}: en SOLO_DE_TESTS y no es un fichero de {d} que oculte"));
+        }
+        let decl = format!("mod {x};");
+        let declaraciones: Vec<usize> =
+            (0..lineas.len()).filter(|&i| lineas[i].ends_with(&decl)).collect();
+        match declaraciones.as_slice() {
+            [i] if *i > 0 && lineas[*i] == decl && lineas[*i - 1] == "#[cfg(test)]" => {}
+            _ => mal.push(format!(
+                "{x}: en SOLO_DE_TESTS, y lib.rs no lo declara una vez `{decl}` bajo #[cfg(test)]"
+            )),
+        }
     }
     for (fichero, airs) in &ocultos {
         match (airs.as_slice(), BANDAS.iter().find(|b| b.0 == fichero.as_str())) {

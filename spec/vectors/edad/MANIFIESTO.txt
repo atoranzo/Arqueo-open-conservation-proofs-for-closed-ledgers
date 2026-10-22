@@ -56,3 +56,15 @@ neg-marca-m32-y-opciones.json|1|edad: marca de la ocultacion Ok(Some(Marca { m: 
 # fuente) y repite la segunda implementacion. No se reescriben (regla 2 del PROCESO).
 neg-prueba-opciones-cero.json|1|prueba mal formada: opciones fuera de rango
 neg-prueba-consultas-cero.json|1|prueba mal formada: consultas fuera de rango
+# §713 (spec/PAQUETE.md, seccion 6.1): un negativo NUEVO, CAPTURADO y no derivado: la misma corrida
+# que `tools/banco_edad.sh` (semillas 7 y 8, clave '37', cabeza v6 de seq 10), con un nodo compilado
+# con el canal de antes del §713 -el nodo verifica su propia prueba antes de escribir el sobre- y
+# contra `winter-fri` 0.13.1 y el parche `tools/vectores/resto_ajeno.diff`: su ultimo compromiso FRI
+# es el hash de OTRO resto -el mismo con su primer coeficiente mas uno- y la prueba lleva el resto de
+# verdad, en una corrida coherente con ese compromiso. El sobre honesto de la misma cabeza da VERDE.
+# Antes del §713 este daba VERDE tambien (salida 0, medido con el kit y con la segunda
+# implementacion): `winter-fri` 0.13.1 no ata el resto a su compromiso. La causa es la variante que
+# `winter-fri` define y no usa; la pone el canal del fork (`crates/winter-verifier/src/channel.rs`,
+# `read_remainder`) y la repite `tools/segunda/stark.py`. Lo produce `tools/vectores/resto_ajeno.sh`.
+# Jamas se reescribe (regla 2 del PROCESO).
+neg-prueba-resto-ajeno.json|1|edad: FriVerificationFailed(RemainderCommitmentMismatch)

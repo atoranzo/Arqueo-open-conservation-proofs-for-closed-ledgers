@@ -39,9 +39,10 @@ python3 tools/segunda/kat_xmss/juez_xmss.py
 #   ⚠️ §712: decia 206 de 206 (§852); los nueve vectores del reloj, cinco de `paquete`, tres de `consumo` y uno de `ancla`, la llevan a 215
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
-# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 38 de 38 (§711)
+# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 39 de 39 (§713)
 #   ⚠️ §711: decia 34 de 34 (§706); los cuatro negativos de la prueba mal formada, dos de la edad y dos del pago, la llevan a 38
-python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca
+#   ⚠️ §713: decia 38 de 38 (§711); el negativo capturado del resto FRI, `edad/neg-prueba-resto-ajeno`, la lleva a 39
+python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca, el orden de Rust, el resto atado
 python3 tools/segunda/juez_stark.py
 
 # 1 sexies · la cadena del registro del cable (NO es núcleo: spec/RPC.md)       -> cadena: 6 de 6
@@ -227,6 +228,9 @@ vectores que caen antes del juez y 33 de 33 falsadores callados, lo que el párr
 ya dice. La fila de la causa del binario, par a par, no se ha vuelto a medir: pide `zk-ssl-verify`
 compilado.
 
+Esa tabla es la medida del §626 y no se ha rehecho. Los párrafos que siguen dicen lo que cambió
+cada sello; la cifra de hoy es la del §713: 39 de 39 pares.
+
 Lo que la medida fijó al escribirlo: que la semilla de Fiat-Shamir es el contexto **más las
 entradas públicas**, de modo que un enunciado mal compuesto no llega ni a la autenticación Merkle;
 que las aserciones de «última fila» de una AIR oculta usan la longitud **interna** T; que las
@@ -267,6 +271,16 @@ mayor. `verificador.py` tiene el mismo juez, con el mismo nombre y los mismos te
 llama en el mismo sitio: la extensión, el consumo y el modo 3 del ancla, donde el ancla hace de
 vieja. Lo fijan los nueve vectores del §712 en `paquete/`, `consumo/` y `ancla/`, y por eso la
 tabla de arriba cuenta 94, 20 y 23.
+
+**El resto FRI, atado como en el kit (§713).** El último compromiso FRI es el hash del resto, y
+`winter-fri` 0.13.1 no lo comprueba al verificar. Desde el §713 lo comprueba el canal del fork
+(`read_remainder`), antes del grado y del plegado, y `stark.py` hace lo mismo en el mismo sitio de
+`verificar_fri`: `hash_e2(resto)` distinto del último compromiso es
+`FriVerificationFailed(RemainderCommitmentMismatch)`, el mismo nombre que el kit. Su autotest lo
+fija con dos pares (`resto_atado`): el negativo capturado de la edad, `neg-prueba-resto-ajeno`, y
+`edad-todos.json` con un bit del resto. Con el `stark.py` anterior el juez da 38 de 39 pares, y el
+que falla es ese negativo, VERDE; con este, 39 de 39, 53 pruebas juzgadas, 35 vectores que caen
+antes del juez y 33 de 33 falsadores callados.
 
 **La cadena del registro** (§797). ⚠️ Esto mide el **cable**, no el núcleo: `chain` es de la clase
 REGISTRO (`spec/NUCLEO.md` §«2. Las cuatro clases»), su composición no tiene KAT (sus piezas sí:
@@ -397,6 +411,10 @@ medido sobre el árbol en que se hizo el arreglo y no sobre éste (el asiento de
 ⚠️ §712: `paquete` tiene 94, `consumo` 20 y `ancla` 23 desde el §712, con los nueve vectores del
 reloj: 372 entradas en los diez y 433 en las doce. Lo medido del `.wasm` no cambia: que las pase no
 está medido, ni antes ni ahora.
+⚠️ §713: `edad` tiene 18 desde el §713, con el negativo capturado del resto FRI: 373 entradas en los
+diez y 434 en las doce. Lo medido del `.wasm` no cambia: que las pase no está medido, ni antes ni
+ahora; el vector, suelto, da bajo `wasmtime` la misma causa que en nativo, medido sobre el árbol en
+que se hizo el arreglo y no sobre éste (el asiento del §713).
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 

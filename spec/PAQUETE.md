@@ -1315,7 +1315,7 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
 | **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido | `InconsistentOodConstraintEvaluations` |
-| **consulta que no casa con el compromiso** | `TraceQueryDoesNotMatchCommitment` · `ConstraintQueryDoesNotMatchCommitment` |
+| **consulta que no casa con el compromiso** | `TraceQueryDoesNotMatchCommitment` · `ConstraintQueryDoesNotMatchCommitment` · `FriVerificationFailed(RemainderCommitmentMismatch)` (§713: el resto FRI que no es el comprometido; la pone el canal del fork, `crates/winter-verifier/src/channel.rs`) |
 
 Cualquier otra variante de `VerifierError` nombra su causa por su nombre, como estas. `NO
 SOPORTADO` no es ninguna de ellas: dice algo de la implementación, no del sobre. Si
@@ -1662,6 +1662,14 @@ cuatro códigos de la sección 6. Ahora son ROJO con salida 1, y el manifiesto p
 mal formada: opciones fuera de rango` y `prueba mal formada: consultas fuera de rango` (sección
 6.1), que pone el fork y repite la segunda implementación.
 
+**Desde el §713 el resto FRI está atado a su compromiso, y tiene vector.** La edad gana un negativo,
+`neg-prueba-resto-ajeno`, CAPTURADO y no derivado: cambiar el compromiso mueve las consultas, y
+una mutación no lo produce. Sale de la misma corrida que `tools/banco_edad.sh`, con un nodo cuyo
+`winter-fri` se compromete con el hash de OTRO resto y lleva en la prueba el de verdad; lo
+produce `tools/vectores/resto_ajeno.sh`. Antes del §713 daba VERDE en el kit y en la segunda
+implementación. Ahora es ROJO con salida 1, y el manifiesto pina la causa,
+`FriVerificationFailed(RemainderCommitmentMismatch)` (sección 6.1).
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1767,6 +1775,13 @@ mal formada: opciones fuera de rango` y `prueba mal formada: consultas fuera de 
   digest y la cabeza posterior que firma por debajo de la custodiada (2.12). Los dos textos nuevos
   entran en la clase «la regla no se sostiene» de la 6.1; nueve vectores nuevos en tres familias,
   ninguno reescrito (sección 9).
+- §713 — el resto FRI, atado a su compromiso: una prueba STARK cuyo último compromiso FRI no es el
+  hash del resto que lleva es ROJO `FriVerificationFailed(RemainderCommitmentMismatch)`, el error de
+  `winter-verifier` del catálogo de cada familia con prueba (sección 5), en el kit y en la segunda
+  implementación. Hasta aquí, una prueba que se comprometía con OTRO resto verificaba. El texto
+  entra en la clase «consulta que no casa con el compromiso» de la 6.1; un vector nuevo en `edad/`,
+  capturado de un nodo real con un probador que se compromete con otro resto; ninguno reescrito
+  (sección 9).
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

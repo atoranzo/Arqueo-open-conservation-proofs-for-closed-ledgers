@@ -70145,3 +70145,260 @@ serie. No corre el canon entero ni los bancos.
 - **La refutación del conflicto con actas** (dos claves, el mismo `mmrSize`) sólo la prueba el test
   puro: no tiene vector.
 - **No se corrieron** `banco_mentiroso_sin_resolver.sh` ni `banco_ancla.sh`, tampoco en privado.
+
+## §713 — el resto FRI, atado a su compromiso: en el canal del fork y en la segunda implementación, con un vector capturado
+
+El commit que lleva este asiento, sobre `b0042a3` (el §712). Un solo sello: en el fork de
+winterfell, `crates/winter-verifier/src/channel.rs` ata el resto FRI a su compromiso
+(`read_remainder`), y el README del crate lo declara; en `tools/segunda/stark.py`, la misma
+comprobación en el mismo sitio, con su autotest, y en `tools/segunda/README.md`, su párrafo y la
+chuleta de órdenes al día; dos falsadores en `stark-experiment` (`src/falsadores_resto.rs`, nuevo, sólo tests), para los que
+`construir_auxiliar` de `circuit_edad.rs` pasa a `pub(crate)`; dos tests del kit en
+`zk-ssl-verify`; un vector negativo capturado en `edad/`, con líneas añadidas al final de su
+manifiesto y sus huellas; su productor, `tools/vectores/resto_ajeno.sh`, nuevo, con el parche de
+captura de `winter-fri`, `tools/vectores/resto_ajeno.diff`, nuevo; la causa en `spec/PAQUETE.md`
+(secciones 6.1, 9 y 10); el censo de las bandas de `crates/zk-ssl/src/instrumento_revela.rs`, que
+salta los módulos de sólo tests que ocultan sin banda y comprueba que lo siguen siendo; los pines de
+`tools/canon.sh`; las cifras de tests de los documentos vivos; el recuento de `spec/vectors/` en los
+dos README y en la lista de la superficie de `spec/RPC.md`; la cuenta de los manifiestos bajo
+`wasmtime` en `tools/segunda/README.md`; y este asiento. Lo escribe y lo comprueba
+una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: el kit publicado daba VERDE a una prueba STARK que se
+comprometía con un resto FRI y llevaba otro. Sale con los demás arreglos de la publicación
+conjunta. Lo midió en privado una sesión de Claude Code, sobre `161a233` con los arreglos del §711
+y del §712; se escribió sobre `e4eb764`, con el §711 y el §712 encima, este sello lo lleva a
+`b0042a3` («Al portar», abajo), y lo que se volvió a correr aquí está en «Medido sobre este árbol».
+El canon entero se corre sobre la punta de la serie, no sobre cada sello.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), con el §711 y el
+§712 encima, y los lleva a `b0042a3` —el §712 ya llevado a `7dd6409`, el §895, sobre el §711
+llevado— una sesión de Claude Code, no el autor: primero sobre el §712 llevado a `3a4176c` (el
+§829), y de ahí, con lo resuelto contra esos, sobre los tres sellos del §863 al §865, y luego sobre
+los seis del §890 al §895, que git funde sin choque con este sello («Al portar», en el §711). Lo que
+git no fundía, o fundía y quedaba falso, se resolvió a mano:
+
+- **El censo de las bandas, del §842 de `main`, contra los falsadores.**
+  `el_censo_de_las_bandas_da_banda_a_cada_familia_oculta` lee todo `.rs` de
+  `crates/stark-experiment/src`, cuenta como probador que oculta cada fichero que llama a
+  `crate::ocultacion_encendida(` y le pide banda y una sola `type Air`. `falsadores_resto.rs`, de
+  sólo tests, oculta con dos, `WorkAir` y `EdadAir`, y no tiene banda: sus pruebas no salen al cable
+  ni a un sobre. Con el sello solo, el censo salía ROJO, «24 probadores que ocultan ; 23 bandas»
+  (medido con el binario de tests de la capa de antes de este arreglo, sobre este árbol). El censo
+  gana `SOLO_DE_TESTS`, la lista de los módulos de tests que ocultan sin banda, con su marca: los
+  salta, y exige que cada uno siga ocultando y que `stark-experiment/src/lib.rs` lo declare una sola
+  vez, `mod <x>;` sin `pub`, en la línea que sigue a `#[cfg(test)]`. No es un test nuevo: el pin de
+  la capa no se mueve. Cambiar la llamada del falsador para que el censo no la viera habría
+  esquivado la compuerta, y no se hizo.
+- **`tools/vectores/resto_ajeno.sh`, contra el §802 y el §786.** Abría las cuentas con las semillas
+  de `tools/banco_edad.sh` de antes del §802, `0xA11CE + S`: la segunda corrida del sandbox vuelve a
+  abrir una identidad que ya tiene cuenta, y desde el §802 eso se rechaza. Pasa a `0xA11CE + 2 * S`,
+  como el banco. Y compilaba sin `--locked`: el `winter-fri` del parche entra por ruta, y el
+  `Cargo.lock` de la copia pierde las dos líneas de su origen en el registro. El guion las quita, y
+  `cargo build --locked` comprueba que es lo único que cambia. El vector no se vuelve a capturar.
+- **`tools/segunda/README.md`.** La chuleta de órdenes ya estaba al día en `main` y en el §711 y el
+  §712 llevados («Lo que arregla de sellos anteriores», abajo). La frase del sello sobre la tabla
+  del verificador STARK va detrás de la nota del §793 de `main`, que ya decía que es la del §626. El
+  párrafo del sello va tras el del §712, y no delante de `wasmtime`, donde lo dejaba git. Y la
+  cuenta de los manifiestos bajo `wasmtime`, que el sello no tocaba, sube con su marca, tras la del
+  §712.
+- **Los contadores**: el valor de `b0042a3` más lo que suma este sello, y medido; y sin marca, como
+  en el §711 y el §712, la lista de la superficie de `spec/RPC.md` (`vectores.json` y
+  `vectores.lineas`), sin la que `check_superficie` daba dos novedades aditivas.
+- **Los tres sellos del §863 al §865**, sobre `3a4176c`. El §863 sube el nodo a 230, el TOTAL DE
+  SELLO a 1872 y `check_tests` a 2034, que el §711 y el §712 llevados dejan en 234, 1910 y 2072, y
+  `spec/vectors/` a 529 ficheros, 509 vectores y 1039 líneas, con la familia `nodo/`, que dejan en
+  542, 522 y 1092; el §865 marca las «1364 declaradas» y las «1349 declared». Chocaban los totales
+  de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, con el desglose de éste, la fila del nodo, al
+  lado de la del kit en `tools/canon.sh`, el recuento de los dos README y la lista de la superficie
+  de `spec/RPC.md`, y llevan el valor de `b0042a3` más lo de este sello: 1914 y 2054, 543 ficheros,
+  523 vectores y 1104 líneas; la fila del nodo y los 234 del desglose quedan como estaban, y las
+  marcas del §865 también. `vectores.json` lo fundía git sin choque y quedaba falso: los dos lados
+  lo habían llevado a 522, y va a 523. `check_tests`, 2076. El «1 bis» del §864 corre
+  `zk-ssl-verify` y `zk-ssl-air`, que llevan el canal del fork como dependencia, con las aserciones
+  de depuración y los pines de su fila: con el perfil `aserciones`, 201 y 46, como en release
+  (abajo). Su pie, «Ceguera declarada», contaba 59 marcas `cfg_attr(debug_assertions, ignore)` en
+  los crates con probador, 18 de ellas en `stark-experiment`: el falsador de la prueba de edad de
+  este sello, sólo en release como sus hermanos de `circuit_edad.rs`, es una más, y la frase pasa a
+  60 y 19, con una marca del §713 en la misma línea y sin mover las del pie. La familia `nodo/` no
+  la corre `tools/conformidad.sh` sino un test del nodo, que con el canal nuevo sigue pasando: las
+  doce familias de la conformidad, abajo, siguen siendo doce.
+
+**De dónde sale.** El probador se compromete con el resto: `set_remainder` (`winter-fri` 0.13.1)
+mete en la moneda `hash_elements(resto)`, con los coeficientes en el orden inverso en que viajan en
+la prueba, y ese es el último compromiso FRI. El verificador no lo comprueba: su `read_remainder`
+devuelve el resto tal cual, y `verify_generic` mira su grado y su plegado, no su compromiso. La
+variante `RemainderCommitmentMismatch` existe en 0.13.1 y nadie la devuelve. Así el compromiso sólo
+siembra la moneda: quien prueba puede comprometerse con un digest cualquiera, ver las consultas y
+enviar después el resto que le convenga.
+
+**Lo que hace.**
+
+1. **El canal del fork ata el resto.** `VerifierChannel::new` guarda el último compromiso FRI; si
+   faltara, es `prueba mal formada: FRI fuera de rango` y no un pánico. El canal sobrescribe
+   `read_remainder`, que el trait de `winter-fri` deja sobrescribir: `H::hash_elements(resto)`
+   distinto del compromiso es `RemainderCommitmentMismatch`, y el kit imprime
+   `FriVerificationFailed(RemainderCommitmentMismatch)`. Es lo primero que se mira del resto, antes
+   del grado y del plegado. `winter-fri` no se bifurca.
+2. **La segunda implementación**, igual. En `verificar_fri`, tras las capas y antes del grado,
+   `hash_e2(resto)` distinto del último compromiso es la misma causa, con el mismo texto. Su
+   autotest gana `resto_atado`, dos pares fijos: el vector nuevo y `edad-todos.json` con un bit del
+   resto.
+3. **Los falsadores en Rust** fabrican la prueba ajena sin tocar el probador. Su hasher es Blake3
+   byte a byte salvo en UNA llamada a `hash_elements`, la del compromiso del resto, que devuelve el
+   hash de otro resto: el mismo con su primer coeficiente más uno. Cuál es esa llamada se mide en
+   una corrida honesta, y la segunda corrida tiene que hacer las mismas llamadas. Las pruebas que
+   salen son de Blake3, y las juzga el verificador de siempre. Dos montajes: WorkAir con
+   `MerkleTree`, y la prueba de edad con la ocultación de producción encendida y `MerkleConSal`,
+   juzgada por el juez del kit; ésta, sólo en release, como sus hermanos de `circuit_edad.rs`.
+4. **Los tests del kit** (`tests_resto`). El vector, por `correr`, es exactamente `edad:
+   FriVerificationFailed(RemainderCommitmentMismatch)`, con salida 1. Y un bit del primer byte del
+   resto de cada prueba de la puerta del §711 —edad, pago, prenda y cobro pendiente— cae por su
+   compromiso, antes que por el plegado. Para eso, los ayudantes de `tests_sin_panico` pasan a
+   `pub(super)`, y su recorrido anota dónde va el resto.
+5. **Un vector nuevo**, `edad/neg-prueba-resto-ajeno.json`, con los mismos bytes con que se capturó
+   en privado (sha256 `809aa74139282437…`, 196.702 B). Se CAPTURA y no se deriva: cambiar el
+   compromiso mueve las consultas, y una mutación no lo produce. `tools/vectores/resto_ajeno.sh`
+   copia el árbol con `git archive`, le pone `winter-fri` 0.13.1 con `resto_ajeno.diff` —con
+   `ARQUEO_RESTO_AJENO` en el entorno, `set_remainder` se compromete con el hash de otro resto, y la
+   prueba lleva el de verdad— y repite el camino de `tools/banco_edad.sh`. El nodo verifica su
+   propia prueba antes de escribir el sobre; por eso, en su copia y sólo en ella, el guion quita del
+   canal la comprobación de este sello, y si no encuentra la línea exacta se para. Su línea va al
+   final del manifiesto de `edad/`, y su huella, en `spec/vectors/HUELLAS.sha256` (§692). La causa
+   entra en la clase «consulta que no casa con el compromiso» de `spec/PAQUETE.md` §6.1 (§693).
+6. **El guion y el parche, en `tools/vectores/`.** Se escribieron en privado, con otra ruta y otros
+   nombres; este sello les da su ruta pública, y el manifiesto la cita. Al llevarlo a la serie, el
+   guion pasa del puerto 8643, que ya usa `tools/banco_un_proceso.sh`, al 8651, que no usa ningún
+   guion de `tools/`. Y las dos líneas de contexto vacías del parche pierden el espacio final, para
+   que `git diff --check` salga limpio: con él y sin él, GNU patch 2.7.6 deja los mismos ficheros.
+
+**Medido en privado**, sobre `161a233` con los arreglos del §711 y del §712 (el kit de antes
+compilado y guardado aparte, y la segunda de antes, copiada aparte):
+
+- **Antes.** El vector capturado: el kit, salida 0 y VERDE; la segunda, VERDE. `edad-todos.json`
+  con el bit bajo del primer byte del resto volteado: los dos, `InvalidRemainderFolding`.
+- **Los falsadores con la comprobación anulada**: la prueba ajena VERIFICA, en WorkAir y en la de
+  edad, la oculta y con sal. Los dos tests del kit caen.
+- **Winterfell 0.13.1 sin el fork**, de punta a punta (la AIR de la demo, los crates de crates.io y
+  sólo `winter-fri` parcheado para probar): la prueba ajena da `Ok(())`.
+- **Con el arreglo.** El vector: el kit, salida 1 y `ROJO: edad:
+  FriVerificationFailed(RemainderCommitmentMismatch)`; el sobre honesto de la misma cabeza, VERDE.
+  La segunda, lo mismo. El bit del resto: la misma causa, en los dos.
+- **Lo que se ata es lo que el probador comprometió.** En las 115 pruebas STARK de `spec/vectors/`
+  que el lector de `stark.py` leía, el último compromiso FRI es el blake3 de los bytes del resto.
+  Con el vector, 115 de 116.
+- **WebAssembly.** El kit en `wasm32-wasip1`, bajo `wasmtime`: el vector y el bit del resto, salida
+  1 y la misma causa que en nativo; `edad-todos.json`, salida 0.
+- **El guion de la captura**, repetido con el arreglo ya en el árbol: VERDE, con dos sobres nuevos.
+  El kit con el arreglo juzga el ajeno como el vector y el honesto como VERDE; el kit de antes da
+  VERDE a los dos. No salen byte a byte: la cabeza lleva su hora y su firma, y la prueba va oculta y
+  con sal. El vector es el de la primera captura.
+- Las pruebas honestas de la capa, del nodo y de `zk-ssl-air` siguen verificando con el canal
+  nuevo, sin cambiar su cuenta.
+
+**Medido sobre este árbol**, `b0042a3` con este sello, en release, con el `target` compartido con
+otras tareas y cada `cargo` bajo un cerrojo, en una máquina de 4 CPU compartida:
+
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `stark-experiment` 425 y 13 ignorados, en 23 s de tests, con los dos falsadores nuevos;
+  `zk-ssl-verify` 201 (127 + 73 + 1); `winter-verifier` 0; y `zk-ssl` 518 y 7 ignorados, en 123 s
+  de tests, con el censo de las bandas al día. Y, con el canal nuevo, sin cambiar su cuenta:
+  `zk-ssl-air` 46, `zk-ssl-node` 234, con el test del §863 que juzga `spec/vectors/nodo/`,
+  `zk-ssl-cli` 167, `zk-ssl-sdk` 22 y `zk-ssl-wire` 27. Con el perfil `aserciones` del «1 bis» del
+  §864, los cinco de su lista con los pines de su fila, 0 fallos y 0 warnings, como en release:
+  `zk-ssl-verify` 201 (127 + 73 + 1), `zk-ssl-air` 46, `zk-ssl-hash` 56, `zk-ssl-guardian` 40 y
+  `zk-ssl-medio` 62. El workspace entero pasa `cargo check --locked --workspace --all-targets`, sin
+  errores y con los avisos de siempre (los 9 de `ceremony` y el del nodo).
+- **El censo de las bandas.** Con este arreglo, «23 probadores que ocultan ; 23 bandas ; 1 de solo
+  tests, saltados», VERDE. Con el binario de tests de la capa de antes de él, sobre estos fuentes,
+  ROJO: «falsadores_resto: oculta y no tiene una sola type Air: ["WorkAir", "EdadAir"]». Y con este
+  binario, sobre una copia de `stark-experiment/src/lib.rs` cambiada a mano y restaurada después
+  con el mismo sha256: sin el `#[cfg(test)]` de `mod falsadores_resto;`, ROJO; con `pub mod`, ROJO.
+- **El kit de antes**, `4549a4e115b3d3de`: el binario de `b0042a3`, el que el asiento del §712 da
+  para su árbol, guardado aparte: el vector nuevo, salida 0 y VERDE, y la conformidad de `edad`,
+  17 de 18. `edad-todos.json` con el bit bajo del primer byte del resto volteado:
+  `FriVerificationFailed(InvalidRemainderFolding)`.
+- **El kit de este árbol**, `8d0be7401ddb09d5`: el vector, salida 1 y `ROJO: edad:
+  FriVerificationFailed(RemainderCommitmentMismatch)`, tras el paso 1/3 de la cabeza; el bit del
+  resto, salida 1 y la misma causa; `edad-todos.json`, salida 0.
+- **La conformidad**, con `tools/conformidad.sh` y ese binario, las doce familias enteras: paquete
+  94 de 94, consumo 20, conflicto 17, rechazo 84, edad 18 de 18, pendiente 10, pago 15, prenda 11,
+  completitud 81, ancla 23, ancla cofirmada 27 y rotación 34. La segunda,
+  `tools/segunda/verificador.py`: paquete 94, consumo 20, conflicto 17, ancla 23, rotación 34 y
+  ancla cofirmada 27, 215 en las seis; este sello no le añade ninguna entrada.
+- **La segunda implementación.** `python3 tools/segunda/stark.py`: autotest OK, con el resto
+  atado. `python3 tools/segunda/juez_stark.py`: 39 de 39 pares, 53 pruebas juzgadas, 35 vectores
+  que caen antes del juez, 33 de 33 falsadores callados. Con el `stark.py` de `b0042a3` y estos
+  vectores: 38 de 39, y el que falla es el vector nuevo, VERDE. Los jueces que este sello no toca:
+  `juez_nucleo`, 34 de 34; `juez_cabezas`, 518 de 570 cabezas, 15 de 20 cofirmas, 431 ficheros, 57
+  con alguna que no verifica y 0 positivos, con salida 0 —la cabeza del vector nuevo verifica—;
+  `juez_cadena` sobre los cuatro catálogos, 24 de 24; `tools/segunda/cable.py`, 27 de 27;
+  `juez_medio`, 92 de 92; y `juez_xmss`, 8 de 8.
+- **El guion de la captura**, sin correrlo: `bash -n` limpio; la línea que desata el canal está una
+  vez en `crates/winter-verifier/src/channel.rs`, y la de `[patch.crates-io]`, una vez en el
+  `Cargo.toml` raíz; `resto_ajeno.diff` se aplica limpio (`patch --dry-run`) sobre `winter-fri`
+  0.13.1 del registro de cargo; y, sobre una copia del árbol con el parche puesto, `cargo metadata
+  --locked --offline` sale 101 con el `Cargo.lock` tal cual y 0 con las dos líneas que el guion
+  quita.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2076
+  declarados; `check_modulos`, 210 ficheros; `check_vectores`, 523 vectores y 1104 líneas con su
+  huella, ninguno movido, también desde `7dd6409`; `check_cifras`, 26 cifras y ninguna contradice el
+  canon; `check_publicadas`, con 543 ficheros en `spec/vectors/`; `check_catalogo`, 229 textos del
+  kit y 280 entradas de §5; `verificar_citas`, 0 muertos; `check_superficie`, la lista de
+  `zkssl/0.4` en 28 comparaciones y 0 novedades aditivas; y `check_columns`,
+  `check_constraint_layout`, `check_curvas`, `check_dominios`, `check_figures`, `check_nucleo` y
+  `check_techo`. Todas salen con 0.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `stark-experiment` 423 -> 425 y
+`zk-ssl-verify` 199 -> 201; `zk-ssl` sigue en 518: el censo cambia y no gana tests. TOTAL DE SELLO
+1910 -> 1914 y TOTAL CON LARGOS 2050 -> 2054, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; el
+desglose de `PRINCIPIOS.md`, 425 de circuitos y 201 del kit; los 423 de circuitos, a 425, en
+`PAPER.md`, `PAPER_EN.md`, `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`. Las «1364 declaradas»
+y las «1349 declared» no se tocan, como en los sellos anteriores (5.A-319). `check_tests`, de 2072
+a 2076. `spec/vectors/`, de 542 a 543 ficheros, en `README.md` y `README_EN.md`. `check_vectores`,
+de 522 a 523 vectores y de 1092 a 1104 líneas, y con ellos la lista de la superficie de
+`spec/RPC.md`, `vectores.json` 523 y `vectores.lineas` 1104, sin marca. La segunda, de 38 a 39
+pares en el resultado esperado de «1 quinquies» de `tools/segunda/README.md`, con su marca; y la
+cuenta de los manifiestos bajo `wasmtime`, de 372 a 373 entradas en los diez y de 433 a 434 en las
+doce, con su marca tras la del §712. Y el pie de `tools/canon.sh`, «Ceguera declarada», de 59 a 60
+marcas `cfg_attr(debug_assertions, ignore)` en los crates con probador y de 18 a 19 en
+`stark-experiment`, con su marca («Al portar», arriba).
+
+**Lo que arregla de sellos anteriores.** En la serie, la chuleta de órdenes de
+`tools/segunda/README.md` se había quedado atrás, y este sello la ponía al día: el verificador
+STARK decía «-> 34 de 34 (§706)», y el segundo verificador, «-> 170 de 170 (§693)». Sobre este
+árbol ya lo estaba: `main` había llevado el segundo verificador hasta el §852, y el §711 y el §712
+llevados la dejaron en «-> 38 de 38 (§711)» y «-> 215 de 215 (§712)», con sus marcas. Aquí sólo pasa el verificador
+STARK a «-> 39 de 39 (§713)», con la suya, y su comentario del autotest nombra el orden de Rust y el
+resto atado. La tabla del verificador STARK es la medida del §626 (23 de 23 pares), y no se rehace
+en este sello: la nota del §793 de `main` ya lo decía, y la frase del sello, debajo, remite a la
+cifra de hoy.
+
+**Lo que NO hace.** No cambia el cable ni la versión `zkssl/0.4`, ni el formato de una prueba: una
+prueba honesta se lee igual y verifica igual. No toca `winter-fri` ni `winter-crypto`: la
+comprobación va en el canal del fork. No reescribe ni cambia el veredicto de ningún vector
+anterior. No publica un kit: el corte va al final de la serie. No corre el canon entero ni los
+bancos.
+
+**Lo que NO cierra.**
+
+- **El alcance en solidez no se cuantificó.** Se midió que el compromiso no ataba. Se midió también,
+  en privado y en las 22 pruebas distintas que tenía entonces `spec/vectors/`, que, con las opciones
+  de la casa, el plegado contrasta el resto (8 o 16 coeficientes) con 35 a 40 posiciones distintas:
+  elegirlo después de las consultas no vacía esa comprobación. No se repitió sobre este árbol.
+  Cuánto gana un probador así, no se midió.
+- **Sólo se ata el resto.** Los demás compromisos —la traza, el cociente y las capas FRI— ya los
+  comprobaba el verificador.
+- **Un vector, en `edad/`.** El arreglo es del canal, común a todas las familias con prueba. Los
+  tests del kit lo miden con un bit del resto en la edad, el pago, la prenda y el cobro pendiente,
+  pero sólo la edad tiene un vector capturado.
+- **El guion de la captura no se corrió aquí de punta a punta.** En privado salió VERDE con el
+  arreglo en el árbol; aquí se comprobaron su sintaxis, sus dos anclas, el parche y el `Cargo.lock`
+  de su copia con `--locked`. Las semillas de claves del §802 que gana al portar tampoco se han
+  corrido en él: son las de `tools/banco_edad.sh`. Sus sobres no salen byte a byte, y el vector no
+  se vuelve a capturar: se conserva el de la primera captura.
+- **La lista de los módulos de tests que el censo de las bandas salta es a mano.** Un módulo de
+  tests nuevo que oculte sin banda sale ROJO en el censo hasta que entra en `SOLO_DE_TESTS`; y lo
+  que entra en ella tiene que seguir siendo de sólo tests, o vuelve a salir ROJO.

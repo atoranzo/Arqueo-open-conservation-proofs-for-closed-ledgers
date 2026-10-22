@@ -4488,7 +4488,7 @@ mod tests_sin_panico {
     use zk_ssl_air::pago_en_curso::verificar_contra_cabeza as juez_pago;
 
     const VALORES: [u8; 5] = [0x00, 0x01, 0x03, 0x40, 0xFF];
-    const VECTORES: [&str; 4] = [
+    pub(super) const VECTORES: [&str; 4] = [
         "edad/edad-todos.json",
         "pago/pago-t-frontera.json",
         "prenda/prenda.json",
@@ -4497,20 +4497,20 @@ mod tests_sin_panico {
     const SEMILLA: u64 = 0x701701;
     const PRESUPUESTO: usize = 1_000;
 
-    fn vector(nombre: &str) -> serde_json::Value {
+    pub(super) fn vector(nombre: &str) -> serde_json::Value {
         let ruta = format!("{}/../../spec/vectors/{nombre}", env!("CARGO_MANIFEST_DIR"));
         serde_json::from_str(&std::fs::read_to_string(ruta).unwrap()).unwrap()
     }
 
     /// El juez de un sobre con prueba, armado con los mismos lectores que el mando.
-    enum Juez {
+    pub(super) enum Juez {
         Edad(Afirmacion, CabezaEdad),
         Pago(AfirmacionPago, CabezaPago),
         Prenda(AfirmacionPrenda, CabezaPrenda),
         Cobro(AfirmacionCobro, CabezaCobro),
     }
 
-    fn juez_de(p: &serde_json::Value) -> Juez {
+    pub(super) fn juez_de(p: &serde_json::Value) -> Juez {
         let e = &p["enunciado"];
         let c = &p["cabeza"];
         let seq = u64_de(c, "seq").unwrap();
@@ -4556,7 +4556,7 @@ mod tests_sin_panico {
         }
     }
 
-    fn juzgar(j: &Juez, prueba: &[u8]) -> Result<(), String> {
+    pub(super) fn juzgar(j: &Juez, prueba: &[u8]) -> Result<(), String> {
         match j {
             Juez::Edad(af, c) => verificar_contra_cabeza(prueba, af, c).map(|_| ()),
             Juez::Pago(af, c) => juez_pago(prueba, af, c).map(|_| ()),
@@ -4654,14 +4654,17 @@ mod tests_sin_panico {
     }
 
     /// Lo que deja el recorrido de una prueba: los bytes de forma, el offset del byte que cuenta
-    /// las capas FRI, y de cada capa su tramo `[desde, hasta)` y la profundidad de su lote.
-    struct Recorrido {
+    /// las capas FRI, y de cada capa su tramo `[desde, hasta)` y la profundidad de su lote; desde
+    /// el §713, tambien donde va el resto (lo usa `tests_resto`).
+    pub(super) struct Recorrido {
         forma: Vec<usize>,
         capas_en: usize,
         capas: Vec<(usize, usize, u8)>,
+        /// §713: donde va la longitud del resto FRI (`u16`); el resto empieza dos bytes despues.
+        pub(super) resto_en: usize,
     }
 
-    fn recorrer(b: &[u8]) -> Recorrido {
+    pub(super) fn recorrer(b: &[u8]) -> Recorrido {
         struct L<'a> {
             b: &'a [u8],
             i: usize,
@@ -4753,12 +4756,13 @@ mod tests_sin_panico {
             assert_eq!(l.i, fin, "el lote de una capa FRI acaba donde dice");
             tramos.push((desde, l.i, profundidad));
         }
+        let resto_en = l.i;
         let resto = l.u16();
         l.i += resto;
         l.u8(); // las particiones FRI
         l.i += 8; // el nonce
         assert_eq!(l.i, b.len(), "el recorrido acaba en el ultimo byte de la prueba");
-        Recorrido { forma: l.forma, capas_en, capas: tramos }
+        Recorrido { forma: l.forma, capas_en, capas: tramos, resto_en }
     }
 
     /// SplitMix64: el azar del barrido, con semilla fija para que el mismo barrido se repita.
@@ -4878,5 +4882,51 @@ mod tests_sin_panico {
         }
         eprintln!("sin panico azar: {} mutaciones (semilla {SEMILLA:#x})", c.mutaciones);
         c.exigir_limpio("el azar");
+    }
+}
+
+/// **§713 · EL RESTO FRI, ATADO A SU COMPROMISO.**
+///
+/// El probador se compromete con el resto: el ultimo compromiso FRI es `hash_elements(resto)`.
+/// `winter-fri` 0.13.1 no lo comprueba al verificar: ese compromiso solo sembraba la moneda, y una
+/// prueba que se compromete con OTRO resto y lleva el de verdad salia VERDE. Lo comprueba ahora el
+/// canal del fork (`crates/winter-verifier/src/channel.rs`, `read_remainder`), antes del grado y
+/// del plegado, con la variante que `winter-fri` define y no usaba. Los falsadores que fabrican esa
+/// prueba sin tocar el probador viven en `stark-experiment` (`falsadores_resto.rs`); aqui, el kit.
+#[cfg(test)]
+mod tests_resto {
+    use super::tests_sin_panico::{juez_de, juzgar, recorrer, vector, VECTORES};
+    use super::*;
+
+    const CAUSA: &str = "FriVerificationFailed(RemainderCommitmentMismatch)";
+
+    /// El vector capturado (`tools/vectores/resto_ajeno.sh`): el ultimo compromiso FRI es el hash
+    /// de OTRO resto. Con el kit de antes del §713 salia VERDE, salida 0; ahora es ROJO con su
+    /// causa, y no por la red de los panicos.
+    #[test]
+    fn un_resto_que_no_es_el_comprometido_es_rojo_con_su_causa() {
+        let ruta = format!(
+            "{}/../../spec/vectors/edad/neg-prueba-resto-ajeno.json",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let e = correr(&ruta).unwrap_err();
+        assert_eq!(e, format!("edad: {CAUSA}"));
+        assert_eq!(codigo_de_salida(&Err(e)), 1);
+    }
+
+    /// Un bit del resto de cada prueba de la puerta del §711 -edad, pago, prenda y cobro-: cae por
+    /// su compromiso, que se mira antes que el plegado. Con el kit de antes del §713, la de edad
+    /// caia por `InvalidRemainderFolding` (medido, y lo mismo en la segunda implementacion).
+    #[test]
+    fn un_bit_del_resto_cae_por_su_compromiso_antes_que_por_el_plegado() {
+        for nombre in VECTORES {
+            let p = vector(nombre);
+            let j = juez_de(&p);
+            let mut b = hex_a_bytes(p["prueba"].as_str().unwrap()).unwrap();
+            assert_eq!(juzgar(&j, &b), Ok(()), "{nombre}: la de partida no verifica");
+            let i = recorrer(&b).resto_en + 2;
+            b[i] ^= 1;
+            assert_eq!(juzgar(&j, &b), Err(CAUSA.to_string()), "{nombre}");
+        }
     }
 }

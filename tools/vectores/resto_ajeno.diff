@@ -1,0 +1,33 @@
+diff -ru a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -62,6 +62,8 @@
+ //! * Swastik Kooparty's [talk on DEEP-FRI](https://www.youtube.com/watch?v=txo_kPSn59Y&list=PLcIyXLwiPilWvjvNkhMn283LV370Pk5CT&index=6)
+
+ #![no_std]
++// ARQUEO §713 (captura): `std::env` en `set_remainder`.
++extern crate std;
+
+ #[macro_use]
+ extern crate alloc;
+diff -ru a/src/prover/mod.rs b/src/prover/mod.rs
+--- a/src/prover/mod.rs
++++ b/src/prover/mod.rs
+@@ -233,7 +233,16 @@
+         let remainder_poly_size = evaluations.len() / self.options.blowup_factor();
+         let remainder_poly: Vec<_> =
+             evaluations[..remainder_poly_size].iter().copied().rev().collect();
+-        let commitment = <H as ElementHasher>::hash_elements(&remainder_poly);
++        // ARQUEO §713, SOLO para capturar el vector negativo (tools/vectores/resto_ajeno.sh): con
++        // ARQUEO_RESTO_AJENO en el entorno, el compromiso es el hash de OTRO resto -el mismo con
++        // su primer coeficiente mas uno- y la prueba lleva el resto de verdad.
++        let commitment = if std::env::var_os("ARQUEO_RESTO_AJENO").is_some() {
++            let mut otro = remainder_poly.clone();
++            otro[0] += E::ONE;
++            <H as ElementHasher>::hash_elements(&otro)
++        } else {
++            <H as ElementHasher>::hash_elements(&remainder_poly)
++        };
+         channel.commit_fri_layer(commitment);
+         self.remainder_poly = FriRemainder(remainder_poly);
+     }

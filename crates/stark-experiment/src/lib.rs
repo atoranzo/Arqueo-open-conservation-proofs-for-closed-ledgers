@@ -130,6 +130,11 @@ mod kat_probador;
 // y en release.
 #[cfg(test)]
 mod falsadores_oculta;
+// §713: el resto FRI atado a su compromiso. Una prueba cuyo ultimo compromiso FRI es el
+// hash de OTRO resto, fabricada sin tocar el probador (un hasher que cambia esa llamada), sobre
+// WorkAir y sobre la prueba de edad de la casa. Solo tests.
+#[cfg(test)]
+mod falsadores_resto;
 
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, MerkleTree};
 use winterfell::math::{fields::f128::BaseElement, FieldElement};

@@ -6,7 +6,9 @@ Este directorio es `winter-verifier` 0.13.1 tal como lo publico crates.io (el ch
 hasta esta correccion aqui decia <<que ningun probador de ARQUEO devuelve>>, cierto solo hasta el S537): lo que difiere de upstream es
 `src/lib.rs` (spike-b-p4r3, sesiones 166 a 172) y, desde el §711, `src/channel.rs` -las capas FRI
 que el dominio exige, ni una menos ni una mas, y la cuenta de segmentos como error- y el `expect` de
-los aleatorios de `src/lib.rs`, que pasa a `RandomCoinError`; todo lo demas es upstream byte a byte. Entra por
+los aleatorios de `src/lib.rs`, que pasa a `RandomCoinError`; desde el §713, `src/channel.rs` ata ademas el
+resto FRI a su compromiso (`read_remainder`: `winter-fri` 0.13.1 no lo comprueba); todo lo demas es
+upstream byte a byte. Entra por
 `[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
 y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream
 pide `0.13`. Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.
