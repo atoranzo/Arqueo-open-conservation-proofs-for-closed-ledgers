@@ -2755,7 +2755,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   abierto OTRO proceso (el cerrojo de sled): un nodo por libro») en vez del
   `Io("could not acquire lock")` de la biblioteca, lo ata
   `dos_nodos_sobre_el_mismo_libro_el_segundo_se_niega_con_nombre` y el
-  banco lo comprueba. **No se reintenta**: un reintento solo haria esperar a
+  banco lo comprueba. **No se reintenta** (⚠️ §829: ya no; desde el §813
+  el nodo espera al cerrojo, acotado, y el autor lo ratifico el 22-10-2026,
+  como dice la nota del final): un reintento solo haria esperar a
   un nodo que no deberia estar ahi. El `WouldBlock` del §79 salio en los
   tests, que cierran y reabren el libro dentro de un mismo proceso, a 16
   hilos; ahi sigue `open_encrypted_retry` (la 45).
@@ -2819,6 +2821,22 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   mira sin dormir, el banco sale ROJO: se niega en 110 ms. DOS NODOS sigue
   atando la exclusion. El «No se reintenta» de arriba deja de valer, y el de
   `error_al_abrir` queda corregido con marca.
+
+  ⚠️ **§829: el autor ratifico el §813 el 22-10-2026.** Lo de arriba se decidio
+  por delegacion; el autor lo ratifico ese dia en el chat de otra sesion que
+  trabaja en el arbol, con «sí a todo lo recomendado», y lo confirmo en el de la
+  sesion que lo sella, con «si». La espera acotada al cerrojo del libro —diez
+  miradas cada 50 ms— revisa el «No se reintenta» del §783, y es ya decision del
+  autor. La 18 sigue cerrada y no se reabre. El control lo midio la otra sesion,
+  no la que lo sella, sobre `7ed7e17`, en 4 CPU, y lo detalla su respuesta de
+  ese dia: en 26 pasadas de `tools/banco_reinicio.sh`, 11 con
+  `BANCO_REINICIO_N=20` y 15 con 50, de los 970 rearranques del SOLAPE, 940
+  abren a la primera y 30 tras esperar al cerrojo, y los 1.940 del REINICIO, a
+  la primera, segun la logica del banco y el total de un agente de su triaje, no
+  su registro de serie; otras seis pasadas, de otro agente y con otra tarea en
+  la maquina, dan en el SOLAPE 180 mas, 176 y 4. Ninguno se niega, y ningun
+  `WouldBlock` llego a error. Lo que ese banco aun dio en ROJO, con el nodo a
+  menos prioridad que la carga, es la 123, no esta. `AUDITORIA.md` §829.
 
 - [ ] **19. Sin log de escritura anticipada — y la consecuencia que se
   describia NO existe.** **Comprobable**: `grep -rn "write_ahead|journal"
@@ -3562,10 +3580,14 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   15-10-2026 sobre `b6994c3`, en 4 CPU con ocho `yes` y carga de 6,6 a 8,7, para el DOS NODOS de
   `tools/banco_reinicio.sh`: de 100 sondas `zkssl_supply` con 2 s de tope a un nodo vivo en cada
   caso (200 en total), **10 quedan sin respuesta SIN segundo nodo y 5 CON él**. Las que contestan
-  lo hacen con mediana de 1 ms, p90 de 9 a 12 ms y máximo de 1,9 a 2,0 s, y las que no,
+  lo hacen con mediana de 1 ms, p90 de 9 a 12 ms (⚠️ §829: no se reproduce; con ocho `yes` y el nodo
+  a `nice` 0, en dos series de la otra sesión pasa de 0,5 s: 1,82 s sobre `7ed7e17`, y sin cifra
+  impresa sobre `b6994c3`; el de aquí es de su fecha: abajo) y máximo de 1,9 a 2,0 s, y las que no,
   reintentadas con 30 s de tope, contestan todas, en 0,6 s como mucho. El segundo nodo no lo
   explica, y no se ha medido nada más: ni dónde se va el tiempo —el planificador, el latido de
-  1 s, el runtime, la escucha—, ni sin carga, ni con otra sonda. Lo que hace el banco desde el §813:
+  1 s, el runtime, la escucha—, ni sin carga, ni con otra sonda (⚠️ §829: sin carga lo midió
+  después la otra sesión, y las sondas lentas solapan un latido, con carga y sin ella; dónde se va
+  el tiempo dentro del nodo sigue sin medirse: abajo). Lo que hace el banco desde el §813:
   el DOS NODOS sondea al primero con hasta cinco sondas de 2 s seguidas en vez de una -la misma
   sonda que su arranque, que hace hasta cien con 0,1 s entre una y otra-, porque lo que comprueba
   es que sigue vivo y contesta. **Lo que pide**: medir dónde se va el tiempo de una sonda sin
@@ -3573,6 +3595,64 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   cliente del cable con un plazo de 2 s puede dar por caído a un nodo vivo. **Qué la cierra**: esa
   medida; si es el nodo, el arreglo con su test, y si es la máquina, la cifra dicha donde el cable
   dice sus plazos.
+
+  ⚠️ **§829: la medida de la otra sesión, con su control, y lo que recomienda el autor.** La midió
+  otra sesión que trabaja en el árbol, no la que lo sella, sobre `7ed7e17`, con datos de `b6994c3`
+  para comparar, en 4 CPU, y la mandó el 22-10-2026 en un mensaje y en una respuesta que lo corrige
+  y que dice contrastada por dos verificadores con las transcripciones. Sus registros y sus guiones
+  se borraron: queda lo que imprimieron los agentes de su triaje. Esta sesión no la ha medido ni
+  repetido; lo leído lo leyó en el árbol, y lo deducido no se midió.
+  - **El control: el cerrojo ya no falla.** En 26 pasadas de `tools/banco_reinicio.sh` sobre
+    `7ed7e17`, 11 con `BANCO_REINICIO_N=20` y 15 con 50, el SOLAPE hizo 970 rearranques: 940 a la
+    primera, 30 tras esperar al cerrojo y ninguno se niega (sin carga añadida, 418 y 2 en 15; con
+    carga, 522 y 28 en 11). Los 1.940 del REINICIO, a la primera, no los apunta su registro de
+    serie: salen de la lógica del banco y del total de un agente de su triaje. Otras seis pasadas,
+    de otro agente y con otra tarea a `nice` 10 en la máquina, dan en el SOLAPE 180 más, 176 y 4,
+    sin negativas. Ningún `WouldBlock` llegó a error.
+  - **Lo que queda es esta entrada.** El DOS NODOS sale ROJO, «el primer nodo dejo de contestar»,
+    con el nodo vivo, en 4 de las 5 pasadas con ocho `yes` a `nice` 0 y el banco a `nice` 10 —tres
+    de `N` 50 y una de 20, de esas seis; la otra salió VERDE, el DOS NODOS en 3.021 ms—, y en
+    ninguna de las otras 27; en esas cuatro, el REINICIO y el SOLAPE pasan enteros. Con nodo y carga
+    a la misma prioridad, VERDE siempre, de 620 a 926 ms. Los ROJO, dice el mensaje, se lanzaron a
+    mano, con los `yes` a `nice` 0, y `serie.sh` usaba `nice` 10: esa receta no se repite tal cual;
+    la respuesta, que las 26 las lanzaba un guion de serie, y no cómo se lanzaron los `yes`.
+  - **El RPC no contesta mientras dura `latir`, también sin carga.** En 100 sondas sin carga sobre
+    `7ed7e17`, la mediana del `ms=` de los 20 latidos de su ventana es de 804 ms (802,5 ms en
+    `b6994c3`), y el latido ocupa el 44 % del tiempo. Las 20 sondas lentas solapan un latido; de las
+    80 rápidas, ninguna empieza dentro de uno, cuando por azar lo harían unas 35. Las lentas acaban
+    de 7 a 11 ms antes de la línea «cabeza de epoca FIRMADA», y con ocho `yes`, de 13 a 44 ms antes.
+    Con ocho `yes` y el nodo a `nice` 0, quedan sin respuesta 4 de 100 sondas en `7ed7e17` y 10 de
+    100 en `b6994c3`, y 0 de 100 en otra serie sobre `7ed7e17`: no es una regresión. Con el nodo a
+    `nice` 10, el latido dura de 14 a 16 s, y quedan sin respuesta 66 de 100 sondas, y 30 de 50 en
+    otra, que corrió con la otra tarea, como unos 35 s del final de la de `b6994c3`.
+  - **El p90.** El 1,85 s del mensaje es de la serie de `b6994c3`, con las 10 sin respuesta dentro,
+    y no se compara con el p90 «de las que contestan» de arriba; el comparable es el de la serie
+    sobre `7ed7e17` en que contestaron las 100: 1,82 s. En la de `b6994c3`, 11 de las 90 que
+    contestan pasan de 0,5 s, y su p90 también, sin cifra impresa. Los 9 a 12 ms no se reproducen.
+  - **La sonda** no es la del banco: son guiones de la otra sesión, que arrancan un nodo con los
+    argumentos del banco, `--latido 1` incluido, salvo tres: `--log info`, el `nice` del nodo y el
+    puerto; lo sondean con `zkssl_supply` y `curl --max-time 2`, con 0,2 s entre una y otra, y un
+    cruce con la línea «cabeza de epoca FIRMADA … ms=» de cada latido da los 804 ms y el 44 %.
+  - **Los matices.** El máximo de 0,80 s que el mensaje da «con la máquina libre» es de una serie de
+    60 sondas lanzada al acabar una con carga, con 4,87 a 1 minuto al empezar. El porcentaje con un
+    latido cada 60 s, el de omisión (`crates/zk-ssl-node/src/latido.rs:72`), no está medido: el
+    periodo es `cada` más lo que dura `latir`, y da 804 / 60.804, el 1,32 %, y de 1,24 a 1,55 % con
+    latidos de 752 a 947 ms, deducido. El `ms=` mide `latir` entera, no solo la firma, y no se puede
+    comparar con los 144,5 ms del comentario: leído.
+  - **La pista del mecanismo, sin medir.** `latir` es síncrona y corre dentro de un `tokio::spawn`
+    (`crates/zk-ssl-node/src/latido.rs:413-421`), y `#[tokio::main]` no fija `worker_threads`
+    (`crates/zk-ssl-node/src/main.rs:1755`): leído. Lo que retiene al RPC —el ejecutor, un candado o
+    la escucha— NO está medido.
+  - **Lo que comprobó la sesión que lo sella.** El banco arranca sus dos nodos —el de `arranca`, la
+    `:60` de `tools/banco_reinicio.sh`, y el segundo del DOS NODOS, la `:116`— con `--latido 1` y
+    `--log warn` (`:62` y `:118`), con el que no sale la línea del latido, un `tracing::info!`
+    (`crates/zk-ssl-node/src/latido.rs:429-431`); el latido duerme `cada` y luego llama a `latir`
+    (`:417-422`); y los 10 de 100 en `b6994c3` coinciden con los de arriba sin segundo nodo.
+  - **Lo que recomienda el autor**, como titula el mensaje lo que el autor decidió el 22-10-2026 en
+    el chat de la otra («sí a todo lo recomendado») y confirmó en el de la que lo sella («si»):
+    sellar ahora solo esta nota, con la medida y su control; arreglar `latir` más adelante, cuando
+    se mida el mecanismo; y no alargar las sondas del DOS NODOS, descartado porque taparía esta
+    entrada. Sigue abierta; lo que pide y lo que la cierra no cambian. `AUDITORIA.md` §829.
 
 - [ ] **124. Nada ata una clave de firma a un solo libro ni a un solo contador (§813).** Medido el
   15-10-2026, en la revisión del §813: un nodo B arranca con la MISMA `--clave-fichero` que un nodo

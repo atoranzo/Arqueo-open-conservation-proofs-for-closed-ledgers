@@ -67516,3 +67516,342 @@ línea del estado en esta punta.
 
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §829 — el autor ratifica el §813: la espera acotada al cerrojo del libro revisa el «No se reintenta» del §783, y la 18 sigue cerrada; y la 123 lleva la medida de la otra sesión: el RPC no contesta mientras dura `latir`, también sin carga, y el cerrojo ya no falla
+
+El commit que lleva este asiento, sobre el §828. Un solo sello, de prosa: en `BACKLOG.md`, la 18,
+con una marca en la línea de su «No se reintenta» y una nota al final de su entrada, y la 123, con
+dos marcas y una nota al final de su entrada; y este asiento. Ni código, ni tests, ni pines, ni
+vectores: no toca `crates/`, ni `tools/`, ni `SECURITY.md`, ni ningún RFC, ni la cabecera «Estado»
+del `BACKLOG.md`.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el último del rango que
+el autor asignó (§800 a §829), y va detrás de números más altos porque los dos rangos se sellan a la
+vez.
+
+**Quién lo decide.** El autor, las dos cosas que este sello registra. El 22-10-2026, en el chat de
+la otra sesión que trabaja en el árbol, las decidió con «sí a todo lo recomendado», como dice el
+mensaje de esa sesión, que no dice quién se lo recomendaba y titula lo de la 123 «Lo que recomienda
+el autor». Esta sesión lo sabe por ese mensaje, recibido ese día a las 06:10 UTC, y se lo preguntó
+al autor en su propio chat, hacia las 06:12 UTC: «¿Me lo confirmas aquí? En el árbol voy a escribir
+que lo decidiste tú, y sólo lo sé por la otra sesión.» El autor contestó: «si».
+
+1. **El §813, ratificado.** El §813 se decidió por delegación del autor, con el criterio del §609,
+   como dice su «Quién lo decide»: el nodo espera al cerrojo de su libro, acotado —diez miradas cada
+   50 ms—, y eso revisa el «No se reintenta» del §783. Desde el 22-10-2026 es una decisión del
+   autor. La 18 sigue cerrada y no se reabre. Con eso, dice el mensaje, «la D 5a del encargo queda
+   cerrada»: es una etiqueta suya, que el mensaje no explica y que no sale en el árbol. Hay un
+   precedente, dice también: «el §845, que también se decidió por delegación y el autor ratificó en
+   el §853». En el árbol es el timeout de 600 s de la fila `zk-ssl-cli`, que eligió una sesión en el
+   §845 y dejó en «Lo que es del autor», y que el autor ratificó el 21-10-2026, como registra el
+   §853.
+2. **La 123: sellar ahora sólo la nota**, con la medida y su control; arreglar `latir` en el código
+   más adelante, cuando se mida el mecanismo; y no alargar las sondas del DOS NODOS de
+   `tools/banco_reinicio.sh`, descartado porque taparía la 123. Y sellar las dos cosas juntas, en un
+   solo sello del rango de esta sesión, como propone el mensaje de la otra.
+
+De la sesión es dónde va cada marca y cada nota, y su texto.
+
+**Lo que hace.**
+
+1. **La 18.** Su «**No se reintenta**», del §783, lleva ahora una marca en su línea: «⚠️ §829: ya
+   no; desde el §813 el nodo espera al cerrojo, acotado, y el autor lo ratifico el 22-10-2026, como
+   dice la nota del final». El §813 lo había dado por caído al final de la entrada («El «No se
+   reintenta» de arriba deja de valer»), no en su línea. Al final de la entrada, una nota «⚠️ §829»:
+   la ratificación, con las palabras del autor y dónde las dijo; que la 18 sigue cerrada y no se
+   reabre; y el control de la otra sesión (abajo). La casilla, `[x]`, y el título no cambian.
+2. **La 123.** Dos marcas: en el «p90 de 9 a 12 ms», que no se reproduce (con ocho `yes` y el nodo a
+   `nice` 0, en dos series de la otra sesión pasa de 0,5 s: da 1,82 s en la de `7ed7e17`, y sin
+   cifra impresa en la de `b6994c3`), y en el «no se ha medido nada más: … ni sin carga», que ya no
+   es cierto (lo midió la otra sesión; dónde se va el tiempo dentro del nodo, no). Al final de la
+   entrada, una nota «⚠️ §829» con la medida y su control, el p90, la sonda, los matices, la pista
+   del mecanismo como leída y sin medir, lo que comprobó esta sesión, en su propia viñeta, y lo que
+   recomienda el autor. La entrada sigue abierta: su casilla, su título, «Lo que pide» y «Qué la
+   cierra» no cambian. La 123 no decía que el cerrojo fallara —habla de un nodo vivo sin respuesta—,
+   así que en eso no hay nada que marcar; el control lo dice en la nota.
+3. **Este asiento.**
+
+Lo que en el árbol, fuera de este registro y de `doc/ecst/borrador/`, habla de la espera al cerrojo
+del libro —la del nodo o la de la capa— o del «No se reintenta» del §783, y no se toca. Salió de
+`git grep` con «No se reintenta», «reintenta», `WouldBlock`, «§783», «§813», «la 18», «entrada 18» y
+«diez veces cada 50 ms», sobre `7ed7e17` y otra vez sobre el §828; lo que esas búsquedas dan de
+otros asuntos —otros reintentos y otros `WouldBlock`, el «(el §813)» que sólo nombra un commit, la
+124, la cabecera del `BACKLOG.md`, que dice qué abrió y qué cerró cada sello, lo que nombra el banco
+del reinicio por su §783 y las crónicas de los contadores de tests de `tools/canon.sh`— no se cuenta
+aquí. Sin este registro ni `doc/ecst/borrador/`, dan 139 líneas en `7ed7e17` y 152 en el §828: las
+139 siguen, con el mismo texto, y las 13 nuevas son de otros asuntos —los reintentos de la sonda del
+recifrado del §828, en la 3.17 de `SECURITY.md`, en `persistence.rs` y en `tests.rs`; y el §813
+nombrado como un commit, en la lista de los sellos que cambian las fuentes del nodo de `doc/KIT.md`
+y `doc/KIT_EN.md` y en una crónica de tiempos de `tools/canon.sh`—. Lo que no se toca:
+
+- en `crates/zk-ssl-node/src/main.rs`, los comentarios del §813 sobre la espera del nodo —el de
+  `abrir_esperando_el_cerrojo` («Por que espera (§813, que corrige al §783)») y los de sus miradas,
+  su pausa y el error de un libro tomado—, el de `error_al_abrir`, que ya lleva en su línea la marca
+  del §813 sobre el «No se reintenta» y lo corrige, y sus tests, del §783 y del §813, que nombran la
+  18; es código, y este sello no lo toca, así que no dicen la ratificación;
+- `tools/banco_reinicio.sh`, cuya cabecera y cuyas marcas del §813 son del banco —el REINICIO, el
+  SOLAPE y la sonda del DOS NODOS—, y cuyos `fallo` dicen «la 18 SE REPRODUCE», no el «No se
+  reintenta»; es un guion, y tampoco se toca;
+- `crates/zk-ssl/src/persistence.rs`, `crates/zk-ssl/src/tests_support.rs` y
+  `crates/zk-ssl/src/tests.rs`, que nombran la entrada 18 o la espera «diez veces cada 50 ms» por las
+  de la capa y de los tests, no por la del nodo;
+- la 3.14 de `SECURITY.md` y el RFC-0001 («Los cerrojos» y «La carrera, y el cerrojo del libro»),
+  que dicen que la apertura de la capa espera, diez veces cada 50 ms, al cerrojo de sled de los
+  hermanos del libro y a `<libro>.cerrojo`: es la capa, sigue siendo cierto, y ninguno dice que el
+  nodo no espere;
+- en `BACKLOG.md`, la 17, que dice que el cerrojo de `sled` (§783 y §813) impone un escritor por
+  libro sólo en la misma máquina, y que la 123 mide que una sonda de 2 s puede dar por caído a un
+  nodo vivo con la máquina sobresuscrita, y la medida nueva no contradice ninguna de las dos cosas;
+  y la 45, que dice que su arreglo de los tests no cierra la 18, y no la cerró;
+- y en este registro, los asientos del §783 y del §813, que no se reescriben, y las secciones 16.6
+  y 79, que dicen lo de su fecha.
+
+**Lo medido, y por quién.** Todo lo de este apartado es de la otra sesión: lo midió sobre `7ed7e17`,
+con datos de `b6994c3` para comparar, en un contenedor de 4 CPU, y lo mandó el 22-10-2026 en dos
+veces: en su mensaje, recibido a las 06:10 UTC, y en su respuesta entera a tres preguntas sobre la
+medida, recibida hacia las 13:14 UTC, que dice contrastada por dos verificadores con las
+transcripciones de los agentes de su triaje y que corrige el mensaje en dos puntos: el p90 no se
+compara con el de la 123, y el porcentaje con 60 s cambia. Sus registros en bruto y sus guiones de
+medida se borraron al cerrar ese triaje, así que no se puede recalcular nada: lo que queda es lo que
+imprimieron sus agentes. Esta sesión no lo ha medido ni repetido, ni sobre `7ed7e17` ni sobre el
+§828. Del §858 al §828 no cambian `crates/zk-ssl-node/` ni `tools/banco_reinicio.sh` (`git diff` de
+`7ed7e17` al §828, vacío en los dos), y sí `crates/zk-ssl`, la capa que el nodo enlaza: la
+instantánea, del §819 al §821; el recifrado, la migración y la apertura del libro, en el §828; y dos
+comentarios, en el §827. Si eso mueve lo medido, no se ha medido. Lo que la otra dice «leído» lo
+comprobó esta en el árbol, y lo que esta comprueba o deduce de lo demás va en su propio apartado
+(abajo). Lo deducido no se midió.
+
+- **El control: el cerrojo ya no falla.** Son 26 pasadas de `tools/banco_reinicio.sh` sobre
+  `7ed7e17`, de un agente de su triaje, que lanzaba un guion de serie fuera del árbol: 11 con
+  `BANCO_REINICIO_N=20` y sin carga añadida, con 219 rearranques del SOLAPE a la primera y 1 tras
+  esperar al cerrojo; y 15 con 50: 4 sin carga añadida, con 199 y 1; 3 con ocho `yes` a `nice` 0 y
+  el banco a `nice` 10, con 142 y 8; 4 con ocho `yes` a `nice` 10, con 184 y 16; 3 con cuatro `yes`
+  a `nice` 10, con 146 y 4; y 1 con un `cargo test --no-run`, con 50 y 0. En total,
+  11 × 20 + 15 × 50 = 970: 940 a la primera, 30 tras esperar y ninguna negativa, según el registro
+  de la serie, que otro agente imprimió entero. Ese registro no apunta el REINICIO: sus 1.940
+  rearranques, todos a la primera, salen de la lógica del banco —en cada pasada, `N` rearranques con
+  SIGKILL y `N` con SIGTERM (`tools/banco_reinicio.sh:76-89`), y `fallo` corta en el primer ROJO
+  (`:38`), y los ROJO fueron en el DOS NODOS, que va después— y del total del agente que corrió la
+  serie; y lo que se imprimió del registro de una de las pasadas con ROJO enseña el «50 de 50» con
+  SIGKILL y con SIGTERM. Otras seis pasadas, del otro agente, sin decir sobre qué commit y con otra
+  tarea a `nice` 10 en la máquina (abajo), dan en el SOLAPE 180 más, 176 a la primera y 4 tras
+  esperar, según sus líneas de serie (su resultado decía 140): 1.150 sin una sola negativa. Ningún
+  `WouldBlock` llegó a error.
+- **Lo que queda es la 123.** El DOS NODOS salió ROJO, «el primer nodo dejo de contestar», con el
+  nodo vivo, en 4 de las 5 pasadas con ocho `yes` a `nice` 0 y el banco a `nice` 10: las tres de
+  `N` 50 del control, tras las que se paró una serie que iba a hacer diez, y una de las dos de
+  `N` 20 del otro agente; la otra salió VERDE, con el DOS NODOS en 3.021 ms, y las dos corrieron con
+  otra tarea a `nice` 10 en la máquina (abajo). En las otras 27 pasadas del banco, 23 del control y
+  4 del otro agente, no hubo ninguno. En esos ROJO, el REINICIO y el SOLAPE pasan enteros. Con el
+  nodo y la carga a la misma prioridad, VERDE siempre, con el DOS NODOS de 620 a 926 ms, dice el
+  mensaje, que añade que la serie de los ROJO se lanzó a mano, con los `yes` a `nice` 0, y que el
+  guion `serie.sh` usaba `nice` 10, así que esa receta no se repite tal cual. La respuesta, en
+  cambio, dice que las 26 pasadas del control, también las tres con ROJO, las lanzaba un guion de
+  serie, y no dice cómo se lanzaron los `yes`, ni que en eso corrija al mensaje.
+- **El RPC no contesta mientras dura `latir`, también sin carga.** En una serie sin carga añadida
+  sobre `7ed7e17`, de 100 sondas, del otro agente, con la carga en 1,75 al empezar su tanda, la
+  mediana del `ms=` de los 20 latidos de su ventana es de 804 ms (802,5 ms en la de `b6994c3`), y el
+  latido ocupa el 44 % del tiempo; las 20 sondas lentas solapan un latido, y de las 80 rápidas
+  ninguna lo solapa ni empieza dentro de uno, cuando por azar lo harían unas 35. Las lentas acaban
+  de 7 a 11 ms antes de la línea «cabeza de epoca FIRMADA», y con ocho `yes`, de 13 a 44 ms antes.
+  Con ocho `yes` y el nodo a `nice` 0, la misma prioridad, quedan sin respuesta 4 de 100 sondas en
+  una serie sobre `7ed7e17` y 10 de 100 en una sobre `b6994c3`, las dos del otro agente, y 0 de 100
+  en otra sobre `7ed7e17`, del que corrió el control: no es una regresión. Con el nodo a `nice` 10 y
+  ocho `yes` a `nice` 0, el latido dura de 14 a 16 s, y quedan sin respuesta 66 de 100 sondas en una
+  serie, del que corrió el control, y 30 de 50 en otra, del otro agente. Esta otra corrió entera con
+  otra tarea a `nice` 10 en la máquina, que pilló también unos 35 s del final de la de `b6994c3` con
+  ocho `yes` —la de los 10 de 100 y la del 1,85 s (abajo)— y el banco del otro agente, el de sus
+  seis pasadas (arriba), con el ROJO y el VERDE de `N` 20 y los 180 del SOLAPE. Ese agente dijo que
+  la máquina no tenía otra carga, y para ese tramo no vale.
+- **El p90.** El «p90 de 9 a 12 ms» de la 123 no se reproduce. El 1,85 s del mensaje es de la serie
+  sobre `b6994c3` con ocho `yes` y el nodo a `nice` 0, del otro agente, la que la otra tarea pilló
+  al final (arriba): «mediana 0.006789 p90 1.853039 max 2.008458», de las 100 sondas con las 10 sin
+  respuesta dentro, de unos 2,0 s cada una. Su cálculo contaba además la línea final, y otra si el
+  nodo seguía vivo, que no tienen tiempo y quedan delante al ordenar: con una o con dos, ese «p90»
+  es el valor 89 de los 100 y la «mediana», el 49; del valor 90 sólo se sabe que está entre 1,853 y
+  2,008 s. La 123 da el p90 «de las que contestan», y 1,85 s no es la cifra que se compara con sus 9
+  a 12 ms. En esa serie contestaron 90, y 11 de ellas tardaron más de 0,5 s, así que el p90 de las
+  que contestan pasa de 0,5 s; nadie lo imprimió. La comparable es la serie sobre `7ed7e17` con ocho
+  `yes` y el nodo a `nice` 0 en la que contestaron las 100, del que corrió el control:
+  «mediana 0.008687 p90 1.822561 max 1.989388», sacada sin esas líneas, así que es el valor 90 y el
+  50, y, como contestaron todas, es también el p90 de las que contestan: 1,82 s. La que el otro
+  agente corrió sobre `7ed7e17` junto a la de `b6994c3` da «p90 1.813386», con 4 sin respuesta y el
+  mismo cálculo que ésta.
+- **La sonda.** «La sonda» de «El banco y la sonda usan `--latido 1`» no es el banco: son las sondas
+  `zkssl_supply` de dos guiones de medida de la otra sesión, fuera del árbol y ya borrados. Arrancan
+  un nodo con los argumentos de `tools/banco_reinicio.sh`, `--latido 1` incluido, y cambian tres
+  cosas: `--log info` en vez de `--log warn`, el `nice` del nodo y el puerto. Esperan a que
+  conteste, lanzan los `yes` y esperan 3 s, y hacen sus sondas con `curl --max-time 2`, con 0,2 s
+  entre una y la siguiente, y de cada una apuntan la hora de envío, el código HTTP, el tiempo total
+  y la carga a 1 minuto. Después, un cruce compara cada sonda con la ventana de cada latido, sacada
+  de la línea «cabeza de epoca FIRMADA … ms=»: de él salen los 804 ms, el 44 % y las 20 lentas y las
+  80 rápidas. El banco no apunta cuántas sondas hace: `arranca` hace hasta 100 de `vivo`, de 2 s
+  como mucho y con 0,1 s entre una y otra, hasta que el nodo contesta, y corta si el proceso muere
+  (`tools/banco_reinicio.sh:55-58` y `:64-68`); el DOS NODOS, hasta cinco seguidas (`:138`). Del
+  banco sale sólo el ROJO del DOS NODOS. Las citas `:60` y `:116` del mensaje son del banco: la
+  `:60` es `arranca`, que sirve al primer nodo, al REINICIO y al SOLAPE, y la `:116`, el segundo
+  nodo del DOS NODOS; las dos llevan `--latido 1`.
+- **Los matices.** El máximo de 0,80 s del mensaje («Pasa también con la máquina libre: el 20 % de
+  las sondas tarda hasta 0,80 s») no sale del cruce: es el de una serie de 60 sondas, con 11 lentas,
+  lanzada justo al acabar una con ocho `yes`, con la carga a 1 minuto en 4,87 y a 5 minutos en 7,11
+  al empezar, la cola de esos `yes`: «mediana 0.000813 p90 0.708879 max 0.804506». De las series sin
+  carga del otro agente, nadie imprimió el máximo. «La carga sólo alarga el latido hasta pasar de
+  2 s», dice el mensaje. El porcentaje con un latido cada 60 s, el de omisión, no está medido: nadie
+  corrió el nodo con `--latido 60`. El bucle duerme `cada` y después llama a `latir`, así que el
+  periodo es `cada` más lo que dura `latir`, y el 44 % medido con `--latido 1` es
+  804 / (1.000 + 804); con 60 s, 804 / 60.804 son el 1,32 %, y con los latidos de 752 a 947 ms de la
+  serie de 60 sondas, de 1,24 a 1,55 %: deducido. El «en torno al 1,5 %» del mensaje, que la
+  respuesta cita como «1,3 a 1,5 %», estaba mal contado, dice ella. El `ms=` del registro del latido
+  mide `latir` entera, no sólo la firma, y no se puede comparar con los 144,5 ms del comentario:
+  leído.
+- **La pista del mecanismo, sin medir.** `latir` es síncrona y corre dentro de un `tokio::spawn`, y
+  `#[tokio::main]` no fija `worker_threads`: leído. Lo que retiene al RPC —el ejecutor, un candado o
+  la escucha— NO está medido.
+
+**Las citas de los dos mensajes, comprobadas por esta sesión en el árbol de `7ed7e17` y otra vez
+en el del §828.** Todas dan su texto, en los dos:
+
+- `tools/banco_reinicio.sh:60`: `"$NB" --listen "127.0.0.1:$PORT" --latido 1 …`, en `arranca`, el
+  nodo que el banco rearranca y sondea; y `:116`: `"$NB" --listen "127.0.0.1:$((PORT+1))" --latido
+  1 …`, el segundo nodo del DOS NODOS. Las dos son del banco; qué es «la sonda» del mensaje, arriba.
+- `tools/banco_reinicio.sh:38`: `fallo(){ msg "ROJO: $*"; exit 1; }`. `:55-58`: `vivo`, un
+  `curl -s --max-time 2` con `"method":"zkssl_supply"`. `:64-68`: el bucle de `arranca`, de hasta
+  100 vueltas, que vuelve con 1 si el proceso ya no vive (`kill -0`) y duerme `sleep 0.1` entre una
+  y otra. `:76-89`: el REINICIO, `for SENAL in KILL TERM`, con `N` rearranques en cada una. `:138`:
+  `contesta`, hasta cinco `vivo` seguidos.
+- `crates/zk-ssl-node/src/latido.rs:72`: `pub const LATIDO_POR_DEFECTO_S: u64 = 60;`.
+- `latido.rs:413-421`: `pub fn arrancar(…)`; en la `:414`, `tokio::spawn(async move {`; en la
+  `:419`, `let t = Instant::now();`; y en la `:420`, `match latir(&app, firmante.as_mut()) {`. La
+  doc de encima (`:410-412`) dice «así que [`latir`] es síncrona y se llama entera entre dos
+  `await`», y `latir` es una `pub fn`, no `async` (`:143`). Que el `ms=` mide `latir` entera se lee
+  en la `:422`, `let ms = t.elapsed().as_secs_f64() * 1000.0;`, entre la `:419` y la vuelta de
+  `latir`; y la línea «cabeza de epoca FIRMADA» (`:431`) sale después de `conservar` (`:427`).
+- `latido.rs:417-422`: en la `:417`, `tokio::time::sleep(cada).await;`, antes de la llamada a
+  `latir` de la `:420` y del `ms` de la `:422`.
+- `crates/zk-ssl-node/src/main.rs:1755`: `#[tokio::main]`, sin argumentos. `worker_threads` no sale
+  en ningún fuente de `crates/zk-ssl-node`, y su `Cargo.toml` pide tokio con `rt-multi-thread`.
+- El «p90 de 9 a 12 ms», en la 123, tal cual: «lo hacen con mediana de 1 ms, p90 de 9 a 12 ms y
+  máximo de 1,9 a 2,0 s», detrás de «Las que contestan». En `7ed7e17` son las líneas 3347 y 3348 de
+  su `BACKLOG.md`, por las que la respuesta cita el p90 «de las que contestan»; en el §828, y con
+  este sello, son otras.
+- Los «144,5 ms» del comentario: el de `latir`, «Firmar cuesta **144,5 ms** medidos (S.3)»
+  (`latido.rs:109-110`), que vuelve en la `:132` y en la `:227` («firmar, que cuesta 144,5 ms»).
+- «el primer nodo dejo de contestar»: el `fallo` del DOS NODOS, `tools/banco_reinicio.sh:139`.
+
+Ninguna se corrige. Las de la nota de la 123 dan en el §828 el mismo texto, en las mismas líneas,
+que en `7ed7e17`: ni el §859 ni la pila tocan `tools/banco_reinicio.sh` ni `crates/zk-ssl-node/`
+(arriba), y este sello tampoco.
+
+**Lo que esta sesión comprueba o deduce, sin medirlo.** Antes de la respuesta, el `N` del control,
+qué era «la sonda» y en qué serie salió el 1,85 s eran deducciones suyas; la respuesta los dice, y
+van arriba como de la otra sesión. Lo que es sólo de esta:
+
+- **Las cuentas.** 11 × 20 + 15 × 50 = 970, y 2 × 970 = 1.940, como hace el banco: dos veces `N` en
+  el REINICIO (`tools/banco_reinicio.sh:76-77`) y `N` en el SOLAPE (`:93`). Por cargas,
+  219 + 199 + 142 + 184 + 146 + 50 = 940 y 1 + 1 + 8 + 16 + 4 + 0 = 30; y en las seis del otro
+  agente, 17 + 20 + 20 + 19 + 50 + 50 = 176 y 3 + 0 + 0 + 1 + 0 + 0 = 4. Con el `N` de omisión, 15
+  (`:39`), 26 pasadas habrían dado 780 y 390, como el §813 contó 900 y 450 en 30. Y 804 / 1.804 son
+  el 44,6 %; 804 / 60.804, el 1,32 %; 752 / 60.752, el 1,24 %; y 947 / 60.947, el 1,55 %.
+- **La sonda, contra el árbol.** El banco arranca sus dos nodos con `--log warn`
+  (`tools/banco_reinicio.sh:62` y `:118`), y la línea «cabeza de epoca FIRMADA» es un
+  `tracing::info!` (`latido.rs:429-431`), que con ese filtro no sale: el cruce no podía salir del
+  banco, y la respuesta dice que sus guiones corrían el nodo con `--log info`. El bucle del latido
+  duerme `cada` y luego llama a `latir` (`latido.rs:417-422`), como dice la respuesta.
+- **Los 10 de 100 en `b6994c3`.** Coinciden con la cifra de la 123, la del 15-10-2026 sin segundo
+  nodo, y son de otra medida: la serie de la otra sesión con ocho `yes` y el nodo a `nice` 0.
+- **La «máquina libre».** El máximo de 0,80 s, que el mensaje da «con la máquina libre», es de una
+  serie que empezó con la carga a 1 minuto en 4,87 y a 5 minutos en 7,11, dice la respuesta, que la
+  atribuye a la cola de los `yes` de la serie de antes. Que esa serie no era con la máquina libre lo
+  concluye esta sesión de esas cifras: la respuesta da la carga, no esa conclusión.
+- **`serie.sh`.** No está en el árbol: `git ls-tree` de `7ed7e17` no tiene ningún `serie`, ni el del
+  §828. La respuesta dice que el guion de serie estaba fuera del árbol y que se borró.
+
+**Lo que NO hace.**
+
+- No toca código: ni `latir`, ni el runtime del nodo, ni `tools/banco_reinicio.sh`, ni sus sondas,
+  ni su `--latido 1`. Arreglar `latir` es para cuando se mida el mecanismo, como recomienda el autor.
+- No toca el comentario de `latir` que dice que «un latido de 144 ms cada 60 s es un 0,24 % del
+  reloj, pero retenido es un 0,24 % de parada total» (`latido.rs:111-112`), ni el de M.1, «Nueve
+  firmas solapadas, CERO escrituras afectadas» (`:130`), medido con `--latido 1` (`:120-121`), que
+  la medida nueva pone en cuestión. El uno habla de retener el candado y el otro de escrituras en
+  serie; M.1 lleva su fecha, el §252, y su «Lo que M.1 NO mide» (`:139-142`) incluye la
+  concurrencia real. La medida no los deja falsos, y son código. Lo que los concilia con ella, o no,
+  es el mecanismo, que no está medido.
+- No alarga las sondas del DOS NODOS: el autor lo descartó.
+- No cierra la 123, ni cambia lo que pide ni lo que la cierra, ni su título, «con la máquina
+  sobresuscrita»: las sondas sin respuesta que da la medida de la otra sesión son todas de series
+  con carga, y sin carga el latido dura unos 804 ms, dentro de los 2 s de la sonda (deducido de esa
+  medida; de sus series sin carga, nadie imprimió el máximo).
+- No da por falso el «p90 de 9 a 12 ms» de la 123: es una medida del 15-10-2026 sobre `b6994c3`, y
+  su marca dice que es de su fecha, junto a las dos series de la otra sesión, sobre `7ed7e17` y
+  sobre el mismo `b6994c3`, en las que el p90 de las que contestan pasa de 0,5 s.
+- No reabre la 18, ni cambia su casilla.
+- No mide nada: no repite la medida de la otra sesión, ni mide el mecanismo.
+- No reescribe los asientos del §783 ni del §813.
+- No trae al árbol `serie.sh`, ni los guiones de la sonda, que se borraron, ni la receta de los ROJO
+  como guion.
+- No nombra las sesiones, los flujos, los agentes ni las series de la otra sesión, ni sus rutas: los
+  cuenta por lo que hacen.
+
+**Sobre esta punta.** El borrador se escribió sobre `7ed7e17`, el §858, y se llevó sobre el §828 con
+un `cherry-pick`. El §859 está ya en `main` (`212eca2`), y la pila, del §819 al §828, va sobre él.
+El `BACKLOG.md` entró por fusión automática, y cambia lo mismo que en el borrador, con el mismo
+texto (`git diff -U0`, comparado con el del borrador), más abajo: en la 18, 158 líneas, las que
+meten por encima el §859, en la nota del §810 de la 85, el §822, el §823, el §824 y el §827; y en la
+123, 217, esas y las que el §820 y el §821 meten en la 120 y la 121. Luego se retocaron dos frases
+de las notas, para que digan lo que dice el mensaje, en sus mismas líneas: en la de la 18, el
+control «lo midio la otra sesion», sin el «despues» del borrador, porque el mensaje no dice si lo
+midió antes o después de que el autor decidiera; y en la de la 123, el `ms=` «no se puede comparar»
+con los 144,5 ms «del comentario», como dice el mensaje, donde el borrador decía «no se compara» y
+«que dice el comentario». `AUDITORIA.md` chocó sólo porque los dos añadían al final: van los
+asientos del §859 y de la pila, tal como estaban en el §828, y este asiento al final, detrás del del
+§828, con una línea en blanco entre los dos, puesto después al día en lo que dice de su base, de sus
+cifras, de lo que dan las búsquedas y de las citas por línea. Lo que el §859 y la pila añaden fuera
+de este registro no habla de la 18 ni de la 123, ni de la espera al cerrojo del libro (arriba), ni
+de lo que tarda `latir`: lo único que nombra `latir` es el «latir más deprisa que la cadencia
+firmada» del RFC-0023, que es otra cosa. `cargo` no se corrió, salvo el `cargo tree` de
+`check_curvas`: el sello no toca código. Una revisión de esta punta, sin bloqueantes, pidió precisar
+tres deducciones de esta sesión: el `N` del control, los 10 de 100 en `b6994c3` y lo que da con 60 s
+la cuenta del 44,6 %. Luego llegó la respuesta entera de la otra sesión, que dice las tres y corrige
+su mensaje en el p90 y en el porcentaje con 60 s, y las notas de la 18 y de la 123 y este asiento se
+pusieron de acuerdo con ella, sin cambiar cuántas líneas tiene ninguna de las dos notas: lo que esta
+sesión deducía y la respuesta dice —el `N`, la sonda y la serie del p90— va ahora como de la otra
+sesión. Una segunda revisión, sin bloqueantes y contrastada con el mensaje y con la respuesta
+entera, pidió ocho precisiones menores, y van en las notas y en este asiento: que la respuesta dice
+que un guion de serie lanzaba las 26 pasadas del control, frente al «a mano» del mensaje para los
+ROJO; que la otra tarea a `nice` 10 pilló también el banco del otro agente y el final de la serie de
+`b6994c3`; qué agente corrió cada serie, sin cruzarlos; que el «con la máquina libre» lo descarta
+esta sesión, no la respuesta; que la respuesta no dice de cuántos minutos es la carga de 1,75; que
+en las seis pasadas del otro agente tampoco se niega ninguno; el p90 de las que contestan sobre
+`b6994c3`, también en la marca; y los tres cambios de la sonda, en la nota, y que la respuesta cita
+su porcentaje como «1,3 a 1,5 %». Ninguna de las dos notas ni de las marcas cambia de número de
+líneas, y las citas por línea de abajo no cambian.
+
+**Contadores.** Ninguno se mueve. Los de esta punta: `check_tests`, 2033 tests declarados y 20
+instrumentos; `check_modulos`, 207; TOTAL DE SELLO 1871 y CON LARGOS 2011, en `PAPER.md`,
+`PAPER_EN.md` y `PRINCIPIOS.md`; `check_vectores`, 508 `.json` y 1017 líneas de 18 manifiestos.
+`BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 41 abiertas y 89 resueltas, contadas
+con `grep -c` de las casillas a principio de línea, como la línea «Estado». En `7ed7e17`, donde se
+escribió el borrador, eran 2012 tests declarados, un total de sello de 1853, y 44 abiertas y 86
+resueltas: el §859 no mueve ninguna; los tests los suben sellos de la pila, que lo dicen en sus
+asientos, y las entradas las mueven el §820, el §821 y el §822, que cierran la 120, la 121 y la 75.
+Las marcas «⚠️ §829» en los ficheros del commit, sin este asiento, son cinco, todas en
+`BACKLOG.md`: dos en la 18 y tres en la 123.
+
+**Las citas por línea que se mueven**, con los números del §828. En `BACKLOG.md`, de 5294 líneas a
+5374: la `:2758`, la del «No se reintenta» de la 18, pasa a tres, y desde la `:2759` corren dos;
+desde la `:2823`, la 19, dieciocho; la `:3565` y la `:3568`, de la 123, pasan a tres cada una, y
+desde la `:3566` corren veinte y desde la `:3569`, veintidós; y desde la `:3577`, la 124, ochenta.
+El árbol vivo no cita ninguna línea de `BACKLOG.md` (`verificar_citas`, v5: 0). En `AUDITORIA.md`,
+con el patrón de la v5, caen en lo que se mueve 19 de sus 33 citas, en 19 líneas, de la `:27360` a
+la `:64020` —también las de los asientos del §820, el §821 y el §822—, y ninguna daba ya en el
+§828 el texto que cita (cada una, contra el `BACKLOG.md` del §828); las demás, entre ellas las dos
+del §859, la `:760` y la `:763-764`, quedan por encima. Son de su fecha, y bajan con lo demás. En
+los demás ficheros no se mueve ninguna línea.
+
+Sobre el §828 con este sello y con este asiento en su sitio, ya de acuerdo con la respuesta, salen
+con 0 las once herramientas del bucle «2 ter» —`check_curvas` bajo el cerrojo de `cargo`, con `nice`
+y con su propio `CARGO_TARGET_DIR`—, y también `check_tests`, `check_modulos`, `check_vectores` y
+`check_catalogo`. `git diff --check`, limpio. En la sesión se corrió el canon entero, `--sello`,
+sobre este árbol y con este asiento en su sitio, y salió VERDE.
