@@ -1,17 +1,52 @@
 # RFC-0016 — Un valor, una escritura: la canonicidad del núcleo
 
-- **Estado:** PROPUESTO (§640) — con sus cinco etapas construidas en el mismo sello y el canon
-  `--sello` VERDE dentro de él. El paso a ACEPTADO es del autor: la regla 4 del PROCESO pide la
-  spec (`NUCLEO.md` sección 6, «Canonicidad», y `PAQUETE.md` sección 5), el OpenRPC (no se mueve:
-  ningún método ni ningún campo cambia), los vectores (cuatro negativos nuevos bajo `zkssl/0.4`) y
-  las suites; todo eso está en el §640, y la decisión no.
+- **Estado:** ACEPTADO (§825) — **la regla 4 del PROCESO, contada.** (1) La spec: `NUCLEO.md`
+  sección 6, «Canonicidad», y `MODULO` y `u64_canonico` en el censo de su sección 4; y `PAQUETE.md`,
+  el texto `{campo}: 0x… no es canonico` en el catálogo de su sección 5 y el valor que su sección 9
+  echaba en falta (§640). La E6 aplica en la biblioteca las reglas de la familia CUENTAS de
+  `NUCLEO.md`, que ya estaban escritas (§475), y no mueve la spec. (2) El OpenRPC no se mueve: ni un
+  método ni un campo; `spec/openrpc.json` no cambió en el §640 ni en el §782. (3) Los vectores,
+  nuevos bajo `zkssl/0.4`, que no sube: los cuatro negativos de la E4
+  —`paquete/rechazo-n-no-canonico.json`, `paquete/rechazo-mmrSize-no-canonico.json`,
+  `ancla/neg-ancla-cero-escrito-como-p.json` y `completitud/neg-n-no-canonico.json`—, con su línea
+  de manifiesto y su huella en `vectors/HUELLAS.sha256`. La E6 no tiene vector: no cambia ningún
+  veredicto del kit, porque el mando juzga el camino con el módulo `cuentas`, y la atan tres
+  falsadores de `zk-ssl-verify`. (4) Las suites: el canon `--sello` VERDE dentro del §640 y dentro
+  del §782, y entero también en el §817, en el §852, en el §858 y en el §859 (sus asientos); del
+  árbol del §859 al de este giro no cambia el código del kit ni nada de lo que este RFC toca: en
+  `crates/` sólo cambian la capa (`zk-ssl/src/snapshot.rs` y sus tests), `zk-core/src/merkle.rs` y
+  un comentario de `settlement-layer/src/sparse_tree.rs`, y en `tools/`, `canon.sh` y `artefacto.sh`
+  (`git diff`). El giro sólo cambia texto, y sobre su árbol corrieron las once herramientas del
+  bucle del canon, que leen ese texto, y `check_vectores`, `check_catalogo`, `check_tests` y
+  `check_modulos`. Y al girarlo, sobre los catálogos de este árbol, con los cuatro negativos entre
+  ellos: la release vigente, `arqueo-verify-v0.4.3`, publicada el 21-10-2026 (§818), con su binario
+  publicado (`1b120e597897e005…`), pasa `paquete/` 89 de 89, `ancla/` 22 de 22 y `completitud/` 81
+  de 81; el kit compilado desde este árbol, cuyas fuentes son las de la 0.4.3 salvo comentarios de
+  `zk-ssl-hash` (§849) y de `zk-ssl-medio` y un test del medio con su `[[test]]` y su grabación
+  (§848), y dos guiones del medio que graban (§855), que el kit no compila, lo mismo; y la segunda
+  implementación, `paquete/` 89 de 89 y `ancla/` 22 de 22, con los tres de esas dos familias.
+  Propuesto en el §640, con las cinco primeras etapas construidas en el mismo sello; la E6, en el
+  §782. El diseño, D-A a D-E, lo aplicó la sesión del §640 con sus decisiones REVERSIBLES (las D-1 a
+  D-3 de aquel asiento), y se acepta así. La decisión de aceptarlo la delegó el autor («HACER
+  todo»), con la regla 4 por criterio, y empujar este sello es su aceptación, como en el §607. **Lo
+  que se acepta CON su residuo, declarado** en «Lo que NO cierra»: `as_digest` sigue reduciendo
+  (D-C) y lo vigilan tests, no una compuerta; los tres textos de camino siguen sin vector; y el
+  deserializador de `Q` de `zk-ssl-wire` exige la escritura mínima y deja la cota a quien lo usa. Y
+  fuera del árbol, al aceptarlo: la `arqueo-verify-v0.3.0` sigue publicada y acepta los cuatro
+  negativos; la vigente, la 0.4.3, los rechaza y lleva la E6 (ver «Compatibilidad»).
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§640): midió, propuso,
-  aplicó, corrió el canon y commiteó, fuera del paso 4 de `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
+  aplicó, corrió el canon y commiteó, fuera del paso 4 de `GENAI.md`; la E6 (§782) y este giro
+  (§825), también en sesiones de Claude Code en la nube y fuera del paso 4 — ver
+  [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-10-01
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: nada de lo que el núcleo produce se
   mueve, ni un KAT ni una cabeza firmada. Cambia lo que se ACEPTA al leer: menos.
-- **Asiento(s) de AUDITORIA:** §640.
+- **Asiento(s) de AUDITORIA:** §640 (la propuesta y sus cinco primeras etapas); §641 (el RFC-0017,
+  que matiza una frase de «Lo que NO cierra»); §662 (la escritura mínima de `Q` en el cable, que «Lo
+  que NO cierra» cita); §775 (el testigo y el SDK leen con la regla); §782 (la E6); §825 (la
+  aceptación). ⚠️ §825: decía «§640.»: callaba la E6, los otros dos asientos que «Lo que NO cierra»
+  cita —el §662 y el §775— y el §641.
 
 ## Estado de las etapas
 
@@ -108,9 +143,22 @@ No rompe el cable ni el formato. Lo medido:
   `NotCanonical` que declaraban. El nodo y el SDK escriben elementos con `as_int`, canónico: nada de
   lo persistido ni de lo publicado cambia de lectura.
 
-El kit publicado, `arqueo-verify-v0.3.0`, es anterior y lee reduciendo: acepta los cuatro negativos
-nuevos. Lo corrige una release nueva, que es decisión del autor; hasta entonces, el árbol y el kit
-publicado discrepan exactamente en estos cuatro vectores, y en ninguno más.
+El kit `arqueo-verify-v0.3.0` es anterior y lee reduciendo: acepta los cuatro negativos nuevos.
+Sigue publicado, y ya no es el vigente. La `arqueo-verify-v0.4.0` (§657) lee canónico, y medida
+desde dentro de su tarball descargado pasa los tres catálogos que llevan los cuatro —`paquete/` 72
+de 72, `ancla/` 22 de 22 y `completitud/` 74 de 74 (§658)—; la 0.4.1, también desde dentro del suyo,
+lo mismo: 72 de 72, 22 de 22 y 74 de 74 (§661); y la 0.4.2, medida desde fuera en el §671, también:
+73 de 73, 22 de 22 y 74 de 74. Al aceptar este RFC la vigente es la `arqueo-verify-v0.4.3`
+(`doc/KIT.md` sección 0), publicada con su aviso el 21-10-2026 y producida sobre `5fd5212`, el
+commit del §817: medida desde dentro de su tarball descargado, 84 de 84, 22 de 22 y 81 de 81 (§818);
+sobre los catálogos de este árbol, el punto (4) de la cabecera. La E6 (§782) es posterior a la 0.4.2
+y la lleva la 0.4.3: su commit, `2638f92`, está en
+`git log a4e888d..5fd5212 -- crates/zk-ssl-verify/src`, de la 0.4.2 a la 0.4.3. La E6 no cambia
+ningún veredicto del kit, porque el mando no llama a esas seis funciones.
+⚠️ §825: decía «El kit publicado, `arqueo-verify-v0.3.0`, es anterior y lee reduciendo: acepta los
+cuatro negativos nuevos. Lo corrige una release nueva, que es decisión del autor; hasta entonces,
+el árbol y el kit publicado discrepan exactamente en estos cuatro vectores, y en ninguno más». La
+release nueva llegó en el §657, y desde el §658 el kit vigente y el árbol leen igual estos cuatro.
 
 ## Seguridad
 
@@ -130,7 +178,11 @@ publicado discrepan exactamente en estos cuatro vectores, y en ninguno más.
   nombrado, sin etapa. ⚠️ §775: el testigo ya lee con la regla —la escritura mínima y la cota
   `< p`—, y el SDK también, en el `logSeq` de la constancia. Queda el deserializador de `Q` de
   `zk-ssl-wire`, que desde el §662 exige la escritura mínima y deja la cota a quien lo usa
-  (`zk_ssl_wire::cantidad_canonica`).
+  (`zk_ssl_wire::cantidad_canonica`). ⚠️ §825: el RFC-0017 matiza el «ningún veredicto de un tercero
+  cambia por ellos» en su sección «Lo que corrige de RFC-0016» (§641): leído en el cable sin la
+  regla, un `balance` del estado que aporta el titular escrito como `b + p` descuadraba la
+  conservación del suministro al reabrir; su E4 lo lee canónico en `ClientStateDto` y en
+  `AccountViewDto`, antes de que la capa lo sume o reste.
 - ~~**`verificar_inclusion` y sus hermanas v2 a v6** no fijan la profundidad del árbol de cuentas
   ni cruzan el camino con el `indice` que el recibo lleva, que hoy no se usa. Ningún consumidor del
   árbol las llama; la regla que sí se aplica en el mando vive en el módulo `cuentas`. Queda nombrado.~~
@@ -147,5 +199,6 @@ publicado discrepan exactamente en estos cuatro vectores, y en ninguno más.
 ## Referencias
 
 `spec/NUCLEO.md` sección 6, «Canonicidad»; `spec/PAQUETE.md` secciones 5 y 9; `zk-ssl-hash`
-(`MODULO`, `u64_canonico`, `element_from_bytes`); `zk-ssl-verify` (`u64_de`, `mmr::mitad`);
-`tools/segunda/nucleo.py`; `AUDITORIA.md` §640.
+(`MODULO`, `u64_canonico`, `element_from_bytes`); `zk-ssl-verify` (`u64_de`, `mmr::mitad`, y desde
+la E6 `inclusion::exigir_camino_de_la_cuenta`); `tools/segunda/nucleo.py`; `AUDITORIA.md` §640,
+§782 y §825.

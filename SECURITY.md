@@ -603,7 +603,7 @@ vectores negativos lo atan, y la segunda implementación los rechaza con el mism
 ninguna cabeza custodiada se mueve. **Residuo**: el lector de `QUANTITY` del cable y el recompositor
 del testigo siguen leyendo sin la regla —lo que firman y comparan es el digest, no el entero—, y el
 kit publicado `arqueo-verify-v0.3.0` es anterior: acepta los cuatro negativos hasta una release nueva. La
-`arqueo-verify-v0.4.0` (§658) los rechaza, medido con el kit descargado.
+`arqueo-verify-v0.4.0` (§658) los rechaza, medido con el kit descargado. ⚠️ §825: el residuo de arriba ya no es el de hoy. El recompositor del testigo lee con la regla desde el §775, y el SDK también, en el `logSeq` de la constancia; el lector de `QUANTITY` exige la escritura mínima desde el §662 y deja la cota a quien lo usa (`zk_ssl_wire::cantidad_canonica`). Al aceptarse el RFC-0016, la release vigente es la `arqueo-verify-v0.4.3`, publicada con su aviso (§818), que rechaza los cuatro igual, medida con su binario publicado (§825); la 0.4.2 (§671), publicada y ya no vigente, también. Y el RFC-0016 está ACEPTADO desde el §825, con su residuo declarado en su cabecera.
 
 ### 3.9 Ocho hallazgos de un análisis con agentes — ⚠️ MEDIDO, siete cerrados y uno acotado
 
