@@ -61,7 +61,8 @@ solvencia**: las pruebas hablan del libro, no del mundo.
   clava (`crates/zk-ssl-node/Cargo.toml`:48-52, `crates/zk-ssl-medio/Cargo.toml`:29-36), y por qué
   va clavada la tercera, en el suyo (`crates/zk-ssl/Cargo.toml`:45-58). ⚠️
   **Corregido en el §794**: decía «Todo en `SECURITY.md`», que no dice de ninguna de las dos que vaya
-  sin auditoría ni clavada: nombra XMSS y ML-DSA sólo como esquemas (`SECURITY.md`:189, :728).
+  sin auditoría ni clavada: nombra XMSS y ML-DSA sólo como esquemas (`SECURITY.md` §2, «Qué NO
+  protege», y §3.11; ⚠️ §893: decía `:189` y `:728`, que eran sus líneas en el §794).
   ⚠️ **Corregido en el §819**: no nombraba `argon2`, clavada desde el §702 y sin auditar por el
   proyecto (`AUDITORIA.md` §702), y decía «lo que declaran las dos dependencias, en el manifiesto que
   las clava».

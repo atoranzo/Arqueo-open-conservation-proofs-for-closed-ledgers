@@ -62,7 +62,8 @@ It proves **conservation, not solvency**: the proofs speak of the ledger, not of
   (`crates/zk-ssl-node/Cargo.toml`:48-52, `crates/zk-ssl-medio/Cargo.toml`:29-36), and why the third
   is pinned, in its own (`crates/zk-ssl/Cargo.toml`:45-58). ⚠️ **Corrected
   in §794**: it said «All of it in `SECURITY.md`», which says of neither dependency that it is
-  unaudited or pinned: it names XMSS and ML-DSA only as schemes (`SECURITY.md`:189, :728).
+  unaudited or pinned: it names XMSS and ML-DSA only as schemes (`SECURITY.md` §2, «Qué NO
+  protege», and §3.11; ⚠️ §893: it said `:189` and `:728`, their lines at §794).
   ⚠️ **Corrected in §819**: it did not name `argon2`, pinned since §702 and not audited by the
   project (`AUDITORIA.md` §702), and it said «what the two dependencies declare, in the manifest that
   pins them».

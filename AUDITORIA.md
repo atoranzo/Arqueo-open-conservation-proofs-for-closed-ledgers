@@ -69401,4 +69401,58 @@ los comentarios de `snapshot.rs`, que se quedó ella.
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
 `check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
 y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
+
+## §893 — los puntos 8 y 14 de la lista de cosas menores: el comentario de `.gitignore` sobre `Cargo.lock` dice la condición del artefacto que el §823 puso en lo demás, y las dos portadas citan `SECURITY.md` por sección, no por dos líneas que ya no eran las suyas
+
+El commit que lleva este asiento, sobre el §892. Toca `.gitignore`, el final de la `:11`;
+`README.md`, la `:64`, que pasa a dos líneas (`:64-65`); y `README_EN.md`, la `:65`, que pasa a dos
+(`:65-66`). Y este asiento. Ni código, ni tests, ni vectores, ni `spec/PAQUETE.md`, ni `BACKLOG.md`.
+Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina,
+fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente del rango §890 a
+§899. El canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol
+limpio, con este asiento en su sitio y sin esta frase: VERDE, 377 s de reloj y 224 s de tests, en
+una máquina de 4 CPU con carga de 1,26 al empezar. Las 19 filas en su pin, con 1872 tests que pasan,
+y las 55 líneas «OK» de sus compuertas, entre ellas el artefacto reproducible, con el binario
+`803ee230ea9d737b` y el tarball `0ff44e87dea67ffb`.
+
+Del autor es la tarea, la misma del §890. Los dos puntos los dejó escritos la sesión del §860 a
+§889, en las dudas de las revisiones de su §823 y de su §819.
+
+**Medido**, sobre el árbol del §829:
+
+1. **`.gitignore:10-11`** dice que «el artefacto reproducible depende de» `Cargo.lock`. El §823
+   corrigió con marca, donde se decía «reproducible» sin más, que lo demostrado es «reconstruible
+   desde su commit; con la misma huella, sólo dentro de una misma máquina» (`README.md:272`,
+   `doc/KIT.md:15`). Este comentario no lo corrigió. `spec/PAQUETE.md:1584`, la línea de la Historia
+   que nombra el §401, tampoco, y es historia: se queda.
+2. **`README.md:64` y `README_EN.md:65`**, la marca del §794, citaban `SECURITY.md:189` y `:728` por
+   «nombra XMSS y ML-DSA sólo como esquemas». En `b6491ef`, el §794, la `:189` es la de XMSS y la
+   `:728` la de ML-DSA. En el árbol del §829, la `:189` es «mentir en ellas es oponible**.» y la
+   `:728` una fila de tabla; XMSS sale en la `:191`, en la sección 2, «Qué NO protege», y ML-DSA en
+   la `:797`, en la 3.11. `verificar_citas` no la vio: no lee la forma `fichero`:N.
+3. **Quién cita las portadas por línea.** Fuera de `AUDITORIA.md` y de `doc/ecst/`, sólo el
+   RFC-0005, en su `:71`, `README.md:60-62`, que es de `2080e5a`, el árbol que ese RFC declara
+   (§890). Que las dos portadas ganen una línea no corre ninguna cita viva.
+
+**Qué cambia.**
+
+- **`.gitignore:11`** gana, en la misma línea, «⚠️ §893: reproducible dentro de una misma maquina,
+  lo demostrado, §823», sin tildes, como el resto del fichero.
+- **Las dos portadas** citan `SECURITY.md` §2, «Qué NO protege», y §3.11, con la marca que dice qué
+  decían y de qué árbol eran las dos líneas.
+
+**Comprobado.** `Cargo.lock` sigue sin ignorarse (`git check-ignore` sale 1). Sobre el árbol con
+este sello salen con 0 `verificar_citas`, `check_publicadas`, `check_cifras` y `check_figures`.
+
+**Lo que NO hace.**
+
+- No toca `spec/PAQUETE.md:1584`, que es historia.
+- No enseña a `verificar_citas` la forma `fichero`:N: lo sugería la lista, y es una regla nueva con
+  su prueba de vida, no una cosa menor.
+- No coteja las demás citas por línea de las portadas: la de los manifiestos de esa misma viñeta la
+  puso al día el §819.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
+`check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
+y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
 resueltas.
