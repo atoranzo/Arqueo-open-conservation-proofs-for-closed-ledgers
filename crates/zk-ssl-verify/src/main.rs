@@ -5581,3 +5581,89 @@ mod tests_coste_edad {
         }
     }
 }
+
+/// **§718, la canonicidad u64 -> campo, con las pruebas REALES.** Los sobres firmados de
+/// `spec/vectors/` -pago, cobro pendiente y edad-, sus jueces armados con los mismos lectores que
+/// el mando, y cada entero de la afirmacion cambiado por su alias `x + p` DESPUES del lector: es
+/// lo que recibe la API de `zk-ssl-air` cuando la llama un integrador sin el lector del kit.
+/// Medido antes del arreglo: cada alias daba `Ok` con la prueba del honesto, y el enunciado
+/// devuelto llevaba el valor reducido mientras el llamante tenia el alias en la mano. Ahora cada
+/// uno es `Err` con su causa, ANTES de leer la prueba; el honesto sigue `Ok` y el control `+1`
+/// sigue cayendo en la prueba (el alias cae por la cota, no por otra cosa).
+///
+/// ⚠️ Al portarlo (§718): se escribieron con `cfg_attr(debug_assertions, ignore = …)`. Solo
+/// verifican pruebas ya hechas, sin el probador, y desde el §864 el canon corre el kit tambien con
+/// el perfil `aserciones`, con los pines de su fila: corren con las aserciones encendidas, y no se
+/// ignoran.
+#[cfg(test)]
+mod tests_canonicidad {
+    use super::tests_puerta::{juez_de, juzgar, vector, Juez};
+    use super::*;
+    use zk_ssl_air::pago_en_curso::MAX_VALOR;
+    use zk_ssl_air::EdadPublicInputs;
+
+    const P: u64 = 0xffff_ffff_0000_0001;
+    const OOD: &str = "InconsistentOodConstraintEvaluations";
+
+    fn prueba_de(p: &serde_json::Value) -> Vec<u8> {
+        hex_a_bytes(p["prueba"].as_str().unwrap()).unwrap()
+    }
+
+    #[test]
+    fn pago_importe_y_t_alias_son_err_con_la_prueba_real() {
+        let p = vector("pago/pago-t-frontera.json");
+        let prueba = prueba_de(&p);
+        let Juez::Pago(af, c) = juez_de(&p) else { panic!("no es un pago") };
+        assert_eq!(enlazar_pago(&prueba, &af, &c).map(|pi| pi.importe.as_int()), Ok(af.importe));
+        let casos = [
+            (AfirmacionPago { importe: af.importe + P, ..af }, "el importe"),
+            (AfirmacionPago { t: af.t + P, ..af }, "T "),
+            (AfirmacionPago { importe: af.importe + P, t: af.t + P, ..af }, "el importe"),
+        ];
+        for (malo, causa) in casos {
+            let e = enlazar_pago(&prueba, &malo, &c).expect_err("el alias verifico");
+            assert!(e.starts_with(causa) && e.ends_with(&format!("techo {MAX_VALOR}")), "{e}");
+        }
+        let control = AfirmacionPago { importe: af.importe + 1, ..af };
+        assert_eq!(enlazar_pago(&prueba, &control, &c).unwrap_err(), OOD);
+    }
+
+    #[test]
+    fn cobro_inferior_alias_es_err_con_la_prueba_real() {
+        for nombre in ["pendiente/cobro-inferior-importe.json", "pendiente/cobro-inferior-0.json"] {
+            let p = vector(nombre);
+            let prueba = prueba_de(&p);
+            let Juez::Cobro(af, c) = juez_de(&p) else { panic!("no es un cobro") };
+            assert!(enlazar_cobro(&prueba, &af, &c).is_ok(), "{nombre}: el honesto");
+            let malo = AfirmacionCobro { inferior: af.inferior + P, ..af };
+            let e = enlazar_cobro(&prueba, &malo, &c).expect_err("el alias verifico");
+            let causa = format!("las cotas {} y {MAX_VALOR} pasan del techo", af.inferior + P);
+            assert!(e.starts_with(&causa), "{nombre}: {e}");
+            let control = AfirmacionCobro { inferior: af.inferior + 1, ..af };
+            assert_eq!(enlazar_cobro(&prueba, &control, &c).unwrap_err(), OOD, "{nombre}");
+        }
+    }
+
+    /// La prueba de todos con `emisor = p` (el alias de 0) por `zk_ssl_air::verificar` directo, y
+    /// el sobre de todos con un emisor nombrado que no es un indice de cuenta.
+    #[test]
+    fn edad_alias_del_emisor_es_err_con_la_prueba_real() {
+        let p = vector("edad/edad-todos.json");
+        let prueba = prueba_de(&p);
+        let Juez::Edad(af, c) = juez_de(&p) else { panic!("no es de edad") };
+        let pi = verificar_contra_cabeza(&prueba, &af, &c).expect("el honesto");
+        assert!(pi.todos && pi.emisor == 0);
+        let alias = EdadPublicInputs { emisor: P, ..pi.clone() };
+        let e = zk_ssl_air::verificar(&prueba, &alias).expect_err("todos con emisor = p");
+        assert!(e.starts_with(&format!("emisor = {P} no es un indice de cuenta")), "{e}");
+        let control = EdadPublicInputs { emisor: 1, ..pi };
+        let e = zk_ssl_air::verificar(&prueba, &control).expect_err("todos con emisor = 1");
+        assert!(e.starts_with("todos con emisor = 1"), "{e}");
+        for x in [P, 1 << 32] {
+            let malo = Afirmacion { emisor: Some(x), ..af };
+            let e = verificar_contra_cabeza(&prueba, &malo, &c).expect_err("emisor fuera");
+            assert!(e.starts_with(&format!("emisor = {x} no es un indice de cuenta")), "{e}");
+        }
+        assert!(juzgar(&Juez::Edad(af, c), &prueba).is_ok());
+    }
+}

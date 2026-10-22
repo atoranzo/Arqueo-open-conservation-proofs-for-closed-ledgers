@@ -557,10 +557,11 @@ pub struct AfirmacionPago {
 
 /// **La prueba de pago en curso contra una cabeza v5.** Exige, en nativo y ANTES de tocar la
 /// prueba, que el pendiente haya nacido antes que la cabeza que lo firma (`nacido < seq`: una
-/// meta nacida despues es una cabeza que miente); compone el enunciado con las dos raices que la
-/// cabeza firma y lo que el sobre afirma; y solo entonces llama al juez. Devuelve el enunciado
-/// verificado. Una prueba de otro arbol, de otra meta o con otro importe no se enlaza: la prueba
-/// es la de SU enunciado.
+/// meta nacida despues es una cabeza que miente) y que `importe`, `T` y `nacido` no pasen del
+/// techo tal como llegan, sin reducir (§718, la canonicidad); compone el enunciado con
+/// las dos raices que la cabeza firma y lo que el sobre afirma; y solo entonces llama al juez.
+/// Devuelve el enunciado verificado. Una prueba de otro arbol, de otra meta o con otro importe no
+/// se enlaza: la prueba es la de SU enunciado.
 pub fn verificar_contra_cabeza(
     prueba: &[u8],
     af: &AfirmacionPago,
@@ -572,6 +573,16 @@ pub fn verificar_contra_cabeza(
              que la firma",
             af.nacido, cabeza.seq
         ));
+    }
+    // §718, la canonicidad: el techo, sobre el `u64` CRUDO y antes de reducir. Lo que
+    // juzga `comprobar_enunciado` es el elemento ya reducido, y `importe + p` entraba como
+    // `importe`: la prueba de 250000 verificaba un sobre que decia 250000 + p, y el enunciado
+    // devuelto no era lo que el llamante tenia en la mano. Las mismas causas que el enunciado.
+    if af.importe > MAX_VALOR {
+        return Err(format!("el importe {} pasa del techo {MAX_VALOR}", af.importe));
+    }
+    if af.t > MAX_VALOR || af.nacido > MAX_VALOR {
+        return Err(format!("T {} o nacido {} pasan del techo {MAX_VALOR}", af.t, af.nacido));
     }
     let pi = PagoEnCursoPublicInputs {
         pending_root: cabeza.pending_root,

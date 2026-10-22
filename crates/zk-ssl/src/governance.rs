@@ -51,7 +51,14 @@ impl SovereignLayer {
     ///
     /// Imponerla exigiría llevar el cupo a los circuitos de emisión,
     /// congelación y recuperación. **No está hecho.**
+    ///
+    /// ⚠️ El cupo entra en `paramsDigest` (§718, la canonicidad): un cupo de `p` o más
+    /// firmaria el de `cupo - p` y aplicaria otro. Entra en pánico con su texto, como `new` con un
+    /// tope fuera de rango: la capa no escribe nunca uno así, y `load` no lo abre.
     pub fn set_max_custodian_uses(&mut self, quota: u64) {
+        if let Err(e) = crate::parametro_canonico("max_custodian_uses", quota) {
+            panic!("{e}");
+        }
         self.max_custodian_uses = quota;
     }
 

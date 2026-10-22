@@ -377,6 +377,9 @@ class CobroPendiente(Air):
         l, u = self.inferior, self.superior
         if l > self.MAX_VALOR or u > self.MAX_VALOR:
             raise Rechazo(f"las cotas {l} y {u} pasan del techo {self.MAX_VALOR}")
+        # §718, la canonicidad: la cota de `verificar_contra_cabeza` sobre nacido.
+        if self.nacido > self.MAX_VALOR:
+            raise Rechazo(f"nacido {self.nacido} pasa del techo {self.MAX_VALOR}")
         if l > u:
             raise Rechazo(f"banda vacia: inferior {l} sobre superior {u}")
 
@@ -601,6 +604,7 @@ class Edad(Air):
     ancho, ancho_aux, aleatorios = 83, 6, 2
     num_aserciones_aux = 2
     BITS = 32
+    BITS_CUENTA = 32
     C_A, C_B, C_M, C_P, C_EMISOR, C_NACIDO, C_VIVO = 0, 12, 24, 36, 40, 41, 42
     C_QA, C_QS, C_WINV, C_Z, C_CUENTA, C_CICLO, C_ACT, C_FUERA, C_BITS = (43, 44, 45, 46, 47, 48,
                                                                           49, 50, 51)
@@ -634,6 +638,13 @@ class Edad(Air):
             raise Rechazo(f"T = {self.t} o seq = {self.seq} no caben en {self.BITS} bits")
         if self.k > self.n:
             raise Rechazo(f"k = {self.k} mayor que n = {self.n}")
+        # §718, la canonicidad: el emisor es un indice de cuenta, menor que 2^32, y con
+        # todos es 0. El lector ya rechaza un emisor >= p; esta cota es la del juez de referencia.
+        if self.emisor >= (1 << self.BITS_CUENTA):
+            raise Rechazo(f"emisor = {self.emisor} no es un indice de cuenta: no cabe en "
+                          f"{self.BITS_CUENTA} bits")
+        if self.todos and self.emisor != 0:
+            raise Rechazo(f"todos con emisor = {self.emisor}: todos se escribe con emisor 0")
         if raiz_desde_subraiz(self.subraiz_pend, self.m) != list(self.pending_root):
             raise Rechazo("la subraiz de pendientes, subida a 32 niveles, no es el pendingRoot "
                           "de la cabeza")

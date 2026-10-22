@@ -131,6 +131,9 @@ pub mod store;
 mod metrics;
 #[cfg(test)]
 mod tests;
+// §718, la canonicidad u64 -> campo: el almacen, la instantanea y la colocacion.
+#[cfg(test)]
+mod tests_canonicidad;
 // RFC-0007 E4b-3 (§466): el PRODUCTOR de la prueba de edad. Vive en la capa porque su
 // testigo -las hojas de `0..next_pending` y su meta- es del OPERADOR y no cruza el cable.
 pub mod prueba_edad;
@@ -239,6 +242,39 @@ pub const DEFAULT_REFUND_TTL: u64 = 64;
 /// Centinela de `pending_meta`: el pendiente nació por EMISIÓN, no tiene
 /// emisor-cuenta; su caducidad DES-EMITE (§178 §4).
 pub const REFUND_SENDER_NONE: u64 = u64::MAX;
+/// ⚠️ **El centinela EN EL CAMPO** (§718, la canonicidad): `u64::MAX = p + (2^32 - 2)`,
+/// asi que la hoja de meta de una emision, `commit_operation(PMETA_V1, [sender, born])`, es la de
+/// un pago de la cuenta `2^32 - 2`, y lo sigue siendo: la hoja es la misma. Lo que cambia es que en
+/// un libro nuevo ninguna cuenta ocupa ese indice (`open_with_id` y la migracion lo saltan, y
+/// `import_snapshot` no acepta una cuenta en el), asi que una hoja de meta que lo nombra solo puede
+/// ser una emision; `load` no acepta un `pmeta:` que lo nombre sin cuenta. ⚠️ Un libro anterior con
+/// una cuenta ya en ese indice abre, y en el una emision y un pago de esa cuenta no se distinguen.
+/// Se deriva, no se teclea.
+pub const INDICE_DEL_CENTINELA: u64 = REFUND_SENDER_NONE - zk_ssl_hash::MODULO;
+
+/// **Un parametro que la cabeza firma, canonico** (§718, la canonicidad). La cabeza v5
+/// firma `paramsDigest` (`zk_ssl_hash::params_digest`), que compone cada entero por `as_digest`, y
+/// `as_digest` reduce modulo `p`: con `x + p` la capa aplicaria otra regla bajo el mismo digest
+/// firmado, y dos cabezas con el mismo `paramsDigest` ya no dirian que las reglas no se movieron
+/// (D-B del RFC-0007). Un solo texto para la apertura, `new` y los dos ajustes; la carga del
+/// almacen, que solo tiene un `what` estatico, lo comprueba con la misma funcion de `zk-ssl-hash`.
+/// El tope de emision no pasa por aqui: `MAX_SUMINISTRO` lo acota mas abajo.
+pub(crate) fn parametro_canonico(que: &str, x: u64) -> Result<u64, String> {
+    zk_ssl_hash::u64_canonico(x)
+        .map_err(|_| format!("{que} = {x} no es canonico: no es menor que p (paramsDigest)"))
+}
+
+/// **Donde cae una cuenta** (F3): `inicio mod cap` con sondeo lineal, saltando lo ocupado y, desde
+/// el §718 (la canonicidad), el [`INDICE_DEL_CENTINELA`]. Un solo productor para `open_with_id` y
+/// la migracion, que tienen que colocar igual. Con el arbol lleno no termina, como antes: lo
+/// impide el tope de cuentas, que se comprueba antes.
+pub(crate) fn colocar(inicio: u64, cap: u64, ocupado: impl Fn(u64) -> bool) -> u64 {
+    let mut i = inicio % cap;
+    while i == INDICE_DEL_CENTINELA || ocupado(i) {
+        i = (i + 1) % cap;
+    }
+    i
+}
 
 /// **S529** -- rechaza toda prueba cuya TRACE_INFO no sea la forma EXACTA
 /// que el AIR espera, ANTES de construirlo. Una guarda de solo ancho no
@@ -1141,6 +1177,12 @@ impl SovereignLayer {
             max_supply <= MAX_SUMINISTRO,
             "max_supply {max_supply} por encima del tope de la capa, 2^62 - 1 (§668)"
         );
+        // §718, la canonicidad: el limite y el tope de cuentas entran en `paramsDigest`.
+        for (que, x) in [("regulatory_limit", regulatory_limit), ("max_accounts", max_accounts)] {
+            if let Err(e) = parametro_canonico(que, x) {
+                panic!("{e}");
+            }
+        }
         Self {
             accounts: SparseTree::new(),
             pending: SparseTree::new(),

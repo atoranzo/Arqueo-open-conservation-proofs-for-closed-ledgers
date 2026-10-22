@@ -75,10 +75,9 @@ impl SovereignLayer {
         let mut mapa = Vec::with_capacity(olds.len());
         for old in olds {
             let r = self.records.get(&old).expect("censado").clone();
-            let mut pos = r.public_id[0].as_int() % cap;
-            while new_records.contains_key(&pos) {
-                pos = (pos + 1) % cap;
-            }
+            // La colocacion de `open_with_id`, que salta el indice del centinela.
+            let pos =
+                crate::colocar(r.public_id[0].as_int(), cap, |i| new_records.contains_key(&i));
             new_accounts.set_leaf(
                 pos,
                 native_leaf_salted(

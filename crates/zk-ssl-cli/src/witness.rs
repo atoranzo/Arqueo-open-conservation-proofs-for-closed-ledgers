@@ -1338,6 +1338,13 @@ fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
 /// `+`, sin mayusculas, sin ceros a la izquierda) y menor que `p`
 /// (`u64_canonico`). Hasta el §775 bastaba `from_str_radix`: `0x+2` y `0x02`
 /// pasaban, y un `n + p` recomponia el mismo digest que `n`.
+///
+/// ⚠️ §718 · Lo que eso cerraba, medido: lo que este lector lee entra en `recomponer`
+/// -`seq`, `n`, `mmrSize`, `consCount`, `nextPending`, `nextIndex`, `totalSupply`,
+/// `recepCount`-, y `as_digest` reduce modulo `p`. Con el lector de antes del §775, una cabeza
+/// firmada con `mmrSize = N` verificaba igual con `N + p`, el testigo anclaba la historia en
+/// `t = p` y desde ahi cada cabeza honesta le parecia `PorDetras`, que no detiene (medido en el
+/// bucle real). Lo fijan los tests de `tests_canonicidad`, al final del fichero.
 fn leer_q(v: &Value) -> Result<u64, String> {
     let s = v.as_str().ok_or("QUANTITY no es cadena")?;
     let x = zk_ssl_hash::cantidad_canonica(s).map_err(|e| format!("QUANTITY {s:?}: {e}"))?;
@@ -7459,5 +7466,73 @@ mod tests {
         let s = sobres_de_bifurcaciones(&a, &b, &c);
         assert_eq!(s.len(), 1, "{c:?}");
         assert_eq!(s[0].1["rama"]["epochDigest"], json!("0xe2"));
+    }
+}
+
+/// **§718, la canonicidad u64 -> campo, en el testigo.** Cabezas FIRMADAS de
+/// `spec/vectors/` -una v5 y una v6- por el bucle real (`una_vuelta`: el DTO del cable y
+/// `verificar`), con cada entero que `recomponer` lee cambiado por su alias `x + p`. Medido con el
+/// lector de antes del §775: los siete de la v5 daban `nueva`, la firma verificaba; `recepCount`
+/// de la v6 no se habia medido. Ahora cada uno es `no-verifica`, con la causa del lector; el control `+1`
+/// sigue sin recomponer. Y el canal de la historia no ancla en `t = p`.
+#[cfg(test)]
+mod tests_canonicidad {
+    use super::*;
+
+    const P: u64 = 0xFFFF_FFFF_0000_0001;
+
+    fn cabeza(rel: &str) -> Value {
+        let ruta = format!("{}/../../spec/vectors/{rel}", env!("CARGO_MANIFEST_DIR"));
+        let d: Value = serde_json::from_str(&std::fs::read_to_string(ruta).unwrap()).unwrap();
+        d["cabeza"].clone()
+    }
+
+    fn error_de(v: &Veredicto) -> String {
+        match v {
+            Veredicto::NoVerifica { error, .. } => error.clone(),
+            otro => otro.clase().to_string(),
+        }
+    }
+
+    fn comprueba(c: &Value, campos: &[&str]) {
+        assert_eq!(una_vuelta(c, &mut Memoria::nueva()).clase(), "nueva", "el control");
+        for &k in campos {
+            let v = leer_q(&c[k]).unwrap();
+            let con = |x: u64| {
+                let mut y = c.clone();
+                y[k] = json!(format!("{x:#x}"));
+                error_de(&una_vuelta(&y, &mut Memoria::nueva()))
+            };
+            let e = con(v + P);
+            let causa = format!("{:#x} no es canonico: no es menor que p", v + P);
+            assert!(e.contains(&causa), "{k} + p: {e}");
+            assert!(con(v + 1).contains("NO recomponen el epochDigest firmado"), "{k} + 1");
+        }
+    }
+
+    #[test]
+    fn testigo_cabeza_alias_no_verifica() {
+        let v5 = ["seq", "n", "nextPending", "nextIndex", "totalSupply", "mmrSize", "consCount"];
+        comprueba(&cabeza("edad/edad-todos.json"), &v5);
+        let mut v6 = v5.to_vec();
+        v6.push("recepCount");
+        comprueba(&cabeza("ancla-cofirmada/cofirmada-un-testigo.json"), &v6);
+    }
+
+    /// Con `mmrSize + p` la cabeza anclaba la historia en `t = p` (`Anclando { t: p }`, medido) y
+    /// cada cabeza honesta despues era `PorDetras`, que no detiene. Ahora el alias no ancla nada,
+    /// y la honesta que llega despues ancla en su `t`.
+    #[test]
+    fn historia_no_ancla_en_alias() {
+        let c = cabeza("edad/edad-todos.json");
+        let t0 = leer_q(&c["mmrSize"]).unwrap();
+        let mut alias = c.clone();
+        alias["mmrSize"] = json!(format!("{:#x}", t0 + P));
+        let mut m = Memoria::nueva();
+        assert_eq!(una_vuelta(&alias, &mut m).clase(), "no-verifica");
+        assert!(al_llegar_cabeza(&mut m, &alias).is_none(), "el alias no dice nada");
+        assert_eq!(una_vuelta(&c, &mut m).clase(), "nueva");
+        let h = al_llegar_cabeza(&mut m, &c);
+        assert!(matches!(h, Some(Consistencia::Anclando { t }) if t == t0), "{h:?}");
     }
 }

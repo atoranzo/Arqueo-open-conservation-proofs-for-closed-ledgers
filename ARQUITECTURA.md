@@ -55,7 +55,7 @@ custodios distintos**, no una clave; y el flujo documentado es el de
 hallazgo propio. Corregido en §361; el error se registra en vez de
 borrarse.
 
-`crates/zk-ssl` — **531 tests** (7 ignorados, declarados). Material para
+`crates/zk-ssl` — **546 tests** (7 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
 El backend STARK añade **18 circuitos** verificados por separado.
 
@@ -1193,7 +1193,7 @@ tabla viva está en «Ninguna vía para crear dinero», arriba.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 35 módulos y **531 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 36 módulos y **546 tests**, frente a
 > los 2 módulos y 17 de este.
 >
 > ⚠️ §778: aquí decía **33 módulos**, la cuenta del §531, y son **34** desde
@@ -1207,6 +1207,8 @@ tabla viva está en «Ninguna vía para crear dinero», arriba.
 > submódulo de `nivel_de_produccion` y no un `mod` de `lib.rs`: el 34 no cambia.
 > ⚠️ §840: decía 34 módulos, 34 frente a 1 y 36 `.rs`. El 35 y el 37 son
 > `src/censo_de_hojas.rs`, un `mod` de fichero de `lib.rs`, solo de tests.
+> ⚠️ §718: decía 35 módulos, 35 frente a 1 y 37 `.rs`. El 36 y el 38 son
+> `src/tests_canonicidad.rs`, otro `mod` de fichero de `lib.rs` solo de tests.
 >
 > Una versión anterior de este documento lo titulaba *"La capa"* sin más,
 > lo que **contradecía a `AUDITORIA.md` §15** en el mismo repositorio.
@@ -1614,7 +1616,7 @@ rojo si corres esa orden tal cual. **La capa se mide con
 `cargo test --locked -p zk-ssl` en depuración da 443 pasan, 0 fallan y 45
 ignorados, sobre `0315b14` (el §813), en 3.253,94 s con otro trabajo en la
 máquina (4 CPU, carga de 9,2 a 18,6). En release, la fila de la capa en
-`tools/canon.sh` fija hoy 531 pasan y 7 ignorados (⚠️ §839: decía 481; el 482.º
+`tools/canon.sh` fija hoy 546 pasan y 7 ignorados (⚠️ §839: decía 481; el 482.º
 es el censo de las longitudes, que corre también en depuración, donde serían
 444 pasan: los 443 son de `0315b14`, y la capa entera no se ha vuelto a correr
 ahí. ⚠️ §840: decía 482; los dos de más, el censo de los `native_leaf`, corren
@@ -1623,7 +1625,7 @@ bytes, también: serían 447. ⚠️ §816: decía 485; los once de más, los de
 se han corrido en depuración. ⚠️ §817: decía 496; el de más, el de la instantánea en claro,
 tampoco. ⚠️ §819: decía 497; el de más, el de la negativa del barrido, tampoco. ⚠️ §820: decía 498;
 los tres de la exportación, tampoco. ⚠️ §821: decía 501; los dos de la capa importada con clave,
-tampoco. ⚠️ §828: decía 503; los doce del recifrado y la migración del libro de otro dueño, tampoco. ⚠️ §711: decía 515; los tres de más, los de la red de la capa, tampoco. ⚠️ §715: decía 518; los cuatro de más, los del reenvío con la prueba maleada, tampoco. ⚠️ §716: decía 522; los ocho de más, los del reenvío de una emisión delegada, tampoco. ⚠️ §717: decía 530; el de más, el del libro sobre el tope de `m`, tampoco). De los 45, 7 son instrumentos de medida, ignorados en todo perfil, y 38 llevan
+tampoco. ⚠️ §828: decía 503; los doce del recifrado y la migración del libro de otro dueño, tampoco. ⚠️ §711: decía 515; los tres de más, los de la red de la capa, tampoco. ⚠️ §715: decía 518; los cuatro de más, los del reenvío con la prueba maleada, tampoco. ⚠️ §716: decía 522; los ocho de más, los del reenvío de una emisión delegada, tampoco. ⚠️ §717: decía 530; el de más, el del libro sobre el tope de `m`, tampoco. ⚠️ §718: decía 531; los quince de más, los de la canonicidad del almacén, la instantánea y el productor de la edad, tampoco, y uno lleva `cfg_attr(debug_assertions, ignore = …)`: el 45 y el 38 que siguen son los de `0315b14`). De los 45, 7 son instrumentos de medida, ignorados en todo perfil, y 38 llevan
 `cfg_attr(debug_assertions, ignore = …)`: en depuración no corren, y corridos ahí con `--ignored`
 pasan los 38. Ya no hay fallos que atribuir al límite de grados, y con esta medida se cierra la
 entrada 41 de `BACKLOG.md`. Sigue en pie: esos 38 solo los corre release, y la capa se mide con

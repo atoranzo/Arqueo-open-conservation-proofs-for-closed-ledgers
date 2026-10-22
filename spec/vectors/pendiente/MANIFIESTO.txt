@@ -33,3 +33,8 @@ neg-inferior-por-encima.json|1|cobro:
 # 0.13.1, el del Cargo.lock, como ya hace `rechazo/`. Caduca con la dependencia, y se declara: si la
 # renombra, la linea se mueve a su version con su vector; no se reescribe.
 neg-inferior-por-encima.json|1|cobro: InconsistentOodConstraintEvaluations
+# §718, la canonicidad u64 -> campo: un negativo que sale de `cobro-inferior-importe.json` por UNA
+# mutacion, `inferior + p`, con `tools/vectores/canonicidad.py`. La API de zk-ssl-air acotaba el
+# valor ya reducido (medido: Ok con el alias); el lector del kit ya lo rechazaba (§640) y se fija
+# aqui. Jamas se reescribe (regla 2 del PROCESO).
+neg-inferior-alias.json|1|inferior: 0xffffffff0003d091 no es canonico

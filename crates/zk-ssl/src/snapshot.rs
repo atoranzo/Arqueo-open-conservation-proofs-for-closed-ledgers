@@ -424,6 +424,39 @@ impl SovereignLayer {
         let n_cons = if con_cons { u64_at("n_cons")? } else { 0 };
         let n_log = u64_at("n_log")?;
 
+        // ⚠️ §718, la canonicidad: el tope de emision, el suministro y cada saldo, por
+        // debajo del tope de la capa (§668) y asi muy por debajo de `p`, ANTES de componer una
+        // hoja. Sin esto, `saldo + p` daba la misma raiz de cuentas, y con `suministro + p`
+        // coordinado la instantanea importaba (medido). `open` ya exigia el tope de emision;
+        // la instantanea no.
+        if max_supply > crate::MAX_SUMINISTRO {
+            return Err(LayerError::SupplyCapExceeded {
+                cap: crate::MAX_SUMINISTRO,
+                would_be: max_supply,
+            });
+        }
+        if total_supply > crate::MAX_SUMINISTRO {
+            return Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                what: "suministro de la instantanea fuera del tope de la capa",
+            }));
+        }
+        // Lo mismo para lo que va a `paramsDigest` y a la cabeza sin raiz que lo cubra: el limite y
+        // el tope de cuentas, canonicos (los comprueba `open`), y el censo de cuentas, dentro del
+        // arbol (lo comprueba `load`). Con `+ p`, la capa importada firmaba el mismo digest con
+        // otra regla, o servia una cabeza que el kit rechaza.
+        let fuera = |what: &'static str| {
+            LayerError::Store(crate::store::StoreError::IntegrityFailure { what })
+        };
+        if zk_ssl_hash::u64_canonico(regulatory_limit).is_err() {
+            return Err(fuera("limite regulatorio de la instantanea no canonico"));
+        }
+        if zk_ssl_hash::u64_canonico(max_accounts).is_err() {
+            return Err(fuera("tope de cuentas de la instantanea no canonico"));
+        }
+        if next_index > SparseTree::new().capacity() {
+            return Err(fuera("censo de cuentas de la instantanea fuera del arbol"));
+        }
+
         let mut layer = Self {
             custodian_uses: 0,
             max_custodian_uses: crate::DEFAULT_MAX_CUSTODIAN_USES,
@@ -475,6 +508,20 @@ impl SovereignLayer {
             );
             let (public_id, balance, nonce, view_id, leaf_salt) =
                 record_from_bytes_v3(take(rec_len, "registro")?)?;
+            if balance > crate::MAX_SUMINISTRO {
+                return Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "saldo de la instantanea fuera del tope de la capa",
+                }));
+            }
+            // ⚠️ Ninguna cuenta en el indice del centinela: en el campo es el de la emision, y una
+            // capa arrancada de aqui tendria, en cuanto esa cuenta pagara, un `pmeta:` que `load`
+            // abre y en el que la reescritura pago -> centinela no se ve (medido: importaba). Lo
+            // mismo que `open_with_id` y la migracion, que no colocan nada en el.
+            if index == crate::INDICE_DEL_CENTINELA {
+                return Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "cuenta de la instantanea en el indice del centinela",
+                }));
+            }
             layer.accounts.set_leaf(
                 index,
                 if salted {

@@ -133,7 +133,7 @@ reintroducir ceremonia y perder resistencia cuántica.
 
 **Sovereign Settlement Layer** — ✅
 `crates/zk-ssl`. Mantiene el estado, encadena raíces, aplica operaciones.
-**531 tests** (7 ignorados, declarados) en `crates/zk-ssl`.
+**546 tests** (7 ignorados, declarados) en `crates/zk-ssl`.
 
 **Superficie de protocolo** — ✅ *(añadido: §197-§199)*
 La capa dejó de estar sola: `zk-ssl-wire` (formato de cable),
@@ -409,11 +409,11 @@ sería faltar al principio de transparencia.
 - Cinco paradigmas implementados y medidos.
 - Capa de liquidación con ciclo monetario completo, persistencia,
   auditoría y verificación de integridad.
-- **1964 tests en la compuerta de sello** —531 de la capa, 428 de
-  circuitos, **237 del nodo**, 34 de la ceremonia, 17 de liquidación, **211
-  del verificador independiente**, **173 del testigo**, y los del SDK, el
+- **1992 tests en la compuerta de sello** —546 de la capa, 428 de
+  circuitos, **239 del nodo**, 34 de la ceremonia, 17 de liquidación, **215
+  del verificador independiente**, **175 del testigo**, y los del SDK, el
   cable, el puente ISO, el árbol del medio y el fork de winterfell—,
-  **2104 contando los pines de `--largo` y `--completo`**, y **1364 declarados** (⚠️ §865: del §497; hoy los cuenta, con otra regla, `tools/check_tests.py`).
+  **2132 contando los pines de `--largo` y `--completo`**, y **1364 declarados** (⚠️ §865: del §497; hoy los cuenta, con otra regla, `tools/check_tests.py`).
   0 fallos y 21 warnings **pinchados** (no crecen). Cada propiedad de
   seguridad con test discriminante.
 

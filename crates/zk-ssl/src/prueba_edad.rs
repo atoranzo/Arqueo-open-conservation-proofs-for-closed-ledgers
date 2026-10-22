@@ -24,6 +24,11 @@
 //! `emisor` nombrado con ese mismo valor no se distingue de el. La colision solo puede INFLAR la
 //! cuenta -la emision entra en `k`-, nunca esconder una posicion, asi que el enunciado sigue
 //! siendo cierto para el emisor real y no se pone guarda: se declara, y hay testigo que lo ensena.
+//!
+//! **El emisor nombrado es un indice de cuenta** (§718, la canonicidad): menor que
+//! `2^32`. El juez lo exige, y este productor lo rechaza antes de leer el libro: `emisor + p`, que
+//! el campo no distingue de `emisor`, ya no sale en un sobre. La colision de arriba sigue, porque
+//! `2^32 - 2` es un indice; la capa no se lo asigna a ninguna cuenta nueva (`open_with_id`).
 
 use crate::{Digest, LayerError, SovereignLayer};
 use stark_experiment::circuit_edad as edad;
@@ -94,6 +99,16 @@ impl SovereignLayer {
                 "prueba de edad: m = {m} fuera de 3..={}",
                 edad::M_MAX
             )));
+        }
+
+        // §718, la canonicidad: el emisor nombrado es un indice de cuenta, menor que
+        // 2^32, como lo exige el juez. Sin esto, `emisor + p` se probaba como `emisor` y salia un
+        // sobre con el alias, que el kit rechaza en su lector: el nodo lo escribia igual.
+        // La cota y su causa son las del juez (`zk_ssl_air::comprobar_emisor`, un solo productor).
+        if let Some(x) = emisor {
+            zk_ssl_air::comprobar_emisor(x).map_err(|e| {
+                LayerError::VerificationFailed(format!("prueba de edad: {e}"))
+            })?;
         }
 
         let n = cab.next_pending;
@@ -303,6 +318,56 @@ mod tests {
         let sobre = l.prueba_de_edad(&cab, 0, Some(s)).expect("la capa produce");
         assert_eq!(sobre.k, a_mano(&l, cab.seq, 0, Some(s)));
         assert!(sobre.k >= 1, "la emision no entro en la cuenta del emisor nombrado");
+    }
+
+    /// **§718, la canonicidad: el alias del emisor no se produce.** `a + p` es `a` en el
+    /// campo, y el productor lo probaba y escribia un sobre con el alias (medido); `2^32` no es un
+    /// indice de cuenta. Los dos caen antes de leer el libro, con la causa del juez. Sin prueba:
+    /// no hace falta release.
+    #[test]
+    fn el_alias_del_emisor_no_se_produce() {
+        let mut l = ts::new_layer();
+        let a = ts::open_and_fund(&mut l, ts::SK_ALICE, 10);
+        let cab = cabeza_de(&l);
+        let p = zk_ssl_hash::MODULO;
+        for x in [a + p, 1u64 << 32, u64::MAX] {
+            let e = l.prueba_de_edad(&cab, 0, Some(x)).expect_err("el alias se produjo");
+            let causa = format!(
+                "prueba de edad: emisor = {x} no es un indice de cuenta: no cabe en 32 bits"
+            );
+            assert!(matches!(&e, LayerError::VerificationFailed(t) if *t == causa), "{e}");
+        }
+    }
+
+    /// **§718, la canonicidad, con la prueba real:** la prueba del emisor de Alice
+    /// verificaba tambien con `a + p`, y el juez devolvia el enunciado con el alias (medido). Ahora
+    /// el juez la rechaza por el enunciado; con `a`, la enlaza; con `a + 1`, cae en la prueba.
+    #[test]
+    #[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
+    fn la_prueba_de_un_emisor_no_verifica_con_su_alias() {
+        let (l, a, _b) = libro();
+        let cab = cabeza_de(&l);
+        let sobre = l.prueba_de_edad(&cab, 0, Some(a)).expect("la capa produce");
+        let suya = edad::CabezaEdad {
+            seq: cab.seq,
+            pending_root: cab.pending_root,
+            pmeta_root: cab.pmeta_root,
+            next_pending: cab.next_pending,
+        };
+        let af = |emisor| edad::Afirmacion {
+            t: sobre.t,
+            k: sobre.k,
+            emisor: Some(emisor),
+            subraiz_pend: sobre.subraiz_pend,
+            subraiz_meta: sobre.subraiz_meta,
+        };
+        let pi = edad::verificar_contra_cabeza(&sobre.prueba, &af(a), &suya).expect("con a");
+        assert_eq!(pi.emisor, a);
+        let alias = a + zk_ssl_hash::MODULO;
+        let e = edad::verificar_contra_cabeza(&sobre.prueba, &af(alias), &suya).unwrap_err();
+        assert!(e.starts_with(&format!("emisor = {alias} no es un indice de cuenta")), "{e}");
+        let e = edad::verificar_contra_cabeza(&sobre.prueba, &af(a + 1), &suya).unwrap_err();
+        assert_eq!(e, "InconsistentOodConstraintEvaluations");
     }
 
     /// **Nombrar a un emisor REAL no cuenta lo ajeno:** con el indice de Alice salen sus dos

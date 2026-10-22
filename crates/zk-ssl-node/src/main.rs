@@ -63,6 +63,14 @@ use zk_ssl::{AccountIndex, LayerError, SovereignLayer};
 use zk_ssl_wire as wire;
 use zk_ssl_wire::{digest_from_wire, digest_to_wire, Q};
 
+/// `--edad-emisor`: un índice de cuenta, con la cota y la causa del juez
+/// (`zk_ssl_air::comprobar_emisor`, un solo productor).
+fn emisor_de_cuenta(s: &str) -> Result<u64, String> {
+    let x: u64 = s.parse().map_err(|e| format!("{e}"))?;
+    zk_ssl_air::comprobar_emisor(x)?;
+    Ok(x)
+}
+
 #[derive(Parser)]
 #[command(name = "zk-ssl-node", version, about = "Nodo JSON-RPC de la ZK-Sovereign Settlement Layer")]
 struct Args {
@@ -343,7 +351,11 @@ struct Args {
     /// `sender = u64::MAX`, que en Goldilocks reduce a `2^32 - 2`. Nombrar ese
     /// valor cuenta también las emisiones: la cota sale INFLADA, nunca corta,
     /// así que el enunciado sigue siendo cierto para el emisor real.
-    #[arg(long, value_name = "INDICE")]
+    ///
+    /// ⚠️ Es un índice de cuenta, menor que `2^32` (§718, la canonicidad): `X + p` es `X`
+    /// en el campo, y el nodo escribía un sobre con el alias que el kit rechaza. Se rechaza al
+    /// leer la línea de órdenes, antes de abrir el libro.
+    #[arg(long, value_name = "INDICE", value_parser = emisor_de_cuenta)]
     edad_emisor: Option<u64>,
     /// **MODO (RFC-0007 E5, §473): produce el sobre de RECHAZO y SALE.**
     ///
@@ -2302,6 +2314,14 @@ fn open_layer_con(a: &Args, pausa: impl FnMut(u32)) -> anyhow::Result<SovereignL
     // §668: el tope de la capa, dicho al arrancar y no como un panico de `new`.
     if a.max_supply > zk_ssl::MAX_SUMINISTRO {
         anyhow::bail!("--max-supply {} por encima del tope de la capa, 2^62 - 1", a.max_supply);
+    }
+    // §718, la canonicidad: el límite y el tope de cuentas entran en `paramsDigest`, que
+    // la cabeza firma reducido módulo `p`. Dicho al arrancar, como el tope de emisión, y no como
+    // un pánico de `new` (sin `--ledger`) o un dato mal formado de `open` (con él).
+    for (bandera, x) in [("--limit", a.limit), ("--max-accounts", a.max_accounts)] {
+        if zk_ssl_hash::u64_canonico(x).is_err() {
+            anyhow::bail!("{bandera} {x} no es canonico: no es menor que p (paramsDigest)");
+        }
     }
     Ok(match &a.ledger {
         Some(path) => {
@@ -9315,6 +9335,51 @@ mod tests_vectores_del_nodo {
             assert_eq!(juzgados[0]["code"], json!(code), "{fichero}: el code de su linea del manifiesto");
             assert_eq!(juzgados[0]["data"]["causa"], json!(causa), "{fichero}: la causa de su linea del manifiesto");
             assert!(app.parada.get().is_none(), "{fichero}: un vector no para el nodo");
+        }
+    }
+}
+
+/// **§718, la canonicidad: `--edad-emisor` es un indice de cuenta.** El nodo pasaba el
+/// `u64` crudo a `prueba_de_edad`, y con `X + p` escribia un sobre que el kit rechaza (medido).
+/// Ahora la linea de ordenes lo rechaza con la causa del juez, y un indice de verdad pasa.
+#[cfg(test)]
+mod tests_canonicidad {
+    use super::*;
+
+    const P: u64 = 0xFFFF_FFFF_0000_0001;
+
+    #[test]
+    fn edad_emisor_alias_rechazado() {
+        let con = |x: u64| Args::try_parse_from(["zk-ssl-node", "--edad-emisor", &x.to_string()]);
+        for x in [0, 3_899_196_793, (1 << 32) - 1] {
+            assert_eq!(con(x).expect("un indice de cuenta").edad_emisor, Some(x));
+        }
+        for x in [3_899_196_793 + P, 1 << 32, u64::MAX] {
+            let e = con(x).err().expect("el alias paso").to_string();
+            assert!(e.contains(&format!("emisor = {x} no es un indice de cuenta")), "{e}");
+        }
+    }
+
+    /// `--limit` y `--max-accounts` entran en `paramsDigest`: con `x + p` el nodo firmaria el
+    /// digest de `x` y aplicaria otra regla. El arranque lo dice antes de abrir, con su causa; el
+    /// mayor canonico arranca. Falsador: sin la comprobacion, `new` entra en panico con el texto
+    /// de la capa y no con este.
+    #[test]
+    fn limite_y_tope_de_cuentas_alias_no_arrancan() {
+        let arranca = |bandera: &str, x: u64| {
+            let a = Args::try_parse_from(["zk-ssl-node", bandera, &x.to_string()]).expect("args");
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match open_layer(&a) {
+                Ok(_) => "ARRANCA".to_string(),
+                Err(e) => e.to_string(),
+            }))
+            .unwrap_or_else(|_| "PANICO".to_string())
+        };
+        for bandera in ["--limit", "--max-accounts"] {
+            assert_eq!(
+                arranca(bandera, 5 + P),
+                format!("{bandera} {} no es canonico: no es menor que p (paramsDigest)", 5 + P)
+            );
+            assert_eq!(arranca(bandera, P - 1), "ARRANCA", "{bandera} = p - 1");
         }
     }
 }

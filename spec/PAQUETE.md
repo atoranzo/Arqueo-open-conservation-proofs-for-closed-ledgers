@@ -286,6 +286,8 @@ donde el valor es una respuesta del cable sin reescribir.
   —y, si el sobre nombra `emisor`, sólo las suyas— son **a lo sumo `k`**. La caja vacía es
   `k = 0`; el tope por cuenta, `t = 0`; la concentración, un `emisor` nombrado. Sin `emisor`
   cuentan todos: lo dice su ausencia, porque el índice 0 es una cuenta y no puede ser el centinela.
+  El `emisor` es un índice de cuenta, menor que `2^32` (§718, la canonicidad): el juez lo
+  rechaza antes de leer la prueba, porque el campo no distingue `emisor` de `emisor + p`.
 - `cabeza` es una respuesta de `zkssl_signedEpochHead` tal cual; `subraices` y `prueba` las
   produce quien prueba, y `prueba` son los bytes de la prueba STARK en `0x` + hex. `seq`,
   `nextPending`, `pendingRoot` y `pmetaRoot` salen **sólo de la cabeza**: el sobre no los
@@ -367,7 +369,9 @@ donde el valor es una respuesta del cable sin reescribir.
   línea decía que no viajaba. Desde el §538 (RFC-0009 E3b-2) no sale literal.
 - `cabeza` es una respuesta de `zkssl_signedEpochHead` tal cual; `seq`, `pendingRoot` y
   `pmetaRoot` salen **sólo de la cabeza** (D-J), y el juez exige `nacido < seq` antes de tocar la
-  prueba. El juez es `zk_ssl_air::pago_en_curso::verificar_contra_cabeza` (§503), el MISMO con el
+  prueba, y que `importe`, `t` y `nacido` no pasen del techo tal como llegan, sin reducir (§718,
+  la canonicidad: `el importe {} pasa del techo {MAX_VALOR}`, `T {} o nacido {} pasan
+  del techo {MAX_VALOR}`). El juez es `zk_ssl_air::pago_en_curso::verificar_contra_cabeza` (§503), el MISMO con el
   que la capa re-verifica lo que produce, y el kit lo compila **sin el probador**.
 - **Lo que NO prueba:** nada sobre quién lo cobrará, nada sobre la `sal`, el `refund_id` ni el
   `emisor` —son testigo—, y nada sobre otra cabeza que la que firma las dos raíces. **Ser testigo
@@ -1058,7 +1062,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba.
 - `edad: {e}`, con `{e}` uno de estos:
   - `la subraiz de pendientes, subida a 32 niveles, no es el pendingRoot de la cabeza`
   - `la subraiz de meta, subida a 32 niveles, no es el pmetaRoot de la cabeza`
-  - los del enunciado: `m = {} fuera de 3..={M_MAX}` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}` — ⚠️ §706: hasta el §706 decía `1..=24`, rancio desde el §538, cuando el D-AG del RFC-0009 subió el suelo de m a 3. ⚠️ §717: hasta el §717 decía `3..=24`; desde el §717 el tope es `M_MAX`, 13 (§2.7).
+  - los del enunciado: `m = {} fuera de 3..={M_MAX}` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}` · `emisor = {} no es un indice de cuenta: no cabe en 32 bits` · `todos con emisor = {}: todos se escribe con emisor 0` (§718) — ⚠️ §706: hasta el §706 decía `1..=24`, rancio desde el §538, cuando el D-AG del RFC-0009 subió el suelo de m a 3. ⚠️ §717: hasta el §717 decía `3..=24`; desde el §717 el tope es `M_MAX`, 13 (§2.7).
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
   - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64` — desde el §651 la marca es parte de la forma: el juez la mira después de la forma de traza y antes de las opciones, y sólo acepta la de la casa con su m. `{lectura}` es lo que lee `Marca::leer`: `Ok(None)` con el meta vacío, `Ok(Some(Marca { m: {m} }))` con otra m, `Err(Desconocida)` sin el prefijo y `Err(Largo)` con otra longitud. Lo emiten los cinco jueces del kit; hasta el §706 no estaba en este catálogo.
 
@@ -1071,7 +1075,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
 - `formatVersion {version}: el cobro pendiente exige una cabeza v5 o v6, las que firman pmetaRoot` — ⚠️ §776: hasta aquí decía `una cabeza v5, la unica que firma pmetaRoot`, rancio desde el §558.
 - `cobro: {e}`, con `{e}` uno de estos:
   - `nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza que la firma`
-  - los del enunciado: `las cotas {l} y {u} pasan del techo {MAX_VALOR}` · `banda vacia: inferior {l} sobre superior {u}`
+  - los del enunciado: `las cotas {l} y {u} pasan del techo {MAX_VALOR}` · `banda vacia: inferior {l} sobre superior {u}` · `nacido {} pasa del techo {MAX_VALOR}` (§718); y, sobre el `u64` tal como llega y antes de reducir (§718, la canonicidad), `las cotas {l} y {u} pasan del techo {MAX_VALOR}` con `{l}` la cota inferior del sobre, y el `nacido` de arriba
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
   - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el de la edad
 
@@ -1390,7 +1394,7 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **firma inválida** | `la firma no verifica` · `la firma es VALIDA pero de otro mensaje` · `el indice declarado ({d}) no cuadra con el que va dentro de la firma` |
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
 | **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
-| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) · `fuera de 3..=` (§717: una `m` de la edad sobre su tope, `m = {} fuera de 3..={M_MAX}`, 2.7; se pina con su `m` y sin el tope) |
+| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) · `fuera de 3..=` (§717: una `m` de la edad sobre su tope, `m = {} fuera de 3..={M_MAX}`, 2.7; se pina con su `m` y sin el tope) · `no es un indice de cuenta` y `todos se escribe con emisor 0` (§718: el emisor de la edad, 2.7) · `pasa del techo` (un entero del pago o del cobro sobre su techo; desde el §718, también tal como llega, antes de reducir, 2.9 y sección 5) |
 | **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) · `prueba mal formada: usize no canonico` (§715: un `usize` de la prueba que no está en su escritura mínima; la pone el lector del fork, `crates/winter-air/src/proof/acotado.rs`, con el texto de `causa.rs`) · `UnconsumedBytes` y `not all bytes were consumed` (§715: bytes de sobra tras la prueba, o dentro de una apertura o del lote de una capa FRI; son el mismo error de winter-utils, `DeserializationError::UnconsumedBytes`, por su `Debug` y por su `Display`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
 | **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido o, desde el §717, una prueba fabricada que sólo tiene la forma | `InconsistentOodConstraintEvaluations` |

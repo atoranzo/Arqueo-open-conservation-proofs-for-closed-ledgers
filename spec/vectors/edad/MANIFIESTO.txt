@@ -125,3 +125,13 @@ neg-prueba-cola-lote-fri.json|1|not all bytes were consumed
 neg-m-sobre-tope.json|1|edad: m = 17 fuera de 3..=
 neg-m-mayor-legible.json|1|edad: m = 23 fuera de 3..=
 neg-m-13-fabricada.json|1|edad: InconsistentOodConstraintEvaluations
+# §718, la canonicidad u64 -> campo: dos negativos que salen de `edad-todos.json` por UNA mutacion
+# cada uno -anaden `enunciado.emisor`-, con `tools/vectores/canonicidad.py`. El emisor es un indice
+# de cuenta, y el juez lo reduce modulo p: la prueba del emisor X verificaba en la API de zk-ssl-air
+# tambien con X + p, y la de todos con emisor = p (medido). El primero, p -el alias de 0-, ya era
+# ROJO en el lector del kit (§640) y se fija aqui. El segundo, 2^32, es canonico pero no es un
+# indice de cuenta: con el kit de antes de este arreglo caia en la coherencia OOD (medido) y ahora
+# cae en el enunciado, ANTES de leer la prueba; la segunda implementacion da la misma causa. Jamas
+# se reescriben (regla 2 del PROCESO).
+neg-emisor-no-canonico.json|1|emisor: 0xffffffff00000001 no es canonico
+neg-emisor-fuera-de-cuentas.json|1|edad: emisor = 4294967296 no es un indice de cuenta

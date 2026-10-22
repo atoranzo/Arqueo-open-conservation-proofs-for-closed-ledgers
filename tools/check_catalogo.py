@@ -84,6 +84,7 @@ TABLA_E = {
                                                  (A + 'lib.rs', 'fn:comprobar_marca')]),
     'verificar_edad::edad: {}': ('enumera', [(A + 'lib.rs', 'fn:verificar_contra_cabeza'),
                                              (A + 'lib.rs', 'fn:comprobar_enunciado'),
+                                             (A + 'lib.rs', 'fn:comprobar_emisor'),   # §718: la cota del emisor, que comprobar_enunciado llama
                                              (A + 'lib.rs', 'fn:verificar'),
                                              (A + 'lib.rs', 'fn:comprobar_marca')]),
     'verificar_cobro_pendiente::cobro: {}': ('enumera', [(A + 'cobro_pendiente.rs', 'fn:verificar_contra_cabeza'),

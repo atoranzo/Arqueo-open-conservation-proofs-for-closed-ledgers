@@ -2950,8 +2950,11 @@ use super::*;
             open_and_fund(&mut layer, SK_ALICE, 1000);
         }
 
+        // §718, la canonicidad: el limite cambiado era `u64::MAX`, que ahora `open` rechaza
+        // antes de mirar el libro (no es canonico: `tests_canonicidad`). Otro limite canonico
+        // prueba lo mismo que este test pedia.
         let r = open_retry(
-                &path, custodian_root(), governance_root(), u64::MAX, MAX_SUPPLY, MAX_ACCOUNTS);
+                &path, custodian_root(), governance_root(), LIMIT + 1, MAX_SUPPLY, MAX_ACCOUNTS);
         assert!(matches!(
             r,
             Err(LayerError::Store(StoreError::ParameterMismatch { .. }))

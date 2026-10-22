@@ -68,10 +68,13 @@ pub const DIARIO_VERSION: u64 = 1;
 
 /// Cantidad en hexadecimal, **como el cable** (`{:#x}`).
 ///
-/// ⚠️ No es cosmético: el testigo lee cantidades con
-/// `u64::from_str_radix(s.trim_start_matches("0x"), 16)`. Escribir
-/// decimales aquí haría ilegible el diario para la herramienta que
-/// tiene que compararlo.
+/// ⚠️ No es cosmético: el testigo lee cantidades con `leer_q`, que exige
+/// la escritura mínima `{:#x}` (`cantidad_canonica`) y un valor menor que
+/// `p` (`u64_canonico`), como el `u64_de` del kit, desde el §775 (§718, la
+/// canonicidad: este comentario decía `u64::from_str_radix`, el lector de
+/// antes). Escribir decimales, ceros a la izquierda o un valor de `p` o más
+/// aquí haría ilegible el diario para la herramienta que tiene que
+/// compararlo.
 fn q(n: u64) -> String {
     format!("{:#x}", n)
 }

@@ -547,9 +547,17 @@ fn digest_de(v: &Value, campo: &str) -> Result<Digest, String> {
     digest_from_bytes(&b).map_err(|e| format!("{campo}: {e:?}"))
 }
 
-/// Un `Q` del cable, en su escritura mínima, con el lector de `zk-ssl-hash` (§662).
+/// Un `Q` del cable, en su escritura mínima, con el lector de `zk-ssl-hash` (§662), y **menor
+/// que `p`** (RFC-0016, `u64_canonico`), como el `u64_de` del mando.
+///
+/// ⚠️ §718, la canonicidad: `mmrSize` entra en el digest del acta por `as_digest`, que
+/// reduce módulo `p`, así que un acta firmada con `mmrSize = N` verificaba igual con `N + p`, en
+/// este lector y en la segunda implementación (medido). `esquema` y `desde` se comparan con
+/// valores canónicos y ya no tenían alias; la cota vale para los tres, y es una sola regla.
 fn q_de(v: &Value, campo: &str) -> Result<u64, String> {
-    zk_ssl_hash::cantidad_canonica(texto(v, campo)?).map_err(|e| format!("{campo}: {e}"))
+    let x =
+        zk_ssl_hash::cantidad_canonica(texto(v, campo)?).map_err(|e| format!("{campo}: {e}"))?;
+    zk_ssl_hash::u64_canonico(x).map_err(|e| format!("{campo}: {e}"))
 }
 
 #[cfg(test)]
@@ -1033,5 +1041,48 @@ mod tests {
         rojo(&|v| v["firma"] = json!("0xabc"), "firma");
         rojo(&|v| v["acta"]["clave"] = json!(7), "clave");
         assert!(acta_de_json(&json!({"firma": "0x00"})).is_err(), "sin acta");
+    }
+
+    /// ⚠️ **§718, la canonicidad: un `Q` del acta es menor que `p`.** `mmrSize` entra en
+    /// el digest del acta por `as_digest`, que reduce módulo `p`: el acta firmada con `40` se leía
+    /// igual con `40 + p` y verificaba (medido con el vector de rotación, que daba VERDE). Ahora
+    /// el lector la rechaza con su campo y la causa de `u64_canonico`, y lo mismo `desde` y
+    /// `esquema`. `p − 1` se lee. Falsador: sin la cota, el primer caso vuelve como `Ok`.
+    #[test]
+    fn un_q_del_acta_que_no_es_canonico_no_se_lee() {
+        let p = 0xFFFF_FFFF_0000_0001u64;
+        let rotacion = ActaFirmada {
+            acta: Acta {
+                clave: vec![4, 5],
+                esquema: ESQUEMA_XMSSMT_SHA2_40_8_256,
+                desde: 41,
+                siguiente: as_digest(8),
+                procedencia: Some(Procedencia {
+                    anterior: as_digest(9),
+                    epoch_digest: as_digest(10),
+                    mmr_root: as_digest(11),
+                    mmr_size: 40,
+                }),
+            },
+            firma: vec![0xcd; 3],
+            firma_anterior: Some(vec![0xef; 4]),
+        };
+        let con = |campo: &str, x: u64| {
+            let mut v = acta_a_json(&rotacion);
+            if campo == "mmrSize" {
+                v["acta"]["procedencia"][campo] = json!(format!("{x:#x}"));
+            } else {
+                v["acta"][campo] = json!(format!("{x:#x}"));
+            }
+            acta_de_json(&v)
+        };
+        for (campo, x) in [("mmrSize", 40 + p), ("mmrSize", p), ("desde", 41 + p), ("esquema", p)] {
+            let e = con(campo, x).expect_err(campo);
+            let causa =
+                format!("{campo}: {x:#x} no es canonico: no es menor que p = 2^64 - 2^32 + 1");
+            assert_eq!(e, causa);
+        }
+        let borde = con("mmrSize", p - 1).expect("p - 1 es canonico");
+        assert_eq!(borde.acta.procedencia.map(|x| x.mmr_size), Some(p - 1));
     }
 }

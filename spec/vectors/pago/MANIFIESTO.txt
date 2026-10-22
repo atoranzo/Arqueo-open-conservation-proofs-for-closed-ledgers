@@ -88,3 +88,11 @@ neg-prueba-cola.json|1|UnconsumedBytes
 neg-prueba-cola-apertura-traza.json|1|not all bytes were consumed
 neg-prueba-cola-apertura-cociente.json|1|not all bytes were consumed
 neg-prueba-cola-lote-fri.json|1|not all bytes were consumed
+# §718, la canonicidad u64 -> campo: dos negativos que salen de `pago-t-frontera.json` por UNA
+# mutacion cada uno, `importe + p` y `t + p`, con `tools/vectores/canonicidad.py`. La API de
+# zk-ssl-air (`verificar_contra_cabeza`) acotaba el valor ya reducido, y la prueba de 250000
+# verificaba un sobre que decia 250000 + p (medido). El lector del kit ya los rechazaba (§640): se
+# fijan aqui, y la API los rechaza ahora sobre el entero crudo, con la causa del techo. Jamas se
+# reescriben (regla 2 del PROCESO).
+neg-importe-alias.json|1|importe: 0xffffffff0003d091 no es canonico
+neg-t-alias.json|1|t: 0xffffffff00000065 no es canonico

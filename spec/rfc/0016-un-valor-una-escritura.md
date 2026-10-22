@@ -33,20 +33,30 @@
   (D-C) y lo vigilan tests, no una compuerta; los tres textos de camino siguen sin vector; y el
   deserializador de `Q` de `zk-ssl-wire` exige la escritura mínima y deja la cota a quien lo usa. Y
   fuera del árbol, al aceptarlo: la `arqueo-verify-v0.3.0` sigue publicada y acepta los cuatro
-  negativos; la vigente, la 0.4.3, los rechaza y lleva la E6 (ver «Compatibilidad»).
+  negativos; la vigente, la 0.4.3, los rechaza y lleva la E6 (ver «Compatibilidad»). ⚠️ §718: la
+  E7 entra después de la aceptación, como enmienda redactada en privado con su arreglo y sellada con
+  él (`PROCESO.md` §«Fallos de seguridad»): seis vectores negativos nuevos bajo `zkssl/0.4`, que no
+  sube; sus textos en las secciones 2.7, 2.9, 5 y 6.1 de `PAQUETE.md`; ni un método ni un campo del
+  OpenRPC; y las suites de su sello. Lo contado arriba es del §825 y no la incluye: la 0.4.3 da
+  VERDE al acta de `rotacion/neg-acta-mmrsize-alias.json` —medido en privado, y en el §718 con el
+  kit de antes de su sello, cuyo lector de actas es el de la 0.4.3—, y la rechaza el kit compilado
+  desde el §718, que sale con el corte.
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§640): midió, propuso,
   aplicó, corrió el canon y commiteó, fuera del paso 4 de `GENAI.md`; la E6 (§782) y este giro
-  (§825), también en sesiones de Claude Code en la nube y fuera del paso 4 — ver
-  [`GENAI.md`](../../GENAI.md)
+  (§825), también en sesiones de Claude Code en la nube y fuera del paso 4; la E7 (§718) la redactó
+  en privado Claude, en otra sesión de Claude Code en la nube, con su arreglo, y la llevó a este
+  árbol otra, también fuera del paso 4 — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-10-01
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: nada de lo que el núcleo produce se
   mueve, ni un KAT ni una cabeza firmada. Cambia lo que se ACEPTA al leer: menos.
 - **Asiento(s) de AUDITORIA:** §640 (la propuesta y sus cinco primeras etapas); §641 (el RFC-0017,
   que matiza una frase de «Lo que NO cierra»); §662 (la escritura mínima de `Q` en el cable, que «Lo
   que NO cierra» cita); §775 (el testigo y el SDK leen con la regla); §782 (la E6); §825 (la
-  aceptación). ⚠️ §825: decía «§640.»: callaba la E6, los otros dos asientos que «Lo que NO cierra»
-  cita —el §662 y el §775— y el §641. ⚠️ §865: y callaba el §258, que cita la D-E.
+  aceptación); §718 (la E7, la «Segunda pasada», con su fila en la tabla de etapas y dos marcas, en
+  el «Estado» y en «Lo que NO cierra», redactadas en privado con su arreglo). ⚠️ §825: decía
+  «§640.»: callaba la E6, los otros dos asientos que «Lo que NO cierra» cita —el §662 y el §775— y
+  el §641. ⚠️ §865: y callaba el §258, que cita la D-E.
 
 ## Estado de las etapas
 
@@ -58,6 +68,7 @@
 | E4 — los vectores | cuatro negativos, uno por defecto medido, en `paquete/`, `ancla/` y `completitud/`, con su entrada de manifiesto; la referencia y la segunda los rechazan con el mismo texto donde las dos leen | NO | sellada — §640 |
 | E5 — una definición en el probador | las siete copias privadas del embebido en `stark-experiment` pasan a ser `zk_ssl_hash::embeber`, y `SPEND_KEY_DOMAIN` se reexporta del núcleo | NO | sellada — §640 |
 | E6 — el camino de la cuenta, entero | las seis `verificar_inclusion*` exigen que el camino mida `ACCOUNTS_DEPTH` y que sus orientaciones sean las del `indice` del recibo, con las reglas del módulo `cuentas`; dos errores nuevos, `ProfundidadDistinta` e `IndiceCruzado` | NO | sellada — §782 |
+| E7 — la segunda pasada | la regla en las fronteras que faltaban: el juez de la edad, del pago en curso y del cobro pendiente (`zk-ssl-air`) y la segunda implementación; la carga del almacén, la instantánea, los parámetros de `paramsDigest` y la colocación que salta el índice del centinela en la capa; el productor de la edad y el arranque del nodo; las actas del kit; seis vectores negativos (ver «Segunda pasada») | NO | sellada — §718 |
 
 ## Motivación
 
@@ -182,7 +193,12 @@ release nueva llegó en el §657, y desde el §658 el kit vigente y el árbol le
   cambia por ellos» en su sección «Lo que corrige de RFC-0016» (§641): leído en el cable sin la
   regla, un `balance` del estado que aporta el titular escrito como `b + p` descuadraba la
   conservación del suministro al reabrir; su E4 lo lee canónico en `ClientStateDto` y en
-  `AccountViewDto`, antes de que la capa lo sume o reste.
+  `AccountViewDto`, antes de que la capa lo sume o reste. ⚠️ §718: para el testigo tampoco era
+  exacto antes del §775: con `mmrSize + p` y la firma válida, el canal de la historia anclaba en
+  `t = p`, y desde ahí cada cabeza honesta le parecía `por-detras`, que no detiene (medido en
+  privado, en su bucle y con su lector de antes del §775; lo fijan los tests de la E7). Del
+  deserializador de `Q`, lo que el nodo lee son índices, posiciones y cantidades que la capa acota,
+  y no se encontró otro veredicto que cambie (leído, sin medir cada método).
 - ~~**`verificar_inclusion` y sus hermanas v2 a v6** no fijan la profundidad del árbol de cuentas
   ni cruzan el camino con el `indice` que el recibo lleva, que hoy no se usa. Ningún consumidor del
   árbol las llama; la regla que sí se aplica en el mando vive en el módulo `cuentas`. Queda nombrado.~~
@@ -195,6 +211,49 @@ release nueva llegó en el §657, y desde el §658 el kit vigente y el árbol le
 - **Los tres textos de camino** —`sibling {i}`, `camino[{i}]`, `{mote}: siblings[{i}]`— siguen sin
   vector: hace falta un hermano con un elemento menor que `2^32 - 1` para escribirlo como `x + p`,
   y los caminos capturados no lo traen.
+
+## Segunda pasada (§718, la canonicidad)
+
+La regla, en las fronteras que faltaban. Un `u64` de fuera que se compone en un elemento se acota
+sobre el entero tal como llega, antes de reducir:
+
+- **La API de `zk-ssl-air`.** El emisor de la edad es un índice de cuenta, menor que `2^32`, y con
+  «todos» es 0 (`comprobar_enunciado`); el importe y el plazo del pago en curso, y la cota inferior
+  y el nacimiento del cobro, no pasan del techo sobre el `u64` crudo (`verificar_contra_cabeza`).
+  La segunda implementación lleva las mismas cotas, con las mismas causas.
+- **El productor de la capa y el nodo**: `prueba_de_edad` y `--edad-emisor` rechazan el emisor que
+  no es un índice, antes de leer el libro.
+- **La carga del almacén y la instantánea**: la meta de los pendientes exige un emisor que sea el
+  centinela o un índice del árbol de cuentas, y un nacimiento canónico; los saldos, los importes
+  pendientes, el suministro y el tope de emisión, por debajo del tope de la capa (§668). La capa no
+  asigna a ninguna cuenta el índice `2^32 - 2`, que en el campo es el centinela de la emisión, y la
+  instantánea no importa una cuenta en él.
+- **Los parámetros de `paramsDigest` y los contadores de la cabeza**: el plazo de reembolso y el
+  tope de custodios, que ninguna raíz cubre, se leen del almacén canónicos; el límite y el tope de
+  cuentas, al abrir, al arrancar y en la instantánea. Los dos ajustes de la capa no aceptan un valor
+  de `p` o más. `nextPending` y `nextIndex` se leen dentro de la capacidad de su árbol. Con `x + p`
+  la cabeza firmaba el mismo `paramsDigest` y la capa aplicaba otra regla: el plazo `+ p` bloqueaba
+  para siempre el reembolso y la des-emisión de la vía v1, y el tope `+ p` dejaba el cupo de
+  custodios sin tope.
+- **El testigo**: su lector de cantidades exige la escritura mínima y `u64_canonico`, como el kit,
+  desde el §775; la E7 le añade los tests, con las cabezas firmadas de los vectores por su bucle, y
+  la medida del ancla en `t = p`.
+- **Las actas**: el lector del kit y el de la segunda implementación exigen `u64_canonico` en sus
+  cantidades.
+
+Salvo el acta, ninguno de esos alias dejaba pasar un enunciado falso por el kit ni por la segunda
+implementación, ni rompía la conservación, ni permitía suplantar. El acta firmada con `mmrSize`
+igual a `N` daba VERDE con `N + p` en el kit y en la segunda: aceptaban un acta que declaraba un
+tamaño que nadie firmó (lo fija `spec/vectors/rotacion/neg-acta-mmrsize-alias.json`). Lo más serio
+estaba en el almacén: una reescritura en claro podía cambiar a quién vuelve un pendiente, o mover
+una regla firmada, sin que la puerta de integridad, la raíz firmada ni el `paramsDigest` lo vieran.
+Lo del pendiente era latente porque el nodo no expone el reembolso.
+
+Lo que NO cierra: un libro anterior con una cuenta ya en el índice `2^32 - 2` abre, y en él la
+hoja de meta de un pago suyo sigue siendo la de una emisión; su instantánea, en cambio, no se
+importa. Se decidió así, por delegación del autor, y no se migra a un centinela fuera del rango:
+migrar cambiaría `PMETA` y `root:pmeta`, y llegar a ese índice exige unos 4.300 millones de
+cuentas. El centinela del retraso del sobre de reversión, D-AG del RFC-0008, sigue declarado allí.
 
 ## Referencias
 

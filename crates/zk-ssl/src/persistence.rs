@@ -59,6 +59,13 @@ impl SovereignLayer {
         if max_supply > crate::MAX_SUMINISTRO {
             return Err(LayerError::SupplyCapExceeded { cap: crate::MAX_SUMINISTRO, would_be: max_supply });
         }
+        // §718: el limite y el tope de cuentas entran en `paramsDigest`, y
+        // `load` solo los compara con lo guardado. Con `x + p` en los dos sitios abria con el mismo
+        // digest firmado y otra regla. Error y no panico, como el tope de emision; sin causa nueva
+        // en el cable, va como dato mal formado.
+        for (que, x) in [("regulatory_limit", regulatory_limit), ("max_accounts", max_accounts)] {
+            crate::parametro_canonico(que, x).map_err(StoreError::Malformed)?;
+        }
         let (db, fijada, de_v1, cerrojo) = Self::abrir_con_su_kdf(path, key.as_ref())?;
 
         let mut layer = Self {
@@ -200,6 +207,13 @@ impl SovereignLayer {
             // unico que se puede suponer, y es lo que habia.
             None => crate::DEFAULT_MAX_CUSTODIAN_USES,
         };
+        // ⚠️ §718, la canonicidad: el tope de custodios no lo cubre ninguna raiz -es
+        // politica, no historia (§394)-, pero entra en `paramsDigest`, que la cabeza v5 firma, y
+        // `as_digest` reduce modulo `p`. `cust_max + p` reabria con el mismo digest firmado y el
+        // cupo sin tope (medido). Lo que la capa escribe es canonico (`set_max_custodian_uses`).
+        if zk_ssl_hash::u64_canonico(self.max_custodian_uses).is_err() {
+            return Err(StoreError::IntegrityFailure { what: "tope de custodios no canonico" }.into());
+        }
         // ⚠️ **Los importes de los pendientes se restauran del disco.**
         //
         // Sin esto, tras un reinicio `total_pending()` valdria cero y la
@@ -222,6 +236,25 @@ impl SovereignLayer {
             );
             let sender = u64::from_le_bytes(v[..8].try_into().unwrap());
             let born = u64::from_le_bytes(v[8..].try_into().unwrap());
+            // ⚠️ §718, la canonicidad: la hoja de meta compone `sender` y `born` por
+            // `BaseElement::new`, que reduce modulo `p`, y la puerta del §388 compara esa hoja.
+            // `s + p` por `s`, o `born + p` por `born`, reabria con la raiz igual (medido) y
+            // cambiaba a quien vuelve el dinero (`AccountNotFound`) o lo bloqueaba para siempre
+            // (`RefundTooEarly`). Antes de componer: el emisor es el centinela o un indice del
+            // arbol de cuentas, y `born` es canonico. El indice del centinela se juzga abajo,
+            // con las cuentas ya leidas.
+            if sender != crate::REFUND_SENDER_NONE && sender >= self.accounts.capacity() {
+                return Err(StoreError::IntegrityFailure {
+                    what: "meta de pendientes: emisor fuera de las cuentas",
+                }
+                .into());
+            }
+            if zk_ssl_hash::u64_canonico(born).is_err() {
+                return Err(StoreError::IntegrityFailure {
+                    what: "meta de pendientes: nacimiento no canonico",
+                }
+                .into());
+            }
             self.pending_meta.insert(pos, (sender, born));
         }
         // §388: el arbol de meta se recompone de lo leido y se comprueba mas
@@ -239,6 +272,13 @@ impl SovereignLayer {
                     .map_err(|_| StoreError::Malformed("refund_ttl".into()))?,
             );
         }
+        // ⚠️ §718, la canonicidad: como el tope de custodios, `T` entra en `paramsDigest` y
+        // ninguna raiz la cubre. `T + p` reabria con el mismo digest firmado y bloqueaba para
+        // siempre el reembolso y la des-emision de la via v1 (`RefundTooEarly`, medido), el mismo efecto que
+        // `born + p`. Lo que la capa escribe es canonico (`set_refund_ttl`).
+        if zk_ssl_hash::u64_canonico(self.refund_ttl).is_err() {
+            return Err(StoreError::IntegrityFailure { what: "plazo de reembolso no canonico" }.into());
+        }
         for item in db.scan_prefix(b"pamt:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
@@ -252,6 +292,14 @@ impl SovereignLayer {
                     .try_into()
                     .map_err(|_| StoreError::Malformed("importe de pendiente".into()))?,
             );
+            // §718, la canonicidad: un importe por encima del tope
+            // de la capa no lo escribio la capa. La suma de abajo es en u128.
+            if importe > crate::MAX_SUMINISTRO {
+                return Err(StoreError::IntegrityFailure {
+                    what: "importe de pendiente fuera del tope de la capa",
+                }
+                .into());
+            }
             // Un importe cero significa **cobrado**: no cuenta como
             // pendiente, igual que la hoja vacia no cuenta como ocupada.
             if importe != 0 {
@@ -267,6 +315,17 @@ impl SovereignLayer {
             ),
             None => 0,
         };
+        // §718, la canonicidad: el contador entra en la cabeza (`nextPending`, por
+        // `as_digest`) y ninguna raiz lo cubre. `+ p` reabria con el mismo digest de cabeza
+        // (medido): la cabeza salia con un `nextPending` que el kit y el testigo rechazan, y ninguna
+        // posicion nueva cabia. La capa nunca lo deja por encima de la capacidad del arbol: la
+        // posicion `p` que asigna es menor que ella, y el contador pasa a `p + 1`.
+        if self.next_pending > self.pending.capacity() {
+            return Err(StoreError::IntegrityFailure {
+                what: "contador de pendientes fuera del arbol",
+            }
+            .into());
+        }
         let stored_limit = u64::from_le_bytes(
             need("meta:limit", get(b"meta:limit")?)?
                 .as_slice()
@@ -316,6 +375,16 @@ impl SovereignLayer {
                 .try_into()
                 .map_err(|_| StoreError::Malformed("suministro".into()))?,
         );
+        // ⚠️ §718, la canonicidad: el suministro no lo cubre ninguna raiz, y `as_digest`
+        // lo reduce modulo `p` en la cabeza. `meta:supply + p` coordinado con un saldo `+ p`
+        // reabria (medido): la conservacion, en enteros, cuadraba. El tope de la capa (§668) lo
+        // acota muy por debajo de `p`; con el, la conservacion acota cada saldo y cada importe.
+        if self.total_supply > crate::MAX_SUMINISTRO {
+            return Err(StoreError::IntegrityFailure {
+                what: "suministro fuera del tope de la capa",
+            }
+            .into());
+        }
         // El contador de recuperaciones. Si faltara, se asume cero: un
         // ledger creado antes de existir esta funcionalidad no ha tenido
         // ninguna.
@@ -343,6 +412,17 @@ impl SovereignLayer {
                 .try_into()
                 .map_err(|_| StoreError::Malformed("next_index".into()))?,
         );
+        // §718, la canonicidad: como `meta:next_pending`, el censo de cuentas entra en la
+        // cabeza (`nextIndex`) y ninguna raiz lo cubre; `+ p` reabria con el mismo digest de cabeza
+        // (medido). Cada alta ocupa una hoja distinta, asi que el censo no pasa de la capacidad del
+        // arbol de cuentas. ⚠️ No se exige `<= max_accounts`, que es mas estrecha: un libro anterior
+        // al tope de cuentas pudo abrir mas de las que hoy se configuran, y hoy abre.
+        if self.next_index > self.accounts.capacity() {
+            return Err(StoreError::IntegrityFailure {
+                what: "censo de cuentas fuera del arbol",
+            }
+            .into());
+        }
 
         // --- Cuentas ---
         // ¿Ledger MIGRADO (B13/B14)? La presencia del marcador decide la
@@ -373,6 +453,14 @@ impl SovereignLayer {
             );
             let (public_id, balance, nonce, view_id, leaf_salt) =
                 crate::store::record_from_bytes_v3(&v)?;
+            // §718, la canonicidad: la hoja compone el saldo por `BaseElement::new`, y
+            // `saldo + p` daba la misma raiz. Antes de componer, el tope de la capa (§668).
+            if balance > crate::MAX_SUMINISTRO {
+                return Err(StoreError::IntegrityFailure {
+                    what: "saldo fuera del tope de la capa",
+                }
+                .into());
+            }
             hojas.push((
                 idx,
                 if migrated {
@@ -395,6 +483,23 @@ impl SovereignLayer {
             );
         }
         self.accounts.rebuild_from(hojas);
+
+        // ⚠️ §718, la canonicidad: el indice del centinela en el campo. Un `pmeta:` que
+        // nombra la cuenta `2^32 - 2` tiene la hoja de una emision (`u64::MAX` reduce a ese
+        // indice), y una emision reescrita asi reabria con la raiz igual y se acreditaba a esa
+        // cuenta en vez de des-emitirse (medido hasta la verificacion de la prueba). La capa no
+        // asigna ese indice; si no hay cuenta en el, el `pmeta:` no lo escribio la capa.
+        // ⚠️ Lo que NO cierra: un libro anterior con una cuenta ya en ese indice abre, y en el
+        // la reescritura contraria (su pago -> centinela) sigue sin verse.
+        let centinela_sin_cuenta = self.pending_meta.values().any(|(s, _)| {
+            *s == crate::INDICE_DEL_CENTINELA && !self.records.contains_key(s)
+        });
+        if centinela_sin_cuenta {
+            return Err(StoreError::IntegrityFailure {
+                what: "meta de pendientes: el indice del centinela sin cuenta",
+            }
+            .into());
+        }
 
         // --- Registro de transiciones ---
         // El registro se lee ORDENADO por numero de secuencia: sled

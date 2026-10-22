@@ -221,11 +221,14 @@ impl SovereignLayer {
         // no como posición: los índices dejan de ser secuenciales y
         // enumerables (contratos de client.rs, superficies 2-3), y las
         // altas de un atacante ya no eligen vecino.
+        //
+        // ⚠️ §718, la canonicidad: el indice `2^32 - 2` no se asigna nunca. En el campo
+        // es el centinela de la emision, y cualquiera lo pedia por `zkssl_openAccount` con el
+        // primer elemento de `public_id` a `0xfffffffe` (medido): la hoja de meta de un pago
+        // suyo seria la de una emision.
         let cap = self.accounts.capacity();
-        let mut index = public_id[0].as_int() % cap;
-        while self.records.contains_key(&index) {
-            index = (index + 1) % cap;
-        }
+        let index =
+            crate::colocar(public_id[0].as_int(), cap, |i| self.records.contains_key(&i));
         self.next_index += 1;
         let root_old = self.accounts.root();
         let nonce = BaseElement::ZERO;

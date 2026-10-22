@@ -392,7 +392,9 @@ def _digest_del_acta(obj, campo):
 
 
 def _q_del_acta(obj, campo):
-    """Un Q en su escritura minima (zk_ssl_hash::cantidad_canonica, §662)."""
+    """Un Q en su escritura minima (zk_ssl_hash::cantidad_canonica, §662) y menor que p (RFC-0016,
+    u64_canonico), como `q_de` de `actas.rs`. §718, la canonicidad: sin la cota, un acta
+    firmada con mmrSize N verificaba igual con N + p, aqui y en la referencia (medido)."""
     s = _texto_de(obj, campo)
     if not s.startswith("0x"):
         raise Fallo(f"{campo}: hex sin 0x")
@@ -402,7 +404,10 @@ def _q_del_acta(obj, campo):
     malo = next((i for i, c in enumerate(h) if c not in b"0123456789abcdef"), None)
     if malo is not None:
         raise Fallo(f"{campo}: hex: cifra no admitida en la posicion {malo}")
-    return int(h, 16)
+    try:
+        return N.u64_canonico(int(h, 16))
+    except ValueError as e:
+        raise Fallo(f"{campo}: {e}")
 
 
 def acta_de_json(v):

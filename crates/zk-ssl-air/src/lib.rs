@@ -91,6 +91,27 @@ const RONDAS: usize = 7;
 pub const PROFUNDIDAD: usize = 32;
 /// Bits del resto que prueba que una posicion es JOVEN (`T - 1 - edad`).
 pub const BITS: usize = 32;
+/// Bits de un indice de cuenta: el arbol de cuentas de la capa tiene 32 niveles. El emisor que
+/// el enunciado nombra es un indice, y [`comprobar_emisor`] lo acota aqui.
+///
+/// ⚠️ Tres sitios dicen este numero: aqui, `BITS_CUENTA` de `tools/segunda/airs.py` y la capacidad
+/// del arbol de cuentas de la capa. Un test de este crate lee la segunda, y uno de la capa compara
+/// la capacidad. Se cambia en los tres a la vez.
+pub const BITS_CUENTA: u32 = 32;
+
+/// **El emisor es un indice de cuenta** (§718, la canonicidad): menor que `2^BITS_CUENTA`.
+/// El emisor entra al AIR por `BaseElement::new`, que reduce modulo `p`, y `emisor + p` se probaba
+/// como `emisor`. Un solo productor de la cota y de su causa: el juez ([`comprobar_enunciado`]), el
+/// productor de la capa y la linea de ordenes del nodo la llaman, y la causa es la misma en los
+/// tres.
+pub fn comprobar_emisor(emisor: u64) -> Result<(), String> {
+    if emisor >= 1u64 << BITS_CUENTA {
+        return Err(format!(
+            "emisor = {emisor} no es un indice de cuenta: no cabe en {BITS_CUENTA} bits"
+        ));
+    }
+    Ok(())
+}
 
 /// **El tope de `m`** (§717, el coste del juez de la edad): la prueba cubre el subarbol
 /// `[0, 2^m)`, y [`comprobar_enunciado`] rechaza `m > M_MAX` ANTES de leer la prueba y de construir
@@ -288,6 +309,11 @@ pub struct EdadPublicInputs {
     pub k: u64,
 }
 
+/// ⚠️ **Cada entero entra por `BaseElement::new`, que reduce modulo `p`**: `x` y `x + p` dan el
+/// mismo elemento, y el mismo transcript. Por eso nada llega aqui sin pasar antes por
+/// [`comprobar_enunciado`], que acota cada uno muy por debajo de `p`: `n <= 2^m`, `seq` y `t` en
+/// 32 bits, `k <= n` y el emisor, un indice de cuenta. §718, la canonicidad: el emisor
+/// era el unico sin cota, y la prueba del emisor `X` verificaba tambien con `X + p`.
 impl ToElements<BaseElement> for EdadPublicInputs {
     fn to_elements(&self) -> Vec<BaseElement> {
         let mut v = Vec::with_capacity(15);
@@ -312,6 +338,10 @@ impl ToElements<BaseElement> for EdadPublicInputs {
 /// Lo que el enunciado tiene que cumplir ANTES de construir el AIR: fuera de estos rangos la
 /// aritmetica del campo daria la vuelta, o el AIR no tendria forma. Nunca entra en panico.
 ///
+/// Desde el §718, cada entero del enunciado queda acotado aqui muy por debajo de `p`, y un
+/// enunciado tiene una sola escritura. El emisor es un indice de cuenta, menor que `2^32`, y con
+/// todos es 0.
+///
 /// Desde el §717, `m` va de 3 a [`M_MAX`] (antes, a 24). Por encima, el juez pagaria un coste
 /// lineal en `2^m` antes de mirar la prueba.
 pub fn comprobar_enunciado(pi: &EdadPublicInputs) -> Result<(), String> {
@@ -326,6 +356,15 @@ pub fn comprobar_enunciado(pi: &EdadPublicInputs) -> Result<(), String> {
     }
     if pi.k > pi.n {
         return Err(format!("k = {} mayor que n = {}", pi.k, pi.n));
+    }
+    // §718, la canonicidad: el emisor es un indice de cuenta, menor que 2^32 (la
+    // capacidad del arbol de cuentas). Sin la cota, `emisor + p` entraba al AIR como `emisor`
+    // y el juez devolvia el enunciado con el alias.
+    comprobar_emisor(pi.emisor)?;
+    // Todos se codifica con emisor 0 (lo hace el probador); otro emisor con todos es otra
+    // escritura del mismo enunciado.
+    if pi.todos && pi.emisor != 0 {
+        return Err(format!("todos con emisor = {}: todos se escribe con emisor 0", pi.emisor));
     }
     Ok(())
 }
@@ -1520,5 +1559,143 @@ mod tests_coste {
         let cociente = tt.as_secs_f64() / t3.as_secs_f64();
         eprintln!("rechazo: m = 3 {t3:?}, m = {M_MAX} {tt:?}, cociente {cociente:.1}");
         assert!(cociente < 25.0, "m = {M_MAX}: {tt:?} frente a {t3:?} en m = 3 ({cociente:.1})");
+    }
+}
+
+/// **§718, la canonicidad u64 -> campo.** Un entero que el llamante da y que el juez
+/// reduce modulo `p` tiene dos escrituras, `x` y `x + p`, y la misma prueba las acreditaba a las
+/// dos. Aqui cada entero de fuera se acota sobre el `u64` tal como llega, ANTES de leer la
+/// prueba: con una prueba vacia, la causa es la del enunciado y no `no se deserializa`. Falsador:
+/// sin las cotas, cada alias de abajo llega al lector de la prueba (los tests con la prueba real
+/// viven en el kit y en la capa, que tienen sobres firmados y un libro).
+#[cfg(test)]
+mod tests_canonicidad {
+    use super::*;
+    use crate::{cobro_pendiente as cobro, pago_en_curso as pago};
+    use winter_math::StarkField;
+
+    const P: u64 = BaseElement::MODULUS;
+    const SP: Digest = [BaseElement::new(11); 4];
+    const SM: Digest = [BaseElement::new(22); 4];
+    const NO_LEE: &str = "la prueba no se deserializa";
+
+    fn cabeza_edad() -> CabezaEdad {
+        CabezaEdad {
+            seq: 1000,
+            pending_root: raiz_desde_subraiz(SP, 3, PROFUNDIDAD),
+            pmeta_root: raiz_desde_subraiz(SM, 3, PROFUNDIDAD),
+            next_pending: 5,
+        }
+    }
+
+    fn af(emisor: Option<u64>) -> Afirmacion {
+        Afirmacion { t: 70, k: 0, emisor, subraiz_pend: SP, subraiz_meta: SM }
+    }
+
+    /// El emisor es un indice de cuenta: `X + p`, `2^32` y el centinela `u64::MAX` caen en el
+    /// enunciado con su causa; `2^32 - 1`, `2^32 - 2` (la reduccion del centinela, declarada en
+    /// la capa) y 0 pasan y llegan a la prueba.
+    #[test]
+    fn edad_alias_del_emisor_es_err() {
+        let c = cabeza_edad();
+        for x in [7 + P, P, 1 << 32, u64::MAX] {
+            let e = verificar_contra_cabeza(&[], &af(Some(x)), &c).expect_err("alias aceptado");
+            assert_eq!(e, format!("emisor = {x} no es un indice de cuenta: no cabe en 32 bits"));
+        }
+        for x in [0, 7, (1 << 32) - 2, (1 << 32) - 1] {
+            let e = verificar_contra_cabeza(&[], &af(Some(x)), &c).expect_err("prueba vacia");
+            assert!(e.starts_with(NO_LEE), "emisor {x}: {e}");
+        }
+    }
+
+    /// §718, la canonicidad: el ancho del indice de cuenta de la segunda es el del juez. Su
+    /// `BITS_CUENTA` es una linea `BITS_CUENTA = <valor>` con este valor, y su enunciado lo usa con
+    /// la misma causa que [`comprobar_emisor`]. Falsador: con `BITS_CUENTA = 33` en `airs.py`, cae
+    /// la primera comparacion.
+    #[test]
+    fn el_indice_de_cuenta_de_la_segunda_es_el_del_juez() {
+        let ruta = format!("{}/../../tools/segunda/airs.py", env!("CARGO_MANIFEST_DIR"));
+        let fuente = std::fs::read_to_string(ruta).expect("airs.py");
+        let lineas: Vec<&str> =
+            fuente.lines().map(str::trim).filter(|l| l.starts_with("BITS_CUENTA = ")).collect();
+        assert_eq!(lineas, vec![format!("BITS_CUENTA = {BITS_CUENTA}")], "el ancho de la segunda");
+        assert!(fuente.contains("self.emisor >= (1 << self.BITS_CUENTA)"), "la segunda no lo usa");
+        assert!(
+            fuente.contains(r#"f"emisor = {self.emisor} no es un indice de cuenta: no cabe en ""#),
+            "otra causa"
+        );
+        assert_eq!(
+            comprobar_emisor(1 << BITS_CUENTA).unwrap_err(),
+            format!("emisor = {} no es un indice de cuenta: no cabe en 32 bits", 1u64 << 32)
+        );
+        assert!(comprobar_emisor((1 << BITS_CUENTA) - 1).is_ok());
+    }
+
+    /// Todos se escribe con emisor 0: un enunciado con `todos` y otro emisor es otra escritura del
+    /// mismo y cae, tambien por `verificar` directo (por donde pasaba `emisor = p`).
+    #[test]
+    fn edad_todos_con_emisor_es_err() {
+        let pi = verificar_contra_cabeza(&[], &af(None), &cabeza_edad()).expect_err("vacia");
+        assert!(pi.starts_with(NO_LEE), "{pi}");
+        let bien = EdadPublicInputs {
+            subraiz_pend: SP,
+            subraiz_meta: SM,
+            m: 3,
+            n: 5,
+            seq: 1000,
+            t: 70,
+            emisor: 0,
+            todos: true,
+            k: 0,
+        };
+        assert!(comprobar_enunciado(&bien).is_ok());
+        // `p` es el alias de 0: con todos, `verificar` lo aceptaba con la prueba de todos.
+        let causas = [
+            (1, "todos con emisor = 1: todos se escribe con emisor 0".to_string()),
+            (P, format!("emisor = {P} no es un indice de cuenta: no cabe en 32 bits")),
+        ];
+        for (x, causa) in causas {
+            let malo = EdadPublicInputs { emisor: x, ..bien.clone() };
+            assert_eq!(verificar(&[], &malo).expect_err("todos con emisor"), causa);
+        }
+    }
+
+    fn cabeza_pago() -> pago::CabezaPago {
+        pago::CabezaPago { seq: 1000, pending_root: SP, pmeta_root: SM }
+    }
+
+    fn af_pago(importe: u64, t: u64) -> pago::AfirmacionPago {
+        pago::AfirmacionPago { receptor: SP, importe, t, nacido: 4 }
+    }
+
+    /// `importe + p` y `t + p` caen con la causa del techo, sobre el entero crudo.
+    #[test]
+    fn pago_importe_y_t_alias_son_err() {
+        let c = cabeza_pago();
+        let m = pago::MAX_VALOR;
+        let e = pago::verificar_contra_cabeza(&[], &af_pago(250_000 + P, 100), &c).unwrap_err();
+        assert_eq!(e, format!("el importe {} pasa del techo {m}", 250_000 + P));
+        let e = pago::verificar_contra_cabeza(&[], &af_pago(250_000, 100 + P), &c).unwrap_err();
+        assert_eq!(e, format!("T {} o nacido 4 pasan del techo {m}", 100 + P));
+        let e = pago::verificar_contra_cabeza(&[], &af_pago(m + 1, 100), &c).unwrap_err();
+        assert_eq!(e, format!("el importe {} pasa del techo {m}", m + 1));
+        let e = pago::verificar_contra_cabeza(&[], &af_pago(m, m), &c).unwrap_err();
+        assert!(e.starts_with(NO_LEE), "en el techo: {e}");
+    }
+
+    /// `inferior + p` cae con la causa del techo, sobre el entero crudo.
+    #[test]
+    fn cobro_inferior_alias_es_err() {
+        let c = cobro::CabezaCobro { seq: 1000, pending_root: SP, pmeta_root: SM };
+        let af = |inferior| cobro::AfirmacionCobro { receptor: SP, nacido: 4, inferior };
+        let m = cobro::MAX_VALOR;
+        for x in [1 + P, P, m + 1] {
+            let e = cobro::verificar_contra_cabeza(&[], &af(x), &c).unwrap_err();
+            assert_eq!(e, format!("las cotas {x} y {m} pasan del techo {m}"));
+        }
+        for x in [0, 1, m] {
+            let e = cobro::verificar_contra_cabeza(&[], &af(x), &c).unwrap_err();
+            assert!(e.starts_with(NO_LEE), "inferior {x}: {e}");
+        }
     }
 }

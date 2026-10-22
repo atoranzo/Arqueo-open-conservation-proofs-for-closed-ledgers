@@ -71651,3 +71651,277 @@ serie. No corre el canon entero ni los bancos.
   rehacen, como en los sellos anteriores. Ninguna cambia un veredicto.
 - **El techo de 13 se midió en una sola máquina**, que no es la de referencia, y el tiempo de allí
   es proyección. La memoria de `m = 14` no depende de la proyección.
+
+## §718 — RFC-0016, segunda pasada: la lectura canónica de u64 a campo en las fronteras que faltaban, del juez, el almacén, la instantánea, el testigo y las actas
+
+El commit que lleva este asiento, sobre `83b21d6` (el §717). Un solo sello: las cotas del enunciado
+de la edad, del pago en curso y del cobro pendiente en `zk-ssl-air` (`src/lib.rs`, con
+`BITS_CUENTA`, `comprobar_emisor` y `tests_canonicidad`, nuevo; `src/pago_en_curso.rs` y
+`src/cobro_pendiente.rs`); en la capa, la colocación que salta el índice del centinela
+(`zk-ssl/src/lib.rs`, `accounts.rs` y `migration.rs`), las cotas de la carga del almacén
+(`persistence.rs`) y de la instantánea (`snapshot.rs`), los parámetros que firma `paramsDigest`
+(`lib.rs`, `governance.rs` y `two_phase.rs`), el emisor del productor de la edad (`prueba_edad.rs`),
+un test cambiado en `tests.rs` y `src/tests_canonicidad.rs`, nuevo; en el nodo, `--edad-emisor`,
+`--limit` y `--max-accounts` (`zk-ssl-node/src/main.rs`) y un comentario de `diario.rs`; los tests
+del lector de cantidades del testigo y una marca en su comentario (`zk-ssl-cli/src/witness.rs`); el
+lector de las actas del kit (`zk-ssl-verify/src/actas.rs`) y sus tests con las pruebas de los
+vectores (`src/main.rs`); la segunda implementación (`tools/segunda/airs.py` y `verificador.py`) y
+las cifras de su README; seis vectores negativos en `edad/`, `pago/`, `pendiente/` y `rotacion/`,
+con treinta líneas al final de sus manifiestos y sus huellas, y su productor,
+`tools/vectores/canonicidad.py`, nuevo; `spec/PAQUETE.md` (las secciones 2.7, 2.9, 5 y 6.1) y una
+fila de `TABLA_E` en `tools/check_catalogo.py`; el RFC-0016; los pines de `tools/canon.sh`; las
+cifras de tests de los documentos vivos, y la de la capa en la prosa de `ARQUITECTURA.md` y
+`CONTRIBUTING.md`; los módulos de la capa en `ARQUITECTURA.md`; el recuento de `spec/vectors/` en
+los dos README y en la lista de la superficie de `spec/RPC.md`; y este asiento. Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: un acta de rotación con su tamaño de MMR escrito como
+`N + p` daba VERDE en el kit publicado y en la segunda implementación, y una reescritura en claro
+del almacén abría con la misma raíz o el mismo `paramsDigest` y otra regla. Sale con los demás
+arreglos de la publicación conjunta. Lo midió en privado una sesión de Claude Code, sobre
+`161a233` con los arreglos del §711 al §717 tal como se hicieron en privado; se escribió sobre
+`e4eb764`, con el §711 al §717 encima, este sello lo lleva a `83b21d6` («Al portar», abajo), y lo
+que se volvió a correr aquí está en «Medido sobre este árbol». El canon entero se corre sobre la
+punta de la serie, no sobre cada sello.
+
+**De dónde sale.** El §640 puso la regla del RFC-0016 —un `u64` que se compone en un elemento es
+menor que `p`— en el núcleo, el mando y la segunda implementación. Quedaban fronteras sin ella: un
+entero de fuera que entra por `BaseElement::new` o por `as_digest`, que reducen módulo `p`, sin
+cota sobre el entero tal como llega. Con `x + p` el elemento es el de `x`: el digest firmado no
+cambia, y lo que se aplica o se declara sí.
+
+**Lo que hace.**
+
+1. **El juez, `zk-ssl-air`.** En la edad, el emisor es un índice de cuenta: `comprobar_emisor`, un
+   solo productor de la cota y de su causa, rechaza `emisor >= 2^BITS_CUENTA` (`BITS_CUENTA = 32`,
+   la profundidad del árbol de cuentas) con `emisor = {} no es un indice de cuenta: no cabe en 32
+   bits`, y `comprobar_enunciado` rechaza `todos` con un emisor distinto de 0. Va antes de leer la
+   prueba, en `verificar` y en `verificar_contra_cabeza`. En el pago en curso, `importe`, `t` y
+   `nacido` contra el techo sobre el `u64` crudo, antes de reducir; en el cobro pendiente,
+   `inferior` y `nacido`, igual.
+2. **La capa.** `INDICE_DEL_CENTINELA` (`2^32 - 2`, derivado: `u64::MAX` reduce a él) y `colocar`,
+   un solo productor de la colocación, que salta ese índice; lo usan `open_with_id` y la migración.
+   `load` rechaza, con `IntegrityFailure` y su `what`, un emisor de la meta de pendientes que no es
+   el centinela ni cabe en el árbol de cuentas, un nacimiento no canónico, un `pmeta:` que nombra el
+   índice del centinela sin cuenta en él, y saldos, importes pendientes y suministro por encima del
+   tope de la capa (§668); el plazo de reembolso y el tope de custodios no canónicos; y
+   `next_pending` y `next_index` fuera de la capacidad de su árbol. `import_snapshot` rechaza un tope
+   de emisión sobre el tope (`SupplyCapExceeded`, como `open`), el suministro y los saldos sobre el
+   tope, el límite y el tope de cuentas no canónicos, `next_index` fuera del árbol y una cuenta en el
+   índice del centinela. `parametro_canonico` es el productor del texto para los parámetros de la
+   configuración: `new` entra en pánico con él, `open` devuelve `StoreError::Malformed`, y
+   `set_refund_ttl` y `set_max_custodian_uses` entran en pánico. `prueba_de_edad` rechaza el emisor
+   que no es un índice antes de leer el libro, con la causa del juez.
+3. **El nodo.** `--edad-emisor` pasa por `comprobar_emisor` antes de abrir el libro, y `--limit` y
+   `--max-accounts` no arrancan con un valor de `p` o más.
+4. **El testigo.** `leer_q`, el lector de todos sus enteros, exige la escritura mínima y
+   `u64_canonico` desde el §775, como `u64_de` del kit. Este sello le añade los tests
+   (`tests_canonicidad`: las cabezas firmadas de dos vectores, una v5 y una v6, por el bucle real,
+   con cada entero que `recomponer` lee cambiado por su alias, y la historia, que no ancla en
+   `t = p`) y una marca en su comentario con lo que el §775 cerraba, medido en privado con el lector
+   de antes. El comentario de `diario.rs` lo dice: decía `u64::from_str_radix`.
+5. **El kit y la segunda implementación.** `q_de` de `actas.rs` y `_q_del_acta` de
+   `verificador.py` exigen `u64_canonico` (vale para `mmrSize`, `esquema` y `desde`). `airs.py`
+   lleva las cotas del emisor, con `BITS_CUENTA = 32`, y la de `nacido` del cobro, con las mismas
+   causas y en el mismo orden. Un test de `zk-ssl-air` compara `BITS_CUENTA` de las dos, y uno de la
+   capa compara `1 << BITS_CUENTA` con la capacidad del árbol de cuentas.
+6. **Seis vectores negativos**, ficheros nuevos, cada uno UNA mutación de un campo de un positivo:
+   `rotacion/neg-acta-mmrsize-alias` (`mmrSize` 0x4 → 0xffffffff00000005),
+   `edad/neg-emisor-fuera-de-cuentas` (`emisor` = `2^32`), `edad/neg-emisor-no-canonico` (`emisor`
+   = `p`), `pago/neg-importe-alias` y `pago/neg-t-alias` (`+ p`) y
+   `pendiente/neg-inferior-alias` (`+ p`). Los produce `tools/vectores/canonicidad.py`, que no
+   reescribe un fichero que ya existe con otros bytes.
+7. **La spec.** `spec/PAQUETE.md` gana la cota del emisor en la 2.7, las cotas crudas del pago en
+   la 2.9 y las causas nuevas en el catálogo de la 5. El RFC-0016, ACEPTADO desde el §825, no se
+   reescribe: gana la E7 en su tabla de etapas y una sección, «Segunda pasada», con la lista, el
+   alcance y lo que no cierra; una marca en el punto de «Lo que NO cierra» sobre el cable y el
+   testigo, porque no era exacto que ningún veredicto cambiase; una marca en su «Estado»; el §718
+   en su «Asiento(s)»; y la sesión en su «Asistencia GenAI». La sección y la corrección se
+   redactaron en privado, con el arreglo; las marcas, al portar (abajo); y entran en este sello.
+8. **Al portarlo a `e4eb764`.** Las marcas que citaban el trabajo privado pasan a este sello, y la
+   sección del RFC-0016 cambia de título con ellas. El guion de los vectores pasa a
+   `tools/vectores/` con su cabecera reescrita y el código tal cual. Los comentarios de los
+   manifiestos se escriben en su forma final antes de registrarlos: con su `§` y la ruta pública.
+   La tabla de `spec/PAQUETE.md` §6.1 gana `no es un indice de cuenta`, `todos se escribe con
+   emisor 0` y `pasa del techo` en «la regla no se sostiene»; `no es canonico` ya estaba en su
+   clase. Ningún texto pinado cambia. Los conflictos con lo que aquel árbol ya tenía —el tope de
+   `m` del §717 en `comprobar_enunciado` y en el catálogo de la edad, y la apertura con su KDF del
+   §702 en `open`— se resolvieron conservando lo de los dos.
+9. **La decisión sobre el índice `2^32 - 2`, por delegación del autor.** Un libro anterior con una
+   cuenta ya en ese índice sigue abriendo, y su instantánea no se importa. No se migra a un
+   centinela fuera del rango: migrar cambiaría `PMETA` y `root:pmeta`, y llegar a ese índice exige
+   unos 4.300 millones de cuentas. Lo declaran el RFC-0016 y los comentarios de `load` y de
+   `INDICE_DEL_CENTINELA`.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), con el §711 al §717
+encima, y los lleva a `83b21d6` —el §717 ya llevado a `7dd6409`, el §895, sobre el §711 al §716
+llevados— una sesión de Claude Code, no el autor: primero sobre el §717 llevado a `6c33d2a` (el
+§865), y de ahí sobre los seis sellos del §890 al §895. De esos seis chocaba sólo la ficha M11 de
+`doc/ecst/VERIFICACION.md`, como en el §711 («Al portar»): el §894 marca su línea «Fuentes» y este
+sello sube el 531 de la de al lado a 546; quedan las dos, cada una con lo suyo. Lo que git no
+fundía, o fundía y quedaba falso, se resolvió a mano:
+
+- **El lector del testigo (§775).** `main` ya leía `leer_q` canónico desde el §775, con el error
+  `QUANTITY {s:?}: {e}`, que pina `spec/vectors/cable/MANIFIESTO.txt`; el del arreglo, con
+  `e.to_string()`, dejaba sin ese prefijo la salida del cable, y su comentario decía «Antes leia
+  cualquier hex, sin cota», falso desde el §775. Queda el cuerpo de `main`; el comentario del
+  arreglo pasa a ser una marca ⚠️ §718 que dice lo que el §775 cerraba, medido con el lector de
+  antes, y los tests entran como se escribieron: buscan la causa con `contains`. El asunto del
+  sello sigue nombrando el testigo, como el del arreglo: lo que el sello le pone son los tests y la
+  medida.
+- **El RFC-0016, aceptado (§825).** El arreglo reescribía el punto de «Lo que NO cierra» sobre el
+  cable y el testigo y le añadía una «Corrección (§718)»; con el RFC aceptado, y con las marcas
+  del §775 y del §825 en ese punto, nada se reescribe: el punto se queda entero, con una marca
+  ⚠️ §718 al final de su cadena, y la viñeta del testigo de «Segunda pasada» dice que el lector es
+  del §775 y que la E7 le añade los tests y la medida. La E7 entra en la tabla de etapas, como la
+  E6 del §782; el «Estado» gana una marca que dice que la E7 entra después de la aceptación, por
+  la vía de `PROCESO.md` §«Fallos de seguridad», y que lo contado allí es del §825; el
+  «Asiento(s)» de `main` gana el §718; y la «Asistencia GenAI», la sesión que la redactó, con la
+  fórmula de la casa y sin el nombre del modelo, como pide el ATADO G.
+- **El catálogo de rechazos (§777).** `tools/check_catalogo.py` salía con 3 ROJO: el texto
+  `todos con emisor = {}: todos se escribe con emisor 0` y `nacido {} pasa del techo {}` iban en
+  §5 tras « y », donde no cuentan como entradas, y `emisor = {} no es un indice de cuenta` salía
+  SOBRA porque `comprobar_emisor` no estaba en `TABLA_E`. Las dos entradas pasan a ir con « · », y
+  `verificar_edad::edad: {}` gana la fila `fn:comprobar_emisor`, con su marca.
+- **El «1 bis» de las aserciones (§864).** Los tres tests nuevos del kit se escribieron con
+  `cfg_attr(debug_assertions, ignore = …)`, y desde el §864 el canon corre el kit también con el
+  perfil `aserciones`, con los pines de su fila: con la puerta habría dado 212 pasan y 3 ignorados
+  frente a 215 y 0, ROJO. Sólo verifican pruebas ya hechas, sin el probador: corren con las
+  aserciones (medido, abajo), y la puerta sale, con una nota en su doc.
+- **`open_layer` con la espera del §813.** El §813 pasó el cuerpo a `open_layer_con`; la
+  comprobación del límite y del tope de cuentas cae dentro, después del tope de emisión y antes de
+  `abrir_esperando_el_cerrojo`: un alias se niega antes de abrir `sled` y sin esperar al cerrojo.
+  Git lo fundía así, y se comprobó.
+- **La apertura con el cerrojo del §816.** `abrir_con_su_kdf` devuelve también el cerrojo del libro;
+  la comprobación de los parámetros va antes de esa línea, así que unos parámetros malos no tocan el
+  disco ni toman el cerrojo.
+- **Los borrados del libro (§816).** Desde el §816 el libro deja `<libro>.cerrojo` al lado, y los
+  tests lo borran con `quitar_libro`. Los once `remove_dir_all` de `tests_canonicidad.rs` pasan a
+  `ts::quitar_libro`.
+- **El final del `main.rs` del nodo (§802).** El arreglo y `main` añadían un módulo de tests al
+  final, `tests_canonicidad` y `tests_una_identidad`: van los dos, primero el de `main`.
+- **Los kits publicados.** El arreglo decía «hasta la 0.4.2» en «Lo que NO cierra»: era la vigente
+  en su base. El §815 cortó la 0.4.3 y el §818 la registró publicada, y la 0.4.3 tampoco lleva este
+  arreglo: «hasta la 0.4.3». Su `actas.rs` es el de `83b21d6`, el kit de antes de este sello.
+- **Las cifras que ninguna herramienta lee.** La capa en la prosa de `ARQUITECTURA.md` y
+  `CONTRIBUTING.md` («fija hoy»), con su marca, que dice que el 45 y el 38 de detrás siguen siendo
+  los de `0315b14`: de los quince tests nuevos de la capa, uno lleva
+  `cfg_attr(debug_assertions, ignore = …)`. Los módulos de la capa en `ARQUITECTURA.md`, de 35 a
+  36, con su marca, con la regla del §778. La lista de la superficie de `spec/RPC.md`, que
+  `check_superficie` sólo cuenta como novedad. Y en `tools/segunda/README.md`, «1 quater» de 236 a
+  237 y «1 quinquies» de 68 a 69, con su marca, la fila de `rotacion` de la tabla, un párrafo del
+  sello como los de los anteriores y la nota del `.wasm`, que gana la del §718 con los tres de la
+  edad del §717, que su sello no contó allí.
+
+**Medido en privado**, sobre `161a233` con los arreglos del §711 al §717 tal como se hicieron en
+privado (el tope de m del §717, todavía en 14), en una máquina de 4 CPU cargada. Ninguna de estas
+medidas depende del tope de m:
+
+- **Antes**, con el kit de ese árbol: `rotacion/neg-acta-mmrsize-alias` daba VERDE, salida 0, y la
+  segunda implementación también. `edad/neg-emisor-fuera-de-cuentas` caía en la coherencia OOD, y
+  los otros cuatro ya caían en el lector del kit (§640). En la API de `zk-ssl-air`, con las pruebas
+  reales de los vectores, el alias `x + p` del importe y el plazo del pago, de la cota inferior del
+  cobro y del emisor de la edad verificaba (`Ok`). En el testigo, con el lector de antes del §775,
+  una cabeza v6 firmada con `recepCount` `+ p` daba `nueva`.
+- **Falsadores**, cada cota apagada a mano y restaurada después: caen los tests nuevos de
+  `zk-ssl-air`, del kit, de la capa (8 de 9 en la primera fase; el de la premisa pasa, como debe;
+  y los 5 con cota de la segunda fase), del testigo y del nodo, cada uno con lo que el alias hacía:
+  abrir, importar, verificar o arrancar. Con `BITS_CUENTA = 33` en `airs.py`, cae el test que
+  compara las dos.
+- **Una revisión adversarial** de sólo lectura no encontró otra escritura ni otra ruta que esquive
+  las cotas del juez, el kit, la segunda, el testigo o el nodo. Dejó un hallazgo importante —el
+  plazo de reembolso y el tope de custodios se leían del almacén sin cota, y con `+ p` reabrían con
+  el mismo `paramsDigest`— y ocho menores: los contadores de la cabeza, la cuenta en el índice del
+  centinela de la instantánea, los textos del RFC-0016, la doc de `INDICE_DEL_CENTINELA`, la
+  huella del kit medido, el comentario de `diario.rs`, el productor único del emisor y una cita
+  que `verificar_citas` contaba como fantasma, porque nombraba un documento de fuera del árbol.
+  Se corrigieron antes de portar.
+
+**Medido sobre este árbol**, `83b21d6` con este sello, en release, con el `target` compartido con
+otras tareas y cada `cargo` bajo un cerrojo, en una máquina de 4 CPU compartida:
+
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `zk-ssl-air` 56; `zk-ssl-verify` 215 (130 + 84 + 1); `zk-ssl-cli` 175; `zk-ssl-node` 239; y
+  `zk-ssl` 546 y 7 ignorados, en 138 s de tests. Y las que usan la capa y el juez sin que este sello
+  las toque: `zk-ssl-sdk` 22, `zk-ssl-wire` 27 y `stark-experiment` 428 y 13 ignorados. Con el
+  perfil `aserciones` del «1 bis», `cargo test --locked --profile aserciones -p <crate>`, los cinco
+  de su lista con los pines de su fila, 0 ignorados y 0 warnings, cada «Running» desde
+  `<target>/aserciones/deps/`: `zk-ssl-hash` 57, `zk-ssl-guardian` 40, `zk-ssl-medio` 62,
+  `zk-ssl-air` 56 y `zk-ssl-verify` 215 (130 + 84 + 1), con los tres de `tests_canonicidad`. El
+  workspace entero pasa `cargo check --locked --workspace --all-targets`, sin errores y con los
+  avisos de siempre (los 9 de `ceremony` y el del nodo), y el nodo sin `dev`
+  (`--no-default-features`, en release) compila con un aviso, el de `podar`.
+- **El mando, antes y después.** Antes, el kit de `83b21d6`, compilado de ese árbol con la orden
+  del canon (`0f72c31a06ff7092`, el binario que midió el §717): `rotacion/neg-acta-mmrsize-alias`
+  VERDE, salida 0; `edad/neg-emisor-fuera-de-cuentas` ROJO por
+  `InconsistentOodConstraintEvaluations`; los otros cuatro, ROJO con `no es canonico`. Después, el
+  kit de este árbol (`a040d76fb3996fc9`): los seis ROJO, salida 1, con la causa que pina su
+  manifiesto.
+- **La conformidad**, con `tools/conformidad.sh` y el kit de este árbol: paquete 94, consumo 20,
+  conflicto 17, rechazo 84, edad 38 de 38, pendiente 11, pago 28, prenda 11, completitud 81, ancla
+  44, ancla cofirmada 27 y rotación 35 de 35; el cable, 27 de 27. Con el kit de `83b21d6`, edad 37
+  de 38 y rotación 34 de 35. La segunda (`verificador.py`) en sus seis: paquete 94, consumo 20,
+  conflicto 17, ancla 44, rotación 35 de 35 y ancla cofirmada 27, 237 de 237; con el
+  `verificador.py` de `83b21d6`, rotación 34 de 35, el alias del acta VERDE con salida 0.
+- **La segunda implementación, STARK.** `python3 tools/segunda/stark.py`: autotest OK.
+  `python3 tools/segunda/juez_stark.py`: 69 de 69 pares, 83 pruebas juzgadas, 39 vectores que caen
+  antes del juez y 33 de 33 falsadores callados, en 13 s; `neg-emisor-fuera-de-cuentas` con la
+  causa del kit. Con el `airs.py` y el `juez_stark.py` de `83b21d6` y estos vectores, sobre una
+  copia del árbol: 68 de 69, ese vector por OOD.
+- **Los vectores, otra vez.** `python3 -I tools/vectores/canonicidad.py .` dice `IGUAL` en los
+  seis: escribe los mismos bytes.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2154
+  declarados; `check_modulos`, 213 ficheros; `check_vectores`, 580 vectores y 1273 líneas con su
+  huella, ninguno movido; `check_cifras`, 26 cifras y ninguna contradice el canon;
+  `check_publicadas`, con 600 ficheros en `spec/vectors/`; `check_catalogo`, 235 textos del kit y
+  290 entradas de §5; `check_nucleo`, 175 filas; `verificar_citas`, 0 muertos; `check_superficie`,
+  la lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas; y `check_columns`,
+  `check_constraint_layout`, `check_curvas`, `check_dominios`, `check_figures` y `check_techo`.
+  Todas salen con 0.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `zk-ssl` 531 -> 546, `zk-ssl-air` 51 -> 56,
+`zk-ssl-verify` 211 -> 215, `zk-ssl-cli` 173 -> 175 y `zk-ssl-node` 237 -> 239. TOTAL DE SELLO
+1964 -> 1992 y TOTAL CON LARGOS 2104 -> 2132, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; el
+desglose de `PRINCIPIOS.md`, 546 de la capa, 239 del nodo, 215 del kit y 175 del testigo; los 531
+de la capa, a 546, en `ARQUITECTURA.md`, `PRINCIPIOS.md`, `PAPER.md`, `PAPER_EN.md`,
+`doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`, y con su marca en la
+prosa de `ARQUITECTURA.md` y `CONTRIBUTING.md`. Las «1364 declaradas» y las «1349 declared» no se
+tocan, como en los sellos anteriores (5.A-319). `check_tests`, de 2126 a 2154. `spec/vectors/`, de
+594 a 600 ficheros, en `README.md` y `README_EN.md`. `check_vectores`, de 574 a 580 vectores y de
+1243 a 1273 líneas, y lo mismo en la lista de la superficie de `spec/RPC.md`. La segunda, de 236 a
+237 en «1 quater» y de 68 a 69 pares en «1 quinquies» de `tools/segunda/README.md`. Los módulos de
+la capa en `ARQUITECTURA.md`, de 35 a 36, con `tests_canonicidad`.
+
+**Lo que NO hace.** No cambia el cable, la versión `zkssl/0.4` ni el formato de una prueba: un valor
+canónico se escribe, se lee y se verifica igual. No reescribe ni cambia el veredicto de ningún
+vector anterior. No toca `zk-ssl-wire`, `zk-ssl-hash` ni el fork de winterfell. No añade variante a
+`LayerError`. No añade entrada a `SECURITY.md`. No publica un kit: el corte va al final de la
+serie. No corre el canon entero ni los bancos.
+
+**Lo que NO cierra.**
+
+- **Un libro anterior con una cuenta ya en `2^32 - 2`** abre, y en él una emisión y un pago de esa
+  cuenta tienen la misma hoja de meta. Es la decisión de arriba.
+- **`load` no exige que la cuenta del emisor exista**, salvo en el índice del centinela: la
+  migración no remapea los emisores de la meta de pendientes, y exigirla dejaría sin abrir un libro
+  migrado con pendientes en vuelo. Sin medir: el reembolso de un pendiente anterior a la migración
+  iría a un índice viejo.
+- **El nacimiento** se acota a canónico, no a la longitud del registro, que sería su cota natural.
+- **`next_index` se acota a la capacidad del árbol**, no a `max_accounts`: un libro anterior al
+  tope de cuentas pudo abrir más de las que hoy se configuran, y con esa cota dejaría de abrir.
+- **El cable** (`zk-ssl-wire::Q`) sigue sin `< p`: lo nombra el RFC-0016.
+- **`stark-experiment` no comprueba el emisor**: lo hace antes el productor de la capa. Quien llame
+  al probador directo con `emisor + p` obtiene una prueba que el juez ya rechaza.
+- **`open` dice `StoreError::Malformed`** para un parámetro de la configuración que no es canónico,
+  también al crear un libro nuevo. El texto de dentro dice cuál; una variante propia tocaría el
+  cable.
+- **El arenero de la CLI** pasa sus parámetros a `new` sin comprobarlos: con `--limit` de `p` o más
+  entra en pánico con el texto de la capa (leído, sin medir). Es una herramienta de desarrollo.
+- **Los kits publicados hasta la 0.4.3** aceptan el acta con su alias. Hace falta un kit nuevo, que
+  sale con el corte.
+- **Las citas por línea que este sello corre** en `zk-ssl-air/src/lib.rs`, `zk-ssl/src/snapshot.rs`
+  y `persistence.rs` —entre ellas las de la cabecera del ATADO F de `tools/check_publicadas.py` y
+  la de `tools/check_catalogo.py`— no se rehacen, como en los sellos anteriores. Ninguna cambia un
+  veredicto.

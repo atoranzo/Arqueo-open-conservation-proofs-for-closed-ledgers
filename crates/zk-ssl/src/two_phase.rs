@@ -254,7 +254,15 @@ impl SovereignLayer {
 
     /// Ajusta `T`. El knob existe para operación y tests; el valor es
     /// parte del contrato público del nodo y se persiste con el lote.
+    ///
+    /// ⚠️ `T` entra en `paramsDigest` (§718, la canonicidad): una `T` de `p` o más
+    /// firmaria la de `T - p` y bloquearia todo reembolso y toda des-emisión de la vía v1. Entra en
+    /// pánico con su texto, como `new` con un tope fuera de rango: la capa no escribe nunca una
+    /// así, y `load` no la abre.
     pub fn set_refund_ttl(&mut self, t: u64) {
+        if let Err(e) = crate::parametro_canonico("refund_ttl", t) {
+            panic!("{e}");
+        }
         self.refund_ttl = t;
     }
 

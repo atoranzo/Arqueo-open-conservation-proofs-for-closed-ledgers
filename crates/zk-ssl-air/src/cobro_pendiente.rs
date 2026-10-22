@@ -532,10 +532,11 @@ pub struct AfirmacionCobro {
 
 /// **La prueba de cobro pendiente contra una cabeza v5** (RFC-0008 D-K). Exige, en nativo y
 /// ANTES de tocar la prueba, que el pendiente haya nacido antes que la cabeza que lo firma
-/// (`nacido < seq`: una meta nacida despues es una cabeza que miente); compone el enunciado con
-/// las dos raices que la cabeza firma, lo que el sobre afirma y el techo del campo; y solo
-/// entonces llama al juez. Devuelve el enunciado verificado. Una prueba de otro arbol, de otra
-/// meta o con otro techo no se enlaza: la prueba es la de SU enunciado.
+/// (`nacido < seq`: una meta nacida despues es una cabeza que miente) y que `inferior` y
+/// `nacido` no pasen del techo tal como llegan, sin reducir (§718, la canonicidad);
+/// compone el enunciado con las dos raices que la cabeza firma, lo que el sobre afirma y el
+/// techo del campo; y solo entonces llama al juez. Devuelve el enunciado verificado. Una prueba
+/// de otro arbol, de otra meta o con otro techo no se enlaza: la prueba es la de SU enunciado.
 pub fn verificar_contra_cabeza(
     prueba: &[u8],
     af: &AfirmacionCobro,
@@ -547,6 +548,15 @@ pub fn verificar_contra_cabeza(
              que la firma",
             af.nacido, cabeza.seq
         ));
+    }
+    // §718, la canonicidad: el techo, sobre el `u64` CRUDO y antes de reducir. Lo que
+    // juzga `comprobar_enunciado` es el elemento ya reducido, y `inferior + p` entraba como
+    // `inferior`. La misma causa que el enunciado; `nacido`, con la suya.
+    if af.inferior > MAX_VALOR {
+        return Err(format!("las cotas {} y {MAX_VALOR} pasan del techo {MAX_VALOR}", af.inferior));
+    }
+    if af.nacido > MAX_VALOR {
+        return Err(format!("nacido {} pasa del techo {MAX_VALOR}", af.nacido));
     }
     let pi = CobroPendientePublicInputs {
         pending_root: cabeza.pending_root,
