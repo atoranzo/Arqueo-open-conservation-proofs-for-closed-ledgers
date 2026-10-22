@@ -189,7 +189,7 @@ aplica.
 |---|---|---|---|
 | 1 | **hoja nueva** | §117 (`AUDITORIA.md:9569-9625`); «rotar clave implicará nueva hoja» (`native.rs:117-118`) | la segunda sal en la subida (`circuit_recovery_climb.rs:72-77`) |
 | 2 | **vista** | §127.5 (`AUDITORIA.md:10487-10499`); «solo rota rotando la clave» (`native.rs:143-146`) | traer el `view_id` nuevo con la rotación (`recovery.rs:97-106`), y decidir qué lo ata (§3, N3) |
-| 3 | **reclamo del B18.2** | `doc/CONFIANZA_RESIDUAL.md:471-477` y `:565` | todo: el circuito, la disponibilidad de datos del B18.1 (`:448-458`) y la declaración del B18.3 |
+| 3 | **reclamo del B18.2** | `doc/CONFIANZA_RESIDUAL.md:480-486` (⚠️ §895: decía `:471-477`) y `:574` (⚠️ §895: decía `:565`) | todo: el circuito, la disponibilidad de datos del B18.1 (`:457-467`; ⚠️ §895: decía `:448-458`) y la declaración del B18.3 |
 | 4 | **gobernanza inmutable** | la 20 | por diseño, nada; el coste es que una clave de gobernanza comprometida lo está para siempre. Lo fija ~~`the_governance_set_survives_restart` (`tests.rs:1176`)~~ ⚠️ §860: `changing_the_governance_set_on_an_existing_ledger_fails` (`tests.rs:2917`), que solo cambia la raíz de gobernanza y al reabrir da `ParameterMismatch`; el de antes reabre con la MISMA raíz, fija otra cosa y se salta en depuración. Es la D-3, en G0 (§6), y la raíz va en `params_digest` de cada cabeza (`lib.rs:890-898`) |
 | 5 | **recifrado** | la 20 | ver abajo |
 | 6 | **la clave del aviso cifrado**, si el B11.2 sale | [`AVISO_EN_ISO20022.md`](AVISO_EN_ISO20022.md) §6.1 | hoy no existe: ninguna cuenta tiene una clave a la que cifrar (`lib.rs:752-767`; `spec/RPC.md:111`) |
@@ -353,7 +353,7 @@ merge(derive_leaf_salt_wide(sk), H(DOM_SIGUIENTE, sk_siguiente))`, y la rotació
 ### R5. El reclamo como rotación — el B18.2 generalizado
 
 - **Autoriza**: la clave del titular, abriendo su hoja bajo una raíz firmada —la `H*` del siniestro
-  o una cabeza viva— (`doc/CONFIANZA_RESIDUAL.md:471-477`); los custodios, si se quieren, como
+  o una cabeza viva— (`doc/CONFIANZA_RESIDUAL.md:480-486` (⚠️ §895: decía `:471-477`)); los custodios, si se quieren, como
   respaldo.
 - **Cubre**: el caso 3 por construcción, y el 1 y el 2 si la hoja nueva se escribe con identidad,
   sal y vista nuevas. Y el 4 **de lado**: «cambiarla exige crear un ledger nuevo» (`lib.rs:975-983`)
@@ -362,12 +362,12 @@ merge(derive_leaf_salt_wide(sk), H(DOM_SIGUIENTE, sk_siguiente))`, y la rotació
 - **No cubre**: el caso 5. Es la más cara.
 - **Coste**: un circuito nuevo de la clase `circuit_claim`; un registro de posiciones ya reclamadas
   en el sucesor —el precedente es el mapa `claimed` del árbol de pendientes
-  (`crates/zk-ssl/src/pending.rs:204`)—; el B18.1 (`doc/CONFIANZA_RESIDUAL.md:448-458`), el B18.3 y
+  (`crates/zk-ssl/src/pending.rs:204`)—; el B18.1 (`doc/CONFIANZA_RESIDUAL.md:457-467` (⚠️ §895: decía `:448-458`)), el B18.3 y
   el B12.1; método, vectores, RFC y segunda implementación. Y su precondición, que el titular
   re-derive la sal con su clave, **falla en las cuentas recuperadas** mientras no exista N1 (§1.3
   b).
 - **Tiempo**: la ventana de reclamos es «política, no parámetro»
-  (`doc/CONFIANZA_RESIDUAL.md:487-490`): necesita reloj, y hereda el §1.4.
+  (`doc/CONFIANZA_RESIDUAL.md:496-499` (⚠️ §895: decía `:487-490`)): necesita reloj, y hereda el §1.4.
 
 ### La gobernanza y el recifrado, que no son claves de cuenta
 

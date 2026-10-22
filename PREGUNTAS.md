@@ -77,7 +77,7 @@ que no; el lote y la prenda, con recibo desde el §611 y resueltos por el sobre 
 (RFC-0014), con su residuo declarado: el agregador que no reenvía y la prenda con `seq` viejo
 (D-H) ([`doc/USE_CASES.md`](./doc/USE_CASES.md), fila 6). ⚠️ **Corregido en el §794**: decía «el
 lote y la prenda no llevan recibo (D-E)»; los dos lo llevan desde el §611
-(`spec/rfc/0010-el-recibo-de-recepcion.md`:291-297).
+(`spec/rfc/0010-el-recibo-de-recepcion.md`:365-371 (⚠️ §895: decía `:291-297`)).
 
 ### 5. ¿Qué aporta que no existiera?
 

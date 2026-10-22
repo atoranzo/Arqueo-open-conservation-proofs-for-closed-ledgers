@@ -80,7 +80,7 @@ not; the batch and the pledge too, with a receipt since §611 and resolved by th
 with a stale `seq` (D-H)
 ([`doc/USE_CASES.md`](./doc/USE_CASES.md), row 6). ⚠️ **Corrected in §794**: it said «the batch and
 the pledge carry no receipt (D-E)»; both carry one since §611
-(`spec/rfc/0010-el-recibo-de-recepcion.md`:291-297).
+(`spec/rfc/0010-el-recibo-de-recepcion.md`:365-371 (⚠️ §895: decía `:291-297`)).
 
 ### 5. What does it contribute that did not exist?
 

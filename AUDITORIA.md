@@ -69523,4 +69523,77 @@ ningún encabezado», por la cita de la cabecera: con el asiento en su sitio sal
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
 `check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
 y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
+
+## §895 — el punto 7 de la lista de cosas menores, en parte: un barrido mide 170 citas por línea de documentos vivos a ficheros que tocaron el §815, el §816, el §817, el §860 o el §861, y que ya no caen donde caían al escribirse; 28 que sólo se desplazaron, en ficheros que hoy no lleva en vuelo ninguna otra sesión, pasan a su línea de hoy con su marca, y el resto queda contado
+
+El commit que lleva este asiento, sobre el §894. Toca, cada una en su línea y sin añadir ninguna:
+`PREGUNTAS.md:80`, `QUESTIONS.md:83`, `doc/AVISO_EN_ISO20022.md:195`, cuatro líneas de
+`doc/ROTACION_DE_CUENTAS.md` (`:192`, `:356`, `:365`, `:370`), trece de `doc/blueprint-v2.md`, dos
+de `doc/mapa-geometria-circuit_send.md` (`:172`, `:191`) y dos comentarios de
+`tools/check_publicadas.py` (`:222`, `:522`). Y este asiento. Ni código que se ejecute, ni tests, ni
+vectores, ni `BACKLOG.md`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube,
+no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el
+siguiente del rango §890 a §899. El canon de este commit, `bash tools/canon.sh --sello`, corrido por
+la sesión sobre su árbol limpio, con este asiento en su sitio y sin esta frase: VERDE, 379 s de
+reloj y 223 s de tests, en una máquina de 4 CPU con carga de 1,07 al empezar. Las 19 filas en su
+pin, con 1872 tests que pasan, y las 55 líneas «OK» de sus compuertas, entre ellas el artefacto
+reproducible, con el binario `803ee230ea9d737b` y el tarball `41f701217b89d633`.
+
+Del autor es la tarea, la misma del §890. El punto 7 de la lista que sacó la sesión del §860 a §889
+pedía «un barrido de las citas por línea que movieron esos cinco sellos»; el §823 había corregido
+ocho, las que vieron sus revisiones. La forma del barrido y su alcance de hoy los propone esta
+sesión.
+
+**El barrido.** Un guion de la sesión, fuera del árbol, sobre el árbol del §894:
+
+1. Busca en los `.md`, `.rs`, `.py`, `.sh` y `.toml` versionados, menos `AUDITORIA.md`,
+   `doc/ecst/`, `doc/preprints/` y `spec/vectors/`, las citas de la forma `fichero:N` o
+   `fichero:N-M`, con o sin el nombre entre comillas invertidas, cuyo fichero tocó alguno de los
+   cinco sellos.
+2. Toma el árbol en que se escribió la línea que cita, con `git blame`, y se queda con las citas
+   escritas antes de alguno de esos sellos.
+3. Compara las líneas citadas en aquel árbol con las del árbol de hoy, y si no son las mismas busca
+   el mismo bloque, entero, en el fichero de hoy.
+
+Da **170**: 116 cuyo bloque está entero en otra línea, y 54 cuyo contenido cambió. Ciego, y se
+declara: no ve la forma «`:N`» suelta detrás de otra cita, ni una cita que no nombre su fichero; y
+«contenido cambiado» incluye líneas a las que sólo se les añadió texto, como `spec/RPC.md:102`, que
+el §890 cotejó a mano y cae en su sitio.
+
+**Qué se hace hoy, y qué no.**
+
+- **72** citan un fichero que hoy vuelve a mover otra sesión —`SECURITY.md`, `spec/RPC.md`, los
+  README, `BACKLOG.md`, `tools/canon.sh`, `spec/NUCLEO.md`, `CONTRIBUTING.md`, los del kit y del
+  verificador, y los de la capa que lleva la sesión del §860 a §889—, y **38** están en un fichero
+  que esa sesión o la de la 0.4.4 tienen en vuelo. No se tocan: hoy se volverían a mover.
+- **18** de las demás cambiaron de contenido: piden criterio, y no se tocan.
+- **42** sólo se desplazaron. De ellas, **25** se corrigen: el número de hoy, y detrás la marca
+  «⚠️ §895: decía `:N`» (en el `.py`, sin tilde ni emoji, como el resto de sus comentarios). Además,
+  al cotejarlas a mano salieron **tres** vecinas en esas mismas líneas, de la forma que el guion no
+  ve —`:565` y `:448-458` en `doc/ROTACION_DE_CUENTAS.md:192`, `:557` en
+  `tools/check_publicadas.py:522`—, y se corrigen igual: **28** en total. No se tocan siete que
+  citan `spec/RPC.md` desde `spec/PAQUETE.md` y el RFC-0004, porque ese fichero lo vuelve a mover
+  el carril B; seis del RFC-0003 y del RFC-0008, que declaran el árbol de sus medidas y son de su
+  fecha (§890); y cuatro con el bloque repetido en el fichero de hoy, que no se pueden llevar a una
+  sola línea sin leer el código: `two_phase.rs:675` tres veces en
+  `crates/zk-ssl-sdk/examples/i1_concurrencia.rs` y `two_phase.rs:1050-1051` en
+  `doc/blueprint-v2.md:281`.
+
+**Comprobado.** Ningún fichero cambia de número de líneas. Sobre el árbol con este sello salen con
+0 `verificar_citas`, `check_publicadas`, `check_cifras` y `check_figures`, y
+`tools/check_publicadas.py` se sigue leyendo como Python (`ast.parse`).
+
+**Lo que NO hace.**
+
+- No corrige 142 de las 170, por las razones de arriba.
+- No guarda el guion ni su lista en el árbol: los dos son de la sesión. Se rehacen con los tres
+  pasos de arriba.
+- No enseña a ninguna herramienta a vigilar las citas por línea a ficheros que se mueven.
+
+**Lo que es del autor.** Si las 142 se corrigen cuando las otras sesiones hayan subido lo suyo, o
+se pasan a citas por nombre o por encabezado, que no se mueven.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
+`check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
+y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
 resueltas.

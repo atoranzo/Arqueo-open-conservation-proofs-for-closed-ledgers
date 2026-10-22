@@ -169,7 +169,7 @@ Este censo busca las CUATRO formas — y lo que encuentra de más:
   test de hitos. Ninguna esconde un literal propio. ✔
 - **Fuera del fichero: NADA.** Las `ROW_*` son privadas; `zk-ssl` solo
   importa `build_trace`/`SendProver`/`SendAir`/`SendPublicInputs`
-  (lib.rs:140, two_phase.rs:53, metrics.rs:94). `doc/air/` documenta
+  (lib.rs:140, two_phase.rs:49 (⚠️ §895: decía `:53`), metrics.rs:249 (⚠️ §895: decía `:94`)). `doc/air/` documenta
   burn y mint, no send. ✔
 - ⚠️ **Los comentarios, la representación informal (la cuarta):**
   1. `TRACE_LENGTH` (96-101), **DESFASADO seguro**: «las fases del
@@ -188,7 +188,7 @@ Este censo busca las CUATRO formas — y lo que encuentra de más:
 - **`FROZEN_DEPTH` es coordenada COMPARTIDA** (la lección de §137,
   vigente aquí): vive en `circuit_freeze.rs:61` y la importan send,
   claim, burn, frozen_climb y settlement; la capa ya tiene
-  `FROZEN_DEPTH_POST = 32` en `migration.rs:20` (1b). Consecuencia para
+  `FROZEN_DEPTH_POST = 32` en `migration.rs:29` (⚠️ §895: decía `:20`) (1b). Consecuencia para
   el piloto en §7.
 
 ## 5. Qué restricción mira cada región (para saber qué se rompe al mover qué)

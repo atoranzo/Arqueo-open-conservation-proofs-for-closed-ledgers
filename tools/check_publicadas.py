@@ -219,7 +219,7 @@ MINIMO_RFC_G = 21
 # ATADO F (§796, tarea 40 del plan) - las CIFRAS DE NIVEL publicadas contra las CONSTANTES de las
 # que salen. ⚠️ §796: hasta aqui ningun cerrojo las miraba. El §698 las corrigio a mano en diez
 # sitios, el §708 anadio la del termino DEEP, y los dos dejaron escrito lo mismo: «los tests del
-# §697 atan las cifras, no la prosa que las cita» (doc/blueprint-v2.md:327, ZK-2). Este atado ata
+# §697 atan las cifras, no la prosa que las cita» (doc/blueprint-v2.md:329 (§895: decia :327), ZK-2). Este atado ata
 # la prosa.
 #
 # DE DONDE SALEN. Medirlas exige compilar Rust; DERIVARLAS, no: las da una funcion cerrada de
@@ -519,7 +519,7 @@ MINIMO_RFC_G = 21
 # comparacion, 63 bits conjeturados.» anadida a FIVE_BACKENDS.md sale VERDE, como se declara, y «63
 # conjectured vs 26-24 provable» en doc/ZENODO.md:125, tambien. Fuera de produccion la replica da,
 # con q = 33, LDR 79 en el envio, y con q = 34, LDR 80 y UDR 52: lo mismo que el debate del plan
-# dio SIN correr la funcion real -ESTIMADO en doc/blueprint-v2.md:308 y :557; la «LDR 79» con 33 de
+# dio SIN correr la funcion real -ESTIMADO en doc/blueprint-v2.md:310 (§895: decia :308) y :560 (§895: decia :557); la «LDR 79» con 33 de
 # :338 no cita medida-, que alli solo corrio con q = 42 (:245, :306-307 y :1115). Eso no la
 # contrasta: la contrasta b).
 DIR_CRATES = os.path.join(RAIZ, "crates")

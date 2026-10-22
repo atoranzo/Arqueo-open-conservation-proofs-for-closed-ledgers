@@ -192,7 +192,7 @@ cobro se rechaza: `a_third_party_cannot_claim_the_pending` (`iso.rs:1029-1067`).
 ## 6. La relación con el B11.2, el aviso cifrado
 
 El B11.2 pide el «cifrado del aviso a la clave del receptor (AEAD + clave efímera, ~100 B de
-sobrecoste)», con el patrón de Sapling (`doc/CONFIANZA_RESIDUAL.md:315-318`); lo declara
+sobrecoste)», con el patrón de Sapling (`doc/CONFIANZA_RESIDUAL.md:324-327` (⚠️ §895: decía `:315-318`)); lo declara
 independiente e implementable hoy (`:541-543` y `:562`), y el §268 lo dejó con esta entrada
 (`AUDITORIA.md:20214-20222`). Medido contra el árbol de hoy, tiene cuatro condiciones que tocan al
 canal:
