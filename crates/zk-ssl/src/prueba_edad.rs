@@ -85,6 +85,17 @@ impl SovereignLayer {
             )));
         }
 
+        // §717, el coste del juez de la edad: el juez no acepta `m` sobre su tope, y el
+        // productor lo dice ANTES de leer el libro, con la misma causa. Sin esto, reservaba y
+        // recorria `nextPending` posiciones para caer despues en `construir`.
+        let m = edad::m_canonico(cab.next_pending);
+        if m > edad::M_MAX {
+            return Err(LayerError::VerificationFailed(format!(
+                "prueba de edad: m = {m} fuera de 3..={}",
+                edad::M_MAX
+            )));
+        }
+
         let n = cab.next_pending;
         let mut hojas: Vec<Digest> = Vec::with_capacity(n as usize);
         let mut meta: Vec<Option<(u64, u64)>> = Vec::with_capacity(n as usize);
@@ -253,6 +264,25 @@ mod tests {
         let e = l.prueba_de_edad(&vieja, 2, None).expect_err("produjo contra otra cabeza");
         let texto = format!("{e}");
         assert!(texto.contains("no es el que esa cabeza firma"), "{texto}");
+    }
+
+    /// **§717, el coste del juez de la edad:** un libro cuyo `nextPending` pasa de
+    /// `2^M_MAX` no tiene prueba, y el productor lo dice ANTES de leer el libro, con la causa del
+    /// juez. No hace falta llenarlo: la marca se pone a mano en un libro vacio, y la cabeza es la
+    /// suya, asi que pasa la puerta de arriba. Con `2^M_MAX + 1`, la causa; con `u64::MAX`, la
+    /// misma clase de causa. Falsador: sin la comprobacion, el segundo entra en panico al reservar
+    /// las hojas (`capacity overflow`), y el primero recorre `2^M_MAX + 1` posiciones antes de
+    /// caer.
+    #[test]
+    fn un_libro_sobre_el_tope_no_se_lee() {
+        let mut l = ts::new_layer();
+        for (marca, m) in [((1u64 << edad::M_MAX) + 1, edad::M_MAX + 1), (u64::MAX, 64)] {
+            l.next_pending = marca;
+            let cab = cabeza_de(&l);
+            let e = l.prueba_de_edad(&cab, 2, None).expect_err("sobre el tope");
+            let causa = format!("prueba de edad: m = {m} fuera de 3..={}", edad::M_MAX);
+            assert!(matches!(&e, LayerError::VerificationFailed(t) if *t == causa), "{e}");
+        }
     }
 
     /// **La colision del emisor de emision, MEDIDA (5.A-183).** Un pendiente de emision lleva

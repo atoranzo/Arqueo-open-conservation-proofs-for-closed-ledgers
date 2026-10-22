@@ -33,9 +33,9 @@ obtenidas en condiciones idénticas, y documentamos un error metodológico
 propio —mezcla de compilaciones de depuración y optimizadas— detectado y
 corregido durante el trabajo.
 
-La implementación de referencia consta de **1955 pruebas ejecutables en la
+La implementación de referencia consta de **1964 pruebas ejecutables en la
 compuerta de sello** (55 son las de winterfell 0.13.1, que el fork del §533
-trae consigo) —2095 contando los pines de los niveles largo y completo, y
+trae consigo) —2104 contando los pines de los niveles largo y completo, y
 1364 declaradas (⚠️ §865: del §497; hoy las cuenta, con otra regla, `tools/check_tests.py`)—, con 18 ignoradas y declaradas, y
 está disponible públicamente. **No ha sido auditada por terceros y no
 implementa consenso distribuido**; discutimos en detalle las implicaciones
@@ -626,11 +626,12 @@ sobre `b6491ef` con el mismo test, en el apartado 2.2).
 Las opciones de producción de la capa —42 consultas, blowup 16, molienda
 21 y extensión cuadrática— dan, sobre sus pruebas ocultas, 127 bits
 conjeturados y, demostrables, 59 en UDR y de 80 a 88 en LDR según el
-circuito; la prueba de edad baja con su `m`, hasta 48 con `m = 23`. Lo
+circuito; la prueba de edad baja con su `m`, hasta 68 con `m = 13`, su
+tope desde el §717. Lo
 fijan tests (§697), y la tabla está en `SECURITY.md` §3.11. La fórmula
 de la conjeturada no descuenta el término DEEP, que crece con la
 longitud de la traza: con él, la conjeturada es de 112,8 a 116,8 según
-el circuito, y baja hasta 96,8 en la edad con `m = 23` (§708). Lo que
+el circuito, y baja hasta 106,8 en la edad con `m = 13` (§708). Lo que
 costaría llevarlas a 128 bits demostrables no está medido, y su nivel
 frente a un adversario cuántico tampoco.
 
@@ -1061,8 +1062,8 @@ herramientas externas ni compiladores no estables.
 # O de una vez, con los pines del canon comprobados:
 bash tools/canon.sh --sello
 
-cargo test -p zk-ssl --release              # capa: 530 tests (7 ignorados)
-cargo test -p stark-experiment --release    # circuitos: 427 tests (13 ignorados)
+cargo test -p zk-ssl --release              # capa: 531 tests (7 ignorados)
+cargo test -p stark-experiment --release    # circuitos: 428 tests (13 ignorados)
 cargo test -p zk-ssl-node --release         # nodo: 115
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

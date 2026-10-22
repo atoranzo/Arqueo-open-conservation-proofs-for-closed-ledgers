@@ -32,7 +32,7 @@ mod coefficients;
 pub use coefficients::{ConstraintCompositionCoefficients, DeepCompositionCoefficients};
 
 mod divisor;
-pub use divisor::ConstraintDivisor;
+pub use divisor::{BloqueDeExenciones, ConstraintDivisor};
 
 #[cfg(test)]
 mod tests;

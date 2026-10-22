@@ -105,3 +105,23 @@ neg-prueba-fri-particiones-64.json|1|prueba mal formada: FRI fuera de rango
 neg-prueba-cola-apertura-traza.json|1|not all bytes were consumed
 neg-prueba-cola-apertura-cociente.json|1|not all bytes were consumed
 neg-prueba-cola-lote-fri.json|1|not all bytes were consumed
+# §717, el coste del juez de la edad: tres negativos que NO salen de `edad-todos.json` (mutar el
+# `nextPending` de una cabeza real cae antes, en el `epochDigest`): son paquetes de atacante, que
+# cualquiera arma sin la clave del operador, sin libro y sin probar. La cabeza v5 va firmada con una
+# clave XMSS de TEST de semilla fija -el mando verifica la firma con la clave que trae la cabeza- y
+# la prueba esta FABRICADA: solo tiene la forma que el lector y la guarda de forma esperan. `m` sale
+# del `nextPending` de esa cabeza, y el juez pagaba, antes de la primera comprobacion contra la
+# prueba, CPU y memoria lineales en 2^m por las exenciones del envoltorio de la prueba: con el kit
+# de antes de este arreglo los tres daban ROJO (salida 1) en la coherencia OOD, tras 0,07 s de CPU
+# en `m = 13`, 1,1 s en `m = 17` y mas de un minuto y 531 MB en `m = 23` (medido). Ahora el
+# enunciado rechaza `m` sobre su tope, 13, ANTES de leer la prueba, y en el tope y por debajo el
+# juez evalua las exenciones en flujo. Las `m` van fijas y cada vector dice lo mismo con cualquier
+# tope de 13 a 16: `m = 17` y `m = 23` caen por el tope, y se pina su causa con su `m` y sin el
+# tope (`fuera de 3..=`); `m = 13` llega a la prueba y cae en la coherencia OOD, y se pina la causa
+# entera, que pone el fork de winterfell (§533). La prueba de los dos de encima del tope no se lee,
+# y aun asi es la fabricada entera: es el ataque mismo, el que el kit de antes pagaba, y una
+# regresion del tope lo volveria a pagar. Lo que la delata es la causa pinada. Los produce
+# `tools/vectores/coste_edad.py`. Jamas se reescriben (regla 2 del PROCESO).
+neg-m-sobre-tope.json|1|edad: m = 17 fuera de 3..=
+neg-m-mayor-legible.json|1|edad: m = 23 fuera de 3..=
+neg-m-13-fabricada.json|1|edad: InconsistentOodConstraintEvaluations

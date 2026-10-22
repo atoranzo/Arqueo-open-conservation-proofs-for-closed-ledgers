@@ -50,7 +50,8 @@ MENSAJES_DEL_JUEZ = (
     "pasan del techo",
     "pasa del techo",
     "banda vacia",
-    "fuera de 3..=24",
+    # el tope de m (§717, el coste del juez de la edad): sin el valor, que lleva `M_MAX`
+    "fuera de 3..=",
     "mayor que n",
     "forma de traza",
     # §711: las causas de una prueba mal formada, que pone el fork y repite `stark.py`

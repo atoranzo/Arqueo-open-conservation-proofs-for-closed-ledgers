@@ -9,6 +9,7 @@ use alloc::vec::Vec;
 use air::TransitionConstraints;
 #[cfg(debug_assertions)]
 use math::fft;
+use air::BloqueDeExenciones;
 use math::{batch_inversion, FieldElement, StarkField};
 #[cfg(feature = "concurrent")]
 use utils::iterators::*;
@@ -330,7 +331,7 @@ fn acc_column<E: FieldElement>(
     // multiplication of column value by the inverse of divisor numerator; for transition
     // constraints, it is computed similarly, but the result is also multiplied by the divisor's
     // denominator (exclusion point).
-    if divisor.exemptions().is_empty() {
+    if divisor.num_exemptions() == 0 {
         // the column represents merged evaluations of boundary constraints, and divisor has the
         // form of (x^a - b); thus to divide the column by the divisor, we compute: value * z,
         // where z = 1 / (x^a - 1) and has already been computed above.
@@ -348,22 +349,105 @@ fn acc_column<E: FieldElement>(
         // form of (x^a - 1) / e(x), where e(x) describes the exemption points; thus, to divide
         // the column by the divisor, we compute: value * e(x) * z, where z = 1 / (x^a - 1) and has
         // already been computed above.
+        //
+        // ARQUEO (§717, el coste del juez de la edad): e(x) sale de
+        // `exenciones_en_el_dominio`, por recurrencia, y no punto a punto: con las 1 + L/2
+        // exenciones del envoltorio de ocultacion, punto a punto eran n productos en cada uno de
+        // los ce * L puntos, cuadratico en la traza. Los valores son los mismos.
         batch_iter_mut!(
             result,
             128, // min batch size
             |batch: &mut [E], batch_offset: usize| {
+                let e = exenciones_en_el_dominio(divisor, domain, batch_offset, batch.len());
                 for (i, acc_value) in batch.iter_mut().enumerate() {
-                    // compute value of e(x) and compute next value of x
-                    let x = domain.get_ce_x_at(batch_offset + i);
-                    let e = divisor.evaluate_exemptions_at(x);
                     // determine which value of z corresponds to the current domain point
                     let z = z[i % z.len()];
                     // compute value * e(x) * z and add it to the result
-                    *acc_value += column[batch_offset + i].mul_base(z * e);
+                    *acc_value += column[batch_offset + i].mul_base(z * e[i]);
                 }
             }
         );
     }
+}
+
+/// ARQUEO (§717, el coste del juez de la edad): las exenciones del divisor, `e(x)`, en los
+/// `cuantos` puntos del dominio de restricciones que empiezan en `inicio`.
+fn exenciones_en_el_dominio<B: StarkField>(
+    divisor: &ConstraintDivisor<B>,
+    domain: &StarkDomain<B>,
+    inicio: usize,
+    cuantos: usize,
+) -> Vec<B> {
+    let x0 = domain.get_ce_x_at(inicio);
+    let w = domain.ce_domain_generator();
+    let ce = domain.trace_to_ce_blowup();
+    match divisor.bloque_de_exenciones() {
+        Some(bloque) => exenciones_por_recurrencia(divisor, bloque, x0, w, ce, cuantos),
+        None => exenciones_punto_a_punto(divisor, x0, w, cuantos),
+    }
+}
+
+/// `e(x0 * w^i)` para `i` en `0..cuantos`, punto a punto: lo que hacia upstream.
+fn exenciones_punto_a_punto<B: StarkField>(
+    divisor: &ConstraintDivisor<B>,
+    x0: B,
+    w: B,
+    cuantos: usize,
+) -> Vec<B> {
+    let mut x = x0;
+    let mut e = Vec::with_capacity(cuantos);
+    for _ in 0..cuantos {
+        e.push(divisor.evaluate_exemptions_at(x));
+        x *= w;
+    }
+    e
+}
+
+/// ARQUEO (§717, el coste del juez de la edad): `e(x0 * w^i)` para `i` en `0..cuantos`,
+/// con `e(x) = prod_{j < n} (x - a * g^j)` el bloque del divisor (`a = g^(L - n)`) y `w^ce = g`.
+///
+/// Como `e(x * g) = g^n * e(x) * (x - a * g^-1) / (x - a * g^(n - 1))`, los `ce` primeros puntos
+/// van directos (n productos cada uno) y cada uno de los demas sale del que esta `ce` puntos antes
+/// con tres productos; los denominadores se invierten por lotes. Cuesta `ce * n + O(cuantos)` en
+/// lugar de `cuantos * n`, y da los mismos elementos: la aritmetica del campo es exacta.
+///
+/// Si un denominador es cero -un punto del dominio que fuese la ultima exencion; con el dominio
+/// desplazado del probador no ocurre-, cae al calculo punto a punto en lugar de dividir por cero.
+fn exenciones_por_recurrencia<B: StarkField>(
+    divisor: &ConstraintDivisor<B>,
+    bloque: BloqueDeExenciones<B>,
+    x0: B,
+    w: B,
+    ce: usize,
+    cuantos: usize,
+) -> Vec<B> {
+    let directos = ce.min(cuantos);
+    let mut xs = Vec::with_capacity(cuantos);
+    let mut x = x0;
+    for _ in 0..cuantos {
+        xs.push(x);
+        x *= w;
+    }
+    let g = bloque.paso;
+    debug_assert_eq!(w.exp((ce as u64).into()), g, "w^ce no es el generador de la traza");
+    let n = bloque.cuantas as u64;
+    let c_num = bloque.primera * g.inv();
+    let c_den = bloque.primera * g.exp((n - 1).into());
+    let dens: Vec<B> = xs[..cuantos - directos].iter().map(|&x| x - c_den).collect();
+    if dens.contains(&B::ZERO) {
+        return exenciones_punto_a_punto(divisor, x0, w, cuantos);
+    }
+    let inv = batch_inversion(&dens);
+    let gn = g.exp(n.into());
+    let mut e = Vec::with_capacity(cuantos);
+    for &x in &xs[..directos] {
+        e.push(divisor.evaluate_exemptions_at(x));
+    }
+    for j in 0..cuantos - directos {
+        let v = gn * e[j] * (xs[j] - c_num) * inv[j];
+        e.push(v);
+    }
+    e
 }
 
 /// Computes evaluations of the divisor's numerator over the domain of the specified size and
@@ -474,4 +558,47 @@ fn evaluate_divisor<E: FieldElement>(
     let g = E::BaseField::get_root_of_unity(domain_size.trailing_zeros());
     let domain = math::get_power_series_with_offset(g, domain_offset, domain_size);
     domain.into_iter().map(|x| E::from(divisor.evaluate_at(x))).collect()
+}
+
+// ARQUEO (§717, el coste del juez de la edad): el testigo de la recurrencia.
+#[cfg(test)]
+mod tests_recurrencia {
+    use air::ConstraintDivisor;
+    use math::{fields::f64::BaseElement, FieldElement, StarkField};
+
+    use super::{exenciones_por_recurrencia, exenciones_punto_a_punto};
+
+    /// La recurrencia da lo que daba el calculo punto a punto, elemento a elemento: sobre el
+    /// dominio de restricciones entero y sobre un trozo que no empieza en cero ni acaba en un
+    /// multiplo de `ce` (los lotes del probador concurrente), con trazas de `2^3` a `2^12`, las
+    /// exenciones de un AIR de upstream (1 y 2) y las del envoltorio de ocultacion (`L/2 + 1`),
+    /// y `ce` de 2, 4 y 8; desde el desplazamiento del probador, desde `1` (el dominio sin
+    /// desplazar) y desde la ultima exencion, donde el primer denominador es cero y la recurrencia
+    /// cae al calculo punto a punto: el mismo resultado. Falsadores: sin `e(x)` en el producto
+    /// falla el primer caso; sin la caida, el de la ultima exencion.
+    #[test]
+    fn la_recurrencia_da_lo_que_daba_punto_a_punto() {
+        for log_l in 3..=12u32 {
+            let l = 1usize << log_l;
+            for n in [1, 2, l / 2 + 1] {
+                let divisor = ConstraintDivisor::<BaseElement>::from_transition(l, n);
+                let bloque = divisor.bloque_de_exenciones().expect("bloque");
+                for ce in [2usize, 4, 8] {
+                    let tam = ce * l;
+                    let w = BaseElement::get_root_of_unity(tam.ilog2());
+                    let ultima = bloque.primera * bloque.paso.exp(((n - 1) as u64).into());
+                    for x0 in [BaseElement::GENERATOR, BaseElement::ONE, ultima] {
+                        let dir = exenciones_punto_a_punto(&divisor, x0, w, tam);
+                        let rec = exenciones_por_recurrencia(&divisor, bloque, x0, w, ce, tam);
+                        assert_eq!(rec, dir, "L = {l}, n = {n}, ce = {ce}, x0 = {x0}");
+                        // un trozo: desde el punto 3, 5 * ce + 3 puntos
+                        let x3 = x0 * w.exp(3u64.into());
+                        let k = (5 * ce + 3).min(tam - 3);
+                        let rec = exenciones_por_recurrencia(&divisor, bloque, x3, w, ce, k);
+                        assert_eq!(rec, dir[3..3 + k], "trozo: L = {l}, n = {n}, ce = {ce}");
+                    }
+                }
+            }
+        }
+    }
 }

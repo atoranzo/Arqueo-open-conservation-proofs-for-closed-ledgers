@@ -1339,8 +1339,14 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **La conjeturada, con el término DEEP (§708)**: su fórmula pone el campo entero y no descuenta el
   término DEEP de la demostrable, que crece con la longitud de la traza. Con él, no pasa de 116,8
   con 128 filas ni de 112,8 con 2.048, y en la edad, de 116,8 con `m = 3` a 96,8 con `m = 23`.
-  Lo fija un test de `tests_nivel` en `zk-ssl-air`, y `SECURITY.md` §3.11 y los textos de arriba lo
-  dan junto a los 127. Lo que se decida aquí mueve también esa cifra.
+  Lo fija un test de `tests_nivel` en `zk-ssl-air` (desde el §717, sólo de `m = 3` a `m = 13`,
+  con 106,8), y `SECURITY.md` §3.11 y los textos de arriba lo dan junto a los 127. Lo que se
+  decida aquí mueve también esa cifra.
+  **El rango de `m`, acotado (§717)**: el enunciado de la edad admite `m` de 3 a 13
+  (`zk_ssl_air::M_MAX`), y `m = 24` ya no. El tope sale del coste del juez y de las cotas de la
+  puerta del RFC-0007, no del nivel: con 13 la LDR es 68 y la conjeturada con el DEEP, 106,8. Los
+  tests del §697 y del §708 quedan en las `m` admitidas, `SECURITY.md` §3.11 lo anota, y `PAPER.md`
+  y `PAPER_EN.md` dan las cifras de `m = 13`. El piso de LDR y el umbral de UDR siguen por decidir.
 
 - [ ] **117. El juez único de verificación, antes del corte zkssl/0.5: lo adopta el autor (§705),
   en la aceptación en bloque.** Es el ARQ-01 de `doc/blueprint-v2.md`. Hoy cada familia se

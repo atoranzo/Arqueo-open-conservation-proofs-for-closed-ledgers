@@ -231,7 +231,9 @@ MINIMO_RFC_G = 21
 #        FIJAN los tests: CONJETURADA_MINIMA, LDR_MINIMA y UDR_ACTUAL en `nivel_de_produccion.rs`;
 #        PISO_LDR, CONJETURADA_CON_DEEP, SIN_PISO, CONJETURADA_MINIMA y UDR_ACTUAL en
 #        `tests_nivel`, que no tiene LDR_MINIMA: alli el piso va por `m`. UDR_ACTUAL es un VALOR,
-#        no un minimo;
+#        no un minimo. ⚠️ §717: y del juez de la edad, `M_MAX` y el suelo de `comprobar_enunciado`
+#        (crates/zk-ssl-air/src/lib.rs): las m de PISO_LDR y SIN_PISO son las que el enunciado
+#        admite, todas, o ROJO TEST;
 #   F.1  la REPLICA de la funcion, aqui, letra a letra y con la aritmetica de f64 de Rust (division
 #        por cero, el NaN que `f64::min` descarta, la conversion saturada a u64), CONTRASTADA en
 #        tres frentes:
@@ -325,7 +327,15 @@ MINIMO_RFC_G = 21
 #           formula que se compila (en la ceguera, los medidos);
 #   F.2  la PROSA contra la replica: cada cifra de nivel de un documento vivo casa con la que se
 #        deriva, y las tres tablas -las dos de SECURITY.md §3.11 y la de FIVE_BACKENDS.md §4- se
-#        atan celda a celda.
+#        atan celda a celda. ⚠️ §717: el enunciado de la edad admite m de 3 a M_MAX, 13, y el test
+#        solo declara esas. Las de la segunda tabla de la edad por encima del tope, lo que da la
+#        funcion para longitudes que el juez ya no acepta, se atan a la replica sola, hasta la
+#        primera m cuyo dominio de extension -2 * CICLO * 2^m filas por el blowup- no cabe en 32
+#        bits, la regla de Context::validar del CABLEADO; esa m, 24 con las opciones de hoy, va con
+#        «—», porque ninguna prueba suya se lee. Las m de las dos tablas son las del test, las de la
+#        replica y esa, ni una mas. Una cifra de la prosa con su m sobre el tope casa tambien con la
+#        replica (ceguera). Las lineas de crates/zk-ssl-air/src/lib.rs que cita esta cabecera son
+#        las del §796: los sellos que mueven ese fichero no las rehacen.
 #
 # ACOPLAMIENTO con la zona del fork. F.1 c) ancla, LITERALES, las 213 lineas de codigo de
 # security.rs hasta `mod tests` y las 263 de las 24 funciones del cableado (⚠️ §711: decia 200 de
@@ -486,7 +496,14 @@ MINIMO_RFC_G = 21
 #     ancho_aux, aleatorios_aux, 4 * longitud);` tras crates/zk-ssl/src/lib.rs:255, sola y con
 #     `#[cfg(any())]` delante de :255-; y su rojo, LONGITUD, sale en `:0`, sin la linea;
 #   - que circuitos lleva cada fila de la tabla de longitud fija es prosa: se atan sus filas, su T,
-#     su LDR y su DEEP, no los nombres de la columna «pruebas».
+#     su LDR y su DEEP, no los nombres de la columna «pruebas»;
+#   - ⚠️ §717: las cifras de la edad con m sobre el tope -las de la segunda tabla de SECURITY.md
+#     §3.11 y las de la prosa que llevan su m- salen SOLO de la replica: desde el §717 ningun test
+#     de Rust las fija, y de los KAT_FORK ninguno tiene el regimen de produccion. Y el rango de m
+#     de la prosa no se ata: una frase de produccion con una m que el juez ya no acepta pasa si
+#     su cifra es la de la replica para esa m. Medido en VERDE, sobre una copia: «hasta 48 con
+#     `m = 23`» en lugar de «hasta 68 con `m = 13`» en PAPER.md. Antes del §717 esa m estaba en
+#     el test, y la cifra tambien era cierta.
 #
 # Falsadores (§796), sobre una copia del arbol con CANON_RAIZ, una mutacion cada vez, y todos en
 # ROJO: una cifra de la prosa en FIVE_BACKENDS, PRINCIPIOS, PAPER, PAPER_EN y el comentario de
@@ -530,6 +547,13 @@ MINIMO_RFC_G = 21
 # dio SIN correr la funcion real -ESTIMADO en doc/blueprint-v2.md:310 (§895: decia :308) y :560 (§895: decia :557); la «LDR 79» con 33 de
 # :338 no cita medida-, que alli solo corrio con q = 42 (:245, :306-307 y :1115). Eso no la
 # contrasta: la contrasta b).
+# ⚠️ §717, los falsadores del tope, sobre una copia del arbol con CANON_RAIZ, una mutacion cada
+# vez, y todos en ROJO: en la segunda tabla de la edad, la LDR de m = 14 de 66 a 67 y el DEEP de
+# m = 23 de 96,8 a 96,9 (TABLA, con la que se deriva), una cifra en la columna de m = 24 (TABLA,
+# sin dominio) y la columna de m = 24 quitada (TABLA, las m que cubren, y VIDA); en la primera,
+# la LDR de m = 13 de 68 a 66; en la prosa, «95,8 con `m = 23`» (NIVEL); y en el juez, M_MAX a 12
+# o a 14, el suelo de `comprobar_enunciado` a 4 (TEST, las m que admite, y con 14, TABLA en
+# m = 14) y M_MAX escrito como una expresion (TEST, no se lee).
 DIR_CRATES = os.path.join(RAIZ, "crates")
 FUENTE_OPCIONES = os.path.join(DIR_CRATES, "zk-ssl", "src", "lib.rs")
 FUENTE_TEST_CAPA = os.path.join(DIR_CRATES, "zk-ssl", "src", "nivel_de_produccion.rs")
@@ -2127,6 +2151,19 @@ def derivacion():
     if sorted(m for m, _ in piso) != sorted(m for m, _ in con_deep):
         fallos.append((rel_edad, 0, "TEST", "PISO_LDR y CONJETURADA_CON_DEEP no nombran las "
                        "mismas m"))
+    # ⚠️ §717: el tope de m. Las m que el enunciado admite salen del juez, `comprobar_enunciado`
+    # con su `M_MAX`, no se teclean; las del test tienen que ser esas, todas (cabecera, F.0).
+    tope = re.search(r"^pub const M_MAX: u32 = (\d+);", src_edad, re.M)
+    suelo = re.search(r"if pi\.m < (\d+) \|\| pi\.m > M_MAX \{", src_edad)
+    if not tope or not suelo:
+        fallos.append((rel_edad, 0, "TEST", "no se leen `pub const M_MAX: u32 = <n>;` ni el "
+                       "rango de `comprobar_enunciado`: sin ellos no se sabe que m admite el juez"))
+        return fallos, None, {}
+    m_max, m_min = int(tope.group(1)), int(suelo.group(1))
+    admitidas = list(range(m_min, m_max + 1))
+    if sorted(set(m for m, _ in piso) | set(sin_piso)) != admitidas:
+        fallos.append((rel_edad, 0, "TEST", "PISO_LDR y SIN_PISO nombran m = %s y el enunciado "
+                       "admite %s" % (sorted(set(m for m, _ in piso) | set(sin_piso)), admitidas)))
 
     # Las familias de longitud fija que prueba el test de la capa, con su TRACE_LENGTH.
     familias = []
@@ -2167,6 +2204,16 @@ def derivacion():
         if m in deep_m and deep_m[m] != decimas:
             fallos.append((rel_edad, 0, "REPLICA", "m = %d: la replica da DEEP %d decimas y "
                            "CONJETURADA_CON_DEEP fija %d" % (m, deep_m[m], decimas)))
+    # ⚠️ §717: sobre el tope, lo que da la funcion para longitudes que el juez ya no acepta -la
+    # segunda tabla de SECURITY.md §3.11-, SOLO de la replica, hasta la primera m cuyo dominio de
+    # extension no cabe en 32 bits: la regla de `Context::validar`, en el CABLEADO. Esa m no tiene
+    # cifra («—»): su prueba no se puede leer.
+    fuera_ldr, fuera_deep = {}, {}
+    sin_dominio = m_max + 1
+    while 2 * (ciclo << sin_dominio) * (edad or prod)["blowup"] <= 0xFFFFFFFF:
+        n = nivel(edad or prod, 2 * (ciclo << sin_dominio))
+        fuera_ldr[sin_dominio], fuera_deep[sin_dominio] = n["ldr"], n["deep"]
+        sin_dominio += 1
     por_familia = []
     for modulo, t in familias:
         n = nivel(prod, 2 * t)
@@ -2213,10 +2260,12 @@ def derivacion():
         "ldr_rango": tuple(sorted((larga[2]["ldr"], corta[2]["ldr"]))),
         "deep_rango": tuple(sorted((larga[2]["deep"], corta[2]["deep"]))),
         "ldr_m": ldr_m, "deep_m": deep_m, "sin_piso": sin_piso, "piso": dict(piso),
-        "con_deep": dict(con_deep), "familias": por_familia,
+        "con_deep": dict(con_deep), "familias": por_familia, "m_max": m_max,
+        "fuera_ldr": fuera_ldr, "fuera_deep": fuera_deep, "sin_dominio": sin_dominio,
         "bits_consultas": _bits_consultas(prod), "comparacion": filas_comp, "nivel": nivel,
     }
-    cuentas = {"m": len(piso), "familias": len(familias), "comparacion": len(filas_comp),
+    cuentas = {"m": len(piso), "fuera": len(fuera_ldr), "familias": len(familias),
+               "comparacion": len(filas_comp),
                "pisos_casan": pisos_casan, "kat_casan": kat_casan}
     return fallos, d, cuentas
 
@@ -2401,10 +2450,11 @@ def _casa(d, conf, clase, v):
             return v == d["deep_rango"]
         if clase == "deep_L":
             return v[0] >= 8 and v[0] & (v[0] - 1) == 0 and _decimas(_deep(o, v[0])) == v[1]
+        # ⚠️ §717: una `m` sobre el tope casa con la replica, no con un test (ceguera)
         if clase == "deep_m":
-            return d["deep_m"].get(v[0]) == v[1]
+            return d["deep_m"].get(v[0], d["fuera_deep"].get(v[0])) == v[1]
         if clase == "ldr_m":
-            return d["ldr_m"].get(v[0]) == v[1]
+            return d["ldr_m"].get(v[0], d["fuera_ldr"].get(v[0])) == v[1]
         if clase == "bits_consultas":
             return v == d["bits_consultas"]
         return o.get(clase) == v
@@ -2617,7 +2667,7 @@ def atado_f_tablas(d):
                                "de la capa prueba, no tiene fila" % (modulo, t)))
 
     # F.2.b - SECURITY.md §3.11, las tablas de la edad: cada m, su piso y su DEEP; «—» solo sin
-    # piso.
+    # piso. ⚠️ §717: y sobre el tope, lo que da la replica, y «—» en la m cuyo dominio no cabe.
     vistas_m = []
     for i, l in enumerate(lineas or ()):
         if not l.startswith("| `m` |"):
@@ -2630,8 +2680,9 @@ def atado_f_tablas(d):
             continue
         for j, m in enumerate(ms):
             vistas_m.append(m)
-            for fila, de_test, deriv in (("LDR", d["piso"], d["ldr_m"]),
-                                         ("con el DEEP", d["con_deep"], d["deep_m"])):
+            for fila, de_test, deriv, fuera in (("LDR", d["piso"], d["ldr_m"], d["fuera_ldr"]),
+                                                ("con el DEEP", d["con_deep"], d["deep_m"],
+                                                 d["fuera_deep"])):
                 n, valores = resto[fila]
                 celda = valores[j] if j < len(valores) else ""
                 celdas += 1
@@ -2640,9 +2691,17 @@ def atado_f_tablas(d):
                         fallos.append(("SECURITY.md", n, "TABLA", "m = %d esta en SIN_PISO y la "
                                        "tabla le da %s" % (m, celda)))
                     continue
-                if m not in de_test:
-                    fallos.append(("SECURITY.md", n, "TABLA", "m = %d no tiene cifra en el test"
-                                   % m))
+                if m == d["sin_dominio"]:
+                    if celda != "—":
+                        fallos.append(("SECURITY.md", n, "TABLA", "m = %d: su dominio de "
+                                       "extension no cabe en 32 bits, ninguna prueba suya se lee, "
+                                       "y la tabla le da %s" % (m, celda)))
+                    continue
+                if m in fuera:
+                    deriv = fuera
+                elif m not in de_test:
+                    fallos.append(("SECURITY.md", n, "TABLA", "m = %d no tiene cifra en el test "
+                                   "ni, sobre el tope (%d), en la replica" % (m, d["m_max"])))
                     continue
                 if fila == "LDR":
                     esperada = str(deriv[m])
@@ -2651,10 +2710,12 @@ def atado_f_tablas(d):
                 if celda != esperada:
                     fallos.append(("SECURITY.md", n, "TABLA", "%s de m = %d: dice %s y se "
                                    "deriva %s" % (fila, m, celda, esperada)))
-    declaradas = sorted(set(d["piso"]) | set(d["sin_piso"]))
+    declaradas = sorted(set(d["piso"]) | set(d["sin_piso"]) | set(d["fuera_ldr"])
+                        | {d["sin_dominio"]})
     if lineas is not None and sorted(vistas_m) != declaradas:
-        fallos.append(("SECURITY.md", 0, "TABLA", "las tablas de la edad cubren m = %s y el test "
-                       "declara %s" % (sorted(vistas_m), declaradas)))
+        fallos.append(("SECURITY.md", 0, "TABLA", "las tablas de la edad cubren m = %s, y el "
+                       "test, la replica sobre el tope y la m sin dominio dan %s"
+                       % (sorted(vistas_m), declaradas)))
 
     # F.2.c - FIVE_BACKENDS.md §4: una fila por configuracion del test, en su orden.
     lineas = lee("FIVE_BACKENDS.md")
@@ -2703,8 +2764,9 @@ def atado_f():
                 % (cuentas["pisos_casan"], cuentas["m"], cuentas["kat_casan"], len(KAT_FORK),
                    len(fallos), ", ".join(sorted(set(f[2] for f in fallos)))))
     else:
-        casa = ("y casa con los %d pisos de la edad y con los %d KAT del fork"
-                % (cuentas["m"], len(KAT_FORK)))
+        casa = ("y casa con los %d pisos de la edad y con los %d KAT del fork; sobre el tope de "
+                "m, %d, %d m de la replica sola y m = %d sin dominio"
+                % (cuentas["m"], len(KAT_FORK), d["m_max"], cuentas["fuera"], d["sin_dominio"]))
     resumen = [
         "ATADO F: opciones %d/%d/%d, extension de grado %d; la replica de security.rs da "
         "conjeturada %d, UDR %s, LDR %d-%d y DEEP %.1f-%.1f en las %d familias del test, %s; %d "

@@ -26,7 +26,7 @@ use zk_ssl_hash::{meta_pendiente_hoja, native_merge, DOMINIO_META_PENDIENTE};
 pub use zk_ssl_air::{
     carril, codificar, m_canonico, opciones, potencias, raiz_desde_subraiz, subraiz, verificar,
     verificar_contra_cabeza, Afirmacion, CabezaEdad, Digest, EdadAir, EdadPublicInputs, ALEATORIOS,
-    ANCHO, ANCHO_AUX, BITS, CICLO, ESTADO, PROFUNDIDAD,
+    ANCHO, ANCHO_AUX, BITS, CICLO, ESTADO, M_MAX, PROFUNDIDAD,
 };
 use zk_ssl_air::{
     C_A, C_ACT, C_B, C_BITS, C_CICLO, C_CUENTA, C_EMISOR, C_FUERA, C_M, C_NACIDO, C_P, C_QA, C_QS,
@@ -74,6 +74,12 @@ pub fn celdas_del_libro(
         return Err(format!("T = {} o seq = {} no caben en {BITS} bits", en.t, en.seq));
     }
     let tam = hojas.len().next_power_of_two().max(8);
+    // §717, el coste del juez de la edad: el juez no acepta m > M_MAX, asi que el probador
+    // no prueba lo que no se aceptaria. La misma causa que `comprobar_enunciado`.
+    let m = tam.trailing_zeros();
+    if m > M_MAX {
+        return Err(format!("m = {m} fuera de 3..={M_MAX}"));
+    }
     let nombrado = BaseElement::new(en.emisor);
     let mut celdas = Vec::with_capacity(tam);
     for p in 0..tam {
@@ -579,6 +585,21 @@ mod tests {
         let pi = traza.enunciado().clone();
         assert_eq!(pi.k, 4, "la falsificacion tenia que esconder una vieja");
         assert!(no_verifica(traza, &pi), "un vivo escondido verifico");
+    }
+
+    /// §717, el coste del juez de la edad: un libro de `2^M_MAX + 1` posiciones pide
+    /// `m = M_MAX + 1`, que el juez no acepta, y el probador lo rechaza antes de recorrer una sola
+    /// celda, con la causa del juez. En el tope, sigue pasando de la comprobacion (falla despues,
+    /// en la primera celda, por otra causa).
+    #[test]
+    fn un_libro_sobre_el_tope_no_se_prueba() {
+        let e = en(70, 0, true);
+        let n = (1usize << M_MAX) + 1;
+        let err = celdas_del_libro(&vec![d(1); n], &vec![None; n], &e).err().expect("el tope");
+        assert_eq!(err, format!("m = {} fuera de 3..={M_MAX}", M_MAX + 1));
+        let n = 1usize << M_MAX;
+        let err = celdas_del_libro(&vec![d(1); n], &vec![None; n], &e).err().expect("sin meta");
+        assert!(err.contains("sin meta"), "en el tope tenia que llegar a las celdas: {err}");
     }
 
     /// Una vieja declarada joven (`qa = 0` con 120 de edad y `T = 70`) no verifica: su resto no

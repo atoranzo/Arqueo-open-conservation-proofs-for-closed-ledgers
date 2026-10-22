@@ -16,8 +16,11 @@ la prueba tiene una sola escritura, la minima, y la misma causa en toda platafor
 `src/proof/acotado.rs` (`leer_vint_canonico`, `leer_usize_canonico`, y el lector acotado que los
 usa), `src/proof/context.rs` (el numero de restricciones, en su escritura minima y acotado antes de
 pasar a `usize`), `src/proof/mod.rs` (los reexporta), `src/causa.rs` (`USIZE`) y
-`src/proof/tests_canonica.rs` (nuevo: sus testigos); todo lo demas es upstream byte a
-byte. Entra por
+`src/proof/tests_canonica.rs` (nuevo: sus testigos), y desde el §717 -el coste del juez de la
+edad: las exenciones de una transicion son un bloque contiguo y se guardan como bloque, sin lista,
+y se evaluan en flujo- `src/air/divisor.rs` (`BloqueDeExenciones`, `num_exemptions` en lugar de
+`exemptions`, y sus testigos en `tests_bloque`), `src/air/mod.rs` y `src/lib.rs` (lo reexportan);
+todo lo demas es upstream byte a byte. Entra por
 `[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
 y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream
 pide `0.13`. Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.

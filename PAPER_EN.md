@@ -30,9 +30,9 @@ identical conditions, and we document a methodological error of our own —
 mixing debug and release build figures — that was detected and corrected
 during the work.
 
-The reference implementation comprises **1955 executable tests in the seal
+The reference implementation comprises **1964 executable tests in the seal
 gate** (55 of them are winterfell 0.13.1's own, brought in by the fork of
-§533) —2095 counting the pins of the long and complete levels, and 1349
+§533) —2104 counting the pins of the long and complete levels, and 1349
 declared (⚠️ §865: from §493; today `tools/check_tests.py` counts them, by another rule)—, with 18 ignored and declared, and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
@@ -591,12 +591,13 @@ remeasured on 2026-10-14 at `b6491ef` with the same test, in section 2.2).
 The layer's production options — 42 queries, blowup 16, grinding 21 and
 quadratic extension — give, over its hidden proofs, 127 conjectured bits
 and, provable, 59 under UDR and 80 to 88 under LDR depending on the
-circuit; the age proof drops with its `m`, down to 48 with `m = 23`.
+circuit; the age proof drops with its `m`, down to 68 with `m = 13`,
+its cap since §717.
 Tests bind these figures (§697), and the table is in `SECURITY.md`
 §3.11. The conjectured formula does not discount the DEEP term, which
 grows with the trace length: with it, the conjectured level is 112.8 to
-116.8 depending on the circuit, and drops to 96.8 in the age proof with
-`m = 23` (§708). What it would cost to bring them to 128 provable bits
+116.8 depending on the circuit, and drops to 106.8 in the age proof with
+`m = 13` (§708). What it would cost to bring them to 128 provable bits
 is not measured, and neither is their level against a quantum adversary.
 
 ⚠️ **Corrected in §698**: until then this section said «In the
@@ -1019,8 +1020,8 @@ non-stable compilers are used.
 # Or all at once, with the canon's pinned counts checked:
 bash tools/canon.sh --sello
 
-cargo test -p zk-ssl --release              # layer: 530 tests (7 ignored)
-cargo test -p stark-experiment --release    # circuits: 427 tests (13 ignored)
+cargo test -p zk-ssl --release              # layer: 531 tests (7 ignored)
+cargo test -p stark-experiment --release    # circuits: 428 tests (13 ignored)
 cargo test -p zk-ssl-node --release         # node: 115
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

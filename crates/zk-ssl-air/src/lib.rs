@@ -92,6 +92,35 @@ pub const PROFUNDIDAD: usize = 32;
 /// Bits del resto que prueba que una posicion es JOVEN (`T - 1 - edad`).
 pub const BITS: usize = 32;
 
+/// **El tope de `m`** (§717, el coste del juez de la edad): la prueba cubre el subarbol
+/// `[0, 2^m)`, y [`comprobar_enunciado`] rechaza `m > M_MAX` ANTES de leer la prueba y de construir
+/// el AIR, con la causa `m = .. fuera de 3..=M_MAX`.
+///
+/// Por que hace falta: la traza oculta mide `2 * 8 * 2^m` filas y el envoltorio de ocultacion
+/// declara `1 + 8 * 2^m` exenciones de transicion, asi que el juez paga un coste lineal en `2^m`
+/// antes de la primera comprobacion contra la prueba. `m` sale de `nextPending` de la cabeza, y
+/// el mando no fija la clave del operador: una cabeza con firma propia y una prueba que solo tiene
+/// la forma bastan para elegirla. El fork evalua ya las exenciones en flujo, sin lista (CPU sin
+/// memoria); lo que acota la CPU es este tope. El probador lo respeta tambien: no prueba lo que
+/// el juez no aceptaria.
+///
+/// Por que 13: con la traza oculta de produccion, `m = 13` (`n = 8192`) es la mayor `m` cuya
+/// prueba cabe en las dos cotas de la puerta del RFC-0007 (D-E4a): probar en un latido, 60 s, y con
+/// un pico por debajo de la mitad de la RAM de la maquina de referencia, 6.124.348 kB. `m = 14` no
+/// cabe: su pico, medido, pasa de esa cota un 2,15 %, y su tiempo, proyectado a esa maquina, es de
+/// 1,27 a 1,46 latidos (§717). El techo del §463, `n = 16384`, se midio sin ocultacion. El juez y
+/// el probador llevan el mismo tope: el juez no acepta lo que no se prueba dentro de las cotas, y
+/// el probador no prueba lo que el juez no aceptaria. En el tope, rechazar una prueba fabricada
+/// cuesta milisegundos (lo mide `tests_coste`).
+///
+/// ⚠️ Un libro cuyo `nextPending` pase de `2^M_MAX` no tiene prueba de edad, y `nextPending` no
+/// baja: es la marca de agua de las posiciones usadas. `allocate_pending` reutiliza el hueco libre
+/// mas bajo, y solo `commit_send` y `apply_mint_pending_delegated` la suben
+/// (`zk-ssl/src/two_phase.rs`). Cambiar el tope es cambiar esta linea y la de la segunda
+/// implementacion (`tools/segunda/airs.py`, `M_MAX`), que un test de este crate compara. Los
+/// vectores y sus pines no dependen del valor.
+pub const M_MAX: u32 = 13;
+
 /// Carril A: el arbol de pendientes (doce columnas del estado).
 pub const C_A: usize = 0;
 /// Carril B: el arbol de meta.
@@ -282,9 +311,12 @@ impl ToElements<BaseElement> for EdadPublicInputs {
 
 /// Lo que el enunciado tiene que cumplir ANTES de construir el AIR: fuera de estos rangos la
 /// aritmetica del campo daria la vuelta, o el AIR no tendria forma. Nunca entra en panico.
+///
+/// Desde el §717, `m` va de 3 a [`M_MAX`] (antes, a 24). Por encima, el juez pagaria un coste
+/// lineal en `2^m` antes de mirar la prueba.
 pub fn comprobar_enunciado(pi: &EdadPublicInputs) -> Result<(), String> {
-    if pi.m < 3 || pi.m > 24 {
-        return Err(format!("m = {} fuera de 3..=24", pi.m));
+    if pi.m < 3 || pi.m > M_MAX {
+        return Err(format!("m = {} fuera de 3..={M_MAX}", pi.m));
     }
     if pi.n > (1u64 << pi.m) {
         return Err(format!("n = {} no cabe en 2^{}", pi.n, pi.m));
@@ -1007,6 +1039,10 @@ mod tests_sal {
 ///
 /// **§708**: el segundo test fija, para cada `m`, el tope que el termino DEEP pone a la
 /// conjeturada, la cifra que `SECURITY.md` §3.11 publica junto a los 127.
+///
+/// **§717**: el enunciado admite `m` de 3 a [`M_MAX`], 13. Las filas de 14 a 23 de las dos tablas
+/// salen con el, porque cada test exige que lo que declara sea una `m` admitida; sus cifras
+/// siguen en `SECURITY.md` §3.11 como medida de la funcion.
 #[cfg(test)]
 mod tests_nivel {
     use super::*;
@@ -1018,7 +1054,7 @@ mod tests_nivel {
     const UDR_ACTUAL: u32 = 59;
 
     /// El piso declarado de la LDR, en bits, para cada `m` (§697): lo que la funcion da hoy.
-    const PISO_LDR: [(u32, u32); 21] = [
+    const PISO_LDR: [(u32, u32); 11] = [
         (3, 88),
         (4, 86),
         (5, 84),
@@ -1030,23 +1066,13 @@ mod tests_nivel {
         (11, 72),
         (12, 70),
         (13, 68),
-        (14, 66),
-        (15, 64),
-        (16, 62),
-        (17, 60),
-        (18, 58),
-        (19, 56),
-        (20, 54),
-        (21, 52),
-        (22, 50),
-        (23, 48),
     ];
 
-    /// Las `m` que el enunciado admite y que no llevan piso. `m = 24`: su prueba no se puede
-    /// generar hoy, y si sale del rango o la edad cambia de opciones lo decide el autor (BACKLOG
-    /// 116). Se declara aqui para que no pase en silencio: el dia que el rango cambie, el test
-    /// obliga a tocar esta lista.
-    const SIN_PISO: [u32; 1] = [24];
+    /// Las `m` que el enunciado admite y que no llevan piso. Hasta el §717 era `m = 24`, cuya
+    /// prueba no se podia generar; desde el §717 el enunciado admite `m` de 3 a [`M_MAX`], 13, y
+    /// ninguna queda sin piso. La lista se queda: el dia que el rango cambie, el test obliga a
+    /// tocarla.
+    const SIN_PISO: [u32; 0] = [];
 
     /// Las `m` que [`comprobar_enunciado`] admite, con el resto del enunciado en su valor mas
     /// pequeno: el rango sale del juez, no se teclea.
@@ -1130,7 +1156,7 @@ mod tests_nivel {
     /// ese termino pone a la conjeturada, la cifra que `SECURITY.md` §3.11 publica junto a los 127
     /// que devuelve la funcion. Las familias de longitud fija tienen las longitudes de `m` = 3, 5,
     /// 6 y 7: 128, 512, 1024 y 2048 filas de traza oculta.
-    const CONJETURADA_CON_DEEP: [(u32, u32); 21] = [
+    const CONJETURADA_CON_DEEP: [(u32, u32); 11] = [
         (3, 1168),
         (4, 1158),
         (5, 1148),
@@ -1142,16 +1168,6 @@ mod tests_nivel {
         (11, 1088),
         (12, 1078),
         (13, 1068),
-        (14, 1058),
-        (15, 1048),
-        (16, 1038),
-        (17, 1028),
-        (18, 1018),
-        (19, 1008),
-        (20, 998),
-        (21, 988),
-        (22, 978),
-        (23, 968),
     ];
 
     /// El termino DEEP de la demostrable en decodificacion unica, en bits: la expresion de
@@ -1318,5 +1334,191 @@ mod tests_nivel {
         );
         assert!(mal.is_empty(), "la conjeturada con el DEEP: {}", mal.join("; "));
         assert!(medidas.len() >= CONJETURADA_CON_DEEP.len(), "solo {} m medidas", medidas.len());
+    }
+}
+
+/// **§717, el coste del juez de la edad.** Una prueba FABRICADA -nadie ha probado nada:
+/// solo tiene la forma que el lector y la guarda de forma esperan- llega hasta la primera
+/// comprobacion contra la prueba (la coherencia OOD) y cae alli. Lo que cuesta llegar es lo que
+/// paga el juez por cualquier fichero: con el tope de `m` y las exenciones en flujo del fork, no
+/// crece con `2^m` ni en memoria ni, sobre el tope, en CPU.
+#[cfg(test)]
+mod tests_coste {
+    use std::time::{Duration, Instant};
+
+    use winter_air::proof::{Commitments, Context, OodFrame, Queries};
+    use winter_air::{Air, Marca, Oculta};
+    use winter_crypto::{BatchMerkleProof, Hasher};
+    use winter_math::fields::QuadExtension;
+    use winter_verifier::{ByteWriter, Deserializable, Serializable};
+
+    use super::*;
+    use crate::sal::VariasConSal;
+
+    type E = QuadExtension<BaseElement>;
+
+    const SP: Digest = [BaseElement::new(11); 4];
+    const SM: Digest = [BaseElement::new(22); 4];
+
+    fn pi_de(m: u32) -> EdadPublicInputs {
+        let n = 1u64 << m;
+        let (seq, t, emisor, todos, k) = (1000, 70, 0, true, 0);
+        EdadPublicInputs { subraiz_pend: SP, subraiz_meta: SM, m, n, seq, t, emisor, todos, k }
+    }
+
+    fn info_de(m: u32) -> TraceInfo {
+        let l = 2 * (CICLO << m);
+        let marca = Marca { m: M_OCULTACION }.escribir();
+        TraceInfo::new_multi_segment(ANCHO + 1, ANCHO_AUX, ALEATORIOS, l, marca)
+    }
+
+    fn digest(k: u8) -> <Blake3 as Hasher>::Digest {
+        Blake3::hash(&[k, 0x42])
+    }
+
+    /// Un lote con sal de la forma que el lector espera: `q` hojas sobre un arbol de `2^prof`.
+    fn lote(prof: u32, q: usize) -> Vec<u8> {
+        let nodos = vec![vec![digest(7); prof as usize]; q];
+        let mut b = BatchMerkleProof::<Blake3> { nodes: nodos, depth: prof as u8 }.to_bytes();
+        b.write_u32(q as u32);
+        for i in 0..q {
+            b.write(digest(i as u8));
+        }
+        b
+    }
+
+    fn tabla<F: FieldElement>(prof: u32, q: usize, fila: Vec<F>) -> Queries {
+        let l = VariasConSal::<Blake3>::read_from_bytes(&lote(prof, q)).expect("lote");
+        Queries::new::<Blake3, F, MerkleConSal<Blake3>>(l, vec![fila; q])
+    }
+
+    /// La prueba fabricada de `m`: contexto, compromisos, tres tablas, marco OOD y FRI con los
+    /// anchos de `m`, y valores cualesquiera. Sin probador: unos milisegundos.
+    fn fabricar(m: u32) -> Vec<u8> {
+        let opts = opciones();
+        let air = Oculta::<EdadAir>::new(info_de(m), pi_de(m), opts.clone());
+        let lde = air.lde_domain_size();
+        let fri = opts.to_fri_options();
+        let capas = fri.num_fri_layers(lde);
+        let ncomp = air.context().num_constraint_composition_columns();
+        let nc = air.context().num_transition_constraints() + 16;
+        let q = 42usize;
+        let ld = lde.ilog2();
+        let ctx = Context::new::<BaseElement>(info_de(m), opts, nc).expect("contexto");
+        let mut b = ctx.to_bytes();
+        b.write_u8(q as u8);
+        let fri_raices = (0..=capas).map(|i| digest(10 + i as u8)).collect();
+        b.write(Commitments::new::<Blake3>(vec![digest(1), digest(2)], digest(3), fri_raices));
+        b.write(tabla(ld, q, vec![BaseElement::new(5); ANCHO + 1]));
+        b.write(tabla(ld, q, vec![E::from(BaseElement::new(6)); ANCHO_AUX]));
+        b.write(tabla(ld, q, vec![E::from(BaseElement::new(8)); ncomp]));
+        let mut ood: Vec<u8> = Vec::new();
+        for (ancho, base) in [(ANCHO + 1 + ANCHO_AUX, 1u64), (ncomp, 3)] {
+            let mut marco: Vec<u8> = vec![2];
+            for i in 0..2 * ancho {
+                marco.write(E::from(BaseElement::new(i as u64 + base)));
+            }
+            ood.write_u16(marco.len() as u16);
+            ood.write_bytes(&marco);
+        }
+        b.write(OodFrame::read_from_bytes(&ood).expect("ood"));
+        // FRI: las capas que el dominio pide, cada una con su lote, y un resto de 32
+        b.write_u8(capas as u8);
+        let mut dom = ld;
+        for _ in 0..capas {
+            dom -= fri.folding_factor().ilog2();
+            let mut vals: Vec<u8> = Vec::new();
+            for _ in 0..q * fri.folding_factor() {
+                vals.write(E::from(BaseElement::new(9)));
+            }
+            let caminos = lote(dom, q);
+            b.write_u32(vals.len() as u32);
+            b.write_bytes(&vals);
+            b.write_u32(caminos.len() as u32);
+            b.write_bytes(&caminos);
+        }
+        let mut resto: Vec<u8> = Vec::new();
+        for _ in 0..32 {
+            resto.write(E::from(BaseElement::new(4)));
+        }
+        b.write_u16(resto.len() as u16);
+        b.write_bytes(&resto);
+        b.write_u8(0);
+        b.write_u64(0);
+        b
+    }
+
+    /// La cabeza que inventa quien envia la prueba: sus subraices y las raices que de ellas salen.
+    fn cabeza(next_pending: u64) -> CabezaEdad {
+        let m = m_canonico(next_pending).min(PROFUNDIDAD as u32);
+        CabezaEdad {
+            seq: 1000,
+            pending_root: raiz_desde_subraiz(SP, m, PROFUNDIDAD),
+            pmeta_root: raiz_desde_subraiz(SM, m, PROFUNDIDAD),
+            next_pending,
+        }
+    }
+
+    const AF: Afirmacion =
+        Afirmacion { t: 70, k: 0, emisor: None, subraiz_pend: SP, subraiz_meta: SM };
+
+    /// El menor de `veces` rechazos (el menor resiste la carga de la maquina) y el ultimo error.
+    fn rechazo(prueba: &[u8], c: &CabezaEdad, veces: usize) -> (Duration, String) {
+        let mut mejor = Duration::MAX;
+        let mut err = String::new();
+        for _ in 0..veces {
+            let t0 = Instant::now();
+            err = verificar_contra_cabeza(prueba, &AF, c).expect_err("la fabricada verifico");
+            mejor = mejor.min(t0.elapsed());
+        }
+        (mejor, err)
+    }
+
+    /// Sobre el tope, el enunciado cae ANTES de leer la prueba y de construir el AIR, con su causa
+    /// (no `no se deserializa`): con una prueba vacia y `nextPending = 2^M_MAX + 1`, y con la
+    /// prueba fabricada de `m = 23`, la mayor que el lector admite (el dominio de extension cabe
+    /// en 32 bits). En el tope, el enunciado pasa y es la prueba lo que se juzga. Falsador: con el
+    /// tope de antes (24), la de `m = 23` llega al juez, paga un producto por fila de la traza y
+    /// cae en la coherencia OOD.
+    #[test]
+    fn m_sobre_el_tope_cae_antes_de_leer_la_prueba() {
+        let sobre = (1u64 << M_MAX) + 1;
+        let e = verificar_contra_cabeza(&[], &AF, &cabeza(sobre)).expect_err("vacia");
+        assert_eq!(e, format!("m = {} fuera de 3..={M_MAX}", M_MAX + 1));
+        let (t, e) = rechazo(&fabricar(23), &cabeza(1 << 23), 3);
+        assert_eq!(e, format!("m = 23 fuera de 3..={M_MAX}"));
+        assert!(t < Duration::from_millis(50), "m = 23 sobre el tope tardo {t:?}");
+        let e = verificar_contra_cabeza(&[], &AF, &cabeza(1 << M_MAX)).expect_err("vacia");
+        assert!(e.starts_with("la prueba no se deserializa"), "en el tope: {e}");
+    }
+
+    /// La segunda implementacion tiene el mismo tope: su `M_MAX` (`tools/segunda/airs.py`) es una
+    /// linea `M_MAX = <valor>` y el valor es este, y su enunciado lo usa con la misma causa.
+    #[test]
+    fn el_tope_de_la_segunda_es_el_del_juez() {
+        let ruta = format!("{}/../../tools/segunda/airs.py", env!("CARGO_MANIFEST_DIR"));
+        let fuente = std::fs::read_to_string(ruta).expect("airs.py");
+        let lineas: Vec<&str> =
+            fuente.lines().map(str::trim).filter(|l| l.starts_with("M_MAX = ")).collect();
+        assert_eq!(lineas, vec![format!("M_MAX = {M_MAX}")], "el tope de la segunda");
+        assert!(fuente.contains("self.m > self.M_MAX"), "la segunda no usa su tope");
+        assert!(fuente.contains(r#"f"m = {self.m} fuera de 3..={self.M_MAX}""#), "otra causa");
+    }
+
+    /// En el tope, la prueba fabricada llega a la coherencia OOD y cae alli, y rechazarla no cuesta
+    /// mucho mas que en `m = 3`: el divisor de las transiciones ya no recorre `1 + 8 * 2^m`
+    /// exponenciaciones (el bloque) ni guarda la lista. Queda un producto en flujo por exencion, el
+    /// unico termino lineal. Falsador: con la lista de upstream en `from_transition`, el cociente
+    /// pasa de 25 en `m = 13` (medido: 58).
+    #[test]
+    fn el_coste_de_rechazar_no_crece_con_m() {
+        let ood = "InconsistentOodConstraintEvaluations";
+        let (t3, e3) = rechazo(&fabricar(3), &cabeza(8), 5);
+        assert_eq!(e3, ood, "m = 3");
+        let (tt, et) = rechazo(&fabricar(M_MAX), &cabeza(1 << M_MAX), 5);
+        assert_eq!(et, ood, "m = {M_MAX}");
+        let cociente = tt.as_secs_f64() / t3.as_secs_f64();
+        eprintln!("rechazo: m = 3 {t3:?}, m = {M_MAX} {tt:?}, cociente {cociente:.1}");
+        assert!(cociente < 25.0, "m = {M_MAX}: {tt:?} frente a {t3:?} en m = 3 ({cociente:.1})");
     }
 }

@@ -8,7 +8,10 @@ hasta esta correccion aqui decia <<que ningun probador de ARQUEO devuelve>>, cie
 `src/trace/mod.rs` (`Trace::comprobar`, S537: el probador oculto devuelve Err con un testigo
 malo) y, con una sola linea, `src/trace/trace_table.rs` (spike-b-p4r3, sesiones 166 a 172, y
 la 176), y desde el §711 `src/channel.rs`, que desenvuelve el `Result` de `Context::new` con el mismo
-panico de upstream; todo lo demas es upstream byte a byte. Entra por
+panico de upstream; y desde el §717 -el coste del juez de la edad-
+`src/constraints/evaluation_table.rs`, que evalua las exenciones del divisor de las transiciones
+en todo el dominio de restricciones por recurrencia y no punto a punto (los mismos valores; su
+testigo, `tests_recurrencia`); todo lo demas es upstream byte a byte. Entra por
 `[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
 y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream
 pide `0.13`. Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.

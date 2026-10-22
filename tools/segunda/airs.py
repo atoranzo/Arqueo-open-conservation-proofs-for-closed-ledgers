@@ -606,6 +606,12 @@ class Edad(Air):
                                                                           49, 50, 51)
     X_H, X_S = 0, 5
     CARRIL_A, CARRIL_B = 1, 2
+    # §717, el coste del juez de la edad: el tope de m, el `M_MAX` de zk-ssl-air (un test
+    # de alli lo compara con esta linea). Por encima, el juez pagaria un coste lineal en 2^m antes
+    # de mirar la prueba. 13 es la mayor m cuya prueba, con la traza oculta de produccion, cabe en
+    # las dos cotas de la puerta del RFC-0007 (un latido y media RAM): m = 14 no cabe (§717).
+    # ⚠️ Se cambia en los dos sitios a la vez.
+    M_MAX = 13
 
     def __init__(self, seq, pending_root, pmeta_root, next_pending, t, k, emisor,
                  subraiz_pend, subraiz_meta):
@@ -620,8 +626,8 @@ class Edad(Air):
 
     def enunciado(self):
         # comprobar_enunciado, y la subida de las subraices (verificar_contra_cabeza)
-        if self.m < 3 or self.m > 24:
-            raise Rechazo(f"m = {self.m} fuera de 3..=24")
+        if self.m < 3 or self.m > self.M_MAX:
+            raise Rechazo(f"m = {self.m} fuera de 3..={self.M_MAX}")
         if self.n > (1 << self.m):
             raise Rechazo(f"n = {self.n} no cabe en 2^{self.m}")
         if self.t >= (1 << self.BITS) or self.seq >= (1 << self.BITS):

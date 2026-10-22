@@ -40,10 +40,11 @@ python3 tools/segunda/kat_xmss/juez_xmss.py
 #   ⚠️ §714: decia 215 de 215 (§712); los veintiun vectores de la bifurcacion en `ancla` la llevan a 236
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
-# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 65 de 65 (§715)
+# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 68 de 68 (§717)
 #   ⚠️ §711: decia 34 de 34 (§706); los cuatro negativos de la prueba mal formada, dos de la edad y dos del pago, la llevan a 38
 #   ⚠️ §713: decia 38 de 38 (§711); el negativo capturado del resto FRI, `edad/neg-prueba-resto-ajeno`, la lleva a 39
 #   ⚠️ §715: decia 39 de 39 (§713); los veintiseis negativos de una sola escritura, quince de la edad y once del pago, la llevan a 65
+#   ⚠️ §717: decia 65 de 65 (§715); los tres negativos del tope de `m` en `edad/` la llevan a 68
 python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca, el orden de Rust, el resto atado, una sola escritura
 python3 tools/segunda/juez_stark.py
 
@@ -232,7 +233,7 @@ ya dice. La fila de la causa del binario, par a par, no se ha vuelto a medir: pi
 compilado.
 
 Esa tabla es la medida del §626 y no se ha rehecho. Los párrafos que siguen dicen lo que cambió
-cada sello; la cifra de hoy es la del §715: 65 de 65 pares.
+cada sello; la cifra de hoy es la del §717: 68 de 68 pares.
 
 Lo que la medida fijó al escribirlo: que la semilla de Fiat-Shamir es el contexto **más las
 entradas públicas**, de modo que un enunciado mal compuesto no llega ni a la autenticación Merkle;
@@ -316,6 +317,16 @@ negativos del §715 en `edad/` y `pago/`: con el `stark.py` y el `juez_stark.py`
 48 de 57 pares —los seis `usize` escritos de más y el nodo de más en la edad y el pago, y la fila
 de más en la edad, VERDE—, y las ocho colas caen antes del juez, sin comparar; con estos, 65 de
 65, 79 pruebas juzgadas, 35 vectores que caen antes del juez y 33 de 33 falsadores callados.
+
+**El tope de `m` de la edad, como el kit (§717).** Desde el §717 el juez de la edad rechaza `m` por
+encima de `zk_ssl_air::M_MAX`, 13, antes de leer la prueba. `airs.py` lleva el mismo tope, `M_MAX`
+en `Edad`, con la misma causa (`m = {} fuera de 3..={M_MAX}`), y un test de `zk-ssl-air` compara
+las dos líneas. `juez_stark.py` cuenta `fuera de 3..=`, sin el valor, entre los mensajes del juez.
+`stark.py` ya multiplicaba las exenciones en flujo y no cambia. Lo fijan los tres negativos del
+§717 en `edad/`: con el `airs.py` y el `juez_stark.py` anteriores, el juez da 66 de 68 pares —los
+dos de encima del tope caen en la coherencia OOD y no por su causa, y el juez entero tarda 108 s—;
+con estos, 68 de 68, 82 pruebas juzgadas, 35 vectores que caen antes del juez y 33 de 33
+falsadores callados, en 17 s.
 
 **La cadena del registro** (§797). ⚠️ Esto mide el **cable**, no el núcleo: `chain` es de la clase
 REGISTRO (`spec/NUCLEO.md` §«2. Las cuatro clases»), su composición no tiene KAT (sus piezas sí:

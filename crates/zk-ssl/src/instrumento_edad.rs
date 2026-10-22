@@ -610,6 +610,9 @@ fn una_raiz_de_meta_ajena_no_se_enlaza() {
 /// las vivas viejas: la traza, la prueba con `crate::proof_options()` y su verificacion; tiempos,
 /// bytes, el pico de memoria (`VmHWM`, ACUMULADO: las tallas van de menor a mayor), y si la
 /// subraiz sube a la raiz del `SparseTree`. Arriba, la maquina.
+///
+/// Desde el §717 el juez no acepta `m` sobre `edad::M_MAX`, 13, y el probador no la prueba: un `n`
+/// objetivo que la pida (16384, `m = 14`) se imprime con su causa y no se prueba.
 #[test]
 #[ignore = "instrumento de medida, no comprobacion: correr a mano, en release"]
 fn instrumento_de_la_prueba_de_edad() {
@@ -629,6 +632,11 @@ fn instrumento_de_la_prueba_de_edad() {
         edad::CICLO
     );
     for n in N_OBJETIVO {
+        let m = edad::m_canonico(n);
+        if m > edad::M_MAX {
+            println!("E4b| n {n} . m = {m} fuera de 3..={}: no se prueba (§717)", edad::M_MAX);
+            continue;
+        }
         let vive = |i: u64| i % 4 != 3;
         let (pend, hojas) = rango_de_pendientes(n, vive);
         let meta: Vec<Option<(u64, u64)>> =

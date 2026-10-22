@@ -5525,3 +5525,59 @@ mod tests_maleabilidad {
         }
     }
 }
+
+/// **§717, el coste del juez de la edad.** El mando no fija la clave del operador: verifica
+/// la cabeza con la que ella trae. Un paquete de edad con una cabeza firmada con una clave propia y
+/// una prueba que solo tiene la forma elige `m` (por `nextPending`), y el juez pagaba un coste
+/// lineal en `2^m` antes de la primera comprobacion contra la prueba. Los tres negativos de
+/// `spec/vectors/edad/` que lo cubren se rechazan con su causa y en el tiempo de uno honesto.
+#[cfg(test)]
+mod tests_coste_edad {
+    use std::time::{Duration, Instant};
+
+    use super::tests_puerta::vector;
+    use super::*;
+
+    /// El menor de tres rechazos del mando (el menor resiste la carga de la maquina) y su error.
+    fn por_el_mando(p: &serde_json::Value) -> (Duration, Result<(), String>) {
+        let mut mejor = Duration::MAX;
+        let mut r = Ok(());
+        for _ in 0..3 {
+            let t0 = Instant::now();
+            r = verificar_edad(p);
+            mejor = mejor.min(t0.elapsed());
+        }
+        (mejor, r)
+    }
+
+    /// Los tres paquetes de atacante caen con su causa: sobre el tope de `m` (`m = 17`, y
+    /// `m = 23`, la mayor que el lector de la prueba admite), por el enunciado y antes de leer la
+    /// prueba; en el tope (`m = 13`), en la coherencia OOD. Las `m` las fija cada vector, no el
+    /// tope: las causas valen con cualquier tope de 13 a 16. Y ninguno cuesta mas de cinco veces
+    /// lo que el paquete honesto de `edad-todos.json` (`m = 3`, una prueba real y su firma): con el
+    /// kit de antes de este arreglo, el de `m = 17` costaba mas de un segundo de CPU y el de
+    /// `m = 23` mas de un minuto (medido con el mando). El tiempo solo se exige sin las aserciones
+    /// de depuracion: con ellas el test no sabe si corre optimizado -el perfil `aserciones` del
+    /// «1 bis» del canon (§864), con los pines de la fila del kit- o en depuracion, donde el
+    /// cronometro no mide el juez de release; ahi comprueba las causas, y no se ignora.
+    #[test]
+    fn un_paquete_de_edad_de_m_alto_se_rechaza_en_milisegundos() {
+        let (t_honesto, r) = por_el_mando(&vector("edad/edad-todos.json"));
+        assert_eq!(r, Ok(()), "el honesto");
+        let casos = [
+            ("edad/neg-m-sobre-tope.json", "edad: m = 17 fuera de 3..="),
+            ("edad/neg-m-mayor-legible.json", "edad: m = 23 fuera de 3..="),
+            ("edad/neg-m-13-fabricada.json", "edad: InconsistentOodConstraintEvaluations"),
+        ];
+        for (nombre, causa) in casos {
+            let (t, r) = por_el_mando(&vector(nombre));
+            let e = r.expect_err(nombre);
+            assert!(e.starts_with(causa), "{nombre}: {e}");
+            let cociente = t.as_secs_f64() / t_honesto.as_secs_f64();
+            eprintln!("{nombre}: {t:?} frente a {t_honesto:?} del honesto ({cociente:.1})");
+            if !cfg!(debug_assertions) {
+                assert!(cociente < 5.0, "{nombre}: {t:?} frente a {t_honesto:?} ({cociente:.1})");
+            }
+        }
+    }
+}

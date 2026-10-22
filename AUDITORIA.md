@@ -71342,3 +71342,312 @@ No publica un kit: el corte va al final de la serie. No corre el canon entero ni
   se toca: está retirada y nada publicado la usa.
 - **Exponer en un nodo la emisión con la quema, o la desemisión**, sigue siendo una decisión
   aparte. Con este arreglo, la condición se cumple en la capa.
+
+## §717 — el coste del juez de la edad, acotado: el tope de m, 13, antes de leer la prueba y el mismo en el probador, medido con el probador de producción; las exenciones en bloque y en flujo, y la recurrencia del probador
+
+El commit que lleva este asiento, sobre `5ce1714` (el §716). Un solo sello: el tope de `m` en
+`zk-ssl-air/src/lib.rs` (`M_MAX`, `comprobar_enunciado` y `tests_coste`, nuevo), en el probador
+(`stark-experiment/src/circuit_edad.rs`), en el productor de la capa (`zk-ssl/src/prueba_edad.rs`)
+y en la segunda implementación (`tools/segunda/airs.py` y `juez_stark.py`); las exenciones en
+bloque en el fork de winterfell (`winter-air`: `src/air/divisor.rs`, con `tests_bloque`, y
+`src/air/mod.rs` y `src/lib.rs`, que lo reexportan) y la recurrencia de su probador
+(`winter-prover/src/constraints/evaluation_table.rs`, con `tests_recurrencia`), con los README de
+los dos crates; un test del kit (`zk-ssl-verify/src/main.rs`); los pisos del §697 y las cifras del
+§708 en las `m` que el enunciado admite, y la segunda tabla de la edad, atada a la réplica en el
+ATADO F de `tools/check_publicadas.py`; el instrumento de la prueba de edad
+(`zk-ssl/src/instrumento_edad.rs`); tres vectores negativos en `edad/`, con veinte líneas al final
+de su manifiesto y sus huellas, y su productor, `tools/vectores/coste_edad.py` y el binario de
+`tools/vectores/coste_edad/`, nuevos; `spec/PAQUETE.md` (las secciones 2.7, 4, 5, 6.1, 9 y 10); una
+corrección en el RFC-0007; una nota y una cifra en `SECURITY.md` §3.11 y en la entrada 116 de
+`BACKLOG.md`; el README de `tools/segunda`, con la cifra del juez del STARK en «1 quinquies»; los
+pines de `tools/canon.sh`; las cifras de tests de los documentos vivos y las de la edad de
+`PAPER.md` y `PAPER_EN.md`, y la de la capa en la prosa de `ARQUITECTURA.md` y `CONTRIBUTING.md`;
+el recuento de `spec/vectors/` en los dos README y en la lista de la superficie de `spec/RPC.md`; y
+este asiento. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: un paquete de edad con una cabeza de firma propia y
+una prueba que sólo tenía la forma hacía pagar al juez, antes de mirar la prueba, un coste lineal en
+`2^m`, y `m` la elegía quien enviaba el paquete. Sale con los demás arreglos de la publicación
+conjunta. Lo midió en privado una sesión de Claude Code, sobre `161a233` con los arreglos del §711
+al §716; se escribió sobre `e4eb764`, con el §711 al §716 encima, este sello lo lleva a `5ce1714`
+(«Al portar», abajo), y lo que se volvió a correr aquí está en «Medido sobre este árbol». El canon
+entero se corre sobre la punta de la serie, no sobre cada sello.
+
+**Una excepción, declarada.** Este sello no es sólo el diff del arreglo hecho en privado. Aquel
+dejaba el tope en 14, el techo del §463, que se midió sin ocultación. Con la traza oculta de
+producción, la medida da 13 (abajo), y la regla que el autor aceptó es medir 13 y 14 y poner el
+mismo tope en quien prueba y en quien verifica. El tope de 13 va en este sello, y no en uno suyo,
+**por delegación del autor**: así el árbol público no lleva nunca el 14, y el manifiesto de la
+edad, que no se reescribe, se registra ya con el valor que vale.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), con el §711 al §716
+encima, y los lleva a `5ce1714` —el §716 ya llevado a `7dd6409`, el §895, sobre el §711 al §715
+llevados— una sesión de Claude Code, no el autor: primero sobre el §716 llevado a `6c33d2a` (el
+§865), y de ahí sobre los seis sellos del §890 al §895. De esos seis chocaba sólo la ficha M11 de
+`doc/ecst/VERIFICACION.md`, como en el §711 («Al portar»): el §894 marca su línea «Fuentes» y este
+sello sube el 530 de la de al lado a 531; quedan las dos, cada una con lo suyo. Lo que git no
+fundía, o fundía y quedaba falso, se resolvió a mano:
+
+- **Las tablas de la edad y el ATADO F (§796).** Desde el §796, `tools/check_publicadas.py` ata
+  cada celda de las dos tablas de la edad de `SECURITY.md` §3.11 a `tests_nivel`: cada `m` de las
+  tablas, con su piso y su cifra del DEEP en el test, o en `SIN_PISO` con «—», y las `m` de las
+  tablas, las del test. Con este sello el test declara sólo las `m` que el enunciado admite, de 3 a
+  13, y con la segunda tabla, que se conserva, el atado salía con 24 ROJO: 23 TABLA —uno por celda
+  de las `m` de 14 a 24 y otro por las `m` que cubren las tablas— y un NIVEL en la frase del DEEP
+  de `m = 23`.
+  La herramienta lee ahora el tope del juez, `M_MAX`, y el suelo de `comprobar_enunciado`, y exige
+  que el test declare esas `m`, todas; las de encima, hasta la primera cuyo dominio de extensión no
+  cabe en 32 bits —la regla de `Context::validar`, que el CABLEADO ancla—, las ata a la réplica
+  sola, y esa, `m = 24`, va con «—»; las `m` de las tablas son ésas, ni una más. Una cifra de la
+  prosa con su `m` sobre el tope casa también con la réplica. Lo dicen tres marcas de su cabecera,
+  una ceguera nueva —esas cifras no las fija ningún test, y el rango de `m` de la prosa no se ata— y
+  sus falsadores (abajo); y una frase de la nota del §717 en `SECURITY.md` §3.11: la segunda tabla
+  ya no la fija un test, sino la réplica. Es la tabla que este sello deja «como lo que da la
+  función»: el atado la sigue mirando celda a celda.
+- **El test del kit y el «1 bis» del canon (§864).** El test del kit de este sello,
+  `un_paquete_de_edad_de_m_alto_se_rechaza_en_milisegundos`, se ignoraba con las aserciones de
+  depuración, y desde el §864 el canon corre el kit también con el perfil `aserciones`, con los
+  pines de su fila: con este sello habría dado 210 pasan y un ignorado frente a 211 y 0, ROJO. El
+  §864 dejó dicho que un test de esos cinco crates que tenga que gatearse en depuración gana su pin
+  propio; éste no tiene que gatearse: corre con las aserciones, comprueba las tres causas y sólo
+  deja de exigir el tiempo, que sin ellas sigue exigiendo. Con el perfil `aserciones` sus cocientes
+  son los de release (abajo).
+- **Los kits publicados.** El arreglo decía «hasta la 0.4.2» en «Lo que NO cierra»: era la vigente
+  en su base. El §815 cortó la 0.4.3 y el §818 la registró publicada, y la 0.4.3 tampoco lleva este
+  arreglo: «hasta la 0.4.3».
+- **El `Cargo.lock` del generador.** El §815 subió `zk-ssl-verify` a 0.4.3, y el de
+  `tools/vectores/coste_edad/`, fuera del workspace, lo fijaba en 0.4.2: `cargo build --locked`,
+  la orden de su guion, se negaba a resolverlo. Cambia esa línea y nada más: medido, sin `--locked`
+  cargo cambia sólo ésa.
+- **Los contadores**: el valor de `5ce1714` más lo que suma este sello, y medido; con su marca, la
+  cifra de la capa en la prosa de `ARQUITECTURA.md` y `CONTRIBUTING.md` y la del juez del STARK en
+  «1 quinquies» de `tools/segunda/README.md`; y sin marca, como en los sellos anteriores, la lista
+  de la superficie de `spec/RPC.md` (`vectores.json` y `vectores.lineas`). Chocaban los totales de
+  `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, con el desglose de éste, y sus marcas del §865 se
+  quedan; las filas de `tools/canon.sh`, donde la de `zk-ssl-air` conserva el timeout de 180 y la
+  nota del §853; las cifras de la capa y de los circuitos de `ARQUITECTURA.md`,
+  `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`, con la línea de
+  `main` en ésta; y el recuento de los dos README, que nombra ya `nodo`.
+- **El README de la segunda.** `main` puso detrás del párrafo del §715 los de la cadena del
+  registro (§797) y del medio (§810); el de este sello va antes que ellos, con los del juez del
+  STARK.
+- **El RFC-0007.** Su cabecera lleva ya la anotación del §716 en su forma llevada; la de este sello
+  va detrás, en dos líneas.
+
+**De dónde sale.** `Oculta<A>`, el envoltorio de ocultación de producción, declara `1 + 8·2^m`
+exenciones de transición en la prueba de edad, y el fork las guardaba como lista
+(`ConstraintDivisor::from_transition`): el juez pagaba `n` exponenciaciones y `8n` bytes al
+construir el divisor, y `n` productos al evaluarlo, antes de la coherencia OOD, la primera
+comprobación contra la prueba. `m` sale de `nextPending` de la cabeza, y el mando verifica la
+cabeza con la clave que ella trae. El enunciado admitía `m` hasta 24. `m = 24` ya caía desde el
+§711, al leer el contexto: su dominio de extensión no cabe en 32 bits. El peor caso era `m = 23`.
+
+**Lo que hace.**
+
+1. **El tope de `m`, en la capa.** `pub const M_MAX: u32 = 13` en `zk-ssl-air`, con su razón en el
+   comentario. `comprobar_enunciado` rechaza `m` sobre el tope con `m = {} fuera de 3..={M_MAX}`
+   (antes, `3..=24`). Va antes de `Proof::from_bytes` en `verificar` y antes de subir las
+   subraíces en `verificar_contra_cabeza`: nada lee la prueba ni construye el AIR sobre el tope.
+   Lo hereda el kit.
+2. **El mismo tope en quien prueba.** `celdas_del_libro` (`circuit_edad.rs`) devuelve `Err` con
+   la misma causa ante un libro de más de `2^M_MAX` posiciones, antes de recorrer una celda. Y
+   `prueba_de_edad` (`zk-ssl/src/prueba_edad.rs`), tras la puerta de la cabeza, compara
+   `m_canonico(nextPending)` con el tope antes de reservar o leer nada: `VerificationFailed("prueba
+   de edad: m = {m} fuera de 3..={M_MAX}")`. Sin eso, con `nextPending = u64::MAX` entraba en
+   pánico al reservar las hojas.
+3. **Las exenciones en bloque, en el fork.** `BloqueDeExenciones { primera, paso, cuantas }`,
+   pública y reexportada: las `n` últimas filas, `g^(L-n)·g^i`. `from_transition` construye el
+   bloque con UNA exponenciación y sin lista, y `evaluate_exemptions_at` lo recorre en flujo, un
+   producto por exención, en el orden de upstream. `exemptions() -> &[B]` desaparece:
+   `num_exemptions()` y `bloque_de_exenciones()`. Su único usuario era el probador. Evaluar sigue
+   siendo Θ(n) en CPU: lo que acota la CPU es el tope.
+4. **La recurrencia, en el probador del fork.** `acc_column` evalúa `e(x)` por lote: si el divisor
+   es un bloque, los `ce` primeros puntos directos y el resto por
+   `e(x·g) = g^n·e(x)·(x − a·g⁻¹)/(x − a·g^(n−1))`, con inversión por lotes; si no, punto a punto
+   como upstream. Si un denominador es cero, cae al cálculo punto a punto. Los valores son los
+   mismos: la aritmética del campo es exacta.
+5. **La segunda implementación.** `M_MAX = 13` en `Edad` (`airs.py`), con la misma causa, y un
+   test de `zk-ssl-air` compara las dos líneas. `juez_stark.py` cuenta `fuera de 3..=`, sin el
+   valor, entre los mensajes del juez. `stark.py` ya multiplicaba en flujo y no cambia.
+6. **Tres vectores de atacante**, ficheros nuevos en `edad/`. No salen de `edad-todos.json`: mutar
+   el `nextPending` de una cabeza real cae antes, en el `epochDigest`. Son paquetes con una cabeza
+   v5 firmada con una clave XMSS de test de semilla fija y una prueba fabricada. Las `m` van fijas:
+   `neg-m-sobre-tope` (`m` = 17) y `neg-m-mayor-legible` (`m` = 23) pinan su causa con su `m` y
+   sin el tope, `edad: m = 17 fuera de 3..=`; `neg-m-13-fabricada` (`m` = 13) llega a la prueba y
+   pina la causa entera, `edad: InconsistentOodConstraintEvaluations`. Los tres dicen lo mismo con
+   cualquier tope de 13 a 16. Los dos de encima pesan 647 y 865 KB: la prueba fabricada entera es el
+   ataque que el kit de antes pagaba. Los produce `tools/vectores/coste_edad.py` con el binario de
+   `tools/vectores/coste_edad/`, un crate con su propio `[workspace]` fuera del del árbol.
+7. **Al portarlo, los tests del §697 y del §708.** Exigen que cada `m` con piso o con cifra sea una
+   `m` que el enunciado admite. Con el tope, las filas de 14 a 23 de `PISO_LDR` y de
+   `CONJETURADA_CON_DEEP` salen, y `SIN_PISO`, que declaraba `m = 24`, queda vacía. `SECURITY.md`
+   §3.11 conserva sus dos tablas y gana una nota: la segunda es lo que da la función para
+   longitudes que el juez ya no acepta, y la frase de `m = 24` dejó de ser cierta. `PAPER.md` y
+   `PAPER_EN.md` dan las cifras de `m = 13`: LDR 68 y 106,8 con el DEEP. La entrada 116 de
+   `BACKLOG.md` lo anota. El párrafo del DEEP de §3.11 decía que el test fija la cifra hasta
+   `m = 23`: ahora da 106,8 con `m = 13`, y el 96,8 de `m = 23` queda como lo de antes del tope.
+   La entrada 116 dice que el test la fija de 3 a 13. El tope no decide el nivel: con 13 la LDR
+   sigue por debajo de 80.
+8. **Al portarlo, el instrumento.** `instrumento_de_la_prueba_de_edad` (ignorado: es instrumento)
+   recorre `N_OBJETIVO = [1024, 4096, 16384]`. Con el tope, el probador ya no prueba 16384, y el
+   instrumento imprime esa talla con su causa en lugar de probarla. `N_OBJETIVO` no cambia.
+9. **Al portarlo, el RFC-0007.** Su D-E4a declaraba el techo medido en `n` = 16384, con la prueba
+   sin ocultación del §463. Gana una corrección, citada y no borrada: con la traza oculta, el techo
+   con las dos cotas es `n` = 8192, con la medida de abajo, y el juez lo aplica. Su cabecera lo
+   anota. La corrección se redactó en privado, al portar, con la medida hecha en privado, y entra
+   en este sello.
+10. **Al portarlo, `spec/PAQUETE.md`.** El arreglo privado ya tocaba la 2.7, el paso `2/3` de la
+    sección 4 y el catálogo de la 5. Aquí, `fuera de 3..=` entra en «la regla no se sostiene» de la
+    6.1, la clase de la OOD nombra también una prueba fabricada, y la 9 y la 10 ganan su párrafo y
+    su línea. Ningún texto pinado cambia. La 2.7 dice «al menos 3» donde decía «al menos 1»: lo es
+    desde que el suelo subió a 3 (§538).
+11. **Lo que se renombró al portar.** Las marcas que citaban el trabajo privado pasan a este sello.
+    El guion de los vectores y su binario pasan a `tools/vectores/`, con sus cabeceras reescritas y
+    el código tal cual. El comentario del manifiesto se escribe en su forma final antes de
+    registrarlo: con su `§`, el tope en 13, la ruta pública y «el envoltorio de la prueba». El
+    falsador de `el_coste_de_rechazar_no_crece_con_m` cita la medida de aquí, en `m = 13`.
+
+**Medido en privado**, sobre `161a233` con los arreglos del §711 al §716, y con este arreglo donde
+se dice (CPU del proceso hijo, en una máquina de 4 CPU cargada):
+
+- **Antes**, con el kit de ese árbol, antes de tocar nada. Los paquetes del generador, con
+  `nextPending` de `2^m`: ROJO por la coherencia OOD en todos, con 0,006 s y 10 MB en `m = 3`,
+  0,071-0,073 s en `m = 13` (`neg-m-13-fabricada`, tres corridas), 0,505 s en `m = 16`, 1,094 s
+  en `m = 17`, 8,0 s y 72 MB en `m = 20`, 32,0 s y 269 MB en `m = 22` y **63,2 s y 531 MB en
+  `m = 23`**. `m = 24` caía en el contexto en 0,009 s.
+- **Sólo el flujo, sin el tope** (un kit con el tope en 23, retirado después): `m = 23` en 0,594 s
+  y 10 MB. El flujo quita la memoria y el factor de la exponenciación; la CPU sigue lineal, y la
+  acota el tope.
+- **Con el arreglo**, con el tope en 14, el del arreglo privado, tres corridas: el honesto de
+  `m = 3`, VERDE en 9 ms; los paquetes de `m = 13` y `14`, ROJO por OOD en 9-13 ms; los de `m = 16`,
+  `17` y `23`, ROJO con su causa en 7-11 ms; 10 MB en todos. Con el tope en 13 y en 16, los tres
+  vectores, `tests_coste` y el manifiesto de la edad pasan igual.
+- **El probador**, de pared, construir, probar y verificar sobre un libro de `2^m` posiciones:
+  `m = 10` de 9,55 a 5,39 s y **`m = 12` de 87,7 a 22,8 s**. Verificar una prueba honesta de
+  `m = 12`, de 37,9 a 2,2 ms. Los KAT del probador prístino (§532) pasan: la recurrencia no mueve un
+  byte de una prueba sin ocultación.
+- **El techo, con el probador de producción y este arreglo**, en una máquina de 4 vCPU que no es la
+  de referencia, tres corridas por talla: `m = 13` prueba en 47,5-48,4 s de CPU con un pico de
+  3.130.836 kB como mucho, el 51,1 % de los 6.124.348 kB de la cota; `m = 14`, en 100,2-101,9 s y
+  6.255.956 kB, un **2,15 % por encima** de la cota, medido. Proyectado a la máquina de referencia
+  con el factor del probador sin ocultación (0,76-0,874, medido en dos sesiones), `m = 13` tarda de
+  36 a 42 s y `m = 14` de 76 a 88 s, de 1,27 a 1,46 latidos. El tope de 13 sale de aquí.
+- **WebAssembly.** El kit compilado para `wasm32-wasip1` y corrido con `wasmtime`: los diez
+  manifiestos de `tools/segunda/README.md` §2, 387 de 387, con la edad 32 de 32.
+- **Falsadores**, cada defensa quitada en su sitio y restaurada después, con el md5 de cada fichero
+  comprobado: con la lista de upstream en `from_transition`, caen `el_coste_de_rechazar_no_crece_con_m`
+  y el test del kit; con el bloque una fila desplazado, los dos de `tests_bloque`; sin `e(x)` en la
+  recurrencia, y sin la caída al cálculo punto a punto, `la_recurrencia_da_lo_que_daba_punto_a_punto`;
+  con el tope en 24, los tres de `tests_coste`; con 24 en la segunda, el test que compara las dos
+  líneas; sin la comprobación del probador, `un_libro_sobre_el_tope_no_se_prueba`; y sin la del
+  productor, `un_libro_sobre_el_tope_no_se_lee`, con un pánico (`capacity overflow`).
+- **Una revisión adversarial** de sólo lectura comprobó que `m` sale sólo del `nextPending`
+  firmado, que las dos entradas del juez comprueban el enunciado antes de leer la prueba, que la
+  segunda llama al enunciado antes de leer la prueba, y que las otras cuatro AIR con `Oculta`
+  tienen la traza fija de 512 filas. Sus dos hallazgos importantes —un negativo que sólo valía con
+  un tope de 16, y un tope que no citaba el techo declarado— y sus menores se corrigieron antes de
+  portar.
+
+**Medido sobre este árbol**, `5ce1714` con este sello, en release, con el `target` compartido con
+otras tareas y cada `cargo` bajo un cerrojo, en una máquina de 4 CPU compartida:
+
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `winter-air` 64; `winter-prover` 7; `winter-verifier` 0; `zk-ssl-air` 51, con los de
+  `tests_nivel` en las `m` de 3 a 13; `zk-ssl-verify` 211 (129 + 81 + 1); `stark-experiment` 428 y
+  13 ignorados, en 16 s de tests; y `zk-ssl` 531 y 7 ignorados, en 130 s de tests. Y las dos que
+  usan la capa y el kit sin que este sello las toque: `zk-ssl-cli` 173 y `zk-ssl-node` 237. Con el
+  perfil `aserciones` del «1 bis», `cargo test --locked --profile aserciones -p <crate>`, los cinco
+  de su lista con los pines de su fila, 0 ignorados y 0 warnings: `zk-ssl-hash` 57,
+  `zk-ssl-guardian` 40, `zk-ssl-medio` 62, `zk-ssl-air` 51 y `zk-ssl-verify` 211 (129 + 81 + 1).
+  El workspace entero pasa `cargo check --locked --workspace --all-targets`, sin errores y con los
+  avisos de siempre (los 9 de `ceremony` y el del nodo).
+- **El coste de rechazar.** `el_coste_de_rechazar_no_crece_con_m`: 0,96 ms en `m = 3` y 1,41 ms en
+  `m = 13`, cociente 1,5 (umbral 25), y 1,4 en otra corrida.
+  `un_paquete_de_edad_de_m_alto_se_rechaza_en_milisegundos`: cocientes 0,7, 0,8 y 0,9 frente al
+  honesto (umbral 5), en release y con el perfil `aserciones`. **Falsador**, con la lista de
+  upstream en `from_transition` y el fichero restaurado después, con su md5: el primero cae con
+  cociente 58,8 (60,4 ms frente a 1,0 ms), y el segundo con 10,5 en `neg-m-13-fabricada` (57,6 ms
+  frente a 5,5 ms).
+- **El mando, antes y después**, CPU del proceso hijo, el menor y el mayor de tres corridas. Antes,
+  el kit de `5ce1714`, compilado de ese árbol con la orden del canon (`766f3b4244c4a411`):
+  `edad-todos.json` VERDE en 7-9 ms; `neg-m-13-fabricada` ROJO por OOD en 63-67 ms;
+  `neg-m-sobre-tope` ROJO por OOD en 0,91-0,97 s; y `neg-m-mayor-legible` ROJO por OOD en
+  **58,4-59,1 s y 531 MB**. Después, el kit de este árbol (`0f72c31a06ff7092`): los cuatro en 7-11
+  ms y 10 MB, los dos de encima del tope con su causa, `m = 17 fuera de 3..=13` y `m = 23 fuera de
+  3..=13`.
+- **La conformidad**, con `tools/conformidad.sh` y el kit de este árbol: paquete 94, consumo 20,
+  conflicto 17, rechazo 84, edad 36 de 36, pendiente 10, pago 26, prenda 11, completitud 81, ancla
+  44, ancla cofirmada 27 y rotación 34. Con el kit de `5ce1714`, edad 34 de 36: caen los dos de
+  encima del tope, que dan la coherencia OOD y no su causa.
+- **La segunda implementación.** `python3 tools/segunda/stark.py`: autotest OK.
+  `python3 tools/segunda/juez_stark.py`: 68 de 68 pares, 82 pruebas juzgadas, 35 vectores que caen
+  antes del juez y 33 de 33 falsadores callados, en 13 s; los tres nuevos con la causa del kit. Con
+  el `airs.py` y el `juez_stark.py` de `5ce1714` y estos vectores, sobre una copia del árbol: 66 de
+  68, con los dos de encima del tope por OOD, en 76 s.
+- **Los vectores, otra vez.** El binario de `tools/vectores/coste_edad/`, compilado con
+  `cargo build --release --locked` y el `Cargo.lock` de este sello, con el `target` fuera del
+  árbol, y `tools/vectores/coste_edad.py` escriben los tres, idénticos byte a byte a los del sello
+  (`cmp`).
+- **El ATADO F, con su cambio**, sobre una copia del árbol con `CANON_RAIZ`, una mutación cada vez,
+  y todas en ROJO: en la segunda tabla de la edad, la LDR de `m = 14` de 66 a 67 y el DEEP de
+  `m = 23` de 96,8 a 96,9; una cifra en la columna de `m = 24`; la columna de `m = 24` quitada; en
+  la primera, la LDR de `m = 13` de 68 a 66; en la prosa, «95,8 con `m = 23`»; y en el juez,
+  `M_MAX` a 12 o a 14, el suelo de `comprobar_enunciado` a 4 y `M_MAX` escrito como una expresión.
+  En VERDE, como declara su ceguera, «hasta 48 con `m = 23`» en lugar de «hasta 68 con `m = 13`»
+  en `PAPER.md`. Sobre este árbol, la herramienta de `5ce1714` da los 24 ROJO de «Al portar».
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2126
+  declarados; `check_modulos`, 212 ficheros; `check_vectores`, 574 vectores y 1243 líneas con su
+  huella, ninguno movido; `check_cifras`, 26 cifras y ninguna contradice el canon;
+  `check_publicadas`, con 594 ficheros en `spec/vectors/` y, en las tablas de la edad, los once
+  pisos del test, diez `m` de la réplica sobre el tope y `m = 24` sin dominio; `check_catalogo`,
+  235 textos del kit y 287 entradas de §5; `check_nucleo`, 175 filas; `verificar_citas`, 0 muertos;
+  `check_superficie`, la lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas; y
+  `check_columns`, `check_constraint_layout`, `check_curvas`, `check_dominios`, `check_figures` y
+  `check_techo`. Todas salen con 0.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `winter-air` 62 -> 64, `winter-prover` 6 ->
+7, `zk-ssl-air` 48 -> 51, `zk-ssl-verify` 210 -> 211, `stark-experiment` 427 -> 428 y `zk-ssl` 530
+-> 531. TOTAL DE SELLO 1955 -> 1964 y TOTAL CON LARGOS 2095 -> 2104, en `PRINCIPIOS.md`,
+`PAPER.md` y `PAPER_EN.md`; el desglose de `PRINCIPIOS.md`, 531 de la capa, 428 de circuitos y 211
+del kit; los 530 de la capa, a 531, en `ARQUITECTURA.md`, `PRINCIPIOS.md`, `PAPER.md`,
+`PAPER_EN.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`, y con su
+marca en la prosa de `ARQUITECTURA.md` y `CONTRIBUTING.md`; los 427 de circuitos, a 428, en
+`PAPER.md`, `PAPER_EN.md`, `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`. Las «1364 declaradas»
+y las «1349 declared» no se tocan, como en los sellos anteriores (5.A-319); las «55» de winterfell
+tampoco. `check_tests`, de 2117 a 2126. `spec/vectors/`, de 591 a 594 ficheros, en `README.md` y
+`README_EN.md`. `check_vectores`, de 571 a 574 vectores y de 1223 a 1243 líneas, y lo mismo en la
+lista de la superficie de `spec/RPC.md`. La segunda, de 65 a 68 pares, con su marca en
+«1 quinquies» de `tools/segunda/README.md`.
+
+**Lo que NO hace.** No cambia el cable, la versión `zkssl/0.4` ni el formato de una prueba: una
+prueba honesta de `m` hasta 13 se escribe, se lee y se verifica igual. No mueve un byte de una
+prueba sin ocultación. No reescribe ni cambia el veredicto de ningún vector anterior. No toca
+`winter-fri`, `winter-crypto` ni `winter-verifier`. No decide el nivel declarado de producción
+(BACKLOG 116). No añade entrada a `SECURITY.md`. No publica un kit: el corte va al final de la
+serie. No corre el canon entero ni los bancos.
+
+**Lo que NO cierra.**
+
+- **La CPU del juez sigue lineal en `2^m` hasta el tope.** El flujo quita la memoria y la
+  exponenciación; el tope acota el resto.
+- **Un libro que pase de `2^13` posiciones de pendiente no tiene prueba de edad, ni la tendrá:**
+  `nextPending` es una marca de agua que no baja. Lo dicen el comentario de `M_MAX` y
+  `spec/PAQUETE.md` §2.7. Cuánto cuesta abrir pendientes hasta ahí no se ha medido.
+- **Pruebas que una máquina con más RAM sí produce**, de `n` = 16384, el juez ya no las acepta.
+  Es lo que pide la regla: el mismo tope en quien prueba y en quien verifica.
+- **El probador sigue siendo el coste dominante** en `m` alto. Lo que queda no se perfiló.
+- **La clave del operador.** El mando sigue verificando la cabeza con la clave que trae
+  (`spec/PAQUETE.md` §8): el tope quita el coste, no la autofirma.
+- **Otras AIR con `Oculta` y traza variable** heredarían el mismo coste sin su propio tope. Hoy
+  las cuatro restantes tienen la traza fija; el flujo del fork las cubre en memoria.
+- **Los kits publicados hasta la 0.4.3** pagan el coste. Hace falta un kit nuevo, que sale con el
+  corte.
+- **Textos que no se tocan aquí**: `doc/blueprint-v2.md` da la cifra de `m = 23` en una nota del
+  §708, y dice que la fija un test; es un documento de diseño con sus actualizaciones fechadas.
+- **Las citas por línea que este sello corre** en `zk-ssl-air/src/lib.rs` —las de la cabecera del
+  ATADO F de `tools/check_publicadas.py`, que lo dice, y la de `tools/check_catalogo.py`— no se
+  rehacen, como en los sellos anteriores. Ninguna cambia un veredicto.
+- **El techo de 13 se midió en una sola máquina**, que no es la de referencia, y el tiempo de allí
+  es proyección. La memoria de `m = 14` no depende de la proyección.

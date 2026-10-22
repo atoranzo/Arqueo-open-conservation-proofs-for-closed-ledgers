@@ -1,0 +1,33 @@
+# §717, el coste del juez de la edad: el generador de los paquetes de edad que cualquiera arma SIN
+# la clave del operador, SIN libro y SIN probar -una cabeza v5 con firma propia (una clave XMSS de
+# test, de semilla fija) y una prueba fabricada que solo tiene la forma-, para los vectores
+# negativos de `spec/vectors/edad/` y para medir el mando. Fuera del workspace (su propio
+# `[workspace]`), con el fork de winterfell del arbol por `[patch.crates-io]`. Lo llama
+# `tools/vectores/coste_edad.py`.
+#
+#   cargo run --release -- <m> <nextPending> <salida.json>
+[package]
+name = "coste-edad"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+serde_json = "1"
+xmss = "=0.1.0-pre.0"
+zk-ssl-hash = { path = "../../../crates/zk-ssl-hash" }
+zk-ssl-air = { path = "../../../crates/zk-ssl-air" }
+zk-ssl-verify = { path = "../../../crates/zk-ssl-verify" }
+winter-math = "=0.13.1"
+winter-air = "=0.13.1"
+winter-crypto = "=0.13.1"
+winter-verifier = "=0.13.1"
+
+[patch.crates-io]
+winter-air = { path = "../../../crates/winter-air" }
+winter-verifier = { path = "../../../crates/winter-verifier" }
+
+[profile.release]
+overflow-checks = true

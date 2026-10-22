@@ -42,8 +42,9 @@ pub use options::{BatchingMethod, FieldExtension, PartitionOptions, ProofOptions
 
 mod air;
 pub use air::{
-    Air, AirContext, Assertion, AuxRandElements, BoundaryConstraint, BoundaryConstraintGroup,
-    BoundaryConstraints, ConstraintCompositionCoefficients, ConstraintDivisor,
+    Air, AirContext, Assertion, AuxRandElements, BloqueDeExenciones, BoundaryConstraint,
+    BoundaryConstraintGroup, BoundaryConstraints, ConstraintCompositionCoefficients,
+    ConstraintDivisor,
     DeepCompositionCoefficients, EvaluationFrame, TraceInfo, TransitionConstraintDegree,
     TransitionConstraints,
 };

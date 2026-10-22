@@ -770,6 +770,12 @@ de pendientes que cubre, y pierde dos bits de LDR cada vez que la traza se dobla
 
 Conjeturada 127 y UDR 59 en todas; la fila «con el DEEP» es la conjeturada contando el término
 DEEP (abajo). Con `m = 24`, que el enunciado admite, la prueba no se puede generar hoy.
+⚠️ **§717:** desde el §717 el enunciado admite `m` de 3 a 13 (`zk_ssl_air::M_MAX`), y el juez
+rechaza las demás antes de leer la prueba. La segunda tabla, de 14 a 24, queda como lo que da la
+función para longitudes que el juez ya no acepta, y la frase de `m = 24` dejó de ser cierta. El tope
+sale del coste del juez y de las cotas de la puerta del RFC-0007, no del nivel: con `m = 13` la LDR
+es 68, y el piso de LDR y el umbral de UDR siguen sin decidir. Las cifras de la segunda tabla ya no
+las fija un test: las ata a la réplica de la función el ATADO F de `tools/check_publicadas.py`.
 
 Lo fijan tests desde el §697: en las familias de longitud fija, conjeturada ≥ 127, LDR ≥ 80 y
 UDR = 59 sobre pruebas ocultas reales; en la edad, el piso de cada `m`. Desde el §839, cada fila
@@ -789,8 +795,9 @@ proximidad —de lo que tratan las conjeturas— sino de grado: el del punto fue
 un error de ((blowup + 1) · (L + 1) + L − 1)/|E|, con |E| el tamaño de la extensión, que la función
 cuenta como 2^128, el grado de las restricciones acotado por el blowup, y en decodificación única,
 sin el tamaño de lista de la LDR. Vale 116,8 bits con 128 filas y casi uno menos cada vez que L se
-dobla —112,8 con 2.048, y 96,8 en la edad con `m = 23`—, y, puesto en lugar del campo, es el menor
-de los términos de la fórmula: las consultas dan 189 bits y el hash pone 128. Con él, la
+dobla —112,8 con 2.048, y 106,8 en la edad con `m = 13`, la mayor que el juez acepta desde el
+§717 (96,8 con `m = 23`, antes del tope)—, y, puesto en lugar del campo, es el menor de los
+términos de la fórmula: las consultas dan 189 bits y el hash pone 128. Con él, la
 conjeturada no pasa de ese término, y esa es la cifra «con el DEEP» de las tablas: el término
 mismo, sin el −1 con que la fórmula resta un bit a su mínimo (sus 127 son 128 − 1); con ese −1,
 sería un bit menos. El otro término de campo, el de ALI, no cambia con L: con el lote lineal de

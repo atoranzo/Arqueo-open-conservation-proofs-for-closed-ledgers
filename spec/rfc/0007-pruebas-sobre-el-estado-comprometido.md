@@ -14,6 +14,8 @@
   §404, §406, §413, §414, §415, §441; el §450, que lo adopta; §451–§456 y §458–§479, las
   etapas; el §480, la spec al día; y el §481, este giro a ACEPTADO. El §716 escribe la
   corrección de `AutorizacionConsumida`, una causa nueva de la capa, tras las del §802 y el §815.
+  El §717 corrige el techo de la prueba de edad con la traza oculta, `n` = 8192, y el juez lo
+  aplica.
 - **Hito:** H4 de la propuesta enviada a NLnet Restack (140 h), en sus palabras: *«Rejection
   with proof and the ageing proof. Circuits over the committed state: proof of the cause of a
   refusal; age distribution of what is in flight with its empty-box form and its concentration
@@ -422,6 +424,24 @@ instrumento del §461, no de la prueba. Lo que sigue es proyección y se dice co
 a 16384 el tiempo creció 4,25 veces y el pico 3,99 —unas 2,06 y 2,00 veces por duplicación—,
 así que `n` = 32768 costaría del orden de 61 s y 6,2 millones de kB, fuera por poco de las dos
 cotas. No se declara techo por encima de 16384 sin medirlo.
+
+**CORRECCIÓN (§247, escrita por el §717).** El techo de arriba, `n` = 16384, se midió sin
+ocultación: el §463 es anterior al §538, que encendió la traza oculta en producción. La traza oculta
+tiene el doble de filas y una columna más, y con ella el techo es otro. Se midió en privado, con el
+probador de producción y el arreglo del §717, en una máquina de 4 vCPU que no es la de referencia:
+
+| `n` | `m` | probar (CPU) | pico | frente a 6.124.348 kB |
+|---|---|---|---|---|
+| 8192 | 13 | 47,5–48,4 s | 3.130.836 kB | 51,1 % |
+| 16384 | 14 | 100,2–101,9 s | 6.255.956 kB | 102,15 % |
+
+El pico de `n` = 16384 pasa de la cota de memoria en cualquier máquina con esa RAM, sin proyectar
+nada. El tiempo, proyectado a la de referencia con el factor que da allí el probador sin ocultación
+(de 0,76 a 0,874, medido en dos sesiones), es de 36 a 42 s para `n` = 8192 y de 76 a 88 s para
+`n` = 16384: de 1,27 a 1,46 latidos. **Con las dos cotas, el techo de la prueba oculta es `n` =
+8192.** Desde el §717 el juez rechaza `m` > 13 (`zk_ssl_air::M_MAX`) antes de leer la prueba, y el
+probador y el productor de la capa no la prueban. La tabla del §463 se conserva: mide la prueba sin
+ocultación.
 
 ### D-F — El kit verifica pruebas: el AIR entra en la clausura, el probador no
 

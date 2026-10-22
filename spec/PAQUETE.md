@@ -290,7 +290,15 @@ donde el valor es una respuesta del cable sin reescribir.
   produce quien prueba, y `prueba` son los bytes de la prueba STARK en `0x` + hex. `seq`,
   `nextPending`, `pendingRoot` y `pmetaRoot` salen **sólo de la cabeza**: el sobre no los
   repite. Y `m` —el subárbol `[0, 2^m)` que la prueba cubre— lo **deriva** el mando de
-  `nextPending`, el menor que la cubre y al menos 1: un enunciado tiene una sola forma.
+  `nextPending`, el menor que la cubre y al menos 3: un enunciado tiene una sola forma.
+- **`m` tiene tope** (§717): el juez rechaza `m` por encima de `zk_ssl_air::M_MAX`, 13,
+  **antes** de leer la prueba, con `m = {} fuera de 3..={M_MAX}`. El juez paga un coste lineal en
+  `2^m` antes de la primera comprobación contra la prueba, y el mando no fija la clave del
+  operador: sin el tope, un paquete con una cabeza de firma propia y una prueba que sólo tiene la
+  forma elegía ese coste. 13 es la mayor `m` cuya prueba, con la traza oculta de producción, cabe
+  en las dos cotas de la puerta del RFC-0007 (un latido y media RAM de la máquina de referencia):
+  `m` = 14 no cabe (§717). El probador de la casa y el productor de la capa aplican el mismo tope,
+  este antes de leer el libro.
 - El juez es `zk_ssl_air::verificar_contra_cabeza` (`crates/zk-ssl-air`), que el kit compila
   **sin el probador**: sube las dos subraíces a 32 niveles, las compara con las raíces firmadas
   y verifica la prueba con las `proof_options()` de la casa y sólo con ellas.
@@ -298,7 +306,11 @@ donde el valor es una respuesta del cable sin reescribir.
   (RFC-0007, corrección del §464)—, nada sobre lo que nunca entró en el árbol (H5b) y nada
   sobre otra cabeza que la que firma las raíces. Su positivo de punta a punta, con una cabeza
   real de un nodo, y su catálogo de vectores son de E4b-3: hoy el mando lleva los negativos que
-  caen antes de la firma, y el juez sus testigos con pruebas reales (§465).
+  caen antes de la firma, y el juez sus testigos con pruebas reales (§465). Y, desde el §717, un
+  libro cuyo `nextPending` pase de `2^M_MAX` no tiene prueba de edad, ni la tendrá.
+  `nextPending` es la marca de agua de las posiciones usadas y no baja: `allocate_pending`
+  reutiliza el hueco libre más bajo, y sólo `commit_send` y `apply_mint_pending_delegated` la
+  suben (`crates/zk-ssl/src/two_phase.rs`).
 
 ### 2.8 El paquete de cobro pendiente (§495)
 
@@ -824,7 +836,8 @@ cuando cita algo que sólo crece, y con **la misma** cuando el estado es instant
 firma verifica · `2/3` las dos subraíces, subidas a 32 niveles con la `m` que el mando deriva de
 `nextPending`, son `pendingRoot` y `pmetaRoot` · `3/3` la prueba verifica contra el enunciado
 que la cabeza fija (`seq`, `nextPending`, `m`) y el sobre afirma (`t`, `k`, `emisor`), con las
-opciones de la casa.
+opciones de la casa. El enunciado se comprueba en el paso `2/3`, antes de subir las subraíces:
+una `m` sobre su tope cae ahí (§717), sin leer la prueba.
 
 **Paquete de cobro pendiente:** antes de tocar la criptografía, el sobre tiene su forma
 (`enunciado`, `prueba`) y la cabeza es **v5 o v6** · `1/3` la cabeza recompone su digest y su
@@ -1045,7 +1058,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba.
 - `edad: {e}`, con `{e}` uno de estos:
   - `la subraiz de pendientes, subida a 32 niveles, no es el pendingRoot de la cabeza`
   - `la subraiz de meta, subida a 32 niveles, no es el pmetaRoot de la cabeza`
-  - los del enunciado: `m = {} fuera de 3..=24` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}` — ⚠️ §706: hasta el §706 decía `1..=24`, rancio desde el §538, cuando el D-AG del RFC-0009 subió el suelo de m a 3.
+  - los del enunciado: `m = {} fuera de 3..={M_MAX}` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}` — ⚠️ §706: hasta el §706 decía `1..=24`, rancio desde el §538, cuando el D-AG del RFC-0009 subió el suelo de m a 3. ⚠️ §717: hasta el §717 decía `3..=24`; desde el §717 el tope es `M_MAX`, 13 (§2.7).
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
   - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64` — desde el §651 la marca es parte de la forma: el juez la mira después de la forma de traza y antes de las opciones, y sólo acepta la de la casa con su m. `{lectura}` es lo que lee `Marca::leer`: `Ok(None)` con el meta vacío, `Ok(Some(Marca { m: {m} }))` con otra m, `Err(Desconocida)` sin el prefijo y `Err(Largo)` con otra longitud. Lo emiten los cinco jueces del kit; hasta el §706 no estaba en este catálogo.
 
@@ -1377,10 +1390,10 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **firma inválida** | `la firma no verifica` · `la firma es VALIDA pero de otro mensaje` · `el indice declarado ({d}) no cuadra con el que va dentro de la firma` |
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
 | **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
-| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) |
+| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) · `fuera de 3..=` (§717: una `m` de la edad sobre su tope, `m = {} fuera de 3..={M_MAX}`, 2.7; se pina con su `m` y sin el tope) |
 | **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) · `prueba mal formada: usize no canonico` (§715: un `usize` de la prueba que no está en su escritura mínima; la pone el lector del fork, `crates/winter-air/src/proof/acotado.rs`, con el texto de `causa.rs`) · `UnconsumedBytes` y `not all bytes were consumed` (§715: bytes de sobra tras la prueba, o dentro de una apertura o del lote de una capa FRI; son el mismo error de winter-utils, `DeserializationError::UnconsumedBytes`, por su `Debug` y por su `Display`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
-| **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido | `InconsistentOodConstraintEvaluations` |
+| **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido o, desde el §717, una prueba fabricada que sólo tiene la forma | `InconsistentOodConstraintEvaluations` |
 | **consulta que no casa con el compromiso** | `TraceQueryDoesNotMatchCommitment` · `ConstraintQueryDoesNotMatchCommitment` · `FriVerificationFailed(RemainderCommitmentMismatch)` (§713: el resto FRI que no es el comprometido; la pone el canal del fork, `crates/winter-verifier/src/channel.rs`) · `FriVerificationFailed(LayerCommitmentMismatch)` (§715: un grupo de más en una capa FRI; la pone el canal del fork, que exige tantos grupos como posiciones plegadas, y desde el §715 también una fila de la traza o del cociente de más da la variante de la tabla) |
 
 Cualquier otra variante de `VerifierError` nombra su causa por su nombre, como estas. `NO
@@ -1768,6 +1781,19 @@ lote, y en la edad tres bytes que antes del §711 hacían entrar en pánico al l
 pinan la causa: `prueba mal formada: usize no canonico`, la variante de `winter-verifier` de una
 apertura que no casa con su compromiso, y la cola con sus dos nombres (sección 6.1).
 
+**Desde el §717 la `m` de la edad tiene tope, y tres vectores de atacante.** No salen de
+`edad-todos.json`: mutar el `nextPending` de una cabeza real cae antes, en el `epochDigest`. Son
+paquetes que cualquiera arma sin la clave del operador, sin libro y sin probar: una cabeza v5
+firmada con una clave XMSS de test de semilla fija —el mando verifica la firma con la clave que
+trae la cabeza— y una prueba fabricada que sólo tiene la forma. Los produce
+`tools/vectores/coste_edad.py`, con el binario de `tools/vectores/coste_edad/`.
+`neg-m-sobre-tope` (`m` = 17) y `neg-m-mayor-legible` (`m` = 23, la mayor que el lector de la prueba
+admite) caen por el tope (2.7), y el manifiesto pina su causa con su `m` y sin el tope;
+`neg-m-13-fabricada` (`m` = 13, en el tope) llega a la prueba y cae en la coherencia OOD, y se pina
+la causa entera. Con el kit de antes del §717 los tres daban ROJO en la coherencia OOD, tras 0,07 s
+de CPU en `m` = 13, 1,1 s en `m` = 17 y más de un minuto y 531 MB en `m` = 23 (medido en privado):
+el coste lo elegía quien enviaba el paquete.
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1894,6 +1920,11 @@ apertura que no casa con su compromiso, y la cola con sus dos nombres (sección 
   la clase «prueba mal formada» de la 6.1, y `FriVerificationFailed(LayerCommitmentMismatch)` en
   «consulta que no casa con el compromiso»; veintiséis vectores nuevos en `edad/` y `pago/`, ninguno
   reescrito (sección 9).
+- §717 — la `m` de la edad tiene tope, 13: el juez la rechaza antes de leer la prueba, y el probador
+  y el productor de la capa no prueban un libro que pase de `2^13` posiciones. El fork evalúa las
+  exenciones de la ocultación en flujo. Hasta aquí, un paquete con una cabeza de firma propia y una
+  prueba fabricada elegía el coste del juez, lineal en `2^m`. `fuera de 3..=` entra en «la regla no
+  se sostiene» de la 6.1; tres vectores nuevos en `edad/`, ninguno reescrito (sección 9).
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto
