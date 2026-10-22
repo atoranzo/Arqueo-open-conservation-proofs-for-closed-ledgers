@@ -760,6 +760,8 @@ instrumentacion) al grupo E.*
   inclusión de RFC 9162 (`medio.py`) y su juez en el canon (`juez_medio.py`, 87/87): 201/201
   entradas en seis familias. En las 27 de la sexta, la salida se comparó con el binario compilado:
   la misma, byte a byte, en los 5 positivos, y la misma línea del ROJO en los 22 negativos.
+  ⚠️ §859: los «87/87» son del §810; desde el §859 el juez del medio da 92/92, con cinco casos que
+  matan los cinco mutantes que vivían del §810 (`tools/segunda/README.md`).
 
 - [ ] **85 (original). Una SEGUNDA implementación que pase los vectores.** Lo caro
   ya está hecho: vectores de conformidad versionados (`0.2` idéntico,

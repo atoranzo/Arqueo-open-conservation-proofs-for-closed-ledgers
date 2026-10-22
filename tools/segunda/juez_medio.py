@@ -28,7 +28,12 @@ Lo que comprueba, por bloques:
      y todo camino de todo arbol de 1 a 33 hojas, y con el indice vecino, un hermano tocado, un hash
      de menos o uno de mas, no. El tamano no: un camino no lo ata, lo ata la nota firmada;
   6. el `{:?}` de Rust con el que salen los nombres en un rechazo (`medio.debug_rust`): once cadenas
-     con lo que se escapa y lo que no, contra lo que imprime el Rust que compila el kit.
+     con lo que se escapa y lo que no, contra lo que imprime el Rust que compila el kit;
+  7. cinco reglas que existen y que nada aislaba (§859): un corte que baja sobre un polinomio sin
+     pistas -la firma de la pista sobre r0 = 0, con la misma h escrita de otra manera-; el hash del
+     subarbol vacio y la marca de mas de 2^63 - 1 de `mensaje_cofirmado`, con notas firmadas a mano
+     por otra clave a medida sobre el mensaje que la regla prohibe; el `+` en el nombre de una linea
+     de firma, y una vkey con el key_id de otra clave. Cada uno con su control, que se acepta.
 
 Salida: una linea `OK` o `ROJO` por comprobacion con nombre, y al final `medio: <ok> de <n>
 comprobaciones`. Exit 0 si todas; 1 si no. Una excepcion que un bloque no espera (la de un mutante
@@ -334,6 +339,7 @@ def bloque_pista_en_cero():
          and sum(map(sum, hh)) == 1 and hh[0][i] == 1)
     caso("pista sobre r0 = 0: UseHint baja r1, y con w1 = r1 - 1 VERIFICA", M.verificar(pk, mensaje, baja) is True)
     caso("pista sobre r0 = 0: con w1 = r1 + 1 NO verifica", M.verificar(pk, mensaje, sube) is False)
+    return pk, mensaje, baja
 
 
 # ─── 3 · una firma tiene una sola escritura ─────────────────────────────────────────────────────
@@ -528,6 +534,96 @@ def bloque_debug():
          f"combina, Zs, Zl, Zp, Cf, Co, Cn, Other_Grapheme_Extend, la comilla simple que no)", not malas, repr(malas))
 
 
+# ─── 7 · cinco reglas que ninguna nota ni ninguna firma de FIPS 204 aislaba (§859) ──────────────
+
+def _mensaje_sin_reglas(nombre, marca, origen, inicio, fin, h):
+    """El `cosigned_message` de `tlog-cosignature`, byte a byte y SIN ninguna de sus reglas: lo que
+    `medio.mensaje_cofirmado` se niega a formar. Solo para firmar a mano lo que una regla prohibe."""
+    n, o = nombre.encode("utf-8"), origen.encode("utf-8")
+    return (MD.ETIQUETA + bytes([len(n)]) + n + marca.to_bytes(8, "big") + bytes([len(o)]) + o
+            + inicio.to_bytes(8, "big") + fin.to_bytes(8, "big") + h)
+
+
+def _firma_a_medida(pk, mensaje):
+    """Una firma de una clave a medida (t1 = 0) sobre cualquier mensaje, sin buscar nada: con z = 0 y
+    sin pistas, w~ = A*z - c*t1*2^d = 0, w1 = 0 y c~ = H(mu || w1Encode(0)). El algoritmo 8 la acepta."""
+    mu = M.H(M.H(pk, 64) + bytes([0, 0]) + mensaje, 64)
+    cero = [[0] * 256 for _ in range(M.K)]
+    return _sig_encode(M.H(mu + M.w1_encode(cero), M.BYTES_C), [[0] * 256 for _ in range(M.L)], cero)
+
+
+def _nota_a_medida(clave, tamano, raiz, marca):
+    """Una nota de una sola linea, la del publicador `clave`, firmada a mano sobre el mensaje sin reglas."""
+    firma = _firma_a_medida(clave.bytes, _mensaje_sin_reglas(clave.nombre, marca, clave.nombre, 0, tamano, raiz))
+    return (f"{clave.nombre}\n{tamano}\n{MD.base64_codificar(raiz)}\n\n{MD.PREFIJO_FIRMA}{clave.nombre} "
+            f"{MD.base64_codificar(clave.id + marca.to_bytes(8, 'big') + firma)}\n")
+
+
+def _veredicto(nota, clave):
+    try:
+        MD.verificar_nota(nota, clave)
+        return "ACEPTA"
+    except MD.ErrorDeNota as e:
+        return f"{e.clase}: {e}"
+
+
+def bloque_cinco(pista, publicador):
+    """Las cinco reglas que vivian sin vigilar desde el §810 (README.md, «Los mutantes del propio
+    verificador»): existen en `mldsa44.py` y `medio.py`, y en el kit, pero quitarlas no cambiaba ninguna
+    salida del juez. Cada caso aisla una: el control de cada uno es la misma entrada sin lo que la
+    regla prohibe, y se tiene que aceptar."""
+    # HintBitUnpack, el corte que baja: sobre un polinomio sin pistas, la misma h con otra escritura.
+    if pista is None:
+        caso("un corte que baja sobre un polinomio sin pistas no verifica", False, "sin la firma de la pista")
+    else:
+        pk, mensaje, baja = pista
+        cortes = M.BYTES_C + M.L * M.BYTES_Z + M.OMEGA
+        otra = bytearray(baja)
+        otra[cortes + 1] = 0
+        antes, despues = M.verificar(pk, mensaje, baja), M.verificar(pk, mensaje, bytes(otra))
+        caso("un corte que baja sobre un polinomio sin pistas no verifica: la firma de la pista sobre r0 = 0 con "
+             "los cortes [1, 0, 1, 1] en vez de [1, 1, 1, 1], la misma h escrita de otra manera",
+             list(baja[cortes:]) == [1, 1, 1, 1] and antes is True and despues is False,
+             f"cortes {list(baja[cortes:])}; con [1, 1, 1, 1] {antes}; con [1, 0, 1, 1] {despues}")
+    # mensaje_cofirmado: el subarbol vacio y la marca de 2^63. Firmados a mano con una clave a medida.
+    clave = MD.ClaveDeNota("juez.invalid/a-medida",
+                           M.H(b"juez_medio: otra clave a medida, t1 = 0", 32) + bytes(M.K * M.BYTES_T1))
+    vacia = _veredicto(_nota_a_medida(clave, 0, MD.sha256(b""), 0), clave)
+    otra = _veredicto(_nota_a_medida(clave, 0, MD.sha256(b"no es el arbol vacio"), 0), clave)
+    caso("tamano 0 y una raiz que no es SHA-256 de nada, firmado a mano: FirmaInvalida (con la raiz del arbol "
+         "vacio, ACEPTA)", vacia == "ACEPTA" and otra.startswith("FirmaInvalida:"), f"vacia {vacia}; otra {otra}")
+    raiz = MD.sha256(b"un arbol de una hoja")
+    tope = _veredicto(_nota_a_medida(clave, 1, raiz, MD.I64_MAX), clave)
+    pasa = _veredicto(_nota_a_medida(clave, 1, raiz, MD.I64_MAX + 1), clave)
+    caso("una marca de 2^63, firmada a mano: FirmaInvalida (con 2^63 - 1, ACEPTA)",
+         tope == "ACEPTA" and pasa.startswith("FirmaInvalida:"), f"2^63 - 1 {tope}; 2^63 {pasa}")
+    # nombre_valido, el `+`: una linea ajena con uno en el nombre. Y leer_vkey, el key_id de otra clave.
+    if publicador is None:
+        caso("una linea de firma con un + en el nombre es Malformada", False, "sin la clave del publicador")
+    else:
+        nota, b = leer("pos-05-anclas.txt"), MD.base64_codificar(bytes(5))
+        con_guion = _veredicto(nota + f"{MD.PREFIJO_FIRMA}otro-nombre {b}\n", publicador)
+        con_mas = _veredicto(nota + f"{MD.PREFIJO_FIRMA}otro+nombre {b}\n", publicador)
+        caso("pos-05 con una linea ajena de nombre otro+nombre es Malformada (con otro-nombre, ACEPTA)",
+             con_guion == "ACEPTA" and con_mas == "Malformada: nota mal formada: nombre de clave inválido",
+             f"otro-nombre {con_guion}; otro+nombre {con_mas}")
+    nombre, id_hex, b64 = leer("publicador.vkey").strip().split("+", 2)
+    otro_id = (int(id_hex, 16) ^ 1).to_bytes(4, "big").hex()
+
+    def _leer(texto):
+        try:
+            return "ACEPTA", MD.ClaveDeNota.leer_vkey(texto)
+        except MD.ErrorDeNota as e:
+            return f"{e.clase}: {e}", None
+
+    tal_cual, k = _leer(f"{nombre}+{id_hex}+{b64}")
+    tal_cual_bien = tal_cual == "ACEPTA" and k.id.hex() == id_hex
+    r, _ = _leer(f"{nombre}+{otro_id}+{b64}")
+    caso(f"la vkey del publicador con el key_id {otro_id} (el ultimo bit cambiado) es Clave (tal cual, con "
+         f"{id_hex}, ACEPTA)",
+         tal_cual_bien and r == "Clave: clave: el key_id no es el de esa clave", f"{id_hex} {tal_cual}; {otro_id} {r}")
+
+
 def a_salvo(nombre, bloque, *args):
     """Corre un bloque. Lo que lance sin esperarlo es un ROJO con su nombre, y el juez sigue."""
     try:
@@ -541,12 +637,13 @@ def main():
     claves = a_salvo("1 · las notas", bloque_notas)
     if claves is not None:
         a_salvo("2 · el firmante", bloque_firmante, claves[0])
-    a_salvo("2 · la pista sobre r0 = 0", bloque_pista_en_cero)
+    pista = a_salvo("2 · la pista sobre r0 = 0", bloque_pista_en_cero)
     if claves is not None:
         a_salvo("3 · la unicidad", bloque_unicidad, claves[0])
     a_salvo("4 · la base64", bloque_base64)
     a_salvo("5 · la inclusion", bloque_inclusion)
     a_salvo("6 · el {:?} de Rust", bloque_debug)
+    a_salvo("7 · las cinco reglas", bloque_cinco, pista, claves[0] if claves is not None else None)
     print(f"medio: {ok} de {n} comprobaciones (ML-DSA-44 de FIPS 204, la nota checkpoint y la inclusion de RFC 9162)")
     return 0 if ok == n else 1
 

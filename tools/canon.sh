@@ -753,7 +753,8 @@ fi
 # escribieron otras manos: las 33 notas del §632 (torchwood sobre el crypto/mldsa de Go, y el crate
 # ml-dsa), las vkeys y las lineas de Go rehechas byte a byte por un firmante de prueba, las firmas de
 # frontera de la norma y de UseHint, la unicidad de la escritura de una firma, las 98 sondas de
-# inclusion de transparency-dev y el {:?} de Rust de los nombres. Pin cero, como los otros. ~2 s.
+# inclusion de transparency-dev y el {:?} de Rust de los nombres; y desde el §859, cinco reglas que
+# nada aislaba, con su caso y su control (92 comprobaciones). Pin cero, como los otros. ~2 s.
 if python3 tools/segunda/juez_medio.py > "$OUT/segunda_medio.txt" 2>&1; then
   msg "  OK  $(tail -n 1 "$OUT/segunda_medio.txt")"
 else

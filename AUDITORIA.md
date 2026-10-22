@@ -62145,3 +62145,155 @@ fuera.
 `check_modulos` en 207: el cambio es de una herramienta del bucle, no de un test. El total de sello
 sigue en 1853. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 44 abiertas y 86
 resueltas.
+
+## §859 — los cinco mutantes que vivían del §810 caen: `tools/segunda/juez_medio.py` gana un bloque 7 con cinco casos, uno por regla —el corte que baja sobre un polinomio sin pistas, el hash del subárbol vacío, la marca de 2^63, el `+` en el nombre de una línea de firma y el `key_id` de una vkey—, cada uno con su control, y pasa de 87 a 92 comprobaciones
+
+El commit que lleva este asiento, sobre `7ed7e17` (el §858). Toca `tools/segunda/juez_medio.py`: la
+docstring gana el punto 7 (`:31-36`); `bloque_pista_en_cero` devuelve su clave, su mensaje y su firma
+(`:342`); el bloque 7 es nuevo (`:537-624`); y `main` lo corre (`:640` y `:646`). Toca
+`tools/segunda/README.md`: la fila de `juez_medio.py` (`:15`), la línea «1 octies» (`:52-53`), la
+cuenta de «El medio» (`:271-272`), una fila nueva en su tabla (`:285`), una nota sobre la tabla de
+mutantes (`:325-330`) y «Lo que NO cubre» (`:611-615`). Toca el comentario del bloque del medio en
+`tools/canon.sh` (`:756-757`) y la nota del §810 en la entrada 85 de `BACKLOG.md` (`:763-764`). Y este
+asiento. Ni `medio.py`, ni `mldsa44.py`, ni `verificador.py`, ni código de los crates, ni tests de
+Rust, ni vectores, ni `spec/vectors/HUELLAS.sha256`. Lo escribe y lo commitea Claude, en una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a §859).
+
+Del autor es la tarea: la 4b del encargo, decidida el 2026-10-22. Matar en `juez_medio.py` los cinco
+mutantes que el §810 dejó vivos y declarados (`tools/segunda/README.md`, «Los mutantes del propio
+verificador»), sin vectores nuevos y sin tocar HUELLAS. Las cinco reglas existen: lo que faltaba era
+una comprobación que viera quitar cada una.
+
+El canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol
+limpio, con este asiento en su sitio y sin esta frase: VERDE, 1499 s de reloj (de su arranque a su
+salida) y 1111 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,09
+al empezar. Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los 275 `.rs` de `crates/`
+y de `tools/` (este sello no añade ninguno), y su log lo registra. El aviso del §855 no salió: la
+caché de la sesión está completa. Las 19 filas del nivel, en su pin, con 1853 tests que pasan (la
+suma de la columna «pasan»); la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con
+features (85 s)»; `check_tests` en 2012 y 20 instrumentos; `check_modulos` en 207; las once
+herramientas del bucle «2 ter»; la puerta de los vectores, en 508 ficheros y 1017 líneas;
+`check_catalogo`; el paquete, con «89 de 89 entradas dicen lo que deben (78 .json, 89 con
+entrada)», y el binario `b87724b089924934`; el cable, en 27 de 27, con el adaptador
+`6908b722db271b19`; las once familias, cada una en lo suyo; el juez del medio, con «medio: 92 de 92
+comprobaciones», la cuenta nueva de este sello; la segunda implementación, con el paquete en 89 de
+89, las otras cinco familias en 17, 17, 22, 34 y 27, y sus pares STARK en 34 de 34; el «3
+duodecies», con la cadena en 24 de 24 y el cable de la segunda en 27 de 27; y el artefacto
+reproducible, con el binario `3a01451fb51204ac`, los manifiestos con el paquete en 89/89, y el
+tarball `14745eb3ef788361`. Corrió con un `TMPDIR` propio, y no dejó nada en él.
+
+**Los cinco**, con su línea en `7ed7e17`:
+
+- M1, `mldsa44.py:122`: HintBitUnpack sin `corte < indice` (`if corte > OMEGA:`).
+- M2, `medio.py:344-345`: `mensaje_cofirmado` sin la regla del subárbol vacío (`inicio == fin` con un
+  hash que no es SHA-256 de nada).
+- M3, `medio.py:264`: `nombre_valido` sin el `+`.
+- M4, `medio.py:338`: `mensaje_cofirmado` sin `marca > I64_MAX`.
+- M5, `medio.py:382-383`: `leer_vkey` sin comparar el `key_id`.
+
+**Medido**, en este orden:
+
+1. Sobre `7ed7e17`, cada mutante en una copia de `tools/segunda` en el directorio de la sesión, con
+   `crates/` enlazado para que el juez lea las notas, y corrido con `python3 -B`. El árbol sin mutar,
+   en su copia: exit 0, «medio: 87 de 87». Y M1, M2, M3, M4 y M5: exit 0 y «medio: 87 de 87» cada uno,
+   de 2,1 a 2,2 s. Los cinco siguen vivos.
+2. Con el bloque 7, en copias nuevas del árbol de este sello. Sin mutar: exit 0, «medio: 92 de 92», en
+   1,9 s. Cada mutante da exit 1, «medio: 91 de 92», y un solo `ROJO`, el de su caso:
+   - M1: «un corte que baja sobre un polinomio sin pistas no verifica: …: cortes [1, 1, 1, 1]; con
+     [1, 1, 1, 1] True; con [1, 0, 1, 1] True».
+   - M2: «tamano 0 y una raiz que no es SHA-256 de nada, firmado a mano: FirmaInvalida (…): vacia
+     ACEPTA; otra ACEPTA».
+   - M3: «pos-05 con una linea ajena de nombre otro+nombre es Malformada (…): otro-nombre ACEPTA;
+     otro+nombre ACEPTA».
+   - M4: «una marca de 2^63, firmada a mano: FirmaInvalida (…): 2^63 - 1 ACEPTA; 2^63 ACEPTA».
+   - M5: «la vkey del publicador con el key_id 7057071b (el ultimo bit cambiado) es Clave (tal cual,
+     con 7057071a, ACEPTA): 7057071a ACEPTA; 7057071b ACEPTA».
+3. El arnés de `ancla-cofirmada`, `bash tools/conformidad.sh <copia>/verificador.py
+   spec/vectors/ancla-cofirmada/MANIFIESTO.txt`, con cada copia: «27 de 27» las seis, sin mutar y
+   con M1 a M5. Este sello no le añade entradas, y sigue sin aislarlos.
+4. Dos mutantes del propio juez, para ver que los controles muerden. J1, `_mensaje_sin_reglas` con la
+   etiqueta `subtree/v0` en vez de `subtree/v1`: «90 de 92», con los casos de M2 y M4 en `ROJO`, porque
+   sus controles salen `FirmaInvalida` y no `ACEPTA`. J2, el caso de M1 sin bajar el corte (pone un 1
+   donde ya había un 1): «91 de 92», con ese caso en `ROJO`, porque la firma sin tocar verifica.
+5. El control del caso de M5, que la primera versión de este sello no llevaba: el caso leía sólo la
+   vkey con el `key_id` cambiado. Ahora lee también la vkey tal cual, y exige que se acepte y que su
+   `id` sea `7057071a`. Medido en copias nuevas, con `python3 -B`:
+   - el árbol sin mutar: exit 0, «medio: 92 de 92», en 2,1 s;
+   - M5: exit 1, «91 de 92», con el `ROJO` de su caso que cita arriba el punto 2;
+   - M5b, `leer_vkey` que rechaza toda vkey (`if True:` en vez de `if c.id != ident:`): exit 1, «13
+     de 16». El bloque 1 cae entero, «ErrorDeNota: clave: el key_id no es el de esa clave»; el caso
+     de M3, «sin la clave del publicador»; y el de M5, «7057071a Clave: …; 7057071b Clave: …». Sin el
+     control, este caso lo daba por bueno. Con el arnés de `ancla-cofirmada`, M5b da exit 1, «9 de
+     27»;
+   - J3, el control del juez leyendo el `key_id` cambiado en vez del suyo: exit 1, «91 de 92», con
+     ese caso en `ROJO`, «7057071a Clave: …; 7057071b Clave: …».
+
+**Qué cambia.** El bloque 7, `bloque_cinco`, corre al final, detrás del `{:?}` de Rust. Cada caso
+lleva su control, la misma entrada sin lo que la regla prohíbe, que se tiene que aceptar. Así el caso
+no pasa por una firma mal hecha.
+
+- **M1.** La firma de la pista sobre r0 = 0 del bloque 2 lleva una sola pista, en el polinomio 0: sus
+  cortes son [1, 1, 1, 1]. Con [1, 0, 1, 1] es la misma h escrita de otra manera. El árbol la rechaza;
+  sin la regla, verifica. Es la firma que el README ya describía en el §810.
+- **M2 y M4.** Una clave a medida nueva, t1 = 0, con nombre `juez.invalid/a-medida`. Con z = 0 y sin
+  pistas, w̃ = 0, w1 = 0 y c̃ = H(μ ‖ w1Encode(0)): la firma de cualquier mensaje sale sin buscar nada
+  (`_firma_a_medida`). `_mensaje_sin_reglas` escribe el `cosigned_message` byte a byte, sin ninguna
+  regla. Con eso se firman a mano dos notas que la regla prohíbe: tamaño 0 con la raíz SHA-256 de «no
+  es el arbol vacio», y tamaño 1 con la marca 2^63. Las dos salen `FirmaInvalida`. Sus controles,
+  tamaño 0 con la raíz del árbol vacío y la marca 2^63 − 1, salen `ACEPTA`.
+- **M3.** `pos-05-anclas.txt` con una línea ajena más, `— otro+nombre` y cinco bytes cero en base64:
+  `Malformada`, «nota mal formada: nombre de clave inválido». Con `otro-nombre`, `ACEPTA`.
+- **M5.** La vkey del publicador de torchwood con el último bit del `key_id` cambiado (`7057071b`):
+  `Clave`, «clave: el key_id no es el de esa clave». Su control, la misma vkey tal cual (`7057071a`):
+  `ACEPTA`, con ese `id`.
+
+Las copias, el conductor y sus salidas se borran al acabar.
+
+Sobre `7ed7e17` con este sello, salen con 0 las once herramientas del bucle «2 ter»,
+`python3 tools/check_vectores.py --desde 7ed7e17` (508 ficheros y 1017 líneas) y `check_catalogo`;
+también `check_tests` y `check_modulos`. Sin este asiento, `verificar_citas` daba ROJO por la cita
+al §859 de `BACKLOG.md`, que este asiento resuelve.
+
+**Correcciones**, sobre los ficheros STAGED de este commit:
+
+1. `tools/segunda/README.md:53`, bajo «1 octies»: «⚠️ §859: decia 87 de 87 (§810); los cinco casos
+   del bloque 7 lo llevan a 92».
+2. `tools/segunda/README.md:271-272`, la cuenta de «El medio»: «(⚠️ §859: decía 87 de 87, la cuenta
+   del §810; …)».
+3. `tools/segunda/README.md:325-330`, sobre la lista de los cinco: «⚠️ §859: la tabla y los 24 que
+   caen son la medida del §810, con el juez de 87, y no se han vuelto a medir con el de 92. …». La
+   tabla y sus 17 filas «N de 87» se quedan como del §810.
+4. `BACKLOG.md:763-764`, en la nota del §810 de la entrada 85: «⚠️ §859: los «87/87» son del §810;
+   …».
+
+**Las citas por línea que se mueven**, con los números de `7ed7e17`. En `tools/segunda/README.md`,
+las líneas de debajo de la 52 bajan una; de la 270, dos; de la 282, tres; de la 321, diez; y de la
+601, catorce. En `tools/segunda/juez_medio.py`, las de debajo de la 31 bajan cinco; de la 336, seis;
+de la 530, noventa y seis; y de la 549, noventa y siete. En `tools/canon.sh`, las de debajo de la
+756, una. En `BACKLOG.md`, las de debajo de la 762, dos. Fuera de `AUDITORIA.md`, el árbol no cita
+por línea ninguno de los cuatro en esas zonas, salvo `doc/ecst/VERIFICACION.md` y
+`doc/ecst/borrador/`. Esos dos citan `BACKLOG.md` con las líneas de `71c5aad`: son generados, y en
+`7ed7e17` esas citas ya no apuntaban a su texto. `verificar_citas` los deja fuera con su razón:
+`VERIFICACION.md` en `EXCLUIDOS_LINEA`, «rutas de 71c5aad»; los `.json`, porque sólo lee `.md` y
+`.rs`. Este sello no los corrige. `verificar_citas` da 0 en la v5 y la v5 bis, y la búsqueda de
+`juez_medio.py:` y `segunda/README.md:` sólo sale en asientos. Las citas del triaje a
+`BACKLOG.md:760` y al README son de `7ed7e17`. Las de los asientos anteriores son de su árbol y de su
+fecha.
+
+**Lo que NO hace.**
+
+- No añade vectores ni toca `spec/vectors/HUELLAS.sha256`. M3 y M5 no llevan vector ahora: por
+  decisión del autor, entran por `tools/banco_ancla_cofirmada.sh` en la captura de zkssl/0.5.
+- No toca `medio.py`, `mldsa44.py` ni `verificador.py`: las cinco reglas ya estaban.
+- No vuelve a medir los 24 mutantes de la tabla del §810 con el juez de 92: quedan con su marca.
+- No corre el kit sobre las notas firmadas a mano: no son vectores, y viven sólo en el juez.
+- No cambia los otros seis bloques del juez, ni sus cuentas.
+
+**Lo que es del autor.** Si la tabla de mutantes del §810 se vuelve a medir con el juez de 92.
+
+**Contadores.** Ninguno de Rust se mueve: `check_tests` sigue en 2012 tests declarados y 20
+instrumentos, y `check_modulos` en 207. El total de sello sigue en 1853. El juez del medio pasa de 87
+a 92 comprobaciones; el canon imprime su última línea, y no lleva pin. La puerta de los vectores sigue
+en 508 ficheros y 1017 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 44
+abiertas y 86 resueltas.
