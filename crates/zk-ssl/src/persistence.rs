@@ -1046,7 +1046,7 @@ impl SovereignLayer {
     /// de un hash (`SECURITY.md` §3.14). Desde el §812 la migracion es el
     /// recifrado de la E4 con la misma frase (`recifrar_en_hermano`, al
     /// final): un directorio nuevo con lo vivo, un cambio de nombre y el viejo
-    /// borrado entero. Entero o nada sigue valiendo.
+    /// borrado entero. Entero o nada sigue valiendo. ⚠️ §828: y desde el §828 solo la hace el dueno del libro: la apertura con clave de otro usuario -root, en un mantenimiento-, o la de un libro cuyo `db`, `conf` o `blobs/` son de otro usuario que su directorio, rehusa al nacer el hermano, en su paso 1, y falla entera sin copiar, sellar ni renombrar nada (`es_del_dueno`, al final); pero despues de que sled abra el libro, y esa apertura hace en el lo que hace cualquier apertura de quien abre -con el libro sin asentar, un `snap.*` suyo y con su umask-, y antes crea el cerrojo del libro, suyo, si no estaba: aqui no se compara antes de abrir, como en `recifrar` (`quien_recifra_es_el_dueno`, al final), porque que el libro es v1 lo dice lo que guarda sled, y rehusar antes toda apertura con clave de otro usuario rehusaria tambien la de un v2, que no migra (deducido; SECURITY.md §3.17); hasta el §828, el libro migrado quedaba del usuario y del grupo de quien lo abria.
     fn migrar_a_kdf_v2(
         &mut self,
         path: &str,
@@ -1277,11 +1277,11 @@ impl SovereignLayer {
     /// identidades retiradas del §802 y su raiz-; y lo abre tambien el codigo
     /// del §702, con la frase nueva: el de antes del §802, como a cualquier
     /// libro desde el §802, sin hacer valer las identidades retiradas
-    /// (SECURITY.md §3.13).
+    /// (SECURITY.md §3.13). ⚠️ §828: y desde el §828 solo lo recifra el dueno del directorio del libro y de su `db`, su `conf` y su `blobs/`: otro usuario rehusa antes de tomar el cerrojo del libro y de abrirlo, sin crear, abrir ni escribir nada del libro ni de su cerrojo (`quien_recifra_es_el_dueno`, al final; que compare ahi es de la sesion, y reversible), y, de respaldo -si esa comparacion no pudo crear su sonda-, en el paso 1, sin copiar nada (`es_del_dueno`), aunque despues de abrir el libro con sled en el paso d, que hace en el lo que hace cualquier apertura de quien abre; y la copia toma el grupo y los modos de cada fichero y del directorio (`dar_lo_del_libro`), o, si su dueno no es del grupo del libro, se queda en el grupo con que nacio -el principal de quien recifra, o el del padre con setgid- y sin bits de grupo ni de otros; salvo el `snap.*` que sled escriba al reabrirlo en el paso 8, de quien recifra y con su umask, como en cualquier apertura; hasta el §828, el libro recifrado quedaba del usuario y del grupo de quien recifraba (SECURITY.md §3.17).
     ///
     /// **Lo que exige.** El libro existe, es un directorio de verdad -no un
     /// enlace- y solo lleva lo que escribe sled; nadie lo tiene abierto; y se
-    /// puede escribir en su directorio padre, con sitio para una copia. Los
+    /// puede escribir en su directorio padre, con sitio para una copia (⚠️ §828: y, en Unix, quien recifra es el dueno del libro y de su `db`, su `conf` y su `blobs/`). Los
     /// nombres `<libro>.recifrando` y `<libro>.retirado` son del recifrado: un
     /// directorio de sled con uno de ellos junto al libro lo BORRA la apertura
     /// siguiente (`resolver_restos`), asi que no sirven para copias. ⚠️ §816: y el
@@ -1330,7 +1330,7 @@ impl SovereignLayer {
         let nueva = nueva.fijar(&crate::crypto::Kdf::nuevo())?;
         // ⚠️ §816: el cerrojo del libro, de aqui al final. La apertura con la vieja
         //    de d, y su migracion, lo encuentran tomado por este hilo.
-        let cerrojo = Cerrojo::tomar(path, Quien::Recifrado)?;
+        let cerrojo = quien_recifra_es_el_dueno(path).and_then(|()| Cerrojo::tomar(path, Quien::Recifrado))?; // ⚠️ §828: antes de tomarlo y de abrir el libro, que quien recifra sea su dueno y el libro de un solo dueno (`quien_recifra_es_el_dueno`, al final): si no, rehusa sin crear, abrir ni escribir nada del libro ni de su cerrojo; si no lo puede saber -la sonda no se crea-, sigue, y rehusa de respaldo el paso 1, despues de tomar el cerrojo -y de crearlo, si no estaba- y de abrir el libro; y si la sonda no se puede borrar, rehusa nombrandola
         // b. Lo que dejara una muerte anterior.
         resolver_restos(path, &cerrojo)?;
         // c. El libro existe, es de sled, y nadie lo tiene abierto. Sin esto,
@@ -1411,7 +1411,7 @@ impl SovereignLayer {
             return Err(ya_existe(&v));
         }
 
-        // --- 1. R nace vacio y con 0700; si ya existe, no es nuestro ---
+        // --- 1. R nace vacio y con 0700; si ya existe, no es nuestro --- ⚠️ §828: y si no es del dueno del libro y de su `db`, su `conf` y su `blobs/` -nace del usuario del proceso-, o ya no es el directorio vacio que nacio, se borra y se rehusa
         let mut nace = std::fs::DirBuilder::new();
         #[cfg(unix)]
         {
@@ -1425,7 +1425,7 @@ impl SovereignLayer {
 
         // --- 2 a 4: copiar, verificar leyendo del disco, sincronizar ---
         // ⚠️ §816: y, antes del compromiso, que el cerrojo del libro siga en su sitio.
-        let preparado = preparar_hermano(&db, &p, &r, &padre, &vieja, &nueva, &cabecera);
+        let preparado = es_del_dueno(&p, &r, queda).and_then(|nacio| preparar_hermano(&db, &p, &r, &padre, &vieja, &nueva, &cabecera, nacio)); // ⚠️ §828: antes de copiar nada, que R sea el directorio vacio que nacio y del dueno del libro y de su `db`, su `conf` y su `blobs/` (`es_del_dueno`, al final), con su dispositivo y su inodo, `nacio`, para el paso 4; si no, el `deshacer_hermano` de abajo lo borra
         if let Err(e) = preparado.and_then(|()| cerrojo.sigue("recifrar:4")) {
             deshacer_hermano(&r, &padre);
             return Err(e);
@@ -1482,19 +1482,19 @@ impl SovereignLayer {
 
 /// §812 · Pasos 2 a 4 del recifrado, todos antes del compromiso: si uno falla,
 /// quien llama borra R y el libro sigue como estaba.
-fn preparar_hermano(
+#[allow(clippy::too_many_arguments)] fn preparar_hermano( // ⚠️ §828: con `nacio`
     db: &sled::Db,
     p: &Path,
     r: &Path,
     padre: &Path,
     vieja: &crate::crypto::LedgerKey,
     nueva: &crate::crypto::LedgerKey,
-    cabecera: &[u8],
+    cabecera: &[u8], nacio: Identidad, // ⚠️ §828: el dispositivo y el inodo de R al nacer (`es_del_dueno`), que el paso 4 exige
 ) -> Result<(), LayerError> {
     punto(1)?;
     // R sigue en 0700 hasta el final del paso 4: sled crea sus ficheros con la
     // umask -un `db` en 0644-, y mientras no tomen los modos de P solo entra
-    // en R su dueno. Los permisos de P los toma alli, ficheros y directorio.
+    // en R su dueno. Los permisos de P los toma alli, ficheros y directorio. ⚠️ §828: y antes que los permisos, el grupo de P, por descriptor (`dar_lo_del_libro`, al final); el dueno de R ya es el del libro y el de su `db`, su `conf` y su `blobs/` (`es_del_dueno`, en el paso 1).
 
     // --- 2. Copiar lo vivo, sellado con la nueva, en UN lote ---
     {
@@ -1593,13 +1593,13 @@ fn preparar_hermano(
     // --- 4. Los permisos de P, y sincronizar: R entero, y su nombre en el padre ---
     // Primero los modos de los ficheros y despues el del directorio, que hasta
     // aqui era 0700: sin esto, sled dejaria la copia con la umask, y un 0700 o
-    // un 0600 del operador pasarian a 0755 o a 0644.
-    copiar_modos(p, r)?;
-    let permisos = std::fs::metadata(p).map_err(|e| error_io(p, e))?.permissions();
-    std::fs::set_permissions(r, permisos).map_err(|e| error_io(r, e))?;
+    // un 0600 del operador pasarian a 0755 o a 0644. ⚠️ §828: y antes que los modos de cada uno, su grupo, por su descriptor y sin seguir un enlace; el directorio, el ultimo, despues de sincronizar: sin el grupo, la copia era del grupo de quien recifra o migra.
+    dar_lo_del_libro(p, r, nacio)?; // ⚠️ §828: era `copiar_modos(p, r)?;`, que solo daba los modos de los ficheros
+    // ⚠️ §828: aqui iban `let permisos = std::fs::metadata(p)?.permissions();` y, debajo, el modo del
+    // directorio por su ruta, `std::fs::set_permissions(r, permisos)?`: lo da ya `dar_lo_del_libro`, el ultimo.
     // sled no sincroniza `conf` ni el nombre de `snap.*`; sin esto, un corte
     // de corriente tras el compromiso podria dejar un R incompleto.
-    sincronizar_arbol(r)?;
+    // ⚠️ §828: aqui iba `sincronizar_arbol(r)?;`: lo hace ya `dar_lo_del_libro`, con R aun en 0700, antes de dar al directorio su grupo y su modo.
     sincronizar(padre)?;
     punto(4)?;
     Ok(())
@@ -1633,7 +1633,7 @@ fn deshacer_hermano(r: &Path, padre: &Path) {
 /// hermano que no es un directorio de verdad o que lleva algo que no es de
 /// sled. Nunca crea un libro vacio donde habia un recifrado a medias (⚠️ §816:
 /// hasta el §816, solo con nadie mas a la vez; una apertura que miraba antes del
-/// compromiso de un recifrado vivo y abria despues lo creaba).
+/// compromiso de un recifrado vivo y abria despues lo creaba). ⚠️ §828: y desde el §828 rehusa tambien, sin tocar nada, un `.recifrando` que no es -con su `db`, su `conf` y su `blobs/`- del dueno del libro -el del directorio de P y de su `db`, su `conf` y su `blobs/` o, si falta P, los de V-: no lo borra ni lo pone en el sitio del libro (`recifrando_del_dueno`, al final).
 ///
 /// ⚠️ §816: quien llama tiene el cerrojo del libro (`cerrojo`), y lo tiene hasta
 /// despues de `sled::open`: ninguna apertura ni recifrado de la capa desde el §816,
@@ -1653,7 +1653,7 @@ fn deshacer_hermano(r: &Path, padre: &Path) {
 /// el libro al lado, la apertura BORRA un `<libro>.recifrando` o un
 /// `<libro>.retirado` de sled que nadie tenga abierto -una copia de seguridad
 /// con ese nombre, tambien-. Lo que no es de sled no lo toca. ⚠️ §816: y un
-/// tercero, `<libro>.cerrojo`, que la capa crea y no borra nunca.
+/// tercero, `<libro>.cerrojo`, que la capa crea y no borra nunca. ⚠️ §828: y un `.recifrando` que no es del dueno del libro no lo borra: rehusa.
 fn resolver_restos(path: &str, _cerrojo: &Cerrojo) -> Result<(), LayerError> {
     let Some((p, r, v)) = hermanos(path) else {
         return Ok(());
@@ -1685,7 +1685,7 @@ fn resolver_restos(path: &str, _cerrojo: &Cerrojo) -> Result<(), LayerError> {
         // (false, false, true); sin ningun hermano ya se volvio arriba.
         _ => return Err(rehusa("esta su `.retirado` y no el libro")),
     }
-    for d in [&p, &r, &v] {
+    recifrando_del_dueno(&p, &r, &v, hay_p, hay_r)?; for d in [&p, &r, &v] { // ⚠️ §828: antes de actuar, que un `.recifrando` sea del dueno del libro (al final)
         if existe(d)? {
             cerrojo_libre(d)?;
         }
@@ -2139,8 +2139,8 @@ fn sincronizar_arbol(dir: &Path) -> Result<(), LayerError> {
 /// §812 · Los modos de los ficheros del libro pasan a los de la copia: cada uno
 /// toma el de su homonimo en P, y el que no lo tiene -los `snap.*` llevan su
 /// numero-, el de `P/db`. Sled los crea con la umask, y un 0600 del operador
-/// pasaria a 0644. Fuera de Unix no hay modos que copiar.
-fn copiar_modos(p: &Path, r: &Path) -> Result<(), LayerError> {
+/// pasaria a 0644. Fuera de Unix no hay modos que copiar. ⚠️ §828: y no daba el grupo, que era el de quien recifraba: desde el §828, en Unix, no la llama nadie -el grupo y los modos los da `dar_lo_del_libro`, al final, por descriptor y sin seguir un enlace-, y fuera de Unix la llama `dar_lo_del_libro`, como antes; se queda para que no se mueva ninguna linea.
+#[cfg_attr(unix, allow(dead_code))] fn copiar_modos(p: &Path, r: &Path) -> Result<(), LayerError> {
     #[cfg(unix)]
     {
         let del_db = std::fs::metadata(p.join("db")).map_err(|e| error_io(p, e))?.permissions();
@@ -2230,7 +2230,7 @@ fn punto(_: u8) -> Result<(), LayerError> {
 // `recifrar:0`, `recifrar:4` y `recifrar:5` (la pieza de la E4), y
 // `cerrojo:tras_mirar` (`abrir_el_cerrojo`, entre mirar el nombre y abrirlo). Los de
 // `Cerrojo::sigue` van justo antes de mirar que el cerrojo siga en su sitio. Fuera
-// de los tests no hace nada y no se compila nada, como `punto`.
+// de los tests no hace nada y no se compila nada, como `punto`. ⚠️ §828: y `recifrar:1`, al empezar `es_del_dueno`, en el paso 1 de la pieza, y `recifrar:grupo`, al empezar `dar_lo_del_libro`, en el paso 4; y `recifrar:sonda`, en `quien_recifra_es_el_dueno`, con la sonda creada y antes de borrarla.
 #[cfg(test)]
 pub(crate) type Gancho = std::sync::Arc<dyn Fn(&'static str) + Send + Sync>;
 #[cfg(test)]
@@ -2290,4 +2290,509 @@ mod tests_cerrojo {
         );
         assert!(!<SondaSync<super::Cerrojo>>::ES_SYNC, "el cerrojo del libro es Sync");
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ⚠️ §828: EL LIBRO DE OTRO DUENO NO SE RECIFRA NI SE MIGRA, Y LA COPIA TOMA EL GRUPO DEL LIBRO. Va al
+// final del fichero, como el §802 y el §816, para que las citas `persistence.rs:linea` de los
+// documentos no se muevan: las tres llamadas van en lineas que ya estaban -la guarda, en la del paso 1
+// de `recifrar_en_hermano` que llama a `preparar_hermano`; el grupo, en la de `copiar_modos`, en el
+// paso 4; y la de `resolver_restos`, en la de su vuelta por los cerrojos-, y lo que el paso 1 le pasa
+// al 4, `nacio`, en dos lineas de la firma de `preparar_hermano`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// ⚠️ §828 · **Quien recifra o migra tiene que ser el dueno del libro.** Hasta el §828, R -el
+/// `.recifrando`, que crea el proceso, y los ficheros que sled crea dentro- nacia del usuario y del
+/// grupo de quien recifraba o migraba -o del grupo del padre, si tiene setgid-; el paso 4 le daba solo
+/// los modos del libro (`copiar_modos`), y el paso 6 lo ponia en su sitio: recifrado o migrado por
+/// root, el libro pasaba a ser de root y su dueno ya no lo abria (`SECURITY.md` §3.17). La migracion
+/// corre en toda apertura con clave de un libro de la version 1.
+///
+/// Lo del autor (21-10-2026, en el chat) es una eleccion: a una pregunta de opcion multiple de la
+/// sesion, eligio la opcion «Rehusar si no es el dueño (Recomendado)», cuya descripcion, escrita por la
+/// sesion, se cita entera en `SECURITY.md` §3.17. Todo lo demas es de la sesion, y reversible: como lee
+/// esa descripcion (abajo, «Nunca se cambia el usuario de nada»), y donde y como. En el recifrado,
+/// `recifrar` compara lo mismo antes de tomar el cerrojo del libro y de abrirlo (`quien_recifra_es_el_dueno`,
+/// al final), y esto queda de respaldo -con test, si la sonda no se crea-; en la migracion, es lo unico. En Unix, en cuanto nace
+/// R (el paso 1), se compara su dueno -el usuario del proceso, que lo acaba de crear- con el del
+/// directorio del libro y con el de su `db`, su `conf` y su `blobs/` (`de_quien_es`): los que sled abre
+/// para escribir, y los que el paso 6 pondria de quien recifra. Si alguno no es el mismo, R, que esta
+/// vacio, se borra (`deshacer_hermano`), y se rehusa con `Malformed`: el error nombra lo que no es
+/// suyo, dice de quien es, quien intenta recifrarlo o migrarlo, que asi quedaria suyo, y que se haga
+/// como su dueno. Un libro con el directorio de un usuario y su `db`, su `conf` o su `blobs/` de otro
+/// -el directorio de un `install -d -o root -g svc -m 2770` con los ficheros del servicio- no lo
+/// recifra ni lo migra ninguno de los dos: falla cerrado, y el error lo dice. Los `snap.*` no se
+/// comparan: una apertura de root deja uno suyo en el libro de otro sin que el libro deje de ser de su
+/// dueno, y rehusar por el seria de mas. Antes de copiar, sellar o renombrar nada: no deja
+/// `.recifrando` ni `.retirado`, y no cambia el dueno, el grupo ni los modos de lo que habia. La
+/// apertura que tendria que migrar falla entera: no se abre sin migrar. Lo que no evita en la
+/// migracion, por ir la guarda aqui: la negativa llega despues de que la capa abra el libro con sled
+/// -abrirlo es lo que dispara la migracion-, y esa apertura hace en el libro lo que sled hace en
+/// cualquier apertura, de quien abre: con el libro sin asentar y la umask 0077 -o cualquier umask que
+/// quite la lectura a otros, como la 0027 para quien no es del grupo 0 (deducido)-, la de root deja un
+/// `snap.*` de 0:0 que su dueno no lee, y su dueno no abre el libro hasta que root se lo de o lo quite;
+/// y antes, quien abre crea el cerrojo del libro, suyo, si no estaba. Aqui no se puede comparar antes
+/// de abrir: que el libro es v1 lo dice lo que guarda sled, y rehusar antes toda apertura con clave de
+/// otro usuario rehusaria tambien la de un v2, que no migra, y la opcion elegida no dice eso
+/// (deducido; `SECURITY.md` §3.17, «Lo que no hace»). En el recifrado, lo mismo solo si la comparacion
+/// de antes no pudo crear su sonda.
+///
+/// R tiene que ser, ademas, lo que nacio: un directorio, sin seguir un enlace, y vacio; si no, se
+/// rehusa igual. Lo que devuelve es su dispositivo y su inodo, que el paso 4 exige antes de darle a
+/// nada el grupo y los modos del libro (`dar_lo_del_libro`): quien pudiera escribir en el padre y
+/// cambiara R por otro directorio antes de esa comprobacion no haria que root le diera el grupo y los
+/// modos del libro a lo que lleve; despues de ella, si a lo del dueno (en `dar_lo_del_libro`, deducido). Nunca se cambia el usuario de nada: lo que el paso 6 pone en el sitio del libro es de quien
+/// recifra, que es el dueno del directorio del libro y de su `db`, su `conf` y su `blobs/`. Pero root,
+/// cuando es el dueno del libro, si cambia el grupo -`fchown(fd, None, Some(gid))`, en
+/// `dar_grupo_y_modo`- de lo que el mismo creo dentro de un R suyo con 0700, y de R; a lo que no creo
+/// -un enlace, un enlace duro, una entrada de otro dueno, otro directorio en el sitio de R que no esta
+/// vacio al compararlo aqui o que en el paso 4 tiene otro dispositivo u otro inodo- no le da grupo ni
+/// modos: rehusa, y el recifrado que rehusa borra R con lo que lleve (`deshacer_hermano`, como desde el
+/// §812). Lo que no alcanza esa guarda esta en `SECURITY.md` §3.17, «Lo que no hace»: otro directorio
+/// vacio del dueno del libro, puesto en el sitio de R antes de compararlo, recibe la copia y el grupo
+/// como el de verdad, y uno puesto entre la comprobacion del paso 4 y su vuelta por las entradas da el
+/// grupo y los modos a las suyas que sean del dueno (`dar_lo_del_libro`; deducido, sin test). Esa es la lectura que hace
+/// la sesion del «Nunca hace chown como root» de la opcion elegida: que no cambia el usuario de nada, ni
+/// el grupo ni los modos de lo que no creo; el grupo de lo suyo, si. Fuera de Unix, como antes: no se
+/// compara nada.
+fn es_del_dueno(p: &Path, r: &Path, queda: &str) -> Result<Identidad, LayerError> {
+    pausa("recifrar:1");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let de_r = std::fs::symlink_metadata(r).map_err(|e| error_io(r, e))?;
+        if !de_r.is_dir() || std::fs::read_dir(r).map_err(|e| error_io(r, e))?.next().is_some() {
+            return Err(rehusa_dar(r, "no es el `.recifrando` que nacio en el paso 1, un directorio vacio"));
+        }
+        let de_quien = de_r.uid();
+        let duenos = de_quien_es(p)?;
+        comparar_duenos(p, &duenos, de_quien, queda)?;
+        Ok(identidad(&de_r))
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (p, r, queda);
+        Ok(())
+    }
+}
+
+/// ⚠️ §828 · De quien es un libro: el usuario de su directorio y el de su `db`, su `conf` y su `blobs/`,
+/// los que haya, sin seguir enlaces; el directorio, el primero. Lo miran `es_del_dueno` y
+/// `recifrando_del_dueno`.
+#[cfg(unix)]
+fn de_quien_es(libro: &Path) -> Result<Vec<(PathBuf, u32)>, LayerError> {
+    use std::os::unix::fs::MetadataExt;
+    let mut out = Vec::new();
+    for (i, ruta) in [libro.to_path_buf(), libro.join("db"), libro.join("conf"), libro.join("blobs")].into_iter().enumerate() {
+        match std::fs::symlink_metadata(&ruta) {
+            Ok(m) => out.push((ruta, m.uid())),
+            Err(e) if i > 0 && e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(error_io(&ruta, e)),
+        }
+    }
+    Ok(out)
+}
+
+/// ⚠️ §828 · **El paso 4 del recifrado y de la migracion v1->v2: R toma el grupo y los modos del
+/// libro**, no solo los modos. Hasta el §828 tomaba solo los de los ficheros (`copiar_modos`) y el del
+/// directorio por su ruta, y el grupo era el del proceso -o el del padre, si tiene setgid-: recifrado
+/// o migrado por su dueno con otro grupo principal, el grupo del libro perdia la lectura y el principal
+/// del dueno la ganaba (`SECURITY.md` §3.17). El dueno ya es el del directorio del libro y el de su
+/// `db`, su `conf` y su `blobs/`: lo exige `es_del_dueno`, en el paso 1.
+///
+/// Cada entrada de R -`conf`, `db`, los `snap.*`, `blobs/` y lo que lleve `blobs/`- toma el grupo y
+/// los modos de su homonimo en P, y la que no lo tiene -un `snap.*` o un blob llevan su numero-, los de
+/// `P/db`; el directorio R, el ultimo, los de P. La regla es la de la exportacion de la instantanea (la
+/// 120), sin el dueno (`dar_grupo_y_modo`): primero el grupo, `fchown` con el dueno en `None`
+/// (`snapshot::cambiar_dueno`, con su gancho `FALLAR_DUENO`), que el dueno de un fichero puede poner si
+/// es uno de sus grupos, y root, cualquiera; si no se puede, la entrada se queda sin los bits de grupo
+/// ni los de otros (`& 0o700`), que con otro grupo alcanzarian a otros; y despues los modos, tambien el
+/// setuid, que el `chown` de un fichero quita siempre, y el setgid, que quita si el fichero tiene el bit
+/// x del grupo (medido en la sesion, en Linux 6.18: un `fchown` de root deja 2640 en 2640 y lleva 2650
+/// a 0650 y 4640 a 0640). La descripcion de la opcion que eligio el autor (21-10-2026) decia «Si es el
+/// dueño, conserva el grupo del libro si es uno de los suyos; si no, quita los bits de grupo y de otros,
+/// como la 120». Leer «uno de los suyos» como el que el `fchown` deja poner -a root, cualquiera, aunque
+/// no sea de sus grupos-, y quitar los bits tambien si el `fchown` falla por otra cosa, es de la
+/// sesion, y reversible. Quitarlos y seguir tiene, ademas, una razon de la sesion: rehusar dejaria sin
+/// abrir el libro v1 de un dueno que no es del grupo del libro, porque abrirlo es migrarlo (deducido).
+///
+/// **Sin seguir un enlace.** Antes de tocar nada, R tiene que ser un directorio de verdad, del dueno
+/// del libro y con 0700, y el que nacio en el paso 1 -su dispositivo y su inodo, `nacio`, de
+/// `es_del_dueno`-, en el que solo entra su dueno. Cada entrada se abre
+/// solo si es un fichero o un directorio de verdad (`abrir_sin_seguir`: lo que dice su nombre sin
+/// seguir enlaces, antes y despues de abrirla, y lo abierto son lo mismo, dispositivo e inodo; en Linux
+/// x86 y arm, ademas con `O_NOFOLLOW`), del dueno de R, y, si es un fichero, con un solo nombre: un
+/// enlace duro no pasa. El grupo y los modos se ponen por el descriptor. Un enlace o lo que no es un
+/// fichero ni un directorio, en R o en su sitio, un directorio dentro de `blobs/`, una entrada de otro
+/// dueno o con otro nombre, o algo que cambie mientras se abre, hace rehusar con `Malformed`, antes del
+/// compromiso: el recifrado borra R y el libro sigue como estaba. Esas negativas son de la sesion, y
+/// reversibles: fallan cerrado. Lo que no alcanza: `std` no tiene
+/// `openat` ni `fchownat`, y cada mirada resuelve la ruta otra vez; un cambio que se deshace entre dos
+/// miradas no se ve, y dentro de R solo puede hacerlo su dueno, o root. Y el hueco entre la
+/// comprobacion de que `dir` es el R que nacio y la vuelta por sus entradas, que `dar_lo_de_dentro` lee
+/// por la ruta (`read_dir(ruta)`) y abre por la ruta: si en ese hueco alguien pone otro directorio en
+/// el sitio de R, las entradas de ese otro que sean del dueno de R -el del libro, que es quien recifra-
+/// y, si son ficheros, con un solo nombre, toman el grupo y los modos de su homonimo en el libro, o los
+/// de `db`, y lo que lleve un directorio suyo de dentro, igual; las demas hacen rehusar. `sigue_siendo`
+/// ve el cambio al acabar las entradas y rehusa, pero despues de darlos; al directorio puesto no se le
+/// da ni el grupo ni el modo del libro, y el recifrado que rehusa borra despues lo que haya en el sitio
+/// de R, si quien lo puso no lo ha quitado antes. Desde el §828 le da tambien el GRUPO del libro; hasta el
+/// §828, `copiar_modos` daba, por la ruta y desde el paso 4 hasta el 6, solo los modos a lo que hubiera
+/// alli, de quien fuera. Puede hacerlo solo quien escribe en el padre del libro -sin el bit sticky, o su
+/// dueno, o root-, y con un directorio que ya este en ese padre, porque llevar un directorio a otro
+/// padre pide escribir en el (`rename(2)`). Lo que gana: nada que no fuera ya del dueno del libro -lo
+/// de quien hace el cambio, si no es el dueno, hace rehusar-; si, que lo del dueno que hubiera en ese
+/// directorio tome el grupo y los modos del libro, y lo lea el grupo del libro si puede entrar en el,
+/// porque su modo no se toca. Todo esto, deducido del codigo, sin test (`SECURITY.md` §3.17, «Lo que no
+/// hace»).
+///
+/// Despues de las entradas y antes que el directorio, sincroniza R entero (`sincronizar_arbol`, que el
+/// paso 4 hacia despues de darle al directorio su modo): asi abre por su ruta lo que hay en R mientras R
+/// sigue en 0700, y no cuando ya lo alcanza el grupo del libro. El directorio, con su grupo y su modo,
+/// se sincroniza por su descriptor.
+///
+/// Fuera de Unix, como antes del §828: `copiar_modos` -que alli no hace nada-, los permisos de P en R y
+/// `sincronizar_arbol`.
+fn dar_lo_del_libro(p: &Path, r: &Path, nacio: Identidad) -> Result<(), LayerError> {
+    pausa("recifrar:grupo");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let del_libro = de_verdad(p, true)?;
+        let del_db = de_verdad(&p.join("db"), false)?;
+        let dir = abrir_sin_seguir(r)?;
+        let de_r = dir.metadata().map_err(|e| error_io(r, e))?;
+        if identidad(&de_r) != nacio || !de_r.is_dir() || de_r.uid() != del_libro.uid() || de_r.mode() & 0o077 != 0 {
+            return Err(rehusa_dar(
+                r,
+                "no es el `.recifrando` que nacio en el paso 1, un directorio del dueno del libro con 0700",
+            ));
+        }
+        dar_lo_de_dentro(&dir, r, p, de_r.uid(), &del_libro, &del_db, true)?;
+        sincronizar_arbol(r)?;
+        sigue_siendo(r, &dir)?;
+        dar_grupo_y_modo(&dir, r, &del_libro)?;
+        dir.sync_all().map_err(|e| error_io(r, e))?;
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = nacio;
+        copiar_modos(p, r)?;
+        let permisos = std::fs::metadata(p).map_err(|e| error_io(p, e))?.permissions();
+        std::fs::set_permissions(r, permisos).map_err(|e| error_io(r, e))?;
+        sincronizar_arbol(r)?;
+    }
+    Ok(())
+}
+
+/// ⚠️ §828 · Las entradas de `dir` -abierto, y en `ruta`-, cada una con el grupo y los modos de su
+/// homonimo en `p`, o de `P/db` si es un fichero sin homonimo, o de P si es un directorio sin el; y, si
+/// `bajar`, antes que un directorio de dentro -`blobs/`-, lo que lleva. `uid` es el dueno de R.
+#[cfg(unix)]
+fn dar_lo_de_dentro(
+    dir: &std::fs::File,
+    ruta: &Path,
+    p: &Path,
+    uid: u32,
+    del_libro: &std::fs::Metadata,
+    del_db: &std::fs::Metadata,
+    bajar: bool,
+) -> Result<(), LayerError> {
+    use std::os::unix::fs::MetadataExt;
+    for e in std::fs::read_dir(ruta).map_err(|e| error_io(ruta, e))? {
+        let e = e.map_err(|e| error_io(ruta, e))?;
+        let hijo = e.path();
+        let f = abrir_sin_seguir(&hijo)?;
+        let m = f.metadata().map_err(|x| error_io(&hijo, x))?;
+        if m.uid() != uid {
+            return Err(rehusa_dar(&hijo, "no es del dueno del `.recifrando`: no lo creo este recifrado"));
+        }
+        if m.is_file() && m.nlink() != 1 {
+            return Err(rehusa_dar(&hijo, "tiene otro nombre, un enlace duro: no lo creo este recifrado"));
+        }
+        let homonimo = p.join(e.file_name());
+        let de = match std::fs::symlink_metadata(&homonimo) {
+            Ok(h) if (m.is_dir() && h.is_dir()) || (m.is_file() && h.is_file()) => h,
+            _ if m.is_dir() => del_libro.clone(),
+            _ => del_db.clone(),
+        };
+        if m.is_dir() {
+            if !bajar {
+                return Err(rehusa_dar(&hijo, "un directorio dentro de `blobs/` no es de sled"));
+            }
+            dar_lo_de_dentro(&f, &hijo, &homonimo, uid, del_libro, del_db, false)?;
+        }
+        dar_grupo_y_modo(&f, &hijo, &de)?;
+    }
+    sigue_siendo(ruta, dir)
+}
+
+/// ⚠️ §828 · La regla de la 120 sin el dueno: el grupo de `de` (`fchown` con el dueno en `None`) y, si se
+/// pudo, sus modos; si no, sus modos sin los bits de grupo ni los de otros. Por el descriptor.
+#[cfg(unix)]
+fn dar_grupo_y_modo(f: &std::fs::File, ruta: &Path, de: &std::fs::Metadata) -> Result<(), LayerError> {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let con_su_grupo = crate::snapshot::cambiar_dueno(f, None, Some(de.gid())).is_ok();
+    let modo = if con_su_grupo { de.mode() & 0o7777 } else { de.mode() & 0o700 };
+    f.set_permissions(std::fs::Permissions::from_mode(modo)).map_err(|e| error_io(ruta, e))
+}
+
+/// ⚠️ §828 · Abre lo que hay en `ruta` solo si es un fichero o un directorio de verdad: lo que dice su
+/// nombre sin seguir enlaces, antes y despues de abrirlo, y lo abierto son lo mismo -dispositivo e
+/// inodo-. Donde se sabe su valor sin `libc` -Linux en x86 y en arm-, se abre ademas con `O_NOFOLLOW`,
+/// y un enlace que aparezca entre mirar y abrir no se abre.
+#[cfg(unix)]
+fn abrir_sin_seguir(ruta: &Path) -> Result<std::fs::File, LayerError> {
+    let antes = std::fs::symlink_metadata(ruta).map_err(|e| error_io(ruta, e))?;
+    if !(antes.is_file() || antes.is_dir()) {
+        return Err(rehusa_dar(ruta, "no es un fichero ni un directorio de verdad (un enlace no se sigue)"));
+    }
+    let f = abrir_sin_enlace(ruta).map_err(|e| {
+        if O_NOFOLLOW != 0 && e.raw_os_error() == Some(ELOOP) {
+            rehusa_dar(ruta, "se cambio por un enlace mientras se abria, y un enlace no se sigue")
+        } else {
+            error_io(ruta, e)
+        }
+    })?;
+    if identidad(&antes) != identidad(&f.metadata().map_err(|e| error_io(ruta, e))?) {
+        return Err(rehusa_dar(ruta, "cambio mientras se abria (un enlace no se sigue)"));
+    }
+    sigue_siendo(ruta, &f)?;
+    Ok(f)
+}
+
+/// ⚠️ §828 · `File::open`, con `O_NOFOLLOW` donde se sabe su valor sin `libc`: el de la ABI de Linux en
+/// x86 y x86_64 (`0o400000`) y en arm y aarch64 (`0o100000`). En los demas, 0: no se pone, y la guarda
+/// es solo la del tipo y el inodo de `abrir_sin_seguir`. `std` no lo da (§816).
+#[cfg(unix)]
+pub(crate) fn abrir_sin_enlace(ruta: &Path) -> std::io::Result<std::fs::File> {
+    use std::os::unix::fs::OpenOptionsExt;
+    std::fs::OpenOptions::new().read(true).custom_flags(O_NOFOLLOW).open(ruta)
+}
+
+#[cfg(all(target_os = "linux", any(target_arch = "x86", target_arch = "x86_64")))]
+pub(crate) const O_NOFOLLOW: i32 = 0o400000;
+#[cfg(all(target_os = "linux", any(target_arch = "arm", target_arch = "aarch64")))]
+pub(crate) const O_NOFOLLOW: i32 = 0o100000;
+#[cfg(all(
+    unix,
+    not(all(target_os = "linux", any(target_arch = "x86", target_arch = "x86_64", target_arch = "arm", target_arch = "aarch64")))
+))]
+pub(crate) const O_NOFOLLOW: i32 = 0;
+/// `ELOOP` en Linux, lo que da `open` con `O_NOFOLLOW` sobre un enlace.
+#[cfg(unix)]
+pub(crate) const ELOOP: i32 = 40;
+
+/// ⚠️ §828 · Que lo que hay en `ruta`, sin seguir enlaces, siga siendo lo abierto en `f`.
+#[cfg(unix)]
+fn sigue_siendo(ruta: &Path, f: &std::fs::File) -> Result<(), LayerError> {
+    let ahora = std::fs::symlink_metadata(ruta).map_err(|e| error_io(ruta, e))?;
+    if identidad(&ahora) != identidad(&f.metadata().map_err(|e| error_io(ruta, e))?) {
+        return Err(rehusa_dar(ruta, "ya no es lo que se abrio (un enlace no se sigue)"));
+    }
+    Ok(())
+}
+
+/// ⚠️ §828 · Lo que da el libro: lo que hay en `ruta` sin seguir enlaces, y solo si es un directorio
+/// (`dir`) o un fichero de verdad.
+#[cfg(unix)]
+fn de_verdad(ruta: &Path, dir: bool) -> Result<std::fs::Metadata, LayerError> {
+    let m = std::fs::symlink_metadata(ruta).map_err(|e| error_io(ruta, e))?;
+    if (dir && m.is_dir()) || (!dir && m.is_file()) {
+        return Ok(m);
+    }
+    Err(rehusa_dar(ruta, "no es lo que da su grupo y sus modos al recifrado (un enlace no se sigue)"))
+}
+
+#[cfg(unix)]
+fn rehusa_dar(ruta: &Path, por: &str) -> LayerError {
+    StoreError::Malformed(format!(
+        "{}: {por}; el recifrado no le da el grupo ni los modos del libro, y no sigue: no se toca el libro",
+        ruta.display()
+    ))
+    .into()
+}
+
+/// ⚠️ §828 · **La apertura no borra ni termina un `.recifrando` que no es del dueno del libro.** Lo deja
+/// un recifrado o una migracion de otro usuario con el codigo de antes del §828, que no lo rehusaba -root
+/// que muere a mitad-, o lo pone alguien. Con P al lado -murio antes del compromiso- el libro esta
+/// entero con la frase de antes, y la apertura borraba R; con V y sin P -murio entre los pasos 5 y 6-,
+/// lo ponia en el sitio del libro: el libro de otro dueno, que su dueno ya no abriria. Desde el §828, si
+/// el dueno de R no es el del libro -el del directorio de P y el de su `db`, su `conf` y su `blobs/`, o
+/// los de V si falta P (`de_quien_es`)-, o el `db`, el `conf` o el `blobs/` de R no son del dueno de R,
+/// rehusa con `Malformed`, sin tocar nada y sin abrir, y el error dice de quien es cada uno y que hacer.
+/// No pierde el libro: con P, P esta entero; con V, estan V, con la frase de antes, y R, con la nueva.
+/// Rehusar en los dos casos, y no borrar el R ajeno que esta junto a un P entero, es de la sesion,
+/// reversible: falla cerrado; y un libro que no es de un solo dueno -el directorio de un usuario y los
+/// ficheros de otro- tampoco resuelve. Un R del mismo dueno y de otro grupo -el que dejaba el codigo de
+/// antes del §828 recifrado por su dueno con otro grupo principal- se resuelve como antes, con su grupo.
+/// Fuera de Unix, como antes.
+fn recifrando_del_dueno(p: &Path, r: &Path, v: &Path, hay_p: bool, hay_r: bool) -> Result<(), LayerError> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if hay_r {
+            let libro = if hay_p { p } else { v };
+            let del_libro = de_quien_es(libro)?;
+            let de_r = std::fs::symlink_metadata(r).map_err(|e| error_io(r, e))?.uid();
+            let ajeno = de_quien_es(r)?.into_iter().chain(del_libro.iter().cloned()).find(|(_, u)| *u != de_r);
+            if let Some((ruta, otro)) = ajeno {
+                let del_libro = del_libro[0].1;
+                let por = if hay_p {
+                    format!(
+                        "el libro, del usuario {del_libro}, esta entero con la frase de antes: si nadie lo esta \
+                         recifrando, quien pueda borra el `.recifrando` y el libro abre"
+                    )
+                } else {
+                    format!(
+                        "terminar el recifrado lo pondria en el sitio del libro, que es del usuario {del_libro} \
+                         -su `.retirado`-, y su dueno no lo abriria; el libro esta entero en el `.recifrando`, con \
+                         la frase nueva, y en el `.retirado`, con la de antes: quien pueda le da el `.recifrando` \
+                         al dueno del libro (`chown -R`) y la apertura siguiente lo termina"
+                    )
+                };
+                return Err(StoreError::Malformed(format!(
+                    "{}: es del usuario {de_r}, y {} del usuario {otro}: no es del dueno del libro, o no es de un \
+                     solo dueno: lo dejo un recifrado o una migracion de otro usuario, o lo puso alguien, y la \
+                     apertura no lo borra ni lo termina; {por}. No se toca nada",
+                    r.display(),
+                    ruta.display()
+                ))
+                .into());
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = (p, r, v, hay_p, hay_r);
+    Ok(())
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ⚠️ §828: LA COMPARACION PREVIA DEL RECIFRADO. Va al final, como lo de arriba: la llamada va en la linea
+// de `recifrar` que toma el cerrojo del libro.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// ⚠️ §828 · **Antes de tomar el cerrojo del libro y de abrirlo, `recifrar` compara quien recifra con el
+/// dueno del libro.** La guarda del paso 1 (`es_del_dueno`) llega despues de que `recifrar` tome el
+/// cerrojo del §816 -y lo cree, suyo, si no estaba- y abra el libro con sled para verificarlo con la
+/// frase vieja (su paso d): con el libro sin asentar, esa apertura deja en el un `snap.*` de quien abre
+/// y con su umask, y con la 0077 -o cualquier umask que quite la lectura a otros, como la 0027 para
+/// quien no es del grupo 0 (deducido)- el dueno ya no abre el libro hasta que root se lo de o lo quite
+/// (`SECURITY.md` §3.17). Aqui se compara antes, con la misma comparacion y los mismos textos que el
+/// paso 1 (`comparar_duenos`): el usuario de quien recifra con el del directorio del libro y el de su
+/// `db`, su `conf` y su `blobs/` (`de_quien_es`). Si no es el mismo, o el libro no es de un solo dueno,
+/// rehusa con `Malformed` sin crear, abrir ni escribir nada del libro ni de su cerrojo, y sin pagar mas
+/// Argon2id que el de la clave nueva (el paso a). Que compare aqui, y ademas en el paso 1, es de la
+/// sesion, y reversible.
+///
+/// **Quien recifra**, sin `libc`: el dueno de una sonda que se crea y se borra en el momento, un fichero
+/// vacio `<libro>.sonda.<pid>.<n>` junto al libro -en el directorio donde el paso 1 crearia R-, con
+/// `create_new`, que no sigue un enlace en el ultimo nombre ni abre lo que ya lleve ese nombre, y 0600, y
+/// mirado por su descriptor. Su dueno es el usuario con que el proceso crea en ese directorio, el que
+/// tendria R: el mismo sistema de ficheros, y tambien con un NFS con `root_squash` o un montaje que cambie
+/// los duenos, que darian a R el mismo (deducido). No `/proc/self`: da el usuario efectivo y no el de los
+/// ficheros (`setfsuid`), solo esta en Linux con `/proc` montado, y no sabe del sistema de ficheros del
+/// libro; ni el directorio temporal, que puede ser otro sistema de ficheros, y una sonda que se quedara
+/// alli no se veria junto al libro (deducido). Si no se puede saber -la sonda no se puede crear, porque
+/// quien recifra no escribe en el padre, porque ya hay algo con ese nombre o porque el nombre no cabe; el
+/// libro no esta, no es un directorio de verdad o no es de sled; no se puede mirar de quien es-, no rehusa
+/// por eso: sigue, y la guarda del paso 1 queda de respaldo, con lo que deja esa apertura -tomar el cerrojo
+/// del libro, y crearlo si no estaba, y abrir el libro con sled- (lo ata
+/// `la_sonda_que_no_se_puede_crear_no_hace_rehusar_y_el_paso_1_queda_de_respaldo`, en `tests.rs`, con un
+/// nombre que no cabe y con el nombre ya puesto -un enlace simbolico a un fichero de fuera que no esta, uno
+/// a uno que esta y uno duro a ese-, que la sonda no sigue). Lo que no es de sled no recibe la sonda: se
+/// mira antes (`es_de_sled`, que solo lee), y rehusa despues `Cerrojo::tomar` o el paso c, como antes del
+/// §828, sin escribir nada; un borrador anterior del §828 la creaba y la borraba antes de mirarlo, y cambiaba
+/// asi la fecha de modificacion del padre (lo vio su revision). La sonda se borra antes de comparar. Si no
+/// se puede borrar -un padre con `chattr +a`, donde se crea y no se borra-, rehusa con `Malformed`,
+/// nombrandola, sin tomar el cerrojo ni abrir el libro: se queda, vacia, y se borra a mano; hasta un
+/// borrador anterior del §828 se quedaba sin que nada lo dijera (lo midio su revision). `Malformed`, como las
+/// demas negativas, y no `Io`: quien reintenta un `Io` crearia otra sonda en cada intento (medido en la
+/// sesion: con `Io`, `recifrar_e4`, de los tests, que lo reintenta hasta diez veces, dejo diez). Si el
+/// proceso muere entre crearla y borrarla, tambien se queda -vacia, del usuario que recifraba-, y nadie la
+/// mira ni la borra (deducido, sin test). Crearla y borrarla cambia la fecha de modificacion del padre
+/// (medido en la sesion, en Linux 6.18 y ext4: el recifrado de root que rehusa el libro de otro, de la
+/// version 2 o de la 1, la cambia, sin dejar nada en el padre; y el que rehusa lo que no es de sled, que no
+/// recibe la sonda, no), como la cambia el paso 1 al crear R (deducido).
+///
+/// La migracion v1->v2 no pasa por aqui: que el libro es v1 solo lo dice lo que guarda sled, y eso se
+/// lee al abrirlo; su negativa sigue en el paso 1, despues de esa apertura (`SECURITY.md` §3.17, «Lo
+/// que no hace»). Un libro v1 que se recifra no llega a migrarse: se rehusa aqui. Fuera de Unix, como
+/// antes: no se compara nada.
+fn quien_recifra_es_el_dueno(path: &str) -> Result<(), LayerError> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
+        static SONDAS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let Some(p) = con_sufijo(path, "") else { return Ok(()) };
+        if es_de_sled(&p, true).is_err() {
+            return Ok(());
+        }
+        let Ok(del_libro) = de_quien_es(&p) else { return Ok(()) };
+        let n = SONDAS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let Some(sonda) = con_sufijo(path, &format!(".sonda.{}.{n}", std::process::id())) else { return Ok(()) };
+        let Ok(f) = std::fs::OpenOptions::new().write(true).create_new(true).mode(0o600).open(&sonda) else {
+            return Ok(());
+        };
+        let de_quien = f.metadata().map(|m| m.uid());
+        drop(f);
+        pausa("recifrar:sonda");
+        if let Err(e) = std::fs::remove_file(&sonda) {
+            return Err(StoreError::Malformed(format!(
+                "{}: la sonda con que el recifrado mira quien recifra no se pudo borrar ({e}): se queda, vacia; \
+                 borrala a mano y recifra otra vez. No se toma el cerrojo ni se abre el libro",
+                sonda.display()
+            ))
+            .into());
+        }
+        let Ok(de_quien) = de_quien else { return Ok(()) };
+        comparar_duenos(&p, &del_libro, de_quien, QUEDA_RECIFRADO)
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+        Ok(())
+    }
+}
+
+/// ⚠️ §828 · La comparacion de `es_del_dueno` (el paso 1) y de `quien_recifra_es_el_dueno` (antes del
+/// cerrojo), con sus dos textos: `duenos`, lo que da `de_quien_es(p)`, con el directorio el primero;
+/// `de_quien`, el usuario de quien recifra o migra; y `queda`, si recifra o migra. Rehusa si el libro no
+/// es de un solo dueno, o si su dueno no es `de_quien`; y si `duenos` esta vacio, que no se alcanza
+/// -`de_quien_es` da siempre el directorio, o un error-, tambien: falla cerrado (deducido, sin test;
+/// hasta un borrador anterior del §828, aceptaba).
+#[cfg(unix)]
+fn comparar_duenos(p: &Path, duenos: &[(PathBuf, u32)], de_quien: u32, queda: &str) -> Result<(), LayerError> {
+    let (que, como) = if queda == QUEDA_MIGRADO {
+        ("migrar a la version 2 -abrirlo con su frase lo migra-", "abrelo con su frase como su dueno, que lo migra")
+    } else {
+        ("recifrar", "recifralo como su dueno")
+    };
+    let Some(&(_, del_dir)) = duenos.first() else {
+        return Err(StoreError::Malformed(format!(
+            "{}: no se sabe de quien es el libro, y el usuario {de_quien} no lo puede {que}. No se copia, no \
+             se sella ni se renombra nada",
+            p.display()
+        ))
+        .into());
+    };
+    if let Some((ruta, otro)) = duenos.iter().find(|(_, u)| *u != del_dir) {
+        return Err(StoreError::Malformed(format!(
+            "{}: es del usuario {otro}, y el directorio del libro del usuario {del_dir}: el libro no es de un \
+             solo dueno, y lo intenta {que} el usuario {de_quien}, que lo dejaria todo suyo; que sea todo de su \
+             dueno, y {como}. No se copia, no se sella ni se renombra nada",
+            ruta.display()
+        ))
+        .into());
+    }
+    if de_quien != del_dir {
+        return Err(StoreError::Malformed(format!(
+            "{}: el libro es del usuario {del_dir}, y lo intenta {que} el usuario {de_quien}: asi \
+             quedaria del usuario {de_quien}, y su dueno no lo abriria; {como}. No se copia, no se sella ni se \
+             renombra nada",
+            p.display()
+        ))
+        .into());
+    }
+    Ok(())
 }

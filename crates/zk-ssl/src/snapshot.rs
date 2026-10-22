@@ -1626,7 +1626,7 @@ pub(crate) fn barrer_descifrada(path: &str) -> Result<bool, LayerError> {
 /// (`SECURITY.md` §3.16). Una en claro no la autentica nadie: `import_snapshot`, que no recibe
 /// clave, la importa sin autenticar nada, y el error lo dice, porque quien esperaba una cifrada y
 /// encuentra una en claro puede tener delante la de quien escribe donde se guarda. Lo ata
-/// `con_clave_una_instantanea_en_claro_no_se_importa`, al final de `tests.rs`.
+/// `con_clave_una_instantanea_en_claro_no_se_importa`, al final de `tests.rs`. ⚠️ §828: ya no es el último: detrás van otros, y los últimos son los del §828 (`SECURITY.md` §3.17).
 fn rehusar_en_claro() -> LayerError {
     LayerError::Store(crate::store::StoreError::Malformed(
         "la instantanea esta en claro y no la autentica la clave: con clave solo se importa una \
@@ -1841,15 +1841,15 @@ fn dar_lo_de_la_anterior(f: &std::fs::File, anterior: &std::fs::Metadata) -> std
 }
 
 /// `fchown`, y en los tests su gancho: si el hilo lo pidio en `FALLAR_DUENO`, falla como sin
-/// privilegios.
+/// privilegios. ⚠️ §828: la comparte el recifrado del libro (`persistence::dar_grupo_y_modo`), que solo pone el grupo: con `uid` siempre `None`.
 #[cfg(all(unix, not(test)))]
 #[inline(always)]
-fn cambiar_dueno(f: &std::fs::File, uid: Option<u32>, gid: Option<u32>) -> std::io::Result<()> {
+pub(crate) fn cambiar_dueno(f: &std::fs::File, uid: Option<u32>, gid: Option<u32>) -> std::io::Result<()> {
     std::os::unix::fs::fchown(f, uid, gid)
 }
 
 #[cfg(all(unix, test))]
-fn cambiar_dueno(f: &std::fs::File, uid: Option<u32>, gid: Option<u32>) -> std::io::Result<()> {
+pub(crate) fn cambiar_dueno(f: &std::fs::File, uid: Option<u32>, gid: Option<u32>) -> std::io::Result<()> {
     if FALLAR_DUENO.with(|c| c.get()) {
         return Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
     }
@@ -1881,7 +1881,7 @@ fn sincronizar_directorio(path: &str) -> std::io::Result<()> {
 // camino de un error de verdad en ese punto. El panico es la aproximacion de la muerte de
 // `persistence::punto`: corre los `Drop`, y aqui lo unico abierto es el temporal, que se cierra sin
 // mas. Fuera de los tests no hace nada y no se compila nada. Y `FALLAR_DUENO` hace fallar el
-// `fchown` de `dar_lo_de_la_anterior`, como sin privilegios.
+// `fchown` de `dar_lo_de_la_anterior`, como sin privilegios. ⚠️ §828: y el del recifrado del libro, que comparte `cambiar_dueno` (`persistence::dar_grupo_y_modo`).
 #[cfg(test)]
 thread_local! {
     pub(crate) static MORIR_EN_EXPORTACION: std::cell::Cell<Option<u8>> = const { std::cell::Cell::new(None) };
@@ -1935,7 +1935,7 @@ fn punto_exportacion(_: u8) -> std::io::Result<()> {
 /// y `commit` no sella nada sin él, ni le quita la clave. Lo atan
 /// `una_capa_importada_de_una_cifrada_se_reexporta_cifrada_con_su_cabecera` -su (f), que la clave
 /// sigue tras operar- y `una_capa_importada_de_una_v1_se_reexporta_en_la_version_2` -su (f), que la
-/// sal es nueva en cada importación-, al final de `tests.rs`.
+/// sal es nueva en cada importación-, al final de `tests.rs`. ⚠️ §828: ya no son los últimos: detrás van los del §828 (`SECURITY.md` §3.17).
 fn conservar_la_clave(
     mut capa: SovereignLayer,
     fijada: crate::crypto::LedgerKey,

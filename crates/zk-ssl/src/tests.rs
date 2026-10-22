@@ -6151,7 +6151,7 @@ fn una_exportacion_muerta_a_mitad_deja_la_anterior_y_su_temporal_no_se_confunde(
 /// tampoco -lo rehusaria igual el cambio de nombre: (d) no distingue la guarda, y (c) si-; (e) con
 /// privilegios, la nueva se queda con el dueno y el grupo de la anterior; y (f) si no puede tomar su
 /// grupo (`snapshot::FALLAR_DUENO`), sin los bits de grupo ni de otros. (e) pide cambiar el dueno
-/// de un fichero: sin privilegios no se puede preparar, y lo dice por la salida de errores. No mide
+/// de un fichero: sin privilegios no se puede preparar, y lo dice por la salida de errores (⚠️ §828: que libtest solo muestra con `--nocapture` o `--show-output`: sin ellos, (e) no se ve sin medir). No mide
 /// las ACL POSIX de la anterior, que la nueva no toma (`dar_lo_de_la_anterior`).
 #[test]
 fn la_exportacion_guarda_los_permisos_de_la_anterior_y_no_sustituye_lo_que_no_es_un_fichero() {
@@ -6408,5 +6408,1567 @@ fn una_capa_importada_de_una_v1_se_reexporta_en_la_version_2() {
     assert_eq!(lo_que_conserva(&r, &[alice, bob]), de_partida, "(f)");
     for f in [&file, &otra] {
         let _ = std::fs::remove_file(f);
+    }
+}
+
+// -----------------------------------------------------------------
+// ⚠️ §828: el libro de otro dueño no se recifra ni se migra, y la copia toma el grupo del libro
+// -----------------------------------------------------------------
+// Al final del fichero, como los del §812, el §816, la 120 y la 121: ninguna cita `tests.rs:linea` se
+// mueve (`SECURITY.md` §3.17). Lo que miran del libro recifrado o migrado es lo que hay en su
+// `.recifrando` al acabar el paso 4 —el gancho `recifrar:4`, antes del compromiso— y, después, lo que
+// sigue en el libro con el mismo nombre y el mismo inodo: no lo que sled cree al reabrirlo en el paso
+// 8, un `snap.*` nuevo de quien abre y con su umask, como en cualquier apertura.
+
+#[cfg(unix)]
+const DUENO_AJENO: u32 = 12345;
+#[cfg(unix)]
+const GRUPO_DEL_LIBRO: u32 = 12346;
+
+/// ⚠️ §828 · Una entrada del libro: su nombre dentro del libro (el directorio mismo es `""`), su inodo,
+/// su dueño, su grupo, su modo (`& 0o7777`) y, si es un fichero, sus bytes.
+#[cfg(unix)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct Entrada {
+    nombre: String,
+    ino: u64,
+    uid: u32,
+    gid: u32,
+    modo: u32,
+    bytes: Option<Vec<u8>>,
+}
+
+/// ⚠️ §828 · El directorio del libro y todo lo que lleva, sin seguir enlaces, por nombre.
+#[cfg(unix)]
+fn censo_del_libro(path: &str) -> Vec<Entrada> {
+    use std::os::unix::fs::MetadataExt;
+    fn rec(base: &std::path::Path, r: &std::path::Path, out: &mut Vec<Entrada>) {
+        let m = std::fs::symlink_metadata(r).expect("mirar una entrada del libro");
+        out.push(Entrada {
+            nombre: r.strip_prefix(base).expect("dentro del libro").to_string_lossy().into_owned(),
+            ino: m.ino(),
+            uid: m.uid(),
+            gid: m.gid(),
+            modo: m.mode() & 0o7777,
+            bytes: m.is_file().then(|| std::fs::read(r).expect("leer una entrada del libro")),
+        });
+        if m.is_dir() {
+            for e in std::fs::read_dir(r).expect("leer el directorio").flatten() {
+                rec(base, &e.path(), out);
+            }
+        }
+    }
+    let p = std::path::Path::new(path);
+    let mut out = Vec::new();
+    rec(p, p, &mut out);
+    out.sort();
+    out
+}
+
+/// ⚠️ §828 · Da el libro entero a `uid:gid` —el directorio y lo que lleva, sin seguir enlaces— y su
+/// cerrojo, si está.
+#[cfg(unix)]
+fn dar_el_libro(path: &str, uid: u32, gid: u32) {
+    fn rec(r: &std::path::Path, uid: u32, gid: u32) {
+        std::os::unix::fs::lchown(r, Some(uid), Some(gid)).expect("dar una entrada del libro");
+        if std::fs::symlink_metadata(r).expect("mirar").is_dir() {
+            for e in std::fs::read_dir(r).expect("leer").flatten() {
+                rec(&e.path(), uid, gid);
+            }
+        }
+    }
+    rec(std::path::Path::new(path), uid, gid);
+    let c = cerrojo_de(path);
+    if hay(&c) {
+        std::os::unix::fs::lchown(&c, Some(uid), Some(gid)).expect("dar el cerrojo");
+    }
+}
+
+/// ⚠️ §828 · Los modos del libro, puestos a mano —no los de la umask—: el directorio, `blobs/`, `conf`,
+/// `db` y cada `snap.*`.
+#[cfg(unix)]
+fn poner_modos(path: &str, dir: u32, blobs: u32, conf: u32, db: u32, snap: u32) {
+    use std::os::unix::fs::PermissionsExt;
+    let poner = |p: &std::path::Path, m: u32| {
+        std::fs::set_permissions(p, std::fs::Permissions::from_mode(m)).expect("poner un modo")
+    };
+    let p = std::path::Path::new(path);
+    for e in std::fs::read_dir(p).expect("leer el libro").flatten() {
+        let n = e.file_name().to_string_lossy().into_owned();
+        match n.as_str() {
+            "blobs" => poner(&e.path(), blobs),
+            "conf" => poner(&e.path(), conf),
+            "db" => poner(&e.path(), db),
+            _ if n.starts_with("snap.") => poner(&e.path(), snap),
+            _ => {}
+        }
+    }
+    poner(p, dir);
+}
+
+/// ⚠️ §828 · Un nombre temporal que no comparte ningún test que corra a la vez: `temp_path` con un número
+/// que no se repite en el proceso.
+#[cfg(unix)]
+fn temporal_unico(nombre: &str) -> String {
+    static N: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    temp_path(&format!("{nombre}_{}", N.fetch_add(1, std::sync::atomic::Ordering::SeqCst)))
+}
+
+/// ⚠️ §828 · Si el proceso puede dar un fichero a otro usuario y a otro grupo: como root. Los tests que lo
+/// piden, sin eso, no tienen nada que medir, y lo dicen por la salida de errores; pero libtest la
+/// captura y solo la muestra con `--nocapture` o `--show-output`: en la salida de siempre, un test que
+/// se salta sale «ok» (medido en la revision, como 12345:12345 con `setpriv`).
+#[cfg(unix)]
+fn puede_dar_a_otro() -> bool {
+    let sonda = temporal_unico("dueno_sonda");
+    std::fs::create_dir(&sonda).expect("crear la sonda");
+    let puede = std::os::unix::fs::chown(&sonda, Some(DUENO_AJENO), Some(GRUPO_DEL_LIBRO)).is_ok();
+    let _ = std::fs::remove_dir_all(&sonda);
+    puede
+}
+
+/// ⚠️ §828 · El usuario del proceso: el dueño de un directorio que acaba de crear.
+#[cfg(unix)]
+fn quien_soy() -> u32 {
+    use std::os::unix::fs::MetadataExt;
+    let d = temporal_unico("dueno_quien");
+    std::fs::create_dir(&d).expect("crear");
+    let uid = std::fs::metadata(&d).expect("mirar").uid();
+    let _ = std::fs::remove_dir_all(&d);
+    uid
+}
+
+/// ⚠️ §828 · Lo que cada entrada de la copia tiene que llevar al acabar el paso 4: el grupo y el modo de
+/// su homónimo en el libro —de `db`, si es un fichero sin él; del libro, si es un directorio sin él—.
+#[cfg(unix)]
+fn lo_que_toca(copia: &[Entrada], libro: &[Entrada]) -> Vec<(String, u32, u32)> {
+    let de = |n: &str| libro.iter().find(|e| e.nombre == n);
+    let (db, dir) = (de("db").expect("el libro lleva db"), de("").expect("el libro"));
+    copia
+        .iter()
+        .map(|e| {
+            let es_dir = e.bytes.is_none();
+            let h = de(&e.nombre).filter(|h| h.bytes.is_none() == es_dir).unwrap_or(if es_dir { dir } else { db });
+            (e.nombre.clone(), h.gid, h.modo)
+        })
+        .collect()
+}
+
+/// ⚠️ §828 · Corre `f` con el gancho `recifrar:4` puesto en ESTE hilo: al acabar el paso 4, antes del
+/// compromiso, guarda el censo de la copia (`<libro>.recifrando`) y el del libro. Devuelve lo que dio
+/// `f` y los dos censos de la última vez que pasó por ahí.
+#[cfg(unix)]
+#[allow(clippy::type_complexity)]
+fn con_el_paso_4<T>(path: &str, f: impl FnOnce() -> T) -> (T, Option<(Vec<Entrada>, Vec<Entrada>)>) {
+    let visto = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let yo = std::thread::current().name().map(str::to_owned);
+    let r = {
+        let (rr, _) = hermanos_de(path);
+        let (visto, p) = (visto.clone(), path.to_owned());
+        let _g = con_gancho(move |hilo, punto| {
+            if punto == "recifrar:4" && Some(hilo) == yo.as_deref() {
+                *visto.lock().unwrap_or_else(|e| e.into_inner()) = Some((censo_del_libro(&rr), censo_del_libro(&p)));
+            }
+        });
+        f()
+    };
+    let v = visto.lock().unwrap_or_else(|e| e.into_inner()).take();
+    (r, v)
+}
+
+/// ⚠️ §828 · **El libro de otro dueño no se recifra ni se migra** (`SECURITY.md` §3.17). Hasta el §828,
+/// recifrado o migrado por root, un libro de 12345:12346 quedaba de root, y su dueño ya no lo abría.
+/// Como root (si no, se salta y lo dice), con un libro de la versión 2 y uno de la 1, los dos de
+/// 12345:12346: (a) `recifrar` el de la 2 rehúsa, con un texto que nombra a los dos usuarios; (b) abrir
+/// con clave el de la 1 —abrirlo lo migraría— también, con el texto de la migración, y la apertura
+/// falla entera; y `recifrar` el de la 1 también, con el del recifrado: rehúsa antes de abrirlo, y no
+/// llega a migrarlo. (c) En los tres no queda `.recifrando` ni `.retirado`, y ninguno llega al paso que
+/// da el grupo (`recifrar:grupo`) ni al 4. La pieza de la E4 empieza una sola vez (el gancho
+/// `recifrar:0`), la de la migración: los dos recifrados rehúsan antes de ella, en `recifrar`, antes de
+/// tomar el cerrojo del libro y de abrirlo (la comparación previa, `persistence::quien_recifra_es_el_dueno`).
+/// Los tres corren con un error inyectado al acabar el paso 1 de la pieza (`fallar_en(1)`), que va
+/// antes de copiar: la migración, que pasa por el paso 0 de la pieza, tiene que rehusar en su paso 0 o
+/// 1, antes de ese error; una guarda puesta después daría ese error, y no el que nombra a los dos
+/// usuarios. (d) El libro queda dueño a dueño como estaba: cada entrada y su cerrojo, con su nombre, su
+/// inodo, su dueño, su grupo y su modo; byte a byte, `conf` y los `snap.*`; y `db`, con las mismas
+/// claves y los mismos valores, tal como los guarda sled (`volcado`), pero no byte a byte: la negativa
+/// de la migración llega después de que la capa abra el libro con sled, y en esa apertura sled puede
+/// escribir en `db`, como en cualquier apertura (medido en la sesión, con el libro asentado y cuatro
+/// hilos a la vez, dos veces, con el código de antes de la comparación previa, cuando también los
+/// recifrados abrían el libro: en 3 de 140 negativas de recifrar uno de la 2, y en 0 de 280 de abrir o
+/// recifrar uno de la 1; los nombres, los inodos, los dueños, los grupos, los modos, `conf` y los
+/// `snap.*`, iguales en las 420). Y todo eso, con el libro asentado y con su cerrojo: si no, la apertura
+/// de root que precede a la negativa de la migración deja en él un `snap.*` o un cerrojo suyos
+/// (`SECURITY.md` §3.17, «Lo que no hace»). Cada libro se abre una vez antes de dárselo al otro dueño,
+/// para que sled escriba su instantánea: sin eso, la apertura de root escribe una nueva, suya (medido,
+/// dos veces, con aquel código: sin esa apertura, 40 de 40 negativas de recifrar uno de la 2 o de abrir
+/// uno de la 1 dejan un `snap.*` nuevo de 0:0, con 0644 por la umask 0022). Lo que deja el recifrado
+/// sin asentar y sin cerrojo, ahora nada, lo mide
+/// `el_libro_sin_asentar_de_otro_dueno_rehusa_antes_del_cerrojo_y_no_recibe_nada`, al final. (e) La
+/// contraprueba: dado a root, el de la 2 se recifra, y el de la 1 se migra al abrirlo, con su saldo.
+/// Que su dueño lo abra después se deduce de (d), y se midió fuera de la suite, con `setpriv` (el
+/// asiento del §828). Discrimina (medido con mutantes; el asiento del §828): el código de antes, que para
+/// (a) en el paso 1 con el error inyectado («fallo inyectado al acabar el paso 1»), no con el que nombra
+/// a los dos usuarios, y el test cae en el primer `nombra`; la guarda del paso 1 quitada, y puesta
+/// después del paso 1 —al acabar el 2 o justo antes de dar el grupo—, que paran así la migración de (b)
+/// y caen en su `nombra`; y sin la comparación previa, con la que el recifrado del de la 1 llega a la
+/// migración y da su texto, y el test cae en ese `nombra` (sin él, caería en la cuenta de `recifrar:0`,
+/// tres veces; deducido). Ninguno de ellos llega a recifrar ni al paso que da el grupo: los para antes la comparación previa, la guarda del paso 1 —sin la comparación previa, con su texto de la migración (medido)— o el error inyectado al acabar ese paso. Así,
+/// el `expect_err` de (a) y (b), lo que (c) pide de `.recifrando`, `.retirado` y los ganchos del grupo
+/// y del 4, y (d) no los separan hoy del arreglo: quedan por si ese error dejara de ir antes de copiar.
+#[test]
+#[cfg(unix)]
+fn el_libro_de_otro_dueno_no_se_recifra_ni_se_migra_y_no_se_toca() {
+    if !puede_dar_a_otro() {
+        eprintln!("§828: sin medir: dar el libro a otro dueño pide privilegios (no se corre como root)");
+        return;
+    }
+    let yo = quien_soy();
+    // Lo que (d) compara: cada entrada sin sus bytes, los bytes de todo menos `db`, y el cerrojo.
+    #[allow(clippy::type_complexity)]
+    let mira = |path: &str| -> (Vec<(String, u64, u32, u32, u32)>, Vec<(String, Option<Vec<u8>>)>, Option<(u64, u32, u32, u32)>) {
+        use std::os::unix::fs::MetadataExt;
+        let censo = censo_del_libro(path);
+        let meta = censo.iter().map(|e| (e.nombre.clone(), e.ino, e.uid, e.gid, e.modo)).collect();
+        let bytes = censo.into_iter().filter(|e| e.nombre != "db").map(|e| (e.nombre, e.bytes)).collect();
+        let cerrojo = std::fs::symlink_metadata(cerrojo_de(path)).map(|m| (m.ino(), m.uid(), m.gid(), m.mode())).ok();
+        (meta, bytes, cerrojo)
+    };
+    let nombra = |e: &LayerError, que: &str| {
+        let t = e.to_string();
+        assert!(
+            t.contains(&format!("del usuario {DUENO_AJENO}")) && t.contains(&format!("el usuario {yo}")) && t.contains(que),
+            "(a/b) el error no nombra al dueño, a quien {que} y lo que intenta: {t}"
+        );
+    };
+    let (p2, alice, _) = libro_e4("dueno_ajeno_v2");
+    let (r2, v2) = hermanos_de(&p2);
+    let p1 = temp_path("dueno_ajeno_v1");
+    quitar_e4(&p1);
+    let (r1, v1) = hermanos_de(&p1);
+    copiar_dir(&p2, &p1);
+    rebajar_a_v1(&p1, FRASE_VIEJA_E4);
+    // Su cerrojo, que `copiar_dir` no copia: sin él, quien abre lo crearía suyo (`SECURITY.md` §3.14).
+    std::fs::File::create(cerrojo_de(&p1)).expect("el cerrojo del v1");
+    let (db2, db1) = (volcado(&p2), volcado(&p1));
+    for p in [&p2, &p1] {
+        drop(sled_open_retry(p));
+        dar_el_libro(p, DUENO_AJENO, GRUPO_DEL_LIBRO);
+    }
+    let (antes2, antes1) = (mira(&p2), mira(&p1));
+    let puntos = std::sync::Arc::new(std::sync::Mutex::new(Vec::<&'static str>::new()));
+    {
+        let (puntos, hilo_del_test) = (puntos.clone(), std::thread::current().name().map(str::to_owned));
+        let _g = con_gancho(move |hilo, punto| {
+            if Some(hilo) == hilo_del_test.as_deref() {
+                puntos.lock().unwrap_or_else(|e| e.into_inner()).push(punto);
+            }
+        });
+        let e = fallar_en(1, || recifrar_e4(&p2, FRASE_VIEJA_E4, FRASE_NUEVA_E4))
+            .map(|_| ())
+            .expect_err("CRITICO: (a) root recifró el libro de otro dueño");
+        nombra(&e, "recifrar");
+        let e = fallar_en(1, || abrir_e4(&p1, FRASE_VIEJA_E4)).map(|_| ()).expect_err("CRITICO: (b) root abrió con clave, y migró, el libro v1 de otro dueño");
+        nombra(&e, "migrar");
+        let e = fallar_en(1, || recifrar_e4(&p1, FRASE_VIEJA_E4, FRASE_NUEVA_E4))
+            .map(|_| ())
+            .expect_err("CRITICO: (b) root recifró el libro v1 de otro dueño");
+        nombra(&e, "lo intenta recifrar");
+    }
+    assert!(!hay(&r2) && !hay(&v2) && !hay(&r1) && !hay(&v1), "CRITICO: (c) lo que rehúsa dejó un hermano");
+    let puntos = puntos.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    assert_eq!(puntos.iter().filter(|p| **p == "recifrar:0").count(), 1, "(c) la pieza de la E4 no empezó una sola vez, la de la migración: los recifrados no rehusaron antes de ella: {puntos:?}");
+    assert!(
+        !puntos.iter().any(|p| matches!(*p, "recifrar:grupo" | "recifrar:4" | "recifrar:5")),
+        "CRITICO: (c) la guarda no va antes de copiar: el recifrado llegó al paso que da el grupo ({puntos:?})"
+    );
+    let (despues2, despues1) = (mira(&p2), mira(&p1));
+    assert_eq!(despues2.0, antes2.0, "CRITICO: (d) el recifrado que rehúsa cambió el dueño, el grupo, el modo o el inodo de algo del libro");
+    assert_eq!(despues1.0, antes1.0, "CRITICO: (d) la migración que rehúsa cambió el dueño, el grupo, el modo o el inodo de algo del libro");
+    assert!(despues2.1 == antes2.1 && despues1.1 == antes1.1, "CRITICO: (d) lo que rehúsa cambió `conf` o un `snap.*`");
+    assert!(despues2.2 == antes2.2 && despues1.2 == antes1.2, "(d) lo que rehúsa cambió el cerrojo");
+
+    dar_el_libro(&p2, yo, yo);
+    dar_el_libro(&p1, yo, yo);
+    assert!(volcado(&p2) == db2 && volcado(&p1) == db1, "CRITICO: (d) lo que rehúsa cambió lo que guarda `db`");
+    let l = recifrar_e4(&p2, FRASE_VIEJA_E4, FRASE_NUEVA_E4).expect("(e) dado a quien recifra, se recifra");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(e)");
+    drop(l);
+    let l = abrir_e4(&p1, FRASE_VIEJA_E4).expect("(e) dado a quien abre, el v1 se migra");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(e)");
+    drop(l);
+    assert!(!hay(&r1) && !hay(&v1) && !hay(&r2) && !hay(&v2), "(e)");
+    quitar_e4(&p1);
+    quitar_e4(&p2);
+}
+
+/// ⚠️ §828 · **Recifrado o migrado por su dueño, el libro conserva su grupo y sus modos**
+/// (`SECURITY.md` §3.17). Hasta el §828 la copia tomaba sólo los modos, y el grupo era el del proceso:
+/// recifrado por su dueño con otro grupo principal, el grupo del libro perdía la lectura y el del
+/// dueño la ganaba. Como root (si no, se salta y lo dice), con un libro de 0:12346 —root es su dueño,
+/// y 12346 no es su grupo principal ni, en la sesión, ninguno de los suyos (`id` da sólo el 0): root
+/// pone el grupo del libro sea cual sea, porque puede, y así lee la sesión el «si es uno de los
+/// suyos» de la opción que eligió el autor (`SECURITY.md` §3.17)— y modos puestos a mano: el
+/// directorio 2750, `blobs/` 0750, `conf` 4640 —el setuid, que el `chown` de un fichero quita
+/// siempre—, `db` 0640 y los `snap.*` 0600. (a) Al acabar el paso 4 del recifrado, cada entrada de la
+/// copia es de root, del grupo 12346, y con el modo de su homónimo en el libro —los `snap.*`, que
+/// llevan otro número, el de `db`—; (b) después, lo que sigue en el libro con el mismo nombre y el
+/// mismo inodo —el directorio, `conf`, `db` y `blobs/` siguen siempre— lo conserva; (c) y (d), lo
+/// mismo con la migración de un libro de la versión 1 al abrirlo. En los dos, la copia lleva al menos
+/// una entrada sin homónimo en el libro —un `snap.*`— (`comprobar_la_copia`, al final). Discrimina
+/// (medido con mutantes; el asiento del §828): sin el grupo, sin el directorio, poner los modos antes que
+/// el grupo (`conf` pierde el setuid), tomar lo de `db` en vez de lo del homónimo, y dar el grupo sólo a
+/// las entradas con homónimo.
+#[test]
+#[cfg(unix)]
+fn el_libro_recifrado_o_migrado_por_su_dueno_conserva_su_grupo_y_sus_modos() {
+    if !puede_dar_a_otro() {
+        eprintln!("§828: sin medir: dar el libro a otro grupo pide privilegios (no se corre como root)");
+        return;
+    }
+    let yo = quien_soy();
+    let comprobar = |que: &str, path: &str, visto| comprobar_la_copia(que, path, visto, yo);
+
+    let (path, alice, _) = libro_e4("dueno_grupo_recifra");
+    dar_el_libro(&path, yo, GRUPO_DEL_LIBRO);
+    poner_modos(&path, 0o2750, 0o750, 0o4640, 0o640, 0o600);
+    let (l, visto) = con_el_paso_4(&path, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4));
+    let l = l.expect("(a) recifrar");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(a)");
+    drop(l);
+    comprobar("a/b", &path, visto);
+    quitar_e4(&path);
+
+    let (pmig, alice, _) = libro_e4("dueno_grupo_migra");
+    rebajar_a_v1(&pmig, FRASE_VIEJA_E4);
+    dar_el_libro(&pmig, yo, GRUPO_DEL_LIBRO);
+    poner_modos(&pmig, 0o2750, 0o750, 0o4640, 0o640, 0o600);
+    let (l, visto) = con_el_paso_4(&pmig, || abrir_e4(&pmig, FRASE_VIEJA_E4));
+    let l = l.expect("(c) migrar al abrir");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(c)");
+    drop(l);
+    comprobar("c/d", &pmig, visto);
+    quitar_e4(&pmig);
+}
+
+/// ⚠️ §828 · **Si no se puede poner el grupo del libro, la copia se queda sin los bits de grupo ni los de
+/// otros** (`SECURITY.md` §3.17): es lo que pasa a un dueño que no es del grupo de su libro, y lo imita
+/// `snapshot::FALLAR_DUENO`, que hace fallar el `fchown`. Con un libro del proceso y modos con bits de
+/// grupo y de otros puestos a mano —el directorio y `blobs/` 0755, `conf` 0644, `db` 0664 y los
+/// `snap.*` 0646—, al acabar el paso 4 (a) del recifrado y (b) de la migración de uno de la versión 1,
+/// cada entrada de la copia tiene el modo de su homónimo `& 0o700`. No pide privilegios. Discrimina: sin
+/// la reserva (los modos del libro enteros, con otro grupo).
+#[test]
+#[cfg(unix)]
+fn sin_poder_poner_el_grupo_la_copia_se_queda_sin_bits_de_grupo_ni_de_otros() {
+    use crate::snapshot::FALLAR_DUENO;
+    let comprobar = |que: &str, visto: Option<(Vec<Entrada>, Vec<Entrada>)>| {
+        let (copia, libro) = visto.unwrap_or_else(|| panic!("({que}) el gancho del paso 4 no se disparó"));
+        assert!(copia.len() >= 5, "({que}) la copia lleva {} entradas", copia.len());
+        for (e, (n, _, modo)) in copia.iter().zip(lo_que_toca(&copia, &libro)) {
+            assert_eq!(e.modo & 0o077, 0, "CRITICO: ({que}) «{n}» conservó bits de grupo u otros sin poder poner el grupo: {:o}", e.modo);
+            assert_eq!(e.modo, modo & 0o700, "({que}) «{n}» no tiene el modo de su homónimo & 0o700: {:o}", e.modo);
+        }
+    };
+
+    let (path, alice, _) = libro_e4("dueno_sin_grupo_recifra");
+    poner_modos(&path, 0o755, 0o755, 0o644, 0o664, 0o646);
+    FALLAR_DUENO.with(|c| c.set(true));
+    let (l, visto) = con_el_paso_4(&path, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4));
+    FALLAR_DUENO.with(|c| c.set(false));
+    assert_eq!(l.expect("(a) recifrar").balance_of(alice), Some(777_777), "(a)");
+    comprobar("a", visto);
+    quitar_e4(&path);
+
+    let (pmig, alice, _) = libro_e4("dueno_sin_grupo_migra");
+    rebajar_a_v1(&pmig, FRASE_VIEJA_E4);
+    poner_modos(&pmig, 0o755, 0o755, 0o644, 0o664, 0o646);
+    FALLAR_DUENO.with(|c| c.set(true));
+    let (l, visto) = con_el_paso_4(&pmig, || abrir_e4(&pmig, FRASE_VIEJA_E4));
+    FALLAR_DUENO.with(|c| c.set(false));
+    assert_eq!(l.expect("(b) migrar al abrir").balance_of(alice), Some(777_777), "(b)");
+    comprobar("b", visto);
+    quitar_e4(&pmig);
+}
+
+/// ⚠️ §828 · Recifra `path` con el gancho `recifrar:grupo` puesto en ESTE hilo: al empezar el paso que da
+/// el grupo y los modos, `cambiar(R)` cambia la copia una vez. Devuelve el texto del error, o `None` si
+/// recifró, y si el gancho se disparó.
+#[cfg(unix)]
+fn recifrar_cambiando_la_copia(path: &str, cambiar: impl Fn(&std::path::Path) + Send + Sync + 'static) -> (Option<String>, bool) {
+    let hecho = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let yo = std::thread::current().name().map(str::to_owned);
+    let r = {
+        let (rr, hecho) = (hermanos_de(path).0, hecho.clone());
+        let _g = con_gancho(move |hilo, punto| {
+            if punto == "recifrar:grupo"
+                && Some(hilo) == yo.as_deref()
+                && !hecho.swap(true, std::sync::atomic::Ordering::SeqCst)
+            {
+                cambiar(std::path::Path::new(&rr));
+            }
+        });
+        recifrar_e4(path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)
+    };
+    (r.err().map(|e| e.to_string()), hecho.load(std::sync::atomic::Ordering::SeqCst))
+}
+
+/// ⚠️ §828 · **Lo que no creó el recifrado en su copia no recibe el grupo ni los modos del libro, y un
+/// enlace no se sigue** (`SECURITY.md` §3.17). En el gancho `recifrar:grupo`, al empezar el paso que da
+/// el grupo y los modos, se cambia la copia; el libro va con 0750 y sus ficheros con 0640, y el
+/// destino, un fichero del proceso, con 0604. (a) `conf` de la copia, cambiado por un enlace al
+/// destino: el recifrado rehúsa nombrando `conf` y el enlace, y el destino sigue con su modo, su dueño
+/// y sus bytes. (b) Por un enlace duro al destino: rehúsa, y lo dice. (c) Dado a 4343:4343, si se puede
+/// (como root): rehúsa, porque no es de quien recifra. (d) La copia misma, abierta a 0755: rehúsa,
+/// porque no es la que nació en el paso 1. En todos, no queda ningún hermano, el libro dice lo mismo
+/// que antes y abre con la frase vieja. (e) Y donde se sabe el valor de `O_NOFOLLOW` sin `libc` —Linux
+/// en x86 y en arm—, `persistence::abrir_sin_enlace` no abre un enlace (`ELOOP`) y sí un fichero.
+/// Salvo (c), no pide privilegios. Discrimina: seguir el enlace (recifra con él), y quitar cada
+/// guarda: el enlace duro, el dueño de la entrada, la copia en 0700.
+#[test]
+#[cfg(unix)]
+fn un_enlace_o_lo_ajeno_en_la_copia_no_recibe_el_grupo_del_libro() {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let (path, alice, _) = libro_e4("dueno_enlace_copia");
+    let (r, v) = hermanos_de(&path);
+    poner_modos(&path, 0o750, 0o750, 0o640, 0o640, 0o640);
+    let destino = format!("{path}.destino");
+    std::fs::write(&destino, b"de otro").expect("el destino");
+    std::fs::set_permissions(&destino, std::fs::Permissions::from_mode(0o604)).expect("su modo");
+    let de_destino = |d: &str| {
+        let m = std::fs::symlink_metadata(d).expect("mirar el destino");
+        (m.uid(), m.gid(), m.mode() & 0o7777, std::fs::read(d).expect("leer el destino"))
+    };
+    let antes_destino = de_destino(&destino);
+    let antes = volcado(&path);
+    let sigue_igual = |que: &str| {
+        assert!(!hay(&r) && !hay(&v), "({que}) quedó un hermano");
+        assert_eq!(volcado(&path), antes, "({que}) el recifrado que rehúsa tocó el libro");
+        assert_eq!(de_destino(&destino), antes_destino, "CRITICO: ({que}) el recifrado tocó el destino");
+    };
+
+    let d = destino.clone();
+    let (e, hecho) = recifrar_cambiando_la_copia(&path, move |rr| {
+        let conf = rr.join("conf");
+        let _ = std::fs::remove_file(&conf);
+        let _ = std::os::unix::fs::symlink(&d, &conf);
+    });
+    assert!(hecho, "(a) el gancho no se disparó");
+    let e = e.expect("CRITICO: (a) recifró con un enlace en la copia");
+    assert!(e.contains("conf") && e.contains("enlace"), "(a) el error no nombra `conf` ni el enlace: {e}");
+    sigue_igual("a");
+
+    let d = destino.clone();
+    let (e, hecho) = recifrar_cambiando_la_copia(&path, move |rr| {
+        let conf = rr.join("conf");
+        let _ = std::fs::remove_file(&conf);
+        let _ = std::fs::hard_link(&d, &conf);
+    });
+    assert!(hecho, "(b) el gancho no se disparó");
+    let e = e.expect("CRITICO: (b) recifró con un enlace duro en la copia");
+    assert!(e.contains("conf") && e.contains("enlace duro"), "(b) el error no nombra `conf` ni el enlace duro: {e}");
+    sigue_igual("b");
+
+    if puede_dar_a_otro() {
+        let (e, hecho) = recifrar_cambiando_la_copia(&path, |rr| {
+            let _ = std::os::unix::fs::lchown(rr.join("conf"), Some(4343), Some(4343));
+        });
+        assert!(hecho, "(c) el gancho no se disparó");
+        let e = e.expect("CRITICO: (c) recifró con una entrada de otro dueño en la copia");
+        assert!(e.contains("conf") && e.contains("no es del dueno"), "(c) el error no lo dice: {e}");
+        sigue_igual("c");
+    } else {
+        eprintln!("§828: (c) sin medir: dar una entrada a otro dueño pide privilegios");
+    }
+
+    let (e, hecho) = recifrar_cambiando_la_copia(&path, |rr| {
+        let _ = std::fs::set_permissions(rr, std::fs::Permissions::from_mode(0o755));
+    });
+    assert!(hecho, "(d) el gancho no se disparó");
+    let e = e.expect("CRITICO: (d) recifró con la copia abierta a otros antes de darle el grupo");
+    assert!(e.contains("paso 1"), "(d) el error no dice que no es la copia del paso 1: {e}");
+    sigue_igual("d");
+
+    let l = abrir_e4(&path, FRASE_VIEJA_E4).expect("el libro abre con la frase vieja");
+    assert_eq!(l.balance_of(alice), Some(777_777));
+    drop(l);
+
+    let enlace = format!("{path}.enlace");
+    let _ = std::fs::remove_file(&enlace);
+    std::os::unix::fs::symlink(&destino, &enlace).expect("(e) el enlace");
+    if crate::persistence::O_NOFOLLOW != 0 {
+        let e = crate::persistence::abrir_sin_enlace(std::path::Path::new(&enlace))
+            .map(|_| ())
+            .expect_err("CRITICO: (e) abrir_sin_enlace abrió un enlace: O_NOFOLLOW no es el de este sistema");
+        assert_eq!(e.raw_os_error(), Some(crate::persistence::ELOOP), "(e) {e}");
+        crate::persistence::abrir_sin_enlace(std::path::Path::new(&destino)).expect("(e) un fichero se abre");
+    } else {
+        eprintln!("§828: (e) sin medir: aquí no se pone O_NOFOLLOW");
+    }
+    for f in [&destino, &enlace] {
+        let _ = std::fs::remove_file(f);
+    }
+    quitar_e4(&path);
+}
+
+/// ⚠️ §828 · **La apertura no termina ni borra un `.recifrando` de otro dueño** (`SECURITY.md` §3.17).
+/// Lo deja el código de antes del §828 si root recifra o migra el libro de otro y muere a mitad: el
+/// `.recifrando` es de root y el libro, del otro. Se fabrica con una muerte inyectada en un libro de
+/// root, y el libro —o su `.retirado`— se da después a 12345:12346. Como root (si no, se salta y lo
+/// dice): (a) con el `.retirado` y el `.recifrando`, sin libro —murió entre los pasos 5 y 6—, abrir con
+/// la frase nueva, y sin clave como el nodo, rehúsa, nombrando el `.recifrando` y los dos usuarios, sin
+/// crear el libro ni tocar los dos hermanos; dado el `.recifrando` al dueño del libro, la apertura
+/// siguiente lo termina, con su saldo. (b) Con el libro y el `.recifrando` —murió antes del
+/// compromiso—, abrir con la frase vieja rehúsa sin tocar ninguno de los dos, byte a byte; borrado el
+/// `.recifrando`, el libro abre. Rehusar en (b), y no borrarlo, es de la sesión. Discrimina (medido con
+/// mutantes; el asiento del §828): el código de antes, y la apertura que no mira de quién es el
+/// `.recifrando` (los dos terminan el recifrado con el `.recifrando` de root, o lo borran).
+#[test]
+#[cfg(unix)]
+fn la_apertura_no_termina_ni_borra_un_recifrando_de_otro_dueno() {
+    if !puede_dar_a_otro() {
+        eprintln!("§828: sin medir: dar el libro a otro dueño pide privilegios (no se corre como root)");
+        return;
+    }
+    let yo = quien_soy();
+    let nombra = |que: &str, e: &LayerError| {
+        let t = e.to_string();
+        assert!(
+            t.contains(".recifrando") && t.contains(&format!("del usuario {yo}")) && t.contains(&format!("{DUENO_AJENO}")),
+            "({que}) el error no nombra el .recifrando ni a los dos usuarios: {t}"
+        );
+    };
+
+    let (path, alice, _) = libro_e4("dueno_restos_vr");
+    let (r, v) = hermanos_de(&path);
+    assert!(morir_en(5, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)), "(a) no murió");
+    assert!(!hay(&path) && hay(&r) && hay(&v), "(a) la muerte en el paso 5 deja el .retirado y el .recifrando");
+    dar_el_libro(&v, DUENO_AJENO, GRUPO_DEL_LIBRO);
+    let antes = (censo_del_libro(&r), censo_del_libro(&v));
+    let e = abrir_e4(&path, FRASE_NUEVA_E4).map(|_| ()).expect_err("CRITICO: (a) la apertura terminó un .recifrando de otro dueño");
+    nombra("a", &e);
+    let e = open_retry(&path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+        .map(|_| ())
+        .expect_err("CRITICO: (a) la apertura sin clave terminó un .recifrando de otro dueño");
+    nombra("a", &e);
+    assert!(!hay(&path), "CRITICO: (a) la apertura que rehúsa creó el libro");
+    assert_eq!((censo_del_libro(&r), censo_del_libro(&v)), antes, "CRITICO: (a) la apertura que rehúsa tocó los hermanos");
+    dar_el_libro(&r, DUENO_AJENO, GRUPO_DEL_LIBRO);
+    let l = abrir_e4(&path, FRASE_NUEVA_E4).expect("(a) con el .recifrando de su dueño, la apertura lo termina");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(a)");
+    drop(l);
+    assert!(hay(&path) && !hay(&r) && !hay(&v), "(a) no lo terminó");
+    quitar_e4(&path);
+
+    let (path, alice, _) = libro_e4("dueno_restos_pr");
+    let (r, v) = hermanos_de(&path);
+    assert!(morir_en(4, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)), "(b) no murió");
+    assert!(hay(&path) && hay(&r) && !hay(&v), "(b) la muerte en el paso 4 deja el libro y el .recifrando");
+    dar_el_libro(&path, DUENO_AJENO, GRUPO_DEL_LIBRO);
+    let antes = (censo_del_libro(&path), censo_del_libro(&r));
+    let e = abrir_e4(&path, FRASE_VIEJA_E4).map(|_| ()).expect_err("CRITICO: (b) la apertura borró un .recifrando de otro dueño");
+    nombra("b", &e);
+    assert_eq!((censo_del_libro(&path), censo_del_libro(&r)), antes, "CRITICO: (b) la apertura que rehúsa tocó el libro o el .recifrando");
+    std::fs::remove_dir_all(&r).expect("(b) borrar el .recifrando");
+    let l = abrir_e4(&path, FRASE_VIEJA_E4).expect("(b) sin el .recifrando, el libro abre con la frase vieja");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(b)");
+    drop(l);
+    quitar_e4(&path);
+}
+
+// -----------------------------------------------------------------
+// ⚠️ §828: lo que las revisiones del borrador vieron sin test: el libro que no es de un solo dueño, el
+// `.recifrando` de su dueño que termina la apertura, lo que lleva `blobs/` y la copia cambiada por otra
+// -----------------------------------------------------------------
+
+/// ⚠️ §828 · Lo que se comprueba de la copia que vio el gancho del paso 4, en el test del grupo y en el del
+/// `.recifrando` que termina la apertura: cada entrada es de quien recifra (`yo`), del grupo del libro
+/// (`GRUPO_DEL_LIBRO`) y con el grupo y el modo de su homónimo —los de `db`, si es un fichero sin él—;
+/// al menos una no tiene homónimo en el libro, para que lo de `db` se mida y no dependa de que los
+/// números de los `snap.*` no coincidan; y lo que sigue en `path` con el mismo nombre y el mismo inodo
+/// conserva lo suyo, y siguen el directorio, `blobs/`, `conf` y `db`.
+#[cfg(unix)]
+fn comprobar_la_copia(que: &str, path: &str, visto: Option<(Vec<Entrada>, Vec<Entrada>)>, yo: u32) {
+    let (copia, libro) = visto.unwrap_or_else(|| panic!("({que}) el gancho del paso 4 no se disparó"));
+    assert!(copia.len() >= 5, "({que}) la copia lleva {} entradas", copia.len());
+    assert!(
+        copia.iter().any(|e| !libro.iter().any(|h| h.nombre == e.nombre)),
+        "({que}) ninguna entrada de la copia está sin homónimo en el libro: lo de `db` no se mide"
+    );
+    let toca = lo_que_toca(&copia, &libro);
+    for (e, (n, gid, modo)) in copia.iter().zip(&toca) {
+        assert_eq!(e.uid, yo, "CRITICO: ({que}) «{n}» de la copia no es de quien recifra: {}", e.uid);
+        assert_eq!(e.gid, GRUPO_DEL_LIBRO, "CRITICO: ({que}) «{n}» de la copia no es del grupo del libro: {}", e.gid);
+        assert_eq!((e.gid, e.modo), (*gid, *modo), "CRITICO: ({que}) «{n}» no tomó el grupo y el modo de su homónimo: {:o}", e.modo);
+    }
+    let despues = censo_del_libro(path);
+    let mut siguen = Vec::new();
+    for e in &copia {
+        if let Some(d) = despues.iter().find(|d| d.nombre == e.nombre && d.ino == e.ino) {
+            assert_eq!((d.uid, d.gid, d.modo), (e.uid, e.gid, e.modo), "({que}) «{}» cambió tras el paso 4", e.nombre);
+            siguen.push(e.nombre.as_str());
+        }
+    }
+    for n in ["", "blobs", "conf", "db"] {
+        assert!(siguen.contains(&n), "({que}) «{n}» no siguió en el libro con el inodo de la copia");
+    }
+}
+
+/// ⚠️ §828 · Recifra `path` con el gancho `punto` puesto en ESTE hilo: la primera vez que llega ahí,
+/// `cambiar(R)` cambia la copia. Devuelve el texto del error, o `None` si recifró, y si el gancho se
+/// disparó. Como `recifrar_cambiando_la_copia`, en el punto que se pida.
+#[cfg(unix)]
+fn recifrar_cambiando_en(
+    path: &str,
+    punto: &'static str,
+    cambiar: impl Fn(&std::path::Path) + Send + Sync + 'static,
+) -> (Option<String>, bool) {
+    let hecho = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let yo = std::thread::current().name().map(str::to_owned);
+    let r = {
+        let (rr, hecho) = (hermanos_de(path).0, hecho.clone());
+        let _g = con_gancho(move |hilo, donde| {
+            if donde == punto && Some(hilo) == yo.as_deref() && !hecho.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                cambiar(std::path::Path::new(&rr));
+            }
+        });
+        recifrar_e4(path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)
+    };
+    (r.err().map(|e| e.to_string()), hecho.load(std::sync::atomic::Ordering::SeqCst))
+}
+
+/// ⚠️ §828 · Como `con_el_paso_4`, y además, la primera vez que ESTE hilo llega al gancho
+/// `recifrar:grupo`, al empezar el paso que da el grupo y los modos, `cambiar(R)` cambia la copia.
+#[cfg(unix)]
+#[allow(clippy::type_complexity)]
+fn con_el_paso_4_cambiando<T>(
+    path: &str,
+    cambiar: impl Fn(&std::path::Path) + Send + Sync + 'static,
+    f: impl FnOnce() -> T,
+) -> (T, Option<(Vec<Entrada>, Vec<Entrada>)>) {
+    let visto = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let hecho = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let yo = std::thread::current().name().map(str::to_owned);
+    let r = {
+        let (rr, _) = hermanos_de(path);
+        let (visto, p) = (visto.clone(), path.to_owned());
+        let _g = con_gancho(move |hilo, punto| {
+            if Some(hilo) != yo.as_deref() {
+                return;
+            }
+            if punto == "recifrar:grupo" && !hecho.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                cambiar(std::path::Path::new(&rr));
+            }
+            if punto == "recifrar:4" {
+                *visto.lock().unwrap_or_else(|e| e.into_inner()) = Some((censo_del_libro(&rr), censo_del_libro(&p)));
+            }
+        });
+        f()
+    };
+    let v = visto.lock().unwrap_or_else(|e| e.into_inner()).take();
+    (r, v)
+}
+
+/// ⚠️ §828 · **El libro que no es de un solo dueño no se recifra ni se migra** (`SECURITY.md` §3.17). Un
+/// borrador anterior del §828 comparaba sólo el dueño del directorio del libro: con el directorio de root
+/// y los ficheros de otro —el directorio de un `install -d -o root -g 12346 -m 2770` con los ficheros
+/// del servicio—, root lo recifraba y lo migraba, y `conf`, `db` y `blobs/` quedaban de root y su dueño
+/// ya no lo abría (lo midió una revisión de ese borrador). Como root (si no, se salta y lo dice), con
+/// el directorio en 0:12346 y 2770, y `db`, `conf` o `blobs/`, de uno en uno, de 12345:12346 —lo demás,
+/// de 0:12346—: (a) `recifrar` un libro de la versión 2 rehúsa, con un texto que nombra lo que es de
+/// otro, a su dueño y a quien recifra, en `recifrar`, antes de tomar el cerrojo y de abrir el libro (la
+/// comparación previa; que sea antes no lo ve este test, porque el paso 1 da el mismo texto: lo ve el décimo); (b) abrir con clave uno de la 1 —abrirlo lo migraría— también, en el paso 1 de
+/// la pieza, y la apertura falla entera. Los seis, con un error inyectado al acabar el paso 1
+/// (`fallar_en(1)`), que la guarda tiene que adelantar. (c) No queda ningún hermano, y el libro queda
+/// como estaba: cada entrada con su nombre, su inodo, su dueño, su grupo y su modo; byte a byte, todo
+/// menos `db`, y `db` con lo mismo (`volcado`; como en el test del libro de otro dueño, cada libro se
+/// asienta antes). (d) La contraprueba: dado entero a root, el de la 2 se recifra, con su saldo. Y la
+/// apertura, con un `.recifrando` de root —una muerte inyectada al acabar el paso 4 de un libro de
+/// root—: (e) con el `db` del libro dado a 12345, y (f) con el `db` del `.recifrando` dado a 12345,
+/// rehúsa nombrando ese `db` y a su dueño, sin tocar el libro ni el `.recifrando`. Discrimina (medido
+/// con mutantes; el asiento del §828): el código de antes; en el paso 1, comparar sólo el directorio, o
+/// dejar fuera de la comparación `db`, `conf` o `blobs/`, y la guarda quitada o puesta después del paso
+/// 1 —al acabar el 2 o justo antes de dar el grupo—, que dan en (b) el error inyectado; y en la
+/// apertura, no mirar de quién es el `.recifrando` ((e) y (f) lo borran), mirar sólo los directorios, y
+/// no mirarlo por dentro ((f)). Lo que la comparación previa deja fuera de la suya no lo ve este test,
+/// porque el paso 1 da después el mismo texto: lo ve el del libro sin asentar, con sus tres `mixto_*`, uno por cada una de `db`, `conf` y `blobs/`.
+#[test]
+#[cfg(unix)]
+fn el_libro_que_no_es_de_un_solo_dueno_no_se_recifra_ni_se_migra() {
+    use std::os::unix::fs::PermissionsExt;
+    if !puede_dar_a_otro() {
+        eprintln!("§828: sin medir: dar un fichero del libro a otro dueño pide privilegios (no se corre como root)");
+        return;
+    }
+    let yo = quien_soy();
+    #[allow(clippy::type_complexity)]
+    let mira = |path: &str| -> (Vec<(String, u64, u32, u32, u32)>, Vec<(String, Option<Vec<u8>>)>) {
+        let censo = censo_del_libro(path);
+        let meta = censo.iter().map(|e| (e.nombre.clone(), e.ino, e.uid, e.gid, e.modo)).collect();
+        (meta, censo.into_iter().filter(|e| e.nombre != "db").map(|e| (e.nombre, e.bytes)).collect())
+    };
+    let preparar = |path: &str, ajeno: &str| {
+        drop(sled_open_retry(path));
+        dar_el_libro(path, yo, GRUPO_DEL_LIBRO);
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o2770)).expect("el modo del directorio");
+        std::os::unix::fs::lchown(std::path::Path::new(path).join(ajeno), Some(DUENO_AJENO), Some(GRUPO_DEL_LIBRO))
+            .expect("dar una entrada del libro a otro dueño");
+    };
+    let nombra = |e: &LayerError, path: &str, ajeno: &str, quien: &str| {
+        let t = e.to_string();
+        assert!(
+            t.contains(&format!("{path}/{ajeno}: es del usuario {DUENO_AJENO}")) && t.contains(&format!("{quien} {yo}")),
+            "({ajeno}) el error no nombra lo que es de otro, a su dueño y a quien lo intenta: {t}"
+        );
+    };
+    let sin_hermanos = |path: &str| {
+        let (r, v) = hermanos_de(path);
+        assert!(!hay(&r) && !hay(&v), "CRITICO: (c) lo que rehúsa dejó un hermano");
+    };
+
+    for ajeno in ["db", "conf", "blobs"] {
+        let (p, alice, _) = libro_e4(&format!("dueno_mixto_{ajeno}"));
+        let db = volcado(&p);
+        preparar(&p, ajeno);
+        let antes = mira(&p);
+        let e = fallar_en(1, || recifrar_e4(&p, FRASE_VIEJA_E4, FRASE_NUEVA_E4))
+            .map(|_| ())
+            .err()
+            .unwrap_or_else(|| panic!("CRITICO: (a) root recifró un libro con «{ajeno}» de otro dueño"));
+        nombra(&e, &p, ajeno, "recifrar el usuario");
+        sin_hermanos(&p);
+        assert_eq!(mira(&p), antes, "CRITICO: (c) el recifrado que rehúsa cambió algo del libro ({ajeno})");
+        assert!(volcado(&p) == db, "CRITICO: (c) el recifrado que rehúsa cambió lo que guarda `db` ({ajeno})");
+        if ajeno == "db" {
+            dar_el_libro(&p, yo, GRUPO_DEL_LIBRO);
+            let l = recifrar_e4(&p, FRASE_VIEJA_E4, FRASE_NUEVA_E4).expect("(d) dado entero a quien recifra, se recifra");
+            assert_eq!(l.balance_of(alice), Some(777_777), "(d)");
+            drop(l);
+            sin_hermanos(&p);
+        }
+        quitar_e4(&p);
+    }
+
+    for ajeno in ["db", "conf", "blobs"] {
+        let (p1, _, _) = libro_e4(&format!("dueno_mixto_v1_{ajeno}"));
+        rebajar_a_v1(&p1, FRASE_VIEJA_E4);
+        let db = volcado(&p1);
+        preparar(&p1, ajeno);
+        let antes = mira(&p1);
+        let e = fallar_en(1, || abrir_e4(&p1, FRASE_VIEJA_E4))
+            .map(|_| ())
+            .err()
+            .unwrap_or_else(|| panic!("CRITICO: (b) root abrió con clave, y migró, un libro v1 con «{ajeno}» de otro dueño"));
+        nombra(&e, &p1, ajeno, "lo migra- el usuario");
+        sin_hermanos(&p1);
+        assert_eq!(mira(&p1), antes, "CRITICO: (c) la migración que rehúsa cambió algo del libro ({ajeno})");
+        assert!(volcado(&p1) == db, "CRITICO: (c) la migración que rehúsa cambió lo que guarda `db` ({ajeno})");
+        quitar_e4(&p1);
+    }
+
+    for (que, en_el_libro) in [("e", true), ("f", false)] {
+        let (p, _, _) = libro_e4(&format!("dueno_mixto_restos_{que}"));
+        let (r, v) = hermanos_de(&p);
+        assert!(morir_en(4, || recifrar_e4(&p, FRASE_VIEJA_E4, FRASE_NUEVA_E4)), "({que}) no murió");
+        assert!(hay(&p) && hay(&r) && !hay(&v), "({que}) la muerte en el paso 4 deja el libro y el .recifrando");
+        let ajeno = std::path::Path::new(if en_el_libro { &p } else { &r }).join("db");
+        std::os::unix::fs::lchown(&ajeno, Some(DUENO_AJENO), Some(GRUPO_DEL_LIBRO)).expect("dar `db` a otro dueño");
+        let antes = (censo_del_libro(&p), censo_del_libro(&r));
+        let e = abrir_e4(&p, FRASE_VIEJA_E4)
+            .map(|_| ())
+            .err()
+            .unwrap_or_else(|| panic!("CRITICO: ({que}) la apertura borró un .recifrando con un libro que no es de un solo dueño"));
+        let t = e.to_string();
+        assert!(
+            t.contains(".recifrando") && t.contains(&format!("{} del usuario {DUENO_AJENO}", ajeno.display())),
+            "({que}) el error no nombra el .recifrando ni el `db` de otro dueño: {t}"
+        );
+        assert_eq!((censo_del_libro(&p), censo_del_libro(&r)), antes, "CRITICO: ({que}) la apertura que rehúsa tocó el libro o el .recifrando");
+        quitar_e4(&p);
+    }
+}
+
+/// ⚠️ §828 · **El `.recifrando` de su dueño que termina la apertura conserva el grupo y los modos del
+/// paso 4** (`SECURITY.md` §3.17). Tras una muerte entre los pasos 5 y 6 quedan el `.retirado` y el
+/// `.recifrando`, y la apertura siguiente pone el `.recifrando` en el sitio del libro: el grupo y los
+/// modos los tomó en el paso 4, que va antes del 5. Como root (si no, se salta y lo dice): (a) con el
+/// libro de 0:12346 y los modos del test del grupo —el directorio 2750, `blobs/` 0750, `conf` 4640,
+/// `db` 0640 y los `snap.*` 0600—, una muerte inyectada al acabar el paso 5; la apertura con la frase
+/// nueva la termina, con su saldo y sin hermanos, y la copia que vio el gancho del paso 4 es del grupo
+/// 12346 con el modo de cada homónimo, y lo conserva en el libro (`comprobar_la_copia`). (b) Un
+/// `.recifrando` del mismo dueño y de otro grupo —el que dejaba el código de antes del §828, recifrado
+/// por su dueño con otro grupo principal— la apertura lo termina como antes, con su grupo: su guarda
+/// mira los dueños, no los grupos. Discrimina: que la apertura compare también el grupo ((b) rehúsa).
+#[test]
+#[cfg(unix)]
+fn el_recifrando_de_su_dueno_que_termina_la_apertura_conserva_su_grupo_y_sus_modos() {
+    use std::os::unix::fs::MetadataExt;
+    if !puede_dar_a_otro() {
+        eprintln!("§828: sin medir: dar el libro a otro grupo pide privilegios (no se corre como root)");
+        return;
+    }
+    let yo = quien_soy();
+
+    let (path, alice, _) = libro_e4("dueno_restos_grupo");
+    let (r, v) = hermanos_de(&path);
+    dar_el_libro(&path, yo, GRUPO_DEL_LIBRO);
+    poner_modos(&path, 0o2750, 0o750, 0o4640, 0o640, 0o600);
+    let (murio, visto) = con_el_paso_4(&path, || morir_en(5, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)));
+    assert!(murio, "(a) no murió");
+    assert!(!hay(&path) && hay(&r) && hay(&v), "(a) la muerte en el paso 5 deja el .retirado y el .recifrando");
+    let l = abrir_e4(&path, FRASE_NUEVA_E4).expect("(a) la apertura termina el recifrado de su dueño");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(a)");
+    drop(l);
+    assert!(hay(&path) && !hay(&r) && !hay(&v), "(a) no lo terminó");
+    comprobar_la_copia("a", &path, visto, yo);
+    quitar_e4(&path);
+
+    let (path, alice, _) = libro_e4("dueno_restos_otro_grupo");
+    let (r, v) = hermanos_de(&path);
+    assert!(morir_en(5, || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4)), "(b) no murió");
+    assert!(!hay(&path) && hay(&r) && hay(&v), "(b) la muerte en el paso 5 deja el .retirado y el .recifrando");
+    let grupo_del_retirado = std::fs::metadata(&v).expect("mirar el .retirado").gid();
+    assert_ne!(grupo_del_retirado, GRUPO_DEL_LIBRO, "(b) el .retirado ya era del otro grupo");
+    dar_el_libro(&r, yo, GRUPO_DEL_LIBRO);
+    let l = abrir_e4(&path, FRASE_NUEVA_E4).expect("(b) la apertura no terminó un .recifrando de su dueño con otro grupo");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(b)");
+    drop(l);
+    assert!(hay(&path) && !hay(&r) && !hay(&v), "(b) no lo terminó");
+    assert_eq!(std::fs::metadata(&path).expect("mirar el libro").gid(), GRUPO_DEL_LIBRO, "(b) el libro no tiene el grupo de su .recifrando");
+    quitar_e4(&path);
+}
+
+/// ⚠️ §828 · **Lo que lleva `blobs/` en la copia toma el grupo y el modo de `db`, y un directorio dentro de
+/// `blobs/` hace rehusar** (`SECURITY.md` §3.17). El libro no tiene blobs —sled 0.34.7 pasa a blob un
+/// fragmento de más de 128 KiB, y un valor del libro mide unos cientos de bytes—, así que se pone algo
+/// en `blobs/` de la copia, en el gancho `recifrar:grupo`, al empezar el paso que da el grupo y los
+/// modos. El libro va con 0750, `blobs/` 0750, `conf` 0600, `db` 0640 y los `snap.*` 0600. (a) Un
+/// fichero del proceso con 0604: al acabar el paso 4 tiene el grupo y el modo de `db` (0640), y el
+/// recifrado acaba, con su saldo —sled, al reabrir el libro, se salta en `blobs/` un nombre que no es
+/// un número—. (b) Un directorio: el recifrado rehúsa nombrándolo, no queda ningún hermano, y el libro
+/// dice lo mismo y abre con la frase de antes. No pide privilegios. Discrimina: no bajar a `blobs/` ((a):
+/// el fichero se queda con 0604) y no rehusar un directorio dentro de `blobs/` ((b) recifra).
+#[test]
+#[cfg(unix)]
+fn lo_que_lleva_blobs_en_la_copia_toma_lo_de_db_y_un_directorio_hace_rehusar() {
+    use std::os::unix::fs::PermissionsExt;
+    let (path, alice, _) = libro_e4("dueno_blobs_fichero");
+    poner_modos(&path, 0o750, 0o750, 0o600, 0o640, 0o600);
+    let (l, visto) = con_el_paso_4_cambiando(
+        &path,
+        |rr| {
+            let b = rr.join("blobs").join("de_la_prueba");
+            std::fs::write(&b, b"blob").expect("(a) el fichero en blobs");
+            std::fs::set_permissions(&b, std::fs::Permissions::from_mode(0o604)).expect("(a) su modo");
+        },
+        || recifrar_e4(&path, FRASE_VIEJA_E4, FRASE_NUEVA_E4),
+    );
+    let l = l.expect("(a) recifrar con un fichero en blobs/ de la copia");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(a)");
+    drop(l);
+    let (copia, libro) = visto.expect("(a) el gancho del paso 4 no se disparó");
+    let db = libro.iter().find(|e| e.nombre == "db").expect("(a) el libro lleva db");
+    let blob = copia.iter().find(|e| e.nombre == "blobs/de_la_prueba").expect("(a) la copia no lleva el fichero de blobs/");
+    assert_eq!(
+        (blob.gid, blob.modo),
+        (db.gid, 0o640),
+        "CRITICO: (a) lo que lleva blobs/ en la copia no tomó el grupo y el modo de `db`: {:o}",
+        blob.modo
+    );
+    quitar_e4(&path);
+
+    let (path, alice, _) = libro_e4("dueno_blobs_directorio");
+    let (r, v) = hermanos_de(&path);
+    let antes = volcado(&path);
+    let (e, hecho) = recifrar_cambiando_en(&path, "recifrar:grupo", |rr| {
+        std::fs::create_dir(rr.join("blobs").join("un_directorio")).expect("(b) el directorio en blobs");
+    });
+    assert!(hecho, "(b) el gancho no se disparó");
+    let e = e.expect("CRITICO: (b) recifró con un directorio dentro de blobs/ de la copia");
+    assert!(e.contains("un_directorio") && e.contains("dentro de `blobs/`"), "(b) el error no lo nombra: {e}");
+    assert!(!hay(&r) && !hay(&v), "(b) quedó un hermano");
+    assert_eq!(volcado(&path), antes, "(b) el recifrado que rehúsa tocó el libro");
+    let l = abrir_e4(&path, FRASE_VIEJA_E4).expect("(b) el libro abre con la frase de antes");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(b)");
+    drop(l);
+    quitar_e4(&path);
+}
+
+/// ⚠️ §828 · **La copia cambiada por otro directorio no recibe el grupo ni los modos del libro**
+/// (`SECURITY.md` §3.17). Quien pudiera escribir en el padre del libro podía cambiar el `.recifrando`
+/// por otro directorio, y el paso 4 le daba a lo que llevara el grupo y los modos del libro: lo midió
+/// una revisión del borrador anterior del §828, como root, con un fichero de root que quedó en el grupo
+/// del libro y con 0640. Aquí se cambia por un directorio del proceso, con 0700, que lleva un fichero
+/// `secreto` con 0600: (a) en el gancho `recifrar:grupo`, al empezar el paso 4, y (b) en el gancho
+/// `recifrar:1`, entre crear R y compararlo. En los dos, el recifrado rehúsa con «no es el
+/// `.recifrando` que nacio en el paso 1» —en (a), porque su dispositivo y su inodo no son los que
+/// nacieron; en (b), porque no está vacío—; `secreto` sigue con 0600 —se mira por un descriptor abierto
+/// en el gancho, porque el recifrado que rehúsa borra lo que haya en el sitio de R, como desde el
+/// §812—; no queda ningún hermano; y el libro dice lo mismo y abre con la frase de antes. El libro va
+/// con 0750 y sus ficheros con 0640. No pide privilegios. Discrimina: no exigir en el paso 4 el inodo
+/// del paso 1 ((a) recifra) y no exigir R vacío en el paso 1 ((b) recifra).
+#[test]
+#[cfg(unix)]
+fn la_copia_cambiada_por_otro_directorio_no_recibe_el_grupo_del_libro() {
+    use std::os::unix::fs::{DirBuilderExt, MetadataExt, PermissionsExt};
+    for (que, punto) in [("a", "recifrar:grupo"), ("b", "recifrar:1")] {
+        let (path, alice, _) = libro_e4(&format!("dueno_copia_cambiada_{que}"));
+        let (r, v) = hermanos_de(&path);
+        let apartado = format!("{path}.apartado");
+        let _ = std::fs::remove_dir_all(&apartado);
+        poner_modos(&path, 0o750, 0o750, 0o640, 0o640, 0o640);
+        let antes = volcado(&path);
+        let secreto = std::sync::Arc::new(std::sync::Mutex::new(None::<std::fs::File>));
+        let (s, ap) = (secreto.clone(), apartado.clone());
+        let (e, hecho) = recifrar_cambiando_en(&path, punto, move |rr| {
+            std::fs::rename(rr, &ap).expect("apartar la copia");
+            std::fs::DirBuilder::new().mode(0o700).create(rr).expect("el otro directorio");
+            let f = rr.join("secreto");
+            std::fs::write(&f, b"de nadie mas").expect("el secreto");
+            std::fs::set_permissions(&f, std::fs::Permissions::from_mode(0o600)).expect("su modo");
+            *s.lock().unwrap_or_else(|e| e.into_inner()) = Some(std::fs::File::open(&f).expect("abrir el secreto"));
+        });
+        assert!(hecho, "({que}) el gancho no se disparó");
+        let e = e.unwrap_or_else(|| panic!("CRITICO: ({que}) recifró con la copia cambiada por otro directorio"));
+        assert!(e.contains("paso 1"), "({que}) el error no dice que no es la copia del paso 1: {e}");
+        let f = secreto.lock().unwrap_or_else(|e| e.into_inner()).take().expect("el gancho abrió el secreto");
+        let modo = f.metadata().expect("mirar el secreto").mode() & 0o7777;
+        assert_eq!(modo, 0o600, "CRITICO: ({que}) el recifrado le dio al secreto los modos del libro: {modo:o}");
+        assert!(!hay(&r) && !hay(&v), "({que}) quedó un hermano");
+        assert_eq!(volcado(&path), antes, "({que}) el recifrado que rehúsa tocó el libro");
+        let l = abrir_e4(&path, FRASE_VIEJA_E4).expect("el libro abre con la frase de antes");
+        assert_eq!(l.balance_of(alice), Some(777_777), "({que})");
+        drop(l);
+        let _ = std::fs::remove_dir_all(&apartado);
+        quitar_e4(&path);
+    }
+}
+
+// -----------------------------------------------------------------
+// ⚠️ §828: la comparación previa del recifrado, con el libro sin asentar y sin cerrojo
+// -----------------------------------------------------------------
+
+/// ⚠️ §828 · La variable con que el test de la comparación previa se corre a sí mismo en otro proceso, y
+/// su papel: `recifra:<libro>\n<mixto_db>\n<mixto_conf>\n<mixto_blobs>`, como root y con la umask 0077, y `abre:<libro>`, como el dueño.
+#[cfg(unix)]
+const HIJO_DE_LA_PREVIA: &str = "ZK_SSL_HIJO_DE_LA_COMPARACION_PREVIA";
+
+/// ⚠️ §828 · Lo que hace el test de la comparación previa en el otro proceso. `recifra:`: recifra los cuatro
+/// libros y exige que rehúsen, cada uno con su texto: cada `mixto_<x>`, el que nombra su `<x>`. `abre:`: abre el libro con la frase vieja y exige
+/// su suministro.
+#[cfg(unix)]
+fn hijo_de_la_previa(papel: &str) {
+    if let Some(libros) = papel.strip_prefix("recifra:") {
+        let yo = quien_soy();
+        let mut libros = libros.split('\n');
+        let libro = libros.next().expect("el libro");
+        let t = recifrar_e4(libro, FRASE_VIEJA_E4, FRASE_NUEVA_E4)
+            .map(|_| ())
+            .expect_err("CRITICO: (a) root recifró el libro sin asentar de otro dueño")
+            .to_string();
+        assert!(
+            t.contains(&format!("el libro es del usuario {DUENO_AJENO}, y lo intenta recifrar el usuario {yo}")),
+            "(a) el error no nombra a los dos usuarios: {t}"
+        );
+        let mut ajenos = Vec::new();
+        for mixto in libros {
+            let ajeno = mixto.rsplit_once("/mixto_").map(|(_, a)| a).expect("lo que es de otro en el mixto");
+            let t = recifrar_e4(mixto, FRASE_VIEJA_E4, FRASE_NUEVA_E4)
+                .map(|_| ())
+                .err()
+                .unwrap_or_else(|| panic!("CRITICO: (b) root recifró el libro sin asentar con su «{ajeno}» de otro dueño"))
+                .to_string();
+            assert!(
+                t.contains(&format!("{mixto}/{ajeno}: es del usuario {DUENO_AJENO}, y el directorio del libro del usuario {yo}")),
+                "(b) el error no nombra el `{ajeno}` de otro dueño: {t}"
+            );
+            ajenos.push(ajeno);
+        }
+        assert_eq!(ajenos, ["db", "conf", "blobs"], "(b) no se recifraron los tres mixtos");
+    } else if let Some(libro) = papel.strip_prefix("abre:") {
+        let l = abrir_e4(libro, FRASE_VIEJA_E4).expect("CRITICO: (d) su dueño, después, no abre su libro");
+        assert_eq!(l.total_supply(), 777_777, "(d) el libro no tiene su suministro");
+    } else {
+        panic!("{HIJO_DE_LA_PREVIA}: papel desconocido: {papel}");
+    }
+}
+
+/// ⚠️ §828 · **Root que recifra el libro sin asentar de otro dueño, sin su cerrojo, rehúsa antes de tomar
+/// el cerrojo y de abrir el libro, y no le deja nada** (`SECURITY.md` §3.17). La guarda del paso 1
+/// llega después de que `recifrar` tome el cerrojo del libro —que crea, suyo, si no está— y abra el
+/// libro con sled; con el libro sin asentar, esa apertura de root deja en él un `snap.*` suyo, y con la
+/// umask 0077 el dueño ya no lo abre (medido en la sesión, con el código de antes de la comparación
+/// previa: 2 de 2). Desde el §828, `recifrar` compara antes (`persistence::quien_recifra_es_el_dueno`).
+/// Como root (si no, se salta y lo dice), en un directorio de 12345:12346 con 0700 —el del servicio—,
+/// cuatro libros sin asentar —no se abren después de su última escritura— y sin cerrojo: `libro`, todo de
+/// 12345:12346, y `mixto_db`, `mixto_conf` y `mixto_blobs`, de 0:12346 con su `db`, su `conf` o su `blobs/` de 12345. El test se corre a sí mismo en otro proceso
+/// (`HIJO_DE_LA_PREVIA`), con `sh -c 'umask 077 && exec …'`, porque la umask es del proceso entero y
+/// `std` no la pone: (a) `recifrar` `libro` rehúsa con el texto que nombra a los dos usuarios, y (b)
+/// cada `mixto_*`, con el que nombra lo suyo de otro; (c) el directorio del dueño y los cuatro libros quedan como estaban,
+/// entrada a entrada —el nombre, el inodo, el dueño, el grupo, el modo y los bytes, también los de
+/// `db`—: ni un `snap.*`, ni un cerrojo, ni la sonda, ni un hermano. (d) Y su dueño lo abre después,
+/// con su suministro: el test se corre otra vez, como 12345:12346 con `setpriv` y en el directorio del
+/// dueño, y el dueño, que no atraviesa el camino hasta el binario ni hasta el directorio temporal de
+/// los tests, ejecuta el binario por `/proc/self/fd/0`, su entrada, y abre el libro por
+/// `/proc/self/cwd/libro` —por `libro`, sled lo haría absoluto desde el directorio actual, y no
+/// llegaría (medido en la sesión)—; sin `setpriv`, o si no lo puede ejecutar, (d) se salta y lo dice. Que el
+/// otro proceso corrió el test lo dice su salida («1 passed»). Discrimina (medido con mutantes; el
+/// asiento del §828): sin la comparación previa —el residuo vuelve: el `snap.*` y el cerrojo de root—, la
+/// comparación después de tomar el cerrojo —el cerrojo—, la sonda que se queda en el disco, la
+/// comparación previa que sólo mira el directorio del libro, y la que deja fuera `db`, `conf` o `blobs/` (el `mixto_*` de cada uno), y el código de antes, que
+/// recifra `libro`.
+#[test]
+#[cfg(unix)]
+fn el_libro_sin_asentar_de_otro_dueno_rehusa_antes_del_cerrojo_y_no_recibe_nada() {
+    use std::os::unix::fs::PermissionsExt;
+    if let Ok(papel) = std::env::var(HIJO_DE_LA_PREVIA) {
+        hijo_de_la_previa(&papel);
+        return;
+    }
+    if !puede_dar_a_otro() {
+        eprintln!("§828: sin medir: dar el libro a otro dueño pide privilegios (no se corre como root)");
+        return;
+    }
+    let yo = quien_soy();
+    let exe = std::env::current_exe().expect("el binario de los tests");
+    let este = format!(
+        "{}::el_libro_sin_asentar_de_otro_dueno_rehusa_antes_del_cerrojo_y_no_recibe_nada",
+        module_path!().split_once("::").map_or(module_path!(), |(_, m)| m)
+    );
+    let salida = |s: &std::process::Output| format!("{}{}", String::from_utf8_lossy(&s.stdout), String::from_utf8_lossy(&s.stderr));
+    let corrio = |s: &std::process::Output| s.status.success() && String::from_utf8_lossy(&s.stdout).contains("1 passed");
+
+    let dir = temporal_unico("dueno_sin_asentar");
+    std::fs::create_dir(&dir).expect("el directorio del dueño");
+    let libro = format!("{dir}/libro");
+    let mixtos = ["db", "conf", "blobs"].map(|ajeno| (format!("{dir}/mixto_{ajeno}"), ajeno));
+    for (en, nombre) in std::iter::once((&libro, "dueno_sin_asentar_libro".to_owned()))
+        .chain(mixtos.iter().map(|(m, ajeno)| (m, format!("dueno_sin_asentar_mixto_{ajeno}"))))
+    {
+        let (p, _, _) = libro_e4(&nombre);
+        std::fs::rename(&p, en).expect("llevar el libro al directorio del dueño");
+        quitar_e4(&p);
+    }
+    dar_el_libro(&libro, DUENO_AJENO, GRUPO_DEL_LIBRO);
+    for (mixto, ajeno) in &mixtos {
+        dar_el_libro(mixto, yo, GRUPO_DEL_LIBRO);
+        let de_otro = std::path::Path::new(mixto).join(ajeno);
+        assert!(hay(&de_otro.to_string_lossy()), "el mixto no lleva «{ajeno}»");
+        std::os::unix::fs::lchown(&de_otro, Some(DUENO_AJENO), Some(GRUPO_DEL_LIBRO)).expect("lo de otro dueño");
+    }
+    std::os::unix::fs::lchown(&dir, Some(DUENO_AJENO), Some(GRUPO_DEL_LIBRO)).expect("el directorio, del dueño");
+    std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).expect("su modo");
+    assert!(
+        std::iter::once(&libro).chain(mixtos.iter().map(|(m, _)| m)).all(|l| !hay(&cerrojo_de(l))),
+        "los libros llevan cerrojo"
+    );
+    let antes = censo_del_libro(&dir);
+
+    let hijo = std::process::Command::new("sh")
+        .args(["-c", "umask 077 && exec \"$0\" \"$@\""])
+        .arg(&exe)
+        .args(["--exact", este.as_str(), "--test-threads=1", "--nocapture"])
+        .env(HIJO_DE_LA_PREVIA, format!("recifra:{libro}\n{}", mixtos.iter().map(|(m, _)| m.as_str()).collect::<Vec<_>>().join("\n")))
+        .output()
+        .expect("correr el recifrado en otro proceso");
+    assert!(corrio(&hijo), "CRITICO: (a/b) el recifrado con la umask 0077: {}", salida(&hijo));
+
+    let despues = censo_del_libro(&dir);
+    let sin_bytes = |c: &[Entrada]| c.iter().map(|e| (e.nombre.clone(), e.ino, e.uid, e.gid, e.modo)).collect::<Vec<_>>();
+    assert_eq!(
+        sin_bytes(&despues),
+        sin_bytes(&antes),
+        "CRITICO: (c) el recifrado que rehúsa dejó o cambió algo en el directorio del dueño o en un libro: un `snap.*`, el cerrojo, la sonda o un hermano"
+    );
+    assert!(despues == antes, "CRITICO: (c) el recifrado que rehúsa cambió los bytes de algo de un libro");
+
+    let abre = std::process::Command::new("setpriv")
+        .arg(format!("--reuid={DUENO_AJENO}"))
+        .arg(format!("--regid={GRUPO_DEL_LIBRO}"))
+        .args(["--clear-groups", "/proc/self/fd/0", "--exact", este.as_str(), "--test-threads=1", "--nocapture"])
+        .stdin(std::fs::File::open(&exe).expect("abrir el binario de los tests"))
+        .current_dir(&dir)
+        .env(HIJO_DE_LA_PREVIA, "abre:/proc/self/cwd/libro")
+        .output();
+    match abre {
+        Err(e) => eprintln!("§828: (d) sin medir: no hay `setpriv` ({e})"),
+        Ok(s) if matches!(s.status.code(), Some(126 | 127)) => {
+            eprintln!("§828: (d) sin medir: `setpriv` no pudo ejecutar el binario: {}", salida(&s))
+        }
+        Ok(s) => assert!(corrio(&s), "CRITICO: (d) su dueño, después, no abre su libro: {}", salida(&s)),
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+// -----------------------------------------------------------------
+// ⚠️ §828: la sonda de la comparación previa: junto a lo que no es un libro, la que no se borra y la que
+// no se crea
+// -----------------------------------------------------------------
+
+/// ⚠️ §828 · Las sondas de `nombre` que hay en `dir`: `<nombre>.sonda.*`, por nombre.
+#[cfg(unix)]
+fn sondas_de(dir: &str, nombre: &str) -> Vec<String> {
+    let prefijo = format!("{nombre}.sonda.");
+    let mut v: Vec<String> = std::fs::read_dir(dir)
+        .expect("leer el directorio")
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| n.starts_with(&prefijo))
+        .collect();
+    v.sort();
+    v
+}
+
+/// ⚠️ §828 · Corre `f` con el gancho puesto en ESTE hilo: devuelve lo que dio `f` y los puntos de pausa por
+/// los que pasó, y en `recifrar:sonda` -la sonda creada, antes de borrarla- llama a `en_la_sonda`.
+#[cfg(unix)]
+fn con_la_sonda<T>(en_la_sonda: impl Fn() + Send + Sync + 'static, f: impl FnOnce() -> T) -> (T, Vec<&'static str>) {
+    let puntos = std::sync::Arc::new(std::sync::Mutex::new(Vec::<&'static str>::new()));
+    let yo = std::thread::current().name().map(str::to_owned);
+    let r = {
+        let puntos = puntos.clone();
+        let _g = con_gancho(move |hilo, punto| {
+            if Some(hilo) == yo.as_deref() {
+                puntos.lock().unwrap_or_else(|e| e.into_inner()).push(punto);
+                if punto == "recifrar:sonda" {
+                    en_la_sonda();
+                }
+            }
+        });
+        f()
+    };
+    let p = puntos.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    (r, p)
+}
+
+/// ⚠️ §828 · **Junto a lo que no es un libro no se crea la sonda, y la que no se puede borrar hace rehusar,
+/// nombrándola** (`SECURITY.md` §3.17). La comparación previa crea su sonda, `<libro>.sonda.<pid>.<n>`,
+/// junto al libro, y la borra en el momento. Un borrador anterior del §828 la creaba antes de mirar que la
+/// ruta fuera un libro de sled: `recifrar` sobre un directorio que no lo es la creaba y la borraba en su
+/// padre —y le cambiaba la fecha de modificación— antes de rehusar, donde el código de antes rehusaba
+/// sin escribir nada; y si no la podía borrar —un padre con `chattr +a`—, se quedaba sin que nada lo
+/// dijera (lo midió una revisión de ese borrador). En un directorio del test: (a) `recifrar` un
+/// directorio que no es de sled —con un fichero `x`— rehúsa como antes, con el texto de `es_de_sled`,
+/// sin llegar a la sonda (el gancho `recifrar:sonda`, con la sonda creada y antes de borrarla, no se
+/// ve), y el directorio del test queda entrada a entrada como estaba, también su fecha de modificación;
+/// y como root, otra vez con ese directorio de 12345:12346. (b) Con un libro del proceso, el gancho
+/// cambia la sonda por un directorio con un fichero dentro, que `remove_file` no borra: `recifrar`
+/// rehúsa con un texto que nombra la sonda y dice que se borre a mano —una sola vez: `recifrar_e4`
+/// reintenta el `Io`, y con otra sonda cada vez—, sin crear el cerrojo del libro ni
+/// un hermano, y el libro queda como estaba. (c) Quitado lo puesto, se recifra, con su saldo, y la sonda
+/// no se queda. (d) Como root, con el padre `chattr +a` —donde se crea y no se borra— y el libro de
+/// 12345:12346, el de la revisión: rehúsa igual, con el texto de la sonda, y lo único nuevo en el padre
+/// es una sonda, vacía, de quien recifra y con 0600; sin root, sin `chattr`, o si el sistema de ficheros
+/// no lo admite, (d) se salta y lo dice. Discrimina (medido con mutantes; el asiento del §828): crear la
+/// sonda sin mirar antes que es de sled ((a)); no rehusar si no se puede borrar, y no borrarla ((b)
+/// recifra); rehusar entonces con `Io` ((b): `recifrar_e4` lo reintenta, y pasa por la sonda una vez
+/// en cada intento, con otra cada vez); y sin la comparación previa ((b) recifra), o con ella después
+/// de tomar el cerrojo ((b) lo toma). Lo que (d) añade no lo separa hoy ninguno: (b) cae antes.
+#[test]
+#[cfg(unix)]
+fn lo_que_no_es_un_libro_no_recibe_la_sonda_y_la_que_no_se_borra_hace_rehusar() {
+    use std::os::unix::fs::MetadataExt;
+    let fecha = |d: &str| {
+        let m = std::fs::symlink_metadata(d).expect("mirar el directorio");
+        (m.mtime(), m.mtime_nsec())
+    };
+    let como_root = puede_dar_a_otro();
+    let yo = quien_soy();
+    let dir = temporal_unico("sonda");
+    std::fs::create_dir(&dir).expect("el directorio del test");
+
+    let otro = format!("{dir}/otro");
+    std::fs::create_dir(&otro).expect("lo que no es un libro");
+    std::fs::write(format!("{otro}/x"), b"x").expect("su fichero");
+    for de_otro in [false, true] {
+        if de_otro {
+            if !como_root {
+                eprintln!("§828: (a) sin medir con otro dueño: dar el directorio a otro dueño pide privilegios (no se corre como root)");
+                break;
+            }
+            for p in [otro.clone(), format!("{otro}/x")] {
+                std::os::unix::fs::lchown(&p, Some(DUENO_AJENO), Some(GRUPO_DEL_LIBRO)).expect("dar a otro dueño");
+            }
+        }
+        let (antes, f0) = (censo_del_libro(&dir), fecha(&dir));
+        let (r, puntos) = con_la_sonda(|| {}, || recifrar_e4(&otro, FRASE_VIEJA_E4, FRASE_NUEVA_E4).map(|_| ()));
+        let t = r.expect_err("CRITICO: (a) se recifró lo que no es un libro").to_string();
+        assert!(t.contains("lleva «x», que no es de sled"), "(a) no rehúsa como antes, con el texto de `es_de_sled`: {t}");
+        assert!(!puntos.contains(&"recifrar:sonda"), "CRITICO: (a) creó la sonda junto a lo que no es un libro: {puntos:?}");
+        assert_eq!(censo_del_libro(&dir), antes, "CRITICO: (a) dejó o cambió algo junto a lo que no es un libro");
+        assert_eq!(fecha(&dir), f0, "CRITICO: (a) cambió la fecha de modificación del directorio: escribió en él");
+    }
+
+    let libro = format!("{dir}/libro");
+    let (p, alice, _) = libro_e4("sonda_libro");
+    std::fs::rename(&p, &libro).expect("llevar el libro al directorio del test");
+    quitar_e4(&p);
+    let (r, v) = hermanos_de(&libro);
+    let antes = censo_del_libro(&libro);
+    let d = dir.clone();
+    let (e, puntos) = con_la_sonda(
+        move || {
+            for s in sondas_de(&d, "libro") {
+                let s = format!("{d}/{s}");
+                if std::fs::symlink_metadata(&s).is_ok_and(|m| m.is_file()) {
+                    std::fs::remove_file(&s).expect("quitar la sonda");
+                    std::fs::create_dir(&s).expect("poner un directorio en su sitio");
+                    std::fs::write(format!("{s}/dentro"), b"").expect("y algo dentro");
+                }
+            }
+        },
+        || recifrar_e4(&libro, FRASE_VIEJA_E4, FRASE_NUEVA_E4).map(|_| ()),
+    );
+    let t = e.expect_err("CRITICO: (b) recifró sin poder borrar su sonda").to_string();
+    let veces = puntos.iter().filter(|p| **p == "recifrar:sonda").count();
+    assert_eq!(
+        veces, 1,
+        "CRITICO: (b) no pasó una sola vez por la sonda: quien reintenta lo que rehúsa crea otra en cada intento: {puntos:?}"
+    );
+    let quedan = sondas_de(&dir, "libro");
+    assert_eq!(quedan.len(), 1, "(b) no queda la sonda que no se pudo borrar: {quedan:?}");
+    let sonda = format!("{dir}/{}", quedan[0]);
+    assert!(
+        t.contains(&format!("{sonda}: la sonda con que el recifrado mira quien recifra no se pudo borrar")) && t.contains("borrala a mano"),
+        "CRITICO: (b) el error no nombra la sonda que se queda: {t}"
+    );
+    assert!(!hay(&cerrojo_de(&libro)) && !hay(&r) && !hay(&v), "CRITICO: (b) tomó el cerrojo del libro o dejó un hermano");
+    assert_eq!(censo_del_libro(&libro), antes, "CRITICO: (b) tocó el libro");
+    std::fs::remove_dir_all(&sonda).expect("quitar lo puesto");
+    let l = recifrar_e4(&libro, FRASE_VIEJA_E4, FRASE_NUEVA_E4).expect("(c) sin lo puesto, se recifra");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(c)");
+    drop(l);
+    assert!(sondas_de(&dir, "libro").is_empty(), "CRITICO: (c) el recifrado que acaba deja su sonda");
+
+    if !como_root {
+        eprintln!("§828: (d) sin medir: el padre con `chattr +a` y el libro de otro dueño piden privilegios (no se corre como root)");
+    } else {
+        struct SinApendice(String);
+        impl Drop for SinApendice {
+            fn drop(&mut self) {
+                let _ = std::process::Command::new("chattr").args(["-a", self.0.as_str()]).status();
+            }
+        }
+        let padre = format!("{dir}/apendice");
+        std::fs::create_dir(&padre).expect("el padre");
+        let libro = format!("{padre}/libro");
+        let (p, _, _) = libro_e4("sonda_apendice");
+        std::fs::rename(&p, &libro).expect("llevar el libro al padre");
+        quitar_e4(&p);
+        dar_el_libro(&libro, DUENO_AJENO, GRUPO_DEL_LIBRO);
+        match std::process::Command::new("chattr").args(["+a", padre.as_str()]).output() {
+            Err(e) => eprintln!("§828: (d) sin medir: no hay `chattr` ({e})"),
+            Ok(s) if !s.status.success() => {
+                eprintln!("§828: (d) sin medir: `chattr +a` no se pudo poner: {}", String::from_utf8_lossy(&s.stderr))
+            }
+            Ok(_) => {
+                let sin_apendice = SinApendice(padre.clone());
+                let antes = censo_del_libro(&padre);
+                let t = recifrar_e4(&libro, FRASE_VIEJA_E4, FRASE_NUEVA_E4)
+                    .map(|_| ())
+                    .expect_err("CRITICO: (d) root recifró el libro de otro dueño en un padre con `chattr +a`")
+                    .to_string();
+                let quedan = sondas_de(&padre, "libro");
+                assert_eq!(quedan.len(), 1, "(d) no queda una sonda: {quedan:?}");
+                let sonda = format!("{padre}/{}", quedan[0]);
+                assert!(
+                    t.contains(&format!("{sonda}: la sonda con que el recifrado mira quien recifra no se pudo borrar")),
+                    "CRITICO: (d) el error no nombra la sonda que se queda: {t}"
+                );
+                let (nueva, resto): (Vec<Entrada>, Vec<Entrada>) = censo_del_libro(&padre).into_iter().partition(|e| e.nombre == quedan[0]);
+                assert_eq!(resto, antes, "CRITICO: (d) dejó o cambió en el padre algo más que la sonda");
+                assert!(
+                    matches!(nueva.as_slice(), [e] if e.uid == yo && e.modo == 0o600 && e.bytes.as_deref() == Some(&[][..])),
+                    "(d) la sonda que se queda no es un fichero vacío de quien recifra, con 0600: {nueva:?}"
+                );
+                drop(sin_apendice);
+                std::fs::remove_file(&sonda).expect("(d) quitado `chattr +a`, la sonda se borra");
+            }
+        }
+    }
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// ⚠️ §828 · **Si la comparación previa no puede crear su sonda, no rehúsa por eso, y la guarda del paso 1
+/// queda de respaldo** (`SECURITY.md` §3.17). La sonda, `<libro>.sonda.<pid>.<n>`, no se crea de dos
+/// maneras, y el test corre las dos. **Con un nombre en el que no cabe** (`ENAMETOOLONG`;
+/// `sin_que_quepa_la_sonda`): el libro lleva el nombre más largo con el que cabe su `.recifrando` —el más
+/// largo de sus hermanos y de su cerrojo— en el directorio del test, que se mide creando nombres; y la
+/// sonda no cabe en él si su sufijo, con el pid del proceso y una sola cifra de `n` —el más corto que puede
+/// llevar en este proceso—, es más largo que `.recifrando`, lo que pasa con un pid de tres cifras o más:
+/// con uno de una o de dos no hay un nombre así, y (a) y (b) se saltan y lo dicen (medido con `unshare
+/// --pid`, con el pid 1). (a) El libro del proceso: `recifrar` no rehúsa, no llega a la sonda (el gancho
+/// `recifrar:sonda` no se ve) y pasa por el paso 1 (`recifrar:1`), y se recifra, con su saldo y sin
+/// hermanos. (b) Como root, el libro, asentado antes, de 12345:12346 y sin cerrojo: rehúsa en el paso 1 —el
+/// respaldo—, con el texto que nombra a los dos usuarios, sin hermanos, con el libro dueño a dueño como
+/// estaba y lo mismo en su `db`; y deja lo que deja ese camino, que declara `SECURITY.md` §3.17: el cerrojo
+/// del libro, que no estaba, de quien recifra y con 0600. **Con el nombre ya puesto, por enlaces que la
+/// sonda no sigue** (`con_el_nombre_de_la_sonda_puesto`), que no depende del pid: el test se corre a sí
+/// mismo en otro proceso (`HIJO_DE_LA_SONDA`), en el que sólo corre él, y en el que la sonda de cada
+/// `recifrar` lleva el pid de ese proceso y una `n` que empieza en 0 —en éste no se sabe cuál le toca: la
+/// cuentan también los tests que corren a la vez—. Allí, con tres libros, antes de recifrar, pone en los
+/// nombres de sus tres primeras sondas, uno junto a cada libro, un enlace simbólico a un fichero de fuera
+/// del directorio de los libros que no está, uno a uno que está y un enlace duro a ése —si el sistema de
+/// ficheros no lo admite, ése se salta y lo dice—, y recifra una vez cada libro, cada uno con la sonda que
+/// le toca puesta (uno por nombre: `con_el_nombre_de_la_sonda_puesto` dice por qué). En cada una, la sonda
+/// no sigue el enlace (`create_new`): el fichero que no estaba no se crea, el que está sigue con sus bytes,
+/// su dueño, su grupo, su modo y su fecha de modificación, los tres nombres siguen como estaban, el gancho
+/// `recifrar:sonda` no se ve y `recifrar:1` sí, y no quedan hermanos. (c) Los libros del proceso se
+/// recifran, con su suministro. (d) Como root, en un directorio de 12345:12346 con 0700 —el del servicio—,
+/// con los libros asentados de 12345:12346 y los dos enlaces simbólicos de 12345:12346 —los puso el dueño—:
+/// rehúsa en el paso 1, con el texto que nombra a los dos usuarios, con cada libro dueño a dueño como
+/// estaba, y deja su cerrojo, que no estaba, de quien recifra y con 0600. Sin root, (b) y (d) se saltan y
+/// lo dicen —lo que se salta en el otro proceso lo repite éste—; que el otro proceso corrió el test lo dice
+/// su salida («1 passed»). Discrimina (medido con mutantes; el asiento del §828): rehusar si la sonda no se
+/// crea ((a) y (c)); la guarda del paso 1 sólo en la migración, o quitada ((b) y (d): el recifrado de root
+/// rehúsa más tarde, en el paso 4, porque el `.recifrando` no es del dueño del libro, y con otro texto); y
+/// crear la sonda con `create` en vez de `create_new` ((c), que va antes que (d): sigue el enlace a lo que
+/// no está y lo crea, y al borrar la sonda quita el enlace). Con el pid de tres cifras o más, los de
+/// rehusar y los de la guarda caen ya en (a) y en (b), que van antes; con el pid 1, en (c) y en (d).
+#[test]
+#[cfg(unix)]
+fn la_sonda_que_no_se_puede_crear_no_hace_rehusar_y_el_paso_1_queda_de_respaldo() {
+    if let Ok(papel) = std::env::var(HIJO_DE_LA_SONDA) {
+        hijo_de_la_sonda(&papel);
+        return;
+    }
+    let dir = temporal_unico("sonda_larga");
+    std::fs::create_dir(&dir).expect("el directorio del test");
+    sin_que_quepa_la_sonda(&dir);
+    con_el_nombre_de_la_sonda_puesto(&dir);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// ⚠️ §828 · (a) y (b) del duodécimo test, en `dir`: la sonda que no cabe en el nombre del libro.
+#[cfg(unix)]
+fn sin_que_quepa_la_sonda(dir: &str) {
+    use std::os::unix::fs::MetadataExt;
+    // El nombre más largo que admite el directorio del test, medido: uno más largo no se crea.
+    let cabe = |n: usize| {
+        let p = format!("{dir}/{}", "m".repeat(n));
+        let si = std::fs::create_dir(&p).is_ok();
+        let _ = std::fs::remove_dir(&p);
+        si
+    };
+    let (mut maximo, mut no) = (1, 4097);
+    assert!(cabe(maximo) && !cabe(no), "el nombre más largo del directorio del test no está entre 1 y 4096");
+    while no - maximo > 1 {
+        let m = (maximo + no) / 2;
+        if cabe(m) {
+            maximo = m;
+        } else {
+            no = m;
+        }
+    }
+    let nombre = "l".repeat(maximo.saturating_sub(".recifrando".len()).max(1));
+    let pid = std::process::id();
+    let la_mas_corta = format!("{nombre}.sonda.{pid}.0");
+    if la_mas_corta.len() <= maximo {
+        eprintln!(
+            "§828: (a) y (b) sin medir: con el pid {pid}, la sonda cabe en el nombre más largo con el que cabe su `.recifrando` ({} de {maximo}); (c) y (d) no dependen del pid",
+            la_mas_corta.len()
+        );
+        return;
+    }
+    let libro = format!("{dir}/{nombre}");
+    let (r, v) = hermanos_de(&libro);
+
+    let (p, alice, _) = libro_e4("sonda_larga_a");
+    std::fs::rename(&p, &libro).expect("llevar el libro al directorio del test");
+    quitar_e4(&p);
+    let (l, puntos) = con_la_sonda(|| {}, || recifrar_e4(&libro, FRASE_VIEJA_E4, FRASE_NUEVA_E4));
+    let l = l.expect("CRITICO: (a) sin poder crear su sonda, el recifrado de su dueño rehusó");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(a)");
+    drop(l);
+    assert!(
+        !puntos.contains(&"recifrar:sonda") && puntos.contains(&"recifrar:1"),
+        "(a) creó la sonda, o no pasó por el paso 1: {puntos:?}"
+    );
+    assert!(!hay(&r) && !hay(&v), "(a) dejó un hermano");
+    quitar_e4(&libro);
+
+    if !puede_dar_a_otro() {
+        eprintln!("§828: (b) sin medir: dar el libro a otro dueño pide privilegios (no se corre como root)");
+        return;
+    }
+    let yo = quien_soy();
+    let (p, _, _) = libro_e4("sonda_larga_b");
+    let db = volcado(&p);
+    drop(sled_open_retry(&p));
+    std::fs::rename(&p, &libro).expect("llevar el libro al directorio del test");
+    quitar_e4(&p);
+    dar_el_libro(&libro, DUENO_AJENO, GRUPO_DEL_LIBRO);
+    let meta = |c: Vec<Entrada>| c.into_iter().map(|e| (e.nombre, e.ino, e.uid, e.gid, e.modo)).collect::<Vec<_>>();
+    let antes = meta(censo_del_libro(&libro));
+    assert!(!hay(&cerrojo_de(&libro)), "(b) el libro lleva cerrojo");
+    let (e, puntos) = con_la_sonda(|| {}, || recifrar_e4(&libro, FRASE_VIEJA_E4, FRASE_NUEVA_E4).map(|_| ()));
+    let t = e.expect_err("CRITICO: (b) root recifró el libro de otro dueño: sin la sonda, el paso 1 no rehusó").to_string();
+    assert!(
+        t.contains(&format!("el libro es del usuario {DUENO_AJENO}, y lo intenta recifrar el usuario {yo}")),
+        "(b) el error no nombra a los dos usuarios: {t}"
+    );
+    assert!(
+        !puntos.contains(&"recifrar:sonda") && puntos.contains(&"recifrar:1"),
+        "(b) no rehusó en el paso 1, el respaldo: {puntos:?}"
+    );
+    assert!(!hay(&r) && !hay(&v), "CRITICO: (b) lo que rehúsa dejó un hermano");
+    assert_eq!(meta(censo_del_libro(&libro)), antes, "CRITICO: (b) cambió el dueño, el grupo, el modo o el inodo de algo del libro");
+    let c = std::fs::symlink_metadata(cerrojo_de(&libro)).expect("(b) no deja lo que declara: el cerrojo del libro");
+    assert_eq!((c.uid(), c.mode() & 0o7777), (yo, 0o600), "(b) el cerrojo que deja no es de quien recifra, con 0600");
+    dar_el_libro(&libro, yo, yo);
+    assert!(volcado(&libro) == db, "CRITICO: (b) lo que rehúsa cambió lo que guarda `db`");
+    quitar_e4(&libro);
+}
+
+/// ⚠️ §828 · La variable con que el duodécimo test se corre a sí mismo en otro proceso, y su papel:
+/// `<propio|ajeno>\n<fuera>\n<libro>\n<libro>\n<libro>`: los tres libros del proceso, o los de otro
+/// dueño, y el directorio de fuera al que apuntan los enlaces.
+#[cfg(unix)]
+const HIJO_DE_LA_SONDA: &str = "ZK_SSL_HIJO_DE_LA_SONDA_PUESTA";
+
+/// ⚠️ §828 · (c) y (d) del duodécimo test, en `dir`: el nombre de la sonda ya puesto, en otro proceso. Un
+/// libro por nombre, y cada uno se recifra una sola vez, como en (b). Un borrador de este test
+/// recifraba tres veces seguidas el mismo libro de otro dueño, asentado, y en una corrida del banco de
+/// mutantes, con uno que no toca ese camino, el libro quedó con un `snap.*` de 0:0 y con 0644 en el
+/// sitio del del dueño: lo que puede dejar la apertura de sled que precede a la negativa del paso 1
+/// (`SECURITY.md` §3.17, «Lo que no hace»). Por qué en esa corrida y no en las otras, no se midió.
+#[cfg(unix)]
+fn con_el_nombre_de_la_sonda_puesto(dir: &str) {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let exe = if hay("/proc/self/exe") {
+        std::path::PathBuf::from("/proc/self/exe")
+    } else {
+        std::env::current_exe().expect("el binario de los tests")
+    };
+    let este = format!(
+        "{}::la_sonda_que_no_se_puede_crear_no_hace_rehusar_y_el_paso_1_queda_de_respaldo",
+        module_path!().split_once("::").map_or(module_path!(), |(_, m)| m)
+    );
+    let correr = |que: &str, papel: String| {
+        let s = std::process::Command::new(&exe)
+            .args(["--exact", este.as_str(), "--test-threads=1", "--nocapture"])
+            .env(HIJO_DE_LA_SONDA, papel)
+            .output()
+            .expect("correr el recifrado en otro proceso");
+        let (out, err) = (String::from_utf8_lossy(&s.stdout), String::from_utf8_lossy(&s.stderr));
+        for l in err.lines().filter(|l| l.contains("sin medir")) {
+            eprintln!("{l}");
+        }
+        assert!(s.status.success() && out.contains("1 passed"), "CRITICO: {que} en el otro proceso: {out}{err}");
+    };
+    // Los tres libros de `en`, con el libro de `nombre`, sin hermanos: `<en>/libro_0`, `_1` y `_2`.
+    let tres = |en: &str, nombre: &str, asentar: bool| {
+        (0..3)
+            .map(|k| {
+                let libro = format!("{en}/libro_{k}");
+                let (p, _, _) = libro_e4(&format!("{nombre}_{k}"));
+                if asentar {
+                    drop(sled_open_retry(&p));
+                }
+                std::fs::rename(&p, &libro).expect("llevar el libro a su directorio");
+                quitar_e4(&p);
+                libro
+            })
+            .collect::<Vec<_>>()
+    };
+    let fuera = format!("{dir}/fuera");
+    std::fs::create_dir(&fuera).expect("el directorio de fuera");
+    std::fs::write(format!("{fuera}/esta"), b"intacto").expect("el fichero de fuera");
+
+    let propio = format!("{dir}/propio");
+    std::fs::create_dir(&propio).expect("el directorio de los libros del proceso");
+    let libros = tres(&propio, "sonda_puesta_c", false);
+    correr("(c)", format!("propio\n{fuera}\n{}", libros.join("\n")));
+
+    if !puede_dar_a_otro() {
+        eprintln!("§828: (d) sin medir: dar el libro a otro dueño pide privilegios (no se corre como root)");
+        return;
+    }
+    let yo = quien_soy();
+    let del_dueno = format!("{dir}/del_dueno");
+    std::fs::create_dir(&del_dueno).expect("el directorio del dueño");
+    let libros = tres(&del_dueno, "sonda_puesta_d", true);
+    for libro in &libros {
+        dar_el_libro(libro, DUENO_AJENO, GRUPO_DEL_LIBRO);
+    }
+    std::os::unix::fs::lchown(&del_dueno, Some(DUENO_AJENO), Some(GRUPO_DEL_LIBRO)).expect("el directorio, del dueño");
+    std::fs::set_permissions(&del_dueno, std::fs::Permissions::from_mode(0o700)).expect("su modo");
+    let meta = |c: Vec<Entrada>| c.into_iter().map(|e| (e.nombre, e.ino, e.uid, e.gid, e.modo)).collect::<Vec<_>>();
+    let antes = libros.iter().map(|l| meta(censo_del_libro(l))).collect::<Vec<_>>();
+    assert!(libros.iter().all(|l| !hay(&cerrojo_de(l))), "(d) un libro lleva cerrojo");
+    correr("(d)", format!("ajeno\n{fuera}\n{}", libros.join("\n")));
+    for (libro, antes) in libros.iter().zip(antes) {
+        assert_eq!(meta(censo_del_libro(libro)), antes, "CRITICO: (d) cambió el dueño, el grupo, el modo o el inodo de algo de {libro}");
+        let c = std::fs::symlink_metadata(cerrojo_de(libro)).expect("(d) no deja lo que declara: el cerrojo del libro");
+        assert_eq!((c.uid(), c.mode() & 0o7777), (yo, 0o600), "(d) el cerrojo de {libro} no es de quien recifra, con 0600");
+    }
+}
+
+/// ⚠️ §828 · Lo que hace el duodécimo test en el otro proceso, en el que sólo corre él: pone los nombres de
+/// sus tres primeras sondas —la `n` empieza en 0—, una por libro, y recifra cada libro una vez (arriba,
+/// en el test).
+#[cfg(unix)]
+fn hijo_de_la_sonda(papel: &str) {
+    use std::os::unix::fs::MetadataExt;
+    let mut partes = papel.split('\n');
+    let (de, fuera) = (partes.next().unwrap_or_default(), partes.next().unwrap_or_default());
+    let libros: Vec<&str> = partes.collect();
+    let (ajeno, que) = match de {
+        "propio" => (false, "(c)"),
+        "ajeno" => (true, "(d)"),
+        _ => panic!("{HIJO_DE_LA_SONDA}: papel desconocido: {papel}"),
+    };
+    assert!(libros.len() == 3 && !fuera.is_empty(), "{HIJO_DE_LA_SONDA}: papel desconocido: {papel}");
+    let yo = quien_soy();
+    let pid = std::process::id();
+    let (no_esta, esta) = (format!("{fuera}/no_esta"), format!("{fuera}/esta"));
+    let puesto = |n: usize| format!("{}.sonda.{pid}.{n}", libros[n]);
+    std::os::unix::fs::symlink(&no_esta, puesto(0)).expect("el enlace a lo que no está");
+    std::os::unix::fs::symlink(&esta, puesto(1)).expect("el enlace al fichero de fuera");
+    let mut nombres = vec!["un enlace a un fichero de fuera que no está", "un enlace a un fichero de fuera"];
+    match std::fs::hard_link(&esta, puesto(2)) {
+        Ok(()) => nombres.push("un enlace duro a un fichero de fuera"),
+        Err(e) => eprintln!("§828: {que} sin medir con un enlace duro: no se pudo poner ({e})"),
+    }
+    if ajeno {
+        for n in 0..2 {
+            std::os::unix::fs::lchown(puesto(n), Some(DUENO_AJENO), Some(GRUPO_DEL_LIBRO)).expect("el enlace, del dueño");
+        }
+    }
+    let de_fuera = || {
+        let m = std::fs::symlink_metadata(&esta).expect("mirar el fichero de fuera");
+        (std::fs::read(&esta).expect("leerlo"), m.uid(), m.gid(), m.mode(), m.mtime(), m.mtime_nsec())
+    };
+    let los_nombres = || {
+        (0..nombres.len())
+            .map(|n| {
+                let m = std::fs::symlink_metadata(puesto(n)).ok();
+                (m.map(|m| (m.ino(), m.uid(), m.gid())), std::fs::read_link(puesto(n)).ok())
+            })
+            .collect::<Vec<_>>()
+    };
+    let (antes_fuera, antes_nombres) = (de_fuera(), los_nombres());
+    for (n, con) in nombres.iter().enumerate() {
+        let libro = libros[n];
+        let (r, v) = hermanos_de(libro);
+        let (resultado, puntos) = con_la_sonda(|| {}, || recifrar_e4(libro, FRASE_VIEJA_E4, FRASE_NUEVA_E4));
+        assert!(
+            !puntos.contains(&"recifrar:sonda") && puntos.contains(&"recifrar:1"),
+            "CRITICO: {que} con {con} en el nombre de la sonda {n}, la creó o no pasó por el paso 1: {puntos:?}"
+        );
+        assert!(!hay(&no_esta), "CRITICO: {que} con {con} en el nombre de la sonda {n}, siguió el enlace: creó lo que no estaba");
+        assert_eq!(de_fuera(), antes_fuera, "CRITICO: {que} con {con} en el nombre de la sonda {n}, cambió el fichero de fuera");
+        assert_eq!(los_nombres(), antes_nombres, "CRITICO: {que} con {con} en el nombre de la sonda {n}, quitó o cambió lo puesto");
+        assert!(!hay(&r) && !hay(&v), "CRITICO: {que} con {con} en el nombre de la sonda {n}, dejó un hermano");
+        if ajeno {
+            let t = resultado.map(|_| ()).expect_err("CRITICO: (d) root recifró el libro de otro dueño").to_string();
+            assert!(
+                t.contains(&format!("el libro es del usuario {DUENO_AJENO}, y lo intenta recifrar el usuario {yo}")),
+                "(d) con {con} en el nombre de la sonda {n}, el error no nombra a los dos usuarios: {t}"
+            );
+        } else {
+            let l = resultado.unwrap_or_else(|e| panic!("CRITICO: (c) con {con} en el nombre de la sonda {n}, su dueño no recifró: {e}"));
+            assert_eq!(l.total_supply(), 777_777, "(c) el libro no tiene su suministro");
+        }
     }
 }

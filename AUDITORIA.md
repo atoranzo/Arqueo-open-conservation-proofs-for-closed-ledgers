@@ -66938,3 +66938,581 @@ les suman las del §819 al §822, son aquí las mismas, contadas otra vez en est
 
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §828 — el recifrado y la migración v1→v2 rehúsan el libro de otro dueño y conservan su grupo: recifrado o migrado por root, un libro de otro usuario quedaba de root y su dueño ya no lo abría, y recifrado o migrado por su dueño con otro grupo principal, el grupo del libro perdía la lectura y el del dueño la ganaba. Redactado en privado
+
+El commit que lleva este asiento, sobre el §827. Se redactó en privado (`spec/rfc/PROCESO.md`
+§«Fallos de seguridad»; la sección 5 de `SECURITY.md`): el fallo, su medida y su arreglo se
+escribieron fuera del árbol, en un clon sin remoto, y entran de una vez en este sello. Ningún sello
+anterior lo nombra. Toca `crates/zk-ssl/src/persistence.rs` —la comparación previa, en la línea de
+`recifrar` que toma el cerrojo del libro; la guarda del dueño, en la línea del
+paso 1 que llama a `preparar_hermano`; el grupo, en la línea de `copiar_modos(p, r)?;` del paso 4;
+lo que el paso 1 le pasa al 4, en dos líneas de la firma de `preparar_hermano`; la negativa de la
+apertura, en la línea de `resolver_restos` que recorre los cerrojos; lo nuevo, al final;
+`copiar_modos`, que en Unix se queda sin uso, en su sitio; y marcas en líneas que ya estaban, para
+que no se mueva ninguna cita `persistence.rs:línea`—; `crates/zk-ssl/src/snapshot.rs` —`cambiar_dueno`,
+con su gancho `FALLAR_DUENO`, pasa a `pub(crate)` en sus mismas líneas, y cuatro marcas—;
+`crates/zk-ssl/src/tests.rs`, con doce tests, al final, y una marca en un comentario de la 120;
+`SECURITY.md` —la 3.17, nueva, y dos marcas en la 3.16—; el RFC-0001 —marcas en los pasos 1 y 4 de la
+E4, en el párrafo de los nombres reservados, en las filas de R y de C de su tabla y en dos filas de lo
+que hace la apertura tras una muerte—; una marca en «Orden determinista» de `ARQUITECTURA.md`; el pin
+de la capa en `tools/canon.sh`, con su crónica; las cifras de `PAPER.md`, `PAPER_EN.md`,
+`PRINCIPIOS.md`, `ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y
+`doc/ecst/VERIFICACION.md`; la cifra del pin en la nota del §814 de `ARQUITECTURA.md` y de
+`CONTRIBUTING.md`, con marca; y este asiento. No cambia ningún formato: ni el
+cable, ni un vector, ni el kit, ni el `Cargo.lock`. No toca el nodo, el cli ni el sdk.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. Lo vio la sesión leyendo el código
+del recifrado, y lo midió en privado. Un primer arreglo, que daba a la copia el dueño y el grupo del
+libro con privilegios, no es el que eligió el autor: a la pregunta de la sesión, eligió la otra
+opción (abajo, en «Quién lo decide»). Las revisiones de aquél midieron lo que éste declara —el
+`snap.*` que sled escribe al reabrir el libro en el paso 8—, y de su test se tomó la idea del censo
+del libro y de dárselo a otro dueño. Éste es el segundo: la opción que eligió el autor, como la lee
+la sesión y con el diseño de la sesión. Un borrador suyo lo revisó la sesión con tres lentes
+—seguridad, tests, y textos y cifras— y un escéptico que confirmó cada hallazgo: la guarda sólo
+miraba el directorio del libro, y con el directorio de root y los ficheros de otro root recifraba y
+migraba, y los ficheros quedaban de root (lo midió la revisión); el paso 4 no comprobaba que R fuera
+el que nació en el paso 1 (también medido); el test de la negativa no ataba que fuera antes de
+copiar (dos mutantes que la ponían después pasaban); faltaban tests de `blobs/`, del `.recifrando`
+del dueño que termina la apertura y de una entrada sin homónimo; y varios textos decían más de lo
+medido, o daban por del autor lo que era de la sesión. Lo corrigió el borrador siguiente, y su
+verificación dejó dos menores de texto —lo que discriminaba el primer test, que el error inyectado
+del paso 1 había dejado rancio, y la cita de lo que eligió el autor, que no decía que leer así el
+«Nunca hace chown como root» de su descripción es de la sesión—, y un retoque de comentarios
+y textos los corrigió, y declaró lo que deja la guarda en el paso 1 como lo que se sigue de una
+decisión de la sesión, con la alternativa y su coste. Una segunda verificación dejó seis menores: el
+coste de esa alternativa estaba exagerado —saber quién recifra no pedía `libc`: lo da el dueño de
+algo que el proceso acaba de crear, como ya lo daba R—; el doc de `es_del_dueno` sobre otro
+directorio en el sitio de R, y el hueco entre la comprobación de identidad del paso 4 y su
+`read_dir`, que desde este sello da también el grupo; lo que decían los docs del primer, segundo,
+quinto y sexto test; y la umask, que no es sólo la 0077. Con eso, la sesión hizo la alternativa
+—decisión suya, y reversible—: `recifrar` compara antes de tomar el cerrojo y de abrir el libro, y lo
+ata un décimo test; y corrigió los menores. Una tercera verificación dejó un bloqueante —ningún test
+ataba que la comparación previa mirara `conf` y `blobs/`, y tres textos lo daban por atado: dos
+mutantes que los dejaban fuera pasaban los diez tests— y ocho menores: la sonda se creaba, y se
+borraba, junto a lo que no es un libro, antes de rehusar como antes, y le cambiaba la fecha al padre;
+la que no se podía borrar —un padre con `chattr +a`— se quedaba sin que nada lo dijera, y un texto
+del RFC-0001 decía que «sólo» se quedaba si el proceso moría; la comparación aceptaba una lista de
+dueños vacía, que no se alcanza; los dos caminos de respaldo —el paso 1 en el recifrado, y seguir si
+la sonda no se crea— no tenían test, y sus textos no lo decían; tres textos decían sin condición que
+el recifrado rehúsa antes de crear el cerrojo; la fecha del padre iba sin rótulo, y se podía medir;
+el doc del primer test daba al error inyectado lo que para, sin la comparación previa, la guarda del
+paso 1; y dos citas —el nombre de la opción que no eligió el autor y la descripción de la segunda—
+no se pueden comprobar desde el borrador, y van como de la sesión, no del autor. El borrador siguiente
+los corrigió: el décimo test lleva un `mixto_*` por cada una de `db`, `conf` y `blobs/`; la comparación
+previa mira antes que el libro es de sled, rehúsa nombrando la sonda que no puede borrar, y la lista
+vacía rehúsa; un undécimo test ata la sonda junto a lo que no es un libro y la que no se borra, y un
+duodécimo, los dos respaldos; y los textos. Ese arreglo se cortó a mitad, por un reinicio del
+contenedor, con su banco de mutantes ya corrido y sin commitear; al retomarlo, la sesión lo comprobó
+fichero a fichero contra el borrador anterior —sin ningún mutante aplicado: los tres `.rs`, con el
+sha256 de su copia prístina— y corrigió lo que decían de más los docs del undécimo y del duodécimo:
+al mutante que rehúsa con `Io` lo paraba en el undécimo el gancho, que no podía quitar en el segundo
+intento la sonda del primero, y no un aserto; y sin la guarda del paso 1 el duodécimo no recifra el
+libro de otro, sino que rehúsa más tarde, en el paso 4. El undécimo cuenta ahora las veces que pasa
+por la sonda, y todo se midió otra vez sobre ese borrador. Una cuarta verificación no
+dejó bloqueantes, y sí tres menores: dos marcas de la 3.16 de `SECURITY.md` decían «los diez» del
+sello, y son doce; ningún test ataba que la sonda se crea con `create_new`, que no sigue un enlace —el
+mutante que la crea con `create` pasaba los doce tests, 3 de 3 veces—; y el duodécimo se saltaba
+entero con un pid de menos de tres cifras, y entonces los dos mutantes de los respaldos, que sólo
+caían en él, sobrevivían (deducido), sin que la 3.17 lo dijera. El último borrador los corrigió: las dos marcas dicen doce; y el duodécimo
+calcula el nombre de su libro con lo que mide del directorio y con el pid del proceso —con uno de
+menos de tres cifras no hay un nombre en el que quepa `.recifrando` y no quepa siempre la sonda, y
+esa parte se salta y lo dice—, y corre además, en otro proceso y sin depender del pid, los nombres de
+la sonda ya puestos, por un enlace simbólico a un fichero de fuera que no está, uno a uno que está y
+uno duro, que no se siguen, un libro por nombre: un primer intento recifraba tres veces el mismo
+libro, y en dos corridas de su banco de mutantes, una con cada uno de dos mutantes, el libro de otro
+dueño quedó con un `snap.*` de root (en «Lo que NO hace»). Los tres mutantes caen, también con el
+pid 1, y lo de «Medido en el clon privado», abajo, se midió otra vez sobre ese último borrador. Una
+quinta verificación, sobre él, no dejó bloqueantes, y sí dos menores de texto: el asiento se
+contradecía sobre cuántas veces se vio ese `snap.*` de root —fueron dos corridas, una con cada
+mutante—, y una frase de la 3.17, que una negativa tras otra sobre el mismo libro asentado, por ese
+camino, puede dejarle un `snap.*` de quien recifra, generalizaba más de lo medido: se vio tras tres
+negativas seguidas, mirado tras las tres, y junto a medidas de negativas repetidas que no cambiaban
+nada. Los dos se corrigen al sellarlo, sin tocar el código: el asiento cuenta las dos corridas, y la
+3.17, lo que se vio, con el porqué como deducido. No lo ha revisado nadie de fuera de la sesión que
+lo escribió. Al sellarlo, la sesión llevó el borrador sobre el §827 (abajo, «Sobre esta punta») y le
+dio el número, el siguiente del rango que el autor asignó (§800 a §829).
+
+**El defecto.** El recifrado de la E4 (`SovereignLayer::recifrar`, `persistence.rs:1318`, que llama a
+`recifrar_en_hermano`, :1353) y la migración de la versión 1 a la 2 —desde el §812, la misma pieza
+(`migrar_a_kdf_v2`, :1050 → :1064), que corre en toda apertura con clave de un libro v1— escriben el
+libro en un directorio hermano, R (`<libro>.recifrando`), y lo ponen en su sitio. R nacía del
+usuario y del grupo del proceso —el directorio, en `nace.create(&r)` (:1421); `conf`, `db`, los
+`snap.*` y `blobs/`, al abrir sled sobre R (:1501)—, o del grupo del padre, si el padre tiene setgid.
+El paso 4 le daba sólo los modos del libro (`copiar_modos`, :2143, y el modo del directorio,
+:1598-1599), y R tomaba el sitio del libro en el paso 6 (`rename`, :1456) o, tras una muerte entre
+los pasos 5 y 6, en la apertura siguiente (`resolver_restos`, :1702). Medido en privado, sobre el
+§821, con `setpriv` y entrando por un descriptor para que no contara el camino hasta las notas:
+root que recifra o migra un libro de 12345:12346 lo deja de 0:0, y su dueño ya no lo abre —«IO
+error: Permission denied (os error 13)» en 5 de 5 libros; de esos cinco lee 0 de 25 entradas, y
+antes, 25 de 25—; tras una muerte en el paso 5 tampoco termina el recifrado, y el libro se queda en
+su `.retirado` y su `.recifrando` hasta que actúe root. El dueño sin privilegios —grupo principal
+12345 y 12346 de suplementario— deja un libro 0750/0640 de 12345:12346 en 12345:12345: 12347:12346
+pasa a leer 0 de 10 entradas y 12348:12345, 10 de 10. Con un padre setgid el grupo se conserva. El
+contenido no cambia, y la clave no cambia de manos: quien gana la lectura lee lo sellado y la
+cabecera del KDF, con su sal y su coste, y puede probar frases fuera de línea contra Argon2id, la
+amenaza que ya declara el RFC-0001.
+
+**La ventana.** Desde `b6994c3` (§812, 14-10-2026), para el recifrado y para la migración. Antes, la
+migración era un lote sobre el mismo sled y no movía los ficheros (deducido del código de
+`b6994c3^`, sin compilarlo). Ningún binario del repositorio llama a `recifrar` ni abre con clave: el
+nodo y el cli abren sin clave (`crates/zk-ssl-node/src/main.rs:2293`, `crates/zk-ssl-cli/src/sandbox.rs:57`),
+y esa apertura sólo encuentra un R si antes murió un recifrado de la biblioteca. Alcanza a quien
+integra la biblioteca y recifra, o abre con clave un libro v1, como otro usuario —root o `sudo`, en
+un mantenimiento— o con otro grupo principal —un servicio—. Lo dejaban falso la cabecera de
+`copiar_modos`, los pasos 1 y 4 de la E4 en el RFC-0001 y la fila de R de su tabla de nombres
+reservados, que llevan marca.
+
+**Quién lo decide.**
+- **El autor** (21-10-2026, en el chat), a dos preguntas de opción múltiple de la sesión. A la
+  primera, cómo se arregla, eligió la opción «Rehusar si no es el dueño (Recomendado)», y no la otra,
+  «Copiar dueño y grupo como root»; la descripción de la que eligió, escrita por la sesión, decía:
+  «recifrar y la migración v1→v2 fallan cerrado si quien los corre no es el dueño del libro (por
+  ejemplo, root sobre el libro de un servicio) y el error dice que se haga como su dueño. Si es el
+  dueño, conserva el grupo del libro si es uno de los suyos; si no, quita los bits de grupo y de
+  otros, como la 120. Nunca hace chown como root. Menos código y nada de superficie nueva.» A la
+  segunda, cómo se publica, eligió «Como el §812, sin GHSA (Recomendado)», cuya descripción, de la
+  sesión, decía: «De una vez con el código. El aviso es la sección nueva de SECURITY.md (la 3.17) y el
+  asiento, sin GHSA ni release, como el §812, el §816 y el §817.» Lo suyo son esas dos elecciones; las
+  descripciones son de la sesión, y no nombran ningún paso.
+- **La sesión**, y reversible: cómo lee esas descripciones. «Nunca hace chown como root» no es
+  exacto del código, y lo lee así: nunca se cambia el usuario de nada, ni el grupo ni los modos de
+  lo que no creó quien recifra; pero root, cuando es el dueño del libro, sí cambia el grupo
+  —`fchown(fd, None, Some(gid))`, en `dar_grupo_y_modo`— de lo que él mismo creó dentro de un R suyo
+  con 0700, y de R. «Si es uno de los suyos», como el grupo que el `fchown` le deja poner: a root,
+  cualquiera, también uno que no es de sus grupos —el 12346 del segundo test—; y si el `fchown`
+  falla, por lo que sea, quita los bits. Que la publicación no lleve aviso porque el kit no depende
+  de la capa es también de la sesión (abajo). Y lo demás: que `recifrar` compare antes de tomar el
+  cerrojo del libro y de abrirlo, con una sonda junto al libro para saber quién recifra, sin `libc`, y
+  sin rehusar si no la puede crear (en «Lo que hace» y en «Lo que NO hace»); que no la cree junto a
+  lo que no es de sled, que rehúse con `Malformed`, nombrándola, si no la puede borrar, y que la
+  comparación con una lista de dueños vacía rehúse; que la guarda vaya además
+  en el paso 1, en cuanto nace R, comparando su dueño —el usuario del proceso— con el del directorio del libro y con el de
+  su `db`, su `conf` y su `blobs/`, y no con los `snap.*`; que el libro que no es de un solo dueño
+  no lo recifre ni lo migre nadie; que R tenga que estar vacío al compararlo, y que el paso 4 exija
+  su dispositivo y su inodo; los textos de los errores; que la copia tome el grupo de su homónimo
+  —el que no lo tiene, el de `db`; el directorio, el del libro—, por un descriptor que no sigue un
+  enlace, y después los modos, y el directorio el último; que la apertura rehúse, sin tocar nada, un
+  `.recifrando` que no es —con su `db`, su `conf` y su `blobs/`— del dueño del libro, o de su
+  `.retirado` si falta el libro, también con el libro al lado, en vez de borrarlo: falla cerrado y
+  no pierde el libro; rehusar, antes del compromiso, si en R hay un enlace o algo que no es un
+  fichero ni un directorio, un fichero con otro nombre (un enlace duro), una entrada de otro dueño o
+  un directorio dentro de `blobs/`, o si R ya no es el directorio que nació, del dueño del libro y
+  con 0700; `O_NOFOLLOW` con su valor de la ABI de Linux en x86 y arm, sin `libc`, que la capa no
+  tiene, y sin él en los demás; sincronizar R entero antes de darle al directorio su grupo y su
+  modo, mientras sigue en 0700; dejar `copiar_modos` en su sitio, sin uso en Unix, para no mover
+  líneas; que el test compare `db` por lo que guarda y no byte a byte, porque la apertura de sled
+  que precede a la negativa de la migración puede escribir en él (abajo); y que la migración no
+  compare antes de abrir, porque no sabe que el libro es v1 sin abrirlo (en «Lo que NO hace»). El
+  autor eligió su opción antes de que se midiera lo que deja esa apertura.
+
+**Por qué no lleva aviso de seguridad.** El fallo está en la capa, `zk-ssl`, y el kit publicado no
+depende de ella: los `[dependencies]` de `crates/zk-ssl-verify/Cargo.toml` nombran `zk-ssl-hash`,
+`zk-ssl-air` y `zk-ssl-medio`, y sus `[dev-dependencies]`, `zk-ssl-guardian` y `zk-ssl-medio`; ninguno,
+`zk-ssl`. Por la sección 5 de `SECURITY.md` no
+corresponde aviso ni release (la lectura es de la sesión), y el autor, a la segunda
+pregunta, eligió «Como el §812, sin GHSA (Recomendado)» (en «Quién lo decide»).
+
+**Lo que hace.**
+- **La comparación previa** (`quien_recifra_es_el_dueno`, al final de `persistence.rs`, llamada en la
+  línea de `recifrar` que toma el cerrojo del libro): antes de tomar ese cerrojo y de abrir el libro,
+  el usuario de quien recifra —el dueño de una sonda, un fichero vacío `<libro>.sonda.<pid>.<n>` que
+  se crea junto al libro con `create_new`, que no sigue un enlace ni abre lo que ya lleve ese nombre, y
+  con 0600, se mira por su descriptor y se borra en el momento—
+  se compara con el del directorio del libro y con el de su `db`, su `conf` y su `blobs/`
+  (`de_quien_es`), con la misma comparación y los mismos textos que la guarda (`comparar_duenos`). Si
+  no es el mismo, o el libro no es de un solo dueño, rehúsa con `Malformed` sin crear, abrir ni
+  escribir nada del libro ni de su cerrojo, y un libro v1 que se recifra no llega a migrarse. Junto a
+  lo que no es de sled no crea la sonda —lo mira antes con `es_de_sled`, que sólo lee, y deja que
+  rehúse como antes `Cerrojo::tomar` o el paso c—; y si no la puede borrar, rehúsa con `Malformed`,
+  nombrándola, sin tomar el cerrojo ni abrir el libro: «…/libro.sonda.<pid>.<n>: la sonda con que el
+  recifrado mira quien recifra no se pudo borrar (…): se queda, vacia; borrala a mano y recifra otra
+  vez. No se toma el cerrojo ni se abre el libro». Si no lo puede saber —la sonda no se puede crear,
+  o el libro no está, no es un directorio, no es de sled o no se puede mirar—, sigue, y la guarda
+  queda de respaldo, con lo que deja la apertura (con test, con una sonda que no cabe en su nombre y
+  con su nombre ya puesto, por enlaces que no sigue: el duodécimo; con lo que no es de sled, que
+  rehúsa como antes, el undécimo; lo demás, deducido). La
+  migración no pasa por aquí;
+- **La guarda** (`es_del_dueno`, al final de `persistence.rs`, llamada en la línea del paso 1 que
+  llama a `preparar_hermano`; en el recifrado, el respaldo; en la migración, lo único): R tiene que ser un directorio vacío —el que el proceso acaba de crear—,
+  y su dueño, el del directorio del libro y el de su `db`, su `conf` y su `blobs/` (`de_quien_es`). Si
+  no, el `deshacer_hermano` de esa misma rama borra R, y el error es un `Malformed`: «el libro es del
+  usuario 12345, y lo intenta recifrar el usuario 0: asi quedaria del usuario 0, y su dueno no lo
+  abriria; recifralo como su dueno. No se copia, no se sella ni se renombra nada»; en la migración, «lo
+  intenta migrar a la version 2 -abrirlo con su frase lo migra-» y «abrelo con su frase como su
+  dueno, que lo migra»; y con un libro que no es de un solo dueño, «…/db: es del usuario 12345, y el
+  directorio del libro del usuario 0: el libro no es de un solo dueno, y lo intenta recifrar el
+  usuario 0, que lo dejaria todo suyo; que sea todo de su dueno, y recifralo como su dueno». La
+  apertura con clave de un libro v1 de otro falla entera, sin abrir: falla cerrado, y el libro queda
+  sin `.recifrando` ni `.retirado` y sin cambiar el dueño, el grupo ni el modo de lo que había (lo que
+  deja antes la apertura de sled, en «Lo que NO hace»). Devuelve el dispositivo y el inodo de R, que
+  el paso 4 exige;
+- **el grupo** (`dar_lo_del_libro`, en la línea de `copiar_modos(p, r)?;`; las dos de debajo, la del
+  modo del directorio por su ruta, y la de `sincronizar_arbol`, pasan a comentario con marca): R
+  tiene que ser el que nació —el mismo dispositivo y el mismo inodo—, un directorio del dueño del
+  libro y con 0700; primero cada entrada de R, abierta con `abrir_sin_seguir` —el tipo y el inodo
+  antes y después de abrir, `O_NOFOLLOW`, del dueño de R y, si es un fichero, con un solo nombre—,
+  toma con `snapshot::cambiar_dueno(f, None, Some(gid))` el grupo de su homónimo en el libro, o el
+  de `db` —que el dueño puede poner si es uno de sus grupos, y root, cualquiera—, y después sus
+  modos, o sus modos `& 0o700` si el grupo no se pudo poner; `blobs/` baja un nivel; después,
+  `sincronizar_arbol(r)`; y el último, el directorio R, con el grupo y el modo del libro, por su
+  descriptor, y su `sync_all`;
+- **la apertura** (`recifrando_del_dueno`, en la línea de `resolver_restos` que recorre los
+  cerrojos): antes de borrar o terminar nada, si hay un `.recifrando` y su dueño no es el del libro
+  —el del directorio y el de su `db`, su `conf` y su `blobs/`, o los del `.retirado` si falta el
+  libro—, o el `db`, el `conf` o el `blobs/` del `.recifrando` no son de su dueño, rehúsa con
+  `Malformed`, sin tocar nada, con un texto que dice de quién es cada uno y qué hacer;
+- fuera de Unix, `dar_lo_del_libro` hace lo de antes —`copiar_modos`, los permisos del libro en R y
+  `sincronizar_arbol`— y las dos guardas no comparan nada.
+
+**Medido en el clon privado**, en release, sobre el último borrador —sobre el §821 de entonces, antes
+de que la pila se rebasara sobre el §859—, con su propio target y bajo el `flock` del cargo:
+- **Los tests nuevos**, al final de `tests.rs`:
+  `el_libro_de_otro_dueno_no_se_recifra_ni_se_migra_y_no_se_toca`,
+  `el_libro_recifrado_o_migrado_por_su_dueno_conserva_su_grupo_y_sus_modos`,
+  `sin_poder_poner_el_grupo_la_copia_se_queda_sin_bits_de_grupo_ni_de_otros`,
+  `un_enlace_o_lo_ajeno_en_la_copia_no_recibe_el_grupo_del_libro`,
+  `la_apertura_no_termina_ni_borra_un_recifrando_de_otro_dueno`,
+  `el_libro_que_no_es_de_un_solo_dueno_no_se_recifra_ni_se_migra`,
+  `el_recifrando_de_su_dueno_que_termina_la_apertura_conserva_su_grupo_y_sus_modos`,
+  `lo_que_lleva_blobs_en_la_copia_toma_lo_de_db_y_un_directorio_hace_rehusar`,
+  `la_copia_cambiada_por_otro_directorio_no_recibe_el_grupo_del_libro`,
+  `el_libro_sin_asentar_de_otro_dueno_rehusa_antes_del_cerrojo_y_no_recibe_nada`,
+  `lo_que_no_es_un_libro_no_recibe_la_sonda_y_la_que_no_se_borra_hace_rehusar` y
+  `la_sonda_que_no_se_puede_crear_no_hace_rehusar_y_el_paso_1_queda_de_respaldo`. Los doce juntos,
+  con cinco hilos y el binario del último borrador, pasan 10 de 10 veces (9,1-11,0 s), y 1 de 1 con `--nocapture`
+  (9,7 s); y con `unshare --pid --fork`, con el pid 1, 3 de 3 (8,8-9,3 s), y 1 de 1 con `--nocapture`, con
+  una línea «sin medir»: la del (a) y el (b) del duodécimo. El duodécimo solo, con un hilo, 20 de 20
+  (5,6-7,1 s). Con el binario del borrador anterior pasaron
+  3 de 3 veces (13,7-14,1 s), y 1 de 1 con `--nocapture` (13,2 s). Los diez primeros, con el binario del de antes, pasaron 3 de 3 veces (8,8-9,3 s), y antes 2 de 2 con el de antes del último retoque del comentario del primer test (10,6 s, y con `--nocapture` 9,5 s). Los nueve primeros, antes de la comparación
+  previa, pasaron 13 de 13 veces con los binarios de dos borradores intermedios, 10 de 10 con el de
+  antes de un último comentario de `persistence.rs` (10,7-15,7 s), 3 de 3 con el de antes de un
+  retoque de comentarios y textos (12,8-15,9 s) y 3 de 3 con el de otro borrador de entonces (10,4-10,8 s).
+  Lo que miran del libro recifrado o migrado es lo que hay en su `.recifrando` al acabar el paso 4 y,
+  después, lo que sigue con el mismo nombre y el mismo inodo; no lo que sled cree al reabrirlo en el
+  paso 8. El primero y el sexto corren sus negativas con un error inyectado al acabar el paso 1
+  (`fallar_en(1)`), que la guarda de la migración tiene que adelantar; las de sus recifrados llegan
+  antes, en la comparación previa. El décimo se corre a sí mismo en otro proceso: como root con
+  `sh -c 'umask 077 && exec …'`, y como el dueño con `setpriv`, que ejecuta el binario por
+  `/proc/self/fd/0` y abre el libro por `/proc/self/cwd/libro`, porque el dueño no atraviesa el camino
+  hasta el directorio temporal de los tests (por `libro` no llegaba: sled lo hace absoluto desde el
+  directorio actual; medido). El undécimo pone el padre de un libro en `chattr +a` como root, y lo
+  quita al acabar, también si cae. El duodécimo no deja crear la sonda de dos maneras. Con un nombre
+  en el que no cabe: mide en su directorio el nombre más largo que se puede crear —255 caracteres en
+  ext4— y da al libro el más largo con el que cabe su `.recifrando`, el sufijo más largo de sus
+  hermanos y de su cerrojo; en él no cabe la sonda si su sufijo más corto en este proceso,
+  `.sonda.<pid>.0`, es más largo que `.recifrando`, lo que pasa con un pid de tres cifras o más; con
+  uno de una o de dos —diez u once caracteres, contra once— no hay un nombre así, y su (a) y su (b) se
+  saltan y lo dicen (medido con `unshare --pid --fork`, con el pid 1). Y con el nombre ya puesto, que
+  no depende del pid: se corre a sí mismo en otro proceso, en el que sólo corre él y la cuenta de
+  sondas empieza en 0, y pone en los nombres de sus tres primeras sondas, junto a tres libros, uno por
+  nombre, un enlace simbólico a un fichero de fuera que no está, uno a uno que está y uno duro a ése, y
+  recifra cada libro una vez; su (c), con los libros del proceso, y su (d), como root, con los de otro
+  dueño en un directorio suyo con 0700 y los enlaces simbólicos de ese dueño. Un borrador suyo
+  recifraba tres veces el mismo libro, y en (d) lo dejó con un `snap.*` de root en dos corridas del
+  banco de mutantes, una con cada uno de dos mutantes (en «Lo que NO hace»). Seis piden root y, sin él, se saltan enteros —el primero, el segundo, el quinto, el
+  sexto, el séptimo y el décimo—; el cuarto corre sin root salvo su (c), el undécimo salvo su (a) con
+  otro dueño y su (d), y el duodécimo salvo su (b) y su (d); y los otros tres no lo piden. Lo dicen por la salida de
+  errores, que libtest sólo muestra con `--nocapture` o `--show-output`: como 12345:12345 con `setpriv`, con el binario del último borrador,
+  los doce salen «ok» sin ninguna línea «sin medir», y con `--nocapture` salen once —las siete de
+  antes y cuatro de los dos últimos—; con el del borrador anterior, los doce «ok» y diez con `--nocapture`, y con el de antes, los
+  diez y siete. La sesión corre como root, y con `--nocapture` no sale ninguna (medido con el binario del último borrador).
+- **La capa entera**: 511 pasan, 0 fallan y 7 ignorados, sin avisos al compilar, con el binario del último
+  borrador (146,2 s de tests; sha256 b11440b2e701a0df…, el de los doce, el del banco y el recompilado al
+  acabarlo). Con el del borrador anterior, 511 pasan, 0 fallan y 7 ignorados (134,5 s de tests; sha256
+  9c8ecbf2f5b00a4a…). Con el binario del de antes, 509 pasan, 0 fallan y 7 ignorados, sin avisos al compilar (142,8 s de tests; sha256 3c186251d4246bb4…). Antes de la comparación previa, 508 pasan, 0 fallan y 7 ignorados,
+  cinco veces, sin avisos al compilar (263,2 s, 263,5 s, 245,1 s, 253,3 s y 181,7 s de tests).
+- **Los mutantes**, cada uno aplicado en el clon, compilado —con el binario distinto del bueno—,
+  corrido con los doce tests y restaurado y comprobado con sha256, sobre el código del último borrador:
+  caen treinta y nueve de los cuarenta, todos en la primera corrida, y sobrevive uno; después, recompilado el
+  bueno, el binario es el mismo (sha256 b11440b2e701…). Los otros treinta y nueve se corrieron también
+  sobre el borrador anterior, con sus doce tests, y cayeron treinta y ocho, y sobrevivió el mismo;
+  treinta, sobre el de antes, con los diez tests de entonces, y cayeron todos; veinticinco, todos menos
+  los cuatro de la comparación previa y el de `db`, sobre el de antes de ése, con los nueve tests de
+  entonces, y también. De los nueve que añadió el borrador anterior, una revisión suya midió que
+  cuatro —la comparación previa sin `conf` o sin `blobs/`, rehusar si la sonda no se crea y la guarda
+  del paso 1 sólo en la migración— pasaban los diez tests del de antes, 3 de 3 veces cada uno; y del
+  de `create`, que añade éste, su verificación midió que pasaba sus doce, 3 de 3 veces. Con el pid 1
+  —con `unshare --pid --fork`, con el que el (a) y el (b) del duodécimo se saltan—, caen también, en el duodécimo y en la primera corrida, los de rehusar si la sonda no se crea y crear la sonda con `create`, en su (c), y los de la guarda del paso 1 sólo en la migración y sin ella, en su (d).
+  - **El código de antes** (`persistence.rs` y `snapshot.rs` del §821, con sólo `O_NOFOLLOW`,
+    `ELOOP` y `abrir_sin_enlace` añadidos, que los tests nombran y la capa no usa): caen los doce; el
+    primero, con «fallo inyectado al acabar el paso 1» donde esperaba el texto que nombra a los dos
+    usuarios, y el décimo, porque root recifra el libro.
+  - **Sin la comparación previa**: el primero —el recifrado del v1 llega a la migración y da su
+    texto, «lo intenta migrar»—; el décimo, que ve en el directorio del dueño los cerrojos de root,
+    de 0:0 con 0600, junto a cada libro, y en cada libro un `snap.*` de 0:0 con 0600: el residuo; y el
+    undécimo, que recifra sin pasar por la sonda: «(b) recifró sin poder borrar su sonda».
+  - **La comparación después de tomar el cerrojo**: el décimo, por los cerrojos de root, y el
+    undécimo, que lo toma.
+  - **La sonda que se queda en el disco**: el décimo, por la sonda de root junto a cada libro, y el
+    undécimo, que recifra.
+  - **La comparación previa que sólo mira el directorio del libro**, y **la que deja fuera** `db`,
+    `conf` o `blobs/` (cuatro mutantes): el décimo, por el cerrojo y el `snap.*` de root en el
+    `mixto_*` que no mira —en los tres, el de sólo el directorio—. El sexto no los ve: el paso 1 da
+    después el mismo texto.
+  - **Crear la sonda sin mirar antes que es de sled**: el undécimo, que la ve junto a lo que no es un
+    libro. **No rehusar si no se puede borrar**: el undécimo, que recifra. **Rehusar entonces con
+    `Io`**: el undécimo, que pasa por la sonda una vez por intento —diez, con otra cada vez—, porque
+    `recifrar_e4` reintenta el `Io`.
+  - **Rehusar si la sonda no se crea**: el duodécimo, en su (a), cuyo dueño no recifra. **La guarda
+    del paso 1 sólo en la migración**: el duodécimo, en su (b), en el que root, con el libro de otro,
+    rehúsa más tarde, en el paso 4 —el `.recifrando` no es del dueño del libro—, con otro texto.
+    **Crear la sonda con `create` en vez de `create_new`**: el duodécimo, en su (c), que la ve
+    creada (el gancho `recifrar:sonda`); en el directorio que deja, el enlace a lo que no estaba lo
+    siguió —lo que no estaba está, de 0:0 con 0600— y lo quitó al borrar la sonda.
+  - **Sin la guarda del paso 1**: el primero y el sexto, con «fallo inyectado al acabar el paso 1» en
+    la migración, donde esperaban el texto que nombra a los dos usuarios, y el duodécimo, como el de
+    arriba; y **con ella después de copiar** —justo antes de dar el grupo, o al acabar el paso 2—: el
+    primero y el sexto, igual.
+  - **En el paso 1, comparar sólo el directorio**, y **dejar fuera** `db`, `conf` o `blobs/` (cuatro
+    mutantes): el sexto, en la migración de cada uno.
+  - **Sin el grupo**: el segundo, el tercero y el séptimo; **sin el directorio**: el segundo y el
+    séptimo, por el directorio de la copia, del grupo 0.
+  - **Seguir los enlaces**, y **quitar la guarda** del enlace duro, la del dueño de cada entrada o la
+    de la copia en 0700: el cuarto.
+  - **Sin la reserva `& 0o700`**: el tercero.
+  - **Los modos antes que el grupo** (con la reserva si el grupo no se puede poner): el segundo y el
+    séptimo, ««conf» no tomó el grupo y el modo de su homónimo: 640»: el `chown` posterior quita el
+    setuid de `conf`, 4640. Lo ve sólo ese aserto, el de `comprobar_la_copia`, que comparten los dos.
+  - **Tomar lo de `db` en vez de lo del homónimo**: el segundo y el séptimo, por `conf` (0640 en vez
+    de 4640).
+  - **No exigir en el paso 4 el inodo del paso 1**, y **no exigir R vacío en el paso 1**: el noveno.
+  - **No bajar a `blobs/`**, y **no rehusar un directorio dentro de él**: el octavo.
+  - **Dar el grupo sólo a las entradas con homónimo** (las otras, con lo de `db` `& 0o700`): el
+    segundo, el séptimo —por el `snap.*`— y el octavo —por el fichero de `blobs/`—.
+  - **Que la apertura no mire de quién es el `.recifrando`**: el quinto y el sexto; **que mire sólo
+    los directorios**, o **no mire el `.recifrando` por dentro**: el sexto; y **que compare también el
+    grupo**: el séptimo.
+  - **Sobrevive**, 3 de 3 veces, el que hace que la comparación acepte una lista de dueños vacía,
+    como un borrador anterior: no se alcanza —`de_quien_es` da siempre el directorio del libro, o un
+    error—, y que ahora rehúse queda deducido, sin test.
+- **La negativa de root y lo que deja en el libro** (un test temporal, fuera del árbol, con cuatro
+  hilos a la vez, con el binario de un borrador anterior y otra vez con el de antes de aquel retoque,
+  los dos de antes de la comparación previa, con lo mismo): con el libro asentado —abierto y cerrado
+  tras su última escritura—, 420 de 420 negativas —140 de recifrar un v2, 140 de abrir con clave un
+  v1 y 140 de recifrarlo— dejan el nombre, el inodo, el dueño, el grupo y el modo de todo, y los
+  bytes de `conf` y de los `snap.*`; sled escribió en `db` en 3 de las 140 de recifrar un v2 (unos
+  1,7 KB de bytes distintos, en la segunda) y en 0 de las 280 de un v1. Sin asentar, 40 de 40
+  negativas dejan un `snap.*` nuevo de 0:0, con 0644 por la umask 0022: las 20 de recifrar un v2,
+  junto a los que había y reescribiendo `db` (entre 506257 y 509254 bytes distintos); las 20 de
+  abrir con clave un v1, en el sitio del `snap.*` del dueño, que ya no está; y las 20 de recifrar
+  después ese v1, ya asentado por esa negativa, no cambian nada. Desde la comparación previa, lo de
+  los recifrados ya no pasa: lo mide el décimo test, sin asentar y sin cerrojo.
+- **El dueño después, con `setpriv`** (la medida de partida, repetida con el binario de antes de aquel
+  retoque, de antes de la comparación previa, sobre libros como los suyos, todos de un solo dueño, y
+  antes con el de un borrador anterior, con lo mismo salvo la lectura del décimo libro, que no
+  entraba): root rehúsa en 12 de 12 —siete recifrados de un v2 y cinco aperturas con clave de un v1—;
+  el dueño lee después las 50 entradas de los diez libros asentados; abre los dos v2 que tenían su
+  cerrojo, con su saldo, y el que no lo tenía no, porque root lo creó suyo; los dos v1 de un
+  directorio de root no los puede migrar, porque no puede crear su `.recifrando` en él; y los cinco
+  de un directorio suyo los recifra o los migra él mismo y los abre después, con su saldo. Con grupo
+  principal 12345 y 12346 de suplementario, el libro sigue en 12345:12346: 12347:12346 lee 15 de 15
+  entradas y 12348:12345, 0 de 15; antes del arreglo, sobre los mismos tres libros, 5 de 15 y 10 de
+  15 —los 5, los del libro del padre con setgid, que ya conservaba su grupo—. Sin el grupo 12346, el
+  libro queda en 12345:12345 con 0700 y 0600, y 12347:12346 lee 0 de 10. Y con la umask 0077 y dos
+  libros sin asentar, root rehúsa los dos, deja en cada uno un `snap.*` de 0:0 con 0600 —y en el que
+  recifraba, `db` pasa de 17561 a 524287 B—, y el dueño ya no los abre: «IO error: Permission denied
+  (os error 13)», 2 de 2. Con la comparación previa, lo del que recifraba, y lo del cerrojo, ya no
+  pasa (el décimo test); lo de la migración, sí (deducido: es el mismo código).
+- **El arnés de la revisión de la sonda** (una copia del test adversario de esa revisión, fuera
+  del árbol, añadido al final de `tests.rs`, compilado, corrido como root y quitado, comprobado con
+  sha256), sobre el código del último borrador, en Linux 6.18.44 y ext4, con el libro de 12345:12346 sin
+  asentar en un directorio de 12345 con 0700 y la umask 0077: el recifrado de root rehúsa el v2 y el
+  v1 en la comparación previa, la fecha del padre cambia y no queda nada en él, y el dueño abre
+  después, con su suministro; con diez sondas del dueño del libro, o diez enlaces, puestos con el pid
+  del proceso, y con un nombre de 244 caracteres, la sonda no se crea, rehúsa el paso 1, deja el
+  cerrojo y un `snap.*` de 0:0 con 0600 y cambia bytes de `db`, y el dueño ya no abre («….cerrojo:
+  Permission denied»); el enlace no se sigue —no crea su destino ni toca el fichero al que apunta; lo
+  ata ahora el duodécimo test, también con un enlace duro—;
+  con el padre `chattr +a` rehúsa nombrando la sonda, que se queda, de 0:0 con 0600, y el dueño abre;
+  la apertura con clave del v1, que no pasa por la sonda, deja lo mismo que el paso 1 (en «Lo que NO
+  hace»); y sobre un directorio de 12345 que no es de sled rehúsa con «lleva «x», que no es de sled», sin
+  cambiar la fecha del padre ni nada en él. Una corrida anterior del arnés, sobre un estado
+  intermedio de este arreglo que rehusaba con `Io` si no podía borrar la sonda, dejó en el padre
+  `chattr +a` diez sondas, una por cada intento de `recifrar_e4`.
+- **`/proc/self` y la sonda**, con Python, como root, en Linux 6.18.44: tras `setgid(12346)` y
+  `setuid(12345)` en el mismo proceso, `prctl(PR_GET_DUMPABLE)` da 0, `/proc/self` es de 12345 y
+  `/proc/self/status` de 0, y un fichero que crea con `O_CREAT|O_EXCL` es de 12345; tras `setpriv` y
+  `exec`, el volcado vuelve a 1 y `/proc/self/status` es de 12345.
+- **El `chown` de un fichero**, con Python, como root, en Linux 6.18.44: `fchown(fd, -1, 12346)` deja
+  2640 en 2640 y 2600 en 2600, y lleva 2650 a 0650, 4640 a 0640, 6640 a 2640 y 6650 a 0650: quita
+  siempre el setuid, y el setgid sólo con el bit x del grupo. Un `chown -R 12345:12346` de root deja
+  un directorio 2750 en 2750 y un `conf` 4640 en 0640. Una revisión midió lo mismo como 12345, con y
+  sin el grupo 12346.
+- **Las herramientas** del bucle del canon —`check_curvas`, bajo el `flock`—, más `check_tests`,
+  `check_modulos`, `check_vectores` y `check_catalogo`: en 0 en una copia sin target
+  del árbol de trabajo, hecha con `git ls-files` y `tar`, con el marcador sin número cambiado por un
+  número de sello que no existe en lo que cambia desde el §817, y un encabezado de asiento con ese
+  número al final de `AUDITORIA.md`; en la copia tal cual, sólo `check_cifras` y `verificar_citas` dan 1, por los marcadores sin número; las dos
+  copias se borraron.
+  `check_tests` cuenta 2022 tests declarados.
+
+**Sobre esta punta.** El borrador se llevó sobre el §827 aplicando, con `git apply --3way`, su diff
+contra el §821 de entonces. El código entró sin conflicto: el `git diff` del §827 a este sello en
+`crates/` es, línea a línea, el del borrador contra su base, con el marcador sin número cambiado por
+«§828» en los comentarios y en las líneas «sin medir» de los tests; `persistence.rs` es, byte a byte,
+el del borrador con ese cambio (sha256 97c74e0176e2949a…), porque el §819 al §827 no lo tocan, y
+`snapshot.rs` y `tests.rs` llevan debajo lo que los rebases y las revisiones de la pila les
+cambiaron. Se resolvió a mano lo demás: las cifras, que son las del §827 más los doce de este sello;
+las dos marcas de la 3.16, que se suman en sus mismas líneas a las del §819, el §820 y el §821; la de
+«Orden determinista» de `ARQUITECTURA.md`, que se suma a la del §821; y la entrada de la crónica del
+pin, detrás de la del §821. La nota del §814 de `ARQUITECTURA.md` y de `CONTRIBUTING.md`, que el
+borrador no tocaba porque en su base no llevaba el pin, lleva la cifra con su marca. La 3.17 va donde
+la pone el borrador, tras la 3.16 y antes de la 3.bis, y su número estaba libre en el §827; mueve las
+líneas de la 3.bis en adelante, y ninguna cita `SECURITY.md:línea` del árbol apunta ahí (la más
+alta, `:1321`). La cita de la 3.14 de este asiento, `SECURITY.md:1023-1028`, era `:1021-1026` en el
+borrador: la pila la movió dos líneas. Las de `persistence.rs`, `crates/zk-ssl-node/src/main.rs:2293`
+y `crates/zk-ssl-cli/src/sandbox.rs:57` siguen en su sitio. Y se corrigieron los dos menores de la
+quinta verificación (arriba) y, en «Por qué no lleva aviso de seguridad», lo que el borrador decía
+de `zk-ssl-guardian`, que no está en los `[dependencies]` del kit sino en sus `[dev-dependencies]`.
+Una revisión de esta punta, sin bloqueantes, pidió tres retoques de texto, y se hicieron: que la
+3.17 diera bien las veces de los nueve de antes de la comparación previa —decía «16 de 16», y son 29
+de 29, los 13, 10, 3 y 3 de «Medido en el clon privado»—; que «Medido aquí» no diera la suite por
+corrida con este asiento en su sitio, porque se corrió antes de su última versión; y que este
+asiento dijera dónde un comentario del código no casa con él: el de
+`con_el_nombre_de_la_sonda_puesto`, en `tests.rs`, cuenta una sola corrida del banco de mutantes con
+el `snap.*` de root, «con uno que no toca ese camino», y dice «Por qué en esa corrida y no en las
+otras, no se midió»; fueron dos (arriba, y en «Lo que NO hace»). Es código del borrador, y se queda.
+
+**Medido aquí**, en la sesión, sobre el §827 con el código y los tests de este sello —antes de los
+últimos retoques de este registro y de la 3.17 de `SECURITY.md`, que los tests no leen—, en release,
+como root, con el target y el directorio temporal de la sesión y bajo el `flock` del cargo: la capa
+entera, 515 pasan, 0 fallan y 7 ignorados, sin avisos al compilar (260,23 s de tests, tras 3 min 8 s
+de compilación); los doce, solos, 3 de 3 veces (17,46 s, 13,32 s y 14,51 s de tests), y 1 de 1 con
+`--nocapture` (9,87 s), sin ninguna línea «sin medir»; y el directorio temporal, vacío al acabar.
+Las quince herramientas, sobre este árbol y con este asiento en su sitio, desde su raíz y
+`check_curvas` bajo el cerrojo de cargo, dan 0: `check_tests` cuenta 2033 tests declarados,
+`check_modulos` 207 ficheros, `check_vectores` 508 vectores y 1017 líneas de manifiesto,
+`check_cifras` 26 cifras de tests en documentos vivos, ninguna contra el canon; `verificar_citas`, 0
+marcadores sin número en el árbol, 0 en la v3 bis, con sus nueve ficheros y su mínimo de nueve, y 0
+en la v5 bis, con sus ocho. `git diff --check`, limpio.
+
+**Contadores.** +12 tests. La capa, 503 -> 515. TOTAL DE SELLO 1859 -> 1871 y CON LARGOS 1999 ->
+2011, en `PAPER.md` (`:36` y `:38`), `PAPER_EN.md` (`:33` y `:35`) y `PRINCIPIOS.md` (`:412`, con
+«—515 de la capa», y `:416`); las «1364 declarados» no se tocan; `check_tests` 2021 -> 2033. La
+cifra de la capa, en `PAPER.md:1057`, `PAPER_EN.md:1015`, `PRINCIPIOS.md:136`, `ARQUITECTURA.md`
+(`:58` y `:1185`, y la nota del §814, `:1606`, con marca en `:1615`), la misma nota de
+`CONTRIBUTING.md` (`:115`, con marca en `:124`), `doc/INSTITUCIONAL.md:546`,
+`doc/INSTITUTIONAL.md:527` y `doc/ecst/VERIFICACION.md:1549`, a mano, como pide el §847; el pin, en
+la fila `zk-ssl` de `tools/canon.sh`, con su entrada. `check_modulos` y los vectores (508) no
+cambian. El `BACKLOG.md` no abre ni cierra ninguna entrada: 41 abiertas y 89 resueltas, como dice su
+línea del estado en esta punta.
+
+**Lo que NO hace.**
+- **En la migración, la apertura de sled que precede a la negativa, y el cerrojo que crea antes quien
+  abre: es lo que se sigue de que la migración no pueda comparar antes de abrir** —la opción que eligió
+  el autor no nombra ningún paso; poner la guarda en el paso 1, y además en `recifrar` antes de tomar
+  el cerrojo, es de la sesión, y reversible—. Antes del paso 1 la apertura crea el cerrojo del libro si
+  no está (`Cerrojo::tomar`) y abre el libro con sled, porque abrirlo es lo que dispara la migración; y
+  sólo migra un libro v1, y que es v1 lo dice lo que guarda sled —datos y ninguna cabecera del KDF,
+  `meta:kdf`—, que se lee al abrirlo: sin saber antes que es v1 no hay forma de rehusar antes sólo la
+  apertura que lo migraría, y rehusar antes toda apertura con clave de otro usuario rehusaría también
+  la de un v2, que no migra, y la opción elegida no dice eso (deducido). En el recifrado pasa lo mismo
+  sólo si la comparación previa no pudo saber quién recifra —la sonda no se pudo crear— (con test: el
+  duodécimo, que mide el cerrojo de root que deja). Un borrador del duodécimo recifraba como root,
+  por ese camino, tres veces seguidas el mismo libro asentado de 12345:12346, y en dos corridas de su
+  banco de mutantes el libro tenía, tras las tres negativas, un `snap.*` de 0:0 con 0644 en el sitio
+  del del dueño: una con el mutante que rehúsa con `Io` si la sonda no se borra, que no toca ese
+  camino, y otra con el de la guarda al acabar el paso 2 (medido una vez cada una; se miró tras las
+  tres, y no se sabe tras cuál; con qué frecuencia, no se midió; el duodécimo recifra ahora cada libro
+  una sola vez). Por qué, deducido y sin medir: una negativa puede escribir en `db` (arriba, 3 de 140)
+  y dejar el libro sin asentar, y una apertura de un libro sin asentar deja un `snap.*` (40 de 40).
+  Esa apertura de root hace lo que sled hace en cualquier apertura (medido arriba, con el código de
+  antes de la comparación previa, cuando también el recifrado abría el libro antes de rehusar): con el
+  libro asentado, nada que se vea salvo, a veces, bytes de `db`; sin asentar, un `snap.*` suyo, con su
+  umask, y con la 0077 —o cualquier umask que quite la lectura a otros, como la 0027 para quien no es
+  del grupo 0 (deducido)—, un `snap.*` de 0:0 que el dueño no lee —con la 0077, 0600—, y el dueño ya
+  no abre el libro hasta que root se lo dé —lo midió la revisión de un arreglo anterior, descartado,
+  con un abridor mínimo de sled: «Ok» tras el `chown` de ese `snap.*`— o lo quite (deducido, sin
+  medir). Lo mismo haría cualquier apertura de root sobre ese libro, también la sin clave del cli
+  (deducido: es la misma apertura de sled; sin medir). Y si no había cerrojo, el que crea root deja al
+  dueño sin abrir (abajo). **La alternativa, comparar en `recifrar` antes de tomar el cerrojo y de
+  abrir el libro, está hecha** («Lo que hace»): lo evita en el recifrado, y no en la migración. Su
+  coste fue una segunda comparación —la del paso 1 sigue haciendo falta para la migración, y de
+  respaldo—, la sonda, y cambiar el primer test, que contaba tres veces `recifrar:0` y ahora cuenta una.
+  No pidió `libc`: el usuario de quien recifra lo da el dueño de la sonda, como en el paso 1 lo da el
+  dueño de R. El asiento anterior decía que lo pedía, y que eso era superficie nueva; no lo era (lo vio
+  su verificación). Hacerla es de la sesión, y reversible; el autor eligió su opción antes de que se
+  midiera esto.
+- **La sonda**: se crea junto al libro —en su directorio padre, donde el paso 1 crearía R— porque su
+  dueño es el usuario con que el proceso crea en ese directorio, el que tendría R, también con un NFS
+  con `root_squash` o con un montaje que cambie los dueños, y porque un fallo de permisos al crearla es
+  el mismo que el del paso 1 (deducido). No `/proc/self`: da el usuario efectivo, y no el de los
+  ficheros (`setfsuid`); sólo está en Linux con `/proc` montado; y no sabe del sistema de ficheros del
+  libro (deducido; sí da el usuario efectivo tras un `setuid` en el mismo proceso, que lo deja sin
+  volcado: medido en la sesión, en Linux 6.18, con su `status` ya de root). Ni el directorio temporal,
+  que puede ser otro sistema de ficheros, y una sonda que se quedara allí no se vería junto al libro
+  (deducido). Crearla y borrarla cambia la fecha de modificación del padre (medido en la sesión, en
+  Linux 6.18 y ext4, con el arnés de la revisión de la sonda, fuera del árbol, sobre el código de este
+  borrador: el recifrado de root que rehúsa el libro de otro, v2 o v1, la cambia sin dejar nada en el
+  padre, y el que rehúsa un directorio que no es de sled, no), como la cambia R (deducido). Junto a lo
+  que no es de sled no se crea (con test, el undécimo). Si no se puede borrar, rehúsa nombrándola, y
+  se queda hasta que se borre a mano (con test, el undécimo, con un directorio en su sitio y, como
+  root, con el padre `chattr +a`); con `Malformed`, y no `Io`, porque quien reintenta un `Io` crearía
+  otra sonda en cada intento (medido: con un estado intermedio de este arreglo, que rehusaba con
+  `Io`, el `recifrar_e4` de los tests, que lo reintenta hasta diez veces, dejó diez con el arnés; y
+  con el mutante que rehúsa con `Io`, el undécimo test pasa diez veces por la sonda). Si el proceso muere entre crearla y borrarla, también se
+  queda —vacía, de quien recifraba, con 0600— y nadie la mira ni la borra: se borra a mano (deducido,
+  sin test). Si la sonda no se puede crear —quien recifra no escribe en el padre, el nombre ya está o
+  no cabe—, la comparación previa no rehúsa, y queda la del paso 1, con lo que deja esa apertura (con
+  test, con un nombre en el que no cabe y con el nombre ya puesto, por enlaces: el duodécimo). Con el
+  nombre ya puesto —diez sondas del dueño del libro, o diez enlaces, con el pid del proceso—, root
+  rehúsa así en el paso 1, deja en el libro, sin asentar, un `snap.*` suyo —con la umask 0077, 0600— y,
+  junto al libro, su cerrojo, y el dueño ya no lo abre (medido con el arnés). Un enlace no se sigue: ni
+  uno simbólico, a un fichero que no está o a uno que está, ni uno duro; el que no estaba no se crea, y
+  el que está no cambia (con test: el duodécimo, con el libro del proceso y, como root, con el de otro
+  dueño y los enlaces de éste; antes, los dos simbólicos, medidos con el arnés). Si quien recifra no
+  puede escribir en el padre, el paso 1 tampoco podrá crear R (deducido).
+- **Los `snap.*` del paso 8** —sled reabre el libro y puede escribir uno— y los de cualquier apertura
+  del dueño en su día a día: son de su grupo principal, o del grupo del padre con setgid, y con su
+  umask (medido: uno de 12345:12346 con 0644 en un libro 2750, y uno de 12345:12345 con 0644 en uno
+  0700). No es de este sello: es lo que hace sled al abrir.
+- **El cerrojo del §816** que no estaba: quien abre lo crea suyo, y quien recifra también, si es el
+  dueño del libro o si la comparación previa no pudo saber quién es (lo mide el duodécimo test); uno de root deja al dueño sin
+  abrir (medido otra vez, con el código de antes de la comparación previa); ya lo dice la 3.14
+  (`SECURITY.md:1023-1028`).
+- **Lo que recifró o migró el código de antes** sigue de quien lo hizo. Un `chown -R` a su dueño le
+  devuelve el dueño y quita el setuid de un fichero que lo tenga, que hay que volver a poner (medido:
+  tras el `chown -R` de root, un `conf` 4640 queda en 0640, y el directorio 2750 se queda; que con eso
+  el dueño lo abra, deducido). Un `.recifrando` de otro que dejó a medias hace rehusar la apertura, con
+  el texto que dice qué hacer; un `.retirado` junto a un libro de otro dueño —root que murió tras su
+  paso 6— lo borra la apertura, como antes, y el libro queda de quien recifró (deducido, sin test).
+- **El grupo que el dueño no tiene**: si no es del grupo del libro, el libro queda en el grupo con que
+  nació la copia —su grupo principal, o el del padre con setgid—, sin bits de grupo ni de otros, y el
+  grupo del libro ya no lo lee; lo devuelve un `chgrp` de quien pueda. Las ACL POSIX y los demás
+  atributos extendidos no se copian: R toma la ACL por defecto del padre (deducido, sin medir).
+- **Lo que no alcanza la guarda de los enlaces**: `std` no tiene `openat` ni `fchownat`, y cada mirada
+  resuelve la ruta otra vez; un cambio que se deshace entre dos miradas no se ve, y dentro de R sólo
+  puede hacerlo su dueño, o root. Quien puede escribir en el directorio padre —sin el bit sticky, y con
+  el directorio que pone ya en ese padre, porque llevar un directorio a otro padre pide escribir en él
+  (deducido de `rename(2)`)— puede cambiar R por otro: hasta el paso 4 la guarda lo ve, con test —el
+  que no está vacío al compararlo, en el paso 1; el de otro dispositivo u otro inodo, en el 4—, y el
+  recifrado que rehúsa borra lo que haya en el sitio de R, como desde el §812; uno vacío del dueño del
+  libro, puesto antes de compararlo, recibe la copia y el grupo como el de verdad (deducido). Y queda el
+  hueco entre la comprobación del paso 4 de que R es el que nació y la vuelta por sus entradas, que
+  lee R por su ruta (`read_dir`) y abre cada entrada por su ruta: si en ese hueco alguien pone otro
+  directorio en el sitio de R, las entradas de ese otro que sean del dueño de R —el del libro, que es
+  quien recifra— y, si son ficheros, con un solo nombre, toman el grupo y los modos de su homónimo en
+  el libro, o los de `db`, y lo que lleve un directorio suyo de dentro, igual; las demás hacen rehusar.
+  Al acabar las entradas la guarda ve el cambio y rehúsa, pero después de darlos; al directorio puesto
+  no le da el grupo ni el modo del libro, y el recifrado que rehúsa borra lo que haya en el sitio de R,
+  si quien lo puso no lo quitó antes. Desde este sello le da también el grupo del libro; hasta él,
+  `copiar_modos` daba por la ruta sólo los modos, a lo que hubiera allí, de quien fuera, desde el paso
+  4 hasta el 6. Lo puede hacer quien escribe en el padre, con un directorio que ya esté en ese padre; y
+  lo que gana no es nada que no fuera ya del dueño del libro —lo de quien hace el cambio, si no es el
+  dueño, hace rehusar—: que lo del dueño que hubiera en ese directorio tome el grupo y los modos del
+  libro, y que lo lea el grupo del libro si puede entrar en él, porque a ese directorio no se le cambia
+  el modo (todo, deducido del código, sin test). Después, desde que acaba el paso 4 hasta el 6,
+  cambiarlo es el hueco que ya tenía el §812 (deducido, sin test).
+- **Lo que se rehúsa de más**: el libro que no es de un solo dueño no lo recifra ni lo migra ninguno de
+  los dos —con test el del directorio; el de los ficheros, deducido—, aunque al dueño de los ficheros
+  le bastaría (deducido): que sea todo de un dueño lo arregla. Y, deducido y sin medir: en un sistema
+  de ficheros que no guarda los modos de Unix, R no queda en 0700 y el recifrado rehúsa; con NFS y
+  `root_squash`, R nace de otro usuario y root rehúsa —en el recifrado, ya en la comparación previa,
+  porque la sonda nace igual—.
+- Fuera de Unix no cambia nada, y no está probado en Windows ni en NFS. No mide quién, fuera del
+  árbol, recifra o abre con clave como otro usuario.
+
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.
