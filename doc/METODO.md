@@ -177,9 +177,9 @@ piden.
 
 - El RFC parte el trabajo en etapas, E1, E2…, y cada una se construye en su sello, que el RFC
   nombra. La mayoría las lleva en una tabla, «etapa | qué entrega | ¿rompe el cable? | estado» —el
-  0001, del 0004 al 0010 y del 0012 al 0017; por ejemplo,
+  0001, del 0004 al 0010 y del 0012 al 0021; por ejemplo,
   `spec/rfc/0015-el-ciclo-de-vida-del-firmante.md` §«Estado de las etapas»—; el 0002, en una tabla
-  de otra forma; el 0003 y el 0011, en una lista; y el 0018 y el 0019, en su cabecera y su diseño.
+  de otra forma; y el 0003 y el 0011, en una lista. En el 0018 y el 0019, desde el §826, la tercera columna es «¿rompe el cable?, y qué superficie», y la tabla va antes de «Seguridad», para no mover sus líneas citadas; la E2 del 0017 y la E4 del 0020 nombran también su superficie: lo pide la R5 del RFC-0021, un sello antes del corte. ⚠️ §826: decía «del 0012 al 0017» y «y el 0018 y el 0019, en su cabecera y su diseño»: el 0020 y el 0021 la traen desde el §790, y el 0018 y el 0019, desde el §826.
 - Las decisiones abiertas van numeradas —D-A, D-B…, o 1, 2…— y son del autor. Cuando él las
   delega, las toma el asistente («Las cinco decisiones las tomó el asistente por delegación del
   autor», `spec/rfc/0009-lo-que-revela-una-prueba.md:65`), y el RFC dice con qué criterio y que son

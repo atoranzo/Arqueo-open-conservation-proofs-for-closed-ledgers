@@ -19,7 +19,7 @@
   custodiado no caduca), §418 (el `tipo` desconocido, con nombre), §641, §680 y §684 (las pruebas
   que cambiaron bajo `zkssl/0.4`), §662 a §664 (la 0.4.2), §682 (la primera mudanza a `0.4/`), §692
   (las huellas), §699 (lo que `zkssl/0.4` no identifica, medido), §707 (la D-G), §790 (este
-  borrador), §799 (la aceptación del autor, con sus ocho decisiones).
+  borrador), §799 (la aceptación del autor, con sus ocho decisiones), §800 (las cifras de S3 y S5 en la D-A, con la E2 del RFC-0020), §801 (la E2 y la E3a), §807 (las frases rancias, con su marca), §810 (la cita del bloque «3 ter» de `tools/canon.sh`), §823 (la condición de la máquina en «reproducible», y las citas de `doc/KIT.md` que el §815 y el §818 habían corrido, con sus marcas), §826 (desde cuándo rige la promesa, precisado, y qué verificador juzga las positivas de la E3b), §852 (la cita de `spec/vectors/paquete/MANIFIESTO.txt` del hecho 7, que sus cinco negativos corrieron, con su marca). ⚠️ §826: la lista acababa en el §799, y callaba el §800, el §801, el §807, el §810, el §823 y el §852, que tocaron este fichero: el §801 lo nombra su línea de estado; el §800, sus cifras de la D-A; y el §807, el §810, el §823 y el §852, sus marcas.
 - **Backlog:** la **90** (la política de compatibilidad, como promesa), que este RFC no cierra hasta
   que se construya; con la **85** (una segunda implementación necesita contra qué comprometerse),
   la **82** (una ruptura para varias razones), la **118** (cómo se identifica una prueba) y la
@@ -33,8 +33,8 @@
 | E1 — la promesa, escrita | este texto: la superficie, la regla de ruptura, el aviso y lo que se garantiza después | no | **escrita (§790) y decidida (§799)** ⚠️ §799: hasta aquí decía «propuesta (§790)» |
 | E2 — la sección normativa | la sección «Versionado y compatibilidad» de `spec/RPC.md`, con el texto de la D-C, y las remisiones desde `spec/PAQUETE.md` §6, `spec/NUCLEO.md` §3, `doc/KIT.md` §0 y la fila «Estado» de los dos README | no (texto) | **construida (§801)** ⚠️ §801: hasta aquí decía «sin construir» |
 | E3a — la compuerta de la superficie | una herramienta del bucle del canon que deriva cada superficie de su productor y la compara con la lista de la sección (D-D) | no | **construida (§801)**: `tools/check_superficie.py`, nombre provisional que confirma el autor ⚠️ §799: hasta aquí decía «propuesta, no escrita» ⚠️ §801: hasta aquí decía «sin construir; **decidida (§799), no escrita**» |
-| E3b — la compuerta de las pruebas que viajan | una prueba positiva por familia que viaja, juzgada en cada canon por el verificador del nodo y del kit (D-D) | no por sí misma | sin construir; con la E3 de la D-G del RFC-0018, en el corte |
-| E4 — el corte, bajo la política | el corte `zkssl/0.5` con su aviso, sus mudanzas y el kit 0.5.0, como primera ruptura que la cumple | **sí** (la del RFC-0018) | sin construir |
+| E3b — la compuerta de las pruebas que viajan | una prueba positiva por familia que viaja, juzgada en cada canon por el verificador del nodo y del kit (D-D) ⚠️ §826: el del kit, sólo en las cinco familias del kit; las de la capa las juzga el del nodo, porque el kit no verifica pruebas de envío, cobro, quema ni umbral (`spec/rfc/0018-el-tren-0-5.md:110`), como dice la «Compatibilidad» del RFC-0017 | no por sí misma | sin construir; con la E3 de la D-G del RFC-0018, en el corte |
+| E4 — el corte, bajo la política | el corte `zkssl/0.5` con su aviso, sus mudanzas y el kit 0.5.0, como primera ruptura que la cumple | **sí**: la del RFC-0018, y con ella las del RFC-0017, el RFC-0019 y el RFC-0020; qué superficie rompe cada etapa lo dice la tabla de su RFC ⚠️ §826: decía «**sí** (la del RFC-0018)» | sin construir |
 
 ## Motivación
 
@@ -211,8 +211,8 @@ que se propone:
 > ## Versionado y compatibilidad
 >
 > Esta sección es la promesa del protocolo a quien lo implementa y a quien custodia lo que produce.
-> Rige desde el sello que acepte el RFC-0021; lo de antes lo cuenta «Versionado», en «Notas
-> operativas», que no se reescribe.
+> Rige desde el §799, el sello en que el autor aceptó el RFC-0021 con sus decisiones —el RFC sigue PROPUESTO hasta que se construyan sus etapas (regla 4 de `rfc/PROCESO.md`)—, y está escrita aquí desde el §801; lo de antes lo cuenta «Versionado», en «Notas
+> operativas», que no se reescribe. ⚠️ §826: decía «Rige desde el sello que acepte el RFC-0021». El §799 aceptó sus decisiones y lo dejó PROPUESTO; leída como el sello que lo pase a ACEPTADO, que llega con su E4, la promesa regiría desde el corte que la estrena. Pero la decisión 4 del autor en el §799 fija el aviso en un sello con el RFC PROPUESTO antes del corte (R5), y eso sólo obliga si la promesa rige mientras el RFC está PROPUESTO. El §801 dejó al autor decir cuál de los dos sellos es; lo precisa el §826, por su delegación («HACER todo») y con ese criterio, y es reversible. La misma precisión va en esta sección de `spec/RPC.md` y en la D-C del RFC-0021, que la propone.
 >
 > **La superficie estable** son seis superficies, cada una con su identificador: (1) el cable,
 > `zkssl/0.N`: los métodos `zkssl_*` de `openrpc.json`, sus parámetros, sus resultados, sus errores
@@ -289,7 +289,11 @@ identifica, y juzgada en cada canon por el verificador del nodo y por el del kit
 sin que su versión suba (la «Regla de extensión» de la D-G), la prueba vieja deja de verificar y el
 canon lo dice. Las cinco del kit ya lo tienen por sus catálogos; las catorce de la capa no, y la D-G
 las cubre con tests de la capa (`spec/rfc/0018-el-tren-0-5.md:425-426`). Necesita compilar, y entra
-con la E3 de la D-G, en el corte: una prueba de `zkssl/0.4` no dice de qué AIR es.
+con la E3 de la D-G, en el corte: una prueba de `zkssl/0.4` no dice de qué AIR es. ⚠️ §826: «y por el
+del kit» vale para las cinco del kit. Las catorce de la capa las juzga el verificador del nodo: el
+kit no verifica pruebas de envío, cobro, quema ni umbral (`spec/rfc/0018-el-tren-0-5.md:110`). Que
+un kit las juzgue no está decidido: lo abriría la versión fuerte de `ProofFailed` y
+`VerificationFailed` de la E3 del RFC-0019, en el mismo corte (la «Compatibilidad» del RFC-0017).
 
 ## Compatibilidad
 
@@ -297,7 +301,10 @@ Ninguna. La E1 es este texto; la E2, texto en `spec/RPC.md` y remisiones; la E3,
 cambian nada de lo que viaja. Ningún vector se mueve por este RFC. Su primera aplicación será el
 corte `zkssl/0.5` (E4): el RFC-0018 ya está en el árbol, PROPUESTO desde el §675, con sus etapas y
 su estado en la cabecera, y eso cumpliría la R5 para lo que ya tiene construido. ⚠️ §799: hasta
-aquí decía «sería».
+aquí decía «sería». ⚠️ §826: no la cumplía entera. La R5 pide también la tabla de etapas con la
+superficie que rompe cada una, y ni el RFC-0018 ni el RFC-0019 tenían tabla; la tienen desde el
+§826; y desde entonces la del RFC-0017 nombra la superficie de su E2, que decía «NO», y la del
+RFC-0020, la de su E4.
 
 ## Decisiones (del autor, §799)
 

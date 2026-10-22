@@ -2,18 +2,18 @@
 
 - **Estado:** PROPUESTO (§675), con sus cuatro decisiones tomadas (§679, §681), E1 y E2 construidas
   (§681, §682) y la primera pieza de E3, el núcleo, construida (§773).
-  Enmienda el RFC-0010 (ACEPTADO); el paso a ACEPTADO exige decidirlas y construir sus etapas (regla 4
-  del PROCESO).
+  Enmienda el RFC-0010 (ACEPTADO); el paso a ACEPTADO exige construir sus etapas (regla 4
+  del PROCESO). ⚠️ §826: decía «exige decidirlas y construir sus etapas»: las cuatro decisiones están tomadas (§679, §681). Sus etapas, con la superficie que rompe cada una, en «Estado de las etapas», antes de «Seguridad» (§826).
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§675): redactó el borrador
   sobre lo que midió el re-triaje del segundo enjambre del plano v2.0, fuera del paso 4 de
   `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-10-02
 - **Versión del protocolo afectada:** `zkssl/0.4`. E1 no cambia el cable; cambia un veredicto del kit.
-  E2 cambia el veredicto de un vector publicado. E3, la hoja del recibo, sí cambia el cable (su
+  E2 cambia el veredicto de dos vectores publicados (⚠️ §826: decía «de un vector publicado»). E3, la hoja del recibo, sí cambia el cable (su
   núcleo entra en el §773 sin cambiarlo).
 - **Asiento(s) de AUDITORIA:** §675 (este borrador), §679 (las decisiones), §681 (la D-A y E1), §682
-  (E2), §707 (lo que ata `digest_pi`, por la D-G del RFC-0018), §773 (E3, primera pieza: el núcleo).
+  (E2), §707 (lo que ata `digest_pi`, por la D-G del RFC-0018), §773 (E3, primera pieza: el núcleo), §815 (la versión fuerte de `ProofFailed` y `VerificationFailed`, que la E3 lleva también), §826 (la tabla de etapas y la cabecera, corregida). ⚠️ §826: acababa en el §773, y callaba el §815, que tocó este fichero con su párrafo de la E3.
 
 ## Motivación
 
@@ -117,6 +117,29 @@ sesión le dijo que lo recomendado no se sostenía (§681).
 - **D-C — vectores nuevos, con nombre nuevo.** Los dos vectores publicados se quedan con su manifiesto
   y su veredicto de `0.4`; los de E2 nacen con otro nombre. Ningún vector se reescribe.
 - **D-D — E3 dentro del tren del RFC-0018** (su D-D).
+
+## Estado de las etapas
+
+⚠️ §826: el RFC no tenía esta tabla, y la R5 del RFC-0021 la pide un sello antes del corte, diciendo
+qué superficie de su D-A rompe cada etapa: S1, el cable; S2, las pruebas que viajan; S3, lo firmado;
+S4, los sobres del kit; S5, los vectores; S6, el kit como binario. Va aquí, y no tras la cabecera,
+para no mover las líneas de este RFC que otros documentos citan.
+
+| etapa | qué entrega | ¿rompe el cable?, y qué superficie | estado |
+|---|---|---|---|
+| E1 — la ventana con el índice acreditado | `indice_embebido` e `indice_acreditado` en el mando del kit, y un vector nuevo, `completitud/neg-vigente-index-inflado.json` | no rompe el cable; en S4 cambia el veredicto de un sobre de completitud cuyos índices declarados se apartan de los acreditados —la sonda H10 daba NO RESUELTA y da ventana ABIERTA—, y el de ninguno de los 74 vectores publicados de la familia (§681); en S6 no rompe, porque cambia el texto y no la causa: de los vectores que viajan en el tarball de la 0.4.2, cuatro dan con la 0.4.3 el mismo 1 con otro texto, porque la ventana se nombra con el índice que la firma acredita y su inicio (medido en el §815, `doc/KIT.md` §0), y la línea de su manifiesto, que pina la causa (`spec/PAQUETE.md` §6.1), es la misma en `a4e888d` que en el árbol | construida — §681 |
+| E2 — `StaleState` no resuelve solo | `stale_no_resuelve`, en el brazo del rechazo directo y en el del lote: el cuarto estado del RFC-0010, salida 3 | no rompe el cable; en S4, dos sobres publicados pasan de VERDE a «DECLARADA, NO PROBADA»; en S5 no rompe: sus dos vectores se mudaron con sus bytes a `spec/vectors/0.4/completitud/` (R6 b), y los mismos bytes viven en `completitud/` con otro nombre | construida — §682 |
+| E3, primera pieza — el núcleo | `digest_pi` y `recibo_digest_v2`, bajo el dominio `RECEP_V2`, con sus KAT y su réplica en `tools/segunda`; nada los consume | no: dos funciones y sus KAT, que nadie emite todavía (R2 del RFC-0021) | construida — §773 |
+| E3, el resto — la hoja v2, en uso | el nodo anota la hoja v2, el cable la sirve, el kit la lee en la forma 2.11 y la segunda en su verificador, con los números de familia y de versión del registro de la D-G del RFC-0018; y, por decisión del autor en el §815, la versión fuerte de `ProofFailed` y `VerificationFailed`: el kit re-verifica la prueba que se le presente con `hash_prueba` y `digest_pi` bajo la firma. Para eso tiene que verificar pruebas de la capa, como las de envío y cobro, a las que el nodo da recibo (`SECURITY.md` §3.15), y hoy no verifica pruebas de envío, cobro, quema ni umbral (`spec/rfc/0018-el-tren-0-5.md:110`): la «Compatibilidad» del RFC-0017 da por hecho que el kit no juzga las de la capa, y eso cambia con esta pieza, en el mismo corte | **sí**: S3, la hoja del recibo, que compone bajo la `recepRoot` que la cabeza firma; S1, el recibo del cable; y S4, la forma 2.11 del sobre, y el rechazo por `ProofFailed` o `VerificationFailed`, que desde la 0.4.3, la vigente (§818), se declara —la `declarada` sale 3, y su sobre de rechazo, ROJO (`doc/KIT.md` §0)— y pasa a probarse o refutarse | sin construir; en el sello del corte `zkssl/0.5` (D-D) |
+
+La E1 y la E2 cambian veredictos del kit (S4) y se construyeron antes de que la política del RFC-0021
+rigiera. La `arqueo-verify-v0.4.2` no las lleva: se construyó desde `a4e888d`, el §670, anterior a
+las dos, y la registró el §671. Las lleva la 0.4.3, que el §815 cortó como arreglo de seguridad
+dentro de `0.4.x` (R6 f), con la lista de lo que cambia, la E1 y la E2 entre ello, en la sección 0
+de `doc/KIT.md`. El autor la publicó el 21-10-2026 con su aviso, `GHSA-6p4m-qg2w-8r6j`, producida
+sobre `5fd5212`, y desde el §818, que la registra con su huella, es la vigente (`doc/KIT.md` §0).
+Sus commits, `41f765d` (§681) y `b0b6770` (§682), salen en
+`git log a4e888d..5fd5212 -- crates/zk-ssl-verify/src`, de la 0.4.2 al commit de la 0.4.3.
 
 ## Seguridad
 

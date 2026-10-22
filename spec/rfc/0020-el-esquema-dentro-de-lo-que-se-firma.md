@@ -20,7 +20,7 @@
   byte de versión elige recompositor), §297 (la cofirma), §406 (`VersionCabeza`), §643 y §644 (el
   acta, con su esquema, y su opt-in), §699 (lo que una versión no identifica), §790 (este borrador),
   §799 (la aceptación del autor, con sus siete decisiones), §800 (la E2: el registro y los dos
-  preámbulos v7, apagados).
+  preámbulos v7, apagados), §826 (la superficie que rompe la E4, en su tabla), §852 (las dos citas de `spec/vectors/paquete/MANIFIESTO.txt` de las siete líneas que se mudan, que sus cinco negativos corrieron, con su marca). ⚠️ §826: acababa en el §800, y callaba el §852, que tocó este fichero con su marca.
 - **Backlog:** la **87** (agilidad criptográfica: el esquema de firma no está versionado), que este
   RFC no cierra hasta que se construya; con la **84** (cambiar de esquema es una rotación) y la
   **108** (qué esquema sería el B: no se mide aquí).
@@ -32,7 +32,7 @@
 | E1 — la regla, escrita | este texto: el identificador, dónde entra, la regla de la transición y su coste | no | **escrita (§790) y decidida (§799)** ⚠️ §799: hasta aquí decía «propuesta (§790)» |
 | E2 — el núcleo, apagado | el registro de esquemas en `spec/NUCLEO.md` §6, el preámbulo v7 de la cabeza y el de la cofirma con sus KAT, y la segunda implementación que los reproduce; nadie los firma todavía | no (aditivo: el registro, dos funciones y tres KAT) | **construida (§800)**: `Esquema` y `preambulo_v7`/`preambulo_cofirma_v7` en `zk-ssl-verify`, `registro_de_esquemas.json`, `preambulo_v7.json` y `preambulo_cofirma_v7.json` en `spec/vectors/nucleo/`, y `tools/segunda` que los reproduce; ni el nodo, ni el testigo, ni el kit los firman ni los aceptan ⚠️ §800: hasta aquí decía «sin construir» |
 | E3 — el despacho | el verificador elige el verificador por el esquema, con un conjunto aceptado y otro emitido; un esquema que no se acepta se rechaza con su número | no (con un solo esquema registrado, nada cambia de veredicto) | sin construir |
-| E4 — el corte | `VersionCabeza::V7` en el conjunto; el nodo firma y sirve v7 con `esquema`; el testigo cofirma v7; el kit lee `esquema` en cada cabeza de sus sobres; los vectores que cambian de texto, mudados a `0.4/` | **sí** | sin construir; en el sello del corte `zkssl/0.5`, como decidió el autor en el §799 (decisión 7) ⚠️ §799: hasta aquí decía «si el autor lo decide así» |
+| E4 — el corte | `VersionCabeza::V7` en el conjunto; el nodo firma y sirve v7 con `esquema`; el testigo cofirma v7; el kit lee `esquema` en cada cabeza de sus sobres; los vectores que cambian de texto, mudados a `0.4/` | **sí**: S3, la cabeza y la cofirma v7, con su `esquema` bajo la firma; S1, porque el cable las sirve; y S4, porque el kit lee `esquema` en cada cabeza de sus sobres; en S5 no rompe: las siete líneas de manifiesto que cambian de texto se mudan a `0.4/` con sus vectores (R6 b). ⚠️ §826: decía «**sí**», sin la superficie que pide la R5 del RFC-0021 | sin construir; en el sello del corte `zkssl/0.5`, como decidió el autor en el §799 (decisión 7) ⚠️ §799: hasta aquí decía «si el autor lo decide así» |
 | E5 — la transición, medida | un segundo esquema registrado, una rotación A -> B en un nodo real y una cabeza de A juzgada por contención bajo B, en un banco | según el esquema B | sin construir; espera a la 108 y a la elección del autor |
 
 ## Motivación

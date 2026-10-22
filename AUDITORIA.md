@@ -65583,3 +65583,561 @@ el `BACKLOG.md`. No corta ni publica ninguna release, ni retira la 0.3.0, que si
 acepta los cuatro negativos. No da vector a los tres textos de camino, ni una compuerta a
 `as_digest`. En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento
 en su sitio, y salió VERDE.
+
+## §826 — los textos de los RFC propuestos, arreglados sin aceptarlos: el RFC-0017 rompió las pruebas que viajan y lo paga el corte, las tablas de etapas dicen qué superficie rompe cada una, y la promesa del RFC-0021 rige desde el §799
+
+El commit que lleva este asiento, sobre el §825. Es un sello de texto. Toca los RFC-0017 a 0021,
+`spec/RPC.md`, `spec/README.md`, `doc/METODO.md` y este asiento. Son ocho ficheros más este
+asiento, con 140 inserciones y 31 borrados fuera de él (`git diff --stat`). Ni código, ni tests, ni
+vectores, ni el `Cargo.lock`, ni los pines de `tools/canon.sh`, ni `PAPER.md`, `PAPER_EN.md` o
+`PRINCIPIOS.md`, ni el `BACKLOG.md`. No toca el RFC-0001, el 0005, el 0013 ni el 0015, ni el
+RFC-0016, que aceptó el §825, ni su fila de `spec/README.md`. Tampoco la sección 0 de los dos
+manuales, que es del §818 y da por vigente la 0.4.3 publicada.
+
+Ninguno de los cinco cambia de estado. Al 0018, al 0019, al 0020 y al 0021 les faltan etapas. Al
+0017 le faltan los vectores de su ruptura, si llegan, con el corte `zkssl/0.5`.
+
+Se hace por delegación del autor («HACER todo»; abajo, «Quién lo decide»). Lo hizo Claude, en una
+sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión lo escribió y lo revisó en su carril y lo
+portó luego sobre el §852 de `main` y lo que iba delante en la pila: el §819, el §820, el §821, el
+§822, el §823, el §824 y el §825 (abajo, «El porte, hasta el §852»), luego sobre el §858, con los
+§853-§858 delante también (abajo, «El porte, hasta el §858»), y ahora sobre el §859, con el §859
+delante también (abajo, «El porte, aquí»). En el carril lo escribió y lo comprobó sobre el giro del
+RFC-0016 de entonces, hoy el §825, que iba sobre `b6994c3` (el §812), en un árbol de trabajo que no
+se empujó; dos revisores, en otras sesiones, lo midieron en una copia y pidieron cinco cosas, que
+otra sesión hizo antes de commitearlo allí:
+1. que las listas de asientos nombraran a todos los que tocaron cada fichero, medido con `git log`:
+   el 0021 callaba el §800, el §807 y el §810, y el 0018, el §773 y el §805;
+2. que la «Compatibilidad» del 0017 no diera por hecho que los vectores de su ruptura nacen en el
+   corte, juzgados por el verificador del nodo y del kit. El kit no verifica pruebas de envío,
+   cobro, quema ni umbral, y la D-G del RFC-0018 sólo prevé positivas de las cinco familias del kit.
+   Va en condicional, y también su cabecera y su fila de `spec/README.md`;
+3. que la vigencia «desde el §799» dijera su criterio y que es reversible;
+4. que la marca de `spec/RPC.md` §«Versionado y compatibilidad» y la de la D-C dijeran lo mismo;
+5. y que el asiento dijera que el canon `--sello` no se corrió entero, y qué se corrió.
+
+El carril lo portó después sobre sus borradores de la 75, de los dos de H6 y del giro del RFC-0016,
+que iban sobre el §817 de antes del rebase (hoy `5fd5212`): los ocho ficheros entraron sin
+conflicto, dos limpios, el 0017 y el 0020, y seis por fusión automática, y el agente cambió a mano
+lo que en aquella punta ya no era cierto, o le faltaba (abajo, «Lo que cambió el porte del
+carril»). Dos revisiones de ese porte lo releyeron y volvieron a medirlo, y lo que pidieron se hizo
+antes de cerrarlo, salvo lo que se declara (abajo). Lo medido en el carril, lo medido sobre
+`378e1fa`, lo medido sobre `7ed7e17` y lo medido aquí van por separado.
+
+**El porte, hasta el §852.** Un `cherry-pick -n` del borrador del carril sobre el §825 de entonces,
+el de `378e1fa`. Siete ficheros entraron sin choque: el 0017 y el 0019, que nada tocó desde la base
+del carril, y por fusión automática los demás, junto a lo que aquella punta les había cambiado
+desde ella —el §850, el §851, el §852 y el §823 en `spec/RPC.md`, el §823 en el 0018, el §852 en el
+0020, el §823 y el §852 en el 0021, y el §824 en `doc/METODO.md`—. Chocó `spec/README.md`, en un
+bloque que junta las filas del 0016 al 0021: el §825 había puesto «ACCEPTED (§825)» en la del 0016,
+y el borrador traía la suya del giro del carril, con el marcador sin número; la fila del 0013, que
+el §848 cambió, entró sin choque. Se resolvió con un script fuera del árbol: la fila del 0016, la
+de aquella punta, que es la del borrador con «§825» por el marcador; las del 0017 al 0021, las del
+borrador, porque en aquella punta eran, por su sha256, las de la base del carril. Donde el borrador
+llevaba el marcador sin número, lleva «§826»: 41 veces en los ocho ficheros, más una de la marca
+nueva del 0020 (abajo). Lo que aquella base exigía, y se hizo:
+- **La 0.4.3 está publicada y es la vigente (§818).** El borrador, escrito antes, decía en el
+  párrafo que sigue a la tabla del 0019 «Publicarla es del autor, y hasta que el asiento que la
+  registre fije su huella la vigente es la 0.4.2 (`doc/KIT.md` §0)», y en la fila del resto de la
+  E3, «desde la 0.4.3, cortada». Es texto que este sello escribe, y se reescribe sin marca: el
+  párrafo dice que el autor la publicó el 21-10-2026 con su aviso, `GHSA-6p4m-qg2w-8r6j`, producida
+  sobre `5fd5212`, y que desde el §818, que la registra con su huella, es la vigente; la fila dice
+  «desde la 0.4.3, la vigente (§818)». Y el `git log a4e888d.. -- crates/zk-ssl-verify/src` del
+  párrafo pasa a `a4e888d..5fd5212`, de la 0.4.2 al commit de la 0.4.3, como el del §825: un rango
+  que ya no depende de la punta.
+- **El sello de registro de H6 es el §823.** El borrador lo nombraba por lo que hizo, sin número, en
+  la lista de asientos del 0018 (:16) y en la del 0021, y en sus marcas: va por su número. Y la
+  entrada del 0021 decía que las citas de `doc/KIT.md` que ese sello corrige las había corrido «el
+  §815»: en aquella punta las corrieron el §815 y el §818, que da la 0.4.3 por vigente, como dicen
+  las marcas del §823 en el 0021 (:85, :121), y la entrada dice «que el §815 y el §818 habían
+  corrido».
+- **El §852 tocó el 0020 y el 0021**, con las marcas de las citas de
+  `spec/vectors/paquete/MANIFIESTO.txt` que sus cinco negativos corrieron, y ninguna de las dos
+  listas lo nombraba: las dos lo ganan. La del 0021 ya llevaba marca, y la marca lo nombra; la del
+  0020 no la llevaba, porque el borrador sólo le añadía este sello, y gana la suya: «acababa en el
+  §800, y callaba el §852, que tocó este fichero con su marca».
+- **Dos citas por línea del asiento del §852 caen en ficheros que el borrador alargaba.** La de
+  `spec/rfc/0021-la-politica-de-compatibilidad.md`:102-103 va detrás de la lista de asientos de la
+  cabecera, que el borrador alargaba siete líneas: la lista va en su línea 22, como la del 0018 en
+  la suya, y la cita dice lo que decía en `main`. La de `spec/RPC.md`:1765-1766, por las cuentas
+  vivas `vectores.json 508` y `vectores.lineas 1017`, ya no lo dice, y no por este sello: el §823
+  metió tres líneas en el párrafo «Después de una ruptura sigue verificando» de `spec/RPC.md`
+  §«Versionado y compatibilidad», y desde él, también en el §825, padre de este sello, esas dos
+  líneas son `sobre.v 1 2` y `sobre.tipo …`, y las cuentas están en la :1768-1769 (`git show`).
+  Este sello no la arregla: los asientos no se marcan, y lo que la corrió es del §823. Tampoco la
+  corre más: el párrafo de la vigencia, que el borrador alargaba de dos líneas a diez, va en las dos
+  líneas físicas que reemplaza (:1646-1647), y `spec/RPC.md` sigue con las 1789 líneas del §825; la
+  D-C del 0021, que lo propone, va también en dos, igual línea a línea, y el 0021 crece siete, todas
+  detrás de su :292.
+- **El RFC-0016.** El carril dejó para la integración la cita `git log a4e888d..` con el hash del
+  §815 de aquel carril y la frase de la 0.4.3 «que sigue sin publicar», en la «Compatibilidad» del
+  RFC-0016. Las corrigió el §825, que lo aceptó, con el rango `a4e888d..5fd5212` y la 0.4.3 por
+  vigente. Este sello no toca el RFC-0016, y lo que dice de él es lo que dice el §825.
+- **Las compuertas de aquella base.** `check_publicadas` ganó en `main` el ATADO G (§846): las
+  cabeceras de los cinco RFC llevan su autor de `GENAI.md` y su viñeta de GenAI con la fórmula de la
+  casa, y ninguna línea de ninguna de ellas, hasta el primer `## `, casa con su `MODELO`, ni en la
+  viñeta ni fuera de ella. `verificar_citas` ganó la v5 bis (§847): este sello no cita
+  `tools/canon.sh` por línea, y la lista del 0021 lo nombra por su bloque, el «3 ter».
+  `check_superficie` ganó la R8 (§849), y este sello no escribe ninguna frase de conformidad en
+  `crates/`.
+
+**Lo que hace.**
+
+1. **El RFC-0017** gana la «Compatibilidad» que la regla 2 del PROCESO pide y que no tenía. Su E2
+   cambió el selector `first_s` de los diecisiete AIR de la capa, y con él la superficie S2 de la
+   D-A del RFC-0021, las pruebas que viajan, sin subir la versión: el §699 lo midió con el envío. Lo
+   paga el corte `zkssl/0.5` del RFC-0018, junto con la E1 (§680) y la E2 (§684) de aquel: una
+   ruptura para varias razones (R4).
+   Qué vectores cubren esa ruptura, como pide la regla 4, no está decidido, y el RFC lo dice en
+   condicional. Nacerían en el corte si la E3b del RFC-0021 guarda como vector la positiva de cada
+   familia de la capa, como propone su D-D, juzgada por el verificador del nodo. El kit no la juzga:
+   no verifica pruebas de envío, cobro, quema ni umbral (`spec/rfc/0018-el-tren-0-5.md`:110), y el
+   0017 no toca ningún AIR del kit (D-3). La D-G del RFC-0018 hoy sólo prevé positivas de las cinco
+   familias del kit (:399), y tests de la capa para las demás (:424-426). Eso cambia si la versión
+   fuerte de `ProofFailed` y `VerificationFailed`, que la E3 del RFC-0019 lleva al mismo corte, le
+   da al kit un verificador de las pruebas de la capa, y el 0017 lo dice.
+   Gana también la «Seguridad» que pide la regla 3. Además, con su marca:
+   - en su tabla, la E2 decía «NO» y ahora dice «sí: S2»;
+   - su cabecera dice que la regla 4 no está cumplida entera;
+   - «Lo que NO hace» gana su nota;
+   - su lista de asientos decía «§641.» y gana el §699, el §778 y este.
+
+   Las dos secciones van donde las pone la plantilla, tras el diseño y delante de «Lo que NO hace»,
+   y no al final del fichero, y la cabecera gana tres líneas tras la :7 y cinco tras la :20: lo que
+   va detrás baja, de 3 a 58 líneas. Ninguna cita se mueve, porque nada en el árbol cita el 0017 por
+   línea (`git grep`).
+
+2. **El RFC-0018 y el RFC-0019** ganan la tabla de etapas que la R5 del RFC-0021 pide un sello antes
+   del corte. Su tercera columna es «¿rompe el cable?, y qué superficie», de S1 a S6. Va antes de
+   «Seguridad», para no mover las líneas que otros documentos citan.
+   - En el 0018: la E1 y la segunda pieza de la E2 rompen S2. La primera y la tercera pieza de la E2
+     no rompen nada. La E3, la marca v2, rompe S2 y S4. El corte rompe S1 y S6, y paga también la
+     ruptura del RFC-0017. En S5 no se rompe nada: los vectores de `0.4` se mudan con sus bytes
+     (R6 b).
+   - En el 0019: la E1 y la E2 cambian veredictos del kit (S4). Se construyeron antes de que la
+     política rigiera. La 0.4.2 no las lleva: sale de `a4e888d`, anterior a las dos. Las lleva la
+     0.4.3, que el §815 cortó como arreglo de seguridad (R6 f) y que es la vigente desde el §818. La
+     primera pieza de la E3 no rompe nada (R2). El resto de la E3 rompe S3, S1 y S4, también con la
+     versión fuerte de `ProofFailed` y `VerificationFailed` que el §815 le suma, y que pide al kit
+     verificar pruebas de la capa.
+   - La cabecera del 0019 decía «exige decidirlas», y las cuatro decisiones ya están tomadas (§679,
+     §681). Su versión afectada decía que la E2 cambia el veredicto de «un vector publicado», y son
+     dos. Las dos cosas van corregidas con marca.
+
+3. **El RFC-0020** nombra en su E4 la superficie que rompe. **El RFC-0021** remite en la suya a las
+   tablas de los cuatro RFC que rompen, y su «Compatibilidad» dice que la R5 no se cumplía entera.
+   Su E3b, en la tabla y en la D-D, decía que cada positiva la juzga «el verificador del nodo y del
+   kit»; gana una marca: el del kit, sólo en las cinco familias del kit, como dice la
+   «Compatibilidad» del 0017.
+
+4. **La vigencia de la promesa.** Cuatro sitios decían que rige «desde el sello que acepte el
+   RFC-0021»: `spec/RPC.md` §«Versionado y compatibilidad», la D-C del RFC-0021 que la propone, la
+   entrada «Versionado» de «Notas operativas» y el principio 2 de `spec/README.md`. Leído como el
+   sello que lo pase a ACEPTADO, que llega con su E4, regiría desde el corte que la estrena. El §801
+   dejó al autor decir cuál de los dos sellos es. Por su delegación, rige desde el §799, que tomó sus
+   decisiones y lo dejó PROPUESTO. El criterio es la decisión 4 del propio autor en el §799: el aviso
+   es «un sello con el RFC PROPUESTO antes del corte» (R5), y eso sólo obliga si la promesa rige
+   mientras el RFC está PROPUESTO. Es reversible. La marca es el mismo párrafo en la sección de
+   `spec/RPC.md` y en la D-C.
+
+5. **Las listas de asientos**, cada una con su marca:
+   - el 0021 gana el §800, el §801, el §807 y el §810, que tocaron el fichero y que su texto nombra,
+     el §823, el §852 y este;
+   - el 0018 gana el §773, la forma de `digest_pi` que su D-G cita, el §805, su línea de asistencia,
+     el §823 y este;
+   - el 0019 gana el §815, su párrafo de la E3, y este;
+   - el 0020 gana este y el §852.
+
+6. **`doc/METODO.md` §5** decía que las tablas de etapas van «del 0012 al 0017» y que el 0018 y el
+   0019 las llevan «en su cabecera y su diseño»: lo que el §799 vio y no corrigió. Ahora dice «del
+   0012 al 0021», con la tercera columna del 0018 y el 0019, y conserva su número de líneas.
+
+7. **`spec/README.md`**: las filas del 0017 al 0021 lo dicen. La del 0017 dice que los vectores de su
+   ruptura no están decididos.
+
+**Quién lo decide.** Por delegación del autor, que pidió «HACER todo» (así lo citan el §814, el §816
+y el §817). Arreglar con marca el texto de un RFC propuesto no lo acepta ni cambia lo que decide:
+ninguno de los cinco cambia de estado, y aceptarlos sigue siendo del autor. Lo único que este sello
+decide es desde cuándo rige la promesa del RFC-0021 (punto 4), y lo decide la sesión por esa
+delegación, con el criterio de la decisión 4 del propio autor en el §799: el aviso es «un sello con
+el RFC PROPUESTO antes del corte» (R5), y eso sólo obliga si la promesa rige mientras el RFC está
+PROPUESTO. Es reversible: si el autor la quiere desde el sello que pase el RFC a ACEPTADO, la marca
+de la sección de `spec/RPC.md`, la de la D-C y las dos cortas, la de «Notas operativas» y la de
+`spec/README.md`, se corrigen con otra. Quedan para el autor, o para el corte: qué vectores cubren
+la ruptura del RFC-0017, cómo juzga el kit las pruebas de la capa que la versión fuerte del §815 le
+pide re-verificar, y el nombre de la herramienta de la E3a.
+
+**Lo que cambió el porte del carril.** Sobre `b6994c3` el sello decía cosas que en la punta del
+carril no eran ciertas, o le faltaba lo que aquella punta añadía:
+- **La release de la E1 y la E2 del 0019.** El párrafo bajo su tabla decía que con qué versión del
+  kit salen, «una `0.4.x` como arreglo de seguridad (R6 f) o la `0.5.0` del corte, lo dice el sello
+  que corte la siguiente release». Allí ese sello era el §815, que cortó la 0.4.3 como arreglo de
+  seguridad, con su aviso y la lista de lo que cambia en la sección 0 de `doc/KIT.md`, y la 0.4.3 las
+  lleva. El párrafo lo decía, con sus commits, `41f765d` (§681) y `b0b6770` (§682); de la vigente
+  decía lo que entonces decía la sección 0 de `doc/KIT.md`. Aquí, con la 0.4.3 publicada, se
+  reescribió (arriba, «El porte, hasta el §852»).
+- **La lista del 0019.** Sobre `b6994c3` ya nombraba a todos. En el carril el §815 tocó el fichero,
+  con su párrafo «E3 lleva también la versión fuerte de `ProofFailed` y `VerificationFailed`», y la
+  lista lo callaba: lo gana, con marca.
+- **La E3 del 0019, en la tabla.** La fila del resto de la E3 nombra esa versión fuerte y la
+  superficie que toca: en S4, el rechazo por esas dos causas, que desde la 0.4.3 se declara —la
+  `declarada` sale 3, y su sobre de rechazo, ROJO—, pasa a probarse o refutarse. Y dice lo que pide:
+  que el kit verifique pruebas de la capa, como las de envío y cobro, a las que el nodo da recibo, y
+  que hoy no verifica (`spec/rfc/0018-el-tren-0-5.md`:110). La «Compatibilidad» del 0017 y la E3b
+  del 0021 lo dicen también.
+- **La E1 del 0019, en la tabla.** Su fila gana lo que el §815 midió con la 0.4.2 publicada y la
+  0.4.3 del árbol: de los vectores que viajan en el tarball de la 0.4.2, cuatro dan el mismo 1 con
+  otro texto, porque la ventana se nombra con el índice que la firma acredita y su inicio
+  (`doc/KIT.md` §0). Y que eso no rompe S6: la causa, que pina la línea de su manifiesto, es la
+  misma.
+- **Las listas del 0018 y del 0021.** En el carril el sello de registro de H6, hoy el §823, tocó los
+  dos ficheros y no se nombraba en sus listas. En el 0018 tocó la «Compatibilidad» de la D-G; en el
+  0021, la fila del hecho, la R6 a, el texto propuesto y seis citas a `doc/KIT.md`. Las dos listas lo
+  ganaron, por lo que hizo y no por su número, que aún no tenía; aquí va por su número.
+- **La sección de `spec/RPC.md` y la D-C.** Sobre `b6994c3` eran iguales en sus 45 líneas. En el
+  carril, y aquí, no lo son: el §823 corrigió «se reproduce desde su commit» en las dos, con marcas
+  de distinta letra. El párrafo de la vigencia, con su marca, sí es el mismo en los dos.
+
+**Medido en el carril**, el 21-10-2026, sobre su punta:
+- **Las listas de asientos**, con `git log` de cada fichero; cada una los nombraba a todos.
+- **Las citas por línea** del 0018 y la del 0019 (:54-57), idénticas por su sha256 a las del padre
+  del sello y a las de `b6994c3`, con las tablas detrás.
+- **La causa de los cuatro de la E1**, la misma línea de manifiesto en `a4e888d` y allí.
+- **La vigencia, en los dos sitios**: la sección de `spec/RPC.md` y la cita de la D-C, iguales en sus
+  34 primeras líneas, con el párrafo de la vigencia y su marca.
+- **Las compuertas**, en una copia temporal sin `target`, con un número de prueba sin asiento en
+  lugar del marcador y un encabezado de prueba con ese número al final de `AUDITORIA.md`: las del
+  bucle «2 ter» de `tools/canon.sh` salvo `check_curvas`, más `check_tests`, `check_modulos`,
+  `check_vectores` y `check_catalogo`, en 0, sin el asiento y con él. `git diff --check`, limpio.
+- **Los mutantes** de `check_publicadas`, sobre esa copia, cada uno restaurado y comprobado con su
+  sha256: M1, la línea de estado del 0019 cambiada a «ACEPTADO (§675)», y M2, la del 0018; los dos
+  salen con 1, «6 sitio(s) no dicen del RFC lo que el RFC dice de si mismo».
+
+No se midió allí el canon `--sello` entero, ni `--bancos`, ni `check_curvas`.
+
+**Lo que pidieron las revisiones del porte del carril, y se hizo.**
+- Que la fila del resto de la E3 del 0019 no dijera que el rechazo por `ProofFailed` o
+  `VerificationFailed` «hoy se declara», porque con la vigente de entonces, la 0.4.2, esa
+  `declarada` salía ROJO: dijo «desde la 0.4.3, cortada», y que su sobre de rechazo sale ROJO
+  (`doc/KIT.md` §0). Aquí dice «desde la 0.4.3, la vigente (§818)».
+- Que la fila de la E1 dijera si el texto que cambia rompe alguna superficie: dice que S6 no,
+  porque la causa es la misma.
+- Que la versión fuerte que esa fila suma, con el kit re-verificando la prueba, nombrara lo que
+  pide: que el kit verifique pruebas de la capa, que hoy no verifica y que la «Compatibilidad» del
+  0017 da por no juzgadas por él. Lo dicen la fila, la «Compatibilidad» del 0017 y la marca de la
+  E3b del 0021.
+- Que la E3b del 0021, en su fila y en la D-D, no dijera que el verificador del kit juzga todas las
+  positivas, contra lo que dice la «Compatibilidad» del 0017: gana una marca en los dos sitios, y
+  su lista de asientos lo nombra. Ese texto es del §790 y del §799.
+- Que la cita del `git log` del 0019 no dependiera del hash que el §815 llevaba en aquel carril: fue
+  `git log a4e888d.. -- crates/zk-ssl-verify/src`, y aquí es `a4e888d..5fd5212`, que no depende de
+  la punta. Y que su frase de la vigente no caducara al integrar la cadena: aquí, con la 0.4.3
+  registrada por el §818, se reescribió.
+- En el asiento: el párrafo «Quién lo decide», como el de los asientos de delante; la cuenta de los
+  marcadores; una huella de M2 que no salía de aquel árbol y era una errata; la cita de la D-C,
+  desde su título; y la línea de `b6994c3` que corresponde a cada cambio de `spec/RPC.md`.
+
+**Lo que pidieron y no se hizo en el carril.** La misma cita de `git log` y la frase de que la 0.4.3
+seguía sin publicar estaban en la «Compatibilidad» del RFC-0016, que era del giro anterior de aquel
+carril: se quedaron para la integración. Aquí las corrigió el §825. Y «el sello de registro de H6»
+no podía ir por su § hasta que se numerara: aquí es el §823.
+
+**Lo que pidieron las revisiones del porte.** Dos revisiones juzgaron el porte sobre el §852, una
+con un bloqueante, y la sesión comprobó contra el árbol cada cosa que pidieron. Eran ciertas, y se
+hicieron, éstas:
+- El bloqueante: este asiento decía que las dos citas del asiento del §852 a ficheros que el
+  borrador alargaba no se movían, y con eso justificaba las dos líneas del párrafo de la vigencia.
+  La de `spec/RPC.md`:1765-1766 ya la había corrido el §823. La revisión pedía arreglarla en el
+  §823 o decirlo aquí; este arreglo es el del §826, que lo dice arriba («El porte, hasta el
+  §852»), y «Medido sobre `378e1fa`» compara también con `main`.
+- Que la entrada del §823 en la lista del 0021 nombra también al §818, y eso no estaba entre lo que
+  aquella base exigía: lo está.
+- Que el párrafo bajo la tabla del 0019 decía que la 0.4.2 «se construyó desde `a4e888d` (§671)», y
+  `a4e888d` es el §670; el §671 es el asiento que la registró. Dice ahora «desde `a4e888d`, el §670,
+  anterior a las dos, y la registró el §671», en las mismas siete líneas.
+- Que este asiento decía que en el carril se comprobó «sobre `b6994c3`»: fue sobre el giro del
+  RFC-0016 de entonces, hoy el §825, que iba sobre `b6994c3`. Lo dice así.
+- Que la «Compatibilidad» y la «Seguridad» del 0017 entran a mitad del fichero, y el asiento sólo
+  lo declaraba de las tablas del 0018 y el 0019: lo declara también del 0017 (punto 1 de «Lo que
+  hace»).
+
+No se hicieron, y por qué:
+- Que la cita `:424-426` del RFC-0018, en la «Compatibilidad» del 0017 y en este asiento, fuera
+  `:425-426`, como la que el RFC-0021 trae de `main`, hoy en su :291: la frase «En las que sólo
+  juzga el nodo, los mismos casos van como tests de la capa» empieza al final de la :424, y la
+  revisión tomó la :423 por la :424 (`git show` con `cat -n`). Se queda la `:424-426`.
+- Que pasan de 100 columnas las dos líneas del párrafo de la vigencia (`spec/RPC.md`:1646-1647 y
+  la D-C del 0021, :214-215), la lista de asientos del 0021 en su :22 y la del 0020 en su :23, y
+  las marcas de las cabeceras del 0018 y el 0019, de `spec/README.md`:88 y de `doc/METODO.md`:182
+  (la :179 sobre `378e1fa`; abajo, «El porte, hasta el §858»): ninguna herramienta las rechaza, y
+  una marca larga al final de la línea que corrige es la forma de la casa —la entrada «Versionado»
+  de `spec/RPC.md`:1606 ya la traía de `main`—. Las listas del 0020 y el 0021, en una línea, dejan
+  en su sitio las citas del §852 a su :224-225 y a su :102-103; y las dos líneas de la vigencia
+  dejan iguales línea a línea la sección de `spec/RPC.md` y la D-C, y `spec/RPC.md` con su número de
+  líneas.
+- Que el RFC-0021 trae de `main` citas viejas a `spec/RPC.md`:1290-1298 y sus vecinas: ya lo
+  declara «Lo que NO hace».
+- Que la misma frase del §852 cita `README.md`:262 y `README_EN.md`:276, y la fila «Protocolo»
+  está desde el §819 en la :270 y la :284: no son ficheros de este sello, y no se tocan aquí.
+
+**Medido sobre `378e1fa`**, el §852, el 22-10-2026, con el §819 al §825 y este sello encima y
+«§826» puesto:
+- **Las listas de asientos**, con `git log` de cada fichero:
+  - el 0017 lo tocaron el §641, el §699 y el §778;
+  - el 0018, el §675, el §679, el §680, el §683, el §684, el §701, el §707, el §773, el §805 y el
+    §823;
+  - el 0019, el §675, el §679, el §681, el §682, el §707, el §773 y el §815;
+  - el 0020, el §790, el §799, el §800 y el §852;
+  - y el 0021, el §790, el §799, el §800, el §801, el §807, el §810, el §823 y el §852.
+
+  Cada lista los nombra ya a todos, y a este.
+- **Las citas por línea.** Con `git grep`, cada cita `fichero:línea` del árbol a los ocho ficheros,
+  fuera de este asiento —325 a `spec/RPC.md`, 13 al 0018, 10 a `spec/README.md`, 3 a
+  `doc/METODO.md` y 2 a cada uno del 0019, el 0020 y el 0021; ninguna al 0017—, comparada línea a
+  línea con el padre: ninguna línea citada cambia ni se mueve. Comparada con `378e1fa`, el §852 de
+  `main`, sólo dos dicen otra cosa: la del asiento del §825 a `spec/README.md`:55, la fila que él
+  mismo cambia, y la del §852 a `spec/RPC.md`:1765-1766, que corrió el §823 (arriba). Las del 0018
+  que cita este sello, :110, :399 y :424-426, dicen lo que el sello dice que dicen, y la tabla del
+  0018 entra en la :453, detrás de la última citada, la :426; la del 0019, en la :121, detrás de la
+  :54-57. `doc/METODO.md`, `spec/README.md`, `spec/RPC.md` y el 0020 conservan su número de líneas
+  (269, 218, 1789 y 362). El 0017 pasa de 123 a 181; el 0018, de 467 a 488; el 0019, de 130 a 153;
+  y el 0021, de 373 a 380.
+- **La causa de los cuatro de la E1.** Las líneas de `spec/vectors/completitud/MANIFIESTO.txt` de
+  `neg-acuse-fuera-de-ventana`, `neg-rechazo-fuera-de-ventana`, `neg-ventana-abierta` y
+  `no-resuelta` son las mismas en `a4e888d` y aquí, todas con el 1: «llega FUERA de la ventana» las
+  dos primeras, «ventana ABIERTA» y «NO RESUELTA EN LA VENTANA» (`git show`).
+- **El `git log` del 0019.** `git log a4e888d..5fd5212 -- crates/zk-ssl-verify/src` da, entre otros,
+  `41f765d` y `b0b6770`; ninguno de los dos es ancestro de `a4e888d`, y los dos lo son de `5fd5212`
+  (`git merge-base --is-ancestor`).
+- **La vigencia, en los dos sitios.** Se comparó con `diff` la sección de `spec/RPC.md`, desde su
+  título en la :1643, con la cita de la D-C, desde su título en la :211 del 0021, quitado el «> ».
+  Las 26 primeras líneas son idénticas, con el párrafo de la vigencia y su marca, ahora en dos
+  líneas. El párrafo «Después de una ruptura sigue verificando» no lo es: son las líneas 27 a 37 de
+  la sección y 27 a 36 de la cita, por las marcas del §823. Las tres que siguen, idénticas.
+- **Las compuertas**, sobre aquel árbol, con «§826» puesto y el asiento de entonces en su sitio: las
+  del bucle «2 ter» de `tools/canon.sh` —`check_cifras`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `verificar_citas`, `check_dominios`, `check_publicadas`,
+  `check_nucleo`, `check_techo`, `check_curvas`, bajo el cerrojo de `cargo` porque lanza `cargo
+  tree`, y `check_superficie`—, más `check_tests`, `check_modulos`, `check_vectores` y
+  `check_catalogo`, en 0, sin aquel asiento y con él. `verificar_citas`: 0 fantasmas, 203
+  encabezados citados y 0 muertos, 0 citas § muertas en el registro, 0 citas por línea al canon en
+  documentos vivos y 0 marcadores sin número, con los 8 declarados. `check_publicadas`: el ATADO D,
+  21 RFC con estado propio y la fila de cada uno en `spec/README.md`; el ATADO G, 21 RFC y la
+  plantilla, 20 con su autor y su viñeta de GenAI y uno por excepción, el 0002. `check_superficie`,
+  28 comparaciones. `check_vectores`, 508 `.json` y 1017 líneas de 18 manifiestos, con su huella.
+  `check_cifras`, 26 cifras de tests, y ninguna contradice los 22 pines. `check_curvas`, 4 raíces de
+  producción y 213 crates distintos en su clausura normal. Ninguna rechaza el marcador del canon que
+  queda al final de este asiento y de los del §822 al §825. `git diff --check`, limpio.
+- **Los mutantes**, sobre una copia de aquel árbol sin `target`, cada uno restaurado y comprobado
+  con su sha256, y `check_publicadas` en 0 antes y después:
+  - M1, la línea de estado del 0019 cambiada a «ACEPTADO (§675)»: sale con 1, «6 sitio(s) no dicen
+    del RFC lo que el RFC dice de si mismo» —el TOKEN de `spec/README.md`:58 y DISCREPA en
+    `README.md`:271, `README_EN.md`:285, `RESUMEN_BILINGUE.md`:63 y :132 y
+    `RESUMEN_EJECUTIVO.md`:103—; el RFC, `0af2fff3f84d7402` antes y después;
+  - M2, la del 0018: sale con 1, con los mismos seis sitios y el TOKEN en `spec/README.md`:57; el
+    RFC, `df8b096772ac5879` antes y después.
+
+  Las dos líneas de estado son las que este sello alarga, y `check_publicadas` las sigue leyendo.
+
+Este sello no toca código: `git diff --stat` del commit sólo nombra ficheros `.md`, y ninguno de
+`crates/`, de `tools/` ni el `Cargo.toml` o el `Cargo.lock`. No se corrió `cargo test`, ni
+`--bancos`, ni sobre `378e1fa`, ni sobre `7ed7e17`, ni aquí.
+
+**El porte, hasta el §858.** Del §852 al §858 lo llevó un `cherry-pick` del commit de este sello que
+salió del porte sobre `378e1fa`, sobre el §825 rebasado sobre `7ed7e17`. Entró sin un choque: los
+siete ficheros de `spec/`, limpios, y `doc/METODO.md` y `AUDITORIA.md`, por fusión automática. Los
+siete de `spec/` salen iguales a como salieron de aquel porte (`git diff` contra su commit, vacío en
+los siete): del §852 al §858, `main` no toca ninguno (`git diff 378e1fa 7ed7e17`, vacío en los
+siete; en `spec/rfc/` sólo cambian la plantilla, en el §856, y el RFC-0005, en el §854).
+`doc/METODO.md` lo tocan el §854 y el §855, en sus secciones 1, 3 y 6, y no en la 5, que es la que
+este sello cambia: la fusión deja lo de `main` y lo del sello, los dos. En `AUDITORIA.md`, los
+asientos de `main` y de la pila delante, tal como estaban en aquella punta, y este asiento al final,
+detrás del del §825, con una línea en blanco entre los dos, puesto después al día en lo que dice de
+su base. Este asiento baja 1736 líneas frente a aquel porte: las 1126 de los asientos del §853 al
+§858 y las 610 que sus portes sumaron a los del §819 al §825 —270 a los del §819 al §822, 82 al del
+§823, 138 al del §824 y 120 al del §825—. `cargo` no se corrió, salvo el `cargo tree` de
+`check_curvas`: el porte no toca código. Lo que aquella base pedía, y se hizo:
+- **`doc/METODO.md`.** Del §852 al §858 pasa de 269 a 279 líneas: el §854 mete una por encima del
+  §5, en la :33, y el §855, dos, en la :116. La frase del §5 que este sello cambia baja de la
+  :176-179 a la :179-182, y el sello la cambia en su sitio, en las mismas líneas: el fichero sigue
+  en 279. La cita de este asiento a su marca, `doc/METODO.md`:179, va a la :182 (arriba, «No se
+  hicieron, y por qué»). Las nueve citas por línea a `doc/METODO.md` de los asientos del §854 y
+  del §855 —:33, :33-34, :111-112, :200, :221-225, :227, :250-256 y dos a :116-118— no caen en la
+  :180 ni en la :182, las dos que el sello cambia, y dicen lo mismo que en el padre. Y una errata
+  del porte sobre `378e1fa`: allí el fichero tenía 269 líneas, no las 270 que decía este asiento
+  (`git show 378e1fa:doc/METODO.md`, con `wc -l`); se corrige en su sitio, en «Medido sobre
+  `378e1fa`».
+- **El ATADO G de toda la cabecera (§856).** El atado lee ahora enteras, hasta su primer `## `, las
+  cabeceras de los cinco RFC. Sólo la del 0017 gana líneas, de 19 a 27, con tres tras la :7 y cinco
+  tras la :20. Las del 0018 al 0021 conservan las suyas (17, 17, 27 y 28), y el sello alarga en
+  ellas líneas que ya estaban: la :6 y la :16 del 0018, la :5-6, la :13 y la :16 del 0019, la :23
+  del 0020 y la :22 del 0021. Pasan las cinco: un autor de `GENAI.md`, la viñeta de GenAI con la
+  fórmula de la casa y ningún identificador de modelo en ninguna línea. El patrón `MODELO`, sobre
+  cada línea de los 23 ficheros de `spec/rfc/`, cabecera y cuerpo: 0 líneas, como midió el §856
+  sobre `62e41e8`. La fórmula de la casa sale una vez en cada RFC del 0016 al 0021, tres en el 0001
+  y una en la plantilla (`git grep -c`): el sello no la escribe en ninguna línea más. Las cabeceras
+  de los 22 `NNNN-*.md` suman 555 líneas, ocho más que en el padre, las del 0017; la más larga sigue
+  siendo la del 0016, con 50. Lo comprueba un mutante nuevo, M3 (abajo, «Medido sobre `7ed7e17`»).
+- **La v5 bis ampliada (§854).** De sus ocho ficheros, el sello toca uno, `doc/METODO.md`, que la
+  regla mira entero desde el §854: sus dos líneas cambiadas no citan `tools/canon.sh`. Este asiento
+  nombra los bloques «2 ter» y «3 ter» del canon sin citarlo por línea.
+- **La v3 bis con su mínimo (§858).** De sus nueve ficheros, el sello toca dos, `spec/README.md` y
+  el RFC-0018, sin escribir en ninguno una cita por línea a `spec/RPC.md`; la lista sigue en nueve,
+  su mínimo, con las mismas 37 citas por encabezado que en el padre. Y lo que la marca del §858 en
+  la ceguera de la v3 bis mide en `02c546b` —que todo fichero que cita `spec/RPC.md` por
+  encabezado y no está en la lista lo cita también por línea— vale también en aquel árbol: con el
+  patrón `ENCABEZADO` de la herramienta y el de `RPC.md:<número>`, son los mismos quince ficheros,
+  y los seis de fuera de la lista lo citan por línea; el sello no hace citar `spec/RPC.md` por
+  encabezado a ningún fichero nuevo.
+- **`doc/ecst/VERIFICACION.md` en `check_publicadas` (§857).** Ninguna de sus 305 líneas «Lo que se
+  puede afirmar» nombra del RFC-0017 al 0021 ni la vigencia de la promesa del RFC-0021; las que
+  nombran un RFC de la casa nombran del 0005 al 0010 (`grep`). El sello no toca la ficha, y el
+  ATADO F y RETIRADAS, que leen esas líneas, pasan.
+- **`check_publicadas`** creció del §852 al §858 81 líneas, de 2826 a 2907, en el §854, el §856 y
+  el §857 (`git log` y `wc -l`): se volvieron a correr allí M1 y M2, y M3 con él.
+- **Las frases de los §853-§858.** Fuera de sus asientos, ninguna habla de los RFC del 0017 al
+  0021, de sus tablas de etapas ni de la vigencia de la promesa (`git diff 378e1fa 7ed7e17` sin
+  `AUDITORIA.md`), y ninguna queda falsa con este sello: no tocan el §5 de `doc/METODO.md`, y la
+  plantilla del §856 sigue poniendo «Compatibilidad» y «Seguridad» tras el «Diseño», donde el 0017
+  las pone. En sus asientos, las citas por línea a los ocho ficheros caen donde caían (abajo); lo
+  que el §856 midió de las cabeceras —506 líneas en las 22, la más larga la del 0010— es de
+  `62e41e8`, en un asiento que no se reescribe, y no queda falsa; y el recorrido del §858 es de
+  `02c546b`, y allí da lo mismo (arriba). No hay nada que marcar.
+
+**Medido sobre `7ed7e17`**, el 22-10-2026, el §858, más el §819 al §825 y este sello, con
+«§826» puesto y su asiento de entonces en su sitio, sin compilar nada:
+- **Las listas de asientos**, con `git log` de cada fichero en aquel árbol: las de «Medido sobre
+  `378e1fa`», porque del §853 al §858 ninguno toca los cinco RFC. Cada lista los nombra a todos, y
+  a este.
+- **Las citas por línea.** El mismo recorrido, en aquel árbol y fuera de este asiento: 325 a
+  `spec/RPC.md`, 13 al 0018, 11 a `spec/README.md`, 12 a `doc/METODO.md` y 2 a cada uno del 0019,
+  el 0020 y el 0021; ninguna al 0017. Son una más a `spec/README.md`, la `:55` que el porte del
+  §825 sumó a su asiento, y nueve más a `doc/METODO.md`, las del §854 y el §855. Comparadas línea a
+  línea con el padre, ninguna línea citada cambia ni se mueve. Con `7ed7e17`, sólo tres dicen otra
+  cosa: las dos del asiento del §825 a `spec/README.md`:55, la fila que él cambia, y la del §852 a
+  `spec/RPC.md`:1765-1766, que corrió el §823. Las citas de este asiento —`spec/RPC.md`:1290-1298,
+  :1606, :1643, :1646-1647 y :1765-1769; `spec/README.md`:55, :57, :58 y :88; el 0018 en su :16,
+  :110, :399, :424-426 y :453; el 0019 en su :54-57 y :121; el 0020 en su :23 y :224-225; el 0021
+  en su :22, :85, :102-103, :121, :211, :214-215, :291 y :292; `README.md`:262, :270 y :271,
+  `README_EN.md`:276, :284 y :285, `RESUMEN_BILINGUE.md`:63 y :132 y `RESUMEN_EJECUTIVO.md`:103—
+  caen donde caían sobre `378e1fa`: del porte de entonces a éste ninguno de esos ficheros cambia
+  (`git diff`, vacío). La de `doc/METODO.md`, en la :182 (arriba). El número de líneas: 279 en
+  `doc/METODO.md`, 218 en `spec/README.md`, 1789 en `spec/RPC.md`, 181 en el 0017, 488 en el 0018,
+  153 en el 0019, 362 en el 0020 y 380 en el 0021.
+- **La causa de los cuatro de la E1**, **el `git log` del 0019** y **la vigencia, en los dos
+  sitios**: lo mismo que sobre `378e1fa`. Las cuatro líneas del manifiesto, iguales a las de
+  `a4e888d`; `41f765d` y `b0b6770`, en `a4e888d..5fd5212` y no ancestros de `a4e888d`; y la sección
+  de `spec/RPC.md` y la D-C, idénticas en sus 26 primeras líneas y en las tres que siguen al
+  párrafo «Después de una ruptura sigue verificando».
+- **Las compuertas**, sobre aquel árbol, con «§826» puesto y su asiento de entonces en su sitio: las
+  once del bucle «2 ter» de `tools/canon.sh` y `check_tests`, `check_modulos`, `check_vectores` y
+  `check_catalogo`, en 0, con el asiento tal como llegó del `cherry-pick` y puesto al día, y con
+  `check_curvas` bajo el cerrojo de `cargo`, con `nice` y con su propio `CARGO_TARGET_DIR`.
+  `verificar_citas`: 0 fantasmas, 204 encabezados citados y 0 muertos —tres más que en el padre,
+  los que cita este sello, y uno más que sobre `378e1fa`: el de `doc/KIT.md` que cita la marca del
+  §824 en `CONTRIBUTING.md`, como dice el asiento del §825—, 0 citas § muertas en el registro, 0
+  citas por línea al `BACKLOG.md` en documentos vivos, 0 en la v3 bis, con sus
+  nueve ficheros y su mínimo de nueve, 0 en la v5 bis, con sus ocho, 0 marcadores sin número y los
+  8 declarados. `check_publicadas`: el ATADO D, 21 RFC con estado propio y la fila de cada uno en
+  `spec/README.md`; el ATADO G, 21 RFC y la plantilla, 20 con su autor y su viñeta de GenAI, «sin
+  identificador de modelo en la cabecera», y uno por excepción, el 0002; y de
+  `doc/ecst/VERIFICACION.md`, en el ATADO F y en RETIRADAS, sus 305 líneas «Lo que se puede
+  afirmar». `check_superficie`, 28 comparaciones. `check_vectores`, 508 `.json` y 1017 líneas de 18
+  manifiestos. `check_cifras`, 26 cifras de tests y 22 pines. `check_curvas`, 4 raíces de
+  producción y 213 crates distintos en su clausura normal. `check_tests`, 2021; `check_modulos`,
+  207. `git diff --check`, limpio.
+- **Los mutantes**, sobre una copia de aquel árbol sin `target` ni `.git`, con `CANON_RAIZ`, cada
+  uno restaurado y comprobado con su sha256, y `check_publicadas` en 0 antes y después de cada uno:
+  - M1: sale con 1, «6 sitio(s) no dicen del RFC lo que el RFC dice de si mismo», en las mismas
+    líneas —el TOKEN de `spec/README.md`:58 y DISCREPA en `README.md`:271, `README_EN.md`:285,
+    `RESUMEN_BILINGUE.md`:63 y :132 y `RESUMEN_EJECUTIVO.md`:103—; el RFC, `0af2fff3f84d7402`
+    antes y después, el mismo;
+  - M2: sale con 1, con los mismos seis sitios y el TOKEN en `spec/README.md`:57; el RFC,
+    `df8b096772ac5879` antes y después, el mismo;
+  - M3, nuevo: un identificador de modelo inventado, con la forma del patrón `MODELO`, al final de
+    la línea 22 del 0017, una de las cinco que el sello mete en su cabecera tras la :20, fuera de la
+    viñeta de GenAI: sale con 1, «1 fallo(s) del ATADO G», MODELO en `:22`, «la cabecera, fuera de
+    la vineta de GenAI, nombra un identificador de modelo». El RFC, `23aa14669ebddc15` antes y
+    después. Con el `check_publicadas` de `378e1fa`, sobre la misma copia, el mismo mutante sale
+    con 0.
+
+**El porte, aquí.** Del §858 al §859 lo llevó un `cherry-pick` del commit de este sello que salió
+del porte sobre `7ed7e17`, sobre el §825 rebasado sobre `212eca2`. Entró sin un choque, y sólo
+`AUDITORIA.md`, por fusión automática; los ocho de fuera salen iguales a como salieron de aquel
+porte (`git diff` contra su commit, vacío en los ocho): del §858 al §859, `main` no toca ninguno
+(`git diff 7ed7e17 212eca2`, vacío en los ocho). En `AUDITORIA.md`, el asiento del §859 va delante
+de los de la pila, y éste, detrás del del §825, baja 456 líneas: las 152 del §859 y las 304 que sus
+portes sumaron a los del §819 al §825 —135 a los del §819 al §822, 43 al del §823, 56 al del §824 y
+70 al del §825—. `cargo` no se corrió, salvo el `cargo tree` de `check_curvas`: el porte no toca
+código. Lo que esta base pide: nada en los ocho ficheros. Lo que el §859 cambia
+—`tools/segunda/juez_medio.py`, su `README.md`, un comentario de `tools/canon.sh` y una nota de la
+85 del `BACKLOG.md`— no habla de los RFC del 0017 al 0021, de sus tablas de etapas ni de la vigencia
+de la promesa, ninguna de las quince herramientas cambia con él, y su asiento no cita por línea
+ninguno de los ocho ficheros. El porte del §825 de esta base sí cambia dos cosas que este asiento
+mide: el (4) del RFC-0016, que este sello no toca ni cita por línea, y una cita más a
+`spec/README.md`:55, la de su «Medido aquí» (abajo).
+
+**Medido aquí**, el 22-10-2026, sobre `212eca2`, el §859, más el §819 al §825 y este sello, con
+«§826» puesto y este asiento en su sitio, sin compilar nada:
+- **Las listas de asientos**, con `git log` de cada fichero en este árbol: las de «Medido sobre
+  `378e1fa`», porque el §859 no toca los cinco RFC. Cada lista los nombra a todos, y a este.
+- **Las citas por línea.** El mismo recorrido, en este árbol y fuera de este asiento: 325 a
+  `spec/RPC.md`, 13 al 0018, 12 a `spec/README.md`, 12 a `doc/METODO.md` y 2 a cada uno del 0019, el
+  0020 y el 0021; ninguna al 0017. Es una más a `spec/README.md` que sobre `7ed7e17`, la `:55` que
+  el porte del §825 suma ahora a su asiento. Comparadas línea a línea con el padre, ninguna de las
+  368 líneas citadas cambia ni se mueve. Con `212eca2`, sólo cuatro dicen otra cosa: las tres del
+  asiento del §825 a `spec/README.md`:55, la fila que él cambia, y la del §852 a
+  `spec/RPC.md`:1765-1766, que corrió el §823. Las citas de este asiento caen donde caían sobre
+  `7ed7e17`: del porte de entonces a éste ninguno de esos ficheros cambia (`git diff`, vacío). El
+  número de líneas de los ocho, el de arriba.
+- **La causa de los cuatro de la E1**, **el `git log` del 0019** y **la vigencia, en los dos
+  sitios**: lo mismo que sobre `7ed7e17`; el §859 no toca `spec/vectors/`, ni `spec/RPC.md`, ni los
+  RFC.
+- **Las compuertas**, sobre este árbol, con «§826» puesto y este asiento en su sitio: las once del
+  bucle «2 ter» de `tools/canon.sh` y `check_tests`, `check_modulos`, `check_vectores` y
+  `check_catalogo`, en 0, con `check_curvas` bajo el cerrojo de `cargo`, con `nice` y con su propio
+  `CARGO_TARGET_DIR`. `verificar_citas`: 0 fantasmas, 204 encabezados citados y 0 muertos, 0 citas §
+  muertas en el registro, 0 citas por línea al `BACKLOG.md` en documentos vivos, 0 en la v3 bis, con
+  sus nueve ficheros y su mínimo de nueve, 0 en la v5 bis, con sus ocho, 0 marcadores sin número y
+  los 8 declarados. `check_publicadas`: el ATADO D, 21 RFC con estado propio y la fila de cada uno
+  en `spec/README.md`; el ATADO G, 21 RFC y la plantilla, 20 con su autor y su viñeta de GenAI, «sin
+  identificador de modelo en la cabecera», y uno por excepción, el 0002; y de
+  `doc/ecst/VERIFICACION.md`, en el ATADO F y en RETIRADAS, sus 305 líneas «Lo que se puede
+  afirmar». `check_superficie`, 28 comparaciones. `check_vectores`, 508 `.json` y 1017 líneas de 18
+  manifiestos. `check_cifras`, 26 cifras de tests y 22 pines. `check_curvas`, 4 raíces de producción
+  y 213 crates distintos en su clausura normal. `check_tests`, 2021; `check_modulos`, 207. `git diff
+  --check`, limpio.
+- **Los mutantes**, sobre una copia de este árbol sin `target` ni `.git`, con `CANON_RAIZ`, cada uno
+  restaurado y comprobado con su sha256, y `check_publicadas` en 0 antes y después de cada uno: M1
+  sale con 1, con los seis sitios y el TOKEN de `spec/README.md`:58; M2, con los seis y el TOKEN en
+  la :57; y M3, con «1 fallo(s) del ATADO G», MODELO en la `:22` del 0017. Los tres RFC, con el
+  sha256 de arriba antes y después: `0af2fff3f84d7402`, `df8b096772ac5879` y `23aa14669ebddc15`.
+
+**Contadores.** Ninguno se mueve: el sello no añade tests ni vectores. Los de esta punta: TOTAL DE
+SELLO 1859 y CON LARGOS 1999, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; la capa 503, el nodo
+229 y el kit 191, en `tools/canon.sh`; `check_tests`, 2021 declarados; `check_modulos`, 207;
+`check_vectores`, 508 `.json` y 1017 líneas de 18 manifiestos. El `BACKLOG.md` no abre ni cierra
+ninguna entrada: 41 abiertas y 89 resueltas, contadas con `grep` de las casillas. Las cifras de
+`212eca2` son las de `7ed7e17`, y éstas las de `378e1fa` —el total de sello en 1853, `check_tests`
+en 2012, 44 abiertas y 86 resueltas, 508 vectores y 1017 líneas—, así que las de este párrafo, que
+les suman las del §819 al §822, son aquí las mismas, contadas otra vez en este árbol.
+
+**Lo que NO hace.**
+- No acepta ninguno de los cinco RFC.
+- No construye ninguna etapa: ni la E3 del 0020, ni la E3b del 0021, ni el productor único de la
+  versión del cable.
+- No decide qué vectores cubren la ruptura del RFC-0017, ni si las positivas de la capa serán
+  vectores o tests: queda para el corte.
+- No elige el nombre de la herramienta de la E3a del RFC-0021.
+- No corta ni publica ninguna release.
+- No reescribe las citas viejas a líneas de `spec/RPC.md` que ya traía el RFC-0021 (por ejemplo,
+  :1290-1298).
+- No iguala el párrafo «Después de una ruptura sigue verificando» de `spec/RPC.md` y de la D-C, que
+  el §823 dejó con marcas distintas.
+- No toca el `BACKLOG.md` (la 90).
+
+La marca de la entrada «Versionado» de «Notas operativas» y la del principio 2 de `spec/README.md`
+siguen cortas: el criterio y la reversibilidad van en la marca de la sección y en la de la D-C. En
+la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y
+salió VERDE.

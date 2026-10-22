@@ -1603,7 +1603,7 @@ si la distingue, y por eso el manifiesto pina clase y texto. Abrir una clase sub
   otro problema y no está implementado).
 - Parámetros de un ledger persistido: inmutables
   (`ParameterMismatch` al reabrir con otros valores).
-- Versionado: ⚠️ §801: la regla la escribe «Versionado y compatibilidad», al final de este documento (§801), que rige desde el sello que acepte el RFC-0021; esta entrada cuenta lo de antes, que no se reescribe. Bajo aquélla la compatibilidad la gobiernan seis superficies, cada una con su identificador —lo que hoy les falta lo declara allí—, y la versión del cable sube con toda ruptura del cable, de las pruebas que viajan o de lo firmado, también con una versión de cabeza nueva que el nodo emita, que de la v3 a la v6 no la subió (RFC-0021, hecho 3). `zkssl_protocolVersion` gobierna compatibilidad. **La
+- Versionado: ⚠️ §801: la regla la escribe «Versionado y compatibilidad», al final de este documento (§801), que rige desde el §799, el sello en que el autor aceptó el RFC-0021 con sus decisiones (⚠️ §826: decía «desde el sello que acepte el RFC-0021»; el §799 lo dejó PROPUESTO hasta sus etapas); esta entrada cuenta lo de antes, que no se reescribe. Bajo aquélla la compatibilidad la gobiernan seis superficies, cada una con su identificador —lo que hoy les falta lo declara allí—, y la versión del cable sube con toda ruptura del cable, de las pruebas que viajan o de lo firmado, también con una versión de cabeza nueva que el nodo emita, que de la v3 a la v6 no la subió (RFC-0021, hecho 3). `zkssl_protocolVersion` gobierna compatibilidad. **La
   versión vigente es `zkssl/0.4`** desde §538 (la `0.3` rigió desde §354, la `0.2` desde §209), y lo
   que la sube es que
   cambien los **valores que viajan**, no el tamaño de la superficie:
@@ -1643,8 +1643,8 @@ si la distingue, y por eso el manifiesto pina clase y texto. Abrir una clase sub
 ## Versionado y compatibilidad
 
 Esta sección es la promesa del protocolo a quien lo implementa y a quien custodia lo que produce.
-Rige desde el sello que acepte el RFC-0021; lo de antes lo cuenta «Versionado», en «Notas
-operativas», que no se reescribe.
+Rige desde el §799, el sello en que el autor aceptó el RFC-0021 con sus decisiones —el RFC sigue PROPUESTO hasta que se construyan sus etapas (regla 4 de `rfc/PROCESO.md`)—, y está escrita aquí desde el §801; lo de antes lo cuenta «Versionado», en «Notas
+operativas», que no se reescribe. ⚠️ §826: decía «Rige desde el sello que acepte el RFC-0021». El §799 aceptó sus decisiones y lo dejó PROPUESTO; leída como el sello que lo pase a ACEPTADO, que llega con su E4, la promesa regiría desde el corte que la estrena. Pero la decisión 4 del autor en el §799 fija el aviso en un sello con el RFC PROPUESTO antes del corte (R5), y eso sólo obliga si la promesa rige mientras el RFC está PROPUESTO. El §801 dejó al autor decir cuál de los dos sellos es; lo precisa el §826, por su delegación («HACER todo») y con ese criterio, y es reversible. La misma precisión va en esta sección de `spec/RPC.md` y en la D-C del RFC-0021, que la propone.
 
 **La superficie estable** son seis superficies, cada una con su identificador: (1) el cable,
 `zkssl/0.N`: los métodos `zkssl_*` de `openrpc.json`, sus parámetros, sus resultados, sus errores

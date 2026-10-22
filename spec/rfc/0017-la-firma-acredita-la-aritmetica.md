@@ -4,7 +4,10 @@
   `--sello` VERDE dentro de él. El paso a ACEPTADO es del autor: la regla 4 del PROCESO pide la
   spec, el OpenRPC (no se mueve: ningún método ni ningún campo cambia), los vectores (ninguno nuevo
   bajo `spec/vectors/`: lo que entra son tests negativos en los crates) y las suites; todo eso está
-  en el §641, y la decisión no.
+  en el §641, y la decisión no. ⚠️ §826: no todo. Su E2 rompió las pruebas que viajan (§699), y de
+  una ruptura del cable la regla 4 pide vectores re-emitidos o nuevos bajo la versión nueva, que no
+  hay todavía: si nacen, nacen con el corte `zkssl/0.5`, que paga la ruptura, y que nazcan para las
+  pruebas de la capa no está decidido (ver «Compatibilidad»).
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§641): midió, propuso,
   aplicó, corrió el canon y commiteó, fuera del paso 4 de `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
@@ -15,14 +18,19 @@
   ⚠️ **Corregido en el §699**: tampoco pasan las pruebas honradas de antes. El selector periódico de
   los diecisiete AIR cambia, y una prueba de envío del §640 no verifica con el AIR del §641, ni al
   revés (medido con el envío); `zkssl/0.4` no lo dice.
-- **Asiento(s) de AUDITORIA:** §641.
+  ⚠️ §826: con la política del RFC-0021, eso es romper la superficie S2, las pruebas que viajan, sin
+  subir la versión; lo paga el corte `zkssl/0.5` del RFC-0018 (ver «Compatibilidad»).
+- **Asiento(s) de AUDITORIA:** §641 (la propuesta y sus cuatro etapas); §699 (lo que la E2 cambió en
+  las pruebas que viajan, medido, y la corrección de la cabecera); §778 (las citas heredadas del
+  RFC-0015 y del §631, corregidas); §826 (su compatibilidad, escrita, y su sección de seguridad).
+  ⚠️ §826: decía «§641.».
 
 ## Estado de las etapas
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — la capa no confía | `validate_send` ata `amount == pi.amount`, el estado del remitente a la hoja del árbol y `pi.amount <= límite`, y resta con `checked_sub`; el cobro ata `notice.amount == pi.amount` y suma con `checked_add`; la quema deriva el suministro nativo (`checked_sub`) en vez de copiar `pi.supply_new`, y ata su estado a la hoja | NO | sellada — §641 |
-| E2 — el rango a 62 bits en los AIR de la capa | los diecisiete circuitos de `stark-experiment` fuerzan a cero **dos** bits altos (63 y 62) de cada segmento de rango, no uno: el rango demostrado baja a `[0, 2^62)` y una resta que envuelve en Goldilocks ya no cabe. `MAX_VALUE` de `compliance_circuit`, `double_entry` y `range_check` a `2^62 - 1` | NO | sellada — §641 |
+| E2 — el rango a 62 bits en los AIR de la capa | los diecisiete circuitos de `stark-experiment` fuerzan a cero **dos** bits altos (63 y 62) de cada segmento de rango, no uno: el rango demostrado baja a `[0, 2^62)` y una resta que envuelve en Goldilocks ya no cabe. `MAX_VALUE` de `compliance_circuit`, `double_entry` y `range_check` a `2^62 - 1` | **sí**: S2, las pruebas que viajan; una de envío del §640 no verifica con el AIR del §641, ni al revés (§699). ⚠️ §826: decía «NO» | sellada — §641 |
 | E3 — la auditoría ata la identidad y acota la banda | `circuit_audit::get_assertions` ata `COL_ID` (la cuenta del testigo) al `public_id` público, y `verify_audit` exige `lower <= upper <= 2^62 - 1` antes de tocar la prueba | NO | sellada — §641 |
 | E4 — el saldo del cliente, canónico en el cable | `zk-ssl-wire` lee `balance` con la regla de RFC-0016 (`u64` canónico, `< p`) en los dos DTO de estado, antes de que la capa lo sume o reste | NO | sellada — §641 |
 
@@ -97,9 +105,59 @@ Con el probador y el verificador reales (perfil release), sobre la capa:
   que el kit ya tenía. No se toca ningún AIR del kit, y por tanto ningún vector portable.
 - **D-4: el RFC queda PROPUESTO**; aceptarlo es del autor.
 
+## Compatibilidad
+
+⚠️ §826: esta sección no existía, y la regla 2 del PROCESO la pide. Lo que el RFC decía de su
+compatibilidad estaba en su cabecera («no sube») y en «Lo que NO hace» («No sube el cable»), y el
+§699 corrigió la cabecera con lo que midió.
+
+**Rompe el cable, y no subió la versión.** La E2 cambió el selector periódico `first_s` de los
+diecisiete AIR de la capa, y con él los bytes de las pruebas que viajan, la superficie S2 de la D-A
+del RFC-0021: una prueba de envío del §640 no verifica con el AIR del §641, ni al revés. Lo midió el
+§699 con el envío, entre nodos y clientes de seis puntos de la historia que dicen todos `zkssl/0.4`
+(`spec/RPC.md`, «Versionado», en «Notas operativas»). Por la regla 2 del PROCESO eso sube la
+versión, y por la R1 y la R3 del RFC-0021 también; el cable siguió en `zkssl/0.4` porque la
+conformidad de `0.4` no compara bytes de prueba (RFC-0009, D-AI). Lo que hizo el §699 fue escribir el
+aviso de lo que ya estaba roto: la línea bajo el título de `spec/RPC.md`, la descripción del OpenRPC
+y la fila «Estado» de los README.
+
+**Lo paga el corte.** La ruptura se paga en el corte `zkssl/0.5` del RFC-0018, junto con las de la
+E1 (§680) y la E2 (§684) de aquel RFC, que cambiaron otras pruebas del cable bajo la misma versión:
+una ruptura para varias razones (R4 del RFC-0021). Los vectores que la regla 4 pide de una ruptura
+del cable —re-emitidos o nuevos bajo la versión nueva— no están decididos. Nacerían en el corte si
+la E3b del RFC-0021 guarda como vector la prueba positiva de cada familia de la capa, como propone
+su D-D, juzgada en cada canon por el verificador del nodo; el del kit no la juzga, porque hoy el kit
+no verifica pruebas de envío, cobro, quema ni umbral (`spec/rfc/0018-el-tren-0-5.md:110`) y este
+RFC no tocó ningún AIR del kit (D-3). Eso cambia si la versión fuerte de `ProofFailed` y
+`VerificationFailed`, que la E3 del RFC-0019 lleva al mismo corte, le da al kit un verificador de
+las pruebas de la capa (lo dice la tabla de etapas de aquel RFC). Hoy la D-G del RFC-0018 prevé
+positivas sólo de las cinco familias del kit (`spec/rfc/0018-el-tren-0-5.md:399`), y en las
+familias que sólo juzga el nodo sus casos van como tests de la capa, no como vectores
+(`:424-426`); la E3b remite a ella para esas familias. Hasta el corte no cambia ninguno de
+`spec/vectors/`, y este RFC sigue PROPUESTO: la regla 4 pide vectores para aceptarlo, y cuáles
+cubren su ruptura lo decide el corte.
+
+**Lo demás deja de aceptar, sin cambiar lo que se escribe.** La E1 y la E4 no cambian un método,
+un campo ni la escritura de un valor: dejan de aceptar lo que acuñaba valor o descuadraba la
+conservación —un importe, un saldo o un suministro en la ventana alta de 63 bits, que ningún
+importe real alcanza (D-2: el techo sano baja a `2^62 - 1`); un estado que no es la hoja del
+árbol; un saldo escrito como `b + p`, que ningún productor de la casa escribe—. La E3 cambia la AIR
+de la auditoría, que no viaja: ningún método del OpenRPC la lleva, y la API de la capa está fuera
+de la promesa (D-A del RFC-0021). Ni un método, ni un campo, ni un KAT, ni una cabeza firmada se
+mueven, y los AIR del kit no se tocan (D-3), así que sus vectores portables tampoco.
+
+## Seguridad
+
+⚠️ §826: esta sección no existía, y la regla 3 del PROCESO la pide. La clave de gasto no viaja, y este
+RFC no la toca: cambia comprobaciones de la capa, el rango de los AIR de la capa, la atadura de la
+identidad pública de la auditoría y la lectura del saldo en el cable. Lo que cierra lo dicen
+«Motivación» y «Lo medido»: una resta envuelta que acuñaba valor en el envío, el cobro y la quema, y
+una auditoría que atribuía su banda a otra cuenta.
+
 ## Lo que NO hace
 
-- No sube el cable ni toca el OpenRPC. No mueve un KAT ni una cabeza firmada.
+- No sube el cable ni toca el OpenRPC. No mueve un KAT ni una cabeza firmada. ⚠️ §826: no subió el
+  cable, y su E2 lo rompía: ver «Compatibilidad».
 - No añade ni regenera un vector de `spec/vectors/`: lo que entra son tres tests negativos en los
   crates (el `public_id` ajeno en `stark-experiment`, la cota de banda en `zk-ssl`, el saldo no
   canónico en `zk-ssl-wire`).
