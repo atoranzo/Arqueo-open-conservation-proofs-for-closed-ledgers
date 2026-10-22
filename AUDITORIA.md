@@ -62020,3 +62020,128 @@ de hoy. Y si la cabecera del fichero, viva desde el §847, se lee también.
 `check_modulos` en 207: el cambio es de una herramienta del bucle, no de un test. El total de sello
 sigue en 1853. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 44 abiertas y 86
 resueltas.
+
+## §858 — la v3 bis de `verificar_citas` gana un mínimo: `SOLO_POR_ENCABEZADO` tiene al menos nueve ficheros, los de hoy, y quitar uno es ROJO, cuando hasta aquí sólo bajaba la cuenta del resumen
+
+El commit que lleva este asiento, sobre `02c546b` (el §857). Toca `tools/verificar_citas.py`: la
+cabecera de la v3 bis gana su R3 (`:32-35`) y una marca en su ceguera (`:40-43`); la ceguera de la
+v5 bis, una marca (`:140`); una constante nueva, `MINIMO_SOLO_POR_ENCABEZADO`, con su comentario
+(`:458-460`); la comprobación (`:497-500`); y la línea de la v3 bis del resumen, que dice el mínimo
+(`:666-669`). Y este asiento. Ni código de los crates, ni tests, ni vectores, ni `tools/canon.sh`,
+ni `BACKLOG.md`, ni los ficheros de la lista. Lo escribe y lo commitea Claude, en una sesión de
+Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente del rango que el autor asignó (§830 a §859).
+
+Del autor es la tarea: el vivo de la v3 bis que el §847 dejó en «Lo que NO hace» («quitar un
+fichero de la lista se ve en el resumen, no es ROJO»), una de las cosas menores que el autor pidió
+hacer en una tanda el 2026-10-21. La forma, un mínimo con su causa, la elige la sesión entre las
+dos que daba la tarea, por ser la de menos superficie: la otra, que todo fichero que cite
+`spec/RPC.md` por encabezado esté en la lista, pedía hoy seis exclusiones con su razón (punto 2).
+El canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol
+limpio, con este asiento en su sitio y sin esta frase: VERDE, 1372 s de reloj (de su arranque a su
+salida) y 1021 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,59
+al empezar. Antes, dentro del mismo cerrojo, la sesión tocó con `touch` los 275 `.rs` de `crates/`
+y de `tools/` (este sello no añade ninguno), y su log lo registra. El aviso del §855 no salió: la
+caché de la sesión está completa. Las 19 filas del nivel, en su pin, con 1853 tests que pasan (la
+suma de la columna «pasan»); la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con
+features (68 s)»; `check_tests` en 2012 y 20 instrumentos; `check_modulos` en 207; las once
+herramientas del bucle «2 ter», con el mínimo nuevo de `verificar_citas`; la puerta de los
+vectores, en 508 ficheros y 1017 líneas; `check_catalogo`; el paquete, con «89 de 89 entradas dicen
+lo que deben (78 .json, 89 con entrada)», y el binario `b87724b089924934`; el cable, en 27 de 27,
+con el adaptador `6908b722db271b19`; las once familias, cada una en lo suyo; la segunda
+implementación, con el paquete en 89 de 89, las otras cinco familias en 17, 17, 22, 34 y 27, y sus
+pares STARK en 34 de 34; el «3 duodecies», con la cadena en 24 de 24 y el cable de la segunda en 27
+de 27; y el artefacto reproducible, con el binario `3a01451fb51204ac`, los manifiestos con el
+paquete en 89/89, y el tarball `77589f444da1e375`. Corrió con un `TMPDIR` propio, y no dejó nada en
+él.
+
+**Medido**, en este orden, sobre `02c546b`:
+
+1. `python3 tools/verificar_citas.py`: exit 0, seis líneas. La de la v3 bis: «0 · 9 ficheros, 37
+   citas por encabezado a su documento».
+2. Un recorrido de los `.md`, `.rs`, `.py` y `.sh` del árbol con el patrón `ENCABEZADO` de la
+   herramienta y el de la cita por línea `RPC.md:<número>`. Citan `spec/RPC.md` por encabezado
+   quince ficheros: los nueve de la lista, que no lo citan por línea, y seis fuera de ella, que sí
+   lo citan por línea: `AUDITORIA.md` (3 y 35), `BACKLOG.md` (2 y 1), `doc/AVISO_EN_ISO20022.md` (8
+   y 2), `spec/PAQUETE.md` (1 y 10), el RFC-0021 (1 y 8) y la propia herramienta (2 y 9).
+3. Una copia de la herramienta de `02c546b` sin `doc/KIT.md` en la lista: exit 0. El resumen baja a
+   «8 ficheros, 36 citas». Es lo que midió el §847.
+
+**Qué cambia.**
+
+- **El mínimo.** `MINIMO_SOLO_POR_ENCABEZADO` vale 9, los ficheros de la lista en `02c546b`. Si la
+  lista tiene menos, es ROJO, «PRUEBA DE VIDA v3 bis: SOLO_POR_ENCABEZADO tiene N ficheros, menos de
+  9», con el remedio: quien quita uno baja el mínimo en el mismo diff, con su razón. Añadir uno no
+  obliga a subirlo, como los demás mínimos de la herramienta.
+- **La cabecera.** La v3 bis gana su R3. Su ceguera dice, con marca, que el mínimo cuenta ficheros
+  y no cuáles, y qué para el cambio de uno por otro. La v5 bis decía que quitar un fichero de su
+  lista no es ROJO, «como en la v3 bis»: la comparación ya no vale, y lleva marca.
+- **El resumen.** La línea de la v3 bis dice el mínimo: «0 · 9 ficheros (mínimo 9), 37 citas por
+  encabezado a su documento (…)». Las otras cinco líneas, iguales byte a byte.
+
+Después, sobre el árbol de este commit, la herramienta da exit 0 y seis líneas.
+
+**Mutantes**, sobre copias de la herramienta en el directorio de la sesión, corridas sobre el árbol
+con este sello sin commitear:
+
+- M1, `doc/KIT.md` quitado de la lista: ROJO, exit 1, un solo hallazgo, «SOLO_POR_ENCABEZADO tiene 8
+  ficheros, menos de 9». El resumen dice «8 ficheros (mínimo 9), 36 citas».
+- M2, `doc/USE_CASES.md` quitado: ROJO, el mismo hallazgo. Y quitado cada uno de los nueve, por
+  turno: exit 1 los nueve.
+- M3, `doc/KIT.md` cambiado por `spec/PAQUETE.md`: ROJO, diez «CITA POR LINEA» en `spec/PAQUETE.md`
+  (R1, no el mínimo).
+- M4, `doc/KIT.md` cambiado por `doc/AVISO_EN_ISO20022.md`: ROJO, dos «CITA POR LINEA», en su `:110`
+  y su `:302` (R1).
+- M5, `doc/KIT.md` cambiado por `RESUMEN_EJECUTIVO.md`, que no cita `spec/RPC.md` por encabezado:
+  ROJO, la prueba de vida de R2.
+- La comprobación nueva mata M1 y M2: sin ella (`if False:`), M1 da exit 0.
+
+Vivos, y se declaran:
+
+- V1, M1 con el mínimo bajado a 8 en la misma copia: VERDE, a propósito. Es el remedio que da el
+  mensaje.
+- V2, un cambio de un fichero de la lista por otro que cite `spec/RPC.md` por encabezado y nunca
+  por línea: VERDE. En `02c546b` no hay ninguno fuera de la lista (punto 2), así que no se pudo
+  sembrar sin escribir uno; M3, M4 y M5 muestran que hoy los candidatos dan ROJO por R1 o por R2.
+
+Las copias, el conductor y sus salidas se borraron al acabar.
+
+Sobre `02c546b` con este sello, salen con 0 las once herramientas del bucle «2 ter»,
+`check_vectores --desde 378e1fa` (508 ficheros y 1017 líneas) y `check_catalogo`; también
+`check_tests` y `check_modulos`.
+
+**Correcciones**, sobre los ficheros STAGED de este commit:
+
+1. `tools/verificar_citas.py:40-43`, la ceguera de la v3 bis: «⚠️ §858: el mínimo cuenta ficheros,
+   no cuáles: cambiar uno de la lista por otro no lo ve R3 …».
+2. `tools/verificar_citas.py:140`, la ceguera de la v5 bis: «(⚠️ §858: decía «como en la v3 bis»,
+   que desde el §858 tiene su mínimo)».
+3. `tools/verificar_citas.py:458-459`, sobre la constante: «⚠️ v3 bis R3 (§858): medido en
+   02c546b, los nueve de arriba …».
+
+**Las citas por línea que se mueven.** En `tools/verificar_citas.py`, las líneas de la 1 a la 31
+no se mueven; las de debajo bajan entre cuatro y quince. Fuera de `AUDITORIA.md`, el árbol no
+cita ninguna. El §854 las cita sobre `e6d243b`, donde el fichero es el de `02c546b`. Llevadas a este
+commit con `difflib`: `:125-133` pasa a `:132-140`; `:130-133`, a `:137-140`; `:512-516`, a
+`:526-530`; y `:554-556`, a `:568-570`. Las citas de los asientos anteriores, como el §831 y el
+§847, son de su árbol y de su fecha.
+
+**Lo que NO hace.**
+
+- No cambia la regla de la v3 bis, ni su lista, ni su autotest.
+- No exige que todo fichero que cite `spec/RPC.md` por encabezado esté en la lista (V2).
+- No añade `doc/AVISO_EN_ISO20022.md` a la lista, ni corrige sus dos citas por línea a
+  `spec/RPC.md`: lo dejó así el §861, y el mínimo no lo necesita.
+- No corrige la frase «53 en 13 ficheros al escribir esto» de la ceguera, que es del §831.
+- No toca la v5 bis más que en la marca: quitar un fichero de `SIN_LINEA_AL_CANON` sigue sin ser
+  ROJO.
+- No toca la línea `RESERVADOS`.
+
+**Lo que es del autor.** Si la v5 bis gana el mismo mínimo. Y si la v3 bis pasa a la otra forma,
+la que exige que todo fichero que cite `spec/RPC.md` por encabezado esté en la lista o declarado
+fuera.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2012 tests declarados y 20 instrumentos, y
+`check_modulos` en 207: el cambio es de una herramienta del bucle, no de un test. El total de sello
+sigue en 1853. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 44 abiertas y 86
+resueltas.

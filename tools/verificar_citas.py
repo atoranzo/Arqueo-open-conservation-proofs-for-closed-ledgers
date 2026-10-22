@@ -29,11 +29,18 @@ no vuelve a citarlo por línea. Solo los de la lista: los demás no se miran.
       el árbol vea solo la suya. Cada fichero declarado tiene que citar su documento por
       encabezado al menos una vez: una declaración que no mira nada es ROJO, y un fichero
       declarado que no existe y una lista vacía, también.
+  R3  MÍNIMO (§858): la lista tiene al menos MINIMO_SOLO_POR_ENCABEZADO ficheros, nueve, los que
+      tenía en 02c546b. Quitar uno es ROJO: hasta el §858 solo bajaba la cuenta del resumen, y la
+      regla dejaba de mirar ese fichero en silencio. El sello que quite uno baja el mínimo en el
+      mismo diff, con su razón. Añadir uno no obliga a subirlo.
   Ceguera declarada. Solo los ficheros de la lista: las demás citas por línea a `spec/RPC.md` de
   los documentos vivos —53 en 13 ficheros al escribir esto, sin `AUDITORIA.md` ni
   `doc/ecst/VERIFICACION.md`— no se miran, y muchas ya no caen en su sitio. `spec/PAQUETE.md`,
   el RFC-0021 y `BACKLOG.md` citan `spec/RPC.md` de las dos formas y no están. Solo la forma
-  «:<número>»: «la línea 860 de `spec/RPC.md`» no se mira.
+  «:<número>»: «la línea 860 de `spec/RPC.md`» no se mira. ⚠️ §858: el mínimo cuenta ficheros,
+  no cuáles: cambiar uno de la lista por otro no lo ve R3. Lo para R1 si el nuevo cita su
+  documento por línea, y R2 si no lo cita por encabezado; en 02c546b, todos los ficheros que citan
+  `spec/RPC.md` por encabezado y no están en la lista lo citan también por línea.
 
 v4 (§792, la 66): las citas §n del REGISTRO. Reglas, declaradas antes de mirar:
   R1  En `AUDITORIA.md` y `BACKLOG.md`, todo «§n» o «§n.m» que no lleve justo
@@ -130,7 +137,7 @@ ninguna caía en su sitio.
   `doc/ecst/borrador/`, `BACKLOG.md` y los demás ficheros de `tools/` no se miran (⚠️ §854:
   decía también `doc/METODO.md`, `doc/blueprint-v2.md` y el RFC-0005, y «los comentarios de
   `tools/`»). Solo la forma «:<número>». Y quitar un fichero de la lista no es ROJO: se ve en
-  la cuenta del resumen, como en la v3 bis.
+  la cuenta del resumen (⚠️ §858: decía «como en la v3 bis», que desde el §858 tiene su mínimo).
 
 v6 (§805): el número que falta. Un sello escribe «§» y la letra N como marcador del número
 que aún no tiene, y lo numera al sellar; el §802 se publicó con 91 líneas sin numerar, en
@@ -448,6 +455,9 @@ SOLO_POR_ENCABEZADO = {
     "spec/rfc/0018-el-tren-0-5.md": "spec/RPC.md",
     "tools/segunda/README.md": "spec/RPC.md",
 }
+# ⚠️ v3 bis R3 (§858): medido en 02c546b, los nueve de arriba. Quitar uno baja este minimo en el
+# mismo diff, con su razon.
+MINIMO_SOLO_POR_ENCABEZADO = 9
 
 
 def linea_a(doc):
@@ -484,6 +494,10 @@ for v in autotest_v3bis():
     reg_rojo.append(f"PRUEBA DE VIDA  {v}")
 if not SOLO_POR_ENCABEZADO:
     reg_rojo.append("PRUEBA DE VIDA  v3 bis: SOLO_POR_ENCABEZADO está vacía: la regla no mira nada")
+if len(SOLO_POR_ENCABEZADO) < MINIMO_SOLO_POR_ENCABEZADO:
+    reg_rojo.append(f"PRUEBA DE VIDA  v3 bis: SOLO_POR_ENCABEZADO tiene {len(SOLO_POR_ENCABEZADO)} "
+                    f"ficheros, menos de {MINIMO_SOLO_POR_ENCABEZADO}: quien quita uno baja "
+                    "MINIMO_SOLO_POR_ENCABEZADO con su razón")
 v3bis_lineas, v3bis_encab = 0, {}
 for rel, doc in SOLO_POR_ENCABEZADO.items():
     p = RAIZ / rel
@@ -650,8 +664,9 @@ print(f"registro (v4): {len(secciones)} encabezados · {reg_cuenta['citas']} cit
 print(f"línea al BACKLOG (v5): {en_vivos} en documentos vivos · "
       + ", ".join(f"{k} {v}" for k, v in sorted(excluidas_vistas.items())) + " (excluidos)")
 print(f"línea a un documento citado por encabezado (v3 bis): {v3bis_lineas} · "
-      f"{len(v3bis_encab)} ficheros, {sum(v3bis_encab.values())} citas por encabezado a su "
-      "documento (" + ", ".join(f"{r} {n}" for r, n in sorted(v3bis_encab.items())) + ")")
+      f"{len(v3bis_encab)} ficheros (mínimo {MINIMO_SOLO_POR_ENCABEZADO}), "
+      f"{sum(v3bis_encab.values())} citas por encabezado a su documento ("
+      + ", ".join(f"{r} {n}" for r, n in sorted(v3bis_encab.items())) + ")")
 print(f"línea al canon en un documento vivo (v5 bis): {v5bis_lineas} · {len(v5bis_nombran)} "
       "ficheros, que lo nombran en su ámbito (" + ", ".join(f"{r} {n}" for r, n in
                                                  sorted(v5bis_nombran.items())) + ")")
