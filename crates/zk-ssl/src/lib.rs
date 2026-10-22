@@ -226,7 +226,7 @@ pub fn proof_options() -> ProofOptions {
     )
 }
 
-/// `T` por defecto de la caducidad (§178), en latidos de `log.seq`.
+/// `T` por defecto de la caducidad (§178), en latidos de `log.seq`. ⚠️ §827: son entradas del registro, no cabezas del latido (RFC-0023, D-A).
 /// Línea sistémica: se declara, se publica y se revisa con datos.
 pub const DEFAULT_REFUND_TTL: u64 = 64;
 /// Centinela de `pending_meta`: el pendiente nació por EMISIÓN, no tiene

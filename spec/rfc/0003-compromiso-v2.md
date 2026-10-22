@@ -140,7 +140,7 @@ abre(C2) ∧ (now − born ≥ Δ) ∧ crédito → f
   emisor: es el «acelerar devoluciones, nunca desviarlas» que ya declara
   `doc/CADUCIDAD_PENDIENTE.md`, no una fuga. Lo que esta línea vendía de más es la
   oponibilidad. Atestiguar el `Δ` abierto es la cláusula (e) de T3b, y la
-  resuelve el RFC del reloj de la entrada 12. El autor lo clasificó como límite
+  resuelve el RFC del reloj de la entrada 12 (⚠️ §827: el RFC-0023, PROPUESTO, la toma para el suelo, en su D-J, y deja como pregunta abierta para el autor, su 11, atestiguar el `Δ` abierto ante un tercero). El autor lo clasificó como límite
   del modelo de confianza, no como fallo (§861). Leído, no medido.
 
 ### Qué se toca, medido

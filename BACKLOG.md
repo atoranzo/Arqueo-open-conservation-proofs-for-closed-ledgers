@@ -1495,12 +1495,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   hoja `x` decide, y el espacio de nombres solo dice si va en claro o cifrado. **D-4**: en claro
   dentro del mensaje es elección del pagador, no lo que el estándar da por defecto («conceder
   observación que no hace falta se defiende mal después», `SECURITY.md` §2.ter), con la fuga dicha
-  —posición y sal a la cadena de agentes, sin poder de cobro— y su retirada escrita desde el
+  —posición y sal a la cadena de agentes, sin poder de cobro (⚠️ §827: y en un v2 también `x`, con lo que se aprende qué cuenta pagó y su Δ, la D-I del RFC-0008; lo dice la Seguridad del RFC-0022)— y su retirada escrita desde el
   principio. Cifrarlo (el B11.2) pide una enmienda del §106, que solo da el autor, o la vía
   simétrica con el AEAD de la casa y una clave por relación, que el receptor entrega con su
   dirección y que deriva de `sk` con dominio propio (la D-9 de la 52, en
   `doc/ROTACION_DE_CUENTAS.md` §6); con una curva no, aunque `ring` ya esté en el SDK (la 122): lo
-  prohíbe el §106, no la puerta. **D-5**: por RFC, con el número libre al entrar; su KAT, en una
+  prohíbe el §106, no la puerta (⚠️ §827: desde el §838 lo ve también la puerta, la R5 de `tools/check_curvas.py`, como dice la marca del §838 de arriba). **D-5**: por RFC, con el número libre al entrar; su KAT, en una
   familia propia, `spec/vectors/aviso/`, solo tras cotejar el XSD original y las reglas de uso
   públicas de una práctica de mercado (hoy, 403). **D-6**: «ISO 20022 no tiene campo» y la cita al
   §21, que es el §39, se corrigen con marca donde viven; `doc/historia/` no. El §861 lo hace en los
@@ -1514,6 +1514,23 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   documentación del puente; y todas, si el autor las revoca (la tabla, en `doc/AVISO_EN_ISO20022.md`
   §8). **Sigue abierta** hasta el prototipo por materiales en `iso.rs` y el RFC PROPUESTO; después,
   solo por el B11.2.
+  ⚠️ §827: **el RFC, PROPUESTO.** El RFC-0022 (`spec/rfc/0022-el-aviso-en-iso20022.md`) escribe como
+  protocolo las seis decisiones de la nota del §861, de arriba, y cita su razón, sus descartes y su
+  reapertura, en `doc/AVISO_EN_ISO20022.md` §8, sin copiarlas. Decide una sola cosa de protocolo
+  que ella no dice, por delegación y REVERSIBLE: la compuerta del KAT de la D-5 coteja los tres
+  mensajes de la D-1 —el pain.001, que el documento no nombraba, el pacs.008 y el camt.054—, y no
+  la fila E del documento, que es el pacs.002; lo sellado lleva su marca. Tres etapas, ninguna
+  construida: la E1, el prototipo por materiales en `iso.rs`; la E2, el KAT en
+  `spec/vectors/aviso/`, detrás de esa compuerta; y la E3, el cifrado, que es el B11.2. Declara lo
+  que la nota no decía: en un v2, el aviso en claro da también `x`, con lo que quien lea el mensaje
+  aprende qué cuenta pagó y su Δ (la D-I del RFC-0008); en claro, el aviso no tiene integridad; la
+  atadura del `ACSC` a la orden acota el límite de `claim_pacs008`, no lo cierra; y el formato no
+  es ninguna superficie del RFC-0021, solo sus vectores. Llevan su marca la D-4 de arriba, por
+  `x`; su frase «lo prohíbe el §106, no la puerta», porque desde el §838 lo ve también la puerta; y
+  la del §861 en `iso.rs:530`, que la vía por materiales «lo cerrará». Deja dos preguntas abiertas
+  para el autor: la enmienda del §106 que pediría la vía (i) del cifrado, y si un v2 puede ir en
+  claro dentro del mensaje. Con el RFC PROPUESTO, de lo que la nota del §861 pide queda el
+  prototipo: **sigue abierta** hasta la E1, y después, solo por el B11.2.
 - [ ] **12. Fondos muertos — POLITICA DECIDIDA (§119), ~~piezas 1-3
   pendientes~~ piezas 1-3 HECHAS; la tienen abierta el suelo Δ_min, T3b, la
   via v1 y dos flecos de la v2 (§779).** ✅ **La reversion es un segundo
@@ -1545,7 +1562,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   CONSTRUCCIÓN**: el legado sin meta es inmune para siempre. Números
   (§181): reembolso ~203 ms + 69 KB; des-emisión ~189 ms + 13,8 KB.
   ⚠️⚠️ **DOS DIVERGENCIAS con la política, DECLARADAS**: (i) **T cuenta
-  latidos de `log.seq`** — exactamente lo que §119.3 descartó como reloj
+  latidos de `log.seq`** (⚠️ §827: son entradas del registro, no cabezas del latido; el RFC-0023, D-A) — exactamente lo que §119.3 descartó como reloj
   («un mes quieto son cero entradas») — porque las cabezas
   firmadas-publicadas (48/B10) no existían cuando esto se escribió.
   ⚠️ **YA EXISTEN: la 48 se cerró en el §268 (10-08-2026), con B10 HECHO**
@@ -1591,7 +1608,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     salvo el Δ=∞ de abajo, y esta entrada no lo decia.
   - **2, el reloj atado a una cabeza verificable (§119.3): HECHA.** `seq` entra
     en el digest firmado (§340; lo ata `la_altura_entra_en_el_digest`,
-    `crates/zk-ssl/src/log.rs:791`) y `born` va bajo `pmeta_root`, en reposo
+    `crates/zk-ssl/src/log.rs:795`; ⚠️ §827: decía `:791`, que el §815 corrió) y `born` va bajo `pmeta_root`, en reposo
     desde el §388 y en la cabeza desde la v5 (§451-§452;
     `crates/zk-ssl-hash/src/lib.rs:446-479`). ⚠️ Atado no es calendario: el
     reloj sigue siendo `self.log.len()` (`two_phase.rs:676`; la cabeza publica
@@ -1606,7 +1623,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   - **El suelo Δ_min = 13 meses no existe.** `apply_refund` compara
     `now - born` con el Δ del sobre y nada mas (`two_phase.rs:694`), y
     `un_refund_v2_tras_delta_devuelve_al_emisor` reembolsa con `delta = 1`
-    (`two_phase.rs:3771-3799`; ⚠️ §832: decía `:3763-3791`, correcto hasta
+    (`two_phase.rs:3773-3801`; ⚠️ §827: decía `:3771-3799`, que el §816 corrió; ⚠️ §832: decía `:3763-3791`, correcto hasta
     que el §832 metió ocho líneas más arriba). Con el reloj en entradas,
     «13 meses» no tiene unidad en el arbol. Por eso la linea entra en
     `PRINCIPIOS.md` con ❌.
@@ -1629,7 +1646,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   - **La via v1, con el knob.** Sin apertura, `apply_refund` juzga con el
     `refund_ttl` global (`two_phase.rs:679-683`; `set_refund_ttl`, `:257`):
     ahi el plazo lo sigue moviendo el operador, y retirarlo o dejarlo de techo
-    es decision de corte (RFC-0003 `:141`; §388 (d), `AUDITORIA.md:29398-29399`; ⚠️ §861: decía `:29363-29364`).
+    es decision de corte (RFC-0003 `:154`; ⚠️ §827: decía `:141`, y las marcas del §861 en el RFC la corrieron; §388 (d), `AUDITORIA.md:29398-29399`; ⚠️ §861: decía `:29363-29364`).
     Y todo mint-a-pendiente nace v1 (`two_phase.rs:1699`): el T-A del §388
     (b), fichado y sin hacer.
   - **Fleco 1 de la v2: Δ=∞ no es ∞.** El §501 midio que Goldilocks reduce
@@ -1641,7 +1658,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     `2^32 - 2` epocas del registro: milenios a mil pagos por jornada, unos
     cincuenta dias a mil operaciones por segundo (§501).
   - **Fleco 2 de la v2: el receptor no ve el Δ.** El sobre X le llega opaco
-    (RFC-0003 `:109-112` y `:186-187`), y el §119.2 queria los terminos «a la
+    (RFC-0003 `:109-112` y `:202-203`; ⚠️ §827: decía `:186-187`, que las marcas del §861 en el RFC corrieron), y el §119.2 queria los terminos «a la
     vista del receptor, que ve al recibir cuando puede vencer lo suyo»
     (`AUDITORIA.md:9667-9669`; ⚠️ §861: decía `:9632-9634`). El RFC lo decidio sin decir que se apartaba del
     §119.2. Lo mas cerca es la prueba del pago en curso del RFC-0008 (E2): el
@@ -1652,7 +1669,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ Y la cita «(§342)» de arriba no se puede seguir: el §342 del registro trata
   la cabecera de `mint` (`AUDITORIA.md:26608`; ⚠️ §861: decía `:26573`), no los metadatos del reembolso,
   y el RFC-0003 la repite (`:11`, `:22`). Se ficha; no se corrige aqui. ⚠️ §861: corregida con marca,
-  arriba y en el RFC-0003, que la repite cuatro veces (`:11`, `:22`, `:202` y `:270`), no dos.
+  arriba y en el RFC-0003, que la repite cuatro veces (`:11`, `:22`, `:218` y `:286`; ⚠️ §827: decía `:202` y `:270`, sus líneas antes de que las marcas del §861 las corrieran), no dos.
 
   ⚠️ **§861: decidida por delegación del autor («resuelvelas aplicando los principios»), con el
   criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. Sigue ABIERTA,
@@ -1681,7 +1698,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   claro la identidad del receptor y la sal, que la fila del RFC-0009 D-B para la apertura del
   reembolso y de la des-emisión pone en «no sale»; la fila se marca en su sello. Hoy no expone nada
   nuevo: `refund`, `refund_v2` y `deissue` ya reciben las dos dentro de la capa (`two_phase.rs:539`,
-  `:593` y `:372`). Y el reembolso por el cable, cuando se abra (ARQ-02, `doc/blueprint-v2.md:388`),
+  `:593` y `:372`). Y el reembolso por el cable, cuando se abra (ARQ-02, `doc/blueprint-v2.md:390`; ⚠️ §827: decía `:388`, que el §815 corrió),
   no hereda este recibo: allí rige la letra del §119.4, `frozen_root` en circuito, que no revela al
   receptor. Un receptor cuya identidad ya está entre las retiradas —recuperado, la 52— no tiene
   cuenta que encontrar: su sello lo decide con un test, «el receptor tiene identidad retirada»;
@@ -1695,10 +1712,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   (3) **El suelo no se retira** (`PRINCIPIOS.md` §4.3) **ni se escribe en entradas** (el §119.3 lo
   descartó). Su unidad ya la eligió el §119.3: cabezas al latido. El árbol cuenta el número, firmado
   —`mmr_t` (`crates/zk-ssl/src/log.rs:640-642`), una hoja por latido
-  (`crates/zk-ssl-node/src/latido.rs:455`)—, pero en el nodo, no en el juez (`two_phase.rs:676`), y
+  (`crates/zk-ssl-node/src/latido.rs:473`; ⚠️ §827: decía `:455`, que el §815 corrió)—, pero en el nodo, no en el juez (`two_phase.rs:676`), y
   el ritmo no va firmado: la cadencia es una bandera del operador, `--latido`
   (`crates/zk-ssl-node/src/main.rs:236-239`, 60 s por defecto, `latido.rs:72`; con `0` no hay
-  latido), y ni ella ni la hora entran en la cabeza (`EpochHead`, `log.rs:613-676`) ni en
+  latido), y ni ella ni la hora entran en la cabeza (`EpochHead`, `log.rs:613-680`; ⚠️ §827: decía `:613-676`, que el §815 alargó) ni en
   `params_digest` (`crates/zk-ssl-hash/src/lib.rs:972-994`). Con `--latido 1`, los unos 569.790
   latidos de trece meses duran unos 6,6 días (deducido). Se pospone a **un RFC del reloj de la
   caducidad**, que tiene que firmar la cadencia, decir qué evidencia deja acelerarla —hoy solo el
@@ -1714,7 +1731,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     Queda escrita para el autor la opción de un Δ en latidos para los pendientes nuevos, que sí
     enmendaría la D1.
   - **Vale para todo lo vivo**: un v2 con Δ menor que el suelo —la conformidad usa 96,
-    `spec/rfc/0003-compromiso-v2.md:246-247`— y todo v1 con meta revierten más tarde de lo que
+    `spec/rfc/0003-compromiso-v2.md:262-263` (⚠️ §827: decía `:246-247`, que las marcas del §861 en el RFC corrieron)— y todo v1 con meta revierten más tarde de lo que
     decía su Δ o su T, y `expiry = born + Δ` (la D1, `:67`) deja de valer por debajo del suelo. No
     es cambiar términos a posteriori: el suelo es política publicada desde el §119.8, anterior a
     todo pendiente reversible —el mecanismo es del §178, y la v2, del RFC-0003, desde el §345—,
@@ -1730,7 +1747,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   (4) **Vía v1.** El «ni techo» ya lo decidió la D-4 del §350 (`AUDITORIA.md:26994-26997`), que esta
   entrada no citaba. El juez v1 se queda para lo que ya existe: quitarlo sería cambiar términos a
   posteriori (§119.6). Lo que cambia es que **se deja de producir v1**: hoy el `zkssl_sendMaterials`
-  del nodo solo compone v1 (`crates/zk-ssl-node/src/main.rs:3799`, por `send_materials_at`, `:3820`)
+  del nodo solo compone v1 (`crates/zk-ssl-node/src/main.rs:3900`, por `send_materials_at`, `:3921`; ⚠️ §827: decía `:3799` y `:3820`, que el §815 corrió)
   y todo mint-a-pendiente nace v1 (`two_phase.rs:1699`). El cambio va, con la T-A, al RFC que abra
   la reversión por el cable (ARQ-02) o al corte de formato, el primero que llegue; si es el corte
   `zkssl/0.5`, también PROPUESTO un sello antes. **D5, aceptada**: `set_refund_ttl` pasa a
@@ -1752,7 +1769,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `assert!` es una precondición (`pending.rs:588-589`), aunque el §128.1 diga «con el reloj en
   cabezas firmadas» (`AUDITORIA.md:10538`).
   (7) ⚠️ **Medido por lectura, nuevo.** El RFC-0003 dice que `f` «puede ser dedicada»
-  (`spec/rfc/0003-compromiso-v2.md:60` y `:178-180`), pero la capa solo acredita a la cuenta de
+  (`spec/rfc/0003-compromiso-v2.md:60` y `:194-196`; ⚠️ §827: decía `:178-180`, que las marcas del §861 en el RFC corrieron), pero la capa solo acredita a la cuenta de
   `meta.sender_index` y exige que su `public_id` sea `f` (`two_phase.rs:710-714`). Con una clave de
   retorno dedicada, el reembolso v2 rebota siempre (`PendingMismatch`), y si el receptor no cobra,
   el pendiente vuelve a ser dinero muerto. Lo mismo tras una rotación en su sitio (la D-5 de la 52,
@@ -1769,6 +1786,32 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   son de la sesión que lleva las AIR.
   **La entrada se cierra** cuando el suelo se cumpla así, con las dos piezas de la capa, (1) y (2),
   y T3b-circuito (c) ya hechos.
+  ⚠️ §827: **el RFC del reloj de la caducidad, PROPUESTO**: el RFC-0023
+  (`spec/rfc/0023-el-reloj-de-la-caducidad.md`). Escribe lo que la nota del §861, de arriba, fija en
+  su (3) y su (4), sin volver a razonarlo, y toma lo que esa nota le pide: la cadencia, firmada como
+  octavo parámetro de `params_digest`, un `u64` en segundos con `0` para el libro sin latido, y
+  fija en la vida del libro, con la que trece meses son 569.790 latidos a 60 s (deducido); la
+  evidencia de acelerarla, una cuenta de latidos desde una cabeza con fecha acotada por abajo frente
+  a la marca de tiempo de un ancla cofirmada (RFC-0012, RFC-0013), y alguien que feche las cabezas a
+  tiempo —dos anclas comparadas entre sí darían un ROJO fabricable contra el operador honrado—, y
+  hoy no hay ninguna de las dos cosas; y sin latido —con cadencia `0`, sin `--clave`, en la capa sin
+  nodo, sin cuenta conocida y en PARADA, en la que desde el §815 el latido no compone ni firma— el
+  suelo no vence. La cuenta del juez no es el `mmr_t` que se pasa a `epoch_head`: la mueve solo una
+  cabeza firmada, y no retrocede. Las hojas de meta nuevas son dos, una por dominio. Lo nacido antes,
+  que no tiene `born` en latidos, cuenta su suelo desde el `mmr_t` de la primera cabeza que firma la
+  cadencia, que nunca da un suelo más corto que contarlo desde el nacimiento; y declara su coste,
+  que la razón de la (3) no cubre: lo retrasa también por encima del suelo contado desde el
+  nacimiento, hasta un suelo entero desde esa cabeza, y eso toca el §119.6. De la (6), la (e) de
+  T3b: para el suelo la toma su D-J, con el test que ata el número que juzga al de una cabeza
+  firmada; atestiguar ante un tercero el `Δ` abierto, que la marca del §861 en el RFC-0003 deja a
+  ese RFC, queda como pregunta abierta para el autor, y la marca lleva la suya. También para el
+  autor, el Δ en latidos para los pendientes nuevos, que enmendaría la D1. Si viaja en el tren lo
+  acuerda quien lo lleva, y queda por coordinar. «Latidos de `log.seq`», en la (i) de arriba y en
+  el comentario de `DEFAULT_REFUND_TTL`, son entradas, y lo dicen sus marcas. Y las seis citas por
+  línea al RFC-0003 de esta entrada que las marcas del §861 corrieron, en cinco sitios, y las siete
+  al código y a `doc/blueprint-v2.md` que el §815 y el §816 corrieron, en seis, llevan la suya.
+  Rompe lo firmado y va al corte; ninguna etapa de código construida —la E1 es el texto del RFC—:
+  **sigue abierta**, y se cierra como dice la nota del §861.
 - [x] **13. Senal temporal para el pagador: ya declarada, coherente.**
   ~~Puede recomputar el compromiso y ver cuando se cobra; declarado, no
   eliminado.~~ **Cerrada** el 30-07-2026: verificado que ya esta declarada

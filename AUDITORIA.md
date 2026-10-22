@@ -66141,3 +66141,800 @@ La marca de la entrada «Versionado» de «Notas operativas» y la del principio
 siguen cortas: el criterio y la reversibilidad van en la marca de la sección y en la de la D-C. En
 la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio, y
 salió VERDE.
+
+## §827 — el RFC-0022, el aviso en ISO 20022 (la 11), y el RFC-0023, el reloj de la caducidad (la 12), PROPUESTOS sobre lo que selló el §861: el aviso, escrito como protocolo desde sus seis decisiones, con la compuerta del KAT corregida y lo que da `x` en claro; el suelo de trece meses en latidos de cadencia firmada, con condición doble, para todo lo vivo con su coste declarado y sin vencer sin una cuenta firmada; y cuatro preguntas para el autor, dos en cada RFC
+
+El commit que lleva este asiento, sobre el §826. Es un sello de documentos. Toca:
+- dos RFC nuevos, PROPUESTOS, `spec/rfc/0022-el-aviso-en-iso20022.md` y
+  `spec/rfc/0023-el-reloj-de-la-caducidad.md`, con los dos números libres siguientes —el último era
+  el 0021, y ni el §826 ni el §859 de `main`, como antes el §852 y el §858, tienen un 0022 o un 0023
+  (`ls spec/rfc`)—, entrados juntos con el precedente del §790, que metió el 0020 y el 0021 a la
+  vez;
+- sus dos filas en `spec/README.md`;
+- la cuenta de los RFC en `README.md`, `README_EN.md`, `RESUMEN_BILINGUE.md` en sus dos lenguas y
+  `RESUMEN_EJECUTIVO.md`, la fila que la cuenta en la tabla de correcciones de
+  `doc/integracion-vertical-evaluacion.md`, y la lista de los RFC con tabla de etapas de
+  `doc/METODO.md` §5;
+- en el `BACKLOG.md`, una nota en la 11 y otra en la 12, al final de cada una; en la nota del §861
+  de la 11, dos marcas; y en la 12, la marca de la (i), la de seis citas por línea al RFC-0003 que
+  el §861 corrió y la de siete citas por línea al código y a `doc/blueprint-v2.md` que el §815 y el
+  §816 corrieron;
+- una marca en el RFC-0003, en la línea de la suya del §861 que deja la (e) de T3b al RFC del reloj;
+- cuatro marcas en `doc/AVISO_EN_ISO20022.md`, una en el §5 y tres en el §8, cada una en su línea;
+- dos comentarios de `.rs`, marcados en su misma línea: el de `DEFAULT_REFUND_TTL`
+  (`crates/zk-ssl/src/lib.rs:229`), que la nota de la 12 pide marcar, y el del límite de
+  `claim_pacs008` (`crates/zk-ssl/src/iso.rs:530`), que el §861 escribió;
+- en el porte sobre el §858, una marca en la cabecera de `tools/verificar_citas.py`, en su misma
+  línea, la `:43`, la última de la ceguera de la v3 bis, que escribió el §858 (abajo, «El porte,
+  hasta el §858»);
+- y este asiento.
+
+Son quince ficheros más este asiento, dos de ellos nuevos, con 939 inserciones y 29 borrados fuera
+de él (`git diff --stat` sobre el §826, con los dos nuevos); sobre `378e1fa` eran catorce, con 938 y
+28, sin la marca de `tools/verificar_citas.py`. Ni código —los dos `.rs` cambian solo un comentario,
+en su misma línea, y `tools/verificar_citas.py`, una línea de su cabecera—, ni tests, ni vectores,
+ni el `Cargo.lock`, ni los pines de `tools/canon.sh`, ni `PAPER.md`, `PAPER_EN.md` o
+`PRINCIPIOS.md`, ni el cable. No toca `crates/zk-ssl-guardian`, ni la zona de la migración de
+Winterfell, ni la 19. Tampoco la sección 0 de los dos manuales, donde el §815 puso el aviso de la
+0.4.3, el §818 la da por publicada y vigente y el §823 corrigió con marca «cada uno se reproduce
+desde su commit», ni la fila del verificador de los sitios que cuentan los RFC, que es del §818 y
+del §823.
+
+Ninguno de los dos RFC se acepta aquí: los dos quedan PROPUESTOS, sin etapa de código construida.
+
+Se hace por delegación del autor («resuelvelas aplicando los principios»; abajo, «Quién lo decide»).
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión lo escribió y lo revisó en
+su carril, lo portó luego sobre el §852 de `main` y lo que iba delante en la pila: el §819, el §820,
+el §821, el §822, el §823, el §824, el §825 y el §826 (abajo, «El porte, hasta el §852»), luego
+sobre el §858, con los §853-§858 delante también (abajo, «El porte, hasta el §858»), y ahora sobre
+el §859, con el §859 delante también (abajo, «El porte, aquí»). En el carril, un agente lo escribió
+el 15-10-2026 sobre `d4d6d45` (el §814), antes del §860 y del §861, en un árbol de trabajo que no se
+commiteó, sobre las decisiones de la tanda, su crítica de coherencia y las objeciones de la revisión
+de la 12; dos revisiones lo leyeron y pidieron arreglos, y la ronda de arreglos se cortó antes de
+commitear, con los suyos en ese árbol. Otro agente lo portó a la punta del carril —el §817 de antes
+del rebase y, encima, los borradores de lo que aquí son el §822 al §826—, llevando a mano el diff y
+los dos RFC, porque allí el §838, el §860, el §861, el §815, el §816 y esos cinco borradores habían
+reescrito líneas de seis de los siete ficheros que el borrador tocaba —todos menos
+`doc/integracion-vertical-evaluacion.md` (`git log d4d6d45..`)—, y leyó el resultado contra lo que
+el §861 ya selló en la 11, en la 12, en `doc/AVISO_EN_ISO20022.md` y en el RFC-0003. Lo que el §861
+ya dijo no se repite: se cita; y lo que el borrador decía distinto de lo sellado se corrige en el
+borrador o se marca en lo sellado (abajo, «Lo que cambió el porte del carril»). Dos revisiones
+leyeron ese porte y pidieron arreglos, que se hicieron antes de commitearlo allí (abajo). Dos
+revisiones del porte sobre el §852 lo juzgaron, sin bloqueantes, y lo que pidieron dice abajo «Lo
+que pidieron las revisiones del porte». Lo medido en el carril, lo medido sobre `378e1fa`, lo medido
+sobre `7ed7e17` y lo medido aquí van por separado.
+
+El número, §827, lo da la numeración de la pila, dentro de los rangos que el autor asignó (del §800
+al §829 y del §860 al §889). El asiento del carril lo dejaba en la tanda de decisiones, del §860 en
+adelante, como el §860 y el §861, y decía que quien numerara lo confirmaría: los dos RFC, sus filas,
+las notas del `BACKLOG.md` y las marcas lo nombran por este número.
+
+**El porte, hasta el §852.** Un `cherry-pick -n` del borrador del carril sobre el §826 de entonces,
+el de `378e1fa`. Cinco ficheros entraron limpios —los dos RFC nuevos, el RFC-0003,
+`doc/AVISO_EN_ISO20022.md` y `crates/zk-ssl/src/iso.rs`, que nada tocó desde la base del carril— y
+cuatro por fusión automática: el `BACKLOG.md`, `crates/zk-ssl/src/lib.rs`, al que el §840 añadió un
+módulo al final, `doc/METODO.md` y `doc/integracion-vertical-evaluacion.md`. Chocaron cinco, en
+bloques en que aquella punta cambió las líneas de al lado de las del sello: en `README.md` y
+`README_EN.md`, la fila de los RFC, idéntica allí y en la base del carril, va entre la de los crates
+(§847) y la del protocolo (§852), por un lado, y la del verificador (§823, sobre el §818), por el
+otro; en `RESUMEN_BILINGUE.md`, en sus dos lenguas, y en `RESUMEN_EJECUTIVO.md`, la línea de la
+cuenta, también idéntica, linda con la del verificador (§823) y, en el segundo, con la del motor
+(§847); y en `spec/README.md`, las filas del 0016 al 0021, detrás de las que entran las dos nuevas,
+llevaban allí el número del §825 y del §826 donde el borrador traía el marcador. Se resolvió con un
+script fuera del árbol: de cada uno, la versión de aquella punta, y encima el cambio del sello, que
+es una sola sustitución por línea —el 0022 y el 0023 entran detrás del 0021 en la lista de
+propuestos, cinco líneas en cuatro ficheros, con la aserción de que cada texto de partida salía una
+vez— y, en `spec/README.md`, las dos filas del borrador detrás de la del 0021. El diff del sello
+sobre el §826 tiene, fichero a fichero, las mismas inserciones y borrados que el del borrador sobre
+su base (`git diff --numstat`). Donde el borrador llevaba el marcador sin número, lleva «§827»: 40
+veces en diez ficheros —el `BACKLOG.md` 16, cada RFC nuevo 6, `doc/AVISO_EN_ISO20022.md` 4,
+`doc/METODO.md` y `spec/README.md` 2 cada uno, y el RFC-0003,
+`doc/integracion-vertical-evaluacion.md`, `iso.rs` y `lib.rs` 1 cada uno—, sustituido sobre la copia
+del índice y comprobado con que la diferencia con ella son solo esas 40. Lo que aquella base exigía,
+y se hizo:
+- **La 0.4.3 está publicada y es la vigente (§818).** El asiento del carril decía «Tampoco el aviso
+  de la 0.4.3, cortada y sin publicar, que el §815 puso en la sección 0 de los dos manuales: la
+  vigente sigue siendo la 0.4.2». Allí no era cierto, ni lo es aquí, y este asiento lo dice como es
+  (arriba). Lo que el sello escribe en el árbol no nombra ninguna versión del kit (`grep` de las
+  líneas que añade), así que no hay más que reescribir.
+- **Los sellos del carril, por su número.** El asiento del carril nombraba los de delante por lo que
+  hicieron: el de la 75 es el §822; los dos de H6, el §823 y el §824; el giro del RFC-0016, el §825;
+  y el de los textos de los RFC, el §826. Lo que el sello escribe en el árbol no los nombraba así:
+  solo el asiento.
+- **El ATADO G (§846)**, que la base del carril no tenía: las cabeceras de los dos RFC nuevos, hasta
+  su primer `## `, llevan la línea de autor, «Ángel José Toranzo Portela», y la viñeta de GenAI con
+  la fórmula de la casa, como el RFC-0020 y el RFC-0021, y ninguna línea casa con el `MODELO` de
+  `tools/check_publicadas.py`, ni en la viñeta ni fuera de ella: se pasó ese patrón por la cabecera
+  entera de cada uno, 34 y 42 líneas, y por el fichero entero, sin un acierto.
+- **La v5 bis (§847) y la R8 (§849).** El sello no cita `tools/canon.sh` por línea en ningún
+  documento, y los dos comentarios de `.rs` que marca no dicen ninguna conformidad con versión.
+- **Las cifras.** Las del asiento del carril eran las de su punta. Las de aquella base, que el sello
+  no mueve, van abajo, en «Contadores», con las de ésta.
+
+**Lo que hace.**
+
+1. **El RFC-0022, el aviso en ISO 20022.** Un formato y dos portadores: un elemento XML propio, con
+   espacio de nombres versionado y sus hojas en `Q` y `B32` canónicos, dentro del mensaje en
+   `CdtTrfTxInf/SplmtryData` del pacs.008 —y del banco del acreedor al titular, en
+   `TxDtls/SplmtryData` del camt.054— o fuera de él. Nace en la vía por materiales y lo escribe el
+   lado del pagador; el operador no escribe nada. Se conforma por infoset; la hoja `x` decide entre
+   v1 y v2; lo que el infoset aún no fija —dos avisos, uno en la raíz, hojas duplicadas o vacías, el
+   blanco, qué se rechaza— lo fija la E2, y la E1 usa nombres provisionales. En claro dentro del
+   mensaje es elección del pagador, con la fuga dicha —en un v2 también `x`, con lo que quien lea el
+   mensaje aprende qué cuenta pagó y su Δ, la D-I del RFC-0008—, sin integridad, y con la retirada
+   escrita; el cifrado, por la enmienda del §106, o por la vía simétrica con una clave por relación,
+   la D-9 de la 52 que resolvió el §860. El formato no es ninguna superficie del RFC-0021: lo que la
+   promesa cubre son sus vectores. Tres etapas, ninguna construida, con la tabla que pide la R5: la
+   E1, el prototipo por materiales en `iso.rs`, con sus cinco tests, cuya atadura acota el límite de
+   `claim_pacs008` y no lo cierra; la E2, el KAT en `spec/vectors/aviso/`, detrás del cotejo con el
+   XSD original de los tres mensajes de la D-1 y de las reglas de uso públicas de una práctica de
+   mercado, que hoy dan 403; y la E3, el cifrado, que es el B11.2. La D-6 la cita como hecha por el
+   §861, y la tabla de reapertura, como la de `doc/AVISO_EN_ISO20022.md` §8, con una condición más,
+   la de su corrección.
+2. **El RFC-0023, el reloj de la caducidad.** Dos relojes con su nombre: la entrada (`seq`, que la
+   cabeza firma desde el §268) y el latido (`mmr_t`, que la cabeza firma desde la v3). El suelo,
+   trece meses de un año de 365,25 días, 34.187.400 s, se cuenta en latidos de la cadencia del
+   libro: 569.790 a 60 s. La condición doble deja el Δ del emisor en entradas, intacto. La cadencia
+   va firmada como octavo parámetro de `params_digest`, un `u64` en segundos con `0` para el libro
+   sin latido, fija en la vida del libro, con su cota superior para la E2. `born` en latidos, bajo
+   `pmeta_root`, en dos hojas nuevas, una por dominio. La cuenta del juez no es el `mmr_t` que se
+   pasa a `epoch_head`: la mueve solo una cabeza firmada, no retrocede, y sin ella —con cadencia
+   `0`, sin `--clave`, en la capa sin nodo, en la PARADA del §815 o sin cuenta conocida— el suelo no
+   vence. Para todo lo vivo: lo nacido antes cuenta su suelo desde el `mmr_t` de la primera cabeza
+   que firma la cadencia, que se reconoce por la versión que fije el corte, con su coste declarado.
+   Acelerar el latido lo vería una cuenta acumulada desde una cabeza con fecha acotada por abajo
+   frente a la marca de un ancla cofirmada, y alguien que feche las cabezas a tiempo; dos anclas
+   comparadas entre sí darían un ROJO fabricable, y hoy no hay ni una cosa ni otra. La D-J toma la
+   (e) de T3b para el suelo —el número que juzga es el de una cabeza firmada— y deja para el autor,
+   en su pregunta 11, atestiguar el `Δ` abierto. Cinco etapas: la E1, este texto; la E2, el núcleo
+   apagado; la E3, el juez y el nodo, con siete tests, de los que los dos primeros son la condición
+   con que la nota de la 12 da el suelo por cumplido; la E4, el corte, que queda por coordinar con
+   quien lleva el tren; y la E5, la medida de la aceleración, de otra sesión.
+3. **Las dos filas de `spec/README.md`**, con su estado, PROPOSED, como pide la puerta del estado de
+   `tools/check_publicadas.py` (ATADO D). Entran detrás de la del 0021, y el fichero pasa de 218 a
+   220 líneas; las citas por línea que tenía son de asientos, y sólo una de las líneas citadas cae
+   detrás de las dos filas y corre dos: la `:88`, que cita el asiento del §826, es ahora la `:90`
+   (abajo, «Medido sobre `7ed7e17`» y «Medido aquí»).
+4. **La cuenta de los RFC**, en las cinco líneas de los cuatro sitios que la publican entera: el
+   0022 y el 0023, propuestos, detrás del 0021, sobre la cuenta que dejó el §825, que pasó el 0016 a
+   los aceptados. En `doc/integracion-vertical-evaluacion.md`, la fila de la tabla de correcciones
+   que cuenta los RFC gana «y 23 (0001-0023) desde el §827», como la del §790. En `doc/METODO.md`
+   §5, la lista de los RFC con tabla de etapas, «del 0012 al 0021», que escribió el §826, pasa a
+   «del 0012 al 0023», con su marca, en la misma línea, que dice que el 0022 y el 0023 la traen con
+   la tercera columna del 0018 y el 0019.
+5. **La 11 y la 12 del `BACKLOG.md`.** Cada una, con una nota «⚠️ §827» al final, detrás de la del
+   §861, que dice qué RFC la recoge, qué toma y qué deja al autor, y que sigue abierta; no repite lo
+   que la nota del §861 dice. En la (i) de la 12, una marca, en su línea: sus «latidos de `log.seq`»
+   son entradas del registro, no cabezas del latido, como pide la nota de la 12. Con
+   `grep -c '^- \[ \]'` y `grep -c '^- \[x\]'`, las casillas a principio de línea, 41 y 89, antes y
+   después —con `grep -cF` salen 42 y 90, porque la `:82` nombra las dos en su prosa—: ninguna
+   entrada se abre ni se cierra, y la línea «Estado» de la cabecera no se toca, como no la tocaron
+   el §823, el §824, el §825 ni el §826, que tampoco mueven casillas.
+6. **Las marcas en lo sellado**, cada una en su misma línea, para no correr ninguna cita:
+  - en el RFC-0003, `:143`, la frase del §861 «y la resuelve el RFC del reloj de la entrada 12» gana
+    que el RFC-0023 la toma para el suelo y deja al autor la del `Δ` abierto;
+  - en `doc/AVISO_EN_ISO20022.md`: en el §5, `:180`, que en un v2 el aviso da tres cosas, también
+    `x`; en el §8, la D-4, `:311`, lo mismo de su fuga, y `:321`, que desde el §838 la puerta
+    también ve una curva —su «lo prohíbe el §106, no la puerta» venía de una decisión escrita antes
+    del §838, y la marca del §838 en el §6 ya lo decía—; y la D-5, `:331`: su compuerta decía «las
+    filas A y E y el camt.054»; la fila E del §2 es el pacs.002, que la D-1 descarta, y la opción E
+    del §7 va fuera del mensaje, sin XSD que cotejar, y el pain.001, donde el pagador escribe el
+    aviso, no salía. La marca dice los tres mensajes de la D-1 y que la corrección la toma por
+    delegación la D-5 del RFC-0022, REVERSIBLE;
+  - en la nota del §861 de la 11, las dos frases que dicen lo mismo, la de la fuga de la D-4 y «lo
+    prohíbe el §106, no la puerta»;
+  - en `crates/zk-ssl/src/iso.rs:530`, la frase del §861 «La vía por materiales lo cerrará»: lo
+    acotará, no lo cerrará, porque nada ata el pendiente a la orden;
+  - en `crates/zk-ssl/src/lib.rs:229`, «en latidos de `log.seq`»: son entradas del registro;
+  - en la 12, seis citas por línea al RFC-0003, en cinco sitios, que las marcas del §861 en el RFC
+    —trece líneas detrás de la `:131` y tres detrás de la `:177`— corrieron: `:141` pasa a `:154`,
+    `:186-187` a `:202-203`, `:202` y `:270` a `:218` y `:286`, `:246-247` a `:262-263` y `:178-180`
+    a `:194-196`, cada una con su «⚠️ §827: decía»;
+  - en la 12, siete citas por línea que el §815 y el §816 corrieron después del §861, en seis
+    sitios: `log.rs:791` pasa a `:795`, `two_phase.rs:3771-3799` a `:3773-3801` (el §816),
+    `doc/blueprint-v2.md:388` a `:390`, `latido.rs:455` a `:473`, `log.rs:613-676` a `:613-680` y
+    `crates/zk-ssl-node/src/main.rs:3799` y `:3820` a `:3900` y `:3921`, cada una con su «⚠️ §827:
+    decía» y el sello que la corrió. El RFC-0023 cita las líneas nuevas, y la 12 decía otras;
+  - y, en el porte sobre el §858, en `tools/verificar_citas.py:43`, la frase del §858 en la ceguera
+    de la v3 bis «en 02c546b, todos los ficheros que citan `spec/RPC.md` por encabezado y no están
+    en la lista lo citan también por línea»: aquí no la cumplen los dos RFC de este sello (abajo,
+    «El porte, hasta el §858»).
+
+**De dónde sale.** El autor pidió, para diecinueve entradas del `BACKLOG.md`, «resuelvelas aplicando
+los principios». El §861 selló las notas de la 11 y de la 12, y dijo que este sello va aparte: «No
+escribe el RFC del aviso ni el del reloj de la caducidad (van en su sello, PROPUESTOS)». La D-5 de
+la 11 decide que el aviso en un mensaje ISO 20022 es protocolo y entra por RFC, con el número libre
+al entrar. La (3) de la nota de la 12 pospone el suelo `Δ_min = 13 meses` (`PRINCIPIOS.md` §4.3, con
+su ❌ desde el §779) a «un RFC del reloj de la caducidad, que tiene que firmar la cadencia, decir qué
+evidencia deja acelerarla —hoy solo el reloj de un testigo, y no hay ninguno—, resolver `--latido 0`
+y la capa usada sin nodo, y desambiguar con marca «latidos de `log.seq`»»; su (6) dice de T3b «(e):
+espera al RFC de (3)»; y la marca del §861 en el RFC-0003, bajo «El invariante de reembolso,
+completo», dice: «Atestiguar el `Δ` abierto es la cláusula (e) de T3b, y la resuelve el RFC del
+reloj de la entrada 12». La crítica de coherencia juntó los dos RFC en un sello. Y el del reloj
+rompe lo firmado: tiene que estar PROPUESTO un sello antes del corte, con su tabla de etapas
+diciendo qué superficie rompe cada una (la R5 del RFC-0021), y la nota de la 12 lo pide igual.
+
+**Quién lo decide.** Por delegación del autor («resuelvelas aplicando los principios»), con el
+criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. En el RFC-0022, sus
+seis decisiones son las del §861, con sus mismos nombres, y el RFC las escribe como protocolo y cita
+su razón, sus descartes y su reapertura en `doc/AVISO_EN_ISO20022.md` §8; decide una sola cosa de
+protocolo que ellas no dicen, una corrección de la compuerta del KAT de la D-5, con su razón y su
+reapertura. En el RFC-0023, lo que la nota de la 12 fijó —la unidad, la condición doble, `born` en
+latidos, la T de la vía v1 de su nacimiento, con la D5, y el suelo para todo lo vivo, con la
+reversión por el cable cerrada— se escribe y no se vuelve a razonar (sus decisiones 1, 2, 6 y 7). Se
+toman aquí, con su razón y su condición de reapertura escritas en el RFC: la cadencia firmada y fija
+(3), la evidencia de acelerarla (4), el suelo que no vence sin latido (5), el corte en que viaja, en
+lo que toca al RFC (9), desde qué latido cuenta lo nacido antes (10), con su coste declarado, la
+forma de la hoja de meta (12), de dónde sale la cuenta del juez (13) y la (e) de T3b para el suelo
+(D-J). Quedan para el autor, escritas como pregunta abierta y sin decidir: en el RFC-0022, la
+enmienda del §106 que pediría la vía (i) del aviso cifrado, que el §861 ya nombró como lo que el
+mandato no alcanza, y si un v2 puede ir en claro dentro del mensaje, que revisaría la D-4 del §861 o
+el compromiso del RFC-0003; y en el RFC-0023, el Δ en latidos para los pendientes nuevos (8), que
+enmendaría la D1 del RFC-0003, ACEPTADO, y atestiguar ante un tercero el `Δ` abierto (11), cuyas
+ramas mueven lo que deciden el RFC-0009 y el RFC-0003, ACEPTADOS, o dan por definitivo un límite. La
+aceptación de un RFC no se delega. En el porte sobre el §858, una marca en la cabecera de
+`tools/verificar_citas.py`, y no un cambio de su lista: añadir el RFC-0022 y el RFC-0023 a
+`SOLO_POR_ENCABEZADO` cambia lo que la herramienta mira, y la forma de la v3 bis que los pediría, la
+que exige que todo fichero que cite `spec/RPC.md` por encabezado esté en la lista o declarado fuera,
+la deja el §858 al autor.
+
+**Lo que cambió el porte del carril.** Sobre `d4d6d45` el borrador decía cosas que en la punta del
+carril no eran ciertas, o no cuadraban con lo que el §861 selló después:
+- **Los asientos, por su número.** El borrador nombraba «el asiento que escribe la nota de la 11» y
+  «el de la 12» como «el anterior a éste en la misma tanda», y «el sello de los cierres» para la D-9
+  de la 52: son el §861 y el §860, y los dos RFC los citan así, en su cabecera, en su cuerpo y en
+  sus referencias.
+- **Lo que el §861 ya dijo, citado.** El RFC-0022 repetía la razón y los descartes de cada decisión,
+  la D-6 entera y la tabla de reapertura, que están en `doc/AVISO_EN_ISO20022.md` §8 desde el §861:
+  ahora dice lo que el protocolo es y cita lo demás, y la D-6 cita lo que el §861 corrigió y lo que
+  dejó para otro sello. El RFC-0023 razonaba otra vez las decisiones 1, 2, 6 y 7, que fijó la nota
+  de la 12: ahora las escribe con su sitio en el diseño y la nota, y sus descartes se citan. Las
+  notas del `BACKLOG.md` dicen solo lo que los RFC añaden.
+- **La (e) de T3b**, que el borrador no recogía. La marca del §861 en el RFC-0003 dice que
+  atestiguar el `Δ` abierto es la (e) y que la resuelve el RFC del reloj, y la (6) de la nota de la
+  12 dice que la (e) «espera al RFC de (3)». El RFC-0023 gana el hecho 7, la D-J —para el suelo, el
+  número que juzga es el que se firma, como el §340 lo cumplió para `seq`; lo que no da, ante un
+  tercero—, la pregunta 11, del autor, con sus tres ramas sin recomendar ninguna, y una línea en su
+  «Seguridad». Como el RFC no la resuelve entera, la marca del §861 en el RFC-0003 lleva la suya
+  (arriba, punto 6).
+- **La PARADA del §815.** El borrador decía que el nodo emite una cabeza por latido; desde el §815,
+  en PARADA el latido no compone ni firma (`latido.rs:152-154`). El RFC-0023 lo dice en su hecho 3,
+  lo trata como «sin latido» en la D-E, y su test 3 lo cubre.
+- **El §838.** La D-4 del borrador decía que la puerta de las curvas «hoy no lo vería (§835)» y que
+  la excepción del §106 para el transporte llegaría «si el autor la da en la 122». El §838 cerró la
+  122 con esa excepción y le dio a `check_curvas` la R5, que da ROJO a un `ring::` en las fuentes de
+  la casa: el RFC-0022 lo dice así. La D-4 de `doc/AVISO_EN_ISO20022.md` §8 y la nota del §861 de la
+  11 decían «lo prohíbe el §106, no la puerta», que venía de la decisión escrita antes del §838:
+  llevan su marca (arriba, punto 6).
+- **La compuerta del KAT.** El borrador cotejaba los tres mensajes de la D-1, con el pain.001; el
+  §861, «las filas A y E y el camt.054». El borrador tiene razón en la sustancia (arriba, punto 6),
+  pero no es lo que el §861 decidió: el RFC-0022 la toma como su única decisión de protocolo nueva,
+  por delegación, REVERSIBLE, con su razón y su reapertura, y lo sellado lleva su marca.
+- **La D5**, que el borrador daba por «decidida y sin construir»: la nota de la 12 la dice
+  «aceptada»; el RFC-0023 lo dice así.
+- **La cabecera del `BACKLOG.md`.** El borrador añadía a la línea «Estado» este sello, con el
+  marcador del número, como uno que no mueve ninguna, igual que hizo el §861 con el suyo. En la
+  punta del carril esa línea acababa en el borrador de la 75, hoy el §822, y los otros borradores
+  del carril que tocan el `BACKLOG.md` sin mover casillas no la tocaban; éste tampoco.
+- **La cuenta de los RFC**, sobre la del giro del RFC-0016, hoy el §825, que pasó el 0016 a los
+  aceptados: el 0022 y el 0023 entran detrás del 0021 en las listas de propuestos. Y
+  `doc/METODO.md`, que el borrador no tocaba, porque allí el borrador de los textos, hoy el §826,
+  escribió «del 0012 al 0021».
+- **La tercera columna** de las dos tablas de etapas, que el borrador titulaba «¿rompe? qué
+  superficie», dice «¿rompe el cable?, y qué superficie», como la del 0018 y el 0019 desde el §826.
+- **Las líneas.** Las citas que el borrador medía en `d4d6d45` y allí se corrieron, por el §815 y el
+  §816, van con la línea nueva: `two_phase.rs:3772` es `:3774`, `log.rs:613-676` es `:613-680`,
+  `log.rs:791` es `:795`, y `main.rs:898`, `SEGUNDOS_ANUALES`, es `:915`. `latido.rs:395-456`, que
+  en `d4d6d45` iba de `arrancar` (`:395-425`) al final de `conservar` (`:431-456`), se parte en dos:
+  `:413-443`, la función `arrancar`, y `:472-474`, donde `conservar` mete la hoja en el MMR. Y la
+  frase «ISO 20022 no tiene campo» de `iso.rs:484-492` y `:528-530` está donde estaba, con la marca
+  del §861 en su misma línea.
+- **La cita del autor**, que el borrador traía con tilde, va como la escribió él: «resuelvelas».
+
+**Lo que pidieron las revisiones del porte del carril, y se hizo.**
+- Que el RFC-0023 declarara lo que la D-H retrasa más allá de lo que justificó el §861: contar lo
+  nacido antes desde la cabeza que estrena la cadencia retrasa también lo que vencía más de trece
+  meses después de nacer y menos de trece meses después de esa cabeza, y lo ya reversible al llegar
+  ella, hasta un suelo entero desde ella. Un v2 nacido diez meses antes de esa cabeza, con un Δ que
+  vence a los veinte meses, revierte a los veinte contado desde su nacimiento y a los veintitrés con
+  la D-H (DEDUCIDO). Ese retraso no es política publicada y toca el §119.6, que la nota de la 12
+  invoca: la D-H, la decisión 10, su reapertura, la «Seguridad», la nota de la 12 y la fila de
+  `spec/README.md` lo declaran como coste, y la decisión 10 dice por qué la alternativa no se toma:
+  contaría latidos de antes de que la cadencia fuera firmada.
+- Que las frases selladas que dicen «lo prohíbe el §106, no la puerta» llevaran marca: la fuente de
+  la decisión decía que `check_curvas` no lo ve, y el porte no debía justificar no marcarlas.
+- Que la compuerta del KAT se declarara como lo que es, una decisión nueva tomada por delegación,
+  REVERSIBLE y con su razón, y no como algo que el §861 dijera; y que los tres campos se llamaran
+  «los tres mensajes», no «portadores», que la D-1 reserva para sus dos. Cambian la cabecera del
+  RFC-0022, que decía «no decide nada que ellas no digan», su D-5, su tabla de reapertura, la nota
+  de la 11, la fila de `spec/README.md` y la marca de la D-5 en `doc/AVISO_EN_ISO20022.md`.
+- Que la «Seguridad» del RFC-0022 dijera lo que da `x` en claro: `X = M(refund_id, [delta, 0, 0,
+  0])` no lleva aleatoriedad (`crates/zk-ssl/src/pending.rs:88-98`), la capa exige que `f` sea el
+  `public_id` de la cuenta que paga (`two_phase.rs:710-714`) y las identidades se enumeran sin
+  credencial (`spec/RPC.md` §«Lectura»): quien lea el pacs.008 o el camt.054 aprende qué cuenta pagó
+  y su Δ, y enlaza los avisos del mismo emisor con el mismo Δ. Es la D-I del RFC-0008, que el árbol
+  ya conoce. El RFC-0022 lo dice en la D-4 y en la «Seguridad», y deja al autor, como su pregunta 2,
+  si un v2 puede ir en claro dentro del mensaje; `doc/AVISO_EN_ISO20022.md` §5 y la D-4 del §8, y la
+  nota del §861 de la 11, llevan su marca.
+- Que la D-F del RFC-0023 no diera por sólida la regla de dos anclas: la marca de tiempo de una
+  cofirma `0x06` acota por arriba cuándo existía la cabeza, no cuándo se compuso, y la publicación
+  es asíncrona (RFC-0013, D-F). Un ancla anterior cofirmada tarde da «aceleración» contra un
+  operador honrado, un ROJO fabricable; y quien acelera y retiene sus anclas no deja nada. La D-F
+  pide ahora una cuenta acumulada desde una cabeza con fecha acotada por abajo y alguien que feche
+  las cabezas a tiempo, y dice que hoy no hay ninguna de las dos; la decisión 4, su reapertura, la
+  E5, la «Seguridad», la rama «no» de la pregunta 11, la nota de la 12 y la fila de `spec/README.md`
+  cambian con ella. «Detectable, no detectado» y «Es el reloj que el §174 quería» ya no están.
+- Que el RFC-0023 fijara de dónde sale `latidos_now`: el `mmr_t` es un parámetro de `epoch_head`
+  (`crates/zk-ssl/src/lib.rs:870-877`) que el sandbox y la conformidad pasan a 0
+  (`crates/zk-ssl-cli/src/sandbox.rs:329-333`, `crates/zk-ssl-cli/src/conformance.rs:139-143`); `0`
+  no tenía cómo firmarse y chocaba con «no arranca con un `--latido` distinto»; un nodo sin
+  `--clave` compone sin firmar y mete la hoja (`latido.rs:435` y `:472-474`), y sin diario su `t`
+  vuelve a 0 (`crates/zk-ssl-node/src/main.rs:456-460`); y el test 4 ataba el número a la cabeza
+  compuesta, no a una firma, que ocurre fuera de la capa (`latido.rs:227-229`). El RFC gana el hecho
+  5 ampliado, la D-K —la cuenta la mueve solo una cabeza firmada, después de firmarla, con cuatro
+  invariantes, y lo que nace sin cuenta no anota 0— y la decisión 13; la D-C da la escritura de `c`,
+  `0` incluido, y su rango; la D-E cubre el nodo sin `--clave` y la falta de cuenta; y los tests 3,
+  4 y 5 cambian: el 4 va en el nodo y ata el número a una cabeza cuya firma verifica.
+- Que el RFC-0023 no contradijera la marca del §861 en el RFC-0003 («sin que nadie pueda
+  demostrarlo»): la excepción de la prueba del pago en curso del RFC-0008, deducida y no medida,
+  sale de la D-J y de la «Seguridad», y la D-J dice lo que sí se sabe de esa prueba: cuenta en
+  entradas y no muestra nada del suelo. `SECURITY.md:42-44` no se toca: dice que pasada la T el
+  emisor recupera, no que nadie pueda reembolsar antes.
+- La condición de reapertura de la decisión 5, que faltaba; la 115 en la tercera rama de la pregunta
+  11 —sin la prueba, que el registro no guarda, un tercero no tiene qué comprobar— y que la segunda,
+  en claro, revelaría `f` contra la D2 del RFC-0003; que la decisión 9 dijera que viajar en el tren
+  lo acuerda quien lo lleva y que queda por coordinar, porque ni la fila del corte del RFC-0018 ni
+  la Compatibilidad del RFC-0021 nombran el RFC-0023; y la marca de `DEFAULT_REFUND_TTL`, que la
+  nota de la 12 pide en `crates/zk-ssl/src/lib.rs:229` y el borrador dejaba a la E3: va en este
+  sello, como el §861 marcó comentarios de `.rs` en un sello de documentos.
+- En el RFC-0022: que los tests de la E1 citaran bien de dónde salen —el 1, el 2, el 3 y el 5 son
+  las cuatro propiedades del §9 de `doc/AVISO_EN_ISO20022.md`; el 4 y el RJCT por importe, de la
+  decisión de la 11—; que «la vía nueva cierra por construcción» el límite de `claim_pacs008` dijera
+  que lo acota, porque nada ata el pendiente a la orden, con la marca en `iso.rs:530`, donde el §861
+  escribió «lo cerrará»; que en claro el aviso no tiene integridad; que lo que el infoset no fija lo
+  fija la E2, y que la E1 usa nombres provisionales; que el formato no es una superficie del
+  RFC-0021; y que la hora y los tres hosts de los 403, sin fuente en el árbol, no estén: queda lo
+  que dice el §861, las tres webs que dan 403.
+- En el RFC-0023: que la hoja de meta con la T solo en el v1 son dos dominios, porque
+  `commit_operation` supone longitud fija por dominio (`crates/zk-ssl-hash/src/lib.rs:1753`), con la
+  decisión 12, y la E2 lo dice con `sender`; que el año y el suelo tengan un productor, y el
+  `SEGUNDOS_ANUALES` del nodo se derive de él en la E3; que la cabeza que estrena la cadencia se
+  reconoce por la versión que fije el corte, no por un `params_digest` nuevo, que cambia también con
+  `refund_ttl` y la gobernanza (`crates/zk-ssl-hash/src/lib.rs:953-968`); y que la cita del §119.8
+  vaya literal, sin tildes, como el registro.
+- Que el RFC-0023 y la nota de la 12 dijeran lo mismo de sus etapas: «ninguna etapa de código
+  construida; la E1 es este texto», y en `spec/README.md`, «no code stage built, E1 being the text».
+- Que `doc/METODO.md` §5 no abriera una raya dentro de otra: el inciso va entre paréntesis, con su
+  marca, «decía «del 0012 al 0021»», para que no se lea como la del §826.
+- Y en el asiento del carril: el rango; la cifra de los marcadores; que la decisión 5 no tenía
+  reapertura escrita; y que `latido.rs:395-456` no «es» `:413-443`.
+
+**Lo que pidieron y no se hizo en el carril.** La línea «Estado» del `BACKLOG.md` sigue sin este
+sello, como sin el §823, el §824, el §825 y el §826, que no mueven casillas. El RFC-0018 y el
+RFC-0021 no ganan el RFC-0023 en su lista: lo acuerda quien lleva el tren. Y en el carril el mensaje
+del commit no cambió con los arreglos y seguía diciendo «dos preguntas para el autor en el del
+reloj», sin las dos del RFC-0022; aquí el mensaje es el título de este asiento, que nombra las
+cuatro.
+
+**Medido en el carril**, el 21-10-2026, sobre su punta:
+- **Las citas por línea de los dos RFC**, con `sed -n`, todas las del cuerpo; las que vienen de
+  `d4d6d45` se compararon con su texto de entonces: las que no se movieron son idénticas, y las que
+  se movieron se encontraron enteras en su línea nueva. `set_refund_ttl`: doce llamadas en tests y
+  su definición. El encabezado `spec/RPC.md` §«Lectura», con la tabla de `zkssl_accountCount` y
+  `zkssl_publicId`; la D-I del RFC-0008 y su límite frente al receptor; las D-E y D-F del RFC-0013;
+  la 115 del `BACKLOG.md`; y la cita del §119.8, `AUDITORIA.md:9756` y `:9762`, sin tildes.
+- **Las seis citas al RFC-0003 de la 12**: el texto de `:141`, `:178-180`, `:186-187` y `:246-247`
+  en `d4d6d45` es idéntico al de `:154`, `:194-196`, `:202-203` y `:262-263` en la punta del carril;
+  el de `:202` y `:270` es el de `:218` y `:286` sin la marca que el §861 le puso en la línea.
+- **Las siete citas de la 12 que corrieron el §815 y el §816**, contra `32b5b12`, el §861: el texto
+  de `log.rs:791`, `two_phase.rs:3771-3799`, `doc/blueprint-v2.md:388`, `latido.rs:455`,
+  `log.rs:613-676` y `main.rs:3799` y `:3820` allí es el de `:795`, `:3773-3801`, `:390`, `:473`,
+  `:613-680` —con las cuatro líneas que el §815 metió dentro de `EpochHead`— y `:3900` y `:3921` en
+  la punta del carril; `git log 32b5b12..` dice que `two_phase.rs` lo movió el §816 y los otros
+  cuatro ficheros el §815.
+- **Que el §838 no estaba en la base de la decisión**: `git merge-base --is-ancestor` de su commit
+  sobre `d4d6d45` sale con 1.
+- **Lo que viene de la decisión y no se rehizo**: la lectura de la rueda `pyiso20022` 1.6.2 y los
+  403 de las tres webs de ISO 20022 y de las prácticas de mercado, de la decisión de la 11, que el
+  §861 cuenta como lo que no midió; y las ramas de la pregunta 11, que salen de la revisión de la 12
+  y de la marca del §861, leídas y no medidas.
+- **DEDUCIDO**, por aritmética: 13/12 de 31.557.600 s son 34.187.400 s, y a 60 s, 569.790 latidos;
+  569.790 s son unos 6,6 días; trece meses a 248 op/s son unos 8,5·10⁹ entradas. Que contar el suelo
+  de lo nacido antes desde la primera cabeza que firma la cadencia no lo acorta nunca: esa cabeza es
+  posterior a su nacimiento, y un suelo cumplido desde ella está cumplido desde él; y que sí lo
+  alarga, hasta un suelo entero desde ella, para lo que vencía por encima del suelo contado desde el
+  nacimiento. Que la cuenta acumulada no fabrica ROJO: un nodo honrado late a intervalos de al menos
+  `c`, así que `N · c` no pasa del tiempo real entre las dos cabezas, y un medio que se retrasa solo
+  agranda `τ`. Lo que da `x` en claro y la falta de integridad, de leer el código y la D-I del
+  RFC-0008, sin medirlo.
+- **`cargo check -p zk-ssl --lib --locked`**, con el cerrojo de la sesión y el `target` del carril,
+  tras las dos marcas de los `.rs`: sale con 0 y sin un aviso, en 18 s. Los tests no se corrieron
+  allí: las dos marcas son comentario en su misma línea, como las del §861.
+- **Las compuertas**, en un árbol de trabajo temporal sin `target`, con el marcador del número
+  cambiado por uno de prueba sin asiento y un encabezado de prueba con ese número al final de
+  `AUDITORIA.md`: las diez del bucle «2 ter» de `tools/canon.sh` salvo `check_curvas`, más
+  `check_tests`, `check_modulos`, `check_vectores` y `check_catalogo`, en 0, sin el asiento y con
+  él; `check_publicadas`, «ATADO D: 23 RFC con estado propio; 5 cuenta(s) en 4 sitio(s)». `git diff
+  --check`, limpio.
+- **Los mutantes**, sobre esa copia, cada uno restaurado y comprobado con su sha256: la línea de
+  estado del RFC-0022 cambiada a ACEPTADO, el 0023 quitado de la cuenta de `README.md` y la fila del
+  0023 en `spec/README.md` sin su estado salen con 1 en `check_publicadas`, y una cita del RFC-0023
+  a un encabezado de `spec/RPC.md` con una letra de más, con 1 en `verificar_citas`, «ENCABEZADO
+  MUERTO».
+
+No se midió allí el canon `--sello` entero, ni `--bancos`, ni `check_curvas`.
+
+**Lo que pidieron las revisiones del porte.** Dos revisiones juzgaron el porte sobre el §852, sin
+bloqueantes, y la sesión comprobó contra el árbol cada cosa que pidieron. Eran ciertas, y se
+hicieron, éstas:
+- Que el porte quitaba, sin que aquella base lo pidiera, cosas del asiento del carril que allí
+  seguían siendo ciertas, y aquí también: que no se toca `SECURITY.md:42-44`, que en aquella punta
+  decía lo mismo; las dos líneas de la cita del §119.8, `AUDITORIA.md:9756` y `:9762`; el `git log
+  32b5b12..` de las siete citas de la 12; y los 18 s del `cargo check`. Volvieron a su sitio, y
+  «Medido sobre `378e1fa`» dice lo que daban allí el `git log` y `SECURITY.md`.
+- Que la sección 0 de los dos manuales no es sólo del §818: el §815 puso en ella el aviso de la
+  0.4.3, y el §823 corrigió también en ella, con marca, `doc/KIT.md:146` y `:148-151` y
+  `doc/KIT_EN.md:150` y `:152-156` (`git blame`). Lo dice así, arriba.
+- Que el punto 3 decía de `spec/README.md` que la cita más alta es la `:58`, y este mismo asiento
+  cita la `:61` y la `:62`. Al rehacerlo, la sesión vio además que el asiento del §826, tal como
+  quedó al arreglarlo, cita la `:88`, que daba su texto en el §826 y que este sello corre a la
+  `:90`: el punto 3 y «Lo que se mueve» lo dicen, con su línea nueva, y ya no dicen que ninguna
+  cita se mueva.
+- Que el `grep -c` del punto 5 no era la orden exacta: con `grep -cF` salen 42 y 90, porque la
+  `:82` del `BACKLOG.md` nombra las dos casillas en su prosa; 41 y 89 son las de principio de
+  línea, las que cuenta la línea «Estado». El punto 5 y «Contadores» dan la orden.
+- Que el RFC-0023 citaba `crates/zk-ssl-node/src/main.rs:233-239`, y la `:233` está en blanco: el
+  comentario de `latido` empieza en la `:234`. Cita ahora la `:234-239`, en su misma línea, la
+  `:81`; venía así del carril, donde la `:233` también estaba en blanco.
+- Y, de la sesión al rehacer «Lo que se mueve»: de las 22 líneas de `AUDITORIA.md` que allí citaban
+  lo que corre en el `BACKLOG.md`, la `:37453`, del §512, no es de las que el §820, el §821 y el
+  §822 dieron por rancias; tampoco daba su texto en el §826. Lo dice así.
+
+No se hizo, y por qué: que las dos notas del `BACKLOG.md` y las dos filas de `spec/README.md` fueran
+al final de su fichero, como pide para lo nuevo la regla de la casa. La nota de una entrada va
+dentro de la entrada, y la fila de un RFC en la tabla de los RFC: así entraron el 0020 y el 0021, en
+el §790, detrás de la `:58` de `spec/README.md`, y así anotaron el `BACKLOG.md` el §861 y, en la
+pila, del §820 al §824 (`git diff -U0`); al pie del fichero las separarían de lo que anotan. Lo que
+corren lo declara «Lo que se mueve», con la línea nueva de la única línea citada que daba su texto,
+la `:88` de `spec/README.md`, como hizo el §822 con las suyas.
+
+**Medido sobre `378e1fa`**, el §852, el 22-10-2026, con el §819 al §826 y este sello encima y «§827»
+puesto:
+- **Las citas por línea de los dos RFC**, otra vez con `sed -n` contra aquella punta: `iso.rs:34`,
+  `:47`, `:61-75`, `:425`, `:449`, `:484-492`, `:528-530`, `:539-542`, `:642`, `:975` y `:1033`;
+  `two_phase.rs:23-40`, `:62-74`, `:257`, `:441-462`, `:676-697`, `:710-714`, `:925` y `:3774`;
+  `pending.rs:70` y `:88-98`; `client.rs:252-255` y `:996`; `zk-ssl-wire/src/lib.rs:268-272` y
+  `:304`; `cobro.rs:34-44`; `zk-ssl-hash/src/lib.rs:906-912`, `:947`, `:953-968`, `:972`, `:1135`,
+  `:1150` y `:1753`; `crates/zk-ssl/Cargo.toml:39` y `crates/zk-ssl-sdk/Cargo.toml:40`;
+  `crypto.rs:39-50`; `crates/zk-ssl/src/lib.rs:229-231` y `:870-877`; `sandbox.rs:329-333` y
+  `conformance.rs:139-143`; `log.rs:613-680`, `:642` y `:795`; `latido.rs:72`, `:152-154`,
+  `:227-229`, `:413-443`, `:435` y `:472-474`; `main.rs:234-239`, `:456-460` y `:915`;
+  `nucleo_kat.rs:3-4`. Cada una dice lo que el RFC dice que dice. Desde la base del carril, aquella
+  punta cambió de esos ficheros solo líneas en su sitio —`zk-ssl-hash/src/lib.rs:75-76` y `:97-99`,
+  `latido.rs:47-50` y `main.rs:97-98`, del §849— y añadió al final de `crates/zk-ssl/src/lib.rs`,
+  detrás de su `:1292`, el módulo del §840 (`git diff -U0` de la base del carril a aquella punta):
+  ninguna línea citada se movió.
+- **Las trece citas nuevas de la 12**, las seis al RFC-0003 y las siete al código y a
+  `doc/blueprint-v2.md`, en aquella punta: `log.rs:795` es `la_altura_entra_en_el_digest`;
+  `two_phase.rs:3773-3801`, del `#[test]` de `un_refund_v2_tras_delta_devuelve_al_emisor` a su llave
+  de cierre; `doc/blueprint-v2.md:390`, la fila ARQ-02; `latido.rs:473`, el `push` de la hoja;
+  `log.rs:613-680`, de `pub struct EpochHead` a su `recep_count`; `main.rs:3900` y `:3921`,
+  `zkssl_sendMaterials` y su `send_materials_at`; y en el RFC-0003, `:154` la fila del gate
+  temporal, `:202-203` el `X` opaco, `:218` y `:286` las dos citas al §342 con la marca del §861,
+  `:262-263` el delta 96 de la conformidad, y `:60` y `:194-196` la `f` que puede ser dedicada.
+  Desde la base del carril, ni `main` ni la pila tocaron el RFC-0003 ni `doc/blueprint-v2.md`. Y
+  `git log 32b5b12..` sobre los cinco ficheros de las siete daba allí los dos de entonces, el §815
+  (`de216ae`) y el §816 (`195ee5c`), y el §849 (`29b4442`) en `latido.rs` y en `main.rs`, que cambia
+  líneas en su sitio, la `:47-50` y la `:97-98` (`git diff --numstat`).
+- **`SECURITY.md:42-44`**, que el asiento dice que no se toca, era allí la caducidad del pendiente
+  con doble cerrojo, «pasada la `T` declarada, el emisor recupera», como en la base del carril:
+  desde ella, el fichero cambia sólo desde su `:606` (`git diff -U0`). Y `AUDITORIA.md:9756` y
+  `:9762` eran, y son aquí, las dos líneas del §119.8 que el RFC-0023 cita.
+- **`SplmtryData`** en los `.rs`: siete líneas, todas de comentario (`git grep -c`: tres en
+  `iso.rs`, tres en `client.rs` y una en el SDK). Lo que el RFC-0022 dice de la R5 de `check_curvas`
+  es lo que dice la cabecera de `tools/check_curvas.py` en aquella punta.
+- **Lo que se mueve.** Los ficheros que cambian en su sitio conservan su número de líneas (`git diff
+  --numstat`, con las inserciones iguales a los borrados en los diez). Crecen tres —`AUDITORIA.md`,
+  por detrás de su última línea, con este asiento, y estos dos—, y los dos RFC nacen:
+  - `spec/README.md`, de 218 a 220: las dos filas entran detrás de la `:60`. Las citas por línea que
+    tenía en el §826 son de asientos, a la `:12`, la `:20`, la `:35`, la `:39`, la `:44`, la `:52`,
+    la `:55`, la `:57`, la `:58` y la `:88` (`git grep`). Las de hasta la `:58` no se mueven. La
+    `:88` es la del asiento del §826 (`AUDITORIA.md:63677`) a la marca que puso en el principio 2,
+    que daba su texto en el §826 y que este sello corre dos: es ahora la `:90`. Este asiento cita
+    además las dos filas nuevas, la `:61` y la `:62`.
+  - El `BACKLOG.md`, de 5247 a 5290: la nota de la 11 entra detrás de la `:1514` y la de la 12
+    detrás de la `:1769`, así que desde la `:1515` corren 17 líneas y desde la `:1770`, 43. Ningún
+    documento vivo lo cita por línea (`verificar_citas`, v5: 0); las diez de
+    `doc/ecst/VERIFICACION.md` son del árbol en `71c5aad`, como declara su cabecera. En
+    `AUDITORIA.md` las que caen en lo que se mueve son de asientos, en 22 líneas, de la `:27342` a
+    la `:62345`, y ninguna daba ya en el §826 el texto que cita (`git show` de cada una): la del
+    §512 a la `:1767` (`:37453`), y las que los asientos del §820, el §821 y el §822 dieron por
+    rancias o por corridas, con las líneas de esos asientos que las nombran. Tampoco daban ya su
+    texto las que el §822 da por su línea nueva, de la `:3352` a la `:4958`, que el §823 y el §824
+    corrieron después. Bajan con lo demás.
+- **Las compuertas**, sobre aquel árbol: las del bucle «2 ter» de `tools/canon.sh` —`check_cifras`,
+  `check_figures`, `check_columns`, `check_constraint_layout`, `verificar_citas`, `check_dominios`,
+  `check_publicadas`, `check_nucleo`, `check_techo`, `check_curvas`, bajo el cerrojo de `cargo`
+  porque lanza `cargo tree`, y `check_superficie`—, más `check_tests`, `check_modulos`,
+  `check_vectores` y `check_catalogo`, en 0 con el asiento de entonces en su sitio. Sin él, todas en
+  0 salvo `verificar_citas`, que da con 1 las dieciséis citas a §827 del `BACKLOG.md` como «CITA DEL
+  REGISTRO MUERTA», porque el encabezado aún no existe, y nada más. `verificar_citas`: 0 fantasmas,
+  216 encabezados citados y 0 muertos, 0 citas § muertas en el registro, 0 citas por línea al
+  `BACKLOG.md` ni al canon en documentos vivos y 0 marcadores sin número, con los 8 declarados.
+  `check_publicadas`: el ATADO D, 23 RFC con estado propio, 5 cuentas en 4 sitios y la fila de cada
+  uno en `spec/README.md`; el ATADO G, 23 RFC y la plantilla, 22 con su autor y su viñeta de GenAI y
+  uno por excepción, el 0002. `check_superficie`, 28 comparaciones y 0 novedades. `check_vectores`,
+  508 `.json` y 1017 líneas de 18 manifiestos, con su huella. `check_tests`, 2021 declarados;
+  `check_modulos`, 207. `check_cifras`, 26 cifras de tests, y ninguna contradice los 22 pines.
+  `check_curvas`, 4 raíces de producción y 213 crates distintos en su clausura normal. Ninguna
+  rechaza el marcador del canon que queda al final de este asiento y de los del §822 al §826.
+- **Los mutantes**, sobre una copia de aquel árbol sin `target`, cada uno restaurado y comprobado
+  con su sha256, y su herramienta en 0 antes y después:
+  - M1, la línea de estado del RFC-0022 cambiada a «ACEPTADO (§827)»: `check_publicadas` sale con 1,
+    «6 sitio(s) no dicen del RFC lo que el RFC dice de si mismo» —el TOKEN de `spec/README.md`:61 y
+    DISCREPA en `README.md`:271, `README_EN.md`:285, `RESUMEN_BILINGUE.md`:63 y :132 y
+    `RESUMEN_EJECUTIVO.md`:103—; el RFC, `e549cff978da04e7` antes y después;
+  - M2, el 0023 quitado de la cuenta de `README.md`: sale con 1, AUSENTE en `README.md`:271;
+  - M3, la fila del 0023 en `spec/README.md` sin su estado: sale con 1, TOKEN en `:62`;
+  - M4, la cita del RFC-0023 a `spec/RPC.md` §«Versionado y compatibilidad» con una letra de más:
+    `verificar_citas` sale con 1, «ENCABEZADO MUERTO», citado en el RFC-0023;
+  - M5, un identificador de la forma que reconoce el `MODELO` —con guion y dígito— en la viñeta de
+    GenAI del RFC-0023: `check_publicadas` sale con 1, un fallo del ATADO G, MODELO en su `:21`;
+  - M6, el mismo identificador en la línea de la fecha del RFC-0022, fuera de la viñeta: sale con 0,
+    la ceguera que el ATADO G declaraba allí («no mira el resto del RFC»), que el §856 cerró en la
+    cabecera: sobre `7ed7e17` y aquí sale con 1 (abajo, «Medido sobre `7ed7e17`» y «Medido aquí»).
+    Por eso la cabecera entera de los dos se miró aparte, con su patrón (arriba, «El porte, hasta el
+    §852»).
+- **El código.** Los dos `.rs` del sello son los del borrador del carril con el número puesto, y
+  `crates/zk-ssl/src/lib.rs` lleva además, al final, el módulo del §840, que la base del carril no
+  tenía. Como ese fichero lo cambió `main` desde la base del carril, se corrieron allí los tests del
+  crate, `cargo test -p zk-ssl --release --locked`, bajo el cerrojo de `cargo` y con el `target` de
+  la pila: sale con 0: 503 pasan y 7 ignorados, los del pin de la capa, en 134 s de tests tras dos
+  minutos de compilación en release, y sin un aviso.
+- `git diff --check`, limpio, con los dos ficheros nuevos dentro.
+
+No se corrió `--bancos`, ni sobre `378e1fa`, ni sobre `7ed7e17`, ni aquí.
+
+**El porte, hasta el §858.** Del §852 al §858 lo llevó un `cherry-pick` del commit de este sello que
+salió del porte sobre `378e1fa`, sobre el §826 rebasado sobre `7ed7e17`. Entró sin un choque: doce
+ficheros, limpios, y el `BACKLOG.md`, `doc/METODO.md` y `AUDITORIA.md`, por fusión automática. Los
+doce salen iguales a como salieron de aquel porte (`git diff` contra su commit, vacío en los doce):
+del §852 al §858, `main` no toca ninguno (`git diff 378e1fa 7ed7e17`, vacío en los doce; en
+`spec/rfc/` sólo cambian la plantilla, en el §856, y el RFC-0005, en el §854). En el `BACKLOG.md` y
+en `doc/METODO.md` el sello cambia lo mismo que allí, con el mismo texto (`git diff -U0`, comparado
+con el de aquel porte): en el `BACKLOG.md`, en las mismas líneas, porque lo que `main` le cambió,
+una línea por tres en la 77 (§855), queda por debajo de las dos notas; en `doc/METODO.md`, la línea
+de la lista de los RFC con tabla de etapas baja de la `:177` a la `:180`, por las tres que el §854 y
+el §855 meten por encima del §5, y este asiento no la cita por línea. En `AUDITORIA.md`, los
+asientos de `main` y de la pila delante, tal como estaban en aquella punta, y este asiento al final,
+detrás del del §826, con una línea en blanco entre los dos, puesto después al día en lo que dice de
+su base. Este asiento baja 1861 líneas frente a aquel porte: las 1126 de los asientos del §853 al
+§858 y las 735 que sus portes sumaron a los del §819 al §826 —270 a los del §819 al §822, 82 al del
+§823, 138 al del §824, 120 al del §825 y 125 al del §826—. `cargo` no se corrió, salvo el `cargo
+tree` de `check_curvas`: el porte no toca código —los dos `.rs` son los de aquel porte, y del §853
+al §858 `main` no cambia ningún `.rs` (`git diff --stat`)—. Lo que aquella base pedía, y se hizo:
+- **El ATADO G de toda la cabecera (§856).** El atado busca ahora el identificador de modelo en cada
+  línea de la cabecera de cada RFC, hasta su primer `## `, y no sólo en la viñeta de GenAI. Las de
+  los dos RFC nuevos, de 34 y 42 líneas, pasan: un autor de `GENAI.md`, la viñeta con la fórmula de
+  la casa y ningún identificador en ninguna línea, como se miró a mano sobre `378e1fa` (arriba, «El
+  porte, hasta el §852»). El patrón `MODELO`, sobre cada línea de los 25 ficheros de `spec/rfc/`,
+  cabecera y cuerpo: 0 líneas. La fórmula sale una vez en cada uno de los dos, como en cada RFC del
+  0016 al 0021 y en la plantilla (`git grep -c`), y su viñeta da lo que la plantilla pide desde el
+  §856: la fórmula, con el asiento y lo que hizo la sesión. Las cabeceras de los 24 `NNNN-*.md`
+  suman 631 líneas, las 555 del padre y las 76 de los dos; la más larga sigue siendo la del 0016,
+  con 50. Lo que cambia es el M6, que sobre `378e1fa` salía con 0 por la ceguera de entonces y allí
+  sale con 1 (abajo, «Medido sobre `7ed7e17`»).
+- **La v5 bis ampliada (§854).** De sus ocho ficheros, el sello toca cuatro —`README.md`,
+  `README_EN.md`, `RESUMEN_EJECUTIVO.md` y `doc/METODO.md`—, y ninguna de las líneas que cambia en
+  ellos cita `tools/canon.sh`, ni ninguna de las que escribe en otro fichero, los dos RFC nuevos con
+  ellas (`git diff -U0` y `grep`). Este asiento nombra el bucle «2 ter» del canon sin citarlo por
+  línea.
+- **La v3 bis con su mínimo (§858).** De sus nueve ficheros, el sello toca tres, `README.md`,
+  `README_EN.md` y `spec/README.md`, y no escribe en ninguno una cita por línea a `spec/RPC.md`: la
+  lista sigue en nueve, su mínimo, con las mismas 37 citas por encabezado que en el padre. Pero los
+  dos RFC nuevos citan `spec/RPC.md` por encabezado —cinco veces el 0022 y dos el 0023, con el
+  patrón `ENCABEZADO` de la herramienta— y ninguna por línea, y no están en la lista. Rehecho en
+  aquel árbol el recorrido del punto 2 del §858, con sus dos patrones, citan `spec/RPC.md` por
+  encabezado diecisiete ficheros: los nueve de la lista, que no lo citan por línea; los seis de
+  fuera de ella que en `02c546b` lo citaban también por línea, y lo siguen citando, con las mismas
+  cuentas salvo `AUDITORIA.md`, que crece con los asientos; y los dos RFC, que no. La frase del §858
+  en la ceguera de la v3 bis, «en 02c546b, todos los ficheros que citan `spec/RPC.md` por encabezado
+  y no están en la lista lo citan también por línea», es cierta de `02c546b` y allí no, y es la que
+  dice por qué el cambio de un fichero de la lista por otro lo para R1: lleva su marca, en su misma
+  línea, la `:43` de `tools/verificar_citas.py`. Y el V2 del §858, que en `02c546b` «no se pudo
+  sembrar sin escribir uno», allí se siembra, y sale VERDE (abajo, «Medido sobre `7ed7e17`»).
+- **`doc/ecst/VERIFICACION.md` en `check_publicadas` (§857).** El sello no toca la ficha. Ninguna de
+  sus 305 líneas «Lo que se puede afirmar», que el ATADO F y RETIRADAS leen desde el §857, nombra el
+  RFC-0022 ni el RFC-0023, ISO 20022 ni el suelo de trece meses (`grep`), ni cita por línea el
+  `BACKLOG.md` ni `spec/README.md`, los dos ficheros que el sello alarga: las diez citas por línea
+  al `BACKLOG.md` de la ficha van en sus «Fuentes:», que siguen fuera, de `71c5aad`. Las que citan
+  `README.md` por línea no se mueven: el sello lo cambia en su sitio. El ATADO F y RETIRADAS pasan.
+- **`check_publicadas` y `verificar_citas`** cambiaron del §852 al §858: la primera, en el §854, el
+  §856 y el §857, de 2826 a 2907 líneas; la segunda, en el §854 y el §858, de 649 a 675 (`git log` y
+  `wc -l`). Se volvieron a correr allí los seis mutantes (abajo, «Medido sobre `7ed7e17`»).
+- **Las frases de los §853-§858.** Fuera de sus asientos, sólo una deja de valer con el sello, la de
+  la ceguera de la v3 bis (arriba), que lleva su marca. Ninguna otra habla del RFC-0022 ni del
+  RFC-0023, de la cuenta de los RFC, de la 11 o la 12, del aviso en ISO 20022 ni del reloj de la
+  caducidad (`git diff 378e1fa 7ed7e17`, sin `AUDITORIA.md`): el §856 cambia la plantilla, cuya
+  viñeta de GenAI los dos RFC ya siguen; el §854 y el §855 cambian secciones de `doc/METODO.md` que
+  no son la 5; y la marca del §855 en la 77 del `BACKLOG.md` queda por debajo de las dos notas, y
+  baja con ellas, sin cita viva que la nombre por línea. De sus asientos, cuatro citas por línea
+  caen en lo que este sello mueve, todas al `BACKLOG.md`: la `:1637` del §854, que en el §826 de
+  aquella base era la `:1682` y con este sello la `:1699` —la línea de la 12 que cita
+  `doc/blueprint-v2.md:388`, y que este sello marca para que cite la `:390`—; y la `:4831` del §854
+  y la `:4831-4833` del §855, dos veces, que en el §826 eran la `:5010-5012` y con este sello la
+  `:5053-5055`. Son de asientos, que no se reescriben, y ninguna daba ya su texto en el §826 (abajo,
+  «Medido sobre `7ed7e17`»).
+
+**Medido sobre `7ed7e17`**, el 22-10-2026, el §858, más el §819 al §826 y este sello, con «§827»
+puesto, la marca de `tools/verificar_citas.py` y su asiento de entonces en su sitio, sin compilar
+nada:
+- **Las citas por línea.** Del porte sobre `378e1fa` a aquél, los ficheros que citan por línea los
+  dos RFC, las notas del `BACKLOG.md`, las marcas y este asiento —los de `crates/`, `SECURITY.md`,
+  el RFC-0003, `README.md`, `README_EN.md`, `RESUMEN_BILINGUE.md` y `RESUMEN_EJECUTIVO.md`— no
+  cambian (`git diff` contra el commit de aquel porte, vacío en ellos), y sus citas caen donde
+  caían. De los que cambian, se citan seis: `doc/blueprint-v2.md:390` sigue siendo la fila ARQ-02,
+  porque el §854 cambia el fichero en su sitio, en la `:399` y la `:673`; `doc/KIT.md:146` y
+  `:148-151` y `doc/KIT_EN.md:150` y `:152-156` siguen en la sección 0, por encima de lo que les
+  cambia el porte del §823 sobre el §858, que empieza en la `:407` y en la `:419` (`git diff -U0`
+  contra el commit de aquel porte); `AUDITORIA.md:9756` y `:9762` siguen siendo las dos líneas del
+  §119.8, y la `:29398-29399`, el §388 (d), que cita una línea de la 12 que este sello marca, porque
+  `AUDITORIA.md` sólo crece por el final; y las de `spec/README.md` y el `BACKLOG.md`, abajo. Lo que
+  el RFC-0022 dice de la R5 de `check_curvas` sigue siendo lo que dice la cabecera de
+  `tools/check_curvas.py`: el §855 le añade el aviso de la caché y no toca la R5.
+- **Lo que se mueve.** Los ficheros que el sello cambia en su sitio conservan su número de líneas
+  (`git diff --numstat`, con las inserciones iguales a los borrados en los once, con
+  `tools/verificar_citas.py`). Crecen tres —`AUDITORIA.md`, por detrás de su última línea, con este
+  asiento, y estos dos—, y los dos RFC nacen:
+  - `spec/README.md`, de 218 a 220, como sobre `378e1fa`: del §852 al §858 `main` no lo toca. Sus
+    citas por línea son de asientos, a las mismas diez líneas (`git grep`), y en más sitios, porque
+    los portes de la pila las repiten: las de hasta la `:58` no se mueven, y la `:88`, la marca del
+    principio 2, que daba su texto en el §826 y que este sello corre dos, es ahora la `:90`. La cita
+    dos veces el asiento del §826, en su «No se hicieron, y por qué» (`AUDITORIA.md:65415`) y en el
+    «Medido» de su porte sobre el §858 (`:65563`). Este asiento cita además las dos filas
+    nuevas, la `:61` y la `:62`.
+  - El `BACKLOG.md`, de 5249 a 5292 —sobre `378e1fa`, de 5247 a 5290: el §855 le suma dos líneas en
+    la 77—. Las dos notas entran detrás de la `:1514` y de la `:1769`, como allí, así que desde la
+    `:1515` corren 17 líneas y desde la `:1770`, 43. Ningún documento vivo lo cita por línea
+    (`verificar_citas`, v5: 0); las diez de `doc/ecst/VERIFICACION.md` van en sus «Fuentes:», de
+    `71c5aad`. En `AUDITORIA.md` las que caen en lo que se mueve son de asientos, 26 citas en 25
+    líneas, de la `:27342` a la `:63734` (con el patrón de la v5), y ninguna daba ya en el §826 el
+    texto que cita: las 22 de antes, en sus líneas de aquella punta, y las cuatro del §854 y el §855
+    (`:61256`, `:61260`, `:61401` y `:61630`), que la pila había corrido antes (arriba). Bajan con
+    lo demás.
+- **Las compuertas**, sobre aquel árbol: las once del bucle «2 ter» de `tools/canon.sh` —con
+  `check_curvas` bajo el cerrojo de `cargo`, con `nice` y con su propio `CARGO_TARGET_DIR`— y
+  `check_tests`, `check_modulos`, `check_vectores` y `check_catalogo`, en 0, con el asiento tal como
+  llegó del `cherry-pick` y otra vez con la marca y el asiento puesto al día. `verificar_citas`: 0
+  fantasmas, 217 encabezados citados y 0 muertos —uno más que sobre `378e1fa`: el de `doc/KIT.md`
+  que cita la marca del §824 en `CONTRIBUTING.md`, como dicen los asientos del §825 y el §826—, 0
+  citas § muertas en el registro, 0 citas por línea al `BACKLOG.md` en documentos vivos, 0 en la v3
+  bis, con sus nueve ficheros y su mínimo de nueve, 0 en la v5 bis, con sus ocho, 0 marcadores sin
+  número y los 8 declarados. `check_publicadas`: el ATADO D, 23 RFC con estado propio, 5 cuentas en
+  4 sitios y la fila de cada uno en `spec/README.md`; el ATADO G, 23 RFC y la plantilla, 22 con su
+  autor y su viñeta de GenAI, «sin identificador de modelo en la cabecera», y uno por excepción, el
+  0002; y de `doc/ecst/VERIFICACION.md`, en el ATADO F y en RETIRADAS, sus 305 líneas «Lo que se
+  puede afirmar». `check_superficie`, 28 comparaciones y 0 novedades. `check_vectores`, 508 `.json`
+  y 1017 líneas de 18 manifiestos. `check_cifras`, 26 cifras de tests y 22 pines. `check_curvas`, 4
+  raíces de producción y 213 crates distintos en su clausura normal. `check_tests`, 2021;
+  `check_modulos`, 207.
+- **Los mutantes**, los seis de arriba, sobre una copia de aquel árbol sin `target` ni `.git`, cada
+  uno restaurado y comprobado con su sha256, y su herramienta en 0 antes y después de cada uno:
+  - M1: sale con 1, «6 sitio(s) no dicen del RFC lo que el RFC dice de si mismo», en las mismas
+    líneas —el TOKEN de `spec/README.md`:61 y DISCREPA en `README.md`:271, `README_EN.md`:285,
+    `RESUMEN_BILINGUE.md`:63 y :132 y `RESUMEN_EJECUTIVO.md`:103—; el RFC, `e549cff978da04e7` antes
+    y después, el mismo;
+  - M2: sale con 1, AUSENTE en `README.md`:271; M3: sale con 1, TOKEN en `:62`; M4:
+    `verificar_citas` sale con 1, «ENCABEZADO MUERTO», citado en el RFC-0023; y M5:
+    `check_publicadas` sale con 1, un fallo del ATADO G, MODELO en su `:21`, «la vineta de GenAI
+    nombra un identificador de modelo»;
+  - M6: sale ahora con 1, un fallo del ATADO G, MODELO en la `:19` del RFC-0022, «la cabecera, fuera
+    de la vineta de GenAI, nombra un identificador de modelo». Con el `check_publicadas` de
+    `378e1fa`, sobre la misma copia, el mismo mutante sale con 0, como allí: esa ceguera la cerró el
+    §856.
+- **El V2 del §858, sembrado**, sobre la misma copia: una copia de `tools/verificar_citas.py` con
+  `doc/KIT.md` cambiado en `SOLO_POR_ENCABEZADO` por el RFC-0022 sale con 0, «9 ficheros (mínimo 9),
+  41 citas por encabezado»; con el RFC-0023, con 0 y 38. Ni R1 ni R2 ni R3 lo ven, como dice la
+  marca del §827 en su ceguera.
+- `git diff --check`, limpio, con los dos ficheros nuevos dentro.
+
+**El porte, aquí.** Del §858 al §859 lo llevó un `cherry-pick` del commit de este sello que salió
+del porte sobre `7ed7e17`, sobre el §826 rebasado sobre `212eca2`. Entró sin un choque: catorce
+ficheros, limpios, y el `BACKLOG.md` y `AUDITORIA.md`, por fusión automática. Los catorce de fuera
+de `AUDITORIA.md` y el `BACKLOG.md` salen iguales a como salieron de aquel porte (`git diff` contra
+su commit, vacío en los catorce): del §858 al §859, `main` no toca ninguno (`git diff 7ed7e17
+212eca2`, vacío en ellos). En el `BACKLOG.md` el sello cambia lo mismo que allí, con el mismo texto
+(`git diff -U0`, comparado con el de aquel porte), dos líneas más abajo: el §859 añade dos líneas a
+la nota del §810 de la 85, en su `:763-764`, por encima de la 11 y de la 12, y todo lo de este sello
+baja dos —las dos notas entran detrás de la `:1516` y de la `:1771`, y no de la `:1514` y de la
+`:1769`, y las marcas en su sitio van de la `:1498` a la `:1772`—. En `AUDITORIA.md`, el asiento del
+§859 va delante de los de la pila, y éste, detrás del del §826, baja 509 líneas: las 152 del §859 y
+las 357 que sus portes sumaron a los del §819 al §826 —135 a los del §819 al §822, 43 al del §823,
+56 al del §824, 70 al del §825 y 53 al del §826—. `cargo` no se corrió, salvo el `cargo tree` de
+`check_curvas`: el porte no toca código —los dos `.rs` son los de aquel porte, y el §859 no cambia
+ningún `.rs`—. Lo que esta base pide: nada en los quince ficheros. Lo que el §859 cambia
+—`tools/segunda/juez_medio.py`, su `README.md`, un comentario de `tools/canon.sh` y la nota de la
+85— no habla del RFC-0022 ni del RFC-0023, de la cuenta de los RFC, de la 11 o la 12, del aviso en
+ISO 20022 ni del reloj de la caducidad, y ninguna de las quince herramientas cambia con él;
+`tools/segunda/README.md`, uno de los nueve de la v3 bis, sigue citando `spec/RPC.md` sólo por
+encabezado, y la lista sigue con sus nueve. Y su asiento cita dos líneas del `BACKLOG.md`, la `:760`
+y la `:763-764`, por encima de las dos notas: no caen en lo que este sello mueve. Las cuatro de los
+§854 y §855 de arriba, que el §859 baja dos, son en el §826 de esta base la `:1684` y la
+`:5012-5014`, y con este sello la `:1701` y la `:5055-5057`; ninguna daba ya su texto en el §826
+(abajo).
+
+**Medido aquí**, el 22-10-2026, sobre `212eca2`, el §859, más el §819 al §826 y este sello, con
+«§827» puesto, la marca de `tools/verificar_citas.py` y este asiento en su sitio, sin compilar nada:
+- **Las citas por línea.** Del porte sobre `7ed7e17` a éste, los ficheros que citan por línea los
+  dos RFC, las notas del `BACKLOG.md`, las marcas y este asiento no cambian (`git diff` contra el
+  commit de aquel porte, vacío en ellos), salvo `doc/KIT.md` y `doc/KIT_EN.md`, que el porte del
+  §824 de esta base cambia en su `:408` y en su `:419-420`, en su sitio y por debajo de la `:146` y
+  la `:148-151` y de la `:150` y la `:152-156`; sus citas caen donde caían. `AUDITORIA.md:9756` y
+  `:9762` siguen siendo las dos líneas del §119.8, y la `:29398-29399`, el §388 (d).
+- **Lo que se mueve.** Los ficheros que el sello cambia en su sitio conservan su número de líneas,
+  como allí. `spec/README.md`, de 218 a 220: la `:88`, la marca del principio 2, es ahora la `:90`,
+  y la cita dos veces el asiento del §826, en su «No se hicieron, y por qué» (`AUDITORIA.md:65872`)
+  y en el «Medido sobre `7ed7e17`» de su porte (`:66020`); este asiento cita además las dos filas
+  nuevas, la `:61` y la `:62`. El `BACKLOG.md`, de 5251 a 5294: desde la `:1517` corren 17 líneas y
+  desde la `:1772`, 43. Ningún documento vivo lo cita por línea (`verificar_citas`, v5: 0). En
+  `AUDITORIA.md`, con el patrón de la v5, las que caen en lo que se mueve son las mismas 26 citas en
+  25 líneas, de la `:27342` a la `:64020`, y ninguna daba ya en el §826 el texto que cita (`git
+  show` de cada una contra el §826 de esta base); las dos del §859 quedan por encima. Bajan con lo
+  demás.
+- **Las compuertas**, sobre este árbol: las once del bucle «2 ter» de `tools/canon.sh` —con
+  `check_curvas` bajo el cerrojo de `cargo`, con `nice` y con su propio `CARGO_TARGET_DIR`— y
+  `check_tests`, `check_modulos`, `check_vectores` y `check_catalogo`, en 0, con este asiento en su
+  sitio. `verificar_citas`: 0 fantasmas, 217 encabezados citados y 0 muertos, 0 citas § muertas en
+  el registro, 0 citas por línea al `BACKLOG.md` en documentos vivos, 0 en la v3 bis, con sus nueve
+  ficheros, su mínimo de nueve y sus 37 citas por encabezado, 0 en la v5 bis, con sus ocho, 0
+  marcadores sin número y los 8 declarados. `check_publicadas`: el ATADO D, 23 RFC con estado
+  propio, 5 cuentas en 4 sitios y la fila de cada uno en `spec/README.md`; el ATADO G, 23 RFC y la
+  plantilla, 22 con su autor y su viñeta de GenAI y uno por excepción, el 0002; y de
+  `doc/ecst/VERIFICACION.md`, en el ATADO F y en RETIRADAS, sus 305 líneas «Lo que se puede
+  afirmar». `check_superficie`, 28 comparaciones y 0 novedades. `check_vectores`, 508 `.json` y 1017
+  líneas de 18 manifiestos. `check_cifras`, 26 cifras de tests y 22 pines. `check_curvas`, 4 raíces
+  de producción y 213 crates distintos en su clausura normal. `check_tests`, 2021; `check_modulos`,
+  207.
+- **Los mutantes**, los seis, sobre una copia de este árbol sin `target` ni `.git`, cada uno
+  restaurado y comprobado con su sha256, y su herramienta en 0 antes y después de cada uno: M1 sale
+  con 1, con los seis sitios en las mismas líneas y el TOKEN de `spec/README.md`:61, y el RFC,
+  `e549cff978da04e7` antes y después; M2, con 1, AUSENTE en `README.md`:271; M3, con 1, TOKEN en
+  `:62`; M4, `verificar_citas` con 1, «ENCABEZADO MUERTO», citado en el RFC-0023; M5,
+  `check_publicadas` con 1, MODELO en la `:21` del RFC-0023, «la vineta de GenAI nombra un
+  identificador de modelo»; y M6, con 1, MODELO en la `:19` del RFC-0022, «la cabecera, fuera de la
+  vineta de GenAI, nombra un identificador de modelo».
+- **El V2 del §858, sembrado**, sobre la misma copia: con `doc/KIT.md` cambiado en
+  `SOLO_POR_ENCABEZADO` por el RFC-0022, `verificar_citas` sale con 0, «9 ficheros (mínimo 9), 41
+  citas por encabezado»; con el RFC-0023, con 0 y 38, como allí.
+- `git diff --check`, limpio, con los dos ficheros nuevos dentro.
+
+**Contadores.** Ninguno se mueve: el sello no añade tests ni vectores. Los de esta punta: TOTAL DE
+SELLO 1859 y CON LARGOS 1999, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; la capa 503, el nodo
+229 y el kit 191, en `tools/canon.sh`; `check_tests`, 2021 declarados; `check_modulos`, 207;
+`check_vectores`, 508 `.json` y 1017 líneas de 18 manifiestos. Los RFC, de 21 a 23, más la plantilla
+(`ls spec/rfc`). El `BACKLOG.md` no abre ni cierra ninguna entrada: 41 abiertas y 89 resueltas,
+contadas con `grep -c` de las casillas a principio de línea, como la línea «Estado». Las cifras de
+`212eca2` son las de `7ed7e17`, y éstas las de `378e1fa` —el total de sello en 1853, `check_tests`
+en 2012, 44 abiertas y 86 resueltas, 508 vectores y 1017 líneas—, así que las de este párrafo, que
+les suman las del §819 al §822, son aquí las mismas, contadas otra vez en este árbol.
+
+**Lo que NO hace.**
+- No acepta ninguno de los dos RFC, y no construye ninguna etapa de código: el prototipo de la 11 es
+  su propio sello, y el núcleo y el juez del reloj van al corte.
+- No decide la enmienda del §106, ni si un v2 va en claro dentro del mensaje, ni el Δ en latidos, ni
+  si se atestigua el `Δ` abierto: son las cuatro preguntas abiertas, del autor.
+- No elige entre las dos vías del cifrado del aviso, que es el B11.2.
+- No fija lo que el infoset del aviso aún no fija, ni la cota superior de la cadencia, ni la cota
+  inferior de cuándo se compone una cabeza: son de la E2 de cada RFC y de la E5 del reloj.
+- No corrige el «§21» de la plantilla de los RFC, de los RFC del 0002 al 0007, de la 74, de
+  `doc/CADUCIDAD_PENDIENTE.md` ni del `println!` de `crates/zk-ssl-sdk/examples/e2e.rs`, que la D-6
+  deja para otro sello.
+- No acuerda con quien lleva el tren que el RFC-0023 viaje en el corte `zkssl/0.5`.
+- No construye el medio ni sus testigos, ni la comparación de la E5. No toca la 19.
+- No añade el RFC-0022 ni el RFC-0023 a `SOLO_POR_ENCABEZADO`, la lista de la v3 bis de
+  `tools/verificar_citas.py`: el porte marca la frase del §858 que aquí deja de valer, y no cambia
+  lo que la herramienta mira (arriba, «Quién lo decide»).
+
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.

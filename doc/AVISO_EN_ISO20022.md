@@ -177,7 +177,7 @@ cobro se rechaza: `a_third_party_cannot_claim_the_pending` (`iso.rs:1029-1067`).
 
 📐 **Lo que da es el vínculo.** En el pacs.008 las partes y el importe ya viajan en claro —`Dbtr`,
 `Cdtr` e `IntrBkSttlmAmt` son obligatorios en la transacción (📖 `pacs_008_001_08.py:3164`, `:3388`,
-`:3436`)—, así que el aviso le añade dos cosas a quien lea el mensaje:
+`:3436`)—, así que el aviso le añade dos cosas a quien lea el mensaje (⚠️ §827: tres en un v2: también `x`, el sobre sin aleatoriedad del que, enumerando las identidades, se saca qué cuenta pagó y su Δ, la D-I del RFC-0008; lo dice la Seguridad del RFC-0022):
 
 - **la posición**, que es la clave que une un envío con su cobro: `spec/RPC.md` §«Qué ve exactamente
   un agregador» (⚠️ §861: hasta aquí citaba líneas, `:344-347`) lo mide para el agregador que ve las
@@ -308,7 +308,7 @@ aceptación. Un formato y dos portadores. La tabla de cuándo se reabre, al fina
   **Decidida (§861)**: no se espera al cifrado. En claro **dentro** del mensaje es una elección del
   pagador, no lo que el estándar da por defecto: la vía fuera del mensaje, con el mismo elemento,
   no concede observación («Conceder observación que no hace falta se defiende mal después»,
-  `SECURITY.md` §2.ter). La fuga se dice: posición y sal para toda la cadena de agentes, sin poder
+  `SECURITY.md` §2.ter). La fuga se dice: posición y sal para toda la cadena de agentes (⚠️ §827: y en un v2 también `x`, con lo que se aprende qué cuenta pagó y su Δ, la D-I del RFC-0008; si un v2 puede ir en claro dentro del mensaje es una pregunta del RFC-0022 para el autor), sin poder
   de cobro (§5). La versión en claro entra con su retirada escrita desde el principio: cuando
   exista la cifrada, la en claro dentro del mensaje pasa a desaconsejada, y sus vectores se mudan
   (R3 y R6 b del RFC-0021). El cifrado necesita una de dos cosas: (i) una enmienda del §106, que
@@ -318,7 +318,7 @@ aceptación. Un formato y dos portadores. La tabla de cuándo se reabre, al fina
   con dominio propio (la D-9 de la 52 del `BACKLOG.md`): no añade familia ni primitiva, y no
   necesita la clave pública por cuenta de §6.1. Elegir es del B11.2; los principios inclinan a la
   (ii). Con una curva no, aunque `ring` ya esté en el SDK (la 122 del `BACKLOG.md`): lo prohíbe el
-  §106, no la puerta.
+  §106, no la puerta. ⚠️ §827: desde el §838 lo ve también la puerta: la R5 de `tools/check_curvas.py` da ROJO a un `ring::` en las fuentes de la casa, como dice la marca del §838 en el §6; la frase venía de una decisión escrita antes del §838.
 - **D-5. Si es protocolo.** `spec/rfc/PROCESO.md:3-5` llama protocolo a lo que cruza el cable
   —`spec/RPC.md`, `spec/openrpc.json` y los vectores de `spec/vectors/`—, y un campo de un mensaje
   ISO no está en esa lista. Si un formato de interoperabilidad bancaria entra por RFC, con vectores,
@@ -328,7 +328,7 @@ aceptación. Un formato y dos portadores. La tabla de cuándo se reabre, al fina
   viaja jamás» (`spec/rfc/PROCESO.md`, regla 3): ninguno, porque el elemento no lleva clave y la vía
   que especifica es la de materiales. Su KAT va en una familia propia, `spec/vectors/aviso/`, con
   su `MANIFIESTO.txt`, su línea en `HUELLAS.sha256` y su lector en `tools/segunda/`, no en
-  `nucleo/`, y entra solo después de cotejar las filas A y E y el camt.054 con el XSD original y
+  `nucleo/`, y entra solo después de cotejar las filas A y E y el camt.054 (⚠️ §827: la fila E del §2 es el pacs.002, que la D-1 descarta, y la opción E del §7 va fuera del mensaje, sin XSD que cotejar; lo que se coteja son los tres mensajes de la D-1, `CdtTrfTxInf/SplmtryData` del pain.001 y del pacs.008 y `TxDtls/SplmtryData` del camt.054: una corrección que la D-5 del RFC-0022 toma por delegación, REVERSIBLE) con el XSD original y
   con las reglas de uso públicas de al menos una práctica de mercado. Las dos son lecturas, no
   actos ante terceros; hoy las dos dan 403. El sello que lo entre pone al día también el bloque
   `superficie` de `spec/RPC.md` §«Versionado y compatibilidad» —el `manifiesto` nuevo,

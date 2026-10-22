@@ -99,7 +99,7 @@ Dos matices, sin rango de error:
 | §2, fila 2; §3 | rango de 63 bits | **62 bits** desde el §641 (RFC-0017) | `crates/stark-experiment/src/range_check.rs:8-15`, `:76` |
 | §5.3 | el `.wasm`, 1.587.916 B | no se ha vuelto a compilar | — |
 | procedencia | «una rama que no se ha fusionado» | fusionada: `71de3d3` y `808e9b9` están en `origin/main` | `git merge-base --is-ancestor` |
-| §1 | 14 RFC; `zk-ssl-verify`, 7.443 líneas; `zk-ssl`, 25.970 | eran 13 RFC más la plantilla `0000`; hoy, 19 (0001-0019) más la plantilla, y 21 (0001-0021) desde el §790; y 10.054 y 28.040 líneas | `git ls-tree spec/rfc`; `wc -l` de los `.rs` de `src/` |
+| §1 | 14 RFC; `zk-ssl-verify`, 7.443 líneas; `zk-ssl`, 25.970 | eran 13 RFC más la plantilla `0000`; hoy, 19 (0001-0019) más la plantilla, y 21 (0001-0021) desde el §790, y 23 (0001-0023) desde el §827; y 10.054 y 28.040 líneas | `git ls-tree spec/rfc`; `wc -l` de los `.rs` de `src/` |
 
 ### «Capa 1: no», con el fundamento corregido
 

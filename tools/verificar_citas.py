@@ -40,7 +40,7 @@ no vuelve a citarlo por línea. Solo los de la lista: los demás no se miran.
   «:<número>»: «la línea 860 de `spec/RPC.md`» no se mira. ⚠️ §858: el mínimo cuenta ficheros,
   no cuáles: cambiar uno de la lista por otro no lo ve R3. Lo para R1 si el nuevo cita su
   documento por línea, y R2 si no lo cita por encabezado; en 02c546b, todos los ficheros que citan
-  `spec/RPC.md` por encabezado y no están en la lista lo citan también por línea.
+  `spec/RPC.md` por encabezado y no están en la lista lo citan también por línea. ⚠️ §827: aquí ya no: el RFC-0022 y el RFC-0023, del §827, lo citan solo por encabezado y no están en la lista; cambiar por uno de ellos un fichero de la lista no lo para ninguna regla (el V2 del §858).
 
 v4 (§792, la 66): las citas §n del REGISTRO. Reglas, declaradas antes de mirar:
   R1  En `AUDITORIA.md` y `BACKLOG.md`, todo «§n» o «§n.m» que no lleve justo

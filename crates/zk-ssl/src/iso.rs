@@ -527,7 +527,7 @@ pub fn settle_pacs008_two_phase(
 ///
 /// ⚠️ **Cómo viaja ese aviso queda fuera de este puente.** ISO 20022 no
 /// tiene campo para él, y usar el de información de remesa sería forzarlo.
-/// Es una pieza real que falta. ⚠️ §861: el estándar no tiene un campo hecho para él, pero el de extensión, `SplmtryData`, lo admite (leído en un modelo derivado de los XSD, sin cotejar con el original); el canal lo decidió la entrada 11 (`doc/AVISO_EN_ISO20022.md` §8), y falta construirlo. Y un límite de este puente que no se decía: el `ACSC` copia los identificadores de `previous` (abajo) sin comprobar que `notice` sea de ese pago, así que puede nombrar el `EndToEndId` de otro; no crea saldo ni gasta sin clave. La vía por materiales lo cerrará, cuando el puente la lleve, atando el `ACSC` a la orden que trae el aviso.
+/// Es una pieza real que falta. ⚠️ §861: el estándar no tiene un campo hecho para él, pero el de extensión, `SplmtryData`, lo admite (leído en un modelo derivado de los XSD, sin cotejar con el original); el canal lo decidió la entrada 11 (`doc/AVISO_EN_ISO20022.md` §8), y falta construirlo. Y un límite de este puente que no se decía: el `ACSC` copia los identificadores de `previous` (abajo) sin comprobar que `notice` sea de ese pago, así que puede nombrar el `EndToEndId` de otro; no crea saldo ni gasta sin clave. La vía por materiales lo cerrará, cuando el puente la lleve, atando el `ACSC` a la orden que trae el aviso. ⚠️ §827: lo acotará, no lo cerrará: ata el `ACSC` a la orden que trae el aviso, pero nada ata el pendiente a la orden, y un aviso en claro puesto en otra orden con el mismo importe y el mismo acreedor da el `ACSC` de esa otra (RFC-0022, Seguridad).
 pub fn claim_pacs008(
     layer: &mut SovereignLayer,
     previous: &Pacs002,
