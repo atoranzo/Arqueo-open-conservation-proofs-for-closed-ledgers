@@ -135,6 +135,45 @@ def deser(msg):
     return Rechazo(f'ProofDeserializationError("{msg}")')
 
 
+# ─── las causas con nombre de una prueba mal formada (§711) ─────────────────────────────────────
+# Las mismas, letra a letra, que `crates/winter-air/src/causa.rs` (la unica fuente) y que
+# `LOTE_FUERA_DE_RANGO` de `crates/zk-ssl-air/src/sal.rs`: el kit las imprime en su ROJO y los
+# manifiestos las pinan, asi que las dos implementaciones fallan por la misma.
+OPCIONES = "prueba mal formada: opciones fuera de rango"
+TRAZA = "prueba mal formada: traza fuera de rango"
+CONTEXTO = "prueba mal formada: contexto fuera de rango"
+CONSULTAS = "prueba mal formada: consultas fuera de rango"
+MARCO_OOD = "prueba mal formada: marco OOD fuera de rango"
+FRI = "prueba mal formada: FRI fuera de rango"
+LOTE = "prueba mal formada: lote fuera de rango"
+
+
+def opciones_validas(o):
+    """`ProofOptions::read_from` del fork: las condiciones de `new` y de `with_partitions`, byte a
+    byte -consultas, expansion, molienda, extension, plegado, resto, dos agrupados, particiones y
+    tasa-. Devuelve None o el detalle de la primera que falla."""
+    potencia = lambda x: x > 0 and x & (x - 1) == 0  # noqa: E731
+    if o[0] == 0:
+        return "number of queries must be greater than 0"
+    if not potencia(o[1]) or not 2 <= o[1] <= 128:
+        return "blowup factor"
+    if o[2] > 32:
+        return "grinding factor cannot be greater than 32"
+    if o[3] not in (1, 2, 3):
+        return "field extension"
+    if not potencia(o[4]) or not 2 <= o[4] <= 16:
+        return "FRI folding factor"
+    if not potencia(o[5] + 1):
+        return "FRI polynomial remainder degree must be one less than a power of two"
+    if o[6] > 2 or o[7] > 2:
+        return "batching method"
+    if not 1 <= o[8] <= 16:
+        return "number of partitions"
+    if o[9] == 0:
+        return "hash rate must be greater than or equal to 1"
+    return None
+
+
 # ─── la serializacion de winter-utils 0.13.1 ──────────────────────────────────────────────────
 
 class Lector:
@@ -226,24 +265,42 @@ def leer_prueba(b):
     p = Prueba()
     # Context: TraceInfo, el modulo, las opciones y el numero de restricciones
     p.ancho, p.ancho_aux, p.aleatorios, log_l = r.u8(), r.u8(), r.u8(), r.u8()
-    if p.ancho == 0 or log_l > 62:
+    if (p.ancho == 0 or p.ancho + p.ancho_aux >= 255 or (p.ancho_aux != 0 and p.aleatorios == 0)
+            or log_l < 3):
         raise deser("trace info")
+    # §711: lo que el fork rechaza ahora con su causa, y antes era un panico del kit
+    if log_l > 31 or (p.ancho_aux == 0 and p.aleatorios != 0):
+        raise deser(TRAZA)
     p.meta = r.tomar(r.u16())
     p.L = 1 << log_l
     p.modulo = r.tomar(r.u8())
+    if not p.modulo:
+        raise deser("field modulus cannot be an empty value")
     p.opciones = r.tomar(10)
+    detalle = opciones_validas(p.opciones)
+    if detalle is not None:
+        raise deser(f"{OPCIONES}: {detalle}")
     p.num_restricciones = r.usize()
+    if p.L * p.opciones[1] > 0xFFFFFFFF or not 1 <= p.num_restricciones <= 0xFFFFFFFF:
+        raise deser(CONTEXTO)
     p.consultas_unicas = r.u8()
+    if p.consultas_unicas == 0 or p.consultas_unicas > p.opciones[0]:
+        raise deser(CONSULTAS)
     p.compromisos = r.tomar(r.u16())
     p.segmentos = 2 if p.ancho_aux > 0 else 1
     p.traza = [leer_queries(r) for _ in range(p.segmentos)]
     p.cociente = leer_queries(r)
+    p.ood_en = r.p  # donde empieza el marco OOD: lo usa el autotest
     p.ood_traza = r.tomar(r.u16())
     p.ood_cociente = r.tomar(r.u16())
+    p.capas_en = r.p  # donde va la cuenta de capas FRI: la usa el autotest
     capas = r.u8()
     p.fri = [(r.tomar(r.u32()), r.tomar(r.u32())) for _ in range(capas)]
     p.resto = r.tomar(r.u16())
-    p.fri_particiones = 1 << r.u8()
+    # §711: `winter-fri` 0.13.1 escribe siempre UNA particion; el fork rechaza otra al leer
+    if r.u8() != 0:
+        raise deser(FRI)
+    p.fri_particiones = 1
     p.nonce = r.u64()
     return p
 
@@ -373,6 +430,8 @@ def leer_lote(r):
     """`VariasConSal::read_from`: el lote Octopus con sus cuentas acotadas y la lista de sales."""
     lote = Lote()
     lote.profundidad = r.u8()
+    if lote.profundidad > 31:  # §711: un dominio de la casa cabe en 32 bits
+        raise deser(LOTE)
     vectores = r.usize()
     if vectores > r.resto():
         raise deser("unexpected EOF")
@@ -629,32 +688,44 @@ def verificar(prueba, air, opciones_aceptadas=OPCIONES_KIT):
     if p.segmentos == 2:
         filas_aux, lote_aux = tabla(p.traza[1], p.ancho_aux, 16, e2s)
     filas_cc, lote_cc = tabla(p.cociente, ncc, 16, e2s)
-    if p.fri_particiones != 1:
-        raise deser("particiones FRI")
     if len(p.resto) % 16 or len(p.resto) == 0:
         raise deser("resto")
     resto = e2s(p.resto)
     if len(resto) & (len(resto) - 1):
         raise deser("resto")
     plegado = p.opciones[4]
-    if len(p.fri) != nfri:
-        raise deser("capas FRI")
+    # §711: en el orden de `VerifierChannel::new` del fork: primero `parse_layers` lee las capas
+    # que traiga la prueba, y DESPUES se exige su cuenta. Una capa de mas mal formada cae por su
+    # forma, como en Rust, y no por la cuenta.
     capas = []
     dom = ctx.lde
     for valores, caminos in p.fri:
-        if len(valores) % (16 * plegado):
+        if len(valores) % (16 * plegado) or not valores:
             raise deser("capa FRI")
+        vs = e2s(valores)  # los valores antes que el lote, como `FriProofLayer::parse`
         lote = leer_lote(Lector(caminos))
         if (1 << lote.profundidad) != dom // plegado:
             raise deser("capa FRI domain")
-        vs = e2s(valores)
         capas.append(([vs[i:i + plegado] for i in range(0, len(vs), plegado)], lote))
         dom //= plegado
+    if len(p.fri) != nfri:
+        raise deser(FRI)
     ancho_t = p.ancho + p.ancho_aux
     tb, qb = p.ood_traza, p.ood_cociente
-    if not tb or tb[0] != 2 or len(tb) != 1 + 2 * ancho_t * 16:
+    # §711: en el orden de `OodFrame::parse` del fork: el marco de la traza entero -su byte de
+    # filas, despues su longitud- y solo entonces el del cociente. Vacio, Rust da EOF al leer el
+    # byte de filas: aqui, «ood traza» u «ood cociente», sin causa con nombre como alli.
+    if not tb:
         raise deser("ood traza")
-    if not qb or qb[0] != 2 or len(qb) != 1 + 2 * ncc * 16:
+    if tb[0] != 2:
+        raise deser(MARCO_OOD)
+    if len(tb) != 1 + 2 * ancho_t * 16:
+        raise deser("ood traza")
+    if not qb:
+        raise deser("ood cociente")
+    if qb[0] != 2:
+        raise deser(MARCO_OOD)
+    if len(qb) != 1 + 2 * ncc * 16:
         raise deser("ood cociente")
     ot = e2s(tb[1:])
     oq = e2s(qb[1:])
@@ -911,7 +982,69 @@ def autotest():
             raise AssertionError(f"la marca {meta!r} pasa")
         except Rechazo as e:
             assert str(e) == f"marca de la ocultacion {lectura}; el enunciado pide m = 64", str(e)
+    pares_fijos_del_orden()
     return True
+
+
+def pares_fijos_del_orden():
+    """§711: el marco OOD y las capas FRI se juzgan en el orden de Rust (`OodFrame::parse` y
+    `VerifierChannel::new` del fork). Cuatro pares fijos sobre `spec/vectors/edad/edad-todos.json`,
+    medidos contra el kit; los dos que llevan dos fallos daban aqui otra causa antes de este orden:
+
+    1. el byte de filas del cociente a 3: el kit da `... marco OOD fuera de rango: expected a
+       frame of 2 rows, but was 3`; aqui, la misma causa;
+    2. eso MAS un elemento de mas en el marco de la traza: el kit da
+       `ProofDeserializationError("not all bytes were consumed")`, porque mira la traza entera
+       antes que el cociente; aqui, `ood traza`, la misma clase, sin causa con nombre;
+    3. una capa FRI de mas, bien formada: el kit da `... FRI fuera de rango: the proof has 2 FRI
+       layers and the domain requires 1`; aqui, la misma causa;
+    4. una capa FRI de mas cuyo lote es de otro dominio: el kit da `ProofDeserializationError(
+       "expected a domain of size 32 but was 64")`, porque lee las capas antes de contarlas; aqui,
+       `capa FRI domain`, la misma clase, sin causa con nombre."""
+    import json
+    import juez_stark as J  # aqui y no arriba: juez_stark importa este modulo
+    S = J.S  # el modulo que juez_stark carga, con SU `Rechazo`
+    with open(os.path.join(J.VECTORES, "edad", "edad-todos.json")) as f:
+        [(_, prueba, air)] = J.par_edad(json.load(f))
+    p = S.leer_prueba(prueba)
+    # el marco OOD: la longitud del de la traza en `i`, la del cociente en `j`
+    i = p.ood_en
+    nt = int.from_bytes(prueba[i:i + 2], "little")
+    j = i + 2 + nt
+    cociente = bytearray(prueba)
+    cociente[j + 2] = 3
+    las_dos = bytearray(cociente)
+    las_dos[i:i + 2] = (nt + 16).to_bytes(2, "little")
+    las_dos[i + 2 + nt:i + 2 + nt] = bytes(16)
+    # las capas FRI: tras la ultima, una de un grupo de 8 valores y un lote vacio sin sales, con
+    # la profundidad que toca (el plegado de la casa es 8: tres niveles menos) o con la de otro
+    # dominio
+    k = p.capas_en + 1
+    for valores, caminos in p.fri:
+        k += 8 + len(valores) + len(caminos)
+    profundidad = p.fri[-1][1][0]
+
+    def capa_de_mas(menos):
+        lote = bytes([profundidad - menos, 0x01, 0, 0, 0, 0])
+        capa = (128).to_bytes(4, "little") + bytes(128) + len(lote).to_bytes(4, "little") + lote
+        b = bytearray(prueba[:k] + capa + prueba[k:])
+        b[p.capas_en] += 1
+        return b
+
+    sin_nombre = [S.MARCO_OOD, S.FRI]
+    for b, quiere in [
+        (cociente, S.MARCO_OOD),
+        (las_dos, 'ProofDeserializationError("ood traza")'),
+        (capa_de_mas(3), S.FRI),
+        (capa_de_mas(2), 'ProofDeserializationError("capa FRI domain")'),
+    ]:
+        try:
+            S.verificar(bytes(b), air)
+            raise AssertionError(f"verifica, y pide {quiere}")
+        except S.Rechazo as e:
+            assert quiere in str(e), f"pide {quiere}, da {e}"
+            if quiere not in sin_nombre:
+                assert not any(c in str(e) for c in sin_nombre), f"otro orden que el de Rust: {e}"
 
 
 if __name__ == "__main__":

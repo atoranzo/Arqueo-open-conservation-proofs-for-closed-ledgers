@@ -164,6 +164,45 @@ pub fn comprobar_marca(meta: &[u8]) -> Result<(), String> {
     }
 }
 
+/// §711: las causas con nombre de una prueba mal formada, del fork de winterfell, la unica fuente:
+/// el kit, la capa y sus tests las nombran desde aqui.
+pub use winter_air::causa;
+
+/// §711: el texto con que empieza el error de [`sin_panico`] cuando recoge un panico. Un test que
+/// exige que una prueba ajena se rechace SIN panico mira que su error no lo lleve: la red no
+/// puede esconder lo que tiene que arreglar el verificador.
+pub const PANICO_RECOGIDO: &str = "panico recogido al juzgar una prueba ajena";
+
+/// **§711 · La red del panico de quien juzga una prueba ajena.** Corre `juzgar` y, si entra en
+/// panico, devuelve `Err(de_panico(..))` con [`PANICO_RECOGIDO`] y el mensaje del panico, en vez
+/// de dejarlo subir.
+///
+/// ⚠️ Es la defensa de ESTRUCTURA, no el arreglo: el verificador del fork rechaza sin panico lo
+/// que se midio (§711), y esta red cubre lo que no se midio. Se pone ANTES de mutar nada: un
+/// panico recogido a medio mutar dejaria un estado roto que parece sano. En el nodo, un panico
+/// con el candado del estado tomado lo envenenaba y lo llevaba a PARADA (§530): recogido aqui,
+/// el candado no llega a verlo.
+///
+/// Con `panic = "abort"` -WebAssembly sin excepciones- no recoge nada: el proceso aborta.
+pub fn sin_panico<T, E>(
+    juzgar: impl FnOnce() -> Result<T, E>,
+    de_panico: impl FnOnce(String) -> E,
+) -> Result<T, E> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(juzgar)) {
+        Ok(r) => r,
+        Err(p) => {
+            let msg = if let Some(t) = p.downcast_ref::<&str>() {
+                (*t).to_string()
+            } else if let Some(t) = p.downcast_ref::<String>() {
+                t.clone()
+            } else {
+                "sin mensaje".to_string()
+            };
+            Err(de_panico(format!("{PANICO_RECOGIDO}: {msg}")))
+        }
+    }
+}
+
 /// **Las opciones que el juez ACEPTA, y solo esas** (decision D-4). Son las `proof_options()` de
 /// la capa; un test de la capa las ata (dos literales son dos productores si nadie los cruza).
 pub fn opciones() -> ProofOptions {
@@ -835,6 +874,20 @@ mod tests {
         assert!(verificar(&[1, 2, 3], &bien).is_err(), "tres bytes verificaron");
     }
 
+    /// §711: la red recoge el panico y lo devuelve como `Err` con [`PANICO_RECOGIDO`] y su
+    /// mensaje; lo que no entra en panico pasa tal cual, `Ok` y `Err`. Falsador: sin el
+    /// `catch_unwind`, el tercer caso hace entrar en panico al test.
+    #[test]
+    fn la_red_recoge_el_panico_y_deja_pasar_lo_demas() {
+        let de = |m: String| m;
+        assert_eq!(sin_panico(|| Ok::<u8, String>(7), de), Ok(7));
+        assert_eq!(sin_panico(|| Err::<u8, String>("rojo".into()), de), Err("rojo".into()));
+        let r = sin_panico(|| -> Result<u8, String> { panic!("panico inyectado {}", 3) }, de);
+        assert_eq!(r, Err(format!("{PANICO_RECOGIDO}: panico inyectado 3")));
+        let r = sin_panico(|| -> Result<u8, String> { panic!("literal") }, de);
+        assert_eq!(r, Err(format!("{PANICO_RECOGIDO}: literal")));
+    }
+
     /// **D-2 de E4b-2 (S465):** la `m` de una marca es la minima, la del probador
     /// (`next_power_of_two`, al menos 8 desde D-AG), y no desborda en los extremos.
     #[test]
@@ -1029,7 +1082,9 @@ mod tests_nivel {
             // Con batching lineal el numero de restricciones no entra en la cifra; `Context::new`
             // solo pide que sea positivo.
             let mut p = Proof::new_dummy();
-            p.context = Context::new::<BaseElement>(info, o.clone(), PRINCIPALES + AUXILIARES);
+            // Desde el §711 `Context::new` devuelve `Result`: este contexto es valido.
+            p.context = Context::new::<BaseElement>(info, o.clone(), PRINCIPALES + AUXILIARES)
+                .expect("un contexto valido");
             let conjeturada = p.conjectured_security::<Blake3>().bits();
             let demostrable = p.proven_security::<Blake3>();
             let (ldr, udr) = (demostrable.ldr_bits(), demostrable.udr_bits());
@@ -1190,7 +1245,8 @@ mod tests_nivel {
                     TraceInfo::new_multi_segment(ANCHO + 1, ANCHO_AUX, ALEATORIOS, filas, vec![]);
                 let mut p = Proof::new_dummy();
                 let restricciones = PRINCIPALES + AUXILIARES;
-                p.context = Context::new::<BaseElement>(info, opc.clone(), restricciones);
+                p.context = Context::new::<BaseElement>(info, opc.clone(), restricciones)
+                    .expect("un contexto valido");
                 p
             };
             let p = contexto(&o);

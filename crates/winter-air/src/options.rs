@@ -140,36 +140,18 @@ impl ProofOptions {
         batching_deep: BatchingMethod,
     ) -> ProofOptions {
         // TODO: return errors instead of panicking
-        assert!(num_queries > 0, "number of queries must be greater than 0");
-        assert!(num_queries <= MAX_NUM_QUERIES, "number of queries cannot be greater than 255");
-
-        assert!(blowup_factor.is_power_of_two(), "blowup factor must be a power of 2");
-        assert!(blowup_factor >= MIN_BLOWUP_FACTOR, "blowup factor cannot be smaller than 2");
-        assert!(blowup_factor <= MAX_BLOWUP_FACTOR, "blowup factor cannot be greater than 128");
-
-        assert!(
-            grinding_factor <= MAX_GRINDING_FACTOR,
-            "grinding factor cannot be greater than 32"
-        );
-
-        assert!(fri_folding_factor.is_power_of_two(), "FRI folding factor must be a power of 2");
-        assert!(
-            fri_folding_factor >= FRI_MIN_FOLDING_FACTOR,
-            "FRI folding factor cannot be smaller than 2"
-        );
-        assert!(
-            fri_folding_factor <= FRI_MAX_FOLDING_FACTOR,
-            "FRI folding factor cannot be greater than 16"
-        );
-
-        assert!(
-            (fri_remainder_max_degree + 1).is_power_of_two(),
-            "FRI polynomial remainder degree must be one less than a power of two"
-        );
-        assert!(
-            fri_remainder_max_degree <= FRI_MAX_REMAINDER_DEGREE,
-            "FRI polynomial remainder degree cannot be greater than 255"
-        );
+        // ARQUEO (§711): las condiciones viven en `validar`, la misma lista con la que `read_from`
+        // devuelve error en vez de entrar en panico. Aqui siguen siendo panico, con el texto de
+        // upstream: quien construye las opciones en codigo es quien las escribe.
+        if let Err(motivo) = Self::validar(
+            num_queries,
+            blowup_factor,
+            grinding_factor,
+            fri_folding_factor,
+            fri_remainder_max_degree,
+        ) {
+            panic!("{}", motivo);
+        }
 
         Self {
             num_queries: num_queries as u8,
@@ -182,6 +164,56 @@ impl ProofOptions {
             batching_constraints,
             batching_deep,
         }
+    }
+
+    /// ARQUEO (§711): las condiciones de [ProofOptions::new], en su orden y con su texto, sin
+    /// panico. `read_from` las aplica a lo que trae la prueba ANTES de construir nada: upstream
+    /// llamaba a `new` con esos bytes, y un byte de consultas a cero era un panico del verificador.
+    const fn validar(
+        num_queries: usize,
+        blowup_factor: usize,
+        grinding_factor: u32,
+        fri_folding_factor: usize,
+        fri_remainder_max_degree: usize,
+    ) -> Result<(), &'static str> {
+        if num_queries == 0 {
+            return Err("number of queries must be greater than 0");
+        }
+        if num_queries > MAX_NUM_QUERIES {
+            return Err("number of queries cannot be greater than 255");
+        }
+
+        if !blowup_factor.is_power_of_two() {
+            return Err("blowup factor must be a power of 2");
+        }
+        if blowup_factor < MIN_BLOWUP_FACTOR {
+            return Err("blowup factor cannot be smaller than 2");
+        }
+        if blowup_factor > MAX_BLOWUP_FACTOR {
+            return Err("blowup factor cannot be greater than 128");
+        }
+
+        if grinding_factor > MAX_GRINDING_FACTOR {
+            return Err("grinding factor cannot be greater than 32");
+        }
+
+        if !fri_folding_factor.is_power_of_two() {
+            return Err("FRI folding factor must be a power of 2");
+        }
+        if fri_folding_factor < FRI_MIN_FOLDING_FACTOR {
+            return Err("FRI folding factor cannot be smaller than 2");
+        }
+        if fri_folding_factor > FRI_MAX_FOLDING_FACTOR {
+            return Err("FRI folding factor cannot be greater than 16");
+        }
+
+        if !(fri_remainder_max_degree + 1).is_power_of_two() {
+            return Err("FRI polynomial remainder degree must be one less than a power of two");
+        }
+        if fri_remainder_max_degree > FRI_MAX_REMAINDER_DEGREE {
+            return Err("FRI polynomial remainder degree cannot be greater than 255");
+        }
+        Ok(())
     }
 
     /// Updates the provided [ProofOptions] instance with the specified partition parameters.
@@ -326,17 +358,48 @@ impl Deserializable for ProofOptions {
     /// # Errors
     /// Returns an error of a valid proof options could not be read from the specified `source`.
     fn read_from<R: ByteReader>(source: &mut R) -> Result<Self, DeserializationError> {
+        // ARQUEO (§711): cada byte se valida con las condiciones de `new` y de `with_partitions`
+        // ANTES de construir. Upstream les pasaba lo que traia la prueba, y sus `assert!` hacian
+        // de un byte ajeno un panico del verificador (medido: el kit salia con 101 en la linea
+        // del primer `assert!`). Un valor fuera de rango es ahora la causa `causa::OPCIONES`,
+        // tambien el de la extension y el del agrupado, que upstream ya devolvia como error.
+        let fuera = |detalle: &str| {
+            DeserializationError::InvalidValue(format!("{}: {detalle}", crate::causa::OPCIONES))
+        };
+        let con_causa = |e: DeserializationError| match e {
+            DeserializationError::InvalidValue(detalle) => fuera(&detalle),
+            otro => otro,
+        };
+        let num_queries = source.read_u8()? as usize;
+        let blowup_factor = source.read_u8()? as usize;
+        let grinding_factor = source.read_u8()? as u32;
+        let field_extension = FieldExtension::read_from(source).map_err(con_causa)?;
+        let fri_folding_factor = source.read_u8()? as usize;
+        let fri_remainder_max_degree = source.read_u8()? as usize;
+        let batching_constraints = BatchingMethod::read_from(source).map_err(con_causa)?;
+        let batching_deep = BatchingMethod::read_from(source).map_err(con_causa)?;
+        Self::validar(
+            num_queries,
+            blowup_factor,
+            grinding_factor,
+            fri_folding_factor,
+            fri_remainder_max_degree,
+        )
+        .map_err(fuera)?;
         let result = ProofOptions::new(
-            source.read_u8()? as usize,
-            source.read_u8()? as usize,
-            source.read_u8()? as u32,
-            FieldExtension::read_from(source)?,
-            source.read_u8()? as usize,
-            source.read_u8()? as usize,
-            BatchingMethod::read_from(source)?,
-            BatchingMethod::read_from(source)?,
+            num_queries,
+            blowup_factor,
+            grinding_factor,
+            field_extension,
+            fri_folding_factor,
+            fri_remainder_max_degree,
+            batching_constraints,
+            batching_deep,
         );
-        Ok(result.with_partitions(source.read_u8()? as usize, source.read_u8()? as usize))
+        let num_partitions = source.read_u8()? as usize;
+        let hash_rate = source.read_u8()? as usize;
+        PartitionOptions::validar(num_partitions, hash_rate).map_err(fuera)?;
+        Ok(result.with_partitions(num_partitions, hash_rate))
     }
 }
 
@@ -410,16 +473,39 @@ pub struct PartitionOptions {
 impl PartitionOptions {
     /// Returns a new instance of `[PartitionOptions]`.
     pub const fn new(num_partitions: usize, hash_rate: usize) -> Self {
-        assert!(num_partitions >= 1, "number of partitions must be greater than or equal to 1");
-        assert!(num_partitions <= 16, "number of partitions must be smaller than or equal to 16");
-
-        assert!(hash_rate >= 1, "hash rate must be greater than or equal to 1");
-        assert!(hash_rate <= 256, "hash rate must be smaller than or equal to 256");
+        // ARQUEO (§711): las condiciones viven en `validar`, que `ProofOptions::read_from` aplica a
+        // los dos bytes de la prueba sin entrar en panico.
+        if let Err(motivo) = Self::validar(num_partitions, hash_rate) {
+            panic!("{}", motivo);
+        }
 
         Self {
             num_partitions: num_partitions as u8,
             hash_rate: hash_rate as u8,
         }
+    }
+
+    /// ARQUEO (§711): las condiciones de [PartitionOptions::new], en su orden y con su texto, sin
+    /// panico.
+    ///
+    /// ⚠️ Upstream admite `hash_rate` 256 y lo guarda en un `u8`: se escribe 0, y al leerlo upstream
+    /// entraba en panico. Aqui `new` lo sigue admitiendo -upstream byte a byte- y la lectura lo
+    /// rechaza: un 0 no es una tasa.
+    const fn validar(num_partitions: usize, hash_rate: usize) -> Result<(), &'static str> {
+        if num_partitions < 1 {
+            return Err("number of partitions must be greater than or equal to 1");
+        }
+        if num_partitions > 16 {
+            return Err("number of partitions must be smaller than or equal to 16");
+        }
+
+        if hash_rate < 1 {
+            return Err("hash rate must be greater than or equal to 1");
+        }
+        if hash_rate > 256 {
+            return Err("hash rate must be smaller than or equal to 256");
+        }
+        Ok(())
     }
 
     /// Returns the size of each partition used when committing to the main and auxiliary traces as

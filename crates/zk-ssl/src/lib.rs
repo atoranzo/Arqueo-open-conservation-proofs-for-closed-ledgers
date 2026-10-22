@@ -264,6 +264,21 @@ pub(crate) fn comprobar_forma(
     zk_ssl_air::comprobar_marca(info.meta()).map_err(LayerError::VerificationFailed)
 }
 
+/// **§711 · La red del panico de la capa.** Corre la lectura y la verificacion de una prueba
+/// AJENA y, si entran en panico, devuelve `VerificationFailed` con `que`, la marca de
+/// `zk_ssl_air::PANICO_RECOGIDO` y el mensaje del panico.
+///
+/// ⚠️ Va alrededor de cada verificacion ajena y ANTES de mutar nada: el nodo llama a la capa con el
+/// candado del estado tomado, y un panico que llegara a soltarlo lo envenenaba y llevaba el nodo a
+/// PARADA (§530; medido: `apply_send` con cero consultas). Recogido aqui, el candado no lo ve, y
+/// el estado no se toco. Es la defensa de ESTRUCTURA: el fork rechaza sin panico lo que se midio.
+pub(crate) fn sin_panico<T>(
+    que: &str,
+    verificar: impl FnOnce() -> Result<T, LayerError>,
+) -> Result<T, LayerError> {
+    zk_ssl_air::sin_panico(verificar, |m| LayerError::VerificationFailed(format!("{que}: {m}")))
+}
+
 #[derive(Debug)]
 pub enum LayerError {
     /// El pendiente aún no cumplió la `T` de caducidad (§178).
@@ -796,22 +811,24 @@ pub fn verify_audit(disclosure: &AuditDisclosure) -> Result<(), LayerError> {
     if lower > upper || upper > stark_experiment::circuit_audit::MAX_VALUE {
         return Err(LayerError::BalanceOutsideBand { lower, upper });
     }
-    let proof = winterfell::Proof::from_bytes(&disclosure.proof)
-        .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
-    let min_opts = AcceptableOptions::OptionSet(vec![proof_options()]);
-    crate::comprobar_forma(
-        proof.trace_info(),
-        stark_experiment::circuit_audit::TRACE_WIDTH,
-        0,
-        0,
-        stark_experiment::circuit_audit::TRACE_LENGTH,
-    )?;
-    verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-        proof,
-        disclosure.public_inputs.clone(),
-        &min_opts,
-    )
-    .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))
+    crate::sin_panico("auditoria", || {
+        let proof = winterfell::Proof::from_bytes(&disclosure.proof)
+            .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
+        let min_opts = AcceptableOptions::OptionSet(vec![proof_options()]);
+        crate::comprobar_forma(
+            proof.trace_info(),
+            stark_experiment::circuit_audit::TRACE_WIDTH,
+            0,
+            0,
+            stark_experiment::circuit_audit::TRACE_LENGTH,
+        )?;
+        verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            proof,
+            disclosure.public_inputs.clone(),
+            &min_opts,
+        )
+        .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))
+    })
 }
 
 /// Recibo de una emisión.
@@ -1205,6 +1222,48 @@ mod guarda_forma {
         let r = r.expect("CRITICO: el meta vaciado no puede hacer entrar en panico a la capa");
         assert!(matches!(r, Err(LayerError::VerificationFailed(ref m)) if m.contains("marca")), "{r:?}");
     }
+    /// §711: un envio honesto con el byte 34 de su prueba -las consultas de las opciones- a cero, y
+    /// otro con el 46 -las consultas unicas- a cero. Antes: `apply_send` entraba en panico en
+    /// `winter-air` (`options.rs:143` y `queries.rs:97`), con el candado del nodo tomado. Ahora:
+    /// `VerificationFailed` con la causa del fork, SIN pasar por la red -que no puede esconder lo
+    /// que arregla el verificador-, el libro sin tocar, y el envio honesto se aplica despues.
+    #[test]
+    fn un_envio_con_cero_consultas_es_err_con_causa_y_no_panico() {
+        use crate::tests_support::*;
+        use winterfell::math::fields::f64::BaseElement;
+        let mut layer = new_layer();
+        let a = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let b = open_and_fund(&mut layer, SK_BOB, 0);
+        let ea = state_of(&layer, a);
+        let receptor = layer.public_id_of(b).expect("cuenta");
+        let mut envio = layer
+            .send(BaseElement::new(SK_ALICE), a, &ea, receptor, salt_de(0x701), 250_000)
+            .expect("envio");
+        let honesta = envio.proof.clone();
+        let raiz = (layer.state_root(), layer.transition_log().len());
+        for (byte, causa) in [(34, zk_ssl_air::causa::OPCIONES), (46, zk_ssl_air::causa::CONSULTAS)]
+        {
+            envio.proof = honesta.clone();
+            assert_ne!(envio.proof[byte], 0);
+            envio.proof[byte] = 0;
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                layer.apply_send(&envio, a, &ea, 250_000)
+            }))
+            .unwrap_or_else(|_| panic!("CRITICO: el byte {byte} a cero hace entrar en panico"));
+            match r {
+                Err(LayerError::VerificationFailed(m)) => {
+                    assert!(m.contains(causa), "byte {byte}: {m}");
+                    assert!(!m.contains(zk_ssl_air::PANICO_RECOGIDO), "lo recogio la red: {m}");
+                }
+                otro => panic!("byte {byte}: se esperaba VerificationFailed, y dio {otro:?}"),
+            }
+            let ahora = (layer.state_root(), layer.transition_log().len());
+            assert_eq!(ahora, raiz, "byte {byte}: el libro no se toca");
+        }
+        envio.proof = honesta;
+        assert!(layer.apply_send(&envio, a, &ea, 250_000).is_ok(), "el envio honesto se aplica");
+    }
+
     #[test]
     fn una_forma_ajena_da_err_no_panico() {
         // ancho ajeno
@@ -1265,6 +1324,77 @@ mod tests_sal {
             total += l.len();
         }
         total
+    }
+
+    /// §711: las lineas de CODIGO de `fuente` con `aguja` que NO van dentro de `crate::sin_panico`:
+    /// la linea mas cercana por encima que abre la red o una funcion tiene que ser la red, y con
+    /// menos sangria. Devuelve cuantas hay con la aguja y las que se salen.
+    fn fuera_de_la_red<'a>(fuente: &'a str, aguja: &str) -> (usize, Vec<&'a str>) {
+        let red = concat!("crate::sin", "_panico(");
+        let sangria = |l: &str| l.len() - l.trim_start().len();
+        let lineas: Vec<&str> = fuente.lines().collect();
+        let mut total = 0;
+        let mut fuera = Vec::new();
+        for (i, l) in lineas.iter().enumerate() {
+            if l.trim_start().starts_with("//") || !l.contains(aguja) {
+                continue;
+            }
+            total += 1;
+            let abre = lineas[..i].iter().rev().find(|x| {
+                let t = x.trim_start();
+                x.contains(red) || t.starts_with("fn ") || t.starts_with("pub fn ")
+                    || t.starts_with("pub(crate) fn ")
+            });
+            match abre {
+                Some(x) if x.contains(red) && sangria(x) < sangria(l) => {}
+                _ => fuera.push(*l),
+            }
+        }
+        (total, fuera)
+    }
+
+    /// **§711: toda verificacion de una prueba AJENA en la capa va dentro de la red del panico.**
+    /// Los quince `verify` de `comprobar_forma` y las cuatro parejas de umbral: si alguien anade
+    /// una fuera, o saca una, cae. Falsador: sin el envoltorio de `validate_send`, el envio sale
+    /// fuera de la red y este test lo nombra.
+    #[test]
+    fn toda_verificacion_ajena_de_la_capa_va_dentro_de_la_red() {
+        let verifica = concat!("verify", "::<");
+        let umbral = concat!("verify_threshold", "_pair(");
+        let mut total = 0;
+        for (nombre, fuente, esperadas, aguja) in [
+            ("two_phase.rs", include_str!("two_phase.rs"), 10, verifica),
+            ("burn.rs", include_str!("burn.rs"), 1, verifica),
+            ("lib.rs", include_str!("lib.rs"), 1, verifica),
+            ("freeze.rs", include_str!("freeze.rs"), 1, verifica),
+            ("recovery.rs", include_str!("recovery.rs"), 1, verifica),
+            ("mint.rs", include_str!("mint.rs"), 1, verifica),
+            ("freeze.rs", include_str!("freeze.rs"), 1, umbral),
+            ("recovery.rs", include_str!("recovery.rs"), 1, umbral),
+            ("mint.rs", include_str!("mint.rs"), 1, umbral),
+            ("governance.rs", include_str!("governance.rs"), 1, umbral),
+        ] {
+            let (n, fuera) = fuera_de_la_red(fuente, aguja);
+            assert_eq!(n, esperadas, "{nombre}: {aguja}");
+            assert!(fuera.is_empty(), "{nombre}: fuera de la red: {fuera:?}");
+            total += n;
+        }
+        assert_eq!(total, 19, "los quince verify y las cuatro parejas de umbral");
+    }
+
+    /// §711: la red de la capa recoge un panico como `VerificationFailed`, con lo que se juzgaba y
+    /// la marca de la red. Falsador: sin el `catch_unwind`, el test entra en panico.
+    #[test]
+    fn la_red_de_la_capa_recoge_el_panico_como_verificacion_fallida() {
+        let r = crate::sin_panico("envio", || -> Result<(), crate::LayerError> { panic!("inyectado") });
+        match r {
+            Err(crate::LayerError::VerificationFailed(m)) => {
+                assert!(m.starts_with("envio: "), "{m}");
+                assert!(m.contains(zk_ssl_air::PANICO_RECOGIDO) && m.contains("inyectado"), "{m}");
+            }
+            otro => panic!("se esperaba VerificationFailed, y dio {otro:?}"),
+        }
+        assert!(matches!(crate::sin_panico("envio", || Ok(7)), Ok(7)));
     }
 
     #[test]

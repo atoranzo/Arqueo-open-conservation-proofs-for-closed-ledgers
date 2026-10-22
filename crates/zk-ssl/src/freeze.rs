@@ -105,19 +105,22 @@ impl SovereignLayer {
 
         let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
 
-        crate::comprobar_forma(
-            climb_proof.trace_info(),
-            stark_experiment::circuit_frozen_climb::TRACE_WIDTH,
-            0,
-            0,
-            stark_experiment::circuit_frozen_climb::TRACE_LENGTH,
-        )?;
-        verify::<FrozenClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-            climb_proof,
-            FrozenClimbPublicInputs { root_a: root_old, root_b: root_new },
-            &accepted,
-        )
-        .map_err(|e| LayerError::VerificationFailed(format!("subida a congelados: {e:?}")))?;
+        crate::sin_panico("subida a congelados", || {
+            crate::comprobar_forma(
+                climb_proof.trace_info(),
+                stark_experiment::circuit_frozen_climb::TRACE_WIDTH,
+                0,
+                0,
+                stark_experiment::circuit_frozen_climb::TRACE_LENGTH,
+            )?;
+            verify::<FrozenClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                climb_proof,
+                FrozenClimbPublicInputs { root_a: root_old, root_b: root_new },
+                &accepted,
+            )
+            .map_err(|e| LayerError::VerificationFailed(format!("subida a congelados: {e:?}")))?;
+            Ok(())
+        })?;
 
         let mut params: Vec<BaseElement> = root_old.to_vec();
         params.extend_from_slice(&root_new);
@@ -125,29 +128,32 @@ impl SovereignLayer {
         params.push(BaseElement::new(count_new));
         let operation = commit_operation(OP_FREEZE, &params);
 
-        verify_threshold_pair(
-            proof_a,
-            inputs_a,
-            proof_b,
-            inputs_b,
-            // Custodios, no gobernanza: congelar es custodia, no cambiar
-            // quien custodia (§57.1).
-            BaseElement::new(CUSTODIAN_DOMAIN),
-            self.custodian_set_root,
-            operation,
-            &accepted,
-        )
-        .map_err(|r| match r {
-            PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
-                "autorizacion: forma de traza equivocada".into(),
-            ),
-            PairRejection::SameCustodian
-            | PairRejection::WrongCustodianSet
-            | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
-            PairRejection::WrongOperation => LayerError::StaleState,
-            PairRejection::InvalidProof => {
-                LayerError::VerificationFailed("autorizacion invalida".into())
-            }
+        crate::sin_panico("autorizacion", || {
+            verify_threshold_pair(
+                proof_a,
+                inputs_a,
+                proof_b,
+                inputs_b,
+                // Custodios, no gobernanza: congelar es custodia, no cambiar
+                // quien custodia (§57.1).
+                BaseElement::new(CUSTODIAN_DOMAIN),
+                self.custodian_set_root,
+                operation,
+                &accepted,
+            )
+            .map_err(|r| match r {
+                PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
+                    "autorizacion: forma de traza equivocada".into(),
+                ),
+                PairRejection::SameCustodian
+                | PairRejection::WrongCustodianSet
+                | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
+                PairRejection::WrongOperation => LayerError::StaleState,
+                PairRejection::InvalidProof => {
+                    LayerError::VerificationFailed("autorizacion invalida".into())
+                }
+            })?;
+            Ok(())
         })?;
 
         // El cupo se consume DESPUES de verificar la autoridad.

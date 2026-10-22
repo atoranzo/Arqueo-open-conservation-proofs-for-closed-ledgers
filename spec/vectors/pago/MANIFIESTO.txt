@@ -58,3 +58,11 @@ neg-importe-mentido.json|1|pago: InconsistentOodConstraintEvaluations
 neg-marca-m32.json|1|pago: marca de la ocultacion Ok(Some(Marca { m: 32 })); el enunciado pide m = 64
 neg-meta-vacio.json|1|pago: marca de la ocultacion Ok(None); el enunciado pide m = 64
 neg-marca-m32-y-opciones.json|1|pago: marca de la ocultacion Ok(Some(Marca { m: 32 })); el enunciado pide m = 64
+# §711 (spec/PAQUETE.md, seccion 6.1): dos negativos NUEVOS que salen de `pago-t-frontera.json` por UNA mutacion
+# de UN byte de la prueba cada uno, y que antes del §711 hacian entrar en panico al kit (salida 101,
+# medido): el byte 34 -el numero de consultas de las opciones- a cero, en `winter-air/src/options.rs`,
+# y el byte 46 -el numero de consultas unicas- a cero, en `proof/queries.rs`, dentro de `verify`. Ahora
+# son ROJO con su causa, que pone el fork de winterfell (`crates/winter-air/src/causa.rs`, una sola
+# fuente) y repite la segunda implementacion. No se reescriben (regla 2 del PROCESO).
+neg-prueba-opciones-cero.json|1|prueba mal formada: opciones fuera de rango
+neg-prueba-consultas-cero.json|1|prueba mal formada: consultas fuera de rango

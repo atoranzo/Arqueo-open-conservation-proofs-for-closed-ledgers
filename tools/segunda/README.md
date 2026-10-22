@@ -38,7 +38,8 @@ python3 tools/segunda/kat_xmss/juez_xmss.py
 #   ⚠️ §852: decia 201 de 201 (§810); los cinco negativos `rechazo-json-*` de `paquete` la llevan a 206
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
-# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 34 de 34 (§706)
+# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 38 de 38 (§711)
+#   ⚠️ §711: decia 34 de 34 (§706); los cuatro negativos de la prueba mal formada, dos de la edad y dos del pago, la llevan a 38
 python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca
 python3 tools/segunda/juez_stark.py
 
@@ -243,6 +244,20 @@ con el `stark.py` anterior el juez da 28 de 34 pares; con este, 34 de 34, 48 pru
 vectores que caen antes del juez y 33 de 33 falsadores callados. La comprobación se leyó del kit,
 como las AIR; su texto y sus cuatro lecturas los da también `spec/PAQUETE.md` §5.
 
+**Las causas de una prueba mal formada, como el kit (§711).** Desde el §711 el fork de winterfell
+valida lo que lee de una prueba antes de construir, y la rechaza con una causa con nombre
+(`crates/winter-air/src/causa.rs`): `prueba mal formada: opciones / traza / contexto / consultas /
+marco OOD / FRI fuera de rango`, y `lote fuera de rango` en `zk-ssl-air/src/sal.rs`. `stark.py` lee
+con las mismas condiciones y repite esas causas; mira el marco OOD en el orden de `OodFrame::parse`
+y las capas FRI en el de `VerifierChannel::new`, y su autotest lo fija con cuatro pares sobre
+`edad-todos.json` (`pares_fijos_del_orden`). `juez_stark.py` cuenta `prueba mal formada` entre los
+mensajes del juez. Lo fijan cuatro negativos de la edad y el pago (`neg-prueba-opciones-cero` y
+`neg-prueba-consultas-cero`): con el `stark.py` anterior el juez da 34 de 38 pares
+(`UnacceptableProofOptions` y `ProofDeserializationError("queries")`, otra causa que el kit); con
+este, 38 de 38, 52 pruebas juzgadas, 35 vectores que caen antes del juez y 33 de 33 falsadores
+callados. Donde el kit da un error de deserialización sin nombre, `stark.py` da otro texto de la
+misma clase: el resto de sus mensajes no lleva todavía causa con nombre.
+
 **La cadena del registro** (§797). ⚠️ Esto mide el **cable**, no el núcleo: `chain` es de la clase
 REGISTRO (`spec/NUCLEO.md` §«2. Las cuatro clases»), su composición no tiene KAT (sus piezas sí:
 `spec/RPC.md` §«La composición de `chain`, byte a byte») y `conformance --check`, que exige el
@@ -365,6 +380,10 @@ en las doce. El segundo verificador no lee la completitud (`NO_SOPORTADOS`), y s
 la prenda que va dentro: los tres nuevos no llevan prueba, así que ninguno de los dos cambia.
 ⚠️ §852: `paquete` tiene 89 desde el §852, con los cinco `rechazo-json-*`: 359 entradas en los diez y
 420 en las doce. Lo medido del `.wasm` no cambia: que las pase no está medido, ni antes ni ahora.
+⚠️ §711: `edad` tiene 17 y `pago` 15 desde el §711, con los cuatro negativos de la prueba mal formada:
+363 entradas en los diez y 424 en las doce. Lo medido del `.wasm` no cambia: que las pase no está
+medido, ni antes ni ahora; los cuatro, sueltos, dan bajo `wasmtime` la misma causa que en nativo,
+medido sobre el árbol en que se hizo el arreglo y no sobre éste (el asiento del §711).
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 

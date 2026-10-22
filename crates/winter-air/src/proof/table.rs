@@ -3,7 +3,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
 use core::iter::FusedIterator;
 
 use math::FieldElement;
@@ -36,8 +36,8 @@ impl<E: FieldElement> Table<E> {
     // --------------------------------------------------------------------------------------------
     /// Returns a new [Table] instantiated with data from the provided bytes.
     ///
-    /// # Panics
-    /// Panics if:
+    /// # Errors
+    /// ARQUEO (§711): devuelve error, y no entra en panico, si:
     /// * Specified number of rows is 0 or greater than 255.
     /// * Specified number of columns is 0 or greater than 255.
     /// * Provided bytes do not encode valid field elements required to fill the table.
@@ -46,16 +46,27 @@ impl<E: FieldElement> Table<E> {
         num_rows: usize,
         num_cols: usize,
     ) -> Result<Self, DeserializationError> {
-        assert!(num_rows > 0, "number of rows must be greater than 0");
-        assert!(
-            num_rows < MAX_ROWS,
-            "number of rows cannot exceed {MAX_ROWS}, but was {num_rows}"
-        );
-        assert!(num_cols > 0, "number of columns must be greater than 0");
-        assert!(
-            num_cols < MAX_ROWS,
-            "number of columns cannot exceed {MAX_COLS}, but was {num_cols}"
-        );
+        // ARQUEO (§711): las filas son las consultas unicas que trae la prueba; upstream las
+        // exigia con `assert!` y un valor ajeno era un panico del verificador. Las mismas
+        // condiciones, con el mismo texto, como error. ⚠️ Upstream compara con `<`: 255 filas, el
+        // maximo de consultas de unas opciones validas, no caben; se conserva y se declara.
+        let fuera = |detalle: String| {
+            DeserializationError::InvalidValue(format!("{}: {detalle}", crate::causa::CONSULTAS))
+        };
+        if num_rows == 0 {
+            return Err(fuera("number of rows must be greater than 0".into()));
+        }
+        if num_rows >= MAX_ROWS {
+            return Err(fuera(format!("number of rows cannot exceed {MAX_ROWS}, but was {num_rows}")));
+        }
+        if num_cols == 0 {
+            return Err(fuera("number of columns must be greater than 0".into()));
+        }
+        if num_cols >= MAX_ROWS {
+            return Err(fuera(format!(
+                "number of columns cannot exceed {MAX_COLS}, but was {num_cols}"
+            )));
+        }
 
         let mut reader = SliceReader::new(bytes);
         let num_elements = num_rows * num_cols;

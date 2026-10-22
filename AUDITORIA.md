@@ -69597,3 +69597,296 @@ se pasan a citas por nombre o por encabezado, que no se mueven.
 `check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
 y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
 resueltas.
+
+## §711 — una prueba ajena se rechaza sin pánico y con su causa: el fork valida lo que lee antes de construir, y el kit, la capa y el nodo la juzgan dentro de una red
+
+El commit que lleva este asiento, sobre `7dd6409` (el §895). Un solo sello: en el fork de
+winterfell, la validación previa de lo que se lee de una prueba (`winter-air`: las opciones, la
+traza, el contexto, las consultas, la tabla y el marco OOD, y `src/causa.rs`, nuevo, con las causas
+con nombre; `winter-verifier`: las capas FRI y la cuenta de segmentos; `winter-prover`, que
+desenvuelve el `Result` nuevo de `Context::new`), con siete tests en `src/proof/tests_sin_panico.rs`;
+la red `zk_ssl_air::sin_panico` y la profundidad del lote en `zk-ssl-air/src/sal.rs`; la red en la
+frontera del kit, en las verificaciones ajenas de la capa y en el juez de la prenda del nodo, cada
+una con su censo; la puerta de regresión del kit; `tools/segunda/stark.py` y `juez_stark.py` con las
+mismas causas; cuatro vectores negativos en `edad/` y `pago/`, con líneas añadidas al final de sus
+manifiestos y sus huellas; las causas en `spec/PAQUETE.md` (secciones 5, 6, 6.1, 9 y 10); el
+RFC-0005, cuyo arnés (E4) gana la causa y los cuatro negativos; los README de los tres crates del
+fork y el de `tools/segunda`; la descripción del fork en el `NOTICE`, con una marca en la frase de
+`doc/KIT.md` y `doc/KIT_EN.md` que da sus ficheros; los pines de `tools/canon.sh`; el cableado del
+ATADO F de `tools/check_publicadas.py` y una marca en `tools/check_catalogo.py`; las cifras de tests de los
+documentos vivos, con la nota del §814 en `ARQUITECTURA.md` y `CONTRIBUTING.md`; el recuento de
+`spec/vectors/` en los dos README y en la lista de la superficie de `spec/RPC.md`; y este asiento. Lo
+escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: un byte de una prueba ajena hacía entrar en pánico al
+kit publicado. Sale con los demás arreglos de la publicación conjunta. Lo midió en privado una
+sesión de Claude Code, sobre `161a233`; se escribió sobre `e4eb764`, este sello lo lleva a
+`7dd6409` («Al portar», abajo), y lo que se volvió a correr aquí está en «Medido sobre este
+árbol». El canon entero se corre sobre la punta de la serie,
+no sobre cada sello.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), y los lleva a
+`7dd6409` (el §895), 101 commits después, una sesión de Claude Code, no el autor: primero a
+`212eca2` (el §859), 81 commits después; de ahí, con lo resuelto contra esos, sobre los once
+sellos del §819 al §829, hasta `3a4176c`; de ahí, con lo resuelto hasta entonces, sobre los tres
+del §863 al §865, hasta `6c33d2a`; y de ahí sobre los seis del §890 al §895. Lo que git no
+fundía, o fundía y quedaba falso, se resolvió a mano, y también lo que el sello ya dejaba falso
+sobre `e4eb764` (el `NOTICE`, el último punto):
+
+- **El brazo de la prenda del nodo, contra el §815**, que juzga la prenda dentro del cierre de
+  `juzgar_y_anotar` y anota la hoja tras el veredicto. La red va dentro de ese cierre y sólo
+  alrededor de `verificar_contra_cabeza`: `apply_consumo` muta y queda fuera, y el
+  `punto_de_corte` de los tests del §815 también. Un pánico recogido es
+  `JuicioPrenda::NoVerifica`, con su hoja y su recibo; ningún test lo ata, sólo el censo, que es de
+  estructura. El comentario del brazo y la doc del censo dejan de decir «la recepcion ya
+  anotada», y la doc de `juzgar_y_anotar` gana una marca: el pánico de una prueba ajena ya no deja
+  hueco.
+- **El ATADO F de `tools/check_publicadas.py` (§796)** salía ROJO FORMULA en `Context::new`,
+  `TraceInfo::new_multi_segment` y `ProofOptions::new`, cuyas condiciones pasan a un `validar`. El
+  cableado ancla las tres con su forma nueva y suma los tres `validar`, para que sus condiciones
+  se sigan vigilando: de 21 funciones y 200 líneas a 24 y 263. Falseado sobre una copia del árbol,
+  una mutación cada vez: una condición de cada `validar` y el `as u8` de las consultas, ROJO
+  FORMULA con su línea; la copia sin tocar, VERDE.
+- **El catálogo del kit (§777)**: `check_catalogo.py` salía ROJO R3 por `el verificador entro en
+  panico: {}`, el texto de la red del mando, que entra en `spec/PAQUETE.md` §5; y el comentario
+  de la herramienta que daba un `panic!` por salida 101 gana una marca.
+- **Los contadores**: el valor de `3a4176c` más lo que suma este sello, y medido. Dos no existían
+  en `e4eb764` y los sube este sello como los sube `main`: la nota del §814 en `ARQUITECTURA.md` y
+  `CONTRIBUTING.md`, «fija hoy N pasan», que ninguna herramienta lee y que gana su marca al final
+  de la cadena, como en el §817; y la lista de la superficie de `zkssl/0.4` en `spec/RPC.md`
+  (§801), cuyas `vectores.json` y `vectores.lineas` suben con los vectores nuevos, como en el §809,
+  el §815, el §850 y el §852. Y dos de orden: el párrafo de `tools/segunda/README.md` va tras el
+  del §706 y antes de los del §797 y el §810, y la línea de la historia de `spec/PAQUETE.md`, tras
+  la del §771.
+- **Los once sellos del §819 al §829** suben la capa de 497 a 515 y `zk-core` de 74 a 77, el TOTAL
+  DE SELLO a 1871 y `check_tests` a 2033; los pines de la capa y los totales chocaban, y llevan el
+  valor de `3a4176c` más lo de este sello. En la nota del §814, la marca del §711 va tras la del
+  §828. **El TOTAL CON LARGOS lo fundía git sin choque, y quedaba falso**: los dos lados subían la
+  misma línea de 1990 a 2011 —`main` con los 18 de la capa y los 3 de `zk-core`, este sello con sus
+  21—, y git la dio por buena; son 2032, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`. Lo mismo
+  `check_tests`: 2033 en los dos lados, y 2054 con los dos.
+- **Los tres sellos del §863 al §865**, sobre `3a4176c`. El §863 sube el nodo de 229 a 230, el
+  TOTAL DE SELLO a 1872, el TOTAL CON LARGOS a 2012 y `check_tests` a 2034, y `spec/vectors/` a 529
+  ficheros, 509 vectores y 1039 líneas, con la familia `nodo/`; el §865 marca las «1364 declaradas»
+  y las «1349 declared». Chocaban la fila del nodo, los totales de `PAPER.md`, `PAPER_EN.md` y
+  `PRINCIPIOS.md`, el recuento de los dos README y la lista de la superficie de `spec/RPC.md`, y
+  llevan el valor de `6c33d2a` más lo de este sello: 234, 1893, 2033, 533 ficheros, 513 vectores y
+  1055 líneas; la crónica del nodo pasa a «§711: 230 -> 234», tras la del §863, y la marca del
+  §865 queda como estaba. `check_tests`, 2055. El test del §863, que manda cada vector de
+  `spec/vectors/nodo/` por la función del transporte, pasa con el nodo de este sello, y el censo de
+  la red del nodo sigue contando un juez: el §863 suma un módulo de tests, que el censo no lee. El
+  §864 no chocaba, y su «1 bis» corre `zk-ssl-air` y `zk-ssl-verify` con las aserciones de
+  depuración y los pines de su fila, que este sello sube: con el perfil `aserciones`, 46 y 196, como
+  en release (abajo). Su pie, «Ceguera declarada», decía de los forks que «sus tests de upstream no
+  corren ahi»; desde este sello `winter-air` tiene siete de Arqueo, que tampoco, y la frase gana una
+  marca del §711 en la misma línea.
+- **Los seis sellos del §890 al §895**, sobre `6c33d2a`: citas por línea y marcas en prosa, dos
+  comentarios de `crates/zk-ssl-node/src/latido.rs` y uno de `crates/halo2-experiment/src/merkle.rs`,
+  y el rango 890-899 en los `RESERVADOS` de `tools/verificar_citas.py`, que este sello no toca.
+  Chocaban dos sitios: el final de este fichero, donde este asiento va tras el del §895, y la ficha
+  M11 de `doc/ecst/VERIFICACION.md`, donde el §894 marca la línea «Fuentes» y este sello sube el 515
+  de la de al lado a 518: quedan las dos, cada una con lo suyo. Lo demás lo funde git: los README en
+  la `:64` y la `:65`, lejos de las líneas de este sello, el RFC-0005 y `tools/check_publicadas.py`.
+  Ninguna cifra se mueve, y ninguna cita por línea de este sello cae en una línea que movieran; la
+  de `README.md` que `check_publicadas` salta pasa de la `:295` a la `:296`. Lo medido con `cargo`,
+  abajo, es de `6c33d2a` con este sello: los seis no cambian ninguna línea que se compile, y los
+  comentarios de `latido.rs` no llevan ninguna de las agujas del censo de la red del nodo, que lee
+  ese fuente; sobre este árbol, `zk-ssl-node` da otra vez 234 pasan, 0 ignorados y 0 warnings. Las
+  compuertas se volvieron a correr aquí, con las mismas cuentas.
+- **El resultado esperado del juez STARK** en el bloque «Cómo se corre» de `tools/segunda/README.md`
+  (`1 quinquies`) seguía en «34 de 34 (§706)», que ninguna herramienta lee y que el porte sobre
+  `212eca2` no subió; pasa a «38 de 38 (§711)», con «⚠️ §711: decia 34 de 34 (§706); …» debajo,
+  como las marcas del §850, el §852 y el §859 en ese bloque.
+- **La cuenta de los manifiestos bajo `wasmtime`** en `tools/segunda/README.md`, la cadena de
+  marcas del §793, el §815 y el §852, que no existía en `e4eb764` y que ninguna herramienta lee. La
+  del §852 dice «359 entradas en los diez y 420 en las doce»; con los cuatro negativos de este
+  sello, `edad` pasa de 15 a 17 y `pago` de 13 a 15, y son 363 y 424, contadas las líneas que no
+  son comentario de cada `MANIFIESTO.txt`. Gana su marca del §711 tras la del §852, como la del §815
+  con la completitud y la del §852 con el paquete; lo medido del `.wasm` no cambia.
+- **El `NOTICE`, que viaja dentro del tarball del kit** (`tools/artefacto.sh`, `cp LICENSE-APACHE
+  LICENSE-MIT NOTICE`). El sello escrito sobre `e4eb764` ponía al día los README de los tres crates
+  del fork, pero no el `NOTICE`, que seguía en «Once ficheros tocados y tres nuevos», con una
+  modificación funcional que acababa en el lector acotado del §575; el kit 0.4.4 lo habría llevado
+  así. Se arregla al portar, con la costumbre del §623: la modificación funcional gana la
+  validación previa, con lo que el fork acepta menos que upstream —una sola partición FRI, y ninguna
+  capa FRI de más—; la cuenta pasa a «Diecinueve ficheros tocados y cinco nuevos», con
+  `src/causa.rs` y `src/proof/tests_sin_panico.rs` en la lista; y una marca del §711 dice lo que
+  decía. Contado con `diff -rq` entre los `src/` de este árbol y los de `winter-air`,
+  `winter-prover` y `winter-verifier` 0.13.1 del registro: 10 tocados y 5 nuevos, 7 y 2. La frase
+  de `doc/KIT.md` y `doc/KIT_EN.md` sobre el `NOTICE` de la 0.3.0, que da «desde el §575» los once
+  y los tres, gana una marca con los diecinueve y los cinco.
+
+**De dónde sale.** Upstream valida la cabecera de una prueba con `assert!`, y sus bytes los pone
+quien la envía. El fork del §533 y el lector acotado del §575 no lo cambiaban: `from_bytes` leía, y
+los constructores entraban en pánico con un valor fuera de rango. El kit salía con 101, que no es
+ninguno de sus cuatro códigos (`spec/PAQUETE.md` §6), y en el nodo un pánico con el candado tomado
+lo llevaba a PARADA.
+
+**Lo que hace.**
+
+1. **El fork valida antes de construir** (`crates/winter-air`). `ProofOptions::new`,
+   `PartitionOptions::new`, `TraceInfo::new_multi_segment` y `Context::new` sacan sus condiciones a
+   un `validar`, en el mismo orden y con el mismo texto. `new` sigue entrando en pánico con el texto
+   de upstream; `read_from` aplica `validar` a lo que lee y devuelve
+   `DeserializationError::InvalidValue`. `Context::new` devuelve `Result`. La traza rechaza un
+   logaritmo de la longitud mayor que 31; el contexto, un dominio que no cabe en 32 bits.
+   `Proof::read_from` exige `1 ≤ consultas únicas ≤ consultas` y una sola partición FRI, la única que
+   escribe `winter-fri` 0.13.1. `Queries::parse`, `Table::from_bytes` y `OodFrame::parse` devuelven
+   error donde había `assert!`.
+2. **Las causas, una sola fuente** (`crates/winter-air/src/causa.rs`): `prueba mal formada:
+   opciones / traza / contexto / consultas / marco OOD / FRI fuera de rango`, en ASCII; y en
+   `zk-ssl-air/src/sal.rs`, `prueba mal formada: lote fuera de rango`. `zk_ssl_air::causa` las
+   reexporta.
+3. **`winter-verifier`** (`src/channel.rs`): las capas FRI son las que el dominio exige, ni una
+   menos ni una más; la cuenta de segmentos es error y no `assert_eq!`; y en `src/lib.rs` el
+   `expect` de los aleatorios pasa a `RandomCoinError`. `winter-fri` no se bifurca: lo que el
+   atacante alcanza allí y en `winter-crypto` —la partición, la cuenta de capas y la profundidad del
+   lote, que `get_multiproof_domain_len` desplaza— se valida antes, en el fork o en `sal.rs`.
+4. **La red** `zk_ssl_air::sin_panico`: corre el juicio con `catch_unwind`, y un pánico es `Err`
+   con `PANICO_RECOGIDO` y su mensaje. Es una defensa de estructura: lo medido lo arregla el fork, y
+   los tests que exigen rechazo sin pánico miran que esa marca NO esté.
+   - En el kit, `main` corre dentro de la red: un pánico es `ROJO: el verificador entro en panico:
+     ...` y salida 1. Los tests llaman a `correr` sin la red.
+   - En la capa, la red rodea los quince `verify` y las cuatro `verify_threshold_pair`, antes de
+     mutar nada; un pánico recogido es `VerificationFailed`. Un censo exige que toda verificación
+     ajena de la capa vaya dentro.
+   - En el nodo, la prenda (`zkssl_pledge`) es la única prueba ajena que el nodo juzga por su
+     cuenta, con el estado tomado. La red va en el sitio de la llamada y no en el juez, para no tapar
+     los falsadores del kit y de la capa. Un censo recorre el código de producción de los ocho
+     fuentes del nodo y exige que cada juez STARK vaya dentro de la red; hoy cuenta uno.
+5. **La puerta de regresión del kit** (`tests_sin_panico` en `zk-ssl-verify/src/main.rs`): tres
+   barridos sobre las pruebas de edad, pago, prenda y cobro pendiente de `spec/vectors/` —la
+   cabecera byte a byte con cinco valores; cada byte que da forma a la prueba; y de uno a tres bytes
+   al azar, con semilla fija y presupuesto (`ARQUEO_SIN_PANICO_PRESUPUESTO`)—, una capa FRI de menos
+   y de más, y la frontera del mando. Cada mutación tiene que ser `Err`, sin la marca de la red, y
+   ninguna puede verificar.
+6. **La segunda implementación.** `stark.py` lee con las mismas condiciones y repite las causas;
+   mira el marco OOD y las capas FRI en el orden de Rust, con cuatro pares fijos en su autotest.
+   `juez_stark.py` cuenta `prueba mal formada` entre los mensajes del juez.
+7. **Cuatro vectores negativos**, ficheros nuevos, de UN byte de la prueba cada uno:
+   `neg-prueba-opciones-cero` (el byte 34, las consultas de las opciones, a cero) y
+   `neg-prueba-consultas-cero` (el byte 46, las consultas únicas, a cero), de `edad-todos.json` y de
+   `pago-t-frontera.json`. Pinan la causa; sus líneas van al final de los dos manifiestos, y sus
+   huellas, en `spec/vectors/HUELLAS.sha256` (§692). La causa entra en la clase «prueba mal
+   formada» de `spec/PAQUETE.md` §6.1 (§693), y el RFC-0005 lo anota en su E4, como hicieron el
+   §693 y el §706.
+9. **Un punto nuevo en el contrato, añadido al portar.** `spec/PAQUETE.md` §6 gana «Un pánico no es
+   un código de salida»: el texto `ROJO` de la red del mando, la salida 1 y el límite en
+   `wasm32-wasip1`. El arreglo hecho en privado no tocaba `spec/PAQUETE.md`; este punto se escribió
+   al llevarlo a `e4eb764`, y dice lo que hace el código de este sello (`main` del kit y
+   `zk_ssl_air::sin_panico`). Como cambia el contrato, el RFC-0005 lo recoge con lo demás.
+8. **Un test cambia, y se declara.** `sal.rs`,
+   `mas_sales_que_bytes_falla_cerrado_aunque_quepan_en_el_arbol`, usaba un lote de 40 niveles;
+   ahora ese lote se rechaza antes por su profundidad, y el test mide lo mismo con 31 niveles. Y dos
+   tests de `zk-ssl-air` que llegaron a `main` después de `161a233` (§697 y §708) construyen un
+   `Context`: desenvuelven el `Result` nuevo con `expect`.
+
+**Medido en privado**, sobre `161a233` (el kit compilado de ese árbol, y los tests nuevos injertados
+en una copia):
+
+- El kit con el byte 34 a cero en `edad-todos.json` y en `pago-t-frontera.json`: salida 101, pánico
+  en `crates/winter-air/src/options.rs`; con el 46 a cero, 101 en `proof/queries.rs`, dentro de
+  `verify`. Lo mismo con el byte 34 de `prenda/prenda.json` y de
+  `pendiente/cobro-inferior-importe.json`.
+- La puerta, sin el arreglo, cuando sólo barría la edad y el pago (antes de sumar la prenda y el
+  cobro pendiente): con la cabecera, 47 de 464 mutaciones entraban en pánico; con la forma, 85 de
+  521. Los sitios: `winter-crypto` (`1 << depth`), el marco OOD, el `pow` de la traza y de la
+  partición FRI, las opciones, la traza y las consultas. El azar, 300 por prueba, no dio ninguno: por
+  eso hay barrido de forma.
+- Una capa FRI de menos, bien formada: pánico en `winter-verifier/src/channel.rs` (`remove(0)`).
+  **Una capa FRI de más, bien formada y nunca leída: la prueba de edad VERIFICABA**, con otros bytes
+  y otra huella.
+- El nodo, `zkssl_applySend` con el byte 34 a cero: «nodo en PARADA: un pánico en zkssl_applySend
+  dejó un candado envenenado».
+- Con el arreglo: los cuatro vectores, salida 1 y su causa. La puerta, sobre las cuatro pruebas
+  (edad, pago, prenda y cobro pendiente): cabecera 926, forma 1.040 y azar 3.993 mutaciones, todas
+  `Err`, ninguna con la marca de la red, ninguna que verifique. Antes, sobre la edad y el pago
+  solos, con un presupuesto de 20.000 por prueba: 39.957 mutaciones al azar, sin un fallo; la
+  prenda y el cobro pendiente no se barrieron con ese presupuesto. La capa FRI de menos y la de más,
+  `prueba mal formada: FRI fuera de rango`. El censo del nodo, falseado: con el juez de la prenda
+  fuera de la red, falla y nombra la línea. El de la capa, falseado: sin la red en `validate_send`,
+  nombra los dos `verify` del envío. El orden de `stark.py`, falseado: con el orden viejo del marco
+  o de las capas, su autotest falla.
+- **WebAssembly.** El kit compilado para `wasm32-wasip1` y corrido con `wasmtime`: los cuatro
+  vectores dan ROJO con la misma causa que en nativo, `edad-todos.json` da VERDE, y 661 de 661
+  mutaciones (la cabecera y 100 al azar, de edad y de pago) dan ROJO sin un trap.
+- `stark-experiment`, que no cambia pero prueba con el fork, con los tres KAT del probador que
+  vigilan que el fork no mueva un byte de las pruebas: 423 pasan, 13 ignorados.
+
+**Medido sobre este árbol**, `6c33d2a` con este sello, en release, con el `target` compartido con
+otras tareas y cada `cargo` bajo un cerrojo, en una máquina de 4 CPU compartida:
+
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `winter-air` 56; `winter-prover` 6; `winter-verifier` 0; `zk-ssl-air` 46; `zk-ssl-verify` 196
+  (127 + 68 + 1); `zk-ssl-node` 234, en 34 s de tests; `zk-ssl` 518 y 7 ignorados, en 124 s de tests.
+- **`stark-experiment`**, que no cambia pero prueba con el fork, con sus KAT del probador: 423 pasan,
+  13 ignorados, 0 fallos, en 17 s de tests. Dos filas que el sello no toca y que enlazan la capa y
+  el fork, en su pin: `zk-ssl-sdk` 22 y `zk-ssl-cli` 153. Y el workspace entero pasa
+  `cargo check --locked --workspace --all-targets`, sin errores y sin avisos nuevos.
+- **La puerta**, con `--test-threads=1 --nocapture`: cabecera 926, forma 1.040 y azar 3.993
+  mutaciones (semilla `0x701701`), los cinco tests en verde en 7,1 s. Con el perfil `aserciones`
+  del «1 bis» del §864, `zk-ssl-air` 46 y `zk-ssl-verify` 196, la puerta incluida, 0 fallos y 0
+  warnings, como en release.
+- **La conformidad**, con `tools/conformidad.sh` y el binario de este árbol (`a8c6d0d036226b1a`),
+  las doce familias enteras: paquete 89 de 89, consumo 17, conflicto 17, rechazo 84, edad 17 de 17,
+  pendiente 10, pago 15 de 15, prenda 11, completitud 81, ancla 22, ancla cofirmada 27 y rotación 34.
+- **La segunda implementación.** `python3 tools/segunda/stark.py`: autotest OK, con la marca del
+  §706 y los cuatro pares del orden. `python3 tools/segunda/juez_stark.py`: 38 de 38 pares, 52
+  pruebas juzgadas, 35 vectores que caen antes del juez, 33 de 33 falsadores callados. Con el
+  `stark.py` de `3a4176c` y estos vectores: 34 de 38, porque los cuatro nuevos daban
+  `UnacceptableProofOptions` y `ProofDeserializationError("queries")`, otra causa que el kit.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2055 declarados;
+  `check_modulos`, 209 ficheros; `check_vectores`, 513 vectores y 1055 líneas con su huella,
+  ninguno movido; `check_cifras`, 26 cifras y ninguna contradice el canon; `check_publicadas`, con
+  533 ficheros en `spec/vectors/` y el cableado de 24 funciones; `check_catalogo`, 227 textos del
+  kit y 278 entradas de §5; `verificar_citas`, 220 encabezados citados, 0 muertos;
+  `check_superficie`, la lista de `zkssl/0.4` en 28 comparaciones y 0 novedades aditivas; y
+  `check_columns`, `check_constraint_layout`, `check_curvas`, `check_dominios`, `check_figures`,
+  `check_nucleo` y `check_techo`. Todas salen con 0.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `winter-air` 49 -> 56, `zk-ssl-air` 44 -> 46,
+`zk-ssl-verify` 191 -> 196, `zk-ssl-node` 230 -> 234 y `zk-ssl` 515 -> 518. TOTAL DE SELLO 1872 ->
+1893 y TOTAL CON LARGOS 2012 -> 2033, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; el desglose de
+`PRINCIPIOS.md`, 518 de la capa, 234 del nodo y 196 del kit; los 515 de la capa, a 518, en
+`ARQUITECTURA.md` (`:58` y `:1185`), `PAPER.md`, `PAPER_EN.md`, `doc/INSTITUCIONAL.md`,
+`doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`; y en la nota del §814, en `ARQUITECTURA.md`
+(`:1606`) y `CONTRIBUTING.md` (`:115`), «fija hoy 518 pasan y 7 ignorados», con «⚠️ §711: decía
+515; los tres de más, los de la red de la capa, tampoco» —no se han corrido en depuración— al final
+de su cadena de marcas, tras la del §828. Las «1364 declaradas» y las «1349 declared» no se tocan, como en los
+sellos anteriores (5.A-319); las «55» de winterfell tampoco: los siete tests nuevos del fork son
+de Arqueo, no de upstream. `check_tests`, de 2034 a 2055, y `check_modulos`, de 207 a 209.
+`spec/vectors/`, de 529 a 533 ficheros, en `README.md` y `README_EN.md`. `check_vectores`, de 509 a
+513 vectores y de 1039 a 1055 líneas, y con ellos la lista de la superficie de `spec/RPC.md`
+(`:1768-1769`), `vectores.json` 513 y `vectores.lineas` 1055, sin marca, como en el §850 y el §852:
+`check_superficie` da 0 novedades aditivas, y sin este cambio daba dos. La segunda, de 34 a 38
+pares, también en el resultado esperado de `tools/segunda/README.md` («Cómo se corre»), con su
+marca. En el mismo README, la cuenta de los manifiestos bajo `wasmtime`, de 359 a 363 entradas en
+los diez y de 420 a 424 en las doce, con su marca tras la del §852. Y el fork en el `NOTICE`, de
+«Once ficheros tocados y tres nuevos» a «Diecinueve ficheros tocados y cinco nuevos», con su
+marca, y la de `doc/KIT.md` y `doc/KIT_EN.md`.
+
+**Lo que NO hace.** No cambia el cable ni la versión `zkssl/0.4`, ni el formato de una prueba: una
+prueba honesta se lee igual y verifica igual. No toca `winter-fri` ni `winter-crypto`. No publica un
+kit: el corte va al final de la serie. No corre el canon entero ni los bancos.
+
+**Lo que NO cierra.**
+
+- **La puerta mide el pánico.** Barre mutaciones de uno a tres bytes en su sitio; lo que cambia la
+  estructura de la prueba no se barre, y su comentario lo dice.
+- **La puerta barre cuatro pruebas**: edad, pago, prenda y cobro pendiente. Las otras que juzga el
+  kit comparten el fork y el lector, pero no se barren.
+- **En `wasm32-wasip1` la red no recoge nada**: allí un pánico aborta. Protege el fork, y lo medido
+  arriba lo confirma para lo barrido, no para lo que no se barrió.
+- **La red del nodo cubre los jueces STARK, no las firmas.** `verificar_cabeza`,
+  `verificar_cofirma` y `verificar_cadena` juzgan bytes ajenos y quedan fuera del censo; no se ha
+  medido que puedan entrar en pánico.
+- **`stark.py` se alinea en lo que toca este sello.** Sus otros mensajes (`"queries"`,
+  `"compromisos"`, `"capa FRI"`, `"ood traza"`, …) siguen sin causa con nombre: donde el kit da un
+  error de deserialización sin nombre, la segunda da otro texto de la misma clase.
+- **Dos rarezas de upstream siguen en el fork**, ahora como error y no como pánico:
+  `Table::from_bytes` compara con `<`, y 255 filas, el máximo de consultas de unas opciones
+  válidas, no caben; y `PartitionOptions::new` admite una tasa de 256 que se escribe como 0, que la
+  lectura rechaza.
+- **La partición FRI se exige 1**, más estricto que upstream: `winter-fri` 0.13.1 no escribe otra.

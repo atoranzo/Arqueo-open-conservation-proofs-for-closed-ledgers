@@ -57,11 +57,16 @@ where
     pub fn new(air: &'a A, mut pub_inputs_elements: Vec<A::BaseField>) -> Self {
         let num_constraints =
             air.context().num_assertions() + air.context().num_transition_constraints();
+        // ARQUEO (§711): `Context::new` devuelve error donde upstream entraba en panico, para que
+        // el verificador rechace sin panico lo que trae una prueba. Aqui el contexto lo pone el
+        // propio AIR, y un AIR que no cabe sigue siendo un panico del probador, con el texto de
+        // upstream.
         let context = Context::new::<A::BaseField>(
             air.trace_info().clone(),
             air.options().clone(),
             num_constraints,
-        );
+        )
+        .unwrap_or_else(|motivo| panic!("{motivo}"));
 
         // build a seed for the public coin; the initial seed is a hash of the proof context and
         // the public inputs, but as the protocol progresses, the coin will be reseeded with the

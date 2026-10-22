@@ -7,7 +7,12 @@ hasta esta correccion aqui decia <<que ningun probador de ARQUEO devuelve>>, cie
 `src/air/context.rs`, `src/air/mod.rs`, `src/air/oculta.rs` (nuevo), `src/marca.rs` (nuevo) y
 `src/lib.rs` (spike-b-p4r3, sesiones 166 a 172), y desde el §575 `src/proof/mod.rs` -`from_bytes`
 lee con el lector acotado, para que una prueba malformada no aborte el proceso- y
-`src/proof/acotado.rs` (nuevo); todo lo demas es upstream byte a byte. Entra por
+`src/proof/acotado.rs` (nuevo), y desde el §711 -una prueba ajena se rechaza con error y su causa,
+no con un panico- `src/options.rs`, `src/air/trace_info.rs`, `src/proof/context.rs` (`Context::new`
+devuelve `Result`), `src/proof/queries.rs`, `src/proof/table.rs`, `src/proof/ood_frame.rs`,
+`src/proof/mod.rs` (las consultas unicas y la particion FRI), `src/causa.rs` (nuevo: las causas con
+nombre) y `src/proof/tests_sin_panico.rs` (nuevo: sus testigos); todo lo demas es upstream byte a
+byte. Entra por
 `[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
 y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream
 pide `0.13`. Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.

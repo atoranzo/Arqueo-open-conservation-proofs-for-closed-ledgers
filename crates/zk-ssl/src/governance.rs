@@ -130,32 +130,35 @@ impl SovereignLayer {
         let operation = commit_operation(OP_GOVERNANCE, &params);
 
         let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
-        verify_threshold_pair(
-            proof_a,
-            inputs_a,
-            proof_b,
-            inputs_b,
-            // ⚠️ **La jerarquia, declarada dos veces.** El dominio dice que
-            // esto es una autorizacion de GOBERNANZA; la raiz, de que
-            // conjunto. Las identidades de custodio se derivan con otro
-            // dominio (§57.1), asi que un custodio no puede pasar por
-            // miembro de gobernanza ni aunque conociera la raiz.
-            BaseElement::new(stark_experiment::circuit_governance::GOVERNANCE_DOMAIN),
-            self.governance_set_root,
-            operation,
-            &accepted,
-        )
-        .map_err(|r| match r {
-            PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
-                "autorizacion: forma de traza equivocada".into(),
-            ),
-            PairRejection::SameCustodian => LayerError::NotTheIssuer,
-            PairRejection::WrongCustodianSet => LayerError::NotTheIssuer,
-            PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
-            PairRejection::WrongOperation => LayerError::StaleState,
-            PairRejection::InvalidProof => {
-                LayerError::VerificationFailed("autorizacion invalida".into())
-            }
+        crate::sin_panico("autorizacion", || {
+            verify_threshold_pair(
+                proof_a,
+                inputs_a,
+                proof_b,
+                inputs_b,
+                // ⚠️ **La jerarquia, declarada dos veces.** El dominio dice que
+                // esto es una autorizacion de GOBERNANZA; la raiz, de que
+                // conjunto. Las identidades de custodio se derivan con otro
+                // dominio (§57.1), asi que un custodio no puede pasar por
+                // miembro de gobernanza ni aunque conociera la raiz.
+                BaseElement::new(stark_experiment::circuit_governance::GOVERNANCE_DOMAIN),
+                self.governance_set_root,
+                operation,
+                &accepted,
+            )
+            .map_err(|r| match r {
+                PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
+                    "autorizacion: forma de traza equivocada".into(),
+                ),
+                PairRejection::SameCustodian => LayerError::NotTheIssuer,
+                PairRejection::WrongCustodianSet => LayerError::NotTheIssuer,
+                PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
+                PairRejection::WrongOperation => LayerError::StaleState,
+                PairRejection::InvalidProof => {
+                    LayerError::VerificationFailed("autorizacion invalida".into())
+                }
+            })?;
+            Ok(())
         })?;
 
         self.custodian_set_root = new_custodian_root;

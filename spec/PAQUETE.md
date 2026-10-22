@@ -785,6 +785,10 @@ nota que dice por qué.
 
 - `no se puede leer {ruta}: {e}`
 - `JSON ilegible: {e}`
+- `el verificador entro en panico: {m}` — §711: la red del mando, alrededor de todo lo demás; `{m}`
+  es `panico recogido al juzgar una prueba ajena: {mensaje}`, con el mensaje del pánico (sección 6,
+  «Un pánico no es un código de salida»). Ningún vector lo pina: lo medido lo rechaza antes el
+  fork, con su causa (sección 6.1), y la red cubre lo que no se midió.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
@@ -1214,6 +1218,11 @@ extensión, con `cabeza` como sujeto.
   argumento, o más de uno; imprime el uso en la salida de error) · `3`, desde el §573, el cuarto
   estado del sobre de completitud, «resolución declarada, no probada», que se imprime con su nombre
   y sin `ROJO`, porque no lo es.
+- **Un pánico no es un código de salida** (§711). Si el mando entra en pánico al verificar, no sale
+  con `101`: imprime `ROJO: el verificador entro en panico: panico recogido al juzgar una prueba
+  ajena: {mensaje}` y sale con `1`. Es una red de estructura: lo que el fork de winterfell valida
+  sale antes, con su causa (sección 6.1), y la red cubre lo que no se validó. En `wasm32-wasip1`,
+  que no desenrolla un pánico, la red no recoge nada, y protege sólo el fork.
 - **Lo que una implementación no lee** (§693). Una implementación que no lee una de las formas lo
   dice con el texto reservado `NO SOPORTADO`, en su línea de error —`ROJO: NO SOPORTADO: {qué}`—,
   y sale con `1`: falla cerrada, nunca `0`. No es un veredicto sobre el sobre, sino sobre ella, y
@@ -1251,7 +1260,7 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
 | **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
 | **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` |
-| **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) |
+| **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
 | **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido | `InconsistentOodConstraintEvaluations` |
 | **consulta que no casa con el compromiso** | `TraceQueryDoesNotMatchCommitment` · `ConstraintQueryDoesNotMatchCommitment` |
@@ -1575,6 +1584,15 @@ hasta el §706 la segunda rechazaba los seis por otra causa, y daba VERDE a una 
 m = 32. Los párrafos de la edad y del pago de arriba, con sus nueve y siete negativos, cuentan cómo
 era hasta entonces.
 
+**Desde el §711 una prueba mal formada se rechaza con su causa, no con un pánico.** La edad y el
+pago ganan dos negativos cada uno, de la clave `prueba` de `edad-todos.json` y `pago-t-frontera.json`,
+con UN byte cambiado: `neg-prueba-opciones-cero`, el byte 34 —las consultas de las opciones— a cero,
+y `neg-prueba-consultas-cero`, el byte 46 —las consultas únicas— a cero. Antes del §711 los dos
+hacían salir al mando con 101, un pánico dentro del fork de winterfell, que no es ninguno de los
+cuatro códigos de la sección 6. Ahora son ROJO con salida 1, y el manifiesto pina la causa, `prueba
+mal formada: opciones fuera de rango` y `prueba mal formada: consultas fuera de rango` (sección
+6.1), que pone el fork y repite la segunda implementación.
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1670,6 +1688,9 @@ era hasta entonces.
   nuevos en la edad y el pago (sección 9), y el rango de m de la edad, al día.
 - §771 — la rotación en el consumo y en la completitud (RFC-0015, lo que la E5b dejó): tres sobres
   en cada familia, del mismo nodo que rota, con `actas` y sin ellas (sección 9).
+- §711 — una prueba mal formada, con su causa (RFC-0005 E4): `prueba mal formada: {qué} fuera de
+  rango` entra en la clase «prueba mal formada» de la 6.1, y cuatro negativos nuevos en la edad y
+  el pago (sección 9) que antes hacían salir al mando con un pánico.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

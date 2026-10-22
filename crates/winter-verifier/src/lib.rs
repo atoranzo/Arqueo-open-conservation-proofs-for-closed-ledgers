@@ -245,9 +245,11 @@ where
 
     // process auxiliary trace segments (if any), to build a set of random elements for each segment
     let aux_trace_rand_elements = if air.trace_info().is_multi_segment() {
+        // ARQUEO (§711): como error y no como `expect`: la moneda la siembran los compromisos que
+        // trae la prueba, y la misma falta es `RandomCoinError` dos lineas mas abajo.
         let aux_rand_elements = air
             .get_aux_rand_elements(&mut public_coin)
-            .expect("failed to generate the random elements needed to build the auxiliary trace");
+            .map_err(|_| VerifierError::RandomCoinError)?;
 
         public_coin.reseed(trace_commitments[AUX_TRACE_IDX]);
 

@@ -57,3 +57,7 @@ pub use air::Oculta;
 /// contexto, el probador y el verificador.
 pub mod marca;
 pub use marca::{Marca, MarcaError};
+
+/// ARQUEO (§711): las causas con nombre de una prueba mal formada. La cabecera se valida con las
+/// condiciones de los constructores y devuelve error en vez de entrar en panico.
+pub mod causa;

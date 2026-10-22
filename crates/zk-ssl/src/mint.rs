@@ -84,26 +84,29 @@ impl SovereignLayer {
 
         let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
 
-        crate::comprobar_forma(
-            climb_proof.trace_info(),
-            stark_experiment::circuit_mint_climb::TRACE_WIDTH,
-            0,
-            0,
-            stark_experiment::circuit_mint_climb::TRACE_LENGTH,
-        )?;
-        verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-            climb_proof,
-            MintClimbPublicInputs {
-                root_old,
-                root_new,
-                amount: BaseElement::new(amount),
-                supply_old: BaseElement::new(supply_old),
-                supply_new: BaseElement::new(supply_new),
-                max_supply: BaseElement::new(self.max_supply),
-            },
-            &accepted,
-        )
-        .map_err(|e| LayerError::VerificationFailed(format!("subida de emision: {e:?}")))?;
+        crate::sin_panico("subida de emision", || {
+            crate::comprobar_forma(
+                climb_proof.trace_info(),
+                stark_experiment::circuit_mint_climb::TRACE_WIDTH,
+                0,
+                0,
+                stark_experiment::circuit_mint_climb::TRACE_LENGTH,
+            )?;
+            verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                climb_proof,
+                MintClimbPublicInputs {
+                    root_old,
+                    root_new,
+                    amount: BaseElement::new(amount),
+                    supply_old: BaseElement::new(supply_old),
+                    supply_new: BaseElement::new(supply_new),
+                    max_supply: BaseElement::new(self.max_supply),
+                },
+                &accepted,
+            )
+            .map_err(|e| LayerError::VerificationFailed(format!("subida de emision: {e:?}")))?;
+            Ok(())
+        })?;
 
         // El compromiso cubre TODO lo que la emision decide: de que raiz a
         // cual, cuanto, y contra que suministro y que tope.
@@ -115,24 +118,27 @@ impl SovereignLayer {
         params.push(BaseElement::new(self.max_supply));
         let operation = commit_operation(OP_MINT, &params);
 
-        verify_threshold_pair(
-            proof_a, inputs_a, proof_b, inputs_b,
-            BaseElement::new(CUSTODIAN_DOMAIN),
-            self.custodian_set_root,
-            operation,
-            &accepted,
-        )
-        .map_err(|r| match r {
-            PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
-                "autorizacion: forma de traza equivocada".into(),
-            ),
-            PairRejection::SameCustodian
-            | PairRejection::WrongCustodianSet
-            | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
-            PairRejection::WrongOperation => LayerError::StaleState,
-            PairRejection::InvalidProof => {
-                LayerError::VerificationFailed("autorizacion invalida".into())
-            }
+        crate::sin_panico("autorizacion", || {
+            verify_threshold_pair(
+                proof_a, inputs_a, proof_b, inputs_b,
+                BaseElement::new(CUSTODIAN_DOMAIN),
+                self.custodian_set_root,
+                operation,
+                &accepted,
+            )
+            .map_err(|r| match r {
+                PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
+                    "autorizacion: forma de traza equivocada".into(),
+                ),
+                PairRejection::SameCustodian
+                | PairRejection::WrongCustodianSet
+                | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
+                PairRejection::WrongOperation => LayerError::StaleState,
+                PairRejection::InvalidProof => {
+                    LayerError::VerificationFailed("autorizacion invalida".into())
+                }
+            })?;
+            Ok(())
         })?;
 
         // Despues de verificar la autoridad.

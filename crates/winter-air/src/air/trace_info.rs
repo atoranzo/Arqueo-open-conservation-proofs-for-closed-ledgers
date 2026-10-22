@@ -3,7 +3,10 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-use alloc::{string::ToString, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 
 use math::{StarkField, ToElements};
 use utils::{ByteReader, ByteWriter, Deserializable, DeserializationError, Serializable};
@@ -38,6 +41,9 @@ impl TraceInfo {
     pub const MAX_META_LENGTH: usize = 65535;
     /// Maximum number of random elements in the auxiliary trace segment; currently set to 255.
     pub const MAX_RAND_SEGMENT_ELEMENTS: usize = 255;
+    /// ARQUEO (§711): el mayor logaritmo de la longitud que se lee de una prueba, 31: la longitud
+    /// cabe en un `u32`, que es lo que `to_elements` supone y `Context::new` exige.
+    pub const MAX_LOG_TRACE_LENGTH: u8 = 31;
 
     // CONSTRUCTORS
     // --------------------------------------------------------------------------------------------
@@ -88,46 +94,18 @@ impl TraceInfo {
         trace_length: usize,
         trace_meta: Vec<u8>,
     ) -> Self {
-        assert!(
-            trace_length >= Self::MIN_TRACE_LENGTH,
-            "trace length must be at least {}, but was {}",
-            Self::MIN_TRACE_LENGTH,
-            trace_length
-        );
-        assert!(
-            trace_length.is_power_of_two(),
-            "trace length must be a power of two, but was {trace_length}"
-        );
-        assert!(
-            trace_meta.len() <= Self::MAX_META_LENGTH,
-            "number of metadata bytes cannot be greater than {}, but was {}",
-            Self::MAX_META_LENGTH,
-            trace_meta.len()
-        );
-
-        // validate trace segment widths
-        assert!(main_segment_width > 0, "main trace segment must consist of at least one column");
-        let full_width = main_segment_width + aux_segment_width;
-        assert!(
-            full_width <= TraceInfo::MAX_TRACE_WIDTH,
-            "total number of columns in the trace cannot be greater than {}, but was {}",
-            TraceInfo::MAX_TRACE_WIDTH,
-            full_width
-        );
-
-        // validate number of random elements required by the auxiliary segment
-        if aux_segment_width == 0 {
-            assert!(
-                num_aux_segment_rands == 0,
-                "number of random elements for an empty auxiliary trace segment must be zero"
-            );
+        // ARQUEO (§711): las condiciones viven en `validar`, la misma lista con la que `read_from`
+        // devuelve error en vez de entrar en panico. Aqui siguen siendo panico, con el texto de
+        // upstream.
+        if let Err(motivo) = Self::validar(
+            main_segment_width,
+            aux_segment_width,
+            num_aux_segment_rands,
+            trace_length,
+            trace_meta.len(),
+        ) {
+            panic!("{motivo}");
         }
-        assert!(
-            num_aux_segment_rands <= TraceInfo::MAX_RAND_SEGMENT_ELEMENTS,
-            "number of random elements required by a segment cannot exceed {}, but was {}",
-            TraceInfo::MAX_RAND_SEGMENT_ELEMENTS,
-            num_aux_segment_rands
-        );
 
         TraceInfo {
             main_segment_width,
@@ -136,6 +114,65 @@ impl TraceInfo {
             trace_length,
             trace_meta,
         }
+    }
+
+    /// ARQUEO (§711): las condiciones de [TraceInfo::new_multi_segment], en su orden y con su
+    /// texto, sin panico. `read_from` las aplica a lo que trae la prueba: upstream comprobaba
+    /// solo una parte y dejaba el resto a los `assert!`, y un segmento auxiliar vacio con
+    /// aleatorios era un panico del verificador.
+    fn validar(
+        main_segment_width: usize,
+        aux_segment_width: usize,
+        num_aux_segment_rands: usize,
+        trace_length: usize,
+        meta_len: usize,
+    ) -> Result<(), String> {
+        if trace_length < Self::MIN_TRACE_LENGTH {
+            return Err(format!(
+                "trace length must be at least {}, but was {}",
+                Self::MIN_TRACE_LENGTH,
+                trace_length
+            ));
+        }
+        if !trace_length.is_power_of_two() {
+            return Err(format!("trace length must be a power of two, but was {trace_length}"));
+        }
+        if meta_len > Self::MAX_META_LENGTH {
+            return Err(format!(
+                "number of metadata bytes cannot be greater than {}, but was {}",
+                Self::MAX_META_LENGTH,
+                meta_len
+            ));
+        }
+
+        // validate trace segment widths
+        if main_segment_width == 0 {
+            return Err("main trace segment must consist of at least one column".to_string());
+        }
+        let full_width = main_segment_width.saturating_add(aux_segment_width);
+        if full_width > TraceInfo::MAX_TRACE_WIDTH {
+            return Err(format!(
+                "total number of columns in the trace cannot be greater than {}, but was {}",
+                TraceInfo::MAX_TRACE_WIDTH,
+                full_width
+            ));
+        }
+
+        // validate number of random elements required by the auxiliary segment
+        if aux_segment_width == 0 && num_aux_segment_rands != 0 {
+            return Err(
+                "number of random elements for an empty auxiliary trace segment must be zero"
+                    .to_string(),
+            );
+        }
+        if num_aux_segment_rands > TraceInfo::MAX_RAND_SEGMENT_ELEMENTS {
+            return Err(format!(
+                "number of random elements required by a segment cannot exceed {}, but was {}",
+                TraceInfo::MAX_RAND_SEGMENT_ELEMENTS,
+                num_aux_segment_rands
+            ));
+        }
+        Ok(())
     }
 
     // PUBLIC ACCESSORS
@@ -312,6 +349,17 @@ impl Deserializable for TraceInfo {
                 trace_length
             )));
         }
+        // ARQUEO (§711): la longitud cabe en 32 bits, como supone `to_elements` y exige
+        // `Context::new`. Upstream elevaba 2 a lo que trajera el byte: con 64 o mas, el `pow`
+        // desbordaba, y el desbordamiento es panico en release desde el §669.
+        if trace_length > TraceInfo::MAX_LOG_TRACE_LENGTH {
+            return Err(DeserializationError::InvalidValue(format!(
+                "{}: trace length cannot be greater than 2^{}, but was 2^{}",
+                crate::causa::TRAZA,
+                TraceInfo::MAX_LOG_TRACE_LENGTH,
+                trace_length
+            )));
+        }
         let trace_length = 2_usize.pow(trace_length as u32);
 
         // read trace metadata
@@ -321,6 +369,19 @@ impl Deserializable for TraceInfo {
         } else {
             vec![]
         };
+
+        // ARQUEO (§711): y el resto de las condiciones del constructor, sin panico: con un
+        // segmento auxiliar vacio y aleatorios, `new_multi_segment` entraba en panico.
+        Self::validar(
+            main_segment_width,
+            aux_segment_width,
+            num_aux_segment_rands,
+            trace_length,
+            trace_meta.len(),
+        )
+        .map_err(|detalle| {
+            DeserializationError::InvalidValue(format!("{}: {detalle}", crate::causa::TRAZA))
+        })?;
 
         Ok(Self::new_multi_segment(
             main_segment_width,

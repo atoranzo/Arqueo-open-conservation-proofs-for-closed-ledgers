@@ -2946,6 +2946,14 @@ fn verificar_ancla_cofirmada(p: &serde_json::Value) -> Result<(), String> {
     Ok(())
 }
 
+/// **§711 · La frontera del mando.** Un panico al verificar no sale con 101: es ROJO, con el texto
+/// de `zk_ssl_air::PANICO_RECOGIDO` y el mensaje del panico, y salida 1. Es la defensa de
+/// ESTRUCTURA: el fork rechaza sin panico lo que se midio, y esto cubre lo que no se midio. Los
+/// tests llaman a `correr` sin la red, para que un panico se siga viendo como panico.
+fn correr_sin_panico(correr: impl FnOnce() -> Result<(), String>) -> Result<(), String> {
+    zk_ssl_air::sin_panico(correr, |m| err(format!("el verificador entro en panico: {m}")))
+}
+
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let ruta = match (args.next(), args.next()) {
@@ -2957,7 +2965,7 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    let r = correr(&ruta);
+    let r = correr_sin_panico(|| correr(&ruta));
     match &r {
         Ok(()) => {}
         // §573: el cuarto estado se imprime con su nombre, sin «ROJO»: no lo es.
@@ -4217,5 +4225,424 @@ mod tests_cola_653 {
         let r = correr(tmp.to_str().unwrap());
         let _ = std::fs::remove_file(&tmp);
         assert_eq!(codigo_de_salida(&r), 1, "ROJO: {r:?}");
+    }
+}
+
+/// **§711 · LA PUERTA DE REGRESION: una prueba ajena se rechaza con `Err`, nunca con un panico.**
+///
+/// Medido antes del arreglo: el byte 34 de las pruebas de edad y de pago a cero hacia salir al
+/// kit con 101 en `winter-air/src/options.rs:143`, y el byte 46 a cero, en `proof/queries.rs:97`,
+/// dentro de `verify`. Tres barridos sobre cuatro pruebas de `spec/vectors/` -edad, pago, prenda y
+/// cobro pendiente: el mismo fork y cuatro jueces-, contra el juez que el mando llama con cada una
+/// -la firma de la cabeza no toca la prueba: la comprueban los manifiestos, con el vector entero-,
+/// y cada mutacion tiene que ser `Err`, sin panico y sin la red de `zk_ssl_air::sin_panico` (que no
+/// puede esconder lo que tiene que arreglar el verificador):
+///
+/// 1. la cabecera: los bytes 0 a 49 con cada uno de `00 01 03 40 FF`, el 46 a cero incluido;
+/// 2. la forma: cada byte que da forma a la prueba -cuentas, longitudes, profundidades, el marco,
+///    las capas FRI y su particion-, leido de sus propios bytes, con los mismos cinco valores;
+/// 3. el azar: de uno a tres bytes de CUALQUIER sitio de la prueba, con semilla fija y presupuesto
+///    (`ARQUEO_SIN_PANICO_PRESUPUESTO`, 1.000 por prueba si no se dice).
+///
+/// Una mutacion de esas, de uno a tres bytes, que VERIFICA tambien cae: seria una prueba con otros
+/// bytes y la misma validez. ⚠️ Lo que cambia la estructura de la prueba no se barre aqui: la
+/// puerta mide el panico.
+#[cfg(test)]
+mod tests_sin_panico {
+    use super::*;
+    use std::sync::{Mutex, Once};
+    use zk_ssl_air::pago_en_curso::verificar_contra_cabeza as juez_pago;
+
+    const VALORES: [u8; 5] = [0x00, 0x01, 0x03, 0x40, 0xFF];
+    const VECTORES: [&str; 4] = [
+        "edad/edad-todos.json",
+        "pago/pago-t-frontera.json",
+        "prenda/prenda.json",
+        "pendiente/cobro-inferior-importe.json",
+    ];
+    const SEMILLA: u64 = 0x701701;
+    const PRESUPUESTO: usize = 1_000;
+
+    fn vector(nombre: &str) -> serde_json::Value {
+        let ruta = format!("{}/../../spec/vectors/{nombre}", env!("CARGO_MANIFEST_DIR"));
+        serde_json::from_str(&std::fs::read_to_string(ruta).unwrap()).unwrap()
+    }
+
+    /// El juez de un sobre con prueba, armado con los mismos lectores que el mando.
+    enum Juez {
+        Edad(Afirmacion, CabezaEdad),
+        Pago(AfirmacionPago, CabezaPago),
+        Prenda(AfirmacionPrenda, CabezaPrenda),
+        Cobro(AfirmacionCobro, CabezaCobro),
+    }
+
+    fn juez_de(p: &serde_json::Value) -> Juez {
+        let e = &p["enunciado"];
+        let c = &p["cabeza"];
+        let seq = u64_de(c, "seq").unwrap();
+        let pending_root = digest_de(c, "pendingRoot").unwrap();
+        let pmeta_root = digest_de(c, "pmetaRoot").unwrap();
+        match p["tipo"].as_str() {
+            Some("edad") => Juez::Edad(
+                Afirmacion {
+                    t: u64_de(e, "t").unwrap(),
+                    k: u64_de(e, "k").unwrap(),
+                    emisor: e.get("emisor").map(|_| u64_de(e, "emisor").unwrap()),
+                    subraiz_pend: digest_de(&p["subraices"], "pendientes").unwrap(),
+                    subraiz_meta: digest_de(&p["subraices"], "meta").unwrap(),
+                },
+                CabezaEdad {
+                    seq,
+                    pending_root,
+                    pmeta_root,
+                    next_pending: u64_de(c, "nextPending").unwrap(),
+                },
+            ),
+            Some("pago_en_curso") => Juez::Pago(
+                AfirmacionPago {
+                    receptor: digest_de(e, "receptor").unwrap(),
+                    importe: u64_de(e, "importe").unwrap(),
+                    t: u64_de(e, "t").unwrap(),
+                    nacido: u64_de(e, "nacido").unwrap(),
+                },
+                CabezaPago { seq, pending_root, pmeta_root },
+            ),
+            Some("prenda") => {
+                Juez::Prenda(enunciado_de_prenda(p).unwrap().0, CabezaPrenda { pending_root })
+            }
+            Some("cobro_pendiente") => Juez::Cobro(
+                AfirmacionCobro {
+                    receptor: digest_de(e, "receptor").unwrap(),
+                    nacido: u64_de(e, "nacido").unwrap(),
+                    inferior: u64_de(e, "inferior").unwrap(),
+                },
+                CabezaCobro { seq, pending_root, pmeta_root },
+            ),
+            otro => panic!("sin juez para {otro:?}"),
+        }
+    }
+
+    fn juzgar(j: &Juez, prueba: &[u8]) -> Result<(), String> {
+        match j {
+            Juez::Edad(af, c) => verificar_contra_cabeza(prueba, af, c).map(|_| ()),
+            Juez::Pago(af, c) => juez_pago(prueba, af, c).map(|_| ()),
+            Juez::Prenda(af, c) => enlazar_prenda(prueba, af, c).map(|_| ()),
+            Juez::Cobro(af, c) => enlazar_cobro(prueba, af, c).map(|_| ()),
+        }
+    }
+
+    /// Donde entro en panico cada hilo: lo apunta un gancho que se pone una vez y llama despues al
+    /// que habia, para que los panicos de los demas tests se sigan viendo.
+    static DONDE: Mutex<Vec<(String, String)>> = Mutex::new(Vec::new());
+    static GANCHO: Once = Once::new();
+
+    fn apuntar_panicos() {
+        GANCHO.call_once(|| {
+            let previo = std::panic::take_hook();
+            std::panic::set_hook(Box::new(move |info| {
+                let hilo = std::thread::current().name().unwrap_or("").to_string();
+                let lugar =
+                    info.location().map(|l| format!("{}:{}", l.file(), l.line())).unwrap_or_default();
+                if let Ok(mut d) = DONDE.lock() {
+                    d.push((hilo, lugar));
+                }
+                previo(info)
+            }));
+        });
+    }
+
+    fn ultimo_panico() -> String {
+        let hilo = std::thread::current().name().unwrap_or("").to_string();
+        let d = DONDE.lock().unwrap();
+        d.iter().rev().find(|(h, _)| *h == hilo).map(|(_, l)| l.clone()).unwrap_or_default()
+    }
+
+    /// Lo que salio de un barrido: cuantas mutaciones, y las que no fueron un `Err` limpio.
+    #[derive(Default)]
+    struct Cuenta {
+        mutaciones: usize,
+        panicos: Vec<String>,
+        verifican: Vec<String>,
+        recogidos: Vec<String>,
+    }
+
+    impl Cuenta {
+        fn exigir_limpio(&self, barrido: &str) {
+            let total = self.panicos.len() + self.verifican.len() + self.recogidos.len();
+            assert!(
+                total == 0,
+                "{barrido}: {} de {} mutaciones no son un Err limpio\n  panicos: {:?}\n  \
+                 verifican: {:?}\n  recogidos por la red: {:?}",
+                total,
+                self.mutaciones,
+                self.panicos,
+                self.verifican,
+                self.recogidos
+            );
+        }
+    }
+
+    /// Aplica cada mutacion (una lista de pares byte, valor) a la prueba y la juzga.
+    fn barrer(nombre: &str, mutaciones: &[Vec<(usize, u8)>], cuenta: &mut Cuenta) {
+        apuntar_panicos();
+        let p = vector(nombre);
+        let j = juez_de(&p);
+        let buena = hex_a_bytes(p["prueba"].as_str().unwrap()).unwrap();
+        assert_eq!(juzgar(&j, &buena), Ok(()), "{nombre}: la prueba sin tocar verifica");
+        for m in mutaciones {
+            let mut b = buena.clone();
+            for &(i, v) in m {
+                b[i] = v;
+            }
+            if b == buena {
+                continue; // la mutacion que no cambia nada no es una mutacion
+            }
+            cuenta.mutaciones += 1;
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| juzgar(&j, &b)));
+            let que = format!("{nombre} {m:?}");
+            match r {
+                Err(_) => cuenta.panicos.push(format!("{que} en {}", ultimo_panico())),
+                Ok(Ok(())) => cuenta.verifican.push(que),
+                Ok(Err(e)) if e.contains(zk_ssl_air::PANICO_RECOGIDO) => {
+                    cuenta.recogidos.push(format!("{que}: {e}"))
+                }
+                Ok(Err(_)) => {}
+            }
+        }
+    }
+
+    /// Los offsets de los bytes que dan FORMA a una prueba de winterfell 0.13.1 con el compromiso
+    /// de la casa, en el orden de `Proof::write_into`: los de la cabecera, el primer byte de cada
+    /// longitud, y en cada lote su profundidad, su cuenta de vectores, las dos primeras cuentas de
+    /// nodos y su cuenta de sales. Recorre la prueba entera y exige acabar en su ultimo byte.
+    fn bytes_de_forma(b: &[u8]) -> Vec<usize> {
+        recorrer(b).forma
+    }
+
+    /// Lo que deja el recorrido de una prueba: los bytes de forma, el offset del byte que cuenta
+    /// las capas FRI, y de cada capa su tramo `[desde, hasta)` y la profundidad de su lote.
+    struct Recorrido {
+        forma: Vec<usize>,
+        capas_en: usize,
+        capas: Vec<(usize, usize, u8)>,
+    }
+
+    fn recorrer(b: &[u8]) -> Recorrido {
+        struct L<'a> {
+            b: &'a [u8],
+            i: usize,
+            forma: Vec<usize>,
+        }
+        impl L<'_> {
+            fn marca(&mut self, n: usize) -> &[u8] {
+                self.forma.push(self.i);
+                self.i += n;
+                &self.b[self.i - n..self.i]
+            }
+            fn u8(&mut self) -> usize {
+                self.marca(1)[0] as usize
+            }
+            fn u16(&mut self) -> usize {
+                let x = self.marca(2);
+                u16::from_le_bytes([x[0], x[1]]) as usize
+            }
+            fn u32(&mut self) -> usize {
+                let x = self.marca(4);
+                u32::from_le_bytes([x[0], x[1], x[2], x[3]]) as usize
+            }
+            fn vint(&mut self) -> usize {
+                let n = self.b[self.i].trailing_zeros() as usize + 1;
+                if n == 9 {
+                    let x = self.marca(9);
+                    return u64::from_le_bytes(x[1..9].try_into().unwrap()) as usize;
+                }
+                let mut a = [0u8; 8];
+                a[..n].copy_from_slice(self.marca(n));
+                (u64::from_le_bytes(a) >> n) as usize
+            }
+            fn lote(&mut self) {
+                self.u8();
+                let vectores = self.vint();
+                for k in 0..vectores {
+                    let nodos = if k < 2 { self.vint() } else { self.saltar_vint() };
+                    self.i += 32 * nodos;
+                }
+                let sales = self.u32();
+                self.i += 32 * sales;
+            }
+            fn saltar_vint(&mut self) -> usize {
+                let antes = self.forma.len();
+                let v = self.vint();
+                self.forma.truncate(antes);
+                v
+            }
+        }
+        let mut l = L { b, i: 0, forma: Vec::new() };
+        l.u8();
+        let aux = l.u8();
+        l.u8();
+        l.u8();
+        let meta = l.u16();
+        l.i += meta;
+        let modulo = l.u8();
+        l.i += modulo;
+        for _ in 0..10 {
+            l.u8(); // las opciones, byte a byte
+        }
+        l.vint(); // las restricciones
+        l.u8(); // las consultas unicas
+        let compromisos = l.u16();
+        l.i += compromisos;
+        for _ in 0..(if aux > 0 { 3 } else { 2 }) {
+            let valores = l.vint();
+            l.i += valores;
+            let apertura = l.vint();
+            let fin = l.i + apertura;
+            l.lote();
+            assert_eq!(l.i, fin, "la apertura de unas consultas acaba donde dice");
+        }
+        for _ in 0..2 {
+            let n = l.u16();
+            l.u8(); // las filas del marco
+            l.i += n - 1;
+        }
+        let capas_en = l.i;
+        let mut tramos = Vec::new();
+        for _ in 0..l.u8() {
+            let desde = l.i;
+            let valores = l.u32();
+            l.i += valores;
+            let caminos = l.u32();
+            let fin = l.i + caminos;
+            let profundidad = b[l.i];
+            l.lote();
+            assert_eq!(l.i, fin, "el lote de una capa FRI acaba donde dice");
+            tramos.push((desde, l.i, profundidad));
+        }
+        let resto = l.u16();
+        l.i += resto;
+        l.u8(); // las particiones FRI
+        l.i += 8; // el nonce
+        assert_eq!(l.i, b.len(), "el recorrido acaba en el ultimo byte de la prueba");
+        Recorrido { forma: l.forma, capas_en, capas: tramos }
+    }
+
+    /// SplitMix64: el azar del barrido, con semilla fija para que el mismo barrido se repita.
+    struct Azar(u64);
+    impl Azar {
+        fn siguiente(&mut self) -> u64 {
+            self.0 = self.0.wrapping_add(0x9e37_79b9_7f4a_7c15);
+            let mut z = self.0;
+            z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+            z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+            z ^ (z >> 31)
+        }
+    }
+
+    /// La frontera del mando: un panico es ROJO, salida 1, con la marca de la red; lo demas pasa
+    /// tal cual. Falsador: sin `correr_sin_panico` en `main`, el mando salia con 101.
+    #[test]
+    fn un_panico_en_la_frontera_del_mando_es_rojo_con_salida_1() {
+        let r = correr_sin_panico(|| panic!("panico inyectado"));
+        assert_eq!(codigo_de_salida(&r), 1, "{r:?}");
+        let e = r.unwrap_err();
+        assert!(e.starts_with("el verificador entro en panico: "), "{e}");
+        assert!(e.contains(zk_ssl_air::PANICO_RECOGIDO) && e.contains("panico inyectado"), "{e}");
+        let bueno = format!("{}/../../spec/vectors/{}", env!("CARGO_MANIFEST_DIR"), VECTORES[0]);
+        assert_eq!(correr_sin_panico(|| correr(&bueno)), Ok(()));
+    }
+
+    #[test]
+    fn la_cabecera_byte_a_byte_es_err_y_nunca_panico() {
+        let mut c = Cuenta::default();
+        for nombre in VECTORES {
+            let mut m: Vec<Vec<(usize, u8)>> =
+                (0..50).flat_map(|i| VALORES.iter().map(move |&v| vec![(i, v)])).collect();
+            m.push(vec![(46, 0)]);
+            barrer(nombre, &m, &mut c);
+        }
+        eprintln!("sin panico cabecera: {} mutaciones", c.mutaciones);
+        c.exigir_limpio("la cabecera");
+    }
+
+    #[test]
+    fn cada_byte_de_forma_es_err_y_nunca_panico() {
+        let mut c = Cuenta::default();
+        for nombre in VECTORES {
+            let p = vector(nombre);
+            let b = hex_a_bytes(p["prueba"].as_str().unwrap()).unwrap();
+            let forma = bytes_de_forma(&b);
+            let m: Vec<Vec<(usize, u8)>> =
+                forma.iter().flat_map(|&i| VALORES.iter().map(move |&v| vec![(i, v)])).collect();
+            barrer(nombre, &m, &mut c);
+        }
+        eprintln!("sin panico forma: {} mutaciones", c.mutaciones);
+        c.exigir_limpio("la forma");
+    }
+
+    /// Las capas FRI son las que el dominio exige, ni una menos ni una mas, y lo dice la causa
+    /// del fork. Medido antes del arreglo: con la ultima capa quitada -bytes bien formados-, el
+    /// verificador hacia `remove(0)` sobre un vector vacio dentro de `verify`, un panico; y con una
+    /// capa de mas, bien formada y nunca leida, la prueba VERIFICABA con otros bytes y otra huella.
+    #[test]
+    fn una_capa_fri_de_menos_o_de_mas_es_err_con_causa_y_no_panico() {
+        for nombre in VECTORES {
+            let p = vector(nombre);
+            let j = juez_de(&p);
+            let b = hex_a_bytes(p["prueba"].as_str().unwrap()).unwrap();
+            let r = recorrer(&b);
+            let (desde, hasta, profundidad) = *r.capas.last().expect("hay capas FRI");
+            // una de menos: la ultima fuera, y la cuenta un byte por debajo
+            let mut menos = b[..desde].to_vec();
+            menos.extend_from_slice(&b[hasta..]);
+            menos[r.capas_en] -= 1;
+            // una de mas: tras la ultima, una capa de un solo grupo de 8 valores de 16 bytes, con
+            // un lote vacio de la profundidad que toca (el plegado de la casa es 8: tres niveles
+            // menos) y ninguna sal
+            let mut capa = Vec::new();
+            capa.extend_from_slice(&128u32.to_le_bytes());
+            capa.extend_from_slice(&[0u8; 128]);
+            let lote = [profundidad - 3, 0x01, 0, 0, 0, 0];
+            capa.extend_from_slice(&(lote.len() as u32).to_le_bytes());
+            capa.extend_from_slice(&lote);
+            let mut mas = b[..hasta].to_vec();
+            mas.extend_from_slice(&capa);
+            mas.extend_from_slice(&b[hasta..]);
+            mas[r.capas_en] += 1;
+            for (que, prueba) in [("de menos", menos), ("de mas", mas)] {
+                let v = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| juzgar(&j, &prueba)))
+                    .unwrap_or_else(|_| panic!("CRITICO: {nombre}, una capa FRI {que}: panico"));
+                let e = v.expect_err(&format!("{nombre}: una capa FRI {que} no puede verificar"));
+                assert!(e.contains(zk_ssl_air::causa::FRI), "{nombre}, una capa {que}: {e}");
+            }
+        }
+    }
+
+    #[test]
+    fn la_prueba_entera_al_azar_es_err_y_nunca_panico() {
+        let presupuesto = std::env::var("ARQUEO_SIN_PANICO_PRESUPUESTO")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(PRESUPUESTO);
+        let mut c = Cuenta::default();
+        let mut azar = Azar(SEMILLA);
+        for nombre in VECTORES {
+            let p = vector(nombre);
+            let largo = hex_a_bytes(p["prueba"].as_str().unwrap()).unwrap().len();
+            let m: Vec<Vec<(usize, u8)>> = (0..presupuesto)
+                .map(|_| {
+                    let k = 1 + (azar.siguiente() % 3) as usize;
+                    (0..k)
+                        .map(|_| {
+                            let i = (azar.siguiente() % largo as u64) as usize;
+                            (i, azar.siguiente() as u8)
+                        })
+                        .collect()
+                })
+                .collect();
+            barrer(nombre, &m, &mut c);
+        }
+        eprintln!("sin panico azar: {} mutaciones (semilla {SEMILLA:#x})", c.mutaciones);
+        c.exigir_limpio("el azar");
     }
 }

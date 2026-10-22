@@ -27,7 +27,8 @@ impl Context {
     /// Creates a new context for a computation described by the specified field, trace info, proof
     /// options, and total number of constraints.
     ///
-    /// # Panics
+    /// # Errors
+    /// ARQUEO (§711): devuelve error donde upstream entraba en panico:
     /// - If either trace length or the LDE domain size implied by the trace length and the blowup
     ///   factor is greater then [u32::MAX].
     /// - If the number of constraints is not greater than 0.
@@ -36,24 +37,45 @@ impl Context {
         trace_info: TraceInfo,
         options: ProofOptions,
         num_constraints: usize,
-    ) -> Self {
+    ) -> Result<Self, &'static str> {
         // TODO: return errors instead of panicking?
+        // ARQUEO (§711): hecho. Las condiciones viven en `validar`, la misma lista con la que
+        // `read_from` rechaza lo que trae la prueba.
+        Self::validar(trace_info.length(), options.blowup_factor(), num_constraints)?;
 
-        let trace_length = trace_info.length();
-        assert!(trace_length <= u32::MAX as usize, "trace length too big");
-
-        let lde_domain_size = trace_length * options.blowup_factor();
-        assert!(lde_domain_size <= u32::MAX as usize, "LDE domain size too big");
-
-        assert!(num_constraints > 0, "number of constraints should be greater than zero");
-        assert!(num_constraints <= u32::MAX as usize, "number of constraints is too big");
-
-        Context {
+        Ok(Context {
             trace_info,
             field_modulus_bytes: B::get_modulus_le_bytes(),
             options,
             num_constraints,
+        })
+    }
+
+    /// ARQUEO (§711): las condiciones de [Context::new], en su orden y con su texto, sin panico.
+    /// El producto de la longitud por la expansion se comprueba sin desbordar: con `usize` de 32
+    /// bits -el kit compilado a WebAssembly- `2^31 * 128` daba la vuelta, y el desbordamiento es
+    /// panico en release desde el §669.
+    fn validar(
+        trace_length: usize,
+        blowup_factor: usize,
+        num_constraints: usize,
+    ) -> Result<(), &'static str> {
+        if trace_length > u32::MAX as usize {
+            return Err("trace length too big");
         }
+
+        match trace_length.checked_mul(blowup_factor) {
+            Some(lde_domain_size) if lde_domain_size <= u32::MAX as usize => {},
+            _ => return Err("LDE domain size too big"),
+        }
+
+        if num_constraints == 0 {
+            return Err("number of constraints should be greater than zero");
+        }
+        if num_constraints > u32::MAX as usize {
+            return Err("number of constraints is too big");
+        }
+        Ok(())
     }
 
     // PUBLIC ACCESSORS
@@ -175,6 +197,14 @@ impl Deserializable for Context {
         // read total number of constraints
         let num_constraints = source.read_usize()?;
 
+        // ARQUEO (§711): el contexto que trae la prueba cumple lo que `new` exige. Upstream no lo
+        // miraba, y un dominio de extension que no cabe en 32 bits llegaba al verificador.
+        Self::validar(trace_info.length(), options.blowup_factor(), num_constraints).map_err(
+            |detalle| {
+                DeserializationError::InvalidValue(format!("{}: {detalle}", crate::causa::CONTEXTO))
+            },
+        )?;
+
         Ok(Context {
             trace_info,
             field_modulus_bytes,
@@ -252,7 +282,8 @@ mod tests {
         );
         let trace_info =
             TraceInfo::new_multi_segment(main_width, aux_width, aux_rands, trace_length, vec![]);
-        let context = Context::new::<BaseElement>(trace_info, options, num_constraints);
+        let context = Context::new::<BaseElement>(trace_info, options, num_constraints)
+            .expect("un contexto valido");
         assert_eq!(expected, context.to_elements());
     }
 
@@ -273,7 +304,8 @@ mod tests {
                 BatchingMethod::Linear,
             ),
             100,
-        );
+        )
+        .expect("un contexto valido");
 
         let bytes = context.to_bytes();
 

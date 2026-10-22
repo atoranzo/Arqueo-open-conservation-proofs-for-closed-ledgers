@@ -53,6 +53,8 @@ MENSAJES_DEL_JUEZ = (
     "fuera de 3..=24",
     "mayor que n",
     "forma de traza",
+    # §711: las causas de una prueba mal formada, que pone el fork y repite `stark.py`
+    "prueba mal formada",
 )
 
 

@@ -77,8 +77,8 @@ impl Queries {
     /// Convert internally stored bytes into a set of query values and the corresponding batch
     /// opening proof.
     ///
-    /// # Panics
-    /// Panics if:
+    /// # Errors
+    /// ARQUEO (§711): devuelve error donde upstream entraba en panico:
     /// * `domain_size` is not a power of two.
     /// * `num_queries` is zero.
     /// * `values_per_query` is zero.
@@ -93,13 +93,27 @@ impl Queries {
         H: ElementHasher<BaseField = E::BaseField>,
         V: VectorCommitment<H>,
     {
-        assert!(domain_size.is_power_of_two(), "domain size must be a power of two");
-        assert!(num_queries > 0, "there must be at least one query");
-        assert!(values_per_query > 0, "a query must contain at least one value");
+        // ARQUEO (§711): `num_queries` es el numero de consultas unicas que trae la prueba, y
+        // con cero el `assert!` de upstream era un panico dentro de `verify` (medido: el byte 46
+        // de las pruebas de edad y de pago). `verify` lo devuelve como `VerifierError`.
+        let fuera = |detalle: &str| {
+            DeserializationError::InvalidValue(format!("{}: {detalle}", crate::causa::CONSULTAS))
+        };
+        if !domain_size.is_power_of_two() {
+            return Err(fuera("domain size must be a power of two"));
+        }
+        if num_queries == 0 {
+            return Err(fuera("there must be at least one query"));
+        }
+        if values_per_query == 0 {
+            return Err(fuera("a query must contain at least one value"));
+        }
 
         // make sure we have enough bytes to read the expected number of queries
         let num_query_bytes = E::ELEMENT_BYTES * values_per_query;
-        let expected_bytes = num_queries * num_query_bytes;
+        let expected_bytes = num_queries
+            .checked_mul(num_query_bytes)
+            .ok_or_else(|| fuera("the query values do not fit in memory"))?;
         if self.values.len() != expected_bytes {
             return Err(DeserializationError::InvalidValue(format!(
                 "expected {} query value bytes, but was {}",

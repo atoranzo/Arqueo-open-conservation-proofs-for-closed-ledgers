@@ -7,7 +7,8 @@ hasta esta correccion aqui decia <<que ningun probador de ARQUEO devuelve>>, cie
 `src/constraints/composition_poly.rs`, `src/domain.rs`, `src/lib.rs`, `src/errors.rs` y
 `src/trace/mod.rs` (`Trace::comprobar`, S537: el probador oculto devuelve Err con un testigo
 malo) y, con una sola linea, `src/trace/trace_table.rs` (spike-b-p4r3, sesiones 166 a 172, y
-la 176); todo lo demas es upstream byte a byte. Entra por
+la 176), y desde el §711 `src/channel.rs`, que desenvuelve el `Result` de `Context::new` con el mismo
+panico de upstream; todo lo demas es upstream byte a byte. Entra por
 `[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`,
 y desde el §694 su `Cargo.toml` clava sus dependencias `winter-*` con `=0.13.1` donde upstream
 pide `0.13`. Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.

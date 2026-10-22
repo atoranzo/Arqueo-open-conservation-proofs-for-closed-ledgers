@@ -115,6 +115,14 @@ impl<H: Hasher> Deserializable for VariasConSal<H> {
     }
 }
 
+/// §711: la causa con nombre de un lote cuya profundidad no cabe. Se lee como las de
+/// `winter_air::causa`, y la segunda implementacion la repite.
+pub const LOTE_FUERA_DE_RANGO: &str = "prueba mal formada: lote fuera de rango";
+
+/// §711: la profundidad mayor de un lote que se lee: un dominio de 2^31 hojas, el mayor que admite
+/// `Context::new` (`u32::MAX`).
+const PROFUNDIDAD_MAXIMA: u8 = 31;
+
 /// §575: ¿caben `n` elementos -de al menos un byte cada uno- en lo que queda? Falla cerrado ANTES
 /// de reservar, con el mismo `UnexpectedEOF` que daria quedarse sin bytes. `n` se acota primero: el
 /// `check_eor` de `SliceReader` suma `pos + n`, y con un `n` gigante esa suma da la vuelta.
@@ -135,6 +143,15 @@ fn leer_lote<H: Hasher, R: ByteReader>(
     source: &mut R,
 ) -> Result<<MerkleTree<H> as VectorCommitment<H>>::MultiProof, DeserializationError> {
     let depth = source.read_u8()?;
+    // §711: `get_multiproof_domain_len` de winter-crypto 0.13.1 desplaza `1 << depth`, y con 64 o
+    // mas -32 o mas con `usize` de 32 bits, el kit en WebAssembly- desborda: panico en release
+    // desde el §669, dentro de `VariasConSal::read_from`, que lo llama antes de comparar el
+    // dominio. Un dominio de la casa cabe en 32 bits (`Context::new`): su arbol, en 31 niveles.
+    if depth > PROFUNDIDAD_MAXIMA {
+        return Err(DeserializationError::InvalidValue(format!(
+            "{LOTE_FUERA_DE_RANGO}: un lote de {depth} niveles; caben {PROFUNDIDAD_MAXIMA}"
+        )));
+    }
     let vectores = source.read_usize()?;
     caben(source, vectores)?;
     let mut nodes = Vec::with_capacity(vectores);
@@ -503,11 +520,14 @@ mod tests {
 
     #[test]
     fn mas_sales_que_bytes_falla_cerrado_aunque_quepan_en_el_arbol() {
-        // un `depth` de 40 deja pasar el tope de hojas con 2^32 - 1 sales: lo para la cuenta
+        // un `depth` de 31 deja pasar el tope de hojas con 2^31 sales: lo para la cuenta.
+        // §711: aqui decia 40 y 2^32 - 1; desde el §711 un lote de mas de 31 niveles se rechaza
+        // antes, por su profundidad (el testigo de abajo), y el de la cuenta se mide con el mayor
+        // que se lee.
         let b = bytes_de(|b| {
-            b.write_u8(40);
+            b.write_u8(31);
             b.write_usize(0);
-            b.write_u32(u32::MAX);
+            b.write_u32(1 << 31);
         });
         assert!(es_eof(VariasConSal::<Blake3>::read_from(&mut SliceReader::new(&b))));
     }
@@ -528,7 +548,8 @@ mod tests {
             BatchingMethod::Linear,
             BatchingMethod::Linear,
         );
-        let contexto = Context::new::<BaseElement>(TraceInfo::new(8, 8), opciones, 1);
+        let contexto = Context::new::<BaseElement>(TraceInfo::new(8, 8), opciones, 1)
+            .expect("un contexto valido");
         let b = bytes_de(|b| {
             contexto.write_into(b);
             b.write_u8(1); // num_unique_queries
@@ -536,5 +557,30 @@ mod tests {
             b.write_usize(1 << 40); // los `values` de la primera `Queries`
         });
         assert!(es_eof(Proof::from_bytes(&b)));
+    }
+
+    /// §711: un lote de mas de 31 niveles es error con su causa, y no un panico. Antes:
+    /// `get_multiproof_domain_len` desplazaba `1 << depth` dentro de `read_from`, y con 64 o mas
+    /// desbordaba (panico en release desde el §669). Falsador: sin la cota, los de 64, 200 y 255
+    /// entran en panico, y el de 32, que en 64 bits desplaza sin desbordar, no da esta causa.
+    #[test]
+    fn un_lote_demasiado_profundo_es_error_con_causa_y_no_panico() {
+        for depth in [32u8, 64, 200, 255] {
+            let b = bytes_de(|b| {
+                b.write_u8(depth);
+                b.write_usize(0);
+                b.write_u32(0);
+            });
+            let r = std::panic::catch_unwind(|| {
+                VariasConSal::<Blake3>::read_from(&mut SliceReader::new(&b))
+            })
+            .unwrap_or_else(|_| panic!("CRITICO: un lote de {depth} niveles hace entrar en panico"));
+            match r {
+                Err(DeserializationError::InvalidValue(m)) => {
+                    assert!(m.starts_with(LOTE_FUERA_DE_RANGO), "{depth}: {m}")
+                },
+                otro => panic!("{depth}: se esperaba la causa del lote, y dio {:?}", otro.err()),
+            }
+        }
     }
 }

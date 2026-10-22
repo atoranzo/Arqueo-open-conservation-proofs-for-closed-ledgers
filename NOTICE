@@ -34,11 +34,17 @@ crates/winter-air/, crates/winter-prover/, crates/winter-verifier/
     Modificación funcional: la ocultación del testigo dentro del núcleo
     (RFC-0009, D-F a D-K), que entró APAGADA en el asiento §533, se
     enciende por `Prover::ocultacion` desde el §534 y la devuelven los 23
-    probadores con fila de ARQUEO desde el §538 (E3b-2); y, desde el
-    §575, un lector acotado para que una prueba malformada no aborte el
-    proceso. Once ficheros tocados y tres nuevos (`src/air/oculta.rs`,
-    `src/marca.rs`, `src/proof/acotado.rs`), listados en el README de
-    cada crate. Con la ocultación apagada cada prueba sale byte a byte
+    probadores con fila de ARQUEO desde el §538 (E3b-2); desde el §575,
+    un lector acotado para que una prueba malformada no aborte el
+    proceso; y, desde el §711, la validación previa de lo que se lee de
+    una prueba: se rechaza con su causa, sin pánico. Con ella el fork
+    acepta menos que upstream: una sola partición FRI, la única que
+    escribe `winter-fri` 0.13.1, y las capas FRI que el dominio exige, ni
+    una más; una capa de más que antes verificaba se rechaza. Diecinueve
+    ficheros tocados y cinco nuevos (`src/air/oculta.rs`, `src/marca.rs`,
+    `src/proof/acotado.rs`, `src/causa.rs`,
+    `src/proof/tests_sin_panico.rs`), listados en el README de cada
+    crate. Con la ocultación apagada cada prueba sale byte a byte
     como la de winterfell, y `crates/stark-experiment/src/kat_probador.rs`
     lo comprueba en cada canon.
     ⚠️ Corregido (§623):
@@ -47,6 +53,9 @@ crates/winter-air/, crates/winter-prover/, crates/winter-verifier/
     probador de ARQUEO devuelve»; lo segundo dejó de ser cierto en el
     §538 y lo primero en el §537 y el §575. El error se registra en vez
     de borrarse.
+    ⚠️ §711: decía «Once ficheros tocados y tres nuevos», sin los dos
+    últimos de la lista, y la modificación funcional acababa en el
+    lector acotado del §575.
 
 crates/zk-ssl-medio/  (§631)
 

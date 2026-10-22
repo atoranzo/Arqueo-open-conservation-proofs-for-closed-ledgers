@@ -111,6 +111,20 @@ where
         let (fri_layer_queries, fri_layer_proofs) = fri_proof
             .parse_layers::<E, H, V>(lde_domain_size, fri_options.folding_factor())
             .map_err(|err| VerifierError::ProofDeserializationError(err.to_string()))?;
+        // ARQUEO (§711): las capas son las que el dominio exige, ni una menos ni una mas.
+        // `parse_layers` lee las que traiga la prueba; con menos, `take_next_fri_layer_proof`
+        // hacia `remove(0)` sobre un vector vacio dentro de `verify`, un panico; con mas, la
+        // prueba verificaba con bytes de sobra y otra huella. Los compromisos ya se leen con esta
+        // misma cuenta.
+        let num_fri_layers = fri_options.num_fri_layers(lde_domain_size);
+        if fri_layer_queries.len() != num_fri_layers {
+            return Err(VerifierError::ProofDeserializationError(format!(
+                "{}: the proof has {} FRI layers and the domain requires {}",
+                air::causa::FRI,
+                fri_layer_queries.len(),
+                num_fri_layers
+            )));
+        }
 
         // --- parse out-of-domain evaluation frame -----------------------------------------------
         let (ood_trace_frame, ood_constraint_evaluations) = ood_frame
@@ -324,13 +338,15 @@ where
         air: &A,
         num_queries: usize,
     ) -> Result<Self, VerifierError> {
-        assert_eq!(
-            queries.len(),
-            air.trace_info().num_segments(),
-            "expected {} trace segment queries, but received {}",
-            air.trace_info().num_segments(),
-            queries.len()
-        );
+        // ARQUEO (§711): como error y no como `assert_eq!`. `Proof::read_from` lee tantas como
+        // segmentos declara su traza, que es la del AIR; una `Proof` armada en memoria no.
+        if queries.len() != air.trace_info().num_segments() {
+            return Err(VerifierError::ProofDeserializationError(format!(
+                "expected {} trace segment queries, but received {}",
+                air.trace_info().num_segments(),
+                queries.len()
+            )));
+        }
 
         // parse main trace segment queries
         let main_segment_width = air.trace_info().main_trace_width();

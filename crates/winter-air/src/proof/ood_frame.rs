@@ -3,7 +3,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
 
 use math::FieldElement;
 use utils::{
@@ -112,10 +112,10 @@ impl OodFrame {
     /// Returns an out-of-domain trace frame and an out-of-domain constraints evaluations frame.
     /// contained in `self`.
     ///
-    /// # Panics
-    /// Panics if either `main_trace_width` or `num_evaluations` are equal to zero.
-    ///
     /// # Errors
+    /// ARQUEO (§711): devuelve error, y no entra en panico, si `main_trace_width` o
+    /// `num_evaluations` son cero, o si un marco no tiene dos filas.
+    ///
     /// Returns an error if:
     /// * Valid [`TraceOodFrame`]s for the specified `main_trace_width` and `aux_trace_width`
     ///   could not be parsed from the internal bytes.
@@ -128,15 +128,27 @@ impl OodFrame {
         aux_trace_width: usize,
         num_quotients: usize,
     ) -> Result<(TraceOodFrame<E>, QuotientOodFrame<E>), DeserializationError> {
-        assert!(main_trace_width > 0, "trace width cannot be zero");
-        assert!(num_quotients > 0, "number of evaluations cannot be zero");
+        // ARQUEO (§711): el tamano del marco es un byte de la prueba, y upstream lo exigia con
+        // `assert_eq!`: otro valor era un panico dentro de `verify`. Las mismas condiciones, como
+        // error con su causa.
+        let fuera = |detalle: String| {
+            DeserializationError::InvalidValue(format!("{}: {detalle}", crate::causa::MARCO_OOD))
+        };
+        if main_trace_width == 0 {
+            return Err(fuera("trace width cannot be zero".into()));
+        }
+        if num_quotients == 0 {
+            return Err(fuera("number of evaluations cannot be zero".into()));
+        }
 
         // parse main and auxiliary trace evaluation frames. This does the reverse operation done in
         // `set_trace_states()`.
         let (trace_current_row, trace_next_row) = {
             let mut reader = SliceReader::new(&self.trace_states);
             let frame_size = reader.read_u8()? as usize;
-            assert_eq!(frame_size, 2);
+            if frame_size != 2 {
+                return Err(fuera(format!("expected a frame of 2 rows, but was {frame_size}")));
+            }
             let mut trace = reader.read_many((main_trace_width + aux_trace_width) * frame_size)?;
 
             if reader.has_more_bytes() {
@@ -153,7 +165,9 @@ impl OodFrame {
         let (quotients_current_row, quotients_next_row) = {
             let mut reader = SliceReader::new(&self.quotient_states);
             let frame_size = reader.read_u8()? as usize;
-            assert_eq!(frame_size, 2);
+            if frame_size != 2 {
+                return Err(fuera(format!("expected a frame of 2 rows, but was {frame_size}")));
+            }
             let mut quotients_evaluations = reader.read_many(num_quotients * frame_size)?;
 
             if reader.has_more_bytes() {

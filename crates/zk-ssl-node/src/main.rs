@@ -3549,9 +3549,22 @@ fn dispatch_con_estado(
                 era,
                 hash_prueba,
                 || {
-                    // El veredicto se BINDEA en vez de encadenarse: asi el falsador por mutacion
-                    // del bloque puede anular la puerta con UNA linea y sin dejar nada sin usar.
-                    let veredicto = zk_ssl_air::prenda::verificar_contra_cabeza(&p.prueba.0, &af, &cab);
+                    // El veredicto se BINDEA en vez de encadenarse: asi el falsador por
+                    // mutacion del bloque puede anular la puerta con UNA sentencia y sin
+                    // dejar nada sin usar.
+                    //
+                    // ⚠️ §711: la prueba es AJENA, y se juzga con el `estado` tomado. Un
+                    // panico del juez envenenaba el candado y llevaba el nodo a PARADA, y
+                    // desde el §815 dejaba ademas su `rx` HUECO. Por eso va dentro de la
+                    // red, y la red va aqui y no en el juez: dentro del juez taparia los
+                    // falsadores de panico del kit y de la capa. Y solo el juez:
+                    // `apply_consumo` muta, y queda FUERA. Un panico recogido es un rechazo
+                    // juzgado (`NoVerifica`), con su hoja y su recibo, como cualquier otro.
+                    // Lo vigila `toda_prueba_ajena_que_juzga_el_nodo_va_dentro_de_la_red`.
+                    let veredicto = zk_ssl_air::sin_panico(
+                        || zk_ssl_air::prenda::verificar_contra_cabeza(&p.prueba.0, &af, &cab),
+                        |m| m,
+                    );
                     match veredicto {
                         Err(e) => JuicioPrenda::NoVerifica(e),
                         Ok(_) => JuicioPrenda::Capa(l.apply_consumo(marca)),
@@ -4557,6 +4570,10 @@ fn punto_de_corte(_punto: PuntoDeCorte) {
 /// nadie puede resolver. Y, **con `--ledger`**, una hoja de una operación APLICADA nace después del
 /// `flush` de su asiento: quien tenga la hoja tiene el acuse.
 ///
+/// ⚠️ §711: un pánico al juzgar una prueba AJENA -dentro de la red de la capa, o de la del juez de
+/// la prenda- ya no corta la evaluación: se recoge, y es un rechazo juzgado con su hoja. El hueco
+/// queda para un pánico fuera de la red, como el de la capa al mutar el estado.
+///
 /// ⚠️ Sin `--ledger` eso NO vale (la A8 de juicio0 y de juicio2; DEDUCIDO de leer el código, sin
 /// medir; residuo declarado en `SECURITY.md` §3.15): el libro vive en memoria y su `commit` no
 /// escribe nada (`persistence.rs`, sin almacén), mientras el contador y el registro de recepción
@@ -4913,6 +4930,221 @@ mod tests {
         assert!(!app.estado.is_poisoned());
         let r2 = despachar(&app, "zkssl_supply", || dispatch(&app, "zkssl_supply", json!({})));
         assert!(r2.is_ok(), "la peticion siguiente se sirve: {r2:?}");
+    }
+
+    /// §711, junto al §650: un `zkssl_applySend` honesto con el byte 34 de su prueba -las consultas
+    /// de sus opciones- a cero. Antes: `winter-air` entraba en panico en `options.rs:143` dentro de
+    /// la capa, con el `estado` tomado; el candado quedaba envenenado y el nodo pasaba a PARADA
+    /// (medido con el kit sobre la misma mutacion: salida 101). Ahora: un error con la causa del
+    /// fork, sin PARADA y con el candado sano, y el mismo envio sin tocar se aplica despues.
+    #[test]
+    fn un_envio_con_cero_consultas_es_error_y_el_nodo_no_para() {
+        use winterfell::math::fields::f64::BaseElement as E;
+        use zk_ssl::tests_support as ts;
+        let app = nodo(60);
+        let params = {
+            let mut e = app.estado.lock().expect("mutex");
+            let alice = ts::open_and_fund(&mut e.layer, ts::SK_ALICE, 1_000_000);
+            let bob = ts::open_and_fund(&mut e.layer, ts::SK_BOB, 0);
+            let ea = ts::state_of(&e.layer, alice);
+            let receptor = e.layer.public_id_of(bob).expect("bob");
+            let recibo = e
+                .layer
+                .send(E::new(ts::SK_ALICE), alice, &ea, receptor, ts::salt_de(0x701), 250_000)
+                .expect("envio");
+            json!({
+                "receipt": wire::SendReceiptDto::from(&recibo),
+                "sender": Q(alice),
+                "senderState": wire::ClientStateDto::from(&ea),
+                "amount": Q(250_000),
+            })
+        };
+        let mut malo = params.clone();
+        let mut h = malo["receipt"]["proof"].as_str().expect("la prueba en hex").to_string();
+        assert_eq!(&h[2 + 68..2 + 70], "2a", "el byte 34 son las 42 consultas de la casa");
+        h.replace_range(2 + 68..2 + 70, "00");
+        malo["receipt"]["proof"] = json!(h);
+        let r = despachar(&app, "zkssl_applySend", || dispatch(&app, "zkssl_applySend", malo));
+        let e = r.expect_err("una prueba con cero consultas no puede dar Ok");
+        assert_ne!(e.code, -32603, "no es un panico: {}", e.message);
+        assert!(e.message.contains(zk_ssl_air::causa::OPCIONES), "{}", e.message);
+        assert!(!e.message.contains(zk_ssl_air::PANICO_RECOGIDO), "lo recogio la red: {}", e.message);
+        assert!(app.parada.get().is_none(), "el nodo NO puede quedar en PARADA");
+        assert!(!app.estado.is_poisoned());
+        let r2 = despachar(&app, "zkssl_applySend", || dispatch(&app, "zkssl_applySend", params));
+        assert!(r2.is_ok(), "el envio honesto se aplica despues: {r2:?}");
+    }
+
+    /// §711: el codigo de PRODUCCION de un fuente del nodo, sin sus `mod` de test. Un `mod ... {`
+    /// en la columna 0 que sigue a un `#[cfg(test)]` (con sus docs y atributos en medio) se salta
+    /// hasta su `}` en la columna 0, que es donde lo cierra rustfmt.
+    fn sin_mod_de_test(fuente: &str) -> Vec<&str> {
+        let mut prod = Vec::new();
+        let (mut tras_cfg, mut en_test) = (false, false);
+        for l in fuente.lines() {
+            if en_test {
+                en_test = l != "}";
+                continue;
+            }
+            let es_mod = ["mod ", "pub mod ", "pub(crate) mod "].iter().any(|m| l.starts_with(m));
+            if tras_cfg && es_mod && l.ends_with('{') {
+                (tras_cfg, en_test) = (false, true);
+                continue;
+            }
+            if l == "#[cfg(test)]" {
+                tras_cfg = true;
+            } else if !(tras_cfg && (l.starts_with("///") || l.starts_with("#["))) {
+                tras_cfg = false;
+            }
+            prod.push(l);
+        }
+        prod
+    }
+
+    /// §711: las lineas de `prod` con `aguja` que NO van dentro de la red. Dentro es: la red en la
+    /// misma linea, antes de la aguja; o la red en una de las lineas que la ENCIERRAN, que se
+    /// buscan hacia atras por sangria (cada una con menos que la anterior) hasta el `fn` que la
+    /// contiene. Asi una red de otro brazo del mismo `fn` no cuenta.
+    fn fuera_de_la_red<'a>(prod: &[&'a str], aguja: &str) -> (usize, Vec<&'a str>) {
+        let red = concat!("zk_ssl_air::sin", "_panico(");
+        let sangria = |l: &str| l.len() - l.trim_start().len();
+        let (mut total, mut fuera) = (0, Vec::new());
+        for (i, l) in prod.iter().enumerate() {
+            let Some(en) = l.find(aguja) else { continue };
+            if l.trim_start().starts_with("//") {
+                continue;
+            }
+            total += 1;
+            if l.find(red).is_some_and(|r| r < en) {
+                continue;
+            }
+            let mut nivel = sangria(l);
+            let mut dentro = false;
+            for x in prod[..i].iter().rev() {
+                if x.trim().is_empty() || sangria(x) >= nivel || x.trim_start().starts_with("//") {
+                    continue;
+                }
+                if x.contains(red) {
+                    dentro = true;
+                    break;
+                }
+                let t = x.trim_start();
+                if ["fn ", "pub fn ", "pub(crate) fn "].iter().any(|f| t.starts_with(f)) {
+                    break;
+                }
+                nivel = sangria(x);
+            }
+            if !dentro {
+                fuera.push(*l);
+            }
+        }
+        (total, fuera)
+    }
+
+    /// **§711 · Toda prueba AJENA que el nodo juzga POR SU CUENTA va dentro de la red del panico.**
+    /// Hoy es una: la prenda de `zkssl_pledge`, que se juzga con el `estado` tomado, y su recepcion
+    /// se anota tras el veredicto (§815). Lo demas que llega con prueba lo juzga la capa, con su red y su censo
+    /// (`toda_verificacion_ajena_de_la_capa_va_dentro_de_la_red`, en `zk-ssl`). Mira el codigo de
+    /// produccion de todos los fuentes del nodo y cuenta cada juez de prueba STARK: los
+    /// `verificar_contra_cabeza` y los `verificar` de `zk_ssl_air`, `verify::<` y
+    /// `verify_threshold_pair`. Un juez nuevo del nodo cae aqui. Falsador: sin la red en
+    /// `zkssl_pledge`, el censo nombra su linea.
+    #[test]
+    fn toda_prueba_ajena_que_juzga_el_nodo_va_dentro_de_la_red() {
+        let agujas = [
+            concat!("verificar_contra", "_cabeza("),
+            concat!("::verificar", "("),
+            concat!("verify", "::<"),
+            concat!("verify_threshold", "_pair("),
+        ];
+        let fuentes = [
+            ("main.rs", include_str!("main.rs")),
+            ("latido.rs", include_str!("latido.rs")),
+            ("diario.rs", include_str!("diario.rs")),
+            ("recepcion.rs", include_str!("recepcion.rs")),
+            ("registro_recepcion.rs", include_str!("registro_recepcion.rs")),
+            ("vista_acuses.rs", include_str!("vista_acuses.rs")),
+            ("vista_recibos.rs", include_str!("vista_recibos.rs")),
+            ("firma_cabeza.rs", include_str!("firma_cabeza.rs")),
+        ];
+        // que no se escape un fuente nuevo: cada `mod x;` de main.rs esta en la lista
+        for l in sin_mod_de_test(fuentes[0].1) {
+            if let Some(m) = l.strip_prefix("mod ").and_then(|r| r.strip_suffix(';')) {
+                let f = format!("{m}.rs");
+                assert!(fuentes.iter().any(|(n, _)| *n == f), "`mod {m};` sin censar");
+            }
+        }
+        let mut total = 0;
+        for (nombre, fuente) in fuentes {
+            let prod = sin_mod_de_test(fuente);
+            if nombre == "main.rs" {
+                // que el recorte no se coma el codigo: el brazo de la prenda sigue ahi, y este
+                // test no
+                let tiene = |x: &str| prod.iter().any(|l| l.contains(x));
+                assert!(tiene("\"zkssl_pledge\" =>"), "main.rs sin la prenda");
+                assert!(!tiene("fn toda_prueba_ajena_que_juzga"), "el recorte deja los tests");
+            }
+            for aguja in agujas {
+                let (n, fuera) = fuera_de_la_red(&prod, aguja);
+                assert!(fuera.is_empty(), "{nombre}: {aguja} fuera de la red: {fuera:?}");
+                total += n;
+            }
+        }
+        assert_eq!(total, 1, "el nodo juzga por su cuenta UNA prueba ajena: la prenda");
+    }
+
+    /// §711: el censo distingue. Una red en la misma linea o en una que encierra al juez vale; una
+    /// de otro brazo, o ninguna, no.
+    #[test]
+    fn el_censo_de_la_red_del_nodo_distingue() {
+        let j = concat!("verificar_contra", "_cabeza(");
+        let dentro = [
+            "fn f() {",
+            "    let v = zk_ssl_air::sin_panico(",
+            "        || verificar_contra_cabeza(a),",
+            "        |m| m,",
+            "    );",
+            "}",
+        ];
+        let linea = [
+            "fn f() {",
+            "    let v = zk_ssl_air::sin_panico(|| verificar_contra_cabeza(a), |m| m);",
+            "}",
+        ];
+        let otro_brazo = [
+            "fn f() {",
+            "    match x {",
+            "        A => zk_ssl_air::sin_panico(|| g(), |m| m),",
+            "        B => {",
+            "            let v = verificar_contra_cabeza(a);",
+            "        }",
+            "    }",
+            "}",
+        ];
+        let sin_red = ["fn f() {", "    let v = verificar_contra_cabeza(a);", "}"];
+        let test = [
+            "fn f() {}",
+            "#[cfg(test)]",
+            "/// doc",
+            "mod tests {",
+            "    fn g() { verificar_contra_cabeza(a); }",
+            "}",
+            "fn h() {}",
+        ];
+        for (fuente, n, fuera) in [
+            (&dentro[..], 1, 0),
+            (&linea[..], 1, 0),
+            (&otro_brazo[..], 1, 1),
+            (&sin_red[..], 1, 1),
+            (&test[..], 0, 0),
+        ] {
+            let fuente = fuente.join("\n");
+            let prod = sin_mod_de_test(&fuente);
+            let (t, f) = fuera_de_la_red(&prod, j);
+            assert_eq!((t, f.len()), (n, fuera), "{fuente}");
+        }
+        let test = test.join("\n");
+        assert_eq!(sin_mod_de_test(&test), vec!["fn f() {}", "#[cfg(test)]", "/// doc", "fn h() {}"]);
     }
 
     /// §655 (SEG-06 c): un rechazo de la capa con causa `Store` (el disco fallo despues de mutar
@@ -7514,6 +7746,32 @@ mod tests {
         let r = v["reason"].as_str().expect("reason");
         assert!(r.contains("no verifica"), "el rechazo tiene que decir QUE paso: {r}");
         assert!(!marca_ya_estaba(&app, &s.marca), "NADA se escribe si la prueba no verifica");
+    }
+
+    /// §711: la prenda es la unica prueba ajena que el nodo juzga por su cuenta, con el `estado`
+    /// tomado. Con el byte 34 -las consultas de sus opciones- a cero, antes el juez entraba en
+    /// panico: el kit de 161a233, antes de este arreglo, con esa mutacion de `prenda/prenda.json`, sale con 101 en
+    /// `options.rs:143`.
+    /// Ahora es un rechazo con la causa del fork y su recibo, sin la marca de la red, sin PARADA,
+    /// con el candado sano y sin escribir la marca; y el sobre sin tocar entra despues.
+    #[test]
+    fn una_prenda_con_cero_consultas_se_rechaza_con_causa_y_el_nodo_no_para() {
+        let (app, pv, l) = escena("pledge_cero_consultas");
+        let s = sobre_de_prenda(&app, &pv, 0xB519, &l);
+        let mut malo = s.clone();
+        assert_eq!(malo.prueba[34], 42, "el byte 34 son las 42 consultas de la casa");
+        malo.prueba[34] = 0;
+        let v = despachar(&app, "zkssl_pledge", || pledge(&app, &malo))
+            .expect("un sobre malo no es un error del que llama");
+        assert_eq!(v["accepted"], json!(false), "{v}");
+        let r = v["reason"].as_str().expect("reason");
+        assert!(r.contains(zk_ssl_air::causa::OPCIONES), "la causa del fork: {r}");
+        assert!(!r.contains(zk_ssl_air::PANICO_RECOGIDO), "lo recogio la red: {r}");
+        assert!(v.get("recepcion").is_some(), "se evaluo, y lleva su recibo: {v}");
+        assert!(app.parada.get().is_none(), "el nodo NO puede quedar en PARADA");
+        assert!(!app.estado.is_poisoned());
+        let v = despachar(&app, "zkssl_pledge", || pledge(&app, &s)).expect("pledge");
+        assert_eq!(v["accepted"], json!(true), "el sobre sin tocar entra despues: {v}");
     }
 
     #[test]

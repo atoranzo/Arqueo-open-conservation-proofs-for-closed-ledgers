@@ -257,10 +257,11 @@ MINIMO_RFC_G = 21
 #           lineas de codigo de security.rs HASTA `mod tests` (de :8 a :346; desde el
 #           `#[cfg(test)]` de :351 hasta el final, :1391, no se lee), linea a linea y en orden, sin
 #           sangria y sin las lineas blancas ni las de comentario `//` -lo de dentro de un `/* */`
-#           cuenta como codigo-. Y CABLEADO: estas 21 funciones de crates/winter-air/src/, cada una
+#           cuenta como codigo-. Y CABLEADO: estas 24 funciones de crates/winter-air/src/, cada una
 #           ENTERA, de la firma a la llave de cierre y sin los atributos `#[...]` que la preceden,
-#           200 lineas, con las mismas reglas, y cada una las veces que dice su cabecera en
-#           CABLEADO (hoy, una), contadas hasta el `#[cfg(test)] mod tests {` de su fichero
+#           263 lineas (⚠️ §711: decia 21 funciones y 200 lineas; abajo, el porque), con las
+#           mismas reglas, y cada una las veces que dice su cabecera en CABLEADO (hoy, una),
+#           contadas hasta el `#[cfg(test)] mod tests {` de su fichero
 #           (proof/mod.rs no lo tiene: su `mod tests;` de :40 no corta, y se lee entero). Cualquier
 #           otra linea del codigo del fork, tambien una por la que pase una entrada de la
 #           formula, NO se vigila aqui: la ceguera nombra lo censado -no es una lista cerrada- y
@@ -288,7 +289,14 @@ MINIMO_RFC_G = 21
 #           - de donde salen opciones y longitud: ProofOptions::new (options.rs:132-185), cuyos
 #             ocho argumentos lee F.0 POR POSICION -el lote lineal, `lotes`, incluido-;
 #             Context::new (proof/context.rs:35-57), que guarda opciones, traza y modulo, y
-#             TraceInfo::new_multi_segment (air/trace_info.rs:84-139), que guarda la longitud;
+#             TraceInfo::new_multi_segment (air/trace_info.rs:84-139), que guarda la longitud.
+#             ⚠️ §711: el fork saca las condiciones de esas tres a un `validar` de cada una, que
+#             `read_from` aplica a lo que lee de una prueba (las tres siguen entrando en panico
+#             con el texto de upstream, y `Context::new` devuelve `Result`). Se anclan con su
+#             forma nueva, y los tres `validar` entran en el cableado: sus condiciones -que acotan
+#             lo que la funcion guarda, como el `as u8` de las consultas- se vigilan como cuando
+#             eran `assert!` de la funcion. Las lineas del fork que cita esta cabecera son las del
+#             §796;
 #           - las dos longitudes, 2T y 2 * CICLO * 2^m: ANCLAS_LONGITUD, en el fuente que las aplica
 #             (crates/zk-ssl/src/lib.rs:255 y crates/zk-ssl-air/src/lib.rs:1027 y :1187), fuera
 #             del fork: cada una, una linea cuyo codigo -sin sangria ni comentario de cola `//`-
@@ -308,7 +316,7 @@ MINIMO_RFC_G = 21
 #           `use security::{...}`, y los demas -`mod context;` (proof/mod.rs:18) entre ellos-
 #           tampoco se vigilan. Lo que da ROJO
 #           FORMULA, y nada mas: una linea de codigo de security.rs ANTES de `mod tests` que
-#           cambia, sobra o falta, con su numero de linea; y una de las 21 funciones del cableado
+#           cambia, sobra o falta, con su numero de linea; y una de las 24 funciones del cableado
 #           que ya no sale tal cual sus veces, con la linea donde se aparta del ancla -o la de la
 #           vez de mas, si sale de mas-; en `:0` si falta la primera linea, si no hay una parecida
 #           o pasadas ocho diferencias. Un cambio del fork fuera de esas lineas solo da rojo si
@@ -320,8 +328,8 @@ MINIMO_RFC_G = 21
 #        atan celda a celda.
 #
 # ACOPLAMIENTO con la zona del fork. F.1 c) ancla, LITERALES, las 213 lineas de codigo de
-# security.rs hasta `mod tests` y las 200 de las 21 funciones del cableado, en cinco ficheros de
-# crates/winter-air/src/ (como ya hace con tres lineas el test del §708,
+# security.rs hasta `mod tests` y las 263 de las 24 funciones del cableado (⚠️ §711: decia 200 de
+# 21), en cinco ficheros de crates/winter-air/src/ (como ya hace con tres lineas el test del §708,
 # crates/zk-ssl-air/src/lib.rs:1153-1169). Un rustfmt o una migracion de winterfell que les cambie
 # la FORMA pone este gate en ROJO FORMULA aunque la formula no cambie. Que hacer: el sello que toque
 # esos ficheros actualiza CODIGO_FORMULA y CABLEADO en el MISMO sello. Que la replica siga siendo la
@@ -450,7 +458,7 @@ MINIMO_RFC_G = 21
 #   - lo que las anclas de c) NO leen, aunque por ahi se compile otra formula: CODIGO_FORMULA
 #     compara las lineas de security.rs HASTA `mod tests`, el CABLEADO solo cuenta cuantas veces
 #     sale cada bloque entero, y `_codigo` solo quita las lineas `//`. Fuera de security.rs,
-#     nada lee los atributos `#[...]` de una de las 21 funciones del cableado ni los del `impl` o el
+#     nada lee los atributos `#[...]` de una de las 24 funciones del cableado ni los del `impl` o el
 #     `mod` que la contiene, ni otra `fn` del mismo nombre, ni distingue lo de dentro de un `/* */`
 #     (en security.rs, antes de `mod tests`, un atributo o una `fn` de mas son lineas que
 #     CODIGO_FORMULA compara, y dan rojo). Medido, sobre una copia del arbol con
@@ -754,7 +762,7 @@ pub fn ceil(value: f64) -> f64 {
 libm::ceil(value)
 }
 """.split("\n") if l)
-# Y el CABLEADO: estas 21 funciones del fork, por su nombre, cada una ENTERA y en orden -de su
+# Y el CABLEADO: estas 24 funciones del fork, por su nombre, cada una ENTERA y en orden -de su
 # firma a su llave de cierre, sin sangria y sin las lineas blancas ni las de comentario `//`; sus
 # atributos `#[...]` no entran-, con las veces que hoy sale hasta el `#[cfg(test)] mod tests {` de
 # su fichero. Cualquier otra funcion del fork fuera de security.rs, tambien una por la que pasen
@@ -800,19 +808,35 @@ pub fn new<B: StarkField>(
 trace_info: TraceInfo,
 options: ProofOptions,
 num_constraints: usize,
-) -> Self {
-let trace_length = trace_info.length();
-assert!(trace_length <= u32::MAX as usize, "trace length too big");
-let lde_domain_size = trace_length * options.blowup_factor();
-assert!(lde_domain_size <= u32::MAX as usize, "LDE domain size too big");
-assert!(num_constraints > 0, "number of constraints should be greater than zero");
-assert!(num_constraints <= u32::MAX as usize, "number of constraints is too big");
-Context {
+) -> Result<Self, &'static str> {
+Self::validar(trace_info.length(), options.blowup_factor(), num_constraints)?;
+Ok(Context {
 trace_info,
 field_modulus_bytes: B::get_modulus_le_bytes(),
 options,
 num_constraints,
+})
 }
+@ proof/context.rs 1 Context::validar
+fn validar(
+trace_length: usize,
+blowup_factor: usize,
+num_constraints: usize,
+) -> Result<(), &'static str> {
+if trace_length > u32::MAX as usize {
+return Err("trace length too big");
+}
+match trace_length.checked_mul(blowup_factor) {
+Some(lde_domain_size) if lde_domain_size <= u32::MAX as usize => {},
+_ => return Err("LDE domain size too big"),
+}
+if num_constraints == 0 {
+return Err("number of constraints should be greater than zero");
+}
+if num_constraints > u32::MAX as usize {
+return Err("number of constraints is too big");
+}
+Ok(())
 }
 @ proof/context.rs 1 Context::trace_info
 pub fn trace_info(&self) -> &TraceInfo {
@@ -846,42 +870,15 @@ num_aux_segment_rands: usize,
 trace_length: usize,
 trace_meta: Vec<u8>,
 ) -> Self {
-assert!(
-trace_length >= Self::MIN_TRACE_LENGTH,
-"trace length must be at least {}, but was {}",
-Self::MIN_TRACE_LENGTH,
-trace_length
-);
-assert!(
-trace_length.is_power_of_two(),
-"trace length must be a power of two, but was {trace_length}"
-);
-assert!(
-trace_meta.len() <= Self::MAX_META_LENGTH,
-"number of metadata bytes cannot be greater than {}, but was {}",
-Self::MAX_META_LENGTH,
-trace_meta.len()
-);
-assert!(main_segment_width > 0, "main trace segment must consist of at least one column");
-let full_width = main_segment_width + aux_segment_width;
-assert!(
-full_width <= TraceInfo::MAX_TRACE_WIDTH,
-"total number of columns in the trace cannot be greater than {}, but was {}",
-TraceInfo::MAX_TRACE_WIDTH,
-full_width
-);
-if aux_segment_width == 0 {
-assert!(
-num_aux_segment_rands == 0,
-"number of random elements for an empty auxiliary trace segment must be zero"
-);
+if let Err(motivo) = Self::validar(
+main_segment_width,
+aux_segment_width,
+num_aux_segment_rands,
+trace_length,
+trace_meta.len(),
+) {
+panic!("{motivo}");
 }
-assert!(
-num_aux_segment_rands <= TraceInfo::MAX_RAND_SEGMENT_ELEMENTS,
-"number of random elements required by a segment cannot exceed {}, but was {}",
-TraceInfo::MAX_RAND_SEGMENT_ELEMENTS,
-num_aux_segment_rands
-);
 TraceInfo {
 main_segment_width,
 aux_segment_width,
@@ -889,6 +886,57 @@ num_aux_segment_rands,
 trace_length,
 trace_meta,
 }
+}
+@ air/trace_info.rs 1 TraceInfo::validar
+fn validar(
+main_segment_width: usize,
+aux_segment_width: usize,
+num_aux_segment_rands: usize,
+trace_length: usize,
+meta_len: usize,
+) -> Result<(), String> {
+if trace_length < Self::MIN_TRACE_LENGTH {
+return Err(format!(
+"trace length must be at least {}, but was {}",
+Self::MIN_TRACE_LENGTH,
+trace_length
+));
+}
+if !trace_length.is_power_of_two() {
+return Err(format!("trace length must be a power of two, but was {trace_length}"));
+}
+if meta_len > Self::MAX_META_LENGTH {
+return Err(format!(
+"number of metadata bytes cannot be greater than {}, but was {}",
+Self::MAX_META_LENGTH,
+meta_len
+));
+}
+if main_segment_width == 0 {
+return Err("main trace segment must consist of at least one column".to_string());
+}
+let full_width = main_segment_width.saturating_add(aux_segment_width);
+if full_width > TraceInfo::MAX_TRACE_WIDTH {
+return Err(format!(
+"total number of columns in the trace cannot be greater than {}, but was {}",
+TraceInfo::MAX_TRACE_WIDTH,
+full_width
+));
+}
+if aux_segment_width == 0 && num_aux_segment_rands != 0 {
+return Err(
+"number of random elements for an empty auxiliary trace segment must be zero"
+.to_string(),
+);
+}
+if num_aux_segment_rands > TraceInfo::MAX_RAND_SEGMENT_ELEMENTS {
+return Err(format!(
+"number of random elements required by a segment cannot exceed {}, but was {}",
+TraceInfo::MAX_RAND_SEGMENT_ELEMENTS,
+num_aux_segment_rands
+));
+}
+Ok(())
 }
 @ air/trace_info.rs 1 TraceInfo::width
 pub fn width(&self) -> usize {
@@ -909,32 +957,15 @@ fri_remainder_max_degree: usize,
 batching_constraints: BatchingMethod,
 batching_deep: BatchingMethod,
 ) -> ProofOptions {
-assert!(num_queries > 0, "number of queries must be greater than 0");
-assert!(num_queries <= MAX_NUM_QUERIES, "number of queries cannot be greater than 255");
-assert!(blowup_factor.is_power_of_two(), "blowup factor must be a power of 2");
-assert!(blowup_factor >= MIN_BLOWUP_FACTOR, "blowup factor cannot be smaller than 2");
-assert!(blowup_factor <= MAX_BLOWUP_FACTOR, "blowup factor cannot be greater than 128");
-assert!(
-grinding_factor <= MAX_GRINDING_FACTOR,
-"grinding factor cannot be greater than 32"
-);
-assert!(fri_folding_factor.is_power_of_two(), "FRI folding factor must be a power of 2");
-assert!(
-fri_folding_factor >= FRI_MIN_FOLDING_FACTOR,
-"FRI folding factor cannot be smaller than 2"
-);
-assert!(
-fri_folding_factor <= FRI_MAX_FOLDING_FACTOR,
-"FRI folding factor cannot be greater than 16"
-);
-assert!(
-(fri_remainder_max_degree + 1).is_power_of_two(),
-"FRI polynomial remainder degree must be one less than a power of two"
-);
-assert!(
-fri_remainder_max_degree <= FRI_MAX_REMAINDER_DEGREE,
-"FRI polynomial remainder degree cannot be greater than 255"
-);
+if let Err(motivo) = Self::validar(
+num_queries,
+blowup_factor,
+grinding_factor,
+fri_folding_factor,
+fri_remainder_max_degree,
+) {
+panic!("{}", motivo);
+}
 Self {
 num_queries: num_queries as u8,
 blowup_factor: blowup_factor as u8,
@@ -946,6 +977,49 @@ partition_options: PartitionOptions::new(1, 1),
 batching_constraints,
 batching_deep,
 }
+}
+@ options.rs 1 ProofOptions::validar
+const fn validar(
+num_queries: usize,
+blowup_factor: usize,
+grinding_factor: u32,
+fri_folding_factor: usize,
+fri_remainder_max_degree: usize,
+) -> Result<(), &'static str> {
+if num_queries == 0 {
+return Err("number of queries must be greater than 0");
+}
+if num_queries > MAX_NUM_QUERIES {
+return Err("number of queries cannot be greater than 255");
+}
+if !blowup_factor.is_power_of_two() {
+return Err("blowup factor must be a power of 2");
+}
+if blowup_factor < MIN_BLOWUP_FACTOR {
+return Err("blowup factor cannot be smaller than 2");
+}
+if blowup_factor > MAX_BLOWUP_FACTOR {
+return Err("blowup factor cannot be greater than 128");
+}
+if grinding_factor > MAX_GRINDING_FACTOR {
+return Err("grinding factor cannot be greater than 32");
+}
+if !fri_folding_factor.is_power_of_two() {
+return Err("FRI folding factor must be a power of 2");
+}
+if fri_folding_factor < FRI_MIN_FOLDING_FACTOR {
+return Err("FRI folding factor cannot be smaller than 2");
+}
+if fri_folding_factor > FRI_MAX_FOLDING_FACTOR {
+return Err("FRI folding factor cannot be greater than 16");
+}
+if !(fri_remainder_max_degree + 1).is_power_of_two() {
+return Err("FRI polynomial remainder degree must be one less than a power of two");
+}
+if fri_remainder_max_degree > FRI_MAX_REMAINDER_DEGREE {
+return Err("FRI polynomial remainder degree cannot be greater than 255");
+}
+Ok(())
 }
 @ options.rs 1 ProofOptions::num_queries
 pub const fn num_queries(&self) -> usize {

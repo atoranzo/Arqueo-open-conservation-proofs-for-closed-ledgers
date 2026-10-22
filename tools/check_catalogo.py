@@ -18,6 +18,9 @@
 #      println!/eprintln!/print! (el VERDE, las lineas n/m, el uso) quedan
 #      fuera por construccion: no son format!. expect/unreachable!/panic!
 #      tampoco: son invariantes (exit 101), no rechazos, y se CUENTAN.
+#      ⚠️ §711: en nativo ya no salen con 101: la red del mando los recoge,
+#      y salen con `el verificador entro en panico: {m}` y 1, que si esta
+#      en §5.
 #  R2  HUECOS DERIVADOS. Un hueco cuyo argumento es VersionCabeza::texto*()
 #      vale el conjunto que DERIVA crates/zk-ssl-verify/src/lib.rs (TODAS y
 #      los lleva_*); uno cuyo argumento es una const con valor literal vale

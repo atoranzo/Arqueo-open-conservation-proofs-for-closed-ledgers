@@ -123,24 +123,27 @@ impl SovereignLayer {
 
         let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
 
-        crate::comprobar_forma(
-            climb_proof.trace_info(),
-            stark_experiment::circuit_recovery_climb::TRACE_WIDTH,
-            0,
-            0,
-            stark_experiment::circuit_recovery_climb::TRACE_LENGTH,
-        )?;
-        verify::<RecoveryClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-            climb_proof,
-            RecoveryClimbPublicInputs {
-                root_old,
-                root_new,
-                recovery_count_old: BaseElement::new(count_old),
-                recovery_count_new: BaseElement::new(count_new),
-            },
-            &accepted,
-        )
-        .map_err(|e| LayerError::VerificationFailed(format!("subida de recuperacion: {e:?}")))?;
+        crate::sin_panico("subida de recuperacion", || {
+            crate::comprobar_forma(
+                climb_proof.trace_info(),
+                stark_experiment::circuit_recovery_climb::TRACE_WIDTH,
+                0,
+                0,
+                stark_experiment::circuit_recovery_climb::TRACE_LENGTH,
+            )?;
+            verify::<RecoveryClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                climb_proof,
+                RecoveryClimbPublicInputs {
+                    root_old,
+                    root_new,
+                    recovery_count_old: BaseElement::new(count_old),
+                    recovery_count_new: BaseElement::new(count_new),
+                },
+                &accepted,
+            )
+            .map_err(|e| LayerError::VerificationFailed(format!("subida de recuperacion: {e:?}")))?;
+            Ok(())
+        })?;
 
         let mut params: Vec<BaseElement> = root_old.to_vec();
         params.extend_from_slice(&root_new);
@@ -148,25 +151,28 @@ impl SovereignLayer {
         params.push(BaseElement::new(count_new));
         let operation = commit_operation(OP_RECOVERY, &params);
 
-        verify_threshold_pair(
-            proof_a, inputs_a, proof_b, inputs_b,
-            // Custodios: recuperar es custodia, no cambiar quien custodia.
-            BaseElement::new(CUSTODIAN_DOMAIN),
-            self.custodian_set_root,
-            operation,
-            &accepted,
-        )
-        .map_err(|r| match r {
-            PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
-                "autorizacion: forma de traza equivocada".into(),
-            ),
-            PairRejection::SameCustodian
-            | PairRejection::WrongCustodianSet
-            | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
-            PairRejection::WrongOperation => LayerError::StaleState,
-            PairRejection::InvalidProof => {
-                LayerError::VerificationFailed("autorizacion invalida".into())
-            }
+        crate::sin_panico("autorizacion", || {
+            verify_threshold_pair(
+                proof_a, inputs_a, proof_b, inputs_b,
+                // Custodios: recuperar es custodia, no cambiar quien custodia.
+                BaseElement::new(CUSTODIAN_DOMAIN),
+                self.custodian_set_root,
+                operation,
+                &accepted,
+            )
+            .map_err(|r| match r {
+                PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
+                    "autorizacion: forma de traza equivocada".into(),
+                ),
+                PairRejection::SameCustodian
+                | PairRejection::WrongCustodianSet
+                | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
+                PairRejection::WrongOperation => LayerError::StaleState,
+                PairRejection::InvalidProof => {
+                    LayerError::VerificationFailed("autorizacion invalida".into())
+                }
+            })?;
+            Ok(())
         })?;
 
         // Despues de verificar la autoridad: si fuera antes, cualquiera
