@@ -1081,6 +1081,25 @@ instrumentacion) al grupo E.*
   nombre provisional que confirma el autor, entra en el bucle del canon y compara esa lista con lo
   que da cada productor. Lo de arriba, «ninguna etapa está construida», valía hasta
   aquí. Sigue abierta: la E3b y la E4 llegan con el corte.
+  ⚠️ §863: el vector del §802, construido, por delegación del autor («resuelvelas aplicando los
+  principios»), con el criterio del §609 y el precedente del §642; REVERSIBLE; entra con su
+  aceptación. El §802 cambió un veredicto del cable dentro de `zkssl/0.4` —`zkssl_openAccount`
+  rechaza con `IdentityUnavailable` lo que antes abría—, un arreglo de seguridad, y la R6 f pide que
+  entre con los vectores que lo muestran, con rutas nuevas: ninguno fijaba un error de
+  `zkssl_openAccount`. Ahora `spec/vectors/nodo/abrir-identidad-con-cuenta.json`, con su línea de
+  manifiesto y su huella, dice lo que responde un nodo conforme sobre un libro recién constituido:
+  la identidad abre, la misma con la vista y la sal de otra clave da `-32000` con la causa
+  `IdentityUnavailable`, sin campos y juzgado en el `seq` 1, y la cuenta de cuentas sigue en 1. No
+  fija el censo `nextIndex`, la raíz ni el registro, que por el cable sólo se leen en
+  `zkssl_epochHead` entero y en las entradas del registro: los ata la capa (`tests_una_identidad`,
+  en `crates/zk-ssl/src/accounts.rs`). Es aditivo (R2): una ruta nueva en una familia nueva, la del
+  NODO, cuyo manifiesto no es el contrato del mando; lo juzga en cada canon un test del nodo que
+  manda cada petición por la función del transporte y compara, y el canon exige por su nombre que
+  pase. La lista de la superficie lo cuenta, como el §809. De lo que pide la R6 f, el §802 tenía el
+  aviso (`SECURITY.md` §3.13), no lleva release porque el kit no cambia, y le faltaba el vector,
+  que ya tiene. Sigue abierta: la E3b y la E4 llegan con el corte, que decide también qué es de esta
+  familia, que ningún kit juzga: si se muda a `spec/vectors/<versión>/` (R6 b), allí no hay un
+  veredicto del kit que conservar ni, todavía, un consumidor.
 
 - [x] **91. El fin de vida: cómo se apaga esto sin dejar a nadie
   dentro.** Toda capa de liquidación termina — por cierre, por

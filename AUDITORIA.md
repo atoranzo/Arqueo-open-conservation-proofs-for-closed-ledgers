@@ -67855,3 +67855,388 @@ con 0 las once herramientas del bucle «2 ter» —`check_curvas` bajo el cerroj
 y con su propio `CARGO_TARGET_DIR`—, y también `check_tests`, `check_modulos`, `check_vectores` y
 `check_catalogo`. `git diff --check`, limpio. En la sesión se corrió el canon entero, `--sello`,
 sobre este árbol y con este asiento en su sitio, y salió VERDE.
+
+## §863 — el vector del §802, con ruta nueva: `zkssl_openAccount` con una identidad que ya tiene cuenta da `-32000` con la causa `IdentityUnavailable`, en `spec/vectors/nodo/`, la familia de lo que RESPONDE un nodo conforme; lo juzga en cada canon un test del nodo que manda cada petición por la función del transporte, y el canon exige que pase, por su nombre (la 90, por delegación)
+
+El commit que lleva este asiento, sobre el §829. Un sello de código y de vector, el C-90v de la
+crítica de coherencia de la tanda; es el §863, del segundo rango que el autor asignó, el §860-§889.
+Toca `crates/zk-ssl-node/src/main.rs`, con un módulo de tests nuevo al final del fichero y un test;
+dos ficheros nuevos, `spec/vectors/nodo/abrir-identidad-con-cuenta.json` y su
+`spec/vectors/nodo/MANIFIESTO.txt`, y `spec/vectors/HUELLAS.sha256`, que crece veintitrés líneas;
+`tools/canon.sh`, con el pin del nodo y su crónica, la guarda de los manifiestos y un bloque nuevo,
+el «3 bis nodo»; `spec/RPC.md`, con una marca en «Apertura» y la lista de «Versionado y
+compatibilidad» al día; una fila nueva en `spec/README.md`; la cuenta de ficheros de `spec/vectors/`
+en `README.md` y `README_EN.md`; una marca en `SECURITY.md` §3.13; la nota de la 90 del
+`BACKLOG.md`; las cifras de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y este asiento. Catorce
+ficheros fuera de él, dos de ellos nuevos, con 293 inserciones y 16 borrados (`git diff --stat`). No
+cambia ningún byte del cable, ni ningún veredicto, ni un vector publicado, ni un KAT, ni el
+`Cargo.lock`, ni el kit, ni `tools/segunda`. No toca `crates/zk-ssl-guardian`, ni la zona de la
+migración de Winterfell (`winter-*`, `crates/zk-ssl-air`, `crates/stark-experiment`), ni
+`crates/ceremony`, ni `tools/check_constraint_layout.py`, ni `crates/zk-ssl/src/snapshot.rs` ni
+`crates/zk-ssl/src/nivel_de_produccion.rs`; ni el kit, `crates/zk-ssl-verify` —ni
+`CAUSAS_SIN_PRUEBA_PORTABLE` de su `main.rs`, ni la `CLAUSURA_DEL_KIT` de su `lib.rs`, ni su
+`Cargo.toml`, que sigue en 0.4.3, la versión que el §818 registra publicada, desde `5fd5212`—.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión lo escribió y lo revisó en
+su carril, sobre el §816 (`195ee5c`; en el carril, el mismo sello antes del rebase), y allí iba
+detrás de un sello de la E3 del RFC-0020 que no va en esta cadena, porque cambia la biblioteca del
+kit y queda para después de la 0.4.4. Lo porta sobre el §829, la punta de `main` (abajo, «El
+porte»); «la base del carril», en este asiento, es lo que el sello tenía debajo en el carril. En el
+carril lo escribió y lo midió un agente sobre las decisiones de la tanda; una revisión lo leyó y
+halló un mutante que el vector no ve —el rechazo que consume el censo—, y lo que eso pidió —el campo
+`no_fija` del vector, la cabecera del manifiesto y la cuenta del «3 bis nodo»— se midió otra vez
+(abajo, «Medido en el carril»). Lo medido en el carril y lo medido aquí van por separado.
+
+**De dónde sale.** El autor pidió, para diecinueve entradas del `BACKLOG.md`, «resuelvelas aplicando
+los principios». La 90 tuvo una recomendación, un escéptico y el juez final de su grupo, el de la
+87, la 90 y la 116, y la crítica de coherencia repartió las decisiones en sellos. La primera
+objeción del escéptico, aceptada por el juez, fue que el §802 cumplía la R6 f del RFC-0021 sólo en
+parte: la R6 f pide, de un arreglo de seguridad que cambia un veredicto dentro de `0.N.x`, el aviso,
+la release que dice qué veredictos cambian, y «los vectores que lo muestran entran con rutas
+nuevas»; el §802 tenía el aviso (`SECURITY.md` §3.13), no lleva release porque el kit no cambia, y
+no metió ningún vector —ningún vector de `spec/vectors` traía `IdentityUnavailable`, y sólo lo ataba
+un test del nodo—. La decisión de la 90 lo pone a construir «desde aquí», en un sello propio: «un
+vector con ruta nueva (R2, aditivo), en el que `zkssl_openAccount` con una identidad que ya tiene
+cuenta da `-32000` y la causa `IdentityUnavailable`. Lleva su línea de manifiesto y su huella, y su
+consumidor en el canon: un test del nodo que lee el vector, manda la petición al despacho y compara
+el código y la causa. Así el test y el vector no pueden discrepar»; con su falsador, «con la puerta
+del §802 quitada de la capa, el test sale ROJO», y la lista de la superficie al día en el mismo
+sello, como el §809. La crítica de coherencia lo llama C-90v, lo pone detrás de N1, el sello de
+documentos de la tanda, y dice qué superficie toca: «S5 aditivo (R2)» (su C21), y que la lista de la
+superficie se pone al día con él (su C20). N1 no está en este árbol: este sello entra antes que él,
+al revés del orden de esa crítica (su sección 6, punto 4); no cita nada de él, y la nota que escribe
+en la 90 dice sólo lo que construye. Cuando entre N1, encima, tres cosas suyas se leen contra este
+sello. Su nota de la 90 dice que al §802 «le falta el vector con ruta nueva, que pone un sello
+propio»: con este sello debajo, eso ha de ir en pasado, «le faltaba», con el §863, y su nota, debajo
+de la de este sello. El «donde hay vector» con que corrige la cabecera de
+`tools/check_superficie.py` ya será verdad; esa frase de la cabecera, que en la base del carril caía
+en `:49-51`, cae en `:62-64` desde que el §849 le añadió la R8. Y su marca de `spec/README.md`, que
+en `32b5b12` caía en `:87-88`, va al texto que en este árbol está en `:90-91` —en el §829, en
+`:89-90`—, reescrito con su marca por el §826 y bajado una línea por la fila nueva de la línea 27:
+se busca por el texto.
+
+**Quién lo decide.** Por delegación del autor («resuelvelas aplicando los principios»), con el
+criterio del §609 y el precedente del §642; REVERSIBLE; entra con su aceptación. Son elecciones de
+la sesión, que el autor puede revisar porque la decisión no las da: que el vector viva en una
+familia nueva, `spec/vectors/nodo/`, y no en la del cable, cuyo manifiesto es de lo que el testigo
+RECHAZA y corre `tools/conformidad.sh` con el adaptador del testigo; el nombre de la familia, del
+fichero y del test; la forma del vector —una secuencia de `pasos`, cada uno con el cuerpo de la
+petición JSON-RPC y el de la respuesta, sobre un libro recién constituido—; que se compare la
+respuesta ENTERA salvo `error.message`, que `spec/RPC.md` describe como el `Debug` de `LayerError` y
+el vector no fija; los tres pasos —abrir, la misma `publicId` con la vista y la sal de otra clave, y
+`zkssl_accountCount`, que dice que no se abrió otra cuenta—; que el vector no fije el censo
+`nextIndex`, la raíz ni el registro, y lo diga en un campo suyo, `no_fija`; las dos claves anchas,
+`0x9001` y `0x9002`; que el manifiesto conserve las tres columnas de la casa con otro sentido,
+`fichero|code|causa`, y que cada vector juzgue un solo error; que el test pase por `handle`, la
+función que sirve el transporte, y no sólo por `dispatch`, y lo haga sobre un nodo sin `--dev`; que
+exija que la versión del vector sea la que habla el nodo; y que el canon lo juzgue en un bloque
+propio, que mira el nombre del test en la salida de su fila.
+
+**Lo que hace.**
+
+1. **El vector.** `spec/vectors/nodo/abrir-identidad-con-cuenta.json`, en ASCII, con `spec`
+   `zkssl/0.4`, la regla que muestra, el libro del que parte, cómo se compara, lo que no fija y tres
+   `pasos`. Uno: `zkssl_openAccount` con la `publicId`, el `viewId` y la `leafSalt` de la clave
+   ancha `0x9001` (`zk_ssl::tests_support::wide_key`) da `{"index": "0xad054a7a"}`: `public_id[0]`
+   mod 2^32, la capacidad del árbol de cuentas, la colocación que `spec/RPC.md` llama «`public_id
+   mod capacidad`». Dos: la misma `publicId` con el `viewId` y la `leafSalt` de la `0x9002`, que no
+   tiene su clave —el ataque del §802— da `{"code": -32000, "data": {"causa": "IdentityUnavailable",
+   "campos": {}, "seq": "0x1"}}`: sin campos y juzgado en la altura de antes, la de la apertura del
+   paso uno. Tres: `zkssl_accountCount` da `"0x1"`: no se abrió otra cuenta. Ese método responde
+   `account_count()`, que es `records.len()` (`crates/zk-ssl/src/accounts.rs:48-50`), y no el censo
+   `next_index`. El vector no fija el censo, ni la raíz, ni el registro: por el cable sólo los dan
+   `zkssl_epochHead` entero (`spec/RPC.md:82`) y las entradas del registro, que fijarían además la
+   composición de la cabeza y la de cada entrada, y los parámetros del libro. Lo dice su campo
+   `no_fija`, que nombra quién los ata: la capa, `tests_una_identidad`, cuya `foto`
+   (`accounts.rs:540-542`) compara el censo, la raíz, el registro y las cuentas antes y después del
+   rechazo. En el carril, los seis valores los dio la segunda implementación
+   (`tools/segunda/nucleo.py`, `native_merge` con los tres dominios) y los mismos, byte a byte,
+   `stark_experiment::native::{derive_public_id_wide, view_id_of_wide, derive_leaf_salt_wide}` en un
+   test temporal que no se commitea; el índice y las tres respuestas, el nodo del árbol, en la
+   primera pasada del test.
+2. **La familia y su manifiesto.** `spec/vectors/nodo/MANIFIESTO.txt` dice en su cabecera qué es la
+   familia —lo que un nodo conforme RESPONDE a una secuencia de peticiones, en orden y sobre un
+   libro recién constituido—, por qué nace —la R6 f, por la 90—, que no se reescribe, que no es el
+   contrato del mando de `tools/conformidad.sh` —su segunda columna es un `code` del cable y la
+   tercera una causa del catálogo de `spec/RPC.md`—, quién lo consume y dónde —un test, dentro del
+   proceso del nodo de referencia: no hay segunda implementación del nodo, ni un ejecutor que hable
+   con uno ajeno, y `tools/conformidad.sh` sobre este manifiesto da ROJO, como sobre el del cable—,
+   que ningún kit lo juzga —si el corte lo muda a `spec/vectors/<versión>/` (R6 b), allí no hay un
+   veredicto del kit que conservar ni, todavía, un consumidor: lo decide el corte—, lo que el vector
+   no fija y de dónde salen los valores; y una entrada,
+   `abrir-identidad-con-cuenta.json|-32000|IdentityUnavailable`. Veintidós líneas, todas ASCII y
+   ninguna con el marcador sin número —nombra el §802 como «asiento 802»—, para que el número del
+   sello no mueva su huella. En el carril se registraron con `python3 tools/check_vectores.py
+   --registrar`: un vector y veintidós líneas nuevas, sin sobrescribir nada.
+3. **El consumidor.**
+   `tests_vectores_del_nodo::el_nodo_responde_lo_que_dice_cada_vector_de_spec_vectors_nodo`, en
+   `crates/zk-ssl-node/src/main.rs`, al final del fichero. Lee el manifiesto y exige que cada
+   `.json` del directorio tenga su entrada y cada entrada su vector; por cada vector, levanta un
+   nodo nuevo sin `--dev`, comprueba que su `zkssl_protocolVersion` es la `spec` del vector y manda
+   cada petición, en orden, por `handle` —la función que sirve el transporte: entra el cuerpo que
+   axum deserializa y sale el que se responde, por `despachar` y `dispatch`—, en un runtime de tokio
+   de un hilo; compara el cuerpo entero, sin `error.message`, con el del vector; exige que el vector
+   no fije `error.message`, que juzgue un solo error y que su `code` y su causa sean los de su línea
+   del manifiesto; y que el nodo no pare. El test, el vector y el manifiesto no pueden discrepar.
+4. **El canon.** El pin del nodo, 229 -> 230, con su crónica. La guarda que exige que cada
+   `spec/vectors/<x>/MANIFIESTO.txt` lo corra algún bucle acepta `nodo`, con su marca en el
+   comentario, en la misma línea. Y el bloque nuevo «3 bis nodo», antes del «3 ter»: la fila del
+   nodo del bloque 1 ya corrió el test, y aquí se exige, por su nombre, la línea `test … ... ok` en
+   su salida; un test borrado, renombrado, ignorado o que falla es ROJO con su nombre, y no sólo un
+   pin que se mueve. Su OK cuenta las entradas del manifiesto como el test, sin los comentarios ni
+   las líneas en blanco. Se llama «3 bis» por lo que hace, la conformidad de una familia de
+   vectores, como el 3 bis, el 3 bis cable y el 3 bis familias, y va detrás del «3 duodecies», como
+   el «3 ter», para no mover las líneas de los bloques de delante; su comentario lo dice. Sus
+   veintiuna líneas bajan las del «3 ter» en adelante, que ningún documento vivo cita por línea
+   (abajo, «Las citas por línea que se mueven»), y las otras tres ediciones no mueven ninguna línea.
+5. **La lista de la superficie.** Sin ella, `check_superficie` cuenta tres novedades aditivas, que
+   no son ROJO —509 `.json`, 1039 líneas y el manifiesto `nodo/MANIFIESTO.txt`—, y la lista de
+   «Versionado y compatibilidad» de `spec/RPC.md` se pone al día en el mismo sello, como el §809:
+   `vectores.json` 508 -> 509, `vectores.lineas` 1017 -> 1039 y la línea `manifiesto
+   nodo/MANIFIESTO.txt`, en su orden. Con ella, 0 novedades.
+6. **Los documentos.** En `spec/RPC.md`, «Apertura», la marca dice que el vector lo muestra, qué
+   fija de la regla y qué no —`nextIndex`, la raíz y el registro, que ata la capa—, y cómo lo juzga
+   el canon, en la misma línea que la del §802. La fila nueva de `spec/README.md`, detrás de la del
+   cable, dice qué es la familia, que ningún kit la juzga y lo que eso deja al corte (R6 b), y para
+   quién es («you implement a node and check that it answers each request as `RPC.md` says»). En
+   `SECURITY.md` §3.13, una marca en su última línea. En los dos README, 527 -> 529 ficheros y la
+   familia en la lista. La nota de la 90, que dice también lo que el vector no fija y lo que deja al
+   corte.
+
+**Superficie.** S5, aditivo (R2), como dice la crítica (C21): un vector con una ruta nueva y un
+manifiesto nuevo; ningún vector publicado ni ninguna línea registrada cambia, y `check_vectores` lo
+comprueba. Ninguna otra de las seis: el cable responde lo que respondía desde el §802 —el vector lo
+fija, no lo cambia—, y el kit, lo firmado y su binario no se tocan. La familia nueva no entra en
+`FAMILIAS` de `tools/artefacto.sh`, que es de los sobres del kit: el tarball del kit no la lleva, y
+`check_superficie` sigue con doce familias del artefacto. Su R8, que el §849 le añadió, sigue sin
+rojo: el sello no escribe ninguna frase de conformidad con una versión.
+
+**Medido en el carril**, sobre su base, con este sello encima.
+
+- **La suite del nodo**, `cargo test --release --locked -p zk-ssl-node`: 230 pasan, 0 fallan, 0
+  ignorados y 0 avisos. Antes, 229: un test nuevo. La última corrida, con el vector y el manifiesto
+  de la revisión y la capa recompilada tras restaurar el mutante del censo: 1 min 22 s de
+  compilación —la capa, el cable y el nodo— y 53,88 s de tests. Y el «3 bis nodo», sacado de
+  `tools/canon.sh` tal cual, sobre esa salida: OK, «1 vector(es) de spec/vectors/nodo/».
+- **El test nuevo, en su primera pasada**, VERDE con el índice que se había calculado a mano
+  (`0xad054a7a`), en 0,11 s; y el temporal de la procedencia dio los seis valores de la segunda
+  implementación, y se quitó antes de los mutantes de código. Esa primera pasada compiló el nodo en
+  release desde un `target` que sólo tenía el kit: 4 min 29 s. Las otras compilaciones de esta
+  sección son incrementales, y cada una lleva su tiempo.
+- **Catorce mutantes**, cada uno aplicado, corrido, restaurado desde una copia buena fuera del árbol
+  y comprobado con `cmp`; los catorce caen, y en el aserto que les toca. Doce son del test. Dos de
+  código, cada uno con su compilación: **la puerta del §802 quitada de la capa** —la llamada a
+  `identidad_libre` en `open_with_id`, `crates/zk-ssl/src/accounts.rs`, el falsador que pide la
+  decisión—: el segundo paso (el «paso 1» del test, que cuenta desde cero) abre una segunda cuenta
+  en `0xad054a7b`, la posición siguiente del sondeo, y el test cae con «paso 1: el nodo responde
+  {"id":2,"jsonrpc":"2.0","result":{"index":"0xad054a7b"}}» (2 min 21 s de compilación); y **el
+  sobre del error sin su causa** —`objeto_de_error` del nodo sin `data`—: cae en el mismo paso (1
+  min 53 s). Diez de datos, contra el binario de la primera pasada: la causa del manifiesto
+  cambiada, y su `code`; el `seq` del vector, y su índice; un `.json` sin entrada; una entrada sin
+  vector; el vector que fija `error.message`; otra `spec`; una línea de manifiesto de dos columnas;
+  y el paso del error escrito como un `result`. Y dos son del canon, con el bloque y el bucle
+  sacados de `tools/canon.sh` tal cual y corridos con un `$OUT` de prueba: el «3 bis nodo» da OK con
+  la línea del test en `ok`, y ROJO con nombre con la línea en `ignored`, en `FAILED`, con otro
+  nombre y con la salida vacía; y la guarda sin `nodo` da ROJO para
+  `spec/vectors/nodo/MANIFIESTO.txt` («ningun bucle del canon lo corre»), y con él, verde.
+- **Uno que el vector NO ve**, hallado en la revisión: **el rechazo que consume el censo**
+  —`self.next_index += 1` antes de `self.identidad_libre(&public_id)?` y `self.next_index -= 1`
+  después, en `open_with_id`—. Con él, `cargo test --release --locked -p zk-ssl-node --
+  tests_vectores_del_nodo tests_una_identidad` da 3 pasan y 0 fallan (2 min 03 s de compilación): el
+  test del vector y los dos del §802 del nodo siguen VERDES. Y `cargo test --release --locked -p
+  zk-ssl --lib -- tests_una_identidad` da 3 pasan y 3 fallan (3 min 26 s de compilación): caen
+  `abrir_una_identidad_con_cuenta_se_rechaza_sin_tocar_nada`,
+  `tras_recuperar_la_identidad_nueva_tampoco_abre_otra_cuenta` y
+  `el_robo_tras_una_recuperacion_no_abre_y_el_pendiente_vuelve_al_emisor`, con «el rechazo movio el
+  libro» (`crates/zk-ssl/src/accounts.rs:579`, `:632` y `:656`). Por eso el vector dice en `no_fija`
+  que no fija el censo, y no lo da por fijado. Restaurado desde la copia buena y comprobado con
+  `cmp`; estuvo en el árbol del carril de 10:48:59 a 10:56:14 UTC.
+- **Lo de la revisión, otra vez.** Tras el campo `no_fija` y la cabecera nueva del manifiesto, el
+  mutante de datos del tercer paso —`"0x2"` por `"0x1"`— cae en «paso 2: el nodo responde
+  {"id":3,"jsonrpc":"2.0","result":"0x1"}», y restaurado, `cmp` igual. Con dos líneas en blanco al
+  final de una copia del manifiesto, el «3 bis nodo» sigue diciendo «1 vector(es)», y la cuenta de
+  antes, `grep -cv '^#'`, daba 3. La primera huella del vector y la de sus diecisiete líneas eran
+  del borrador sin publicar: se quitaron de `HUELLAS.sha256` y se registró lo de ahora sobre las
+  huellas de la base del carril (`check_vectores --registrar --desde` esa base), y `check_vectores
+  --desde` esa base, el §816 y el §861 (`32b5b12`) sale OK.
+- **El arnés del kit sobre la familia**, `bash tools/conformidad.sh target/release/zk-ssl-verify
+  spec/vectors/nodo/MANIFIESTO.txt`: «ROJO abrir-identidad-con-cuenta.json: exit 1, el manifiesto
+  espera -32000», 0 de 1, como dice el manifiesto; sobre el del cable, el mismo binario
+  (`880f53cda12d737f`) da 0 de 23: un bucle de `conformidad.sh` sobre todos los
+  `spec/vectors/*/MANIFIESTO.txt` ya daba ROJOS falsos antes de este sello, con el cable.
+- **La segunda implementación**, `python3 tools/segunda/juez_cabezas.py`, sale 0 con lo de antes:
+  488 de 540 cabezas, 10 de 15 cofirmas, 409 ficheros con cabezas, 57 con alguna que no verifica y 0
+  positivos; el vector nuevo no trae cabezas, y el lector de manifiestos del juez lee su `-32000`
+  como un entero.
+- **Las herramientas del bucle del canon** (`check_cifras`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `verificar_citas`, `check_dominios`, `check_publicadas`,
+  `check_nucleo`, `check_techo`, `check_curvas`, `check_superficie`) y `check_tests`,
+  `check_modulos`, `check_vectores` y `check_catalogo`: en un clon de la base del carril sin
+  `target`, con este sello encima, el marcador sin número cambiado por un número de prueba sólo en
+  las líneas que escriben y un encabezado de prueba al final de `AUDITORIA.md`, las quince en 0; y
+  con los asientos numerados en vez del encabezado, también las quince. En el árbol del carril, con
+  el marcador sin número, ROJAS `verificar_citas` (v6, los marcadores sin número) y `check_cifras`
+  (las crónicas de los pines, que no lee sin número), y las otras trece en 0. `check_tests`, 2008 ->
+  2009; `check_vectores`, 501 `.json` y 1024 líneas de 19 manifiestos; `check_superficie`, 28
+  comparaciones y 0 novedades; `check_publicadas`, 521 ficheros en `spec/vectors/` y las dos citas
+  de esa cuenta; `check_catalogo`, los 226 textos del kit y las 277 entradas de §5, como antes. `git
+  diff --check`, limpio. El clon se borró.
+- **`cargo`** se corrió con `-p zk-ssl-node`, y con `-p zk-ssl --lib` sólo para el mutante del
+  censo. El sello no toca otro crate: el test es `#[cfg(test)]` y no gana ningún nombre fuera de su
+  módulo.
+
+**El porte.** `git cherry-pick -n` del sello, ya numerado, sobre el §829: diez ficheros entraron sin
+conflicto —`crates/zk-ssl-node/src/main.rs`, los dos nuevos de `spec/vectors/nodo/`,
+`spec/vectors/HUELLAS.sha256`, `spec/RPC.md`, `SECURITY.md`, `README.md` y `README_EN.md` tal cual,
+y `BACKLOG.md` y `spec/README.md` por fusión automática— y cinco con conflicto, resueltos a mano:
+`PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md` y `tools/canon.sh`, por las cifras, y `AUDITORIA.md`, por
+el sitio del asiento, que va al final, tras el del §829. Lo que cambió el porte, y por qué:
+
+1. **El código es el del carril.** En `crates/zk-ssl-node/src/main.rs`, el diff contra el borrador
+   del carril sólo pone el número, §863, en el comentario del módulo nuevo, y trae el comentario que
+   el §849 cambió en `:97-98`, que el borrador no tenía. En `tools/canon.sh`, lo del sello es lo del
+   borrador —la fila del nodo, con su pin y su crónica, la marca y la palabra `nodo` de la guarda, y
+   el bloque «3 bis nodo»—, con el número en sus tres sitios y un comentario reescrito (abajo, 3);
+   el resto, también las otras filas de la tabla, es de esta punta. `spec/vectors/nodo/` es, byte a
+   byte, el del borrador. Pero de la base del carril a esta punta cambia lo que el nodo tiene
+   debajo, y el test del sello abre cuentas en la capa por el cable: en la capa, `persistence.rs`,
+   `snapshot.rs`, `tests.rs`, `censo_de_hojas.rs` y su `mod` en `lib.rs`, `nivel_de_produccion.rs` y
+   su `censo.rs`, `instrumento_revela.rs`, `metrics.rs` —que hace `pub(crate)` su módulo de tests y
+   dos bandas— y un comentario en `iso.rs` y otro en `lib.rs`; en `zk-ssl-hash`, dos comentarios; en
+   `zk-ssl-medio`, un test nuevo con sus vectores y sus guiones, y comentarios; en
+   `stark-experiment`, tres comentarios; y en `crates/zk-ssl-node`, sólo comentarios, en `main.rs`,
+   `latido.rs` y `recepcion.rs`. Son los sellos de `main` que la base del carril no tenía: el §817,
+   el §819, el §820, el §821, el §827, el §828, el §839, el §840, el §841, el §842, el §848, el §849
+   y el §855 (`git log` de cada fichero desde el §861, `32b5b12`). Y `zk-ssl-verify`, que el nodo
+   enlaza, es aquí la del §816, y no la de la base del carril, que la traía cambiada en `actas.rs` y
+   `lib.rs`. Por eso aquí se corrió la suite del nodo (abajo, «Medido aquí»).
+2. **La 0.4.3 está publicada.** El asiento del carril decía que el `Cargo.toml` del kit «sigue en
+   0.4.3, cortada en el §815 y sin publicar», y que `tools/conformidad.sh` viaja en el tarball «del
+   kit, la 0.4.3 cortada». Aquí es falso: la 0.4.3 se publicó el 21-10-2026 desde `5fd5212`, el
+   §817, y el §818 la registra. Este asiento lo dice así, arriba y en «Lo que NO hace». Ningún texto
+   del sello en el árbol hablaba de la 0.4.3.
+3. **El comentario del «3 bis nodo».** Decía que va detrás del «3 duodecies» «para no mover las
+   lineas de este fichero que otros textos citan (:723-741)». Desde el §855, la 77 (original) del
+   `BACKLOG.md` (`:5155` en este árbol, con su marca) cita ese tramo por el nombre del bloque, el «3
+   duodecies», y no por línea, y la v5 bis de `verificar_citas` (§847, ampliada en el §854) no deja
+   citar `tools/canon.sh` por línea en los documentos vivos de su lista; la cita se quita y el
+   comentario dice «para no mover las lineas de los bloques de delante», en las mismas tres líneas.
+   El punto 4 de «Lo que hace» lo dice igual.
+4. **Las cifras son las de esta punta.** El pin del nodo, 229 -> 230, sobre el de esta punta, que es
+   el del carril. TOTAL DE SELLO 1871 -> 1872 y CON LARGOS 2011 -> 2012, donde el carril tenía 1849
+   -> 1850 y 1986 -> 1987: la base del carril no tenía 27 tests de sello que `main` tiene —23 de la
+   capa y 4 de `zk-ssl-medio`— ni 3 completos —de `zk-core`, el §822—, y traía 5 más en el kit, que
+   esta punta no tiene. La cuenta de `spec/vectors/` de los dos README, 527 -> 529, donde el carril
+   tenía 519 -> 521: los ocho negativos del §850 y del §852 están en medio. La lista de la
+   superficie, 508 -> 509 `.json` y 1017 -> 1039 líneas, donde el carril tenía 500 -> 501 y 1002 ->
+   1024: las mismas veintidós líneas sobre las 1017 de esta punta. `HUELLAS.sha256`, 1533 -> 1556
+   líneas, donde el carril tenía 1510 -> 1533: las mismas veintitrés entran en su orden, entre las
+   de `edad/` y las de `nucleo/`.
+5. **Las citas del asiento**, a lo que cayó en otro sitio: la cabecera de
+   `tools/check_superficie.py` y el texto de `spec/README.md` que marque N1, cuando entre (arriba,
+   «De dónde sale»), y en «Lo que NO hace» las frases de «los 500 vectores», que caen en
+   `doc/KIT.md:55`, `doc/KIT_EN.md:56` y `SECURITY.md:1218` —en la base del carril, en
+   `doc/KIT.md:52`, `doc/KIT_EN.md:53` y `SECURITY.md:1192`—, y la cuenta de la S5 del RFC-0021, en
+   `:120` y no en `:119`. Las de `crates/zk-ssl/src/accounts.rs` y la de `spec/RPC.md:82` caen donde
+   caían: ni el uno ni las líneas de delante del otro cambiaron. Y los hashes de antes del rebase,
+   por su número: el §816 por `195ee5c`.
+
+**Medido aquí**, sobre el §829 con este sello encima.
+
+- **La suite del nodo**, `cargo test -p zk-ssl-node --release --locked`, bajo el cerrojo de `cargo`,
+  con `nice -n 19` y su propio `CARGO_TARGET_DIR`, en el que el nodo estaba compilado desde otro
+  árbol: 230 pasan, 0 fallan, 0 ignorados y 0 avisos —229 en el §829 y el nuevo,
+  `tests_vectores_del_nodo::el_nodo_responde_lo_que_dice_cada_vector_de_spec_vectors_nodo`, `ok`,
+  con los dos del §802 del nodo, también `ok`—; 1 min 34 s de compilación, catorce crates, los trece
+  del workspace que el nodo usa —el fork de Winterfell, la capa, el kit, el cable y el nodo, entre
+  ellos— y `winterfell`, de crates.io, y 34,92 s de tests, 130 s en total, con el cerrojo libre.
+- **El «3 bis nodo»**, sacado de `tools/canon.sh` tal cual, sobre esa salida: OK, «1 vector(es) de
+  spec/vectors/nodo/, juzgados por» el test, por su nombre. Y la guarda de los manifiestos, sacada
+  igual, con las doce `FAMILIAS` de `tools/artefacto.sh`: los catorce
+  `spec/vectors/*/MANIFIESTO.txt` de primer nivel —las doce familias, el cable y el nodo— tienen
+  bucle, sin ROJO.
+- **La lista de la superficie**: con la lista del §829 en `spec/RPC.md` y el resto del sello encima,
+  `check_superficie` sale 0 con tres novedades aditivas, «NUEVO R6»: un `.json` «mas que los 508 de
+  la lista», 22 líneas de manifiesto «mas que los 1017 de la lista» y «nodo/MANIFIESTO.txt entra»;
+  con la del sello, 0 novedades. La lista del §829 se puso en el árbol sobre una copia buena
+  guardada fuera de él, y se restauró y se comprobó con `cmp`.
+- **La segunda**: `python3 tools/segunda/juez_cabezas.py`, exit 0 en 33 s: 496 de 548 cabezas, 15 de
+  20 cofirmas, 417 ficheros con cabezas, 57 con alguna que no verifica y 0 positivos, y su falsador,
+  VERDE; el vector nuevo no trae cabezas.
+- **El kit** no se corrió aquí sobre la familia: el sello no lo toca, y `tools/conformidad.sh` sobre
+  `spec/vectors/nodo/MANIFIESTO.txt` da ROJO por diseño, como midió el carril.
+- **Las herramientas**, con el número puesto y este asiento en su sitio, desde la raíz del árbol
+  como las corre el canon: las once del bucle «2 ter» —`check_curvas` bajo el cerrojo de `cargo`,
+  con `nice` y con su propio `CARGO_TARGET_DIR`— y `check_tests`, `check_modulos`, `check_vectores`
+  y `check_catalogo`, las quince en 0. `check_tests` cuenta 2034 tests declarados y 20 instrumentos;
+  `check_modulos`, 207 ficheros; `check_vectores`, 509 `.json` y 1039 líneas de 19 manifiestos, cada
+  uno con su huella, y `--desde` el §861 (`32b5b12`) y `--desde` el §829, OK; `check_cifras`, 26
+  cifras de tests en documentos vivos, ninguna contra el canon, y las doce crónicas y los tres
+  totales con largos en su sitio; `check_publicadas`, 529 ficheros en `spec/vectors/` y las dos
+  citas de esa cuenta, en los dos README (su ATADO E, el cerrojo de la 113); `check_nucleo`, 172
+  filas, como en el §829; `check_catalogo`, los 226 textos del kit y las 277 entradas de §5, como
+  antes; `check_superficie`, 28 comparaciones y 0 novedades, y su R8 sin rojo, con su única frase,
+  la exenta; y `verificar_citas`, 0 marcadores sin número en el árbol, 0 líneas al `BACKLOG.md` en
+  documentos vivos (v5), 0 en la v3 bis, con sus nueve ficheros, y 0 en la v5 bis. `git diff
+  --check`, limpio.
+
+**Contadores.** `zk-ssl-node` 229 -> 230, con su entrada en la fila del canon. TOTAL DE SELLO 1871
+-> 1872 y CON LARGOS 2011 -> 2012, en `PAPER.md` (`:36` y `:38`), `PAPER_EN.md` (`:33` y `:35`) y
+`PRINCIPIOS.md` (`:412`, `:413`, con «**230 del nodo**», y `:416`); las «1364 declarados» y las
+«1349 declared» no se tocan; `check_tests` 2033 -> 2034. La cifra del nodo no sale en ningún otro
+documento vivo (`check_cifras`). `spec/vectors/` 527 -> 529 ficheros en `README.md` (`:270`) y
+`README_EN.md` (`:284`): 509 `.json` y 1039 líneas de 19 manifiestos, también en la lista de la
+superficie; `spec/vectors/HUELLAS.sha256`, 1533 -> 1556 líneas, todas con «+». Ningún KAT: 34 del
+núcleo, como antes. El `BACKLOG.md` no abre ni cierra ninguna entrada: 41 abiertas y 89 resueltas,
+contadas con `grep -c` de las casillas a principio de línea, como su línea «Estado». En el carril
+eran 229 -> 230, 1849 -> 1850, 1986 -> 1987, 2008 -> 2009, 519 -> 521 ficheros y 44 abiertas y 86
+resueltas.
+
+**Las citas por línea que se mueven.** En `BACKLOG.md`, de 5374 líneas a 5393: la nota entra tras la
+`:1083`, la última de la 90, y desde la `:1084` todo baja diecinueve; el árbol vivo no cita ninguna
+línea suya que caiga en su sitio (`verificar_citas`, v5), y las de las «Fuentes» de
+`doc/ecst/VERIFICACION.md` son de `71c5aad`, y las de `doc/ecst/borrador/`, de `d531c80` y de
+`71c5aad`. En `spec/README.md`, de 220 a 221: la fila entra en la `:27`, y nadie cita ese fichero
+por línea fuera del registro. En `spec/RPC.md`, de 1789 a 1790: la línea del manifiesto entra tras
+la `:1781`, en la lista, y nadie cita una línea suya de ahí en adelante. En
+`spec/vectors/HUELLAS.sha256`, de 1533 a 1556, tras la `:822`; las citas a ese fichero (`:1-8` y
+`:4-7`) caen delante. En `tools/canon.sh`, de 985 a 1006: el bloque entra tras la `:818`, y las
+citas por línea de `tools/canon.sh` que quedan fuera del registro caen delante o no son de este
+árbol: `spec/rfc/0004-paquete-de-evidencia.md:57` y `:115` (`:278-286`), en un RFC ACEPTADO que se
+conserva como registro; `tools/conservados.sh:23`, que cita la de `41f765d`; las de `doc/ecst/`, de
+`d531c80` o de `71c5aad`; y los ejemplos de `tools/verificar_citas.py`, cuya v5 bis no deja citarlo
+por línea en los documentos vivos de su lista. En `crates/zk-ssl-node/src/main.rs`, de 8735 a 8860,
+al final. En los demás ficheros no se mueve ninguna línea: las marcas van en las que ya estaban.
+
+**Lo que NO hace.** No escribe la nota de la decisión de la 90 ni las marcas de su sello de
+documentos —las dos de la vigencia en `spec/RPC.md`, la de `spec/README.md`, las del RFC-0021 y la
+de la decisión 6 en `SECURITY.md` §5—: van en N1, cuando entre. Tampoco la de la cabecera de
+`tools/check_superficie.py`, que deja a «los vectores del cable» los errores y su causa en `data` y
+que N1, cuando entre, ha de corregir con «donde hay vector»: desde aquí, un error de S1 lo ata
+también un vector del nodo. No mete en el vector las otras reglas del §802 —la identidad retirada
+por una recuperación, ni recuperar hacia una identidad con cuenta—, porque la recuperación no está
+en el cable; ni `dev_openSeeded` con una semilla repetida, que es `dev_*` y queda fuera de la
+promesa. No fija en el vector el censo, la raíz ni el registro (arriba, por qué). No hace que
+`tools/conformidad.sh` ni ninguna segunda implementación del nodo corran la familia —no hay segunda
+implementación del nodo—, ni la mete en el artefacto del kit; `tools/conformidad.sh` viaja en el
+tarball del kit —en el de la 0.4.3 publicada, como `conformidad.sh` en su raíz— y no se toca para
+que salte la familia. No toca las frases que cuentan «los 500 vectores» o «the 500 vectors» de
+`spec/vectors/` (`doc/KIT.md:55`, `doc/KIT_EN.md:56`, `SECURITY.md:1218`): son medidas del kit, con
+su sello, y el vector nuevo no es del kit; ni la cuenta de la S5 del RFC-0021
+(`spec/rfc/0021-la-politica-de-compatibilidad.md:120`, 492 `.json` y 982 líneas de 18 manifiestos),
+anterior a este sello y de un RFC que N1, cuando entre, ha de corregir. Ni los «dieciocho
+manifiestos» de `spec/rfc/0020-el-esquema-dentro-de-lo-que-se-firma.md:226`, una medida del RFC
+sobre `8c02941`, la fecha de su texto, cuya conclusión sigue en pie: `nodo/MANIFIESTO.txt` no
+escribe ninguna versión de cabeza. No decide qué pasa con el vector en el corte `zkssl/0.5`: si la
+versión sube, el test cae en su primera aserción, y el corte decide si se muda a
+`spec/vectors/0.4/nodo/` (R6 b) —con un consumidor que todavía no existe para lo conservado de esta
+familia— o si la versión nueva lo hereda; si la 119 cambia los parámetros de `zkssl_openAccount`, su
+veredicto cambia y se muda. No toca el kit, ni su versión, ni `tools/segunda`.
+
+**Lo que NO cierra.** La 90 sigue abierta: la E3b y la E4 del RFC-0021 llegan con el corte
+`zkssl/0.5`. De lo que la R6 f pide al §802, ya tiene las tres cosas: el aviso, la release que no
+hace falta porque el kit no cambia, y el vector.
+
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.

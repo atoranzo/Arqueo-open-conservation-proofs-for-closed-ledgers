@@ -1,0 +1,65 @@
+{
+  "spec": "zkssl/0.4",
+  "regla": "asiento 802 (SECURITY.md 3.13): una identidad abre a lo sumo una cuenta en la vida del libro; abrir con una publicId que ya tiene cuenta es -32000 con la causa IdentityUnavailable, sin campos y juzgado en la altura de antes, sin tocar nextIndex, la raiz ni el registro (spec/RPC.md, Apertura)",
+  "libro": "recien constituido: sin cuentas y con el registro vacio",
+  "compara": "cada paso en orden, sobre el mismo libro: la respuesta entera salvo error.message, que es el Debug de LayerError y no se fija (spec/RPC.md, La causa de un rechazo, como dato)",
+  "no_fija": "nextIndex, la raiz ni el registro. El tercer paso dice que no se abrio otra cuenta: zkssl_accountCount cuenta las cuentas, no el censo nextIndex. El censo y la raiz solo se leen por el cable en zkssl_epochHead entero, y el registro en sus entradas (zkssl_logEntries), que fijarian ademas la composicion de la cabeza y la de cada entrada, y los parametros del libro. Los ata la capa: tests_una_identidad, en crates/zk-ssl/src/accounts.rs, compara el censo, la raiz, el registro y las cuentas antes y despues del rechazo",
+  "pasos": [
+    {
+      "peticion": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "zkssl_openAccount",
+        "params": {
+          "publicId": "0x7a4a05adabed27218982b15324ee13d555e7fad342fae95d39ab9bd3d208ad77",
+          "viewId": "0xcc5ef63b59b4cd9841a819959a8238e307aa2bc3936400a277190b13fc78cb9f",
+          "leafSalt": "0xc26a767b4b1bf50f1b86b6ae8adbc4780c4aa1126d31c106d74d30b60368a922"
+        }
+      },
+      "respuesta": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "index": "0xad054a7a"
+        }
+      }
+    },
+    {
+      "peticion": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "zkssl_openAccount",
+        "params": {
+          "publicId": "0x7a4a05adabed27218982b15324ee13d555e7fad342fae95d39ab9bd3d208ad77",
+          "viewId": "0x4bc5dd77df5c57eb12913f58ca1442667c5912f57a6841cddcc934c8e1bd686c",
+          "leafSalt": "0x23d292e8fef6965dd28e92511807c80ce12de91c3a3a9de331d97b88332c4420"
+        }
+      },
+      "respuesta": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "error": {
+          "code": -32000,
+          "data": {
+            "causa": "IdentityUnavailable",
+            "campos": {},
+            "seq": "0x1"
+          }
+        }
+      }
+    },
+    {
+      "peticion": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "zkssl_accountCount",
+        "params": {}
+      },
+      "respuesta": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": "0x1"
+      }
+    }
+  ]
+}

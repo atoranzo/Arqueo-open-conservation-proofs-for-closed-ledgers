@@ -1,0 +1,22 @@
+# Vectores del NODO: lo que un nodo conforme RESPONDE a una secuencia de peticiones JSON-RPC (spec/RPC.md), en orden
+# y sobre un libro recien constituido. Nace con el del asiento 802, por la 90 del BACKLOG.md: la R6 f del RFC-0021
+# pide que un arreglo de seguridad que cambia un veredicto dentro de 0.N.x entre con los vectores que lo muestran, con
+# rutas nuevas, y hasta aqui ningun vector fijaba un error de zkssl_openAccount. Jamas se reescriben (regla 2 del PROCESO).
+# fichero|code del error JSON-RPC que el vector juzga|su causa, data.causa
+# NO es el contrato del mando de tools/conformidad.sh (exit 0/1/2/3): la segunda columna es un `code` del cable y la
+# tercera una causa del catalogo de spec/RPC.md. Cada vector trae sus `pasos`, cada uno con su peticion y la respuesta
+# que da un nodo conforme, entera salvo error.message (el Debug de LayerError, que no se fija), y juzga UN error, el
+# de su linea. Su consumidor en el canon es el test tests_vectores_del_nodo de crates/zk-ssl-node/src/main.rs: manda
+# cada peticion por la funcion del transporte y compara, y el canon exige que haya pasado. Ese test los corre dentro
+# del proceso del nodo de referencia: no hay segunda implementacion del nodo, ni un ejecutor que hable con un nodo
+# ajeno, y tools/conformidad.sh sobre este manifiesto da ROJO, como sobre el del cable. Ningun kit los juzga: si al
+# corte de version se mudan a spec/vectors/<version>/ (R6 b del RFC-0021), alli no hay un veredicto del kit que
+# conservar ni, todavia, un consumidor. Lo decide el corte (la 90).
+# abrir-identidad-con-cuenta.json: la publicId, la vista y la sal de la clave ancha 0x9001 abren; la misma publicId con
+# la vista y la sal de la 0x9002, que no tiene su clave, da -32000 IdentityUnavailable, sin campos y juzgado en seq 1;
+# y zkssl_accountCount sigue en 1: no se abrio otra cuenta. El censo nextIndex, la raiz y el registro no los fija (su
+# campo no_fija dice por que y quien los ata). Los valores, de stark_experiment::native::{derive_public_id_wide,
+# view_id_of_wide, derive_leaf_salt_wide} sobre zk_ssl::tests_support::wide_key; el indice, public_id[0] mod 2^32,
+# la capacidad del arbol de cuentas (TREE_DEPTH 32), con sondeo lineal: la colocacion que spec/RPC.md llama
+# "public_id mod capacidad".
+abrir-identidad-con-cuenta.json|-32000|IdentityUnavailable

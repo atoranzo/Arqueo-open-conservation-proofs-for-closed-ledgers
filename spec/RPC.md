@@ -124,7 +124,7 @@ view_id_of_wide, derive_leaf_salt_wide}`.
 ⚠️ §802: una identidad abre a lo sumo una cuenta en la vida del libro: una `publicId` que ya tiene
 cuenta, o que una recuperación retiró, se rechaza con `-32000` y la causa `IdentityUnavailable`,
 sin campos y sin tocar `nextIndex`, la raíz ni el registro. Hasta el §802 se abría una segunda
-cuenta con la misma identidad (`SECURITY.md` §3.13).
+cuenta con la misma identidad (`SECURITY.md` §3.13). ⚠️ §863: lo muestra un vector con ruta nueva, `vectors/nodo/abrir-identidad-con-cuenta.json`, como pide la R6 f del RFC-0021 —el `code`, la causa sin campos, el `seq` y que no se abre otra cuenta; `nextIndex`, la raíz y el registro, que el cable sólo da en `zkssl_epochHead` entero y en las entradas, no los fija: los ata la capa—; el canon lo juzga con un test del nodo que manda cada petición por la función del transporte (la 90 del `BACKLOG.md`).
 
 ### Pago en dos fases
 
@@ -1765,8 +1765,8 @@ acta.emite 1
 sobre.v 1 2
 sobre.tipo extension consumo conflicto rechazo edad cobro_pendiente pago_en_curso prenda completitud ancla ancla-cofirmada solapamiento
 kit.salida 0 1 2 3
-vectores.json 508
-vectores.lineas 1017
+vectores.json 509
+vectores.lineas 1039
 manifiesto 0.3/edad/MANIFIESTO.txt
 manifiesto 0.3/pago/MANIFIESTO.txt
 manifiesto 0.3/pendiente/MANIFIESTO.txt
@@ -1779,6 +1779,7 @@ manifiesto completitud/MANIFIESTO.txt
 manifiesto conflicto/MANIFIESTO.txt
 manifiesto consumo/MANIFIESTO.txt
 manifiesto edad/MANIFIESTO.txt
+manifiesto nodo/MANIFIESTO.txt
 manifiesto pago/MANIFIESTO.txt
 manifiesto paquete/MANIFIESTO.txt
 manifiesto pendiente/MANIFIESTO.txt

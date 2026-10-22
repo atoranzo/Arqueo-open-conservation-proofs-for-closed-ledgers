@@ -903,7 +903,7 @@ el libro lleno—.
 Se redactó en privado y se publica de una vez con el código, como pide la sección 5. No hay libro
 desplegado ni terceros a quien avisar: el aviso es esta sección y el asiento §802, no un GHSA. El kit
 publicado no cambia: no depende de la capa, y un sobre de rechazo con esta causa lo rechaza por su
-nombre. `AUDITORIA.md` §802.
+nombre. `AUDITORIA.md` §802. ⚠️ §863: y lo muestra un vector con ruta nueva, como pide la R6 f del RFC-0021 a un arreglo que cambia un veredicto dentro de `0.N.x`: `spec/vectors/nodo/abrir-identidad-con-cuenta.json`, abrir por el cable una identidad que ya tiene cuenta, que el canon juzga con un test del nodo (la 90 del `BACKLOG.md`).
 
 ### 3.14 El libro cifrado migrado desde la versión 1 guardaba en sus ficheros lo sellado con la clave v1 — ⚠️ MEDIDO, cerrado en la biblioteca (§812); su carrera, medida y cerrada en el §816
 

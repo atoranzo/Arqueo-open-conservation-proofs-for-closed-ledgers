@@ -8733,3 +8733,128 @@ mod tests_una_identidad {
         abrir(0x1D04).expect("otra semilla abre");
     }
 }
+
+/// ⚠️ §863 · **Los vectores del NODO** (`spec/vectors/nodo/`, la 90 del `BACKLOG.md`): lo que un nodo
+/// conforme RESPONDE a una secuencia de peticiones JSON-RPC, en orden y sobre un libro recién
+/// constituido. Nacen con el del §802: hasta aquí ningún vector fijaba un error de
+/// `zkssl_openAccount`, y el veredicto que el §802 cambió dentro de `zkssl/0.4` lo ataba solo
+/// `tests_una_identidad`, que una segunda implementación no ve. La R6 f pide que un arreglo de
+/// seguridad que cambia un veredicto dentro de `0.N.x` entre con los vectores que lo muestran, con
+/// rutas nuevas; la R2 lo hace aditivo.
+///
+/// Este test es su consumidor en el canon. Lee el `MANIFIESTO.txt` y cada vector; manda cada
+/// petición por [`handle`], la misma función que sirve el transporte —entra el cuerpo que axum
+/// deserializa y sale el que se responde—, sobre un nodo sin `--dev`; y compara la respuesta
+/// entera salvo `error.message`, que es el `Debug` de `LayerError` y el vector no fija. El `code` y
+/// la causa del error que cada vector juzga son, además, los de su línea del manifiesto: el test, el
+/// vector y el manifiesto no pueden discrepar. Y el canon exige, por su nombre, que haya pasado (el
+/// «3 bis nodo» de `tools/canon.sh`). Falsador, medido: con la puerta del §802 quitada de la capa
+/// (`identidad_libre`), el segundo paso del vector abre y el test sale ROJO.
+#[cfg(test)]
+mod tests_vectores_del_nodo {
+    use super::*;
+    use std::sync::Arc;
+
+    const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../spec/vectors/nodo");
+
+    /// El cuerpo de la respuesta a un cuerpo de petición, por la función del transporte.
+    fn responder(rt: &tokio::runtime::Runtime, app: &Arc<App>, peticion: &Value) -> Value {
+        let req: RpcRequest = serde_json::from_value(peticion.clone())
+            .unwrap_or_else(|e| panic!("la peticion no es un cuerpo JSON-RPC: {e}: {peticion}"));
+        let Json(cuerpo) = rt.block_on(handle(State(Arc::clone(app)), Json(req)));
+        cuerpo
+    }
+
+    /// Lo que el vector compara: el cuerpo entero, sin `error.message`.
+    fn sin_message(mut cuerpo: Value) -> Value {
+        if let Some(e) = cuerpo.get_mut("error").and_then(Value::as_object_mut) {
+            e.remove("message");
+        }
+        cuerpo
+    }
+
+    /// Las entradas del manifiesto: (fichero, `code`, causa), en su orden.
+    fn entradas() -> Vec<(String, i64, String)> {
+        let ruta = format!("{DIR}/MANIFIESTO.txt");
+        let texto = std::fs::read_to_string(&ruta).unwrap_or_else(|e| panic!("{ruta}: {e}"));
+        texto
+            .lines()
+            .enumerate()
+            .filter(|(_, l)| !l.trim().is_empty() && !l.starts_with('#'))
+            .map(|(n, l)| {
+                let c: Vec<&str> = l.split('|').collect();
+                assert_eq!(c.len(), 3, "{ruta}:{}: fichero|code|causa, y no {l:?}", n + 1);
+                let code = c[1]
+                    .parse()
+                    .unwrap_or_else(|e| panic!("{ruta}:{}: el code {:?} no es un entero: {e}", n + 1, c[1]));
+                (c[0].to_string(), code, c[2].to_string())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn el_nodo_responde_lo_que_dice_cada_vector_de_spec_vectors_nodo() {
+        let entradas = entradas();
+        assert!(!entradas.is_empty(), "prueba de vida: spec/vectors/nodo/MANIFIESTO.txt sin entradas");
+        let mut ficheros: Vec<String> = std::fs::read_dir(DIR)
+            .unwrap_or_else(|e| panic!("{DIR}: {e}"))
+            .map(|e| e.expect("entrada del directorio").file_name().into_string().expect("nombre UTF-8"))
+            .filter(|n| n.ends_with(".json"))
+            .collect();
+        ficheros.sort();
+        let mut nombrados: Vec<String> = entradas.iter().map(|(f, _, _)| f.clone()).collect();
+        nombrados.sort();
+        assert_eq!(
+            ficheros, nombrados,
+            "cada .json de spec/vectors/nodo/ con su entrada del manifiesto, y cada entrada con su vector"
+        );
+        let rt = tokio::runtime::Builder::new_current_thread().build().expect("runtime de tokio");
+        for (fichero, code, causa) in &entradas {
+            let ruta = format!("{DIR}/{fichero}");
+            let texto = std::fs::read_to_string(&ruta).unwrap_or_else(|e| panic!("{ruta}: {e}"));
+            let v: Value = serde_json::from_str(&texto).unwrap_or_else(|e| panic!("{ruta}: {e}"));
+            // Un nodo nuevo y sin `--dev`: un vector de esta familia no pide ningun `dev_*`.
+            let mut app = crate::tests::nodo(30);
+            app.dev = false;
+            let app = Arc::new(app);
+            let version = responder(
+                &rt,
+                &app,
+                &json!({ "jsonrpc": "2.0", "id": 0, "method": "zkssl_protocolVersion" }),
+            );
+            assert_eq!(
+                version["result"], v["spec"],
+                "{fichero}: el vector es de {} y el nodo habla {}; cuando suba la version, el corte \
+                 decide si se muda a spec/vectors/<version>/ (R6 b del RFC-0021)",
+                v["spec"], version["result"]
+            );
+            let pasos = v["pasos"].as_array().unwrap_or_else(|| panic!("{fichero}: sin `pasos`"));
+            assert!(!pasos.is_empty(), "{fichero}: sin pasos");
+            let mut juzgados = Vec::new();
+            for (i, paso) in pasos.iter().enumerate() {
+                let esperado = &paso["respuesta"];
+                assert!(
+                    esperado.pointer("/error/message").is_none(),
+                    "{fichero}, paso {i}: el vector no fija error.message"
+                );
+                let cuerpo = responder(&rt, &app, &paso["peticion"]);
+                assert_eq!(
+                    &sin_message(cuerpo.clone()),
+                    esperado,
+                    "{fichero}, paso {i}: el nodo responde {cuerpo}"
+                );
+                if let Some(e) = esperado.get("error") {
+                    juzgados.push(e.clone());
+                }
+            }
+            assert_eq!(
+                juzgados.len(),
+                1,
+                "{fichero}: un vector de spec/vectors/nodo/ juzga UN error, el de su linea del manifiesto"
+            );
+            assert_eq!(juzgados[0]["code"], json!(code), "{fichero}: el code de su linea del manifiesto");
+            assert_eq!(juzgados[0]["data"]["causa"], json!(causa), "{fichero}: la causa de su linea del manifiesto");
+            assert!(app.parada.get().is_none(), "{fichero}: un vector no para el nodo");
+        }
+    }
+}
