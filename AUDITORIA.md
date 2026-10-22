@@ -69294,4 +69294,54 @@ dejan así, fechados, o se ponen al día con cada sello.
 **Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
 `check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
 y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
+
+## §891 — el punto 12 de la lista de cosas menores, y una cita vecina que nadie había visto: `doc/integracion-vertical-evaluacion.md` cita el criterio de no apilar superficie por la sección 6 de `CONTRIBUTING.md` y no por sus líneas, y la fila E5 cita `digest_of_proof` por su nombre, con sus marcas
+
+El commit que lleva este asiento, sobre el §890. Toca `doc/integracion-vertical-evaluacion.md`: la
+fila E5 de la tabla de errores (`:75`), la fila E6 (`:76`) y el punto 2 de su lista de lo que no se
+mueve (`:115-117`). Y este asiento. Ni código, ni tests, ni vectores, ni `tools/`, ni
+`CONTRIBUTING.md`, ni `BACKLOG.md`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en
+la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número
+es el siguiente del rango §890 a §899. El canon de este commit, `bash tools/canon.sh --sello`,
+corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y sin esta frase: VERDE,
+385 s de reloj y 228 s de tests, en una máquina de 4 CPU con carga de 1,53 al empezar. Las 19 filas
+en su pin, con 1872 tests que pasan, y las 55 líneas «OK» de sus compuertas, entre ellas el
+artefacto reproducible, con el binario `803ee230ea9d737b` y el tarball `e1bf920dcb7d74f8`.
+
+Del autor es la tarea, la misma del §890: cerrar hoy las cosas menores que quedan. El punto 12 de
+la lista que sacó la sesión del §860 a §889 decía que las dos citas a `CONTRIBUTING.md:149-157` ya
+estaban rancias antes de su pila. Este fichero no lo lleva en vuelo ninguna otra sesión. La forma,
+la cita por encabezado, es la que el §792 ya usó en este mismo documento.
+
+**Medido**, con `git show`:
+
+1. **Las dos citas a `CONTRIBUTING.md`.** En `c5f5eae`, el §705 que las escribió, y en `8c02941`,
+   el árbol del §792, la `:149` es «**No encaja sin discusión previa con números**» y la `:157`
+   «alguien tendrá que auditar, y **no hay auditoría**»: caían en su sitio. El §793 les añadió el
+   rango `:159-167` al bajar la sección diez líneas. En `212eca2` la `:149-157` es el bloque de
+   `tools/check_constraint_layout.py` de la sección 4, y la sección 6 empieza en la `:191`. La pila
+   de la sesión del §860 a §889 y su carril B añaden notas en la sección 4 y en la 2, y la volverían
+   a bajar.
+2. **La fila E5**, que nadie había listado. Citaba `crates/zk-ssl-hash/src/lib.rs:1716`, `:1724` y
+   `:1737-1739` por `digest_of_proof` con Blake3. En `c5f5eae` caían en su sitio: el `Blake3_256`,
+   su `hash` y la función. En `8c02941`, el árbol del §792, ya eran tres líneas del REGISTRO de
+   dominios, y el §792 no la vio. En `212eca2` la función está en la `:1836`.
+3. **Las otras citas de las filas E5 a E7** caen en su sitio en `212eca2`:
+   `crates/zk-ssl/Cargo.toml:35-37` y `crates/stark-experiment/src/compliance_real_proof.rs:211-220`.
+
+**Qué cambia.** Las filas E5 y E6 y el punto 2 citan por nombre y por encabezado, con una marca
+que dice qué decían, de qué árbol eran y dónde está hoy lo citado.
+
+**Comprobado.** Sobre el árbol con este sello salen con 0 `verificar_citas`, `check_publicadas`,
+`check_cifras`, `check_figures`, `check_tests` y `check_modulos`.
+
+**Lo que NO hace.**
+
+- No coteja el resto de las citas por línea del documento: sólo las de las filas E5 a E7 y el
+  punto 2.
+- No toca `CONTRIBUTING.md`.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2034 tests declarados y 20 instrumentos,
+`check_modulos` en 207 y el total de sello en 1872. La puerta de los vectores, en 509 ficheros
+y 1039 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 40 abiertas y 90
 resueltas.
