@@ -1047,8 +1047,12 @@ prometer—. Se borra, y se dice lo que puede seguir guardando copias:
   borra (`la_importacion_barre_el_claro_que_dejaba_una_importacion_muerta`) y lo dice por la salida
   de errores. Es de la sesión, reversible, que si no puede borrarlo la importación falle con un error
   que lo nombra, sin importar nada, y que sólo borre un fichero regular: un directorio o un enlace
-  con ese nombre no se tocan. Ni la negativa ni el aviso tienen test. El de una instantánea que no
-  se vuelva a importar se busca junto a ella y se borra a mano; y borrarlo tampoco sobrescribe;
+  con ese nombre no se tocan. ⚠️ §819: decía «Ni la negativa ni el aviso tienen test». Los dos lo
+  tienen desde el §819 (`si_no_puede_barrer_el_claro_la_importacion_falla_sin_importar_nada`): la
+  negativa, con el borrado mismo hecho fallar, y el aviso, leído en lo que guarda el hilo en los
+  tests; que vaya a la salida de errores no lo ve el test: fuera de los tests es un `eprintln!` de
+  una línea, sin test, y se declara; dejarlo así es de la sesión, reversible. El de una instantánea
+  que no se vuelva a importar se busca junto a ella y se borra a mano; y borrarlo tampoco sobrescribe;
 - **la capa importada** de una instantánea cifrada nace sin clave y, si se vuelve a exportar, sale
   en claro (la entrada 121 del `BACKLOG.md`);
 - **el hardware y el sistema de ficheros**: un SSD (su FTL, el nivelado de desgaste, TRIM), los
@@ -1281,9 +1285,10 @@ sólo ata el sellado— y la 3.13 («Solo la cifrada las protege»), que llevan 
 **El arreglo.** Con clave, la marca `0x00` se rehúsa, con un `Malformed` cuyo texto dice que la
 instantánea está en claro y que, si se esperaba una cifrada, pudo ponerla quien escribe donde se
 guarda: `import_snapshot`, que no recibe clave, la importaría sin autenticar nada. Falla cerrado.
-Lo ata `con_clave_una_instantanea_en_claro_no_se_importa`, al final de `crates/zk-ssl/src/tests.rs`:
-con la frase, con otra frase y con una clave ya fijada a su KDF, una en claro no se importa; el
-mismo cuerpo tras una marca que no es de cifrado, tampoco; ni una v8 en claro; y sin clave, sí.
+Lo ata `con_clave_una_instantanea_en_claro_no_se_importa`, al final de `crates/zk-ssl/src/tests.rs`
+(⚠️ §819: ya no es el último: detrás va el del §819, en la 3.14): con la frase, con otra frase y con una
+clave ya fijada a su KDF, una en claro no se importa; el mismo cuerpo tras una marca que no es de
+cifrado, tampoco; ni una v8 en claro; y sin clave, sí.
 
 **Lo que no hace.** `import_snapshot` sigue importando una en claro: es la vía de una capa sin clave,
 y quien la llama tiene que saber de dónde sale. La importación con clave no ata la instantánea a un

@@ -1589,6 +1589,11 @@ fn abrir_sellada(buf: &[u8], key: &crate::crypto::LedgerKey) -> Result<Vec<u8>, 
 /// puede borrarlo, la importacion falla y lo dice: no se importa con el claro al lado sin que nadie
 /// lo vea. Devuelve si lo borro. El de una instantanea que no se vuelva a importar se busca junto a
 /// ella y se borra a mano.
+///
+/// ⚠️ §819: esa negativa y el aviso tienen test desde el §819
+/// (`si_no_puede_barrer_el_claro_la_importacion_falla_sin_importar_nada`): la negativa, con el
+/// borrado MISMO hecho fallar (`ruta_del_borrado`, abajo); el aviso, leido por el test en lo que
+/// guarda el hilo (`avisar_del_barrido`, abajo). Que vaya a la salida de errores no lo ve el test.
 pub(crate) fn barrer_descifrada(path: &str) -> Result<bool, LayerError> {
     // El nombre, como lo formaba aquel codigo: pegando el sufijo a la ruta.
     let resto = format!("{path}.tmp-descifrada");
@@ -1596,18 +1601,20 @@ pub(crate) fn barrer_descifrada(path: &str) -> Result<bool, LayerError> {
         Ok(m) if m.file_type().is_file() => {}
         _ => return Ok(false),
     }
-    std::fs::remove_file(&resto).map_err(|e| {
+    std::fs::remove_file(&*ruta_del_borrado(&resto)).map_err(|e| {
         io_err(format!(
             "{resto}: es el estado del libro EN CLARO que dejo una importacion muerta de una version \
              entre 5d2833e y c87d7d6, y no se pudo borrar ({e}); no se importa con el al lado: hay \
              que borrarlo a mano"
         ))
     })?;
-    eprintln!(
+    // ⚠️ §819: hasta el §819, `eprintln!` aqui mismo; ahora por `avisar_del_barrido` (abajo), que lo
+    // escribe igual y deja que un test lo lea.
+    avisar_del_barrido(format_args!(
         "aviso (§812): se borro {resto}, el estado del libro EN CLARO que dejo una importacion muerta \
          de una version entre 5d2833e y c87d7d6; borrar no sobrescribe, y su contenido puede seguir \
          en el disco (SECURITY.md §3.14)"
-    );
+    ));
     Ok(true)
 }
 
@@ -1627,4 +1634,52 @@ fn rehusar_en_claro() -> LayerError {
          import_snapshot la importaria sin autenticar nada: solo si sabes de donde sale"
             .into(),
     ))
+}
+
+/// ⚠️ §819 · **El aviso de `barrer_descifrada`.** Fuera de los tests, `eprintln!`, como desde el
+/// §812. En ellos lo guarda el hilo en `AVISOS_DEL_BARRIDO`, y
+/// `si_no_puede_barrer_el_claro_la_importacion_falla_sin_importar_nada` lo lee: que se avisa al
+/// borrar, que no se avisa de un borrado que no se hizo, y que el aviso nombra el fichero y dice
+/// que estaba en claro. Lo que el test no ve es la salida de errores misma: que el aviso vaya a ella
+/// lo dice esta funcion, un `eprintln!` de una linea, sin test. Se declara; dejarlo sin test es de
+/// la sesion, reversible.
+#[cfg(not(test))]
+fn avisar_del_barrido(aviso: std::fmt::Arguments<'_>) {
+    eprintln!("{aviso}");
+}
+
+#[cfg(test)]
+fn avisar_del_barrido(aviso: std::fmt::Arguments<'_>) {
+    AVISOS_DEL_BARRIDO.with(|a| a.borrow_mut().push(aviso.to_string()));
+}
+
+#[cfg(test)]
+thread_local! {
+    pub(crate) static AVISOS_DEL_BARRIDO: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// ⚠️ §819 · **La ruta que borra `barrer_descifrada`, y su gancho en los tests.** Fuera de los tests
+/// es la del resto, tal cual. En ellos, si el hilo lo pidio en `FALLAR_BORRADO`, es la del resto
+/// con una barra al final: `remove_file` la rehusa (`ENOTDIR`: un fichero no es un directorio) y el
+/// resto se queda. Es el borrado MISMO el que falla, no un paso aparte antes de el: el `Result` que
+/// la importacion propaga es el de `remove_file`, y un mutante que lo ignore cae en
+/// `si_no_puede_barrer_el_claro_la_importacion_falla_sin_importar_nada`.
+#[cfg(not(test))]
+#[inline(always)]
+fn ruta_del_borrado(resto: &str) -> std::borrow::Cow<'_, str> {
+    std::borrow::Cow::Borrowed(resto)
+}
+
+#[cfg(test)]
+fn ruta_del_borrado(resto: &str) -> std::borrow::Cow<'_, str> {
+    if FALLAR_BORRADO.with(|f| f.get()) {
+        std::borrow::Cow::Owned(format!("{resto}/"))
+    } else {
+        std::borrow::Cow::Borrowed(resto)
+    }
+}
+
+#[cfg(test)]
+thread_local! {
+    pub(crate) static FALLAR_BORRADO: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }

@@ -52,11 +52,19 @@ solvencia**: las pruebas hablan del libro, no del mundo.
 - **No está auditado por terceros.** Ninguna cantidad de tests propios lo sustituye. Dos
   dependencias criptográficas sin auditoría independiente —`xmss`, pre-release, y `ml-dsa`, en
   el kit desde el §633— van clavadas con `=` y declaradas, y desde el §694 lo comprueba el canon,
-  con las de winterfell y la clausura del kit como lista cerrada. Lo que no está auditado, en
-  [`SECURITY.md`](./SECURITY.md); lo que declaran las dos dependencias, en el manifiesto que las
-  clava (`crates/zk-ssl-node/Cargo.toml`:48-52, `crates/zk-ssl-medio/Cargo.toml`:29-36). ⚠️
+  con las de winterfell y la clausura del kit como lista cerrada. Y una tercera, `argon2` 0.5.3, el
+  KDF de reposo de la capa desde el §702, va clavada igual y sin auditar por el proyecto
+  (`AUDITORIA.md` §702: «No audita `argon2` 0.5.3»); de una auditoría por terceros no hay registro
+  en el árbol. El vector del RFC 9106 y los KAT comprueban la salida, no el código, y su fijación la
+  comprueba un test de la capa, `argon2_entra_clavada_y_solo_por_la_capa`. Lo que no está auditado,
+  en [`SECURITY.md`](./SECURITY.md); lo que declaran las dos primeras, en el manifiesto que las
+  clava (`crates/zk-ssl-node/Cargo.toml`:48-52, `crates/zk-ssl-medio/Cargo.toml`:29-36), y por qué
+  va clavada la tercera, en el suyo (`crates/zk-ssl/Cargo.toml`:45-58). ⚠️
   **Corregido en el §794**: decía «Todo en `SECURITY.md`», que no dice de ninguna de las dos que vaya
   sin auditoría ni clavada: nombra XMSS y ML-DSA sólo como esquemas (`SECURITY.md`:189, :728).
+  ⚠️ **Corregido en el §819**: no nombraba `argon2`, clavada desde el §702 y sin auditar por el
+  proyecto (`AUDITORIA.md` §702), y decía «lo que declaran las dos dependencias, en el manifiesto que
+  las clava».
 - **Los seis depósitos con DOI preceden a correcciones del árbol.** Lo que se corrigió se marca, no
   se borra: [`doc/preprints/ERRATA.md`](./doc/preprints/ERRATA.md).
 

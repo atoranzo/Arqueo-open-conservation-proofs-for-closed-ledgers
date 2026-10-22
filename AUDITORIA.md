@@ -62297,3 +62297,326 @@ instrumentos, y `check_modulos` en 207. El total de sello sigue en 1853. El juez
 a 92 comprobaciones; el canon imprime su última línea, y no lleva pin. La puerta de los vectores sigue
 en 508 ficheros y 1017 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 44
 abiertas y 86 resueltas.
+
+## §819 — la negativa del barrido y su aviso tienen test: si la importación de una instantánea no puede borrar el claro que dejaba una importación muerta, falla, lo nombra, no importa nada y no avisa de un borrado que no hizo; y `argon2` 0.5.3, clavada y sin auditar por el proyecto, entra en la frase de las dependencias de los README
+
+El commit que lleva este asiento, sobre `212eca2` (el §859). Toca `crates/zk-ssl/src/snapshot.rs`
+—en `barrer_descifrada`, el borrado pasa por `ruta_del_borrado` y el aviso por `avisar_del_barrido`,
+con una marca en su doc y otra en su cuerpo; las dos funciones, en sus dos variantes, y los dos
+`thread_local!` de los tests, al final, detrás de `rehusar_en_claro`—; `crates/zk-ssl/src/tests.rs`,
+con `junto_a` y el test, al final, detrás del del §817; `SECURITY.md` —una marca en la 3.14 y otra
+en la 3.16—; el RFC-0001 —su cabecera, una marca en la D-H y un añadido marcado en su «Seguridad»—;
+`README.md` y `README_EN.md`, en la viñeta de «No está auditado por terceros»; el pin de la capa en
+`tools/canon.sh`, con su crónica; las cifras de `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`; la
+cifra del pin en la nota del §814 de `ARQUITECTURA.md` y de `CONTRIBUTING.md`, con marca; y este
+asiento. No cambia ningún formato: ni el cable, ni un vector, ni el kit, ni el `Cargo.lock`. Fuera
+de los tests, lo que hace la capa no cambia: borra la misma ruta y escribe el mismo aviso por la
+salida de errores. No toca `persistence.rs`, ni `crates/zk-ssl-guardian`, ni la zona de la
+migración de Winterfell, ni el nodo.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. La sesión lo escribió y lo revisó en
+su carril, en su propio árbol: primero sobre `b6994c3` (el §812), donde una primera vuelta escribió
+el código, el test y los textos; unos escépticos los juzgaron, y todas sus objeciones a este sello
+eran ciertas —un juicio, «no es una propiedad de seguridad: no cambia lo que queda en el disco», que
+el sello no medía y que estaba en el doc de `avisar_del_barrido`, en la 3.14 de `SECURITY.md` y en
+la D-H del RFC-0001; una marca de `doc/ecst/VERIFICACION.md` que contaba a medias la historia de su
+cita del pin; la cabecera del RFC-0001, que no sumaba el asiento; y dos frases falsas del material
+del asiento: que el borrado no tenía test, y que eran tres los textos que decían «sin test»—, y una
+segunda vuelta las hizo todas. Luego, en el carril, lo portó sobre el §817 de antes del rebase (en
+`main`, rebasado, es `5fd5212`), y dos revisiones más juzgaron ese porte —una, el código, el test y
+los mutantes; otra, los textos, las citas y las cifras— sin hallar nada bloqueante; de sus menores,
+la sesión comprobó cada uno contra el árbol e hizo los ciertos: una cuenta, una razón que faltaba y
+una cita del asiento, la base que nombraba para una medida, la marca de la 3.16 de `SECURITY.md`,
+que pone «al final» un test que ya no lo es, el «como el aviso» del añadido de la «Seguridad» del
+RFC-0001 —el aviso que nombra ese párrafo, el de la salida de errores, es el que el test no ve—, y
+la entrada de la crónica del pin, que no nombraba el aviso. Lo portó luego sobre el §852 de `main`,
+luego sobre el §858, y ahora sobre el §859, que frente a la base del carril trae los §839-§842, el
+§815, el §816 y el §817 rebasados sobre ellos, el §818 y los §843-§859; es el primer sello de la
+pila, y no lleva otro de ella delante. Dos revisiones juzgaron también este porte cuando iba sobre
+el §849 (`29b4442`), y la sesión comprobó cada hallazgo contra el árbol: sus dos bloqueantes, los
+dos del asiento —nombraba commits del carril que no están en la historia de `main`, y daba dos
+líneas de `29b4442` por las de este commit—, se hicieron, como sus menores ciertos (abajo), salvo
+dos, que se quedan: las líneas de más de 100 columnas de los textos del carril, como tantas otras de
+esos ficheros en `main` (99 en `SECURITY.md`, 122 en el RFC-0001), y la de 103 que deja en la nota
+del §814 la marca de este sello, porque en las cuatro líneas que se rehacen no cabe en 100 sin
+partir el `cfg_attr` que nombra. Del §849 al §852 lo llevó un `cherry-pick`, que sólo chocó en
+`AUDITORIA.md` (abajo, «El porte, hasta el §852»). Otra revisión juzgó el porte sobre el §852, y la
+sesión comprobó cada hallazgo contra el árbol: su bloqueante, del asiento —daba 349 citas por línea
+a los README detrás de lo que se mueve, y son 239: su `git grep` casaba también citas a otros
+ficheros que se llaman así—, y su menor, que las citas de `AUDITORIA.md` a los README que este sello
+baja no son sólo las nueve que trae `main`, se hicieron, sólo en este asiento (abajo, «Las líneas»).
+Del §852 al §858 lo llevó otro `cherry-pick`, que también chocó sólo en `AUDITORIA.md` (abajo, «El
+porte, hasta el §858»), y del §858 al §859 otro más, con el mismo choque (abajo, «El porte, aquí»).
+Lo medido en el carril, lo medido sobre `29b4442`, lo medido sobre `378e1fa`, lo medido sobre
+`7ed7e17` y lo medido aquí van por separado (abajo, «Medido»).
+
+**Lo que faltaba.** Desde el §812, `import_snapshot_with_key` empieza por `barrer_descifrada`
+(`snapshot.rs:184`): si junto a la instantánea hay un `{instantánea}.tmp-descifrada` que es un
+fichero regular, lo borra y lo dice por la salida de errores; si no puede borrarlo, la importación
+falla con un error que lo nombra, sin importar nada. El borrado tenía test desde el §812
+(`la_importacion_barre_el_claro_que_dejaba_una_importacion_muerta`); ni la negativa ni el aviso lo
+tenían, y lo decían dos textos, la 3.14 de `SECURITY.md` y la D-H del RFC-0001. Y los README
+nombraban dos dependencias criptográficas sin auditoría independiente, `xmss` y `ml-dsa`, y no
+`argon2` 0.5.3, el KDF de reposo de la capa desde el §702, clavada con `=`
+(`crates/zk-ssl/Cargo.toml:58`) y que el proyecto no audita (el asiento del §702: «No audita
+`argon2` 0.5.3»).
+
+**Lo que hace.** `barrer_descifrada` borra por `ruta_del_borrado`: fuera de los tests, la ruta tal
+cual; en ellos, si el hilo lo pidió en `FALLAR_BORRADO`, la ruta con una barra al final, que
+`remove_file` rehúsa (`ENOTDIR`: un fichero no es un directorio), y el fichero se queda. El `Result`
+que la importación propaga con `?` es el del borrado mismo, no el de un paso aparte antes de él. El
+aviso pasa por `avisar_del_barrido`: fuera de los tests, el `eprintln!` del §812, con el mismo
+texto; en ellos lo guarda el hilo en `AVISOS_DEL_BARRIDO`, y el test lo lee. El test,
+`si_no_puede_barrer_el_claro_la_importacion_falla_sin_importar_nada`, al final de `tests.rs`: con el
+borrado fallando, (a) la importación falla, (b) su error nombra el fichero, y (c) la instantánea y
+el resto siguen byte a byte, no aparece nada junto a la instantánea y no se avisa de nada; y (d) sin
+el fallo, la misma importación lo barre, lo avisa una vez —nombrándolo y con «EN CLARO»— e importa
+con su raíz y con Alice a 777 777. Se corrigen con marca los dos textos que decían «sin test», la
+3.14 de `SECURITY.md` y la D-H del RFC-0001: los dos dicen ahora sólo lo medido —que el test no ve
+que el aviso vaya a la salida de errores, que fuera de los tests es un `eprintln!` de una línea,
+sin test, y que dejarlo así es de la sesión, reversible—. La «Seguridad» del RFC-0001 lleva un
+añadido marcado, y su cabecera suma este asiento. Los README, en castellano y en inglés, nombran
+ahora `argon2` 0.5.3, clavada igual y sin auditar por el proyecto, con su fuente (el §702) y el
+manifiesto que la clava (`crates/zk-ssl/Cargo.toml:45-58`); que el vector del RFC 9106 y los KAT
+comprueban la salida y no el código; y que su fijación la comprueba
+`argon2_entra_clavada_y_solo_por_la_capa` (`crypto.rs`). De una auditoría por terceros no hay
+registro en el árbol. La corrección de los README va con marca.
+
+**Quién lo decide.** El barrido y su aviso los decidió el autor en el §812, y la negativa, la
+sesión, también en el §812. En este sello, la sesión, y reversible: el gancho en la ruta del
+borrado mismo, y no en un paso aparte, para que un mutante que ignore el error del borrado caiga; y
+dejar sin test que el aviso llegue a la salida de errores, que se declara.
+
+**El porte, en el carril.** Entre `b6994c3` y el §817 de antes del rebase, la capa cambiaba en seis
+commits —el §832, el §860, el §861, el §815, el §816 y el §817—, y en ninguno cambiaban
+`barrer_descifrada` ni el test del §812 (medido con `diff`). Lo nuevo de `snapshot.rs` pasó detrás
+de `rehusar_en_claro`, que el §817 dejó al final, y el test, detrás del del §817; el test limpia con
+`quitar_e4`, que desde el §816 borra también el cerrojo del libro.
+
+**El porte, hasta el §852.** Entre `5fd5212`, el §817 de `main`, y `378e1fa`, `snapshot.rs` y
+`tests.rs` no cambian (`git diff 5fd5212 378e1fa -- crates/zk-ssl/src/snapshot.rs
+crates/zk-ssl/src/tests.rs`, vacío, como hasta `29b4442`), y son los del §817 de antes del rebase,
+sobre el que el carril lo portó; el código del sello es el del borrador del carril: frente a él, en
+esos dos ficheros sólo se numera el marcador, «§819», en cinco líneas de comentario. Pero la capa de
+`main` no es la del carril: lleva cuatro tests más, los de los §839, §840 y §842 —el censo de las
+longitudes, los dos del censo de los `native_leaf` y el de las bandas de bytes—, que entraron en
+`main` antes que el §815, el §816 y el §817; su pin, en `29b4442` y en `378e1fa`, es 497, y no 493.
+El `cherry-pick` del borrador sobre `29b4442` chocó sólo en las cifras —`ARQUITECTURA.md`,
+`PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md`,
+`doc/ecst/VERIFICACION.md` y el pin de `tools/canon.sh`—: se tomaron las de `main` y se volvieron a
+sumar. El que lo llevó del §849 al §852 chocó sólo en `AUDITORIA.md`: los asientos del §850 al §852
+van delante de éste, que baja 555 líneas. De los demás ficheros de este sello, los §850-§852 sólo
+tocan los README, en la cuenta de ficheros de `spec/vectors/`, en su misma línea y fuera de la
+viñeta de este sello, y `tools/canon.sh`, en el «3 duodecies», lejos de la fila `zk-ssl` de su
+tabla; ni las cifras de `main` ni el pin cambian del §849 al §852. Lo que cambia al portarlo:
+- las cifras se suman a las de `378e1fa`, las mismas en `7ed7e17`: 497, 1853, 1990 y 2012, no 493,
+  1845, 1982 y 2004;
+- la entrada de la crónica del pin, «§819: 497 -> 498», va detrás de la del §817 (en el carril era
+  «493 -> 494», y sobre `b6994c3`, «481 -> 482»);
+- la nota del §814 de `ARQUITECTURA.md` y de `CONTRIBUTING.md`, «la fila de la capa en
+  `tools/canon.sh` fija hoy N pasan», ya estaba en la base del carril, y rancia: en el §817 de antes
+  del rebase decía 481 con el pin en 493 (la `:1561` de su `ARQUITECTURA.md`), y el borrador no la
+  tocaba. En `main` la corrigió con marca el §839, y la llevan con la suya el §840, el §842, el §816
+  y el §817. Pasa a 498, con su marca, «⚠️ §819: decía 497; el de más, el de la negativa del
+  barrido, tampoco» —no se ha corrido en depuración—. El §817 puso su marca en una línea nueva; esta
+  va en las que ya estaban: se rehacen cuatro líneas de la nota en cada fichero
+  (`ARQUITECTURA.md:1613-1616`, `CONTRIBUTING.md:122-125`) y no se mueve ninguna;
+- en `doc/ecst/VERIFICACION.md`, desde el §847 la ficha cita la fila `zk-ssl` de la tabla de
+  `tools/canon.sh`, no su línea, y lleva el pin a mano: aquí sólo cambia la cifra, a mano. La vuelta
+  del carril sobre `b6994c3` corregía su cita por línea con su historia entera, y ya no hay cita por
+  línea que corregir. La marca del §847 de su cabecera (`:6`) cuenta los sellos que, hasta él,
+  pusieron al día ese pin a mano; éste no la toca: es crónica de aquel sello;
+- la cabecera del RFC-0001 decía, en `main` como en el carril, «§702, §812, §816», y este asiento
+  va detrás;
+- y las herramientas que `main` trae nuevas o más estrictas —el ATADO G de `check_publicadas`
+  (§846), la v5 bis de `verificar_citas` (§847), la R8 de `check_superficie` (§849) y la causa de
+  `check_curvas` (§843)— no piden nada de este sello: el RFC-0001 lleva ya su línea de autor y la
+  de asistencia, los README no ganan ninguna cita por línea a `tools/canon.sh`, y el sello no
+  escribe ninguna frase de conformidad. Los §850-§852 no cambian ninguna de las quince (`git diff
+  --stat 29b4442 378e1fa -- tools/` da `tools/canon.sh` y `tools/segunda/`), y lo que cambian en el
+  canon y en `tools/segunda/` no lee nada de este sello.
+
+**El porte, hasta el §858.** Del §852 al §858 lo llevó un `cherry-pick` sobre `7ed7e17`, que sólo
+chocó en `AUDITORIA.md`: los asientos del §853 al §858 van delante de éste, que baja 1126 líneas,
+con una línea en blanco entre ellos. De los demás ficheros de este sello, los §853-§858 tocan tres,
+y `git` los juntó sin choque: `CONTRIBUTING.md`, donde el §855 añade su párrafo del canon en un clon
+recién hecho detrás de la nota del §814 (en la `:132`), que no se mueve; `doc/ecst/VERIFICACION.md`,
+donde el §857 rehace la línea de M8a, la `:1629`, y no la de M11, la `:1549`; y `tools/canon.sh`,
+donde el §853 rehace la fila `zk-ssl-air` y el §855 añade su bloque del target detrás de la tabla y
+cambia el binario del «3 bis» y de las familias, lejos de la fila `zk-ssl`. `snapshot.rs` y
+`tests.rs` no cambian de `378e1fa` a `7ed7e17` (`git diff 378e1fa 7ed7e17 -- crates/zk-ssl`, vacío),
+ni los demás ficheros del sello fuera de esos tres: sus trozos caen en las mismas líneas que sobre
+`378e1fa` (`git diff -U0`, comparado), y ni las cifras de `main` ni el pin cambian del §852 al §858.
+Lo que las herramientas traen nuevo o más estricto no pide nada de este sello, y en su árbol no se
+arregla nada:
+- el ATADO G de `check_publicadas`, que desde el §856 busca el identificador de modelo en toda la
+  cabecera de cada RFC, hasta su primer «## »: la del RFC-0001 va de la `:1` a la `:32` —su primer
+  «## », «Estado de las etapas», es la `:33`—, y la línea que este sello rehace en ella, la `:28`,
+  la de sus asientos, no nombra ningún modelo;
+- la v5 bis de `verificar_citas`, que el §854 amplía a `doc/METODO.md`, `doc/blueprint-v2.md`, el
+  RFC-0005 y `tools/check_publicadas.py`: el sello no toca ninguno de los cuatro ni escribe en un
+  documento vivo una cita por línea a `tools/canon.sh`; en `doc/ecst/VERIFICACION.md` su ámbito
+  sigue siendo las líneas «Lo que se puede afirmar», y la de M11, que el sello rehace, cita la fila;
+- `check_publicadas`, que desde el §857 lee esas mismas 305 líneas en el ATADO F y en RETIRADAS: la
+  de M11 no dice nivel ni cifra retirada, y pasa;
+- la v3 bis con su mínimo (§858): sus nueve ficheros siguen en la lista, y en los dos que este sello
+  toca, los README, no escribe ninguna cita por línea a `spec/RPC.md`;
+- y el §853 y el §855, en el canon, cambian timeouts y caminos, y el aviso de `check_curvas` al
+  empezar: el sello no toca el `Cargo.lock`, ni de la fila `zk-ssl` más que su pin y su crónica, y
+  su timeout sigue en 900.
+Ninguna frase que escribieron los §853-§858 queda falsa con este sello: fuera de sus asientos, que
+narran su commit y no se reescriben, ninguna da el pin de la capa, el total de sello ni la cuenta de
+`check_tests`, y ninguna de sus citas por línea cae en lo que este sello mueve (abajo, «Las
+líneas»).
+
+**El porte, aquí.** Del §858 al §859 lo llevó un `cherry-pick` sobre `212eca2`, que sólo chocó en
+`AUDITORIA.md`: el asiento del §859 va delante de éste, que baja 152 líneas, con una línea en blanco
+entre ellos. De los demás ficheros de este sello, el §859 sólo toca `tools/canon.sh`, en el
+comentario del bloque del medio, lejos de la fila `zk-ssl` de su tabla, y `git` lo juntó sin choque;
+los trozos de este sello caen en las mismas líneas que sobre `7ed7e17` (`git diff -U0`, comparado),
+y ni las cifras de `main` ni el pin cambian del §858 al §859 (`git diff --stat 7ed7e17 212eca2` da
+`AUDITORIA.md`, `BACKLOG.md`, `tools/canon.sh`, `tools/segunda/README.md` y
+`tools/segunda/juez_medio.py`). Lo que el §859 cambia no lee nada de este sello, ninguna de las
+quince herramientas cambia con él, y ninguna frase que escribió fuera de su asiento da el pin de la
+capa, el total de sello ni la cuenta de `check_tests`.
+
+Cinco textos ponen «al final» algo que ahora tiene lo de este sello detrás (las líneas, las de este
+commit): en `snapshot.rs`, la cabecera (`:85`) y el doc de `import_snapshot_with_key` (`:176`), a
+`rehusar_en_claro`; el comentario de la `:184`, a `barrer_descifrada`, desde el §812 y con
+`rehusar_en_claro` detrás desde el §817; el doc de `rehusar_en_claro` (`:1629`), a su test; y la
+3.16 de `SECURITY.md` (`:1288`), al mismo test. La de `SECURITY.md`, un documento público que se lee
+al pie de la letra, lleva marca. Los cuatro de `snapshot.rs`, no: son comentarios que dicen dónde
+buscar por su nombre algo que sigue en el tramo final del fichero, y la `:184` no la marcó el §817;
+dejarlos así, para que el `snapshot.rs` de este commit sea el que se midió en el carril, es de la
+sesión, reversible.
+
+**Las líneas**, las de `212eca2` (`git diff -U0 212eca2`), las mismas que sobre `7ed7e17`, sobre
+`378e1fa` y sobre `29b4442`. En `snapshot.rs`, desde la `:1592` las líneas corren cinco, desde la
+`:1607` siete, y `rehusar_en_claro` pasa de la `:1623` a la `:1630`; en `tests.rs` nada se mueve. En
+`SECURITY.md` corren cuatro desde la `:1052` y cinco desde la `:1287`; en el RFC-0001, tres desde la
+`:423` y cuatro desde la `:575`; en los README, cinco desde la `:58` (`README_EN.md`: `:59`) y ocho
+desde la `:60` (`:61`). En `ARQUITECTURA.md`, `CONTRIBUTING.md` y las demás cifras no se mueve
+ninguna. Ninguna cita por línea de los documentos vivos cae en lo que se mueve de `snapshot.rs`, de
+`SECURITY.md` ni del RFC-0001 (`git grep` sobre `212eca2`, sin `AUDITORIA.md`: al RFC-0001 se le
+cita la `:12` y la `:21`, desde `doc/ROTACION_DE_CUENTAS.md`, y a `SECURITY.md`, nada detrás de la
+`:728`, que cita la viñeta de los README), ni en las cuatro líneas que se rehacen de la nota del
+§814. A los README, fuera de `AUDITORIA.md`, se les citan por línea, detrás de lo que se mueve, 239
+sitios: 238 en `doc/ecst/` —236 a `README.md` y dos a `README_EN.md`, las dos `README_EN.md:95`, en
+`doc/ecst/borrador/verificacion-measures.json`— y uno en el RFC-0005, `README.md:60-62`, «el
+contrato de la segunda implementación». Es la cifra del carril, y sale la misma sobre `212eca2`,
+sobre `7ed7e17`, sobre `378e1fa`, sobre `29b4442`, sobre `5fd5212` y sobre el §817 de antes del
+rebase, la base del carril: `main` no añade ninguna. Se cuentan por su ruta (`git grep -oE
+'[A-Za-z0-9_./-]*README(_EN)?\.md:[0-9]+'`, sin `AUDITORIA.md`, y de lo que casa, sólo lo que es
+`README.md` o `README_EN.md`); la orden que daba este asiento, `git grep -oE
+'README(_EN)?\.md:[0-9]+'`, cuenta 349, porque casa también 110 citas a otros ficheros que se llaman
+así y que este sello no mueve: 107 a `hbs-state/README.md`, el del otro repositorio contra el que se
+hizo la verificación (`doc/ecst/borrador/README.md:3-6`; `doc/ecst/VERIFICACION.md:6`, «`hbs-state`
+a960828»), y tres a `doc/preprints/README.md:81`. De los 239 no se marca ninguno, porque ninguno
+cita el árbol vivo: `doc/ecst/` declara que sus `fichero:línea` son del árbol en `71c5aad`
+(`ECST.md:31-32`, `ECST_EN.md:33-34`, `VERIFICACION.md:24`), y su `borrador/` es el material de
+trabajo de la verificación, hecho sobre `d531c80` y `71c5aad`, que «no se cita»
+(`borrador/README.md:3-9`); el RFC-0005, que sus medidas se tomaron sobre `9ae055c` y `2080e5a`
+(`0005-nucleo-congelado.md:20-22`). Lo que citan en esos commits no lo mueve ningún sello: en
+`71c5aad`, `README.md:128`, `:129` y `:130` son las filas 1, 2 y 3 de la tabla de propiedades, y en
+`9ae055c`, `README.md:60-62` es el contrato. En esta punta ya no caían en su sitio antes de este
+sello: la fila 3 está en `212eca2`, como en `7ed7e17` y en `378e1fa`, en la `:173`, y el contrato en
+la `:130`. Las de `AUDITORIA.md` son de sus asientos, que no se reescriben, y las que caen detrás de
+lo que se mueve bajan con ello, ciertas o no en `212eca2`. De las ciertas, `main` trae nueve, de los
+§850 y §852 —los asientos de los §853-§859 no citan por línea ningún fichero de este sello que se
+mueva—, a la cuenta de `spec/vectors/` de los README, `README.md:262` y `README_EN.md:276`, que este
+sello baja ocho, a la `:270` y la `:284`; y las hay de asientos de antes, que bajan igual: entre
+ellas, las del §847 a las líneas de sus marcas, `README.md:143-144` y `:261` y
+`README_EN.md:145-147` y `:275`, que bajan ocho, a la `:151-152`, la `:269`, la `:153-155` y la
+`:283`, y las del §839 y el §860 a la marca del §794, `README.md:59` y `README_EN.md:60`, que bajan
+cinco, a la `:64` y la `:65`. La más alta a `SECURITY.md` es ahora la `:1098`, del asiento del §841,
+que cita el árbol de su sello y en `212eca2` ya no es esa línea.
+
+**Medido en el carril**, en release, con `--locked`, sobre el §817 de antes del rebase más este
+sello, con el marcador sin numerar: el filtro «barre snapshot instantanea», 30 de 30, el nuevo, el
+del §812 y el del §817 entre ellos; los mutantes, sobre `snapshot.rs`, cada uno restaurado y
+comprobado con su sha256: caen los tres, en el test nuevo —ignorar el error del borrado (`let _ =
+remove_file(..)`) cae en «CRITICO: (a) importo con el claro al lado sin poder borrarlo»; quitar el
+aviso, en «(d) el borrado no se aviso una vez: []»; y avisar antes de borrar, en «CRITICO: (c) aviso
+de un borrado que no hizo»—, cada uno con el test nuevo solo; la capa entera, 494 pasan, 0 fallan, 7
+ignorados y 0 avisos (283,57 s de tests); y las quince herramientas, en 0 en una copia con el
+marcador numerado y su asiento, con 2005 tests declarados.
+
+**Medido sobre `29b4442`**, el §849, más este sello, con «§819» puesto. La capa entera, porque la de
+`main` no es la del carril (`cargo test -p zk-ssl --release --locked`, el 21-10-2026): 498 pasan, 0
+fallan, 7 ignorados y 0 avisos, en 290,26 s de tests tras 4 min 19 s de compilación; entre ellos, el
+nuevo, el del §812 y el del §817. Las herramientas del bucle «2 ter» de `tools/canon.sh` —las once,
+`check_curvas` bajo el cerrojo de cargo—, más `check_tests`, `check_modulos`, `check_vectores` y
+`check_catalogo`, desde la raíz del árbol, con este asiento en su sitio: las quince dan 0;
+`check_tests` cuenta 2013 tests declarados, `check_modulos` 207 ficheros, `check_vectores` 500
+vectores y 1002 líneas de manifiesto, y `check_cifras`, 26 cifras de tests en documentos vivos,
+ninguna contra el canon. `git diff --check`, limpio. Tras las correcciones de las dos revisiones del
+porte, que sólo tocan este asiento, las quince se corrieron otra vez, con lo mismo. Los mutantes no
+se volvieron a correr: el código es el que se midió en el carril.
+
+**Medido sobre `378e1fa`**, el §852, más este sello, con su asiento de entonces en su sitio. La capa
+no se volvió a correr a mano: los §850-§852 no tocan `crates/zk-ssl`, ni sus dependencias, ni el
+`Cargo.lock` (`git diff --stat 29b4442 378e1fa -- crates/ Cargo.lock` da sólo
+`crates/zk-ssl-cli/src/witness.rs`, del §850), aunque su suite lee, al correr, `spec/RPC.md` y los
+fuentes de `crates/`, que sí cambian; la corrió el canon, el entero, `--sello`, sobre ese árbol, y
+salió VERDE. Las quince herramientas, como arriba: dan 0; `check_tests` cuenta 2013 tests
+declarados, `check_modulos` 207 ficheros, `check_vectores` 508 vectores y 1017 líneas de manifiesto
+—los ocho vectores y las quince líneas que suman el §850 y el §852—, y `check_cifras`, 26 cifras de
+tests en documentos vivos, ninguna contra el canon. `git diff --check`, limpio. Tras la corrección
+de la revisión del porte sobre el §852, que sólo toca este asiento, las quince se corrieron otra
+vez, con lo mismo.
+
+**Medido sobre `7ed7e17`**, el §858, más este sello, con su asiento de entonces en su sitio. La capa
+no se volvió a correr a mano: los §853-§858 no tocan `crates/zk-ssl`, ni sus dependencias, ni el
+`Cargo.lock` (`git diff --stat 378e1fa 7ed7e17 -- crates/ Cargo.lock` da sólo los dos `rehacer*.sh`
+de `crates/zk-ssl-medio/tests/vectores/testigos/`, del §855, guiones y no fuentes), y `snapshot.rs`
+y `tests.rs` son byte a byte los del sello sobre `378e1fa`; la corre el canon sobre este commit
+(abajo). Las quince herramientas, desde la raíz del árbol y `check_curvas` bajo el cerrojo de cargo,
+dan 0: `check_tests` cuenta 2013 tests declarados, `check_modulos` 207 ficheros, `check_vectores`
+508 vectores y 1017 líneas de manifiesto, `check_cifras` 26 cifras de tests en documentos vivos,
+ninguna contra el canon; `verificar_citas`, 0 en la v3 bis, con sus nueve ficheros y su mínimo de
+nueve, y 0 en la v5 bis, con sus ocho; y `check_publicadas`, en el ATADO G, los 21 RFC y la
+plantilla, y de `doc/ecst/VERIFICACION.md`, en RETIRADAS, sus 305 líneas «Lo que se puede afirmar».
+`git diff --check`, limpio.
+
+**Medido aquí**, sobre `212eca2` más este sello, con este asiento en su sitio. La capa no se volvió
+a correr a mano: el §859 no toca `crates/` ni el `Cargo.lock` (`git diff --stat 7ed7e17 212eca2 --
+crates/ Cargo.lock`, vacío), y `snapshot.rs` y `tests.rs` son byte a byte los del sello sobre
+`7ed7e17`; la corre el canon (abajo). Las quince herramientas, desde la raíz del árbol y
+`check_curvas` bajo el cerrojo de cargo, dan 0: `check_tests` cuenta 2013 tests declarados,
+`check_modulos` 207 ficheros, `check_vectores` 508 vectores y 1017 líneas de manifiesto,
+`check_cifras` 26 cifras de tests en documentos vivos, ninguna contra el canon; `verificar_citas`,
+0 en la v3 bis, con sus nueve ficheros y su mínimo de nueve, y 0 en la v5 bis, con sus ocho; y
+`check_publicadas`, en el ATADO G, los 21 RFC y la plantilla, y de `doc/ecst/VERIFICACION.md`, en
+RETIRADAS, sus 305 líneas «Lo que se puede afirmar». `git diff --check`, limpio.
+
+**Contadores.** +1 test. La capa, 497 -> 498. TOTAL DE SELLO 1853 -> 1854 y CON LARGOS 1990 -> 1991,
+en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; las «1364 declarados» y las «1349 declared» no se
+tocan, como en los sellos anteriores; `check_tests` 2012 -> 2013. La cifra de la capa, en
+`ARQUITECTURA.md` (dos veces, y la nota del §814, con marca), la misma nota de `CONTRIBUTING.md`,
+con marca, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`, a mano; el
+pin, en la fila `zk-ssl` de `tools/canon.sh`, con su entrada. `check_modulos` (207) y los vectores
+(508) no cambian. El `BACKLOG.md` no se toca: 44 abiertas y 86 resueltas.
+
+**Lo que NO hace.** El test no ve que el aviso llegue a la salida de errores: fuera de los tests es
+un `eprintln!` de una línea, sin test, y se declara. El gancho del borrado cambia la ruta, no los
+permisos: los tests corren como root (`id -u` da 0 en la máquina de la sesión), y un fichero que el
+proceso no puede borrar por sus permisos no se prueba. Y queda un error cierto fuera de la cadena:
+en las «Fuentes» de `doc/ecst/VERIFICACION.md:1550`, «`tools/canon.sh:89`: pin actual de zk-ssl en
+release = 421 pasan». Ya era falso cuando se escribió, en S594 (`b6c3e64`): entonces la fila de la
+capa estaba en la `:99` y pinaba 423 (`git show b6c3e64:tools/canon.sh`), como en `71c5aad`, el
+árbol que el registro declara; era cierto en `d531c80`, sobre el que se hizo el bloque M de la
+verificación, de donde viene la frase (`doc/ecst/borrador/verificacion-measures.json:2`, «HEAD
+d531c80», y `:356`; `git show d531c80:tools/canon.sh`: la `:89`, 421). La v5 bis del §847 no lo ve:
+mira las líneas «Lo que se puede afirmar», y las «Fuentes» de esa ficha quedan en su ceguera
+declarada, como del árbol en `71c5aad`, en el que tampoco era cierto; ni lo ve la del §854, que suma
+otros cuatro ficheros, ni `check_publicadas`, que desde el §857 lee de esa ficha las mismas líneas
+que la v5 bis. Queda para un sello propio, con marca: ninguno de los §853-§859 lo toca. Y otro en la
+viñeta de los README que este sello reescribe, en una línea que no toca: la marca del §794 da
+`SECURITY.md`:189 y :728 por XMSS y ML-DSA, y en `212eca2`, como en este commit, esas líneas no los
+nombran: XMSS sale por primera vez en la `:191`, y ML-DSA en la `:797`; queda también para un sello
+propio. Y otro dentro de la cadena, en el asiento del §817: cita `snapshot.rs:184-188` por la
+lectura del fichero y la `:183` por el barrido, y en `5fd5212`, como ya en su padre `195ee5c`, son
+la `:185-189` y la `:184`. El asiento no se reescribe; se dice aquí. En la sesión se corrió el canon
+entero, `--sello`, sobre este árbol y con este asiento en su sitio, y salió VERDE.

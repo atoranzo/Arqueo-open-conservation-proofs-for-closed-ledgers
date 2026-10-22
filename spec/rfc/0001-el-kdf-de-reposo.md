@@ -25,7 +25,7 @@
   —también el que el nodo abre en claro—, `<libro>.recifrando` y `<libro>.retirado`, y la regla
   con que la apertura los lee. ⚠️ §816: y un tercero, `<libro>.cerrojo`: un fichero vacío que la capa
   crea junto a todo libro que abre y no borra nunca, el cerrojo del libro.
-- **Asiento(s) de AUDITORIA:** §702, §812, §816.
+- **Asiento(s) de AUDITORIA:** §702, §812, §816; el §819, que da test a la negativa del barrido y a su aviso.
 
 **Número.** El 0001 estaba reservado a esto desde el §206: la nota de numeración del RFC-0002 lo
 dice, y los RFC-0003 a 0006 lo repiten. Este RFC lo ocupa.
@@ -418,8 +418,11 @@ privado, y reversible, como lo de arriba, mientras este RFC no esté ACEPTADO.
   el autor; que la importación falle, sin importar nada, si no puede borrar el `.tmp-descifrada`
   que tenga al lado —no se importa con el claro al lado sin que nadie lo vea—, y que sólo borre un
   fichero regular —un directorio o un enlace con ese nombre no los escribió aquel código, y no se
-  tocan—, es de la sesión, reversible. Ni esa negativa ni el aviso por la salida de
-  errores tienen test; lo tiene que lo borra.
+  tocan—, es de la sesión, reversible. ⚠️ §819: decía «Ni esa negativa ni el aviso por la salida de
+  errores tienen test; lo tiene que lo borra». Desde el §819 lo tienen los dos: la negativa, con el
+  borrado mismo hecho fallar, y el aviso, leído en lo que guarda el hilo en los tests; que vaya a la
+  salida de errores no lo ve el test: fuera de los tests es un `eprintln!` de una línea, sin test,
+  y dejarlo así es de la sesión, reversible.
 - **D-I. El remedio de un libro ya migrado es a mano** —`recifrar` con una frase nueva—, y se
   admite la misma frase (de la sesión). Dos cosas no se hacen. La primera la decidió el autor (§812),
   por recomendación de la sesión: **no se sobrescribe antes de borrar** —se borra, y se dice que los
@@ -568,10 +571,11 @@ privado, y reversible, como lo de arriba, mientras este RFC no esté ACEPTADO.
   `5d2833e` (28-07-2026) y `c87d7d6` (§774, 08-10-2026): el §774 quitó el escritor y no barría;
   desde el §812, por decisión del autor, la importación de esa instantánea lo barre —si junto a ella
   hay un fichero con ese nombre, lo borra y lo dice por la salida de errores—; que si no puede la
-  importación falle con un error que lo nombra, sin importar nada, es de la sesión. El de una
-  instantánea que no se vuelva a importar se busca junto a ella y se borra a mano. Cambiar la frase del
-  keystore —`load` y `save`— no cambia la clave de gasto: una copia vieja abierta con su frase vieja
-  da la misma clave.
+  importación falle con un error que lo nombra, sin importar nada, es de la sesión (⚠️ §819: con test
+  desde el §819, como el aviso, leído en lo que guarda el hilo en los tests; que vaya a la salida de
+  errores no tiene test). El de una instantánea que no se vuelva a importar se busca junto a ella y
+  se borra a mano. Cambiar la frase del keystore —`load` y `save`— no cambia la clave de gasto: una
+  copia vieja abierta con su frase vieja da la misma clave.
 
 ## Referencias
 

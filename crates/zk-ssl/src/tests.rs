@@ -5918,3 +5918,78 @@ fn con_clave_una_instantanea_en_claro_no_se_importa() {
     let _ = std::fs::remove_file(&file);
     quitar_libro(&path);
 }
+
+/// Los nombres del directorio de `file` que empiezan por el de `file`, ordenados: lo que una
+/// importacion o una exportacion podria dejar a su lado. Solo esos, porque el directorio temporal
+/// lo comparten los tests que corren a la vez.
+fn junto_a(file: &str) -> Vec<String> {
+    let p = std::path::Path::new(file);
+    let nombre = p.file_name().expect("nombre").to_string_lossy().into_owned();
+    let mut v: Vec<String> = std::fs::read_dir(p.parent().expect("padre"))
+        .expect("leer el directorio")
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| n.starts_with(&nombre))
+        .collect();
+    v.sort();
+    v
+}
+
+/// ⚠️ §819 · **Si no puede borrar el claro que dejaba una importacion muerta, la importacion falla y
+/// no importa nada.** El borrado se hace fallar a el mismo (`snapshot::FALLAR_BORRADO`: se le pide
+/// a `remove_file` el resto con una barra al final, y lo rehusa): el `Result` que la importacion
+/// propaga es el del borrado, y un mutante que lo ignore cae aqui. Se exige que (a) la importacion
+/// falle, (b) el error nombre el fichero, (c) la instantanea y el resto sigan byte a byte como
+/// estaban, no aparezca nada a su lado y no se avise de un borrado que no se hizo, y (d) sin el
+/// fallo, la misma importacion lo barra, lo avise -una vez, nombrandolo y diciendo que estaba en
+/// claro (`snapshot::AVISOS_DEL_BARRIDO`)- e importe: la negativa era del borrado, y nada mas lo
+/// impedia.
+#[test]
+fn si_no_puede_barrer_el_claro_la_importacion_falla_sin_importar_nada() {
+    use crate::crypto::LedgerKey;
+    use crate::snapshot::{AVISOS_DEL_BARRIDO, FALLAR_BORRADO};
+    let avisos = || AVISOS_DEL_BARRIDO.with(|a| a.borrow_mut().split_off(0));
+    let (path, alice, _) = libro_e4("e4_no_barre");
+    let file = format!("{path}.instantanea");
+    let resto = format!("{file}.tmp-descifrada");
+    let _ = std::fs::remove_file(&file);
+    let _ = std::fs::remove_file(&resto);
+    let key = LedgerKey::from_passphrase(FRASE_VIEJA_E4);
+    let raiz = {
+        let layer = abrir_e4(&path, FRASE_VIEJA_E4).expect("abrir");
+        layer.export_snapshot(&file).expect("exportar");
+        layer.state_root()
+    };
+    const CLARO: &[u8] = b"el estado del libro en claro, de mentira";
+    std::fs::write(&resto, CLARO).unwrap();
+    let instantanea = std::fs::read(&file).unwrap();
+    let al_lado = junto_a(&file);
+    avisos();
+
+    FALLAR_BORRADO.with(|f| f.set(true));
+    let r = SovereignLayer::import_snapshot_with_key(&file, &key).map(|l| l.state_root());
+    FALLAR_BORRADO.with(|f| f.set(false));
+    let e = match r {
+        Err(e) => e.to_string(),
+        Ok(_) => panic!("CRITICO: (a) importo con el claro al lado sin poder borrarlo"),
+    };
+    assert!(e.contains(&resto), "(b) el error no nombra el fichero: {e}");
+    assert_eq!(std::fs::read(&resto).ok().as_deref(), Some(CLARO), "(c) el resto se toco");
+    assert_eq!(std::fs::read(&file).unwrap(), instantanea, "(c) la instantanea se toco");
+    assert_eq!(junto_a(&file), al_lado, "(c) aparecio algo junto a la instantanea");
+    assert_eq!(avisos(), Vec::<String>::new(), "CRITICO: (c) aviso de un borrado que no hizo");
+
+    let l = SovereignLayer::import_snapshot_with_key(&file, &key).expect("(d) importar");
+    assert_eq!(l.state_root(), raiz, "(d)");
+    assert_eq!(l.balance_of(alice), Some(777_777), "(d)");
+    assert!(!hay(&resto), "(d) sin el fallo, la importacion no lo barrio");
+    let dichos = avisos();
+    assert_eq!(dichos.len(), 1, "(d) el borrado no se aviso una vez: {dichos:?}");
+    assert!(
+        dichos[0].contains(&resto) && dichos[0].contains("EN CLARO"),
+        "(d) el aviso no nombra el fichero o no dice que estaba en claro: {}",
+        dichos[0]
+    );
+    let _ = std::fs::remove_file(&file);
+    quitar_e4(&path);
+}

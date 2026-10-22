@@ -112,17 +112,17 @@ que corre `tools/canon.sh`.
 `cargo test --locked -p zk-ssl` en depuración da 443 pasan, 0 fallan y 45
 ignorados, sobre `0315b14` (el §813), en 3.253,94 s con otro trabajo en la
 máquina (4 CPU, carga de 9,2 a 18,6). En release, la fila de la capa en
-`tools/canon.sh` fija hoy 497 pasan y 7 ignorados (⚠️ §839: decía 481; el 482.º
+`tools/canon.sh` fija hoy 498 pasan y 7 ignorados (⚠️ §839: decía 481; el 482.º
 es el censo de las longitudes, que corre también en depuración, donde serían
 444 pasan: los 443 son de `0315b14`, y la capa entera no se ha vuelto a correr
 ahí. ⚠️ §840: decía 482; los dos de más, el censo de los `native_leaf`, corren
 también ahí: serían 446. ⚠️ §842: decía 484; el de más, el censo de las bandas de
 bytes, también: serían 447. ⚠️ §816: decía 485; los once de más, los del cerrojo del libro, no
 se han corrido en depuración. ⚠️ §817: decía 496; el de más, el de la instantánea en claro,
-tampoco). De los 45, 7 son instrumentos de medida, ignorados en
-todo perfil, y 38 llevan `cfg_attr(debug_assertions, ignore = …)`: en
-depuración no corren, y corridos ahí con `--ignored` pasan los 38. Ya no hay
-fallos que atribuir al límite de grados, y con esta medida se cierra la entrada
+tampoco. ⚠️ §819: decía 497; el de más, el de la negativa del barrido,
+tampoco). De los 45, 7 son instrumentos de medida, ignorados en todo perfil, y 38 llevan
+`cfg_attr(debug_assertions, ignore = …)`: en depuración no corren, y corridos ahí con `--ignored`
+pasan los 38. Ya no hay fallos que atribuir al límite de grados, y con esta medida se cierra la entrada
 41 de `BACKLOG.md`. Sigue en pie: esos 38 solo los corre release, y la capa se
 mide con `--release`. Si la orden de arriba, el workspace entero con
 `--all-features`, da rojo hoy no se sabe: no se ha remedido. Y el «307» de

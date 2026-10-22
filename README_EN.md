@@ -53,11 +53,19 @@ It proves **conservation, not solvency**: the proofs speak of the ledger, not of
 - **Not audited by third parties.** No amount of the author's own tests replaces that. Two
   cryptographic dependencies without an independent audit —`xmss`, a pre-release, and `ml-dsa`,
   in the kit since §633— are pinned with `=` and declared, and since §694 the canon checks it,
-  together with winterfell's pins and the kit's closure as a closed list. What is not audited, in
-  [`SECURITY.md`](./SECURITY.md); what the two dependencies declare, in the manifest that pins them
-  (`crates/zk-ssl-node/Cargo.toml`:48-52, `crates/zk-ssl-medio/Cargo.toml`:29-36). ⚠️ **Corrected
+  together with winterfell's pins and the kit's closure as a closed list. And a third one, `argon2`
+  0.5.3, the layer's at-rest KDF since §702, is pinned the same way and not audited by the project
+  (`AUDITORIA.md` §702: «No audita `argon2` 0.5.3»); the tree holds no record of a third-party
+  audit. The RFC 9106 vector and the KATs check the output, not the code, and its pin is checked by
+  a test of the layer, `argon2_entra_clavada_y_solo_por_la_capa`. What is not audited, in
+  [`SECURITY.md`](./SECURITY.md); what the first two declare, in the manifest that pins them
+  (`crates/zk-ssl-node/Cargo.toml`:48-52, `crates/zk-ssl-medio/Cargo.toml`:29-36), and why the third
+  is pinned, in its own (`crates/zk-ssl/Cargo.toml`:45-58). ⚠️ **Corrected
   in §794**: it said «All of it in `SECURITY.md`», which says of neither dependency that it is
   unaudited or pinned: it names XMSS and ML-DSA only as schemes (`SECURITY.md`:189, :728).
+  ⚠️ **Corrected in §819**: it did not name `argon2`, pinned since §702 and not audited by the
+  project (`AUDITORIA.md` §702), and it said «what the two dependencies declare, in the manifest that
+  pins them».
 - **The six deposits with a DOI predate corrections in the tree.** What was corrected is marked,
   not erased: [`doc/preprints/ERRATA.md`](./doc/preprints/ERRATA.md).
 
