@@ -22,6 +22,11 @@
 #
 # Exito (D-D del RFC-0011): que la defensa DISPARE nombrando el indice. Los indices esperados
 # salen de los diarios crudos (el mismo indice, dos digests), no del texto de la herramienta.
+# §712: el indice es el EMBEBIDO en la firma, no el `index` declarado (RFC-0012 D-C), y
+# `--comparar` nombra ademas cada mmrSize que los dos diarios vieron con dos digests (la regla del
+# reloj); los dos se cuentan de los diarios crudos. Con la MISMA cima es bifurcacion y cuenta; con
+# OTRA cima se dice y no cuenta -reseteo visible o bifurcacion, que entre dos diarios no se
+# distingue-.
 # Claves de prueba siempre (D-E): semillas deterministas de la suite, nunca un keystore.
 #
 # FUERA del canon: levanta procesos y espera latidos. NO ESCRIBE EN EL ARBOL: todo vive en un
@@ -110,14 +115,26 @@ def mover_recepcion(port, rotulo):
     msg('%s: el envio de ceros RECHAZADO consume el recibo 1: recepCount firmado = 1' % rotulo)
 def lineas(d):
     return [json.loads(l) for l in open(d + '/diario.jsonl') if l.strip()]
+def embebido(v):
+    # XMSS^MT 40/8: el indice de hoja son los cinco primeros bytes de la firma, big-endian. §712:
+    # el testigo cuenta por este, el que la firma acredita, y no por el `index` declarado.
+    return int(v['signature'][2:12], 16)
 def digests(ls):
-    # indice -> digests en orden de aparicion, solo lineas con cabeza firmada
+    # indice EMBEBIDO -> digests en orden de aparicion, solo lineas con cabeza firmada.
     m = {}
     for v in ls:
         if v.get('signature') and v.get('index'):
-            ds = m.setdefault(int(v['index'], 16), [])
+            ds = m.setdefault(embebido(v), [])
             if v['epochDigest'] not in ds:
                 ds.append(v['epochDigest'])
+    return m
+def primeras_por_tamano(ls):
+    # §712: mmrSize -> (digest, cima) de la PRIMERA linea con cabeza
+    # firmada que lo trae, sin el tamaño 0 del genesis: lo que `--comparar` cruza.
+    m = {}
+    for v in ls:
+        if v.get('signature') and v.get('index') and int(v.get('mmrSize') or '0x0', 16) > 0:
+            m.setdefault(int(v['mmrSize'], 16), (v['epochDigest'], v.get('mmrRoot')))
     return m
 def cli(*args):
     p = subprocess.run([CLI, 'witness'] + list(args) + ['--no-color'], capture_output=True, text=True)
@@ -153,16 +170,25 @@ try:
                '--auditar %s: LIMPIO -- un diario, solo, no puede contener la otra vista' % n, out)
     g1, g2 = digests(l1), digests(l2)
     divididos = sorted(i for i in set(g1) & set(g2) if g1[i][0] != g2[i][0])
-    exigir(len(divididos) > 0, 'los diarios crudos traen %d indice(s) con dos digests: %s'
+    exigir(len(divididos) > 0, 'los diarios crudos traen %d indice(s) embebido(s) con dos digests: %s'
            % (len(divididos), divididos),
            'testigo-1: %s\ntestigo-2: %s' % (sorted(g1), sorted(g2)))
+    # §712: y la regla del reloj entre los dos diarios, por mmrSize: con la misma cima,
+    # bifurcacion; con otra, informativo.
+    t1, t2 = primeras_por_tamano(l1), primeras_por_tamano(l2)
+    comunes = [t for t in sorted(set(t1) & set(t2)) if t1[t][0] != t2[t][0]]
+    bifurcados = [t for t in comunes if t1[t][1] == t2[t][1]]
+    otras = [t for t in comunes if t1[t][1] != t2[t][1]]
     rc, out = cli('--comparar', d1 + '/diario.jsonl', d2 + '/diario.jsonl')
-    nombrados = sorted(int(x) for x in re.findall(r'VISTA DIVIDIDA en el indice (\d+):', out))
-    exigir(rc != 0 and nombrados == divididos and divididos
-           and out.count('(misma clave: true)') == len(divididos)
-           and '%d divergencia(s)' % len(divididos) in out,
-           '--comparar: ROJO, nombra los %d indices divididos, todos de la MISMA clave'
-           % len(divididos), out[-1500:])
+    nombrados = sorted(int(x) for x in re.findall(r'VISTA DIVIDIDA en el indice embebido (\d+):', out))
+    tamanos = sorted(int(x) for x in re.findall(r'BIFURCACION en el mmrSize (\d+):', out))
+    dichas = sorted(int(x) for x in re.findall(r'mmrSize (\d+): OTRA cima en cada diario', out))
+    exigir(rc != 0 and nombrados == divididos and divididos and tamanos == bifurcados and dichas == otras
+           and out.count('(misma clave: true)') == len(divididos) + len(bifurcados)
+           and '%d divergencia(s) y %d bifurcacion(es)' % (len(divididos), len(bifurcados)) in out,
+           '--comparar: ROJO, nombra los %d indices embebidos divididos y los %d mmrSize bifurcados -la '
+           'misma cima-, todos de la MISMA clave; y dice, sin contarlos, los %d con OTRA cima'
+           % (len(divididos), len(bifurcados), len(otras)), out[-1500:])
     # §689: cada indice dividido, como el sobre del ancla, modo 4, armado de los dos diarios.
     rc, out = cli('--comparar', d1 + '/diario.jsonl', d2 + '/diario.jsonl', '--sobres', DIR + '/sobres-1')
     sobres = sorted(glob.glob(DIR + '/sobres-1/vista-dividida-indice-*.json'))
@@ -189,6 +215,7 @@ try:
     r3 = esperar(w3, 90)
     matar(nd)
     sal3, l3 = open(d3 + '/salida.txt').read(), lineas(d3)
+    # §712: el indice del veredicto es el EMBEBIDO.
     m = re.search(r'EL TESTIGO SE DETIENE: VistaDividida \{ indice: (\d+),', sal3)
     detenido = int(m.group(1)) if m else None
     exigir(r3 not in (0, None) and detenido is not None,
@@ -197,7 +224,7 @@ try:
     g3 = digests(l3)
     ultima = l3[-1] if l3 else {}
     exigir(ultima.get('clase') == 'vista-dividida' and detenido is not None
-           and int(ultima.get('index', '0x0'), 16) == detenido and len(g3.get(detenido, [])) == 2,
+           and ultima.get('signature') and embebido(ultima) == detenido and len(g3.get(detenido, [])) == 2,
            'su ULTIMA linea es la evidencia: vista-dividida, indice %s, dos digests en el diario crudo'
            % detenido, 'clases: ' + clases(l3))
     msg('     el diario del testigo: ' + clases(l3))

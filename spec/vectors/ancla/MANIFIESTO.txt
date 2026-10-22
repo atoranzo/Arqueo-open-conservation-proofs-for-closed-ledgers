@@ -52,3 +52,11 @@ neg-contraria-v2.json|1|contraria: formatVersion
 # RFC-0016 (S631): el cero del campo escrito como p en el primer elemento del chainDigest de
 # ancla-exacta. Antes la referencia lo leia como cero y decia VERDE; la segunda lo rechazaba.
 neg-ancla-cero-escrito-como-p.json|1|chainDigest: 0xffffffff00000001 no es canonico
+# §712 · RFC-0012 D-C: el reloj de la extension, tambien en el modo 3.
+# UN sobre NUEVO, DERIVADO sin otra corrida de `spec/vectors/paquete/rechazo-ext-bifurcada-mismo-mmrSize.json`
+# (la corrida del sello de `tools/banco_bifurcacion.sh`, semilla '39' x 96): el ancla que el mando
+# DERIVA de su cabeza vieja (modo 1: mmrSize 5, hoja 11) contra su cabeza nueva (mmrSize 5, la MISMA
+# cima, hoja 17, otro digest), con el camino vacio. Con el mismo mmrSize la consistencia es la
+# identidad: daba VERDE -«la historia anclada es un prefijo»- en el kit y en la segunda de antes del
+# §712 (medido). Ningun vector anterior se reescribe ni cambia de veredicto.
+neg-ancla-bifurcada-mismo-mmrSize.json|1|extension: mismo mmrSize y digest distinto

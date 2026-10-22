@@ -1,4 +1,4 @@
-//! # El testigo: cuatro clases, y **el primer ancla**
+//! # El testigo: las clases de la cabeza, y **el primer ancla**
 //!
 //! Implementación de referencia de lo que **un tercero** correría contra un
 //! nodo ZK-SSL. Consulta `zkssl_signedEpochHead` a la cadencia del latido,
@@ -34,21 +34,26 @@
 //! **no crea confianza**: **quita la excusa de que no hay cómo**, igual que
 //! `spec/RPC.md` hizo con la segunda implementación.
 //!
-//! ## Cuatro clases, y **dos detienen**
+//! ## Las clases de la cabeza, y **tres detienen**
 //!
 //! | clase | qué es | qué hace |
 //! |---|---|---|
-//! | **hueco** | falta una cabeza: reinicio, red, o el nodo sin clave | anota y **sigue** |
+//! | **hueco** | falta una cabeza: reinicio, red, el nodo sin clave, o índices huérfanos | anota y **sigue** |
 //! | **fallo de verificación** | la firma no valida | anota y **sigue** — puede ser transitorio, y **el patrón importa** |
-//! | ⚠️ **vista dividida** | **mismo índice, digest distinto** | **SE DETIENE** |
-//! | ⚠️ **cambio de clave** | la pública no es la fijada | **SE DETIENE** |
+//! | ⚠️ **vista dividida** | **mismo índice EMBEBIDO, digest distinto** | **SE DETIENE** |
+//! | ⚠️ **cambio de clave** | la pública no es la fijada, y ninguna cadena de actas lo explica | **SE DETIENE** |
+//! | ⚠️ **solapamiento** | una firma fuera del tramo de su clave (§647) | **SE DETIENE** |
 //!
-//! ⚠️ **La cuarta detiene porque rotar la clave es exactamente cómo un
-//! operador escaparía de la tercera**: rota, y presenta otra historia
+//! ⚠️ CORRECCIÓN (§712): este título decía «Cuatro clases, y **dos detienen**». Desde el
+//! §647 el solapamiento también detiene: son tres. Y el índice de la vista dividida es el EMBEBIDO
+//! en la firma, no el `index` declarado, que la firma no acredita (RFC-0012 D-C).
+//!
+//! ⚠️ **El cambio de clave detiene porque rotar la clave es exactamente cómo un
+//! operador escaparía de la vista dividida**: rota, y presenta otra historia
 //! firmada con otra clave. Un testigo que aceptara la nueva en silencio
 //! **acepta cualquier cosa a partir de ahí**.
 //!
-//! ⚠️ Y se detiene ante las dos porque **seguir sería sobrescribir el
+//! ⚠️ Y se detiene ante las tres porque **seguir sería sobrescribir el
 //! propio hallazgo con ruido posterior**. Importa preservar la evidencia,
 //! no acumular registros.
 //!
@@ -59,7 +64,7 @@
 //!
 //! ## El segundo canal: **la historia** (§294)
 //!
-//! Las cuatro clases de arriba juzgan **la cabeza**. Desde §294 hay un
+//! Las clases de arriba juzgan **la cabeza**. Desde §294 hay un
 //! canal aparte que juzga **la historia**: el testigo pide
 //! `zkssl_consistencyProof` con el `mmrSize` que custodia y comprueba que
 //! la cima nueva EXTIENDE a la suya, con el objeto de §291 como juez.
@@ -69,7 +74,7 @@
 //! | **anclando** | primera cabeza v3: se fija la pareja de partida | anota y **sigue** |
 //! | **consistencia-pendiente** | el camino espera a la cabeza que lo firma | anota y **sigue** |
 //! | **extiende** | la nueva contiene a la custodiada | anota y **sigue** |
-//! | ⚠️ **no-extiende** | **la historia se bifurcó o se recortó** | **SE DETIENE** |
+//! | ⚠️ **no-extiende** | **la historia se bifurcó o se recortó**; o, desde el §712, una cabeza en un `mmrSize` ya visto con otro digest | **SE DETIENE** |
 //! | **por-detras** | el acumulador del nodo va detrás: reseteo VISIBLE | anota y **sigue** |
 //!
 //! ⚠️ **`por-detras` no detiene a propósito**: es el nodo **diciendo la
@@ -150,6 +155,11 @@ pub enum Veredicto {
     /// La firma no valida. Anota y **sigue**: puede ser transitorio.
     NoVerifica { indice: u64, error: String },
     /// ⚠️ **MISMO ÍNDICE, DIGEST DISTINTO.** Se DETIENE.
+    ///
+    /// ⚠️ §712: el índice es el EMBEBIDO en la firma, el único que la firma acredita
+    /// (§399; RFC-0012 D-C). El `index` declarado solo está acotado por abajo y lo cambia
+    /// cualquiera que sirva o guarde la cabeza: con él, dos firmas en la misma hoja declaradas
+    /// 2 y 3 no eran la misma vista.
     VistaDividida { indice: u64, digest_a: String, digest_b: String },
     /// ⚠️ **La clave pública no es la fijada.** Se DETIENE.
     ///
@@ -166,8 +176,11 @@ pub enum Veredicto {
 }
 
 impl Veredicto {
-    /// ⚠️ **Dos clases detienen**: la vista dividida y el cambio de clave.
-    /// La segunda porque **rotar es cómo se escapa de la primera**.
+    /// ⚠️ **Tres clases detienen**: la vista dividida, el cambio de clave y el solapamiento.
+    /// La segunda porque **rotar es cómo se escapa de la primera**; la tercera, desde el §647,
+    /// porque es una firma fuera del tramo de su clave.
+    ///
+    /// ⚠️ CORRECCIÓN (§712): decía «Dos clases detienen»; el cuerpo ya contaba tres.
     pub fn detiene(&self) -> bool {
         matches!(
             self,
@@ -322,6 +335,28 @@ fn juzgar(p: &Pendiente, cima_nueva: &str, t_nueva: u64) -> bool {
     mmr::verificar_consistencia(vieja, p.de_t, nueva, t_nueva, &camino)
 }
 
+/// ⚠️ §712 · **La regla del reloj sobre una cabeza que llega** (RFC-0012 D-C): `vista` es
+/// la `(mmrRoot, epochDigest)` de la primera cabeza que se vio con el mismo `mmrSize`, si se vio.
+/// Bifurca si el digest es otro y, o la cima es la misma -dos cabezas en el mismo sitio de la
+/// MISMA historia: nada honesto la produce-, o el nodo no va por detras de lo custodiado -otra
+/// historia en un tamaño ya visto, sin el reseteo visible del §295 que la explique-. Pura: la
+/// usan la vuelta viva y `--auditar`, con su propio «por detras».
+pub fn bifurca(vista: Option<&(String, String)>, cima: &str, digest: &str, detras: bool) -> bool {
+    match vista {
+        Some((raiz, dg)) => dg != digest && (raiz == cima || !detras),
+        None => false,
+    }
+}
+
+/// ⚠️ §300 · **COFIRMA ⇔ `Nueva` ∧ `Extiende`. NADA MAS.** La razon, entera, donde se usa (el
+/// bucle de [`run`]).
+///
+/// §712: sacada del bucle, sin cambiarla, para que un test diga que una cabeza que el
+/// reloj rechaza no se cofirma.
+pub fn cofirmable(v: &Veredicto, c: Option<&Consistencia>) -> bool {
+    matches!(v, Veredicto::Nueva { .. }) && matches!(c, Some(Consistencia::Extiende { .. }))
+}
+
 /// **Al llegar una cabeza**: juzga el camino pendiente si esta es la que lo
 /// firma, ancla la pareja de partida, o no dice nada.
 ///
@@ -339,6 +374,49 @@ pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
     }
     let cima = v["mmrRoot"].as_str()?.to_string();
     let t = leer_q(&v["mmrSize"]).ok()?;
+
+    // ⚠️⚠️ §712 · **LA BIFURCACION MANDA SOBRE EL RETROCESO.** La regla del reloj, sobre
+    // cada cabeza que llega: un `mmrSize` ya visto con otro digest es una cabeza DISTINTA en el
+    // mismo sitio de la historia. Con la misma cima, siempre: el juez de consistencia no la ve
+    // -con el mismo tamaño es la identidad- y el retroceso de abajo la anotaba `por-detras`,
+    // vuelta tras vuelta, mientras el nodo recortado volvia a crecer. Medido con el banco de la
+    // bifurcacion: el testigo de antes la vio 18 lineas despues, y solo porque el nodo volvio a
+    // pasar de lo custodiado. Con otra cima, solo si el nodo NO va por detras: por detras es el
+    // reseteo VISIBLE del §295, que no detiene. Va ANTES del retroceso por eso mismo: una cabeza
+    // recortada siempre va por detras.
+    let digest = v["epochDigest"].as_str().unwrap_or_default().to_string();
+    if t > 0 {
+        let detras = m.pareja.as_ref().map_or(false, |(_, pt)| t < *pt);
+        if bifurca(m.historia.get(&t), &cima, &digest, detras) {
+            return Some(Consistencia::NoExtiende { de_t: t, a_t: t, camino: Vec::new() });
+        }
+    }
+
+    // ⚠️⚠️ §712 · **EL RELOJ, LA OTRA MITAD DE LA REGLA.**
+    // Una cabeza POSTERIOR a la custodiada -mas `mmrSize`- de la MISMA clave firma por encima de
+    // ella: es `el_reloj_avanza` del kit, con la cabeza que fija la pareja como la vieja. Sin esto,
+    // un nodo restaurado de antes de unos indices huerfanos servia una historia CONSISTENTE con la
+    // custodiada en una hoja por debajo: `clasificar` la daba `Nueva` -una hoja no vista-, el camino
+    // la daba `Extiende`, y por el §300 el testigo la COFIRMABA (medido: la ESCENA 3 del banco de la
+    // bifurcacion, bajo un testigo vivo, y el test con sus cabezas). El kit rechaza ese mismo par con
+    // «extension: el indice embebido no crece» (`paquete/rechazo-ext-reloj-retrocede.json`). Va
+    // ANTES de juzgar lo pendiente: el camino puede casar y la cabeza sigue sin ser posterior.
+    // `no-extiende` ya existe y detiene: el diario no cambia de formato (DIARIO_VERSION sigue en 4).
+    // Con claves distintas no se compara: el cruce lo juzga el tramo, como en el kit. Por detras
+    // -el reseteo visible del §295, el `mmrSize` que baja- tampoco: alli el indice sigue subiendo.
+    let clave = v["publicKey"].as_str().unwrap_or_default().to_string();
+    let embebido = leer_hex(&v["signature"]).ok().and_then(|f| indice_de_firma(&f).ok());
+    if let (Some((_, pt)), Some((kc, ec)), Some(e)) = (m.pareja.as_ref(), m.reloj.as_ref(), embebido)
+    {
+        if t > *pt && clave == *kc && e <= *ec {
+            return Some(Consistencia::NoExtiende { de_t: *pt, a_t: t, camino: Vec::new() });
+        }
+    }
+    let reloj = embebido.map(|e| (clave, e));
+    if t > 0 {
+        // La PRIMERA cabeza de cada tamaño: la evidencia es la que se vio antes.
+        m.historia.entry(t).or_insert_with(|| (cima.clone(), digest));
+    }
 
     // ⚠️⚠️ §295 · **EL RETROCESO MANDA SOBRE LO PENDIENTE**, y va ANTES
     // que nada. Si el acumulador del nodo va POR DETRAS de lo custodiado,
@@ -376,8 +454,9 @@ pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
         }
         // ⚠️ Esta es la cabeza que FIRMA el camino: se juzga.
         return Some(if juzgar(&p, &cima, t) {
-            // El ancla avanza SOLO cuando la historia se demostro.
+            // El ancla avanza SOLO cuando la historia se demostro. Y con ella, la hoja del reloj.
             m.pareja = Some((cima, t));
+            m.reloj = reloj;
             Consistencia::Extiende { de_t: p.de_t, a_t: t, camino: p.camino }
         } else {
             // ⚠️ El ancla NO se mueve ante un hallazgo: preservar la
@@ -389,6 +468,7 @@ pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
     match m.pareja.as_ref().map(|(_, t)| *t) {
         None => {
             m.pareja = Some((cima, t));
+            m.reloj = reloj;
             Some(Consistencia::Anclando { t })
         }
         // ⚠️⚠️ §295 · **UN ANCLA EN t=0 NO ES UN ANCLA.** El genesis
@@ -405,6 +485,7 @@ pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
         // matematica.
         Some(0) if t > 0 => {
             m.pareja = Some((cima, t));
+            m.reloj = reloj;
             Some(Consistencia::Anclando { t })
         }
         // El retroceso ya no se decide aqui (§295): se resuelve arriba,
@@ -599,6 +680,10 @@ pub fn cabeza_de_linea(linea: &Value) -> Value {
 /// `None` si no lo son: el auditor encuentra la vista por el indice DECLARADO, y el sobre exige la
 /// misma clave y el mismo EMBEBIDO; sin eso, queda el hallazgo y no se arma un sobre que el kit
 /// rechazaria.
+///
+/// ⚠️ CORRECCION (§712): desde el §712 el auditor y `--comparar` encuentran la vista por el
+/// indice EMBEBIDO y por clave, el mismo que exige el sobre: dos firmas de la hoja 1 declaradas 0x2
+/// y 0x3 ya no se escapan. La comprobacion de aqui se queda: es la frontera del sobre.
 pub fn sobre_de_vista_dividida(una: &Value, otra: &Value) -> Option<Value> {
     let embebido = |l: &Value| {
         leer_hex(&l["signature"])
@@ -721,8 +806,16 @@ pub fn pedir(agente: &ureq::Agent, url: &str, cuerpo: Value) -> Servido {
 pub struct Memoria {
     /// ⚠️ Si un índice ya visto reaparece con OTRO digest, eso es la vista
     /// dividida de §110.3.
+    ///
+    /// ⚠️ §712: la clave del mapa es el índice EMBEBIDO en la firma, no el `index`
+    /// declarado (RFC-0012 D-C). El declarado lo cambia quien sirve la cabeza sin romper la firma.
     vistos: BTreeMap<u64, String>,
+    /// ⚠️ §712: el MAYOR índice embebido visto, no el último. Un índice que retrocede no mueve la
+    /// cuenta de los huecos hacia atrás.
     ultimo: Option<u64>,
+    /// ⚠️ §712: por `mmrSize`, la `(mmrRoot, epochDigest)` de la primera cabeza que
+    /// verificó con ese tamaño. La regla del reloj sobre cada cabeza que llega: [`bifurca`].
+    historia: BTreeMap<u64, (String, String)>,
     /// ⚠️ **EL ANCLA.** La clave pública que se vio la primera vez.
     clave_fijada: Option<String>,
     /// ⚠️ **EL ANCLA DE LA HISTORIA** (§294): la pareja del MMR de la
@@ -731,6 +824,9 @@ pub struct Memoria {
     /// ⚠️ Solo se fija tras recomponer: anclar una cima que la firma **no
     /// cubre** no ancla nada.
     pareja: Option<(String, u64)>,
+    /// ⚠️ §712: la `publicKey` y el indice EMBEBIDO de la cabeza que
+    /// fijo la `pareja`. Se mueven con ella, y solo con ella: es la «vieja» del reloj del kit.
+    reloj: Option<(String, u64)>,
     /// El camino pedido y aun no juzgado.
     pendiente: Option<Pendiente>,
     /// ⚠️ §647 · el mayor indice EMBEBIDO que la clave fijada firmo, entre las cabezas que
@@ -829,6 +925,10 @@ impl Memoria {
     /// distinción **no existía y no pudo comprobarse**. L.3 fabricó dos
     /// pares de índices consecutivos con digest repetido —una ventana
     /// deliberadamente quieta— y los dos salieron `Nueva`.
+    ///
+    /// ⚠️ §712: `indice` es el EMBEBIDO en la firma (RFC-0012 D-C), y lo pasa
+    /// [`una_vuelta`]. Los huecos se cuentan desde el MAYOR visto: los índices huérfanos de un
+    /// nodo honesto -reservados y no firmados- son un hueco, que anota y sigue.
     pub fn clasificar(&mut self, indice: u64, digest: &str) -> Veredicto {
         if let Some(previo) = self.vistos.get(&indice) {
             if previo == digest {
@@ -849,7 +949,7 @@ impl Memoria {
             _ => None,
         };
         self.vistos.insert(indice, digest.to_string());
-        self.ultimo = Some(indice);
+        self.ultimo = Some(self.ultimo.map_or(indice, |u| u.max(indice)));
         match hueco {
             // ⚠️ §242 DECLARO que habra huecos. Anotar y SEGUIR; si esto
             // gritara, el primer reinicio quemaria la credibilidad.
@@ -905,6 +1005,8 @@ pub fn una_vuelta(v: &Value, m: &mut Memoria) -> Veredicto {
         }
         Err(e) => return Veredicto::NoVerifica { indice: 0, error: format!("{e}") },
     };
+    // ⚠️ §712: el declarado solo nombra la cabeza que NO verifica. La que verifica se
+    // clasifica por el indice EMBEBIDO (abajo, paso 5).
     let indice = vista.index.0;
     // ⚠️ El digest se lee de lo SERVIDO y no se recompone desde la vista:
     // `m.clasificar` compara esta cadena entre vueltas, y devolver los bytes
@@ -921,7 +1023,18 @@ pub fn una_vuelta(v: &Value, m: &mut Memoria) -> Veredicto {
             if let Some(fuera) = embebido.and_then(|e| m.en_su_tramo(e)) {
                 return fuera;
             }
-            m.clasificar(indice, &digest)
+            // ── 5 · §712: se clasifica por el indice EMBEBIDO, el que la firma acredita ──
+            //
+            // ⚠️ Hasta el §712 era `vista.index`, el declarado: un nodo que sirve dos cabezas en la
+            // misma hoja declarandolas 2 y 3 pasaba por dos cabezas nuevas. La firma ya verifico, y
+            // `verificar_cabeza` lee el embebido: aqui no puede faltar.
+            match embebido {
+                Some(e) => m.clasificar(e, &digest),
+                None => Veredicto::NoVerifica {
+                    indice,
+                    error: "la firma verifica y no da su indice embebido".into(),
+                },
+            }
         }
     }
 }
@@ -1185,6 +1298,10 @@ pub enum Hallazgo {
     /// La firma guardada **no valida contra su propio digest**.
     FirmaNoVerifica { linea: usize, indice: u64, error: String },
     /// El índice **retrocede**: un diario solo puede avanzar.
+    ///
+    /// ⚠️ §712: el índice EMBEBIDO, y por clave (RFC-0012 D-C). Retrocede aunque los
+    /// declarados crezcan; y un declarado que baja con el embebido creciendo ya no es hallazgo: el
+    /// declarado no va firmado.
     IndiceRetrocede { linea: usize, previo: u64, ahora: u64 },
     /// ⚠️ **La clave cambia a mitad del diario.** Es el caso que §244 dejó
     /// abierto —el anclaje— y **el auditor es quien puede verlo**.
@@ -1205,6 +1322,9 @@ pub enum Hallazgo {
     /// El testigo la caza **en vivo**, sí — pero **solo si estaba
     /// corriendo**. Un diario que llega de un tercero se comprueba en
     /// frío.
+    ///
+    /// ⚠️ §712: el mismo índice EMBEBIDO de la misma clave. Con el declarado, un diario
+    /// con dos firmas en la hoja 1 declaradas 0x2 y 0x3 pasaba limpio (medido).
     VistaDividida { linea: usize, indice: u64, digest_a: String, digest_b: String },
     /// ⚠️ §647 · **Una linea trae actas y la cadena NO explica el cambio de clave** (RFC-0015,
     /// D-E): el motivo, del juez del kit. El cambio se anota ademas como `CambioDeClave`.
@@ -1212,6 +1332,10 @@ pub enum Hallazgo {
     /// ⚠️ §647 · **Una firma fuera del tramo de su clave** (D-C, reglas 3 y 4), el mismo
     /// nombre que en [`Veredicto`].
     Solapamiento { linea: usize, indice: u64, desde: u64 },
+    /// ⚠️ §712 · **Una cabeza en un `mmrSize` ya visto con otro digest** (la regla del
+    /// reloj, [`bifurca`]): dos cabezas en el mismo sitio de la historia. El mismo nombre que la
+    /// clase de la vuelta viva, [`Consistencia::NoExtiende`].
+    NoExtiende { linea: usize, t: u64, digest_a: String, digest_b: String },
 }
 
 impl Hallazgo {
@@ -1228,11 +1352,14 @@ impl Hallazgo {
             Hallazgo::VistaDividida { .. } => "vista-dividida",
             Hallazgo::RotacionInvalida { .. } => "rotacion-invalida",
             Hallazgo::Solapamiento { .. } => "solapamiento",
+            Hallazgo::NoExtiende { .. } => "no-extiende",
         }
     }
 }
 
 /// Un mismo índice con dos contenidos distintos, en dos diarios.
+///
+/// ⚠️ §712: el índice EMBEBIDO en la firma, no el declarado (RFC-0012 D-C).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Divergencia {
     pub indice: u64,
@@ -1272,11 +1399,31 @@ pub struct Auditoria {
 /// dos implementaciones pueden discrepar.
 pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
     let mut a = Auditoria::default();
+    // ⚠️ §712: el mayor indice EMBEBIDO visto. Uno, y no uno por clave: la cuenta de indices es UNA POR OPERADOR (RFC-0015 D-A, PAQUETE
+    //    2.14), la sucesora empieza por encima de lo que firmo la anterior, y la vuelta viva cuenta
+    //    asi. Una clave nueva por debajo retrocede, y ademas es `cambio-de-clave` o, con actas,
+    //    `solapamiento`. La vista dividida, en cambio, es de UNA clave (abajo): es la que el kit
+    //    juzga en el modo 4 del ancla.
     let mut ultimo: Option<u64> = None;
     let mut clave: Option<String> = None;
     // §688: con el digest, la posicion de la linea que lo trajo: la vista dividida arma su sobre
     //       releyendo esa linea, sin guardar las cabezas enteras en memoria.
-    let mut vistos: BTreeMap<u64, (String, usize)> = BTreeMap::new();
+    // ⚠️ §712: la clave del mapa es (publicKey, indice EMBEBIDO), no el declarado. Por
+    //    clave a proposito, y no por operador como la cuenta de arriba: la vista dividida es de UNA
+    //    clave -dos contenidos bajo una hoja de un solo uso, lo que el modo 4 del ancla exige-. La
+    //    misma hoja con dos claves es un cruce entre tramos: `solapamiento` con actas, y sin ellas
+    //    `cambio-de-clave`. En vivo el mapa va solo por hoja y dice lo mismo: la clave esta fijada,
+    //    y una rotacion juzgada deja a la sucesora por encima de todo lo que firmo la anterior.
+    let mut vistos: BTreeMap<(String, u64), (String, usize)> = BTreeMap::new();
+    // ⚠️ §712: la regla del reloj en frio. Por `mmrSize`, la (cima, digest) de la primera
+    //    cabeza que REVERIFICO con ese tamaño.
+    let mut historia: BTreeMap<u64, (String, String)> = BTreeMap::new();
+    // ⚠️ §712: «por detras» es la pareja custodiada, la MISMA que la vuelta viva,
+    //    reconstruida del diario: la cabeza de la ultima linea anotada `anclando` o `extiende` -las
+    //    dos unicas que la mueven en vivo-, y sin anotaciones, la primera con historia, como el
+    //    anclaje de la vuelta viva. No el MAYOR tamaño visto: la pareja va por detras de lo visto, y
+    //    con el mayor la vuelta viva se detendria en un tamaño entre los dos y el auditor callaria.
+    let mut pareja_t: Option<u64> = None;
     // ⚠️ §647: la misma memoria del tramo que el testigo vivo, para rejuzgar sus rotaciones.
     let mut m = Memoria::nueva();
     // ⚠️ §687: lo que hace falta para ARMAR el sobre del solapamiento sin el nodo: la cadena de la
@@ -1325,36 +1472,49 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
                 continue;
             }
         };
-        // ⚠️ Un diario SOLO PUEDE AVANZAR: es de solo añadir (§248).
-        if let Some(u) = ultimo {
-            if indice < u {
-                a.hallazgos.push(Hallazgo::IndiceRetrocede { linea: n, previo: u, ahora: indice });
+        // ⚠️⚠️ §712 · EL RELOJ ES EL INDICE EMBEBIDO (RFC-0012 D-C). Hasta el §712 lo de
+        // abajo se contaba con el `index` declarado, que la firma no acredita: dos firmas en la
+        // misma hoja declaradas 2 y 3 pasaban LIMPIAS, y un declarado inflado y despues corregido
+        // daba un «retrocede» que la firma no sostenia. Una firma que no llega al ancho no da
+        // indice: no entra en la cuenta, y su clase la pone la firma mas abajo.
+        let k_linea = v["publicKey"].as_str().unwrap_or_default().to_string();
+        let embebido = leer_hex(&v["signature"])
+            .ok()
+            .and_then(|f| indice_de_firma(&f).ok());
+        if let Some(e) = embebido {
+            // ⚠️ Un diario SOLO PUEDE AVANZAR: es de solo añadir (§248). Una cuenta por operador.
+            //    En frio, esto es tambien el reloj de la vuelta viva: una cabeza posterior que
+            //    firma por debajo de la custodiada es una hoja por debajo de la mayor vista.
+            if let Some(u) = ultimo {
+                if e < u {
+                    a.hallazgos.push(Hallazgo::IndiceRetrocede { linea: n, previo: u, ahora: e });
+                }
             }
-        }
-        ultimo = Some(ultimo.map_or(indice, |u| u.max(indice)));
+            ultimo = Some(ultimo.map_or(e, |u| u.max(e)));
 
-        // ⚠️⚠️ EL MISMO INDICE CON DOS DIGESTS. Un indice REPETIDO es
-        // normal —el testigo anota `nueva` y luego `repetida`, y las dos
-        // llevan la cabeza—; lo que NO puede pasar es que el contenido
-        // cambie. Hasta §250 esto no se miraba.
-        let dg = v["epochDigest"].as_str().unwrap_or_default().to_string();
-        match vistos.get(&indice) {
-            None => {
-                vistos.insert(indice, (dg, i));
-            }
-            Some((previo, _)) if *previo == dg => {}
-            Some((previo, j)) => {
-                a.hallazgos.push(Hallazgo::VistaDividida {
-                    linea: n,
-                    indice,
-                    digest_a: previo.clone(),
-                    digest_b: dg,
-                });
-                if let Some(sobre) = serde_json::from_str::<Value>(&lineas[*j])
-                    .ok()
-                    .and_then(|primera| sobre_de_vista_dividida(&primera, &v))
-                {
-                    a.sobres.push((n, sobre));
+            // ⚠️⚠️ EL MISMO INDICE CON DOS DIGESTS. Un indice REPETIDO es
+            // normal —el testigo anota `nueva` y luego `repetida`, y las dos
+            // llevan la cabeza—; lo que NO puede pasar es que el contenido
+            // cambie. Hasta §250 esto no se miraba.
+            let dg = v["epochDigest"].as_str().unwrap_or_default().to_string();
+            match vistos.get(&(k_linea.clone(), e)) {
+                None => {
+                    vistos.insert((k_linea.clone(), e), (dg, i));
+                }
+                Some((previo, _)) if *previo == dg => {}
+                Some((previo, j)) => {
+                    a.hallazgos.push(Hallazgo::VistaDividida {
+                        linea: n,
+                        indice: e,
+                        digest_a: previo.clone(),
+                        digest_b: dg,
+                    });
+                    if let Some(sobre) = serde_json::from_str::<Value>(&lineas[*j])
+                        .ok()
+                        .and_then(|primera| sobre_de_vista_dividida(&primera, &v))
+                    {
+                        a.sobres.push((n, sobre));
+                    }
                 }
             }
         }
@@ -1410,6 +1570,44 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
         match verificar(&v) {
             Ok(()) => {
                 a.reverificadas += 1;
+                // ⚠️ §712: la regla del reloj en frio, solo sobre lo que REVERIFICO -el
+                //    `mmrSize` y la cima los cubre la firma porque se recompusieron-. La misma
+                //    `bifurca` que la vuelta viva, y el mismo «por detras»: por debajo de la pareja
+                //    custodiada ANTES de esta linea. Un tamaño 0 no se juzga: el genesis no tiene
+                //    historia (§295).
+                if let (Some(cima), Ok(t)) = (v["mmrRoot"].as_str(), leer_q(&v["mmrSize"])) {
+                    let dg = v["epochDigest"].as_str().unwrap_or_default().to_string();
+                    if t > 0 {
+                        let detras = pareja_t.map_or(false, |x| t < x);
+                        match historia.get(&t) {
+                            Some(vista) if bifurca(Some(vista), cima, &dg, detras) => {
+                                a.hallazgos.push(Hallazgo::NoExtiende {
+                                    linea: n,
+                                    t,
+                                    digest_a: vista.1.clone(),
+                                    digest_b: dg,
+                                })
+                            }
+                            Some(_) => {}
+                            None => {
+                                historia.insert(t, (cima.to_string(), dg));
+                            }
+                        }
+                    }
+                    // La pareja se mueve DESPUES de juzgar la linea, como en vivo.
+                    let mueve = matches!(
+                        v["consistencia"]["clase"].as_str(),
+                        Some("anclando") | Some("extiende")
+                    );
+                    let sin_ancla = match pareja_t {
+                        None => true,
+                        Some(0) => t > 0,
+                        Some(_) => false,
+                    };
+                    if mueve || (sin_ancla && v["consistencia"].is_null()) {
+                        pareja_t = Some(t);
+                    }
+                }
                 // ⚠️ §647: la cabeza verificada, contra el tramo de su clave (regla 4), y su hoja
                 //    para la regla 3 de la rotacion siguiente.
                 let embebido = leer_hex(&v["signature"])
@@ -1469,7 +1667,20 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
 #[derive(Debug, Default)]
 pub struct Comparacion {
     pub divergencias: Vec<Divergencia>,
-    /// El diario A se contradice a sí mismo.
+    /// ⚠️ §712: la regla del reloj entre los dos diarios. Un `mmrSize` con un digest en A y
+    /// otro en B: el operador sirvió dos cabezas para el mismo sitio de su historia. `indice` es
+    /// aquí el `mmrSize`.
+    ///
+    /// ⚠️ Solo con la MISMA cima, la regla de [`bifurca`] que no depende de quién va por detrás.
+    /// Con otra cima va a [`Comparacion::otra_cima`].
+    pub bifurcaciones: Vec<Divergencia>,
+    /// ⚠️ §712 · **informativo**: el mismo `mmrSize` con OTRA cima en
+    /// cada diario. Es el reseteo visible del §295 o una bifurcación, y entre dos diarios no se sabe
+    /// quién iba por detrás: no da la salida 1 ni hace `interna`. Lo decide `--auditar` con la
+    /// pareja custodiada de cada diario.
+    pub otra_cima: Vec<Divergencia>,
+    /// El diario A se contradice a sí mismo: el mismo índice embebido o, desde el §712, el
+    /// mismo `mmrSize` y la misma cima con dos digests.
     pub interna_a: bool,
     /// El diario B se contradice a sí mismo.
     pub interna_b: bool,
@@ -1495,15 +1706,13 @@ pub struct Comparacion {
 /// primera cabeza de ese índice en cada diario. Una por índice, en su orden; la que el kit no
 /// podría juzgar (otro índice embebido) no se arma.
 pub fn sobres_de_divergencias(a: &[String], b: &[String], c: &Comparacion) -> Vec<(u64, Value)> {
+    // ⚠️ §712: por el indice EMBEBIDO, como `comparar_lineas`.
     let primeras = |ls: &[String]| -> BTreeMap<u64, Value> {
         let mut m = BTreeMap::new();
         for l in ls {
             if let Ok(v) = serde_json::from_str::<Value>(l) {
-                if v["signature"].is_null() {
-                    continue;
-                }
-                if let Ok(i) = leer_q(&v["index"]) {
-                    m.entry(i).or_insert(v);
+                if let Some(e) = embebido_de_linea(&v) {
+                    m.entry(e).or_insert(v);
                 }
             }
         }
@@ -1520,51 +1729,91 @@ pub fn sobres_de_divergencias(a: &[String], b: &[String], c: &Comparacion) -> Ve
         .collect()
 }
 
+/// ⚠️ §712: el indice EMBEBIDO de una linea del diario con cabeza firmada, o `None` si no
+/// la lleva o si su firma no llega al ancho del indice: no entra en la cuenta (§333).
+fn embebido_de_linea(v: &Value) -> Option<u64> {
+    if v["signature"].is_null() {
+        return None;
+    }
+    leer_hex(&v["signature"]).ok().and_then(|f| indice_de_firma(&f).ok())
+}
+
 pub fn comparar_lineas(a: &[String], b: &[String]) -> Comparacion {
-    // Devuelve (mapa con la PRIMERA de cada indice, se_contradice).
-    let mapa = |ls: &[String]| -> (BTreeMap<u64, (String, String)>, bool) {
-        let mut m: BTreeMap<u64, (String, String)> = BTreeMap::new();
-        let mut interna = false;
+    // Un trio (digest, clave, cima) por clave del mapa: la PRIMERA linea que la trae. `interna` dice
+    // si el diario se contradice a si mismo.
+    type Mapa = BTreeMap<u64, (String, String, String)>;
+    // ⚠️ §712: con `mirar_cima`, el mismo `mmrSize` con OTRA cima no contradice al diario.
+    //    Es el reseteo VISIBLE del §295 -diario y libro nuevos con el mismo contador-, o una
+    //    bifurcacion: decidirlo pide saber quien iba por detras, y eso lo dice la pareja custodiada
+    //    que `--auditar` reconstruye del diario. Sin esto, un diario que cruza un reseteo honesto
+    //    sale «VISTA DIVIDIDA INTERNA» (medido).
+    fn anotar(m: &mut Mapa, k: u64, trio: (String, String, String), mirar_cima: bool, interna: &mut bool) {
+        match m.get(&k) {
+            None => {
+                m.insert(k, trio);
+            }
+            // ⚠️ Repetir un indice es NORMAL; cambiar su digest, no.
+            Some(p) if p.0 == trio.0 => {}
+            Some(p) if mirar_cima && p.2 != trio.2 => {}
+            Some(_) => *interna = true,
+        }
+    }
+    // ⚠️ §712: dos mapas por diario. Por indice EMBEBIDO -el que la firma acredita; el
+    //    declarado lo cambia quien sirve la cabeza (RFC-0012 D-C)- y por `mmrSize` -la regla del
+    //    reloj: el mismo sitio de la historia con dos digests-. Un tamaño 0 no cuenta: el genesis no
+    //    tiene historia (§295). Como las divergencias de siempre, esto no reverifica: la evidencia
+    //    son las dos cabezas, y `--auditar` y el kit las juzgan.
+    let mapas = |ls: &[String]| -> (Mapa, Mapa, bool) {
+        let (mut por_indice, mut por_tamano, mut interna) = (Mapa::new(), Mapa::new(), false);
         for l in ls {
             let v: Value = match serde_json::from_str(l) {
                 Ok(v) => v,
                 Err(_) => continue,
             };
-            if v["signature"].is_null() {
-                continue;
+            let e = match embebido_de_linea(&v) {
+                Some(e) => e,
+                None => continue,
+            };
+            let trio = (
+                v["epochDigest"].as_str().unwrap_or_default().to_string(),
+                v["publicKey"].as_str().unwrap_or_default().to_string(),
+                v["mmrRoot"].as_str().unwrap_or_default().to_string(),
+            );
+            if let Ok(t) = leer_q(&v["mmrSize"]) {
+                if t > 0 {
+                    anotar(&mut por_tamano, t, trio.clone(), true, &mut interna);
+                }
             }
-            if let Ok(i) = leer_q(&v["index"]) {
-                let par = (
-                    v["epochDigest"].as_str().unwrap_or_default().to_string(),
-                    v["publicKey"].as_str().unwrap_or_default().to_string(),
-                );
-                match m.get(&i) {
-                    None => {
-                        m.insert(i, par);
-                    }
-                    // ⚠️ Repetir un indice es NORMAL; cambiar su digest, no.
-                    Some(p) if p.0 == par.0 => {}
-                    Some(_) => interna = true,
+            anotar(&mut por_indice, e, trio, false, &mut interna);
+        }
+        (por_indice, por_tamano, interna)
+    };
+    // Lo que difiere entre los dos mapas, en dos montones: con la misma cima y con otra.
+    let cruzar = |x: &Mapa, y: &Mapa| -> (Vec<Divergencia>, Vec<Divergencia>) {
+        let (mut misma, mut otra) = (Vec::new(), Vec::new());
+        for (i, (da, ka, ca)) in x {
+            if let Some((db, kb, cb)) = y.get(i) {
+                if da != db {
+                    let d = Divergencia {
+                        indice: *i,
+                        digest_a: da.clone(),
+                        digest_b: db.clone(),
+                        misma_clave: ka == kb,
+                    };
+                    if ca == cb { misma.push(d) } else { otra.push(d) }
                 }
             }
         }
-        (m, interna)
+        (misma, otra)
     };
-    let ((ma, ia), (mb, ib)) = (mapa(a), mapa(b));
-    let mut c = Comparacion { interna_a: ia, interna_b: ib, ..Default::default() };
-    for (i, (da, ka)) in &ma {
-        if let Some((db, kb)) = mb.get(i) {
-            if da != db {
-                c.divergencias.push(Divergencia {
-                    indice: *i,
-                    digest_a: da.clone(),
-                    digest_b: db.clone(),
-                    misma_clave: ka == kb,
-                });
-            }
-        }
-    }
-    c
+    let ((ia_a, ta_a, ia), (ib_b, tb_b, ib)) = (mapas(a), mapas(b));
+    // Por indice embebido la cima no cuenta: dos contenidos bajo una hoja de un solo uso son la
+    // vista dividida con cualquier cima.
+    let (mut divergencias, otras) = cruzar(&ia_a, &ib_b);
+    divergencias.extend(otras);
+    divergencias.sort_by_key(|d| d.indice);
+    let (bifurcaciones, otra_cima) = cruzar(&ta_a, &tb_b);
+    Comparacion { divergencias, bifurcaciones, otra_cima, interna_a: ia, interna_b: ib }
 }
 
 /// **La comprobación DIRIGIDA**: índices del testigo ausentes del diario
@@ -1583,23 +1832,22 @@ pub fn comparar_lineas(a: &[String], b: &[String]) -> Comparacion {
 /// ⚠️ Esto es lo que `comparar_lineas` NO hace: mapea por `index` y sólo
 /// recorre los presentes en ambos, así que una ausencia le pasa en
 /// silencio.
+///
+/// ⚠️ §712: contaba el `index` DECLARADO, que la firma no
+/// acredita y cambia quien sirve la cabeza. Una firma es su hoja: desde aquí, el índice EMBEBIDO
+/// ([`embebido_de_linea`]), el mismo que cuentan `--auditar` y `--comparar`. Un declarado inflado
+/// por el camino ya no fabrica una ausencia, y una firma en una hoja que el diario del nodo no
+/// tiene ya no se esconde tras un declarado que sí tiene. Una línea cuyo `index` no es canónico
+/// sigue sin contar (§775): `--auditar` la da por ilegible.
 pub fn ausentes(testigo: &[String], nodo: &[String]) -> Vec<u64> {
     let indices = |ls: &[String]| -> std::collections::BTreeSet<u64> {
-        let mut s = std::collections::BTreeSet::new();
-        for l in ls {
-            let v: Value = match serde_json::from_str(l) {
-                Ok(v) => v,
-                Err(_) => continue,
-            };
-            if v["signature"].is_null() {
-                continue;
-            }
-            // §775: el indice, con el mismo lector canonico que el resto.
-            if let Ok(i) = leer_q(&v["index"]) {
-                s.insert(i);
-            }
-        }
-        s
+        // ⚠️ §712, con el §775: una linea cuyo `index` no es canonico no se lee, como en
+        //    `--auditar`, que la da por ilegible; las demas cuentan por su hoja EMBEBIDA.
+        ls.iter()
+            .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+            .filter(|v| leer_q(&v["index"]).is_ok())
+            .filter_map(|v| embebido_de_linea(&v))
+            .collect()
     };
     let (t, n) = (indices(testigo), indices(nodo));
     t.difference(&n).copied().collect()
@@ -1650,11 +1898,16 @@ pub struct WitnessArgs {
     ///
     /// ⚠️ Con un solo operador **no prueba nada**. Es la pieza que activa
     /// la propiedad de §248 cuando exista un segundo testigo.
+    ///
+    /// §712: el índice EMBEBIDO, y el mismo `mmrSize` con la misma
+    /// cima y dos digests (la bifurcación). Con OTRA cima lo dice y no lo
+    /// cuenta: reseteo visible del §295 o bifurcación, que decide `--auditar`.
     #[arg(long, value_name = "DIARIO", num_args = 2)]
     comparar: Option<Vec<PathBuf>>,
 
     /// **Indices que el TESTIGO tiene y el NODO no** (nota 80): la
-    /// comprobacion dirigida sobre dos diarios.
+    /// comprobacion dirigida sobre dos diarios. El indice EMBEBIDO en la firma
+    /// (§712), no el declarado.
     ///
     /// ⚠️ DIRECCIONAL: el diario del testigo primero, el del nodo despues.
     /// Al reves no es un hallazgo —el diario del nodo es completo y el del
@@ -2491,7 +2744,8 @@ fn texto_del_veredicto(v: &Veredicto) -> String {
     match v {
         Veredicto::NoVerifica { error, .. } => error.clone(),
         Veredicto::SinFirma { motivo } | Veredicto::SinRespuesta { motivo } => motivo.clone(),
-        Veredicto::Nueva { indice, digest } => format!("indice {indice:#x} · {digest}"),
+        // §712: el indice de una cabeza que verifico es el EMBEBIDO, y el texto lo dice.
+        Veredicto::Nueva { indice, digest } => format!("indice embebido {indice:#x} · {digest}"),
         otro => format!("{otro:?}"),
     }
 }
@@ -2646,18 +2900,34 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             if mal {
                 println!("  ⚠️⚠️ {} CONTIENE UNA VISTA DIVIDIDA INTERNA: el mismo",
                          n.display());
-                println!("     indice con dos digests. Mirar con --auditar.");
+                // §712: o el mismo mmrSize y la misma cima, que `--auditar` nombra `no-extiende`.
+                println!("     indice, o el mismo mmrSize y la misma cima, con dos digests. Mirar con \
+                          --auditar.");
             }
         }
-        if c.divergencias.is_empty() {
+        // ⚠️ §712: el mismo mmrSize con OTRA cima se DICE y no cuenta:
+        //    reseteo visible del §295 o bifurcacion, y entre dos diarios no se sabe quien iba por
+        //    detras. Sin «misma clave» en el texto: no es una divergencia.
+        for v in &c.otra_cima {
+            println!("  ⚠️ mmrSize {}: OTRA cima en cada diario ({} != {}): reseteo visible (§295) o \
+                      bifurcacion; no se sabe quien iba por detras. Mirar cada diario con --auditar.",
+                     v.indice, v.digest_a, v.digest_b);
+        }
+        if c.divergencias.is_empty() && c.bifurcaciones.is_empty() {
             if c.interna_a || c.interna_b {
                 anyhow::bail!("hay una vista dividida INTERNA: usar --auditar");
             }
             println!("sin divergencias");
             return Ok(());
         }
+        // ⚠️ §712: el indice es el EMBEBIDO en la firma, y lo dice.
         for v in &c.divergencias {
-            println!("  ⚠️⚠️ VISTA DIVIDIDA en el indice {}: {} != {} (misma clave: {})",
+            println!("  ⚠️⚠️ VISTA DIVIDIDA en el indice embebido {}: {} != {} (misma clave: {})",
+                     v.indice, v.digest_a, v.digest_b, v.misma_clave);
+        }
+        // ⚠️ §712: la regla del reloj entre los dos diarios, con la misma cima.
+        for v in &c.bifurcaciones {
+            println!("  ⚠️⚠️ BIFURCACION en el mmrSize {}: {} != {} (misma clave: {})",
                      v.indice, v.digest_a, v.digest_b, v.misma_clave);
         }
         // ⚠️ §689: cada divergencia de la misma clave, como el sobre del ancla, modo 4.
@@ -2677,7 +2947,9 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         eprintln!("   DETECTAR NO ES DISTINGUIR: esto no dice cual miente.");
         eprintln!("   Pero el operador EMITIO LAS DOS, y ninguno de los dos");
         eprintln!("   testigos pudo fabricar su firma.");
-        anyhow::bail!("{} divergencia(s) entre los diarios", c.divergencias.len());
+        // ⚠️ §712: las divergencias y las bifurcaciones, cada una con su cuenta.
+        anyhow::bail!("{} divergencia(s) y {} bifurcacion(es) entre los diarios",
+                      c.divergencias.len(), c.bifurcaciones.len());
     }
 
     if let Some(ps) = &a.ausentes {
@@ -2690,7 +2962,8 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             return Ok(());
         }
         for i in &faltan {
-            println!("  ⚠️⚠️ AUSENTE en el diario del nodo: indice {i}");
+            // §712: el indice es el EMBEBIDO, y lo dice.
+            println!("  ⚠️⚠️ AUSENTE en el diario del nodo: indice embebido {i}");
         }
         eprintln!();
         eprintln!("   O el nodo firmo algo que no recuerda, o alguien sirvio una");
@@ -3000,8 +3273,7 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         //     como EL precio de este eslabon— y re-avalar una cabeza ya
         //     avalada gasta serie sin informacion nueva. **Una cofirma por
         //     cabeza, en la vuelta que la juzgo.**
-        let cofirmable = matches!(veredicto, Veredicto::Nueva { .. })
-            && matches!(cons, Some(Consistencia::Extiende { .. }));
+        let cofirmable = cofirmable(&veredicto, cons.as_ref());
         let mut marca: Option<Value> = None;
         if let (Some(cf), true) = (cofirmante.as_mut(), cofirmable) {
             let d = servido.get("epochDigest").and_then(|v| v.as_str()).and_then(hex32);
@@ -4248,7 +4520,18 @@ mod tests {
     // ── §249: LEER el diario ──
 
     /// Una linea de diario bien formada, para las pruebas de estructura.
+    ///
+    /// ⚠️ §712: la firma lleva en sus cinco primeros bytes el MISMO numero que el `index`
+    /// declarado. Decia `0xabcd`, dos bytes sin indice: desde el §712 el auditor y `--comparar`
+    /// cuentan el EMBEBIDO, y una firma sin indice no entra en la cuenta. Con el mismo numero
+    /// dentro, cada test de estructura sigue diciendo lo que decia; la firma sigue sin verificar.
     fn dia(indice: &str, digest: &str, clave: &str) -> String {
+        let e = u64::from_str_radix(indice.trim_start_matches("0x"), 16).expect("indice");
+        dia_con(indice, e, digest, clave)
+    }
+
+    /// §712: una linea de estructura con el indice EMBEBIDO aparte del declarado.
+    fn dia_con(indice: &str, embebido: u64, digest: &str, clave: &str) -> String {
         let mut v = json!({});
         v["v"] = json!(DIARIO_VERSION);
         v["clase"] = json!("nueva");
@@ -4256,7 +4539,7 @@ mod tests {
         v["index"] = json!(indice);
         v["epochDigest"] = json!(digest);
         v["formatVersion"] = json!("0x1");
-        v["signature"] = json!("0xabcd");
+        v["signature"] = json!(format!("0x{:010x}abcd", embebido));
         v["publicKey"] = json!(clave);
         v.to_string()
     }
@@ -6293,5 +6576,387 @@ mod tests {
             let _ = sin.as_object_mut().expect("objeto").remove(k);
             recomponer(&sin, &ed32).expect_err(k);
         }
+    }
+
+    // ── §712 · RFC-0012 D-C: el reloj es el indice EMBEBIDO ──
+    //
+    // Las cabezas de verdad salen de `spec/vectors/ancla/vista-dividida.json`: dos de la clave '37'
+    // en la hoja 1, declaradas 0x2, con el mismo mmrSize (1) y la misma cima. Con la segunda
+    // declarada 0x3 -el declarado no va firmado, y la firma sigue verificando: 1 < 3- son el
+    // `diario_B` y los dos testigos que se midieron antes del §712: el auditor los daba LIMPIOS y
+    // `--comparar`, «sin divergencias».
+
+    fn par_indice() -> (Value, Value) {
+        let v: Value = serde_json::from_str(include_str!(
+            "../../../spec/vectors/ancla/vista-dividida.json"
+        ))
+        .expect("vector");
+        (v["cabeza"].clone(), v["contraria"].clone())
+    }
+
+    fn linea_indice(c: &Value) -> String {
+        let nueva = Veredicto::Nueva { indice: 0, digest: String::new() };
+        linea_de_diario(&nueva, c, 0).to_string()
+    }
+
+    fn declarada(c: &Value, d: &str) -> Value {
+        let mut x = c.clone();
+        x["index"] = json!(d);
+        x
+    }
+
+    /// §712: **el diario_B**, declarado 0x2 y 0x3, embebido 1 y 1: la vista dividida de la hoja 1 y
+    /// la bifurcacion del mmrSize 1, con su sobre. Y la MISMA cabeza con dos declarados no es
+    /// hallazgo: es la misma firma sobre el mismo mensaje.
+    #[test]
+    fn el_auditor_cuenta_el_embebido_aunque_el_declarado_crezca() {
+        let (a, b) = par_indice();
+        let (da, db) = (
+            a["epochDigest"].as_str().unwrap().to_string(),
+            b["epochDigest"].as_str().unwrap().to_string(),
+        );
+        let r = auditar_lineas(&[linea_indice(&a), linea_indice(&declarada(&b, "0x3"))]);
+        assert_eq!(r.reverificadas, 2, "las dos firmas verifican: el declarado no va firmado");
+        assert!(
+            r.hallazgos.contains(&Hallazgo::VistaDividida {
+                linea: 2,
+                indice: 1,
+                digest_a: da.clone(),
+                digest_b: db.clone()
+            }),
+            "{:?}",
+            r.hallazgos
+        );
+        assert!(
+            r.hallazgos.contains(&Hallazgo::NoExtiende { linea: 2, t: 1, digest_a: da, digest_b: db }),
+            "{:?}",
+            r.hallazgos
+        );
+        assert_eq!(r.sobres.len(), 1, "el sobre del ancla, modo 4, se arma por el embebido");
+        assert_eq!(r.sobres[0].1["tipo"], json!("ancla"));
+        let r = auditar_lineas(&[linea_indice(&a), linea_indice(&declarada(&a, "0x3"))]);
+        assert!(r.hallazgos.is_empty(), "{:?}", r.hallazgos);
+    }
+
+    /// §712: **dos testigos**, uno con la cabeza declarada 0x2 y otro con la contraria declarada
+    /// 0x3: la divergencia de la hoja 1, la bifurcacion del mmrSize 1 y un sobre.
+    #[test]
+    fn comparar_dos_testigos_por_el_embebido_y_por_el_mmr_size() {
+        let (a, b) = par_indice();
+        let (x, y) = (vec![linea_indice(&a)], vec![linea_indice(&declarada(&b, "0x3"))]);
+        let c = comparar_lineas(&x, &y);
+        assert_eq!(c.divergencias.len(), 1, "{c:?}");
+        assert_eq!((c.divergencias[0].indice, c.divergencias[0].misma_clave), (1, true));
+        assert_eq!(c.bifurcaciones.len(), 1, "{c:?}");
+        assert_eq!(c.bifurcaciones[0].indice, 1, "el mmrSize");
+        assert!(!c.interna_a && !c.interna_b);
+        let s = sobres_de_divergencias(&x, &y, &c);
+        assert_eq!(s.len(), 1);
+        assert_eq!(s[0].0, 1);
+    }
+
+    /// §712: **la vuelta viva** clasifica por el embebido: la contraria, servida con el declarado
+    /// 0x3, es la vista dividida de la hoja 1 y detiene. Antes era una cabeza `nueva`.
+    #[test]
+    fn la_vuelta_viva_clasifica_por_el_embebido() {
+        let (a, b) = par_indice();
+        let mut m = Memoria::nueva();
+        assert!(matches!(una_vuelta(&a, &mut m), Veredicto::Nueva { indice: 1, .. }));
+        let v = una_vuelta(&declarada(&b, "0x3"), &mut m);
+        assert!(matches!(v, Veredicto::VistaDividida { indice: 1, .. }), "{v:?}");
+        assert!(v.detiene());
+    }
+
+    /// §712: **la regla del reloj en el canal de la historia.** La contraria tiene el mismo mmrSize y
+    /// la misma cima que la cabeza, y otro digest: `no-extiende` en el 1, sin mover el ancla. La
+    /// cabeza otra vez no es hallazgo.
+    #[test]
+    fn un_mmr_size_ya_visto_con_otro_digest_no_extiende() {
+        let (a, b) = par_indice();
+        let mut m = Memoria::nueva();
+        assert_eq!(al_llegar_cabeza(&mut m, &a), Some(Consistencia::Anclando { t: 1 }));
+        let c = al_llegar_cabeza(&mut m, &b).expect("hallazgo");
+        assert_eq!(c, Consistencia::NoExtiende { de_t: 1, a_t: 1, camino: Vec::new() });
+        assert!(c.detiene());
+        assert_eq!(m.pareja().map(|(_, t)| t), Some(1), "el ancla no se mueve ante un hallazgo");
+        assert_eq!(al_llegar_cabeza(&mut m, &a), None);
+    }
+
+    /// §712: `bifurca`, la regla pura. Con la misma cima, siempre; con otra, solo si el nodo no va
+    /// por detras de lo custodiado: por detras es el reseteo visible del §295.
+    #[test]
+    fn bifurca_con_la_misma_cima_siempre_y_con_otra_si_no_va_por_detras() {
+        let v = ("0xc1".to_string(), "0xd1".to_string());
+        assert!(!bifurca(None, "0xc1", "0xd2", false), "un tamaño no visto no bifurca");
+        assert!(!bifurca(Some(&v), "0xc1", "0xd1", true), "la misma cabeza otra vez");
+        assert!(bifurca(Some(&v), "0xc1", "0xd2", false));
+        assert!(bifurca(Some(&v), "0xc1", "0xd2", true), "la misma cima, aunque vaya por detras");
+        assert!(bifurca(Some(&v), "0xc2", "0xd2", false), "otra historia en un tamaño visto");
+        assert!(!bifurca(Some(&v), "0xc2", "0xd2", true), "el reseteo visible no detiene");
+    }
+
+    fn cabeza_indice(cima: &str, t: u64, dg: &str) -> Value {
+        json!({
+            "available": true,
+            "formatVersion": "0x3",
+            "mmrRoot": cima,
+            "mmrSize": format!("{t:#x}"),
+            "epochDigest": dg,
+        })
+    }
+
+    /// §712: **el recorte detiene aunque vaya por detras; el reseteo visible, no.** El testigo vio
+    /// los tamaños 1 a 4 y custodia el 4. El nodo vuelve con el 2 y OTRA cima -un reseteo: sigue
+    /// siendo `por-detras`, como desde el §295-; con el 3 y la MISMA cima de antes y otro digest -un
+    /// recorte de su diario-, `no-extiende`. Y en el 4, el custodiado, otra cima es `no-extiende` en
+    /// esa misma vuelta: antes se pedia camino y se esperaba a la cabeza siguiente.
+    #[test]
+    fn el_recorte_detiene_aunque_vaya_por_detras_y_el_reseteo_visible_no() {
+        let mut m = Memoria::nueva();
+        for t in 1..=4u64 {
+            let _ = al_llegar_cabeza(&mut m, &cabeza_indice(&format!("0xc{t}"), t, &format!("0xd{t}")));
+        }
+        m.pareja = Some(("0xc4".into(), 4));
+        m.pendiente = None;
+        assert_eq!(
+            al_llegar_cabeza(&mut m, &cabeza_indice("0xe2", 2, "0xf2")),
+            Some(Consistencia::PorDetras { t_nodo: 2, pedido: 4 })
+        );
+        assert_eq!(
+            al_llegar_cabeza(&mut m, &cabeza_indice("0xc3", 3, "0xf3")),
+            Some(Consistencia::NoExtiende { de_t: 3, a_t: 3, camino: Vec::new() })
+        );
+        assert_eq!(
+            al_llegar_cabeza(&mut m, &cabeza_indice("0xe4", 4, "0xf4")),
+            Some(Consistencia::NoExtiende { de_t: 4, a_t: 4, camino: Vec::new() })
+        );
+    }
+
+    /// §712: **los huerfanos de un nodo honesto son un hueco, y no detienen** -medido con el banco
+    /// de la bifurcacion: el contador salta cinco hojas y el testigo sigue-. Una hoja por debajo
+    /// que no se vio se anota, y la cuenta de huecos sigue desde la mayor: antes bajaba con ella y
+    /// la cabeza siguiente salia `hueco` por hojas que ya se habian visto.
+    #[test]
+    fn los_huerfanos_son_un_hueco_y_el_retroceso_no_mueve_la_cuenta() {
+        let mut m = Memoria::nueva();
+        assert!(matches!(m.clasificar(3, "0xa"), Veredicto::Nueva { .. }));
+        let h = m.clasificar(9, "0xb");
+        assert_eq!(h, Veredicto::Hueco { desde: 4, hasta: 8 });
+        assert!(!h.detiene());
+        assert!(matches!(m.clasificar(5, "0xc"), Veredicto::Nueva { indice: 5, .. }));
+        assert!(matches!(m.clasificar(10, "0xd"), Veredicto::Nueva { indice: 10, .. }));
+    }
+
+    /// §712: **el auditor ve el embebido que retrocede aunque el declarado crezca**, y por clave. Un
+    /// declarado que baja con el embebido creciendo ya no es hallazgo: el declarado no va firmado.
+    #[test]
+    fn el_auditor_ve_el_embebido_que_retrocede_aunque_el_declarado_crezca() {
+        let clases = |r: &Auditoria| r.hallazgos.iter().map(|h| h.clase()).collect::<Vec<_>>();
+        let r = auditar_lineas(&[
+            dia_con("0x5", 4, "0xaa", "0xdead"),
+            dia_con("0x9", 2, "0xbb", "0xdead"),
+        ]);
+        assert!(
+            r.hallazgos.contains(&Hallazgo::IndiceRetrocede { linea: 2, previo: 4, ahora: 2 }),
+            "{:?}",
+            r.hallazgos
+        );
+        let r = auditar_lineas(&[
+            dia_con("0x9", 2, "0xaa", "0xdead"),
+            dia_con("0x5", 4, "0xbb", "0xdead"),
+        ]);
+        assert!(!clases(&r).contains(&"indice-retrocede"), "{:?}", clases(&r));
+        // La cuenta es UNA por operador (RFC-0015 D-A, PAQUETE 2.14), como en la vuelta viva: otra
+        // clave por debajo tambien retrocede, y ademas cambia la clave. Por encima, como una
+        // sucesora honesta, solo cambia la clave.
+        let r = auditar_lineas(&[
+            dia_con("0x5", 4, "0xaa", "0xdead"),
+            dia_con("0x2", 1, "0xbb", "0xbeef"),
+        ]);
+        assert!(
+            r.hallazgos.contains(&Hallazgo::IndiceRetrocede { linea: 2, previo: 4, ahora: 1 }),
+            "una cuenta por operador: {:?}",
+            clases(&r)
+        );
+        assert!(clases(&r).contains(&"cambio-de-clave"));
+        let r = auditar_lineas(&[
+            dia_con("0x5", 4, "0xaa", "0xdead"),
+            dia_con("0x9", 8, "0xbb", "0xbeef"),
+        ]);
+        assert!(!clases(&r).contains(&"indice-retrocede"), "{:?}", clases(&r));
+        assert!(clases(&r).contains(&"cambio-de-clave"));
+    }
+
+    // ── §712: el reloj entero, con cabezas del banco de la bifurcacion ──
+    //
+    // Cabezas de verdad del catalogo, de la corrida del sello de `tools/banco_bifurcacion.sh`
+    // (semilla '39'): de `paquete/rechazo-ext-reloj-retrocede.json`, la de A en el mmrSize 4 (hoja
+    // 10, la primera tras los huerfanos) y la de D, el operador restaurado de antes de los
+    // huerfanos, en el mmrSize 5 (hoja 5) con el camino que lo une: la historia de D CONTIENE a la
+    // de A. De `paquete/rechazo-ext-bifurcada-mismo-mmrSize.json`, la de A en el 5 (hoja 11), y de
+    // `paquete/extension-sobre-huerfanos.json`, la de A en el 3 (hoja 3) y en el 6 (hoja 12).
+
+    fn sobre_indice(json: &str) -> Value {
+        serde_json::from_str(json).expect("vector")
+    }
+
+    fn reloj_indice() -> Value {
+        sobre_indice(include_str!("../../../spec/vectors/paquete/rechazo-ext-reloj-retrocede.json"))
+    }
+
+    /// ⚠️ §712: **la vuelta viva aplica el reloj.** El testigo custodia la de A
+    /// (mmrSize 4, hoja 10); llega la de D (mmrSize 5, hoja 5) con el camino BUENO. `clasificar` la
+    /// da `Nueva` -una hoja no vista- y el camino casa: sin el reloj era `Extiende`, y por el §300
+    /// el testigo la COFIRMABA, una cabeza que el kit rechaza con «extension: el indice embebido
+    /// no crece». Ahora es `no-extiende` del 4 al 5, detiene, no cofirma y el ancla no se mueve.
+    #[test]
+    fn la_vuelta_viva_no_cofirma_una_cabeza_posterior_que_firma_por_debajo() {
+        let s = reloj_indice();
+        let (vieja, nueva) = (s["vieja"].clone(), s["nueva"].clone());
+        let mut m = Memoria::nueva();
+        assert!(matches!(una_vuelta(&vieja, &mut m), Veredicto::Nueva { indice: 10, .. }));
+        assert_eq!(al_llegar_cabeza(&mut m, &vieja), Some(Consistencia::Anclando { t: 4 }));
+        let r = json!({"available": true, "mmrSize": "0x5", "camino": s["camino"].clone()});
+        assert_eq!(al_llegar_camino(&mut m, &r), Consistencia::Pendiente { de_t: 4, esperando_t: 5 });
+        let v = una_vuelta(&nueva, &mut m);
+        assert!(matches!(v, Veredicto::Nueva { indice: 5, .. }), "una hoja no vista: {v:?}");
+        let c = al_llegar_cabeza(&mut m, &nueva);
+        assert_eq!(c, Some(Consistencia::NoExtiende { de_t: 4, a_t: 5, camino: Vec::new() }));
+        assert!(c.as_ref().map_or(false, Consistencia::detiene));
+        assert!(!cofirmable(&v, c.as_ref()), "una cabeza que el reloj rechaza no se cofirma");
+        assert_eq!(m.pareja().map(|(_, t)| t), Some(4), "el ancla no se mueve ante un hallazgo");
+    }
+
+    /// §712: **el reloj no salta con los huerfanos honestos.** La de A en el 3
+    /// (hoja 3) y la de A en el 6 (hoja 12), con su camino: seis hojas huerfanas en medio. La
+    /// cabeza es un `hueco` y la historia `extiende`: el testigo sigue, y el ancla avanza con su
+    /// hoja.
+    #[test]
+    fn el_reloj_no_salta_con_los_huerfanos_honestos() {
+        let s = sobre_indice(include_str!("../../../spec/vectors/paquete/extension-sobre-huerfanos.json"));
+        let (vieja, nueva) = (s["vieja"].clone(), s["nueva"].clone());
+        let mut m = Memoria::nueva();
+        una_vuelta(&vieja, &mut m);
+        assert_eq!(al_llegar_cabeza(&mut m, &vieja), Some(Consistencia::Anclando { t: 3 }));
+        let r = json!({"available": true, "mmrSize": "0x6", "camino": s["camino"].clone()});
+        al_llegar_camino(&mut m, &r);
+        let v = una_vuelta(&nueva, &mut m);
+        assert_eq!(v, Veredicto::Hueco { desde: 4, hasta: 11 });
+        let c = al_llegar_cabeza(&mut m, &nueva).expect("hay veredicto");
+        assert!(matches!(c, Consistencia::Extiende { de_t: 3, a_t: 6, .. }), "{c:?}");
+        assert_eq!(m.reloj.as_ref().map(|(_, e)| *e), Some(12), "el reloj avanza con el ancla");
+    }
+
+    fn cabeza_reloj(cima: &str, t: u64, dg: &str, clave: &str, hoja: u64) -> Value {
+        let mut c = cabeza_indice(cima, t, dg);
+        c["publicKey"] = json!(clave);
+        c["signature"] = json!(format!("0x{hoja:010x}00"));
+        c
+    }
+
+    /// §712: **el reloj, regla a regla**, sobre cabezas que solo llevan lo que
+    /// lee. Ancla en el 4, hoja 10, clave k. Por detras -el reseteo visible del §295: el `mmrSize`
+    /// baja y la hoja sigue subiendo- es `por-detras`, como siempre. Otra clave no se compara: el
+    /// cruce lo juzga el tramo. Con la misma clave y mas `mmrSize`, una hoja por encima pasa; la
+    /// MISMA hoja o una por debajo es `no-extiende` desde la custodiada.
+    #[test]
+    fn el_reloj_de_la_vuelta_viva_regla_a_regla() {
+        let mut m = Memoria::nueva();
+        assert_eq!(
+            al_llegar_cabeza(&mut m, &cabeza_reloj("0xc4", 4, "0xd4", "0xk", 10)),
+            Some(Consistencia::Anclando { t: 4 })
+        );
+        assert_eq!(
+            al_llegar_cabeza(&mut m, &cabeza_reloj("0xe2", 2, "0xf2", "0xk", 11)),
+            Some(Consistencia::PorDetras { t_nodo: 2, pedido: 4 })
+        );
+        assert_eq!(al_llegar_cabeza(&mut m, &cabeza_reloj("0xc5", 5, "0xd5", "0xotra", 3)), None);
+        assert_eq!(al_llegar_cabeza(&mut m, &cabeza_reloj("0xc6", 6, "0xd6", "0xk", 12)), None);
+        for (t, hoja) in [(7, 10), (8, 9)] {
+            assert_eq!(
+                al_llegar_cabeza(&mut m, &cabeza_reloj(&format!("0xc{t}"), t, "0xd", "0xk", hoja)),
+                Some(Consistencia::NoExtiende { de_t: 4, a_t: t, camino: Vec::new() })
+            );
+        }
+    }
+
+    /// §712: **un diario que cruza el reseteo visible del §295 no es una bifurcacion.** A ve los
+    /// tamaños 1 a 5 y, tras el reseteo -diario y libro nuevos, el mismo contador-, otra historia en
+    /// el 1 al 3 con la hoja creciendo; B empezo despues. El mismo `mmrSize` con OTRA cima se dice
+    /// y no cuenta: ni bifurcacion ni `interna`. Contarlo con cualquier cima daba tres
+    /// bifurcaciones y «A CONTIENE UNA VISTA DIVIDIDA INTERNA» (medido con estos mismos diarios).
+    /// Con la MISMA cima y otro digest sigue siendo bifurcacion.
+    #[test]
+    fn comparar_no_llama_bifurcacion_al_reseteo_visible() {
+        let l = |hoja: u64, t: u64, cima: &str, dg: &str| {
+            let mut v: Value = serde_json::from_str(&dia_con(&format!("{hoja:#x}"), hoja, dg, "0xdead"))
+                .expect("linea");
+            v["mmrSize"] = json!(format!("{t:#x}"));
+            v["mmrRoot"] = json!(cima);
+            v.to_string()
+        };
+        let mut a: Vec<String> = (1..=5).map(|t| l(t, t, &format!("0xc{t}"), &format!("0xd{t}"))).collect();
+        a.extend((1..=3).map(|t| l(5 + t, t, &format!("0xf{t}"), &format!("0xe{t}"))));
+        let b: Vec<String> = (1..=3).map(|t| l(5 + t, t, &format!("0xf{t}"), &format!("0xe{t}"))).collect();
+        let c = comparar_lineas(&a, &b);
+        assert!(c.bifurcaciones.is_empty() && !c.interna_a && !c.interna_b, "{c:?}");
+        assert!(c.divergencias.is_empty(), "{c:?}");
+        assert_eq!(c.otra_cima.iter().map(|d| d.indice).collect::<Vec<_>>(), vec![1, 2, 3]);
+        let b = vec![l(9, 2, "0xc2", "0xe9")];
+        let c = comparar_lineas(&a, &b);
+        assert_eq!(c.bifurcaciones.iter().map(|d| d.indice).collect::<Vec<_>>(), vec![2]);
+        assert!(c.otra_cima.is_empty(), "{c:?}");
+    }
+
+    /// §712: **el «por detras» del auditor es la pareja custodiada**, la misma que la vuelta viva,
+    /// reconstruida del diario: la cabeza de la ultima linea `anclando` o
+    /// `extiende`. Cuatro lineas reales: A en el 4 (anclando), A en el 5, A en el 6 y D en el 5,
+    /// otra cima. Con la pareja en el 4, D no va por detras: `no-extiende` en el 5, lo que la
+    /// vuelta viva habria dicho. Con el mayor tamaño visto (el 6), el auditor callaria.
+    /// Si la linea del 6 es `extiende`, la pareja esta en el 6 y D va por detras: es el reseteo
+    /// visible, y no hay `no-extiende`. En los dos casos la hoja de D (5) baja de la mayor vista
+    /// (12): `indice-retrocede`, el reloj en frio.
+    #[test]
+    fn el_auditor_juzga_por_detras_con_la_pareja_del_diario() {
+        let reloj = reloj_indice();
+        let (a4, d5) = (reloj["vieja"].clone(), reloj["nueva"].clone());
+        let a5 = sobre_indice(include_str!(
+            "../../../spec/vectors/paquete/rechazo-ext-bifurcada-mismo-mmrSize.json"
+        ))["vieja"]
+            .clone();
+        let a6 = sobre_indice(include_str!("../../../spec/vectors/paquete/extension-sobre-huerfanos.json"))
+            ["nueva"]
+            .clone();
+        let nueva = Veredicto::Nueva { indice: 0, digest: String::new() };
+        let con = |c: &Value, k: Option<Consistencia>| linea_de_diario_con(&nueva, c, 0, k.as_ref()).to_string();
+        let ext = Consistencia::Extiende { de_t: 4, a_t: 6, camino: Vec::new() };
+        let pend = Consistencia::Pendiente { de_t: 4, esperando_t: 6 };
+        let no_ext = |r: &Auditoria| r.hallazgos.iter().filter(|h| h.clase() == "no-extiende").count();
+        for (seis, esperado) in [(pend, 1), (ext, 0)] {
+            let r = auditar_lineas(&[
+                con(&a4, Some(Consistencia::Anclando { t: 4 })),
+                con(&a5, None),
+                con(&a6, Some(seis)),
+                con(&d5, None),
+            ]);
+            assert_eq!(r.reverificadas, 4, "{:?}", r.hallazgos);
+            assert_eq!(no_ext(&r), esperado, "{:?}", r.hallazgos);
+            assert!(
+                r.hallazgos.contains(&Hallazgo::IndiceRetrocede { linea: 4, previo: 12, ahora: 5 }),
+                "{:?}",
+                r.hallazgos
+            );
+        }
+    }
+
+    /// §712: **`--ausentes` cuenta la hoja, no el declarado.** La misma firma con
+    /// otro declarado esta presente; una firma en una hoja que el nodo no tiene falta aunque su
+    /// declarado si este.
+    #[test]
+    fn ausentes_cuenta_el_indice_embebido() {
+        let nodo = vec![dia_con("0x2", 1, "0xaa", "0xdead")];
+        assert!(ausentes(&[dia_con("0x3", 1, "0xaa", "0xdead")], &nodo).is_empty());
+        let nodo = vec![dia_con("0x2", 5, "0xaa", "0xdead")];
+        assert_eq!(ausentes(&[dia_con("0x2", 1, "0xaa", "0xdead")], &nodo), vec![1]);
     }
 }

@@ -673,6 +673,9 @@ fn indice_acreditado(c: &serde_json::Value, cual: &str) -> Result<u64, String> {
 /// de consistencia entre sus cimas — el eslabon 2 entero, verificable
 /// **sin el nodo**: quien custodia la vieja comprueba que la nueva la
 /// EXTIENDE, con el objeto de §291 como juez.
+///
+/// ⚠️ §712: y despues de la consistencia, el reloj ([`el_reloj_avanza`]). Con el mismo
+/// `mmrSize`, el mismo digest; con la misma clave, la hoja de la nueva por encima.
 fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
     let vieja = p.get("vieja").ok_or_else(|| err("falta vieja".into()))?;
     let (cima_v, t_v, clave_v, _) = cabeza_v3_verificada(vieja, "vieja")?;
@@ -697,8 +700,107 @@ fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
         )));
     }
     println!("3/3 la cima nueva EXTIENDE a la vieja: consistencia O(log N), sin el registro");
+    // §712: despues de la consistencia, y no antes: sus rojos siguen siendo los suyos.
+    println!("{}", el_reloj_avanza(dos_lados((vieja, &clave_v, t_v), (nueva, &clave_n, t_n))?)?);
     println!("VERDE: la extension se sostiene sin el nodo");
     Ok(())
+}
+
+/// Un lado de [`el_reloj_avanza`]: quien es, para el texto, y lo que el reloj compara -su
+/// `mmrSize`, su `epochDigest`, su clave y su indice EMBEBIDO-.
+///
+/// ⚠️ §712: los datos sueltos, y no la cabeza entera, porque el ancla del modo 3 (PAQUETE
+/// 2.12) no es una cabeza: trae el digest y el indice escritos. Asi el juez es UNO para la
+/// extension, el consumo y el ancla.
+struct Lado<'a> {
+    nombre: &'a str,
+    t: u64,
+    digest: Digest,
+    clave: &'a str,
+    embebido: u64,
+}
+
+/// Los dos lados de la extension y del consumo: dos cabezas YA verificadas, con su clave y su
+/// `mmrSize`. La firma verifico, asi que su indice embebido se lee: aqui no nace un rojo nuevo.
+fn dos_lados<'a>(
+    (vieja, kv, tv): (&serde_json::Value, &'a str, u64),
+    (nueva, kn, tn): (&serde_json::Value, &'a str, u64),
+) -> Result<(Lado<'a>, Lado<'a>), String> {
+    Ok((
+        Lado {
+            nombre: "la vieja",
+            t: tv,
+            digest: digest_de(vieja, "epochDigest")?,
+            clave: kv,
+            embebido: indice_embebido(vieja, "vieja")?,
+        },
+        Lado {
+            nombre: "la nueva",
+            t: tn,
+            digest: digest_de(nueva, "epochDigest")?,
+            clave: kn,
+            embebido: indice_embebido(nueva, "nueva")?,
+        },
+    ))
+}
+
+/// ⚠️ §712 · RFC-0012 D-C · **El reloj es el índice EMBEBIDO.** La consistencia del MMR
+/// prueba que la cima nueva contiene a la vieja. No ve dos cabezas en el mismo sitio de la
+/// historia, ni una cabeza posterior que firma por debajo de una anterior. Con el mismo `mmrSize`
+/// el juez de consistencia es la identidad (`mmr::verificar_consistencia`, el caso identidad, que
+/// no se toca): dos cabezas DISTINTAS con la misma cima pasaban, y una bifurcación firmada salía
+/// VERDE como extensión. Medido: los dos sentidos de la vista dividida del ancla y una bifurcación
+/// con índices embebidos distintos daban VERDE en la extensión y en el consumo.
+///
+/// Va DESPUÉS de la consistencia: un rojo de consistencia sigue siendo el suyo. Un productor para
+/// la extensión, el consumo y el ancla del modo 3 (PAQUETE 2.12); la refutación del conflicto
+/// (PAQUETE 2.5) es una extensión.
+///
+/// - **Mismo `mmrSize`**: el mismo `epochDigest`. La misma cabeza dos veces sigue VERDE.
+/// - **`mmrSize` mayor y la misma clave**: el índice embebido de la nueva, estrictamente mayor.
+///   Un índice huérfano —reservado y no firmado— solo lo adelanta: no da rojo.
+/// - ⚠️ **Con claves distintas el índice no se compara AQUÍ**: la cuenta es una por operador
+///   (RFC-0015 D-A, PAQUETE 2.14), y el cruce entre sus claves lo juzgan los tramos de la cadena
+///   de actas (`juzgar_continuidad`, reglas 3 y 4), no este reloj.
+///
+/// ⚠️ El ancla del modo 3 también: con el mismo `mmrSize` su consistencia es la identidad, y el
+/// ancla de una rama contra la cabeza de la otra salía VERDE, «la historia anclada es un prefijo»
+/// (medido con el kit de antes del §712 y con la segunda).
+///
+/// Devuelve la línea que lo dice; el rojo nombra su causa, la misma en los tres sobres.
+fn el_reloj_avanza((v, n): (Lado, Lado)) -> Result<String, String> {
+    let (tv, tn) = (v.t, n.t);
+    if tv == tn {
+        if v.digest != n.digest {
+            return Err(err(format!(
+                "extension: mismo mmrSize y digest distinto - {} y {} firman la misma historia \
+                 de {tv} cabeza(s) y no son la misma cabeza: una bifurcacion firmada, no una \
+                 extension",
+                v.nombre, n.nombre
+            )));
+        }
+        return Ok(format!(
+            "   {} y {} son la MISMA cabeza: mismo mmrSize y mismo digest",
+            v.nombre, n.nombre
+        ));
+    }
+    if v.clave != n.clave {
+        return Ok("   claves distintas: el orden de sus hojas lo juzgan los tramos de la cadena, \
+                   no el reloj de una clave"
+            .into());
+    }
+    let (ev, en) = (v.embebido, n.embebido);
+    if en <= ev {
+        return Err(err(format!(
+            "extension: el indice embebido no crece - {} (t={tn}) firma en la hoja {en} y {} \
+             (t={tv}) en la {ev}: con la misma clave, una cabeza posterior firma por encima \
+             (RFC-0012 D-C)",
+            n.nombre, v.nombre
+        )));
+    }
+    Ok(format!(
+        "   el reloj de la clave avanza con la historia: de la hoja {ev} a la {en} (RFC-0012 D-C)"
+    ))
 }
 
 /// El paquete de CONSUMO (§419, RFC-0006 E3b): dos cabezas **v4**
@@ -740,6 +842,9 @@ fn verificar_consumo(p: &serde_json::Value) -> Result<(), String> {
         )));
     }
     println!("3/5 la cima nueva EXTIENDE a la vieja: el «antes» es de esta historia");
+    // §712: el mismo reloj que la extension. Sin el, una vieja de OTRA rama -el mismo mmrSize, sin
+    // el consumo- «probaba» que el consumo se publico despues de ella.
+    println!("{}", el_reloj_avanza(dos_lados((vieja, &clave_v, t_v), (nueva, &clave_n, t_n))?)?);
 
     let consumo = digest_de(p, "consumo")?;
     let pos = zk_ssl_verify::consumos::posicion_de_consumo(&consumo);
@@ -2498,7 +2603,9 @@ fn hex_de_digest(d: &Digest) -> String {
 ///    campos iguales, el indice contra el EMBEBIDO en la firma. VERDE.
 /// 3. Con `ancla` y `camino`: el ancla es ANTERIOR — misma clave, indice
 ///    anterior, y la consistencia del MMR (§291, RFC 6962) del lote
-///    anclado a la cabeza. VERDE: la historia anclada es un prefijo.
+///    anclado a la cabeza; despues, el reloj de la extension
+///    ([`el_reloj_avanza`]): con el mismo `mmrSize`, el mismo digest (§712). VERDE: la
+///    historia anclada es un prefijo.
 /// 4. Con `contraria`: la VISTA DIVIDIDA — dos cabezas firmadas de la
 ///    misma clave con el MISMO indice embebido y contenidos distintos.
 ///    DETECCION con salida 0, el molde del conflicto (§430): el sobre que
@@ -2629,6 +2736,30 @@ fn verificar_ancla(p: &serde_json::Value) -> Result<(), String> {
                     println!(
                         "2/3 la cima de la cabeza EXTIENDE el lote anclado: consistencia \
                          O(log N), sin el registro"
+                    );
+                    // ⚠️ §712: el reloj de la extension, tambien aqui y despues de la
+                    //    consistencia. Con `a_size == t` la consistencia es la identidad y bastaba
+                    //    compartir la cima: el ancla de una rama contra la cabeza de la otra -el
+                    //    mismo mmrSize, otro digest- salia VERDE. La clave es una por construccion:
+                    //    la huella ya se comparo.
+                    println!(
+                        "{}",
+                        el_reloj_avanza((
+                            Lado {
+                                nombre: "el ancla",
+                                t: a_size,
+                                digest: a_digest,
+                                clave: &clave_hex,
+                                embebido: a_indice,
+                            },
+                            Lado {
+                                nombre: "la cabeza",
+                                t,
+                                digest: epoch_digest,
+                                clave: &clave_hex,
+                                embebido,
+                            },
+                        ))?
                     );
                     println!("3/3 la huella del ancla: {}", hex_de_digest(&huella));
                     println!(
@@ -3573,6 +3704,109 @@ mod tests {
             let e = verificar_paquete(&sobre).unwrap_err();
             assert!(e.contains(texto), "{texto}: {e}");
         }
+    }
+
+    /// ⚠️ §712 · RFC-0012 D-C · **el reloj de la extensión y del consumo, sobre los
+    /// vectores.** Los siete negativos del §712 -una bifurcación con hojas distintas, los dos
+    /// sentidos de la vista dividida del ancla, la vista dividida y la bifurcación en el consumo, y
+    /// el reloj que retrocede en los dos sobres- caen con su causa; antes del §712 los siete daban
+    /// VERDE (medido con `tools/banco_bifurcacion.sh` y el kit de antes del §712). Los positivos siguen
+    /// VERDE -la extensión por encima de índices huérfanos, las tres rotaciones que cruzan claves,
+    /// el consumo-, la misma cabeza a los dos lados también, y con los papeles cambiados sigue
+    /// mandando la consistencia: el reloj va DESPUÉS.
+    #[test]
+    fn la_extension_y_el_consumo_exigen_el_reloj() {
+        let leer = |t: &str| -> serde_json::Value { serde_json::from_str(t).unwrap() };
+        let (gemelas, reloj) = (
+            "extension: mismo mmrSize y digest distinto",
+            "extension: el indice embebido no crece",
+        );
+        for (sobre, causa) in [
+            (include_str!("../../../spec/vectors/paquete/rechazo-ext-bifurcada-mismo-mmrSize.json"), gemelas),
+            (include_str!("../../../spec/vectors/paquete/rechazo-ext-vista-dividida-ab.json"), gemelas),
+            (include_str!("../../../spec/vectors/paquete/rechazo-ext-vista-dividida-ba.json"), gemelas),
+            (include_str!("../../../spec/vectors/paquete/rechazo-ext-reloj-retrocede.json"), reloj),
+            (include_str!("../../../spec/vectors/consumo/rechazo-cons-bifurcada-mismo-mmrSize.json"), gemelas),
+            (include_str!("../../../spec/vectors/consumo/rechazo-cons-vista-dividida.json"), gemelas),
+            (include_str!("../../../spec/vectors/consumo/rechazo-cons-reloj-retrocede.json"), reloj),
+        ] {
+            let e = verificar_paquete(&leer(sobre)).unwrap_err();
+            assert!(e.starts_with(causa), "se esperaba «{causa}» y salio: {e}");
+        }
+        for sobre in [
+            include_str!("../../../spec/vectors/paquete/extension.json"),
+            include_str!("../../../spec/vectors/paquete/extension-sobre-huerfanos.json"),
+            include_str!("../../../spec/vectors/rotacion/rotacion-un-eslabon.json"),
+            include_str!("../../../spec/vectors/rotacion/rotacion-sin-firma-de-la-vieja.json"),
+            include_str!("../../../spec/vectors/rotacion/rotacion-dos-eslabones.json"),
+            include_str!("../../../spec/vectors/consumo/consumo.json"),
+        ] {
+            assert_eq!(verificar_paquete(&leer(sobre)), Ok(()));
+        }
+        let mut misma = leer(include_str!("../../../spec/vectors/paquete/extension.json"));
+        misma["vieja"] = misma["nueva"].clone();
+        misma["camino"] = json!([]);
+        assert_eq!(verificar_paquete(&misma), Ok(()), "el caso identidad sigue VERDE");
+        let e = verificar_paquete(&leer(include_str!(
+            "../../../spec/vectors/rotacion/neg-papeles-cambiados.json"
+        )))
+        .unwrap_err();
+        assert!(e.contains("NO extiende a la vieja"), "la consistencia va antes: {e}");
+    }
+
+    /// ⚠️ §712 · **el reloj, puro**, sobre cabezas que solo llevan lo que lee: el digest y
+    /// la firma, con su hoja en los cinco primeros bytes. Con el mismo tamaño, el mismo digest -y
+    /// las claves no lo salvan-; con tamaño mayor y la misma clave, una hoja estrictamente mayor;
+    /// con claves distintas, la hoja no se compara.
+    #[test]
+    fn el_reloj_puro() {
+        let d = |n: u8| format!("0x{}{:02x}", "00".repeat(31), n);
+        let c = |dg: &str, hoja: u64| json!({"epochDigest": dg, "signature": format!("0x{hoja:010x}00")});
+        let (d1, d2) = (d(1), d(2));
+        fn r<'a>(
+            v: (&serde_json::Value, &'a str, u64),
+            n: (&serde_json::Value, &'a str, u64),
+        ) -> Result<String, String> {
+            el_reloj_avanza(dos_lados(v, n)?)
+        }
+        assert!(r((&c(&d1, 1), "k", 5), (&c(&d1, 1), "k", 5)).is_ok(), "la misma cabeza");
+        let e = r((&c(&d1, 1), "k", 5), (&c(&d2, 2), "k", 5)).unwrap_err();
+        assert!(e.starts_with("extension: mismo mmrSize y digest distinto"), "{e}");
+        let e = r((&c(&d1, 9), "k1", 4), (&c(&d2, 2), "k2", 4)).unwrap_err();
+        assert!(e.starts_with("extension: mismo mmrSize y digest distinto"), "{e}");
+        for hoja in [2, 3] {
+            let e = r((&c(&d1, 3), "k", 4), (&c(&d2, hoja), "k", 6)).unwrap_err();
+            assert!(e.starts_with("extension: el indice embebido no crece"), "{e}");
+        }
+        assert!(r((&c(&d1, 3), "k", 4), (&c(&d2, 4), "k", 6)).is_ok());
+        assert!(r((&c(&d1, 9), "k1", 4), (&c(&d2, 2), "k2", 6)).is_ok(), "claves distintas");
+    }
+
+    /// ⚠️ §712 · **el ancla del modo 3 y el mismo reloj.** El ancla que
+    /// el mando deriva de la cabeza vieja de la bifurcación (mmrSize 5, hoja 11) contra la cabeza
+    /// nueva (mmrSize 5, la misma cima, hoja 17), con el camino vacío: la consistencia es la
+    /// identidad y salía VERDE, «la historia anclada es un prefijo» (medido con el kit de antes del §712 y
+    /// con la segunda). Ahora cae con la causa de la extensión, DESPUÉS de la consistencia. El
+    /// positivo del modo 3 sigue VERDE, y el juez es el mismo: con la misma clave, la hoja avanza.
+    #[test]
+    fn el_ancla_del_modo_3_exige_el_reloj() {
+        let leer = |t: &str| -> serde_json::Value { serde_json::from_str(t).unwrap() };
+        let e = verificar_paquete(&leer(include_str!(
+            "../../../spec/vectors/ancla/neg-ancla-bifurcada-mismo-mmrSize.json"
+        )))
+        .unwrap_err();
+        assert!(e.starts_with("extension: mismo mmrSize y digest distinto - el ancla y la cabeza"), "{e}");
+        assert_eq!(
+            verificar_paquete(&leer(include_str!("../../../spec/vectors/ancla/ancla-extendida.json"))),
+            Ok(())
+        );
+        // Con la vieja de otra cima, manda la consistencia: su rojo sigue siendo el suyo.
+        let mut otra = leer(include_str!(
+            "../../../spec/vectors/ancla/neg-ancla-bifurcada-mismo-mmrSize.json"
+        ));
+        otra["ancla"]["mmrRoot"] = otra["ancla"]["epochDigest"].clone();
+        let e = verificar_paquete(&otra).unwrap_err();
+        assert!(e.contains("NO extiende el ancla"), "la consistencia va antes: {e}");
     }
 
     /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.

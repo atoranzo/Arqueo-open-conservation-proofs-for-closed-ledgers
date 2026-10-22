@@ -28,3 +28,13 @@ rechazo-cons-no-extiende.json|1|NO extiende a la vieja
 consumo-rotado.json|0|2/5 claves distintas que las actas unen (1 eslabon(es), la posterior desde la hoja 8), y las dos cabezas llevan consRoot
 rechazo-cons-rotado-sin-actas.json|1|las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante
 rechazo-cons-rotado-cadena-corta.json|1|las cabezas llevan claves DISTINTAS y las actas no las unen: la clave que llega no esta en la cadena: nadie la comprometio
+# §712 · RFC-0012 D-C: el reloj de la extension, tambien en el consumo. TRES sobres NUEVOS de
+# la misma corrida de `bash tools/banco_bifurcacion.sh --guardar <dir>` (semilla '39' x 96), COPIADOS:
+# la vieja es una cabeza de A sin el consumo, y la nueva la de una copia del operador que lo publico,
+# con los caminos de zkssl_consumoPath tal cual. Los tres daban VERDE antes del §712 -«el consumo se
+# publico entre las dos cabezas»- y la nueva no es posterior a la vieja: la bifurcacion (el mismo
+# mmrSize 5 y la misma cima, en la hoja 17 y no en la 11), la vista dividida (el mismo mmrSize 5 y la
+# MISMA hoja 11) y el reloj que retrocede (mmrSize 5 en la hoja 5, tras una vieja de mmrSize 4 en la 10).
+rechazo-cons-bifurcada-mismo-mmrSize.json|1|extension: mismo mmrSize y digest distinto
+rechazo-cons-vista-dividida.json|1|extension: mismo mmrSize y digest distinto
+rechazo-cons-reloj-retrocede.json|1|extension: el indice embebido no crece

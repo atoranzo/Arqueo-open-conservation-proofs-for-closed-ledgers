@@ -636,8 +636,34 @@ def extension(doc):
         raise Rojo(f"la nueva (t={nueva['mmrSize']}) NO extiende a la vieja (t={vieja['mmrSize']}): historia bifurcada, "
                    f"recortada, o camino que no es el suyo")
     salida.append("3/3 la cima nueva EXTIENDE a la vieja: consistencia O(log N), sin el registro")
+    salida.append(el_reloj_avanza(vieja, nueva))  # §712: despues de la consistencia, como la referencia
     salida.append("VERDE: la extension se sostiene sin el nodo")
     return salida
+
+
+def el_reloj_avanza(vieja, nueva, nombres=("la vieja", "la nueva")):
+    """§712, RFC-0012 D-C: el reloj es el indice EMBEBIDO. Despues de la consistencia, que con el
+    mismo mmrSize es la identidad: con el mismo mmrSize, el mismo digest; con mmrSize mayor y la misma clave,
+    el embebido de la nueva estrictamente mayor. Con claves distintas el indice no se compara aqui: la cuenta
+    es una por operador y el cruce entre sus claves lo juzgan los tramos de la cadena. Los textos son los de
+    la referencia (`el_reloj_avanza`). Un lado es un dict con mmrSize, digest, pk y embebido.
+
+    `nombres` da el sujeto del texto: el ancla del modo 3 usa el mismo juez como «el ancla» y «la cabeza».
+    Sin el, con el mismo mmrSize, el modo 3 salia VERDE (medido)."""
+    nv, nn = nombres
+    tv, tn = vieja["mmrSize"], nueva["mmrSize"]
+    if tv == tn:
+        if vieja["digest"] != nueva["digest"]:
+            raise Rojo(f"extension: mismo mmrSize y digest distinto - {nv} y {nn} firman la misma historia de "
+                       f"{tv} cabeza(s) y no son la misma cabeza: una bifurcacion firmada, no una extension")
+        return f"   {nv} y {nn} son la MISMA cabeza: mismo mmrSize y mismo digest"
+    if vieja["pk"] != nueva["pk"]:
+        return "   claves distintas: el orden de sus hojas lo juzgan los tramos de la cadena, no el reloj de una clave"
+    ev, en = vieja["embebido"], nueva["embebido"]
+    if en <= ev:
+        raise Rojo(f"extension: el indice embebido no crece - {nn} (t={tn}) firma en la hoja {en} y {nv} "
+                   f"(t={tv}) en la {ev}: con la misma clave, una cabeza posterior firma por encima (RFC-0012 D-C)")
+    return f"   el reloj de la clave avanza con la historia: de la hoja {ev} a la {en} (RFC-0012 D-C)"
 
 
 # ─── el arbol de consumos (RFC-0006 §413; NUCLEO.md, familia CONSUMO) ─────────────────────────
@@ -728,6 +754,7 @@ def consumo(doc):
         raise Rojo(f"la nueva (t={nueva['mmrSize']}) NO extiende a la vieja (t={vieja['mmrSize']}): historia bifurcada, "
                    f"recortada, o camino que no es el suyo")
     salida.append("3/5 la cima nueva EXTIENDE a la vieja: el «antes» es de esta historia")
+    salida.append(el_reloj_avanza(vieja, nueva))  # §712: el mismo reloj que la extension
     cons = digest_de(doc, "consumo")
     pos = posicion_de_consumo(cons)
     caminos = {cual: leer_camino_consumo(doc, cual) for cual in ("presencia", "ausencia")}
@@ -879,6 +906,10 @@ def ancla(doc):
         raise Rojo(f"la cabeza (t={cab['mmrSize']}) NO extiende el ancla (t={size}): historia bifurcada, recortada, o camino "
                    f"que no es el suyo")
     salida.append("2/3 la cima de la cabeza EXTIENDE el lote anclado: consistencia O(log N), sin el registro")
+    # §712: el reloj de la extension, como la referencia. Con el mismo
+    # mmrSize la consistencia es la identidad: el ancla de una rama contra la cabeza de la otra salia VERDE.
+    lado_ancla = {"mmrSize": size, "digest": dig, "pk": cab["pk"], "embebido": indice}
+    salida.append(el_reloj_avanza(lado_ancla, cab, ("el ancla", "la cabeza")))
     salida.append(f"3/3 la huella del ancla: 0x{N.digest_to_bytes(hd(indice, dig, root, size)).hex()}")
     salida.append("VERDE: la cabeza extiende el ancla: la historia anclada es un prefijo, y se sostiene sin el nodo")
     return salida

@@ -69890,3 +69890,258 @@ kit: el corte va al final de la serie. No corre el canon entero ni los bancos.
   válidas, no caben; y `PartitionOptions::new` admite una tasa de 256 que se escribe como 0, que la
   lectura rechaza.
 - **La partición FRI se exige 1**, más estricto que upstream: `winter-fri` 0.13.1 no escribe otra.
+
+## §712 — el reloj es el índice embebido: con el mismo mmrSize, el mismo digest en la extensión, el consumo y el ancla, y el testigo agrupa por el índice que la firma acredita
+
+El commit que lleva este asiento, sobre `3d01e22` (el §711). Un solo sello: en el kit
+(`crates/zk-ssl-verify/src/main.rs`), el juez `el_reloj_avanza`, después de la consistencia, en la
+extensión, en el consumo y en el ancla del modo 3; en `tools/segunda/verificador.py`, el mismo juez
+con los mismos textos, y en `tools/segunda/README.md`, su párrafo y la tabla del segundo
+verificador; en el testigo (`crates/zk-ssl-cli/src/witness.rs`), la cuenta por el índice
+embebido en la vuelta viva, en `--auditar`, en `--comparar` y en `--ausentes`, y el mismo reloj
+sobre cada cabeza que llega; nueve vectores nuevos en `paquete/`, `consumo/` y `ancla/`, con líneas
+añadidas al final de sus manifiestos y sus huellas; `tools/banco_bifurcacion.sh`, nuevo, su
+productor; `tools/banco_mentiroso_vista.sh` y `tools/banco_mentiroso_ausentes.sh`, adaptados;
+`spec/PAQUETE.md` (2.3, 2.4, 2.5, 2.12, las secciones 4, 5, 6.1, 9 y 10); el RFC-0012, en su D-C;
+los pines de `tools/canon.sh`; las cifras de tests de los documentos vivos; el recuento de
+`spec/vectors/` en los dos README y en la lista de la superficie de `spec/RPC.md`; las cuentas del
+segundo verificador y de los manifiestos bajo `wasmtime` en `tools/segunda/README.md` y en
+`doc/integracion-vertical-evaluacion.md`; y este asiento. Lo escribe y lo comprueba una sesión de
+Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: el kit publicado daba VERDE a una extensión y a un
+consumo entre dos cabezas que no son una historia. Sale con los demás arreglos de la publicación
+conjunta. Lo midió en privado una sesión de Claude Code, sobre `161a233` con el arreglo del §711;
+se escribió sobre `e4eb764`, con el §711 encima, este sello lo lleva a `3d01e22` («Al portar»,
+abajo), y lo que se volvió a correr aquí está en «Medido sobre este árbol». El canon entero se
+corre sobre la punta de la serie, no sobre cada sello.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), con el §711
+encima, y los lleva a `3d01e22` —el §711 ya llevado a `7dd6409`, el §895— una sesión de Claude
+Code, no el autor: primero sobre `3a4176c` (el §829), con el §711 llevado allí, y de ahí, con lo
+resuelto contra esos, sobre los tres sellos del §863 al §865, y luego sobre los seis del §890 al
+§895, que git funde sin choque con este sello («Al portar», en el §711). Lo que git no fundía, o
+fundía y quedaba falso, se resolvió a mano:
+
+- **`--ausentes`, contra el §775**, que lee el `index` con el lector canónico (`leer_q`) y cuyo
+  test pide que un `0x05` del nodo no cubra la cabeza `5` del testigo. El sello cuenta la hoja
+  EMBEBIDA, y su `dia()` embebe el mismo número que el declarado: con su lado solo, ese test caía.
+  Se quedan los dos: la cuenta por el embebido, con el filtro del §775 delante —una línea cuyo
+  `index` no es canónico no cuenta, como en `--auditar`, que la da por ilegible—. Pasan el test del
+  §775 y `ausentes_cuenta_el_indice_embebido`.
+- **El catálogo del kit (§777)**: `check_catalogo.py` salía ROJO R3 DIFIERE en los dos textos del
+  reloj. La sección 5 los escribía con los lados puestos («la vieja y la nueva»), y el kit los
+  rellena con el nombre de cada lado, que en el ancla del modo 3 son «el ancla» y «la cabeza»: la
+  sección 5 pasa a `{vieja}` y `{nueva}`, con su glosa.
+- **`tools/banco_bifurcacion.sh`, nuevo**, compilaba sin `--locked` y buscaba los binarios en
+  `target/release`: la puerta del §786 del canon salía ROJO con sus dos `cargo build`. Gana
+  `--locked` y `tools/target_dir.sh` (§855), como los demás bancos; `BANCO_BIN` sigue igual.
+- **La tabla del segundo verificador** en `tools/segunda/README.md`: el punto 2 la daba por
+  atrasada sobre `e4eb764` y la cerraba; `main` ya la tenía al día (el §771, el §852), así que
+  lleva el valor de `main` más los nueve de este sello, 94, 20, 17 y 23, cada fila que cambia con su
+  marca, y el párrafo del sello dice 94, 20 y 23 donde decía 88, 17 y 23. Lo mismo, con su marca
+  al final de su cadena, el resultado esperado de «1 quater» (de 206 a 215), la cuenta de los
+  manifiestos bajo `wasmtime` (de 363 y 424 a 372 y 433) y la fila del tercer hito en
+  `doc/integracion-vertical-evaluacion.md`, que ninguna herramienta lee; y sin marca, como en el
+  §711, la lista de la superficie de `spec/RPC.md` (`vectores.json` y `vectores.lineas`), sin la
+  que `check_superficie` daba dos novedades aditivas.
+- **Los contadores y el orden**: el valor de `3d01e22` más lo que suma este sello, y medido. La
+  viñeta del reloj en `spec/PAQUETE.md` 2.3 va delante de la de la forma, que `main` reescribió en
+  el §776; el paso `3/5` del consumo lleva el «v4, v5 o v6» de `main` y el reloj; el bloque del
+  manifiesto de consumo, tras el del §771; y el párrafo de `tools/segunda/README.md`, tras el del
+  §711. Las huellas, las de `main` y las 46 de este sello, con `--registrar`: las mismas 46.
+- **Los dos textos que cuentan bancos**, del §811 de `main`, que el sello volvía falsos y ninguna
+  herramienta lee: el pie de `tools/bancos.sh` y el de `tools/canon.sh`. Cada uno, con su marca al
+  final de su última línea («Contadores», abajo), sin añadir líneas.
+- **Los tres sellos del §863 al §865**, sobre `3a4176c`. El §863 sube el nodo a 230, que el §711
+  lleva a 234, `check_tests` a 2034, que el §711 lleva a 2055, y `spec/vectors/` a 529 ficheros,
+  509 vectores y 1039 líneas, con la familia `nodo/`, que el §711 lleva a 533, 513 y 1055; el §865
+  marca las «1364 declaradas» y las «1349 declared». Chocaban la fila del testigo y la del kit, al
+  lado de la del nodo en `tools/canon.sh`, los totales de `PAPER.md`, `PAPER_EN.md` y
+  `PRINCIPIOS.md`, el recuento de los dos README y la lista de la superficie de `spec/RPC.md`, y
+  llevan el valor de `3d01e22` más lo de este sello: 1910 y 2050, 542 ficheros, 522 vectores y
+  1092 líneas; la fila del nodo y los 234 del desglose de `PRINCIPIOS.md` quedan como estaban, y
+  las marcas del §865 también. `check_tests`, 2072. El «1 bis» del §864 corre `zk-ssl-verify` con
+  las aserciones de depuración y el pin de su fila, que este sello sube: con el perfil
+  `aserciones`, 199, como en release (abajo); `zk-ssl-cli` va en `CIEGA_PROBADOR` y no entra en
+  él. La familia `nodo/` no la corre `tools/conformidad.sh` sino un test del nodo, que este sello
+  no toca: las doce familias de la conformidad, abajo, siguen siendo doce.
+
+**De dónde sale.** La consistencia del MMR (§291) prueba que la cima nueva contiene a la vieja.
+Con el mismo `mmrSize` es la identidad: dos cabezas DISTINTAS en el mismo sitio de la historia
+—una bifurcación firmada, o los dos lados de una vista dividida— pasaban por extensión, por
+consumo y por ancla del modo 3. Y con un `mmrSize` mayor nada miraba la hoja: un operador que
+restaura su diario y su contador firma la nueva por debajo de la vieja, y la historia sigue
+siendo consistente. El testigo contaba por el `index` DECLARADO, que la firma no acredita (§399):
+dos firmas de la misma hoja declaradas 0x2 y 0x3 pasaban limpias por `--auditar` y por
+`--comparar`.
+
+**Lo que hace.**
+
+1. **El reloj del kit** (`el_reloj_avanza`, RFC-0012 D-C). Después de la consistencia —un rojo de
+   consistencia sigue siendo el suyo—, dos reglas. Con el mismo `mmrSize`, el mismo `epochDigest`,
+   o ROJO `extension: mismo mmrSize y digest distinto`; la misma cabeza a los dos lados sigue
+   VERDE. Con un `mmrSize` mayor y la misma `publicKey`, el índice embebido de la nueva
+   estrictamente mayor, o ROJO `extension: el indice embebido no crece`. Con claves distintas no
+   compara: el cruce lo juzgan los tramos de la cadena. El juez toma los datos sueltos, y lo
+   llaman la extensión, el consumo y el modo 3 del ancla; la refutación del conflicto (2.5) es una
+   extensión y lo hereda. Cada sobre que pasa imprime la línea del reloj bajo su paso.
+2. **La segunda implementación** hace lo mismo, con los mismos textos y en el mismo sitio. Su
+   README gana un párrafo que lo dice, y su tabla del segundo verificador pasa a las entradas de
+   este árbol: `paquete` 94, `consumo` 20, `conflicto` 17, `ancla` 23 y `rotacion` 34. Este sello
+   añade cinco entradas a `paquete`, tres a `consumo` y una a `ancla`, y cada fila que cambia lleva
+   su marca.
+3. **El testigo cuenta por el índice embebido**, una cuenta por operador:
+   - la vuelta viva clasifica por el embebido; el declarado sólo nombra la cabeza que no verifica.
+     `Memoria::ultimo` es el mayor embebido visto, no el último;
+   - en cada cabeza que llega, antes del retroceso del §295, un `mmrSize` ya visto con otro digest
+     es `no-extiende`: con la misma cima, siempre; con otra, si el nodo no va por detrás de la
+     pareja custodiada. Otra cima por detrás sigue siendo el reseteo visible del §295;
+   - una cabeza posterior a la custodiada, de la misma clave, que firma en su hoja o por debajo,
+     es `no-extiende` y no se cofirma. La regla del §300 sale a una función pura, `cofirmable`, sin
+     cambiar, para que un test lo diga;
+   - `--auditar` cuenta el embebido y aplica la misma regla en frío, con «por detrás» igual a la
+     pareja custodiada que reconstruye de las líneas `anclando` y `extiende`;
+   - `--comparar` cuenta como bifurcación el mismo `mmrSize` con la misma cima y otro digest; con
+     OTRA cima lo dice y no lo cuenta;
+   - `--ausentes` cuenta el embebido; una línea cuyo `index` no es canónico sigue sin contar
+     (§775);
+   - la clase `no-extiende` ya existía: `DIARIO_VERSION` sigue en 4.
+4. **Dos textos del testigo, corregidos y citados.** La cabecera decía «Cuatro clases, y dos
+   detienen», y `Veredicto::detiene`, «Dos clases detienen»; detienen tres. El doc de
+   `sobre_de_vista_dividida` decía que el auditor encuentra la vista por el índice declarado. Cada
+   uno lleva su corrección, sin borrar lo que decía.
+5. **Nueve vectores nuevos**, ficheros nuevos, con los mismos bytes con que se capturaron en
+   privado. Seis se CAPTURAN de una corrida de `tools/banco_bifurcacion.sh`, contra un nodo real
+   con el binario sin tocar: en `paquete/`, el positivo `extension-sobre-huerfanos` (salida 0),
+   `rechazo-ext-bifurcada-mismo-mmrSize` y `rechazo-ext-reloj-retrocede`; en `consumo/`,
+   `rechazo-cons-bifurcada-mismo-mmrSize`, `rechazo-cons-vista-dividida` y
+   `rechazo-cons-reloj-retrocede`. Tres se DERIVAN sin otra corrida: `rechazo-ext-vista-dividida-ab`
+   y `-ba`, de `ancla/vista-dividida.json`, y `ancla/neg-ancla-bifurcada-mismo-mmrSize`, de la
+   bifurcación de `paquete/`. Sus líneas van al final de los tres manifiestos, y sus huellas, en
+   `spec/vectors/HUELLAS.sha256` (§692). Los dos textos nuevos entran en la clase «la regla no se
+   sostiene» de `spec/PAQUETE.md` §6.1 (§693).
+6. **El banco.** `tools/banco_bifurcacion.sh` siembra un nodo, lo para y mueve su contador, y
+   corre tres copias del operador: el diario recortado con el mismo contador (la bifurcación),
+   con el contador restaurado (la vista dividida) y los dos de antes de unos huérfanos (el reloj
+   que retrocede). Mira los falsos positivos —los huérfanos, el reinicio y la recuperación del
+   §690— y, bajo un testigo vivo, el reloj sobre una historia consistente. Va fuera del canon.
+7. **El RFC-0012, puesto al día al portar.** El arreglo hecho en privado no tocaba el RFC; su D-C
+   gana un párrafo con lo que hace este sello, y su cabecera, este asiento. Se redactó también en
+   privado, al llevar el arreglo a la serie, sobre `e4eb764`, y entra en el mismo sello que el
+   código.
+8. **Un fixture cambia, y se declara.** `dia()`, el de los tests de estructura del testigo,
+   firmaba con `0xabcd`, dos bytes sin índice. Ahora lleva en sus cinco primeros bytes el mismo
+   número que su `index` declarado: los tests de estructura dicen lo mismo que decían, y la firma
+   sigue sin verificar. `dia_con` lo separa para los tests nuevos.
+
+**Medido en privado**, sobre `161a233` con el arreglo del §711 (los binarios de antes guardados
+aparte, y los nuevos del mismo árbol con este arreglo):
+
+- **Antes.** Los siete negativos de `paquete/` y `consumo/`, con el kit y con la segunda de
+  antes: salida 0 y VERDE. El del ancla, igual: «VERDE: la cabeza extiende el ancla: la historia
+  anclada es un prefijo».
+- **El testigo de antes ante la bifurcación** (el diario recortado a 5 líneas, el mismo contador):
+  anotó `por-detras` en 18 líneas y se detuvo en la línea 38, dieciocho después de la cabeza
+  bifurcada, y sólo porque el nodo volvió a pasar de lo custodiado. `--auditar` de su diario: «sin
+  hallazgos».
+- **Dos firmas de la hoja 1, declaradas 0x2 y 0x3**, con digests distintos: `--auditar` «sin
+  hallazgos», `--sobres` «ningun sobre», y `--comparar` de dos testigos «sin divergencias».
+- **Un nodo que infla el declarado** (la escena 2 de `banco_mentiroso_vista.sh` con un proxy, fuera
+  del árbol, que suma 1000 al `index`): el testigo de antes se detuvo en la séptima cabeza, como
+  `no-extiende` y nunca como vista dividida, y su diario pasaba `--auditar` sin hallazgos. El nuevo
+  se detiene en la segunda, la hoja 1, con `VistaDividida`.
+- **Con el arreglo.** `tools/banco_bifurcacion.sh`: 0 fallos. El testigo vivo se detiene en la
+  cabeza bifurcada misma, y ante el reloj que retrocede, en la primera cabeza posterior a la
+  custodiada; `--auditar` lo ve sin el nodo. El mismo banco con un testigo sin el reloj de la
+  vuelta viva: 2 fallos; ese testigo cofirmaba dos cabezas por debajo de la custodiada.
+- **Falsos positivos**, con los binarios nuevos: los huérfanos, el reinicio y la recuperación del
+  §690 no detienen al testigo. `banco_consistencia.sh` VERDE (el reseteo visible del §295 sigue
+  `por-detras` y su `--auditar`, «sin hallazgos»). VERDE también `banco_cofirma.sh` (5 cofirmas en el
+  positivo y 7 en el envío), `banco_rotacion.sh`, `banco_mentiroso_censura.sh`,
+  `banco_reutilizacion.sh`, `banco_evidencia_v2.sh` y `banco_completo.sh`; y, adaptados en este
+  sello, `banco_mentiroso_vista.sh` y `banco_mentiroso_ausentes.sh`.
+- **Falsadores**, cada pieza quitada por separado: sin las dos comparaciones del kit, sin el reloj
+  del modo 3, sin la clasificación por el embebido y la regla en la cabeza que llega a la vez, sin
+  el reloj de la vuelta viva, sin la cima en `--comparar`, sin la pareja como «por detrás» del
+  auditor, con la cuenta por clave o con `--ausentes` por el declarado, cae al menos un test de su
+  crate.
+- Las salidas de los diez positivos que tocan el reloj, idénticas línea a línea entre el kit y la
+  segunda.
+
+**Medido sobre este árbol**, `3d01e22` con este sello, en release, con el `target` compartido con
+otras tareas y cada `cargo` bajo un cerrojo, en una máquina de 4 CPU compartida:
+
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `zk-ssl-verify` 199 (127 + 71 + 1); `zk-ssl-cli` 167, en 5,0 s de tests. Con el perfil
+  `aserciones` del «1 bis» del §864, `zk-ssl-verify` 199 (127 + 71 + 1), 0 fallos y 0 warnings, como
+  en release. Y el workspace entero pasa `cargo check --locked --workspace --all-targets`, sin
+  errores y sin avisos en los dos crates que toca.
+- **La conformidad**, con `tools/conformidad.sh` y el binario de este árbol (`4549a4e115b3d3de`),
+  las doce familias enteras: paquete 94 de 94, consumo 20, conflicto 17, rechazo 84, edad 17,
+  pendiente 10, pago 15, prenda 11, completitud 81, ancla 23 de 23, ancla cofirmada 27 y rotación
+  34. La segunda, `tools/segunda/verificador.py`: paquete 94 de 94, consumo 20, conflicto 17, ancla
+  23, rotación 34 y ancla cofirmada 27, 215 en las seis. Las salidas de los 23 positivos de esas
+  seis familias, idénticas línea a línea entre el kit y la segunda; entre ellos `consumo-rotado.json`
+  del §771, entre dos claves, donde los dos dicen que el reloj no compara. El cable, con
+  `tools/cable_respuesta.sh` y el testigo de este árbol, 27 de 27, y con `tools/segunda/cable.py`,
+  27 de 27.
+- **Los jueces de la segunda**, que este sello no toca: `juez_nucleo`, 34 de 34; `juez_cabezas`,
+  517 de 569 cabezas, 15 de 20 cofirmas, 430 ficheros, 57 con alguna que no verifica y 0 positivos,
+  con salida 0; `stark.py`, autotest OK, y `juez_stark`, 38 de 38 pares; `juez_cadena` sobre los
+  cuatro catálogos, 24 de 24; `juez_medio`, 92 de 92; y `juez_xmss`, 8 de 8.
+- **Los bancos tocados**, sólo su sintaxis (`bash -n`) y la puerta del §786: 59 llamadas a cargo en
+  `tools/banco_*.sh`, todas con `--locked`. No se corrieron aquí.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2072 declarados;
+  `check_modulos`, 209 ficheros; `check_vectores`, 522 vectores y 1092 líneas con su huella,
+  ninguno movido; `check_cifras`, 26 cifras y ninguna contradice el canon; `check_publicadas`, con
+  542 ficheros en `spec/vectors/`; `check_catalogo`, 229 textos del kit y 280 entradas de §5;
+  `verificar_citas`, 0 muertos; `check_superficie`, la lista de `zkssl/0.4` en 28 comparaciones y
+  0 novedades aditivas; y `check_columns`, `check_constraint_layout`, `check_curvas`,
+  `check_dominios`, `check_figures`, `check_nucleo` y `check_techo`. Todas salen con 0.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `zk-ssl-verify` 196 -> 199 y `zk-ssl-cli`
+153 -> 167. TOTAL DE SELLO 1893 -> 1910 y TOTAL CON LARGOS 2033 -> 2050, en `PRINCIPIOS.md`,
+`PAPER.md` y `PAPER_EN.md`; el desglose de `PRINCIPIOS.md`, 199 del kit y 167 del testigo. Las
+«1364 declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores (5.A-319).
+`check_tests`, de 2055 a 2072. `spec/vectors/`, de 533 a 542 ficheros, en `README.md` y
+`README_EN.md`. `check_vectores`, de 513 a 522 vectores y de 1055 a 1092 líneas, y con ellos la
+lista de la superficie de `spec/RPC.md`, `vectores.json` 522 y `vectores.lineas` 1092, sin marca.
+La segunda, de 206 a 215 entradas en el resultado esperado de `tools/segunda/README.md` («Cómo se
+corre») y en `doc/integracion-vertical-evaluacion.md`, con su marca; la tabla del segundo
+verificador, con la suya; y la cuenta de los manifiestos bajo `wasmtime`, de 363 a 372 entradas en
+los diez y de 424 a 433 en las doce, con su marca tras la del §711. Y los bancos: con
+`tools/banco_bifurcacion.sh` hay 27 `tools/banco_*.sh` y una pasada de `tools/bancos.sh` corre 26
+(el de los cortes sigue FUERA, §804). El pie de `tools/bancos.sh` decía 26 y 25, y que de esos 25
+el único sin ninguna pasada entera que conste era `reinicio`; de `bifurcacion` tampoco consta
+ninguna. El pie de `tools/canon.sh`, en su bloque del §811, decía «los 25 que corre hoy una
+pasada», con el 26 fuera. Los dos llevan su marca al final de la última línea de su párrafo, sin
+añadir líneas: `doc/METODO.md` cita la cabecera de `tools/bancos.sh` por líneas, y el pie de
+`tools/canon.sh` va detrás del `exit`.
+
+**Lo que NO hace.** No cambia el cable ni la versión `zkssl/0.4`, ni el formato del diario
+(`DIARIO_VERSION` sigue en 4). No reescribe ni cambia el veredicto de ningún vector anterior. No
+añade un sobre de DETECCIÓN de la bifurcación. No publica un kit: el corte va al final de la
+serie. No corre el canon entero ni los bancos.
+
+**Lo que NO cierra.**
+
+- **No hay sobre de DETECCIÓN de la bifurcación.** El de extensión la rechaza con su causa; los
+  de la vista dividida la delatan cuando además se repite la hoja. `--sobres` no escribe nada para
+  una bifurcación con hojas distintas: pide un modo nuevo en el kit, por RFC.
+- **Con claves distintas el reloj no se compara**, ni en el kit ni en el testigo. La firma tardía
+  de la clave que se va, con una hoja libre por debajo del `desde` de su sucesora, no se ha
+  medido.
+- **Por detrás, el reloj de la vuelta viva no mira.** Un operador restaurado que vuelve a firmar el
+  mismo contenido en hojas más bajas sin pasar de la pareja custodiada sale `por-detras`, como el
+  reseteo visible. Sólo `--auditar` lo ve, como `indice-retrocede`. Distinguirlo en vivo pide una
+  clase nueva y subir `DIARIO_VERSION`.
+- **`--comparar` no reverifica**, y con OTRA cima no decide: lo dice y remite a `--auditar`.
+- **El «por detrás» de `--auditar` confía en las anotaciones del diario** (`anclando`,
+  `extiende`): sólo cuentan en líneas que reverifican, pero quien escribe el diario elige dónde
+  anotarlas. El testigo vivo no depende de eso.
+- **La refutación del conflicto con actas** (dos claves, el mismo `mmrSize`) sólo la prueba el test
+  puro: no tiene vector.
+- **No se corrieron** `banco_mentiroso_sin_resolver.sh` ni `banco_ancla.sh`, tampoco en privado.

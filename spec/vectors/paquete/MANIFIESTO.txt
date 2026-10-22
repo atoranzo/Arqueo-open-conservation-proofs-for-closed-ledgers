@@ -100,3 +100,22 @@ rechazo-cofirma-testigo-nibble.json|1|cofirma 1: la firma no verifica
 rechazo-ext-nueva-signature-nibble.json|1|nueva: cabeza: la firma no verifica
 rechazo-cofirma-versionformato-0x103.json|1|cofirma 1: versionFormato 0x103 no cabe
 no-existe.json|1|no se puede leer
+# §712 · RFC-0012 D-C: el reloj es el indice EMBEBIDO. CINCO sobres de extension NUEVOS.
+# Tres se CAPTURAN de UNA corrida de su productor, que vive en el arbol: `bash tools/banco_bifurcacion.sh
+# --guardar <dir>`, contra un nodo REAL de semilla '39' x 96 con el binario SIN TOCAR -la mentira la
+# hacen la clave y el diario del operador, no otro codigo-. Dos corridas no dan los mismos bytes: se
+# COPIAN de la corrida del sello y no se re-derivan. El positivo, salida 0: la extension por encima
+# de seis hojas HUERFANAS (el contador salto cinco a mano y la parada dejo una reservada sin firmar),
+# el caso honesto que el reloj no rompe. Los cuatro negativos, salida 1, daban VERDE antes del §712
+# (medido con el kit y la segunda implementacion de antes): la bifurcacion -el diario recortado a 5
+# lineas y el MISMO contador: el mmrSize 5 con la misma cima, en la hoja 17 y no en la 11, con otro
+# contenido-; el reloj que retrocede -el diario y el contador de antes de los huerfanos: la historia
+# sigue siendo consistente, y la nueva (mmrSize 5) firma en la hoja 5, por debajo de la 10 de la vieja
+# (mmrSize 4)-; y los dos sentidos de la vista dividida del ancla, DERIVADOS sin otra corrida de
+# `spec/vectors/ancla/vista-dividida.json`: la cabeza y la contraria tal cual, con el camino vacio.
+# Ningun vector anterior se reescribe ni cambia de veredicto.
+extension-sobre-huerfanos.json|0|VERDE: la extension se sostiene sin el nodo
+rechazo-ext-bifurcada-mismo-mmrSize.json|1|extension: mismo mmrSize y digest distinto
+rechazo-ext-reloj-retrocede.json|1|extension: el indice embebido no crece
+rechazo-ext-vista-dividida-ab.json|1|extension: mismo mmrSize y digest distinto
+rechazo-ext-vista-dividida-ba.json|1|extension: mismo mmrSize y digest distinto

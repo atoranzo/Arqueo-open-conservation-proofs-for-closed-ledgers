@@ -22,6 +22,8 @@
 # Exito (D-D del RFC-0011): que la defensa DISPARE nombrando los indices. Los esperados salen de
 # los diarios crudos (indices firmados del testigo menos los del diario ensenado), no del texto de
 # la herramienta. Claves de prueba siempre (D-E): semillas deterministas, nunca un keystore.
+# §712: el indice es el EMBEBIDO en la firma, no el `index` declarado
+# (RFC-0012 D-C); en un nodo honesto el declarado es el embebido mas uno.
 #
 # FUERA del canon: levanta procesos y espera latidos. NO ESCRIBE EN EL ARBOL: todo vive en un
 # temporal bajo $HOME, que borra al salir, y lo comprueba al final por `git status --porcelain`.
@@ -100,13 +102,16 @@ def primera_cabeza(port):
     return None
 def lineas(ruta):
     return [l for l in open(ruta) if l.strip()] if os.path.exists(ruta) else []
+def embebido(v):
+    # XMSS^MT 40/8: el indice de hoja son los cinco primeros bytes de la firma, big-endian.
+    return int(v['signature'][2:12], 16)
 def firmados(ls):
-    # los indices de las lineas con cabeza firmada: lo mismo que `--ausentes` cuenta
+    # los indices EMBEBIDOS de las lineas con cabeza firmada: lo mismo que `--ausentes` cuenta
     s = set()
     for l in ls:
         v = json.loads(l)
-        if v.get('signature') and v.get('index'):
-            s.add(int(v['index'], 16))
+        if v.get('signature'):
+            s.add(embebido(v))
     return s
 def escribir(ruta, ls):
     open(ruta, 'w').write(''.join(ls))
@@ -114,7 +119,7 @@ def escribir(ruta, ls):
 def ausentes(t, n):
     p = subprocess.run([CLI, 'witness', '--ausentes', t, n, '--no-color'], capture_output=True, text=True)
     out = p.stdout + p.stderr
-    return p.returncode, out, sorted(int(x) for x in re.findall(r'AUSENTE en el diario del nodo: indice (\d+)', out))
+    return p.returncode, out, sorted(int(x) for x in re.findall(r'AUSENTE en el diario del nodo: indice embebido (\d+)', out))
 def clases(ls):
     # la cabeza y la historia, los dos canales del testigo: 'nueva/extiende x5 · ...'
     rachas = []
@@ -182,8 +187,7 @@ try:
            % len(D - T), out[-800:])
     vistos = sorted(T)
     borrado = vistos[len(vistos) // 2]
-    resto = [l for l in ln if not (json.loads(l).get('signature')
-                                   and int(json.loads(l).get('index', '0x0'), 16) == borrado)]
+    resto = [l for l in ln if not (json.loads(l).get('signature') and embebido(json.loads(l)) == borrado)]
     recortado = escribir(DIR + '/diario-recortado.jsonl', resto)
     msg('se borra a mano la linea del indice %d (%d lineas -> %d)' % (borrado, len(ln), len(resto)))
     rc, out, nombrados = ausentes(dw2 + '/diario.jsonl', recortado)

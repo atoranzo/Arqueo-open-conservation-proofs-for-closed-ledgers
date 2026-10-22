@@ -33,9 +33,10 @@ python3 tools/segunda/juez_cabezas.py
 # 1 ter · el corpus KAT de XMSS^MT: dos implementaciones, los mismos bytes       -> 8 de 8
 python3 tools/segunda/kat_xmss/juez_xmss.py
 
-# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 206 de 206 (§852)
+# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 215 de 215 (§712)
 #   ⚠️ §810: decia 174 de 174 (§780), las cinco familias sin `ancla-cofirmada`, que salia NO SOPORTADO
 #   ⚠️ §852: decia 201 de 201 (§810); los cinco negativos `rechazo-json-*` de `paquete` la llevan a 206
+#   ⚠️ §712: decia 206 de 206 (§852); los nueve vectores del reloj, cinco de `paquete`, tres de `consumo` y uno de `ancla`, la llevan a 215
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
 # 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 38 de 38 (§711)
@@ -134,10 +135,10 @@ la sexta, `ancla-cofirmada`, es del §810):
 
 | familia | entradas | segundo verificador |
 |---|---|---|
-| `paquete` (posición v1 y v2, extensión; ⚠️ §852: decía 84 y 84 de 84, de antes de los cinco `rechazo-json-*`) | 89 | 89 de 89 |
-| `consumo` (desde el §771, también entre dos claves con `actas`) | 17 | 17 de 17 |
+| `paquete` (posición v1 y v2, extensión; ⚠️ §852: decía 84 y 84 de 84, de antes de los cinco `rechazo-json-*`; ⚠️ §712: decía 89 y 89 de 89, de antes de los cinco del reloj) | 94 | 94 de 94 |
+| `consumo` (desde el §771, también entre dos claves con `actas`; ⚠️ §712: decía 17 y 17 de 17, de antes de los tres del reloj) | 20 | 20 de 20 |
 | `conflicto` | 17 | 17 de 17 |
-| `ancla` | 22 | 22 de 22 |
+| `ancla` (⚠️ §712: decía 22 y 22 de 22, de antes de `neg-ancla-bifurcada-mismo-mmrSize`) | 23 | 23 de 23 |
 | `rotacion` (la extensión entre dos claves, con `actas`; §649; y el sobre del solapamiento, §686) | 34 | 34 de 34 |
 | `ancla-cofirmada` (la nota del medio con su firma ML-DSA-44, las cofirmas y la inclusión; §810) | 27 | 27 de 27 |
 
@@ -257,6 +258,15 @@ mensajes del juez. Lo fijan cuatro negativos de la edad y el pago (`neg-prueba-o
 este, 38 de 38, 52 pruebas juzgadas, 35 vectores que caen antes del juez y 33 de 33 falsadores
 callados. Donde el kit da un error de deserialización sin nombre, `stark.py` da otro texto de la
 misma clase: el resto de sus mensajes no lleva todavía causa con nombre.
+
+**El reloj de la extensión, como el kit (§712).** Desde el §712 el kit juzga, después de la
+consistencia, el reloj de la extensión (`el_reloj_avanza`, RFC-0012 D-C): con el mismo `mmrSize`, el
+mismo digest; con un `mmrSize` mayor y la misma clave, el índice embebido de la nueva estrictamente
+mayor. `verificador.py` tiene el mismo juez, con el mismo nombre y los mismos textos
+(`extension: mismo mmrSize y digest distinto` y `extension: el indice embebido no crece`), y lo
+llama en el mismo sitio: la extensión, el consumo y el modo 3 del ancla, donde el ancla hace de
+vieja. Lo fijan los nueve vectores del §712 en `paquete/`, `consumo/` y `ancla/`, y por eso la
+tabla de arriba cuenta 94, 20 y 23.
 
 **La cadena del registro** (§797). ⚠️ Esto mide el **cable**, no el núcleo: `chain` es de la clase
 REGISTRO (`spec/NUCLEO.md` §«2. Las cuatro clases»), su composición no tiene KAT (sus piezas sí:
@@ -384,6 +394,9 @@ la prenda que va dentro: los tres nuevos no llevan prueba, así que ninguno de l
 363 entradas en los diez y 424 en las doce. Lo medido del `.wasm` no cambia: que las pase no está
 medido, ni antes ni ahora; los cuatro, sueltos, dan bajo `wasmtime` la misma causa que en nativo,
 medido sobre el árbol en que se hizo el arreglo y no sobre éste (el asiento del §711).
+⚠️ §712: `paquete` tiene 94, `consumo` 20 y `ancla` 23 desde el §712, con los nueve vectores del
+reloj: 372 entradas en los diez y 433 en las doce. Lo medido del `.wasm` no cambia: que las pase no
+está medido, ni antes ni ahora.
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 

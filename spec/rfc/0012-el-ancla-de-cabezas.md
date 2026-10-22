@@ -23,7 +23,8 @@
   diarios prueban que emitió dos cosas para el mismo índice), §291–§292 (el MMR de cabezas y su
   pareja firmada), §399 (el índice embebido, el único que la firma acredita), §567 (el reloj es
   el índice XMSS, no el `seq`), §580 (la casa no cría código sin llamador); y los de esta serie:
-  §590 (E1), §591 (E2), §592 (E3), §593 (E4); y §607 (la aceptación).
+  §590 (E1), §591 (E2), §592 (E3), §593 (E4); y §607 (la aceptación); el §712 lleva el reloj de
+  D-C a la extensión, al consumo, al ancla del modo 3 y al testigo, con nueve vectores nuevos.
 - **Backlog:** B10.6 (el formato del ancla + `M`) y B10.7 (el verificador en cliente) del
   backlog de `doc/CONFIANZA_RESIDUAL.md`; la mitad portable de B10.2 (la prueba de fraude); y
   compone con las entradas 83 y 86 del BACKLOG (el ancla acota la ventana del primer encuentro).
@@ -91,6 +92,17 @@ solo está acotado **por abajo** —dos cabezas honestas pueden declarar el mism
 ancla sobre el declarado fabricaría vistas divididas falsas. El ancla compromete el embebido, el
 mando lo extrae con `indice_de_firma`, y es el mismo reloj que la era del recibo usa desde el
 §567: la clave solo firma cabezas, cada firma quema un índice, y un censor no lo congela.
+
+§712: el mismo reloj, fuera del ancla. Con el mismo `mmrSize`, la consistencia del §291 es la
+identidad, y no veía dos cabezas distintas en el mismo sitio de la historia: una bifurcación
+firmada pasaba por extensión, por consumo y por ancla del modo 3. Después de la consistencia, el
+juez `el_reloj_avanza` exige el mismo `epochDigest` con el mismo `mmrSize` y, con la misma clave,
+un índice embebido de la nueva estrictamente mayor que el de la vieja (`PAQUETE.md` 2.3; en el
+modo 3 el índice ya se exigía anterior, 2.12). Con claves distintas no compara: el cruce lo juzgan
+los tramos de la cadena. El testigo cuenta por el embebido, una cuenta por operador, y aplica la
+misma regla a cada cabeza que llega. Nueve vectores nuevos en `paquete/`, `consumo/` y `ancla/`
+(`PAQUETE.md` sección 9); ninguno se reescribe, y el cable no se mueve. El arreglo y este párrafo
+se redactaron en privado (`SECURITY.md` §5, `PROCESO.md` §«Fallos de seguridad»).
 
 ### D-D — El lote es el árbol que la cabeza ya firma
 

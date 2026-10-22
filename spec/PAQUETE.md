@@ -89,6 +89,20 @@ donde el valor es una respuesta del cable sin reescribir.
   `zkssl_signedEpochHead`; `camino` es la prueba de consistencia entre sus cimas
   (`RPC.md:785-812`). Quien custodia la vieja comprueba que la nueva la **extiende**, con el MMR
   de cabezas (§291) como juez, sin el registro y sin el nodo.
+- ⚠️ **§712 · RFC-0012 D-C — el reloj es el índice EMBEBIDO.** La consistencia prueba que
+  la cima nueva contiene a la vieja; con el mismo `mmrSize` es la identidad, y no ve dos cabezas
+  DISTINTAS en el mismo sitio de la historia: una bifurcación firmada pasaba por extensión, y los
+  dos sentidos de la vista dividida del ancla salían VERDE. Por eso, **después** de la consistencia
+  —un rojo de consistencia sigue siendo el suyo—, dos reglas: con el **mismo `mmrSize`**, el
+  **mismo `epochDigest`** (la misma cabeza a los dos lados sigue VERDE), y si no, ROJO
+  `extension: mismo mmrSize y digest distinto`; con un `mmrSize` **mayor** y la **misma
+  `publicKey`**, el índice embebido de la nueva **estrictamente mayor** que el de la vieja, y si no,
+  ROJO `extension: el indice embebido no crece`. Un índice huérfano —reservado y no firmado— solo
+  adelanta la hoja: no da rojo. ⚠️ Con claves distintas el índice no se compara aquí: la cuenta es
+  una por operador (2.14), y el cruce entre sus claves lo juzgan los tramos de la cadena (abajo,
+  reglas 3 y 4), no este reloj. Las rotaciones del catálogo cruzan claves de la hoja 3 a la 13, de
+  la 8 a la 12 y de la 3 a la 8, y siguen VERDE. El juez es uno, `el_reloj_avanza`, el mismo en el
+  consumo (2.4), en la refutación del conflicto (2.5) y en el ancla del modo 3 (2.12).
 - La forma se elige por `tipo`: sin `tipo`, el sobre es el de posición; con `"extension"`, éste;
   cada uno de los otros once lleva a su forma (2.4 a 2.14), y uno desconocido se rechaza con su
   nombre (§418). `v` se comprueba antes en todos los casos. ⚠️ §776: hasta aquí decía «si no, es el
@@ -118,7 +132,10 @@ donde el valor es una respuesta del cable sin reescribir.
 
 - Superconjunto estricto del de extensión: **mismas dos cabezas y misma prueba de
   consistencia**, y por eso el «antes» es de ESTA historia y no de una bifurcación firmada. Y
-  las mismas `actas` opcionales (§648), con el mismo juez.
+  las mismas `actas` opcionales (§648), con el mismo juez. ⚠️ Y desde el §712 el mismo
+  reloj (2.3): sin él, una vieja de OTRA rama —el mismo `mmrSize` y la misma cima, sin el
+  consumo— «probaba» que el consumo se publicó después de ella, y una nueva firmada por debajo de
+  la vieja también. Los tres casos daban VERDE (medido).
   Lo que añade son los dos caminos del árbol de consumos: `presencia` sube el digest del
   consumo hasta el `consRoot` de la **nueva**, `ausencia` sube la **hoja vacía** hasta el de
   la **vieja**. Las dos llevan `consRoot` (**v4, v5 o v6**): una v2 o v3 no lo lleva.
@@ -157,6 +174,12 @@ donde el valor es una respuesta del cable sin reescribir.
   (2.3). Si verifica, las dos son UNA historia y el consumo bajo las dos es el mismo, publicado una
   vez. ⚠️ La cadena sola NO basta: dos operadores de acuerdo pueden firmarse una cadena que una sus
   claves, y no pueden firmarse una historia común —la consistencia del MMR entre las dos cabezas—.
+  ⚠️ **§712:** la refutación es una extensión, y hereda su reloj. Con el mismo `mmrSize`,
+  la consistencia es la identidad y bastaba compartir la cima: dos operadores que siembran su MMR
+  con el mismo diario la comparten en ese tamaño, y sus dos cabezas no son una historia, son dos
+  ramas del mismo pasado. Desde el §712, dos cabezas distintas con el mismo `mmrSize` no refutan
+  nada: `extension: mismo mmrSize y digest distinto`. Con claves distintas el índice embebido no se
+  compara (2.3).
 - ⚠️ **Lo que esto demuestra y lo que no.** Demuestra que dos libros aceptaron el mismo
   consumo: eso es **detección**, y llega después. **No previene nada**, y no dice que la unidad
   consumida sea la misma en los dos: que el identificador signifique lo mismo a los dos lados
@@ -544,8 +567,13 @@ modos:
 3. **Con `ancla` y `camino`**: el ancla es ANTERIOR. Misma clave, `indice` estrictamente
    anterior al embebido, y la cima de la cabeza EXTIENDE el lote anclado —`mmrRoot`/`mmrSize`
    del ancla contra los de la cabeza, el juez de consistencia del §291—. El ancla del génesis
-   (`mmrSize` 0) no tiene historia que extender y se rechaza con su nombre. VERDE: la historia
-   anclada es un prefijo.
+   (`mmrSize` 0) no tiene historia que extender y se rechaza con su nombre. ⚠️ Después de la
+   consistencia, el reloj de la extensión (2.3), con el ancla como la vieja: con el **mismo
+   `mmrSize`** la consistencia es la identidad, y el ancla de una rama contra la cabeza de la otra
+   —la misma cima, otro digest— salía VERDE (medido en el kit y en la segunda de antes del §712).
+   Desde el §712 es ROJO `extension: mismo mmrSize y digest distinto`, la causa de la
+   extensión, y la línea del reloj se imprime bajo el `2/3`. VERDE: la historia anclada es un
+   prefijo.
 4. **Con `contraria`**: la VISTA DIVIDIDA. La contraria se verifica ENTERA como la cabeza;
    misma clave, mismo índice EMBEBIDO, contenidos distintos —dos preámbulos bajo un índice de
    un solo uso, que sólo quien tiene la clave puede producir (§248)—. Sale **DETECCIÓN**, con
@@ -562,8 +590,20 @@ contador de índice fresco y otro libro—, y **el catálogo es `spec/vectors/an
 décima familia del artefacto, COPIADA de una corrida suya: sección 9. **El de la vista dividida lo
 arma también el TESTIGO** (§688): `zk-ssl-cli witness --auditar DIARIO --sobres DIR` escribe el
 sobre del modo 4 con las dos cabezas que su diario guardó, cuando son de la misma clave y del mismo
-índice embebido; `tools/banco_mentiroso_vista.sh` lo demuestra con un testigo vivo ante un nodo que
-vuelve con el contador restaurado. Y desde el §689, `--comparar DIARIO_A DIARIO_B --sobres DIR` arma
+índice embebido —desde el §712 el testigo y su auditor cuentan por ese índice, y no por el
+`index` declarado: con el declarado, dos firmas de la hoja 1 declaradas 0x2 y 0x3 pasaban
+limpias—; `tools/banco_mentiroso_vista.sh` lo demuestra con un testigo vivo ante un nodo que
+vuelve con el contador restaurado. ⚠️ Y el testigo aplica el reloj de 2.3 a cada cabeza que llega
+(§712): un `mmrSize` ya visto con otro digest
+—con la misma cima siempre; con otra, si el nodo no va por detrás de la pareja custodiada— y una
+cabeza posterior a la custodiada, de la misma clave, que firma en su hoja o por debajo, son
+`no-extiende`, que detiene y no se cofirma. La cuenta de índices es una por operador en las tres
+rutas —la vuelta viva, `--auditar`, que en frío da el reloj como `indice-retrocede`, y
+`--ausentes`—, y «por detrás» es en las dos primeras la pareja custodiada, que `--auditar`
+reconstruye de las líneas `anclando` y `extiende` del diario. `--comparar` cuenta como
+bifurcación el mismo `mmrSize` con la misma cima y otro digest; con OTRA cima lo dice y no lo
+cuenta: es el reseteo visible del §295 o una bifurcación, y entre dos diarios no se sabe quién iba
+por detrás. Y desde el §689, `--comparar DIARIO_A DIARIO_B --sobres DIR` arma
 uno por cada índice que DOS testigos vieron dividido —cada uno, solo, no ve nada—, con la cabeza de
 cada diario.
 
@@ -715,13 +755,15 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
 **Paquete de extensión:** `1/3` las dos cabezas (v3, v4, v5 o v6) recomponen su digest y sus firmas verifican ·
 `2/3` misma `publicKey` en las dos: la continuidad es de **un** firmante —o, con `actas` (§648),
 claves distintas que la cadena une: la continuidad es de **un** operador— · `3/3` la cima nueva
-extiende a la vieja por `camino`.
+extiende a la vieja por `camino`, y **después**, desde el §712, el reloj de 2.3, en una
+línea sangrada debajo: la misma cabeza con el mismo `mmrSize`, o la hoja que avanza con la misma
+clave, o «claves distintas: el orden de sus hojas lo juzgan los tramos».
 
 **Paquete de consumo:** `1/5` las dos cabezas recomponen su digest y sus firmas verifican ·
 `2/5` misma `publicKey` y las dos llevan `consRoot` (**v4, v5 o v6**) a los dos lados · `3/5`
-la cima nueva extiende a la vieja · `4/5` los dos caminos son los de la posición **derivada**
-del consumo, no de la que el sobre diga · `5/5` el consumo está bajo el `consRoot` de la
-nueva y **no estaba** bajo el de la vieja.
+la cima nueva extiende a la vieja, y después el reloj de 2.3 (§712) · `4/5` los dos caminos
+son los de la posición **derivada** del consumo, no de la que el sobre diga · `5/5` el consumo
+está bajo el `consRoot` de la nueva y **no estaba** bajo el de la vieja.
 
 **Paquete de conflicto:** `1/4` las dos cabezas recomponen su digest y sus firmas verifican ·
 `2/4` son de operadores **distintos** y las dos llevan `consRoot` (**v4, v5 o v6**) · `3/4` los
@@ -871,6 +913,11 @@ nota que dice por qué.
 - `camino[{i}] no es cadena` · `camino[{i}]: {} bytes` · `camino[{i}]: {e}` — ⚠️ §776: hasta aquí
   decía `{e:?}`, rancio desde el §640.
 - `la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia bifurcada, recortada, o camino que no es el suyo`
+- ⚠️ §712, después de la consistencia, y los mismos en el consumo y en el ancla del modo 3, con
+  `{vieja}` y `{nueva}` los nombres de los lados: `la vieja` y `la nueva` en la extensión y el
+  consumo, `el ancla` y `la cabeza` en el ancla:
+  - `extension: mismo mmrSize y digest distinto - {vieja} y {nueva} firman la misma historia de {t} cabeza(s) y no son la misma cabeza: una bifurcacion firmada, no una extension`
+  - `extension: el indice embebido no crece - {nueva} (t={t_n}) firma en la hoja {e_n} y {vieja} (t={t_v}) en la {e_v}: con la misma clave, una cabeza posterior firma por encima (RFC-0012 D-C)`
 
 **El consumo** (`{cual}` es `presencia` o `ausencia`)
 
@@ -1123,6 +1170,11 @@ VERDE ni ROJO.
 - `el ancla declara un indice ({a}) que no es ANTERIOR al embebido de la cabeza ({b})`
 - `la cabeza (t={t}) NO extiende el ancla (t={a}): historia bifurcada, recortada, o camino que
   no es el suyo`
+- ⚠️ §712, después de la consistencia del modo 3, el reloj de la extensión con su
+  causa: `extension: mismo mmrSize y digest distinto - el ancla y la cabeza firman
+  la misma historia de {t} cabeza(s) y no son la misma cabeza: una bifurcacion firmada, no una
+  extension`. El de `el indice embebido no crece` no puede salir aquí: el `indice` del ancla ya se
+  exige ANTERIOR, antes de la consistencia.
 - `los indices embebidos son DISTINTOS ({a}, {b}): dos firmas con su indice propio no dividen
   la vista`
 - `contraria: {e}` — el índice embebido de la contraria, leído con `indice_de_firma`; `{e}`
@@ -1259,7 +1311,7 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **firma inválida** | `la firma no verifica` · `la firma es VALIDA pero de otro mensaje` · `el indice declarado ({d}) no cuadra con el que va dentro de la firma` |
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
 | **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
-| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` |
+| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) |
 | **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
 | **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido | `InconsistentOodConstraintEvaluations` |
@@ -1531,6 +1583,23 @@ segundo nodo, de otra semilla. El umbral de testigos no tiene vector: el mando n
 La familia se COPIA de la corrida del sello: las cabezas, las marcas y la sal cambian en cada
 corrida. Su productor es `tools/banco_ancla_cofirmada.sh` (§634).
 
+**Desde el §712 cubre el RELOJ de la extensión** (RFC-0012 D-C, 2.3): cinco sobres nuevos
+en `spec/vectors/paquete/`, tres en `spec/vectors/consumo/` y uno en `spec/vectors/ancla/`, con sus
+líneas al final de cada `MANIFIESTO.txt`. Seis se CAPTURAN de una corrida de `tools/banco_bifurcacion.sh`, contra un nodo
+real con el binario sin tocar: el operador recorta su diario y conserva su contador —la
+bifurcación: el mismo `mmrSize`, otra hoja—, lo recorta y restaura el contador a la hoja de
+entonces —la vista dividida: el mismo `mmrSize` y la misma hoja—, o restaura los dos de antes de
+unos índices huérfanos —el reloj que retrocede: la historia sigue siendo consistente y la nueva
+firma por debajo—. Los otros dos son los dos sentidos de la vista dividida del ancla
+(`ancla/vista-dividida.json`) como extensión, derivados sin otra corrida. Los siete negativos
+daban VERDE en el kit y en la segunda implementación de antes del §712 (medido); el positivo, una
+extensión por encima de seis hojas huérfanas, sigue VERDE. El banco mira además al testigo vivo
+(§712): no se detiene ante los huérfanos, el reinicio ni la recuperación del §690, y se detiene con
+`no-extiende` ante la bifurcación y ante el reloj que retrocede sobre una historia consistente, en
+la primera cabeza posterior a la custodiada. El de `ancla/`, `neg-ancla-bifurcada-mismo-mmrSize.json`,
+es el ancla que el mando deriva de la cabeza vieja de la bifurcación contra la nueva, con el camino
+vacío, DERIVADO sin otra corrida; también daba VERDE en el kit y en la segunda de antes (medido).
+
 **Desde §649 cubre la ROTACIÓN de la clave del operador** (RFC-0015, E5b): `spec/vectors/rotacion/`
 trae TRES positivos CAPTURADOS de UN nodo real que rota dos veces sobre el mismo diario —A, su
 génesis comprometiendo a B; B, con la firma de A; C, sin la de B— y sobres de extensión con la
@@ -1691,6 +1760,13 @@ mal formada: opciones fuera de rango` y `prueba mal formada: consultas fuera de 
 - §711 — una prueba mal formada, con su causa (RFC-0005 E4): `prueba mal formada: {qué} fuera de
   rango` entra en la clase «prueba mal formada» de la 6.1, y cuatro negativos nuevos en la edad y
   el pago (sección 9) que antes hacían salir al mando con un pánico.
+- §712 — el reloj es el índice embebido (RFC-0012 D-C): la extensión, el consumo y el ancla del
+  modo 3 exigen, tras la consistencia, el mismo digest con el mismo `mmrSize` y una hoja que crece
+  con la misma clave (2.3); el testigo cuenta por el índice embebido, una cuenta por operador en sus
+  tres rutas, y aplica la regla entera a cada cabeza que llega: el `mmrSize` ya visto con otro
+  digest y la cabeza posterior que firma por debajo de la custodiada (2.12). Los dos textos nuevos
+  entran en la clase «la regla no se sostiene» de la 6.1; nueve vectores nuevos en tres familias,
+  ninguno reescrito (sección 9).
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto
