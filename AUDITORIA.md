@@ -73351,3 +73351,97 @@ ni los bancos que no son de la banda ni del cobro.
 - **Los `Cargo.lock` de los generadores van por detrás del corte**: el de este, como los de
   `tools/vectores/coste_edad/` y `tools/vectores/historia_comun/`, dice `zk-ssl-verify` 0.4.3, y el
   corte de la serie sube el kit.
+
+## §724 — `SECURITY.md` §5 dice dónde se prepara un arreglo de seguridad: en privado, en el fork temporal del aviso o en un repositorio privado del mantenedor, y lo preparado así entra en `main` por avance rápido
+
+El commit que lleva este asiento, sobre `f6e7611` (el §723). Un solo sello, sin código: el párrafo
+«**Cómo se arregla**» de `SECURITY.md` §5, sustituido, y este asiento. `spec/rfc/PROCESO.md` no
+cambia. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El párrafo se redactó en
+privado, con la serie, el 08-10-2026, sobre `e4eb764` (el §740), y este sello lo lleva a `f6e7611`
+(«Al portar», abajo). El canon entero se corre sobre la punta de la serie, no sobre cada sello.
+
+**De dónde sale.** Desde el §691, `SECURITY.md` §5 decía que un arreglo de seguridad se hace «en el
+fork privado temporal que se crea desde el borrador del aviso». Los arreglos de esta publicación,
+del §711 al §723, no se hicieron allí: se prepararon en un repositorio privado del mantenedor, un
+commit por arreglo con su asiento, y entran en `main` de una vez, por avance rápido, con el corte del
+kit 0.4.4, justo antes de su release y su aviso. Que fuera allí y no en el fork lo decidió el
+08-10-2026, por delegación del autor, la sesión de Claude Code que preparaba la publicación, con
+tres razones: el trabajo ya vivía en ese repositorio, con su historia, sus notas y su canon; el fork
+temporal no corre GitHub Actions (lo dice esa decisión; este sello no lo vuelve a comprobar); y
+fusionar desde el aviso mete en `main` un merge que no lleva asiento y rompe el avance rápido. La
+enmienda dice lo que se hizo, y conserva «nunca en una rama, un PR o un *issue* públicos».
+
+**Lo que hace.**
+
+1. **Dónde.** Detrás del fork, «o en un repositorio privado del mantenedor (también un clon sin
+   remoto)».
+2. **Cómo entra.** Una frase nueva: «Lo preparado en un repositorio privado entra en `main` por
+   avance rápido, un commit por arreglo con su asiento, justo antes de la release y el aviso, si los
+   lleva.»
+3. **Lo demás, igual**, palabra por palabra. El párrafo pasa de nueve líneas a doce, de la 1967 a
+   la 1978, y lo de debajo baja tres: ninguna cita del árbol apunta a una línea de `SECURITY.md`
+   desde la 1900 (`git grep` de `SECURITY.md:` y sus números, sin salida).
+
+**Por qué en su propio sello, y justo antes del corte.** El tag del kit 0.4.4 va sobre el corte, y
+así el árbol etiquetado ya dice cómo se hizo lo que la release publica; los arreglos del §711 al
+§723 quedan antes de la frase que los describe, en la misma serie. No va dentro del corte, porque el
+corte es lo que la release lleva y la enmienda cambia el proceso, no el kit: quien lea la historia
+de §5 encuentra un asiento por cambio. Y si el corte hay que rehacerlo, la enmienda no se mueve.
+
+**`spec/rfc/PROCESO.md` no cambia.** Su §«Fallos de seguridad» dice que el arreglo propio «se
+redacta en privado y se publica de una vez», y que su RFC «se redacta fuera, con el código», sin
+nombrar el fork ni otro sitio: vale para las dos vías. Tampoco cambia `spec/README.md`, que dice
+«drafted in private» en la fila de `PROCESO.md` y en `spec/README.md` §«Changing any of this».
+Fuera de `AUDITORIA.md`, el párrafo sustituido era el único sitio del árbol que nombraba el fork del
+aviso: `git grep -n -i` de `fork privado`, `fork temporal` y `private fork` da sólo esa línea.
+
+**Al portar.** El párrafo se redactó sobre `e4eb764` (el §740), donde iba en las líneas 934 a 942 de
+`SECURITY.md`, y lo lleva a `f6e7611` una sesión de Claude Code, no el autor: primero sobre el §723
+llevado a `6c33d2a` (el §865), y de ahí sobre los seis sellos del §890 al §895, que git funde sin
+choque con este sello («Al portar», en el §711). Con sus seis asientos, el registro de
+`verificar_citas` cuenta 825 encabezados, no los 819 de `6c33d2a` con la serie, y el asiento da la
+cuenta de este árbol. Lo resuelto a mano: dos añadidos al texto de entonces, para que no choque con
+lo que `main` dice desde el §812, que entró después.
+
+- **«(también un clon sin remoto)».** Los sellos de `main` que dicen dónde se redactó su arreglo
+  privado —el §812, el §815, el §816, el §817 y el §828— lo sitúan, en su asiento, «en un clon sin
+  remoto» o «en clones sin remoto», y las 3.15, 3.16 y 3.17 de `SECURITY.md` dicen que se midió así.
+  El texto de entonces no los nombraba. El del §815 llevó aviso y release, y tampoco pasó por el
+  fork.
+- **«si los lleva».** El §812, el §816, el §817 y el §828 salieron sin aviso ni release, porque el
+  kit publicado no depende de la capa (3.14, 3.16 y 3.17), y la frase nueva, sin eso, decía que todo
+  lo preparado así entra justo antes de una release y un aviso. Qué fallo los lleva lo sigue diciendo
+  el párrafo de antes, «Qué sale cuando se arregla», con `spec/rfc/PROCESO.md` §«Fallos de
+  seguridad»: la frase no lo decide. La 3.17, que da por lectura de la sesión que la sección 5 no
+  pida aviso ni release a un fallo de la capa, sigue siendo exacta, y no se toca.
+
+**Comprobado sobre este árbol.**
+
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_cifras`, 26 cifras y
+  ninguna contradice el canon; `check_tests`, 2230 declarados; `check_modulos`, 216 ficheros;
+  `check_vectores`, 605 vectores y 1370 líneas de 19 manifiestos con su huella, ninguno movido;
+  `check_catalogo`, 236 textos del kit y 302 entradas de §5; `check_superficie`, la lista de
+  `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas; `verificar_citas`, 0 fantasmas, 0 secciones
+  muertas y 242 encabezados citados, 0 muertos —sobre el §723, 240: las dos citas por encabezado de
+  este asiento, a `spec/rfc/PROCESO.md` y a `spec/README.md`, caen en el suyo—, y el registro con 825
+  encabezados y 0 citas muertas; `check_nucleo`, 180 filas; y `check_figures`, `check_columns`,
+  `check_constraint_layout`, `check_dominios`, `check_publicadas`, `check_techo` y `check_curvas`.
+  Todas salen con 0, y las demás, con las mismas cuentas que sobre el §723.
+- **`cargo check --locked --workspace --all-targets`**, sin errores. Ningún test: el sello no toca
+  `src/` ni `tests/`.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2230; el TOTAL DE SELLO, en 2068, y el
+TOTAL CON LARGOS, en 2208, como los dejó el §723; los pines de `tools/canon.sh`, igual. El
+`BACKLOG.md` sigue en 40 abiertas y 90 resueltas: ninguna entrada llevaba esto.
+
+**Lo que NO hace.** No toca código, ni el cable, ni un vector, ni el kit, ni `spec/rfc/PROCESO.md`.
+No reescribe el §691, que decía lo de antes —su punto 3: «El arreglo se desarrolla en el fork
+privado temporal que se crea desde el borrador del aviso»—, ni los asientos del §812 al §828: el
+§815 metió sus tres arreglos en un solo sello, con el corte del kit 0.4.3, antes de la frase de «un
+commit por arreglo», y se queda como está. No dice qué fallo lleva aviso: lo dice el párrafo de
+antes. No promete plazos.
+
+**Lo que NO cierra.** Nada de la cola. La cláusula es de método, como las del §691, y ninguna
+compuerta la comprueba: que lo preparado en privado entre por avance rápido y un commit por arreglo
+no lo mira el canon.

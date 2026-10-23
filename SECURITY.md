@@ -1965,9 +1965,12 @@ afectadas y la primera que lo arregla, con el crédito de quien lo reportó si l
 desea.
 
 **Cómo se arregla**: en privado —en el fork privado temporal que se crea desde
-el borrador del aviso, nunca en una rama, un PR o un *issue* públicos— y se
-publica de una vez: el código, los vectores, el RFC o la enmienda con su etapa
-ya construida, el asiento de `AUDITORIA.md`, la release y el aviso. Los vectores
+el borrador del aviso o en un repositorio privado del mantenedor (también un
+clon sin remoto), nunca en una rama, un PR o un *issue* públicos— y se publica
+de una vez: el código, los vectores, el RFC o la enmienda con su etapa ya
+construida, el asiento de `AUDITORIA.md`, la release y el aviso. Lo preparado en
+un repositorio privado entra en `main` por avance rápido, un commit por arreglo
+con su asiento, justo antes de la release y el aviso, si los lleva. Los vectores
 viejos no se reescriben: si el arreglo cambia el cable, la versión sube y los
 viejos se conservan bajo la suya (regla 2 de `spec/rfc/PROCESO.md`). Lo escribe
 `spec/rfc/PROCESO.md` §«Fallos de seguridad», que dice también por qué el RFC
