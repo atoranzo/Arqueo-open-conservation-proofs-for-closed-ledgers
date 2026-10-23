@@ -612,7 +612,8 @@ fn una_raiz_de_meta_ajena_no_se_enlaza() {
 /// subraiz sube a la raiz del `SparseTree`. Arriba, la maquina.
 ///
 /// Desde el §717 el juez no acepta `m` sobre `edad::M_MAX`, 13, y el probador no la prueba: un `n`
-/// objetivo que la pida (16384, `m = 14`) se imprime con su causa y no se prueba.
+/// objetivo que la pida (16384, `m = 14`) se imprime con su causa y no se prueba. Desde el §721 el
+/// instrumento mide tambien la talla del tope, `2^M_MAX` (8192).
 #[test]
 #[ignore = "instrumento de medida, no comprobacion: correr a mano, en release"]
 fn instrumento_de_la_prueba_de_edad() {
@@ -631,7 +632,13 @@ fn instrumento_de_la_prueba_de_edad() {
         edad::ANCHO_AUX,
         edad::CICLO
     );
-    for n in N_OBJETIVO {
+    // §721: tambien la talla del tope, `2^M_MAX`, la mayor que el juez acepta. Las tallas van de
+    // menor a mayor (el pico es acumulado).
+    let mut tallas: Vec<u64> = N_OBJETIVO.to_vec();
+    tallas.push(1u64 << edad::M_MAX);
+    tallas.sort_unstable();
+    tallas.dedup();
+    for n in tallas {
         let m = edad::m_canonico(n);
         if m > edad::M_MAX {
             println!("E4b| n {n} . m = {m} fuera de 3..={}: no se prueba (§717)", edad::M_MAX);

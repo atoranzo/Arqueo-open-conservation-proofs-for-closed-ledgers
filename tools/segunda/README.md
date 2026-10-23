@@ -41,12 +41,13 @@ python3 tools/segunda/kat_xmss/juez_xmss.py
 #   ⚠️ §718: decia 236 de 236 (§714); el acta con su `mmrSize` escrito como `N + p`, en `rotacion`, la lleva a 237
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
-# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 69 de 69 (§718)
+# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 70 de 70 (§721)
 #   ⚠️ §711: decia 34 de 34 (§706); los cuatro negativos de la prueba mal formada, dos de la edad y dos del pago, la llevan a 38
 #   ⚠️ §713: decia 38 de 38 (§711); el negativo capturado del resto FRI, `edad/neg-prueba-resto-ajeno`, la lleva a 39
 #   ⚠️ §715: decia 39 de 39 (§713); los veintiseis negativos de una sola escritura, quince de la edad y once del pago, la llevan a 65
 #   ⚠️ §717: decia 65 de 65 (§715); los tres negativos del tope de `m` en `edad/` la llevan a 68
 #   ⚠️ §718: decia 68 de 68 (§717); el emisor fuera de las cuentas, en `edad/`, la lleva a 69; los otros cuatro negativos con prueba del §718 caen antes del juez
+#   ⚠️ §721: decia 69 de 69 (§718); el negativo que fija el tope de `m` en 13, `edad/neg-m-14-sobre-tope`, la lleva a 70
 python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca, el orden de Rust, el resto atado, una sola escritura
 python3 tools/segunda/juez_stark.py
 
@@ -235,7 +236,7 @@ ya dice. La fila de la causa del binario, par a par, no se ha vuelto a medir: pi
 compilado.
 
 Esa tabla es la medida del §626 y no se ha rehecho. Los párrafos que siguen dicen lo que cambió
-cada sello; la cifra de hoy es la del §718: 69 de 69 pares.
+cada sello; la cifra de hoy es la del §721: 70 de 70 pares.
 
 Lo que la medida fijó al escribirlo: que la semilla de Fiat-Shamir es el contexto **más las
 entradas públicas**, de modo que un enunciado mal compuesto no llega ni a la autenticación Merkle;
@@ -343,6 +344,13 @@ VERDE con salida 0 (la familia, 34 de 35); y en `edad/`, el emisor `2^32`, que c
 otros cuatro, el emisor `p` y los tres alias del pago y del cobro, caen en el lector antes del juez.
 Con estos, 69 de 69, 83 pruebas juzgadas, 39 vectores que caen antes del juez y 33 de 33 falsadores
 callados, en 13 s.
+
+**El valor del tope, fijado (§721).** Los tres negativos del §717 valen con cualquier tope de 13 a
+16. `neg-m-14-sobre-tope` (`nextPending` = `2^13 + 1`) cae por el tope sólo si el tope es 13. Con
+`M_MAX = 14` en `airs.py`, el juez da 69 de 70 pares, y el que falta es ese: da la coherencia OOD y
+no su causa. Con `M_MAX = 12`, también 69 de 70: cae `neg-m-13-fabricada` por el tope. Con 13, 70
+de 70, 84 pruebas juzgadas, 39 vectores que caen antes del juez y 33 de 33 falsadores callados, en
+12 s.
 
 **La cadena del registro** (§797). ⚠️ Esto mide el **cable**, no el núcleo: `chain` es de la clase
 REGISTRO (`spec/NUCLEO.md` §«2. Las cuatro clases»), su composición no tiene KAT (sus piezas sí:
@@ -488,6 +496,9 @@ asiento del §715).
 negativos de la canonicidad y los tres del tope de `m` del §717, que su sello no contó aquí: 428
 entradas en los diez y 490 en las doce. Lo medido del `.wasm` no cambia: que las pase no está
 medido, ni antes ni ahora.
+⚠️ §721: `edad` tiene 39 desde el §721, con el negativo que fija el tope de `m` en 13: 429 entradas
+en los diez y 491 en las doce. Lo medido del `.wasm` no cambia: que las pase no está medido, ni
+antes ni ahora.
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 

@@ -135,3 +135,12 @@ neg-m-13-fabricada.json|1|edad: InconsistentOodConstraintEvaluations
 # se reescriben (regla 2 del PROCESO).
 neg-emisor-no-canonico.json|1|emisor: 0xffffffff00000001 no es canonico
 neg-emisor-fuera-de-cuentas.json|1|edad: emisor = 4294967296 no es un indice de cuenta
+# §721, el tope de m de la edad fijado en 13: los tres negativos del §717 valen con cualquier tope
+# de 13 a 16, asi que ninguno fija el valor. Lo fija este, de la misma familia de atacante y con la
+# misma clave XMSS de TEST: `nextPending` = 2^13 + 1, la marca mas pequena sobre 13, y una prueba
+# FABRICADA de `m = 14`. Con el tope en 13 cae por el tope, ANTES de leer la prueba; con 14 llegaria
+# a la prueba y caeria en la coherencia OOD, otra causa. Junto con `neg-m-13-fabricada.json`, el
+# tope queda en 13 y en ningun otro valor: con 12, aquel cae por el tope; con 14 o mas, este llega
+# a la prueba. Se pina la causa con su `m` y sin el tope, como los de arriba. Lo produce
+# `tools/vectores/coste_edad.py`. Jamas se reescribe (regla 2 del PROCESO).
+neg-m-14-sobre-tope.json|1|edad: m = 14 fuera de 3..=

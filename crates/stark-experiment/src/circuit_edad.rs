@@ -232,6 +232,16 @@ pub fn probar_con(
     traza: TrazaEdad,
     opts: ProofOptions,
 ) -> Result<(Vec<u8>, EdadPublicInputs), String> {
+    // §721, el tope de m: el probador se niega a probar `m` sobre el tope del juez, con su causa,
+    // en vez de gastar el tiempo. `construir` ya lo para en el libro; esto cubre una traza de
+    // `trazar`, que no comprueba nada. Mira el `m` declarado y el de la forma de la traza (`CICLO`
+    // filas por posicion): los dos tienen que caber.
+    let m_traza = (traza.info.length() / CICLO).trailing_zeros();
+    for m in [traza.pi.m, m_traza] {
+        if m > M_MAX {
+            return Err(format!("m = {m} fuera de 3..={M_MAX}"));
+        }
+    }
     let pi = traza.pi.clone();
     let prueba = EdadProver { options: opts }.prove(traza).map_err(|e| format!("{e:?}"))?;
     Ok((prueba.to_bytes(), pi))
@@ -708,6 +718,34 @@ mod tests {
         let n = 1usize << M_MAX;
         let err = celdas_del_libro(&vec![d(1); n], &vec![None; n], &e).err().expect("sin meta");
         assert!(err.contains("sin meta"), "en el tope tenia que llegar a las celdas: {err}");
+    }
+
+    /// **§721: el probador rechaza `m = 14`**, el primero sobre el tope (13: el `m` mas alto que
+    /// cumple las dos cotas del RFC-0007 con la traza oculta; la regla, en `zk_ssl_air::M_MAX`). Por
+    /// los tres caminos y con la causa del juez, sin probar nada: un libro de `2^13 + 1`
+    /// posiciones, en `construir`; una traza pequena que declara `m = 14`, en `probar`; y una traza
+    /// cuya forma es la de `m = 14` (`CICLO * 2^14` filas en su `TraceInfo`) con el enunciado
+    /// honesto de sus 16 celdas, `m = 4`, tambien en `probar`. La forma se arma sin las filas: la
+    /// comprobacion la mira antes de tocar la traza. Falsador: sin la comprobacion de
+    /// `probar_con`, la segunda llega al probador y cae despues de evaluar la traza, con otra causa
+    /// (`RestriccionAuxNoSatisfecha`); y mirando solo el `m` declarado, la tercera llega al
+    /// probador y entra en panico en la matriz de la traza.
+    #[test]
+    fn el_probador_rechaza_m_14() {
+        let causa = "m = 14 fuera de 3..=13";
+        let e = en(70, 0, true);
+        let n = (1usize << 13) + 1;
+        let err = construir(&vec![d(1); n], &vec![None; n], &e).err().expect("el libro de m = 14");
+        assert_eq!(err, causa, "construir");
+        let mut traza = trazar(&honestas(&e), 8, &e);
+        let pi = EdadPublicInputs { m: 14, ..traza.enunciado().clone() };
+        traza.declarar(pi);
+        assert_eq!(probar(traza).err().expect("la traza de m = 14"), causa, "probar, declarada");
+        let mut traza = trazar(&honestas(&e), 8, &e);
+        assert_eq!(traza.enunciado().m, 4, "el enunciado honesto, 16 celdas");
+        traza.info =
+            TraceInfo::new_multi_segment(ANCHO, ANCHO_AUX, ALEATORIOS, CICLO << 14, vec![]);
+        assert_eq!(probar(traza).err().expect("la forma de m = 14"), causa, "probar, la forma");
     }
 
     /// Una vieja declarada joven (`qa = 0` con 120 de edad y `T = 70`) no verifica: su resto no

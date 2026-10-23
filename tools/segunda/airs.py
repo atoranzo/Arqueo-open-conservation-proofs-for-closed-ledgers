@@ -614,7 +614,8 @@ class Edad(Air):
     # de alli lo compara con esta linea). Por encima, el juez pagaria un coste lineal en 2^m antes
     # de mirar la prueba. 13 es la mayor m cuya prueba, con la traza oculta de produccion, cabe en
     # las dos cotas de la puerta del RFC-0007 (un latido y media RAM): m = 14 no cabe (§717).
-    # ⚠️ Se cambia en los dos sitios a la vez.
+    # ⚠️ Se cambia en los dos sitios a la vez, y con vectores nuevos: `neg-m-13-fabricada.json` y
+    # `neg-m-14-sobre-tope.json` (spec/vectors/edad/) fijan el tope en 13 (§721).
     M_MAX = 13
 
     def __init__(self, seq, pending_root, pmeta_root, next_pending, t, k, emisor,

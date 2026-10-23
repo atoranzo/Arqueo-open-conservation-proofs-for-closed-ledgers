@@ -72400,3 +72400,208 @@ ni los bancos.
 - **La holgura del §489**, los tres limbos altos del rate en el enlace del nonce de la banda, sigue
   abierta. El censo la vuelve a ver y la declara libre citando el §489, con «NO por diseño».
   Cerrarla cambia la AIR de la banda.
+
+## §721 — el tope de m de la edad, fijado en 13: un vector de m = 14 que con el de m = 13 deja el tope en 13 y en ningún otro valor, el probador que se niega por los tres caminos y el umbral del coste en el tope a 10
+
+El commit que lleva este asiento, sobre `49f0ff1` (el §720). Un solo sello, que completa el §717:
+un vector negativo nuevo en `edad/`, `neg-m-14-sobre-tope.json`, con nueve líneas al final de su
+manifiesto y sus huellas, y su entrada en `tools/vectores/coste_edad.py`, con el comentario de la
+lista; dos tests en `zk-ssl-air/src/lib.rs`, el umbral de `el_coste_de_rechazar_no_crece_con_m` y
+el comentario de `M_MAX`; la comprobación de `probar_con` y un test en
+`stark-experiment/src/circuit_edad.rs`; un caso más en un test del kit
+(`zk-ssl-verify/src/main.rs`); la talla del tope en el instrumento ignorado de
+`zk-ssl/src/instrumento_edad.rs`; el comentario de `M_MAX` en `tools/segunda/airs.py` y un párrafo
+en `tools/segunda/README.md`, con sus cuentas; `spec/PAQUETE.md` (las secciones 2.7, 9 y 10); los
+pines de `tools/canon.sh`; las cifras de tests de los documentos vivos; el recuento de
+`spec/vectors/` en los dos README y en la superficie de `spec/RPC.md`; y este asiento. Lo escribe y
+lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera
+del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad», y sale con los demás de la publicación conjunta. Es
+la parte del tope en 13 que el §717 no trajo. El §717 ya pone `M_MAX = 13` en el juez, el
+probador, el productor de la capa y la segunda. Le faltaba lo que fija ese valor: un vector, los
+tests que lo pinan y el probador ante una traza armada a mano. Lo midió en privado una sesión de
+Claude Code, sobre `161a233` con los arreglos del §711 al §720 tal como se hicieron en privado y
+el que publica el §722; se escribió sobre `e4eb764`, con el §711 al §720 encima, este sello lo
+lleva a `49f0ff1` («Al portar», abajo), y lo que se volvió a correr aquí está en «Medido sobre este
+árbol». El canon entero se corre sobre la punta de la serie, no sobre cada sello.
+
+**De dónde sale.** Los tres vectores de atacante del §717 dicen lo mismo con cualquier tope de 13 a
+16: `m = 17` y `m = 23` caen por el tope, y su causa se pina sin el tope; `m = 13` llega a la
+prueba. Un kit con el tope en 14 pasaba la edad entera. Ningún vector fijaba el valor.
+
+**Por qué el vector fija 13 frente a 14.** `neg-m-14-sobre-tope` lleva `nextPending` = `2^13 + 1`
+= 8193, la marca más pequeña sobre 13, y una prueba fabricada de `m = 14`. Con el tope en 13 cae
+por el tope, antes de leer la prueba: `edad: m = 14 fuera de 3..=13`. Con 14 llega a la prueba y
+cae en la coherencia OOD, otra causa. `neg-m-13-fabricada` hace lo contrario: con 13 llega a la
+prueba; con 12 cae por el tope. Juntos, con 12 o con 14 la conformidad de la edad cae, y sólo con
+13 pasa entera. Medido en privado y aquí (abajo).
+
+**Lo que hace.**
+
+1. **El vector.** Fichero nuevo, 550.060 B, del mismo guion y con la misma clave XMSS de test que
+   los del §717. `tools/vectores/coste_edad.py` gana su entrada al final de `VECTORES`, con su
+   comentario: éste sí depende del tope. El comentario de la lista lo dice también: las tres
+   primeras valen con cualquier tope de 13 a 16, la cuarta no. El manifiesto gana ocho líneas de
+   comentario y la entrada `neg-m-14-sobre-tope.json|1|edad: m = 14 fuera de 3..=`, al final.
+   Ninguna línea ni vector anterior cambia.
+2. **El juez, con el valor pinado.** `m_13_entra_al_juez_y_se_juzga_la_prueba`: el enunciado de
+   `m = 13` pasa; con una prueba vacía, la causa es la del lector; con la fabricada, la de la
+   coherencia OOD; y `M_MAX == 13`. `m_14_cae_por_el_tope_en_milisegundos`: la fabricada de
+   `m = 14` cae con `m = 14 fuera de 3..=13`, en menos de 50 ms. El comentario de `M_MAX` ya no
+   dice que los vectores no dependen del valor: nombra los tres tests y los dos vectores que lo
+   pinan, y dice que un tope nuevo pide vectores nuevos.
+3. **El probador, por los tres caminos.** `probar_con` se niega a probar si el `m` declarado o el
+   de la forma de la traza (`CICLO` filas por posición) pasa del tope, con la causa del juez y
+   antes de tocar la traza. `construir` ya lo paraba en el libro; esto cubre una traza de
+   `trazar`, que no comprueba nada. `el_probador_rechaza_m_14` lo mide en `construir`, con una
+   traza que declara `m = 14` y con una traza cuya forma es la de `m = 14`.
+4. **El umbral del coste en el tope, de 25 a 10.** Con el tope en 13, el cociente honesto de
+   `el_coste_de_rechazar_no_crece_con_m` está entre 1,3 y 1,7. Su falsador, con la lista de
+   upstream en `from_transition`, dio en privado 31,6 en una corrida: a 1,26 veces del umbral de
+   25. Con 10, el honesto tiene unas 6 veces de holgura y el falsador cae con 3 o más. El
+   comentario dice las dos medidas.
+5. **El kit y la segunda.** `un_paquete_de_edad_de_m_alto_se_rechaza_en_milisegundos` gana el
+   cuarto caso, con su causa. `airs.py` no cambia de valor: su comentario nombra los dos vectores.
+   `juez_stark.py` lee el vector del manifiesto.
+6. **`spec/PAQUETE.md`.** La 2.7 nombra los dos vectores que fijan el valor; la 9 gana su párrafo y
+   la 10 su línea. Ningún texto pinado cambia.
+7. **El instrumento de la prueba de edad** (`instrumento_de_la_prueba_de_edad`, ignorado: mide,
+   no comprueba). Mide también la talla del tope, `2^M_MAX` = 8192, la mayor que el juez acepta.
+   Con el §717 sólo medía 1024 y 4096, y la talla 16384 la imprimía con su causa. Sigue ignorado:
+   no cambia ningún contador.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), con el §711 al §720
+encima, y los lleva a `49f0ff1` —el §720 ya llevado a `7dd6409`, el §895, sobre el §711 al §719
+llevados— una sesión de Claude Code, no el autor: primero sobre el §720 llevado a `6c33d2a` (el
+§865), y de ahí sobre los seis sellos del §890 al §895, que git funde sin choque con este sello («Al
+portar», en el §711). El código entra como se escribió: `main` no tocó `circuit_edad.rs`,
+`zk-ssl-air/src/lib.rs`, `instrumento_edad.rs`, `airs.py` ni `coste_edad.py`, que quedan byte a byte
+como en el sello, como el vector y su manifiesto; sus huellas y `spec/PAQUETE.md` funden solos. Lo
+que git no fundía, o lo que el sello da por supuesto de `main`, se miró a mano:
+
+- **El test del kit y el «1 bis» del canon (§864).** El doc de
+  `un_paquete_de_edad_de_m_alto_se_rechaza_en_milisegundos`, que el sello reescribe para el cuarto
+  caso, acababa en «Solo en release: en depuracion los tiempos no dicen nada»; desde el §717
+  llevado el test corre también con el perfil `aserciones` y con él sólo deja de exigir el tiempo.
+  El doc junta el cuarto caso con la frase del §717 llevado, y el cuerpo del test, con su caso
+  nuevo, entra como se escribió. `zk-ssl-air` y el kit, los dos en la pasada del «1 bis», dan con
+  las aserciones los pines de su fila, con los dos tests nuevos y el umbral de 10 (abajo).
+- **Las cuentas de `tools/segunda/README.md`**, que ninguna herramienta lee y que la versión
+  privada del sello no subía. Su párrafo va detrás del de la canonicidad del §718 llevado.
+  «1 quinquies», en «Cómo se corre», de «69 de 69» a «70 de 70», con su marca; «la cifra de hoy»,
+  en el sitio, como la subieron el §717 y el §718 llevados; y en «El verificador bajo wasmtime» una
+  marca «⚠️ §721», como la de cada sello que añadió vectores: `edad` 39, 429 entradas en los diez
+  manifiestos y 491 en las doce familias. El párrafo dice el tiempo del juez medido aquí, 12 s, y
+  no los 17 s de la medida privada.
+- **La superficie de `spec/RPC.md`.** `check_superficie` contaba el vector y sus nueve líneas como
+  dos novedades aditivas: `vectores.json` 580 -> 581 y `vectores.lineas` 1273 -> 1282, sin marca,
+  como en los sellos anteriores, y sale con 0 novedades.
+- **Los contadores**, los del §720 llevado más los de este sello, y medidos: los conflictos de
+  `tools/canon.sh` —con el timeout de 180 del §853 en la fila de `zk-ssl-air`—, `PAPER.md`,
+  `PAPER_EN.md`, `PRINCIPIOS.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md`, `README.md` y
+  `README_EN.md` eran sólo esas cifras (abajo, «Contadores»). Las cifras en prosa que ninguna
+  herramienta lee, buscadas por cada valor viejo con `git grep -n -w` fuera de este fichero, de
+  `spec/vectors` y de los `.rs`: 478, 56, 600, 580, 1273, 428 y 490 sólo salen como otra cosa o en
+  las marcas de sellos anteriores, como 69, 83 y 38; 2042, 2182 y 2204, en ningún sitio. El «fija
+  hoy» de `ARQUITECTURA.md` y `CONTRIBUTING.md` es el de la capa, que no cambia.
+- **Las citas por línea de `crates/zk-ssl-air/src/lib.rs`** en los comentarios de
+  `tools/check_publicadas.py` y de `tools/check_catalogo.py`: las seis líneas que el sello añade al
+  doc de `M_MAX` las corren otra vez. Ninguna compuerta las lee y no cambian ningún veredicto:
+  quedan, como en los sellos anteriores, para el cierre de la serie.
+
+**Medido en privado**, con el tope en 13:
+
+- **El generador**, dos corridas a dos carpetas: los tres vectores del §717, iguales byte a byte a
+  los del árbol, y el nuevo, igual en las dos (sha256 `9a01988b…432a`).
+- **El mando sobre el vector nuevo**: ROJO con `m = 14 fuera de 3..=13`, salida 1, en 7,4-9,3 ms
+  de pared. Conformidad de la edad 35 de 35. La segunda, 59 de 59 pares.
+- **Falsadores**, cada uno en su sitio y restaurado, con el md5 comprobado. Con el tope en 14 en el
+  juez: la edad, 34 de 35, cae el vector nuevo con la coherencia OOD; fallan los dos tests nuevos
+  y el que compara con la segunda. Con 14 en la segunda: 58 de 59, el mismo vector. Con 12 en el
+  juez: 34 de 35, cae `neg-m-13-fabricada` por el tope. Sin la comprobación de `probar_con`, la
+  traza que declara `m = 14` llega al probador y cae tras evaluar la traza, con
+  `RestriccionAuxNoSatisfecha`. Mirando sólo el `m` declarado, la de la forma de `m = 14` entra en
+  pánico en `winter-prover/src/matrix/col_matrix.rs:52`.
+- **El umbral.** El honesto, 1,5-1,7 y 1,3-1,5 en dos tandas de tres corridas. El falsador del
+  coste, tres corridas: 31,6, 60,2 y 59,3, unos 70 ms en `m = 13` frente a 1,2-2,2 ms en `m = 3`.
+- **El instrumento, en la talla del tope**: `n` 8192, 65.536 filas, la prueba en 53,9 s con la
+  máquina cargada, 170.848 B, verifica, sube a la raíz y pico de 3.135.748 kB.
+
+**Medido sobre este árbol**, `49f0ff1` con este sello, en release, con el directorio de compilación
+compartido, `flock` y `nice -n 19`, en una máquina de 4 CPU compartida con otras tareas:
+
+- **El generador.** El binario de `tools/vectores/coste_edad/`, con `cargo build --release
+  --locked` y un `CARGO_TARGET_DIR` propio, y `tools/vectores/coste_edad.py`, dos corridas: los
+  cuatro vectores, idénticos byte a byte a los del árbol (`cmp`); el nuevo, 550.060 B, sha256
+  `9a01988b…432a`.
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `zk-ssl-air` 58; `zk-ssl-verify` 215 (130 + 84 + 1); `stark-experiment` 479 y 13 ignorados, en
+  19 s de tests; y `zk-ssl`, por su instrumento, 546 y 7 ignorados, en 120 s de tests. Con el
+  perfil `aserciones` del «1 bis» (`cargo test --locked --profile aserciones -p <crate>`):
+  `zk-ssl-air` 58 y `zk-ssl-verify` 215, con 0 ignorados y 0 warnings, los pines de sus filas, y
+  cada «Running» bajo `<target>/aserciones/deps/`.
+- **Los cronómetros.** `tests_coste`, tres corridas: el cociente de
+  `el_coste_de_rechazar_no_crece_con_m` da 1,5, 1,5 y 1,4 (umbral 10), y 1,5 en las tres con el
+  perfil `aserciones`; la fabricada de `m = 14` cae por el tope en 77-85 ns, y en 98-137 ns con las
+  aserciones. `tests_coste_edad`, tres corridas: cocientes de 0,7 a 0,9 frente al honesto; el
+  nuevo, 3,8-4,0 ms frente a 5,6-6,2 ms.
+- **El mando** (`f8ad3d09732b010b`) sobre el vector nuevo, tres corridas: `ROJO: edad: m = 14
+  fuera de 3..=13`, salida 1, en 9-11 ms de pared.
+- **La conformidad**, con `tools/conformidad.sh` y ese kit, en las doce familias del artefacto:
+  edad 39 de 39, paquete 94, consumo 20, conflicto 17, rechazo 84, pendiente 11, pago 28, prenda
+  11, completitud 81, ancla 44, ancla cofirmada 27 y rotación 35, cada una entera.
+- **Los falsadores del valor**, con `M_MAX` cambiado en `zk-ssl-air` y restaurado, con su md5. Con
+  14 (kit `b33c5cfacaf0cade`): la edad, 38 de 39; el vector nuevo da `ROJO: edad:
+  InconsistentOodConstraintEvaluations`. Con 12 (kit `e8ddd6e9d6f64d4c`): 38 de 39; cae
+  `neg-m-13-fabricada`, con `m = 13 fuera de 3..=12`. Con los dos fallan cinco tests de
+  `zk-ssl-air`: `m_13_entra_al_juez_y_se_juzga_la_prueba`, `m_14_cae_por_el_tope_en_milisegundos`
+  y `el_tope_de_la_segunda_es_el_del_juez`, los tres que nombra el comentario de `M_MAX`, y los dos
+  de `tests_nivel` que desde el §717 declaran sus cifras para las `m` que el enunciado admite,
+  `el_piso_de_la_edad_para_cada_m` y `la_conjeturada_con_el_termino_deep_para_cada_m`.
+- **La segunda.** `python3 tools/segunda/juez_stark.py`: 70 de 70 pares, 84 pruebas juzgadas, 39
+  vectores que caen antes del juez y 33 de 33 falsadores callados, en 12 s; el nuevo, `ROJO m = 14
+  fuera de 3..=13`. Sobre copias de `tools/segunda`, con `M_MAX = 14` en `airs.py`, 69 de 70: el
+  nuevo da la coherencia OOD; con 12, 69 de 70: cae `neg-m-13-fabricada` por el tope. El autotest de
+  `stark.py`, OK. `juez_cabezas.py`: 590 de 645 cabezas y 15 de 20 cofirmas verifican, en 488
+  ficheros; los 60 con alguna que no verifica son negativos, y la cabeza del nuevo verifica.
+- **Los falsadores del probador**, en su sitio y restaurados, con su md5: sin la comprobación de
+  `probar_con`, `el_probador_rechaza_m_14` cae con `RestriccionAuxNoSatisfecha { indice: 4, paso:
+  0 }`; mirando sólo el `m` declarado, entra en pánico en `col_matrix.rs:52` («number of rows in a
+  matrix must be a power of 2»).
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2207
+  declarados; `check_modulos`, 214 ficheros; `check_vectores`, 581 vectores y 1282 líneas de 19
+  manifiestos con su huella, ninguno movido; `check_cifras`, 26 cifras y ninguna contradice el
+  canon; `check_columns`, 51 ficheros, y sus columnas, 323, todas rellenas; `check_publicadas`, con
+  601 ficheros en `spec/vectors/`; `check_catalogo`, 235 textos del kit y 290 entradas de §5;
+  `check_nucleo`, 175 filas; `verificar_citas`, 0 fantasmas y 0 muertos; `check_superficie`, la
+  lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas; `check_constraint_layout`, los 33
+  circuitos y las 5 AIR del kit sin hueco; y `check_curvas`, `check_dominios`, `check_figures` y
+  `check_techo`. Todas salen con 0.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `zk-ssl-air` 56 -> 58, con su timeout de
+180, y `stark-experiment` 478 -> 479, los ignorados en 13. TOTAL DE SELLO 2042 -> 2045 y TOTAL CON
+LARGOS 2182 -> 2185, en `PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`; los 478 de circuitos, a 479, en
+`PRINCIPIOS.md`, `PAPER.md`, `PAPER_EN.md`, `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`. Las
+«1364 declaradas» y las «1349 declared» no se tocan, como en los sellos anteriores (5.A-319).
+`zk-ssl-verify` sigue en 215: gana un caso, no un test; y `zk-ssl` en 546, con el instrumento
+ignorado. `check_tests`, de 2204 a 2207. `spec/vectors/`, de 600 a 601 ficheros, en `README.md` y
+`README_EN.md`. `check_vectores`, de 580 a 581 vectores y de 1273 a 1282 líneas, y con ellos la
+superficie de `spec/RPC.md`. En `tools/segunda/README.md`, el juez del STARK de 69 a 70 pares, en
+«1 quinquies» y en «la cifra de hoy», y las entradas de los manifiestos, de 428 a 429 en los diez y
+de 490 a 491 en las doce. El pie «Ceguera declarada» de `tools/canon.sh` no cambia: el test nuevo de
+`circuit_edad.rs` no lleva `cfg_attr(debug_assertions, ignore)`.
+
+**Lo que NO hace.** No cambia el tope, que el §717 ya puso en 13, ni el cable, la versión
+`zkssl/0.4` o el formato de una prueba. No reescribe ni cambia el veredicto de ningún vector
+anterior. No publica un kit: el corte va al final de la serie. No corre el canon entero ni los
+bancos.
+
+**Lo que NO cierra.**
+
+- **Un tope nuevo pide vectores nuevos.** Los dos que fijan el 13 no se reescriben. Si la medida
+  cambia, el tope sube o baja con un vector propio, y el comentario de `M_MAX` lo dice.
+- **El umbral de 10 es una decisión, medida en los dos lados**, no una cota teórica: el honesto
+  tiene unas 6 veces de holgura y el falsador cae con 3 o más.
+- Lo demás que el §717 dejó abierto sigue igual.

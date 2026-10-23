@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""§717: los tres negativos de `spec/vectors/edad/` del coste del juez de la edad.
+"""§717 y §721: los cuatro negativos de `spec/vectors/edad/` del coste del juez de la edad.
 
 Cada uno es un paquete que cualquiera arma sin la clave del operador -cabeza v5 con firma propia,
 de una clave XMSS de test de semilla fija- y sin probar -una prueba fabricada que solo tiene la
@@ -21,14 +21,18 @@ import subprocess
 import sys
 import tempfile
 
-# Las m van fijas y no salen del tope: los tres valen con cualquier tope de 13 a 16. Sobre el
-# tope, m = 17 y m = 23 (la mayor que el lector de la prueba admite); por debajo o en el tope,
-# m = 13. Cada fichero se nombra por lo que es con cualquier tope de ese rango.
+# Las m van fijas y no salen del tope: las tres primeras valen con cualquier tope de 13 a 16; la
+# cuarta (§721) no, y con la tercera fija el tope. Sobre el tope, m = 17 y m = 23 (la mayor que el
+# lector de la prueba admite); por debajo o en el tope, m = 13. Cada uno de los tres primeros
+# ficheros se nombra por lo que es con cualquier tope de ese rango.
 VECTORES = [
     # (fichero, m de la prueba fabricada, nextPending)
     ("neg-m-sobre-tope.json", 17, (1 << 16) + 1),
     ("neg-m-mayor-legible.json", 23, 1 << 23),
     ("neg-m-13-fabricada.json", 13, 1 << 13),
+    # §721, con el tope en 13: la marca mas pequena sobre el tope. Este SI depende del tope: cae
+    # por el tope con 13 y llega a la prueba con 14, asi que junto con el de m = 13 fija el tope.
+    ("neg-m-14-sobre-tope.json", 14, (1 << 13) + 1),
 ]
 
 

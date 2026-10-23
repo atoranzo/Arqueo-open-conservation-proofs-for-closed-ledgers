@@ -137,9 +137,15 @@ pub fn comprobar_emisor(emisor: u64) -> Result<(), String> {
 /// ⚠️ Un libro cuyo `nextPending` pase de `2^M_MAX` no tiene prueba de edad, y `nextPending` no
 /// baja: es la marca de agua de las posiciones usadas. `allocate_pending` reutiliza el hueco libre
 /// mas bajo, y solo `commit_send` y `apply_mint_pending_delegated` la suben
-/// (`zk-ssl/src/two_phase.rs`). Cambiar el tope es cambiar esta linea y la de la segunda
-/// implementacion (`tools/segunda/airs.py`, `M_MAX`), que un test de este crate compara. Los
-/// vectores y sus pines no dependen del valor.
+/// (`zk-ssl/src/two_phase.rs`).
+///
+/// ⚠️ Cambiar el tope no es cambiar solo esta linea. Va con la de la segunda implementacion
+/// (`tools/segunda/airs.py`, `M_MAX`), que un test de este crate compara. Y pinan el valor, a
+/// proposito (§721), tres tests -`m_13_entra_al_juez_y_se_juzga_la_prueba` y
+/// `m_14_cae_por_el_tope_en_milisegundos`, aqui, y `el_probador_rechaza_m_14`, en
+/// `stark-experiment`- y dos vectores de `spec/vectors/edad/`: `neg-m-13-fabricada.json` llega a
+/// la prueba y `neg-m-14-sobre-tope.json` cae por el tope, asi que juntos fijan el tope en 13. Un
+/// tope nuevo pide vectores nuevos; los de hoy no se reescriben.
 pub const M_MAX: u32 = 13;
 
 /// Carril A: el arbol de pendientes (doce columnas del estado).
@@ -1543,6 +1549,36 @@ mod tests_coste {
         assert!(e.starts_with("la prueba no se deserializa"), "en el tope: {e}");
     }
 
+    /// **§721: el tope es 13, y `m = 13` entra al juez.** 13 es el `m` mas alto que cumple las dos
+    /// cotas de la puerta del RFC-0007 con la traza oculta (la regla y la medida, en [`M_MAX`]). En
+    /// 13 el enunciado pasa: con una prueba vacia, la causa es la del lector; con la fabricada, la
+    /// de la coherencia OOD. Es la prueba lo que se juzga, no el tope. Al final, el valor: el tope
+    /// es 13 y no otro. Falsador: con el tope en 12, el enunciado de `m = 13` cae con
+    /// `m = 13 fuera de 3..=12`; con el tope en 14, falla el valor.
+    #[test]
+    fn m_13_entra_al_juez_y_se_juzga_la_prueba() {
+        assert_eq!(comprobar_enunciado(&pi_de(13)), Ok(()), "el enunciado de m = 13");
+        let e = verificar_contra_cabeza(&[], &AF, &cabeza(1 << 13)).expect_err("vacia");
+        assert!(e.starts_with("la prueba no se deserializa"), "m = 13: {e}");
+        let (_, e) = rechazo(&fabricar(13), &cabeza(1 << 13), 1);
+        assert_eq!(e, "InconsistentOodConstraintEvaluations", "m = 13 llega a la prueba");
+        assert_eq!(M_MAX, 13, "el tope de la regla");
+    }
+
+    /// **§721: `m = 14` cae por el tope, con su causa y en milisegundos.** La prueba fabricada de
+    /// `m = 14` no se lee: el enunciado cae antes, con `m = 14 fuera de 3..=13`. Con un tope de 14,
+    /// esa misma prueba llegaria a la coherencia OOD y caeria alli. Falsador: con el tope en 14, la
+    /// causa es `InconsistentOodConstraintEvaluations`.
+    #[test]
+    fn m_14_cae_por_el_tope_en_milisegundos() {
+        let causa = "m = 14 fuera de 3..=13";
+        let (t, e) = rechazo(&fabricar(14), &cabeza(1 << 14), 3);
+        assert_eq!(e, causa, "la fabricada de m = 14");
+        eprintln!("rechazo: m = 14 sobre el tope en {t:?}");
+        assert!(t < Duration::from_millis(50), "m = 14 sobre el tope tardo {t:?}");
+        assert_eq!(comprobar_enunciado(&pi_de(14)), Err(causa.to_string()), "el enunciado");
+    }
+
     /// La segunda implementacion tiene el mismo tope: su `M_MAX` (`tools/segunda/airs.py`) es una
     /// linea `M_MAX = <valor>` y el valor es este, y su enunciado lo usa con la misma causa.
     #[test]
@@ -1559,8 +1595,11 @@ mod tests_coste {
     /// En el tope, la prueba fabricada llega a la coherencia OOD y cae alli, y rechazarla no cuesta
     /// mucho mas que en `m = 3`: el divisor de las transiciones ya no recorre `1 + 8 * 2^m`
     /// exponenciaciones (el bloque) ni guarda la lista. Queda un producto en flujo por exencion, el
-    /// unico termino lineal. Falsador: con la lista de upstream en `from_transition`, el cociente
-    /// pasa de 25 en `m = 13` (medido: 58).
+    /// unico termino lineal. Con el tope en 13, el cociente es de 1,3 a 1,7 (medido, seis corridas
+    /// en release). Falsador: con la lista de upstream en `from_transition`, de 31,6 a 60,2 en
+    /// `m = 13` (medido, tres corridas: unos 70 ms frente a 1,2-2,2 ms en `m = 3`; 57,9 al portar
+    /// el §717). ⚠️ El umbral es 10, no 25 (§721): con 25, una corrida del falsador quedo a 1,26
+    /// veces de el. Con 10, el honesto tiene unas 6 veces de holgura y el falsador cae con 3 o mas.
     #[test]
     fn el_coste_de_rechazar_no_crece_con_m() {
         let ood = "InconsistentOodConstraintEvaluations";
@@ -1570,7 +1609,7 @@ mod tests_coste {
         assert_eq!(et, ood, "m = {M_MAX}");
         let cociente = tt.as_secs_f64() / t3.as_secs_f64();
         eprintln!("rechazo: m = 3 {t3:?}, m = {M_MAX} {tt:?}, cociente {cociente:.1}");
-        assert!(cociente < 25.0, "m = {M_MAX}: {tt:?} frente a {t3:?} en m = 3 ({cociente:.1})");
+        assert!(cociente < 10.0, "m = {M_MAX}: {tt:?} frente a {t3:?} en m = 3 ({cociente:.1})");
     }
 }
 

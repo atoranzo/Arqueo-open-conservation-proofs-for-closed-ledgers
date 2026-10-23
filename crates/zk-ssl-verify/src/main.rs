@@ -5529,8 +5529,9 @@ mod tests_maleabilidad {
 /// **§717, el coste del juez de la edad.** El mando no fija la clave del operador: verifica
 /// la cabeza con la que ella trae. Un paquete de edad con una cabeza firmada con una clave propia y
 /// una prueba que solo tiene la forma elige `m` (por `nextPending`), y el juez pagaba un coste
-/// lineal en `2^m` antes de la primera comprobacion contra la prueba. Los tres negativos de
-/// `spec/vectors/edad/` que lo cubren se rechazan con su causa y en el tiempo de uno honesto.
+/// lineal en `2^m` antes de la primera comprobacion contra la prueba. Los cuatro negativos de
+/// `spec/vectors/edad/` que lo cubren (tres del §717 y uno del §721) se rechazan con su causa y en
+/// el tiempo de uno honesto.
 #[cfg(test)]
 mod tests_coste_edad {
     use std::time::{Duration, Instant};
@@ -5550,16 +5551,19 @@ mod tests_coste_edad {
         (mejor, r)
     }
 
-    /// Los tres paquetes de atacante caen con su causa: sobre el tope de `m` (`m = 17`, y
+    /// Los cuatro paquetes de atacante caen con su causa: sobre el tope de `m` (`m = 17`, y
     /// `m = 23`, la mayor que el lector de la prueba admite), por el enunciado y antes de leer la
     /// prueba; en el tope (`m = 13`), en la coherencia OOD. Las `m` las fija cada vector, no el
-    /// tope: las causas valen con cualquier tope de 13 a 16. Y ninguno cuesta mas de cinco veces
-    /// lo que el paquete honesto de `edad-todos.json` (`m = 3`, una prueba real y su firma): con el
-    /// kit de antes de este arreglo, el de `m = 17` costaba mas de un segundo de CPU y el de
-    /// `m = 23` mas de un minuto (medido con el mando). El tiempo solo se exige sin las aserciones
-    /// de depuracion: con ellas el test no sabe si corre optimizado -el perfil `aserciones` del
-    /// «1 bis» del canon (§864), con los pines de la fila del kit- o en depuracion, donde el
-    /// cronometro no mide el juez de release; ahi comprueba las causas, y no se ignora.
+    /// tope: las tres primeras causas valen con cualquier tope de 13 a 16. La cuarta (§721),
+    /// `m = 14` (`nextPending` = `2^13 + 1`, la marca mas pequena sobre el tope), cae por el tope
+    /// solo si el tope es 13: con 14 llegaria a la coherencia OOD. Con la de `m = 13`, fija el tope
+    /// en 13. Y ninguno cuesta mas de cinco veces lo que el paquete honesto de `edad-todos.json`
+    /// (`m = 3`, una prueba real y su firma): con el kit de antes de este arreglo, el de `m = 17`
+    /// costaba mas de un segundo de CPU y el de `m = 23` mas de un minuto (medido con el mando). El
+    /// tiempo solo se exige sin las aserciones de depuracion: con ellas el test no sabe si corre
+    /// optimizado -el perfil `aserciones` del «1 bis» del canon (§864), con los pines de la fila del
+    /// kit- o en depuracion, donde el cronometro no mide el juez de release; ahi comprueba las
+    /// causas, y no se ignora.
     #[test]
     fn un_paquete_de_edad_de_m_alto_se_rechaza_en_milisegundos() {
         let (t_honesto, r) = por_el_mando(&vector("edad/edad-todos.json"));
@@ -5568,6 +5572,7 @@ mod tests_coste_edad {
             ("edad/neg-m-sobre-tope.json", "edad: m = 17 fuera de 3..="),
             ("edad/neg-m-mayor-legible.json", "edad: m = 23 fuera de 3..="),
             ("edad/neg-m-13-fabricada.json", "edad: InconsistentOodConstraintEvaluations"),
+            ("edad/neg-m-14-sobre-tope.json", "edad: m = 14 fuera de 3..="),
         ];
         for (nombre, causa) in casos {
             let (t, r) = por_el_mando(&vector(nombre));

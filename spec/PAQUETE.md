@@ -300,7 +300,8 @@ donde el valor es una respuesta del cable sin reescribir.
   forma elegía ese coste. 13 es la mayor `m` cuya prueba, con la traza oculta de producción, cabe
   en las dos cotas de la puerta del RFC-0007 (un latido y media RAM de la máquina de referencia):
   `m` = 14 no cabe (§717). El probador de la casa y el productor de la capa aplican el mismo tope,
-  este antes de leer el libro.
+  este antes de leer el libro. Dos vectores de `spec/vectors/edad/` fijan el valor (§721):
+  `neg-m-13-fabricada.json` llega a la prueba y `neg-m-14-sobre-tope.json` cae por el tope.
 - El juez es `zk_ssl_air::verificar_contra_cabeza` (`crates/zk-ssl-air`), que el kit compila
   **sin el probador**: sube las dos subraíces a 32 niveles, las compara con las raíces firmadas
   y verifica la prueba con las `proof_options()` de la casa y sólo con ellas.
@@ -1798,6 +1799,14 @@ la causa entera. Con el kit de antes del §717 los tres daban ROJO en la coheren
 de CPU en `m` = 13, 1,1 s en `m` = 17 y más de un minuto y 531 MB en `m` = 23 (medido en privado):
 el coste lo elegía quien enviaba el paquete.
 
+**Desde el §721 un cuarto vector fija el valor del tope.** Los tres del §717 dicen lo mismo con
+cualquier tope de 13 a 16. `neg-m-14-sobre-tope` sale del mismo guion, con la misma clave de test:
+`nextPending` = `2^13 + 1`, la marca más pequeña sobre 13, y una prueba fabricada de `m` = 14. Cae
+por el tope antes de leer la prueba, y el manifiesto pina su causa con su `m` y sin el tope. Con un
+tope de 14 llegaría a la prueba y caería en la coherencia OOD. Junto con `neg-m-13-fabricada`, el
+tope queda en 13 y en ningún otro valor: con 12, aquel cae por el tope; con 14 o más, este llega a
+la prueba.
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1929,6 +1938,9 @@ el coste lo elegía quien enviaba el paquete.
   exenciones de la ocultación en flujo. Hasta aquí, un paquete con una cabeza de firma propia y una
   prueba fabricada elegía el coste del juez, lineal en `2^m`. `fuera de 3..=` entra en «la regla no
   se sostiene» de la 6.1; tres vectores nuevos en `edad/`, ninguno reescrito (sección 9).
+- §721 — el valor del tope de `m`, fijado: un vector nuevo en `edad/`, `neg-m-14-sobre-tope`, que
+  con `neg-m-13-fabricada` deja el tope en 13 y en ningún otro valor; ninguno reescrito (2.7 y
+  sección 9).
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto
