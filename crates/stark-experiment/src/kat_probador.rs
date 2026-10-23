@@ -93,11 +93,13 @@ mod work {
     }
 }
 
-mod banda {
+// §723, la ventana del saldo privado: la banda de la foto es la v1, la que se midio. La
+// v2 tiene su propio KAT (`kat_banda_v2.rs`), con este mismo probador y el mismo escenario.
+pub(crate) mod banda {
     use super::asierta;
     use crate::circuit_banda::{
-        opciones, trazar, BandaAir, BandaPublicInputs, BandaWitness, Digest, COL_ID, COL_LOWER,
-        COL_UPPER, PROFUNDIDAD, ROW_RAIZ,
+        opciones, trazar, BandaAirDe, BandaAirV1, BandaPublicInputs, BandaWitness, Digest, COL_ID,
+        COL_LOWER, COL_UPPER, PROFUNDIDAD, ROW_RAIZ,
     };
     use crate::merkle::{native_merge, MerklePath};
     use crate::native::{native_climb, native_leaf_salted};
@@ -116,13 +118,14 @@ mod banda {
     /// El probador PROPIO de la foto (D-Y): el `impl Prover for BandaProver` de `circuit_banda.rs`
     /// (S477), copiado y no compartido; `MerkleTree<Blake3>` como `VC` y la ocultacion apagada,
     /// el `None` que el trait provee. Solo lo mueve una version nueva de winterfell, con asiento.
-    struct ProbadorBanda {
-        options: ProofOptions,
+    /// §723: con la version de la banda como parametro: la foto prueba la v1.
+    pub(crate) struct ProbadorBanda<const V: u8> {
+        pub(crate) options: ProofOptions,
     }
 
-    impl Prover for ProbadorBanda {
+    impl<const V: u8> Prover for ProbadorBanda<V> {
         type BaseField = BaseElement;
-        type Air = BandaAir;
+        type Air = BandaAirDe<V>;
         type Trace = TraceTable<BaseElement>;
         type HashFn = Blake3;
         type VC = MerkleTree<Blake3>;
@@ -197,7 +200,7 @@ mod banda {
     }
 
     /// `escenario(balance)` de los tests de circuit_banda.rs, copiado: el operador sin clave.
-    fn escenario(balance: u64) -> (BandaWitness, Digest) {
+    pub(crate) fn escenario(balance: u64) -> (BandaWitness, Digest) {
         let mut vacios = vec![[BaseElement::ZERO; 4]];
         for k in 1..=PROFUNDIDAD {
             let previo = vacios[k - 1];
@@ -237,7 +240,7 @@ mod banda {
     fn kat_banda() {
         let (w, root) = escenario(1_000_000);
         let (lower, upper) = (0u64, 4_999_999u64);
-        let bytes = ProbadorBanda { options: opciones() }
+        let bytes = ProbadorBanda::<1> { options: opciones() }
             .prove(trazar(&w, lower, upper))
             .expect("prove")
             .to_bytes();
@@ -248,7 +251,7 @@ mod banda {
             upper: BaseElement::new(upper),
         };
         let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
-        verify::<BandaAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        verify::<BandaAirV1, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
             Proof::from_bytes(&bytes).expect("from_bytes"),
             declarado,
             &aceptadas,

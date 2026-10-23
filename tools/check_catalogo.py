@@ -82,9 +82,11 @@ TABLA_E = {
     'actas_del_sobre::actas[{}]: {}': ('opaco', [(V + 'actas.rs', 'fn:acta_de_json')]),
     'camino_mmr::camino[{}]: {}': ('opaco', [(H, 'Display:FormatoError')]),
     'camino_de::{}: siblings[{}]: {}': ('opaco', [(H, 'Display:FormatoError')]),
-    'verificar_rechazo::banda: {}': ('enumera', [(A + 'banda.rs', 'fn:verificar'),
-                                                 (A + 'banda.rs', 'fn:comprobar_enunciado'),
-                                                 (A + 'lib.rs', 'fn:comprobar_marca')]),
+    # §723: el sobre de rechazo se juzga en `verificar_rechazo_diferido`, que aplaza el cuarto estado
+    # de la banda de la v1; y el juez de la banda, con sus dos versiones, vive en `verificar_con`
+    'verificar_rechazo_diferido::banda: {}': ('enumera', [(A + 'banda.rs', 'fn:verificar_con'),
+                                                          (A + 'banda.rs', 'fn:comprobar_enunciado'),
+                                                          (A + 'lib.rs', 'fn:comprobar_marca')]),
     'verificar_edad::edad: {}': ('enumera', [(A + 'lib.rs', 'fn:verificar_contra_cabeza'),
                                              (A + 'lib.rs', 'fn:comprobar_enunciado'),
                                              (A + 'lib.rs', 'fn:comprobar_emisor'),   # §718: la cota del emisor, que comprobar_enunciado llama

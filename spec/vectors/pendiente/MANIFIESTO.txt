@@ -38,3 +38,11 @@ neg-inferior-por-encima.json|1|cobro: InconsistentOodConstraintEvaluations
 # valor ya reducido (medido: Ok con el alias); el lector del kit ya lo rechazaba (§640) y se fija
 # aqui. Jamas se reescribe (regla 2 del PROCESO).
 neg-inferior-alias.json|1|inferior: 0xffffffff0003d091 no es canonico
+# §723, la v2 del cobro pendiente (los tres segmentos de rango en 62 bits): los dos positivos
+# de arriba son de la v1, con el superior MAX_VALOR, donde la v1 no deja pasar ningun importe fuera
+# de la banda, y siguen VERDE. Estos dos son las mismas dos formas de D-N con la v2, COPIADOS tal
+# cual de una corrida de `tools/banco_pendiente.sh --guardar <dir>` con el nodo que prueba con la v2
+# (BANCO-PENDIENTE VERDE, exit 0; el aviso y la credencial, con las huellas de arriba). Un kit que
+# solo implemente la v1 los rechaza por la coherencia OOD. Jamas se reescriben (regla 2 del PROCESO).
+cobro-v2-inferior-0.json|0|por al menos 0, nacido en 4
+cobro-v2-inferior-importe.json|0|por al menos 250000, nacido en 4

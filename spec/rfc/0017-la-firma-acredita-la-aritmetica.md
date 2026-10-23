@@ -22,7 +22,8 @@
   subir la versión; lo paga el corte `zkssl/0.5` del RFC-0018 (ver «Compatibilidad»).
 - **Asiento(s) de AUDITORIA:** §641 (la propuesta y sus cuatro etapas); §699 (lo que la E2 cambió en
   las pruebas que viajan, medido, y la corrección de la cabecera); §719 (completa la E2: el segmento
-  del tope de la emisión a pendiente y `solvency`, a 62 bits); §778 (las citas heredadas del
+  del tope de la emisión a pendiente y `solvency`, a 62 bits); §723 (la corrección de la D-3: la
+  banda y el cobro pendiente del kit, a 62 bits con su v2); §778 (las citas heredadas del
   RFC-0015 y del §631, corregidas); §826 (su compatibilidad, escrita, y su sección de seguridad).
   ⚠️ §826: decía «§641.».
 
@@ -112,6 +113,27 @@ Con el probador y el verificador reales (perfil release), sobre la capa:
   upper`— antes de verificar el STARK, así que el tercero que verifica con el kit ya estaba a salvo
   del wraparound por una cota NATIVA. E3 lleva a `circuit_audit` y a `verify_audit` al mismo nivel
   que el kit ya tenía. No se toca ningún AIR del kit, y por tanto ningún vector portable.
+
+  > ⚠️ **Corrección del §723 (la ventana del saldo privado).** Para la banda y el cobro
+  > pendiente, D-3 es falsa. `comprobar_enunciado` acota los límites PÚBLICOS; el saldo de la banda
+  > y el importe del cobro son PRIVADOS, y sólo los acotaba el segmento 0 de su rango, que en el kit
+  > seguía en 63 bits (`primera_s[seg * LARGO_SEGMENTO] = uno`). Con un superior `u` por debajo de
+  > `2^64 - 1 - p = 2^32 - 2`, un valor de la ventana `[2^62, 2^63)` pasaba la banda: medido con el
+  > juez del kit, una hoja con saldo `2^63 - 2^32 + 2` probaba «saldo en `[0, 0]`» y verificaba, y
+  > con `4_999_999` más, `[0, 4_999_999]`; los controles con `2^62 + 1` no verificaban. Una
+  > transición honesta no deja esa hoja, y la capa no la firma (su tope rechaza el saldo al cargar
+  > el almacén y al importar la instantánea), pero un operador que firma una raíz a mano obtenía un
+  > VERDE falso de `InsufficientBalance` ante quien sólo comprueba la cabeza y la banda. El cobro
+  > pendiente tenía la misma forma en `verificar` con un superior pequeño; `verificar_contra_cabeza`
+  > fija el superior en `2^62 - 1`, y ahí la ventana está vacía. El pago en curso es sólido. Lo
+  > cierra una **v2** de `BandaAir` y de `CobroPendienteAir`, con los tres segmentos a 62 bits como
+  > las AIR vivas de E2 (`primera_s[seg * LARGO_SEGMENTO + 1] = uno`), en el kit y en la segunda
+  > implementación. Las pruebas de la v1 ya emitidas se juzgan por su superior: desde `2^32 - 2`
+  > dicen lo que parecen y siguen verificando; por debajo, el mando da el cuarto estado,
+  > «DECLARADA, NO PROBADA» (salida 3). La única prueba de la v1 bajo la cota que ya se publicó,
+  > la de `rechazo/saldo-insuficiente.json` (capturada de un nodo de la casa), sigue VERDE: el juez
+  > la reconoce por la huella de su contenido y su enunciado, en una lista cerrada que no crece, y
+  > ningún vector cambia de veredicto. El texto de arriba se conserva como se escribió.
 - **D-4: el RFC queda PROPUESTO**; aceptarlo es del autor.
 
 ## Compatibilidad
@@ -165,6 +187,22 @@ auditoría, porque la verifica la capa, y la D-G del RFC-0018, en propuesta, la 
 catorce familias que juzga la capa, que el corte versionaría con su marca v2; ni lo uno ni lo otro
 las hace viajar bajo `zkssl/0.4`. No rompe S1 ni S2, y no se suma a las rupturas de `zkssl/0.4` que
 declaran `spec/RPC.md` y los README.
+⚠️ §723: «este RFC no tocó ningún AIR del kit (D-3)», arriba, es cierto del RFC, y la D-3 que lo
+justificaba era falsa para la banda y el cobro pendiente (ver su corrección): el valor que acotan
+es privado, y en el kit su rango seguía en 63 bits. El §723 los baja a 62 bits con una v2 de las
+dos AIR, en el juez del kit, en los probadores y en la segunda implementación. Ésas sí viajan: la
+banda, en el sobre de rechazo `InsufficientBalance` que escribe el nodo (`--prueba-rechazo`), y el
+cobro, en el sobre del cobro pendiente que arma el cliente; las dos las juzga el kit. La v2 cambia
+el selector de una columna periódica, y con él los bytes de esas pruebas: la 0.4.3 y las anteriores
+no verifican una prueba de la v2. Es una ruptura de S2 sin subir la versión, ya bajo la promesa, que
+rige desde el §799, y la paga el mismo corte `zkssl/0.5`, como la de la E2. El kit sigue leyendo la
+v1 ya emitida, por su superior o, la única ya publicada bajo la cota, por su huella en una lista
+cerrada, y por debajo da el cuarto estado, salida 3: un arreglo de seguridad que cambia un
+veredicto dentro de `0.N.x`, con su aviso. Ningún vector publicado cambia de veredicto ni se muda;
+entran once nuevos, con sus líneas al final de los manifiestos de `rechazo/`, `completitud/` y
+`pendiente/`. Se suma a las rupturas de `zkssl/0.4` que declaran `spec/RPC.md`, `spec/README.md` y
+los README; la descripción del OpenRPC habla de las pruebas que un nodo acepta por el cable, y éstas
+no las acepta ninguno, así que no la toca.
 
 ## Seguridad
 
@@ -184,6 +222,7 @@ una auditoría que atribuía su banda a otra cuenta.
 - No toca los AIR del kit (`zk-ssl-air`), ya protegidos por `comprobar_enunciado` (D-3), ni sus
   vectores portables (`edad`, `pendiente`, `pago`, `prenda`), que son capturas no regenerables en
   `--sello`.
+  ⚠️ §723: «ya protegidos» es falso para la banda y el cobro pendiente: ver la corrección de la D-3.
 - No corre `--bancos` ni `--completo`: sólo `--sello`.
 
 ## Lo que corrige de RFC-0016

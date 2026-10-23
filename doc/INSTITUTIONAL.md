@@ -524,8 +524,8 @@ Nothing in this document requires trusting its author.
 ```bash
 git clone [repository]
 cd zk-ssl
-cargo test -p zk-ssl --release              # 546 tests (7 ignored)
-cargo test -p stark-experiment --release    # 479 tests
+cargo test -p zk-ssl --release              # 547 tests (7 ignored)
+cargo test -p stark-experiment --release    # 488 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 

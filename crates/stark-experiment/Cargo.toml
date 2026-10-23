@@ -24,6 +24,12 @@ zk-ssl-air = { path = "../zk-ssl-air" }
 # E3b2-M3: Ocultacion para los probadores encendidos (por [patch.crates-io], el fork).
 winter-prover = "=0.13.1"
 
+# §723, la ventana del valor privado: el constructor de la v1 de `BandaProverDe` y de
+# `CobroPendienteProverDe`, para los generadores de vectores de fuera del workspace. Nada del
+# workspace la enciende: ninguna prueba de la casa sale de la v1.
+[features]
+probador-v1 = []
+
 # RFC-0009 E3a-2 (S534): los falsadores de D-K encienden la ocultacion del nucleo, y `Ocultacion`,
 # `Marca` y `Oculta` no salen por el paraguas `winterfell`, que no esta bifurcado. Solo tests: por
 # el [patch.crates-io] del raiz resuelven al fork del arbol, el mismo crate que usa el paraguas.

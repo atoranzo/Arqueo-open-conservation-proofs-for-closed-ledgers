@@ -28,10 +28,10 @@ use crate::merkle::MerklePath;
 use crate::rescue_hash::{NUM_ROUNDS, STATE_WIDTH};
 
 pub use zk_ssl_air::banda::{
-    comprobar_enunciado, verificar, BandaAir, BandaPublicInputs, ANCHO, COL_BAL, COL_BIT, COL_ID,
-    COL_LEAF_SALT, COL_LOWER, COL_NONCE, COL_SACC, COL_SBIT, COL_UPPER, CYC_ACC, CYC_RAIZ,
-    LARGO_SEGMENTO, MAX_VALOR, NUM_ASERCIONES, NUM_RESTRICCIONES, ROW_ENLACE_HOJA,
-    ROW_ENLACE_SALT, ROW_HOJA_LISTA, ROW_RAIZ, SEGMENTOS, TRAZA,
+    comprobar_enunciado, verificar, BandaAir, BandaAirDe, BandaAirV1, BandaPublicInputs, ANCHO,
+    COL_BAL, COL_BIT, COL_ID, COL_LEAF_SALT, COL_LOWER, COL_NONCE, COL_SACC, COL_SBIT, COL_UPPER,
+    CYC_ACC, CYC_RAIZ, LARGO_SEGMENTO, MAX_VALOR, NUM_ASERCIONES, NUM_RESTRICCIONES,
+    ROW_ENLACE_HOJA, ROW_ENLACE_SALT, ROW_HOJA_LISTA, ROW_RAIZ, SEGMENTOS, TRAZA,
 };
 pub use zk_ssl_air::{opciones, Digest, CICLO, ESTADO, PROFUNDIDAD};
 
@@ -164,11 +164,26 @@ pub fn trazar(w: &BandaWitness, lower: u64, upper: u64) -> TraceTable<BaseElemen
     traza
 }
 
-pub struct BandaProver {
+/// El probador de la banda en su version `V` (la del AIR que prueba).
+pub struct BandaProverDe<const V: u8> {
     options: ProofOptions,
 }
 
-impl BandaProver {
+/// **El probador de la casa**: la v2 ([`BandaAir`]). Desde el §723 (la ventana del saldo
+/// privado), ninguna prueba nueva sale de la v1; su alias solo existe en los tests.
+pub type BandaProver = BandaProverDe<2>;
+
+impl BandaProverDe<2> {
+    pub fn new(options: ProofOptions) -> Self {
+        Self { options }
+    }
+}
+
+/// ⚠️ La v1 se construye solo en los tests y, con la feature `probador-v1`, en los generadores de
+/// vectores de fuera del workspace (`tools/vectores/ventana_banda/`): la regla de que ninguna
+/// prueba de la casa sale de la v1 es del tipo, no de la costumbre.
+#[cfg(any(test, feature = "probador-v1"))]
+impl BandaProverDe<1> {
     pub fn new(options: ProofOptions) -> Self {
         Self { options }
     }
@@ -192,9 +207,9 @@ pub fn probar_con(
     Ok((prueba.to_bytes(), pi))
 }
 
-impl Prover for BandaProver {
+impl<const V: u8> Prover for BandaProverDe<V> {
     type BaseField = BaseElement;
-    type Air = BandaAir;
+    type Air = BandaAirDe<V>;
     type Trace = TraceTable<BaseElement>;
     type HashFn = Blake3;
     type VC = MerkleConSal<Blake3>;
@@ -489,5 +504,126 @@ mod tests {
         let (bytes, pi) = probar_con(traza, otras).expect("probar");
         assert_eq!(pi.root, raiz, "el escenario no es el que se cree");
         assert!(verificar(&bytes, &pi).is_err(), "el juez acepto otras opciones");
+    }
+
+    // ------------------------------------------------------------ §723, la ventana
+
+    /// El saldo del falsador: con la v1, `2^63 - 2^32 + 2` mas el superior cabe en la ventana y
+    /// prueba la banda `[0, superior]` (medido sobre la v1: verificaba con el juez del kit, con
+    /// el superior 0 y con `4_999_999`).
+    const VENTANA: u64 = (1u64 << 63) - (1u64 << 32) + 2;
+
+    /// §723, la v1, solo para medir lo que juzga el kit: las pruebas ya emitidas.
+    type BandaProverV1 = BandaProverDe<1>;
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits altos en la v2, y solo el alto en la
+    /// v1** (`mutation::bits_altos_rechazados`, el molde de las AIR vivas del RFC-0017). Los tres
+    /// segmentos: el saldo y sus dos holguras. Falsador: sin el `if V >= 2` de `zk-ssl-air`, la v2
+    /// da `[true, false, false]` y cae.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+        let (w, root) = escenario(1_000_000);
+        let filas = rows_of(&trazar(&w, 0, 4_999_999), ANCHO, TRAZA);
+        let info = || TraceInfo::new(ANCHO, TRAZA);
+        let pi = || pi(root, w.public_id, 0, 4_999_999);
+        let v2 = BandaAir::new(info(), pi(), opciones());
+        let v1 = BandaAirV1::new(info(), pi(), opciones());
+        for seg in 0..SEGMENTOS {
+            let inicio = seg * LARGO_SEGMENTO;
+            assert_eq!(
+                bits_altos_rechazados(&v2, &filas, COL_SBIT, COL_SACC, inicio, LARGO_SEGMENTO),
+                [true, true, false],
+                "v2, segmento {seg}"
+            );
+            assert_eq!(
+                bits_altos_rechazados(&v1, &filas, COL_SBIT, COL_SACC, inicio, LARGO_SEGMENTO),
+                [true, false, false],
+                "v1, segmento {seg}"
+            );
+        }
+    }
+
+    /// **El probador de la casa no prueba un saldo de la ventana.** La traza del falsador, con la
+    /// v2: el probador oculto la comprueba antes de probar y cae en la fila 1, el bit 62 del
+    /// segmento del saldo. Con `2^62 + 1` (el control, que ya no verificaba con la
+    /// v1) cae en el mismo sitio. Lo mismo en depuracion y en release.
+    #[test]
+    fn un_saldo_de_la_ventana_no_se_prueba() {
+        for (saldo, superior) in
+            [(VENTANA, 0), (VENTANA + 4_999_999, 4_999_999), ((1u64 << 62) + 1, 0)]
+        {
+            let (w, _) = escenario(saldo);
+            let e = BandaProver::new(opciones()).prove(trazar(&w, 0, superior));
+            assert!(
+                matches!(e, Err(winterfell::ProverError::UnsatisfiedTransitionConstraintError(1))),
+                "saldo {saldo}, superior {superior}: {:?}",
+                e.map(|p| p.to_bytes().len())
+            );
+        }
+    }
+
+    /// **El juez del kit rechaza una banda de la ventana con la v2**, cuando el probador es
+    /// malicioso: oculta, como pide el juez, y no comprueba la traza (`sin_comprobar`). La prueba
+    /// llega a `verificar` y cae en la coherencia OOD, con la v2 y con la v1. Con la v1, la misma
+    /// traza y el probador de la casa daban `Ok(())`: el falsador.
+    #[test]
+    #[cfg_attr(debug_assertions, ignore = "en depuracion winterfell comprueba los grados al evaluar y hace panico antes de probar")]
+    fn el_juez_rechaza_un_saldo_de_la_ventana() {
+        use crate::sin_comprobar::{OcultaSinComprobar, TrazaSinComprobar};
+        // El control: con una traza honesta, la prueba del malicioso verifica.
+        let (w, root) = escenario(1_000_000);
+        let honesta = OcultaSinComprobar(BandaProver::new(opciones()))
+            .prove(TrazaSinComprobar(trazar(&w, 0, 4_999_999)))
+            .expect("el malicioso prueba")
+            .to_bytes();
+        assert_eq!(verificar(&honesta, &pi(root, w.public_id, 0, 4_999_999)), Ok(()), "control");
+        for (saldo, superior) in [(VENTANA, 0), (VENTANA + 4_999_999, 4_999_999)] {
+            let (w, root) = escenario(saldo);
+            let declarado = pi(root, w.public_id, 0, superior);
+            let prueba = OcultaSinComprobar(BandaProver::new(opciones()))
+                .prove(TrazaSinComprobar(trazar(&w, 0, superior)))
+                .expect("el malicioso prueba")
+                .to_bytes();
+            assert_eq!(
+                verificar(&prueba, &declarado),
+                Err("InconsistentOodConstraintEvaluations".to_string()),
+                "saldo {saldo}, superior {superior}"
+            );
+        }
+    }
+
+    /// **Una prueba de la v1 se juzga por su superior.** El falsador, con la v1 y el
+    /// probador de la casa: el juez la rehusa con la causa de la ventana. Una honesta de la v1 con
+    /// un superior pequeno, tambien: el juez no distingue una de otra, y por eso el mando la cuenta
+    /// como <<declarada, no probada>> y no como ROJO. Con el superior en la cota o por encima, la v1
+    /// dice lo que parece y verifica; y la v2 honesta verifica con cualquier superior.
+    #[test]
+    fn una_prueba_de_la_v1_se_juzga_por_su_superior() {
+        let v1 = |saldo: u64, superior: u64| {
+            let (w, root) = escenario(saldo);
+            let prueba = BandaProverV1::new(opciones())
+                .prove(trazar(&w, 0, superior))
+                .expect("la v1 prueba")
+                .to_bytes();
+            verificar(&prueba, &pi(root, w.public_id, 0, superior))
+        };
+        let ventana = |u: u64| {
+            format!(
+                "{}: con el superior {u}, bajo {}, no acota el saldo privado: un saldo de la ventana \
+                 [2^62, 2^63) tambien la pasa",
+                zk_ssl_air::PRUEBA_V1_EN_LA_VENTANA,
+                zk_ssl_air::COTA_V1
+            )
+        };
+        assert_eq!(v1(VENTANA, 0), Err(ventana(0)), "el falsador, [0, 0]");
+        assert_eq!(v1(VENTANA + 4_999_999, 4_999_999), Err(ventana(4_999_999)), "el falsador");
+        assert_eq!(v1(1_000_000, 4_999_999), Err(ventana(4_999_999)), "la honesta, bajo la cota");
+        let cota = zk_ssl_air::COTA_V1;
+        assert_eq!(v1(1_000_000, cota), Ok(()), "la honesta, en la cota");
+        assert_eq!(v1(1_000_000, MAX_VALOR), Ok(()), "la honesta, en el techo");
+        let (w, root) = escenario(1_000_000);
+        let (prueba, _) = probar(trazar(&w, 0, 4_999_999)).expect("la v2 prueba");
+        assert_eq!(verificar(&prueba, &pi(root, w.public_id, 0, 4_999_999)), Ok(()), "la v2");
     }
 }

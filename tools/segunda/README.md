@@ -15,7 +15,7 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 | `juez_medio.py` | el **juez del medio** (§810): las 33 notas del §632 con el veredicto de su `MANIFIESTO.txt`, un **firmante de prueba** de FIPS 204 —KeyGen y Sign, solo aquí— que rehace byte a byte las vkeys y las líneas deterministas que firmó Go, las dos firmas de frontera de la norma, una pista donde la parte baja es cero con una clave a medida, la unicidad de la escritura de una firma, la base64, las 98 sondas de inclusión de transparency-dev y el `{:?}` de Rust con el que salen los nombres en un rechazo; y desde el §859, cinco reglas de `mldsa44.py` y `medio.py` que nada aislaba, cada una con su caso y su control |
 | `cable.py` | el **cable en Python**, dos piezas en un fichero, y ⚠️ **ninguna es núcleo** (§797). ⚠️ §809: las dos se escribieron con el mismo nombre de fichero —la cadena en el §797, el consumidor en el §809— y se juntaron en uno sin compartir ningún nombre; `juez_cadena.py` importa la parte I y `main` es de la II. I · la **cadena del registro** como la sirve el cable, `chain_v1` y `chain_v2`, y lo que cada clase asienta como `proofDigest`, escritas desde `spec/RPC.md` §«La composición de `chain`, byte a byte»; es la clase REGISTRO de `NUCLEO.md` (RFC-0005, D-A), y por eso no vive en `nucleo.py`, del que sólo toma las primitivas. II · el **segundo consumidor del cable** (§809): juzga una respuesta de `zkssl_signedEpochHead` desde fichero y sin nodo, como `zk-ssl-cli witness --respuesta` con la memoria fresca —el cuerpo JSON-RPC, con los límites del lector de la referencia, `available`, el tipado del cable, lo que una cabeza firmada tiene que traer, la versión, la clave, la firma, el preámbulo, el `index` y la recomposición—, con el contrato del mando (un argumento, `VERDE: nueva` o una línea `ROJO: <clase> · <texto>`, exit 0/1/2), y lo juzga `tools/conformidad.sh` con el manifiesto del cable, en lugar del adaptador `tools/cable_respuesta.sh`; la cabeza se parte y se recompone con `juez_cabezas.py` y la firma se verifica con `kat_xmss/xmss.py`. Lo que `spec/RPC.md` no escribe lo fija la conducta medida del testigo, como caja negra (abajo, «El segundo consumidor del cable») |
 | `stark.py` | el **verificador STARK** (§626): la maquinaria de `winter-verifier` 0.13.1 en Python, sin dependencias —el formato de `Proof`, la moneda pública sobre Blake3 en el orden exacto de Fiat-Shamir, la autenticación Merkle por lotes con la sal de `MerkleConSal`, el chequeo fuera del dominio, la composición DEEP, FRI y la envoltura `Oculta`—, leída de las fuentes de winterfell y no copiada; `INV_MDS` se calcula invirtiendo la MDS y el autotest la contrasta con la tabla de `winter-crypto` |
-| `airs.py` | las **cinco AIR** del paquete —Banda, Edad, Prenda, CobroPendiente y PagoEnCurso—, **transcritas** de `crates/zk-ssl-air/src/*.rs` restricción a restricción: ninguna RFC escribe sus restricciones y el `.rs` es la única fuente, así que una AIR infra-restringida pasaría aquí igual que allí |
+| `airs.py` | las **cinco AIR** del paquete —Banda, Edad, Prenda, CobroPendiente y PagoEnCurso—, **transcritas** de `crates/zk-ssl-air/src/*.rs` restricción a restricción: ninguna RFC escribe sus restricciones y el `.rs` es la única fuente, así que una AIR infra-restringida pasaría aquí igual que allí. Desde el §723, Banda y CobroPendiente en sus dos versiones, y el `verificar` que las elige |
 | `juez_stark.py` | el **juez del STARK**: compone, para cada vector con prueba, el par que el mando juzga —la prueba y el enunciado, con los campos y la cabeza que lee `zk-ssl-verify`— y lo compara con su `MANIFIESTO.txt`; tres falsadores por positivo |
 | `juez_cadena.py` | el **juez de la cadena** (§797): recompone desde sus entradas cada `chain` de los vectores del cable —en la forma del vector de conformidad o en la de la lista `LogEntry[]` que sirve `zkssl_logEntries`—, dice `OK`, `DECLARADO` o `ROJO <fichero> seq <seq> (<kind>)` por entrada, corre sus falsadores, dice en sus líneas `NOTA` y `SIN EJERCITAR` lo que no ve y cierra con `cadena: N de N cadenas recompuestas` |
 | `wasm_runner.py` | el **envoltorio** para correr `zk-ssl-verify` compilado a `wasm32-wasip1` dentro de wasmtime con el contrato del mando (`PAQUETE.md`, sección 6), para que `tools/conformidad.sh` lo juzgue como al binario nativo |
@@ -42,13 +42,14 @@ python3 tools/segunda/kat_xmss/juez_xmss.py
 #   ⚠️ §722: decia 237 de 237 (§718); los trece vectores de la historia comun, en `rotacion`, la llevan a 250
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
-# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 70 de 70 (§721)
+# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 76 de 76 (§723)
 #   ⚠️ §711: decia 34 de 34 (§706); los cuatro negativos de la prueba mal formada, dos de la edad y dos del pago, la llevan a 38
 #   ⚠️ §713: decia 38 de 38 (§711); el negativo capturado del resto FRI, `edad/neg-prueba-resto-ajeno`, la lleva a 39
 #   ⚠️ §715: decia 39 de 39 (§713); los veintiseis negativos de una sola escritura, quince de la edad y once del pago, la llevan a 65
 #   ⚠️ §717: decia 65 de 65 (§715); los tres negativos del tope de `m` en `edad/` la llevan a 68
 #   ⚠️ §718: decia 68 de 68 (§717); el emisor fuera de las cuentas, en `edad/`, la lleva a 69; los otros cuatro negativos con prueba del §718 caen antes del juez
 #   ⚠️ §721: decia 69 de 69 (§718); el negativo que fija el tope de `m` en 13, `edad/neg-m-14-sobre-tope`, la lleva a 70
+#   ⚠️ §723: decia 70 de 70 (§721); las seis pruebas de la v2 y de la ventana, cuatro de `rechazo` y dos de `pendiente`, la llevan a 76
 python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices, la marca, el orden de Rust, el resto atado, una sola escritura
 python3 tools/segunda/juez_stark.py
 
@@ -237,7 +238,8 @@ ya dice. La fila de la causa del binario, par a par, no se ha vuelto a medir: pi
 compilado.
 
 Esa tabla es la medida del §626 y no se ha rehecho. Los párrafos que siguen dicen lo que cambió
-cada sello; la cifra de hoy es la del §721: 70 de 70 pares.
+cada sello; la cifra de hoy es la del §723: 76 de 76 pares. ⚠️ §723: decía «la del §721: 70 de 70
+pares».
 
 Lo que la medida fijó al escribirlo: que la semilla de Fiat-Shamir es el contexto **más las
 entradas públicas**, de modo que un enunciado mal compuesto no llega ni a la autenticación Merkle;
@@ -352,6 +354,24 @@ callados, en 13 s.
 no su causa. Con `M_MAX = 12`, también 69 de 70: cae `neg-m-13-fabricada` por el tope. Con 13, 70
 de 70, 84 pruebas juzgadas, 39 vectores que caen antes del juez y 33 de 33 falsadores callados, en
 12 s.
+
+**La banda y el cobro pendiente, en sus dos versiones, como el kit (§723).** Desde el §723 Banda y
+CobroPendiente llevan su versión: la 2, con los tres segmentos de rango en 62 bits (el bit 62 a
+cero), y la 1, con los de 63, que solo juzga las pruebas ya emitidas. `airs.verificar_v2_o_v1` es
+el `verificar` de los dos `.rs`: la v2 primero; si no verifica, la v1, aceptada solo con el
+superior en `COTA_V1 = 2^32 - 2` o por encima, y por debajo `V1EnLaVentana`, con el mismo prefijo
+de causa que el juez (un test de `zk-ssl-air` compara las dos líneas). La excepción es
+`PUBLICADAS_V1`: la única prueba de la v1 bajo la cota que ya se publicó
+(`rechazo/saldo-insuficiente.json`), reconocida por la huella de su contenido
+(`huella_del_contenido`, la de `zk-ssl-air`) y su enunciado; otro test de `zk-ssl-air` compara la
+lista con la del juez. El juez STARK compara el cuarto estado del sobre de rechazo (salida 3,
+`DECLARADA, NO PROBADA: banda: …`) con `V1EnLaVentana`. Lo fijan los once vectores del §723: los
+seis con prueba de `rechazo/` y `pendiente/` entran en el juez, y los cinco de `completitud/` caen
+antes. Con el `airs.py` y el `juez_stark.py` anteriores, el juez da 71 de 75 pares —las cuatro
+positivas de la v2, dos de la banda y dos del cobro, caen en la coherencia OOD— y el sobre de la v1
+en la ventana cae antes del juez, con el cuarto estado del mando, y su par da VERDE; con estos, 76
+de 76, 90 pruebas juzgadas, 44 vectores que caen antes del juez y 45 de 45 falsadores callados, en
+15 s.
 
 **La cadena del registro** (§797). ⚠️ Esto mide el **cable**, no el núcleo: `chain` es de la clase
 REGISTRO (`spec/NUCLEO.md` §«2. Las cuatro clases»), su composición no tiene KAT (sus piezas sí:
@@ -503,6 +523,9 @@ antes ni ahora.
 ⚠️ §722: `rotacion` tiene 48 desde el §722, con los trece de la historia común: las 429 de los diez
 no cambian, porque `rotacion` no es uno de ellos, y son 504 en las doce. Lo medido del `.wasm` no
 cambia: que las pase no está medido, ni antes ni ahora.
+⚠️ §723: `rechazo` tiene 88, `completitud` 86 y `pendiente` 13 desde el §723, con los once de la
+ventana: 440 entradas en los diez y 515 en las doce. Lo medido del `.wasm` no cambia: que las pase
+no está medido, ni antes ni ahora.
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 

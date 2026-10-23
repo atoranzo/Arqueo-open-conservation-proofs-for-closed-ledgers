@@ -18,6 +18,13 @@ lo compara con lo que fija el MANIFIESTO de la familia:
   5. y tres falsadores por positivo: un byte volteado en el primer, el segundo y el ultimo tercio
      de la prueba, y los tres tienen que dejar de verificar.
 
+§723, la ventana de la v1: la banda y el cobro pendiente se juzgan como su `verificar`,
+con la v2 y, si no verifica, con la v1 solo donde su ventana esta vacia (`airs.verificar_v2_o_v1`).
+Un rechazo cuya banda es de la v1 con el superior bajo la cota sale del mando con el cuarto estado
+(codigo 3, «DECLARADA, NO PROBADA: banda: ...»), y aqui se compara como tal: el par tiene que dar
+`V1EnLaVentana` con esa causa. La v1 ya publicada (`airs.PUBLICADAS_V1`, la de
+`rechazo/saldo-insuficiente.json`) sigue VERDE, como en el kit.
+
 Los vectores del cable 0.3 (`spec/vectors/0.3/`) quedan FUERA: sin ocultar y sin sal, con las AIR
 de `0eda58c`, y el kit de hoy no los verifica (rechaza su forma, D-AD).
 
@@ -166,8 +173,11 @@ PARES = {"rechazo": par_rechazo, "edad": par_edad, "pago": par_pago, "pendiente"
          "prenda": par_prenda, "completitud": par_completitud}
 
 
+DECLARADA_NO_PROBADA = "DECLARADA, NO PROBADA: "
+
+
 def esperado(familia, codigo, texto):
-    """'VERDE', ('ROJO', causa) o None (no se compara)."""
+    """'VERDE', ('ROJO', causa), ('DECLARADA', causa) o None (no se compara)."""
     if familia == "completitud":
         if codigo == 0 and "PRENDA aceptada" in texto:
             return "VERDE"
@@ -179,6 +189,8 @@ def esperado(familia, codigo, texto):
     if codigo == 0:
         return "VERDE"
     pre = PREFIJO[familia]
+    if codigo == 3 and texto.startswith(DECLARADA_NO_PROBADA + pre):
+        return ("DECLARADA", texto[len(DECLARADA_NO_PROBADA + pre):].strip())
     if texto.startswith(pre):
         return ("ROJO", texto[len(pre):].strip())
     if any(m in texto for m in MENSAJES_DEL_JUEZ):
@@ -188,8 +200,13 @@ def esperado(familia, codigo, texto):
 
 def juzgar_par(prueba, air):
     try:
-        S.verificar(prueba, air)
+        if hasattr(air, "con_version"):
+            A.verificar_v2_o_v1(prueba, air)
+        else:
+            S.verificar(prueba, air)
         return "VERDE", ""
+    except A.V1EnLaVentana as e:
+        return "DECLARADA", str(e)
     except S.Rechazo as e:
         return "ROJO", str(e)
 
@@ -252,7 +269,7 @@ def main():
                 if quiere == "VERDE":
                     ok = v == "VERDE"
                 else:
-                    ok = v == "ROJO" and quiere[1] in causa
+                    ok = v == quiere[0] and quiere[1] in causa
                 if ok and quiere == "VERDE":
                     vivos = falsadores(prueba, air)
                     falsadores_total += 3

@@ -125,6 +125,10 @@ pub mod solvency;
 // Solo tests, y solo en release.
 #[cfg(test)]
 mod kat_probador;
+// §723, la ventana del saldo privado: el KAT de la banda v2, con el montaje de la foto.
+// Solo tests, y solo en release.
+#[cfg(test)]
+mod kat_banda_v2;
 // RFC-0009 E3a-2 (S534): los siete falsadores de D-K, con el modo oculto solo en ellos, y
 // desde el S537 los dos de D-AH (el probador oculto devuelve Err). Solo tests, en depuracion
 // y en release.
@@ -144,6 +148,11 @@ mod falsadores_aperturas;
 // ocultacion apagada, para que una traza mala llegue al verificador. Solo tests, en release.
 #[cfg(test)]
 mod sin_ocultar;
+// §723, la ventana del valor privado en la banda y el cobro pendiente del kit: un probador
+// que oculta y no comprueba la traza, para que el falsador llegue al juez del kit, que solo acepta
+// pruebas ocultas. Solo tests, en release.
+#[cfg(test)]
+mod sin_comprobar;
 
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, MerkleTree};
 use winterfell::math::{fields::f128::BaseElement, FieldElement};

@@ -127,3 +127,19 @@ rechazo-rech-banda-sin-prueba.json|1|banda: falta prueba o no es cadena 0x
 rechazo-rech-banda-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
 rechazo-rech-banda-pedido-cero.json|1|la causa NO se sostiene: pedir 0 no puede pasar de ningun saldo
 rechazo-rech-banda-techo.json|1|banda: los limites 0 y 4611686018427387904 pasan del techo 4611686018427387903
+# §723, la ventana del saldo privado: la banda v2 (los tres segmentos de rango en 62 bits).
+# Con la v1 y un superior bajo 2^32 - 2, un saldo de la ventana [2^62, 2^63) tambien pasa la banda,
+# y el juez no distingue la prueba honesta de la fabricada: el kit da el cuarto estado. El positivo
+# saldo-insuficiente.json, de arriba, es una banda de la v1 con el superior 1000, y sigue VERDE con
+# su linea: el kit reconoce esa prueba ya publicada por la huella de su contenido y su enunciado,
+# en una lista cerrada (PUBLICADAS_V1 de zk-ssl-air), y ninguna otra. El positivo de la v2 es la
+# captura del banco (tools/banco_rechazo.sh, que lo nombra saldo-insuficiente-banda-v2.json). Los
+# tres de la ventana los arma un operador con su propia clave XMSS de test y una raiz de cuentas de
+# UNA hoja que su capa no firmaria (saldo 2^63 - 2^32 + 1002, pedido 1001), con
+# tools/vectores/ventana_banda.py: el de la v1, con el probador de la casa, daba VERDE con el kit
+# de antes; el de la v2, con un probador que no comprueba la traza y recorta el cociente,
+# cae en la coherencia OOD; y el control, con la misma forma y una hoja honesta (saldo 1000), verifica.
+saldo-insuficiente-banda-v2.json|0|VERDE: InsufficientBalance se sostiene sobre el estado comprometido
+rechazo-rech-banda-ventana-v1.json|3|DECLARADA, NO PROBADA: banda: prueba de la v1 con segmentos de 63 bits
+rechazo-rech-banda-ventana-v2.json|1|banda: InconsistentOodConstraintEvaluations
+rechazo-banda-ventana-control.json|0|VERDE: InsufficientBalance se sostiene sobre el estado comprometido

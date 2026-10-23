@@ -352,10 +352,13 @@ niega "$DIR/neg2-hoja-otra.json"     "NO sube al accountsRoot"      "2-hoja-otra
 # de el -el borde exacto, FONDEO + 1- y la banda que se prueba es [0, FONDEO]. Es la primera
 # corrida de `prueba_de_banda` sobre el libro de un nodo real: su puerta compara el seq y el
 # accountsRoot de la cabeza con los del libro, y aqui se falsa en vivo.
-FILA3=$(grep '^saldo-insuficiente\.json|' "$MANIFIESTO") \
-  || fallo "el MANIFIESTO del rechazo no tiene fila para saldo-insuficiente.json"
+# §723, la banda v2: el nodo prueba con la v2, y la captura de esta causa es la de
+# saldo-insuficiente-banda-v2.json. El positivo de la v1, saldo-insuficiente.json, sigue en el
+# manifiesto con su linea; el juez lo reconoce por su huella (PUBLICADAS_V1).
+FILA3=$(grep '^saldo-insuficiente-banda-v2\.json|' "$MANIFIESTO") \
+  || fallo "el MANIFIESTO del rechazo no tiene fila para saldo-insuficiente-banda-v2.json"
 ESPERADO3=$(printf '%s' "$FILA3" | cut -d'|' -f3)
-[ -n "$ESPERADO3" ] || fallo "la fila de saldo-insuficiente.json no trae texto esperado"
+[ -n "$ESPERADO3" ] || fallo "la fila de saldo-insuficiente-banda-v2.json no trae texto esperado"
 msg "el VERDE de la tercera causa, DERIVADO del MANIFIESTO: <<$ESPERADO3>>"
 
 IMPORTE3=$((FONDEO + 1))

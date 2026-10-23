@@ -1088,6 +1088,17 @@ fn fuentes(dir: &Path) -> Vec<(String, String)> {
     v
 }
 
+/// Las AIR que un fuente implementa: `impl Air for X` y, desde el §723 (la banda y el cobro
+/// pendiente v2), la AIR con version, `impl<const V: u8> Air for XDe<V>`, que se cuenta por su
+/// familia `X`: la v1 y la v2 son una fila, porque revelan lo mismo.
+fn air_implementadas(texto: &str) -> Vec<String> {
+    let mut v = nombres_tras(texto, concat!("impl Air", " for"));
+    for n in nombres_tras(texto, concat!("impl<const V: u8> Air", " for")) {
+        v.push(n.strip_suffix("De").map(str::to_string).unwrap_or(n));
+    }
+    v
+}
+
 /// Los identificadores que siguen a cada aparicion de `patron` en `texto`.
 fn nombres_tras(texto: &str, patron: &str) -> Vec<String> {
     let mut v = Vec::new();
@@ -1117,7 +1128,6 @@ fn el_censo_del_cable_da_fila_a_cada_air_verificada() {
     let crates = zk.parent().expect("la carpeta crates");
     // Los patrones se parten en dos literales: este fichero no se censa a si mismo.
     let verifica = concat!("verify", "::<");
-    let implementa = concat!("impl Air", " for");
     let mut capa = BTreeSet::new();
     let mut hay_par = false;
     for (nombre, texto) in fuentes(&zk.join("src")) {
@@ -1135,14 +1145,14 @@ fn el_censo_del_cable_da_fila_a_cada_air_verificada() {
     }
     let mut kit = BTreeSet::new();
     for (_, texto) in fuentes(&crates.join("zk-ssl-air/src")) {
-        kit.extend(nombres_tras(&texto, implementa));
+        kit.extend(air_implementadas(&texto));
     }
     let mut arbol = BTreeSet::new();
     for entrada in std::fs::read_dir(crates).expect("la carpeta crates") {
         let src = entrada.expect("un crate").path().join("src");
         if src.is_dir() {
             for (_, texto) in fuentes(&src) {
-                arbol.extend(nombres_tras(&texto, implementa));
+                arbol.extend(air_implementadas(&texto));
             }
         }
     }
@@ -1294,7 +1304,13 @@ fn el_censo_de_las_bandas_da_banda_a_cada_familia_oculta() {
                 saltados.push(fichero);
                 continue;
             }
-            ocultos.insert(fichero, nombres_tras(&texto, "type Air ="));
+            // §723: la banda y el cobro pendiente dicen `type Air = XDe<V>`, la AIR con version;
+            // se cuentan por su familia `X`, con la regla de `air_implementadas`.
+            let airs = nombres_tras(&texto, "type Air =")
+                .into_iter()
+                .map(|n| n.strip_suffix("De").map(str::to_string).unwrap_or(n))
+                .collect::<Vec<_>>();
+            ocultos.insert(fichero, airs);
         }
     }
     let modulo = std::fs::read_to_string(zk.join("src/instrumento_revela.rs"))

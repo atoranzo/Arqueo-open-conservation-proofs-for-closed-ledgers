@@ -1201,7 +1201,25 @@ fn verificar_conflicto(p: &serde_json::Value) -> Result<(), String> {
 /// del libro para lo que no tiene setter -el limite regulatorio-. El veredicto es de la CAUSA:
 /// VERDE si se sostiene sobre el estado comprometido; si no, ROJO nombrando por que, y entonces el
 /// sobre es la prueba de que la regla fue un disfraz.
+///
+/// §723, la ventana del saldo privado: una banda de la v1 con el superior bajo la cota no
+/// es VERDE ni ROJO, sino el cuarto estado, salida 3 (ver [`verificar_rechazo_diferido`]).
 fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
+    match verificar_rechazo_diferido(p)? {
+        Some(m) => Err(format!("{DECLARADA_NO_PROBADA}{m}")),
+        None => Ok(()),
+    }
+}
+
+/// El sobre de rechazo, con el cuarto estado de la banda APLAZADO: `Ok(None)` es VERDE, `Err` es
+/// ROJO, y `Ok(Some(m))` dice que todas las reglas del sobre se cumplen, pero que su banda es de la
+/// v1 con el superior bajo la cota y no prueba la causa; `m` es el porque, sin el prefijo.
+///
+/// §723, la ventana del saldo privado. El cuarto estado sale de la ULTIMA comprobacion del
+/// sobre, y quien lo resuelve dentro de otro -los brazos de completitud- lo dice despues de las
+/// suyas: con el `?` de antes, un sobre de completitud que nombraba otra operacion del lote, o otra
+/// marca de la prenda, daba 3 en vez de ROJO (medido).
+fn verificar_rechazo_diferido(p: &serde_json::Value) -> Result<Option<String>, String> {
     let d = p
         .get("data")
         .ok_or_else(|| err("falta data (el objeto del rechazo)".into()))?;
@@ -1582,7 +1600,25 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
                 upper: BaseElement::new(pedido - 1),
             };
             println!("2/3 el enunciado es el de la cuenta nombrada bajo el accountsRoot firmado");
-            verificar_banda(&prueba, &pi).map_err(|e| err(format!("banda: {e}")))?;
+            // §723, la ventana del saldo privado: una banda de la v1 con el superior bajo
+            // la cota no prueba la causa -un saldo de la ventana [2^62, 2^63) tambien la pasa-, y
+            // el juez no distingue la honesta de la fabricada. No es VERDE ni ROJO: el cuarto
+            // estado, con su porque. Es la ultima regla del sobre; quien llama lo dice.
+            let banda = verificar_banda(&prueba, &pi);
+            if let Err(e) = &banda {
+                if e.starts_with(zk_ssl_air::PRUEBA_V1_EN_LA_VENTANA) {
+                    println!(
+                        "3/3 la prueba es de la v1 y su superior queda bajo la cota: no prueba la \
+                         causa"
+                    );
+                    return Ok(Some(format!(
+                        "banda: {e}. El operador declara InsufficientBalance con una prueba de la \
+                         v1, que no lo prueba: una prueba nueva es de la v2"
+                    )));
+                }
+            }
+            // El ROJO va por su `map_err`, el envoltorio que lee `tools/check_catalogo.py` (§777).
+            banda.map_err(|e| err(format!("banda: {e}")))?;
             println!(
                 "3/3 la prueba verifica: el saldo de esa cuenta esta en [0, {}] bajo esa raiz, y \
                  el importe pedido era {pedido}",
@@ -1597,7 +1633,7 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
     }
     println!("VERDE: {causa} se sostiene sobre el estado comprometido. Dice que la regla se");
     println!("       aplico, no que sea justa (RFC-0007)");
-    Ok(())
+    Ok(None)
 }
 
 /// **El paquete de EDAD** (RFC-0007 E4b-2, S465): la prueba de edad de `zk-ssl-air` contra una
@@ -1967,7 +2003,8 @@ const CAUSAS_SIN_PRUEBA_PORTABLE: [&str; 6] = [
 const DECLARADA_NO_PROBADA: &str = "DECLARADA, NO PROBADA: ";
 
 /// El codigo de salida de un veredicto: 0 VERDE, 3 el cuarto estado del sobre de completitud, 1
-/// cualquier otro fallo con nombre. El 2 -uso- lo decide `main` antes de leer nada.
+/// cualquier otro fallo con nombre. El 2 -uso- lo decide `main` antes de leer nada. Desde el
+/// §723, el 3 lo da tambien el sobre de rechazo cuya banda es de la v1 con el superior bajo la cota.
 fn codigo_de_salida(r: &Result<(), String>) -> u8 {
     match r {
         Ok(()) => 0,
@@ -2024,7 +2061,9 @@ fn resolver_por_acuse(
 /// La resolucion por RECHAZO (veredicto 2 del RFC-0010): el sobre de la seccion 2.6, atado al
 /// recibo por su `data.recepcion` (D3), sobre una cabeza del mismo operador dentro de la ventana, y
 /// verificado por sus reglas. `que` nombra el sitio: `resolucion.sobre` en la via directa y en el
-/// lote, `resolucion.rechazo` en la prenda (§613). Devuelve el indice XMSS de su cabeza y su `data`.
+/// lote, `resolucion.rechazo` en la prenda (§613). Devuelve el indice XMSS de su cabeza, su `data`
+/// y, desde el §723, el cuarto estado APLAZADO de su banda, con el sitio: cada brazo lo dice
+/// despues de sus propias comprobaciones, como [`stale_no_resuelve`].
 fn resolver_por_rechazo<'a>(
     sobre: &'a serde_json::Value,
     hash: Digest,
@@ -2032,7 +2071,7 @@ fn resolver_por_rechazo<'a>(
     n: u64,
     cierre: &Cierre,
     que: &str,
-) -> Result<(u64, &'a serde_json::Value), String> {
+) -> Result<(u64, &'a serde_json::Value, Option<String>), String> {
     if sobre.get("tipo").and_then(|t| t.as_str()) != Some("rechazo") {
         return Err(err("resolucion: el sobre no es de tipo rechazo".into()));
     }
@@ -2052,8 +2091,18 @@ fn resolver_por_rechazo<'a>(
         )));
     }
     println!("   la resolucion, como sobre de rechazo:");
-    verificar_rechazo(sobre)?;
-    Ok((s, d))
+    let pendiente = verificar_rechazo_diferido(sobre)?
+        .map(|m| format!("{DECLARADA_NO_PROBADA}{que}: {m}"));
+    Ok((s, d, pendiente))
+}
+
+/// §723, la ventana del saldo privado: el cuarto estado aplazado de la banda de un rechazo
+/// ([`resolver_por_rechazo`]). Cada brazo lo pregunta DESPUES de sus propias comprobaciones.
+fn banda_no_resuelve(pendiente: Option<String>) -> Result<(), String> {
+    match pendiente {
+        Some(m) => Err(m),
+        None => Ok(()),
+    }
 }
 
 /// RFC-0019 E2 (§682): un `StaleState` no resuelve solo. Su causa se sostiene -las raices que el
@@ -2211,10 +2260,11 @@ fn resolver_lote(
             );
         }
         (false, true, false) => {
-            let (s, d) =
+            let (s, d, banda) =
                 resolver_por_rechazo(&x["sobre"], hash, inicio, n, cierre, "resolucion.sobre")?;
             let j = operacion_nombrada(d, k, "resolucion.sobre.data")?;
             stale_no_resuelve(d, s, "resolucion.sobre")?;
+            banda_no_resuelve(banda)?;
             println!(
                 "3/3 RESUELTA como LOTE rechazado con prueba, dentro de la ventana (indice {s}): \
                  la operacion {j} no se sostenia, y sus companeras quedan resueltas por ella -el \
@@ -2417,7 +2467,7 @@ fn resolver_prenda(
             }
         }
         (false, false, true) => {
-            let (s, d) =
+            let (s, d, banda) =
                 resolver_por_rechazo(&x["rechazo"], hash, inicio, n, cierre, "resolucion.rechazo")?;
             let rechazado = d.get("campos").and_then(|c| digest_de(c, "consumo").ok());
             if rechazado != Some(af.marca) {
@@ -2427,6 +2477,7 @@ fn resolver_prenda(
                         .into(),
                 ));
             }
+            banda_no_resuelve(banda)?;
             println!(
                 "3/3 RESUELTA como PRENDA rechazada por la capa, con prueba, dentro de la ventana \
                  (indice {s}): la causa se sostiene sobre el estado comprometido, y el consumo \
@@ -2591,8 +2642,10 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
                 .expect("hay resolucion")
                 .get("sobre")
                 .ok_or_else(|| err("resolucion: falta sobre (el de rechazo)".into()))?;
-            let (s, d) = resolver_por_rechazo(sobre, hash, inicio, n, &contra, "resolucion.sobre")?;
+            let (s, d, banda) =
+                resolver_por_rechazo(sobre, hash, inicio, n, &contra, "resolucion.sobre")?;
             stale_no_resuelve(d, s, "resolucion.sobre")?;
+            banda_no_resuelve(banda)?;
             println!(
                 "3/3 RESUELTA como rechazo con prueba, dentro de la ventana (indice {s}); la \
                  atadura al recibo es la palabra del nodo en su data"
@@ -4830,6 +4883,66 @@ mod tests_marca_651 {
         for v in ["neg-declarada-con-prueba", "neg-declarada-de-otra-operacion"] {
             let r = correr(&format!("{raiz}/{v}.json"));
             assert_eq!(codigo_de_salida(&r), 1, "{v}: {r:?}");
+        }
+    }
+
+    /// §723, la ventana del saldo privado: una banda de la v1 con el superior bajo la cota
+    /// no es VERDE. La del operador que firmo a mano una hoja de la ventana da el cuarto estado,
+    /// salida 3, con su porque. La misma hoja con la banda v2 y un probador malicioso es ROJO por la
+    /// coherencia OOD; el control de la misma forma y la captura de la v2 del banco, VERDE. Y la v1
+    /// ya publicada (`saldo-insuficiente.json`, superior 1000) sigue VERDE: la reconoce la lista
+    /// cerrada de `zk_ssl_air::banda::PUBLICADAS_V1`. Falsador, ensayado: con el kit de antes,
+    /// `rechazo-rech-banda-ventana-v1` daba VERDE.
+    #[test]
+    fn una_banda_de_la_v1_no_es_verde() {
+        let raiz = format!("{}/../../spec/vectors/rechazo", env!("CARGO_MANIFEST_DIR"));
+        let r = correr(&format!("{raiz}/rechazo-rech-banda-ventana-v1.json"));
+        assert_eq!(codigo_de_salida(&r), 3, "{r:?}");
+        let e = r.unwrap_err();
+        let prefijo = format!("{DECLARADA_NO_PROBADA}banda: {}", zk_ssl_air::PRUEBA_V1_EN_LA_VENTANA);
+        assert!(e.starts_with(&prefijo), "{e}");
+        let r = correr(&format!("{raiz}/rechazo-rech-banda-ventana-v2.json"));
+        assert_eq!(r, Err("banda: InconsistentOodConstraintEvaluations".to_string()));
+        for v in ["rechazo-banda-ventana-control", "saldo-insuficiente-banda-v2", "saldo-insuficiente"] {
+            let r = correr(&format!("{raiz}/{v}.json"));
+            assert_eq!(codigo_de_salida(&r), 0, "{v}: {r:?}");
+        }
+    }
+
+    /// §723, la ventana del saldo privado: el cuarto estado de una banda de la v1 se dice
+    /// DESPUES de las comprobaciones de cada brazo de completitud. Los sobres de
+    /// `spec/vectors/completitud/` cuya resolucion es un rechazo `InsufficientBalance` con la banda
+    /// honesta de la v1: bien atados, la salida 3 con el sitio; con la operacion fuera del lote, o
+    /// con otra marca en la prenda, ROJO por lo suyo. Falsador, medido: con el `?` de antes en
+    /// `resolver_por_rechazo`, los dos ROJO daban 3.
+    #[test]
+    fn el_cuarto_estado_de_la_banda_va_despues_de_cada_brazo() {
+        let raiz = format!("{}/../../spec/vectors/completitud", env!("CARGO_MANIFEST_DIR"));
+        let banda = |que: &str| {
+            format!("{DECLARADA_NO_PROBADA}{que}: banda: {}", zk_ssl_air::PRUEBA_V1_EN_LA_VENTANA)
+        };
+        for (v, que) in [
+            ("rechazo-banda-v1-declarada", "resolucion.sobre"),
+            ("lote-banda-v1-declarada", "resolucion.sobre"),
+            ("prenda-banda-v1-declarada", "resolucion.rechazo"),
+        ] {
+            let r = correr(&format!("{raiz}/{v}.json"));
+            assert_eq!(codigo_de_salida(&r), 3, "{v}: {r:?}");
+            assert!(r.as_ref().unwrap_err().starts_with(&banda(que)), "{v}: {r:?}");
+        }
+        for (v, causa) in [
+            (
+                "neg-lote-banda-v1-operacion-fuera",
+                "resolucion.sobre.data: la operacion 1 no esta en un lote de 1",
+            ),
+            (
+                "neg-prenda-banda-v1-marca-otra",
+                "resolucion.rechazo: el consumo que la capa rechazo no es la marca de este sobre",
+            ),
+        ] {
+            let r = correr(&format!("{raiz}/{v}.json"));
+            assert_eq!(r, Err(causa.to_string()), "{v}");
+            assert_eq!(codigo_de_salida(&r), 1, "{v}");
         }
     }
 

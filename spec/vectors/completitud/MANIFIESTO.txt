@@ -168,3 +168,21 @@ neg-rotada-vigente-cadena-corta.json|1|las cabezas llevan claves DISTINTAS y las
 declarada-verification-failed.json|3|DECLARADA, NO PROBADA: el operador declara VerificationFailed, una causa que el RFC-0007 dejo sin prueba portable
 declarada-proof-failed.json|3|DECLARADA, NO PROBADA: el operador declara ProofFailed, una causa que el RFC-0007 dejo sin prueba portable
 lote-declarada-verification-failed.json|3|DECLARADA, NO PROBADA: el operador declara VerificationFailed en la operacion 0 del lote
+# §723, la ventana del saldo privado: una resolucion por rechazo InsufficientBalance cuya banda
+# es de la v1, con el superior 1000 (pedido 1001), sobre una hoja HONESTA (saldo 1000): la que da
+# cualquier nodo de antes de la banda v2. El kit no la acepta como prueba de la causa -un saldo de la
+# ventana [2^62, 2^63) tambien pasa esa banda- y da el cuarto estado, con el sitio. Pero lo dice
+# DESPUES de las comprobaciones de cada brazo: un lote que nombra una operacion que no tiene, o una
+# prenda cuyo consumo rechazado no es su marca, siguen siendo ROJO por lo suyo. Medido: con el kit
+# que lo decia antes (el `?` en resolver_por_rechazo), los dos negativos daban 3; con el kit de antes
+# de este sello, VERDE los tres positivos y ROJO los dos negativos. Los arma un operador con su propia
+# clave XMSS de test, de semilla fija: la cabeza v5 del rechazo (indice 0) y el cierre v6 (indice 1),
+# con UNA hoja de recibo (rx 1, era 1, n 1440, Q 0), con tools/vectores/ventana_banda.py (la orden
+# completitud). Los dos de prenda copian el sobre de prenda de prenda-rechazada-por-la-capa.json: la
+# rama del rechazo no juzga su prueba, solo su digest, que es el hashPrueba del recibo. No son
+# reproducibles byte a byte: cada corrida da otra prueba.
+rechazo-banda-v1-declarada.json|3|DECLARADA, NO PROBADA: resolucion.sobre: banda: prueba de la v1 con segmentos de 63 bits
+lote-banda-v1-declarada.json|3|DECLARADA, NO PROBADA: resolucion.sobre: banda: prueba de la v1 con segmentos de 63 bits
+neg-lote-banda-v1-operacion-fuera.json|1|resolucion.sobre.data: la operacion 1 no esta en un lote de 1
+prenda-banda-v1-declarada.json|3|DECLARADA, NO PROBADA: resolucion.rechazo: banda: prueba de la v1 con segmentos de 63 bits
+neg-prenda-banda-v1-marca-otra.json|1|resolucion.rechazo: el consumo que la capa rechazo no es la marca de este sobre

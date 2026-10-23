@@ -148,6 +148,45 @@ pub fn comprobar_emisor(emisor: u64) -> Result<(), String> {
 /// tope nuevo pide vectores nuevos; los de hoy no se reescriben.
 pub const M_MAX: u32 = 13;
 
+/// **§723, la ventana de la v1 de la banda y del cobro pendiente.** En la v1 los tres
+/// segmentos de rango de [`banda`] y de [`cobro_pendiente`] eran de 63 bits. El valor que acotan
+/// (el saldo, el importe) es PRIVADO, y la cota nativa de `comprobar_enunciado` solo acota los
+/// limites publicos. Con `v` en `[0, 2^63)`, `(v - l) mod p` y `(u - v) mod p` en `[0, 2^63)`, un
+/// `v > u` pasa si `p - (v - u) < 2^63`, es decir, si `v > u + p - 2^63`. Como `v < 2^63`, eso solo
+/// cabe con `u < 2^64 - 1 - p`, que es este numero: `2^32 - 2`. Con `u` desde aqui, la v1 dice lo
+/// que parece; por debajo, un `v` de la ventana `[2^62, 2^63)` tambien la pasa (medido: saldo
+/// `2^63 - 2^32 + 2` con la banda `[0, 0]`). La v2 baja los segmentos a 62 bits y la cierra.
+pub const COTA_V1: u64 = (1u64 << 32) - 2;
+const _: () = assert!(COTA_V1 == u64::MAX - <BaseElement as winter_math::StarkField>::MODULUS);
+
+/// El prefijo de la causa con la que [`banda::verificar`] y [`cobro_pendiente::verificar`] rehusan
+/// una prueba de la v1 cuyo superior queda bajo [`COTA_V1`]. Quien la llama la distingue por el: el
+/// mando del kit la cuenta como <<declarada, no probada>>, no como ROJO, porque una prueba honesta
+/// de la v1 tambien la da.
+pub const PRUEBA_V1_EN_LA_VENTANA: &str = "prueba de la v1 con segmentos de 63 bits";
+
+/// La v1 vale solo donde su ventana esta vacia: con el superior en [`COTA_V1`] o por encima.
+pub fn v1_sin_ventana(superior: u64) -> bool {
+    superior >= COTA_V1
+}
+
+/// La causa que da el juez cuando una prueba no verifica ni con la v2 ni con la v1: la de la version
+/// que llego mas lejos. Una prueba juzgada con la version que no es la suya cae en la coherencia OOD,
+/// la primera comprobacion que mira las restricciones; con la suya pasa de ahi y cae por lo que de
+/// verdad tiene (un nodo de mas, un resto que no es el suyo). Si una de las dos cae por la OOD y la
+/// otra no, la causa es la de la otra; si no, la de la v2. Asi una prueba de la v1 ya emitida y
+/// maleada sigue cayendo con su causa, la misma que con el kit de antes.
+pub fn la_causa_de_la_que_llego_mas_lejos(
+    v2: Result<(), String>,
+    v1: Result<(), String>,
+) -> Result<(), String> {
+    const OOD: &str = "InconsistentOodConstraintEvaluations";
+    match (v2, v1) {
+        (Err(e2), Err(e1)) if e2 == OOD && e1 != OOD => Err(e1),
+        (v2, _) => v2,
+    }
+}
+
 /// Carril A: el arbol de pendientes (doce columnas del estado).
 pub const C_A: usize = 0;
 /// Carril B: el arbol de meta.
@@ -1748,5 +1787,92 @@ mod tests_canonicidad {
             let e = cobro::verificar_contra_cabeza(&[], &af(x), &c).unwrap_err();
             assert!(e.starts_with(NO_LEE), "inferior {x}: {e}");
         }
+    }
+}
+
+/// **§723, la ventana de la v1.** Lo que el circuito de la v1 comprueba de un valor
+/// privado `v` con la banda `[l, u]`, escrito en enteros: `v < 2^63`, `(v - l) mod p < 2^63` y
+/// `(u - v) mod p < 2^63`. Con el de la v2, `2^62` en los tres.
+#[cfg(test)]
+mod tests_ventana_v1 {
+    use super::*;
+    use winter_math::StarkField;
+
+    const P: u128 = BaseElement::MODULUS as u128;
+
+    fn pasa(v: u128, l: u128, u: u128, bits: u32) -> bool {
+        let r = |x: u128| x % P;
+        v < (1 << bits) && r(v + P - l) < (1 << bits) && r(u + P - v) < (1 << bits)
+    }
+
+    /// El mayor `v` fuera de la banda que la v1 deja pasar con el superior `u`: el mas grande de
+    /// los `v < 2^63` con `v > u + p - 2^63`, si lo hay.
+    fn fuera_que_pasa(u: u64) -> Option<u128> {
+        let v = (1u128 << 63) - 1;
+        (v > u as u128 && pasa(v, 0, u as u128, 63)).then_some(v)
+    }
+
+    /// La ventana empieza EXACTAMENTE en [`COTA_V1`]: con el superior una unidad por debajo hay un
+    /// saldo fuera de la banda que la v1 deja pasar, y desde la cota no. Los dos del falsador
+    /// medido (superior 0 y `4_999_999`) estan dentro, y el techo [`banda::MAX_VALOR`] fuera. Con la
+    /// v2, ningun superior deja pasar nada de la ventana. Falsador: con `COTA_V1` una unidad mas
+    /// alta o mas baja, cae la primera o la segunda comparacion.
+    #[test]
+    fn la_ventana_de_la_v1_acaba_en_la_cota() {
+        assert!(fuera_que_pasa(COTA_V1 - 1).is_some(), "bajo la cota hay ventana");
+        assert!(fuera_que_pasa(COTA_V1).is_none(), "en la cota no la hay");
+        assert!(!v1_sin_ventana(COTA_V1 - 1) && v1_sin_ventana(COTA_V1));
+        let w = (1u128 << 63) - (1u128 << 32) + 2;
+        assert!(pasa(w, 0, 0, 63), "el falsador medido, [0, 0]");
+        assert!(pasa(w + 4_999_999, 0, 4_999_999, 63), "el falsador medido, [0, 4_999_999]");
+        assert!(fuera_que_pasa(banda::MAX_VALOR).is_none(), "con el techo, la v1 dice lo que parece");
+        for u in [0u128, 1000, COTA_V1 as u128 - 1, banda::MAX_VALOR as u128] {
+            for v in [1u128 << 62, w, w + u, (1u128 << 63) - 1] {
+                assert!(!pasa(v, 0, u, 62), "la v2 deja pasar {v} con el superior {u}");
+            }
+        }
+    }
+
+    /// La segunda implementacion tiene la misma cota y la misma causa: su `COTA_V1`
+    /// (`tools/segunda/airs.py`) es una linea `COTA_V1 = <valor>` con este valor, y su causa lleva
+    /// el mismo prefijo. Falsador: con `COTA_V1 = 4294967293` en `airs.py`, cae la primera.
+    #[test]
+    fn la_cota_de_la_v1_de_la_segunda_es_la_del_juez() {
+        let ruta = format!("{}/../../tools/segunda/airs.py", env!("CARGO_MANIFEST_DIR"));
+        let fuente = std::fs::read_to_string(ruta).expect("airs.py");
+        let lineas: Vec<&str> =
+            fuente.lines().map(str::trim).filter(|l| l.starts_with("COTA_V1 = ")).collect();
+        assert_eq!(lineas, vec![format!("COTA_V1 = {COTA_V1}")], "la cota de la segunda");
+        let prefijo: Vec<&str> = fuente
+            .lines()
+            .map(str::trim)
+            .filter(|l| l.starts_with("PRUEBA_V1_EN_LA_VENTANA = "))
+            .collect();
+        assert_eq!(
+            prefijo,
+            vec![format!("PRUEBA_V1_EN_LA_VENTANA = \"{PRUEBA_V1_EN_LA_VENTANA}\"")],
+            "el prefijo de la causa"
+        );
+    }
+}
+
+/// §723, la ventana de la v1: la causa cuando ninguna version verifica.
+#[cfg(test)]
+mod tests_causa_v1 {
+    use super::la_causa_de_la_que_llego_mas_lejos as causa;
+
+    /// La version que no es la de la prueba cae en la OOD; la otra, por lo suyo, y esa es la causa.
+    /// Si las dos caen por lo mismo, o por otra cosa las dos, la de la v2. Falsador: devolviendo
+    /// siempre la de la v2, una prueba de cobro de la v1 maleada en el resto dejaba de caer por
+    /// `RemainderCommitmentMismatch` (medido en `zk-ssl-verify`).
+    #[test]
+    fn la_causa_es_la_de_la_version_que_llego_mas_lejos() {
+        let ood = || Err("InconsistentOodConstraintEvaluations".to_string());
+        let resto = || Err("FriVerificationFailed(RemainderCommitmentMismatch)".to_string());
+        let nodo = || Err("TraceQueryDoesNotMatchCommitment".to_string());
+        assert_eq!(causa(ood(), resto()), resto(), "una de la v1 maleada");
+        assert_eq!(causa(resto(), ood()), resto(), "una de la v2 maleada");
+        assert_eq!(causa(ood(), ood()), ood(), "ninguna llega");
+        assert_eq!(causa(nodo(), resto()), nodo(), "las dos pasan de la OOD: la de la v2");
     }
 }

@@ -39,6 +39,19 @@
 //!
 //! La traza y el `Prover` viven en `stark-experiment` (`circuit_banda`), como en el molde del
 //! S463: el AIR tiene UN productor y el probador y el kit lo comparten.
+//!
+//! ## La v2: el saldo a 62 bits (§723)
+//!
+//! El saldo es PRIVADO, y [`comprobar_enunciado`] solo acota los limites publicos. En la v1 los
+//! tres segmentos de rango eran de 63 bits, y con un superior pequeno un saldo de la ventana
+//! `[2^62, 2^63)` probaba la banda: medido, una hoja con saldo `2^63 - 2^32 + 2` probaba <<saldo en
+//! `[0, 0]`>> y verificaba con [`verificar`]. Una transicion honesta no deja esa hoja, pero quien
+//! firma la raiz a mano si. La v2 ([`BandaAir`]) fuerza a cero los DOS bits altos de cada segmento,
+//! como el RFC-0017 hizo en las AIR vivas: el saldo y sus dos holguras caben en 62 bits, y una
+//! resta que da la vuelta ya no cabe. La v1 ([`BandaAirV1`]) solo sigue aqui para juzgar las
+//! pruebas ya emitidas, y [`verificar`] la acepta solo donde su ventana esta vacia
+//! ([`crate::COTA_V1`]). La traza es la misma en las dos: con un saldo honesto, el bit 62 ya es
+//! cero.
 
 use winter_air::proof::Proof;
 use winter_air::{
@@ -188,16 +201,25 @@ pub fn comprobar_enunciado(pi: &BandaPublicInputs) -> Result<(), String> {
 
 // ------------------------------------------------------------------ el AIR
 
-pub struct BandaAir {
+/// El AIR de la banda en su version `V`: la 1, con los segmentos de 63 bits, o la 2, con los de 62.
+pub struct BandaAirDe<const V: u8> {
     context: AirContext<BaseElement>,
     pi: BandaPublicInputs,
 }
 
-impl Air for BandaAir {
+/// **La banda que se prueba y se juzga hoy**: la v2, con el saldo y sus holguras a 62 bits.
+pub type BandaAir = BandaAirDe<2>;
+
+/// ⚠️ La v1, con los segmentos de 63 bits. Solo para juzgar las pruebas ya emitidas: con un
+/// superior bajo [`crate::COTA_V1`] no acota el saldo privado. Nadie prueba con ella.
+pub type BandaAirV1 = BandaAirDe<1>;
+
+impl<const V: u8> Air for BandaAirDe<V> {
     type BaseField = BaseElement;
     type PublicInputs = BandaPublicInputs;
 
     fn new(trace_info: TraceInfo, pub_inputs: Self::PublicInputs, options: ProofOptions) -> Self {
+        assert!(V == 1 || V == 2, "la banda no tiene version {V}");
         assert_eq!(ANCHO, trace_info.width());
         let entera = vec![TRAZA];
         let ciclo = |d: usize| TransitionConstraintDegree::with_cycles(d, entera.clone());
@@ -232,7 +254,7 @@ impl Air for BandaAir {
         }
         assert_eq!(grados.len(), NUM_RESTRICCIONES, "cuenta de grados");
 
-        BandaAir {
+        BandaAirDe {
             context: AirContext::new(trace_info, grados, NUM_ASERCIONES, options),
             pi: pub_inputs,
         }
@@ -288,6 +310,10 @@ impl Air for BandaAir {
         let mut sigue_s = vec![cero; TRAZA];
         for seg in 0..SEGMENTOS {
             primera_s[seg * LARGO_SEGMENTO] = uno;
+            // ⚠️ La v2: tambien la segunda fila, y el bit 62 a cero. 62 bits, no 63 (la cabecera).
+            if V >= 2 {
+                primera_s[seg * LARGO_SEGMENTO + 1] = uno;
+            }
             for p in 0..LARGO_SEGMENTO - 1 {
                 sigue_s[seg * LARGO_SEGMENTO + p] = uno;
             }
@@ -438,7 +464,75 @@ impl Air for BandaAir {
 /// que la prueba declara -ancho, sin segmento auxiliar y longitud [`TRAZA`]- para que un
 /// fichero ajeno no llegue a construir el AIR, y acepta SOLO [`opciones`]. Nunca entra en
 /// panico por lo que traiga la prueba.
+///
+/// Juzga con la v2 ([`BandaAir`]). Si no verifica, prueba la v1 ([`BandaAirV1`]), la de las pruebas
+/// ya emitidas: con un superior en [`crate::COTA_V1`] o por encima la acepta, porque ahi dice lo
+/// mismo que la v2; por debajo la rehusa con la causa [`crate::PRUEBA_V1_EN_LA_VENTANA`], porque un
+/// saldo de la ventana `[2^62, 2^63)` tambien la pasa. La excepcion es [`PUBLICADAS_V1`]: una
+/// prueba de la v1 ya publicada, reconocida por la huella de su contenido y su enunciado. Si
+/// tampoco verifica con la v1, la causa es la de la version que llego mas lejos
+/// ([`crate::la_causa_de_la_que_llego_mas_lejos`]).
 pub fn verificar(prueba: &[u8], pi: &BandaPublicInputs) -> Result<(), String> {
+    verificar_con(prueba, pi, PUBLICADAS_V1)
+}
+
+/// Una prueba de la v1 con el superior bajo [`crate::COTA_V1`] que ya se publico: la huella de su
+/// contenido ([`crate::huella_del_contenido`]) y su enunciado entero. La raiz y la cuenta van como
+/// los bytes de `digest_to_bytes`, en hex sin `0x`.
+pub struct PublicadaV1 {
+    /// Donde vive, para quien la busque.
+    pub vector: &'static str,
+    pub huella: &'static str,
+    pub raiz: &'static str,
+    pub cuenta: &'static str,
+    pub inferior: u64,
+    pub superior: u64,
+}
+
+/// **Las pruebas de la v1 bajo la cota que ya se publicaron, y SOLO esas** (§723, la
+/// ventana del saldo privado). El juez no distingue una banda honesta de la v1 de una fabricada:
+/// por eso rehusa la v1 bajo la cota. Pero esta prueba la capturo un banco de un nodo de la casa, y
+/// su vector pide VERDE desde que se publico: su enunciado es verdadero. La lista cerrada la
+/// reconoce por la huella de su CONTENIDO -sus compromisos: sin el testigo nadie abre otros que
+/// verifiquen- y por su enunciado, y solo despues de que verifique con la v1. Un falsador no
+/// reproduce la huella. ⚠️ No crece: una prueba nueva es de la v2. La segunda implementacion
+/// lleva la misma lista (`PUBLICADAS_V1` de `tools/segunda/airs.py`; un test de aqui las compara).
+pub const PUBLICADAS_V1: &[PublicadaV1] = &[PublicadaV1 {
+    vector: "spec/vectors/rechazo/saldo-insuficiente.json",
+    huella: "95d8fd37865d8d0c8322535b6b8c5edbd0a6eadee05c78dba1a27a19742c32de",
+    raiz: "87b9805f534c39aecaa316fd0d8203f6feab81ba9a8ac7780f033ed465c69f1d",
+    cuenta: "d38feef2725224670cef36f48f56313698363536f76355e95bea532a29660862",
+    inferior: 0,
+    superior: 1000,
+}];
+
+/// ¿Es esta prueba, con este enunciado, una de `publicadas`? Solo la pregunta quien ya la verifico
+/// con la v1.
+fn es_publicada_v1(prueba: &[u8], pi: &BandaPublicInputs, publicadas: &[PublicadaV1]) -> bool {
+    let Some(huella) = crate::huella_del_contenido(prueba) else {
+        return false;
+    };
+    let hex = |b: &[u8]| b.iter().map(|x| format!("{x:02x}")).collect::<String>();
+    let (h, raiz, cuenta) = (
+        hex(&huella),
+        hex(&zk_ssl_hash::digest_to_bytes(&pi.root)),
+        hex(&zk_ssl_hash::digest_to_bytes(&pi.public_id)),
+    );
+    publicadas.iter().any(|e| {
+        e.huella == h
+            && e.raiz == raiz
+            && e.cuenta == cuenta
+            && e.inferior == pi.lower.as_int()
+            && e.superior == pi.upper.as_int()
+    })
+}
+
+/// [`verificar`] con la lista de las publicadas como parametro: los tests la vacian o la tocan.
+fn verificar_con(
+    prueba: &[u8],
+    pi: &BandaPublicInputs,
+    publicadas: &[PublicadaV1],
+) -> Result<(), String> {
     comprobar_enunciado(pi)?;
     let proof =
         Proof::from_bytes(prueba).map_err(|e| format!("la prueba no se deserializa: {e:?}"))?;
@@ -457,8 +551,30 @@ pub fn verificar(prueba: &[u8], pi: &BandaPublicInputs) -> Result<(), String> {
     }
     // §651 (D3-META): la marca es parte de la forma; sin ella, panico en `AIR::new`.
     crate::comprobar_marca(info.meta())?;
+    let v2 = juzgar::<2>(proof.clone(), pi);
+    if v2.is_ok() {
+        return v2;
+    }
+    let v1 = juzgar::<1>(proof, pi);
+    if v1.is_ok() {
+        let u = pi.upper.as_int();
+        if crate::v1_sin_ventana(u) || es_publicada_v1(prueba, pi, publicadas) {
+            return Ok(());
+        }
+        return Err(format!(
+            "{}: con el superior {u}, bajo {}, no acota el saldo privado: un saldo de la ventana \
+             [2^62, 2^63) tambien la pasa",
+            crate::PRUEBA_V1_EN_LA_VENTANA,
+            crate::COTA_V1
+        ));
+    }
+    crate::la_causa_de_la_que_llego_mas_lejos(v2, v1)
+}
+
+/// La verificacion de winterfell con la banda de la version `V`: la UNICA llamada del fichero.
+fn juzgar<const V: u8>(proof: Proof, pi: &BandaPublicInputs) -> Result<(), String> {
     let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
-    verify::<BandaAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+    verify::<BandaAirDe<V>, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
         proof,
         pi.clone(),
         &aceptadas,
@@ -571,5 +687,120 @@ mod tests {
         assert_eq!((ROW_RAIZ + 1).next_power_of_two(), TRAZA);
         assert_eq!(ANCHO, COL_LEAF_SALT + 4);
         assert_eq!(NUM_RESTRICCIONES, C_SALT_IN + 4);
+    }
+
+    /// **§723, la v2.** El selector del primer bit marca DOS filas por segmento en la v2 y
+    /// una en la v1, y ninguna otra columna periodica cambia: las dos versiones son el mismo AIR
+    /// salvo el bit 62 de cada segmento, que la v2 fuerza a cero. Falsador: sin el `if V >= 2`, la
+    /// v2 es la v1 y la primera comparacion cae.
+    #[test]
+    fn la_v2_fuerza_a_cero_el_bit_62_de_cada_segmento() {
+        let v2 = air().get_periodic_column_values();
+        let v1 = BandaAirV1::new(TraceInfo::new(ANCHO, TRAZA), enunciado(), opciones())
+            .get_periodic_column_values();
+        let filas = |c: &[BaseElement]| -> Vec<usize> {
+            c.iter().enumerate().filter(|(_, x)| **x == BaseElement::ONE).map(|(i, _)| i).collect()
+        };
+        let l = LARGO_SEGMENTO;
+        assert_eq!(filas(&v2[P_FIRST_S]), vec![0, 1, l, l + 1, 2 * l, 2 * l + 1], "la v2");
+        assert_eq!(filas(&v1[P_FIRST_S]), vec![0, l, 2 * l], "la v1");
+        assert_eq!(v1.len(), v2.len());
+        for (k, (a, b)) in v1.iter().zip(&v2).enumerate() {
+            if k != P_FIRST_S {
+                assert_eq!(a, b, "la columna periodica {k} cambia de la v1 a la v2");
+            }
+        }
+    }
+
+    /// El valor de texto de `clave` en un vector JSON: lo justo para leer cuatro campos sin
+    /// `serde_json`, que este crate no lleva. Cada clave que se lee aparece una vez, o la primera es
+    /// la buena (`requested` va en `campos` y en `banda`, con el mismo valor).
+    fn campo<'a>(texto: &'a str, clave: &str) -> &'a str {
+        let i = texto.find(&format!("\"{clave}\"")).unwrap_or_else(|| panic!("falta {clave}"));
+        let resto = texto[i + clave.len() + 2..].trim_start().strip_prefix(':').expect(":");
+        let resto = resto.trim_start().strip_prefix('"').expect("una cadena");
+        &resto[..resto.find('"').expect("cierre")]
+    }
+
+    fn de_hex(t: &str) -> Vec<u8> {
+        zk_ssl_hash::bytes_de_hex(t.strip_prefix("0x").unwrap_or(t)).expect("hex")
+    }
+
+    /// La prueba y el enunciado que el mando compone de un sobre de rechazo `InsufficientBalance`
+    /// de `spec/vectors/rechazo/`: la raiz de la cabeza, la cuenta de la banda y `[0, pedido - 1]`.
+    fn del_vector(fichero: &str) -> (Vec<u8>, BandaPublicInputs) {
+        let ruta = format!("{}/../../spec/vectors/rechazo/{fichero}", env!("CARGO_MANIFEST_DIR"));
+        let t = std::fs::read_to_string(&ruta).expect("el vector");
+        let dg = |c: &str| zk_ssl_hash::digest_from_bytes(&de_hex(campo(&t, c))).expect("digest");
+        let pedido = u64::from_str_radix(campo(&t, "requested").trim_start_matches("0x"), 16)
+            .expect("requested");
+        let pi = BandaPublicInputs {
+            root: dg("accountsRoot"),
+            public_id: dg("publicId"),
+            lower: BaseElement::ZERO,
+            upper: BaseElement::new(pedido - 1),
+        };
+        (de_hex(campo(&t, "prueba")), pi)
+    }
+
+    /// **§723, la v1 ya publicada.** La prueba de `saldo-insuficiente.json` es de la v1,
+    /// con el superior 1000, bajo la cota: sin la lista seria la causa de la ventana, y con ella
+    /// verifica, porque su huella y su enunciado son los de [`PUBLICADAS_V1`]. Falsadores: con la
+    /// lista vacia, o con UN byte de su huella cambiado, la misma prueba da la causa de la ventana;
+    /// la del operador de la ventana (`rechazo-rech-banda-ventana-v1.json`, v1 que verifica) no esta
+    /// en la lista; y la publicada con otro superior no verifica.
+    #[test]
+    fn la_v1_publicada_se_reconoce_por_su_huella_y_su_enunciado() {
+        let ventana = |r: Result<(), String>| {
+            r.as_ref().is_err_and(|e| e.starts_with(crate::PRUEBA_V1_EN_LA_VENTANA))
+        };
+        let (prueba, pi) = del_vector("saldo-insuficiente.json");
+        let e = &PUBLICADAS_V1[0];
+        assert_eq!((pi.lower.as_int(), pi.upper.as_int()), (e.inferior, e.superior));
+        assert!(!crate::v1_sin_ventana(e.superior), "la publicada esta bajo la cota");
+        assert_eq!(verificar(&prueba, &pi), Ok(()), "la publicada, con la lista");
+        assert!(ventana(verificar_con(&prueba, &pi, &[])), "sin la lista, la ventana");
+        let mut huella = e.huella.to_string();
+        let otro = if huella.starts_with('0') { "1" } else { "0" };
+        huella.replace_range(0..1, otro);
+        let tocada = [PublicadaV1 { huella: Box::leak(huella.into_boxed_str()), ..*e }];
+        assert!(ventana(verificar_con(&prueba, &pi, &tocada)), "un byte de la huella cambiado");
+        let (falsa, pi_falsa) = del_vector("rechazo-rech-banda-ventana-v1.json");
+        assert!(ventana(verificar(&falsa, &pi_falsa)), "la del operador no esta en la lista");
+        let mut otro_superior = pi.clone();
+        otro_superior.upper = BaseElement::new(999);
+        assert!(verificar(&prueba, &otro_superior).is_err(), "con otro enunciado no verifica");
+        assert!(!ventana(verificar(&prueba, &otro_superior)), "y no por la ventana");
+    }
+
+    /// La segunda implementacion lleva la MISMA lista: su `PUBLICADAS_V1` (`tools/segunda/airs.py`),
+    /// sin comentarios ni blancos, es la de aqui. Falsador: con una tupla de mas, o un digito
+    /// cambiado en `airs.py`, cae.
+    #[test]
+    fn la_lista_de_la_segunda_es_la_del_juez() {
+        let ruta = format!("{}/../../tools/segunda/airs.py", env!("CARGO_MANIFEST_DIR"));
+        let fuente = std::fs::read_to_string(ruta).expect("airs.py");
+        let mut dentro = false;
+        let mut leida = String::new();
+        for l in fuente.lines() {
+            if l.starts_with("PUBLICADAS_V1 = [") {
+                dentro = true;
+            }
+            if dentro && !l.trim_start().starts_with('#') {
+                leida.extend(l.chars().filter(|c| !c.is_whitespace()));
+            }
+            if dentro && l == "]" {
+                break;
+            }
+        }
+        let mut esperada = String::from("PUBLICADAS_V1=[");
+        for e in PUBLICADAS_V1 {
+            esperada.push_str(&format!(
+                "(\"{}\",\"{}\",\"{}\",{},{}),",
+                e.huella, e.raiz, e.cuenta, e.inferior, e.superior
+            ));
+        }
+        esperada.push(']');
+        assert_eq!(leida, esperada, "la lista de la segunda");
     }
 }

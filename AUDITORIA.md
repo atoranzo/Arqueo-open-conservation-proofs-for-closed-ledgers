@@ -72932,3 +72932,422 @@ ni otro banco que el suyo.
   `mmrSize` del relevo menos uno tendría que ser esa. Sin vector.
 - **Los `Cargo.lock` de los generadores van por detrás del corte**: el de este y el de
   `tools/vectores/coste_edad/` dicen `zk-ssl-verify` 0.4.3, y el corte de la serie sube el kit.
+
+## §723 — la banda y el cobro pendiente del kit, a 62 bits: la v2 cierra la ventana [2^62, 2^63) sobre el saldo y el importe que la prueba no revela; la v1 ya emitida se juzga por su superior, desde 2^32 - 2, la ya publicada por su huella en una lista cerrada, y por debajo es el cuarto estado, dicho después de las comprobaciones de cada brazo de completitud; la corrección de la D-3 del RFC-0017 y once vectores
+
+El commit que lleva este asiento, sobre `3ff8069` (el §722). Un solo sello: la v2 de las AIR de la
+banda y del cobro pendiente en `crates/zk-ssl-air` (`src/banda.rs`, `src/cobro_pendiente.rs` y, en
+`src/lib.rs`, la cota de la v1, el prefijo de su causa y la regla de la causa), con la lista
+cerrada `banda::PUBLICADAS_V1`; el cuarto estado del sobre de rechazo en el mando
+(`crates/zk-ssl-verify/src/main.rs`); los probadores con versión, la feature `probador-v1` y
+`src/sin_comprobar.rs`, nuevo y sólo de tests, en `crates/stark-experiment`, con el KAT de la v2
+(`src/kat_banda_v2.rs`, nuevo) y el de la v1 sin moverse (`src/kat_probador.rs`); un test de la capa
+(`crates/zk-ssl/src/tests_canonicidad.rs`) y los dos censos de la capa que leen las AIR por su
+nombre (`crates/zk-ssl/src/instrumento_revela.rs` y `src/nivel_de_produccion/censo.rs`); la segunda
+implementación (`tools/segunda/airs.py`, `juez_stark.py` y su README); once vectores en `rechazo/`,
+`completitud/` y `pendiente/`, con líneas añadidas al final de sus manifiestos y sus huellas; el
+generador de ocho de ellos, `tools/vectores/ventana_banda.py` y `tools/vectores/ventana_banda/`,
+nuevos; `tools/banco_rechazo.sh`; la fila de la banda en `tools/check_catalogo.py`;
+`spec/PAQUETE.md` (2.6, 2.8, 2.11 y las secciones 5, 6, 6.1 y 9); la corrección de la D-3 del
+RFC-0017, con su compatibilidad; `spec/RPC.md`, `spec/README.md` y la fila del protocolo de los dos
+README; los pines de `tools/canon.sh`; las cifras de tests de los documentos vivos; el recuento de
+`spec/vectors/` en los dos README y en la superficie de `spec/RPC.md`; y este asiento. Lo escribe y
+lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera
+del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: el kit publicado daba VERDE a un sobre de rechazo
+`InsufficientBalance` cuya banda no acota el saldo. Sale con los demás arreglos de la publicación
+conjunta. La corrección de la D-3 del RFC-0017 se redactó en privado, con el código, y entra en este
+sello, como pide esa misma cláusula. Lo midió en privado una sesión de Claude Code, sobre `161a233`
+(el §690) con los arreglos del §711 al §722 tal como se hicieron en privado; este sello lo lleva a
+`3ff8069` («Al portar», abajo), y lo que se volvió a correr aquí está en «Medido sobre este
+árbol». El canon entero se corre sobre la punta de la serie, no sobre cada sello.
+
+**De dónde sale.** El RFC-0017 (§641) bajó a 62 bits el rango de los AIR de la capa: dos filas del
+selector por segmento, y los bits 63 y 62 a cero. Su D-3 dejó fuera los del kit: el tercero que
+verifica con el kit «ya estaba a salvo del wraparound por una cota NATIVA», `comprobar_enunciado`.
+Eso vale para los límites de la banda, que son públicos. El saldo de la banda y el importe del cobro
+pendiente no se publican: los acota el rango de la prueba, y en el kit cada segmento seguía en 63
+bits. Lo que la v1 comprueba de un valor `v` con la banda `[l, u]`, en enteros, es `v < 2^63`,
+`(v - l) mod p < 2^63` y `(u - v) mod p < 2^63`. Con `v > u`, la última es `u - v + p < 2^63`, y un
+`v` bajo `2^63` la cumple sólo si `u < 2^64 - 1 - p = 2^32 - 2`. Con un superior por debajo de esa
+cota, un valor de la ventana `[2^62, 2^63)` pasa la banda. En el sobre de rechazo el superior es
+`requested - 1`. Lo midió una revisión adversarial de sólo lectura del trabajo del §719. El §719 no
+lo nombra: un fallo sin arreglo no se publica, y los dos salen juntos.
+
+**Lo que hace.**
+
+1. **La v2 de las dos AIR** (`zk-ssl-air`). `BandaAirDe<const V: u8>` y `CobroPendienteAirDe<V>`;
+   `BandaAir` y `CobroPendienteAir` son la v2, y los alias `…V1` juzgan lo ya emitido. La única
+   diferencia: con `V >= 2`, `primera_s[seg * LARGO_SEGMENTO + 1] = uno`, el bit 62 de cada uno de
+   los tres segmentos a cero, como las AIR vivas del RFC-0017. Ancho, columnas, restricciones y
+   grados no cambian: un uno más en una columna periódica. La traza es la misma: con un valor
+   honesto el bit 62 ya es cero.
+2. **El juez lee las dos versiones** (`banda::verificar` y `cobro_pendiente::verificar`). La forma,
+   la marca y el enunciado, una vez; después la v2; si no verifica, la v1. La v1 vale con el
+   superior en `COTA_V1` (`2^32 - 2`) o por encima. Su derivación va en el comentario, y una
+   aserción en compilación la ata a `u64::MAX - p`. Por debajo, `Err` con el prefijo
+   `PRUEBA_V1_EN_LA_VENTANA`, «prueba de la v1 con segmentos de 63 bits». Si no verifica ninguna,
+   la causa es la de la versión que llegó más lejos (`la_causa_de_la_que_llego_mas_lejos`): una
+   prueba juzgada con la versión que no es la suya cae en la coherencia OOD, y una de la v1 maleada
+   sigue cayendo con su causa, la de antes. Una sola llamada a `verify::<` por fichero, como pide
+   `toda_verificacion_del_kit_lee_con_sal`.
+3. **La lista cerrada `banda::PUBLICADAS_V1`.** La única prueba de la v1 bajo la cota que ya se
+   publicó es la de `rechazo/saldo-insuficiente.json`, que capturó un banco de un nodo de la casa,
+   con el superior 1000. El juez la reconoce por la huella de su contenido (`huella_del_contenido`,
+   §715), su raíz, su cuenta y su banda, y sólo después de que verifique con la v1. Lo único que
+   levanta es la regla de la ventana. La segunda lleva la misma lista. La lista no crece. Así ningún
+   vector publicado cambia de veredicto ni se muda.
+4. **El mando: el cuarto estado del sobre de rechazo.** Una banda de la v1 bajo la cota no prueba
+   la causa —un saldo de la ventana también la pasa— y el juez no distingue la honesta de la
+   fabricada. No es VERDE ni ROJO: `DECLARADA, NO PROBADA: banda: prueba de la v1 con segmentos de
+   63 bits: …`, salida 3, en la última regla del sobre. `verificar_rechazo_diferido` lo devuelve
+   aplazado, y `verificar_rechazo` lo convierte en ese texto. En completitud, la vía directa, el
+   lote y la prenda lo dicen con su sitio (`DECLARADA, NO PROBADA: resolucion.sobre: banda: …` o
+   `resolucion.rechazo: banda: …`) y DESPUÉS de sus comprobaciones —la operación nombrada, la marca
+   y `stale_no_resuelve`—, con `banda_no_resuelve`: un lote que no tiene la operación, o una prenda
+   con otra marca, siguen siendo ROJO por lo suyo.
+5. **Los probadores** (`stark-experiment`). `BandaProverDe<V>` y `CobroPendienteProverDe<V>`;
+   `BandaProver` y `CobroPendienteProver` son la v2, así que la capa y el nodo prueban con la v2 sin
+   tocarse. El constructor de la v1 sólo existe en los tests y con la feature `probador-v1`, que nada
+   del workspace enciende: la enciende el generador de los vectores. `sin_comprobar.rs`, nuevo y
+   sólo de tests, es un probador que no comprueba la traza y recorta el cociente a lo que cabe, para
+   que un falsador llegue al juez del kit con la forma que el juez acepta (§651). Con una traza
+   honesta su prueba verifica: es el control. El KAT de la banda (`kat_probador.rs`) sigue midiendo
+   la v1, 49.418 B, sin moverse. `kat_banda_v2.rs`, nuevo, fija la v2 con el montaje de esa foto:
+   49.693 B y blake3 `79f93f1d…ae2a2ac`. Es un pin de regresión, no una foto de winterfell sin
+   bifurcar.
+6. **Los tests nuevos**, con su causa exacta:
+   - en `circuit_banda` y `circuit_cobro_pendiente`: `un_saldo_de_la_ventana_no_se_prueba` y
+     `un_importe_de_la_ventana_no_se_prueba` (el probador de la casa rehúsa la traza del falsador
+     con `UnsatisfiedTransitionConstraintError(1)`, el bit 62 del segmento 0, en depuración y en
+     release); `el_juez_rechaza_un_saldo_de_la_ventana` y `el_juez_rechaza_un_importe_de_la_ventana`
+     (con `sin_comprobar`, la prueba llega al juez y cae con `InconsistentOodConstraintEvaluations`,
+     y su control honesto verifica; sólo en release); `una_prueba_de_la_v1_se_juzga_por_su_superior`;
+     y `cada_segmento_fuerza_a_cero_sus_dos_bits_altos`, con `bits_altos_rechazados` del §719: la v2
+     da `[true, true, false]` y la v1 `[true, false, false]` en los tres segmentos;
+   - en `zk-ssl-air`: `la_v2_fuerza_a_cero_el_bit_62_de_cada_segmento` (en las dos AIR),
+     `la_ventana_de_la_v1_acaba_en_la_cota`, `la_cota_de_la_v1_de_la_segunda_es_la_del_juez`,
+     `la_causa_es_la_de_la_version_que_llego_mas_lejos`,
+     `la_v1_publicada_se_reconoce_por_su_huella_y_su_enunciado` y
+     `la_lista_de_la_segunda_es_la_del_juez`;
+   - en el kit: `una_banda_de_la_v1_no_es_verde` y
+     `el_cuarto_estado_de_la_banda_va_despues_de_cada_brazo`;
+   - en la capa: `tests_canonicidad::una_hoja_de_la_ventana_no_abre_ni_se_importa`. No es un
+     falsador del arreglo: pasa también antes. Fija lo medido para la severidad (abajo).
+7. **La segunda implementación.** `airs.py`: `Banda` y `CobroPendiente` con `version` (la 2 por
+   defecto), el bit 62 en sus periódicas, `COTA_V1`, `PRUEBA_V1_EN_LA_VENTANA`, `V1EnLaVentana`,
+   `PUBLICADAS_V1`, `huella_del_contenido` y `verificar_v2_o_v1`, con la misma regla de la causa.
+   `juez_stark.py` juzga la banda y el cobro con ella y compara la salida 3 del rechazo con
+   `V1EnLaVentana`. Dos tests de `zk-ssl-air` comparan la cota, el prefijo y la lista con los del
+   juez.
+8. **Once vectores**, ficheros nuevos, con sus líneas al final de su manifiesto y sus huellas (§692):
+   - `rechazo/`: `saldo-insuficiente-banda-v2.json`, la captura de `tools/banco_rechazo.sh --guardar`
+     con la v2, VERDE; `rechazo-rech-banda-ventana-v1.json`, el sobre de un operador que firma a
+     mano, con una clave XMSS de test, una raíz de cuentas de una hoja con saldo
+     `2^63 - 2^32 + 1002`, y pide 1001: salida 3, y con el kit de antes de este sello, VERDE;
+     `rechazo-rech-banda-ventana-v2.json`, la misma hoja con la v2 y el probador que no comprueba la
+     traza: `banda: InconsistentOodConstraintEvaluations`; y `rechazo-banda-ventana-control.json`, la
+     misma forma con una hoja honesta, saldo 1000, VERDE;
+   - `completitud/`: cinco sobres del mismo operador —la cabeza del rechazo, el cierre v6 y una hoja
+     de recibo— cuya resolución es un rechazo `InsufficientBalance` con la banda honesta de la v1,
+     saldo 1000 y pedido 1001. `rechazo-banda-v1-declarada.json`, `lote-banda-v1-declarada.json` y
+     `prenda-banda-v1-declarada.json` dan 3 con el sitio; `neg-lote-banda-v1-operacion-fuera.json` y
+     `neg-prenda-banda-v1-marca-otra.json`, ROJO por lo suyo. Los dos de prenda copian el sobre de
+     prenda de `prenda-rechazada-por-la-capa.json`: la rama del rechazo no juzga su prueba, sólo su
+     digest;
+   - `pendiente/`: `cobro-v2-inferior-0.json` y `cobro-v2-inferior-importe.json`, las dos formas de
+     D-N con la v2, copiadas de una corrida de `tools/banco_pendiente.sh --guardar`. Un kit que sólo
+     lea la v1 las rechaza.
+
+   Los tres del operador en `rechazo/` y los cinco de `completitud/` los escribe
+   `tools/vectores/ventana_banda.py` con el binario de `tools/vectores/ventana_banda/`, fuera del
+   workspace y con la feature `probador-v1`. No son reproducibles byte a byte: cada corrida da otra
+   prueba. Las dos causas ROJO nuevas de `completitud/` ya estaban en el catálogo de la sección 5;
+   entran en su clase de la 6.1 (§693), «no casa con lo comprometido», sin cambiar el texto pinado.
+9. **El banco del rechazo** (`tools/banco_rechazo.sh`): su positivo de esta causa es ahora la
+   captura de la v2. `saldo-insuficiente.json` sigue en el manifiesto con su línea.
+10. **El contrato.** `spec/PAQUETE.md`: la fila `InsufficientBalance` de la 2.6 (la prueba es de la
+    v2; una de la v1 vale sólo con `requested - 1 >= 2^32 - 2` o si es la publicada, y si no, salida
+    3); la 2.8 (la v2 del cobro, y por qué la v1 ya emitida, con el superior `MAX_VALOR`, sigue
+    VERDE); la 2.11 (en el veredicto 2, ese rechazo tampoco resuelve); la sección 5 (su frase de
+    entrada, los textos de la ventana en las listas de la banda y del cobro, y
+    `DECLARADA, NO PROBADA: {m}`); la sección 6 (el `3` es también el de ese sobre de rechazo); la
+    6.1; y tres párrafos de la 9. El RFC-0017 lleva la corrección de la D-3 en la forma de la casa,
+    con su marca, una línea en «Lo que NO hace», una marca en «Compatibilidad» y este § en sus
+    asientos. La v2 cambia los bytes de dos pruebas que viajan en los sobres del kit, y la 0.4.3 no
+    las verifica: es una ruptura de S2 bajo la promesa de `spec/RPC.md` §«Versionado y
+    compatibilidad», que rige desde el §799, y se declara como el §826 declaró la de la E2 de aquel
+    RFC: no sube `zkssl/0.4`, y la paga el corte `zkssl/0.5`. Lo dicen `spec/RPC.md` (la línea bajo
+    el título y §«Lo que `zkssl/0.4` no identifica todavía»), `spec/README.md` y la fila del
+    protocolo de los dos README. El kit, que juzga las dos versiones y cambia un veredicto —la v1
+    bajo la cota, de VERDE a 3—, es un arreglo de seguridad dentro de `0.N.x`, con su aviso.
+
+**Por qué el cuarto estado.** Había tres salidas para la v1 bajo la cota. Que el kit sólo aceptara
+la v2 daba ROJO, sin causa con nombre, a toda prueba de la v1, también a las de cobro, que son
+sólidas; movía tres vectores VERDE y acusaba a un operador que probó con honradez con el kit de
+antes. Dar el cuarto estado a toda la v1 lo daba también donde la v1 es sólida, sin ganar nada. Se
+eligió la tercera: la v2 para todo lo nuevo, la v1 aceptada sólo donde es sólida y el cuarto estado
+por debajo, con su porqué. Un ROJO para la v1 bajo la cota, en vez del 3, acusaría igual al operador
+honesto: el juez no los distingue.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `161a233` (el §690), con los arreglos
+del §711 al §722 tal como se hicieron en privado, y los lleva a `3ff8069` —el §722 ya llevado a
+`7dd6409`, el §895, sobre el §711 al §721 llevados— una sesión de Claude Code, no el autor: primero
+sobre el §722 llevado a `6c33d2a` (el §865), y de ahí sobre los seis sellos del §890 al §895. De
+esos seis chocaba sólo la ficha M11 de `doc/ecst/VERIFICACION.md`, como en el §711 («Al portar»): el
+§894 marca su línea «Fuentes» y este sello sube el 546 de la de al lado a 547; quedan las dos, cada
+una con lo suyo. El código entra como se escribió —el juez, los probadores, la segunda y los tests—,
+salvo las marcas, que citaban el trabajo privado y pasan a este §, tres comentarios de
+`circuit_banda.rs` que nombraban «la revisión», lo que dice la lista de abajo y el lector de
+hexadecimal de los tests de la banda, que va detrás de ella; los once vectores, byte a byte. Lo que
+git no fundía, o fundía y quedaba falso con lo que `main` cambió desde `161a233`, se resolvió a
+mano:
+
+- **El censo de las longitudes del cable (§839)**, que el sello no conocía, lee los
+  `impl Air for` de `zk-ssl-air` por su nombre y no veía `BandaAirDe<V>` ni
+  `CobroPendienteAirDe<V>`: caía con «las AIR vistas, con la edad, […] no son las del cable de
+  D-L». Cuenta ahora la AIR con versión por su familia, con la regla que el sello ya aplicaba al
+  censo del cable.
+- **El censo de las bandas de bytes (§842)** lee el nombre que sigue a `type Air =` y veía
+  `BandaAirDe`: sin el cambio, medido, cae con «circuit_banda: oculta BandaAirDe y su banda es de
+  BandaAir» y lo mismo del cobro. Con la misma regla, pasa, y las pruebas de la v2 caen dentro de
+  las bandas de bytes medidas con la v1.
+- **`tools/check_catalogo.py` (§777).** El sello devolvía el ROJO de la banda con un `return Err`
+  y la herramienta no veía el envoltorio: R5 de su fila y cinco R4 de la lista de la banda. El
+  ROJO vuelve a su `map_err`, en `verificar_rechazo_diferido`, con la misma conducta; la fila pasa
+  a `verificar_rechazo_diferido::banda: {}` y lee `fn:verificar_con`, donde vive el juez de las dos
+  versiones; y la sección 5 gana el productor nuevo, `DECLARADA, NO PROBADA: {m}`, y el texto de la
+  ventana en las listas de la banda y del cobro, que el sello no tenía (R3).
+- **La compatibilidad (§801 y §826).** El sello declaraba la v2 en `spec/RPC.md` y en los README
+  «como el §699». Desde el §826 la promesa rige desde el §799 y la ruptura de S2 la paga el corte:
+  se declara así en la «Compatibilidad» del RFC-0017, en `spec/RPC.md`, en `spec/README.md` y en
+  los README, y la línea de asientos de la cabecera del RFC, que el §826 reescribió, suma este §
+  en su orden. La descripción del OpenRPC no se toca: habla de las pruebas que un nodo acepta por
+  el cable, y éstas no las acepta ninguno.
+- **Los manifiestos**, en su forma final antes de registrarlos: con este §, la ruta del generador
+  en `tools/vectores/`, «el kit de antes de este sello» en vez del commit privado con el que se
+  midió, y «cada corrida da otra prueba» y «un probador que no comprueba la traza» en vez de lo que
+  decían de la ocultación. Ninguna línea de entrada cambia, y los once dan con el kit de este árbol
+  lo que pinan (abajo): ninguno se volvió a capturar.
+- **El generador.** `ventana_banda.py` sube dos niveles hasta `spec/`, no tres, y el `Cargo.toml`
+  fija `winterfell = "=0.13.1"`, como las fijaciones del §694. Su `Cargo.lock` parte del del árbol
+  y cargo lo poda: frente al del sello, sólo cambia `zk-ssl-verify`, de 0.4.2 a 0.4.3 (§815).
+- **La 6.1 de `spec/PAQUETE.md`.** Las dos causas ROJO de `completitud/` ganan su fila, «no casa
+  con lo comprometido», como hicieron el §718 y el §722 con las suyas. Ninguna herramienta la
+  comprueba.
+- **La cuenta del pie «Ceguera declarada» (§864).** El (a) CIEGA_PROBADOR de `tools/canon.sh`
+  cuenta las marcas `cfg_attr(debug_assertions, ignore)` de los crates con probador, y el sello
+  suma tres que su versión privada no contaba, porque ese pie no existía: las de
+  `el_juez_rechaza_un_saldo_de_la_ventana` (`circuit_banda.rs`),
+  `el_juez_rechaza_un_importe_de_la_ventana` (`circuit_cobro_pendiente.rs`) y `kat_banda_v2`, sólo
+  en release. De 67 a 70, y de 25 a 28 en `stark-experiment`, contadas como las contó el §864 (las
+  de una línea y las de varias), con su marca «⚠️ §723» al final de la cadena. Ninguna herramienta
+  lee ese pie. Los ignorados de los pines no cambian: esas marcas sólo ignoran en depuración, y el
+  canon corre en release.
+- **Lo que fundía con `main`:** los pines de `tools/canon.sh`, sumados a los de la punta, y la fila
+  de `zk-ssl-air` con su tiempo del §853; las secciones 5 y 6 de `spec/PAQUETE.md`, con el §777,
+  el §801, el §815 y el §711 —la viñeta del pánico sigue detrás del contrato de los códigos—; el
+  módulo de tests del mando, con el test del §815 delante; y el README de la segunda, con el
+  párrafo de este sello detrás del del §721.
+- **Lo que ninguna herramienta lee.** En `tools/segunda/README.md`, «1 quinquies» de «70 de 70» a
+  «76 de 76», con su marca; «la cifra de hoy» del juez STARK, con la suya; el párrafo nuevo con su
+  medida, en vez de remitir a la tabla del §626; y en «El verificador bajo wasmtime» una marca
+  «⚠️ §723», como la de cada sello que añadió vectores. La superficie de `spec/RPC.md`:
+  `vectores.json` 594 -> 605 y `vectores.lineas` 1328 -> 1370, sin marca, como en los sellos
+  anteriores, y `check_superficie` sale con 0 novedades. El «fija hoy» de `ARQUITECTURA.md` y
+  `CONTRIBUTING.md`, de 546 a 547, con su marca al final de la cadena; y la cifra de la capa de
+  `doc/ecst/VERIFICACION.md`, que `check_cifras` daba por rancia. Las cifras en prosa, buscadas por
+  cada valor viejo con `git grep -n -w` fuera de este fichero, de `spec/vectors` y de los `.rs`:
+  546, 479, 218, 2049, 2189, 2211, 614, 594, 1328, 429, 504, 235, 299, 214, 612, 667 y 501 sólo
+  salen como otra cosa, en las marcas de sellos anteriores o en medidas fechadas, como las de la
+  0.4.3 en `doc/KIT.md`, que pone al día el corte.
+
+El lector de hexadecimal de los tests de la banda no es de esa lista: no choca con nada que `main`
+cambiara. Es un defecto del sello tal como se escribió, que sus comprobaciones no vieron. El
+`de_hex` que el sello escribía en `crates/zk-ssl-air/src/banda.rs` troceaba el texto por bytes de un
+`&str`, y el censo de `zk-ssl-hash` del §650,
+`tests_hex::nadie_trocea_hexadecimal_por_bytes_de_una_cadena`, que recorre todo `.rs` de `crates/`,
+cae con esa línea. Ese censo ya estaba en `161a233`, con la misma regla, y la línea ya caía allí;
+las comprobaciones del sello no corrieron los tests de `zk-ssl-hash` (abajo, «Las suites»). Lo
+encontraron las comprobaciones de la punta de la serie en una primera escritura de este porte, que
+lo arreglaba en el corte; por decisión del autor del 28-10-2026 lo arregla este sello, el que
+escribió la línea. Lee ahora con el lector de la casa, `zk_ssl_hash::bytes_de_hex`, dentro de
+`#[cfg(test)]`: no cambia lo que hace el kit ni lo que mide ningún test de la banda.
+
+**Medido en privado**, sobre `161a233` con los arreglos del §711 al §722 tal como se hicieron en
+privado:
+
+- **El falsador, antes del arreglo.** Con el juez del kit (`banda::verificar`) y el probador de la
+  casa: con segmentos de 63 bits la traza del falsador cumple el AIR, y no hace falta un probador
+  malicioso. Saldo `2^63 - 2^32 + 2` con la banda `[0, 0]`: `Ok(())`, una prueba de 62.166 B; con
+  `4_999_999` más y la banda `[0, 4_999_999]`: `Ok(())`. Los controles, con `2^62 + 1`, no se
+  prueban: `UnsatisfiedTransitionConstraintError(128)`, el segmento del superior. El cobro, con
+  `verificar`: el importe `2^63 - 2^32 + 1002` con la banda `[0, 1000]`, `Ok(())`; con el superior
+  `MAX_VALOR` no se prueba, y por `verificar_contra_cabeza` no pasa. La segunda de antes, sobre esas
+  pruebas, VERDE.
+- **El mando, de punta a punta.** El sobre de `rechazo-rech-banda-ventana-v1.json`, con el kit de
+  antes: `VERDE: InsufficientBalance se sostiene sobre el estado comprometido`, salida 0. La segunda
+  de antes, VERDE.
+- **La capa no firma esa hoja** por ninguna puerta medida, y
+  `una_hoja_de_la_ventana_no_abre_ni_se_importa` pasa ya antes del arreglo. El almacén con el saldo
+  de la ventana no abre (`saldo fuera del tope de la capa`, y con el suministro movido a la par,
+  `suministro fuera del tope de la capa`), y la instantánea no se importa
+  (`saldo de la instantanea fuera del tope de la capa`,
+  `suministro de la instantanea fuera del tope de la capa`). Las transiciones en memoria no la
+  producen: el tope de emisión es `2^62 - 1` y el suministro se conserva.
+- **La severidad, con lo medido.** Un VERDE falso del kit y de la segunda sobre una afirmación del
+  estado comprometido. Hace falta un operador que firme una raíz fuera de la capa de la casa, con una
+  hoja que ninguna transición honesta deja. Ese operador ya podía comprometer una hoja con saldo 0 y
+  probar la banda con honradez; lo que añade la ventana es que lo que el kit afirma de la hoja
+  comprometida es falso. Severidad: baja, la que propuso la sesión; el autor no la objetó al decidir
+  la publicación de la 0.4.4.
+- **Con el arreglo**, la conformidad de las doce familias con el kit de ese árbol, todo lo que
+  deben: rechazo 88 de 88, pendiente 12 de 12, completitud 80 de 80, paquete 78, consumo 17,
+  conflicto 17, edad 35, pago 24, prenda 9, ancla 44, ancla cofirmada 27 y rotación 48. Con el kit de
+  antes: rechazo 85 de 88 (los tres nuevos de la v1 o de la v2), completitud 77 de 80 (los tres
+  positivos, VERDE) y pendiente 10 de 12 (rechaza las dos de la v2).
+- **La revisión.** Una revisión adversarial de sólo lectura dio por buenas la v2 y la cota,
+  comprobadas a mano, y pidió siete cambios antes del commit. Se aplicaron los siete:
+  - **no mover un vector publicado.** La primera versión del arreglo mudaba `saldo-insuficiente.json`
+    a `spec/vectors/0.4/rechazo/` y daba el veredicto nuevo a una copia con otro nombre. En su
+    lugar, la lista del punto 3. Falsador: el kit sin la lista da `ROJO saldo-insuficiente.json:
+    exit 3, el manifiesto espera 0`, 87 de 88 en rechazo;
+  - **que el cuarto estado no tape los ROJO de completitud.** La primera versión lo decía antes de
+    las comprobaciones del brazo, y los cinco vectores de completitud daban 3, también los dos
+    negativos (con el kit de antes, VERDE los tres positivos y ROJO los dos negativos). De ahí el
+    orden del punto 4;
+  - **un vector que fije la v2 del cobro**: las dos capturas de `pendiente/`. La segunda, versión a
+    versión: las dos nuevas dan `v2=VERDE v1=ROJO(InconsistentOodConstraintEvaluations)`, y las dos
+    de la v1, lo contrario;
+  - **el contrato del mando en `spec/PAQUETE.md`**: el punto 10;
+  - y tres menores: el constructor de la v1 bajo la feature (sin ella, el generador no compila,
+    `error[E0599]`, medido), un comentario por función en `instrumento_revela.rs` y las notas.
+- **La regla de la causa, falseada.** Sin ella caían tres tests del kit
+  (`un_grupo_fri_de_mas_es_rojo`, `un_nodo_de_mas_en_cualquier_lote_es_rojo` y el del resto FRI): la
+  prueba de cobro de la v1 maleada daba la coherencia OOD de la v2 en vez de su causa. La lista de la
+  segunda, falseada con otra banda en `airs.py`: `la_lista_de_la_segunda_es_la_del_juez` cae.
+- **La segunda.** `juez_stark.py`: 65 de 65 pares (79 pruebas juzgadas, 44 vectores caen antes del
+  juez) y 45 de 45 falsadores callados; `saldo-insuficiente.json` da VERDE y
+  `rechazo-rech-banda-ventana-v1.json`, el cuarto estado. `juez_cabezas.py`: 600 de 653 cabezas
+  verifican, y ningún positivo lleva una que no verifique. `juez_nucleo.py`: 29 de 29.
+- **Los bancos.** `tools/banco_rechazo.sh --guardar`: `BANCO-RECHAZO VERDE`, 19 reglas en vivo,
+  salida 0 y sin tocar el árbol. `tools/banco_pendiente.sh --guardar`: `BANCO-PENDIENTE VERDE`, las
+  siete reglas del sobre en vivo, salida 0.
+- **El coste de la v2**, quince pruebas por lado, la banda `[0, 4_999_999]`, en una máquina
+  compartida: el KAT, de 49.418 a 49.693 B (+275 B, +0,56 %); verificar, mediana de 1,90-1,91 ms a
+  1,93-2,08 ms; probar, dentro del ruido; rehusar una v1 en la ventana, que son dos verificaciones,
+  2,79 ms de mediana.
+- **En depuración**, los dos falsadores del juez se saltan con su condición: forzados, winterfell
+  hace pánico en `evaluation_table.rs:215` antes de probar.
+- **Las suites**, en release y sin warnings: siete tests más en `zk-ssl-air`, dos en
+  `zk-ssl-verify`, uno en `zk-ssl` y nueve en `stark-experiment`, con sus 13 ignorados sin cambio;
+  `zk-ssl-node`, sin cambio.
+
+**Medido sobre este árbol**, `3ff8069` con este sello, en release, con el directorio de compilación
+compartido, `flock` y `nice -n 19`, en una máquina de 4 CPU compartida con otras tareas:
+
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `zk-ssl-air` 65, con 0 ignorados, en 16 s de pared; `zk-ssl-verify` 220 (132 + 87 + 1), en 22 s;
+  `stark-experiment` 488 y 13 ignorados, en 121 s; y `zk-ssl` 547 y 7 ignorados, en 196 s, con los
+  dos censos de `instrumento_revela.rs` y el de `nivel_de_produccion/censo.rs` en verde. La primera
+  corrida de la capa, antes de poner al día el censo del §839, dio 546 y un fallo, el suyo. Y
+  `zk-ssl-node` 240 y `zk-ssl-cli` 175, sin cambio: prueban la banda y el cobro con la v2 por los
+  alias, sin tocarse. Con el perfil `aserciones` del «1 bis» (`cargo test --locked --profile
+  aserciones -p <crate>`): `zk-ssl-air` 65 y `zk-ssl-verify` 220, con 0 ignorados y 0 warnings, los
+  pines de sus filas, y cada «Running» bajo `<target>/aserciones/deps/`. Y `zk-ssl-hash` 57, con
+  0 ignorados, su pin, sin cambio: su censo del §650,
+  `tests_hex::nadie_trocea_hexadecimal_por_bytes_de_una_cadena`, en verde con el `de_hex` de la
+  banda (arriba). `cargo check --locked --workspace --all-targets`, sin errores.
+- **El generador.** `cargo build --release --locked --manifest-path
+  tools/vectores/ventana_banda/Cargo.toml`, con un `CARGO_TARGET_DIR` propio, en 49 s, sin
+  warnings; y una corrida de `tools/vectores/ventana_banda.py` a una carpeta aparte, `rechazo` y
+  `completitud`, en 5 s: los ocho que escribe dan con el kit de este árbol el código y el texto que
+  pinan sus líneas. No dan los mismos bytes: no se espera.
+- **La conformidad**, con `tools/conformidad.sh` y el kit de este árbol (`d194319d703a79a0`), en
+  las doce familias del artefacto: paquete 94 de 94, consumo 20, conflicto 17, rechazo 88, edad 39,
+  pendiente 13, pago 28, prenda 11, completitud 86, ancla 44, ancla cofirmada 27 y rotación 48,
+  cada una entera. Con el kit del §722, compilado de `3ff8069` en una carpeta aparte
+  (`b61074ddd66ecf75`): rechazo 85 de 88 —la captura de la v2 y el control, salida 1 por la
+  coherencia OOD, y el sobre de la ventana, VERDE—, completitud 83 de 86 —los tres positivos de la
+  v1, VERDE; los dos negativos, ROJO por lo suyo— y pendiente 11 de 13 —los dos cobros de la v2,
+  `cobro: InconsistentOodConstraintEvaluations`—; las otras nueve, enteras. El kit 0.4.3 publicado
+  (`1b120e59…`, el del §818), sobre los once, lo mismo que el del §722: el sobre de la ventana,
+  `VERDE: InsufficientBalance se sostiene sobre el estado comprometido`, y las tres resoluciones de
+  completitud, VERDE.
+- **La segunda.** `stark.py`, su autotest, OK. `juez_stark.py`: 76 de 76 pares, 90 pruebas
+  juzgadas, 44 vectores que caen antes del juez —los cinco de `completitud/` entre ellos— y 45 de
+  45 falsadores callados, en 15 s; `saldo-insuficiente.json` da VERDE y
+  `rechazo-rech-banda-ventana-v1.json`, el cuarto estado. Con el `airs.py` y el `juez_stark.py` del
+  §722 sobre los vectores de este árbol: 71 de 75, las cuatro positivas de la v2 en la coherencia
+  OOD, y el sobre de la ventana cae antes del juez con un par que da VERDE. `juez_cabezas.py`: 630
+  de 685 cabezas y 15 de 20 cofirmas verifican, en 512 ficheros, en 27 s; los 60 con alguna que no
+  verifica son negativos, y las dieciocho cabezas nuevas verifican todas. `juez_nucleo.py`: 34 de 34.
+- **Los bancos del rechazo y del pendiente**, con `--guardar` a una carpeta aparte:
+  `BANCO-RECHAZO VERDE`, 19 reglas en vivo, en 16 s; `BANCO-PENDIENTE VERDE`, las siete reglas del
+  sobre en vivo, en 79 s. Los dos, salida 0 y el árbol sin tocar.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2230
+  declarados; `check_modulos`, 216 ficheros; `check_vectores`, 605 vectores y 1370 líneas de 19
+  manifiestos con su huella, ninguno movido; `check_catalogo`, 236 textos del kit y 302 entradas de
+  §5, 60 de listas de biblioteca; `check_superficie`, la lista de `zkssl/0.4` en 29 comparaciones y
+  0 novedades aditivas; `check_cifras`, 26 cifras y ninguna contradice el canon;
+  `check_constraint_layout`, los 33 circuitos y las 5 AIR del kit sin hueco, con los censos de la
+  banda (351 celdas-clase, 0 sin dueño, mutantes 2/2) y del cobro (616, 0 sin dueño, 2/2);
+  `check_nucleo`, 180 filas; `verificar_citas`, 0 fantasmas y 0 muertos; y `check_columns`,
+  `check_publicadas`, `check_dominios`, `check_figures`, `check_techo` y `check_curvas`. Todas
+  salen con 0.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `zk-ssl-air` 58 -> 65, `zk-ssl-verify` 218 ->
+220, `zk-ssl` 546 -> 547 y `stark-experiment` 479 -> 488, con los ignorados en 0, 0, 7 y 13.
+TOTAL DE SELLO 2049 -> 2068 y TOTAL CON LARGOS 2189 -> 2208, en `PRINCIPIOS.md`, `PAPER.md` y
+`PAPER_EN.md`, y el desglose de `PRINCIPIOS.md`, la capa a 547, los circuitos a 488 y el verificador
+a 220; la capa y los circuitos también en el «cómo se corre» de `PAPER.md`, `PAPER_EN.md`,
+`doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`, y la capa en `ARQUITECTURA.md` y
+`doc/ecst/VERIFICACION.md`. Las «1364 declarados» y las «1349 declared» no se tocan, como en los
+sellos anteriores. `check_tests`, de 2211 a 2230. `spec/vectors/`, de 614 a 625 ficheros, en
+`README.md` y `README_EN.md`. `check_vectores`, de 594 a 605 vectores y de 1328 a 1370 líneas, y
+con ellos la superficie de `spec/RPC.md`. Los manifiestos: `rechazo` +4 entradas, `completitud` +5 y
+`pendiente` +2. `check_catalogo`, de 235 a 236 textos y de 299 a 302 entradas. `check_modulos`, de
+214 a 216 ficheros. En `tools/segunda/README.md`, el juez STARK de 70 a 76 pares y las entradas de
+las doce familias de 504 a 515. El pie «Ceguera declarada» de `tools/canon.sh`, de 67 a 70 marcas
+`cfg_attr(debug_assertions, ignore)`, y de 25 a 28 en `stark-experiment`, con su marca «⚠️ §723» al
+final de la cadena: suben por las tres de `stark-experiment`, los dos falsadores del juez de la
+ventana, `el_juez_rechaza_un_saldo_de_la_ventana` y `el_juez_rechaza_un_importe_de_la_ventana`, y
+`kat_banda_v2`, sólo en release; los nueve tests nuevos de `zk-ssl-air` y `zk-ssl-verify`, los de la
+pasada de las aserciones, no llevan ninguna.
+
+**Lo que NO hace.** No cambia el cable ni la versión `zkssl/0.4`, ni la cabeza ni la forma de una
+prueba: cambia una columna periódica de dos AIR, y con ella los bytes de sus pruebas. No reescribe,
+no mueve ni cambia el veredicto de ningún vector publicado. No toca las AIR de la edad, el pago en
+curso ni la prenda. No publica un kit: el corte va al final de la serie. No corre el canon entero
+ni los bancos que no son de la banda ni del cobro.
+
+**Lo que NO cierra.**
+
+- **Los kits publicados**, de la 0.3.0 a la 0.4.3, siguen dando VERDE al sobre de
+  `rechazo-rech-banda-ventana-v1.json` y a las tres resoluciones de completitud con la banda de la
+  v1: medido con la 0.4.3 publicada (arriba), y leído en el código de las anteriores, que llevan la
+  misma AIR de la banda y el mismo brazo. Lo dice el aviso de la release que corta la serie.
+- **Un kit de antes de este sello rechaza las pruebas de la v2**, por la coherencia OOD: con la
+  0.4.3 no se verifica lo que prueba un nodo de este árbol, ni los dos cobros nuevos de
+  `pendiente/` (medido, arriba).
+- **Una prueba honesta de la v1 bajo la cota** que no es la publicada da el cuarto estado, no VERDE:
+  el juez no la distingue de la fabricada. La lista no crece.
+- **La cota de la v1** está derivada, y su frontera probada en enteros
+  (`la_ventana_de_la_v1_acaba_en_la_cota`); no se buscó contra el circuito con un probador.
+- **Ningún vector ejercita la ventana del cobro por el mando**: contra la cabeza el superior es
+  `2^62 - 1`, y ahí la v1 no tiene ventana. La segunda con un superior pequeño se midió sólo sobre
+  pruebas volcadas.
+- **El censo de celdas del kit** (`doc/fv`, §720) no modela la segunda fila del selector: sale en
+  verde, pero no la mira.
+- **El KAT de la v2** es un pin de regresión, no una foto de winterfell sin bifurcar.
+- **Los ocho vectores del operador** no son reproducibles byte a byte. Su cabeza la firma una clave
+  XMSS de test, como los de atacante del §717. Los cinco de completitud no son capturas de un nodo,
+  y los dos de prenda llevan dentro el sobre de prenda de otro operador, el capturado.
+- **`doc/ecst/ECST.md` §5.7** y `ECST_EN.md` dicen todavía que el 3 es sólo del sobre de
+  completitud: es un documento fechado, y no se toca. El contrato de la sección 0 de `doc/KIT.md` y
+  de `doc/KIT_EN.md` lo pone al día el corte.
+- **Los `Cargo.lock` de los generadores van por detrás del corte**: el de este, como los de
+  `tools/vectores/coste_edad/` y `tools/vectores/historia_comun/`, dice `zk-ssl-verify` 0.4.3, y el
+  corte de la serie sube el kit.

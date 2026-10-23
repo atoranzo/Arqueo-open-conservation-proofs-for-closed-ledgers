@@ -314,7 +314,7 @@ donde el valor es una respuesta del cable sin reescribir.
 | `DuplicatePendingInBatch` | `lote` | el primer choque del lote es una posición repetida | v3, v4, v5 o v6, la misma (§456) |
 | `AccountFrozen` | `congelados` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `frozenRoot`; la hoja no es la vacía | v3, v4, v5 o v6, la misma (§459) |
 | `AccountNotFound` | `cuenta` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `accountsRoot`; la hoja **es** la vacía | v3, v4, v5 o v6, la misma (§476) |
-| `InsufficientBalance` | `banda` | `data` no trae `available`; el `requested` de `data` es el de `banda` y no es cero; la `prueba` verifica, con las opciones de la casa y sin el saldo, que el saldo de la cuenta `publicId` está en `[0, requested - 1]` bajo el `accountsRoot` (`zk_ssl_air::banda`) | v3, v4, v5 o v6, la misma (§478) |
+| `InsufficientBalance` | `banda` | `data` no trae `available`; el `requested` de `data` es el de `banda` y no es cero; la `prueba` verifica, con las opciones de la casa y sin el saldo, que el saldo de la cuenta `publicId` está en `[0, requested - 1]` bajo el `accountsRoot` (`zk_ssl_air::banda`). Desde el §723, la prueba es de la banda **v2** (los tres segmentos de rango en 62 bits); una de la v1 vale sólo con `requested - 1 >= 2^32 - 2`, o si es la ya publicada que el juez reconoce por su huella y su enunciado (`zk_ssl_air::banda::PUBLICADAS_V1`), y si no, salida 3 | v3, v4, v5 o v6, la misma (§478) |
 | `SupplyCapExceeded` | `parametros`, `peticion` | los siete recomponen; `cap` es el `maxSupply` comprometido; `wouldBe` es el `totalSupply` de la cabeza más el `amount` de la petición (la suma saturada de la capa) y pasa el tope | v5 o v6, la misma (§460) |
 
 - ⚠️ §776: `StaleState` y los dos duplicados de lote decían «v5» desde el §456, y el código nunca
@@ -404,7 +404,10 @@ donde el valor es una respuesta del cable sin reescribir.
 - `cabeza` es una respuesta de `zkssl_signedEpochHead` tal cual; `prueba` son los bytes de la
   prueba STARK en `0x` + hex. `seq`, `pendingRoot` y `pmetaRoot` salen **sólo de la cabeza**: el
   sobre no los repite (D-J). Y la cota **superior no viaja**: la fija el juez en el techo del
-  campo, `MAX_VALOR`, porque un enunciado tiene una sola forma.
+  campo, `MAX_VALOR`, porque un enunciado tiene una sola forma. Desde el §723, la v2 del AIR del
+  cobro (los tres segmentos de rango en 62 bits, como la banda): es la que produce la boca desde
+  entonces. Una prueba de la v1 ya emitida sigue verificando, porque con el superior `MAX_VALOR`
+  la v1 no deja pasar ningún importe fuera de la banda.
 - El juez es `zk_ssl_air::cobro_pendiente::verificar_contra_cabeza` (`crates/zk-ssl-air`), que el
   kit compila **sin el probador** (D-K): exige `nacido < seq` —una meta nacida después de la
   cabeza que la firma es una cabeza que miente, y se para con su nombre—, compone el enunciado
@@ -557,7 +560,11 @@ la hoja la ata a su camino pero no mide la ventana:
    su causa se sostiene, pero las raíces que su `recibo` declara y su `data` no van firmados, y que
    sean las de ESTA operación es la palabra del acusado. Sale como el cuarto estado, «DECLARADA, NO
    PROBADA» (salida 3). Los dos vectores que lo resolvían en VERDE se conservan en
-   `spec/vectors/0.4/completitud/` con su manifiesto de entonces.
+   `spec/vectors/0.4/completitud/` con su manifiesto de entonces. ⚠️ §723: un rechazo
+   `InsufficientBalance` con la banda de la v1 bajo la cota (sección 2.6) tampoco resuelve: es el
+   cuarto estado, con el sitio, y en la vía directa, en el lote y en la prenda se dice DESPUÉS de
+   las comprobaciones de la forma, así que una operación que el lote no tiene, o una marca que no
+   es la del sobre, siguen siendo ROJO.
 3. **Sin resolución**, con una cabeza `vigente` fuera de la ventana: **ROJO NOMBRADO**, «NO
    RESUELTA EN LA VENTANA». Es el producto del hito: la promesa firmada por el acusado, la ventana
    aritmética sobre dos cabezas firmadas, y la carga de exhibir la resolución de quien la tiene.
@@ -986,7 +993,9 @@ apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con 
 
 Cualquier rechazo para el binario con **el primer fallo, con nombre**, en la salida de error, y
 sale con código 1 (sección 6); los tres textos del cuarto estado del sobre de completitud salen
-con 3 y sin `ROJO` (bloque de la completitud). No hay pánico por paquete mal formado: cada
+con 3 y sin `ROJO` (bloque de la completitud), y desde el §723 también el del sobre de rechazo
+cuya banda es de la v1 bajo la cota, solo o dentro de una resolución de completitud (bloque del
+rechazo, `banda: {e}`). No hay pánico por paquete mal formado: cada
 lectura de campo falla cerrada. El catálogo es la lista de mensajes que el binario puede emitir,
 con sus huecos entre llaves; un lector que vea uno de estos textos sabe qué regla ha caído. **La
 verdad se mide en el fuente**: al sellar, `tools/check_catalogo.py` re-deriva el censo por llamada,
@@ -1179,7 +1188,8 @@ de los **mismos productores** de arriba, con su hueco relleno distinto.
 - `la causa NO se sostiene: el suministro resultante ({seria}) no supera el tope ({tope})`
 - `data: esta causa no publica el saldo: la banda lo prueba sin el` · `falta banda (la prueba de la desigualdad)`
 - `data: el importe que el nodo dice no es el que la prueba acota` · `la causa NO se sostiene: pedir 0 no puede pasar de ningun saldo`
-- `banda: falta prueba o no es cadena 0x` · `banda: {e}`, donde `{e}` es el rojo de `zk_ssl_air::banda::verificar`: `los limites {l} y {u} pasan del techo {MAX_VALOR}`, `banda vacia: inferior {l} sobre superior {u}`, `la prueba no se deserializa: …`, `forma de traza …`, `marca de la ocultacion …` (el de la edad), o el que escribe winterfell (§478)
+- `banda: falta prueba o no es cadena 0x` · `banda: {e}`, donde `{e}` es el rojo de `zk_ssl_air::banda::verificar`: `los limites {l} y {u} pasan del techo {MAX_VALOR}`, `banda vacia: inferior {l} sobre superior {u}`, `la prueba no se deserializa: …`, `forma de traza …`, `marca de la ocultacion …` (el de la edad), `prueba de la v1 con segmentos de 63 bits: con el superior {u}, bajo {COTA_V1}, no acota el saldo privado: un saldo de la ventana [2^62, 2^63) tambien la pasa` (§723: el juez lo da, y el mando no lo imprime como ROJO sino en el cuarto estado, abajo), o el que escribe winterfell (§478)
+- `DECLARADA, NO PROBADA: {m}` — desde el §723, el cuarto estado del sobre de rechazo, con salida 3 y sin `ROJO`. La banda v2 (los segmentos de rango a 62 bits; la corrección de la D-3 del RFC-0017): una banda de la v1 verifica solo con el superior en `2^32 - 2` o por encima, o si es la ya publicada de `PUBLICADAS_V1`. Por debajo, un saldo de la ventana `[2^62, 2^63)` también la pasa, y el sobre no sale ROJO sino con el cuarto estado: `{m}` es `banda: {e}. El operador declara InsufficientBalance con una prueba de la v1, que no lo prueba: una prueba nueva es de la v2`, con `{e}` el texto de la ventana de la lista de arriba, así que la línea empieza por `DECLARADA, NO PROBADA: banda: prueba de la v1 con segmentos de 63 bits: con el superior {u}, bajo 4294967294, no acota el saldo privado: …`; dentro de un sobre de completitud, con el sitio delante: `DECLARADA, NO PROBADA: resolucion.sobre: banda: …` o `resolucion.rechazo: banda: …`
 
 **La edad** (§465; `{e}` sale de `zk_ssl_air::verificar_contra_cabeza`)
 
@@ -1207,6 +1217,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
   - los del enunciado: `las cotas {l} y {u} pasan del techo {MAX_VALOR}` · `banda vacia: inferior {l} sobre superior {u}` · `nacido {} pasa del techo {MAX_VALOR}` (§718); y, sobre el `u64` tal como llega y antes de reducir (§718, la canonicidad), `las cotas {l} y {u} pasan del techo {MAX_VALOR}` con `{l}` la cota inferior del sobre, y el `nacido` de arriba
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
   - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el de la edad
+  - `prueba de la v1 con segmentos de 63 bits: con el superior {u}, bajo {COTA_V1}, no acota el importe privado: un importe de la ventana [2^62, 2^63) tambien la pasa` — §723: el de la v1 con un superior bajo la cota; contra la cabeza el superior es `MAX_VALOR` y no sale
 
 **El pago en curso** (§506; `{e}` sale de `zk_ssl_air::pago_en_curso`)
 
@@ -1482,9 +1493,12 @@ extensión, con `cabeza` como sujeto.
 - **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para. Desde
   el §693 el motivo nombra una causa de la sección 6.1, y va en una sola línea.
 - **Cuatro códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
-  argumento, o más de uno; imprime el uso en la salida de error) · `3`, desde el §573, el cuarto
-  estado del sobre de completitud, «resolución declarada, no probada», que se imprime con su nombre
-  y sin `ROJO`, porque no lo es.
+  argumento, o más de uno; imprime el uso en la salida de error) · `3`, el cuarto estado,
+  «declarada, no probada», que se imprime con su nombre y sin `ROJO`, porque no lo es: desde el
+  §573, el del sobre de completitud; y desde el §723, también el del sobre de
+  rechazo `InsufficientBalance` cuya banda es de la v1 con el superior bajo `2^32 - 2` (sección 2.6).
+  Un sobre de completitud que se resuelve con ese rechazo lo dice con su sitio, y después de sus
+  propias comprobaciones: si nombra otra operación del lote u otra marca de la prenda, es `1`.
 - **Un pánico no es un código de salida** (§711). Si el mando entra en pánico al verificar, no sale
   con `101`: imprime `ROJO: el verificador entro en panico: panico recogido al juzgar una prueba
   ajena: {mensaje}` y sale con `1`. Es una red de estructura: lo que el fork de winterfell valida
@@ -1525,7 +1539,7 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **recomposición** — los campos no dan el digest firmado | `NO recomponen` |
 | **firma inválida** | `la firma no verifica` · `la firma es VALIDA pero de otro mensaje` · `el indice declarado ({d}) no cuadra con el que va dentro de la firma` |
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
-| **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
+| **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` · `no esta en un lote de` y `no es la marca de este sobre` (§723: la operación que el lote no tiene y el consumo que no es la marca de la prenda, en una resolución por rechazo, 2.11; con una banda de la v1 bajo la cota, también salen antes del cuarto estado) |
 | **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) · `fuera de 3..=` (§717: una `m` de la edad sobre su tope, `m = {} fuera de 3..={M_MAX}`, 2.7; se pina con su `m` y sin el tope) · `no es un indice de cuenta` y `todos se escribe con emisor 0` (§718: el emisor de la edad, 2.7) · `pasa del techo` (un entero del pago o del cobro sobre su techo; desde el §718, también tal como llega, antes de reducir, 2.9 y sección 5) · `RELEVO` y `no hay solapamiento` (§722: una cabeza fuera del relevo de su tramo en los ocho sitios de 2.3, y una dentro de su tramo y de su relevo en el sobre del solapamiento, 2.14) |
 | **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) · `prueba mal formada: usize no canonico` (§715: un `usize` de la prueba que no está en su escritura mínima; la pone el lector del fork, `crates/winter-air/src/proof/acotado.rs`, con el texto de `causa.rs`) · `UnconsumedBytes` y `not all bytes were consumed` (§715: bytes de sobra tras la prueba, o dentro de una apertura o del lote de una capa FRI; son el mismo error de winter-utils, `DeserializationError::UnconsumedBytes`, por su `Debug` y por su `Display`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
@@ -1693,7 +1707,15 @@ escenas, y se declara: el pedido cero y el techo tocan los dos `requested` a la 
 tocar uno solo cae antes por el importe distinto. El rojo de la cuenta otra lo escribe
 winterfell, y el manifiesto pina el nombre de su variante (0.13.1, fijado en el lock). Sin
 vector, y se declara: una prueba corrupta cae por la MISMA regla que la cuenta otra, y una
-cabeza con otro `accountsRoot` y el mismo `seq` no se fabrica sin romper la firma.
+cabeza con otro `accountsRoot` y el mismo `seq` no se fabrica sin romper la firma. **Desde el
+§723, la banda v2** añade CUATRO vectores al final del manifiesto, con su causa: la captura del
+banco con la v2 (positivo); el sobre de un operador que firma a mano, con su propia clave de test,
+una raíz de cuentas de una hoja con el saldo en la ventana `[2^62, 2^63)` y la prueba de la v1
+(salida 3, y VERDE con el kit de antes); la misma hoja con la v2 y un probador malicioso (ROJO por
+la coherencia OOD); y un control de la misma forma con una hoja honesta (positivo). El positivo
+de §479 es de la v1 con el superior 1000 y sigue VERDE con su línea: el juez reconoce esa prueba
+por la huella de su contenido y su enunciado, en una lista cerrada (`PUBLICADAS_V1`), y ninguna
+otra. Los tres del operador no se reproducen byte a byte.
 **Desde §467 cubre el sobre de EDAD** (RFC-0007, E4b-3, que cierra E4): `spec/vectors/edad/`
 trae DOS positivos REUNIDOS de las capturas de un nodo real -la capa los produjo con
 `zk-ssl-node --prueba-edad` sobre el libro de ese nodo, contra la cabeza v5 de seq 10 que el
@@ -1724,7 +1746,11 @@ entero, y se declara: el de la prueba que no verifica lo pone WINTERFELL y no la
 manifiesto pina sólo el prefijo `cobro:` que antepone el mando. La cabeza no viaja como vector: va
 entera dentro de los dos sobres; el aviso y la credencial del escenario tampoco —el mando no los
 lee— y el manifiesto los declara por su huella. Su productor es `tools/banco_pendiente.sh` (§498),
-que siembra con el nodo PARADO y pide con el nodo VIVO. **El lado del pago llegó en el §509** y su
+que siembra con el nodo PARADO y pide con el nodo VIVO. **Desde el §723, la v2 del cobro**: los dos
+positivos de arriba son de la v1, con el superior `MAX_VALOR`, y siguen VERDE; DOS positivos más,
+al final del manifiesto, son las dos formas de D-N con la v2, COPIADOS de una corrida de
+`tools/banco_pendiente.sh --guardar` con el nodo de hoy, para que un kit que sólo implemente la v1
+no pase la familia. **El lado del pago llegó en el §509** y su
 catálogo es `spec/vectors/pago/`, que tiene aquí su párrafo propio desde el §548.
 
 **Desde §509 cubre el sobre de PAGO EN CURSO** (RFC-0008, E2): `spec/vectors/pago/` trae DOS
@@ -1787,7 +1813,13 @@ aplicado, rechazado con prueba, por su FORMA, declarado y dos RECHAZOS SIN FUNDA
 aceptada, rechazada con prueba, rechazada por la capa y un RECHAZO SIN FUNDAMENTO— y veintisiete
 negativos, uno por regla producible y por sitio. Los RECHAZOS SIN FUNDAMENTO y el cuarto estado del
 lote se DERIVAN por mutación de lo capturado, porque un nodo honrado no los produce, y se declara;
-las claves distintas y la resolución fuera de la ventana no se producen ahí.
+las claves distintas y la resolución fuera de la ventana no se producen ahí. **Desde el §723, la
+banda v2** añade CINCO vectores, que arma un operador con su propia clave de test -la cabeza del
+rechazo, el cierre v6 y una hoja de recibo- y una resolución por rechazo `InsufficientBalance` con
+la banda honesta de la v1 bajo la cota: en la vía directa, en el lote y en la prenda, el cuarto
+estado con el sitio (salida 3); con la operación fuera del lote, o con otra marca en la prenda,
+ROJO por lo suyo. Los dos de la prenda copian el sobre de prenda de un vector capturado: esa rama
+no juzga su prueba, sólo su digest.
 
 **Desde §593 cubre el sobre del ANCLA** (RFC-0012, E4): `spec/vectors/ancla/` trae CUATRO
 positivos CAPTURADOS de un nodo real que firma un latido por segundo, uno por modo: el ancla

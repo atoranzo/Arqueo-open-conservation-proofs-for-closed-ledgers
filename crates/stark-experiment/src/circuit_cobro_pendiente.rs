@@ -26,7 +26,8 @@ use crate::rescue_hash::{NUM_ROUNDS, STATE_WIDTH};
 
 pub use zk_ssl_air::cobro_pendiente::{
     comprobar_enunciado, verificar, verificar_contra_cabeza, AfirmacionCobro, CabezaCobro,
-    CobroPendienteAir, CobroPendientePublicInputs, ANCHO, C_A,
+    CobroPendienteAir, CobroPendienteAirDe, CobroPendienteAirV1, CobroPendientePublicInputs, ANCHO,
+    C_A,
     C_B, COL_BIT, COL_EMISOR, COL_IMPORTE, COL_INFERIOR, COL_NACIDO, COL_RECEPTOR, COL_SACC,
     COL_SAL, COL_SBIT, COL_SUPERIOR, COL_X, CYC_ACC, CYC_META, CYC_RAIZ, LARGO_SEGMENTO,
     MAX_VALOR, NUM_ASERCIONES, NUM_RESTRICCIONES, ROW_ENLACE_IMPORTE, ROW_ENLACE_X,
@@ -190,11 +191,26 @@ fn trazar_con(
     traza
 }
 
-pub struct CobroPendienteProver {
+/// El probador del cobro pendiente en su version `V` (la del AIR que prueba).
+pub struct CobroPendienteProverDe<const V: u8> {
     options: ProofOptions,
 }
 
-impl CobroPendienteProver {
+/// **El probador de la casa**: la v2 ([`CobroPendienteAir`]). Desde el §723 (la ventana del
+/// importe privado), ninguna prueba nueva sale de la v1; su alias solo existe en los tests.
+pub type CobroPendienteProver = CobroPendienteProverDe<2>;
+
+impl CobroPendienteProverDe<2> {
+    pub fn new(options: ProofOptions) -> Self {
+        Self { options }
+    }
+}
+
+/// ⚠️ La v1 se construye solo en los tests y, con la feature `probador-v1`, en los generadores de
+/// vectores de fuera del workspace (`tools/vectores/ventana_banda/`): la regla de que ninguna
+/// prueba de la casa sale de la v1 es del tipo, no de la costumbre.
+#[cfg(any(test, feature = "probador-v1"))]
+impl CobroPendienteProverDe<1> {
     pub fn new(options: ProofOptions) -> Self {
         Self { options }
     }
@@ -218,9 +234,9 @@ pub fn probar_con(
     Ok((prueba.to_bytes(), pi))
 }
 
-impl Prover for CobroPendienteProver {
+impl<const V: u8> Prover for CobroPendienteProverDe<V> {
     type BaseField = BaseElement;
-    type Air = CobroPendienteAir;
+    type Air = CobroPendienteAirDe<V>;
     type Trace = TraceTable<BaseElement>;
     type HashFn = Blake3;
     type VC = MerkleConSal<Blake3>;
@@ -633,5 +649,124 @@ mod tests {
                 bytes.len()
             );
         }
+    }
+
+
+    // ------------------------------------------------------------ §723, la ventana
+
+    /// El importe del falsador: con la v1, `2^63 - 2^32 + 2` mas el superior cabe en la ventana
+    /// y prueba la banda `[0, superior]` (medido sobre la v1: verificaba con `verificar` y el
+    /// superior 1000).
+    const VENTANA: u64 = (1u64 << 63) - (1u64 << 32) + 2;
+
+    /// §723, la v1, solo para medir lo que juzga el kit: las pruebas ya emitidas.
+    type CobroPendienteProverV1 = CobroPendienteProverDe<1>;
+
+    /// El escenario con otro importe: la hoja de pendientes y su raiz, recompuestas.
+    fn con_importe(importe: u64) -> Escenario {
+        let e = escenario();
+        let hoja = hoja_v2(e.w.receptor, e.w.sal, importe, e.w.x);
+        let pending_root = native_climb(hoja, &e.w.camino_pendiente);
+        let w = CobroPendienteWitness { importe, ..e.w.clone() };
+        Escenario { w, pending_root, ..e }
+    }
+
+    /// **Cada segmento de rango fuerza a cero sus dos bits altos en la v2, y solo el alto en la
+    /// v1**: el importe y sus dos holguras. Falsador: sin el `if V >= 2` de `zk-ssl-air`, la v2 da
+    /// `[true, false, false]` y cae.
+    #[test]
+    fn cada_segmento_fuerza_a_cero_sus_dos_bits_altos() {
+        use crate::mutation::{bits_altos_rechazados, rows_of};
+        let e = escenario();
+        // Un superior pequeno: con el techo, la holgura de arriba ya tiene su bit 61 a uno.
+        let filas = rows_of(&trazar(&e.w, 100, 1_000_000), ANCHO, TRAZA);
+        let info = || TraceInfo::new(ANCHO, TRAZA);
+        let pi = || pi(&e, e.w.receptor, P_NACIDO, 100, 1_000_000);
+        let v2 = CobroPendienteAir::new(info(), pi(), opciones());
+        let v1 = CobroPendienteAirV1::new(info(), pi(), opciones());
+        for seg in 0..SEGMENTOS {
+            let inicio = seg * LARGO_SEGMENTO;
+            assert_eq!(
+                bits_altos_rechazados(&v2, &filas, COL_SBIT, COL_SACC, inicio, LARGO_SEGMENTO),
+                [true, true, false],
+                "v2, segmento {seg}"
+            );
+            assert_eq!(
+                bits_altos_rechazados(&v1, &filas, COL_SBIT, COL_SACC, inicio, LARGO_SEGMENTO),
+                [true, false, false],
+                "v1, segmento {seg}"
+            );
+        }
+    }
+
+    /// **El probador de la casa no prueba un importe de la ventana**: cae en la fila 1, el bit 62
+    /// del segmento del importe. Lo mismo en depuracion y en release.
+    #[test]
+    fn un_importe_de_la_ventana_no_se_prueba() {
+        for (importe, superior) in [(VENTANA + 1000, 1000), ((1u64 << 62) + 1, 1000)] {
+            let e = con_importe(importe);
+            let r = CobroPendienteProver::new(opciones()).prove(trazar(&e.w, 0, superior));
+            assert!(
+                matches!(r, Err(winterfell::ProverError::UnsatisfiedTransitionConstraintError(1))),
+                "importe {importe}, superior {superior}: {:?}",
+                r.map(|p| p.to_bytes().len())
+            );
+        }
+    }
+
+    /// **El juez del kit rechaza un importe de la ventana con la v2**, con el probador malicioso
+    /// que oculta y no comprueba la traza (`sin_comprobar`): cae en la coherencia OOD. Con la v1,
+    /// la misma traza y el probador de la casa daban `Ok(())` con `verificar`.
+    #[test]
+    #[cfg_attr(debug_assertions, ignore = "en depuracion winterfell comprueba los grados al evaluar y hace panico antes de probar")]
+    fn el_juez_rechaza_un_importe_de_la_ventana() {
+        use crate::sin_comprobar::{OcultaSinComprobar, TrazaSinComprobar};
+        // El control: con una traza honesta, la prueba del malicioso verifica.
+        let e = escenario();
+        let honesta = OcultaSinComprobar(CobroPendienteProver::new(opciones()))
+            .prove(TrazaSinComprobar(trazar(&e.w, 0, 1_000_000)))
+            .expect("el malicioso prueba")
+            .to_bytes();
+        let control = pi(&e, e.w.receptor, P_NACIDO, 0, 1_000_000);
+        assert_eq!(verificar(&honesta, &control), Ok(()), "control");
+        let e = con_importe(VENTANA + 1000);
+        let declarado = pi(&e, e.w.receptor, P_NACIDO, 0, 1000);
+        let prueba = OcultaSinComprobar(CobroPendienteProver::new(opciones()))
+            .prove(TrazaSinComprobar(trazar(&e.w, 0, 1000)))
+            .expect("el malicioso prueba")
+            .to_bytes();
+        assert_eq!(
+            verificar(&prueba, &declarado),
+            Err("InconsistentOodConstraintEvaluations".to_string())
+        );
+    }
+
+    /// **Una prueba de la v1 se juzga por su superior.** El falsador con la v1 y el probador de la
+    /// casa: `verificar` lo rehusa con la causa de la ventana. Por `verificar_contra_cabeza`, que
+    /// fija el superior en el techo, una honesta de la v1 se sigue enlazando: las pruebas de
+    /// cobro ya emitidas siguen valiendo, y dicen lo que parecen.
+    #[test]
+    fn una_prueba_de_la_v1_se_juzga_por_su_superior() {
+        let e = con_importe(VENTANA + 1000);
+        let prueba = CobroPendienteProverV1::new(opciones())
+            .prove(trazar(&e.w, 0, 1000))
+            .expect("la v1 prueba")
+            .to_bytes();
+        assert_eq!(
+            verificar(&prueba, &pi(&e, e.w.receptor, P_NACIDO, 0, 1000)),
+            Err(format!(
+                "{}: con el superior 1000, bajo {}, no acota el importe privado: un importe de la \
+                 ventana [2^62, 2^63) tambien la pasa",
+                zk_ssl_air::PRUEBA_V1_EN_LA_VENTANA,
+                zk_ssl_air::COTA_V1
+            ))
+        );
+        let e = escenario();
+        let honesta = CobroPendienteProverV1::new(opciones())
+            .prove(trazar(&e.w, 100, MAX_VALOR))
+            .expect("la v1 prueba")
+            .to_bytes();
+        let enlazado = verificar_contra_cabeza(&honesta, &afirma(&e), &cabeza(&e, P_NACIDO + 1));
+        assert_eq!(enlazado, Ok(pi(&e, e.w.receptor, P_NACIDO, 100, MAX_VALOR)), "la v1 honesta");
     }
 }

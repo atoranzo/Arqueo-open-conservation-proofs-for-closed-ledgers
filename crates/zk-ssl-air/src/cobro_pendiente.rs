@@ -37,6 +37,17 @@
 //!
 //! La traza y el `Prover` viven en `stark-experiment` (`circuit_cobro_pendiente`), como en la
 //! banda: el AIR tiene UN productor y el probador y el kit lo comparten.
+//!
+//! ## La v2: el importe a 62 bits (§723)
+//!
+//! El importe es PRIVADO, y [`comprobar_enunciado`] solo acota las cotas publicas. Con los
+//! segmentos de 63 bits de la v1, un importe de la ventana `[2^62, 2^63)` probaba una banda con un
+//! superior pequeno: medido, un importe de `2^63 - 2^32 + 1002` probaba <<importe en `[0, 1000]`>>
+//! y verificaba con [`verificar`]. Por [`verificar_contra_cabeza`] no pasaba: fija el superior en
+//! [`MAX_VALOR`], y con ese techo la ventana esta vacia. La v2 ([`CobroPendienteAir`]) fuerza a
+//! cero los dos bits altos de cada segmento, como la banda; la v1 ([`CobroPendienteAirV1`]) solo
+//! juzga las pruebas ya emitidas, y [`verificar`] la acepta solo donde su ventana esta vacia
+//! ([`crate::COTA_V1`]).
 
 use winter_air::proof::Proof;
 use winter_air::{
@@ -226,16 +237,26 @@ pub fn comprobar_enunciado(pi: &CobroPendientePublicInputs) -> Result<(), String
 
 // ------------------------------------------------------------------ el AIR
 
-pub struct CobroPendienteAir {
+/// El AIR del cobro pendiente en su version `V`: la 1, con los segmentos de 63 bits, o la 2, con
+/// los de 62.
+pub struct CobroPendienteAirDe<const V: u8> {
     context: AirContext<BaseElement>,
     pi: CobroPendientePublicInputs,
 }
 
-impl Air for CobroPendienteAir {
+/// **El cobro pendiente que se prueba y se juzga hoy**: la v2, con el importe a 62 bits.
+pub type CobroPendienteAir = CobroPendienteAirDe<2>;
+
+/// ⚠️ La v1, con los segmentos de 63 bits. Solo para juzgar las pruebas ya emitidas: con un
+/// superior bajo [`crate::COTA_V1`] no acota el importe privado. Nadie prueba con ella.
+pub type CobroPendienteAirV1 = CobroPendienteAirDe<1>;
+
+impl<const V: u8> Air for CobroPendienteAirDe<V> {
     type BaseField = BaseElement;
     type PublicInputs = CobroPendientePublicInputs;
 
     fn new(trace_info: TraceInfo, pub_inputs: Self::PublicInputs, options: ProofOptions) -> Self {
+        assert!(V == 1 || V == 2, "el cobro pendiente no tiene version {V}");
         assert_eq!(ANCHO, trace_info.width());
         let entera = vec![TRAZA];
         let ciclo = |d: usize| TransitionConstraintDegree::with_cycles(d, entera.clone());
@@ -270,7 +291,7 @@ impl Air for CobroPendienteAir {
         }
         assert_eq!(grados.len(), NUM_RESTRICCIONES, "cuenta de grados");
 
-        CobroPendienteAir {
+        CobroPendienteAirDe {
             context: AirContext::new(trace_info, grados, NUM_ASERCIONES, options),
             pi: pub_inputs,
         }
@@ -329,6 +350,10 @@ impl Air for CobroPendienteAir {
         let mut sigue_s = vec![cero; TRAZA];
         for seg in 0..SEGMENTOS {
             primera_s[seg * LARGO_SEGMENTO] = uno;
+            // ⚠️ La v2: tambien la segunda fila, y el bit 62 a cero. 62 bits, no 63 (la cabecera).
+            if V >= 2 {
+                primera_s[seg * LARGO_SEGMENTO + 1] = uno;
+            }
             for p in 0..LARGO_SEGMENTO - 1 {
                 sigue_s[seg * LARGO_SEGMENTO + p] = uno;
             }
@@ -494,6 +519,13 @@ impl Air for CobroPendienteAir {
 /// **Verifica una prueba de cobro pendiente contra su enunciado.** Comprueba ANTES la forma de
 /// la traza que la prueba declara -ancho, sin segmento auxiliar y longitud [`TRAZA`]- y acepta
 /// SOLO [`opciones`]. Nunca entra en panico por lo que traiga la prueba.
+///
+/// Juzga con la v2 ([`CobroPendienteAir`]). Si no verifica, prueba la v1 ([`CobroPendienteAirV1`]),
+/// la de las pruebas ya emitidas: con un superior en [`crate::COTA_V1`] o por encima la acepta;
+/// por debajo la rehusa con la causa [`crate::PRUEBA_V1_EN_LA_VENTANA`]. Si tampoco verifica con
+/// la v1, la causa es la de la version que llego mas lejos
+/// ([`crate::la_causa_de_la_que_llego_mas_lejos`]). Por [`verificar_contra_cabeza`] el superior
+/// es [`MAX_VALOR`]: una prueba de la v1 se sigue aceptando, y dice lo que parece.
 pub fn verificar(prueba: &[u8], pi: &CobroPendientePublicInputs) -> Result<(), String> {
     comprobar_enunciado(pi)?;
     let proof =
@@ -513,8 +545,31 @@ pub fn verificar(prueba: &[u8], pi: &CobroPendientePublicInputs) -> Result<(), S
     }
     // §651 (D3-META): la marca es parte de la forma; sin ella, panico en `AIR::new`.
     crate::comprobar_marca(info.meta())?;
+    let v2 = juzgar::<2>(proof.clone(), pi);
+    if v2.is_ok() {
+        return v2;
+    }
+    let v1 = juzgar::<1>(proof, pi);
+    if v1.is_ok() {
+        let u = pi.superior.as_int();
+        if crate::v1_sin_ventana(u) {
+            return Ok(());
+        }
+        return Err(format!(
+            "{}: con el superior {u}, bajo {}, no acota el importe privado: un importe de la \
+             ventana [2^62, 2^63) tambien la pasa",
+            crate::PRUEBA_V1_EN_LA_VENTANA,
+            crate::COTA_V1
+        ));
+    }
+    crate::la_causa_de_la_que_llego_mas_lejos(v2, v1)
+}
+
+/// La verificacion de winterfell con el cobro pendiente de la version `V`: la UNICA llamada del
+/// fichero.
+fn juzgar<const V: u8>(proof: Proof, pi: &CobroPendientePublicInputs) -> Result<(), String> {
     let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
-    verify::<CobroPendienteAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+    verify::<CobroPendienteAirDe<V>, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
         proof,
         pi.clone(),
         &aceptadas,
@@ -716,5 +771,28 @@ mod tests {
         assert_eq!(C_M_IN + 8, C_INPUT);
         assert_eq!(C_INPUT + 8, C_TRANSPORT);
         assert_eq!((C_HASH_B, C_CAP_A), (C_HASH_A + ESTADO, C_HASH_B + ESTADO));
+    }
+
+    /// **§723, la v2.** El selector del primer bit marca DOS filas por segmento en la v2 y
+    /// una en la v1, y ninguna otra columna periodica cambia: las dos versiones son el mismo AIR
+    /// salvo el bit 62 de cada segmento, que la v2 fuerza a cero. Falsador: sin el `if V >= 2`, la
+    /// v2 es la v1 y la primera comparacion cae.
+    #[test]
+    fn la_v2_fuerza_a_cero_el_bit_62_de_cada_segmento() {
+        let v2 = air().get_periodic_column_values();
+        let v1 = CobroPendienteAirV1::new(TraceInfo::new(ANCHO, TRAZA), enunciado(), opciones())
+            .get_periodic_column_values();
+        let filas = |c: &[BaseElement]| -> Vec<usize> {
+            c.iter().enumerate().filter(|(_, x)| **x == BaseElement::ONE).map(|(i, _)| i).collect()
+        };
+        let l = LARGO_SEGMENTO;
+        assert_eq!(filas(&v2[P_FIRST_S]), vec![0, 1, l, l + 1, 2 * l, 2 * l + 1], "la v2");
+        assert_eq!(filas(&v1[P_FIRST_S]), vec![0, l, 2 * l], "la v1");
+        assert_eq!(v1.len(), v2.len());
+        for (k, (a, b)) in v1.iter().zip(&v2).enumerate() {
+            if k != P_FIRST_S {
+                assert_eq!(a, b, "la columna periodica {k} cambia de la v1 a la v2");
+            }
+        }
     }
 }

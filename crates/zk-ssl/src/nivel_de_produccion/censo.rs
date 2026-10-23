@@ -15,7 +15,8 @@
 //! - **la pareja umbral:** `verify_threshold_pair` compara la longitud con `2 * TRACE_LENGTH` de
 //!   su circuito;
 //! - **el kit:** cada `impl Air for` de `crates/zk-ssl-air/src`, por su fichero, con la `TRAZA` de
-//!   ese fichero. La edad (`EdadAir`, en `lib.rs`), cuya longitud depende de `m`, queda fuera:
+//!   ese fichero (⚠️ §723: y cada AIR con version, `XDe<V>`, por su familia `X`). La edad
+//!   (`EdadAir`, en `lib.rs`), cuya longitud depende de `m`, queda fuera:
 //!   tiene su test en `zk-ssl-air` (`tests_nivel`), con el piso de cada `m`.
 //!
 //! Las AIR vistas, con la edad, son las del cable: las filas `true` del censo D-L
@@ -205,8 +206,20 @@ fn cada_longitud_del_cable_tiene_su_nivel_medido() {
     for f in fuentes(&crates.join("zk-ssl-air/src")) {
         let src = codigo(&leer(&f));
         let fichero = f.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
-        for (i, _) in src.match_indices(concat!("impl Air", " for ")) {
-            let air: String = src[i + 13..].chars().take_while(|c| c.is_alphanumeric()).collect();
+        let mut implementadas: Vec<String> = src
+            .match_indices(concat!("impl Air", " for "))
+            .map(|(i, _)| src[i + 13..].chars().take_while(|c| c.is_alphanumeric()).collect())
+            .collect();
+        // §723: la banda y el cobro pendiente implementan la AIR con version, `XDe<V>`, y cuentan
+        // por su familia `X`, con la regla de `air_implementadas` de `instrumento_revela.rs`: la
+        // v1 y la v2 tienen la misma traza.
+        let con_version = concat!("impl<const V: u8> Air", " for ");
+        for (i, _) in src.match_indices(con_version) {
+            let n: String =
+                src[i + con_version.len()..].chars().take_while(|c| c.is_alphanumeric()).collect();
+            implementadas.push(n.strip_suffix("De").map(str::to_string).unwrap_or(n));
+        }
+        for air in implementadas {
             if fichero == "lib.rs" && air == "EdadAir" {
                 continue; // su longitud depende de `m`: `tests_nivel`
             }

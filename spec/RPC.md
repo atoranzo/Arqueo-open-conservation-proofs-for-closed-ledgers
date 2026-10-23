@@ -1,5 +1,5 @@
 # Arqueo JSON-RPC — especificación v0.4 (`zkssl/0.4`)
-⚠️ **`zkssl/0.4` no identifica qué pruebas acepta un nodo** (§699): las pruebas cambiaron sin subirla en el §641, el §680 y el §684, y así sigue hasta el corte de `zkssl/0.5`; y `vectors/zkssl-0.2.json` se re-emitió tres veces bajo su versión. El detalle, en «Versionado» (§«Notas operativas»).
+⚠️ **`zkssl/0.4` no identifica qué pruebas acepta un nodo** (§699): las pruebas cambiaron sin subirla en el §641, el §680 y el §684, y así sigue hasta el corte de `zkssl/0.5`; y `vectors/zkssl-0.2.json` se re-emitió tres veces bajo su versión. El detalle, en «Versionado» (§«Notas operativas»). ⚠️ §723: y en el §723, ya bajo la promesa de «Versionado y compatibilidad», las de la banda y el cobro pendiente, que no las acepta un nodo sino el kit en sus sobres: pasan a su v2, que la 0.4.3 no verifica, y lo paga el mismo corte, como la E2 del RFC-0017 (§826).
 > **Qué cambió de `0.1` a `0.2` (§209, etapa 1 del RFC-0002).** Un solo
 > cambio, y no está en los métodos: **`proof_digest` deja de calcularse
 > con un hash algebraico**. Con él cambian `chain` y la cabeza de época,
@@ -1712,7 +1712,13 @@ escrituras (R7 del RFC-0021). Hoy faltan tres:
 - **Una prueba de `zkssl/0.4` no dice de qué AIR es** (§699): las que viajan cambiaron en el §641,
   el §680 y el §684 sin subir la versión, y lo que las identifica hoy es el commit; el detalle, en
   «Versionado», en «Notas operativas». La marca que las identificará es la D-G del RFC-0018 (la 118
-  de `BACKLOG.md`), y la compuerta que verá un AIR cambiado, la E3b del RFC-0021, entra con el corte.
+  de `BACKLOG.md`), y la compuerta que verá un AIR cambiado, la E3b del RFC-0021, entra con el corte. ⚠️
+  §723: y en el §723 cambiaron otras dos, ya bajo esta promesa: la banda y el cobro pendiente del
+  kit, que viajan en el sobre de rechazo `InsufficientBalance` y en el del cobro, pasan a su v2, con
+  los tres segmentos de rango a 62 bits (la corrección de la D-3 del RFC-0017). Es una ruptura de
+  (2) que no sube la versión, y la paga el corte `zkssl/0.5`, como la de la E2 de aquel RFC (§826,
+  su «Compatibilidad»). Hasta el corte, el kit juzga la v2 y, si no verifica, la v1, y la 0.4.3 y
+  las anteriores no verifican la v2.
 - **La cabeza y la cofirma no dicen con qué esquema de firma se firmaron**: lo firmado no lo nombra
   (el acta nombra, desde el §643, el de la clave que entra). Meterlo dentro es el RFC-0020 (la 87),
   aceptado con el RFC-0021 en el §799.
@@ -1785,8 +1791,8 @@ acta.emite 1
 sobre.v 1 2
 sobre.tipo extension consumo conflicto rechazo edad cobro_pendiente pago_en_curso prenda completitud ancla ancla-cofirmada solapamiento
 kit.salida 0 1 2 3
-vectores.json 594
-vectores.lineas 1328
+vectores.json 605
+vectores.lineas 1370
 manifiesto 0.3/edad/MANIFIESTO.txt
 manifiesto 0.3/pago/MANIFIESTO.txt
 manifiesto 0.3/pendiente/MANIFIESTO.txt

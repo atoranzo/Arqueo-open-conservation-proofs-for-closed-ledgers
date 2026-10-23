@@ -23,10 +23,12 @@ Cada AIR expone lo que el verificador necesita y nada del probador:
   aserciones_aux()  `get_aux_assertions()`
 """
 
+import copy
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import nucleo as N  # noqa: E402
 import stark as S  # noqa: E402
 from stark import Rechazo  # noqa: E402
 
@@ -35,6 +37,84 @@ CICLO = 8
 ESTADO = 12
 PROFUNDIDAD = 32
 RONDAS = 7
+
+# §723, la ventana de la v1 de la banda y del cobro pendiente: `COTA_V1` y
+# `PRUEBA_V1_EN_LA_VENTANA` de zk-ssl-air (un test de alli compara estas dos lineas). La v1 tenia
+# los tres segmentos de rango en 63 bits, y el valor que acotan es privado: con un superior `u`
+# bajo `2^64 - 1 - p = 2^32 - 2`, un valor de la ventana [2^62, 2^63) tambien pasaba. La v2 los
+# baja a 62 bits. El juez acepta la v1 solo desde la cota; por debajo, con esta causa.
+COTA_V1 = 4294967294
+PRUEBA_V1_EN_LA_VENTANA = "prueba de la v1 con segmentos de 63 bits"
+assert COTA_V1 == (1 << 64) - 1 - S.P
+
+
+# §723: la unica prueba de la v1 bajo la cota que ya se publico, reconocida por la huella de
+# su contenido y su enunciado: `PUBLICADAS_V1` de banda.rs (un test de alli compara esta lista). Las
+# tuplas: (huella, raiz, cuenta, inferior, superior), con los digests en hex sin `0x`.
+PUBLICADAS_V1 = [
+    # spec/vectors/rechazo/saldo-insuficiente.json
+    ("95d8fd37865d8d0c8322535b6b8c5edbd0a6eadee05c78dba1a27a19742c32de",
+     "87b9805f534c39aecaa316fd0d8203f6feab81ba9a8ac7780f033ed465c69f1d",
+     "d38feef2725224670cef36f48f56313698363536f76355e95bea532a29660862", 0, 1000),
+]
+
+# `DOMINIO_CONTENIDO` de zk-ssl-hash: el de `huella_de_contenido`.
+DOMINIO_CONTENIDO = b"ZK-SSL-proof-content-v1"
+
+
+def huella_del_contenido(prueba):
+    """`zk_ssl_air::huella_del_contenido`: la de los compromisos de la prueba -su `Commitments`
+    serializado, con su longitud en u16-, con el molde de `resumen_con_dominio`."""
+    p = S.leer_prueba(prueba)
+    c = len(p.compromisos).to_bytes(2, "little") + p.compromisos
+    return bytes(N.limbos_reducidos(N.blake3(DOMINIO_CONTENIDO + len(c).to_bytes(8, "little") + c)))
+
+
+def _publicada_v1(prueba, air):
+    if not isinstance(air, Banda):
+        return False
+    try:
+        h = huella_del_contenido(prueba).hex()
+    except Rechazo:
+        return False
+    raiz = N.digest_to_bytes(air.root).hex()
+    cuenta = N.digest_to_bytes(air.public_id).hex()
+    return (h, raiz, cuenta, air.lower, air.upper) in PUBLICADAS_V1
+
+
+class V1EnLaVentana(Rechazo):
+    """Una prueba de la v1 que verifica, con un superior bajo `COTA_V1`: no prueba la banda."""
+
+
+def verificar_v2_o_v1(prueba, air):
+    """`verificar` de `banda.rs` y de `cobro_pendiente.rs`: juzga con la v2; si no verifica,
+    prueba la v1, y la acepta solo si su superior no deja ventana. Si la v1 tampoco verifica, la
+    causa es la de la version que llego mas lejos (`la_causa_de_la_que_llego_mas_lejos` del kit).
+    Devuelve la version con la que verifico."""
+    try:
+        S.verificar(prueba, air.con_version(2))
+        return 2
+    except Rechazo as e:
+        primera = e
+    try:
+        S.verificar(prueba, air.con_version(1))
+    except Rechazo as e:
+        # la causa de la version que llego mas lejos: la que no cae en la coherencia OOD
+        ood = "InconsistentOodConstraintEvaluations"
+        if str(primera) == ood and str(e) != ood:
+            raise e
+        raise primera
+    u = air.superior_publico()
+    if u >= COTA_V1 or _publicada_v1(prueba, air):
+        return 1
+    raise V1EnLaVentana(f"{PRUEBA_V1_EN_LA_VENTANA}: con el superior {u}, bajo {COTA_V1}, no "
+                        f"acota {air.valor_privado}: {air.uno_de_la_ventana}")
+
+
+def _con_version(air, v):
+    otro = copy.copy(air)
+    otro.version = v
+    return otro
 
 
 class Air:
@@ -85,8 +165,18 @@ class Banda(Air):
     CYC_ACC = 3
     ROW_ENLACE_HOJA, ROW_ENLACE_SALT, ROW_HOJA_LISTA, ROW_RAIZ = 7, 15, 23, 279
 
-    def __init__(self, root, public_id, lower, upper):
+    valor_privado = "el saldo privado"
+    uno_de_la_ventana = "un saldo de la ventana [2^62, 2^63) tambien la pasa"
+
+    def __init__(self, root, public_id, lower, upper, version=2):
         self.root, self.public_id, self.lower, self.upper = root, public_id, lower, upper
+        self.version = version
+
+    def con_version(self, v):
+        return _con_version(self, v)
+
+    def superior_publico(self):
+        return self.upper
 
     def enunciado(self):
         l, u = self.lower, self.upper
@@ -133,6 +223,8 @@ class Banda(Air):
         L = self.LARGO_SEGMENTO
         for seg in range(self.SEGMENTOS):
             primera[seg * L] = 1
+            if self.version >= 2:  # la v2: el bit 62 a cero, 62 bits y no 63
+                primera[seg * L + 1] = 1
             for p in range(L - 1):
                 sigue[seg * L + p] = 1
         cols += [primera, sigue]
@@ -312,10 +404,11 @@ class Prenda(Air):
 DOMINIO_META_PENDIENTE = int.from_bytes(b"PMETA_V1", "big")  # zk-ssl-hash
 
 
-def _periodicas_dos_carriles(air, desde_b, segmentos):
+def _periodicas_dos_carriles(air, desde_b, segmentos, bit62=False):
     """Las columnas periodicas comunes a cobro y pago: dos banderas de hash (la del carril B
     arranca en `desde_b`), ARK1/ARK2, el enlace del arbol, los cuatro selectores y, si hay rango,
-    sus `segmentos` de 64 bits."""
+    sus `segmentos` de 64 bits. Con `bit62`, el primer bit marca tambien la segunda fila de cada
+    segmento: la v2 del cobro pendiente."""
     T = air.traza
     cols = []
     for desde in (0, desde_b):
@@ -343,6 +436,8 @@ def _periodicas_dos_carriles(air, desde_b, segmentos):
     primera, sigue = [0] * T, [0] * T
     for seg in range(segmentos):
         primera[seg * 64] = 1
+        if bit62:
+            primera[seg * 64 + 1] = 1
         for p in range(63):
             sigue[seg * 64 + p] = 1
     cols += [primera, sigue]
@@ -365,10 +460,20 @@ class CobroPendiente(Air):
     ROW_ENLACE_IMPORTE, ROW_ENLACE_X, ROW_HOJA_LISTA, ROW_RAIZ = 7, 15, 23, 279
     TRANSPORTE = [13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 28, 29, 42, 43]
 
-    def __init__(self, seq, pending_root, pmeta_root, receptor, nacido, inferior):
+    valor_privado = "el importe privado"
+    uno_de_la_ventana = "un importe de la ventana [2^62, 2^63) tambien la pasa"
+
+    def __init__(self, seq, pending_root, pmeta_root, receptor, nacido, inferior, version=2):
         self.seq = seq
         self.pending_root, self.pmeta_root, self.receptor = pending_root, pmeta_root, receptor
         self.nacido, self.inferior, self.superior = nacido, inferior, self.MAX_VALOR
+        self.version = version
+
+    def con_version(self, v):
+        return _con_version(self, v)
+
+    def superior_publico(self):
+        return self.superior
 
     def enunciado(self):
         if self.nacido >= self.seq:
@@ -393,7 +498,7 @@ class CobroPendiente(Air):
                 + [(1, [])] * (102 - 85) + [(2, [])] * 2 + [c(1)] * (110 - 104))
 
     def periodicas(self):
-        cols = _periodicas_dos_carriles(self, self.CYC_META * CICLO, 3)
+        cols = _periodicas_dos_carriles(self, self.CYC_META * CICLO, 3, self.version >= 2)
         assert len(cols) == 36
         return cols
 

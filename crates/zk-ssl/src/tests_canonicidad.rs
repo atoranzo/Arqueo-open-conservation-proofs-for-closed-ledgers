@@ -464,3 +464,59 @@ fn el_indice_de_cuenta_del_juez_es_el_del_arbol() {
     assert_eq!(1u64 << zk_ssl_air::BITS_CUENTA, l.accounts.capacity());
     assert_eq!(1u64 << zk_ssl_air::BITS_CUENTA, crate::sparse_tree::SparseTree::new().capacity());
 }
+
+/// La hoja que necesita el falsador de la banda del kit, con su segmento de saldo en 63 bits: un
+/// saldo de la ventana `[2^62, 2^63)`, aqui `2^63 - 2^32 + 1001`, que con aquella banda probaba
+/// <<saldo en [0, 1000]>> y verificaba. La capa no la firma por ninguna de sus puertas de entrada:
+/// ni por la carga del almacen, con el saldo solo o con el suministro movido a la par, ni por la
+/// instantanea. Lo para el tope de la capa (§668). El circuito, desde la v2 de la banda, ya no
+/// depende de esto; quien fabrica la raiz a mano no pasa por aqui.
+#[test]
+fn una_hoja_de_la_ventana_no_abre_ni_se_importa() {
+    const VENTANA: u64 = (1u64 << 63) - (1u64 << 32) + 1001;
+    let r = ruta("ventana");
+    let (_, _, alice) = libro(&r);
+    let saldo = {
+        let l = abre(&r).expect("abre");
+        ts::state_of(&l, alice).balance
+    };
+    let d = VENTANA - saldo;
+    suma_en(&r, &clave(b"acct:", alice), 32, d);
+    suma_en(&r, b"meta:supply", 0, d);
+    assert_eq!(causa(abre(&r)), "suministro fuera del tope de la capa", "coordinados");
+    suma_en(&r, b"meta:supply", 0, d.wrapping_neg());
+    assert_eq!(causa(abre(&r)), "saldo fuera del tope de la capa", "solo el saldo");
+    suma_en(&r, &clave(b"acct:", alice), 32, d.wrapping_neg());
+    assert_eq!(causa(abre(&r)), "ABRE", "deshecho, abre");
+    let _ = std::fs::remove_dir_all(&r);
+
+    let f = format!("{}.snap", ruta("ventana_instantanea"));
+    let mut l = ts::new_layer();
+    ts::open_and_fund(&mut l, ts::SK_ALICE, 1_000_000);
+    l.export_snapshot(&f).expect("exportar");
+    let bytes = std::fs::read(&f).expect("leer");
+    let aguja = 1_000_000u64.to_le_bytes();
+    let donde: Vec<usize> =
+        (0..bytes.len() - 8).filter(|&i| bytes[i..i + 8] == aguja).collect();
+    assert_eq!(donde.len(), 2, "el suministro y el saldo de Alice, y nada mas: {donde:?}");
+    let (sup, saldo) = (donde[0], donde[1]);
+    let con = |cambios: &[(usize, u64)]| {
+        let mut b = bytes.clone();
+        for &(off, x) in cambios {
+            b[off..off + 8].copy_from_slice(&x.to_le_bytes());
+        }
+        std::fs::write(&f, &b).expect("escribir");
+        match SovereignLayer::import_snapshot(&f) {
+            Ok(_) => "IMPORTA".to_string(),
+            Err(LayerError::Store(StoreError::IntegrityFailure { what })) => what.to_string(),
+            Err(e) => format!("{e:?}"),
+        }
+    };
+    assert_eq!(con(&[]), "IMPORTA", "el control");
+    assert_eq!(
+        con(&[(sup, VENTANA), (saldo, VENTANA)]),
+        "suministro de la instantanea fuera del tope de la capa"
+    );
+    assert_eq!(con(&[(saldo, VENTANA)]), "saldo de la instantanea fuera del tope de la capa");
+    let _ = std::fs::remove_file(&f);
+}
