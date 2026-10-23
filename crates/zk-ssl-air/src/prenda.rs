@@ -188,6 +188,18 @@ const _: () = assert!(P_FIRST_ROW + 1 == NUM_PERIODICAS);
 /// Aserciones de frontera: las dos capacidades, la raiz, el receptor y la marca.
 pub const NUM_ASERCIONES: usize = 20;
 
+// Las celdas que ninguna restriccion mira, por diseno. El censo de celdas
+// (doc/fv/interprete_prenda.py) exige cada una aqui.
+// CELDAS_LIBRES: bit de camino: solo los enlaces de la subida lo miran (clase sin link_merkle ni link_place, col 12)
+// CELDAS_LIBRES: carril B ocioso entre el ciclo de la clave y el de la marca, y tras ella (clase hash_a, cols 30..42)
+// CELDAS_LIBRES: carril B ocioso en el enlace del importe (clase link_importe, cols 30..42)
+// CELDAS_LIBRES: carril B ocioso en el enlace del sobre (clase link_x, cols 30..42)
+// CELDAS_LIBRES: carril B ocioso tras la marca, que se aserta en la fila 31: capacidad (clase link_merkle, cols 30..34)
+// CELDAS_LIBRES: carril B ocioso tras la marca: rate alto (clase link_merkle, cols 38..42)
+// CELDAS_LIBRES: carril A muerto tras la raiz, capacidad (clase plana, cols 0..4)
+// CELDAS_LIBRES: carril A muerto tras la raiz, rate (clase plana, cols 8..12)
+// CELDAS_LIBRES: carril B muerto tras la raiz (clase plana, cols 30..42)
+
 // ------------------------------------------------------------------ las entradas publicas
 
 /// **Lo que el juez declara.** Ni `C2`, ni la clave, ni el importe: son testigo (D-AW).

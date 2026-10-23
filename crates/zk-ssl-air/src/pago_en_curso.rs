@@ -186,6 +186,17 @@ const _: () = assert!(P_SEG_LINK + SEGMENTOS == NUM_PERIODICAS);
 /// nacido.
 pub const NUM_ASERCIONES: usize = 19;
 
+// Las celdas que ninguna restriccion mira, por diseno. El censo de celdas
+// (doc/fv/interprete_pago_en_curso.py) exige cada una aqui.
+// CELDAS_LIBRES: bit de camino: solo los enlaces de la subida lo miran (clase sin link_merkle ni link_place, col 12)
+// CELDAS_LIBRES: descansos del acumulador de rango tras su segmento (clase sin cont_s, col 20)
+// CELDAS_LIBRES: carril B ocioso en el ciclo 0: lo siembra el enlace de la fila 7 (clase cont_s+first_row+first_s+hash_a, cols 30..42)
+// CELDAS_LIBRES: carril B ocioso en el ciclo 0 (clase cont_s+hash_a, cols 30..42)
+// CELDAS_LIBRES: carril A muerto tras la raiz, capacidad (clase plana, cols 0..4)
+// CELDAS_LIBRES: carril A muerto tras la raiz, rate (clase plana, cols 8..12)
+// CELDAS_LIBRES: carril B muerto tras la raiz, capacidad (clase plana, cols 30..34)
+// CELDAS_LIBRES: carril B muerto tras la raiz, rate (clase plana, cols 38..42)
+
 // ------------------------------------------------------------------ las entradas publicas
 
 /// **Lo que el juez declara.** Ni `refund_id` ni `delta` ni el emisor: testigo oculto (S538).

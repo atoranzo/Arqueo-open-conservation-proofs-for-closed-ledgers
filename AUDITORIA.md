@@ -72181,3 +72181,222 @@ bancos.
   disparan pero imponen otra cosa, las aserciones de frontera ni las auxiliares: en la edad, las 9
   del multiconjunto quedan sin cubrir, y lo dicen el test y la cabecera de `mutation.rs`. Un
   resultado limpio significa que no tienen ese fallo, no que sean correctas.
+
+## §720 — las guardias de las cinco AIR del kit: el barrido de ranuras y el censo de celdas entran en zk-ssl-air, y un hueco del barrido tumba la salida
+
+El commit que lleva este asiento, sobre `fd8134d` (el §719). Un solo sello: el barrido de ranuras
+(`tools/check_constraint_layout.py`) y el censo de celdas FV-1 (`doc/fv/censo_nucleo.py` y cinco
+intérpretes nuevos, `doc/fv/interprete_{banda,cobro_pendiente,pago_en_curso,prenda,edad}.py`)
+entran en las cinco AIR de `crates/zk-ssl-air`; las celdas libres, declaradas en comentarios
+`// CELDAS_LIBRES:` de `banda.rs`, `cobro_pendiente.rs`, `pago_en_curso.rs`, `prenda.rs` y
+`lib.rs`; `buscar_vacias_aux` en `stark-experiment/src/mutation.rs`; tres tests y un cambio de
+productor en `stark-experiment/src/circuit_edad.rs`; el §10 de `doc/VERIFICACION_FORMAL.md`; el pin
+de `tools/canon.sh` y la cuenta de las marcas de su pie «Ceguera declarada»; las cifras de tests de
+los documentos vivos; y este asiento. Lo escribe y lo
+comprueba una sesión de Claude Code, y lo commitea esa sesión, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+No arregla un fallo del kit: es herramienta y tests. Se hizo **en privado**, en la misma serie que
+los arreglos de la publicación conjunta, como manda `SECURITY.md` §5 y `spec/rfc/PROCESO.md`
+§«Fallos de seguridad» para ellos, y sale con ella. Lo midió en privado una sesión de Claude Code,
+sobre `161a233` con los arreglos del §711 al §719 tal como se hicieron en privado; se escribió
+sobre `e4eb764`, con el §711 al §719 encima, este sello lo lleva a `fd8134d` («Al portar», abajo),
+y lo que se volvió a correr aquí está en «Medido sobre este árbol». El canon entero se corre sobre
+la punta de la serie, no sobre cada sello.
+
+**De dónde sale.** El barrido de ranuras del guardián y el censo de celdas FV-1 (§1 a §9 de
+`doc/VERIFICACION_FORMAL.md`) sólo miraban `crates/stark-experiment/src`. Las cinco AIR del kit
+—banda, cobro pendiente, pago en curso, prenda y edad— son las que juzgan las pruebas de los hitos,
+y las que la segunda implementación transcribe. Ninguna de las dos herramientas entraba en ellas: el
+barrido, apuntado a `crates/zk-ssl-air/src`, dejaba 45 puntos sin comprobar y salía con 0, porque un
+hueco no era grave. Y `buscar_vacias` no mira el tramo auxiliar: en la edad, las 9 restricciones del
+multiconjunto quedaban sin cubrir, como decía el §719 en «Lo que NO cierra».
+
+**Lo que hace.**
+
+1. **El barrido entra en el kit.** `main` barre `stark-experiment/src` como siempre y después
+   `zk-ssl-air/src`, con su rótulo («el kit (zk-ssl-air)»). Para eso aprende las formas del kit,
+   cada una con su comentario: las constantes que cada AIR importa de la raíz del crate (la del
+   propio fichero gana); los cortes `&mut result[a..b]` que recibe `ronda_rescue`; los bucles de
+   tuplas de los dos carriles, con las variables juntas; los bucles sobre listas de constantes y
+   las tablas `const TRANSPORTE`; el contador secuencial de la edad (`interpretar_contadores`, que
+   devuelve hueco si un contador cambia dentro de un `if` o de un cierre); la lista periódica
+   devuelta con otro nombre; el total del tramo auxiliar, con MUERTA AUX y DESBORDE AUX; y una
+   ranura escrita dos veces desde el mismo sitio, que es colisión.
+2. **Un hueco del barrido es grave.** `barrer` gana `huecos_graves`, y `main` lo pasa en las dos
+   raíces, que están en 0 huecos. Una pisada escrita en una forma que el barrido no expande (un
+   bucle al revés, un alias de un corte de `result`, `result.iter_mut()`) salía como hueco y con
+   exit 0. Además, todo uso de `result` sin índice dentro de `evaluate_transition` o
+   `evaluate_aux_transition` es hueco, salvo la delegación entera a otra AIR. Y `main` corre el
+   `--autotest` antes de barrer: si falla, lo imprime y sale con 1.
+3. **El censo entra en el kit.** El núcleo gana claves opcionales; sin ellas hace lo de siempre.
+   Con `KIT`: la ronda por `ronda_rescue`, los selectores en línea (uno sin máscara es error), los
+   bucles de listas y tuplas, las tablas constantes y la cosecha por sumando. La edad, cíclica y con
+   tramo auxiliar, extiende la doctrina del §1, y el §10 nuevo de `doc/VERIFICACION_FORMAL.md` lo
+   dice: una referencia a la fila actual en la transición `r+1`, **bajo un selector** activo en
+   **todas** las clases sucesoras, es dueña de la celda de `r+1`; y los dueños del multiconjunto se
+   declaran, anclados en las líneas de `evaluate_aux_transition`. El guardián corre los cinco censos
+   como compuerta (`CENSOS_KIT`) y exige que cada intérprete cace todos sus mutantes, y nunca menos
+   de dos.
+4. **Las celdas libres, declaradas.** 36 líneas `// CELDAS_LIBRES:`, con su cabecera y sólo
+   comentarios: carriles muertos tras la raíz, el carril B ocioso antes de su ciclo, el bit de
+   camino fuera de la subida, los descansos del acumulador de rango, la sal de la hoja de la banda
+   y, en la edad, los testigos de cada posición fuera de la fila 0 de su ciclo. Ninguna AIR cambia
+   de restricciones: ninguna prueba, KAT ni vector cambia. Las líneas que asientos viejos citan de
+   esos cinco ficheros se corren unas líneas; son narrativa y no se reescriben.
+5. **La mutación mira el tramo auxiliar.** `buscar_vacias_aux` perturba cada celda de la principal
+   y de la auxiliar, evalúa las dos transiciones auxiliares que la tocan, con aleatorios del campo
+   base y fijos, y exige antes que la referencia las cumpla todas. En `circuit_edad.rs`,
+   `no_aux_constraint_is_vacuous` (las 9, en los dos modos del enunciado) y
+   `buscar_vacias_aux_ve_una_auxiliar_anulada` (un doble de la edad con la auxiliar 3 a cero: el
+   informe dice `[3]` y sólo eso).
+6. **El hallazgo, de la herramienta y no del AIR.** Con la doctrina laxa, la booleanidad
+   `c[x] * (c[x] - 1)` contaba como dueña de vivo, qa, qs, fuera y los bits en todas las filas, y
+   tapaba la constancia de vivo dentro del ciclo: cambiar `hf` por `enlace` en
+   `hf * (s[C_VIVO] - vivo)` dejaba el guardián entero en verde. El AIR siempre tuvo esa
+   restricción. Se cierra por dos caminos:
+   - la doctrina estricta del punto 3, con qa, qs y los bits fuera de la fila 0 declarados libres,
+     y un tercer mutante en el censo de la edad, ese cambio de selector («mutantes 3/3»);
+   - el test discriminante `un_vivo_que_se_apaga_en_la_fila_6_no_verifica`: ocho posiciones vivas,
+     la 5 sin meta; el falsador la deja viva en la fila 0 de su ciclo, la apaga en la fila 6, elige
+     un `nacido` viejo y sube la cuenta de 6 a 7. Antes de probar, evalúa el AIR real sobre la traza
+     falsa y exige que sólo falle la constancia de vivo, en las filas 45 y 46; después, que no
+     verifique. Para que el falsador use el mismo productor, `construir_auxiliar` lee el ciclo y
+     `vivo` de la fila 6, como el AIR. En una traza honesta da lo mismo.
+7. **Al portarlo.** El conflicto de `tools/canon.sh` se resolvió conservando las filas de los sellos
+   anteriores de la serie y sumando la entrada nueva a la de `stark-experiment`. En
+   `circuit_edad.rs`, el doc de `construir_auxiliar` y el del test del tope de m conservan su `§`
+   de la serie, y suman lo nuevo.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `e4eb764` (el §740), con el §711 al §719
+encima, y los lleva a `fd8134d` —el §719 ya llevado a `7dd6409`, el §895, sobre el §711 al §718
+llevados— una sesión de Claude Code, no el autor: primero sobre el §719 llevado a `6c33d2a` (el
+§865), y de ahí sobre los seis sellos del §890 al §895, que git funde sin choque con este sello («Al
+portar», en el §711). El código entra como se escribió: `main` no tocó ninguno de los ficheros de
+`crates/` ni de `doc/fv/` que toca el sello, ni `tools/check_constraint_layout.py` ni
+`doc/VERIFICACION_FORMAL.md`, y quedan byte a byte como en el sello. Lo que git no fundía, o lo que
+el sello da por supuesto de `main`, se miró a mano:
+
+- **El guardián en el canon de `main`.** `main` lo corre en el «2 ter» de `tools/canon.sh`, sin
+  argumentos, al lado de `check_columns`, cuyo universo son desde el §695 las mismas dos raíces.
+  El sello no toca esa llamada: con él, la misma llamada barre también el kit, corre antes el
+  `--autotest` y sale con 1 por un hueco. Sobre este árbol, con los comentarios del §841 en tres
+  ficheros de `stark-experiment/src`, sale con 0 y 0 huecos, y `check_columns` sigue con las
+  mismas cifras (abajo).
+- **Las citas por línea de `crates/zk-ssl-air/src/lib.rs` en dos herramientas de `main`.** Las
+  doce líneas que el sello añade a `lib.rs`, las celdas libres tras `AUXILIARES` (`:196-207`),
+  corren doce líneas lo que viene detrás. Los comentarios de `tools/check_publicadas.py` (la
+  cabecera del ATADO F: `:1027`, `:1040`, `:1187`, `:1229` y otras) y de `tools/check_catalogo.py`
+  (`:735`) citan las líneas de `lib.rs` en `212eca2`, que ya no casaban desde el §711 llevado.
+  Ninguna compuerta las lee y no cambian ningún veredicto: no se corren en este sello, como no se
+  corrieron en los anteriores, y quedan para el cierre de la serie.
+- **La cuenta del pie «Ceguera declarada» (§864).** El (a) CIEGA_PROBADOR de `tools/canon.sh`
+  cuenta las marcas `cfg_attr(debug_assertions, ignore)` de los crates con probador, y el sello
+  suma una que su versión privada no contaba, porque ese pie no existía: el falsador de la
+  constancia de vivo, `un_vivo_que_se_apaga_en_la_fila_6_no_verifica`, sólo en release como sus
+  hermanos de `circuit_edad.rs`. De 66 a 67, y de 24 a 25 en `stark-experiment`, contadas como las
+  contó el §864 (las de una línea y las de varias), con su marca «⚠️ §720» al final de la cadena.
+  Los ignorados de los pines no cambian: esas marcas sólo ignoran en depuración, y el canon corre
+  en release.
+- **Los contadores**, los del §719 llevado más los de este sello: los conflictos de
+  `tools/canon.sh`, `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `doc/INSTITUCIONAL.md` y
+  `doc/INSTITUTIONAL.md` eran sólo esas cifras (abajo, «Contadores»). Las cifras en prosa que
+  ninguna herramienta lee, buscadas por cada valor viejo con `git grep -n -w` fuera de este
+  fichero, de `spec/vectors` y de los `.rs`: 475 sólo sale como otra cosa (restricciones en
+  `ARQUITECTURA.md`, citas del §475 y las crónicas de los pines); 2039, 2179 y 2201, en ningún
+  sitio. El «fija hoy» de `ARQUITECTURA.md` y `CONTRIBUTING.md` es el de la capa, y sin vectores
+  nuevos no se mueven la lista de la superficie de `spec/RPC.md` ni los resultados de
+  `tools/segunda/README.md`.
+
+**Medido en privado**, sobre `161a233` con los arreglos del §711 al §719 tal como se hicieron en
+privado:
+
+- **Antes**, el barrido apuntado a `crates/zk-ssl-air/src`: 45 puntos sin comprobar (banda 4, cobro
+  pendiente 8, `lib.rs` 19, pago en curso 8, prenda 6), con exit 0. Sin declarar nada, los censos
+  daban 76, 66, 51, 70 y 24 celdas-clase sin dueño. Todas se leyeron una a una antes de declararlas.
+- **El barrido ve lo que dice ver**, con mutantes sobre copias de los ficheros reales, todos con
+  exit 1: la edad sin un `i += 1` o sin el `i += 4` (colisiones), sin la suma acumulada (MUERTA AUX),
+  con `ark2 = ark1` (MUERTA PERIODICA); el cobro con una tupla cruzada (COLISION) o sin el transporte
+  (MUERTA); la banda con un corte de ronda de 11; la prenda con una periódica de más. Y cada
+  intérprete caza sus mutantes.
+- **Una revisión adversarial de sólo lectura**, con 16 mutantes sobre copias, encontró los dos
+  huecos de los puntos 2 y 6, y seis menores. Se corrigieron antes de portar, salvo el KAT
+  diferencial (abajo, «Lo que NO cierra»). Después, 15 de los 16 dan exit 1. El que da 0,
+  `hf * c[C_B + k]` en vez de `f0 * ..`, es una restricción más fuerte: rompe la completitud, no la
+  solidez.
+- **El test discriminante, con el AIR cambiado** a mano (`hf` por `enlace`) y restaurado: la traza
+  falsa no viola nada y su prueba verifica con `k = 7`, también contra la cabeza del libro sin meta
+  en la 5. Con ese AIR, el test nuevo falla y `un_pendiente_vivo_sin_meta_no_se_prueba` pasa.
+- **Paridad**: las salidas de los doce intérpretes que no son la edad, idénticas byte a byte a las
+  de antes.
+- **Las suites**, en release: `stark-experiment` 478 pasan y 13 ignorados; `zk-ssl-air` 54.
+
+**Medido sobre este árbol**, `fd8134d` con este sello, en release, con el directorio de compilación
+compartido, `flock` y `nice -n 19`, en una máquina de 4 CPU compartida con otras tareas:
+
+- **`stark-experiment`**, con `cargo test --release --locked`: 478 pasan, 13 ignorados, 0
+  fallos y 0 warnings, en 18 s de tests.
+- **`zk-ssl-air`**, con la misma orden: 56 pasan, 0 fallos y 0 warnings. Es la cifra de su
+  pin: sólo cambian comentarios.
+- **`zk-ssl`**, con la misma orden, porque sus pruebas de edad (`prueba_edad.rs`,
+  `instrumento_edad.rs`) salen del productor que cambia: 546 pasan, 7 ignorados, 0 fallos y 0
+  warnings, en 122 s de tests. Es la cifra de su pin: en una traza honesta el productor da lo
+  mismo.
+- **El guardián**, `python3 tools/check_constraint_layout.py`, exit 0 en 3,8 s: «33 circuitos:
+  ninguna ranura colisiona, desborda ni queda muerta» y «5 AIR del kit: ninguna ranura colisiona,
+  desborda ni queda muerta», con los censos de banda (351 celdas-clase en 13 clases, 76 libres
+  declaradas), cobro pendiente (616, 14, 66), pago en curso (484, 11, 51), prenda (336, 8, 70) y
+  edad (332, 4, 126), los cinco con 0 sin dueño, y la edad con «mutantes 3/3». `--autotest`, exit 0,
+  con sus siete casos. Son 33 circuitos y no los 32 del §719 porque `circuit_edad.rs` entra en el
+  barrido: el doble de prueba nuevo escribe `result[3]`, y lo barre como fichero sin total propio
+  (uno de los 13 de abajo, «Lo que NO cierra»); la herramienta de antes, sobre el mismo árbol sin el
+  sello, da 32.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2204
+  declarados; `check_modulos`, 214 ficheros; `check_vectores`, 580 vectores y 1273 líneas con su
+  huella, ninguno movido; `check_cifras`, 26 cifras y ninguna contradice el canon;
+  `check_columns`, 51 ficheros, y sus columnas, 323, todas rellenas; `check_publicadas`, con 600
+  ficheros en `spec/vectors/`; `check_catalogo`, 235 textos del kit y 290 entradas de §5;
+  `check_nucleo`, 175 filas; `verificar_citas`, 0 fantasmas y 0 muertos; `check_superficie`, la
+  lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas; y `check_curvas`,
+  `check_dominios`, `check_figures` y `check_techo`. Todas salen con 0. Sin vectores ni cambios en
+  `tools/segunda`, la conformidad no se volvió a correr en este sello.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `stark-experiment` 475 -> 478, los ignorados
+en 13. TOTAL DE SELLO 2039 -> 2042 y TOTAL CON LARGOS 2179 -> 2182, en `PRINCIPIOS.md`, `PAPER.md`
+y `PAPER_EN.md`; los 475 de circuitos, a 478, en `PRINCIPIOS.md`, `PAPER.md`, `PAPER_EN.md`,
+`doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`. Las «1364 declaradas» y las «1349 declared» no se
+tocan, como en los sellos anteriores (5.A-319). `check_tests`, de 2201 a 2204. Sin vectores:
+`spec/vectors/` sigue con 600 ficheros. `zk-ssl-air` sigue en 56 y `zk-ssl` en 546. En el pie
+«Ceguera declarada» de `tools/canon.sh`, las marcas `cfg_attr(debug_assertions, ignore)` de su (a)
+CIEGA_PROBADOR, de 66 a 67: 39 en `zk-ssl`, 25 en `stark-experiment` y 3 en `zk-ssl-sdk`, con su
+marca «⚠️ §720».
+
+**Lo que NO hace.** No cambia ninguna restricción, ni el cable, la versión `zkssl/0.4`, la cabeza o
+el formato de una prueba. No toca el código de la capa, el kit (salvo los comentarios
+`CELDAS_LIBRES` del punto 4), el nodo, el testigo ni la segunda implementación. No añade vectores
+ni mueve ningún KAT. No publica un kit: el corte va al final de la serie. No corre el canon entero
+ni los bancos.
+
+**Lo que NO cierra.**
+
+- **La segunda implementación no la mira ninguna guardia**: ni el barrido, ni el censo, ni la
+  vacuidad leen `tools/segunda/airs.py`. El arreglo de fondo es el KAT diferencial que describe el
+  §10 de `doc/VERIFICACION_FORMAL.md`. Queda pendiente.
+- **El censo es sintáctico.** Referenciada no es determinada. La regla estricta sólo vale en la fila
+  actual: en la siguiente, un sumando sin selector sigue siendo dueño (la doctrina del §1). La
+  booleanidad de un bit de rango sobre la fila siguiente cuenta como dueña de esa celda: el censo no
+  distingue un bit de rango que nada ata de uno que ata el Horner. No se ha medido un mutante que
+  pase por ahí.
+- **Los dueños del multiconjunto de la edad se declaran**, no se leen. Si cambian las líneas que los
+  anclan, el censo se para.
+- **Las celdas del tramo auxiliar** (`X_H`, `X_S`) no las mira ninguna red. Sus restricciones las
+  mira la mutación, con aleatorios del campo base y fijos: una que sólo se anulara para ciertos
+  aleatorios no se distinguiría.
+- **El intérprete de contadores** no sigue un contador que cambie dentro de un `if`, un cierre o un
+  bucle sin acotar: ahí da hueco, y el hueco es grave.
+- **13 ficheros de `stark-experiment` no declaran su total**: en ellos el barrido mira colisiones,
+  no ranuras muertas ni desbordes. Viene de antes; `--verbose` ahora lo dice.
+- **El barrido no compara las periódicas que cuenta con `NUM_PERIODICAS`.** Hoy coinciden.
+- **La holgura del §489**, los tres limbos altos del rate en el enlace del nonce de la banda, sigue
+  abierta. El censo la vuelve a ver y la declara libre citando el §489, con «NO por diseño».
+  Cerrarla cambia la AIR de la banda.

@@ -193,6 +193,18 @@ const P_ARK2: usize = P_ARK1 + ESTADO;
 pub const PRINCIPALES: usize = 3 * ESTADO + 8 + ESTADO + 4 + 5 + 1 + 1 + 1 + (4 + BITS) + 2 + 1 + 3;
 pub const AUXILIARES: usize = 5 + 3 + 1;
 
+// Las celdas de la traza principal que ninguna restriccion mira, por diseno. El censo de celdas
+// (doc/fv/interprete_edad.py) exige cada una aqui. Los testigos de cada posicion solo se leen en
+// la fila 0 de su ciclo, que es la siguiente del enlace: alli los atan la hoja del pendiente
+// (leida por el multiconjunto), la meta, la edad y el emisor. En las demas filas no los lee nadie.
+// La booleanidad de qa, qs y los bits rige en todas las filas, pero no los determina: los
+// referencia. Vivo y fuera, en cambio, no se declaran: su constancia dentro del ciclo es la que
+// lleva el vivo de la fila 0 a la hoja de meta que se escribe en la fila 6.
+// CELDAS_LIBRES: hoja del pendiente, emisor y nacido fuera de la fila 0 del ciclo (clase sin enlace, cols 36..42)
+// CELDAS_LIBRES: qa y qs fuera de la fila 0 del ciclo: solo booleanos (clase sin enlace, cols 43..45)
+// CELDAS_LIBRES: inverso del emisor y producto z fuera de la fila 0 del ciclo (clase sin enlace, cols 45..47)
+// CELDAS_LIBRES: bits del resto fuera de la fila 0 del ciclo: solo booleanos (clase sin enlace, cols 51..83)
+
 // ------------------------------------------------------------------ las opciones
 
 /// §651 (D3-META): la `m` de la ocultacion de la casa, la de `ocultacion_encendida` en todos los

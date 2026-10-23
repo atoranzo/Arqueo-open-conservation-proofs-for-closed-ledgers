@@ -285,6 +285,12 @@ impl Trace for TrazaEdad {
 /// lecturas y la hoja de pendientes) y de los tres de la fila 6 (los dos nodos y la hoja de meta,
 /// con los valores de la fila 7), y la suma acumulada que el AIR comprueba fila a fila.
 ///
+/// ⚠️ Cada termino se lee en la fila donde lo lee el AIR: las lecturas en la 0 y las escrituras en
+/// la 6 (su ciclo y su `vivo`; los nodos y la meta, en la 7). En una traza honesta da lo mismo,
+/// porque vivo y el ciclo son constantes dentro del ciclo. En una falsa no: un falsador que cambia
+/// vivo dentro del ciclo tiene que escribir la hoja de meta que el AIR espera, o lo que tumbaria
+/// su prueba seria este productor y no el AIR.
+///
 /// §713: `pub(crate)` para el probador del falsador del resto (`falsadores_resto.rs`), que es este
 /// mismo con otro hasher.
 pub(crate) fn construir_auxiliar<E: FieldElement<BaseField = BaseElement>>(
@@ -305,14 +311,14 @@ pub(crate) fn construir_auxiliar<E: FieldElement<BaseField = BaseElement>>(
 
     let mut den = Vec::with_capacity(8 * hojas);
     for c in 0..hojas {
-        let (f0, f7) = (c * CICLO, c * CICLO + 7);
+        let (f0, f6, f7) = (c * CICLO, c * CICLO + 6, c * CICLO + 7);
         let ciclo = v(C_CICLO, f0);
-        let vivo = v(C_VIVO, f0);
         den.push(codificar(&pot, beta, dos * ciclo, dig(C_A + 4, f0), ca));
         den.push(codificar(&pot, beta, dos * ciclo + E::ONE, dig(C_A + 8, f0), ca));
         den.push(codificar(&pot, beta, dos * ciclo, dig(C_B + 4, f0), cb));
         den.push(codificar(&pot, beta, dos * ciclo + E::ONE, dig(C_B + 8, f0), cb));
         den.push(codificar(&pot, beta, n_hojas + ciclo, dig(C_P, f0), ca));
+        let (ciclo, vivo) = (v(C_CICLO, f6), v(C_VIVO, f6));
         let meta = dig(C_M + 4, f7);
         let hoja_meta = [vivo * meta[0], vivo * meta[1], vivo * meta[2], vivo * meta[3]];
         den.push(codificar(&pot, beta, ciclo, dig(C_A + 4, f7), ca));
@@ -499,6 +505,18 @@ mod tests {
         }
     }
 
+    /// La subraiz de meta del libro, en nativo: la hoja cero donde no hay meta.
+    fn cabeza_meta(meta: &[Option<(u64, u64)>]) -> Digest {
+        let metas: Vec<Digest> = meta
+            .iter()
+            .map(|m| match m {
+                Some((e, b)) => meta_pendiente_hoja(*e, *b),
+                None => CERO,
+            })
+            .collect();
+        subraiz(&metas)
+    }
+
     fn afirmacion(pi: &EdadPublicInputs) -> Afirmacion {
         Afirmacion {
             t: pi.t,
@@ -585,6 +603,96 @@ mod tests {
         let pi = traza.enunciado().clone();
         assert_eq!(pi.k, 4, "la falsificacion tenia que esconder una vieja");
         assert!(no_verifica(traza, &pi), "un vivo escondido verifico");
+    }
+
+    /// Las restricciones que una traza viola, con el AIR real: `(fila, ranura)` de las principales
+    /// y de las auxiliares, con la auxiliar construida por el MISMO productor que el probador y los
+    /// dos aleatorios fijos de [`AZAR`]. Todas las transiciones, sin muestrear.
+    fn violadas(traza: &TrazaEdad) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
+        use winterfell::Air;
+        let (rows, aux) = filas_de(traza, &AZAR);
+        let air = EdadAir::new(traza.info.clone(), traza.pi.clone(), opciones());
+        let periodicas = air.get_periodic_column_values();
+        let azar = AuxRandElements::new(AZAR.to_vec());
+        let (mut principales, mut auxiliares) = (Vec::new(), Vec::new());
+        for paso in 0..rows.len() - 1 {
+            let vals: Vec<BaseElement> = periodicas.iter().map(|c| c[paso % c.len()]).collect();
+            let mut fp = EvaluationFrame::<BaseElement>::new(ANCHO);
+            fp.current_mut().copy_from_slice(&rows[paso]);
+            fp.next_mut().copy_from_slice(&rows[paso + 1]);
+            let mut fa = EvaluationFrame::<BaseElement>::new(ANCHO_AUX);
+            fa.current_mut().copy_from_slice(&aux[paso]);
+            fa.next_mut().copy_from_slice(&aux[paso + 1]);
+            let mut r = vec![BaseElement::ZERO; air.context().num_main_transition_constraints()];
+            air.evaluate_transition::<BaseElement>(&fp, &vals, &mut r);
+            let mut x = vec![BaseElement::ZERO; air.context().num_aux_transition_constraints()];
+            air.evaluate_aux_transition::<BaseElement, BaseElement>(&fp, &fa, &vals, &azar, &mut x);
+            for (k, _) in r.iter().enumerate().filter(|(_, v)| **v != BaseElement::ZERO) {
+                principales.push((paso, k));
+            }
+            for (k, _) in x.iter().enumerate().filter(|(_, v)| **v != BaseElement::ZERO) {
+                auxiliares.push((paso, k));
+            }
+        }
+        (principales, auxiliares)
+    }
+
+    /// **La constancia de vivo dentro del ciclo.** Un pendiente vivo sin meta, contado igual. El
+    /// falsador deja la posicion 5 viva en la fila 0 de su ciclo -su hoja no es cero, y
+    /// `(1 - vivo) * P = 0` lo exige- y la apaga en la fila 6, donde el multiconjunto escribe
+    /// `vivo * meta`. La hoja de meta escrita es entonces la cero, la del libro, y el `nacido` de
+    /// la posicion queda libre: el falsador elige uno viejo y la cuenta sube en uno.
+    ///
+    /// La tumba `hf * (s[C_VIVO] - vivo)` y nada mas: el test lo comprueba evaluando el AIR real
+    /// sobre la traza falsa (solo esa ranura, en las filas 45 y 46). ⚠️ Con `enlace` en vez de `hf`
+    /// en esa restriccion -un selector equivocado: la ranura sigue escrita y la vacuidad no lo ve-
+    /// la traza falsa no viola nada y su prueba verifica con `k = 7`, tambien contra la cabeza del
+    /// libro sin meta en la 5 (medido con el AIR cambiado a mano y restaurado).
+    ///
+    /// Las ocho posiciones estan vivas: con el selector cambiado, vivo tendria que ser igual a los
+    /// dos lados de cada enlace, y asi la falsificacion no tropieza con nada mas.
+    #[test]
+    #[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
+    fn un_vivo_que_se_apaga_en_la_fila_6_no_verifica() {
+        let hojas: Vec<Digest> = (0..8).map(d).collect();
+        let mut meta: Vec<Option<(u64, u64)>> = (0..8).map(|p| Some((p % 3, 10 * p))).collect();
+        meta[5] = None;
+        let e = en(70, 0, true);
+        let err = celdas_del_libro(&hojas, &meta, &e).err().expect("tenia que fallar");
+        assert!(err.contains("sin meta"), "{err}");
+
+        // La posicion 5 con su hoja real, la meta del libro (cero) y un nacido viejo elegido.
+        let mut eleccion = meta.clone();
+        eleccion[5] = Some((0, 0));
+        let mut celdas = celdas_del_libro(&hojas, &eleccion, &e).expect("celdas");
+        assert!(celdas[5].qa && celdas[5].qs, "el nacido elegido tiene que contar");
+        celdas[5].vivo = false;
+        let mut traza = trazar(&celdas, 8, &e);
+        let honesta = traza.enunciado().clone();
+        assert_eq!(honesta.subraiz_meta, cabeza_meta(&meta), "la meta es la del libro");
+        assert_eq!(honesta.k, 6, "las otras siete: seis viejas");
+
+        // Viva en todo el ciclo salvo en la fila 6, contada en la fila 0, y la cuenta arrastrada.
+        let f = 5 * CICLO;
+        for fila in (f..f + CICLO).filter(|r| *r != f + 6) {
+            traza.falsear(C_VIVO, fila, BaseElement::ONE);
+        }
+        traza.falsear(C_Z, f, BaseElement::ONE);
+        let filas = traza.principal.num_rows();
+        for fila in f + 1..filas {
+            let cuenta = traza.principal.get(C_CUENTA, fila);
+            traza.falsear(C_CUENTA, fila, cuenta + BaseElement::ONE);
+        }
+        let pi = EdadPublicInputs { k: 7, ..honesta };
+        traza.declarar(pi.clone());
+
+        let constancia = zk_ssl_air::PRINCIPALES - 6;
+        assert_eq!(
+            violadas(&traza),
+            (vec![(f + 5, constancia), (f + 6, constancia)], vec![]),
+            "solo la constancia de vivo tenia que tumbarla"
+        );
+        assert!(no_verifica(traza, &pi), "un pendiente vivo sin meta se conto");
     }
 
     /// §717, el coste del juez de la edad: un libro de `2^M_MAX + 1` posiciones pide
@@ -732,8 +840,7 @@ mod tests {
     /// un emisor nombrado y todos.
     ///
     /// ⚠️ Mira las 110 restricciones PRINCIPALES. Las 9 del tramo auxiliar (el
-    /// multiconjunto) quedan sin cubrir: `buscar_vacias` no construye ese
-    /// tramo.
+    /// multiconjunto) las mira `no_aux_constraint_is_vacuous`.
     ///
     /// ⚠️ Un resultado limpio no significa que el circuito sea correcto:
     /// significa que no tiene este fallo concreto.
@@ -766,5 +873,123 @@ mod tests {
                 informe.nunca_disparadas
             );
         }
+    }
+
+    /// Las dos filas de la referencia: la principal y la auxiliar, esta construida por el MISMO
+    /// productor que usa el probador, con dos aleatorios del campo base.
+    fn filas_de(
+        traza: &TrazaEdad,
+        r: &[BaseElement],
+    ) -> (Vec<Vec<BaseElement>>, Vec<Vec<BaseElement>>) {
+        let filas = traza.principal.num_rows();
+        let rows = (0..filas)
+            .map(|f| (0..ANCHO).map(|c| traza.principal.get(c, f)).collect())
+            .collect();
+        let auxiliar = construir_auxiliar(&traza.principal, r);
+        let aux = (0..filas)
+            .map(|f| (0..ANCHO_AUX).map(|c| auxiliar.get(c, f)).collect())
+            .collect();
+        (rows, aux)
+    }
+
+    /// Dos aleatorios fijos y sin estructura. Para buscar restricciones vacias basta el campo base.
+    const AZAR: [BaseElement; ALEATORIOS] =
+        [BaseElement::new(0x1234_5678_9ABC_DEF1), BaseElement::new(0x0FED_CBA9_8765_4321)];
+
+    /// **PRUEBA POR MUTACIÓN del tramo auxiliar: ninguna de sus 9 restricciones está vacía.**
+    ///
+    /// El multiconjunto de la edad: cinco lecturas en la fila 0 del ciclo, tres escrituras en la
+    /// 6 y la suma acumulada. Perturba cada celda de las dos trazas, todas las filas, y en los dos
+    /// modos del enunciado.
+    ///
+    /// ⚠️ Un resultado limpio no significa que el multiconjunto sea correcto: significa que
+    /// ninguna de sus restricciones deja de reaccionar a las celdas que mira.
+    #[test]
+    fn no_aux_constraint_is_vacuous() {
+        use crate::mutation::buscar_vacias_aux;
+        use winterfell::Air;
+
+        let (hojas, meta) = libro();
+        for (t, emisor, todos) in [(50u64, 1u64, false), (50, 0, true)] {
+            let traza = construir(&hojas, &meta, &en(t, emisor, todos)).expect("traza");
+            let (rows, aux) = filas_de(&traza, &AZAR);
+            let air = EdadAir::new(traza.info.clone(), traza.pi.clone(), opciones());
+            let informe = buscar_vacias_aux(&air, &rows, &aux, &AZAR, 1);
+
+            assert_eq!(informe.total, zk_ssl_air::AUXILIARES, "las nueve del multiconjunto");
+            assert_eq!(informe.celdas, rows.len() * (ANCHO + ANCHO_AUX), "las dos trazas enteras");
+            assert!(
+                informe.nunca_disparadas.is_empty(),
+                "emisor {emisor}, todos {todos}: auxiliares que NINGUNA perturbacion activa \
+                 (de {}, {} celdas probadas): {:?}",
+                informe.total,
+                informe.celdas,
+                informe.nunca_disparadas
+            );
+        }
+    }
+
+    /// La edad con su auxiliar 3 anulada: la lectura del hijo derecho del carril B no impone nada.
+    struct EdadConUnaVacia(EdadAir);
+
+    impl winterfell::Air for EdadConUnaVacia {
+        type BaseField = BaseElement;
+        type PublicInputs = EdadPublicInputs;
+
+        fn new(info: TraceInfo, pi: EdadPublicInputs, o: ProofOptions) -> Self {
+            EdadConUnaVacia(EdadAir::new(info, pi, o))
+        }
+        fn context(&self) -> &winterfell::AirContext<BaseElement> {
+            self.0.context()
+        }
+        fn evaluate_transition<E: FieldElement<BaseField = BaseElement>>(
+            &self,
+            frame: &EvaluationFrame<E>,
+            periodic: &[E],
+            result: &mut [E],
+        ) {
+            self.0.evaluate_transition(frame, periodic, result)
+        }
+        fn get_assertions(&self) -> Vec<winterfell::Assertion<BaseElement>> {
+            self.0.get_assertions()
+        }
+        fn get_periodic_column_values(&self) -> Vec<Vec<BaseElement>> {
+            self.0.get_periodic_column_values()
+        }
+        fn evaluate_aux_transition<F, E>(
+            &self,
+            principal: &EvaluationFrame<F>,
+            auxiliar: &EvaluationFrame<E>,
+            periodic: &[F],
+            azar: &AuxRandElements<E>,
+            result: &mut [E],
+        ) where
+            F: FieldElement<BaseField = BaseElement>,
+            E: FieldElement<BaseField = BaseElement> + winterfell::math::ExtensionOf<F>,
+        {
+            self.0.evaluate_aux_transition(principal, auxiliar, periodic, azar, result);
+            result[3] = E::ZERO;
+        }
+        fn get_aux_assertions<E: FieldElement<BaseField = BaseElement>>(
+            &self,
+            azar: &AuxRandElements<E>,
+        ) -> Vec<winterfell::Assertion<E>> {
+            self.0.get_aux_assertions(azar)
+        }
+    }
+
+    /// **El detector del tramo auxiliar detecta.** Un detector que nunca ha detectado nada no
+    /// esta probado: con la auxiliar 3 anulada, el informe la nombra, y SOLO a ella.
+    #[test]
+    fn buscar_vacias_aux_ve_una_auxiliar_anulada() {
+        use crate::mutation::buscar_vacias_aux;
+        use winterfell::Air;
+
+        let (hojas, meta) = libro();
+        let traza = construir(&hojas, &meta, &en(50, 1, false)).expect("traza");
+        let (rows, aux) = filas_de(&traza, &AZAR);
+        let air = EdadConUnaVacia::new(traza.info.clone(), traza.pi.clone(), opciones());
+        let informe = buscar_vacias_aux(&air, &rows, &aux, &AZAR, 1);
+        assert_eq!(informe.nunca_disparadas, vec![3]);
     }
 }

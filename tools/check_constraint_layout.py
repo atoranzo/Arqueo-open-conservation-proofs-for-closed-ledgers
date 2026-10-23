@@ -43,9 +43,26 @@ expandir con certeza se marca INDETERMINADA y **cuenta como hueco del
 barrido, no como aprobado**. Un barrido que aprueba lo que no entiende es
 peor que no tener barrido: fue el error de §42.5, en esta misma auditoria.
 
+Y **las AIR del kit** (`crates/zk-ssl-air/src`), que juzgan las pruebas de
+los hitos y que la segunda implementacion transcribe del `.rs`. Hasta que
+entraron, el barrido no miraba su crate, y sus formas le eran ajenas: 45
+puntos sin expandir. Ahora las entiende —el contador secuencial de la edad
+(`let mut i = 0; result[i] = ...; i += 1;`), los cortes
+`&mut result[a..b]` que recibe `ronda_rescue`, los bucles de tuplas de los
+dos carriles, las tablas `const TRANSPORTE`, la lista periodica con otro
+nombre, las constantes que cada AIR importa de la raiz del crate y el total
+de ranuras del tramo auxiliar— y cada forma tiene su mutante en el
+autotest. Los censos FV-1 de las cinco AIR corren con las suyas.
+
+En las dos raices del arbol, un hueco tambien es GRAVE: las dos estan en 0
+huecos (medido), y una pisada en una forma que el barrido no expande sale
+como hueco, no como COLISION. Y el autotest corre siempre antes del
+barrido: si falla, el veredicto sobre el arbol no vale y el exit es 1.
+
 Uso:
     python3 tools/check_constraint_layout.py
     python3 tools/check_constraint_layout.py --verbose
+    python3 tools/check_constraint_layout.py --autotest   (solo el autotest, con su salida)
 """
 
 import itertools
@@ -55,6 +72,7 @@ import subprocess
 import sys
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..", "crates", "stark-experiment", "src")
+RAIZ_KIT = os.path.join(os.path.dirname(__file__), "..", "crates", "zk-ssl-air", "src")
 
 # Constantes de otros modulos que la cadena necesita. Si aparece una nueva sin
 # declarar aqui, el barrido lo dice en vez de suponer un valor.
@@ -93,11 +111,34 @@ RE_VEC = re.compile(r"vec!\[([^\[\]]*)\]")
 RE_FN_PERIODIC = re.compile(r"fn get_periodic_column_values")
 RE_FOR = re.compile(r"\bfor\s+(\([^)]*\)|[a-z_][a-z_0-9]*)\s+in\s+([^{]+?)\s*\{")
 RE_LET_ARRAY = re.compile(r"let\s+([a-z_][a-z_0-9]*)\s*=\s*\[([^\]]*)\]\s*;", re.S)
+RE_CONST_ARRAY = re.compile(
+    r"(?:pub\s+)?const\s+([A-Z][A-Z_0-9]*)\s*:\s*\[[^\]]*\]\s*=\s*\[([^\]]*)\]\s*;", re.S
+)
+# Los contadores secuenciales: `let mut i = 0;` y luego `result[i] = ...; i += 1;`.
+RE_LET_MUT = re.compile(r"\blet\s+mut\s+([a-z_][a-z_0-9]*)\s*(?::\s*usize\s*)?=\s*([^;]+);")
+
+# Los nombres del total de ranuras. Los circuitos de `stark-experiment` usan
+# `NUM_CONSTRAINTS`; el kit, `NUM_RESTRICCIONES` en sus cuatro AIR de un solo
+# tramo y `PRINCIPALES` / `AUXILIARES` en la edad. Sin el total no hay
+# ranuras MUERTAS ni DESBORDES que mirar.
+TOTALES = ("NUM_CONSTRAINTS", "NUM_RESTRICCIONES", "PRINCIPALES")
+TOTALES_AUX = ("NUM_AUX_CONSTRAINTS", "AUXILIARES")
 
 
-def resolver_simbolos(texto):
+def resolver_simbolos(texto, del_crate=None):
+    """Constantes del fichero resueltas a enteros.
+
+    `del_crate` son las constantes que el fichero importa de la raiz de su
+    crate (`use crate::{CICLO, ESTADO, ...}` en el kit). ⚠️ Una constante
+    del propio fichero GANA a la del crate: el cobro pendiente declara su
+    `C_A` y su `C_B` (columnas de sus carriles) y la raiz del kit declara
+    otras con el mismo nombre (columnas de la edad).
+    """
     crudos = {m.group(1): m.group(2).strip() for m in RE_CONST.finditer(texto)}
     valores = dict(EXTERNAS)
+    for nombre, v in (del_crate or {}).items():
+        if nombre not in crudos:
+            valores[nombre] = v
     for _ in range(len(crudos) + 2):
         cambio = False
         for nombre, expr in crudos.items():
@@ -140,51 +181,115 @@ def contar_elementos(cuerpo):
 
 
 def elementos_de_array(texto, nombre):
-    """Cuenta elementos de `let nombre = [ ... ];`."""
+    """Elementos de `let nombre = [ ... ];` o de `const NOMBRE: [T; N] = [ ... ];`.
+
+    El kit declara su tabla de transporte como constante del modulo
+    (`const TRANSPORTE: [usize; 17] = [...]`), no como `let` dentro de la
+    funcion: sin la segunda forma, `result[C_TRANSPORT + k]` quedaba sin
+    expandir en el cobro pendiente, el pago en curso y la prenda.
+    """
     for m in RE_LET_ARRAY.finditer(texto):
         if m.group(1) == nombre:
-            return contar_elementos(m.group(2))
+            return partir_elementos(m.group(2))
+    for m in RE_CONST_ARRAY.finditer(texto):
+        if m.group(1) == nombre:
+            return partir_elementos(m.group(2))
     return None
 
 
-def rango_de_bucle(texto, rango, valores):
-    """Conjunto de valores de la variable de un bucle, o None si no se acota."""
-    rango = rango.strip()
+def partir_elementos(cuerpo):
+    """Trozos de nivel cero de un cuerpo de array, sin los vacios."""
+    prof, trozos, actual = 0, [], []
+    for ch in cuerpo:
+        if ch in "([":
+            prof += 1
+        elif ch in ")]":
+            prof -= 1
+        if ch == "," and prof == 0:
+            trozos.append("".join(actual))
+            actual = []
+        else:
+            actual.append(ch)
+    trozos.append("".join(actual))
+    return [t.strip() for t in trozos if t.strip()]
 
-    m = re.match(r"^(.+?)\.\.(=?)(.+)$", rango)
-    if m and ".iter()" not in rango:
-        try:
-            ini = eval(m.group(1), {"__builtins__": {}}, valores)  # noqa: S307
-            fin = eval(m.group(3), {"__builtins__": {}}, valores)  # noqa: S307
-        except Exception:
-            return None
-        if isinstance(ini, int) and isinstance(fin, int):
-            return set(range(ini, fin + 1 if m.group(2) else fin))
+
+def valor_de(expr, valores):
+    """Valor entero de una expresion, o None. Acepta el sufijo `usize`."""
+    e = re.sub(r"\b([0-9]+)usize\b", r"\1", expr.strip())
+    try:
+        v = eval(e, {"__builtins__": {}}, valores)  # noqa: S307
+    except Exception:
         return None
+    return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+
+def iteraciones_de_bucle(texto, patron, rango, valores):
+    """Lista de entornos `{variable: valor}`, uno por iteracion, o None.
+
+    Un valor None dentro de un entorno quiere decir «esta variable existe
+    pero no se sabe cuanto vale» (un `true`, una expresion de campo). Usarla
+    en un indice deja ese indice INDETERMINADO, nunca aprobado.
+
+    ⚠️ **Las variables de un patron de tupla van JUNTAS.** El kit sube sus
+    dos carriles con `for (c_cap, c_place, base) in [(C_CAP_A, C_PLACE_A,
+    C_A), (C_CAP_B, C_PLACE_B, C_B)]`. Expandir cada variable por su lado y
+    cruzarlas daria cuatro combinaciones, dos de ellas falsas: `c_cap` del
+    carril A con `base` del B. El barrido pintaria escrituras que no existen.
+    """
+    rango = rango.strip()
+    if patron.startswith("("):
+        nombres = [v.strip() for v in patron[1:-1].split(",")]
+    else:
+        nombres = [patron]
+
+    def entornos(tuplas):
+        salida = []
+        for tupla in tuplas:
+            d = {n: None for n in nombres}
+            for n, v in zip(nombres, tupla):
+                d[n] = v
+            salida.append(d)
+        return salida
+
+    # for i in a..b, for i in a..=b
+    m = re.match(r"^(.+?)\.\.(=?)(.+)$", rango, re.S)
+    if m and ".iter()" not in rango and not rango.startswith("["):
+        ini, fin = valor_de(m.group(1), valores), valor_de(m.group(3), valores)
+        if ini is None or fin is None:
+            return None
+        return entornos((v,) for v in range(ini, fin + 1 if m.group(2) else fin))
 
     # for (k, x) in ARRAY.iter().enumerate()
-    m = re.match(r"^([a-z_][a-z_0-9]*)\s*\.iter\(\)\s*\.enumerate\(\)$", rango, re.S)
+    m = re.match(r"^([A-Za-z_][A-Za-z_0-9]*)\s*\.iter\(\)\s*\.enumerate\(\)$", rango, re.S)
     if m:
-        n = elementos_de_array(texto, m.group(1))
-        return set(range(n)) if n is not None else None
+        elems = elementos_de_array(texto, m.group(1))
+        if elems is None:
+            return None
+        return entornos((k, valor_de(e, valores)) for k, e in enumerate(elems))
 
     # for (k, x) in [A, B, C].iter().enumerate()  — array en linea, que el
     # proyecto parte en varias lineas.
     m = re.match(r"^\[(.*)\]\s*\.iter\(\)\s*\.enumerate\(\)$", rango, re.S)
     if m:
-        return set(range(contar_elementos(m.group(1))))
+        elems = partir_elementos(m.group(1))
+        return entornos((k, valor_de(e, valores)) for k, e in enumerate(elems))
 
+    # for x in [A, B, C], for (a, b) in [(A, B), (C, D)]
     if rango.startswith("[") and rango.endswith("]"):
-        primeros = re.findall(r"\(\s*([0-9]+)(?:usize)?\s*,", rango)
-        if primeros:
-            return {int(p) for p in primeros}
-        return None
+        filas = []
+        for e in partir_elementos(rango[1:-1]):
+            if e.startswith("(") and e.endswith(")"):
+                filas.append(tuple(valor_de(x, valores) for x in partir_elementos(e[1:-1])))
+            else:
+                filas.append((valor_de(e, valores),))
+        return entornos(filas)
 
     return None
 
 
 def bucles_que_envuelven(texto, pos, valores):
-    """Bucles abiertos y no cerrados en `pos`, con el rango de su variable."""
+    """Bucles abiertos y no cerrados en `pos`: (variables, iteraciones), de fuera adentro."""
     fuera = []
     for m in RE_FOR.finditer(texto[:pos]):
         try:
@@ -202,123 +307,102 @@ def bucles_que_envuelven(texto, pos, valores):
                     break
         if cerrado:
             continue
-        var, rango = m.group(1), m.group(2)
-        vals = rango_de_bucle(texto, rango, valores)
-        if var.startswith("("):
-            nombres = [v.strip() for v in var[1:-1].split(",")]
-            fuera.append((nombres[0], vals))
-            for otro in nombres[1:]:
-                fuera.append((otro, None))
+        patron, rango = m.group(1), m.group(2)
+        if patron.startswith("("):
+            nombres = [v.strip() for v in patron[1:-1].split(",")]
         else:
-            fuera.append((var, vals))
+            nombres = [patron]
+        fuera.append((nombres, iteraciones_de_bucle(texto, patron, rango, valores)))
     return fuera
 
 
-def indices_escritos(texto, m, valores):
-    """Indices absolutos que escribe una sentencia, o None si no se expande."""
-    expr = m.group(1).strip()
-    envolventes = bucles_que_envuelven(texto, m.start(), valores)
+def _valores_de_expr(texto, pos, expr, valores, extra=None):
+    """Valores que toma una expresion en `pos`, expandiendo sus bucles.
+
+    Es el nucleo de `indices_escritos` y de las lecturas de `periodic[...]`
+    —que pueden ser cortes `a..b`—, para que usen la MISMA maquinaria.
+    Duplicarla habria hecho que las dos divergieran en silencio.
+
+    `extra` son variables ya fijadas (los contadores del interprete
+    secuencial): no se buscan en los bucles.
+    """
+    expr = expr.strip()
+    base = dict(valores)
+    if extra:
+        base.update(extra)
+    envolventes = bucles_que_envuelven(texto, pos, valores) if extra is None else []
     libres = sorted(set(re.findall(r"\b([a-z_][a-z_0-9]*)\b", expr)))
-    libres = [v for v in libres if v not in valores]
+    libres = [v for v in libres if v not in base]
 
-    dominios = []
+    # Cada variable libre sale del bucle MAS EXTERNO que la nombra (el orden
+    # de siempre); los bucles necesarios se cruzan enteros, con sus tuplas.
+    necesarios = []
     for v in libres:
-        vals = None
-        for nombre, conjunto in envolventes:
-            if nombre == v:
-                vals = conjunto
+        for k, (nombres, _) in enumerate(envolventes):
+            if v in nombres:
+                if k not in necesarios:
+                    necesarios.append(k)
                 break
-        if vals is None:
+        else:
             return None
-        dominios.append(sorted(vals))
+    listas = []
+    for k in necesarios:
+        its = envolventes[k][1]
+        if its is None:
+            return None
+        listas.append(its)
 
-    salida = set()
-    for combo in (itertools.product(*dominios) if dominios else [()]):
-        entorno = dict(valores)
-        entorno.update(dict(zip(libres, combo)))
-        try:
-            v = eval(expr, {"__builtins__": {}}, entorno)  # noqa: S307
-        except Exception:
+    salida = []
+    for combo in (itertools.product(*listas) if listas else [()]):
+        entorno = dict(base)
+        for d in combo:
+            entorno.update(d)
+        if any(entorno.get(v) is None for v in libres):
             return None
-        if not isinstance(v, int):
+        v = valor_de(expr, entorno)
+        if v is None:
             return None
-        salida.add(v)
+        salida.append(v)
     return salida
 
 
-def _valores_de_expr(texto, pos, expr, valores):
-    """Valores que toma una expresion en `pos`, expandiendo sus bucles.
-
-    Es el nucleo de `indices_escritos`, extraido para que las lecturas de
-    `periodic[...]` —que pueden ser cortes `a..b`— usen la MISMA maquinaria.
-    Duplicarla habria hecho que las dos divergieran en silencio.
-    """
+def _valores_de_indice(texto, pos, expr, valores, extra=None):
+    """Indices de un `x[...]`, incluidos los cortes `a..b`, CON repeticiones."""
     expr = expr.strip()
-    envolventes = bucles_que_envuelven(texto, pos, valores)
-    libres = sorted(set(re.findall(r"\b([a-z_][a-z_0-9]*)\b", expr)))
-    libres = [v for v in libres if v not in valores]
-
-    dominios = []
-    for v in libres:
-        vals = None
-        for nombre, conjunto in envolventes:
-            if nombre == v:
-                vals = conjunto
-                break
-        if vals is None:
-            return None
-        dominios.append(sorted(vals))
-
-    salida = set()
-    for combo in (itertools.product(*dominios) if dominios else [()]):
-        entorno = dict(valores)
-        entorno.update(dict(zip(libres, combo)))
-        try:
-            v = eval(expr, {"__builtins__": {}}, entorno)  # noqa: S307
-        except Exception:
-            return None
-        if not isinstance(v, int):
-            return None
-        salida.add(v)
+    if ".." not in expr:
+        return _valores_de_expr(texto, pos, expr, valores, extra)
+    ini_txt, fin_txt = expr.split("..", 1)
+    inclusivo = fin_txt.startswith("=")
+    if inclusivo:
+        fin_txt = fin_txt[1:]
+    a = _valores_de_expr(texto, pos, ini_txt, valores, extra)
+    b = _valores_de_expr(texto, pos, fin_txt, valores, extra)
+    if a is None or b is None or len(a) != len(b):
+        return None
+    # ⚠️ Los extremos van en PAREJA, de la misma iteracion: `result[i..i + N]`
+    # dentro de un bucle no es el producto de todos los inicios por todos los
+    # finales.
+    salida = []
+    for x, y in zip(a, b):
+        salida.extend(range(x, y + 1 if inclusivo else y))
     return salida
 
 
 def indices_leidos(texto, m, valores):
     """Indices que lee un `periodic[...]`, incluidos los cortes `a..b`."""
-    expr = m.group(1).strip()
-    if ".." not in expr:
-        return _valores_de_expr(texto, m.start(), expr, valores)
-
-    ini_txt, fin_txt = expr.split("..", 1)
-    inclusivo = fin_txt.startswith("=")
-    if inclusivo:
-        fin_txt = fin_txt[1:]
-    a = _valores_de_expr(texto, m.start(), ini_txt, valores)
-    b = _valores_de_expr(texto, m.start(), fin_txt, valores)
-    if a is None or b is None:
-        return None
-    salida = set()
-    for x in a:
-        for y in b:
-            salida.update(range(x, y + 1 if inclusivo else y))
-    return salida
+    v = _valores_de_indice(texto, m.start(), m.group(1), valores)
+    return None if v is None else set(v)
 
 
 def tamano_de_bucle(texto, rango, valores):
     """Cuantas veces itera un bucle, o None si no se acota.
 
     Para CONTAR empujes basta el tamano; los valores no hacen falta. Por eso
-    acepta arrays literales como `[true, false]`, que `rango_de_bucle` no
-    puede convertir en indices y devolveria None.
+    acepta arrays literales como `[true, false]`, cuyos elementos no son
+    indices.
     """
-    vals = rango_de_bucle(texto, rango, valores)
-    if vals is not None:
-        return len(vals)
-    r = rango.strip()
-    if r.startswith("[") and r.endswith("]") and ".iter()" not in r:
-        n = contar_elementos(r[1:-1])
-        return n if n else None
-    return None
+    its = iteraciones_de_bucle(texto, "_", rango, valores)
+    return len(its) if its is not None else None
 
 
 def _envolventes_acotadas(texto, pos, valores):
@@ -373,6 +457,9 @@ def _cuerpo_de_funcion(texto, nombre):
     return None
 
 
+DELEGADA = "delegada"
+
+
 def columnas_construidas(texto, valores):
     """Cuantas columnas periodicas construye el circuito, o None.
 
@@ -389,6 +476,13 @@ def columnas_construidas(texto, valores):
         return 0  # el circuito no tiene cadena periodica
     cuerpo, desplazamiento = cuerpo_pos
 
+    # Un envoltorio que DELEGA la cadena en otro AIR (`self.0.get_periodic_
+    # column_values()`, los dobles de prueba de `circuit_edad`) no construye
+    # columnas propias: su cadena se comprueba donde vive. Si el fichero
+    # ademas LEE periodicas, `analizar` lo marca como hueco.
+    if re.fullmatch(r"\{\s*self\.\w+\.get_periodic_column_values\(\)\s*\}", cuerpo):
+        return DELEGADA
+
     # Forma 1: `columns.push(...)`, expandiendo sus bucles.
     total, hubo = 0, False
     for m in RE_PUSH.finditer(cuerpo):
@@ -399,6 +493,23 @@ def columnas_construidas(texto, valores):
         total += n
     if hubo:
         return total
+
+    # Forma 1b: la lista que la funcion DEVUELVE, se llame como se llame. El
+    # kit la llama `columnas` y la edad `cols`; con `columns` fijo, las cinco
+    # AIR del kit quedaban con la cadena periodica sin comprobar. Se cuentan
+    # solo los `push` a la variable devuelta: la edad empuja tambien a sus
+    # columnas sueltas (`hash.push(...)`, `v.push(...)`), que no son la lista.
+    m_dev = re.search(r"\b([a-z_][a-z_0-9]*)\s*\}\s*$", cuerpo)
+    if m_dev:
+        total, hubo = 0, False
+        for m in re.finditer(r"\b%s\.push\(" % re.escape(m_dev.group(1)), cuerpo):
+            hubo = True
+            n = _envolventes_acotadas(texto, desplazamiento + m.start(), valores)
+            if n is None:
+                return None
+            total += n
+        if hubo:
+            return total
 
     # Forma 2: `vec![a, b, c]` devuelto directamente.
     listas = [g for g in RE_VEC.findall(cuerpo) if ";" not in g]
@@ -439,13 +550,240 @@ def sin_comentarios(texto):
     return "".join(salida)
 
 
-def analizar(ruta):
+_AUSENTE = object()
+
+
+def _fin_de_sentencia(texto, i):
+    """Fin (exclusivo) de la sentencia que empieza en `i`, o None.
+
+    Una sentencia acaba en el `;` de nivel cero. Un bloque que no lleva `;`
+    (`if ... { } else { }`) acaba en su llave de cierre si lo que sigue no es
+    un `else`.
+    """
+    prof = 0
+    j, n = i, len(texto)
+    while j < n:
+        ch = texto[j]
+        if ch in "([{":
+            prof += 1
+        elif ch in ")]}":
+            prof -= 1
+            if prof < 0:
+                return None
+            if ch == "}" and prof == 0:
+                resto = texto[j + 1:].lstrip()
+                if not resto.startswith("else") and not resto.startswith(";") \
+                        and not resto.startswith(".") and not resto.startswith(")"):
+                    # `let x = match k { ... };` sigue con `;`: no acaba aqui.
+                    cabeza = texto[i:j].lstrip()
+                    if re.match(r"(if|while|loop|match|unsafe)\b|\{", cabeza):
+                        return j + 1
+        elif ch == ";" and prof == 0:
+            return j + 1
+        j += 1
+    return None
+
+
+def interpretar_contadores(cuerpo, valores, contadores, texto=None):
+    """Ejecuta el cuerpo de una funcion con sus contadores secuenciales.
+
+    La edad no escribe `result[C_X + k]`: lleva un contador, `let mut i = 0;`,
+    y escribe `result[i] = ...; i += 1;`. El barrido sintactico no puede
+    expandir eso sin seguir el orden de las sentencias: eran 18 de los 45
+    puntos sin comprobar del kit. Este interprete lo sigue.
+
+    Entiende: `let mut c = <entero>;`, `c += <expr>;`, `c = <expr>;`, los
+    `for` con las formas de `iteraciones_de_bucle` (anidados, desenrollados
+    en orden) y las escrituras `result[...]` en cualquier sentencia, cortes
+    incluidos.
+
+    Devuelve `{posicion_en_cuerpo: [indices, con repeticiones]}` con TODAS
+    las ejecuciones de cada sitio, o None si no puede seguir el cuerpo: un
+    contador que cambia dentro de un `if`, de un cierre o de un bucle que no
+    se acota. ⚠️ None es «no comprobado»: el sitio vuelve a ser un hueco del
+    barrido, nunca un aprobado.
+
+    ⚠️ Con un contador, un mismo sitio PUEDE escribir dos veces la misma
+    ranura (un `i += 1` olvidado dentro de un bucle). Por eso devuelve las
+    repeticiones: es la firma de §38 en su forma secuencial.
+    """
+    salida = {}
+
+    def ejecutar(ini, fin, entorno):
+        p = ini
+        while p < fin:
+            m_ws = re.compile(r"\s*").match(cuerpo, p)
+            p = m_ws.end()
+            if p >= fin:
+                return True
+            m_for = RE_FOR.match(cuerpo, p)
+            if m_for:
+                abre = cuerpo.index("{", m_for.end() - 1)
+                prof, cierra = 0, None
+                for k in range(abre, fin):
+                    if cuerpo[k] == "{":
+                        prof += 1
+                    elif cuerpo[k] == "}":
+                        prof -= 1
+                        if prof == 0:
+                            cierra = k
+                            break
+                if cierra is None:
+                    return False
+                bloque = cuerpo[abre + 1:cierra]
+                toca = RE_WRITE.search(bloque) or any(
+                    re.search(r"\b%s\s*(\+=|=[^=])" % c, bloque) for c in contadores)
+                entorno_valores = dict(valores)
+                entorno_valores.update({k: v for k, v in entorno.items() if v is not None})
+                # Las tablas (`const TRANSPORTE: [usize; N]`) viven fuera de la
+                # funcion: se buscan en el fichero entero.
+                its = iteraciones_de_bucle(texto if texto is not None else cuerpo,
+                                           m_for.group(1), m_for.group(2), entorno_valores)
+                if its is None:
+                    if toca:
+                        return False
+                else:
+                    # ⚠️ El MISMO entorno: lo que un contador avanza dentro del
+                    # bucle sigue avanzado en la vuelta siguiente y al salir.
+                    # Solo las variables del bucle vuelven a lo que eran.
+                    antes = {k: entorno.get(k, _AUSENTE) for it in its[:1] for k in it}
+                    for it in its:
+                        entorno.update(it)
+                        if not ejecutar(abre + 1, cierra, entorno):
+                            return False
+                    for k, v in antes.items():
+                        if v is _AUSENTE:
+                            entorno.pop(k, None)
+                        else:
+                            entorno[k] = v
+                p = cierra + 1
+                continue
+
+            f = _fin_de_sentencia(cuerpo[:fin], p)
+            if f is None:
+                return False
+            sent = cuerpo[p:f]
+            # Un contador que cambia dentro de llaves (un `if`, un cierre) no
+            # se sigue: el orden ya no es el del texto.
+            interior = sent[sent.find("{"):] if "{" in sent else ""
+            for c in contadores:
+                if re.search(r"\b%s\s*(\+=|-=|=[^=])" % c, interior):
+                    return False
+            m_let = RE_LET_MUT.match(sent)
+            if m_let and m_let.group(1) in contadores:
+                v = valor_de(m_let.group(2), dict(valores, **{
+                    k: x for k, x in entorno.items() if x is not None}))
+                if v is None:
+                    return False
+                entorno[m_let.group(1)] = v
+            else:
+                m_asig = re.match(r"([a-z_][a-z_0-9]*)\s*(\+=|-=|=)\s*([^;]+);", sent)
+                if m_asig and m_asig.group(1) in contadores:
+                    v = valor_de(m_asig.group(3), dict(valores, **{
+                        k: x for k, x in entorno.items() if x is not None}))
+                    if v is None:
+                        return False
+                    viejo = entorno.get(m_asig.group(1))
+                    if m_asig.group(2) != "=" and viejo is None:
+                        return False
+                    entorno[m_asig.group(1)] = (
+                        v if m_asig.group(2) == "="
+                        else viejo + v if m_asig.group(2) == "+="
+                        else viejo - v)
+            for m_w in RE_WRITE.finditer(sent):
+                fijas = {k: x for k, x in entorno.items() if x is not None}
+                idx = _valores_de_indice(cuerpo, p + m_w.start(), m_w.group(1), valores, fijas)
+                pos = p + m_w.start()
+                if idx is None:
+                    salida[pos] = None
+                elif salida.get(pos, []) is not None:
+                    salida.setdefault(pos, []).extend(idx)
+            p = f
+        return True
+
+    # `_cuerpo_de_funcion` devuelve el cuerpo CON sus llaves.
+    ini, fin = (1, len(cuerpo) - 1) if cuerpo.startswith("{") else (0, len(cuerpo))
+    if not ejecutar(ini, fin, {}):
+        return None
+    return salida
+
+
+def contadores_de(cuerpo, valores):
+    """Los `let mut c = <entero>;` del cuerpo que indexan un `result[...]`."""
+    usados = set()
+    for m in RE_WRITE.finditer(cuerpo):
+        usados.update(re.findall(r"\b([a-z_][a-z_0-9]*)\b", m.group(1)))
+    return sorted(
+        m.group(1) for m in RE_LET_MUT.finditer(cuerpo)
+        if m.group(1) in usados and valor_de(m.group(2), valores) is not None
+    )
+
+
+# Un uso de `result` que no es un indice: `result.iter_mut()`, `result.fill(..)`,
+# `result.copy_from_slice(..)`. RE_WRITE no lo ve, ni siquiera como hueco.
+RE_RESULT_SUELTO = re.compile(r"\bresult\b(?!\s*\[)")
+RE_DELEGACION = re.compile(r"\.evaluate_(?:aux_)?transition\s*\(")
+
+
+def usos_sin_indice(texto):
+    """Los usos de `result` sin indice dentro de las funciones de evaluacion.
+
+    ⚠️ Cada uno es un HUECO: una escritura por `result.iter_mut().skip(k)`
+    puede anular una ranura que otro sitio escribe, y el barrido, que solo
+    lee `result[..]`, no la veia ni como hueco (medido: una pisada asi sobre
+    la cuenta de la edad salia con exit 0). Se exceptua la delegacion
+    ENTERA a otra AIR (`self.0.evaluate_transition(.., result)`), la forma
+    de los dobles de prueba: las ranuras de la AIR delegada las barre su
+    propio fichero.
+    """
+    salida = []
+    for nombre_fn in ("evaluate_transition", "evaluate_aux_transition"):
+        busca = 0
+        while True:
+            k = texto.find("fn " + nombre_fn + "<", busca)
+            k2 = texto.find("fn " + nombre_fn + "(", busca)
+            k = min(x for x in (k, k2, len(texto)) if x >= 0)
+            if k >= len(texto):
+                break
+            cp = _cuerpo_de_funcion(texto[k:], nombre_fn)
+            if cp is None:
+                break
+            cuerpo, desp = cp
+            for u in RE_RESULT_SUELTO.finditer(cuerpo):
+                antes = cuerpo[:u.start()]
+                inicio = max(antes.rfind(";"), antes.rfind("{"), antes.rfind("}"))
+                llamadas = list(RE_DELEGACION.finditer(antes, inicio + 1))
+                # `result` entero, como ULTIMO argumento de la llamada, no dentro
+                # de otra expresion: `x.evaluate_transition(f, p, g(result))` no vale.
+                if llamadas:
+                    args = antes[llamadas[-1].end():]
+                    if (args.count("(") == args.count(")")
+                            and re.match(r"\s*\)", cuerpo[u.end():])):
+                        continue
+                linea = texto[: k + desp + u.start()].count("\n") + 1
+                fin = cuerpo.find(";", u.start())
+                trozo = " ".join(cuerpo[u.start():fin if fin > 0 else u.end() + 40].split())
+                salida.append((linea, "uso de `result` sin indice: " + trozo[:60]))
+            busca = k + desp + len(cuerpo)
+    return salida
+
+
+def analizar(ruta, del_crate=None):
     texto = sin_comentarios(open(ruta, encoding="utf-8").read())
-    valores, crudos, sin_resolver = resolver_simbolos(texto)
+    valores, crudos, sin_resolver = resolver_simbolos(texto, del_crate)
     grupos = {n: valores[n] for n in crudos if n.startswith("C_") and n in valores}
-    total = valores.get("NUM_CONSTRAINTS")
+    # El total sale de una constante DEL FICHERO, nunca de la raiz del crate:
+    # la banda no tiene las 110 ranuras de la edad.
+    total = next((valores[n] for n in TOTALES if n in crudos and n in valores), None)
+    total_aux = next((valores[n] for n in TOTALES_AUX if n in crudos and n in valores), None)
     if not RE_WRITE.search(texto):
         return None
+    # Un grupo es una constante `C_` con la que se indexa `result`. En la edad
+    # las `C_` son COLUMNAS (C_A, C_P, ...) y las ranuras van por contador:
+    # rotular «ranura 36 (C_P+0)» señalaria una columna como si fuera grupo.
+    en_indices = " ".join(m.group(1) for m in RE_WRITE.finditer(texto))
+    if not re.search(r"\bC_[A-Z_0-9]*\b", en_indices):
+        grupos = {}
 
     # §534: las escrituras dentro de `evaluate_aux_transition` van al `result` del tramo
     # auxiliar, OTRO espacio de ranuras (winterfell le pasa su propio `result`): no colisionan
@@ -456,24 +794,54 @@ def analizar(ruta):
     aux = _cuerpo_de_funcion(texto, "evaluate_aux_transition")
     aux_ini, aux_fin = (aux[1], aux[1] + len(aux[0])) if aux else (-1, -1)
 
+    # Las funciones con contador secuencial (la edad) se ejecutan en orden;
+    # sus sitios salen del interprete, con repeticiones.
+    interpretadas = {}
+    for nombre_fn in ("evaluate_transition", "evaluate_aux_transition"):
+        cp = _cuerpo_de_funcion(texto, nombre_fn)
+        if cp is None:
+            continue
+        cuerpo, desplazamiento = cp
+        contadores = contadores_de(cuerpo, valores)
+        if not contadores:
+            continue
+        r = interpretar_contadores(cuerpo, valores, contadores, texto)
+        if r is None:
+            continue  # sus sitios quedan como huecos, no como aprobados
+        for pos, idx in r.items():
+            interpretadas[desplazamiento + pos] = idx
+
     escrituras, indeterminadas = [], []
     for m in RE_WRITE.finditer(texto):
-        idx = indices_escritos(texto, m, valores)
+        if m.start() in interpretadas:
+            idx = interpretadas[m.start()]
+        else:
+            # Con repeticiones: un sitio en un bucle cuyo indice no depende de
+            # la variable del bucle, o una tupla repetida, escribe la misma
+            # ranura dos veces. Como conjunto, eso no se veia.
+            idx = _valores_de_indice(texto, m.start(), m.group(1), valores)
         linea = texto[: m.start()].count("\n") + 1
         if idx is None:
             indeterminadas.append((linea, m.group(0)))
         else:
             escrituras.append((linea, idx, aux_ini <= m.start() < aux_fin))
+    indeterminadas.extend(usos_sin_indice(texto))
 
+    # ⚠️ Una ranura ya escrita es COLISION aunque la vuelva a escribir el
+    # mismo sitio: con un contador, un `i += 1` olvidado en un bucle escribe
+    # la misma ranura desde la misma linea. Los sitios sin contador no
+    # repiten indice, asi que para ellos nada cambia.
     duenos, colisiones = {}, {}
     duenos_aux, colisiones_aux = {}, {}
     for linea, idx, en_aux in escrituras:
         d, c = (duenos_aux, colisiones_aux) if en_aux else (duenos, colisiones)
         for i in idx:
-            if i in d and d[i] != linea:
-                c.setdefault(i, set()).update({d[i], linea})
+            if i in d:
+                if i not in c:
+                    c[i] = [d[i]]
+                c[i].append(linea)
             else:
-                d.setdefault(i, linea)
+                d[i] = linea
 
     cubiertas = set(duenos)
     desbordes = sorted(i for i in cubiertas if total is not None and i >= total)
@@ -481,6 +849,10 @@ def analizar(ruta):
     # asi que no se puede hablar de ranuras muertas. Las COLISIONES —que son
     # la firma de §38— si se detectan igual.
     muertas = sorted(set(range(total)) - cubiertas) if total is not None else []
+    # Y lo mismo en el tramo auxiliar, contra su propio total.
+    cubiertas_aux = set(duenos_aux)
+    desbordes_aux = sorted(i for i in cubiertas_aux if total_aux is not None and i >= total_aux)
+    muertas_aux = sorted(set(range(total_aux)) - cubiertas_aux) if total_aux is not None else []
 
     # ===== LA CADENA PERIODICA (entrada 39) =====
     #
@@ -497,6 +869,10 @@ def analizar(ruta):
         else:
             p_leidas.update(idx)
 
+    if p_construidas == DELEGADA:
+        # Sin cadena propia no hay nada que cruzar; leerla aqui SI seria un hueco.
+        p_desbordes, p_muertas = [], []
+        p_construidas = 0 if not (p_leidas or p_indeterminadas) else None
     if p_construidas is None:
         p_desbordes, p_muertas = [], []
     else:
@@ -505,6 +881,9 @@ def analizar(ruta):
 
     return {
         "total": total,
+        "total_aux": total_aux,
+        "desbordes_aux": desbordes_aux,
+        "muertas_aux": muertas_aux,
         "colisiones": colisiones,
         "colisiones_aux": colisiones_aux,
         "desbordes": desbordes,
@@ -543,13 +922,15 @@ def grupo_de(indice, grupos):
 #
 # El interprete vive en doc/fv/ —donde §188 lo cita— y se ejecuta tal cual:
 # caza sus DOS mutantes en cada corrida («mutantes 2/2» en su COMPUERTA),
-# asi que el caso-mutacion viene sembrado de fabrica y aqui SE EXIGE.
+# asi que el caso-mutacion viene sembrado de fabrica y aqui SE EXIGE. Un
+# interprete puede llevar mas (la edad del kit lleva tres: «mutantes 3/3»);
+# se exigen todos, y nunca menos de dos.
 CENSO_RUTA = os.path.join(
     os.path.dirname(__file__), "..", "doc", "fv", "interprete_multiciclo.py"
 )
 RE_COMPUERTA = re.compile(
     r"^COMPUERTA: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
-    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d+)/(\d+) \u00b7 "
     r"C_SEG_LINK\u2192guardi\u00e1n$"
 )
 CENSO_CREDIT_RUTA = os.path.join(
@@ -557,7 +938,7 @@ CENSO_CREDIT_RUTA = os.path.join(
 )
 RE_COMPUERTA_CREDIT = re.compile(
     r"^COMPUERTA-CREDIT: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
-    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d+)/(\d+) \u00b7 "
     r"C_SEG_LINK\u2192guardi\u00e1n$"
 )
 CENSO_MINT_PAGOS_RUTA = os.path.join(
@@ -565,7 +946,7 @@ CENSO_MINT_PAGOS_RUTA = os.path.join(
 )
 RE_COMPUERTA_MINT = re.compile(
     r"^COMPUERTA-MINT: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
-    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d+)/(\d+) \u00b7 "
     r"C_SEG_LINK\u2192guardi\u00e1n$"
 )
 CENSO_RECOVERY_RUTA = os.path.join(
@@ -573,7 +954,7 @@ CENSO_RECOVERY_RUTA = os.path.join(
 )
 RE_COMPUERTA_RECOVERY = re.compile(
     r"^COMPUERTA-RECOVERY: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
-    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d+)/(\d+) \u00b7 "
     r"C_SEG_LINK\u2192guardi\u00e1n$"
 )
 CENSO_SEND_RUTA = os.path.join(
@@ -581,7 +962,7 @@ CENSO_SEND_RUTA = os.path.join(
 )
 RE_COMPUERTA_SEND = re.compile(
     r"^COMPUERTA-SEND: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
-    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d+)/(\d+) \u00b7 "
     r"C_SEG_LINK\u2192guardi\u00e1n$"
 )
 CENSO_CLAIM_RUTA = os.path.join(
@@ -589,7 +970,7 @@ CENSO_CLAIM_RUTA = os.path.join(
 )
 RE_COMPUERTA_CLAIM = re.compile(
     r"^COMPUERTA-CLAIM: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
-    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d+)/(\d+) \u00b7 "
     r"C_SEG_LINK\u2192guardi\u00e1n$"
 )
 
@@ -622,18 +1003,21 @@ def _censo_fv1(sujeto, ruta, prefijo, regex):
         if m is None:
             faltas.append(f"[CENSO] COMPUERTA con forma inesperada: {linea}")
         else:
-            clases, celdas, libres, huerf, mut = m.groups()
+            clases, celdas, libres, huerf, mut, total = m.groups()
             if huerf != "0":
                 faltas.append(
                     f"[CENSO] {huerf} celda(s)-clase SIN DUE\u00d1O en {sujeto}"
                 )
-            if mut != "2":
-                faltas.append(f"[CENSO] el interprete cazo {mut}/2 mutantes")
+            # Todos los mutantes cazados, y al menos los dos de siempre: un
+            # interprete que pierde un mutante no puede salir verde por contar
+            # menos.
+            if mut != total or int(total) < 2:
+                faltas.append(f"[CENSO] el interprete cazo {mut}/{total} mutantes")
             if not faltas:
                 return (
                     f"Censo {sujeto}: {celdas} celdas-clase en {clases} "
                     f"clases \u00b7 {libres} libres declaradas \u00b7 0 sin "
-                    f"due\u00f1o \u00b7 mutantes 2/2."
+                    f"due\u00f1o \u00b7 mutantes {mut}/{total}."
                 ), []
     return None, faltas
 
@@ -665,6 +1049,52 @@ def censo_send():
 def censo_claim():
     return _censo_fv1("claim", CENSO_CLAIM_RUTA,
                       "COMPUERTA-CLAIM:", RE_COMPUERTA_CLAIM)
+
+
+CENSOS_STARK = (
+    ("circuit_mint_climb.rs", censo_mint_climb),
+    ("circuit_credit_climb.rs", censo_credit_climb),
+    ("circuit_recovery_climb.rs", censo_recovery_climb),
+    ("circuit_mint.rs", censo_mint_pagos),
+    ("circuit_send.rs", censo_send),
+    ("circuit_claim.rs", censo_claim),
+)
+
+
+# ===== LOS CENSOS DEL KIT (zk-ssl-air) =====
+#
+# Las cinco AIR del kit, con el mismo nucleo (`doc/fv/censo_nucleo.py`) y
+# sus formas propias (ESPEC["KIT"]). La banda, el cobro pendiente y el pago
+# en curso tienen segmentos de rango, y su candidato C_SEG_LINK lo para este
+# guardian; la prenda y la edad no tienen segmentos. La edad es ciclica y
+# tiene tramo auxiliar: su censo cuenta tambien la fila ACTUAL, solo bajo
+# selector, y los dueños que declara el multiconjunto
+# (doc/fv/interprete_edad.py). Su tercer mutante cambia el selector de la
+# constancia de vivo (`hf` por `enlace`): ni el barrido ni la vacuidad lo
+# ven, porque la ranura sigue escrita y la restriccion sigue reaccionando.
+def _re_compuerta(rotulo, cola):
+    return re.compile(
+        r"^COMPUERTA-%s: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
+        r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d+)/(\d+) \u00b7 "
+        r"C_SEG_LINK\u2192%s$" % (rotulo, cola)
+    )
+
+
+def _censo_kit(sujeto, interprete, rotulo, cola):
+    ruta = os.path.join(os.path.dirname(__file__), "..", "doc", "fv", interprete)
+    return lambda: _censo_fv1(sujeto, ruta, "COMPUERTA-%s:" % rotulo,
+                              _re_compuerta(rotulo, cola))
+
+
+CENSOS_KIT = (
+    ("banda.rs", _censo_kit("banda", "interprete_banda.py", "BANDA", "guardi\u00e1n")),
+    ("cobro_pendiente.rs", _censo_kit("cobro pendiente", "interprete_cobro_pendiente.py",
+                                      "COBRO", "guardi\u00e1n")),
+    ("pago_en_curso.rs", _censo_kit("pago en curso", "interprete_pago_en_curso.py",
+                                    "PAGO", "guardi\u00e1n")),
+    ("prenda.rs", _censo_kit("prenda", "interprete_prenda.py", "PRENDA", "sin segmento")),
+    ("lib.rs (edad)", _censo_kit("edad", "interprete_edad.py", "EDAD", "sin segmento")),
+)
 
 
 CASO_50 = """
@@ -764,6 +1194,80 @@ fn evaluate_aux_transition(&self) {
 """
 
 
+# Las formas del kit (zk-ssl-air), en pequeño: un contador secuencial con un
+# corte (la edad), una tupla de carriles y una tabla de transporte constante
+# (el cobro pendiente, el pago en curso y la prenda), y la lista periodica con
+# otro nombre. Sano: 2 + 4 + 2 + 2 = 10 ranuras, cada una una vez.
+CASO_KIT = """
+const ESTADO: usize = 2;
+const C_CAP_A: usize = 4;
+const C_CAP_B: usize = 6;
+const C_TRANSPORT: usize = 8;
+const NUM_RESTRICCIONES: usize = 10;
+const AUXILIARES: usize = 1;
+const TRANSPORTE: [usize; 2] = [
+    COL_UNO,
+    COL_DOS,
+];
+const P_UNO: usize = 0;
+const P_DOS: usize = 1;
+
+fn get_periodic_column_values(&self) -> Vec<Vec<Self::BaseField>> {
+    let mut cols = Vec::new();
+    let mut v = Vec::new();
+    v.push(uno);
+    cols.push(v);
+    for k in [true, false] {
+        cols.push(otra);
+    }
+    cols
+}
+
+fn evaluate_transition(&self) {
+    let mut i = 0;
+    ronda(&mut result[i..i + ESTADO]);
+    i += ESTADO;
+    for k in 0..2 {
+        result[i] = periodic[P_UNO];
+        i += 1;
+    }
+    for (c_cap, base) in [(C_CAP_A, 0), (C_CAP_B, 12)] {
+        for j in 0..2 {
+            result[c_cap + j] = periodic[P_DOS + j] * siguiente[base + j];
+        }
+    }
+    for (k, col) in TRANSPORTE.iter().enumerate() {
+        result[C_TRANSPORT + k] = siguiente[*col] - actual[*col];
+    }
+    let _ = i;
+}
+
+fn evaluate_aux_transition(&self) {
+    result[0] = suma;
+}
+"""
+
+
+def _barrer_caso(texto, huecos_graves=False):
+    """Barre un circuito sembrado, sin censo; devuelve (rc, salida)."""
+    import io
+    import tempfile
+    from contextlib import redirect_stdout
+
+    d = tempfile.mkdtemp()
+    ruta = os.path.join(d, "caso.rs")
+    with open(ruta, "w") as f:
+        f.write(texto)
+    buf = io.StringIO()
+    try:
+        with redirect_stdout(buf):
+            rc = barrer(d, verbose=False, con_censo=False, huecos_graves=huecos_graves)
+    finally:
+        os.unlink(ruta)
+        os.rmdir(d)
+    return rc, buf.getvalue()
+
+
 def autotest():
     """Comprueba que el detector caza el fallo real de §50.
 
@@ -856,14 +1360,137 @@ def autotest():
         return 1
     print("autotest: el tramo auxiliar es otro espacio de ranuras (§534), "
           "y sus colisiones se ven igual")
+
+    # ===== Las formas del kit: limpias, sin huecos, y cada fallo visto =====
+    #
+    # Sin estas, el barrido del kit podria salir verde por no entender: los
+    # 45 puntos que no expandia eran exactamente estas formas.
+    rc, salida = _barrer_caso(CASO_KIT)
+    # Sin `--verbose`, el barrido solo nombra el fichero si tiene algo que decir.
+    if rc != 0 or "caso.rs" in salida or "NO ha comprobado" in salida:
+        print(f"AUTOTEST FALLA: el caso sano del kit no sale limpio (rc {rc}):\n{salida}")
+        return 1
+    mutantes_kit = (
+        # (que se rompe, de, a, lo que tiene que gritar)
+        ("el i += 1 olvidado en el bucle del contador",
+         "        result[i] = periodic[P_UNO];\n        i += 1;\n",
+         "        result[i] = periodic[P_UNO];\n", "(el mismo sitio, mas de una vez)"),
+        ("el contador que no avanza tras el corte",
+         "    i += ESTADO;\n", "", "[COLISION]"),
+        ("la tupla del carril B con la capacidad del A",
+         "(C_CAP_B, 12)", "(C_CAP_A, 12)", "[COLISION]"),
+        ("una fila de la tabla de transporte de menos",
+         "    COL_UNO,\n", "", "[MUERTA]"),
+        ("la ranura auxiliar sin escribir",
+         "    result[0] = suma;\n", "    let _ = suma;\n", "[MUERTA AUX]"),
+        ("una periodica de mas en la lista devuelta",
+         "    cols\n}", "    cols.push(tercera);\n    cols\n}", "[MUERTA PERIODICA]"),
+    )
+    for que, de, a, grito in mutantes_kit:
+        if CASO_KIT.count(de) != 1:
+            print(f"AUTOTEST FALLA: el mutante «{que}» no casa una sola vez")
+            return 1
+        rc, salida = _barrer_caso(CASO_KIT.replace(de, a))
+        if rc != 1 or grito not in salida:
+            print(f"AUTOTEST FALLA: el barrido no ve «{que}» (rc {rc}):\n{salida}")
+            return 1
+    print(f"autotest: las formas del kit salen limpias y sin huecos, y el barrido "
+          f"ve sus {len(mutantes_kit)} mutantes (contador, corte, tupla, tabla, "
+          f"tramo auxiliar, lista periodica)")
+
+    # ===== Un hueco tambien tumba el exit donde la raiz esta en 0 huecos =====
+    #
+    # Una pisada en una forma que el barrido no expande no da COLISION: sale
+    # como hueco. Sin `huecos_graves`, el exit era 0 (medido sobre una copia
+    # de la banda). Tres formas: un bucle que el barrido no sabe recorrer, un
+    # alias de un corte de `result` y un iterador sobre `result`, que antes
+    # ni siquiera era hueco. Las tres pisan una ranura que otro sitio escribe.
+    sin_aux = CASO_534.split("fn evaluate_aux_transition")[0]
+    pisadas = (
+        # (la forma, el caso sano, de, a)
+        ("un bucle al reves", sin_aux, "    result[C_B] = b;\n",
+         "    result[C_B] = b;\n    for j in (0..1).rev() {\n"
+         "        result[C_A + j] = cero;\n    }\n"),
+        ("un alias del corte", CASO_KIT, "    let _ = i;\n}",
+         "    let r = &mut result[C_CAP_A..];\n    r[0] = cero;\n    let _ = i;\n}"),
+        ("un iterador sobre result", sin_aux, "    result[C_B] = b;\n",
+         "    result[C_B] = b;\n    result.iter_mut().skip(1).for_each(|x| *x = cero);\n"),
+    )
+    for que, sano, de, a in pisadas:
+        # El caso sano sale limpio CON huecos_graves: el hueco es la pisada.
+        rc_sano, salida = _barrer_caso(sano, huecos_graves=True)
+        if sano.count(de) != 1 or rc_sano != 0 or "NO ha comprobado" in salida:
+            print(f"AUTOTEST FALLA: la base de «{que}» no sale limpia (rc {rc_sano}):\n{salida}")
+            return 1
+        caso = sano.replace(de, a)
+        rc_blando, salida = _barrer_caso(caso)
+        rc_duro, _ = _barrer_caso(caso, huecos_graves=True)
+        if "NO ha comprobado" not in salida or "[COLISION]" in salida \
+                or (rc_blando, rc_duro) != (0, 1):
+            print(f"AUTOTEST FALLA: la pisada por «{que}» tenia que ser un hueco, "
+                  f"con exit 0 sin huecos_graves y 1 con el; da {rc_blando} y "
+                  f"{rc_duro}:\n{salida}")
+            return 1
+    print(f"autotest: una pisada que el barrido no expande es un hueco, y con "
+          f"huecos_graves tumba el exit ({len(pisadas)} formas)")
+
+    # ===== Y sobre la edad REAL: un `i += 1` de menos es colision =====
+    ruta_edad = os.path.join(RAIZ_KIT, "lib.rs")
+    real = open(ruta_edad, encoding="utf-8").read()
+    de = "            i += 1;\n        }\n        i += 4;\n        let dominio"
+    if real.count(de) != 1:
+        print("AUTOTEST FALLA: el ancla del mutante de la edad no casa una sola vez "
+              "(la edad cambio de forma: rehacer el mutante)")
+        return 1
+    import shutil
+    import tempfile
+
+    d = tempfile.mkdtemp()
+    try:
+        with open(os.path.join(d, "lib.rs"), "w", encoding="utf-8") as f:
+            f.write(real.replace(de, "        }\n        i += 4;\n        let dominio"))
+        r = analizar(os.path.join(d, "lib.rs"), constantes_del_crate(RAIZ_KIT))
+    finally:
+        shutil.rmtree(d)
+    if not r["colisiones"] or r["indeterminadas"]:
+        print(f"AUTOTEST FALLA: la edad sin su `i += 1` no da colision "
+              f"({len(r['colisiones'])} colisiones, {len(r['indeterminadas'])} huecos)")
+        return 1
+    print(f"autotest: la edad real sin un `i += 1` da {len(r['colisiones'])} "
+          f"ranuras en colision")
     return 0
 
 
-def barrer(raiz, verbose, con_censo):
+def constantes_del_crate(raiz):
+    """Las constantes de la raiz del crate (`lib.rs`), resueltas.
+
+    El kit declara `CICLO`, `ESTADO`, `PROFUNDIDAD` y `RONDAS` en su raiz y
+    cada AIR las importa con `use crate::{...}`. Sin ellas, la banda no sabia
+    cuanto mide `result[C_HASH..C_HASH + ESTADO]`.
+    """
+    ruta = os.path.join(raiz, "lib.rs")
+    if not os.path.exists(ruta):
+        return {}
+    texto = sin_comentarios(open(ruta, encoding="utf-8").read())
+    valores, _, _ = resolver_simbolos(texto)
+    return valores
+
+
+def barrer(raiz, verbose, con_censo, del_crate=None, censos=None, rotulo="circuitos",
+           huecos_graves=False):
     """Recorre `raiz`; devuelve 1 si hay GRAVES, 0 si no.
 
     `con_censo=False` existe para el autotest: permite barrer un
-    directorio sembrado sin arrastrar el censo del arbol real.
+    directorio sembrado sin arrastrar el censo del arbol real. `censos` es
+    la lista de censos FV-1 de esa raiz; por defecto, los de
+    `stark-experiment`.
+
+    `huecos_graves=True`: un hueco del barrido tambien tumba el exit. ⚠️ Sin
+    eso, una pisada escrita en una forma que el barrido no sabe expandir
+    (`for i in (0..1).rev()`, un alias de un corte de `result`) no da
+    COLISION ni MUERTA: sale como hueco, y el exit era 0. Las dos raices del
+    arbol estan hoy en 0 huecos (medido), y `main` lo fija: un hueco nuevo es
+    un fallo hasta que el barrido aprenda su forma.
     """
     graves = huecos = barridos = 0
 
@@ -872,7 +1499,7 @@ def barrer(raiz, verbose, con_censo):
         if not fichero.endswith(".rs"):
             continue
         ruta = os.path.join(raiz, fichero)
-        r = analizar(ruta)
+        r = analizar(ruta, del_crate)
         if r is None:
             # ⚠️ Un circuito que escribe restricciones pero no usa constantes
             # `C_` no se puede analizar con este barrido. Callarlo daria una
@@ -886,14 +1513,29 @@ def barrer(raiz, verbose, con_censo):
         for i, sitios in sorted(r["colisiones"].items()):
             lineas.append(
                 f"    [COLISION] ranura {i} ({grupo_de(i, r['grupos'])}): "
-                f"escrita en las lineas {sorted(sitios)}"
+                f"escrita en las lineas {sorted(set(sitios))}"
+                + (" (el mismo sitio, mas de una vez)" if len(set(sitios)) == 1 else "")
             )
             graves += 1
 
         for i, sitios in sorted(r["colisiones_aux"].items()):
             lineas.append(
                 f"    [COLISION AUX] ranura {i} del tramo auxiliar: "
-                f"escrita en las lineas {sorted(sitios)}"
+                f"escrita en las lineas {sorted(set(sitios))}"
+                + (" (el mismo sitio, mas de una vez)" if len(set(sitios)) == 1 else "")
+            )
+            graves += 1
+
+        for i in r["desbordes_aux"]:
+            lineas.append(
+                f"    [DESBORDE AUX] ranura {i} del tramo auxiliar >= {r['total_aux']}"
+            )
+            graves += 1
+
+        if r["muertas_aux"]:
+            lineas.append(
+                f"    [MUERTA AUX] {len(r['muertas_aux'])} ranura(s) del tramo "
+                f"auxiliar sin escribir: {r['muertas_aux']}"
             )
             graves += 1
 
@@ -957,20 +1599,22 @@ def barrer(raiz, verbose, con_censo):
             for ln in lineas:
                 print(ln)
         elif verbose:
-            print(f"\n  {fichero}: {r['total']} ranuras, cada una escrita una vez")
+            if r["total"] is None:
+                # Sin total propio no hay MUERTAS ni DESBORDES que mirar: un doble de
+                # prueba, o un circuito que no declara su `NUM_CONSTRAINTS`.
+                print(f"\n  {fichero}: sin total propio: solo se miran colisiones, "
+                      "y no hay ninguna")
+            else:
+                extra = (f" + {r['total_aux']} auxiliares"
+                         if r["total_aux"] is not None else "")
+                print(f"\n  {fichero}: {r['total']} ranuras{extra}, "
+                      "cada una escrita una vez")
 
     linea_censo = None
     if con_censo:
         # ===== LOS CENSOS (FV-1, §189/§191): ven la celda que estas redes no ven =====
         partes = []
-        for fichero_censo, fn_censo in (
-            ("circuit_mint_climb.rs", censo_mint_climb),
-            ("circuit_credit_climb.rs", censo_credit_climb),
-            ("circuit_recovery_climb.rs", censo_recovery_climb),
-            ("circuit_mint.rs", censo_mint_pagos),
-            ("circuit_send.rs", censo_send),
-            ("circuit_claim.rs", censo_claim),
-        ):
+        for fichero_censo, fn_censo in (censos if censos is not None else CENSOS_STARK):
             linea_c, faltas_censo = fn_censo()
             if faltas_censo:
                 print(f"\n  {fichero_censo} (censo FV-1)")
@@ -985,7 +1629,7 @@ def barrer(raiz, verbose, con_censo):
     print()
     if graves:
         print(
-            f"{graves} problema(s) GRAVE(S) en {barridos} circuitos. Una COLISION "
+            f"{graves} problema(s) GRAVE(S) en {barridos} {rotulo}. Una COLISION "
             "es la firma de §38 y puede ser un fallo de solidez como §39, §50 o "
             "§50.7: se mira con un test discriminante, no por lectura."
         )
@@ -993,11 +1637,12 @@ def barrer(raiz, verbose, con_censo):
         print(
             f"{huecos} punto(s) que este barrido NO ha comprobado. No son "
             "aprobados: son huecos del propio barrido, y hay que mirarlos a mano."
+            + (" Aqui son GRAVES: esta raiz esta fijada en 0 huecos." if huecos_graves else "")
         )
     if not graves and not huecos:
         censo_txt = f" {linea_censo}" if linea_censo else ""
         print(
-            f"{barridos} circuitos: ninguna ranura colisiona, desborda ni queda "
+            f"{barridos} {rotulo}: ninguna ranura colisiona, desborda ni queda "
             "muerta, y ninguna columna periodica se lee fuera de rango ni se "
             "construye sin leerse." + censo_txt
         )
@@ -1015,13 +1660,38 @@ def barrer(raiz, verbose, con_censo):
             "defecto de §38 es MAS facil, no menos, porque no hay una cadena de "
             "constantes que delate el desajuste."
         )
-    return 1 if graves else 0
+    return 1 if graves or (huecos_graves and huecos) else 0
 
 
 def main():
     if "--autotest" in sys.argv:
         return autotest()
-    return barrer(RAIZ, "--verbose" in sys.argv, con_censo=True)
+    # El autotest corre siempre antes del barrido: cuesta una decima de
+    # segundo, y sin el una regresion del propio barrido (una forma que deja
+    # de entender, un mutante que deja de ver) pasaria en silencio. Solo se
+    # imprime si falla.
+    import io
+    from contextlib import redirect_stdout
+
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        rc_auto = autotest()
+    if rc_auto != 0:
+        print(buf.getvalue(), end="")
+        print("El autotest del barrido FALLA: su veredicto sobre el arbol no vale.")
+        return 1
+    verbose = "--verbose" in sys.argv
+    rc = barrer(RAIZ, verbose, con_censo=True, huecos_graves=True)
+    # Las AIR del kit: las que juzgan las pruebas de los hitos (banda y edad;
+    # cobro pendiente, pago en curso y prenda), y las que la segunda
+    # implementacion transcribe. Hasta aqui tenian menos guardias que los
+    # circuitos de `stark-experiment`: el barrido no entraba en su crate.
+    print()
+    print("== el kit (zk-ssl-air) ==")
+    rc_kit = barrer(RAIZ_KIT, verbose, con_censo=True,
+                    del_crate=constantes_del_crate(RAIZ_KIT),
+                    censos=CENSOS_KIT, rotulo="AIR del kit", huecos_graves=True)
+    return 1 if (rc or rc_kit) else 0
 
 
 if __name__ == "__main__":

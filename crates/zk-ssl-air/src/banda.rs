@@ -140,6 +140,16 @@ pub const NUM_PERIODICAS: usize = 35;
 /// entran las cuatro de identidad (D-2b).
 pub const NUM_ASERCIONES: usize = 17;
 
+// Las celdas que ninguna restriccion mira. El censo de celdas (doc/fv/interprete_banda.py) exige
+// cada una aqui: una celda sin dueno y sin declarar es un rojo del guardian. Todas son testigo por
+// diseno SALVO la del §489, que es un fallo conocido y abierto, no un testigo.
+// CELDAS_LIBRES: sal de hoja testigo, solo la lee el enlace de la fila 15 (clase *, cols 23..27)
+// CELDAS_LIBRES: bit de camino: solo los enlaces de la subida lo miran (clase sin link_merkle ni link_place, col 12)
+// CELDAS_LIBRES: descansos del acumulador de rango entre segmentos y tras ellos (clase sin cont_s, col 22)
+// CELDAS_LIBRES: NO por diseno: limbos altos del rate en el enlace del nonce, la holgura conocida y abierta del §489, no explotable contra una raiz firmada; cerrarla cambia el AIR (clase cont_s+link_leaf, cols 9..12)
+// CELDAS_LIBRES: carril muerto tras la raiz, capacidad (clase plana, cols 0..4)
+// CELDAS_LIBRES: carril muerto tras la raiz, rate (clase plana, cols 8..12)
+
 // ------------------------------------------------------------------ las entradas publicas
 
 /// **Lo que el juez declara.** Las mismas cuatro que el AIR de auditoria: la raiz del estado

@@ -313,3 +313,90 @@ el falso positivo del alias). **Queda de la 71**: selectores multi-ciclo
 los circuitos de cuentas) y el injerto en el guardián como compuerta —
 sesión propia, cobertura sobre concepto probado. FV-2: tras el injerto.
 FV-3: horizonte.
+
+## 10. FV-1 en el kit (`zk-ssl-air`)
+
+Las cinco AIR del kit —banda, cobro pendiente, pago en curso, prenda y
+edad— tienen censo:
+`doc/fv/interprete_{banda,cobro_pendiente,pago_en_curso,prenda,edad}.py`,
+sobre el mismo núcleo (`censo_nucleo.py`), y el guardián
+(`tools/check_constraint_layout.py`) los corre como compuerta junto a los
+seis de `stark-experiment`. Antes de eso ni el barrido de ranuras ni el
+censo entraban en el crate: son las AIR que juzgan las pruebas de los hitos
+y las que la segunda implementación transcribe del `.rs`, así que una celda
+sin dueño en el `.rs` habría pasado en las dos.
+
+En las dos raíces, un hueco del barrido (una escritura que no sabe
+expandir) es GRAVE, no un aviso: las dos están en 0 huecos, y una pisada en
+una forma que el barrido no expande —un bucle al revés, un alias de un
+corte de `result`, `result.iter_mut()`— salía como hueco con exit 0. Y el
+autotest del barrido corre antes de cada barrido.
+
+**Lo que el núcleo aprende para el kit** (`ESPEC["KIT"]`; sin esa clave el
+núcleo hace lo de siempre, y la paridad de los seis censos anteriores se
+midió byte a byte):
+
+- la ronda por `ronda_rescue(actual, siguiente, ark1, ark2, bandera, ..)`:
+  sus dueños son las doce celdas de la fila siguiente del carril, bajo su
+  bandera;
+- los selectores **en línea** (`periodic[P_HASH_B]` dentro de la sentencia).
+  Uno que no tiene máscara es error, no «sin selector»: tomarlo por sin
+  selector reclamaría la celda en todas las clases;
+- los bucles sobre listas y tuplas (los dos carriles) y las tablas
+  `const TRANSPORTE: [usize; N]`;
+- la cosecha **por sumando**: en `s[C_CICLO] - c[C_CICLO] - enlace` el
+  `enlace` se resta, no selecciona, y la celda queda atada en todas las
+  filas.
+
+**La edad extiende la doctrina del §1, y lo dice.** Es cíclica (cada ciclo
+de 8 filas es un nodo) y tiene tramo auxiliar. La fila 0 de cada ciclo, que
+es la siguiente del enlace, la atan restricciones de la fila ACTUAL (`f0 *
+c[..]`) y las lecturas del multiconjunto. Por eso, solo en ella:
+
+4. una referencia a la fila actual en la transición `r+1`, **bajo un
+   selector** activo en todas las clases sucesoras de la de `r` (las clases
+   de las filas `r+1`), es dueña de la celda de la fila `r+1`;
+5. los dueños del tramo auxiliar (lecturas en `f0`, escrituras en `f6`) se
+   declaran en la ESPEC y se anclan en las líneas de
+   `evaluate_aux_transition`.
+
+Las dos condiciones de la regla 4 se midieron. **Sin selector no hay
+dueño**: la booleanidad `c[x] * (c[x] - 1)` referencia la celda en todas
+las filas, pero no la determina (el «referenciada ≠ determinada» del §1).
+Contarla tapaba la constancia de vivo dentro del ciclo: cambiar `hf` por
+`enlace` en `hf * (s[C_VIVO] - vivo)` dejaba el barrido y los cinco censos
+en verde (medido), y la vacuidad tampoco lo ve, porque la restricción sigue
+reaccionando en el enlace. Con la regla estricta, ese mutante deja la col
+42 sin dueño, y es el tercer mutante del censo de la edad («mutantes
+3/3»). Qa, qs
+y los bits fuera de la fila 0 del ciclo se declaran libres: solo los ata la
+booleanidad. Lo que ese mutante abre lo tumba un test discriminante,
+`un_vivo_que_se_apaga_en_la_fila_6_no_verifica`. **En todas las
+sucesoras, no en una**: la clase `hash` de la edad (filas 1..5) tiene por
+sucesoras `hash` y `f6+hash`, y un selector activo solo en f6 aprobaba la
+celda de las filas 2..5, que no mira (sesgo al verde, §59.2; con la regla
+buena el resultado no cambia).
+
+Las restricciones del tramo auxiliar las mira la prueba por mutación de
+`stark-experiment` (`buscar_vacias_aux`). Sus celdas (`X_H`, `X_S`) no las
+mira ninguna red.
+
+**Lo que encontró.** Ninguna celda sin dueño que no sea testigo por diseño.
+Las declaradas (`// CELDAS_LIBRES:` en cada AIR) son los carriles muertos
+tras la raíz, el carril B ocioso antes de su ciclo, el bit de camino fuera
+de la subida, los descansos del acumulador de rango, la sal de la hoja de la
+banda y, en la edad, los testigos de cada posición fuera de la fila 0 de su
+ciclo (qa, qs y los bits, solo booleanos). Y una ya conocida, que no es por
+diseño: los tres limbos altos del rate en el enlace del nonce de la banda,
+la holgura del §489, abierta, no explotable contra una raíz firmada, y que
+el censo vuelve a ver.
+
+**Lo que no cierra.** Ni el barrido, ni el censo, ni la vacuidad miran la
+segunda implementación (`tools/segunda/airs.py`). Un error de
+transcripción en ella —una restricción vacía en Python— dejaría a la
+segunda aceptar lo que el kit rechaza, y ningún vector honesto lo vería. El
+arreglo de fondo es un KAT diferencial: evaluar `evaluate_transition` y
+`evaluate_aux_transition` del kit sobre marcos pseudoaleatorios con semilla
+fija, y que la segunda compare `transicion` y `transicion_aux` elemento a
+elemento (coincidir en puntos aleatorios lleva las guardias del `.rs` al
+`.py`). Queda pendiente.

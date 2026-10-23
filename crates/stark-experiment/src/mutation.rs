@@ -39,14 +39,16 @@
 //! - Restricciones que **sí se disparan pero imponen lo que no se cree**.
 //!   Eso ninguna herramienta lo detecta: exige leer y entender.
 //! - Restricciones de **frontera** (aserciones), que son otro mecanismo.
-//! - Restricciones del tramo **auxiliar**: sólo evalúa las principales. En
-//!   la edad, las 9 auxiliares quedan sin mirar.
+//! - Restricciones del tramo **auxiliar** con [`buscar_vacias`]: esa sólo
+//!   evalúa las principales. Las auxiliares las mira
+//!   [`buscar_vacias_aux`], que necesita además la traza auxiliar y sus
+//!   aleatorios.
 //!
 //! Un resultado limpio **no significa que el circuito sea correcto**.
 //! Significa que no tiene este fallo concreto.
 
 use winterfell::math::{fields::f64::BaseElement, FieldElement};
-use winterfell::{Air, EvaluationFrame};
+use winterfell::{Air, AuxRandElements, EvaluationFrame};
 
 /// Lee la traza entera como filas.
 ///
@@ -79,6 +81,45 @@ where
     // AIR de un solo tramo las dos cuentas coinciden.
     let mut result = vec![BaseElement::ZERO; air.context().num_main_transition_constraints()];
     air.evaluate_transition::<BaseElement>(&frame, &vals, &mut result);
+    result
+}
+
+/// Evalúa las restricciones AUXILIARES de transición en un paso.
+///
+/// Los aleatorios y la traza auxiliar van en el campo BASE: para buscar
+/// restricciones vacías basta, porque lo que se mira es si una perturbación
+/// las dispara, no la solidez del argumento.
+fn evaluar_aux<A>(
+    air: &A,
+    rows: &[Vec<BaseElement>],
+    aux: &[Vec<BaseElement>],
+    periodic: &[Vec<BaseElement>],
+    aleatorios: &AuxRandElements<BaseElement>,
+    paso: usize,
+) -> Vec<BaseElement>
+where
+    A: Air<BaseField = BaseElement>,
+{
+    let mut principal = EvaluationFrame::<BaseElement>::new(rows[0].len());
+    principal.current_mut().copy_from_slice(&rows[paso]);
+    principal.next_mut().copy_from_slice(&rows[paso + 1]);
+    let mut auxiliar = EvaluationFrame::<BaseElement>::new(aux[0].len());
+    auxiliar.current_mut().copy_from_slice(&aux[paso]);
+    auxiliar.next_mut().copy_from_slice(&aux[paso + 1]);
+
+    let vals: Vec<BaseElement> = periodic
+        .iter()
+        .map(|col| col[paso % col.len()])
+        .collect();
+
+    let mut result = vec![BaseElement::ZERO; air.context().num_aux_transition_constraints()];
+    air.evaluate_aux_transition::<BaseElement, BaseElement>(
+        &principal,
+        &auxiliar,
+        &vals,
+        aleatorios,
+        &mut result,
+    );
     result
 }
 
@@ -152,6 +193,85 @@ where
                 for (i, v) in r.iter().enumerate() {
                     if *v != BaseElement::ZERO {
                         disparada[i] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    Informe {
+        nunca_disparadas: (0..n).filter(|i| !disparada[*i]).collect(),
+        total: n,
+        celdas,
+    }
+}
+
+/// Busca restricciones AUXILIARES que ninguna perturbación de una celda activa.
+///
+/// La misma técnica que [`buscar_vacias`], sobre el tramo auxiliar: perturba
+/// cada celda de la traza PRINCIPAL y de la AUXILIAR, evalúa las dos
+/// transiciones auxiliares que la tocan y anota qué restricciones se
+/// disparan. `aux` es la traza auxiliar construida con `aleatorios`, fila a
+/// fila; quien llama la construye con el mismo productor que el probador.
+///
+/// ⚠️ Lo mismo que [`buscar_vacias`] no encuentra, y además: el
+/// multiconjunto se evalúa con aleatorios del campo base y fijos. Una
+/// restricción que solo se anula para ciertos aleatorios no se distingue.
+///
+/// ⚠️ La referencia debe cumplir TODAS las auxiliares en todos los pasos:
+/// si no, el informe marcaría como disparadas las que ya lo estaban.
+pub fn buscar_vacias_aux<A>(
+    air: &A,
+    rows: &[Vec<BaseElement>],
+    aux: &[Vec<BaseElement>],
+    aleatorios: &[BaseElement],
+    muestra_filas: usize,
+) -> Informe
+where
+    A: Air<BaseField = BaseElement>,
+{
+    let periodic = air.get_periodic_column_values();
+    let azar = AuxRandElements::new(aleatorios.to_vec());
+    let n = air.context().num_aux_transition_constraints();
+    let length = rows.len();
+    assert_eq!(aux.len(), length, "la traza auxiliar mide lo mismo que la principal");
+
+    for paso in (0..length - 1).step_by(muestra_filas) {
+        let base = evaluar_aux(air, rows, aux, &periodic, &azar, paso);
+        for (i, v) in base.iter().enumerate() {
+            assert_eq!(
+                *v,
+                BaseElement::ZERO,
+                "la traza de referencia no es valida: auxiliar {i} en el paso {paso}"
+            );
+        }
+    }
+
+    let delta = BaseElement::new(0x9E37_79B9_7F4A_7C15);
+    let mut disparada = vec![false; n];
+    let mut celdas = 0usize;
+
+    // Primero las celdas de la principal (tramo 0) y luego las de la auxiliar (tramo 1).
+    for tramo in 0..2 {
+        let ancho = if tramo == 0 { rows[0].len() } else { aux[0].len() };
+        for fila in (0..length).step_by(muestra_filas) {
+            for col in 0..ancho {
+                celdas += 1;
+                let (mut p, mut x) = (rows.to_vec(), aux.to_vec());
+                if tramo == 0 {
+                    p[fila][col] += delta;
+                } else {
+                    x[fila][col] += delta;
+                }
+                for paso in [fila.saturating_sub(1), fila] {
+                    if paso + 1 >= length {
+                        continue;
+                    }
+                    let r = evaluar_aux(air, &p, &x, &periodic, &azar, paso);
+                    for (i, v) in r.iter().enumerate() {
+                        if *v != BaseElement::ZERO {
+                            disparada[i] = true;
+                        }
                     }
                 }
             }
