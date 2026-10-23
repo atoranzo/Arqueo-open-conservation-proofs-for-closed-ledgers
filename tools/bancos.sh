@@ -116,7 +116,7 @@ exit 1
 # esos 25, el unico que no ha corrido en ninguna pasada entera que conste es
 # `reinicio` (§783), y los otros han cambiado desde el §709 (el §771, el §785
 # y el §786, entre otros): los 1.891 s son de sus versiones de entonces. Una
-# pasada con los 25 no se ha medido. ⚠️ §712: decia 26 y 25, y `reinicio` el unico sin pasada entera que conste; con `banco_bifurcacion.sh` son 27 y una pasada corre 26, y de `bifurcacion` tampoco consta ninguna pasada entera: una con los 26 no se ha medido.
+# pasada con los 25 no se ha medido. ⚠️ §712: decia 26 y 25, y `reinicio` el unico sin pasada entera que conste; con `banco_bifurcacion.sh` son 27 y una pasada corre 26, y de `bifurcacion` tampoco consta ninguna pasada entera: una con los 26 no se ha medido. ⚠️ §722: decia 27 y 26; con `banco_historia_comun.sh` son 28 y una pasada corre 27, y de `historia_comun` consta una corrida suelta (su asiento), no una pasada entera: una con los 27 no se ha medido.
 #
 # `reinicio` compila el nodo SOLO (`-p zk-ssl-node`), y cargo le unifica otras
 # features que al nodo, el verificador y el testigo juntos (`getrandom` 0.2 sin

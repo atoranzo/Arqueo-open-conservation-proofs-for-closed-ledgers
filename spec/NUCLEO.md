@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 111 elementos alcanzables en `zk-ssl-verify` y 64 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 138, REFERENCIA 14, REGISTRO 18). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 117 elementos alcanzables en `zk-ssl-verify` y 64 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 143, REFERENCIA 14, REGISTRO 18). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`, `actas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -216,6 +216,11 @@ real de sus llaves, no por la primera marca.
 | `Tramo` | `verify/actas.rs` | NÚCLEO | ACTA | `struct` |
 | `contiene` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
 | `tramos_de` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `relevo_del_acta` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `CabezaDeLaCadena` | `verify/actas.rs` | NÚCLEO | ACTA | `struct` |
+| `juzgar_historia` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `Relevo` | `verify/actas.rs` | NÚCLEO | ACTA | `struct` |
+| `relevo_del_tramo` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |
@@ -458,6 +463,16 @@ clave en hex, los largos como número y los dos sí-o-no como booleanos de JSON.
 
 ## 8. Historia
 
+- §722 — `relevo_del_acta`, `CabezaDeLaCadena`,
+  `juzgar_historia`, `Relevo`, con `contiene`, y `relevo_del_tramo` en el módulo `actas`: la
+  `procedencia` de un acta fija en el MMR de cabezas el sitio del cambio de clave, y dos cabezas de
+  una historia caen a su lado; el juez de la extensión y del consumo con `actas`, y el relevo del
+  tramo en el sobre del solapamiento (`spec/PAQUETE.md` 2.3 y 2.14). Cinco filas nuevas, familia
+  ACTA. `RotacionError` gana ocho variantes —siete del relevo, por los dos bordes de las dos
+  cabezas y el que retrocede, y la anterior fuera de todos sus tramos— y no gana fila: la fila es del
+  tipo. Tras su revisión, el juez es el de los ocho sitios que exigen continuidad, y cada cabeza cae
+  en el relevo de su tramo por sus dos bordes; el borde lo calcula un productor privado del módulo,
+  el mismo que usa `Relevo::contiene`, y no gana fila.
 - §800 — el registro de esquemas (`Esquema`, con `TODOS`, `as_u64` y `entrada`, `EntradaEsquema` y
   `EsquemaNoRegistrado`) y los dos preámbulos v7, `preambulo_v7` y `preambulo_cofirma_v7`, en
   `zk-ssl-verify` (RFC-0020, E2): el número del esquema que firma, el `u64` del acta, en el

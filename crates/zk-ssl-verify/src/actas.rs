@@ -294,6 +294,52 @@ pub enum RotacionError {
         desde: u64,
         hasta: Option<u64>,
     },
+    /// ⚠️ §722 · **El relevo**: la cabeza de la clave que se va lleva un `mmrSize` que el
+    /// acta de su sucesora ya daba a la sucesora. La `procedencia` fija el sitio del cambio de clave
+    /// en la historia de cabezas, y la clave que se va firma por debajo.
+    AnteriorTrasSuRelevo {
+        mmr_size: u64,
+        eslabon: usize,
+        relevo: u64,
+    },
+    /// ⚠️ §722 · La cabeza de la clave que llega lleva un `mmrSize` anterior a su relevo:
+    /// la clave que llega firma desde el acumulador que hereda.
+    PosteriorAntesDeSuRelevo {
+        mmr_size: u64,
+        eslabon: usize,
+        relevo: u64,
+    },
+    /// ⚠️ §722 · La cabeza de la clave que llega firma el `mmrSize` de su relevo con otra
+    /// cima: la que hereda la declara su acta.
+    RelevoConOtraCima { eslabon: usize, relevo: u64 },
+    /// ⚠️ §722 · Un acta de la cadena releva por debajo del relevo de la previa: la
+    /// historia de cabezas no retrocede.
+    RelevoRetrocede {
+        eslabon: usize,
+        relevo: u64,
+        previo: u64,
+    },
+    /// ⚠️ §722 · El otro borde de la que llega: su `mmrSize` alcanza el relevo del acta
+    /// que la sucede en la cadena. Ese sitio de la historia de cabezas ya es de otra clave.
+    PosteriorTrasSuRelevo {
+        mmr_size: u64,
+        eslabon: usize,
+        relevo: u64,
+    },
+    /// ⚠️ §722 · El otro borde de la que se va: su `mmrSize` queda por debajo del relevo
+    /// del acta por la que ELLA entró. La génesis no tiene ese borde.
+    AnteriorAntesDeSuRelevo {
+        mmr_size: u64,
+        eslabon: usize,
+        relevo: u64,
+    },
+    /// ⚠️ §722 · La que se va firma el `mmrSize` del relevo de su propia acta con otra
+    /// cima que la que esa acta le hizo heredar.
+    AnteriorConOtraCima { eslabon: usize, relevo: u64 },
+    /// ⚠️ §722 · La que se va firma en una hoja fuera de TODOS sus tramos hasta el paso: la
+    /// cuenta del operador daba esa hoja a otra clave suya o a un acta. Es lo que el sobre del
+    /// solapamiento delata con una cabeza sola; la extensión no puede darla por buena.
+    AnteriorFueraDeTramo { indice: u64 },
 }
 
 impl std::fmt::Display for RotacionError {
@@ -334,6 +380,66 @@ impl std::fmt::Display for RotacionError {
                     None => Ok(()),
                 }
             }
+            RotacionError::AnteriorTrasSuRelevo {
+                mmr_size,
+                eslabon,
+                relevo,
+            } => write!(
+                f,
+                "RELEVO: la cabeza de la clave que se va lleva el mmrSize {mmr_size}, y el acta \
+                 {eslabon} la releva en el {relevo}: la clave que se va firma por debajo"
+            ),
+            RotacionError::PosteriorAntesDeSuRelevo {
+                mmr_size,
+                eslabon,
+                relevo,
+            } => write!(
+                f,
+                "RELEVO: la cabeza de la clave que llega lleva el mmrSize {mmr_size}, y el acta \
+                 {eslabon} la hace entrar en el {relevo}: la clave que llega firma desde ahi"
+            ),
+            RotacionError::RelevoConOtraCima { eslabon, relevo } => write!(
+                f,
+                "RELEVO: la cabeza de la clave que llega firma el mmrSize {relevo} de su relevo con \
+                 otra cima que la que el acta {eslabon} le hace heredar"
+            ),
+            RotacionError::RelevoRetrocede {
+                eslabon,
+                relevo,
+                previo,
+            } => write!(
+                f,
+                "RELEVO: el acta {eslabon} releva en el mmrSize {relevo}, por debajo del {previo} \
+                 de la previa: la historia de cabezas no retrocede"
+            ),
+            RotacionError::PosteriorTrasSuRelevo {
+                mmr_size,
+                eslabon,
+                relevo,
+            } => write!(
+                f,
+                "RELEVO: la cabeza de la clave que llega lleva el mmrSize {mmr_size}, y el acta \
+                 {eslabon} la releva en el {relevo}: la clave que llega firma por debajo"
+            ),
+            RotacionError::AnteriorAntesDeSuRelevo {
+                mmr_size,
+                eslabon,
+                relevo,
+            } => write!(
+                f,
+                "RELEVO: la cabeza de la clave que se va lleva el mmrSize {mmr_size}, y el acta \
+                 {eslabon} la hace entrar en el {relevo}: la clave que se va firma desde ahi"
+            ),
+            RotacionError::AnteriorConOtraCima { eslabon, relevo } => write!(
+                f,
+                "RELEVO: la cabeza de la clave que se va firma el mmrSize {relevo} de su relevo con \
+                 otra cima que la que el acta {eslabon} le hace heredar"
+            ),
+            RotacionError::AnteriorFueraDeTramo { indice } => write!(
+                f,
+                "SOLAPAMIENTO: la clave que se va firmo en la hoja {indice}, fuera de todos sus \
+                 tramos: la cuenta del operador la daba a otra clave suya o a un acta"
+            ),
         }
     }
 }
@@ -350,14 +456,7 @@ pub fn juzgar_rotacion(
     ultimo_de_la_vieja: Option<u64>,
 ) -> Result<Rotacion, RotacionError> {
     verificar_cadena(actas).map_err(|(eslabon, error)| RotacionError::Cadena { eslabon, error })?;
-    let j = actas
-        .iter()
-        .rposition(|x| x.acta.clave == a)
-        .ok_or(RotacionError::RecibidaFuera)?;
-    let i = actas[..j]
-        .iter()
-        .rposition(|x| x.acta.clave == de)
-        .ok_or(RotacionError::FijadaFuera)?;
+    let (i, j) = eslabones_del_paso(actas, de, a)?;
     if let Some(u) = ultimo_de_la_vieja {
         let sucesora = actas[i + 1].acta.desde;
         if u >= sucesora {
@@ -372,6 +471,24 @@ pub fn juzgar_rotacion(
         hasta: actas.get(j + 1).map(|x| x.acta.desde),
         eslabones: j - i,
     })
+}
+
+/// Las actas del paso de `de` a `a`: la última entrada de `a` y, antes, la última de `de`. Un
+/// productor para [`juzgar_rotacion`] y para el relevo de [`juzgar_historia`].
+fn eslabones_del_paso(
+    actas: &[ActaFirmada],
+    de: &[u8],
+    a: &[u8],
+) -> Result<(usize, usize), RotacionError> {
+    let j = actas
+        .iter()
+        .rposition(|x| x.acta.clave == a)
+        .ok_or(RotacionError::RecibidaFuera)?;
+    let i = actas[..j]
+        .iter()
+        .rposition(|x| x.acta.clave == de)
+        .ok_or(RotacionError::FijadaFuera)?;
+    Ok((i, j))
 }
 
 /// ⚠️ §648 · **La continuidad de dos cabezas de claves distintas** (RFC-0015 E5, D-E): la de los
@@ -400,6 +517,203 @@ pub fn juzgar_continuidad(
         });
     }
     Ok(r)
+}
+
+/// ⚠️ §722 · **El relevo de un acta**: el `mmrSize` y la cima del acumulador de cabezas que
+/// la clave que entra hereda, de su `procedencia`. El nodo los lee de su diario al rotar
+/// (`zk-ssl-node`, `firmar_acta_saltando`): la cima de TODAS las cabezas anotadas, y su número. La
+/// primera cabeza de la clave que entra firma ese acumulador; la última de la que se va, uno menor.
+/// La génesis no lleva procedencia, y no releva a nadie: `None`.
+pub fn relevo_del_acta(a: &ActaFirmada) -> Option<(u64, Digest)> {
+    a.acta
+        .procedencia
+        .as_ref()
+        .map(|p| (p.mmr_size, p.mmr_root))
+}
+
+/// ⚠️ §722 · Una cabeza para el juicio de la historia: su clave, su índice EMBEBIDO y la
+/// pareja del MMR que firma.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CabezaDeLaCadena<'a> {
+    pub clave: &'a [u8],
+    pub embebido: u64,
+    pub mmr_size: u64,
+    pub mmr_root: Digest,
+}
+
+/// ⚠️ §722 · **Una historia, no solo un operador.** [`juzgar_continuidad`] y, después, el
+/// RELEVO: la cadena fija en el MMR de cabezas el sitio de cada cambio de clave, y cada una de las
+/// dos cabezas tiene que caer en el relevo de SU tramo ([`Relevo`]), por sus dos bordes. Es el juicio
+/// que el sobre del solapamiento hace con una cabeza sola: con una cadena, un veredicto.
+///
+/// Sin esto, la continuidad solo miraba claves e índices. Dos operadores de acuerdo -la génesis del
+/// uno comprometiendo la clave del otro, y el otro arrancando sobre una COPIA del diario del uno,
+/// cuyas líneas son digests públicos- se firmaban una cadena y un MMR que contenía al del primero, y
+/// la extensión entre las cabezas de un conflicto genuino salía VERDE (medido con
+/// `tools/banco_historia_comun.sh`, dos nodos reales). Eso no se puede impedir desde el sobre: lo
+/// que el sobre ve es lo que vería de una rotación. Lo que el relevo hace es ATARLO: el acta
+/// declara dónde acaba la clave que se va, y una cabeza suya por encima es evidencia.
+///
+/// El orden de las reglas es el de los textos (`spec/PAQUETE.md` 2.3):
+/// 1. La anterior, la de índice embebido menor, cae en un tramo de su clave hasta el paso: el que
+///    su índice dice, que con una clave que vuelve a la cadena no es siempre el último. Si no cae
+///    en ninguno, `AnteriorFueraDeTramo`: la regla 4 de la D-C también para ella.
+/// 2. Los relevos de las actas que se cruzan, desde ese tramo hasta el de la posterior, no
+///    retroceden.
+/// 3. La anterior, en el relevo de su tramo: desde el de su acta -y si es igual, con la cima que
+///    hereda; la génesis no tiene ese borde- y por debajo del de la siguiente.
+/// 4. La posterior, en el relevo del suyo, con los mismos dos bordes.
+///
+/// ⚠️ Con eso la cabeza de `mmrSize` mayor es la posterior: el reloj cruza las claves por la cadena.
+/// ⚠️ La posterior se juzga contra la ÚLTIMA entrada de su clave, como en la continuidad: con una
+/// clave que vuelve, una posterior de un tramo anterior cae por índice (`FueraDeTramo`). Es un falso
+/// negativo que viene de la continuidad, y se declara.
+pub fn juzgar_historia(
+    actas: &[ActaFirmada],
+    una: CabezaDeLaCadena<'_>,
+    otra: CabezaDeLaCadena<'_>,
+) -> Result<Rotacion, RotacionError> {
+    let r = juzgar_continuidad(
+        actas,
+        (una.clave, una.embebido),
+        (otra.clave, otra.embebido),
+    )?;
+    let (anterior, posterior) = if otra.embebido < una.embebido {
+        (otra, una)
+    } else {
+        (una, otra)
+    };
+    let (i, j) = eslabones_del_paso(actas, anterior.clave, posterior.clave)?;
+    // 1 · el tramo de la anterior, por su índice, entre las entradas de su clave hasta la `i`.
+    let k = tramos_de(actas, anterior.clave)
+        .into_iter()
+        .filter(|t| t.eslabon <= i)
+        .find(|t| t.contiene(anterior.embebido))
+        .ok_or(RotacionError::AnteriorFueraDeTramo {
+            indice: anterior.embebido,
+        })?
+        .eslabon;
+    // 2 · la cadena ya valió entera: cada acta de rotación lleva su procedencia.
+    for m in k + 2..=j {
+        let previa = relevo_del_acta(&actas[m - 1]);
+        if let (Some((previo, _)), Some((s, _))) = (previa, relevo_del_acta(&actas[m])) {
+            if s < previo {
+                return Err(RotacionError::RelevoRetrocede {
+                    eslabon: m,
+                    relevo: s,
+                    previo,
+                });
+            }
+        }
+    }
+    // 3 · la anterior, en el relevo de su tramo.
+    let t = anterior.mmr_size;
+    match relevo_en(actas, k).borde(t, anterior.mmr_root) {
+        None => {}
+        Some(Borde::Antes(s)) => {
+            return Err(RotacionError::AnteriorAntesDeSuRelevo {
+                mmr_size: t,
+                eslabon: k,
+                relevo: s,
+            })
+        }
+        Some(Borde::OtraCima(s)) => {
+            return Err(RotacionError::AnteriorConOtraCima {
+                eslabon: k,
+                relevo: s,
+            })
+        }
+        Some(Borde::Tras(s)) => {
+            return Err(RotacionError::AnteriorTrasSuRelevo {
+                mmr_size: t,
+                eslabon: k + 1,
+                relevo: s,
+            })
+        }
+    }
+    // 4 · la posterior, en el relevo del suyo.
+    let t = posterior.mmr_size;
+    match relevo_en(actas, j).borde(t, posterior.mmr_root) {
+        None => Ok(r),
+        Some(Borde::Antes(s)) => Err(RotacionError::PosteriorAntesDeSuRelevo {
+            mmr_size: t,
+            eslabon: j,
+            relevo: s,
+        }),
+        Some(Borde::OtraCima(s)) => Err(RotacionError::RelevoConOtraCima {
+            eslabon: j,
+            relevo: s,
+        }),
+        Some(Borde::Tras(s)) => Err(RotacionError::PosteriorTrasSuRelevo {
+            mmr_size: t,
+            eslabon: j + 1,
+            relevo: s,
+        }),
+    }
+}
+
+/// ⚠️ §722 · **El relevo de un tramo**: los `mmrSize` en que la clave firma cabezas desde
+/// ese acta. Desde el relevo de su acta, con la cima que hereda en él, y por debajo del relevo de
+/// la siguiente, si la cadena la trae. Es la regla 4 de la D-C en la otra cuenta, la de la historia
+/// de cabezas.
+///
+/// ⚠️ La génesis no tiene borde de abajo. El de arriba, en cambio, juzga TODO lo que su clave firmó,
+/// también antes de optar: la D-I exime esas cabezas por índice, no por `mmrSize`. Una génesis
+/// sobre un diario nuevo, o una rotación desde un diario restaurado por detrás de lo que la vieja
+/// firmó, dejan cabezas reales por encima del relevo (RFC-0015, D-G y D-I).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Relevo {
+    pub desde: Option<(u64, Digest)>,
+    pub hasta: Option<u64>,
+}
+
+/// El borde del [`Relevo`] que cruza una cabeza, con el relevo de ese borde.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Borde {
+    /// Por debajo del relevo de su acta.
+    Antes(u64),
+    /// En el relevo de su acta, con otra cima que la que hereda.
+    OtraCima(u64),
+    /// En el relevo de la siguiente o por encima.
+    Tras(u64),
+}
+
+impl Relevo {
+    /// Si una cabeza de la clave con este `mmrSize` y esta cima cae en el relevo del tramo.
+    pub fn contiene(&self, mmr_size: u64, mmr_root: Digest) -> bool {
+        self.borde(mmr_size, mmr_root).is_none()
+    }
+
+    /// El borde que cruza, o `None` si cae dentro. Un productor para [`Relevo::contiene`] y para
+    /// [`juzgar_historia`]: el sobre del solapamiento y la extensión dicen lo mismo. Abajo primero
+    /// -el relevo de su acta, y en él la cima-, después el de la siguiente.
+    fn borde(&self, mmr_size: u64, mmr_root: Digest) -> Option<Borde> {
+        if let Some((s, cima)) = self.desde {
+            if mmr_size < s {
+                return Some(Borde::Antes(s));
+            }
+            if mmr_size == s && mmr_root != cima {
+                return Some(Borde::OtraCima(s));
+            }
+        }
+        self.hasta.filter(|&h| mmr_size >= h).map(Borde::Tras)
+    }
+}
+
+/// El [`Relevo`] de la entrada `eslabon` de la cadena: el de su acta y el de la siguiente.
+fn relevo_en(actas: &[ActaFirmada], eslabon: usize) -> Relevo {
+    Relevo {
+        desde: actas.get(eslabon).and_then(relevo_del_acta),
+        hasta: actas
+            .get(eslabon + 1)
+            .and_then(relevo_del_acta)
+            .map(|(s, _)| s),
+    }
+}
+
+/// ⚠️ §722 · El [`Relevo`] de un [`Tramo`] de la cadena.
+pub fn relevo_del_tramo(actas: &[ActaFirmada], tramo: &Tramo) -> Relevo {
+    relevo_en(actas, tramo.eslabon)
 }
 
 /// ⚠️ §686 · **Un tramo de una clave en la cadena** (D-C, regla 4): las hojas en que esa clave
@@ -569,7 +883,8 @@ mod tests {
 
     // ⚠️ Cada clave y cada firma XMSS^MT 40/8 cuestan segundos en un build de depuracion. La
     // escena se firma UNA vez, en paralelo, y la comparten los tests; las reglas van antes que
-    // las firmas, asi que sus rojos no necesitan firmar nada nuevo. Cinco firmas en el modulo.
+    // las firmas, asi que sus rojos no necesitan firmar nada nuevo. Cinco firmas en la escena, y
+    // cuatro en la cadena alternada del relevo (§722), firmada aparte y tambien una vez.
 
     fn clave(semilla: u8) -> KeyPair<Conjunto> {
         KeyPair::<Conjunto>::from_seed(&[semilla; 96]).expect("keygen")
@@ -962,6 +1277,302 @@ mod tests {
         assert!(
             genesis_tardia.contiene(3) && !genesis_tardia.contiene(7),
             "antes de optar no se juzga; la hoja del acta, sí"
+        );
+    }
+
+    /// ⚠️ §722 · **el relevo ata las dos cabezas a la historia de cabezas.** Sin firmar
+    /// nada nuevo: la rotación de la escena releva en el mmrSize 39, con la cima `as_digest(8)`. La
+    /// cabeza de la 1 por debajo y la de la 2 en el 39 con esa cima, o por encima con cualquiera,
+    /// son una historia, lleguen en el orden que lleguen. La 1 en el 39, la 2 en el 38 y la 2 en el
+    /// 39 con otra cima caen, cada una con su regla; y la continuidad va antes, con su rojo. El
+    /// relevo de los tramos dice lo mismo para una cabeza sola. El relevo que retrocede pide una
+    /// cadena de tres, firmada: lo ata `spec/vectors/rotacion/`.
+    #[test]
+    fn el_relevo_ata_las_dos_cabezas_a_la_historia_de_cabezas() {
+        let e = escena();
+        let cadena = [e.genesis.clone(), e.rotacion.clone()];
+        let (k1, k2) = (&e.genesis.acta.clave[..], &e.rotacion.acta.clave[..]);
+        let cab = |clave, embebido, mmr_size, cima: u64| CabezaDeLaCadena {
+            clave,
+            embebido,
+            mmr_size,
+            mmr_root: as_digest(cima),
+        };
+        let r = Rotacion {
+            desde: 40,
+            hasta: None,
+            eslabones: 1,
+        };
+        assert_eq!(
+            juzgar_historia(&cadena, cab(k1, 39, 38, 1), cab(k2, 41, 39, 8)),
+            Ok(r)
+        );
+        assert_eq!(
+            juzgar_historia(&cadena, cab(k2, 41, 90, 2), cab(k1, 39, 0, 1)),
+            Ok(r),
+            "el orden de llegada no cuenta, y por encima del relevo vale cualquier cima"
+        );
+        assert_eq!(
+            juzgar_historia(&cadena, cab(k1, 39, 39, 1), cab(k2, 41, 50, 2)),
+            Err(RotacionError::AnteriorTrasSuRelevo {
+                mmr_size: 39,
+                eslabon: 1,
+                relevo: 39
+            })
+        );
+        assert_eq!(
+            juzgar_historia(&cadena, cab(k1, 39, 10, 1), cab(k2, 41, 38, 8)),
+            Err(RotacionError::PosteriorAntesDeSuRelevo {
+                mmr_size: 38,
+                eslabon: 1,
+                relevo: 39
+            })
+        );
+        assert_eq!(
+            juzgar_historia(&cadena, cab(k1, 39, 10, 1), cab(k2, 41, 39, 9)),
+            Err(RotacionError::RelevoConOtraCima {
+                eslabon: 1,
+                relevo: 39
+            })
+        );
+        assert_eq!(
+            juzgar_historia(&cadena, cab(k1, 40, 99, 1), cab(k2, 41, 39, 8)),
+            Err(RotacionError::Solapamiento {
+                indice: 40,
+                desde: 40
+            }),
+            "la continuidad va antes"
+        );
+        assert_eq!(
+            RotacionError::AnteriorTrasSuRelevo {
+                mmr_size: 39,
+                eslabon: 1,
+                relevo: 39
+            }
+            .to_string(),
+            "RELEVO: la cabeza de la clave que se va lleva el mmrSize 39, y el acta 1 la releva \
+             en el 39: la clave que se va firma por debajo"
+        );
+        assert_eq!(
+            RotacionError::RelevoRetrocede {
+                eslabon: 2,
+                relevo: 6,
+                previo: 7
+            }
+            .to_string(),
+            "RELEVO: el acta 2 releva en el mmrSize 6, por debajo del 7 de la previa: la historia \
+             de cabezas no retrocede"
+        );
+        let r1 = relevo_del_tramo(&cadena, &tramos_de(&cadena, k1)[0]);
+        assert_eq!(
+            r1,
+            Relevo {
+                desde: None,
+                hasta: Some(39)
+            }
+        );
+        assert!(r1.contiene(0, as_digest(5)) && r1.contiene(38, as_digest(5)));
+        assert!(!r1.contiene(39, as_digest(8)), "la 1 en el relevo de la 2");
+        let r2 = relevo_del_tramo(&cadena, &tramos_de(&cadena, k2)[0]);
+        assert_eq!(
+            r2,
+            Relevo {
+                desde: Some((39, as_digest(8))),
+                hasta: None
+            }
+        );
+        assert!(r2.contiene(39, as_digest(8)) && r2.contiene(u64::MAX, as_digest(1)));
+        assert!(!r2.contiene(39, as_digest(9)) && !r2.contiene(38, as_digest(8)));
+    }
+
+    /// Una cadena que ALTERNA dos claves, A -> B -> A -> B: la génesis de A en la hoja 200 y las
+    /// rotaciones en la 240, la 280 y la 320, con los relevos 10, 20 y 30 y la cima `as_digest(s)`
+    /// en cada uno. Cuatro firmas y dos claves, aparte de la escena: el borde de arriba de la
+    /// posterior y el de abajo de la anterior piden una cadena de más de dos actas.
+    fn alternada() -> &'static [ActaFirmada; 4] {
+        static C: OnceLock<[ActaFirmada; 4]> = OnceLock::new();
+        C.get_or_init(|| {
+            let (ka, kb) = std::thread::scope(|s| {
+                let a = s.spawn(|| clave(1));
+                let b = s.spawn(|| clave(2));
+                (a.join().expect("A"), b.join().expect("B"))
+            });
+            let (pa, pb) = (publica(&ka), publica(&kb));
+            let acta = |clave: &[u8], desde, siguiente, sale: Option<&[u8]>| Acta {
+                clave: clave.to_vec(),
+                esquema: ESQUEMA_XMSSMT_SHA2_40_8_256,
+                desde,
+                siguiente,
+                procedencia: sale.map(|v| Procedencia {
+                    anterior: huella_de_clave(v),
+                    epoch_digest: as_digest(1),
+                    mmr_root: as_digest((desde - 200) / 4),
+                    mmr_size: (desde - 200) / 4,
+                }),
+            };
+            let g = acta(&pa, 200, huella_de_clave(&pb), None);
+            let b1 = acta(&pb, 240, huella_de_clave(&pa), Some(&pa));
+            let a2 = acta(&pa, 280, huella_de_clave(&pb), Some(&pb));
+            let b2 = acta(&pb, 320, as_digest(77), Some(&pa));
+            let (pg, pb1, pa2, pb2) = (pre(&g), pre(&b1), pre(&a2), pre(&b2));
+            let ((fg, fa2), (fb1, fb2)) = std::thread::scope(|s| {
+                let a = s.spawn(|| {
+                    let mut k = ka;
+                    (firmar_en(&mut k, 200, &pg), firmar_en(&mut k, 280, &pa2))
+                });
+                let b = s.spawn(|| {
+                    let mut k = kb;
+                    (firmar_en(&mut k, 240, &pb1), firmar_en(&mut k, 320, &pb2))
+                });
+                (a.join().expect("A"), b.join().expect("B"))
+            });
+            let firmada = |acta, firma| ActaFirmada {
+                acta,
+                firma,
+                firma_anterior: None,
+            };
+            [
+                firmada(g, fg),
+                firmada(b1, fb1),
+                firmada(a2, fa2),
+                firmada(b2, fb2),
+            ]
+        })
+    }
+
+    /// ⚠️ §722 · **cada cabeza, en el relevo de SU tramo, por los dos bordes.** Con la cadena
+    /// alternada, lo que el sobre del solapamiento delata con una cabeza sola, la extensión no lo da
+    /// por bueno: la A del primer tramo por encima de su relevo (el 10), o en una hoja de B; la A
+    /// del segundo por debajo del suyo (el 20) o en él con otra cima; y la A del segundo como
+    /// posterior, en el relevo de la B que la sucede (el 30). La A del primer tramo se juzga contra
+    /// el relevo de ESE tramo, no contra el del último de su clave: extendida a la última B vale.
+    /// La posterior, en cambio, se juzga contra la última entrada de su clave, como en la
+    /// continuidad: la A1 -> B1 honrada cae por índice, y se declara.
+    #[test]
+    fn cada_cabeza_cae_en_el_relevo_de_su_tramo_por_los_dos_bordes() {
+        let c = alternada();
+        assert_eq!(
+            verificar_cadena(c),
+            Ok(()),
+            "una clave que vuelve vale en la cadena"
+        );
+        let (a, b) = (&c[0].acta.clave[..], &c[1].acta.clave[..]);
+        let cab = |clave, embebido, mmr_size, cima: u64| CabezaDeLaCadena {
+            clave,
+            embebido,
+            mmr_size,
+            mmr_root: as_digest(cima),
+        };
+        let a_b2 = Rotacion {
+            desde: 320,
+            hasta: None,
+            eslabones: 1,
+        };
+        assert_eq!(
+            juzgar_historia(c, cab(a, 210, 5, 5), cab(b, 330, 35, 5)),
+            Ok(a_b2),
+            "la A del primer tramo, contra el relevo de su tramo"
+        );
+        assert_eq!(
+            juzgar_historia(c, cab(a, 210, 12, 5), cab(b, 330, 35, 5)),
+            Err(RotacionError::AnteriorTrasSuRelevo {
+                mmr_size: 12,
+                eslabon: 1,
+                relevo: 10
+            })
+        );
+        assert_eq!(
+            juzgar_historia(c, cab(a, 250, 5, 5), cab(b, 330, 35, 5)),
+            Err(RotacionError::AnteriorFueraDeTramo { indice: 250 }),
+            "la A en una hoja de B"
+        );
+        assert_eq!(
+            juzgar_historia(c, cab(a, 290, 20, 20), cab(b, 330, 35, 5)),
+            Ok(a_b2),
+            "la A del segundo tramo en su relevo, con la cima que hereda"
+        );
+        assert_eq!(
+            juzgar_historia(c, cab(a, 290, 15, 5), cab(b, 330, 35, 5)),
+            Err(RotacionError::AnteriorAntesDeSuRelevo {
+                mmr_size: 15,
+                eslabon: 2,
+                relevo: 20
+            })
+        );
+        assert_eq!(
+            juzgar_historia(c, cab(a, 290, 20, 99), cab(b, 330, 35, 5)),
+            Err(RotacionError::AnteriorConOtraCima {
+                eslabon: 2,
+                relevo: 20
+            })
+        );
+        assert_eq!(
+            juzgar_historia(c, cab(b, 250, 15, 5), cab(a, 290, 29, 5)),
+            Ok(Rotacion {
+                desde: 280,
+                hasta: Some(320),
+                eslabones: 1
+            })
+        );
+        assert_eq!(
+            juzgar_historia(c, cab(b, 250, 15, 5), cab(a, 290, 30, 5)),
+            Err(RotacionError::PosteriorTrasSuRelevo {
+                mmr_size: 30,
+                eslabon: 3,
+                relevo: 30
+            })
+        );
+        assert_eq!(
+            juzgar_historia(c, cab(a, 210, 5, 5), cab(b, 250, 15, 5)),
+            Err(RotacionError::FueraDeTramo {
+                indice: 250,
+                desde: 320,
+                hasta: None
+            }),
+            "el falso negativo de la continuidad con una clave que vuelve: declarado"
+        );
+        // El sobre del solapamiento dice lo mismo con cada cabeza sola: un productor, `borde`.
+        let relevo_de = |clave, embebido| {
+            let t = tramos_de(c, clave)
+                .into_iter()
+                .find(|t| t.contiene(embebido))
+                .expect("en un tramo");
+            relevo_del_tramo(c, &t)
+        };
+        // Una cabeza por turno, cada una en su tramo y en su relevo: alternando los libros no queda
+        // nada que delatar (el residuo de `spec/PAQUETE.md` 2.5).
+        assert!(relevo_de(a, 210).contiene(5, as_digest(5)));
+        assert!(relevo_de(b, 250).contiene(15, as_digest(5)));
+        assert!(relevo_de(a, 290).contiene(25, as_digest(5)));
+        assert!(relevo_de(b, 330).contiene(35, as_digest(5)));
+        assert!(!relevo_de(a, 210).contiene(12, as_digest(5)));
+        assert!(!relevo_de(a, 290).contiene(15, as_digest(5)));
+        assert!(!relevo_de(a, 290).contiene(20, as_digest(99)));
+        assert!(!relevo_de(a, 290).contiene(30, as_digest(5)));
+        assert_eq!(
+            RotacionError::PosteriorTrasSuRelevo {
+                mmr_size: 7,
+                eslabon: 2,
+                relevo: 7
+            }
+            .to_string(),
+            "RELEVO: la cabeza de la clave que llega lleva el mmrSize 7, y el acta 2 la releva en \
+             el 7: la clave que llega firma por debajo"
+        );
+        assert_eq!(
+            RotacionError::AnteriorAntesDeSuRelevo {
+                mmr_size: 15,
+                eslabon: 2,
+                relevo: 20
+            }
+            .to_string(),
+            "RELEVO: la cabeza de la clave que se va lleva el mmrSize 15, y el acta 2 la hace \
+             entrar en el 20: la clave que se va firma desde ahi"
+        );
+        assert_eq!(
+            RotacionError::AnteriorFueraDeTramo { indice: 250 }.to_string(),
+            "SOLAPAMIENTO: la clave que se va firmo en la hoja 250, fuera de todos sus tramos: la \
+             cuenta del operador la daba a otra clave suya o a un acta"
         );
     }
 

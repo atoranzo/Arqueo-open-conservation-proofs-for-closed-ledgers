@@ -487,6 +487,17 @@ def verificar_acta(a, previa):
             raise Fallo(f"la clave que se va firma en la hoja {e}, fuera de ({previa['desde']}, {a['desde']})")
 
 
+def _eslabones_del_paso(actas, de, a):
+    """La ultima entrada de `a` y, antes, la ultima de `de`: un productor para la rotacion y el relevo."""
+    j = next((k for k in range(len(actas) - 1, -1, -1) if actas[k]["clave"] == a), None)
+    if j is None:
+        raise Fallo("la clave que llega no esta en la cadena: nadie la comprometio")
+    i = next((k for k in range(j - 1, -1, -1) if actas[k]["clave"] == de), None)
+    if i is None:
+        raise Fallo("la clave que se tenia no esta en la cadena antes de la que llega")
+    return i, j
+
+
 def juzgar_rotacion(actas, de, a, ultimo):
     """La cadena entera vale, `a` esta en ella y `de` antes, y lo visto de `de` queda por debajo del
     `desde` de su sucesora. Devuelve (desde, hasta, eslabones) del tramo de `a`."""
@@ -495,12 +506,7 @@ def juzgar_rotacion(actas, de, a, ultimo):
             verificar_acta(x, actas[i - 1] if i else None)
         except Fallo as e:
             raise Fallo(f"el acta {i} de la cadena no vale: {e}")
-    j = next((k for k in range(len(actas) - 1, -1, -1) if actas[k]["clave"] == a), None)
-    if j is None:
-        raise Fallo("la clave que llega no esta en la cadena: nadie la comprometio")
-    i = next((k for k in range(j - 1, -1, -1) if actas[k]["clave"] == de), None)
-    if i is None:
-        raise Fallo("la clave que se tenia no esta en la cadena antes de la que llega")
+    i, j = _eslabones_del_paso(actas, de, a)
     if ultimo is not None and ultimo >= actas[i + 1]["desde"]:
         raise Fallo(f"SOLAPAMIENTO: la clave que se va firmo en la hoja {ultimo}, y su sucesora empieza en la "
                     f"{actas[i + 1]['desde']}")
@@ -517,6 +523,72 @@ def juzgar_continuidad(actas, una, otra):
         raise Fallo(f"SOLAPAMIENTO: la clave que llega firmo en la hoja {e}, fuera de su tramo: por encima de la "
                     f"{desde}" + (f" y por debajo de la {hasta}" if hasta is not None else ""))
     return desde, hasta, eslabones
+
+
+def relevo_del_acta(a):
+    """§722: el relevo de un acta, (mmrSize, mmrRoot) de su procedencia; la genesis no releva."""
+    p = a["procedencia"]
+    return None if p is None else (p[3], p[2])
+
+
+def _borde_del_relevo(actas, k, talla, cima):
+    """§722: el borde del relevo de la entrada `k` que cruza una cabeza con ese mmrSize y esa cima, o
+    None si cae dentro. Abajo primero (el relevo de su acta, y en el la cima), despues el de la siguiente. Un
+    productor para la extension y el solapamiento: con una cadena, un veredicto."""
+    desde = relevo_del_acta(actas[k])
+    hasta = relevo_del_acta(actas[k + 1]) if k + 1 < len(actas) else None
+    if desde is not None:
+        if talla < desde[0]:
+            return ("antes", desde[0])
+        if talla == desde[0] and cima != desde[1]:
+            return ("otra-cima", desde[0])
+    if hasta is not None and talla >= hasta[0]:
+        return ("tras", hasta[0])
+    return None
+
+
+def juzgar_historia(actas, una, otra):
+    """§722: la continuidad y el RELEVO (PAQUETE.md 2.3), en su orden. Cada lado es (clave, embebido,
+    mmrSize, mmrRoot). 1, la anterior en un tramo de su clave hasta el paso, el que su indice dice; 2, los relevos
+    que se cruzan no retroceden; 3, la anterior en el relevo de su tramo, por los dos bordes; 4, la posterior en el
+    del suyo. Los textos son los de la referencia."""
+    r = juzgar_continuidad(actas, una[:2], otra[:2])
+    anterior, posterior = (otra, una) if otra[1] < una[1] else (una, otra)
+    i, j = _eslabones_del_paso(actas, anterior[0], posterior[0])
+    tramos = [(m, a["desde"], actas[m + 1]["desde"] if m + 1 < len(actas) else None)
+              for m, a in enumerate(actas[:i + 1]) if a["clave"] == anterior[0]]
+    k = next((t[0] for t in tramos if _contiene(t, anterior[1])), None)
+    if k is None:
+        raise Fallo(f"SOLAPAMIENTO: la clave que se va firmo en la hoja {anterior[1]}, fuera de todos sus tramos: la "
+                    f"cuenta del operador la daba a otra clave suya o a un acta")
+    for m in range(k + 2, j + 1):
+        previo, actual = relevo_del_acta(actas[m - 1]), relevo_del_acta(actas[m])
+        if previo is not None and actual is not None and actual[0] < previo[0]:
+            raise Fallo(f"RELEVO: el acta {m} releva en el mmrSize {actual[0]}, por debajo del {previo[0]} de la previa: "
+                        f"la historia de cabezas no retrocede")
+    borde = _borde_del_relevo(actas, k, anterior[2], anterior[3])
+    if borde is not None:
+        tipo, s = borde
+        if tipo == "antes":
+            raise Fallo(f"RELEVO: la cabeza de la clave que se va lleva el mmrSize {anterior[2]}, y el acta {k} la hace "
+                        f"entrar en el {s}: la clave que se va firma desde ahi")
+        if tipo == "otra-cima":
+            raise Fallo(f"RELEVO: la cabeza de la clave que se va firma el mmrSize {s} de su relevo con otra cima que la "
+                        f"que el acta {k} le hace heredar")
+        raise Fallo(f"RELEVO: la cabeza de la clave que se va lleva el mmrSize {anterior[2]}, y el acta {k + 1} la "
+                    f"releva en el {s}: la clave que se va firma por debajo")
+    borde = _borde_del_relevo(actas, j, posterior[2], posterior[3])
+    if borde is not None:
+        tipo, s = borde
+        if tipo == "antes":
+            raise Fallo(f"RELEVO: la cabeza de la clave que llega lleva el mmrSize {posterior[2]}, y el acta {j} la hace "
+                        f"entrar en el {s}: la clave que llega firma desde ahi")
+        if tipo == "otra-cima":
+            raise Fallo(f"RELEVO: la cabeza de la clave que llega firma el mmrSize {s} de su relevo con otra cima que la "
+                        f"que el acta {j} le hace heredar")
+        raise Fallo(f"RELEVO: la cabeza de la clave que llega lleva el mmrSize {posterior[2]}, y el acta {j + 1} la "
+                    f"releva en el {s}: la clave que llega firma por debajo")
+    return r
 
 
 def leer_actas(doc):
@@ -574,7 +646,23 @@ def solapamiento(doc):
                   f"ellas")
     for t in tramos:
         if _contiene(t, e):
-            raise Rojo(f"la cabeza firma en la hoja {e}, dentro de su tramo {_texto_de_tramo(t)}: no hay solapamiento")
+            # §722: dentro de su tramo, el RELEVO (la otra cuenta, la de la historia de cabezas).
+            desde = relevo_del_acta(actas[t[0]])
+            hasta = relevo_del_acta(actas[t[0] + 1]) if t[0] + 1 < len(actas) else None
+            talla, cima = cab["mmrSize"], cab["mmrRoot"]
+            borde = _borde_del_relevo(actas, t[0], talla, cima)
+            if borde is None:
+                raise Rojo(f"la cabeza firma en la hoja {e}, dentro de su tramo {_texto_de_tramo(t)}: no hay solapamiento")
+            otra = ", con otra cima que la que hereda" if borde[0] == "otra-cima" else ""
+            texto = (f"acta {t[0]}, la genesis" if desde is None
+                     else f"acta {t[0]}: desde el mmrSize {desde[0]}, con la cima que hereda")
+            texto = f"({texto}, por debajo del mmrSize {hasta[0]})" if hasta is not None else f"({texto})"
+            salida.append(f"3/3 la hoja {e} cae en su tramo {_texto_de_tramo(t)}, y el mmrSize {talla}{otra} fuera de su "
+                          f"relevo {texto}")
+            salida.append(f"VERDE: SOLAPAMIENTO - la clave firmo una cabeza con el mmrSize {talla}, fuera del relevo de su "
+                          f"tramo: la cadena da ese sitio de la historia de cabezas a otra clave del operador. Es DETECCION "
+                          f"del operador: solo quien tiene la clave pudo firmarla")
+            return salida
     salida.append(f"3/3 la hoja {e} cae fuera de los tramos de su clave: {', '.join(_texto_de_tramo(t) for t in tramos)}")
     salida.append(f"VERDE: SOLAPAMIENTO - la clave firmo una cabeza en la hoja {e}, que la cuenta del operador (RFC-0015 "
                   f"D-A) daba a otra clave suya o a un acta. Es DETECCION del operador: solo quien tiene la clave pudo "
@@ -592,6 +680,21 @@ def misma_continuidad(doc, una, otra):
     actas = leer_actas(doc)
     try:
         return juzgar_continuidad(actas, una, otra)
+    except Fallo as e:
+        raise Rojo(f"las cabezas llevan claves DISTINTAS y las actas no las unen: {e}")
+
+
+def misma_historia(doc, una, otra):
+    """§722: misma_continuidad con el relevo, para la extension y el consumo. Cada lado es la cabeza
+    leida (dict con pk, embebido, mmrSize y mmrRoot)."""
+    if una["pk"] == otra["pk"]:
+        return None
+    if "actas" not in doc:
+        raise Rojo("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante")
+    actas = leer_actas(doc)
+    lado = lambda c: (c["pk"], c["embebido"], c["mmrSize"], c["mmrRoot"])
+    try:
+        return juzgar_historia(actas, lado(una), lado(otra))
     except Fallo as e:
         raise Rojo(f"las cabezas llevan claves DISTINTAS y las actas no las unen: {e}")
 
@@ -623,7 +726,7 @@ def extension(doc):
         cabs[cual] = cab
     vieja, nueva = cabs["vieja"], cabs["nueva"]
     salida.append("1/3 las DOS cabezas recomponen su digest y sus firmas verifican")  # §649, como la referencia
-    r = misma_continuidad(doc, (vieja["pk"], vieja["embebido"]), (nueva["pk"], nueva["embebido"]))
+    r = misma_historia(doc, vieja, nueva)
     salida.append(linea_de_continuidad("2/3", r, ": el mismo OPERADOR en los dos extremos")
                   or "2/3 misma publicKey: el mismo firmante en los dos extremos")
     cam = doc.get("camino")
@@ -761,7 +864,7 @@ def consumo(doc):
     vieja = leer_cabeza_de(doc, "vieja", (4, 5, 6), msg_v)
     nueva = leer_cabeza_de(doc, "nueva", (4, 5, 6), msg_v)
     salida.append("1/5 las DOS cabezas recomponen su digest y sus firmas verifican")
-    r = misma_continuidad(doc, (vieja["pk"], vieja["embebido"]), (nueva["pk"], nueva["embebido"]))
+    r = misma_historia(doc, vieja, nueva)
     salida.append(linea_de_continuidad("2/5", r, ", y las dos cabezas llevan consRoot (v4, v5 o v6) a los dos lados")
                   or "2/5 misma publicKey y las dos cabezas llevan consRoot (v4, v5 o v6) a los dos lados")
     camino = leer_lista_de_digests(doc, "camino")

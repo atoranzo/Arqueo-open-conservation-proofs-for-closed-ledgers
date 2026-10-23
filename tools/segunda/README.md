@@ -9,7 +9,7 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 | `juez_nucleo.py` | el **juez**: corre los 34 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto. ⚠️ §797: hasta aquí decía «es el único llamador de `nucleo.py`», y ya no lo era: lo importan también `juez_cabezas.py:23`, `verificador.py:31` y `stark.py:30`, y desde el §797 `cable.py` y `juez_cadena.py`. ⚠️ §852: decía `verificador.py:25`, rancia desde el §810, que llevó el `import` a la `:30`; el `import re` del §852 lo lleva a la `:31` |
 | `kat_xmss/xmss.py` | la **verificación XMSS^MT de RFC 8391** para `XMSSMT-SHA2_40/8_256`, el conjunto que la casa firma, escrita desde el texto del RFC y de ningún crate; solo verificar |
 | `juez_cabezas.py` | el **juez de las cabezas firmadas**: para cada cabeza y cofirma de los vectores recompone el `epochDigest` por versión, compara el preámbulo recuperado, verifica la firma con `kat_xmss/xmss.py` y comprueba el índice embebido (`PAQUETE.md`, 2/3 y sección 8); con un falsador que voltea un byte |
-| `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario; desde el §693 declara lo que no lee, en `NO_SOPORTADOS`, y lo dice con el texto reservado `NO SOPORTADO`; y desde el §810 lee el sobre del **ancla cofirmada** (RFC-0013 E4a), que no exige STARK sino el medio: la cabeza, la nota con su firma ML-DSA-44, las cofirmas y la inclusión, con `mldsa44.py` y `medio.py` |
+| `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento —desde el §722, con el relevo de la historia común: `juzgar_historia` en la extensión y el consumo, cada cabeza en el relevo de su tramo por sus dos bordes, y el mismo juicio en el solapamiento—, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario; desde el §693 declara lo que no lee, en `NO_SOPORTADOS`, y lo dice con el texto reservado `NO SOPORTADO`; y desde el §810 lee el sobre del **ancla cofirmada** (RFC-0013 E4a), que no exige STARK sino el medio: la cabeza, la nota con su firma ML-DSA-44, las cofirmas y la inclusión, con `mldsa44.py` y `medio.py` |
 | `mldsa44.py` | la **verificación ML-DSA-44 de FIPS 204** (§810), en Python y sin dependencias —`hashlib` trae SHAKE128 y SHAKE256—, escrita desde el texto del estándar —del crate `ml-dsa` 0.1.1 se leyó, para contrastar y no para copiar, cómo arma μ y dónde rechaza la norma y las pistas—: el algoritmo 3 con el contexto vacío y la firma pura, que es como la casa llama a `ml-dsa` 0.1.1 (`nota.rs`, `verify_with_context(mensaje, &[], firma)`), sobre el 8, con pkDecode, sigDecode, HintBitUnpack, SampleInBall, ExpandA, la NTT y UseHint; solo verificar |
 | `medio.py` | el **medio del ancla** (§810): la base64 estricta, la inclusión de RFC 9162 en el árbol SHA-256 de anclas y la nota `checkpoint` con su firma `0x06` y sus cofirmas, con las reglas que declara la cabecera de `crates/zk-ssl-medio/src/nota.rs` —que es lo que `PAQUETE.md` 2.13 manda leer— y los textos de su `Display`, para que la causa de un rechazo sea la del binario |
 | `juez_medio.py` | el **juez del medio** (§810): las 33 notas del §632 con el veredicto de su `MANIFIESTO.txt`, un **firmante de prueba** de FIPS 204 —KeyGen y Sign, solo aquí— que rehace byte a byte las vkeys y las líneas deterministas que firmó Go, las dos firmas de frontera de la norma, una pista donde la parte baja es cero con una clave a medida, la unicidad de la escritura de una firma, la base64, las 98 sondas de inclusión de transparency-dev y el `{:?}` de Rust con el que salen los nombres en un rechazo; y desde el §859, cinco reglas de `mldsa44.py` y `medio.py` que nada aislaba, cada una con su caso y su control |
@@ -33,12 +33,13 @@ python3 tools/segunda/juez_cabezas.py
 # 1 ter · el corpus KAT de XMSS^MT: dos implementaciones, los mismos bytes       -> 8 de 8
 python3 tools/segunda/kat_xmss/juez_xmss.py
 
-# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 237 de 237 (§718)
+# 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 250 de 250 (§722)
 #   ⚠️ §810: decia 174 de 174 (§780), las cinco familias sin `ancla-cofirmada`, que salia NO SOPORTADO
 #   ⚠️ §852: decia 201 de 201 (§810); los cinco negativos `rechazo-json-*` de `paquete` la llevan a 206
 #   ⚠️ §712: decia 206 de 206 (§852); los nueve vectores del reloj, cinco de `paquete`, tres de `consumo` y uno de `ancla`, la llevan a 215
 #   ⚠️ §714: decia 215 de 215 (§712); los veintiun vectores de la bifurcacion en `ancla` la llevan a 236
 #   ⚠️ §718: decia 236 de 236 (§714); el acta con su `mmrSize` escrito como `N + p`, en `rotacion`, la lleva a 237
+#   ⚠️ §722: decia 237 de 237 (§718); los trece vectores de la historia comun, en `rotacion`, la llevan a 250
 for m in paquete consumo conflicto ancla rotacion ancla-cofirmada; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
 
 # 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 70 de 70 (§721)
@@ -147,7 +148,7 @@ la sexta, `ancla-cofirmada`, es del §810):
 | `consumo` (desde el §771, también entre dos claves con `actas`; ⚠️ §712: decía 17 y 17 de 17, de antes de los tres del reloj) | 20 | 20 de 20 |
 | `conflicto` | 17 | 17 de 17 |
 | `ancla` (⚠️ §712: decía 22 y 22 de 22, de antes de `neg-ancla-bifurcada-mismo-mmrSize`; ⚠️ §714: decía 23 y 23 de 23, de antes de los veintiún de la bifurcación) | 44 | 44 de 44 |
-| `rotacion` (la extensión entre dos claves, con `actas`; §649; y el sobre del solapamiento, §686; ⚠️ §718: decía 34 y 34 de 34, de antes de `neg-acta-mmrsize-alias`) | 35 | 35 de 35 |
+| `rotacion` (la extensión entre dos claves, con `actas`; §649; y el sobre del solapamiento, §686; ⚠️ §718: decía 34 y 34 de 34, de antes de `neg-acta-mmrsize-alias`; ⚠️ §722: decía 35 y 35 de 35, de antes de los trece de la historia común, con el relevo) | 48 | 48 de 48 |
 | `ancla-cofirmada` (la nota del medio con su firma ML-DSA-44, las cofirmas y la inclusión; §810) | 27 | 27 de 27 |
 
 Y en los positivos de las cinco, su salida es **idéntica línea a línea** a la del binario, la
@@ -499,6 +500,9 @@ medido, ni antes ni ahora.
 ⚠️ §721: `edad` tiene 39 desde el §721, con el negativo que fija el tope de `m` en 13: 429 entradas
 en los diez y 491 en las doce. Lo medido del `.wasm` no cambia: que las pase no está medido, ni
 antes ni ahora.
+⚠️ §722: `rotacion` tiene 48 desde el §722, con los trece de la historia común: las 429 de los diez
+no cambian, porque `rotacion` no es uno de ellos, y son 504 en las doce. Lo medido del `.wasm` no
+cambia: que las pase no está medido, ni antes ni ahora.
 
 ## Lo que el segundo verificador no lee, declarado (§693)
 

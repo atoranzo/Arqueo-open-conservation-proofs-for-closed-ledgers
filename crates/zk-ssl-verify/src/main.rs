@@ -52,7 +52,8 @@
 use std::process::ExitCode;
 
 use zk_ssl_verify::actas::{
-    acta_de_json, juzgar_continuidad, tramos_de, verificar_cadena, ActaFirmada, Rotacion, Tramo,
+    acta_de_json, juzgar_continuidad, juzgar_historia, relevo_del_tramo, tramos_de,
+    verificar_cadena, ActaFirmada, CabezaDeLaCadena, Relevo, Rotacion, Tramo,
 };
 use zk_ssl_verify::{
     acuses, recibos, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
@@ -684,7 +685,7 @@ fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
     // §649: decia «v3» a fuego, y la extension lee v3 a v6; la medida de la segunda implementacion
     // sobre la familia de la rotacion, de cabezas v6, lo destapo. Sin version, como el consumo.
     println!("1/3 las DOS cabezas recomponen su digest y sus firmas verifican");
-    match misma_continuidad(p, (vieja, &clave_v), (nueva, &clave_n))? {
+    match misma_historia(p, (vieja, &clave_v), (nueva, &clave_n))? {
         None => println!("2/3 misma publicKey: el mismo firmante en los dos extremos"),
         Some(r) => println!(
             "2/3 claves distintas que las actas unen ({} eslabon(es), la posterior desde la \
@@ -817,7 +818,7 @@ fn verificar_consumo(p: &serde_json::Value) -> Result<(), String> {
     let nueva = p.get("nueva").ok_or_else(|| err("falta nueva".into()))?;
     let (cima_n, t_n, clave_n, cons_n) = cabeza_v3_verificada(nueva, "nueva")?;
     println!("1/5 las DOS cabezas recomponen su digest y sus firmas verifican");
-    let rotada = misma_continuidad(p, (vieja, &clave_v), (nueva, &clave_n))?;
+    let rotada = misma_historia(p, (vieja, &clave_v), (nueva, &clave_n))?;
     let (raiz_v, raiz_n) = match (cons_v, cons_n) {
         (Some(v), Some(n)) => (v, n),
         _ => return Err(exige_consumos("consumo")),
@@ -899,9 +900,14 @@ fn claves_distintas() -> String {
 /// continuidad es de UN operador si `juzgar_continuidad` lo dice: la cadena entera vale, lleva de
 /// la clave de la cabeza de índice EMBEBIDO menor a la de la otra, la anterior firmó por debajo del
 /// `desde` de su sucesora y la posterior en su tramo. El embebido lo lee `indice_embebido` (§681),
-/// el mismo que mide la ventana de completitud. Un productor para los ocho sitios que exigen
-/// continuidad; el conflicto exige claves distintas y la vista dividida la misma, y no leen
-/// `actas`. Con la misma clave, `actas` no se lee: no hay cambio que explicar.
+/// el mismo que mide la ventana de completitud. El conflicto exige claves distintas y la vista
+/// dividida la misma, y no leen `actas`. Con la misma clave, `actas` no se lee: no hay cambio que
+/// explicar.
+///
+/// ⚠️ §722: era el productor de los ocho sitios que exigen continuidad,
+/// y ya no lo es. Esos ocho -la extensión, el consumo y las seis cabezas que la completitud compara
+/// con su cierre- usan [`misma_historia`], con el relevo. Esta queda para la bifurcación del ancla,
+/// que no debe exigirlo (`bifurcacion_del_ancla`).
 fn misma_continuidad(
     sobre: &serde_json::Value,
     una: (&serde_json::Value, &str),
@@ -916,6 +922,50 @@ fn misma_continuidad(
     };
     let ((k1, e1), (k2, e2)) = (lado(una)?, lado(otra)?);
     juzgar_continuidad(&actas, (&k1, e1), (&k2, e2))
+        .map(Some)
+        .map_err(|e| {
+            err(format!(
+                "las cabezas llevan claves DISTINTAS y las actas no las unen: {e}"
+            ))
+        })
+}
+
+/// ⚠️ §722 · **¿La misma HISTORIA?** [`misma_continuidad`] con el relevo: con claves
+/// distintas, el juez es `juzgar_historia`, que además de claves e índices ata la `procedencia` de
+/// las actas al MMR de las dos cabezas: cada una, en el relevo de su tramo, por los dos bordes. Es
+/// el juez de los ocho sitios que exigen la continuidad de un firmante: la extensión, el consumo y
+/// las seis cabezas que la completitud compara con su cierre (`Cierre::exige`). La refutación del
+/// conflicto (PAQUETE 2.5) es una extensión. Medido: dos operadores de acuerdo se firmaban una
+/// cadena y un MMR que contenía al del otro, y la extensión entre las cabezas de un conflicto
+/// genuino salía VERDE; sigue saliendo -el sobre ve lo que vería de una rotación-, pero el acta
+/// fija el relevo, y una cabeza de la clave que se va por encima es evidencia (el solapamiento).
+/// Con la misma clave, `actas` no se lee, como en `misma_continuidad`.
+fn misma_historia(
+    sobre: &serde_json::Value,
+    una: (&serde_json::Value, &str),
+    otra: (&serde_json::Value, &str),
+) -> Result<Option<Rotacion>, String> {
+    if una.1 == otra.1 {
+        return Ok(None);
+    }
+    let actas = actas_del_sobre(sobre)?.ok_or_else(claves_distintas)?;
+    let lado =
+        |(c, clave): (&serde_json::Value, &str)| -> Result<(Vec<u8>, u64, u64, Digest), String> {
+            Ok((
+                hex_a_bytes(clave)?,
+                indice_embebido(c, "cabeza")?,
+                u64_de(c, "mmrSize")?,
+                digest_de(c, "mmrRoot")?,
+            ))
+        };
+    let ((k1, e1, t1, r1), (k2, e2, t2, r2)) = (lado(una)?, lado(otra)?);
+    let cabeza = |clave, embebido, mmr_size, mmr_root| CabezaDeLaCadena {
+        clave,
+        embebido,
+        mmr_size,
+        mmr_root,
+    };
+    juzgar_historia(&actas, cabeza(&k1, e1, t1, r1), cabeza(&k2, e2, t2, r2))
         .map(Some)
         .map_err(|e| {
             err(format!(
@@ -950,10 +1000,17 @@ struct Cierre<'a> {
 }
 
 impl Cierre<'_> {
-    /// `misma_continuidad` con el cierre como uno de los lados; `que` nombra la otra cabeza en la
+    /// `misma_historia` con el cierre como uno de los lados; `que` nombra la otra cabeza en la
     /// línea que dice la rotación.
+    ///
+    /// ⚠️ §722: era `misma_continuidad`, y una resolución con una cabeza
+    /// de otra clave pasaba sin el relevo, con más libertad que la refutación. Las cabezas que llegan
+    /// aquí ya verificaron como v3 o posteriores, y llevan la pareja del MMR. Desde el §771 dos
+    /// vectores de completitud llevan `actas`, `rotada-ventana-abierta` y
+    /// `neg-rotada-vigente-cadena-corta`: el cambio no mueve ninguno, y los dos dicen, línea a
+    /// línea, lo que decían sin el relevo (medido, 81 de 81).
     fn exige(&self, c: &serde_json::Value, clave: &str, que: &str) -> Result<(), String> {
-        if let Some(r) = misma_continuidad(self.sobre, (self.cabeza, self.clave), (c, clave))? {
+        if let Some(r) = misma_historia(self.sobre, (self.cabeza, self.clave), (c, clave))? {
             println!(
                 "   {que}: otra clave del MISMO operador, unida al cierre por las actas ({} \
                  eslabon(es), la posterior desde la hoja {})",
@@ -2852,9 +2909,11 @@ fn verificar_ancla(p: &serde_json::Value) -> Result<(), String> {
 /// repite la hoja. DETECCION con salida 0, el molde del modo 4 y del conflicto.
 ///
 /// - La `rama` se verifica ENTERA, como la cabeza: dos firmas de verdad o no hay delacion.
-/// - **El mismo operador**: la misma `publicKey`, o claves distintas que las `actas` unen, con el
-///   juez de los ocho sitios que exigen continuidad ([`misma_continuidad`]). Dos operadores en el
-///   mismo `mmrSize` no bifurcan nada: cada uno lleva su historia.
+/// - **El mismo operador**: la misma `publicKey`, o claves distintas que las `actas` unen, con la
+///   continuidad de claves e índices ([`misma_continuidad`]). Dos operadores en el mismo `mmrSize`
+///   no bifurcan nada: cada uno lleva su historia. ⚠️ §722: aquí SIN el
+///   relevo, que juzgan los otros ocho sitios. Dos cabezas en el mismo `mmrSize` a los dos lados de
+///   un relevo son la bifurcación misma, y tienen que delatar.
 /// - **El mismo `mmrSize`**, con cualquier cima: con la misma, las dos ramas divergen en esta
 ///   cabeza; con otra, antes. El genesis (`mmrSize` 0) cuenta: dos cabezas que dicen «ninguna
 ///   cabeza antes» con contenidos distintos son dos historias desde el principio.
@@ -2937,6 +2996,15 @@ fn bifurcacion_del_ancla(
 /// ⚠️ La cadena la firman las claves del operador: quien delata no puede añadir un acta, y un
 /// prefijo de la cadena solo quita tramos superiores —delata menos, nunca de más—. Lo que la
 /// génesis firmó antes de su acta no se juzga: es el residuo de la D-I.
+///
+/// ⚠️ §722, y la otra cuenta: dentro de su tramo, la cabeza tiene que caer también en el
+/// RELEVO de ese tramo ([`Relevo`]): el `mmrSize` que la `procedencia` de su acta le hace heredar o
+/// uno mayor, y por debajo del relevo de la siguiente. Fuera, es una cabeza en un sitio de la
+/// historia que la cadena da a otra clave del operador: DETECCIÓN, salida 0. Un prefijo de la
+/// cadena también aquí quita relevos superiores: delata menos, nunca de más. ⚠️ El relevo de la
+/// génesis no tiene borde de abajo, pero el de arriba juzga también lo que su clave firmó antes de
+/// optar: la D-I lo exime por índice, no por `mmrSize`. Y quien delata elige la cadena: entre dos
+/// cadenas firmadas del operador, la de relevo más bajo delata más.
 fn verificar_solapamiento(p: &serde_json::Value) -> Result<(), String> {
     let c = p
         .get("cabeza")
@@ -2974,10 +3042,40 @@ fn verificar_solapamiento(p: &serde_json::Value) -> Result<(), String> {
         tramos.len()
     );
     if let Some(t) = tramos.iter().find(|t| t.contiene(e)) {
-        return Err(err(format!(
-            "la cabeza firma en la hoja {e}, dentro de su tramo {}: no hay solapamiento",
-            texto_de_tramo(t)
-        )));
+        // ⚠️ §722 · dentro de su tramo, la otra cuenta: el RELEVO. La cabeza de una clave
+        //    con un `mmrSize` que la cadena da a otra clave suya es una hoja de la historia de
+        //    cabezas que el operador ya habia cedido. El sobre no dice por que: la historia comun
+        //    de dos operadores de acuerdo -la clave que se fue siguio firmando por encima de su
+        //    relevo (medido, `tools/banco_historia_comun.sh`)- o una rotacion desde un diario
+        //    restaurado sin las cabezas que la vieja firmo, que la D-G del RFC-0015 evita.
+        let relevo = relevo_del_tramo(&actas, t);
+        let (cima, talla) = (digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?);
+        if relevo.contiene(talla, cima) {
+            return Err(err(format!(
+                "la cabeza firma en la hoja {e}, dentro de su tramo {}: no hay solapamiento",
+                texto_de_tramo(t)
+            )));
+        }
+        // Solo si es la cima lo que cae: en el relevo de su acta con la cima que hereda, y fuera,
+        // es el borde de arriba.
+        let otra_cima = match relevo.desde {
+            Some((s, heredada)) if s == talla && heredada != cima => {
+                ", con otra cima que la que hereda"
+            }
+            _ => "",
+        };
+        println!(
+            "3/3 la hoja {e} cae en su tramo {}, y el mmrSize {talla}{otra_cima} fuera de su \
+             relevo {}",
+            texto_de_tramo(t),
+            texto_de_relevo(t.eslabon, &relevo)
+        );
+        println!(
+            "VERDE: SOLAPAMIENTO - la clave firmo una cabeza con el mmrSize {talla}, fuera del \
+             relevo de su tramo: la cadena da ese sitio de la historia de cabezas a otra clave del \
+             operador. Es DETECCION del operador: solo quien tiene la clave pudo firmarla"
+        );
+        return Ok(());
     }
     let lista: Vec<String> = tramos.iter().map(texto_de_tramo).collect();
     println!(
@@ -3004,6 +3102,19 @@ fn texto_de_tramo(t: &Tramo) -> String {
     };
     match t.hasta {
         Some(h) => format!("({abajo}, por debajo de la {h})"),
+        None => format!("({abajo})"),
+    }
+}
+
+/// ⚠️ §722 · El relevo de un tramo dicho para leerlo: desde el `mmrSize` que hereda y por
+/// debajo del de la siguiente.
+fn texto_de_relevo(eslabon: usize, r: &Relevo) -> String {
+    let abajo = match r.desde {
+        None => format!("acta {eslabon}, la genesis"),
+        Some((s, _)) => format!("acta {eslabon}: desde el mmrSize {s}, con la cima que hereda"),
+    };
+    match r.hasta {
+        Some(h) => format!("({abajo}, por debajo del mmrSize {h})"),
         None => format!("({abajo})"),
     }
 }
@@ -4023,6 +4134,94 @@ mod tests {
             let e = verificar_paquete(&leer(sobre)).unwrap_err();
             assert!(e.starts_with(causa), "se esperaba «{causa}» y salio: {e}");
         }
+    }
+
+    /// ⚠️ §722 · **la historia común de dos operadores de acuerdo, y el relevo que la ata.**
+    /// Los trece sobres nuevos de `rotacion/`: siete de dos nodos reales
+    /// (`tools/banco_historia_comun.sh`) y seis con un acta firmada de nuevo por las mismas claves. La
+    /// refutación del conflicto genuino sigue VERDE -el residuo que se declara-; la cabeza de la clave
+    /// que se fue, firmada tras su relevo, ahora se delata; y cada mentira sobre el relevo cae con su
+    /// regla, en el paso 2 de la extensión, antes de la consistencia. Antes del arreglo, el
+    /// solapamiento daba ROJO y los cuatro relevos firmados de nuevo, VERDE (medido con el kit de la
+    /// base y con la segunda). Con un acta de C que releva en el `mmrSize` de la cabeza de B, la misma
+    /// cadena da un veredicto: la extensión cae por el borde de arriba de la posterior, y el
+    /// solapamiento de esa cabeza delata. Con los papeles cambiados, el relevo se sostiene -el índice
+    /// ordena- y cae la consistencia; sin actas, el rechazo de siempre.
+    #[test]
+    fn la_historia_comun_se_refuta_y_el_relevo_la_ata() {
+        let leer = |t: &str| -> serde_json::Value { serde_json::from_str(t).unwrap() };
+        let refutacion = leer(include_str!(
+            "../../../spec/vectors/rotacion/historia-comun-refutacion.json"
+        ));
+        for sobre in [
+            include_str!("../../../spec/vectors/rotacion/historia-comun-conflicto.json"),
+            include_str!(
+                "../../../spec/vectors/rotacion/historia-comun-solapamiento-tras-el-relevo.json"
+            ),
+            include_str!("../../../spec/vectors/rotacion/historia-comun-bifurcacion.json"),
+            include_str!(
+                "../../../spec/vectors/rotacion/historia-comun-solap-la-nueva-tras-su-relevo.json"
+            ),
+        ] {
+            assert_eq!(verificar_paquete(&leer(sobre)), Ok(()));
+        }
+        assert_eq!(
+            verificar_paquete(&refutacion),
+            Ok(()),
+            "el residuo: la refutacion sigue VERDE"
+        );
+        let relevo = "las cabezas llevan claves DISTINTAS y las actas no las unen: RELEVO: ";
+        for (sobre, causa) in [
+            (
+                include_str!("../../../spec/vectors/rotacion/neg-historia-comun-la-vieja-tras-el-relevo.json"),
+                "la cabeza de la clave que se va lleva el mmrSize 7, y el acta 1 la releva en el 6",
+            ),
+            (
+                include_str!("../../../spec/vectors/rotacion/neg-historia-comun-relevo-en-la-vieja.json"),
+                "la cabeza de la clave que se va lleva el mmrSize 3, y el acta 1 la releva en el 3",
+            ),
+            (
+                include_str!("../../../spec/vectors/rotacion/neg-historia-comun-relevo-tras-la-nueva.json"),
+                "la cabeza de la clave que llega lleva el mmrSize 7, y el acta 1 la hace entrar en el 8",
+            ),
+            (
+                include_str!("../../../spec/vectors/rotacion/neg-historia-comun-relevo-con-otra-cima.json"),
+                "la cabeza de la clave que llega firma el mmrSize 7 de su relevo con otra cima",
+            ),
+            (
+                include_str!("../../../spec/vectors/rotacion/neg-historia-comun-relevo-retrocede.json"),
+                "el acta 2 releva en el mmrSize 6, por debajo del 7 de la previa",
+            ),
+            (
+                include_str!("../../../spec/vectors/rotacion/neg-historia-comun-la-nueva-tras-su-relevo.json"),
+                "la cabeza de la clave que llega lleva el mmrSize 7, y el acta 2 la releva en el 7",
+            ),
+        ] {
+            let e = verificar_paquete(&leer(sobre)).unwrap_err();
+            assert!(e.starts_with(&format!("{relevo}{causa}")), "se esperaba «{causa}» y salio: {e}");
+        }
+        for sobre in [
+            include_str!(
+                "../../../spec/vectors/rotacion/neg-historia-comun-solap-a-en-su-relevo.json"
+            ),
+            include_str!(
+                "../../../spec/vectors/rotacion/neg-historia-comun-solap-b-en-su-relevo.json"
+            ),
+        ] {
+            let e = verificar_paquete(&leer(sobre)).unwrap_err();
+            assert!(e.ends_with("no hay solapamiento"), "{e}");
+        }
+        let mut cambiada = refutacion.clone();
+        cambiada["vieja"] = refutacion["nueva"].clone();
+        cambiada["nueva"] = refutacion["vieja"].clone();
+        let e = verificar_paquete(&cambiada).unwrap_err();
+        assert!(
+            e.contains("NO extiende a la vieja"),
+            "el relevo se sostiene y cae la consistencia: {e}"
+        );
+        let mut sin = refutacion.clone();
+        sin.as_object_mut().unwrap().remove("actas");
+        assert_eq!(verificar_paquete(&sin), Err(claves_distintas()));
     }
 
     /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.

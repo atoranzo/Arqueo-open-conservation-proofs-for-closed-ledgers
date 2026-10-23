@@ -76,6 +76,9 @@ TABLA_E = {
     'indice_embebido::{}: {}': ('opaco', [(V + 'lib.rs', 'Display:VerificaError')]),
     'misma_continuidad::las cabezas llevan claves DISTINTAS y las actas no las unen: {}':
         ('enumera', [(V + 'actas.rs', 'Display:RotacionError')]),
+    # §722: el juez de los ocho sitios que exigen continuidad, con el relevo; los mismos textos
+    'misma_historia::las cabezas llevan claves DISTINTAS y las actas no las unen: {}':
+        ('enumera', [(V + 'actas.rs', 'Display:RotacionError')]),
     'actas_del_sobre::actas[{}]: {}': ('opaco', [(V + 'actas.rs', 'fn:acta_de_json')]),
     'camino_mmr::camino[{}]: {}': ('opaco', [(H, 'Display:FormatoError')]),
     'camino_de::{}: siblings[{}]: {}': ('opaco', [(H, 'Display:FormatoError')]),

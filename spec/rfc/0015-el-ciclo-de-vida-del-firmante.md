@@ -39,7 +39,7 @@
 | E3b-1 — la vieja firma y el techo | la firma de la clave que se va (decisión 5), y el latido que deja de quemar el contador en el techo | no | **construida (§645)**: `--clave-anterior-fichero` da la semilla de la clave que se va, solo en una rotación; la vieja firma el mismo preámbulo en la hoja que da el contador y la nueva empieza en la siguiente, y una semilla que no es la del acta en vigor no gasta nada. En el techo el firmante devuelve `Agotada` **sin reservar**: el contador dice el techo, porque el SK no lo representa (medido) |
 | E3b-2 — el cable | `zkssl_keyActs`, que sirve la cadena de actas desde la génesis | no (aditivo: un método) | **construida (§646)**: sin parámetros, `{actas}` desde la génesis, armada una vez al arrancar tras juzgarla; el acta en JSON la escriben y la leen `acta_a_json` y `acta_de_json` del kit, que son también la línea del diario —byte a byte la de antes—; un elemento de un digest que vale `p` o más no se lee. La superficie pasa de 31 a 32 métodos y `zkssl/0.4` no sube |
 | E4 — el testigo | ante un cambio de clave pide el acta, la juzga contra la clave que fijó y sigue o se detiene; `--auditar` la juzga en el diario | no | **construida (§647)**: ante un cambio de clave el testigo pide `zkssl_keyActs` y la juzga con `juzgar_rotacion` del kit; si la cadena lleva de la clave fijada a la recibida, anota `rotada` con la cadena dentro, fija la nueva con su tramo y sigue; si no, se detiene como antes, con el motivo. Nace `solapamiento`, que detiene (reglas 3 y 4). `--auditar` rejuzga la rotación desde la línea, sin el nodo. El diario del testigo pasa a v4 |
-| E5a — el kit | el campo `actas` en los sobres que comparan cabezas | no (aditivo: un campo opcional) | **construida (§648)**: `juzgar_continuidad` en el kit, un juez para los ocho sitios que exigen la continuidad de un firmante —la extensión, el consumo y las seis cabezas que la completitud compara con su cierre—; el índice EMBEBIDO ordena las dos cabezas, la cadena lleva de la anterior a la posterior (reglas 1 a 3) y la posterior cae en su tramo (regla 4, que nace con nombre: `FueraDeTramo`). Sin `actas`, el texto de `claves_distintas` byte a byte. El conflicto y la vista dividida no la leen, y `spec/PAQUETE.md` dice por qué |
+| E5a — el kit | el campo `actas` en los sobres que comparan cabezas | no (aditivo: un campo opcional) | **construida (§648)**: `juzgar_continuidad` en el kit, un juez para los ocho sitios que exigen la continuidad de un firmante —la extensión, el consumo y las seis cabezas que la completitud compara con su cierre—; el índice EMBEBIDO ordena las dos cabezas, la cadena lleva de la anterior a la posterior (reglas 1 a 3) y la posterior cae en su tramo (regla 4, que nace con nombre: `FueraDeTramo`). Sin `actas`, el texto de `claves_distintas` byte a byte. El conflicto y la vista dividida no la leen, y `spec/PAQUETE.md` dice por qué. ⚠️ §722: en esos ocho sitios el juez es ahora `juzgar_historia`, que la contiene y le añade el relevo (`spec/PAQUETE.md` 2.3); `juzgar_continuidad` sola queda para la bifurcación del ancla |
 | E5b — el catálogo y el banco | los vectores con `actas`, `tools/banco_rotacion.sh` contra un nodo real y la segunda implementación que los lee | no | **construida (§649)**: `spec/vectors/rotacion/`, la duodécima familia del artefacto, copiada de un nodo real que rota dos veces —A, B con la firma de A, C sin la de B—: tres positivos, las dos conductas del operador que la cadena delata sembradas con sus claves —la vieja que firma después, la nueva que firma antes— y dieciocho negativos por una mutación; la segunda implementación lee `actas` y pasa los 23 con el mismo arnés, y su salida es la del binario línea a línea en los positivos; desde el §771, también en el consumo y en la completitud, del mismo nodo |
 | E5c — el sobre del solapamiento | `tipo: "solapamiento"`: una cabeza y la cadena; la detección portable de las reglas 3 y 4 | no (aditivo: un sobre nuevo) | **construida (§686)**: `Tramo` y `tramos_de` en el núcleo —un tramo por cada entrada de la clave en la cadena, y la génesis sin juzgar lo de antes de optar—; una cabeza fuera de todos los tramos de su clave es DETECCIÓN con salida 0, el molde de la vista dividida; once sobres derivados de la familia `rotacion/` sin otra corrida, que la segunda implementación pasa; y la refutación del conflicto entre dos claves de un operador, escrita: el sobre de extensión con la cadena, no la cadena sola. Desde el §687 lo arma el testigo desde su diario, `--auditar --sobres` |
 | E6 — el medio | el acta como hoja del medio de la clave que se va y de la que llega, con la E3 del RFC-0013 | no | pendiente, tras la E3 del RFC-0013 |
@@ -246,10 +246,21 @@ delataría a un operador honrado. Una cabeza fuera de TODOS los tramos de su cla
 salida 0. Quien delata no puede fabricar un tramo —las actas las firman las claves del operador— y
 un prefijo de la cadena solo delata menos. Y el conflicto entre dos claves de un operador se refuta
 con el sobre de extensión entre sus dos cabezas, con la cadena: la cadena sola no basta, porque dos
-operadores de acuerdo pueden firmarse una, y no una historia común. Desde el §687 el testigo arma
-el sobre desde su diario: por la regla 4, con la cabeza de la línea y la cadena de la rotación que
-fijó su tramo; por la regla 3, con la cabeza de la clave vieja de hoja más alta —la que la memoria
-usa como lo visto— y la cadena de la línea que la delata.
+operadores de acuerdo pueden firmarse una. ⚠️ §722: y también la historia común. Aquí se decía que
+no, sin medirlo: el segundo arranca su nodo sobre una copia del diario del primero, cuyas hojas son
+digests públicos, y su MMR contiene al del primero (medido con dos nodos reales,
+`tools/banco_historia_comun.sh`). Desde el arreglo los ocho sitios que exigen continuidad exigen el
+RELEVO —la `procedencia` del acta ata el MMR de las dos cabezas, cada una en el relevo de su tramo
+por sus dos bordes— y el sobre del solapamiento delata, con el mismo juicio, una cabeza de una clave
+fuera del relevo de su tramo. La refutación sigue siendo posible. Delata una cabeza de la clave que
+se fue firmada desde su relevo, con cualquier cadena que el operador firmó —la de relevo más bajo
+delata más—. No delata nada si los dos libros se ALTERNAN en lugar de apagar uno, si el segundo
+rellena su MMR y salta a la vez el contador, o si el operador firma otra acta de la misma
+transición con otro relevo: dos actas válidas de la misma clave tras la misma anterior son una
+equivocación de la cadena, y aún no tienen sobre (`spec/PAQUETE.md` 2.3, 2.5, 2.14 y 8). Desde el
+§687 el testigo arma el sobre desde su diario: por la regla 4, con la cabeza de la línea y la cadena
+de la rotación que fijó su tramo; por la regla 3, con la cabeza de la clave vieja de hoja más alta
+—la que la memoria usa como lo visto— y la cadena de la línea que la delata.
 
 ### D-F — El agotamiento: un aviso con umbral, y la sucesora ya comprometida
 
@@ -298,6 +309,17 @@ y las que caen fuera de su tramo, que son hojas que esa clave firmó. Esa cifra,
 `--desde-minimo`: el nodo entra en la siguiente. El medio y el respaldo siguen siendo cosa del
 operador, y una firma que no verifica no da hoja.
 
+⚠️ **§722 — el paso 3, en la otra cuenta.** Desde el arreglo, el acta de rotación fija también el
+RELEVO: el `mmrSize` y la cima que hereda la sucesora, que el nodo lee de su diario —el relevo es
+su número de cabezas—. El `--desde-minimo` salta por índice, no por `mmrSize`: con una instantánea
+más corta que lo que la vieja firmó y sirvió, las cabezas reales de la vieja quedan por encima del
+relevo, y el sobre del solapamiento las delata con una sola. Por eso el paso 3 se completa:
+**antes de rotar se reconstruye el diario** con las cabezas que la vieja firmó —las de los
+testigos, el medio o los clientes; a la línea le basta su `epochDigest`—, y el nodo lo exige con
+`--relevo-minimo N`, solo en una rotación: `N` es el mayor `mmrSize` que la vieja firmó, más uno, y
+con menos cabezas en el diario el nodo no firma el acta ni gasta una hoja. La cifra que el testigo
+da desde el §770 es la hoja, la de `--desde-minimo`; esta `N` no la da todavía.
+
 ### D-H — La custodia, declarada como hoy
 
 La clave siguiente es fría por diseño (D-B). Dónde vive la en curso sigue siendo una afirmación
@@ -316,6 +338,12 @@ módulos hardware y el RFC 10033 §4 los recomienda; esta propuesta no los exige
   diario sí lo ve (`--auditar`).
 - **La 103 sigue abierta**: perder a la vez el contador y el diario sigue apagando la puerta. D-G
   dice qué hacer cuando se sabe; cuando no se sabe, no hay procedimiento que valga.
+- ⚠️ **§722 — lo de antes de optar, por índice sí y por `mmrSize` no.** El tramo de la génesis
+  no juzga lo que su clave firmó antes de optar; el relevo de la primera
+  rotación, en cambio, sí: una génesis firmada sobre un diario nuevo deja sus cabezas viejas por
+  encima de ese relevo, y el sobre del solapamiento las delata. Lo mismo una rotación desde un
+  diario restaurado sin las cabezas que la vieja firmó (D-G, paso 3). Se opta sobre el diario de
+  siempre, y se rota con él completo.
 - **El cofirmante del testigo** tiene el mismo ciclo de vida y el mismo guardián (§298). Esta
   propuesta es para la clave del operador; la del testigo seguiría las mismas reglas en una etapa
   propia.

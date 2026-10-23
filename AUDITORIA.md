@@ -72605,3 +72605,330 @@ bancos.
 - **El umbral de 10 es una decisión, medida en los dos lados**, no una cota teórica: el honesto
   tiene unas 6 veces de holgura y el falsador cae con 3 o más.
 - Lo demás que el §717 dejó abierto sigue igual.
+
+## §722 — dos operadores de acuerdo pueden firmarse una historia común, y el relevo la ata: la procedencia de las actas fija en el MMR el sitio de cada cambio de clave, y cada cabeza cae en el relevo de su tramo por sus dos bordes en los ocho sitios que exigen continuidad y en el solapamiento; la segunda igualada, --relevo-minimo en el nodo y trece vectores
+
+El commit que lleva este asiento, sobre `ac92d99` (el §721). Un solo sello: en el kit, el relevo en
+`zk-ssl-verify/src/actas.rs` —`relevo_del_acta`, `CabezaDeLaCadena`, `juzgar_historia`, `Relevo`
+con `contiene`, `relevo_del_tramo`, ocho variantes de `RotacionError` y `eslabones_del_paso`, un
+productor que `juzgar_rotacion` ya usa sin cambiar de conducta—, con dos tests; en `src/main.rs`,
+`misma_historia` en la extensión, el consumo y el cierre de la completitud, el relevo en el sobre
+del solapamiento y un test sobre los trece vectores; en el nodo, `--relevo-minimo`
+(`zk-ssl-node/src/main.rs`), con un test; la segunda implementación
+(`tools/segunda/verificador.py`) y su README; `tools/banco_historia_comun.sh`, nuevo; el generador
+de seis vectores, `tools/vectores/historia_comun/`, nuevo; trece vectores en `rotacion/`, con sus
+líneas al final del manifiesto y sus huellas; `spec/PAQUETE.md` (las secciones 2.3, 2.5, 2.11,
+2.12, 2.14, 4, 5, 6.1, 8, 9 y 10); `spec/NUCLEO.md`; el RFC-0015; la fila del envoltorio nuevo en
+`tools/check_catalogo.py`; los pines de `tools/canon.sh` y la cuenta de bancos de su pie de
+`--bancos`; la cuenta de bancos de `tools/bancos.sh`; las cifras de tests de los documentos vivos;
+el recuento de `spec/vectors/` en los dos README y en la superficie de `spec/RPC.md`; y este
+asiento. Lo escribe y lo comprueba una sesión de Claude Code, y lo commitea esa sesión, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+El arreglo se hizo **en privado** antes de publicarse, como manda `SECURITY.md` §5 y
+`spec/rfc/PROCESO.md` §«Fallos de seguridad»: `spec/PAQUETE.md` 2.5 decía que dos operadores de
+acuerdo no pueden firmarse una historia común, y pueden; y el kit publicado que lee actas, la
+0.4.3, juzga la continuidad entre dos claves sin atarla a la historia de cabezas. Sale con los
+demás arreglos de la publicación conjunta. Lo midió en privado una sesión de Claude Code, sobre
+`161a233` (el §690) con los arreglos del §711 al §720 tal como se hicieron en privado; este sello
+lo lleva a `ac92d99` («Al portar», abajo), y lo que se volvió a correr aquí está en «Medido sobre
+este árbol». El canon entero se corre sobre la punta de la serie, no sobre cada sello.
+
+**De dónde sale.** El §686 escribió que el conflicto entre dos claves de un operador se refuta con
+el sobre de extensión entre sus dos cabezas, con la cadena, y que la cadena sola no basta: dos
+operadores de acuerdo «pueden firmarse una cadena que una sus claves, y no pueden firmarse una
+historia común». Lo segundo no se midió. Las hojas del MMR de cabezas son digests de cabeza,
+públicos, y el nodo siembra su MMR del diario (§292). Con dos nodos sin tocar,
+`tools/banco_historia_comun.sh` la fabrica:
+
+1. A arranca con su génesis comprometiendo la clave de B (`--siguiente`).
+2. A acepta un consumo y firma la cabeza que lo lleva: `mmrSize` 3, hoja 4.
+3. Se para A. B copia su diario y su contador: sin el contador, el nodo no arranca (§594). El
+   libro de B, vacío.
+4. B arranca con su clave y `--desde-minimo 1000000`. Rota de verdad: firma su acta en la hoja
+   1000001, con la procedencia que lee de la copia (el relevo en el `mmrSize` 6), y siembra su MMR
+   con las hojas de A.
+5. A vuelve a arrancar sobre lo suyo y sigue latiendo con su clave.
+6. B acepta el mismo consumo y firma: `mmrSize` 7, hoja 1000003.
+
+Dos libros, dos estados, el mismo consumo. El conflicto sale VERDE. La refutación —la extensión
+entre las dos cabezas, con la cadena de B— también. La cabeza que A firmó después, con el
+`mmrSize` 7, caía dentro de su tramo y no delataba nada. Sólo el modo 5 del ancla (§714)
+delataba, y pide una cabeza de cada nodo en el mismo `mmrSize`.
+
+**Lo que hace.**
+
+1. **El relevo, en `actas.rs`.** Desde el §644, la `procedencia` de un acta de rotación lleva el
+   `mmrSize` y la cima del acumulador de cabezas que hereda la clave que entra. `relevo_del_acta`
+   los lee. El relevo de un tramo va desde el de su acta —y en él, con la cima que hereda; la
+   génesis no tiene ese borde— hasta por debajo del de la siguiente, si la cadena la trae.
+   `juzgar_historia` es `juzgar_continuidad` y, después, cuatro reglas, en este orden:
+   1. la anterior, la de índice embebido menor, cae en un tramo de su clave hasta el paso: el que
+      su índice dice, que con una clave que vuelve a la cadena no es siempre el último. Si no cae
+      en ninguno, `SOLAPAMIENTO: … fuera de todos sus tramos`;
+   2. los relevos de las actas que se cruzan, desde ese tramo hasta el de la posterior, no
+      retroceden;
+   3. la anterior cae en el relevo de su tramo, por sus dos bordes;
+   4. la posterior, en el del suyo.
+
+   Si una cae, ROJO con su texto, `RELEVO: …`. El borde lo calcula un solo productor,
+   `Relevo::borde`, privado del módulo, que usa también `Relevo::contiene`: la extensión y el
+   solapamiento no pueden discrepar. Con esto, la cabeza de `mmrSize` mayor es la posterior: el
+   reloj cruza las claves por la cadena.
+2. **Los ocho sitios que exigen continuidad**, en `main.rs`. La extensión, el consumo y las seis
+   cabezas que la completitud compara con su cierre (`Cierre::exige`) usan `misma_historia`, con
+   el relevo, en su paso 2, antes de la consistencia. El ROJO lleva el prefijo de siempre:
+   `las cabezas llevan claves DISTINTAS y las actas no las unen: RELEVO: …`. `misma_continuidad`
+   queda sólo para la bifurcación del ancla: dos cabezas en el mismo `mmrSize` a los dos lados de
+   un relevo son la bifurcación misma, y tienen que delatar.
+3. **El sobre del solapamiento** (§686). Una cabeza dentro de su tramo por índice, pero con un
+   `mmrSize` fuera del relevo de ese tramo, es ahora `VERDE: SOLAPAMIENTO - la clave firmo una
+   cabeza con el mmrSize {t}, fuera del relevo de su tramo: …`, con salida 0: la detección. Antes
+   era ROJO, «no hay solapamiento». La línea `3/3` nombra el tramo y el relevo, y dice «con otra
+   cima» sólo si es la cima lo que cae. El VERDE no dice por qué. Lo producen dos operadores de
+   acuerdo, y también un operador honrado que rota desde un diario restaurado sin las cabezas que
+   la vieja firmó (el punto siguiente).
+4. **El nodo, `--relevo-minimo N`.** Sólo en una rotación. El relevo del acta es el número de
+   cabezas del diario. Si el diario lleva menos de `N`, el nodo no firma el acta ni gasta una
+   hoja, y dice por qué. Fuera de una rotación no arranca ni gasta; sin clave, no arranca. Es el
+   paso 3 de la D-G del RFC-0015 en la otra cuenta: `--desde-minimo` (§690) salta por índice, no
+   por `mmrSize`, y con un diario restaurado por detrás las cabezas reales de la vieja quedarían
+   por encima del relevo. No se hace obligatoria junto a `--desde-minimo`: rompería los arranques
+   del banco y del test del §690 sin cerrar nada que la opcional no cierre.
+5. **La segunda implementación** (`verificador.py`): `juzgar_historia`, `misma_historia`,
+   `relevo_del_acta` y el relevo del solapamiento, con los mismos textos y el mismo orden, y un
+   solo productor del borde, `_borde_del_relevo`. Su README lo dice. La segunda no lee la
+   completitud: el relevo del cierre es sólo del kit.
+6. **El banco**, `tools/banco_historia_comun.sh`: la escena de arriba con dos nodos reales, en los
+   puertos 8861 y 8862 y con las semillas `61`, `62` y `63`. Arma los sobres con lo que sirvió el
+   cable, los juzga con el mando con los nodos parados, trabaja en un temporal bajo `$HOME` y
+   comprueba el árbol por delta de `git status`. `--guardar` copia los sobres y sus líneas de
+   manifiesto. `tools/bancos.sh` lee los bancos del directorio: entra en `--bancos`.
+7. **Trece vectores en `rotacion/`**, ficheros nuevos.
+   - Siete se capturan de una corrida del banco y se copian: dos corridas no dan los mismos
+     bytes. Son el conflicto, la refutación —VERDE: el residuo—, la cabeza de A tras el relevo
+     como SOLAPAMIENTO, la bifurcación del modo 5 y tres negativos: esa cabeza extendida a una
+     posterior de B, que cae por el relevo, y las dos cabezas del conflicto, dentro de su tramo y
+     de su relevo.
+   - Seis los arma `tools/vectores/historia_comun/` con un acta firmada de nuevo por las claves del
+     banco (semillas `61`, `62`, `63` y `64`), en hojas que nadie firmó. Cuatro, uno por regla del
+     relevo que una mutación no produce. Dos, con una cadena de tres —un acta de C que releva en el
+     `mmrSize` de la cabeza de B—: la extensión de la refutación cae por el borde de arriba de la
+     posterior, y el solapamiento de esa misma cabeza delata. Con una cadena, un veredicto.
+   - Sus líneas van al final del manifiesto, y sus huellas en `spec/vectors/HUELLAS.sha256`
+     (§692). La clase de la 6.1 (§693) es «la regla no se sostiene», que gana `RELEVO` y
+     `no hay solapamiento` junto a `SOLAPAMIENTO`. Ningún vector anterior se reescribe.
+8. **La spec.** `spec/PAQUETE.md` corrige la 2.5: lo que la refutación prueba, y lo que queda. La
+   2.3 da las cuatro reglas en su orden; la 2.11, el relevo en el cierre; la 2.12, por qué la
+   bifurcación no lo aplica; la 2.14, el relevo del tramo, el VERDE que no dice por qué y
+   `--relevo-minimo`; la 4, el relevo en el paso `2/3` de la extensión y en el `3/3` del
+   solapamiento; la 5, los textos nuevos en su orden; la 6.1, su clase; la 8, lo que no afirma; la
+   9, la familia; la 10, su línea. `spec/NUCLEO.md` gana cinco filas de la familia ACTA y su nota.
+   El RFC-0015 corrige la misma afirmación en la E5c, y gana el relevo en la E5a, el paso 3 de la
+   D-G en la otra cuenta y una línea en lo que no cierra: lo que la génesis firmó antes de optar,
+   la D-I lo exime por índice, y el relevo lo juzga por `mmrSize`. Los textos de la spec y del RFC
+   se redactaron en privado, con el arreglo, y entran en este sello.
+
+**Al portar.** Este asiento y su sello se escribieron sobre `161a233` (el §690), con los arreglos
+del §711 al §720 tal como se hicieron en privado, y los lleva a `ac92d99` —el §721 ya llevado a
+`7dd6409`, el §895, sobre el §711 al §720 llevados— una sesión de Claude Code, no el autor: primero
+sobre el §721 llevado a `6c33d2a` (el §865), y de ahí sobre los seis sellos del §890 al §895, que
+git funde sin choque con este sello («Al portar», en el §711). El código entra como se escribió:
+`actas.rs`, el `main.rs` del kit, el del nodo y `verificador.py` funden solos, y sus líneas nuevas
+son las del sello salvo las marcas, que citaban el trabajo privado y pasan a este §; los trece
+vectores, byte a byte. Lo que git no fundía, o lo que el sello daba por supuesto de `main`, se miró
+a mano:
+
+- **Los vectores del §771.** Desde el §771 llevan `actas` dos sobres de consumo
+  (`consumo-rotado.json` y `rechazo-cons-rotado-cadena-corta.json`) y dos de completitud
+  (`rotada-ventana-abierta.json` y `neg-rotada-vigente-cadena-corta.json`), y otros dos, uno de
+  cada, no las traen. La doc de `Cierre::exige` y la 2.11 de `spec/PAQUETE.md` decían que ningún
+  vector de completitud lleva `actas` y daban «75 de 75»: se reescriben con la medida de aquí, los
+  seis con la misma salida, línea a línea, que el kit del §721 llevado, y la completitud 81 de 81.
+- **`tools/check_catalogo.py` (§777).** `misma_historia` es un envoltorio nuevo, con el texto de
+  `misma_continuidad`, y gana su fila en `TABLA_E`. Y la herramienta no leía como lista de
+  biblioteca la lista numerada de la 5 —ocho `R3 FALTA`, uno por variante nueva—: la viñeta del
+  §722 empieza ahora, como su hermana de arriba, por el prefijo entre comillas de código,
+  `las cabezas llevan claves DISTINTAS y las actas no las unen: {e}`, y los textos no cambian.
+- **El banco (§786 y §855).** Sus dos `cargo build` van con `--locked`, y el directorio de los
+  binarios sale de `tools/target_dir.sh`, como en los demás bancos.
+- **El `Cargo.lock` del generador.** El del sello llevaba `zk-ssl-verify` 0.4.2 —el árbol dice
+  0.4.3 desde el §815— y otras quince versiones que no son las del `Cargo.lock` del árbol. Se parte
+  de éste, cargo poda lo que el generador no usa, y compila con `--locked`; los seis vectores salen
+  iguales byte a byte a los del árbol (abajo). La cabecera del `Cargo.toml` y la primera línea de
+  `src/main.rs` se reescriben; el código, tal cual.
+- **El RFC-0015 y `spec/PAQUETE.md` con el §770 y el §771.** En la tabla de etapas, la E5a con el
+  relevo y la E5b con el §771; en la 2.3, la 9 y la 10, los dos textos. El párrafo del relevo en
+  la D-G va detrás del del §770, y dice que la cifra que el testigo da desde el §770 es la hoja de
+  `--desde-minimo`, no la `N` de `--relevo-minimo`.
+- **La 6.1 de `spec/PAQUETE.md`.** El sello no la tocaba, y su manifiesto pina `RELEVO` y
+  `no hay solapamiento` como «la regla no se sostiene»: la fila los gana, como ganó el §718 los
+  suyos. Ninguna herramienta la comprueba.
+- **El censo de `spec/NUCLEO.md`.** Cinco filas nuevas y 117 elementos alcanzables, no 116: el
+  `contiene` de `Relevo` cuenta como alcanzable y comparte la fila del de `Tramo`, como en el sello.
+  Su nota de historia va arriba, delante de la del §800.
+- **Lo que ninguna herramienta lee.** En `tools/segunda/README.md`, «1 quater» de «237 de 237» a
+  «250 de 250», con su marca; la fila `rotacion` de la tabla, de 35 a 48, con su marca; y en «El
+  verificador bajo wasmtime» una marca «⚠️ §722», como la de cada sello que añadió vectores. En
+  `tools/bancos.sh`, la cuenta de bancos, de 27 y una pasada de 26 a 28 y 27, con su marca; y la
+  misma cuenta en el pie de `--bancos` de `tools/canon.sh`, de una pasada de 26 (el 27, el de los
+  cortes, FUERA) a 27 (el 28 FUERA), con la suya, como hizo el §712 en los dos sitios. La
+  superficie de `spec/RPC.md`: `vectores.json` 581 -> 594 y `vectores.lineas` 1282 -> 1328, sin
+  marca, como en los sellos anteriores, y `check_superficie` sale con 0 novedades. Las cifras en
+  prosa, buscadas por cada valor viejo con `git grep -n -w` fuera de este fichero, de
+  `spec/vectors` y de los `.rs`: 239, 215, 2045, 2185, 2207, 601, 581, 1282, 237, 491, 290, 175,
+  111 y 138 sólo salen como otra cosa o en las marcas de sellos anteriores; y 26 y 27, los de los
+  bancos, sólo como cuenta de bancos en esos dos pies, ya marcados, y en otra cosa. El «fija hoy»
+  de `ARQUITECTURA.md` y `CONTRIBUTING.md` es el de la capa, que no cambia.
+
+**Medido en privado**, sobre `161a233` con los arreglos del §711 al §720:
+
+- **El banco, antes del arreglo**: el conflicto, VERDE; la refutación, VERDE, «el mismo OPERADOR en
+  los dos extremos»; la cabeza de A tras el relevo, `mmrSize` 7 y hoja 8, ROJO «dentro de su tramo
+  …: no hay solapamiento»; la bifurcación, VERDE; y la extensión de esa cabeza a una posterior de
+  B, ROJO, pero por la consistencia. **Después**: `BANCO-HISTORIA VERDE`, los siete como dice el
+  manifiesto. La refutación sigue VERDE.
+- **La familia `rotacion`**, con `tools/conformidad.sh`, 48 entradas. El kit de antes de este
+  arreglo, 40 de 48: el solapamiento tras el relevo daba ROJO, la extensión de la cabeza tardía
+  caía por la consistencia, los cuatro relevos firmados de nuevo daban VERDE, y los dos de la
+  cadena de tres no decían lo suyo. El kit y la segunda de este arreglo, 48 de 48.
+- **Una primera versión miraba un borde de cada cabeza.** Con la cadena de tres, la extensión de la
+  refutación y el solapamiento de la misma cabeza de B daban dos VERDE contrarios, en el kit y en la
+  segunda: 47 de 48. De ahí los dos bordes, y la anterior juzgada por el tramo que su índice dice.
+- **Sin regresión**, el kit: ancla cofirmada 27 de 27, ancla 44, completitud 75, conflicto 17,
+  consumo 17, edad 34, pago 24, paquete 78, pendiente 10, prenda 9, rechazo 84 y rotación 48. La
+  segunda: paquete 78, consumo 17, conflicto 17, ancla 44 y rotación 48.
+- **La segunda dice lo mismo**: su salida es la del kit, línea a línea, en los cinco positivos de
+  la historia común. Con la cadena alternada del test del núcleo (A, B, A, B; relevos 10, 20 y 30),
+  sin firmas y en los dos órdenes de llegada, 18 de 18 casos dan el texto del kit.
+- **El generador**, dos corridas y `cmp`: los seis ficheros, iguales entre corridas; 1,6 y 1,7 s en
+  release.
+- **Los tests**, en release: `zk-ssl-verify` 123 + 84 + 1; `zk-ssl-node` 205 de 205; `zk-ssl-cli`
+  160 de 160, sin cambios: el testigo empareja `RotacionError` con un brazo `Err(e)`, y las
+  variantes nuevas caen ahí. La lib de `zk-ssl-verify` entera, 6,5 s.
+- `tools/segunda/juez_cabezas.py`: 581 de 634 cabezas verifican, y ningún positivo lleva una que no.
+
+**Medido sobre este árbol**, `ac92d99` con este sello, en release, con el directorio de compilación
+compartido, `flock` y `nice -n 19`, en una máquina de 4 CPU compartida con otras tareas:
+
+- **Las filas que toca**, con `cargo test --release --locked -p <crate>`, 0 fallos y 0 warnings:
+  `zk-ssl-verify` 218 (132 + 85 + 1), en 13 s de pared; `zk-ssl-node` 240, con los tests en 29 s;
+  y `zk-ssl-cli` 175, sin cambios, por la misma razón que en privado. Con el perfil `aserciones`
+  del «1 bis» (`cargo test --locked --profile aserciones -p zk-ssl-verify`): 218, con 0 ignorados y
+  0 warnings, el pin de su fila, y cada «Running» bajo `<target>/aserciones/deps/`. La fila de
+  `zk-ssl-verify` medida como el §853, en frío y con un núcleo (`taskset -c 3`): 32,4 s de pared,
+  18,7 s de compilar y 13,6 s de tests, contra su timeout de 120 s.
+- **El banco**: `bash tools/banco_historia_comun.sh --guardar <dir>`, `BANCO-HISTORIA VERDE` en
+  18 s, los siete sobres OK y el árbol sin tocar (el banco lo comprueba por delta de `git status`).
+  La escena es la de arriba: A en el `mmrSize` 3 y la hoja 4; la copia, 6 cabezas; el acta de B
+  desde la hoja 1000001 con el relevo en el `mmrSize` 6; B en el 7 y la hoja 1000003; A, tras el
+  relevo, en el 7 y la hoja 8. Las siete líneas que `--guardar` escribe son, letra por letra, las
+  del manifiesto; los bytes de los sobres, otros, como se espera de otra corrida. A y B, cada uno
+  con su libro: el cerrojo del §816 no estorba.
+- **El generador**: `cargo build --release --locked` en `tools/vectores/historia_comun/`, con un
+  `CARGO_TARGET_DIR` propio, y dos corridas sobre la refutación del árbol, en 1,4 y 1,3 s: los seis
+  ficheros, iguales entre corridas y byte a byte a los del árbol (`cmp`).
+- **La conformidad**, con `tools/conformidad.sh` y el kit de este árbol (`6e4f654cf5013d96`), en
+  las doce familias del artefacto: paquete 94 de 94, consumo 20, conflicto 17, rechazo 84, edad 39,
+  pendiente 11, pago 28, prenda 11, completitud 81, ancla 44, ancla cofirmada 27 y rotación 48,
+  cada una entera. Los seis sobres del §771, con la misma salida, línea a línea, que el kit del
+  §721 llevado (`f8ad3d09732b010b`, compilado de `ac92d99`), que en `rotacion` da 40 de 48: los
+  ocho de antes del arreglo, como en privado.
+- **El kit 0.4.3 publicado** (`1b120e59…`, el del §818) sobre los trece: 38 de 48 en `rotacion`,
+  con nueve de los trece y `neg-acta-mmrsize-alias.json` (§718) en rojo. Siete dan otro código:
+  los dos solapamientos tras el relevo, salida 1 con `no hay solapamiento`, y los cinco negativos
+  del relevo firmado de nuevo, salida 0 con `VERDE: la extension se sostiene sin el nodo`. Dos dan
+  el código y no el texto: la bifurcación, VERDE sin el modo 5 (§714), y la extensión de la cabeza
+  tardía de A, ROJO por la consistencia. Los cuatro restantes, el conflicto, la refutación y los
+  dos solapamientos dentro de su relevo, dicen lo mismo con la 0.4.3: la refutación fabricada es
+  VERDE en las dos.
+- **La segunda**: con `tools/conformidad.sh`, paquete 94 de 94, consumo 20, conflicto 17, ancla 44,
+  rotación 48 y ancla cofirmada 27, 250 de 250 en 36 s; su salida, la del kit línea a línea en los
+  cinco positivos de la historia común; y la cadena alternada, sin firmas, 18 de 18 casos en los
+  dos órdenes. `juez_cabezas.py`: 612 de 667 cabezas y 15 de 20 cofirmas verifican, en 501
+  ficheros, en 26 s; los 60 con alguna que no verifica son negativos, y las cabezas de los trece
+  verifican todas.
+- **Los falsadores**, cada uno en su sitio y restaurado, con el md5 comprobado. Con
+  `misma_continuidad` en vez de `misma_historia` en la extensión: `rotacion` 42 de 48 —los cinco
+  negativos del relevo firmado de nuevo dan VERDE, y la extensión de la cabeza tardía cae por la
+  consistencia— y falla `la_historia_comun_se_refuta_y_el_relevo_la_ata`; consumo y completitud,
+  enteras. Sin el borde de arriba de la posterior: 47 de 48, cae
+  `neg-historia-comun-la-nueva-tras-su-relevo.json`, y falla
+  `cada_cabeza_cae_en_el_relevo_de_su_tramo_por_los_dos_bordes`. El solapamiento sin el relevo:
+  46 de 48, los dos solapamientos tras el relevo dan ROJO, y falla
+  `la_historia_comun_se_refuta_y_el_relevo_la_ata`, el test de los trece. El nodo sin la
+  comprobación de `--relevo-minimo`: falla
+  `acta_de_arranque::el_relevo_minimo_falla_cerrado_con_un_diario_corto`. El kit de vuelta, el
+  mismo binario que antes de ellos (`ff748e97c7203654`); el de arriba es otro sólo porque después se
+  reescribió la doc de `Cierre::exige`, que corre las líneas del fuente.
+- **Las compuertas**, desde la raíz y con este asiento en su sitio: `check_tests`, 2211
+  declarados; `check_modulos`, 214 ficheros; `check_vectores`, 594 vectores y 1328 líneas de 19
+  manifiestos con su huella, ninguno movido; `check_cifras`, 26 cifras y ninguna contradice el
+  canon; `check_columns`, 51 ficheros, y sus columnas, 323, todas rellenas; `check_publicadas`, con
+  614 ficheros en `spec/vectors/`; `check_catalogo`, 235 textos del kit y 299 entradas de §5, 58 de
+  listas de biblioteca; `check_nucleo`, 180 filas; `verificar_citas`, 0 fantasmas y 0 muertos;
+  `check_superficie`, la lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas;
+  `check_constraint_layout`, los 33 circuitos y las 5 AIR del kit sin hueco; y `check_curvas`,
+  `check_dominios`, `check_figures` y `check_techo`. Todas salen con 0. Las 61 llamadas a cargo de
+  `tools/banco_*.sh` llevan `--locked`, la puerta del §786.
+
+**Contadores.** En `tools/canon.sh`, con su crónica: `zk-ssl-verify` 215 -> 218 (dos tests en
+`actas::tests` y uno en `tests` del binario) y `zk-ssl-node` 239 -> 240
+(`acta_de_arranque`). TOTAL DE SELLO 2045 -> 2049 y TOTAL CON LARGOS 2185 -> 2189, en
+`PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md`, y el desglose de `PRINCIPIOS.md`, el nodo a 240 y el
+verificador a 218. Las «1364 declarados» y las «1349 declared» no se tocan, como en los sellos
+anteriores. `zk-ssl-cli` sigue en 175. `check_tests`, de 2207 a 2211. `spec/vectors/`, de 601 a 614
+ficheros, en `README.md` y `README_EN.md`. `check_vectores`, de 581 a 594 vectores y de 1282 a
+1328 líneas, y con ellos la superficie de `spec/RPC.md`. El censo de `spec/NUCLEO.md`, de 111 a
+117 elementos alcanzables y de 138 a 143 en NÚCLEO, 180 filas. `check_catalogo`, de 290 a 299
+entradas de §5. En `tools/segunda/README.md`, `rotacion` de 35 a 48, «1 quater» de 237 a 250 y las
+entradas de las doce familias de 491 a 504. `tools/bancos.sh`, un banco más: 28, y 27 por pasada;
+y el pie de `--bancos` de `tools/canon.sh`, 27 por pasada y el 28 FUERA. El pie «Ceguera
+declarada» de `tools/canon.sh` no cambia: ninguno de los cuatro tests nuevos lleva
+`cfg_attr(debug_assertions, ignore)`.
+
+**Lo que NO hace.** No cambia el cable ni la versión `zkssl/0.4`, ni el acta ni la cabeza: el
+relevo se lee de la `procedencia` que el acta firma desde el §644. No reescribe ningún vector, y no
+cambia el veredicto de ninguno anterior (medido, las doce familias). No hace obligatoria
+`--relevo-minimo`. No publica un kit: el corte va al final de la serie. No corre el canon entero,
+ni otro banco que el suyo.
+
+**Lo que NO cierra.**
+
+- **La refutación fabricada sigue VERDE**, y se declara (2.5 y 8). La extensión entre dos claves
+  con `actas` prueba que las dos cabezas caben en una historia de cabezas con esa cadena y ese
+  relevo. No prueba una historia de estado: un libro nuevo que copia el diario de otro y se declara
+  su heredero es, en el sobre, una rotación.
+- **La detección pide una cabeza de la clave que se fue firmada desde su relevo, y que alguien la
+  guarde.** Quien delata elige la cadena: la de relevo más bajo delata más. Tres escapes no dejan
+  evidencia que ningún sobre juzgue:
+  1. **alternar los libros** en lugar de apagar uno: A, B, A, B, cada clave en sus turnos, con
+     nodos sin tocar. El nodo acepta como rotación cualquier clave cuya huella sea la siguiente del
+     acta vigente, también una que vuelve. El test de la cadena alternada lo mide: cada cabeza cae
+     en su tramo y en su relevo;
+  2. **el relleno**: el segundo siembra su MMR con subárboles de hojas iguales y salta el contador
+     a la vez. En el propio banco, B firma la hoja 1000003 con el `mmrSize` 7: una regla «índice ≥
+     `mmrSize`» no lo vería, y no se adopta;
+  3. **volver a firmar el relevo**: una transición admite más de un acta. El generador firma cuatro
+     de la misma transición de B, en las hojas 500001 a 500004, y las cuatro valen en
+     `verificar_cadena`. Dos actas válidas de la misma clave tras la misma anterior son una
+     equivocación de la cadena, y no tienen sobre todavía.
+- **El relevo delata a un operador honrado que no siga la D-G**: el que rota desde un diario
+  restaurado sin las cabezas que la vieja sirvió, o firma su génesis sobre un diario nuevo.
+  `--relevo-minimo` lo evita, pero es opcional. Es detección de lo firmado, no de la intención
+  (2.14, D-I).
+- **El testigo no aplica el relevo**: ni en la vuelta viva, ni en `--auditar --sobres`, ni en
+  `--comparar`. El sobre de una cabeza fuera del relevo de su tramo se arma a mano. Y
+  `witness --auditar` da, por clave, la hoja más alta que pide `--desde-minimo` (§770), no el
+  `mmrSize` que pide `--relevo-minimo`.
+- **Las claves que vuelven, del lado de la posterior.** Se juzga contra la última entrada de su
+  clave, como en la continuidad: una posterior de un tramo anterior de su clave cae por índice
+  (`FueraDeTramo`). Es un falso negativo de `juzgar_continuidad`, anterior a este sello, y se
+  declara en la 2.3. Arreglarlo cambia también la bifurcación del ancla.
+- **Tres de las ocho causas nuevas no tienen vector**: la anterior por debajo del relevo de su acta,
+  la anterior con otra cima y la anterior fuera de todos sus tramos. Piden que la anterior no sea
+  de la génesis. Las juzga el test de la cadena alternada, en el kit y, sin firmas, en la segunda.
+- **El `epochDigest` de la procedencia no se juzga**: la cabeza de la clave que se va en el
+  `mmrSize` del relevo menos uno tendría que ser esa. Sin vector.
+- **Los `Cargo.lock` de los generadores van por detrás del corte**: el de este y el de
+  `tools/vectores/coste_edad/` dicen `zk-ssl-verify` 0.4.3, y el corte de la serie sube el kit.

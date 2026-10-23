@@ -1,0 +1,33 @@
+# §722, la historia comun: el generador de los negativos del RELEVO que una mutacion no produce
+# -cada uno pide un acta FIRMADA de nuevo con otra procedencia-, para los seis sobres de
+# `spec/vectors/rotacion/` que no se capturan. Toma la refutacion capturada por
+# `tools/banco_historia_comun.sh` (`spec/vectors/rotacion/historia-comun-refutacion.json`) y vuelve
+# a firmar el acta de B -y, para el relevo que retrocede, una cadena de tres- con las claves del
+# banco, semillas '61' (A), '62' (B), '63' (C) y '64' (X) x 96: lo que dos operadores de acuerdo
+# pueden firmar. Las cabezas y el camino no se tocan. Fuera del workspace (su propio
+# `[workspace]`), con el fork de winterfell del arbol por `[patch.crates-io]`. Tras la revision del
+# relevo, un acta de C cierra el borde de arriba de la cabeza de B. No lo llama ningun guion: lo
+# cita el manifiesto.
+#
+#   cargo run --release --locked -- <refutacion.json> <dir de salida>
+[package]
+name = "historia-comun"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+serde_json = "1"
+xmss = "=0.1.0-pre.0"
+zk-ssl-hash = { path = "../../../crates/zk-ssl-hash" }
+zk-ssl-verify = { path = "../../../crates/zk-ssl-verify" }
+zk-ssl-guardian = { path = "../../../crates/zk-ssl-guardian" }
+
+[profile.release]
+overflow-checks = true
+
+[patch.crates-io]
+winter-air = { path = "../../../crates/winter-air" }
+winter-verifier = { path = "../../../crates/winter-verifier" }

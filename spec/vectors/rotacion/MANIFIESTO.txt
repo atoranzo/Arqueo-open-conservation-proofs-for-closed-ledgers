@@ -77,3 +77,49 @@ neg-solap-cabeza-v2.json|1|cabeza: formatVersion 2: el sobre del solapamiento le
 # salida 0 -un acta firmada, dos escrituras- (medido). Ahora el lector del acta exige `u64_canonico`
 # en los dos. Jamas se reescribe (regla 2 del PROCESO).
 neg-acta-mmrsize-alias.json|1|actas[1]: mmrSize: 0xffffffff00000005 no es canonico
+#
+# ── §722, la HISTORIA COMUN: dos operadores de acuerdo (spec/PAQUETE.md 2.3, 2.5 y 2.14) ──
+# SIETE sobres de UNA corrida de `bash tools/banco_historia_comun.sh --guardar <dir>`, COPIADOS: dos
+# nodos REALES sin una linea tocada. A arranca con su genesis comprometiendo a B, acepta el consumo y
+# firma la cabeza que lo lleva; B copia el diario y el contador de A -lineas de digests publicos-, y
+# arranca con su clave sobre la copia, con un libro VACIO y `--desde-minimo 1000000`: el nodo rota de
+# verdad, firma su acta con el relevo que lee de la copia (mmrSize 6) y siembra su MMR con las hojas de
+# A. A SIGUE con su clave; B acepta el MISMO consumo. Dos libros, dos estados, el mismo consumo.
+# Los CUATRO positivos, salida 0: el conflicto genuino; la REFUTACION, la extension entre las dos
+# cabezas del conflicto con la cadena de B -VERDE antes y despues del arreglo, y se declara: el sobre
+# ve lo que veria de una rotacion, y la historia de cabezas no ata el estado-; el SOLAPAMIENTO por el
+# relevo, una cabeza de A tras la copia con mmrSize 7 que el acta da a B -antes del arreglo ROJO,
+# «dentro de su tramo», y la refutacion quedaba sin respuesta-; y la BIFURCACION del modo 5 del ancla,
+# A y B en el mismo mmrSize con la cadena, que ya delataba antes y pide las dos cabezas.
+# Los TRES negativos: la extension de esa A tardia a una B posterior cae por el relevo, antes de la
+# consistencia -antes del arreglo caia por la consistencia-, y la A del conflicto y la B, dentro de su
+# tramo y de su relevo, no delatan. Dos corridas no dan los mismos bytes: se COPIA y no se re-deriva.
+# Causa de los negativos, en la taxonomia del §693 (spec/PAQUETE.md 6.1): «la regla no se sostiene»,
+# con el texto `RELEVO` o `no hay solapamiento`.
+historia-comun-conflicto.json|0|VERDE: dos libros aceptaron el mismo consumo
+historia-comun-refutacion.json|0|(1 eslabon(es), la posterior desde la hoja 1000001): el mismo OPERADOR en los dos extremos
+historia-comun-solapamiento-tras-el-relevo.json|0|VERDE: SOLAPAMIENTO - la clave firmo una cabeza con el mmrSize 7
+historia-comun-bifurcacion.json|0|VERDE: BIFURCACION - el operador firmo DOS cabezas distintas con el mmrSize 10
+neg-historia-comun-la-vieja-tras-el-relevo.json|1|RELEVO: la cabeza de la clave que se va lleva el mmrSize 7, y el acta 1 la releva en el 6
+neg-historia-comun-solap-a-en-su-relevo.json|1|la cabeza firma en la hoja 4, dentro de su tramo (acta 0, la genesis: cualquier hoja salvo la 0 de su acta, por debajo de la 1000001): no hay solapamiento
+neg-historia-comun-solap-b-en-su-relevo.json|1|la cabeza firma en la hoja 1000003, dentro de su tramo (acta 1: por encima de la hoja 1000001): no hay solapamiento
+# CUATRO negativos que una mutacion no produce -cada uno pide un acta firmada de nuevo con otra
+# procedencia-: los arma `tools/vectores/historia_comun/` desde la refutacion de arriba, con las
+# claves del banco (semillas '61', '62' y '64' x 96), en hojas que el banco quemo sin firmar. Es lo que
+# dos operadores de acuerdo pueden firmar despues; las cabezas y el camino, tal cual. Determinista.
+# Antes del arreglo los cuatro daban VERDE, en el kit y en la segunda (medido). Causa: «la regla no se
+# sostiene», `RELEVO`, juzgada ANTES de la consistencia, en el paso 2 de la extension.
+neg-historia-comun-relevo-en-la-vieja.json|1|RELEVO: la cabeza de la clave que se va lleva el mmrSize 3, y el acta 1 la releva en el 3: la clave que se va firma por debajo
+neg-historia-comun-relevo-tras-la-nueva.json|1|RELEVO: la cabeza de la clave que llega lleva el mmrSize 7, y el acta 1 la hace entrar en el 8: la clave que llega firma desde ahi
+neg-historia-comun-relevo-con-otra-cima.json|1|RELEVO: la cabeza de la clave que llega firma el mmrSize 7 de su relevo con otra cima que la que el acta 1 le hace heredar
+neg-historia-comun-relevo-retrocede.json|1|RELEVO: el acta 2 releva en el mmrSize 6, por debajo del 7 de la previa: la historia de cabezas no retrocede
+# DOS sobres mas, de la revision del relevo, con UNA cadena de tres: la de la refutacion y un acta de
+# C (la clave que B compromete, semilla '63' x 96, que nunca firmo) en la hoja 2000000 -la cabeza de
+# B queda en su tramo por indice- con el relevo en el mmrSize 7 de esa misma cabeza. Los arma el
+# mismo generador. Con el relevo de un solo borde la cadena daba DOS veredictos contrarios: la
+# extension de la refutacion VERDE, «el mismo OPERADOR», y el solapamiento de la misma cabeza de B
+# VERDE, la deteccion (medido con el kit y la segunda sin corregir). Ahora cada cabeza cae en el
+# relevo de SU tramo por los dos bordes, en la extension y en el solapamiento: uno es ROJO y el otro
+# VERDE. Causa del negativo: «la regla no se sostiene», `RELEVO`, el borde de arriba de la que llega.
+neg-historia-comun-la-nueva-tras-su-relevo.json|1|RELEVO: la cabeza de la clave que llega lleva el mmrSize 7, y el acta 2 la releva en el 7: la clave que llega firma por debajo
+historia-comun-solap-la-nueva-tras-su-relevo.json|0|VERDE: SOLAPAMIENTO - la clave firmo una cabeza con el mmrSize 7, fuera del relevo de su tramo

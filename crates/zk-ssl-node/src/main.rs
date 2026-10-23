@@ -234,6 +234,16 @@ struct Args {
     #[arg(long, value_name = "HOJA")]
     desde_minimo: Option<u64>,
 
+    /// ⚠️ §722 · **El relevo mínimo**, en una rotación (RFC-0015, D-G,
+    /// paso 3): el mayor `mmrSize` que la clave que se va firmó según lo que el operador sabe de
+    /// fuera, más uno. El acta declara como relevo el número de cabezas del diario, y una cabeza
+    /// de la vieja con ese `mmrSize` o mayor es SOLAPAMIENTO contra el operador. Con un diario
+    /// restaurado por detrás, el nodo NO firma el acta: se reconstruye antes el diario con las
+    /// cabezas que faltan -de los testigos, del medio; basta su `epochDigest`-. Fuera de una
+    /// rotación, no arranca.
+    #[arg(long, value_name = "N")]
+    relevo_minimo: Option<u64>,
+
     /// **Imprime la huella de la clave de una semilla y sale**, sin contador, sin diario y sin
     /// escucha: es lo que se pasa a `--siguiente` desde la máquina donde vive la clave fría.
     #[arg(long)]
@@ -779,17 +789,19 @@ fn firmar_acta_si_toca(
     siguiente: Option<&str>,
     anterior: Option<&[u8]>,
 ) -> anyhow::Result<()> {
-    firmar_acta_saltando(f, ruta, siguiente, anterior, None)
+    firmar_acta_saltando(f, ruta, siguiente, anterior, None, None)
 }
 
 /// ⚠️ §690 · `firmar_acta_si_toca` con `--desde-minimo`: en una rotación, la sucesora entra por
-/// encima de esa hoja (RFC-0015, D-G, paso 3).
+/// encima de esa hoja (RFC-0015, D-G, paso 3). ⚠️ §722: y con
+/// `--relevo-minimo`, no entra con un relevo por debajo de lo que la vieja firmó.
 fn firmar_acta_saltando(
     f: &mut firma_cabeza::FirmanteCabeza,
     ruta: &str,
     siguiente: Option<&str>,
     anterior: Option<&[u8]>,
     desde_minimo: Option<u64>,
+    relevo_minimo: Option<u64>,
 ) -> anyhow::Result<()> {
     use zk_ssl_verify::actas::{huella_de_clave, Acta, Procedencia, ESQUEMA_XMSSMT_SHA2_40_8_256};
     let actas = crate::diario::actas(ruta);
@@ -808,6 +820,12 @@ fn firmar_acta_saltando(
              el desde de la sucesora"
         );
     }
+    if relevo_minimo.is_some() && !matches!(decision, DecisionDeActa::Rotacion { .. }) {
+        anyhow::bail!(
+            "--relevo-minimo solo vale en una rotacion, y este arranque no lo es: el relevo es el \
+             del acta de la sucesora"
+        );
+    }
     let (previa, siguiente) = match decision {
         DecisionDeActa::Ninguna => return Ok(()),
         DecisionDeActa::EnVigor => {
@@ -818,6 +836,22 @@ fn firmar_acta_saltando(
         DecisionDeActa::Genesis { siguiente } => (None, siguiente),
         DecisionDeActa::Rotacion { previa, siguiente } => (Some(previa), siguiente),
     };
+    // ⚠️ §722 · el relevo del acta es el número de cabezas del diario.
+    //    Con uno restaurado por detrás de lo que la vieja firmó y sirvió, sus cabezas reales
+    //    quedarían por encima del relevo, y el sobre del solapamiento las delataría con una sola: lo
+    //    que el `--desde-minimo` evita por índice, en la otra cuenta. Falla cerrado, ANTES de gastar
+    //    una hoja.
+    if let (Some(n), Some(_)) = (relevo_minimo, previa.as_ref()) {
+        let tiene = crate::diario::digests(ruta).len() as u64;
+        if tiene < n {
+            anyhow::bail!(
+                "--relevo-minimo {n}: el diario lleva {tiene} cabezas, y el relevo del acta es ese \
+                 numero. La clave que se va firmo cabezas que el diario no tiene, y quedarian por \
+                 encima del relevo: un SOLAPAMIENTO contra el operador. Se reconstruye el diario con \
+                 esas cabezas antes de rotar (RFC-0015, D-G, paso 3)"
+            );
+        }
+    }
     // La procedencia: la ultima cabeza que firmo la clave que se va, y el acumulador de cabezas
     // que la que entra hereda -el que su primera cabeza firmara-. Sin cabeza de la anterior,
     // el digest es el cero declarado, como el genesis del MMR.
@@ -1675,7 +1709,7 @@ mod acta_de_arranque {
         };
 
         let mut a = abrir(1);
-        let e = firmar_acta_saltando(&mut a, ruta, Some(&huella(2)), None, Some(30))
+        let e = firmar_acta_saltando(&mut a, ruta, Some(&huella(2)), None, Some(30), None)
             .expect_err("fuera de una rotacion");
         assert!(e.to_string().contains("solo vale en una rotacion"), "{e}");
         assert_eq!(
@@ -1687,7 +1721,8 @@ mod acta_de_arranque {
         drop(a);
 
         let mut b = abrir(2);
-        firmar_acta_saltando(&mut b, ruta, Some(&huella(3)), None, Some(30)).expect("rotacion");
+        firmar_acta_saltando(&mut b, ruta, Some(&huella(3)), None, Some(30), None)
+            .expect("rotacion");
         let actas = crate::diario::actas(&diario);
         assert_eq!(
             actas[1].acta.desde, 31,
@@ -1698,10 +1733,81 @@ mod acta_de_arranque {
         drop(b);
 
         let mut c = abrir(3);
-        firmar_acta_saltando(&mut c, ruta, Some(&huella(4)), None, Some(5)).expect("rotacion");
+        firmar_acta_saltando(&mut c, ruta, Some(&huella(4)), None, Some(5), None)
+            .expect("rotacion");
         let actas = crate::diario::actas(&diario);
         assert_eq!(actas[2].acta.desde, 32, "por debajo del contador no salta");
         assert_eq!(verificar_cadena_de_actas(&actas), Ok(()));
+    }
+
+    /// ⚠️ §722 · **el relevo no queda por debajo de lo que la vieja
+    /// firmó.** Un diario restaurado con dos cabezas, cuando la vieja firmó y sirvió hasta el
+    /// `mmrSize` 2: con `--relevo-minimo 3` la rotación NO se firma ni gasta, y el acta no se anota.
+    /// Reconstruido con la línea que faltaba -basta su `epochDigest`-, se firma, y su relevo es 3.
+    /// Fuera de una rotación, la bandera no arranca ni gasta.
+    #[test]
+    fn el_relevo_minimo_falla_cerrado_con_un_diario_corto() {
+        use crate::firma_cabeza::FirmanteCabeza;
+        use std::io::Write;
+        let d = crate::tests_dir("acta_relevo_minimo");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let (contador, diario) = (d.join("indice.bin"), d.join("diario.jsonl"));
+        let ruta = diario.to_str().expect("utf8");
+        let semilla = |x: u8| [x; 96];
+        let huella = |x: u8| huella_de_semilla(&semilla(x)).expect("huella");
+        let abrir = |x: u8| {
+            let mut f = FirmanteCabeza::desde_semilla(&semilla(x), &contador).expect("firmante");
+            let r = f.reconciliar().expect("reconciliar");
+            if let DecisionDeArranque::ArrancaResincronizando { hasta, .. } =
+                politica_de_reconciliacion(&r, crate::diario::maximo_indice(&diario))
+            {
+                f.resincronizar_a(hasta).expect("resincronizar");
+            }
+            f
+        };
+        let cabeza = |n: u8| {
+            let mut fichero = std::fs::OpenOptions::new()
+                .append(true)
+                .open(&diario)
+                .expect("diario");
+            let linea = json!({ "epochDigest": format!("0x{}", hex_de(&[n; 32])) });
+            writeln!(fichero, "{linea}").expect("anotar");
+        };
+
+        let mut a = abrir(1);
+        let e = firmar_acta_saltando(&mut a, ruta, Some(&huella(2)), None, None, Some(1))
+            .expect_err("fuera de una rotacion");
+        assert!(e.to_string().contains("solo vale en una rotacion"), "{e}");
+        assert_eq!(
+            a.indice_del_guardian(),
+            0,
+            "la bandera fuera de sitio no gasta nada"
+        );
+        firmar_acta_si_toca(&mut a, ruta, Some(&huella(2)), None).expect("genesis");
+        drop(a);
+        cabeza(1);
+        cabeza(2);
+
+        let mut b = abrir(2);
+        let antes = b.indice_del_guardian();
+        let e = firmar_acta_saltando(&mut b, ruta, Some(&huella(3)), None, None, Some(3))
+            .expect_err("un diario corto");
+        assert!(e.to_string().contains("el diario lleva 2 cabezas"), "{e}");
+        assert_eq!(b.indice_del_guardian(), antes, "no gasta nada");
+        assert_eq!(crate::diario::actas(&diario).len(), 1, "ni anota el acta");
+        cabeza(3);
+        firmar_acta_saltando(&mut b, ruta, Some(&huella(3)), None, None, Some(3))
+            .expect("el diario, reconstruido");
+        let actas = crate::diario::actas(&diario);
+        assert_eq!(verificar_cadena_de_actas(&actas), Ok(()));
+        let relevo = zk_ssl_verify::actas::relevo_del_acta(&actas[1]).expect("rotacion");
+        assert_eq!(relevo.0, 3, "el relevo es el numero de cabezas del diario");
+        assert_eq!(
+            Some(relevo.1),
+            zk_ssl_verify::mmr::cima(&crate::diario::digests(&diario)),
+            "y la cima, la de esas cabezas"
+        );
     }
 
     /// ⚠️ §646: **el cable sirve la cadena de actas, y el kit la juzga.** Un nodo sin actas
@@ -1861,6 +1967,9 @@ async fn main() -> anyhow::Result<()> {
     if args.desde_minimo.is_some() && semilla_hex.is_none() {
         anyhow::bail!("--desde-minimo sin --clave/--clave-fichero: no hay sucesora que entre");
     }
+    if args.relevo_minimo.is_some() && semilla_hex.is_none() {
+        anyhow::bail!("--relevo-minimo sin --clave/--clave-fichero: no hay sucesora que entre");
+    }
     if firma_sin_diario(semilla_hex.is_some(), args.diario.is_some()) {
         anyhow::bail!(
             "quien firma, anota: --clave/--clave-fichero exige --diario. \
@@ -1940,6 +2049,7 @@ async fn main() -> anyhow::Result<()> {
                     args.siguiente.as_deref(),
                     anterior.as_deref(),
                     args.desde_minimo,
+                    args.relevo_minimo,
                 )?;
                 actas_de_clave = cadena_servida(ruta);
             }

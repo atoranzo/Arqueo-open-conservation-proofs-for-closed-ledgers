@@ -121,7 +121,43 @@ donde el valor es una respuesta del cable sin reescribir.
   continuidad: aquí, en el consumo (2.4) y en las seis cabezas que el sobre de completitud
   compara con su cierre (2.11). Su catálogo, desde el §649, es `spec/vectors/rotacion/`, de un
   nodo real que rota (sección 9); y desde el §771, tres sobres en `consumo/` y tres en
-  `completitud/`, del mismo nodo.
+  `completitud/`, del mismo nodo. ⚠️ §722: en esos ocho sitios el juez
+  es ahora `juzgar_historia`, que la contiene y le añade el relevo (abajo). `juzgar_continuidad`
+  sola queda para la bifurcación del ancla (2.12), por la razón que da la sección 8.
+- ⚠️ **§722 — el RELEVO: la cadena ata el MMR.** La continuidad de
+  arriba solo mira claves e índices. Dos operadores de acuerdo se firmaban una: la génesis del uno
+  compromete la clave del otro, y el otro arranca su nodo sobre una COPIA del diario del uno —sus
+  líneas son digests de cabeza, públicos—. El nodo rota de verdad, su MMR contiene al del primero,
+  y la extensión entre dos cabezas de dos libros distintos salía VERDE (medido con
+  `tools/banco_historia_comun.sh`, dos nodos reales sin tocar). Por eso, en los ocho sitios de
+  arriba —aquí, en el consumo y en las seis cabezas de la completitud—, con claves distintas y
+  `actas`, el juez es `juzgar_historia`: la continuidad y, después, el **relevo**. La `procedencia`
+  de un acta de rotación lleva el `mmrSize` y la cima del acumulador de cabezas que la clave que
+  entra hereda —el nodo los lee de su diario al rotar, y su primera cabeza los firma—. Cada tramo
+  de una clave tiene así su relevo (2.14): desde el `mmrSize` que su acta le hace heredar —y en
+  él, con la cima que hereda; la génesis no tiene ese borde— y por debajo del relevo del acta
+  siguiente, si la cadena la trae. **Cada una de las dos cabezas cae en el relevo de su tramo, por
+  sus dos bordes**: es el juicio que el sobre del solapamiento hace con una cabeza sola, y con una
+  cadena hay un solo veredicto. Las reglas, en este orden, que es el de precedencia de los textos
+  (sección 5) en el kit y en la segunda implementación:
+  1. la anterior, la de índice embebido menor, cae en un tramo de su clave hasta el paso: el que su
+     índice dice, que con una clave que vuelve a la cadena no es siempre el último. Si no cae en
+     ninguno, SOLAPAMIENTO, la regla 4 también para ella;
+  2. los relevos de las actas que se cruzan, desde ese tramo hasta el de la posterior, **no
+     retroceden**;
+  3. la anterior, en el relevo de su tramo: si no, ROJO por debajo del relevo de su acta, en él con
+     otra cima, o en el de la siguiente o por encima —en este orden—;
+  4. la posterior, en el relevo del suyo, con los mismos tres bordes y el mismo orden.
+
+  Si no, ROJO con la regla que cae —`SOLAPAMIENTO: …` en la 1, `RELEVO: …` en las demás—, en el
+  paso `2/3`: antes de la consistencia. Con eso la cabeza de `mmrSize` mayor es la posterior: el reloj cruza las claves por la cadena. Las
+  tres rotaciones del catálogo siguen VERDE. ⚠️ La posterior se juzga contra la ÚLTIMA entrada de
+  su clave, como en la continuidad de arriba: con una clave que vuelve a la cadena, una posterior
+  de un tramo anterior de su clave cae por índice (`FueraDeTramo`). Es un falso negativo de la
+  continuidad, anterior al relevo, y se declara. ⚠️ El relevo **no impide** la historia común: dos
+  operadores de acuerdo la arman con el relevo bien puesto, y el sobre ve lo que vería de una
+  rotación (2.5). Lo que hace es **atarla**: el acta dice dónde acaba la clave que se va, y una
+  cabeza suya por encima es evidencia (2.14).
 
 ### 2.4 El paquete de consumo (§419)
 
@@ -173,7 +209,44 @@ donde el valor es una respuesta del cable sin reescribir.
   **La refutación tiene sobre** (§686): el de extensión entre las dos cabezas, con la cadena
   (2.3). Si verifica, las dos son UNA historia y el consumo bajo las dos es el mismo, publicado una
   vez. ⚠️ La cadena sola NO basta: dos operadores de acuerdo pueden firmarse una cadena que una sus
-  claves, y no pueden firmarse una historia común —la consistencia del MMR entre las dos cabezas—.
+  claves. ⚠️ **§722: y también pueden firmarse la historia común.** Aquí
+  se decía que no —la consistencia del MMR entre las dos cabezas—, sin medirlo, y es falso. Las
+  hojas del MMR son digests de cabeza, públicos: el segundo arranca su nodo sobre una copia del
+  diario del primero, cuya génesis compromete su clave, y su MMR contiene al del primero. Medido con
+  `tools/banco_historia_comun.sh`: dos nodos reales sin tocar, dos libros —dos estados, dos árboles
+  de consumos— que aceptan el mismo consumo; el conflicto sale VERDE, y la refutación también,
+  antes y después del arreglo. El sobre ve lo que vería de una rotación, y la historia de cabezas no
+  ata el ESTADO: nada en él distingue un relevo de verdad de un libro nuevo que se declara heredero.
+  **La refutación, por tanto, no cierra el conflicto: lo traslada.** Desde el arreglo la extensión
+  exige el relevo (2.3), y el acta de la refutación fija dónde acaba la clave que se fue. Si el
+  primer libro siguió firmando con ella —y en un conflicto genuino sigue: cada latido es una
+  cabeza—, cualquier cabeza suya con un `mmrSize` desde el relevo, con la cadena de la refutación,
+  es un SOLAPAMIENTO (2.14), DETECCIÓN con salida 0. Antes del arreglo esa cabeza estaba dentro de
+  su tramo y no delataba nada; solo la bifurcación del modo 5 del ancla (2.12) delataba, y pedía
+  las dos cabezas en el mismo `mmrSize`, una de cada nodo. Quien juzga la refutación pide, pues, la
+  cabeza más reciente de la clave que se fue. Y quien delata elige la cadena: cualquier cadena que
+  el operador firmó le sirve, y la de relevo más bajo delata más.
+
+  ⚠️ **Lo que queda, sin evidencia que ningún sobre juzgue:**
+  1. **Alternar los libros, no apagarlos.** El nodo acepta como rotación cualquier clave cuya
+     huella sea la siguiente del acta vigente, también una que vuelve. Con nodos sin tocar, A, B,
+     A, B…, cada uno sobre una copia del diario del otro y con su propio libro, firman una historia
+     de cabezas lineal y una cadena válida. Cada cabeza cae en su tramo y en su relevo, y los dos
+     libros siguen vivos (medido en el núcleo: una cadena de cuatro actas que vale, y una cabeza
+     por turno que cae en su tramo y en su relevo, así que el sobre del solapamiento no delata
+     ninguna). No hace falta apagar el primer libro: basta que cada clave firme solo en sus turnos.
+  2. **El relleno.** El segundo siembra su MMR con subárboles de hojas iguales, cuya cima cuesta un
+     hash por nivel, y pone el relevo por encima de todo lo que el primero firmará. Que el
+     `mmrSize` quede muy por encima de las hojas que su clave gastó no lo delata si el contador
+     también salta: en el propio banco B salta con `--desde-minimo` a la hoja 1000001 y firma con el
+     `mmrSize` 7, así que el relleno puede subir el relevo hasta cerca de su índice sin que una
+     regla «índice ≥ `mmrSize`» lo vea.
+  3. **Volver a firmar el relevo.** Una misma transición admite más de un acta: la clave que entra
+     puede firmar otra, con otra `procedencia`, en una hoja que su salto quemó. El generador de los
+     vectores firma cuatro actas distintas de la misma transición de B, en las hojas 500001 a
+     500004, y las cuatro valen en `verificar_cadena`. «El acta fija dónde acaba la clave» vale por
+     cadena: dos actas válidas de la misma clave tras la misma anterior son una equivocación de la
+     cadena, y hoy ningún sobre la delata (pendiente: un sobre de esa equivocación).
   ⚠️ **§712:** la refutación es una extensión, y hereda su reloj. Con el mismo `mmrSize`,
   la consistencia es la identidad y bastaba compartir la cima: dos operadores que siembran su MMR
   con el mismo diario la comparten en ese tamaño, y sus dos cabezas no son una historia, son dos
@@ -466,7 +539,12 @@ Después, el veredicto (RFC-0010, D-F y D-G). La ventana se MIDE siempre en la u
 índice **acreditado** —el embebido más uno— de una cabeza firmada por la misma clave, con
 `S − inicio <= n`. Desde el §648 esa cabeza puede ser de otra clave del mismo operador, si el sobre
 lleva `actas` que la unen al cierre (2.3): la cuenta de índices es una (RFC-0015 D-A), y la ventana
-se mide igual. El `index` declarado no entra en lo firmado (§399) y ya no mide nada; la `era` de
+se mide igual. ⚠️ §722: las seis cabezas que este sobre compara con su cierre se juzgan con
+`juzgar_historia`, con el relevo de 2.3, como la extensión: una resolución con una cabeza de otra
+clave no resuelve con más libertad que la refutación del conflicto. Desde el §771 dos vectores de
+completitud llevan `actas`, `rotada-ventana-abierta.json` y `neg-rotada-vigente-cadena-corta.json`,
+y ninguno se mueve: los dos dicen, línea a línea, lo que decían sin el relevo (medido, 81 de 81).
+El `index` declarado no entra en lo firmado (§399) y ya no mide nada; la `era` de
 la hoja la ata a su camino pero no mide la ventana:
 
 1. **`acuse`**: la cabeza está dentro de la ventana, el acuse es de la MISMA prueba y el par
@@ -614,7 +692,8 @@ modos, y desde el §714, cinco:
    antes que su `available`, como el de la cabeza— y se verifica ENTERA, como la cabeza —dos
    firmas de verdad o no hay delación—; el operador es el mismo —la misma `publicKey`, o claves
    distintas que las `actas` unen, con el juez de 2.3, `juzgar_continuidad`: dos operadores en el
-   mismo tamaño no bifurcan nada—; el `mmrSize` es el mismo, con cualquier cima —con la misma, las
+   mismo tamaño no bifurcan nada; desde el §722, sin el relevo, por la razón de
+   la sección 8—; el `mmrSize` es el mismo, con cualquier cima —con la misma, las
    dos ramas divergen en esa cabeza; con otra, antes—, y el génesis (`mmrSize` 0) también cuenta;
    y los digests difieren —el mismo digest es la misma cabeza, aunque la firmen dos hojas—. Hasta
    el §714 ningún sobre DELATABA la bifurcación: el de extensión la rechaza con su causa (§712), y un
@@ -729,16 +808,43 @@ corrida suya: sección 9.
 - ⚠️ **La génesis no juzga lo que su clave firmó antes de optar** (el residuo de la D-I del
   RFC-0015): su tramo admite cualquier hoja salvo la de su acta. Una clave que vuelve a la cadena
   tiene un tramo por cada entrada, y basta caer en uno.
+- ⚠️ **§722 — y el RELEVO del tramo**, la otra cuenta: la de la
+  historia de cabezas (2.3). Dentro de su tramo, la cabeza tiene que llevar un `mmrSize` igual o
+  mayor que el relevo de su acta —y si es igual, la cima que hereda— y por debajo del relevo de la
+  siguiente, si la cadena la trae. La génesis no tiene el borde de abajo; el de arriba, en cambio,
+  juzga también lo que su clave firmó **antes de optar**: la D-I lo exime por índice, no por
+  `mmrSize`. Fuera, es una cabeza en un sitio de la historia que la cadena da a otra clave del
+  operador: **DETECCIÓN con salida 0**, `VERDE: SOLAPAMIENTO - la clave firmo una cabeza con el
+  mmrSize {t}, …`. Es el mismo juicio que la extensión hace a cada una de sus dos cabezas (2.3):
+  con una cadena, un veredicto. Antes del arreglo esa cabeza daba ROJO, «dentro de su tramo»
+  (medido). Un prefijo de la cadena también aquí quita relevos superiores.
+- ⚠️ **§722 — el VERDE no dice por qué.** Lo produce la historia común
+  de dos operadores de acuerdo (2.5) —la clave que se fue siguió firmando por encima de su
+  relevo—, y también un operador honrado que rota desde un diario **restaurado**: el procedimiento
+  de emergencia de la D-G del RFC-0015 restaura una instantánea, más corta que lo que la vieja firmó
+  y sirvió, y rota con `--desde-minimo`. Ese salto evita el solapamiento por índice, no por
+  `mmrSize`: el relevo del acta es el número de cabezas del diario, y las cabezas reales de la vieja
+  quedan por encima. Lo mismo una génesis firmada sobre un diario nuevo, con cabezas de antes de
+  optar sobre el viejo. Por eso la D-G, paso 3, reconstruye el diario ANTES de rotar con las
+  cabezas que la vieja firmó —de los testigos, del medio, de los clientes; a una línea le basta su
+  `epochDigest`—, y el nodo falla cerrado con `--relevo-minimo N`: no firma el acta de rotación si
+  el diario lleva menos de `N` cabezas (`N`, el mayor `mmrSize` que la vieja firmó, más uno). El
+  sobre no distingue un caso del otro, y no lo pretende: es detección de lo que la clave firmó.
 - ⚠️ **Lo que quien delata no puede fabricar.** Las actas las firman las claves del operador —cada
   una, la que entra, y comprometida antes por la anterior—: quien arma el sobre no puede añadir un
   tramo ni moverlo. Puede presentar un prefijo de la cadena, y eso solo quita tramos superiores:
-  delata menos, nunca de más.
+  delata menos, nunca de más. ⚠️ §722: el operador, en cambio, sí puede
+  firmar más de una cadena —dos actas de la misma transición, con otra `procedencia` (2.5)—, y
+  quien delata usa cualquiera: la de relevo más bajo delata más.
 - **El banco es `tools/banco_rotacion.sh`** (§649; el sobre, desde el §686) y **el catálogo vive
-  en `spec/vectors/rotacion/`**, con los sobres de la extensión entre dos claves: sección 9.
+  en `spec/vectors/rotacion/`**, con los sobres de la extensión entre dos claves: sección 9. El del
+  relevo es `tools/banco_historia_comun.sh` (§722).
 - **Lo arma el testigo** (§687): `zk-ssl-cli witness --auditar DIARIO --sobres DIR` escribe un sobre
   por cada solapamiento que su diario delata, con la cabeza que cruza —la de la línea, o por la
   regla 3 la de la clave vieja con la hoja más alta— y la cadena de la rotación que fijó el tramo.
-  La detección del testigo se vuelve evidencia que cualquiera verifica sin él y sin el nodo.
+  La detección del testigo se vuelve evidencia que cualquiera verifica sin él y sin el nodo. ⚠️
+  §722: el testigo no aplica todavía el relevo —ni en la vuelta viva, ni en `--auditar`, ni en
+  `--comparar`—, y el sobre de una cabeza fuera del relevo de su tramo se arma a mano (sección 8).
 
 ## 3. El sobre — lo que el binario lee
 
@@ -810,7 +916,8 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
 
 **Paquete de extensión:** `1/3` las dos cabezas (v3, v4, v5 o v6) recomponen su digest y sus firmas verifican ·
 `2/3` misma `publicKey` en las dos: la continuidad es de **un** firmante —o, con `actas` (§648),
-claves distintas que la cadena une: la continuidad es de **un** operador— · `3/3` la cima nueva
+claves distintas que la cadena une: la continuidad es de **un** operador, y desde el §722 el
+relevo de 2.3: cada cabeza en el de su tramo, por sus dos bordes— · `3/3` la cima nueva
 extiende a la vieja por `camino`, y **después**, desde el §712, el reloj de 2.3, en una
 línea sangrada debajo: la misma cabeza con el mismo `mmrSize`, o la hoja que avanza con la misma
 clave, o «claves distintas: el orden de sus hojas lo juzgan los tramos».
@@ -862,7 +969,8 @@ ancla sube hasta la raíz de la nota en su posición.
 leídas una a una) y la versión de la cabeza · `1/3` la cabeza recompone su digest y su firma
 verifica, y se lee su índice embebido · `2/3` la cadena vale entera, eslabón a eslabón, y la clave
 de la cabeza entra en ella · `3/3` el índice cae fuera de todos los tramos de su clave: VERDE,
-SOLAPAMIENTO, la detección.
+SOLAPAMIENTO, la detección. ⚠️ §722: si cae en uno, el `3/3` mira su
+`mmrSize` contra el relevo de ese tramo (2.14), y fuera de él también es VERDE, SOLAPAMIENTO.
 
 **Sobre del ancla, modo 5: la bifurcación** (§714): antes de tocar la criptografía, la
 forma (la `rama` sin `ancla` ni `contraria`, detrás de las dos reglas de forma del ancla) · `1/3` la
@@ -973,6 +1081,26 @@ nota que dice por qué.
     `SOLAPAMIENTO: la clave que se va firmo en la hoja {indice}, y su sucesora empieza en la
     {desde}` · `SOLAPAMIENTO: la clave que llega firmo en la hoja {indice}, fuera de su tramo:
     por encima de la {desde}[ y por debajo de la {hasta}]`
+  - `las cabezas llevan claves DISTINTAS y las actas no las unen: {e}`, el mismo prefijo: ⚠️
+    §722, en los ocho sitios de 2.3 —la extensión, el consumo y las seis cabezas de la
+    completitud—, después de las de arriba y en el orden de las reglas de 2.3, con `{e}` uno de:
+    1. `SOLAPAMIENTO: la clave que se va firmo en la hoja {indice}, fuera de todos sus tramos: la
+       cuenta del operador la daba a otra clave suya o a un acta`;
+    2. `RELEVO: el acta {k} releva en el mmrSize {s}, por debajo del {s'} de la previa: la
+       historia de cabezas no retrocede`;
+    3. la anterior: `RELEVO: la cabeza de la clave que se va lleva el mmrSize {t}, y el acta {k}
+       la hace entrar en el {s}: la clave que se va firma desde ahi` · `RELEVO: la cabeza de la
+       clave que se va firma el mmrSize {s} de su relevo con otra cima que la que el acta {k} le
+       hace heredar` · `RELEVO: la cabeza de la clave que se va lleva el mmrSize {t}, y el acta
+       {k} la releva en el {s}: la clave que se va firma por debajo`;
+    4. la posterior: `RELEVO: la cabeza de la clave que llega lleva el mmrSize {t}, y el acta {k}
+       la hace entrar en el {s}: la clave que llega firma desde ahi` · `RELEVO: la cabeza de la
+       clave que llega firma el mmrSize {s} de su relevo con otra cima que la que el acta {k} le
+       hace heredar` · `RELEVO: la cabeza de la clave que llega lleva el mmrSize {t}, y el acta
+       {k} la releva en el {s}: la clave que llega firma por debajo`.
+
+    Un sobre que rompe dos reglas dice la primera en ese orden, en el kit y en la segunda
+    implementación. La bifurcación del ancla no lo aplica (sección 8).
 - `falta camino (lista de digests)`
 - `camino[{i}] no es cadena` · `camino[{i}]: {} bytes` · `camino[{i}]: {e}` — ⚠️ §776: hasta aquí
   decía `{e:?}`, rancio desde el §640.
@@ -1309,7 +1437,10 @@ el §714, `rama`—: viven en su bloque y no se repiten aquí.
 - `la clave de la cabeza no esta en la cadena: nadie la comprometio`
 - `la cabeza firma en la hoja {e}, dentro de su tramo {tramo}: no hay solapamiento`, con
   `{tramo}` `(acta 0, la genesis: cualquier hoja salvo la {d} de su acta[, por debajo de la {h}])`
-  o `(acta {i}: por encima de la hoja {d}[, por debajo de la {h}])`
+  o `(acta {i}: por encima de la hoja {d}[, por debajo de la {h}])`. ⚠️ §722: solo si su
+  `mmrSize` cae también en el relevo de ese tramo (2.14). Si no, el VERDE de la
+  detección: `VERDE: SOLAPAMIENTO - la clave firmo una cabeza con el mmrSize {t}, fuera del relevo
+  de su tramo: …`, con la línea `3/3` que nombra el tramo y el relevo.
 
 Lo que el sobre exige de una cabeza —`available:true`, la recomposición, la firma— es lo de la
 extensión, con `cabeza` como sujeto.
@@ -1395,7 +1526,7 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **firma inválida** | `la firma no verifica` · `la firma es VALIDA pero de otro mensaje` · `el indice declarado ({d}) no cuadra con el que va dentro de la firma` |
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
 | **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` |
-| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) · `fuera de 3..=` (§717: una `m` de la edad sobre su tope, `m = {} fuera de 3..={M_MAX}`, 2.7; se pina con su `m` y sin el tope) · `no es un indice de cuenta` y `todos se escribe con emisor 0` (§718: el emisor de la edad, 2.7) · `pasa del techo` (un entero del pago o del cobro sobre su techo; desde el §718, también tal como llega, antes de reducir, 2.9 y sección 5) |
+| **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) · `fuera de 3..=` (§717: una `m` de la edad sobre su tope, `m = {} fuera de 3..={M_MAX}`, 2.7; se pina con su `m` y sin el tope) · `no es un indice de cuenta` y `todos se escribe con emisor 0` (§718: el emisor de la edad, 2.7) · `pasa del techo` (un entero del pago o del cobro sobre su techo; desde el §718, también tal como llega, antes de reducir, 2.9 y sección 5) · `RELEVO` y `no hay solapamiento` (§722: una cabeza fuera del relevo de su tramo en los ocho sitios de 2.3, y una dentro de su tramo y de su relevo en el sobre del solapamiento, 2.14) |
 | **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) · `prueba mal formada: usize no canonico` (§715: un `usize` de la prueba que no está en su escritura mínima; la pone el lector del fork, `crates/winter-air/src/proof/acotado.rs`, con el texto de `causa.rs`) · `UnconsumedBytes` y `not all bytes were consumed` (§715: bytes de sobra tras la prueba, o dentro de una apertura o del lote de una capa FRI; son el mismo error de winter-utils, `DeserializationError::UnconsumedBytes`, por su `Debug` y por su `Display`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
 | **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido o, desde el §717, una prueba fabricada que sólo tiene la forma | `InconsistentOodConstraintEvaluations` |
@@ -1465,6 +1596,24 @@ mando, desde el §688, el de la vista dividida (2.12, modo 4).
   su MMR**: no es tiempo de reloj, y él elige qué cabezas firma y cuándo. Dentro de un libro
   el uso único es un invariante comprobable; **entre libros este paquete no dice nada** —eso
   es detección, no prevención, y vive en el RFC-0006 E4—.
+- ⚠️ §722. La extensión entre dos claves con `actas` **no demuestra
+  una historia de ESTADO**: demuestra que las dos cabezas caben en una historia de cabezas con esa
+  cadena y ese relevo. Dos operadores de acuerdo la fabrican (2.5), y la delata una cabeza de la
+  clave que se fue por encima del relevo (2.14), si existe y alguien la guarda. **No la delata
+  nada** si alternan los libros en lugar de apagar uno —cada clave firma solo en sus turnos, con
+  nodos sin tocar—, si rellenan el MMR y saltan el contador a la vez, o si el operador firma otra
+  acta de la misma transición con otro relevo (2.5). Esa última es una equivocación de la cadena
+  —dos actas válidas de la misma clave tras la misma anterior— para la que no hay sobre todavía.
+- ⚠️ §722. El relevo se juzga en los ocho sitios de 2.3 —la extensión,
+  el consumo y las seis cabezas del cierre de la completitud (2.11)— y en el solapamiento. **No** en
+  la bifurcación del ancla (2.12), donde dos cabezas en el mismo `mmrSize` a los dos lados de un
+  relevo son la bifurcación misma, y tienen que delatar. El testigo tampoco lo aplica todavía: ni
+  al ver una rotación, ni en `--auditar`, ni en `--comparar`. Y con una clave que vuelve a la
+  cadena, la posterior se juzga contra el último tramo de su clave (2.3).
+- ⚠️ §722. El relevo **juzga lo que la génesis firmó antes de optar**
+  —la D-I del RFC-0015 lo exime por índice, no por `mmrSize`— y **las rotaciones desde un diario
+  restaurado** por detrás de lo que la vieja firmó. Las dos delatan a un operador que no mintió: la
+  D-G pide reconstruir el diario antes de rotar, y el nodo lo exige con `--relevo-minimo` (2.14).
 
 ## 9. Vectores y puerta
 
@@ -1807,6 +1956,22 @@ tope de 14 llegaría a la prueba y caería en la coherencia OOD. Junto con `neg-
 tope queda en 13 y en ningún otro valor: con 12, aquel cae por el tope; con 14 o más, este llega a
 la prueba.
 
+**Desde el §722, la HISTORIA COMÚN** (2.3, 2.5 y 2.14): trece sobres más en `spec/vectors/rotacion/`,
+con sus líneas al final del `MANIFIESTO.txt`. Siete se CAPTURAN de una corrida de
+`tools/banco_historia_comun.sh`, dos nodos reales sin tocar: el conflicto genuino; la refutación,
+VERDE —el residuo que se declara—; la cabeza de la clave que se fue, firmada tras su relevo, como
+SOLAPAMIENTO; la bifurcación del modo 5 del ancla con la cadena; y tres negativos —esa cabeza
+extendida a una posterior, que cae por el relevo, y las dos cabezas del conflicto dentro de su tramo
+y de su relevo—. Cuatro más, uno por regla del relevo que una mutación no produce, los arma
+`tools/vectores/historia_comun/` con un acta firmada de nuevo por las mismas claves del banco,
+sobre la refutación capturada. Antes del arreglo, en el kit y en la segunda implementación, seis de
+los once no decían lo suyo: el solapamiento daba ROJO, la extensión de la cabeza tardía caía por la
+consistencia y los cuatro relevos firmados de nuevo daban VERDE (medido). Dos más, de la revisión del
+relevo, con UNA cadena de tres —la de la refutación y un acta de C, la clave que B compromete, que
+releva en el `mmrSize` de la cabeza de B—: la extensión de la refutación cae por el borde de arriba
+de la posterior, y el solapamiento de esa misma cabeza delata. Con el relevo de un solo borde la
+misma cadena daba dos VERDE contrarios, en el kit y en la segunda (medido). Ninguno reescrito.
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1941,6 +2106,15 @@ la prueba.
 - §721 — el valor del tope de `m`, fijado: un vector nuevo en `edad/`, `neg-m-14-sobre-tope`, que
   con `neg-m-13-fabricada` deja el tope en 13 y en ningún otro valor; ninguno reescrito (2.7 y
   sección 9).
+- §722 — la historia común: dos operadores de acuerdo se firmaban una
+  historia común que refutaba un conflicto genuino, y 2.5 decía que no podían (medido con dos nodos
+  reales). Los ocho sitios que exigen continuidad —la extensión, el consumo y las seis cabezas de
+  la completitud— exigen desde aquí el RELEVO (2.3): la `procedencia` de las actas ata el MMR de
+  las dos cabezas, cada una en el relevo de su tramo por sus dos bordes. El sobre del solapamiento
+  delata la cabeza de una clave fuera del relevo de su tramo (2.14), con el mismo juicio. El nodo
+  gana `--relevo-minimo` para la emergencia de la D-G. La refutación sigue siendo posible, y se
+  declara con lo que queda (2.5 y 8). Trece vectores nuevos en `rotacion/`, ninguno reescrito
+  (sección 9).
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto
