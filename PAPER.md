@@ -33,9 +33,9 @@ obtenidas en condiciones idénticas, y documentamos un error metodológico
 propio —mezcla de compilaciones de depuración y optimizadas— detectado y
 corregido durante el trabajo.
 
-La implementación de referencia consta de **2093 pruebas ejecutables en la
+La implementación de referencia consta de **2095 pruebas ejecutables en la
 compuerta de sello** (55 son las de winterfell 0.13.1, que el fork del §533
-trae consigo) —2233 contando los pines de los niveles largo y completo, y
+trae consigo) —2235 contando los pines de los niveles largo y completo, y
 1364 declaradas (⚠️ §865: del §497; hoy las cuenta, con otra regla, `tools/check_tests.py`)—, con 21 ignoradas y declaradas (⚠️ §900: decía 18; son la suma de la columna de ignorados de la tabla de sello de `tools/canon.sh`, y los instrumentos que cuenta `tools/check_tests.py`), y
 está disponible públicamente. **No ha sido auditada por terceros y no
 implementa consenso distribuido**; discutimos en detalle las implicaciones
@@ -1063,7 +1063,7 @@ herramientas externas ni compiladores no estables.
 bash tools/canon.sh --sello
 
 cargo test -p zk-ssl --release              # capa: 562 tests (8 ignorados)
-cargo test -p stark-experiment --release    # circuitos: 489 tests (13 ignorados)
+cargo test -p stark-experiment --release    # circuitos: 490 tests (13 ignorados)
 cargo test -p zk-ssl-node --release         # nodo: 244
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

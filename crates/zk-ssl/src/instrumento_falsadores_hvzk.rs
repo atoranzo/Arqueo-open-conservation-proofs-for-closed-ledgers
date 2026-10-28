@@ -131,7 +131,7 @@ const fn s32(n: u64) -> [u8; 32] {
 }
 
 fn ocultacion(m: usize, filas: u64, cociente: u64) -> Ocultacion {
-    Ocultacion { m, semilla_filas: s32(filas), semilla_cociente: s32(cociente), columnas: 1 }
+    Ocultacion { m, semilla_filas: s32(filas), semilla_cociente: s32(cociente), columnas: 1, marca_v2: None }
 }
 
 struct ProbadorConstante {

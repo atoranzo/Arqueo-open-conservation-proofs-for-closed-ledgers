@@ -1148,7 +1148,13 @@ impl Prover for ProbadorSonda {
     }
 
     fn ocultacion(&self) -> Option<Ocultacion> {
-        Some(Ocultacion { m: 64, semilla_filas: s32(0x134_0001), semilla_cociente: s32(0x134_0002), columnas: 1 })
+        Some(Ocultacion {
+            m: 64,
+            semilla_filas: s32(0x134_0001),
+            semilla_cociente: s32(0x134_0002),
+            columnas: 1,
+            marca_v2: None,
+        })
     }
 
     fn new_trace_lde<F: FieldElement<BaseField = BaseElement>>(

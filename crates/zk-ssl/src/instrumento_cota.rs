@@ -485,7 +485,7 @@ const fn s32(n: u64) -> [u8; 32] {
 }
 
 fn ocultacion_juguete(m: usize) -> Ocultacion {
-    Ocultacion { m, semilla_filas: s32(0xc07a_0001), semilla_cociente: s32(0xc07a_0002), columnas: 1 }
+    Ocultacion { m, semilla_filas: s32(0xc07a_0001), semilla_cociente: s32(0xc07a_0002), columnas: 1, marca_v2: None }
 }
 
 struct ProbadorJuguete {

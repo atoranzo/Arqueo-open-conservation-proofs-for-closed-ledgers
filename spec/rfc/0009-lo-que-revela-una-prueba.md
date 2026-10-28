@@ -907,6 +907,9 @@ coste (una columna más de 2T elementos de F por prueba, frente a un tramo auxil
 lo hay). **Reversible** hacia la columna sobre E, que el instrumento mide igual, si el corte
 prefiere el tramo auxiliar.
 
+⚠️ §906: la marca v2 de laboratorio (RFC-0018 D-G) lleva ya el byte de columnas que esta decisión
+pide, y el probador la escribe con las columnas que se le pidan; apagada hasta el corte.
+
 ### D-AM — La promesa tras A1, A2, A3 y la 134: sigue siendo el censo; lo que se podría prometer, para qué familias y bajo qué hipótesis, queda escrito con sus palabras y es del autor
 
 **Estado: decidida en el §901 por la sesión, con el criterio que el autor dictó para A4 —«no puede

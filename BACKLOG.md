@@ -1557,6 +1557,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   salida que no depende del álgebra de cada AIR.
   ⚠️ §905: con ella y el lema L1' medido, también el umbral conjunto (T = 64) queda cubierto sin
   más filas; los otros cuatro de T = 64 necesitan además la 131.
+  ⚠️ §906: la marca v2 del corte lleva el byte de columnas, en laboratorio y apagada (RFC-0018
+  D-G); lo que queda es encenderla en el sello del corte.
 
 - [x] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
   las restricciones, que el instrumento de R3 no cuenta (§898).** Lo puso la revisión escéptica del

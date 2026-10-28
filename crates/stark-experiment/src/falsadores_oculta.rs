@@ -34,9 +34,9 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Mutex;
 
-use winter_air::{Marca, MarcaError, MarcaLaboratorio, Oculta};
-use winter_prover::{Ocultacion, ProverError};
-use winter_verifier::verify_laboratorio;
+use winter_air::{Marca, MarcaError, MarcaLaboratorio, MarcaV2, Oculta};
+use winter_prover::{CamposV2, Ocultacion, ProverError};
+use winter_verifier::{verify_laboratorio, verify_v2};
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, Hasher, MerkleTree};
 use winterfell::math::fields::f128::BaseElement as Base128;
 use winterfell::math::fields::f64::BaseElement as Base;
@@ -70,6 +70,7 @@ const OC: Ocultacion = Ocultacion {
     semilla_filas: s32(0xf11a_0001),
     semilla_cociente: s32(0xc0c1_0001),
     columnas: 1,
+    marca_v2: None,
 };
 
 /// Las opciones de la casa para los circuitos y la foto: 32/8/0/None/8/31.
@@ -209,6 +210,17 @@ fn verificar_laboratorio_work(bytes: &[u8], publico: Base128) -> Result<(), Stri
     let acc = AcceptableOptions::OptionSet(vec![opciones()]);
     verify_laboratorio::<WorkAir, Blake3W, DefaultRandomCoin<Blake3W>, MerkleTree<Blake3W>>(
         proof, publico, &acc,
+    )
+    .map_err(|e| format!("{e:?}"))
+}
+
+/// §906: verifica unos bytes como prueba de WorkAir con la marca v2 de laboratorio, pidiendo la
+/// familia, la version y el perfil que se le den.
+fn verificar_v2_work(bytes: &[u8], publico: Base128, familia: u16, version: u16, perfil: u8) -> Result<(), String> {
+    let proof = Proof::from_bytes(bytes).map_err(|e| format!("leer: {e:?}"))?;
+    let acc = AcceptableOptions::OptionSet(vec![opciones()]);
+    verify_v2::<WorkAir, Blake3W, DefaultRandomCoin<Blake3W>, MerkleTree<Blake3W>>(
+        proof, publico, &acc, familia, version, perfil,
     )
     .map_err(|e| format!("{e:?}"))
 }
@@ -389,6 +401,59 @@ fn laboratorio_dos_columnas() {
     assert_eq!(MarcaLaboratorio { m: 64, columnas: 2 }.escribir(), b"arqueo:oculta:lab\x40\x00\x00\x00\x02");
     assert_eq!(MarcaLaboratorio::leer(b"arqueo:oculta:lab\x40\x00\x00\x00\x01"), Err(MarcaError::Columnas));
     assert_eq!(MarcaLaboratorio::leer(b"arqueo:oculta:1\x40\x00\x00\x00"), Err(MarcaError::Desconocida));
+}
+
+/// 11. §906 (RFC-0018 D-G y E3, en laboratorio): la marca v2 con el byte de columnas. El probador
+/// la escribe cuando se le pide; `verify` y el laboratorio de la 133 la rechazan; `verify_v2` la
+/// acepta solo con su familia, su version y su perfil, con las causas de la D-G en su orden, y
+/// nombra la v1 y el meta vacio; y la marca, byte a byte.
+#[test]
+fn laboratorio_marca_v2() {
+    let campos = CamposV2 { familia: 23, version: 1, perfil: 1 };
+    let bytes = prueba_work(256, Some(Ocultacion { columnas: 2, marca_v2: Some(campos), ..OC }));
+    let proof = Proof::from_bytes(&bytes).expect("leer");
+    assert_eq!(proof.trace_info().main_trace_width(), 1 + 2, "ancho + 2");
+    assert_eq!(proof.trace_info().length(), 512, "2T");
+    assert_eq!(
+        MarcaV2::leer(proof.trace_info().meta()),
+        Ok(Some(MarcaV2 { m: 64, familia: 23, version: 1, perfil: 1, columnas: 2 }))
+    );
+    assert_eq!(proof.trace_info().meta(), b"arqueo:oculta:2\x40\x00\x00\x00\x17\x00\x01\x00\x01\x02");
+    assert_eq!(Marca::leer(proof.trace_info().meta()), Err(MarcaError::Desconocida));
+    assert_eq!(MarcaLaboratorio::leer(proof.trace_info().meta()), Err(MarcaError::Desconocida));
+    rechaza_sin_panico(&bytes, resultado(256), "la prueba v2 en verify");
+    assert!(verificar_laboratorio_work(&bytes, resultado(256)).is_err(), "ni el laboratorio de la 133 la lee");
+    verificar_v2_work(&bytes, resultado(256), 23, 1, 1).expect("verify_v2 la acepta con su familia, version y perfil");
+    assert!(verificar_v2_work(&bytes, resultado(256) + Base128::ONE, 23, 1, 1).is_err(), "y rechaza un publico mas uno");
+    // las causas de la D-G, en su orden: la familia, la version y el perfil
+    let e = verificar_v2_work(&bytes, resultado(256), 22, 1, 1).unwrap_err();
+    assert!(e.contains("marca: la prueba es de la familia 23; se pide la 22"), "{e}");
+    let e = verificar_v2_work(&bytes, resultado(256), 23, 2, 1).unwrap_err();
+    assert!(e.contains("marca: version 1 de la AIR de la familia 23; se acepta 2"), "{e}");
+    let e = verificar_v2_work(&bytes, resultado(256), 23, 1, 2).unwrap_err();
+    assert!(e.contains("marca: perfil 1 desconocido"), "{e}");
+    // la de produccion y la clara, en verify_v2: nombradas, no desconocidas
+    let v1 = prueba_work(256, Some(OC));
+    let e = verificar_v2_work(&v1, resultado(256), 23, 1, 1).unwrap_err();
+    assert!(e.contains("marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x"), "{e}");
+    let clara = prueba_work(256, None);
+    let e = verificar_v2_work(&clara, resultado(256), 23, 1, 1).unwrap_err();
+    assert!(e.contains("marca: meta vacio, prueba anterior a zkssl/0.4"), "{e}");
+    let lab = prueba_work(256, Some(Ocultacion { columnas: 2, ..OC }));
+    let e = verificar_v2_work(&lab, resultado(256), 23, 1, 1).unwrap_err();
+    assert!(e.contains("marca desconocida"), "{e}");
+    // con una sola columna tambien se escribe y se lee
+    let una = prueba_work(256, Some(Ocultacion { marca_v2: Some(campos), ..OC }));
+    assert_eq!(Proof::from_bytes(&una).expect("leer").trace_info().main_trace_width(), 1 + 1);
+    verificar_v2_work(&una, resultado(256), 23, 1, 1).expect("la v2 con una columna");
+    // la marca v2, byte a byte: un campo a cero, el perfil reservado, sin columnas, otra longitud
+    assert_eq!(MarcaV2::leer(b"arqueo:oculta:2\x40\x00\x00\x00\x00\x00\x01\x00\x01\x02"), Err(MarcaError::Cero));
+    assert_eq!(MarcaV2::leer(b"arqueo:oculta:2\x40\x00\x00\x00\x17\x00\x00\x00\x01\x02"), Err(MarcaError::Cero));
+    assert_eq!(MarcaV2::leer(b"arqueo:oculta:2\x40\x00\x00\x00\x17\x00\x01\x00\xff\x02"), Err(MarcaError::Cero));
+    assert_eq!(MarcaV2::leer(b"arqueo:oculta:2\x40\x00\x00\x00\x17\x00\x01\x00\x01\x00"), Err(MarcaError::Columnas));
+    assert_eq!(MarcaV2::leer(b"arqueo:oculta:2\x40\x00\x00\x00"), Err(MarcaError::Largo));
+    assert_eq!(MarcaV2::leer(b"arqueo:oculta:1\x40\x00\x00\x00"), Err(MarcaError::Desconocida));
+    assert_eq!(MarcaV2::leer(b""), Ok(None));
 }
 
 // EL JUGUETE DEL CENSO: UNA COLUMNA CONSTANTE Y OTRA EN EL TRAMO AUXILIAR

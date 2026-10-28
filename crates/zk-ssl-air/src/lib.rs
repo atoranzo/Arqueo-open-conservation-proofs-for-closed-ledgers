@@ -74,6 +74,8 @@ pub mod prenda;
 /// fila en D-B y el kit recibiran como `VC` cuando E3b encienda la ocultacion. Hoy nadie lo
 /// declara como `VC`: entra como tipo, con sus testigos, y no mueve un byte de ninguna prueba.
 pub mod sal;
+// §906 (RFC-0018 D-G, en laboratorio): el registro de las familias de la marca v2, un solo productor
+pub mod familias;
 
 /// El digest de la casa: cuatro elementos (el de `zk-ssl-hash`).
 pub type Digest = zk_ssl_hash::Digest;

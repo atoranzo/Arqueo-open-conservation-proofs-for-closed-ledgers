@@ -621,10 +621,18 @@ pub trait Prover {
         for _ in 0..ocultacion.columnas {
             columnas.push((0..2 * t).map(|_| sacar::<Self::BaseField>(&mut moneda)).collect());
         }
-        let marca = if ocultacion.columnas == 1 {
-            ::air::Marca { m: ocultacion.m }.escribir()
-        } else {
-            ::air::MarcaLaboratorio { m: ocultacion.m, columnas: ocultacion.columnas }.escribir()
+        let marca = match ocultacion.marca_v2 {
+            // §906: la marca v2 de laboratorio, con las columnas que se pidan, una o mas
+            Some(c) => ::air::MarcaV2 {
+                m: ocultacion.m,
+                familia: c.familia,
+                version: c.version,
+                perfil: c.perfil,
+                columnas: ocultacion.columnas as u8,
+            }
+            .escribir(),
+            None if ocultacion.columnas == 1 => ::air::Marca { m: ocultacion.m }.escribir(),
+            None => ::air::MarcaLaboratorio { m: ocultacion.m, columnas: ocultacion.columnas }.escribir(),
         };
         let info_oculta = TraceInfo::new_multi_segment(
             trace.info().main_trace_width() + ocultacion.columnas,
@@ -763,4 +771,18 @@ pub struct Ocultacion {
     /// la de un custodio- se despejaba de una prueba con unas 2^74 compresiones (ESTIMADO).
     pub semilla_filas: [u8; 32],
     pub semilla_cociente: [u8; 32],
+    /// §906 (RFC-0018 D-G y E3, en LABORATORIO): con `Some`, el probador escribe la marca v2 del
+    /// corte 0.5 -la familia, la version de la AIR y el perfil, con m y las columnas de aqui- en
+    /// vez de la de produccion o la de laboratorio; `verify` la rechaza como desconocida y solo
+    /// `verify_v2` la lee. Ningun probador de produccion la pide hasta el corte: `None`.
+    pub marca_v2: Option<CamposV2>,
+}
+
+/// §906: lo que la marca v2 lleva ademas de m y las columnas: la familia (del registro de
+/// `spec/NUCLEO.md`), la version de la AIR y el perfil. Ninguno a cero (D-G).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CamposV2 {
+    pub familia: u16,
+    pub version: u16,
+    pub perfil: u8,
 }

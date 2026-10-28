@@ -258,6 +258,49 @@ real de sus llaves, no por la primera marca.
 | `reverificar` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `fn` |
 | `reverificar_con` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `fn` |
 
+### 4 bis. El registro de las familias de la marca v2 (laboratorio, §906)
+
+⚠️ **§906:** la marca v2 del corte 0.5 (RFC-0018 D-G) lleva la familia de la prueba en un `u16`, la
+versión de su AIR en otro y el perfil de opciones en un byte, y desde el §899 las columnas
+aleatorias en otro (RFC-0009 D-AL): `arqueo:oculta:2`, m, familia, versión, perfil y columnas, 25
+bytes fijos, todos *little-endian*. Este registro es el de la D-G, y entra en vigor en el sello del
+corte: hasta entonces vive en el árbol en laboratorio, con un solo productor en el código,
+`zk_ssl_air::familias` (`crates/zk-ssl-air/src/familias.rs`), y un KAT por entrada en sus tests
+—los 25 bytes de cada marca con m = 64, versión 1, perfil 1 y dos columnas—, que el corte llevará
+a `spec/vectors/nucleo/`. Ningún probador de producción escribe la marca v2 y ningún juez la acepta
+(`Marca::leer` la rechaza como desconocida); la escribe el probador que la pide
+(`Ocultacion::marca_v2`) y la lee `verify_v2`, de laboratorio, con las causas de la D-G en su
+orden. El cero no se asigna en ningún campo; el perfil 255 queda reservado para otro motor.
+
+| familia | AIR |
+|---|---|
+| 1 | `SendAir` |
+| 2 | `SendV2Air` |
+| 3 | `ClaimAir` |
+| 4 | `ClaimAirV2` |
+| 5 | `PrendaAir` |
+| 6 | `MintPendingClimbAir` |
+| 7 | `NullifierThresholdAir` |
+| 8 | `ThresholdAir` |
+| 9 | `AuditAir` |
+| 10 | `BurnAir` |
+| 11 | `SolvencyAir` |
+| 12 | `DoubleEntryAir` |
+| 13 | `BandaAir` |
+| 14 | `EdadAir` |
+| 15 | `CobroPendienteAir` |
+| 16 | `PagoEnCursoAir` |
+| 17 | `MerkleAir` |
+| 18 | `RefundAir` |
+| 19 | `RefundAirV2` |
+| 20 | `CreditClimbAir` |
+| 21 | `MintClimbAir` |
+| 22 | `FrozenClimbAir` |
+| 23 | `RecoveryClimbAir` |
+
+La versión inicial de toda familia es 1 y el perfil de producción es 1 (un solo `OptionSet` por
+versión del cable). Son las 23 AIR con probador oculto, en el orden de la tabla de D-B del RFC-0009.
+
 ## 5. Por qué no puede cambiar, por familia
 
 - **HASH** — la permutación y el merge 2-a-1, cómo se embebe un `u64`, cómo se sube un camino y cómo

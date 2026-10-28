@@ -217,6 +217,82 @@ where
     verificar_oculta::<AIR, HashFn, RandCoin, VC>(air, proof, public_coin_seed)
 }
 
+/// ARQUEO (§906; RFC-0018 D-G y E3, en LABORATORIO): el verificador de la marca v2. Acepta solo
+/// una marca v2 -`arqueo:oculta:2`, m, la familia, la version de la AIR, el perfil y las columnas-
+/// y solo si la familia, la version y el perfil son los que pide quien llama, con las causas que
+/// la D-G propone para el juez, en su orden: la marca antes que nada. `verify` la rechaza como meta
+/// desconocido y ningun juez de produccion llama aqui hasta el corte. Lo demas es lo mismo: el
+/// envoltorio `Oculta<AIR>`, que lee de la marca cuantas columnas quitar, y `perform_verification`.
+pub fn verify_v2<AIR, HashFn, RandCoin, VC>(
+    proof: Proof,
+    pub_inputs: AIR::PublicInputs,
+    acceptable_options: &AcceptableOptions,
+    familia: u16,
+    version: u16,
+    perfil: u8,
+) -> Result<(), VerifierError>
+where
+    AIR: Air,
+    HashFn: ElementHasher<BaseField = AIR::BaseField>,
+    RandCoin: RandomCoin<BaseField = AIR::BaseField, Hasher = HashFn>,
+    VC: VectorCommitment<HashFn>,
+{
+    use alloc::format;
+    let marca = match ::air::MarcaV2::leer(proof.trace_info().meta()) {
+        Ok(Some(marca)) => marca,
+        Ok(None) => {
+            return Err(VerifierError::ProofDeserializationError(alloc::string::String::from(
+                "marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version",
+            )))
+        },
+        Err(::air::MarcaError::Desconocida) if ::air::Marca::leer(proof.trace_info().meta()).is_ok() => {
+            return Err(VerifierError::ProofDeserializationError(alloc::string::String::from(
+                "marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x",
+            )))
+        },
+        Err(_) => {
+            return Err(VerifierError::ProofDeserializationError(alloc::string::String::from(
+                "marca desconocida",
+            )))
+        },
+    };
+    if marca.familia != familia {
+        return Err(VerifierError::ProofDeserializationError(format!(
+            "marca: la prueba es de la familia {}; se pide la {familia}",
+            marca.familia
+        )));
+    }
+    if marca.version != version {
+        return Err(VerifierError::ProofDeserializationError(format!(
+            "marca: version {} de la AIR de la familia {familia}; se acepta {version}",
+            marca.version
+        )));
+    }
+    if marca.perfil != perfil {
+        return Err(VerifierError::ProofDeserializationError(format!(
+            "marca: perfil {} desconocido",
+            marca.perfil
+        )));
+    }
+    acceptable_options.validate::<HashFn>(&proof)?;
+    let mut public_coin_seed = proof.context.to_elements();
+    public_coin_seed.append(&mut pub_inputs.to_elements());
+    if proof.trace_info().length() < 16
+        || proof.trace_info().main_trace_width() < marca.columnas as usize + 1
+        || marca.m >= proof.trace_info().length()
+    {
+        return Err(VerifierError::ProofDeserializationError(alloc::string::String::from(
+            "traza oculta mal formada",
+        )));
+    }
+    let air = ::air::Oculta::<AIR>::new(
+        proof.trace_info().clone(),
+        pub_inputs,
+        proof.options().clone(),
+    );
+    verificar_oculta::<AIR, HashFn, RandCoin, VC>(air, proof, public_coin_seed)
+}
+
 /// El despacho del envoltorio por la extension del campo: lo que `verify` hacia en su sitio y,
 /// desde el §899, comparte con `verify_laboratorio`.
 fn verificar_oculta<AIR, HashFn, RandCoin, VC>(

@@ -98,6 +98,8 @@ pub fn ocultacion_encendida() -> winter_prover::Ocultacion {
         // §899: una columna aleatoria, la construccion de zkssl/0.4; la de laboratorio (la 133)
         // no la enciende ningun probador de produccion hasta el corte 0.5
         columnas: 1,
+        // §906: ni la marca v2 (RFC-0018 D-G), construida en laboratorio y apagada hasta el corte
+        marca_v2: None,
     }
 }
 pub mod circuit_credit_climb;

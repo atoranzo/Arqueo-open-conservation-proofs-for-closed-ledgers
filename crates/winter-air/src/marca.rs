@@ -28,8 +28,10 @@ pub enum MarcaError {
     Desconocida,
     /// el prefijo esta y detras no van exactamente los cuatro bytes de m
     Largo,
-    /// §899: la marca de laboratorio declara menos de dos columnas aleatorias
+    /// §899: la marca de laboratorio declara menos de dos columnas aleatorias; §906: la v2, ninguna
     Columnas,
+    /// §906: la marca v2 lleva a cero la familia, la version o el perfil, o el perfil reservado 255
+    Cero,
 }
 
 /// ARQUEO (§899, la 133 de `BACKLOG.md`): la marca de LABORATORIO, `arqueo:oculta:lab`, m y las
@@ -83,6 +85,80 @@ impl MarcaLaboratorio {
     }
 }
 
+/// ARQUEO (§906; RFC-0018 D-G y E3, en LABORATORIO): la marca v2 del corte 0.5 con el byte de
+/// columnas que le pide la D-AL del RFC-0009: `arqueo:oculta:2`, m (u32), la familia (u16, del
+/// registro de `spec/NUCLEO.md`), la version de la AIR (u16), el perfil (u8, el indice de la tabla
+/// de opciones) y las columnas aleatorias (u8): 25 bytes fijos, todos little-endian. Hasta el corte
+/// ningun probador de produccion la escribe, y `Marca::leer` -lo que lee el verificador de
+/// produccion y el kit- la rechaza como desconocida, igual que a la de laboratorio: la escribe el
+/// probador que la pide en `Ocultacion::marca_v2` y la lee `verify_v2`. El cero no se asigna en
+/// ninguno de los tres campos y el perfil 255 queda reservado (D-G).
+pub const PREFIJO_V2: &[u8] = b"arqueo:oculta:2";
+
+/// Lo que ocupa la marca v2: el prefijo, m, la familia, la version, el perfil y las columnas.
+pub const LARGO_V2: usize = 15 + 4 + 2 + 2 + 1 + 1;
+
+/// El perfil reservado para una prueba de otro motor (D-G): no se escribe ni se acepta aqui.
+pub const PERFIL_RESERVADO: u8 = 255;
+
+/// La marca v2: m, la familia, la version de la AIR, el perfil y las columnas aleatorias.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MarcaV2 {
+    pub m: usize,
+    pub familia: u16,
+    pub version: u16,
+    pub perfil: u8,
+    pub columnas: u8,
+}
+
+impl MarcaV2 {
+    /// Los 25 bytes que van al meta. Entra en panico con un campo a cero, el perfil reservado o
+    /// una m que no cabe: son errores de quien construye, no de quien lee.
+    pub fn escribir(&self) -> Vec<u8> {
+        assert!(self.m <= u32::MAX as usize, "marca v2: m no cabe en cuatro bytes");
+        assert!(self.familia != 0 && self.version != 0 && self.perfil != 0, "marca v2: un campo a cero");
+        assert!(self.perfil != PERFIL_RESERVADO, "marca v2: el perfil 255 esta reservado");
+        assert!(self.columnas >= 1, "marca v2: sin columnas aleatorias");
+        let mut meta = Vec::with_capacity(LARGO_V2);
+        meta.extend_from_slice(PREFIJO_V2);
+        meta.extend_from_slice(&(self.m as u32).to_le_bytes());
+        meta.extend_from_slice(&self.familia.to_le_bytes());
+        meta.extend_from_slice(&self.version.to_le_bytes());
+        meta.push(self.perfil);
+        meta.push(self.columnas);
+        meta
+    }
+
+    /// `Ok(None)` con el meta vacio, `Ok(Some(marca))` con el prefijo v2 y sus 25 bytes, y `Err`
+    /// con cualquier otro meta: otro prefijo (`Desconocida`, la marca de produccion y la de
+    /// laboratorio incluidas), otra longitud (`Largo`), un campo a cero o el perfil reservado
+    /// (`Cero`), o ninguna columna (`Columnas`).
+    pub fn leer(meta: &[u8]) -> Result<Option<MarcaV2>, MarcaError> {
+        if meta.is_empty() {
+            return Ok(None);
+        }
+        if !meta.starts_with(PREFIJO_V2) {
+            return Err(MarcaError::Desconocida);
+        }
+        if meta.len() != LARGO_V2 {
+            return Err(MarcaError::Largo);
+        }
+        let r = &meta[PREFIJO_V2.len()..];
+        let m = u32::from_le_bytes([r[0], r[1], r[2], r[3]]) as usize;
+        let familia = u16::from_le_bytes([r[4], r[5]]);
+        let version = u16::from_le_bytes([r[6], r[7]]);
+        let perfil = r[8];
+        let columnas = r[9];
+        if familia == 0 || version == 0 || perfil == 0 || perfil == PERFIL_RESERVADO {
+            return Err(MarcaError::Cero);
+        }
+        if columnas == 0 {
+            return Err(MarcaError::Columnas);
+        }
+        Ok(Some(MarcaV2 { m, familia, version, perfil, columnas }))
+    }
+}
+
 impl Marca {
     /// Los bytes que van al meta de la traza: el prefijo y m en cuatro bytes little-endian.
     pub fn escribir(&self) -> Vec<u8> {
@@ -118,7 +194,11 @@ impl Marca {
             Ok(Some(marca)) => marca.m,
             _ => match MarcaLaboratorio::leer(meta) {
                 Ok(Some(marca)) => marca.m,
-                _ => 0,
+                // §906: la marca v2 de laboratorio lleva m igual que las otras
+                _ => match MarcaV2::leer(meta) {
+                    Ok(Some(marca)) => marca.m,
+                    _ => 0,
+                },
             },
         }
     }
@@ -130,7 +210,11 @@ impl Marca {
             Ok(Some(_)) => 1,
             _ => match MarcaLaboratorio::leer(meta) {
                 Ok(Some(marca)) => marca.columnas,
-                _ => 0,
+                // §906: la v2 las lleva en su ultimo byte
+                _ => match MarcaV2::leer(meta) {
+                    Ok(Some(marca)) => marca.columnas as usize,
+                    _ => 0,
+                },
             },
         }
     }

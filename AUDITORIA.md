@@ -75577,3 +75577,109 @@ cambia— y el tarball `1ab8797b8c3fd23c`, que cambia con las fuentes, como en c
 con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
 anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no
 hubo roja.
+
+## §906 — La preparación del corte 0.5, primer sello: la marca v2 de la D-G del RFC-0018 con el byte de columnas de la D-AL del RFC-0009, construida en el fork en laboratorio y apagada —`MarcaV2`, 25 bytes, su lector con sus causas, el probador que la escribe a petición y `verify_v2`, que la juzga con la familia, la versión y el perfil en el orden de la D-G—, el registro de las 23 familias con su KAT (`zk_ssl_air::familias`, `spec/NUCLEO.md` §4 bis) y su falsador; ningún probador de producción la escribe y ningún juez la acepta
+
+El commit que lleva este asiento, sobre `013d4721` (el §905, la punta de la rama de la sesión).
+Toca el fork: `crates/winter-air/src/marca.rs`, que gana `MarcaV2` —`arqueo:oculta:2`, m (u32), la
+familia (u16), la versión de la AIR (u16), el perfil (u8) y las columnas aleatorias (u8), 25
+bytes—, su `escribir`, su `leer` con las causas `Desconocida`, `Largo`, `Cero` (un campo a cero o el
+perfil reservado, 255) y `Columnas`, `PERFIL_RESERVADO`, y un `m_de` y un `columnas_de` que la leen
+también, con `Marca::leer` intacto; `crates/winter-air/src/lib.rs`, que la exporta;
+`crates/winter-prover/src/lib.rs`, donde `Ocultacion` gana `marca_v2: Option<CamposV2>` —la
+familia, la versión y el perfil— y `generate_proof_oculto` escribe la marca v2 cuando se le pide,
+con las columnas de la ocultación, y si no, lo de siempre; y `crates/winter-verifier/src/lib.rs`,
+con `verify_v2`, que lee la marca antes de nada y la juzga con la familia, la versión y el perfil
+que pide quien llama, con los textos que la D-G propone (1b, 1c, 1d, 1e, 1f, 1g). Fuera del fork:
+`crates/zk-ssl-air/src/familias.rs`, nuevo, el registro —las 23 familias numeradas en el orden de
+la tabla de D-B, la versión inicial y el perfil de producción— con `familia_de`, `nombre_de`,
+`marca_v2_de` y el KAT de las 23 marcas en su test; `crates/zk-ssl-air/src/lib.rs`, una línea;
+`crates/stark-experiment/src/falsadores_oculta.rs`, el falsador 11 y su ayudante; los cinco
+`Ocultacion` del árbol, con `marca_v2: None` (`ocultacion_encendida`, el `OC` de los falsadores y
+los tres instrumentos de `zk-ssl`); `tools/canon.sh`, las filas de `stark-experiment` (489 -> 490)
+y de `zk-ssl-air` (65 -> 66) con sus crónicas; los totales y la copia del pin de los circuitos en
+`PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`;
+`spec/NUCLEO.md`, la sección 4 bis; `spec/rfc/0018-el-tren-0-5.md`, una nota en la D-G y el estado
+de la E3; `spec/rfc/0009-lo-que-revela-una-prueba.md`, una nota en la D-AL; `BACKLOG.md`, una nota
+en la 133; y este asiento. Ni vectores, ni ningún probador de producción, ni ningún juez de
+producción, ni el cable: `ocultacion_encendida` sigue escribiendo la marca de producción —las
+mismas extracciones de la moneda, los mismos bytes—, `verify` sigue leyendo con `Marca::leer` y
+rechazando la v2 como desconocida, y el falsador lo mide. Lo escribe y lo commitea Claude, en una
+sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. El número es el siguiente libre tras el §905. El canon de este commit se dice al
+final.
+
+**De dónde sale.** La orden del autor: «HACER: … El corte 0.5 con la E3 (marca v2) y la E5 (las dos
+columnas) … dime el alcance y lo preparo». El alcance de este primer sello es lo que el corte
+puede tener construido antes de su sello sin cambiar un byte de ninguna prueba de producción: la
+marca v2 con el byte de columnas, su lector, su escritor a petición, su verificador de
+laboratorio y el registro con su KAT; como la 133 entró en laboratorio en el §899. Lo que sigue
+siendo del sello del corte, porque rompe el cable: encenderla en los 23 probadores, el orden y las
+causas de los jueces del kit y de la capa, `tools/segunda`, el catálogo de `spec/PAQUETE.md` y los
+vectores bajo `zkssl/0.5`.
+
+**Lo que hace.**
+
+1. **La marca v2**, byte a byte como la D-G, más el byte de columnas que la D-AL pidió en el §899:
+   25 bytes; el cero no se asigna en la familia, la versión ni el perfil, y el 255 del perfil queda
+   reservado; `Marca::leer`, lo que leen el verificador de producción y el kit, la rechaza como
+   desconocida, igual que a la de laboratorio del §899.
+2. **El probador la escribe a petición** (`Ocultacion::marca_v2`), con una o más columnas; sin
+   petición, la marca de producción con una columna o la de laboratorio con más, como hasta hoy.
+3. **`verify_v2`**, de laboratorio: la marca antes que nada —un meta vacío, la v1, otra marca— y
+   después la familia, la versión y el perfil que pide quien llama, cada rechazo con el texto que
+   la D-G propone; después, lo de siempre.
+4. **El registro**: `zk_ssl_air::familias`, un solo productor, con las 23 familias numeradas de 1
+   a 23 en el orden de la tabla de D-B, la versión inicial 1 y el perfil de producción 1; el KAT de
+   los 25 bytes de cada marca en su test; y la sección 4 bis de `spec/NUCLEO.md`, que lo copia.
+5. **El falsador 11** de `falsadores_oculta`: una prueba de `WorkAir` con la marca v2 y dos
+   columnas, sus bytes, `verify` y el laboratorio de la 133 que la rechazan sin pánico, `verify_v2`
+   que la acepta con su familia, su versión y su perfil y rechaza un público más uno, las seis
+   causas de la D-G con su texto, la v2 con una sola columna, y la marca byte a byte: un campo a
+   cero, el perfil reservado, sin columnas, otra longitud, el prefijo v1 y el meta vacío.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release y con `--locked`: las tres del fork en
+su pin, `winter-air` 64 de 64 en 1,1 s, `winter-prover` 7 de 7 en 2,2 s y `winter-verifier` 0;
+`zk-ssl-air` 66 de 66 en 0,06 s, con el registro y su KAT; los falsadores de la ocultación del
+núcleo, 13 de 13 en 0,04 s con el undécimo, y los circuitos enteros, 490 de 490 con 13 ignorados
+en 17,4 s; los cuatro tests de `instrumento_mlin` de `zk-ssl`, 4 de 4 con 1 ignorado en 20,4 s;
+`check_tests`, 2258 declarados y 21 instrumentos (eran 2256); `check_modulos`, 221 (era 220, con
+`familias.rs`); `check_nucleo`, OK con la sección 4 bis; `check_cifras`, 26 cifras y ninguna
+contradice el canon.
+
+**Lo que NO hace.** No enciende la marca v2 en ningún probador de producción ni la acepta ningún
+juez de producción: las pruebas de `zkssl/0.4` siguen siendo las mismas byte a byte, y el kit
+rechaza la v2 como marca desconocida. No fija el catálogo de causas de `spec/PAQUETE.md` ni el
+orden del juez en el kit, la capa o `tools/segunda`: es del sello del corte. No emite vectores. No
+lleva el KAT a `spec/vectors/nucleo/`: lo deja en el test del registro hasta el corte. No decide
+el byte de columnas en la marca del corte: lo construye, y la D-G lo deja al autor. No toca la
+promesa.
+
+**Lo que es del autor.** El sello del corte, con lo que esta preparación le deja; el byte de
+columnas en la marca v2 (la D-G lo propone; la D-AL lo pide); llevar este asiento a `main`; y el
+número de este asiento.
+
+**Contadores.** `stark-experiment` 489 -> 490 y `zk-ssl-air` 65 -> 66; los demás sin cambio.
+TOTAL DE SELLO 2093 -> 2095 y CON LARGOS 2233 -> 2235, en `PAPER.md`, `PAPER_EN.md` y
+`PRINCIPIOS.md`; `check_tests` 2256 -> 2258; `check_modulos` 220 -> 221. `BACKLOG.md` sigue en 42
+abiertas y 95 resueltas. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 755 s de reloj (de su arranque a su salida)
+y 510 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU. Las 19 filas del nivel,
+en su pin, con 2095 tests que pasan (la suma de la columna «pasan»), la de `zk-ssl` en 562 pasan y
+8 ignorados, 220 s, la de `stark-experiment` en 490 y 13, 17 s, y la de `zk-ssl-air` en 66, 12 s;
+las tres del fork, `winter-air` 64, `winter-prover` 7 y `winter-verifier` 0, en su pin; la puerta
+de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (44 s)»; `check_tests` en
+2258 y 21 instrumentos; `check_modulos` en 221; las once herramientas del bucle «2 ter»; la puerta
+de los vectores, en 605 ficheros y 1370 líneas de 19 manifiestos, con las huellas de `550375e` —la
+base en `origin/main`— en las del árbol; `check_catalogo`, en 236 textos y 302 entradas; la
+conformidad, 0.5 IDÉNTICO y las cuatro versiones anteriores RECHAZADAS; el cable, en 27 de 27; la
+segunda implementación, con el núcleo en 34 de 34, sus pares STARK en 76 de 76 y la cadena en 30
+de 30; y el artefacto reproducible, igual desde dos raíces, con el binario `31c70dcb83ef951b`
+—**cambia** respecto al `30a7452dc043e5f7` del §904 y del §905, y debe: el fork lleva `MarcaV2`,
+`verify_v2` y el campo `marca_v2` del probador, y `zk-ssl-air` el registro de familias; lo que no
+cambia es ninguna prueba, y lo miden los vectores en sus huellas y la conformidad— y el tarball
+`313f83554509cadb`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio
+y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.

@@ -57,7 +57,7 @@ pub use air::Oculta;
 /// dentro; con el meta vacio, la prueba es la de winterfell tal cual. Un solo lector para el
 /// contexto, el probador y el verificador.
 pub mod marca;
-pub use marca::{Marca, MarcaError, MarcaLaboratorio};
+pub use marca::{Marca, MarcaError, MarcaLaboratorio, MarcaV2, PERFIL_RESERVADO};
 
 /// ARQUEO (§711): las causas con nombre de una prueba mal formada. La cabecera se valida con las
 /// condiciones de los constructores y devuelve error en vez de entrar en panico.
