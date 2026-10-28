@@ -33,9 +33,12 @@
 //! Lo que NO hace: no cuenta las filas aleatorias del tramo auxiliar (solo `EdadAir` lo tiene, y
 //! con T = 64); no cambia la cuenta de L1: condiciona cada columna lineal a sus 2q + 6 tocados,
 //! mas de lo que el verificador ve de ella, asi que M_lin es una cota inferior y R3 con M_lin es
-//! suficiente, no necesaria (la 135 de `BACKLOG.md`); con T = 64 no hay M_lin que medir,
-//! T − 2q − 6 < 0, y esas cinco familias siguen en la 131; no mide los desafios de ninguna prueba
-//! real; y no cambia la promesa de la casa.
+//! suficiente, no necesaria (la 135 de `BACKLOG.md`; ⚠️ §905: la cuenta fina esta medida:
+//! `Base::Vistos` condiciona a lo visto, q + 4, `sobreyectiva` mide el rango de Λ -lo que C ve de
+//! las lineales en S_ab y el verificador no- y `FINA_MEDIDO` clava lo que da en las familias que
+//! no caben con la gruesa: ninguna se rescata hoy); con T = 64 no hay M_lin que medir con la
+//! cuenta gruesa, T − 2q − 6 < 0, y esas cinco familias siguen en la 131; no mide los desafios de
+//! ninguna prueba real; y no cambia la promesa de la casa.
 
 use std::collections::BTreeSet;
 
@@ -366,6 +369,23 @@ pub(crate) fn libres_de(g: &Geometria) -> usize {
     g.t.saturating_sub(2 * g.q + 6)
 }
 
+/// §905 (la 135): a que se condiciona cada columna lineal antes de contar lo que le queda libre.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Base {
+    /// La cuenta de L1: los 2q + 6 tocados (las posiciones, sus siguientes, z, z·g y g²·z, con
+    /// sus conjugados). Lo del §900.
+    Tocados,
+    /// La cuenta fina de L1': lo VISTO de la columna, q + 4 (las posiciones, z y z·g, con sus
+    /// conjugados); lo que C ve de ella en S_ab lo descuenta el nucleo conjunto, y que C(S_ab) sea
+    /// uniforme lo mide `sobreyectiva`.
+    Vistos,
+}
+
+/// Las dimensiones libres por columna lineal con la base fina: T − (q + 4), o cero.
+pub(crate) fn libres_finos_de(g: &Geometria) -> usize {
+    g.t.saturating_sub(g.q + 4)
+}
+
 /// (h(x) − h(a)) / (x − a), por division sintetica; el ultimo coeficiente queda a cero.
 fn cociente_en(h: &[E], a: E) -> Vec<E> {
     let n = h.len();
@@ -399,6 +419,18 @@ pub(crate) fn mide(
     lineales: &[usize],
     semilla: u64,
     var: Variantes,
+) -> MedidaLin {
+    mide_con_base(s, g, lineales, semilla, var, Base::Tocados)
+}
+
+/// `mide` con la base de condicionamiento que se le diga (§905, la 135).
+pub(crate) fn mide_con_base(
+    s: &dyn Sonda,
+    g: &Geometria,
+    lineales: &[usize],
+    semilla: u64,
+    var: Variantes,
+    base: Base,
 ) -> MedidaLin {
     assert_eq!(s.largo(), 2 * g.t, "la traza oculta no es la de la geometria");
     assert_eq!(s.trozos(), g.trozos, "los trozos de la prueba no son los del contexto");
@@ -446,14 +478,15 @@ pub(crate) fn mide(
     let mut vistos = BTreeSet::new();
     let mut tocados = Vec::new();
     let g_e = E::from(g_traza);
+    let fina = base == Base::Vistos;
     for &x in &x_pos {
-        for y in [x, x * g_e] {
+        for y in if fina { vec![x] } else { vec![x, x * g_e] } {
             if vistos.insert(clave(y)) {
                 tocados.push(y);
             }
         }
     }
-    for y in [z, zg, zg * g_e] {
+    for y in if fina { vec![z, zg] } else { vec![z, zg, zg * g_e] } {
         for w in [y, conjugado(y)] {
             if vistos.insert(clave(w)) {
                 tocados.push(w);
@@ -615,6 +648,86 @@ pub(crate) fn mide(
         rango_lineales,
         rango_mascaras,
     }
+}
+
+/// §905 (la 135), L1': el rango sobre F de Λ, la aplicacion de lo libre de las columnas lineales
+/// -condicionadas a lo visto, la base fina- en lo que C ve de ellas y el verificador no:
+/// Σ_i σ_i^next(x_j)·P_ρ,i(g·x_j) en las q posiciones y Σ_i σ_i^next(z·g)·P_ρ,i(g²·z); y la
+/// dimension del blanco, 2(q + 1) sobre F. Λ sobreyectiva es lo que L1' pide para que C(S_ab) sea
+/// uniforme e independiente del testigo. Con los mismos desafios que `mide`.
+pub(crate) fn sobreyectiva(s: &dyn Sonda, g: &Geometria, lineales: &[usize], semilla: u64) -> (usize, usize) {
+    let d = desafios(g, semilla);
+    let largo = 2 * g.t;
+    let lde = largo * proof_options().blowup_factor();
+    let omega = BaseElement::get_root_of_unity(lde.ilog2());
+    let g_traza = BaseElement::get_root_of_unity(largo.ilog2());
+    let g_e = E::from(g_traza);
+    let x_pos: Vec<E> = d
+        .posiciones
+        .iter()
+        .map(|&p| E::from(BaseElement::GENERATOR * omega.exp(p as u64)))
+        .collect();
+    let (z, zg) = (d.z, d.z * g_e);
+    let blanco = 2 * (g.q + 1);
+    if lineales.is_empty() {
+        return (0, blanco);
+    }
+    let mut moneda = Moneda::new(&[BaseElement::new(semilla ^ 0x1350)]);
+    let coefs = coeficientes(s, &mut moneda);
+    let aux = aleatorios(s, &mut moneda);
+    // la base fina: Z_real·V_ab, con V_ab nula en S_ab y sus conjugados
+    let mut vistos = BTreeSet::new();
+    let mut puntos = Vec::new();
+    for &x in &x_pos {
+        if vistos.insert(clave(x)) {
+            puntos.push(x);
+        }
+    }
+    for y in [z, zg] {
+        for w in [y, conjugado(y)] {
+            if vistos.insert(clave(w)) {
+                puntos.push(w);
+            }
+        }
+    }
+    let v_ab = de_raices(&puntos);
+    let z_real = de_raices(&(0..g.t).map(|j| E::from(g_traza.exp(j as u64))).collect::<Vec<E>>());
+    let base_lin = mul(&z_real, &v_ab);
+    let libres = (largo + 1).saturating_sub(base_lin.len());
+    if libres == 0 {
+        return (0, blanco);
+    }
+    // los puntos donde C lee la fila siguiente: g·x_j y g²·z; las pendientes de cada lineal ahi
+    let ys: Vec<E> = x_pos.iter().copied().chain([zg]).collect();
+    let per: Vec<Vec<E>> = ys.iter().map(|&y| s.periodicas(y)).collect();
+    let cero = marco_cero(s);
+    let c0 = s.composicion(&vec![&cero; ys.len()], &ys, &per, &coefs, &aux);
+    let sigmas: Vec<Vec<E>> = lineales
+        .iter()
+        .map(|&i| {
+            let mut es = cero.clone();
+            es.siguiente[i] = E::ONE;
+            let cs = s.composicion(&vec![&es; ys.len()], &ys, &per, &coefs, &aux);
+            cs.iter().zip(&c0).map(|(a, b)| *a - *b).collect()
+        })
+        .collect();
+    let siguientes: Vec<E> = ys.iter().map(|&y| y * g_e).collect();
+    let base_en: Vec<E> = siguientes.iter().map(|&y| polynom::eval(&base_lin, y)).collect();
+    // combinaciones aleatorias de lo libre de todas las lineales, mas que el blanco
+    let n = blanco + 8;
+    let filas: Vec<Vec<BaseElement>> = (0..n)
+        .map(|_| {
+            let mut v = vec![E::ZERO; ys.len()];
+            for sig in &sigmas {
+                let w: Vec<E> = (0..libres).map(|_| E::from(saca::<BaseElement>(&mut moneda))).collect();
+                for (k, &y) in siguientes.iter().enumerate() {
+                    v[k] += sig[k] * base_en[k] * polynom::eval(&w, y);
+                }
+            }
+            sobre_f(&v)
+        })
+        .collect();
+    (rango_de(filas), blanco)
 }
 
 /// Una linea por medida.
@@ -898,6 +1011,35 @@ pub(crate) fn medido(air: &str) -> Option<(usize, usize, usize, usize, usize, us
     MLIN_MEDIDO.iter().find(|f| f.0 == air).map(|f| (f.1, f.2, f.3, f.4, f.5, f.6))
 }
 
+/// §905 (la 135): lo medido con la cuenta fina en las familias que no caben con la gruesa
+/// (T = 64), clavado: por AIR, T, trozos, el rango de Λ sobre F y su blanco (2q + 2), y, si Λ es
+/// sobreyectiva, R3 con la base fina: lo que FRI abre sin determinar, las lineales con los
+/// aleatorizadores y las tres juntas (cero si no se mide). Con la semilla 1.
+pub(crate) const FINA_MEDIDO: &[(&str, usize, usize, usize, usize, usize, usize, usize)] = &[
+    // AIR, T, trozos, rango de Λ, blanco, sin determinar, lineales y aleatorizadores, las tres
+    ("NullifierThresholdAir", 64, 15, 36, 86, 0, 0, 0),
+    ("ThresholdAir", 64, 15, 86, 86, 168, 120, 158),
+    ("EdadAir", 64, 15, 18, 86, 0, 0, 0),
+    ("RefundAirV2", 64, 15, 72, 86, 0, 0, 0),
+];
+
+/// La fila de lo medido con la cuenta fina de una AIR.
+pub(crate) fn fino(air: &str) -> Option<(usize, usize, usize, usize, usize, usize, usize)> {
+    FINA_MEDIDO.iter().find(|f| f.0 == air).map(|f| (f.1, f.2, f.3, f.4, f.5, f.6, f.7))
+}
+
+/// §905: la medida fina de una familia que no cabe con la gruesa: Λ y, si es sobreyectiva, R3
+/// con la base fina. Devuelve la fila de `FINA_MEDIDO` medida.
+pub(crate) fn mide_fina(s: &dyn Sonda, g: &Geometria, lineales: &[usize], semilla: u64) -> (usize, usize, usize, usize, usize, usize, usize) {
+    let (r, b) = sobreyectiva(s, g, lineales, semilla);
+    if r == b && !lineales.is_empty() {
+        let m = mide_con_base(s, g, lineales, semilla, LARGO, Base::Vistos);
+        (g.t, g.trozos, r, b, m.rango_k, m.rango_lineales, m.rango_mascaras)
+    } else {
+        (g.t, g.trozos, r, b, 0, 0, 0)
+    }
+}
+
 // ---- el juguete de la sonda: cuatro columnas con las tres entradas ----
 
 const CICLO_SONDA: usize = 8;
@@ -1170,6 +1312,17 @@ mod tests {
                 Some(_) => {},
             }
             let se_mide = solo.as_ref().is_none_or(|v| v.iter().any(|a| *a == air));
+            // §905 (la 135): las que no caben con la cuenta gruesa, con la fina
+            if libres_de(&g) == 0 && l > 0 && se_mide {
+                let t0 = std::time::Instant::now();
+                let f = mide_fina(&*s, &g, &censo.lineales(), 1);
+                println!("[135] {air}: T {} · {} trozos · Λ de rango {} sobre F, blanco {} · sin determinar {} · lineales y aleatorizadores {} · las tres {} · {:?}", f.0, f.1, f.2, f.3, f.4, f.5, f.6, t0.elapsed());
+                match fino(&air) {
+                    None => mal.push(format!("{air}: sin fila en FINA_MEDIDO: {f:?}")),
+                    Some(c) if c != f => mal.push(format!("{air}: fino medido {f:?} y clavado {c:?}")),
+                    Some(_) => {},
+                }
+            }
             if libres_de(&g) > 0 && l > 0 && se_mide {
                 let t0 = std::time::Instant::now();
                 let m = mide(&*s, &g, &censo.lineales(), 1, LARGO);
@@ -1184,6 +1337,28 @@ mod tests {
         }
         assert_eq!(vistas.len(), 23, "familias vistas");
         assert!(mal.is_empty(), "la 134 no es lo clavado:\n{}", mal.join("\n"));
+    }
+
+    /// **§905 (la 135): la base fina en el juguete.** Condicionar cada lineal a lo visto (q + 4)
+    /// en vez de a lo tocado (2q + 6) deja 82 libres por columna en vez de 38; Λ, lo que C ve de
+    /// las lineales en S_ab y el verificador no, es sobreyectiva con las dos (86 de 86 sobre F) y
+    /// nula sin ellas; y la mascara con la base fina no baja de la gruesa ni sale de K.
+    #[test]
+    fn el_juguete_con_la_base_fina_tiene_lambda_sobre_y_mas_mascara() {
+        let (s, g) = juguete();
+        let (r, b) = sobreyectiva(&*s, &g, &[1, 3], 1);
+        println!("[135] juguete: Λ de rango {r} sobre F, blanco {b}");
+        assert_eq!((r, b), (86, 86));
+        assert_eq!(sobreyectiva(&*s, &g, &[], 1), (0, 86));
+        let t0 = std::time::Instant::now();
+        let fina = mide_con_base(&*s, &g, &[1, 3], 1, LARGO, Base::Vistos);
+        println!("{} · base fina · {:?}", linea("juguete", &g, &fina), t0.elapsed());
+        assert_eq!((fina.lineales, fina.libres, fina.rango_k), (2, libres_finos_de(&g), 424));
+        assert_eq!(libres_finos_de(&g), 82);
+        // la fina suma dos dimensiones a la gruesa (156 y 330): de las 2 · 82 libres, 86 se van en
+        // hacer uniforme C(S_ab) -el nucleo conjunto fija cada trozo en S_ab- y quedan 78, frente
+        // a las 2 · 38 = 76 de la gruesa
+        assert_eq!((fina.rango_lineales, fina.rango_mascaras), (158, 332));
     }
 
     /// La mascara del §898 de una geometria, clavada en `instrumento_r3` (las dos juntas).

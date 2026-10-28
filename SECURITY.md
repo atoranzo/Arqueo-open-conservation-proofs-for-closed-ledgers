@@ -1982,7 +1982,9 @@ y también trae dos defensas que antes no existían.
   FrozenClimbAir, que necesitan una máscara de DEEP en E (la 133 de
   `BACKLOG.md`, de un corte futuro), y las cinco con 64 filas reales —los dos
   umbrales, la edad y los dos reembolsos—, a las que sus filas aleatorias no
-  cubren lo que la prueba toca (la 131). Lo que se podría prometer para las
+  cubren lo que la prueba toca (la 131; ⚠️ §905: la cuenta fina de la 135,
+  medida, no las rescata hoy, y con la máscara de DEEP en E cubriría al
+  umbral conjunto sin más filas). Lo que se podría prometer para las
   dieciséis —ocultación simulable sin el testigo, estadística en el modelo
   de oráculo aleatorio programable, bajo hipótesis con nombre, entre ellas la
   sal fresca y las semillas no repetidas de §3.11— está escrito en la D-AM

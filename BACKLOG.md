@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 43 abiertas, 94 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 42 abiertas, 95 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, y el §902, que cierra la 130 y la 132 y abre la 136.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, y el §905, que cierra la 135.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1491,6 +1491,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   columnas lineales en los dos umbrales, la edad (con siete más de pendiente del testigo) y los
   dos reembolsos, que la cuenta fina de la 135 podría aprovechar sin más filas; es un lema nuevo,
   no una medida.
+  ⚠️ §905: la cuenta fina, medida: no rescata a ninguna de las cinco hoy; con la 133 cubriría al
+  umbral conjunto, y las otras cuatro siguen necesitando T = 128.
 
 - [x] **132. La solvencia no tiene máscaras que cubran lo que FRI abre de DEEP: 506 dimensiones
   frente a unas 630 (§897).** `SolvencyAir` (T = 256, dos trozos) cumple la cuenta de lo tocado —la
@@ -1553,6 +1555,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   FrozenClimbAir, sin ninguna columna lineal, y las cinco de T = 64, que antes necesitan la 131;
   las otras dieciséis cumplen R3 con la máscara lineal de sus columnas, sin ella. Sigue siendo la
   salida que no depende del álgebra de cada AIR.
+  ⚠️ §905: con ella y el lema L1' medido, también el umbral conjunto (T = 64) queda cubierto sin
+  más filas; los otros cuatro de T = 64 necesitan además la 131.
 
 - [x] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
   las restricciones, que el instrumento de R3 no cuenta (§898).** Lo puso la revisión escéptica del
@@ -1587,7 +1591,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   necesitan la 133 para R3**: esas siete; las dieciséis, no. Lo que queda fuera es la cuenta fina,
   la 135.
 
-- [ ] **135. La cuenta fina de M_lin: condicionar cada columna lineal a lo que el verificador ve
+- [x] **135. La cuenta fina de M_lin: condicionar cada columna lineal a lo que el verificador ve
   de ella, no a lo que toca (§900).** El instrumento de la 134 (`crates/zk-ssl/src/instrumento_mlin.rs`)
   condiciona las filas aleatorias de cada columna lineal a sus 2q + 6 tocados, como pide L1 de
   `doc/ocultacion-hvzk.md`: la fila siguiente de cada posición y g²·z se dan por vistos, aunque el
@@ -1602,6 +1606,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   con su demostración o su contraejemplo, y entonces medir con la base V_ab en vez de V_toc, en el
   mismo instrumento. **Qué la cierra**: el lema escrito y la medida; hasta entonces, la 134 vale con
   su cuenta gruesa y las cinco de T = 64 siguen en la 131.
+  ✅ §905: cerrada: el lema L1' escrito con su demostración (`doc/ocultacion-hvzk.md`, apartado 15)
+  y la medida en cada canon (`sobreyectiva`, `FINA_MEDIDO`): Λ sólo es sobreyectiva en el umbral
+  conjunto (86 de 86), y a ése R3 con la base fina le faltan diez dimensiones (158 de 168); en la
+  autorización delegada, la edad y el reembolso v2, Λ no llega (36, 18 y 72 de 86), y el v1 no
+  tiene lineales. No rescata a ninguna hoy. Lo que deja para el corte: con la 133 y L1', el umbral
+  conjunto queda cubierto sin más filas; los otros cuatro necesitan la 131.
 
 - [ ] **136. La revisión ajena del argumento de ocultación: el dosier, quién lo revisa y lo que
   decida (§902).** La D-AM del RFC-0009 deja escrito lo que se podría prometer para dieciséis

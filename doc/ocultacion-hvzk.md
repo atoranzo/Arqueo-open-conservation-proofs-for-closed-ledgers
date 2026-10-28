@@ -404,6 +404,8 @@ es un distinguidor (apartado 12). Las salidas: L6 por AIR, o T ≥ 2q + 6 = 90, 
 filas y de coste para ellas, en un corte futuro, nunca en `zkssl/0.4`— (la 131 de `BACKLOG.md`);
 la edad con 16 hojas o más (T = 8·2^m con m ≥ 4) ya cumple la cuenta, medida sólo en la cota: el
 instrumento la mide con ocho hojas.
+⚠️ §905: la otra salida, la cuenta fina para las columnas lineales (L1', apartado 15), está
+medida: no rescata hoy a ninguna de las cinco; al umbral conjunto lo cubriría con la 133.
 
 ## 4. Las hipótesis, con su clase
 
@@ -421,6 +423,7 @@ instrumento la mide con ocho hojas.
 | H10: la moneda de las máscaras no comparte estado con la pública | demostrada | L5 | `generate_proof_oculto`, `segmentar` |
 | H11: T ≥ 2q + 6 | medida: 18 familias sí, 5 no; y lo que cuesta, en el juguete (§898) | L1, L6 | `INDEPENDIENTE_DE_LA_AIR`; con T = 64 lo tocado dice el testigo, con T = 128 no |
 | H12 (§900): las filas aleatorias de una columna que entra en C linealmente y con coeficiente público son una máscara más, M_lin: uniformes en un núcleo que no depende del testigo una vez condicionadas a S_toc, con imagen lineal y pública en D | medida: qué columnas lo son, en cada canon, AIR a AIR; y R3 con M_lin, por familia | L3 | `instrumento_mlin`: `CENSO_134` y `MLIN_MEDIDO` (apartado 14) |
+| H13 (§905): Λ, lo que C ve en S_ab de las columnas lineales condicionadas a lo visto, es sobreyectiva: C(S_ab) uniforme e independiente del testigo sin pasar por S_toc | medida, por familia, en las que no caben con la gruesa: sólo en el umbral conjunto | L1' | `instrumento_mlin`: `sobreyectiva`, `FINA_MEDIDO` (apartado 15) |
 
 ## 5. El simulador
 
@@ -940,8 +943,90 @@ M_lin es suficiente, no necesaria: el instrumento condiciona cada columna lineal
 tocados, más de lo que el verificador ve de ella (la 135), así que un «no se cumple» no es un
 contraejemplo; para MerkleAir y FrozenClimbAir no hace falta la cuenta fina: no tienen columna que
 contar.
+⚠️ §905: la cuenta fina está medida (apartado 15): L1' vale como lema y hoy no cambia el censo.
 
 **Lo que no hace.** No cuenta las filas aleatorias del tramo auxiliar (sólo la edad lo tiene, con
 T = 64). No mide los desafíos de ninguna prueba real: la geometría y las opciones son las de una
 prueba de cada familia, y los desafíos los elige el test, como en el §898. No toca un byte de
 producción: el instrumento es sólo de tests. No es una promesa: lo que A4 enuncie, lo enuncia A4.
+
+## 15. La 135, medida (§905): la cuenta fina no rescata ninguna de las cinco
+
+### L1' — La cuenta fina para las columnas lineales: lo visto, no lo tocado (§905)
+
+**Lo que L1 cuenta de más.** L1 pide que las T filas aleatorias de una columna cubran los 2q + 3
+puntos que la prueba toca de ella —las q posiciones, sus q siguientes, z, z·g y g²·z, 2q + 6
+dimensiones sobre F—, porque C(x_j) lee P(g·x_j) y C(z·g) lee P(g²·z). Pero el verificador no ve
+P(g·x_j) ni P(g²·z): ve P en S_ab —q + 4 dimensiones sobre F por columna— y ve C en S_ab, una suma
+de todas las columnas con q + 2 valores de E en total, 2q + 2 dimensiones sobre F que entran en el
+marco OOD y en las aperturas de los trozos (y C(z), que lee P(z) y P(z·g), es función de lo visto).
+Para una columna que entra en C con grado ≥ 2 eso no ayuda: su parte en C(x_j) depende del testigo
+de una forma que la AIR decide (L6). Para las columnas lineales con coeficiente público, sí.
+
+**Enunciado.** Sea Lin el conjunto de columnas principales que entran en C linealmente con
+coeficiente público (H12). Para cada i ∈ Lin, lo que queda libre de sus filas aleatorias una vez
+condicionadas a lo VISTO de ella es P_ρ,i = Z_real·V_ab·w_i, con V_ab nulo en S_ab y sus
+conjugados (grado q + 4) y w_i ∈ F[x] de grado < T − q − 4; y C en S_ab se escribe como
+C(y) = A(y) + Σ_{i∈Lin} [σ_i^cur(y)·P_ρ,i(y) + σ_i^next(y)·P_ρ,i(g·y)] con σ públicas y A función
+del testigo, de las columnas no lineales y de lo visto. Como P_ρ,i(y) = 0 en S_ab, lo que queda es
+Λ(w) := (Σ_i σ_i^next(x_j)·P_ρ,i(g·x_j))_j, Σ_i σ_i^next(z·g)·P_ρ,i(g²·z)), una aplicación
+F-lineal de ⊕_i F^{T−q−4} en E^{q+1} (2q + 2 dimensiones sobre F). **Si Λ es sobreyectiva**, la
+distribución de (P(S_ab) de todas las columnas, C(S_ab)) dada la traza real es la uniforme sobre su
+soporte, independiente del testigo: la de P(S_ab) por L1 con q + 4 ≤ T, y la de C(S_ab) porque
+A + Λ(w) con w uniforme y Λ sobre es uniforme sea cual sea A. Y lo residual de w tras condicionar a
+C(S_ab) —el núcleo de Λ— es lo que queda para enmascarar D: es lo que mide el instrumento con la
+base fina, con el núcleo conjunto de los aleatorizadores, que ya descuenta las aperturas de los
+trozos.
+
+**Demostración.** Las filas aleatorias de cada columna son uniformes en F^T e independientes del
+testigo y entre columnas (L5). Para i ∈ Lin, condicionar P_i a sus q + 4 valores en S_ab es
+condicionar a una aplicación lineal de rango q + 4 (la matriz de Lagrange sobre S_ab, de rango
+pleno por H1), así que lo residual es uniforme en el núcleo, Z_real·V_ab·F[x]_{<T−q−4}, y no
+depende del testigo. C es afín en las columnas de Lin con pendientes públicas (H12), así que
+C(y) − A(y) = Σ_i [σ_i^cur(y)·P_ρ,i(y) + σ_i^next(y)·P_ρ,i(g·y)], y el primer sumando es nulo en
+S_ab. Si Λ es sobreyectiva, Λ(w) es uniforme en E^{q+1} y, al ser w independiente de A, C(S_ab) es
+uniforme e independiente del testigo; la distribución conjunta con P(S_ab) de las demás columnas
+también, porque esas filas son independientes de w. □
+
+**Lo que pide, y se mide.** (1) q + 4 ≤ T con la Lagrange de rango pleno sobre S_ab: ya medido
+para todas las familias (`rango_pleno`). (2) Λ sobreyectiva: su rango sobre F es 2q + 2; lo mide
+`instrumento_mlin::sobreyectiva`, por familia. (3) R3 con la base fina: las máscaras —la columna
+aleatoria, los aleatorizadores y el núcleo de Λ— cubren O|_K, con el núcleo conjunto de siempre.
+Con las tres, el simulador del apartado 5 cambia sólo en S2: muestrea P(S_ab) y C(S_ab) en vez de
+P(S_toc); lo demás, igual. Lo que no pide: nada de las columnas no lineales más que q + 4 ≤ T.
+
+**Lo que cuenta por cuenta, con T = 64.** Cada columna lineal deja T − q − 4 = 18 dimensiones, y Λ
+necesita 2q + 2 = 86: hacen falta al menos cinco columnas lineales. Los dos umbrales tienen 8 y 7;
+la edad, 4 (más siete con pendiente del testigo, que no sirven); el reembolso v2, 4; el v1, 0. Por
+cuenta, L1' sólo puede valer para los dos umbrales, y la medida dice si vale.
+
+**Lo medido** (`instrumento_mlin`: `Base::Vistos`, `sobreyectiva`, `FINA_MEDIDO`; en cada canon,
+con la semilla 1, sobre las familias que no caben con la cuenta gruesa y tienen columnas lineales,
+y sobre el juguete como control):
+
+| AIR | T | lineales | rango de Λ (blanco 86) | R3 con la base fina: lineales y aleatorizadores / las tres (K) | veredicto |
+|---|---|---|---|---|---|
+| NullifierThresholdAir | 64 | 8 | 36 | no se mide | no: Λ no es sobreyectiva |
+| ThresholdAir | 64 | 7 | **86** | 120 / **158** (168) | no: L1' vale y a R3 le faltan 10 |
+| EdadAir | 64 | 4 (+ 7 del testigo) | 18 | no se mide | no |
+| RefundAirV2 | 64 | 4 | 72 | no se mide | no: 4 · 18 = 72 < 86, por cuenta |
+| RefundAir | 64 | 0 | — | — | no: sin lineales |
+| el juguete | 128 | 2 | 86 | 158 / 332 (424) | control: la fina no baja de la gruesa (156 / 330) |
+
+Que Λ no llegue con ocho columnas lineales (36 = 2 · 18) dice que casi todas entran en C sólo por
+la fila actual, o con pendientes dependientes en la fila siguiente; es una inferencia consistente
+con la cifra, no una medida. Y la base fina añade poco a R3: en el juguete, de las 2 · 82 libres
+se van 86 en hacer uniforme C(S_ab) —el núcleo conjunto fija cada trozo en S_ab, y con ello C— y
+quedan 78, dos más que las 76 de la gruesa.
+
+**Lo que dice.** L1' es un lema que vale, y hoy no rescata a ninguna de las cinco: en cuatro, Λ no
+es sobreyectiva, y en el umbral conjunto lo es pero R3 con la base fina se queda a diez
+dimensiones de K. Lo que sí deja escrito para el corte: con la 133 —dos columnas aleatorias, con
+las que R3 se cumple por geometría también con T = 64 (apartado 13)— y L1' medido, el umbral
+conjunto queda cubierto sin más filas; los otros cuatro —la autorización delegada, la edad y los
+dos reembolsos— necesitan la 131, T = 128, y con ella la cuenta gruesa (90 ≤ 128) y la 133 los
+cubren por geometría. Después del corte, pues: dieciséis de hoy, más MerkleAir y FrozenClimbAir
+por la 133, más el umbral conjunto por la 133 y L1', diecinueve; y cuatro que esperan a la 131.
+
+**Lo que no hace.** No cambia la cuenta gruesa de L1 ni lo clavado del §900: la base fina es otra
+medida, con sus propias constantes. No rescata nada hoy. No toca la promesa.

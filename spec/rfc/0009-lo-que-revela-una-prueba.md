@@ -376,6 +376,14 @@ escrito y revisado: la sal se va y la prueba adelgaza.
 > argumento (la 136 de `BACKLOG.md`) el autor podrá volver a pesarla con la cuenta de las hojas
 > delante.
 
+> ⚠️ **§905 (la 135): la cuenta fina, medida, no rescata a ninguna de las cinco familias de T = 64.**
+> El lema L1' —condicionar cada columna lineal a lo que el verificador ve de ella, q + 4, y pedir
+> que lo que C ve de esas columnas en S_ab sea una aplicación sobreyectiva, Λ— está escrito y
+> medido (`doc/ocultacion-hvzk.md`, apartado 15): Λ sólo es sobreyectiva en el umbral conjunto, y
+> a ése R3 con la base fina le faltan diez dimensiones; en las otras cuatro Λ no llega, o no hay
+> columnas lineales. Lo que deja para el corte: con la 133 y L1', el umbral conjunto queda cubierto
+> sin más filas; la autorización delegada, la edad y los dos reembolsos necesitan la 131.
+
 ### D-J — Las cifras de bytes pasan a bandas y el azar sale del sistema
 
 Una prueba oculta no es determinista: con otra semilla pesa distinto (E1, E2 y E4 del SPIKE-B-P4:
@@ -949,6 +957,9 @@ necesitan la 131 (T = 128) o el lema de la 135, y después la 133 o la medida de
 Cinco de las siete son del cable: la autorización delegada, la edad, los dos reembolsos y la
 subida de la congelación delegada. Para las siete no se podría prometer nada hoy con ningún
 argumento escrito.
+⚠️ §905: la cuenta fina (la 135) está medida y no cambia esto hoy; para el corte sí: con la 133 y
+el lema L1', el umbral conjunto entra en lo que se podría prometer sin más filas, con MerkleAir y
+FrozenClimbAir por la 133; los otros cuatro de T = 64 esperan a la 131.
 
 **Qué le falta a lo escrito para ser promesa.** (1) La aceptación del autor, que decide sobre lo
 medido (`doc/METODO.md` §7) y de quien es toda promesa; (2) una revisión ajena del argumento de A2

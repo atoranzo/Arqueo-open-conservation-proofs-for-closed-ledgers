@@ -842,6 +842,21 @@ fn la_cota_de_ocultacion_de_los_23_probadores_con_fila() {
                 }
             },
         }
+        // §905 (la 135): las que no caben con la cuenta gruesa (T = 64) y tienen lineales, con la
+        // cuenta fina: Λ sobreyectiva o no y, si lo es, R3 con la base fina, contra lo clavado
+        if libres == 0 && l > 0 {
+            let f = instrumento_mlin::mide_fina(&*sonda, &g, &censo.lineales(), 1);
+            println!(
+                "[135] {air}: T {} · {} trozos · Λ de rango {} sobre F, blanco {} · sin determinar {} · lineales y \
+                 aleatorizadores {} · las tres {}",
+                f.0, f.1, f.2, f.3, f.4, f.5, f.6
+            );
+            match instrumento_mlin::fino(&air) {
+                None => mal.push(format!("{air}: sin fila en FINA_MEDIDO: {f:?}")),
+                Some(c) if c != f => mal.push(format!("{air}: fino medido {f:?} y clavado {c:?}")),
+                Some(_) => {},
+            }
+        }
         if air == "SolvencyAir" {
             let m = instrumento_mlin::mide(&*sonda, &g, &censo.lineales(), 1, instrumento_mlin::TODAS);
             println!("{}", instrumento_mlin::linea(&air, &g, &m));

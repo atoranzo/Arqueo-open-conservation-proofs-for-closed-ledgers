@@ -75475,3 +75475,105 @@ investiga aquí. Una sola corrida: no hubo roja. Antes de ella, la sesión quit�
 de trabajo de un revisor independiente que había lanzado bajo `.claude/worktrees/` —ajena a git,
 y que las herramientas de documentos leían como parte del árbol—; el revisor volvió a lanzarse
 sobre una copia fuera del repositorio, y su informe es del asiento que lo registre.
+
+## §905 — La 135, medida: la cuenta fina de M_lin —condicionar cada columna lineal a lo que el verificador ve de ella, no a lo que la prueba toca— con su lema L1' escrito y demostrado, y medida en cada canon en las familias que no caben con la cuenta gruesa: no rescata hoy a ninguna de las cinco de T = 64 —Λ sólo es sobreyectiva en el umbral conjunto, y a ése R3 con la base fina le faltan diez dimensiones—; lo que deja para el corte: con la 133 y L1', el umbral conjunto queda cubierto sin más filas, y los otros cuatro necesitan la 131; la 135 cerrada
+
+El commit que lleva este asiento, sobre `550375e2` (el §904, la fusión, que es también `main`).
+Toca sólo tests y documentos: `crates/zk-ssl/src/instrumento_mlin.rs`, que gana la base de
+condicionamiento (`Base::Tocados`, la del §900, y `Base::Vistos`, la fina), `mide_con_base`,
+`sobreyectiva` —el rango de Λ sobre F y su blanco—, `mide_fina`, la tabla `FINA_MEDIDO`, un test
+del juguete con la base fina y la medida fina en el test largo; `crates/zk-ssl/src/instrumento_cota.rs`,
+cuyo test de las 23 familias mide la cuenta fina en las que no caben con la gruesa y tienen
+columnas lineales, contra lo clavado; `tools/canon.sh`, la fila de `zk-ssl`, 561 -> 562, con su
+crónica; los totales y las copias del pin en `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`ARQUITECTURA.md` (con su marca), `CONTRIBUTING.md` (con su marca), `doc/INSTITUCIONAL.md`,
+`doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`; `doc/ocultacion-hvzk.md`, el apartado 15 con
+el lema, la H13 y las notas §905 en L6 y en el apartado 14; `BACKLOG.md`, la 135 cerrada, notas en
+la 131 y la 133, el estado y la cadena; `spec/rfc/0009-lo-que-revela-una-prueba.md`, una nota en
+la D-I y otra en la D-AM; `SECURITY.md`, una frase en §3.bis; y este asiento. Ni el fork, ni
+ningún probador, ni ningún AIR, ni el cable, ni vectores. Lo escribe y lo commitea Claude, en una
+sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. El número es el siguiente libre tras el §904. El canon de este commit se dice al
+final.
+
+**De dónde sale.** La orden del autor: «HACER: … La 135, el lema de la cuenta fina, si quieres que
+lo intente antes del corte: podría rescatar las cinco de T = 64 sin más filas». La 135 la abrió el
+§900: el instrumento de la 134 condiciona cada columna lineal a sus 2q + 6 tocados, más de lo que
+el verificador ve de ella, y con T = 64 eso no deja nada libre; la cuenta fina condiciona a lo
+visto, q + 4, y pide un lema nuevo.
+
+**Lo que hace.**
+
+1. **El lema L1'**, escrito con su demostración (apartado 15 del documento): para las columnas que
+   entran en C linealmente con coeficiente público, lo libre tras condicionar a lo visto es
+   Z_real·V_ab·F[x]_{<T−q−4}, y C en S_ab es A + Λ(w) con A función del testigo y de lo visto, y
+   Λ una aplicación F-lineal de lo libre en E^{q+1}: si Λ es sobreyectiva, C(S_ab) es uniforme e
+   independiente del testigo, y la distribución conjunta con P(S_ab) de todas las columnas también
+   (L1 con q + 4 ≤ T, ya medida en todas). Lo residual, el núcleo de Λ, es lo que queda para D.
+2. **El instrumento.** `Base::Vistos` cambia la base de la 134 —V_ab en vez de V_toc— y nada más;
+   `sobreyectiva` mide el rango de Λ sobre F con combinaciones aleatorias de lo libre de todas las
+   lineales, con las pendientes de la fila siguiente de cada una en g·x_j y en g²·z y el mismo
+   muestreo que la 134; `mide_fina` mide Λ y, si es sobreyectiva, R3 con la base fina. Lo clavado
+   del §900 no cambia: la base gruesa sigue siendo la de `mide`.
+3. **Lo medido, sellado** en `FINA_MEDIDO`, en cada canon, sobre las familias que no caben con la
+   gruesa y tienen lineales; y el juguete como control.
+4. **Los textos**: el apartado 15, la H13, las notas y la 135 cerrada.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release. El juguete (T = 128, dos lineales):
+Λ de rango 86 sobre F, su blanco; sin lineales, 0; 82 libres por columna con la base fina frente a
+38 con la gruesa; R3 con la base fina, 158 con los aleatorizadores y 332 las tres, frente a 156 y
+330 con la gruesa: de las 2 · 82 libres se van 86 en hacer uniforme C(S_ab), porque el núcleo
+conjunto fija cada trozo en S_ab y con ello C, y quedan 78, dos más que las 76 de la gruesa; 8,3 s.
+Las cinco de T = 64, en el test de las 23 familias (la corrida que las midió, 185,8 s; la que confirmó lo clavado, 1 de 1 en 185,14 s):
+
+| AIR | lineales | rango de Λ (blanco 86) | R3 con la base fina: lineales y aleatorizadores / las tres (K 168) | veredicto |
+|---|---|---|---|---|
+| NullifierThresholdAir | 8 | 36 | no se mide | Λ no es sobreyectiva |
+| ThresholdAir | 7 | 86 | 120 / 158 | L1' vale; a R3 le faltan diez |
+| EdadAir | 4 | 18 | no se mide | Λ no es sobreyectiva |
+| RefundAirV2 | 4 | 72 | no se mide | 4 · 18 = 72 < 86, por cuenta |
+| RefundAir | 0 | — | — | sin lineales |
+
+Que Λ no llegue con ocho lineales (36 = 2 · 18) dice que casi todas entran en C sólo por la fila
+actual o con pendientes dependientes en la siguiente: inferencia consistente con la cifra, no
+medida. `check_tests`, 2256 declarados y 21 instrumentos (eran 2255 y 21); `check_modulos`, 220;
+`verificar_citas`, 0 en sus tres cuentas; `check_cifras`, 26 cifras y ninguna contradice el canon;
+`check_publicadas` y `check_figures`, OK.
+
+**Lo que dice.** L1' es un lema que vale y hoy no rescata a ninguna de las cinco. Para el corte deja
+escrito: con la 133 —R3 se cumple por geometría también con T = 64, apartado 13— y L1' medido, el
+umbral conjunto queda cubierto sin más filas; la autorización delegada, la edad y los dos
+reembolsos necesitan la 131, T = 128, y con ella la cuenta gruesa y la 133 los cubren por
+geometría. Después del corte: las dieciséis de hoy, MerkleAir y FrozenClimbAir por la 133, y el
+umbral conjunto por la 133 y L1', diecinueve; cuatro esperan a la 131. Y la base fina añade poco a
+R3: lo que gana en libertad lo gasta en C(S_ab).
+
+**Lo que NO hace.** No cambia lo clavado del §900 ni el censo de la 134: la cuenta fina es otra
+medida, con sus constantes. No rescata ninguna familia hoy ni promete nada: la promesa sigue
+siendo el censo, y lo escrito en la D-AM espera la revisión ajena. No mide la base fina en las
+dieciséis que cumplen con la gruesa: no la necesitan. No decide la 131 ni la 133.
+
+**Lo que es del autor.** La 131 para las cuatro que quedan, y el corte con la 133; llevar este
+asiento a `main`; y el número de este asiento.
+
+**Contadores.** `zk-ssl` 561 -> 562, con 8 ignorados; los demás sin cambio. TOTAL DE SELLO
+2092 -> 2093 y CON LARGOS 2232 -> 2233, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`;
+`check_tests` 2255 -> 2256; `check_modulos` 220. `BACKLOG.md` pasa a 42 abiertas y 95 resueltas:
+cierra la 135. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 419 s de reloj (de su arranque a su salida)
+y 273 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,89 al
+empezar. Las 19 filas del nivel, en su pin, con 2093 tests que pasan (la suma de la columna
+«pasan»), la de `zk-ssl` en 562 pasan y 8 ignorados, 196 s, y la de `stark-experiment` en 489 y 13,
+18 s; las tres del fork, `winter-air` 64, `winter-prover` 7 y `winter-verifier` 0, en su pin; la
+puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (2 s)»; `check_tests`
+en 2256 y 21 instrumentos; `check_modulos` en 220; las once herramientas del bucle «2 ter»; la
+puerta de los vectores, en 605 ficheros y 1370 líneas de 19 manifiestos; `check_catalogo`, en 236
+textos y 302 entradas; el cable, en 27 de 27; la segunda implementación, con el núcleo en 34 de
+34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, igual desde
+dos raíces, con el binario `30a7452dc043e5f7` —el mismo del §904: nada de producción ni del fork
+cambia— y el tarball `1ab8797b8c3fd23c`, que cambia con las fuentes, como en cada asiento. Corrió
+con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
+anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no
+hubo roja.
