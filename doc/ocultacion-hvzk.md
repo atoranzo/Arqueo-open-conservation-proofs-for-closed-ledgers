@@ -2,7 +2,8 @@
 
 **Estado**: documento de trabajo de la 130 de `BACKLOG.md` (A2 del HVZK), escrito en el §897 por la
 sesión, y **revisable**: cada objeción con su cierre va en el apartado 11 y en el asiento que la
-lleve. **No es una promesa.** Lo que la casa promete sigue siendo el censo —«una prueba que verifica
+lleve. ⚠️ §898 (A3): R3 está medida, y no se cumple en ninguna geometría de producción; lo que eso
+cambia está marcado con §898 donde toca y reunido en el apartado 13. **No es una promesa.** Lo que la casa promete sigue siendo el censo —«una prueba que verifica
 demuestra la transición que enuncia y no publica literal ningún valor de columna constante de su
 traza», RFC-0009 D-A y `SECURITY.md` §3.bis— hasta que A4, con A3 sellada, decida qué se promete y
 con qué palabras. Nada de lo que sigue cambia `SECURITY.md`, el RFC-0009 más allá de la nota de su
@@ -15,14 +16,20 @@ lema atado al test del §896 y del §897 que mide su hipótesis (`crates/zk-ssl/
 la lista de hipótesis con su clase —medida, demostrada, de modelo o supuesta—, lo que no cubre y
 dónde el fork se aparta de la nota 2024/1037.
 
-**Qué da, en una frase.** Para diecisiete de las veintitrés familias, la vista del verificador
-honesto se simula sin el testigo si se cumple una condición suficiente que nadie ha medido, R3: que
-las dos máscaras que no dependen del testigo —la columna aleatoria y los aleatorizadores del
-cociente— cubran lo que FRI abre del polinomio DEEP (apartados 3 y 6). Para seis familias el
-argumento no llega: las cinco con T = 64, porque sus filas aleatorias no cubren lo que una prueba
-toca (L1, L6), y la solvencia, porque sus máscaras tienen menos dimensiones que lo que FRI abre y
-R3 le falla por pura cuenta (L3). La 131 y la 132 de `BACKLOG.md` llevan las decisiones. Hasta que
-R3 esté medida (A3) y las seis tengan su salida, el enunciado del apartado 8 es condicional.
+**Qué da, en una frase.** ⚠️ §898: hasta aquí este párrafo decía que para diecisiete de las
+veintitrés familias la vista del verificador honesto se simulaba sin el testigo «si se cumple una
+condición suficiente que nadie ha medido, R3», y que seis quedaban fuera, las cinco con T = 64 por
+L1 y la solvencia por cuenta. A3 midió R3 (apartado 13) y **no se cumple en ninguna geometría de
+producción**: la columna aleatoria vive en F y, en cada valor de E que FRI abre, sólo mueve una de
+sus dos coordenadas; los aleatorizadores del cociente aportan 80 dimensiones en total, no 40 por
+trozo; y lo que FRI abre sin determinar son 168, 632, 760 y 1016 dimensiones frente a 126, 378 a
+382, 510 y 766 de máscara. Hoy el argumento independiente de la AIR no cubre ninguna familia: lo
+que sostenga la ocultación más allá del censo, si algo la sostiene, depende de la AIR —de una
+máscara lineal propia, donde sus columnas entran sólo linealmente en las restricciones (M_lin, la
+134 de `BACKLOG.md`, sin medir), o del testigo (L6)—, y nadie lo ha argumentado. La salida
+independiente de la AIR es la 133: que la máscara de DEEP viva en E, en un corte futuro. El
+enunciado del apartado 8 no se puede hacer hoy para ninguna familia; la promesa sigue siendo el
+censo.
 
 **La nota, no leída.** La nota 2024/1037 de ePrint —Ulrich Haböck y Al Kindi, «A note on adding
 zero-knowledge to STARKs», recibida el 26 de junio de 2024 y revisada por última vez el 22 de
@@ -285,8 +292,15 @@ r_k en S_ab, D = D_resto + M_R(ρ_R) + M_r(r_res): D_resto depende del testigo, 
 aleatorias de las columnas reales y de lo condicionado, de cualquier forma; ρ_R es lo libre de la
 columna aleatoria, L − q − 4 dimensiones sobre F (sus L valores menos los q + 4 abiertos); r_res,
 lo libre de los aleatorizadores, 2(m − q − 2) por cada uno de los N − 1 (sus m coeficientes de E
-menos sus valores en los q + 2 puntos abiertos). M_R y M_r son lineales sobre F e inyectivas (el
-núcleo de P ↦ Q[P] son las constantes, que lo residual no contiene), independientes de D_resto, y
+menos sus valores en los q + 2 puntos abiertos). ⚠️ §898: esa cuenta de los aleatorizadores es la
+de sus grados de libertad, no la de lo que llega a D: los N − 1 entran en D por dos huecos,
+Σ_k cc'_k·(x^s·r_k − r_{k−1}) = x^s·A − B con A y B en E[x]_{<m}, así que su imagen en D mide a lo
+sumo 2(m − q − 2) sobre E tras lo abierto, 40, es decir 80 sobre F, con cualquier N ≥ 3 (40 con
+N = 2); medido (apartado 13). Y la columna aleatoria, en cada punto x de Λ, aporta
+cc_R·Q[R](x) = R(x)·c(x) con R(x) ∈ F y c(x) ∈ E fijo: una sola dimensión sobre F de las dos que
+tiene cada valor que FRI abre, por mucho que L − q − 4 sea grande. M_R y M_r son lineales sobre F e
+inyectivas (el núcleo de P ↦ Q[P] son las constantes, que lo residual no contiene), independientes
+de D_resto, y
 valen 0 en x_j y en x₀, porque lo residual no mueve los valores en S_ab y Q[·](x₀) sólo depende
 de ellos: im(M_R), im(M_r) ⊆ K = {D : D(x_j) = 0 ∀j, D(x₀) = 0}, y D_resto está en el espacio afín
 de D.
@@ -308,7 +322,9 @@ columna aleatoria sola llega por cuenta; con T = 512 (N = 8), 978 + 280 frente a
 columna sola también; con T = 256, 466 + 320 = 786 frente a unas 630 en MerkleAir y FrozenClimbAir
 (N = 9), a medir, y **466 + 40 = 506 frente a unas 630 en SolvencyAir (N = 2): R3 falla por cuenta,
 y con q = 40 y cosets repetidos sigue fallando**; con T = 64, 82 + 560 frente a unas 168, pero
-esas cinco ya quedaron fuera por L1. ⚠️ Lo que la nota de la D-I del §896 daba por hecho —«la
+esas cinco ya quedaron fuera por L1. ⚠️ §898: esas cuentas eran cotas por arriba y la estructura
+las hunde: medidas, las máscaras llegan a 126, 378, 382, 510 y 766 frente a 168, 632, 632, 760 y
+1016 (apartado 13), y R3 falla en las cinco geometrías, no sólo en la solvencia. ⚠️ Lo que la nota de la D-I del §896 daba por hecho —«la
 columna aleatoria … enmascara DEEP en todas las direcciones menos una»— no es cierto en general:
 la columna aleatoria entra en DEEP como cc_R·Q[R] con R ∈ F[x]_{<L}, y Q[R] recorre una imagen de
 dimensión L − q − 4 sobre F dentro de un espacio de 2(L − 1); con T = 64 y T = 256 no puede
@@ -317,7 +333,9 @@ enmascarar sola lo que FRI abre, y en todas la uniformidad depende del rango con
 **Hipótesis.** (H6, **no medida**) R3, suficiente. Es lo primero que A3 tiene que medir, y el
 apartado 6 dice cómo; las matrices son pequeñas y cabe en el sello. Si R3 falla en una familia, el
 argumento de este documento NO vale para ella: en la solvencia falla por cuenta, y la salida es la
-de la 132, una máscara propia de DEEP o más filas (apartado 10).
+de la 132, una máscara propia de DEEP o más filas (apartado 10). ⚠️ §898: **medida, y falsa en las
+cinco geometrías de producción** (apartado 13): el argumento de este documento no vale hoy para
+ninguna familia, y la salida es la 133.
 
 ### L4 — Las hojas saladas esconden lo que no se abre y dejan equivocar lo que se abre
 
@@ -382,12 +400,12 @@ instrumento la mide con ocho hojas.
 | H3: z fuera de F y de H, sin coincidencias de conjugados | supuesta, fallo < 2^{−60} por prueba | L1 | no se mide: las posiciones y z no viajan |
 | H4: q + 2 ≤ m, Vandermonde de rango pleno sobre E | medida, en cada canon | L2 | `rango_pleno`; el mutante m = 43; el mutante del árbol |
 | H5: s ≥ 1, N ≥ 2, y ≠ 0 | demostrada | L2 | los asertos de `segmentar` |
-| H6: R3, suficiente: las dos máscaras independientes del testigo cubren lo que FRI abre | **no medida**; falla por cuenta en la solvencia | L3 | nadie: A3, apartado 6 |
+| H6: R3, suficiente: las dos máscaras independientes del testigo cubren lo que FRI abre | **medida en el §898: con M = {columna, aleatorizadores}, falsa en las cinco geometrías** | L3 | `instrumento_r3`, en cada canon, con sus cifras clavadas (apartado 13) |
 | H7: Blake3 como oráculo aleatorio programable | modelo | L0, L4, L5 | — |
 | H8: la sal es fresca | supuesta | L4 | `SECURITY.md` §3.11; los tests de `sal.rs` miden tamaño y efecto, no frescura |
-| H9: ninguna semilla se repite | supuesta | L5 | el falsador de A3 |
+| H9: ninguna semilla se repite | supuesta; lo que cuesta, medido en el juguete (§898) | L5 | `instrumento_falsadores_hvzk`: dos pruebas con la misma semilla dan sus dos constantes |
 | H10: la moneda de las máscaras no comparte estado con la pública | demostrada | L5 | `generate_proof_oculto`, `segmentar` |
-| H11: T ≥ 2q + 6 | medida: 18 familias sí, 5 no | L1, L6 | `INDEPENDIENTE_DE_LA_AIR` |
+| H11: T ≥ 2q + 6 | medida: 18 familias sí, 5 no; y lo que cuesta, en el juguete (§898) | L1, L6 | `INDEPENDIENTE_DE_LA_AIR`; con T = 64 lo tocado dice el testigo, con T = 128 no |
 
 ## 5. El simulador
 
@@ -446,7 +464,10 @@ M (L3). **La comparación**: rango_F(O∘M) frente a rango_F(O|_K), con una base
 de E[x]_{≤L−2} con las q + 1 condiciones lineales. Iguales: R3 se cumple para esos desafíos. Un
 atajo suficiente: si rango_F(O∘M_R) = rango_F(O|_K) con M_R la columna aleatoria sola, R3 vale por
 ella sola; con T ≥ 512 la cuenta de dimensión lo permite (978 frente a unas 758; 2002 frente a unas
-1014), con T = 256 no (466 frente a unas 630).
+1014), con T = 256 no (466 frente a unas 630). ⚠️ §898: la cuenta lo permitía y la estructura no:
+medido, rango_F(O∘M_R) es 294 + 2·(L/8 − 42) —338, 466 y 722 con T = 256, 512 y 1024—, una
+dimensión por cada uno de los 7q puntos de la capa 0 y dos por cada funcional nuevo de la capa 1,
+porque R(x) ∈ F en cada punto de Λ.
 
 Como en L1 y L2, el rango para unos desafíos que elige el test es la instancia medida. Que valga
 para los reales: sobre z, cc y α_i, una caída de rango es una condición polinómica (un menor que se
@@ -455,6 +476,8 @@ el instrumento tiene que probar varias elecciones y decirlo. El coste es pequeñ
 L − q − 4 + 40·(N − 1) columnas —2282 con T = 1024 y N = 8— y O a lo sumo 2·(8c₀ + 8c₁ + resto)
 filas sobre F, 1408; construir O∘M y eliminar cabe en el sello. Lo que el instrumento de A3 tiene
 que imprimir, por familia: rango_F(O), rango_F(O|_K), rango_F(O∘M) y rango_F(O∘M_R), y el veredicto.
+⚠️ §898: hecho, `crates/zk-ssl/src/instrumento_r3.rs`, con dos semillas de desafíos que dan los
+mismos rangos, y en el sello por geometría de producción (apartado 13).
 
 ## 7. Lo que el argumento no cubre
 
@@ -462,7 +485,8 @@ que imprimir, por familia: rango_F(O), rango_F(O|_K), rango_F(O∘M) y rango_F(O
   RefundAir, RefundAirV2 y EdadAir con ocho hojas.
 - La solvencia (SolvencyAir, T = 256 con dos trozos): R3 le falla por cuenta de dimensión (L3), y
   no tiene argumento.
-- R3 (H6), en las otras diecisiete, hasta que A3 la mida.
+- R3 (H6), en las otras diecisiete, hasta que A3 la mida. ⚠️ §898: medida, falla en todas: hoy el
+  argumento no cubre ninguna familia.
 - La dependencia de los trozos del cociente en las filas aleatorias de las columnas reales fuera de
   los puntos abiertos (L3): no es lineal ni independiente del testigo, y este documento no la usa
   como máscara; donde R3 se cumple no estorba, y donde falla es lo que queda.
@@ -490,7 +514,9 @@ AIR interno acepta, la vista del verificador honesto del protocolo oculto y la s
 estadísticamente indistinguibles en el modelo de oráculo aleatorio programable, con ventaja menor
 que 2^{−60} más Q·2^{−256} para Q consultas al oráculo. Puede enunciarse, a falta de medir R3, para
 diecisiete familias. **Para las cinco familias con T = 64 no se enuncia**: les falta L6 o T = 128.
-**Para la solvencia tampoco**: R3 le falla por cuenta (L3, la 132). **Nada de esto es una promesa
+**Para la solvencia tampoco**: R3 le falla por cuenta (L3, la 132). ⚠️ §898: **con R3 medida y
+falsa en las cinco geometrías, hoy no se enuncia para ninguna familia**; vale como enunciado de lo
+que la construcción tendría si la máscara de DEEP viviera en E (la 133), no de lo que tiene. **Nada de esto es una promesa
 de la casa**: A4 decidirá, con A3 sellada, qué se promete y para qué familias, y hasta entonces la
 promesa es el censo.
 
@@ -540,7 +566,10 @@ código. Con eso, lo que se puede decir, y lo que no:
   tendría 2(L − 1) y haría R3 automática. Si la nota construye la máscara como una columna del
   campo base, la cuenta de R3 es suya también; si la suma a D, el fork se aparta de ella aquí, y
   R3 es el precio, que en la solvencia no se paga: con dos trozos, R3 le falla por cuenta (L3).
-  **Pendiente de leerla.**
+  **Pendiente de leerla.** ⚠️ §898: el precio no se paga en ninguna familia: la máscara en F frente
+  a un DEEP en E deja una coordenada de cada dos sin cubrir en todo lo que FRI abre. Que la nota
+  trate, según su resumen, «la aleatorización con polinomios sobre el campo base» hace más
+  urgente leerla: es exactamente esto.
 - **Lo tocado** (L1): la cuenta de la D-I, 44 por columna frente a T, no contaba g·x_j ni g²·z; si
   la nota los cuenta, la D-AG se decidió con una cuenta menor que la suya. Pendiente.
 - **La sal** (L4): el issue la pide para la traza; el fork la pone en la traza, los trozos y FRI.
@@ -584,8 +613,36 @@ instrumento delante, sin las conclusiones— puso ocho objeciones, dos altas. Ca
    41, y el apartado 11 remitía a un asiento que aún no llevaba las objeciones. **Cerrada**: la
    cifra, en L1; las objeciones, aquí y en el asiento.
 
-Lo que la revisión dio por correcto, con el código delante: el orden de los compromisos y de los
-desafíos, las dos monedas y sus semillas (P1, P4, P6, P7); `segmentar` y el número de trozos; la
+**La revisión del §898**, sobre el instrumento de R3, el apartado 13 y los falsadores, con el
+código de winter-fri y del fork delante; dio por correctos O (el mapa exacto del probador de FRI),
+las dos máscaras, K, la comparación de rangos, la afirmación estructural de una dimensión por punto
+y los tres falsadores, y puso seis objeciones:
+
+1. **(alta) M deja fuera una máscara lineal que existe en la solvencia.** La objeción 1 del §897
+   vale para columnas que entran en alguna restricción con grado ≥ 2 o con coeficientes del
+   testigo; en `SolvencyAir` cuatro columnas entran linealmente en todas, con coeficientes
+   constantes o periódicos, y sus filas aleatorias son una máscara lineal independiente del testigo
+   que el instrumento no cuenta y que puede cubrir lo que falta. **Cerrada**: el veredicto se
+   enuncia como «R3 con M = {columna, aleatorizadores} no se cumple», la cabecera del instrumento y
+   este apartado lo dicen, y medir M_lin por AIR es la 134.
+2. **(media) El apartado 13 afirmaba más de lo medido**: «H6 es falsa, el simulador no reproduce …
+   en ninguna familia», y «faltan exactamente 250, la segunda coordenada», que es una inferencia.
+   **Cerrada**: reescrito como arriba, y la inferencia dicha como inferencia.
+3. **(media) Lo sellado era una sola instancia de desafíos**, semilla 1 y q = 42, mientras el texto
+   decía «dos semillas» y «q = 40 y 41». **Cerrada**: en el sello, la geometría de T = 64 corre
+   además con q = 40 y 41 y con la semilla 2; lo demás se dice como corrida de exploración, fuera
+   del árbol. Y «las posiciones y z no viajan» era inexacto: no se rehacen en el instrumento de la
+   cota, que no tiene el AIR; en los falsadores sí.
+4. **(baja) Sin autocomprobación de inclusión** en `mide`. **Cerrada**: tres asertos, cada máscara
+   dentro de las dos juntas y las dos dentro de K.
+5. **(baja) La cabecera de los falsadores decía 92 ecuaciones** y son 91. **Cerrada**.
+6. **(baja) Lo que valida la moneda rehecha** no es el aserto de las posiciones únicas sino la
+   consistencia del primer ataque, y `siguiente_de` divide por una pendiente que sería 0 con una
+   constante secreta 0. **Cerrada**: dicho en la cabecera y en el apartado 13, y un aserto en la
+   pendiente.
+
+Lo que la revisión del §897 dio por correcto, con el código delante: el orden de los compromisos y
+de los desafíos, las dos monedas y sus semillas (P1, P4, P6, P7); `segmentar` y el número de trozos; la
 demostración de L1 entera, con las exenciones en las últimas filas; L2; Q[P](x₀) y que D(x₀) es
 público; que K es el espacio correcto y que las dos máscaras lícitas caen en él; lo que FRI abre y
 cómo; la sal y los tests que se citan; el simulador, paso a paso, y que nada del `Proof` queda sin
@@ -593,7 +650,8 @@ simular salvo lo de la objeción 1; y que el documento no afirma HVZK en ningún
 
 ## 12. Lo que pide a A3, A4 y A5
 
-- **A3**, en este orden: (1) el instrumento de R3 del apartado 6, por familia, en el sello o en
+- **A3** (⚠️ §898: hecha, apartado 13; lo que sigue es lo que pedía), en este orden: (1) el
+  instrumento de R3 del apartado 6, por familia, en el sello o en
   `--largo` con su pin; (2) el falsador de la recuperación por álgebra lineal, en el juguete: con
   T = 32 y una columna constante, las q + 4 ecuaciones de L1 sobre T + 1 incógnitas devuelven la
   constante; y para la 131, con T = 64 en el juguete, un distinguidor y no una recuperación: de
@@ -604,9 +662,107 @@ simular salvo lo de la objeción 1; y que el documento no afirma HVZK en ningún
   `--largo` con su pin, y si no, declarado fuera.
 - **A4**: la promesa nueva sólo con R3 medida en verde y con las cinco familias de la 131 dichas
   aparte; las palabras, las del apartado 8 y no más; H7 conservada hasta una revisión ajena; «nivel
-  cuántico: no medido», intacto.
+  cuántico: no medido», intacto. ⚠️ §898: R3 está medida y en rojo en todas: A4 no puede enunciar
+  HVZK para ninguna familia con el argumento de este documento. Lo que A4 puede hacer es decir eso
+  con las palabras de este documento —el censo sigue, y lo que falta y por qué— y dejar la promesa
+  de HVZK para lo que la 134 mida AIR a AIR o para el corte que lleve la 133.
 - **A5**: la sal es lo que hace L4 incondicional. Sin ella, (a) necesita que cada hoja no abierta
   tenga entropía frente al oráculo —la fila entera de la traza en un punto de Λ la tiene por L1, el
   vector de los trozos por L2, y los ocho valores de un coset de FRI sólo por R3— y (b) desaparece.
   La recomendación de este documento al autor es conservarla hasta que R3 esté medida, y decidir
   después con la cuenta de las hojas delante.
+
+## 13. A3, medido (§898)
+
+**El instrumento de R3** (`crates/zk-ssl/src/instrumento_r3.rs`) construye, para una geometría
+(q, T, m, N, capas, resto) y unos desafíos de una moneda Blake3 sembrada con un número, lo que el
+apartado 6 pide: O con el pliegue de winter-fri (`apply_drp`, `fold_positions`, el mismo offset),
+K, M_R y M_r con sus fórmulas de L3, y los rangos sobre F por eliminación, sobre combinaciones
+aleatorias con más filas que O (Schwartz–Zippel sobre 2^64), y con los asertos de inclusión que
+la construcción promete (cada máscara dentro de las dos juntas, y las dos dentro de K). Corre en el
+sello, dentro de `la_cota_de_ocultacion_de_los_23_probadores_con_fila`, una vez por geometría de
+producción con q = 42 y la semilla 1, contra sus cifras clavadas (`R3_MEDIDO`), y en la geometría de
+T = 64, además, con q = 40 y 41 y con la semilla 2, con el mismo veredicto. Las demás semillas y
+consultas de las otras geometrías —los mismos rangos con la semilla 2— y el rango de O entera, que
+informa y no decide, se midieron en la corrida de exploración del §898 y no están en el árbol.
+
+| geometría (T, trozos, capas, resto) | familias | rango de O (E) | sin determinar, O sobre K (F) | columna | aleatorizadores | juntas | R3 |
+|---|---|---|---|---|---|---|---|
+| 64, 15, 1, 16 | las cinco de T = 64 | 127 (D entero) | 168 | 82 | 80 | 126 | no |
+| 256, 2, 2, 8 | SolvencyAir | 358 | 632 | 338 | 40 | 378 | no |
+| 256, 9, 2, 8 | MerkleAir, FrozenClimbAir | 358 | 632 | 338 | 80 | 382 | no |
+| 512, 8, 2, 16 | las nueve de T = 512 | 422 | 760 | 466 | 80 | 510 | no |
+| 1024, 8, 2, 32 | las seis de T = 1024 | 550 | 1016 | 722 | 80 | 766 | no |
+| 128, 4, 1, 32 (el juguete) | — | 255 | 424 | 210 | 80 | 254 | no |
+
+Todo sobre F salvo la columna del rango de O. Con q = 41 (T = 64): 170 frente a 129. Y la prueba
+de vida: con cuatro consultas en la geometría del juguete, 112 frente a 112, R3 se cumple; el
+instrumento sabe decir que sí.
+
+**Por qué falla, leído de las cifras.** El rango de O es el de L3 corregido por la revisión
+(objeción 2): 8c₀ + L/8 − c₀ sobre E. Lo que la columna aleatoria cubre es 294 + 2·(L/8 − 42):
+**una** dimensión por cada uno de los 7q = 294 puntos de la capa 0 que no son posiciones, y dos
+por cada funcional nuevo de la capa 1. Es estructural: la columna aleatoria es un polinomio de
+F[x], y en un punto x de Λ ⊂ F su contribución a D es R(x)·c(x), un múltiplo en F del número fijo
+c(x) = cc_R·ℓ(x)/((x − z)(x − z·g)) ∈ E; el valor D(x) que FRI abre tiene dos coordenadas sobre F, y
+la columna sólo mueve una. Los aleatorizadores del cociente cubren a lo sumo 80: entran todos por
+los dos huecos x^s·A − B. Con T ≥ 256 faltan 250 = 294 − 44 dimensiones en las tres geometrías;
+que sean la segunda coordenada de los 294 puntos de la capa 0 menos lo que los aleatorizadores
+alcanzan es una inferencia consistente con las cifras (632 = 2·294 + 44, columna = 294 + 44), no
+una medida: el instrumento mide rangos, no el subespacio que falta. Con T = 64, FRI entrega D
+entero y faltan 42. ⚠️ Donde este documento decía, en L3 y en
+el apartado 6, que «con T ≥ 512 la columna aleatoria sola llega por cuenta», contaba dimensiones
+y no estructura: la cuenta era una cota por arriba.
+
+**Lo que significa**, con la precisión que puso la revisión del §898 (apartado 11): lo medido es
+que **R3 con M = {columna aleatoria, aleatorizadores} no se cumple** en ninguna geometría de
+producción, y por tanto el argumento de este documento no establece la simulabilidad de lo que FRI
+abre para ninguna familia. No establece lo contrario: la condición es suficiente, y lo que queda sin
+cubrir lo mueven las filas aleatorias de las columnas reales. En una AIR cuyas restricciones toquen
+una columna con grado ≥ 2 o con coeficientes que dependan del testigo, esa contribución no es
+lineal (objeción 1 del §897); pero en una AIR que toque alguna columna sólo linealmente y con
+coeficientes públicos —la solvencia, donde cuatro de sus columnas entran así en todas sus
+restricciones—, las filas aleatorias de esa columna son una máscara lineal más, independiente del
+testigo, M_lin, que este instrumento no cuenta y que puede cubrir lo que falta: medirla, AIR a AIR,
+es la 134. Lo que se puede acotar por cuenta: la parte directa de DEEP de todas las columnas sobre
+F, módulo la dirección que la columna aleatoria ya cubre, cabe en un solo polinomio de
+Z_real·F[x]_{<T} y da a lo sumo T − 46 dimensiones —210 con T = 256, menos que las 250 que faltan—,
+así que con T = 256 sólo la vía de los trozos puede cerrar el hueco, y con T ≥ 512 ni eso está
+excluido por cuenta. La solvencia (la 132) y las cinco de T = 64 (la 131, que fallan además por L1)
+siguen como estaban. La salida independiente de la AIR que las cifras señalan es una máscara de
+DEEP que viva en E: la columna aleatoria en el tramo auxiliar, que winterfell lleva sobre E, o un
+polinomio aleatorio de E[x] del grado de D sumado a D, el «polinomio aleatorio antes de FRI» del
+issue 9; es la 133 de `BACKLOG.md`, de un corte futuro y nunca de `zkssl/0.4`, y es del autor; la 134
+dice antes qué familias la necesitan.
+
+**Los falsadores del juguete** (`crates/zk-ssl/src/instrumento_falsadores_hvzk.rs`): `ConstanteAir`,
+una columna constante secreta con una transición de grado 3 y una columna pública con dos
+aserciones, en el campo de producción con su extensión y con las consultas, el blowup y el
+plegado de `proof_options()`, m = 64 —la mitad cuando T = 32, que no admite más—, sin molienda ni
+sal. El adversario es el test: rehace la moneda pública desde los bytes de
+la prueba exactamente como el verificador —el contexto y las entradas públicas, las raíces, los
+coeficientes de las restricciones, z, el marco OOD, los coeficientes de DEEP, un α por compromiso
+de FRI, el nonce y las posiciones— y lee lo abierto. Lo medido, en el sello:
+
+1. **La cota de la traza tiene dientes** (L1). Con T = 32: 45 ecuaciones sobre F (41 posiciones
+   únicas, z y z·g) sobre 33 incógnitas —la constante y los 32 coeficientes de R, con la columna
+   escrita como c·I_real + Z_real·R, I_real el indicador de las filas reales—, y la constante sale
+   por eliminación. Con T = 64: 46 sobre 65, y no sale.
+2. **Lo tocado dice el testigo** (la 131). Con T = 64 y dos candidatos, los 85 a 90 valores tocados
+   —las posiciones, sus filas siguientes despejadas de C(x_j), z, z·g y g²·z despejado de C(z·g)—
+   son consistentes con `Z_real·F[x]_{<64}` para el candidato bueno y no para el malo: la vista dice
+   el testigo, en las dos pruebas. Con T = 128, los dos candidatos son consistentes: no dice nada.
+   No es una recuperación: es que la distribución cambia con el testigo, como dijo la revisión.
+3. **La semilla repetida** (H9). Dos pruebas de dos constantes con la misma semilla de filas
+   comparten R: 91 ecuaciones sobre 66 incógnitas devuelven las dos constantes con T = 64, donde
+   cada prueba sola (46 sobre 65) no devuelve ninguna. Con semillas distintas, 91 sobre 130: ninguna.
+
+**El distinguidor estadístico** queda declarado fuera: el de arriba es algebraico y decide con
+certeza, y para lo que FRI abre la cuestión no es estadística sino de rango, y está medida. Lo
+que valida la moneda rehecha de los falsadores no es el aserto de las posiciones únicas, que es
+débil, sino el primer ataque: 45 ecuaciones sobre 33 incógnitas sólo son consistentes si z y las
+posiciones son las de la prueba.
+
+**Lo que A3 no hace.** No ataca ninguna prueba de la casa ni ningún AIR del cable: el juguete es el
+juguete, y lo que dice de las familias reales es lo que dicen sus geometrías. No toca la promesa.
+No decide la 131, la 132 ni la 133. No lee la nota.

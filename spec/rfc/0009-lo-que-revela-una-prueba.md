@@ -335,6 +335,24 @@ escrito y revisado: la sal se va y la prueba adelgaza.
 > simulador, sus lemas y la lista de lo medido, lo de modelo y lo supuesto, es
 > `doc/ocultacion-hvzk.md`; esta decisión y la D-A siguen sin cambiar lo que prometen hasta A4.
 
+> ⚠️ **§898 (A3 del HVZK): R3, medida, y no se cumple en ninguna geometría de producción.** Lo
+> que FRI abre del polinomio DEEP sin determinar son 168, 632, 760 y 1016 dimensiones sobre F con
+> T = 64, 256, 512 y 1024, y las dos máscaras que no dependen del testigo llegan a 126, 378 a 382,
+> 510 y 766 (`crates/zk-ssl/src/instrumento_r3.rs`, en cada canon, con sus cifras clavadas). La
+> razón es estructural: la columna aleatoria vive en F y DEEP en E, así que en cada valor que FRI
+> abre mueve una sola de sus dos coordenadas; y los aleatorizadores del cociente, que entran todos
+> por los mismos dos huecos, aportan 80 dimensiones en total. Hoy el argumento independiente de la
+> AIR de `doc/ocultacion-hvzk.md` no cubre ninguna familia: lo que sostenga la ocultación más allá
+> del censo depende de la AIR —de una máscara lineal propia, donde sus columnas entran sólo
+> linealmente en las restricciones, que la 134 de `BACKLOG.md` medirá, o del testigo—, y nadie lo
+> ha argumentado. La salida independiente de la AIR es que la máscara
+> de DEEP viva en E —la columna aleatoria en el tramo auxiliar, o un polinomio aleatorio de E[x] del
+> grado de DEEP—, en un corte futuro (la 133 de `BACKLOG.md`). Tres falsadores en un juguete con la
+> geometría de producción miden lo demás: con T = 32 una columna constante sale por eliminación y
+> con T = 64 no; con T = 64 lo tocado dice el testigo entre dos candidatos y con T = 128 no (la
+> 131); y la semilla repetida devuelve dos constantes que cada prueba sola oculta (por qué la
+> semilla es fresca, §652). Esta decisión, la D-A y la promesa no cambian: el censo.
+
 ### D-J — Las cifras de bytes pasan a bandas y el azar sale del sistema
 
 Una prueba oculta no es determinista: con otra semilla pesa distinto (E1, E2 y E4 del SPIKE-B-P4:

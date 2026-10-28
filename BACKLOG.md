@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 43 abiertas, 90 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 45 abiertas, 90 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §896, que abre la 130, y el §897, que abre la 131 y la 132.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §896, que abre la 130, el §897, que abre la 131 y la 132, y el §898, que abre la 133 y la 134.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1437,6 +1437,13 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   la condición R3 —que la columna aleatoria y los aleatorizadores del cociente cubran lo que FRI
   abre de DEEP— queda SIN medir, es lo primero de A3, y a la solvencia le falla por cuenta (la
   132). QUEDAN A3, A4 y A5: sigue abierta.
+  ✅ a medias (§898): A3, hecha: el instrumento de R3 por geometría, en el sello con sus cifras
+  clavadas, y tres falsadores en un juguete con la geometría de producción —la recuperación lineal
+  con T = 32, el distinguidor de la 131 con T = 64 y la semilla repetida—; el distinguidor
+  estadístico, declarado fuera. Lo que A3 encontró cambia A4: R3 no se cumple en ninguna geometría
+  con las dos máscaras que no dependen de la AIR (la 133), así que A4 no puede enunciar HVZK para
+  ninguna familia con el argumento de A2; la 134 mide si alguna AIR aporta la máscara que falta.
+  QUEDAN A4 y A5: sigue abierta.
 
 - [ ] **131. Cinco familias abren más puntos de los que sus filas aleatorias enmascaran: T = 64
   frente a 2q + 6 = 90 (§897).** Medido en cada canon desde el §897 (`INDEPENDIENTE_DE_LA_AIR`,
@@ -1452,6 +1459,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   decisión del autor —L6 por AIR, o T = 128 en el corte que lo lleve— y, si es T = 128, el sello que
   lo haga con la cota de los tocados en verde para las cinco. Hasta entonces, lo que A4 enuncie
   para las demás no vale para ellas.
+  ⚠️ §898: medido en el juguete (`crates/zk-ssl/src/instrumento_falsadores_hvzk.rs`): con T = 64
+  lo tocado dice el testigo entre dos candidatos, y con T = 128 no; no es una recuperación, es una
+  distribución que cambia con el testigo. Y la salida por T = 128 no basta sola: la 133 va antes.
 
 - [ ] **132. La solvencia no tiene máscaras que cubran lo que FRI abre de DEEP: 506 dimensiones
   frente a unas 630 (§897).** `SolvencyAir` (T = 256, dos trozos) cumple la cuenta de lo tocado —la
@@ -1466,6 +1476,53 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   corte futuro, nunca en `zkssl/0.4`; o T = 512 para la solvencia, donde la columna aleatoria sola
   llega por cuenta (978 frente a unas 758). **Qué la cierra**: la decisión del autor y, con ella, el
   sello que mida R3 en verde para la solvencia. Hasta entonces, lo que A4 enuncie no vale para ella.
+  ⚠️ §898: no es sólo la solvencia, y T = 512 no la salvaría: R3 no se cumple en ninguna geometría,
+  por la estructura de la máscara (la 133). La salida de esta entrada es la de la 133, y la
+  decisión, una.
+
+- [ ] **133. La máscara de DEEP vive en F y DEEP en E: R3 no se cumple en ninguna geometría de
+  producción (§898).** Medido en cada canon desde el §898 (`R3_MEDIDO`,
+  `crates/zk-ssl/src/instrumento_r3.rs`): lo que FRI abre del polinomio DEEP sin determinar —los
+  cosets de plegado enteros de la capa 0, la capa 1 y el resto— son 168, 632, 760 y 1016
+  dimensiones sobre F (T = 64, 256, 512, 1024), y las dos máscaras que no dependen del testigo
+  llegan a 126, 378 a 382, 510 y 766. La columna aleatoria es un polinomio de F[x] y en cada punto
+  de Λ aporta R(x)·c(x), un múltiplo en F de un número de E: una coordenada de las dos; los
+  aleatorizadores del cociente entran todos por x^s·A − B y aportan 80 en total. Con T ≥ 256 faltan
+  exactamente 250 dimensiones: la segunda coordenada de los 294 puntos de la capa 0 que no son
+  posiciones, menos lo que los aleatorizadores alcanzan —una inferencia consistente con las
+  cifras, no una medida—. Consecuencia: el argumento independiente de la AIR de
+  `doc/ocultacion-hvzk.md` (apartado 13) no cubre hoy ninguna familia; la 132 era un caso de esto.
+  Con precisión (la revisión del §898): R3 falla con las dos máscaras que no dependen de la AIR; una
+  AIR cuyas columnas entren sólo linealmente en sus restricciones tiene una máscara lineal más,
+  M_lin, que puede cubrir lo que falta, y la 134 la mide antes de decidir esta. Las salidas: la
+  columna aleatoria en el tramo auxiliar, que winterfell lleva sobre E
+  —entraría en DEEP con sus dos coordenadas; cambia la forma de la prueba de las familias sin tramo
+  auxiliar—, o un polinomio aleatorio de E[x] del grado de DEEP sumado a DEEP, el «polinomio
+  aleatorio antes de FRI» del issue 9, comprometido y abierto como una columna más; las dos son de
+  un corte futuro, nunca de `zkssl/0.4`, y después de cualquiera de las dos R3 se vuelve a medir con
+  el mismo instrumento. **Qué la cierra**: la decisión del autor y el sello del corte que la lleve,
+  con R3 en verde en las cinco geometrías. Hasta entonces, A4 no puede enunciar HVZK para ninguna
+  familia con el argumento de A2, y la promesa sigue siendo el censo.
+
+- [ ] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
+  las restricciones, que el instrumento de R3 no cuenta (§898).** Lo puso la revisión escéptica del
+  §898: la objeción 1 del §897 —las filas aleatorias de las columnas reales no son una máscara
+  lineal— vale para columnas que entran en alguna restricción con grado ≥ 2 o con coeficientes del
+  testigo; en una AIR que toque alguna columna sólo linealmente y con coeficientes públicos
+  (constantes o periódicos), las filas aleatorias de esa columna entran en DEEP —por Q[P_i] y por
+  los trozos del cociente, que son trozos de una función lineal de ellas— como una máscara lineal
+  independiente del testigo, con varias direcciones de E por punto, que puede cubrir lo que a R3 le
+  falta. En `SolvencyAir` cuatro columnas entran así en todas sus restricciones: 4T = 1024
+  dimensiones sobre F con T = 256, más de las 250 que faltan; en `MerkleAir` y `FrozenClimbAir` la
+  sbox de grado 7 toca todas las columnas y no hay M_lin. Lo que se puede acotar sin medir: la parte
+  directa de DEEP de todas las columnas sobre F, módulo lo que la columna aleatoria ya cubre, da a lo
+  sumo T − 46 (210 con T = 256), así que con T = 256 sólo la vía de los trozos puede cerrar el hueco,
+  y con T ≥ 512 ni eso está excluido. **Qué pide**: un instrumento que, AIR a AIR, lea qué columnas
+  entran sólo linealmente, construya el mapa lineal de sus filas aleatorias a D —la parte directa y
+  la de los trozos, evaluando la composición sobre la traza perturbada— restringido con los r_k al
+  núcleo de las aperturas, y mida R3 con M ∪ M_lin; en el sello o en `--largo` con su pin. **Qué la
+  cierra**: ese instrumento con su veredicto por familia. Lo que diga decide qué familias necesitan
+  la 133 y cuáles no.
 
 ## D. Declaradas, acotadas, sin urgencia
 

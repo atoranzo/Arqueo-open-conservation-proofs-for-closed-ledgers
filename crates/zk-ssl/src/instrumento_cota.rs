@@ -24,7 +24,8 @@
 //!   valor de DEEP en `x0` se calcula del marco OOD, es publico, y no es una abertura que
 //!   enmascarar ni una fuga (`doc/ocultacion-hvzk.md`, L3). El modulo ya no la cuenta. Lo que
 //!   FRI abre de DEEP mas alla de las posiciones -las otras siete evaluaciones de cada coset de
-//!   plegado, las capas y el resto- es la condicion R3 de ese documento, que este modulo NO mide.
+//!   plegado, las capas y el resto- es la condicion R3 de ese documento, que mide `instrumento_r3`
+//!   desde el §898, por geometria y dentro del test de las 23 familias.
 //! - **La cota, por objeto.** Por columna principal: las `q` posiciones viven en F y `z`, `z·g`
 //!   en E, asi que lo abierto son `q + 4` dimensiones sobre F frente a las T filas aleatorias
 //!   que el envoltorio `Oculta<A>` pone detras de las reales (RFC-0009 D-G); ⚠️ §897: hasta aqui
@@ -644,7 +645,8 @@ fn linea(fila: &str, g: &Geometria, ab: Option<Aberturas>) -> String {
 /// `asierta` sean exactamente las 23 de `FILAS` y que `FILAS` cuente lo que cuenta el fuente, un
 /// probador por fichero que llama a `ocultacion_encendida()`; y en cada prueba exige la cota por
 /// columna y por trozo y el rango pleno de sus dos matrices. Las del cable, ademas, llevan las
-/// opciones de produccion. Un rojo junta todas las pruebas que fallan y las nombra.
+/// opciones de produccion. Un rojo junta todas las pruebas que fallan y las nombra. §898 (A3):
+/// y mide R3 (`instrumento_r3`) en cada geometria de produccion, contra sus cifras clavadas.
 #[test]
 #[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
 fn la_cota_de_ocultacion_de_los_23_probadores_con_fila() {
@@ -716,6 +718,47 @@ fn la_cota_de_ocultacion_de_los_23_probadores_con_fila() {
     }
     println!("[A1] {} pruebas de {} AIR, {} probadores que encienden", pruebas.len(), vistas.len(), encienden);
     assert!(mal.is_empty(), "la cota de ocultacion no se cumple:\n{}", mal.join("\n"));
+
+    // §898 (A3): R3, por geometria canonica (q = 42), contra lo clavado; en ninguna se cumple
+    let mut geometrias: Vec<Geometria> = Vec::new();
+    for (fila, bytes) in &pruebas {
+        let g = crate::instrumento_r3::canonica(&geometria::<E>(fila, bytes).expect("geometria"));
+        if !geometrias.iter().any(|h| (h.t, h.trozos, h.capas_fri, h.resto) == (g.t, g.trozos, g.capas_fri, g.resto)) {
+            geometrias.push(g);
+        }
+    }
+    let mut mal = Vec::new();
+    for g in &geometrias {
+        let nombre = format!("T {} · {} trozos", g.t, g.trozos);
+        let m = crate::instrumento_r3::mide(g, 1, false);
+        println!("{}", crate::instrumento_r3::linea(&nombre, g, &m));
+        match crate::instrumento_r3::clavado(g) {
+            None => mal.push(format!("{nombre}: sin fila en R3_MEDIDO")),
+            Some(clavado) => {
+                let medido = (m.rango_k, m.rango_columna, m.rango_trozos, m.rango_mascaras);
+                if medido != clavado {
+                    mal.push(format!("{nombre}: medido {medido:?} y clavado {clavado:?}"));
+                }
+            }
+        }
+        if m.cumple() {
+            mal.push(format!("{nombre}: R3 se cumple, y lo clavado dice que no"));
+        }
+        if g.t == 64 {
+            // la geometria barata, con las otras consultas que una prueba abre y otra semilla de
+            // desafios: el veredicto no cambia (lo demas, en la exploracion del §898)
+            for (q, semilla) in [(40usize, 1u64), (41, 1), (42, 2)] {
+                let h = Geometria { q, ..g.clone() };
+                let m = crate::instrumento_r3::mide(&h, semilla, false);
+                println!("{} · semilla {semilla}", crate::instrumento_r3::linea(&nombre, &h, &m));
+                if m.cumple() {
+                    mal.push(format!("{nombre} con q = {q} y semilla {semilla}: R3 se cumple"));
+                }
+            }
+        }
+    }
+    assert_eq!(geometrias.len(), crate::instrumento_r3::R3_MEDIDO.len(), "geometrias de produccion");
+    assert!(mal.is_empty(), "R3 no es lo clavado:\n{}", mal.join("\n"));
 }
 
 /// **El juguete con la geometria de produccion cumple la cota, y verifica.** `WorkAir` con 128

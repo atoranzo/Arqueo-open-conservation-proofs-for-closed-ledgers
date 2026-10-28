@@ -1484,6 +1484,10 @@ mod tests_sal {
 mod nivel_de_produccion;
 #[cfg(test)]
 mod instrumento_cota;
+#[cfg(test)]
+mod instrumento_r3;
+#[cfg(test)]
+mod instrumento_falsadores_hvzk;
 
 // §840 (la 51 de BACKLOG.md): el censo de los `native_leaf` y la guarda de que las estrechas no
 // llegan a produccion. Solo tests. Al final, por lo mismo que el anterior.

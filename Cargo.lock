@@ -3585,6 +3585,7 @@ dependencies = [
  "sled",
  "stark-experiment",
  "winter-air",
+ "winter-fri",
  "winter-prover",
  "winterfell",
  "zeroize",

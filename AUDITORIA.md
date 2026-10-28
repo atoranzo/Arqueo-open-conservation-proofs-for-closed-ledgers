@@ -74121,3 +74121,201 @@ STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, con el b
 vacío, y al acabar quedaba en él el mismo fichero que en el §896,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`, el cerrojo de un test que no es de este sello; no se
 investiga aquí. Una sola corrida: no hubo roja.
+
+## §898 — A3 del HVZK: la condición R3 de `doc/ocultacion-hvzk.md`, medida por geometría en cada canon, y no se cumple en ninguna: la columna aleatoria vive en F y mueve una sola coordenada de cada valor de E que FRI abre, y los aleatorizadores del cociente aportan 80 dimensiones en total; y tres falsadores en un juguete con la geometría de producción —la constante sale con T = 32, lo tocado dice el testigo con T = 64, la semilla repetida devuelve dos constantes—; la 130 a medias, nace la 133
+
+El commit que lleva este asiento, sobre `b475bd6f` (el §897, la punta de la rama de la sesión).
+Toca `crates/zk-ssl/src/instrumento_r3.rs`, nuevo y sólo de tests, el instrumento de R3;
+`crates/zk-ssl/src/instrumento_falsadores_hvzk.rs`, nuevo y sólo de tests, el juguete con sus tres
+falsadores; `crates/zk-ssl/src/instrumento_cota.rs`, cuyo test de las 23 familias mide ahora R3 en
+cada geometría de producción contra sus cifras clavadas, y una línea de su cabecera;
+`crates/zk-ssl/src/lib.rs`, que declara los dos módulos bajo `#[cfg(test)]`; `crates/zk-ssl/Cargo.toml`,
+que gana `winter-fri` como dependencia de desarrollo, y `Cargo.lock`, una línea en la lista de
+`zk-ssl` y ningún paquete nuevo; `tools/canon.sh`, la fila de `zk-ssl`, con su pin de 552 a 557 y
+su crónica; los totales de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; el «552» de la capa en
+`ARQUITECTURA.md` (tres, el de la nota del §839 con su marca), `CONTRIBUTING.md` (con su marca),
+`PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y
+`doc/ecst/VERIFICACION.md`; `doc/ocultacion-hvzk.md`, con sus marcas §898 donde lo medido cambia lo
+escrito y un apartado 13 nuevo; `spec/rfc/0009-lo-que-revela-una-prueba.md`, una tercera nota en la
+D-I; `BACKLOG.md`, que deja la 130 a medias por A3, anota la 131 y la 132, abre la 133 y recuenta su
+cabecera; y este asiento. Ni vectores, ni ningún probador, ni ningún AIR, ni el cable, ni una línea
+de código fuera de `#[cfg(test)]`. Lo escribe y lo commitea Claude, en una sesión de Claude Code en
+la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número
+es el siguiente libre tras el §897, por la misma razón que aquél. El canon de este commit se dice
+al final de este asiento.
+
+**De dónde sale.** La orden del autor de hacer A3, con el orden que el apartado 12 del documento
+de A2 dejó escrito: primero el instrumento de R3, después la recuperación por álgebra lineal, el
+distinguidor de la 131 y la semilla repetida, y el distinguidor estadístico sólo si cabe. Este
+asiento es A3, y sólo A3: no toca la promesa y no decide nada que sea del autor.
+
+**Lo que hace.**
+
+1. **El instrumento de R3**, `instrumento_r3.rs`. Para una geometría (q, T, m, N, capas, resto) y
+   unos desafíos de una moneda Blake3 sembrada con un número —las q posiciones únicas, z, el
+   coeficiente DEEP de la columna aleatoria, los de los N trozos y un α por capa—, construye lo que
+   el apartado 6 del documento pide: O, lo que FRI abre de un polinomio D de grado ≤ L − 2 —en cada
+   capa la hoja entera del coset de plegado de cada posición, con `apply_drp` y `fold_positions`
+   de winter-fri y su mismo offset, y el resto, los coeficientes de la última capa interpolada—;
+   K, los D que valen 0 en las posiciones y en x₀; M_R, la imagen de lo libre de la columna
+   aleatoria, `cc_R·ℓ·V·(x − z̄)(x − z̄g)·u` con u ∈ F[x], un espacio sobre F; y M_r, la de lo libre
+   de cada aleatorizador, `(cc'_k·x^s − cc'_{k+1})·V·ℓ·v` con v ∈ E[x]. Los rangos, sobre F por
+   eliminación, sobre combinaciones aleatorias con más filas que O (Schwartz–Zippel sobre 2^64).
+   Una tabla clavada, `R3_MEDIDO`, lleva por geometría de producción lo que FRI abre sin
+   determinar y lo que cubren la columna, los aleatorizadores y las dos juntas; el test de las 23
+   familias toma cada geometría distinta de las 28 pruebas, la mide con q = 42 y la contrasta con
+   la tabla: cualquier cifra distinta, o un «se cumple», es rojo. Dos tests propios: el juguete de
+   A1 (T = 128, cuatro trozos) con sus cifras, y la prueba de vida de que el instrumento sabe decir
+   que sí: con cuatro consultas en esa geometría, R3 se cumple.
+2. **Los tres falsadores**, `instrumento_falsadores_hvzk.rs`, sobre `ConstanteAir`: una columna
+   constante secreta —la forma de una clave en una traza de la casa— con una transición de grado
+   3 para que el cociente oculto tenga trozos con T = 128, y una columna pública constante con dos
+   aserciones, porque un AIR necesita alguna; campo de producción con su extensión, 42 consultas,
+   blowup 16, m = 64 (32 con T = 32), sin molienda ni sal, determinista. El adversario es el test:
+   rehace la moneda pública desde los bytes de la prueba exactamente como el verificador —el
+   contexto y las entradas públicas, la raíz de la traza, los coeficientes de las restricciones,
+   la raíz del cociente, z, el marco OOD, los coeficientes de DEEP, un α por compromiso de FRI, el
+   nonce y las posiciones, y el aserto de que salen las mismas posiciones únicas que la prueba
+   declara— y lee lo abierto. La columna es c·I_real + Z_real·R, con I_real el indicador de las
+   filas reales y R de grado < T determinado sólo por las filas aleatorias: con eso, los tres
+   ataques son sistemas lineales sobre F con sus dos ecuaciones por punto de E.
+3. **Los pines**: `zk-ssl` de 552 a 557, cinco tests nuevos —los tres falsadores y los dos de
+   `instrumento_r3`—, y sus copias publicadas.
+4. **Los textos**: el documento, con sus marcas §898 y el apartado 13; la tercera nota de la D-I; el
+   BACKLOG.
+
+**Lo que A3 encontró.**
+
+- **R3 no se cumple en ninguna geometría de producción.** Lo que FRI abre sin determinar —el rango
+  de O sobre K, sobre F— es 168 (T = 64), 632 (T = 256, con 2 y con 9 trozos), 760 (T = 512) y
+  1016 (T = 1024); las dos máscaras juntas llegan a 126, 378, 382, 510 y 766. En el juguete de A1,
+  424 frente a 254. Con dos semillas de desafíos, los mismos rangos.
+- **La columna aleatoria mueve una sola coordenada.** Su rango es 82, 338, 466 y 722: con T ≥ 256,
+  exactamente 294 + 2·(L/8 − 42), una dimensión por cada uno de los 7q = 294 puntos de la capa 0
+  que no son posiciones y dos por cada funcional nuevo de la capa 1. Es estructural: la columna
+  aleatoria es un polinomio de F[x], y en un punto x de Λ ⊂ F su contribución a D es R(x)·c(x), un
+  múltiplo en F del número fijo c(x) = cc_R·ℓ(x)/((x − z)(x − z·g)) ∈ E; cada valor que FRI abre
+  tiene dos coordenadas sobre F, y la columna sólo mueve una. El documento decía, en L3 y en el
+  apartado 6, que «con T ≥ 512 la columna aleatoria sola llega por cuenta»: contaba dimensiones y
+  no estructura.
+- **Los aleatorizadores del cociente aportan 80 en total**, no 40 por trozo: los N − 1 entran en D
+  por los mismos dos huecos, x^s·A − B con A y B en E[x]_{<m}, y tras lo abierto quedan 2·(m − q − 2)
+  dimensiones sobre E, 40, sean los trozos que sean (20, con dos trozos). El documento los contaba
+  por aleatorizador.
+- **Con T ≥ 256 faltan exactamente 250 dimensiones** en las tres geometrías: 294 − 44, la segunda
+  coordenada de los puntos de la capa 0 menos lo que los aleatorizadores alcanzan. Con T = 64, FRI
+  entrega D entero (rango 127 sobre E, 254 sobre F) y faltan 42.
+- **Consecuencia**, con la precisión que puso la revisión escéptica (abajo): R3 con esas dos
+  máscaras no se cumple, y el argumento de A2 no establece la simulabilidad de lo que FRI abre para
+  ninguna familia; tampoco lo contrario, porque la condición es suficiente y lo que queda sin cubrir
+  lo mueven las filas aleatorias de las columnas reales: de forma no lineal donde las restricciones
+  las tocan con grado ≥ 2 (L6), y como una máscara lineal más, independiente del testigo, donde
+  entran sólo linealmente con coeficientes públicos —la solvencia—, que el instrumento no cuenta y
+  la 134 medirá. La 132 (la solvencia) era un caso de lo general. La salida independiente de la AIR
+  que las cifras señalan: una máscara de DEEP que viva en E —la columna aleatoria en el tramo
+  auxiliar, que winterfell lleva sobre E, o un polinomio aleatorio de E[x] del grado de DEEP sumado
+  a DEEP, el «polinomio aleatorio antes de FRI» del issue 9—, en un corte futuro; es la 133, y es del
+  autor. A4 no puede enunciar HVZK para ninguna familia con el argumento de A2, y el documento lo
+  dice.
+- **Los falsadores miden lo demás**: la cota de la traza tiene dientes, lo tocado dice el testigo
+  con T = 64, y la semilla repetida cuesta las dos constantes.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release y con `--locked`. El instrumento de
+R3, en una corrida de exploración aparte con el rango de O entera y dos semillas de desafíos (`cargo
+test -p zk-ssl --release --locked explora -- --ignored --nocapture`, un test que después se quitó;
+145 s las catorce medidas): la tabla del apartado 13 del documento, con el rango de O sobre E en
+127, 358, 422 y 550 (255 en el juguete), y con q = 41 en T = 64, 170 frente a 129; el tiempo por
+geometría, 1, 8 a 9, 16 y 33 s con el rango de O y 2 s el juguete. El test de las 23 familias con
+R3 dentro, sin el rango de O entera y con la eliminación sólo hacia abajo: 1 de 1 en 67,0 s (eran
+unos 25), las cinco geometrías con sus cifras clavadas y ninguna cumple, y la de T = 64 además con
+q = 40 (172 sin determinar frente a 132 de máscara), q = 41 (170 frente a 129) y la semilla 2 (las
+mismas cifras que la 1), ninguna cumple; los asertos de inclusión, en verde en todas. Los dos tests de
+`instrumento_r3`: 2 de 2 en 1,8 s; el juguete, 424 frente a 254, y con cuatro consultas 112 frente
+a 112, SE CUMPLE. Los tres falsadores: 3 de 3 en 0,06 s: con T = 32, 45 ecuaciones sobre F (41
+posiciones únicas, z y z·g) sobre 33 incógnitas y la constante sale; con T = 64, 46 sobre 65 y no;
+con T = 64, de 85 a 90 dimensiones tocadas frente a 64 y la vista dice el testigo en las dos
+pruebas, y con T = 128, 89 y 90 frente a 128 y no dice nada; con la misma semilla de filas, 91
+ecuaciones sobre 66 incógnitas y salen las dos constantes, y con semillas distintas 91 sobre 130 y
+ninguna. Todo sin ningún warning. Una primera versión del tercer falsador modelaba la columna como
+c + Z_real·R con R compartida, y el sistema de las dos pruebas salía inconsistente: R depende de c
+—R(h) = (ρ − c)/Z_real(h) en las filas aleatorias—; lo compartido es Z_real·R con la columna escrita
+como c·I_real + Z_real·R, y así se quedó. Se dice porque es lo que un adversario tendría que saber.
+
+**La revisión escéptica.** Un agente de la sesión, con el instrumento, el juguete, el apartado 13
+del documento, winter-fri y el fork delante y sin las conclusiones, corrió los tests y dio por
+correctos O —el mapa exacto del probador de FRI: la transposición, `fold_positions` sobre el tamaño
+de cada capa, el offset del generador en todas y el resto—, las dos máscaras y su derivación de la
+fórmula de DEEP y de `segmentar`, que «80 en total» es de la construcción, K con x₀, la
+comparación de rangos sobre F frente a dos veces el rango sobre E, la eliminación y el muestreo, la
+afirmación estructural de una dimensión por punto, y los tres falsadores con su moneda rehecha
+paso a paso. Y puso seis objeciones, una alta: (1) M deja fuera una máscara lineal que existe: la
+objeción 1 del §897 vale para columnas que entran en alguna restricción con grado ≥ 2 o con
+coeficientes del testigo, y en `SolvencyAir` cuatro columnas entran linealmente en todas, con
+coeficientes constantes o periódicos, así que sus filas aleatorias son una máscara lineal
+independiente del testigo, con varias direcciones de E por punto, que el instrumento no cuenta y
+que puede cubrir lo que falta; cerrada rebajando el veredicto a «R3 con M = {columna,
+aleatorizadores} no se cumple» en el instrumento, el documento, la D-I, la 133 y este asiento, y
+abriendo la 134, que la medirá por AIR. Las medias: (2) el apartado 13 afirmaba más de lo medido
+—«H6 es falsa, el simulador no reproduce … en ninguna familia», y las 250 que faltan como «la
+segunda coordenada», que es una inferencia—, reescrito; (3) lo sellado era una sola instancia de
+desafíos, semilla 1 y q = 42, y el texto decía «dos semillas» y «q = 40 y 41»: ahora la geometría
+de T = 64 corre en el sello además con q = 40 y 41 y con la semilla 2, y lo demás se dice como
+exploración fuera del árbol; y «las posiciones y z no viajan» era inexacto, y se corrige. Las
+bajas: (4) sin asertos de inclusión en `mide`, puestos; (5) la cabecera de los falsadores decía 92
+ecuaciones y son 91; (6) lo que valida la moneda rehecha es la consistencia del primer ataque, no
+el aserto de las posiciones únicas, dicho, y un aserto en la pendiente de `siguiente_de`. Una cota
+que la revisión dio y el documento toma: la parte directa de DEEP de todas las columnas sobre F,
+módulo lo que la columna aleatoria cubre, da a lo sumo T − 46; con T = 256 sólo la vía de los
+trozos puede cerrar el hueco.
+
+**Lo medido sobre este árbol, antes del canon**, desde la raíz y con este asiento en su sitio:
+`verificar_citas`, 0 fantasmas, 0 secciones muertas, 247 encabezados citados y 0 muertos, y el
+registro con 0 citas muertas; `check_cifras`, 26 cifras y ninguna contradice el canon; `check_publicadas`,
+0 —la primera pasada dio un rojo, una frase del apartado 13 del documento que el atado F leía como
+cifra de nivel de una comparación, «42 consultas, blowup 16» sin la marca de producción; se
+reescribió sin cifras—; `check_figures`, 0; `check_tests`, 2240 declarados y 20 instrumentos;
+`check_modulos`, 219 ficheros. Y la suite entera de `zk-ssl`, en release: 557 pasan y 7 ignorados
+en 118,6 s.
+
+**Lo que NO hace.** No toca la promesa: `SECURITY.md` §3.bis y §3.11, la D-A y la regla 3 del
+PROCESO siguen diciendo cero literales, y ningún texto vivo dice HVZK de nada que exista; lo que
+A3 añade es que tampoco lo podrá decir A4 con la construcción de hoy, y lo dice. No decide la 131,
+la 132 ni la 133. No cambia ningún probador, ningún AIR, el cable, los vectores ni el fork: la
+columna aleatoria sigue en el tramo principal, en F. No ataca ninguna prueba de la casa: el juguete
+es el juguete, y lo que dice de las familias reales es lo que dicen sus geometrías. No mide los
+desafíos reales de ninguna prueba (las posiciones y z no viajan): R3 se mide con desafíos que elige
+el test, con dos semillas que dan los mismos rangos. No corre ningún distinguidor estadístico: el
+de aquí es algebraico y decide con certeza, y queda declarado fuera. No lee la nota 2024/1037. No
+argumenta L6 para ninguna AIR.
+
+**Lo que es del autor.** La 133: la columna aleatoria al tramo auxiliar o un polinomio aleatorio
+de E[x] del grado de DEEP, y en qué corte; con ella, la 131 y la 132; y si la 134 —medir M_lin por
+AIR— va antes que la 133 o después. Qué dice A4 con esto delante:
+el documento propone que diga el censo y lo que falta, con sus palabras, y deje la promesa de
+HVZK para el corte que lleve la 133. Leer la nota, que según su resumen trata exactamente de la
+aleatorización con polinomios sobre el campo base. Y el número de este asiento, que la sesión tomó
+como el siguiente libre.
+
+**Contadores.** `zk-ssl` 552 -> 557. TOTAL DE SELLO 2073 -> 2078 y CON LARGOS 2213 -> 2218, en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests` 2235 -> 2240; `check_modulos` 217 -> 219.
+`BACKLOG.md` pasa de 43 abiertas y 90 resueltas a 45 y 90: la 130 sigue a medias, la 131 y la 132
+ganan su nota, y abre la 133 y la 134. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo, después de los cierres de la revisión: VERDE,
+342 s de reloj (de su arranque a su salida) y 194 s de tests (la línea «total» de la tabla), en una
+máquina de 4 CPU con carga de 0,97 al empezar y la caché caliente de una corrida anterior. Las 19
+filas del nivel, en su pin, con 2078 tests que pasan (la suma de la columna «pasan»), y la de
+`zk-ssl` en 557 pasan y 7 ignorados, 121 s; la puerta de los binarios, con «OK 24 objetivos en 8
+paquetes, 12 con features (2 s)», en caliente; `check_tests` en 2240 y 20 instrumentos;
+`check_modulos` en 219; las once herramientas del bucle «2 ter»; la puerta de los vectores, en 605
+ficheros y 1370 líneas de 19 manifiestos; `check_catalogo`, en 236 textos y 302 entradas; el cable,
+en 27 de 27; la segunda implementación, con el núcleo en 34 de 34, sus pares STARK en 76 de 76 y la
+cadena en 30 de 30; y el artefacto reproducible, con el binario `451f186fcd68697f`, el mismo del
+§896 y del §897, y el tarball `845bbf34d65facf7`. Corrió con un `TMPDIR` propio y vacío, y al acabar
+quedaba en él el mismo fichero que en los dos sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Antes hubo otra corrida, sobre el
+árbol de antes de los cierres de la revisión —el mismo código salvo los asertos de inclusión, las
+tres medidas más de T = 64 y un aserto en los falsadores, y los textos sin rebajar—: VERDE, 562 s de
+reloj y 347 s de tests, con el mismo binario y el mismo tarball; se dice, y no vale como sello,
+porque el árbol cambió después.

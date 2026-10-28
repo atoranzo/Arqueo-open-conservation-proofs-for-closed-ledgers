@@ -66,6 +66,9 @@ zeroize = "1"
 # juguete de sus mutantes devuelve su `Ocultacion`. Solo tests, como en `stark-experiment` (D-V).
 winter-air = "=0.13.1"
 winter-prover = "=0.13.1"
+# §898 (A3 del HVZK): el pliegue de FRI, `apply_drp` y `fold_positions`, para observar DEEP como
+# lo abre el probador de FRI, sin reescribirlo; solo tests.
+winter-fri = "=0.13.1"
 
 [features]
 # Expone `tests_support` como sandbox para herramientas (zk-ssl-cli/node).
