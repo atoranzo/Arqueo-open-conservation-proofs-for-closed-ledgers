@@ -73445,3 +73445,167 @@ antes. No promete plazos.
 **Lo que NO cierra.** Nada de la cola. La cláusula es de método, como las del §691, y ninguna
 compuerta la comprueba: que lo preparado en privado entre por avance rápido y un commit por arreglo
 no lo mira el canon.
+
+## §725 — el kit 0.4.4, cortado: los ocho defectos del verificador de `SECURITY.md` §3.18, con su aviso, la licencia de `zk-ssl-hash` y el canon entero sobre la punta de la serie
+
+El commit que lleva este asiento, sobre `d94e6fa` (el §724). Último sello de la serie del §711 al
+§725, y su punta: corta la versión del kit; publicarla y registrarla vienen después. Lo escribe, lo
+mide y lo commitea una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4
+de `GENAI.md`, como pide `CLAUDE.md`. La sección 3.18 de `SECURITY.md` que este sello añade se
+redactó en privado con la serie, el 22-10-2026, como pide `spec/rfc/PROCESO.md` §«Fallos de
+seguridad»; el resto se escribe sobre este árbol.
+
+**El canon entero, sólo aquí.** Por decisión del autor del 22-10-2026, al decidir esta publicación
+(«Sólo en la punta», a la pregunta de la sesión), el canon `--sello` completo se corre sólo sobre
+esta punta: los sellos del §711 al §724 pasaron las comprobaciones rápidas —`cargo check` del
+workspace, los tests de los crates que tocan, las herramientas del «2 ter», `check_vectores` y
+`check_catalogo`—, cada uno en su asiento, y no el canon. El canon del autor en su máquina, en WSL,
+lo repite sobre este commit antes de publicar.
+
+**El resultado.** En la sesión, el 28-10-2026, de las 04:59 a las 05:14 UTC, con `rustc` 1.97.0 en
+una máquina de 4 CPU, y tras tocar todo `.rs` de `crates/` para que cargo lo recompilara entero, el
+canon `--sello` salió VERDE sobre un commit con este mismo árbol salvo este párrafo: los 19 crates
+del nivel en sus pines, con 631 s de tests y el TOTAL DE SELLO en 2068; las once herramientas del «2
+ter», los vectores, el catálogo, la conformidad, las doce familias y el cable, la segunda
+implementación, el nodo, la clase de cada miembro y las aserciones de depuración en los cinco crates
+sin el probador, con sus pines; y el artefacto, igual desde dos raíces y sin rutas de la máquina,
+con los doce catálogos en verde desde fuera y desde dentro del tarball: binario `451f186fcd68697f…` y
+tarball `3986234fa5738e2d…`. `bash tools/artefacto.sh --check`, corrido aparte después, da lo mismo,
+y `bash tools/artefacto.sh` da el tarball
+`3986234fa5738e2db13fc141cdc5d141a33df6dfa4910762c681482dfc7ee392`, de 29.916.594 B y 520 ficheros,
+y el binario `451f186fcd68697fd4281283cc8b4b1c57ecb7376c877e4eae8ef2fe6052b99f`, de 3.028.240 B. Son
+las huellas de esta máquina y de ese commit: el tarball lleva en su `VERSION` el commit y el
+`describe` sobre los que se produjo, que no son los de este, y el binario sale de este `rustc` y de
+este `cc`, GCC 13.3.0, cuando la 0.4.3 se produjo con el 1.97.1 (§818). Las de la release las da la
+máquina del autor, y el registro las mide desde fuera.
+
+**Lo que hace.**
+
+1. **La versión.** `zk-ssl-verify` 0.4.3 -> 0.4.4 en su `Cargo.toml`, en su bloque del `Cargo.lock`,
+   en la línea `zk-ssl-verify 0.4.4 ruta` de `CLAUSURA_DEL_KIT` (el test
+   `la_clausura_del_kit_no_lleva_el_probador`, que la compara con el lock), y en los `Cargo.lock` de
+   los tres generadores de `tools/vectores/` que lo fijan por ruta —`coste_edad`, `historia_comun` y
+   `ventana_banda`—, que con `--locked` ya no resolverían: `cargo metadata --locked --offline` sale
+   con 0 en los cuatro. Como el corte de la 0.4.3 en el §815.
+2. **La licencia de `zk-ssl-hash`.** `license.workspace = true`, como los demás crates propios. Era
+   el único sin ella: el `THIRD-PARTY.txt` de la 0.4.3 publicada dice `zk-ssl-hash v0.1.0` sin
+   licencia, porque `tools/artefacto.sh` lo arma con `cargo tree --format '{p} {l}'`, y el de este
+   árbol, `zk-ssl-hash v0.1.0 MIT OR Apache-2.0`, con los mismos 61 paquetes.
+3. **`doc/KIT.md` y `doc/KIT_EN.md`, sección 0.** Un párrafo nuevo, detrás del de la vigente: la 0.4.4
+   está cortada y no publicada, y es un arreglo de seguridad; la vigente sigue siendo la 0.4.3 hasta
+   el asiento que la registre (§726); las huellas de este asiento son las de la máquina de la
+   sesión, con la condición del §823; los ocho defectos, cada uno con las releases que alcanza, lo
+   que cambia frente a la 0.4.3 y lo medido (abajo). En el párrafo de la 0.2.0, una marca: decía
+   «Falla cerrada: nunca da un VERDE falso», y lo da en el punto 2, como la 0.1.0 —leído en su
+   código, `crates/zk-ssl-verify/src/mmr.rs` de `1528943`, donde `verificar_consistencia` con el
+   mismo tamaño sólo compara las cimas; no medido con su binario—. En el contrato del mando, otra:
+   desde la 0.4.4 el `3` lo da también el sobre de rechazo de la ventana (§723), y un pánico sale
+   `ROJO: el verificador entro en panico: …` con `1` (§711). No toca las huellas de las releases
+   publicadas, ni el «Use la 0.4.3» de sus párrafos: eso lo cambia el registro.
+4. **`README.md` y `README_EN.md`**: la fila del verificador —«0.4.4, cortada (§725)…; la publicada es
+   `arqueo-verify-v0.4.3`»—, con su marca al final de la cadena, y una marca en «Sin Rust y sin
+   repositorio»: la 0.4.4 cortada, y la vigente, la 0.4.3. **`RESUMEN_BILINGUE.md` y
+   `RESUMEN_EJECUTIVO.md`**: la línea y la fila del verificador, igual. Las doce familias ya las
+   decían (§794, §807): el corte no las repite. Y en el mismo párrafo de los dos README, la frase de
+   la 0.2.0 —«falla cerrada, nunca un VERDE falso», en inglés «it fails closed, never a false
+   GREEN»— lleva al final la marca del punto 3: sí lo da en el punto 2 de la 0.4.4, como la 0.1.0.
+   Lo encontró la revisión del sello: la primera escritura de este asiento la ponía sólo en los dos
+   manuales, y la portada habría contradicho, el día del aviso, el punto 2 de la 3.18, que da VERDE
+   con el mismo `mmrSize` a la extensión desde la 0.1.0 y al consumo desde la 0.2.0. La entrada 107
+   de `BACKLOG.md`, resuelta, decía lo mismo, «declarado ya en `doc/KIT.md` y `doc/KIT_EN.md`
+   (seccion 0) y en los dos README», y gana otra marca, que dice también que su razón (c), «no hay
+   aceptacion falsa que cerrar», tampoco se sostiene. Las tres caben en una línea que ya existía:
+   no corren ninguna cita por línea.
+5. **`SECURITY.md` §3.18**, nueva, detrás de la 3.17: los ocho defectos del kit, de la 0.1.0 a la
+   0.4.3, cada uno con su sello, su medida, su severidad y lo que cierra; el de la capa, el §716,
+   como un punto dentro y sin número, por decisión del autor; el alcance, el residuo, upstream y «Lo
+   que conviene hacer». Es el texto redactado con la serie, con un cambio en la viñeta de upstream,
+   por decisión del autor del 28-10-2026: la frase del borrador sobre el aviso al mantenedor de
+   winterfell llevaba una fecha relativa a la publicación, y la publicación ya no es de ese día.
+   Dice ahora, sin fecha relativa, «Su mantenedor recibió el aviso el 22-10-2026, con los tres
+   parches y sin plazo acordado; en upstream todavía no están arreglados». El mantenedor, el
+   28-10-2026, no había contestado. Las notas de la release, que no están en el árbol, llevan la
+   misma frase; el aviso de seguridad no habla de upstream.
+6. **Las citas por línea que el párrafo nuevo corre**, con su marca: las seis de
+   `doc/KIT.md` en el RFC-0021 —`:76-123`, `:87-93`, `:94-100`, `:102-108`, `:125-127` y `:137-139`
+   pasan a `:125-177`, `:136-142`, `:143-149`, `:151-157`, `:179-181` y `:191-193`—, y la `:98` de
+   `README.md` y la `:100` de `README_EN.md`, a la `:147` y la `:148`. La primera y las dos últimas ya
+   no caían en su sitio desde el §711 y el §715, que alargaron dos líneas el párrafo de la 0.3.0 sin
+   moverlas; ahora caen. La quinta, la de la fila S6 del RFC-0021 («el tag, el commit y las dos
+   huellas, juntos»), la encontró la revisión del sello: la primera escritura de este asiento
+   contaba cinco. Ninguna cita del árbol apunta a una línea de `SECURITY.md` desde la 1781, donde
+   entra la 3.18.
+7. **Este asiento.**
+
+**Lo medido sobre este árbol.**
+
+- **Las comprobaciones rápidas**, antes del canon: `cargo check --locked --workspace --all-targets`,
+  sin errores; `zk-ssl-verify` en release, 220 pasan y 0 ignorados (132, 87 y 1), su pin; y
+  `zk-ssl-hash`, cuyo `Cargo.toml` gana la licencia, 57 pasan y 0 ignorados, su pin, con el censo del
+  §650 en verde.
+- **Las herramientas**, desde la raíz y con este asiento en su sitio: `check_cifras`, 26 cifras y
+  ninguna contradice el canon; `check_tests`, 2230 declarados; `check_modulos`, 216 ficheros;
+  `check_vectores`, 605 vectores y 1370 líneas de 19 manifiestos con su huella, ninguno movido;
+  `check_catalogo`, 236 textos del kit y 302 entradas de §5; `check_superficie`, la lista de
+  `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas; `verificar_citas`, 0 fantasmas, 0
+  secciones muertas y 246 encabezados citados, 0 muertos, y el registro con 826 encabezados y 0 citas
+  muertas; `check_nucleo`, 180 filas; y `check_figures`, `check_columns`, `check_constraint_layout`,
+  `check_dominios`, `check_publicadas`, `check_techo` y `check_curvas`. Todas salen con 0.
+- **La 0.4.3 publicada y la 0.4.4 de este árbol, vector a vector.** El tarball de la 0.4.3,
+  descargado otra vez el 23-10-2026 de la URL de su release: sha256 `0bb21f4f5dfe7575…`, 21.737.865 B,
+  420 ficheros sin enlaces, `sha256sum -c SHA256SUMS` con 0 errores, y el binario
+  `1b120e597897e005…`, los del §818. La 0.4.4, el `zk-ssl-verify` de este árbol que compila el
+  `--check` de `tools/artefacto.sh`, con su remap. Cada uno sobre cada `.json` que nombra un
+  `MANIFIESTO.txt` de las doce familias de `FAMILIAS` y de los catálogos conservados de
+  `spec/vectors/0.3/` y `0.4/`, con la entrada estándar vacía, el código de salida y la última línea
+  no vacía, el 28-10-2026. Lo que dice la sección 0 de `doc/KIT.md`:
+  - **los 399 `.json` de las doce familias que viajan en el tarball de la 0.4.3**, con los mismos bytes
+    (`cmp`), dan con las dos el mismo código y la misma última línea, y los cinco que el árbol ganó en
+    el §852 (`paquete/rechazo-json-*`), también;
+  - **de los 95 de esta serie**, 26 dan lo mismo con las dos; doce, el mismo código y otra última
+    línea —`ancla/bifurcacion-misma-cima`, `bifurcacion-otra-cima` y `bifurcacion-genesis`, de VERDE
+    del ancla a `VERDE: BIFURCACION`, y `neg-rama-con-contraria`, `neg-rama-con-ancla-null` y
+    `neg-rama-con-contraria-null` (§714); `edad/neg-m-sobre-tope` y `neg-m-mayor-legible` (§717),
+    `neg-emisor-fuera-de-cuentas` (§718) y `neg-m-14-sobre-tope` (§721), de
+    `InconsistentOodConstraintEvaluations` a su causa antes de leer la prueba; y
+    `rotacion/historia-comun-bifurcacion` y `neg-historia-comun-la-vieja-tras-el-relevo` (§722)—; y
+    57, otro código: 40 de 0 a 1 (ocho del §712, uno del §713, doce del §714, trece del §715, uno del
+    §718 y cinco del §722), siete de 101 a 1 (`edad/` y `pago/neg-prueba-opciones-cero` y
+    `neg-prueba-consultas-cero`, del §711, y `edad/neg-prueba-particiones-cero`,
+    `neg-prueba-marco-ood-3` y `neg-prueba-fri-particiones-64`, del §715), seis de 1 a 0
+    (`rechazo/saldo-insuficiente-banda-v2`, `rechazo-banda-ventana-control` y
+    `pendiente/cobro-v2-inferior-0` e `inferior-importe`, del §723, y
+    `rotacion/historia-comun-solapamiento-tras-el-relevo` e `historia-comun-solap-la-nueva-tras-su-relevo`,
+    del §722) y cuatro de 0 a 3 (`rechazo/rechazo-rech-banda-ventana-v1` y
+    `completitud/rechazo-banda-v1-declarada`, `lote-banda-v1-declarada` y `prenda-banda-v1-declarada`,
+    del §723);
+  - la 0.4.4 da a los 499 el código que pinan sus manifiestos, y la 0.4.3, a 442;
+  - **los 40 conservados** de `spec/vectors/0.3/` y `0.4/completitud/` dan con las dos el mismo código
+    y la misma última línea: 31 el que pinan y nueve no, los de antes de su corte, que juzga el kit de su
+    commit (`tools/conservados.sh`);
+  - y la entrada de `paquete/` sin fichero, `no-existe.json`, da 1 con las dos, como pina.
+
+  De los trece del relevo, nueve no dan con la 0.4.3 lo que pinan: siete con otro código y dos con el
+  mismo y otra línea. Las salidas, vector a vector, quedan en los registros de
+  la sesión, fuera del árbol; lo que dicen va aquí.
+
+**Contadores.** Ninguno se mueve: ningún test entra ni sale. Los pines de `tools/canon.sh`, igual;
+el TOTAL DE SELLO, 2068, y el TOTAL CON LARGOS, 2208, como los dejó el §723; `check_tests`, 2230
+declarados; los vectores, 605 `.json` y 1370 líneas de manifiesto, ninguno movido; `check_superficie`,
+0 novedades. El `BACKLOG.md` no abre ni cierra ninguna entrada: 40 abiertas y 90 resueltas; la
+107, resuelta, gana la marca del punto 4.
+
+**Lo que NO hace.** No publica. El tag `arqueo-verify-v0.4.4` va sobre el commit que lleva este
+asiento, y la release y su aviso los publica el autor, con el tarball que produzca en su máquina;
+las huellas de aquí son las de esta sesión, con un `VERSION` que nombra el commit que las midió (el
+tarball las lleva dentro: el commit y el `describe`), y el registro (§726) fija las publicadas,
+medidas desde fuera, como el §818 con la 0.4.3. Hasta entonces la vigente sigue siendo la 0.4.3, y
+este sello no toca lo que la nombra como vigente —`PREGUNTAS.md`, `QUESTIONS.md`, el RFC-0016, las
+releases de la sección 0—. No corre `--bancos`, `--largo`, `--completo` ni `--conservados`: la
+decisión del autor pide el `--sello`. Y no mide la 0.4.4 rehecha en otra máquina.
+
+**Lo que NO cierra.** El residuo de la sección 3.18: la refutación fabricada sigue VERDE, el alcance
+en solidez del resto FRI no se cuantificó, la CPU del juez de la edad sigue lineal hasta el tope, la
+v1 de la banda se acepta desde la cota, la huella del contenido no persiste, en `wasm32-wasip1` la red
+del pánico no recoge nada, volver atrás el almacén entero de la capa devuelve el contador, y en
+winterfell los puntos 1, 3 y 4 siguen sin arreglo.

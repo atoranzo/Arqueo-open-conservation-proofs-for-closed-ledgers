@@ -1778,6 +1778,141 @@ SECURITY.md (la 3.17) y el asiento, sin GHSA ni release, como el §812, el §816
 sección 5 no pida aviso ni release, porque el kit publicado no depende de la capa, es lectura de la
 sesión. `AUDITORIA.md` §828.
 
+### 3.18 Ocho defectos del verificador del kit, de la 0.1.0 a la 0.4.3, y uno de la capa: VERDE a sobres que no se sostienen, 101 ante una prueba mal formada, un coste que elegía quien envía y una emisión delegada que se reenviaba — ⚠️ MEDIDO, cerrado en el kit 0.4.4 y en la capa (§711 a §723)
+
+El verificador del kit, `zk-ssl-verify`, tenía ocho defectos en las releases publicadas. Cada uno
+alcanza a las suyas, dichas en su punto. La capa tenía además uno suyo, el de la emisión delegada,
+que va detrás de los ocho y sin número: no es del kit ni del aviso. Salieron de una revisión
+interna del autor con la ayuda de Claude Code (`GENAI.md`). Se midieron antes de publicar nada, con
+el kit compilado de cada árbol y, donde se dice, con el binario publicado. Cada asiento dice qué
+midió y con qué. Los puntos llevan el número del aviso de seguridad de la 0.4.4.
+
+1. **Una prueba mal formada hacía salir al kit con 101** (§711). De la 0.3.0 a la 0.4.3. Upstream
+   valida la cabecera de una prueba con `assert!`, y los bytes los pone quien la envía. Medido
+   antes del arreglo: de las mutaciones de la cabecera, 47 de 464 entraban en pánico; de las de la
+   forma, 85 de 521; y una capa FRI de menos, también. En el nodo, un pánico con el candado tomado
+   lo llevaba a PARADA. Es otra vía que la de la 3.7, que abortaba por memoria. **Cerrado**: el fork
+   valida lo que lee antes de construir, y el kit da ROJO con su causa, `prueba mal formada: …`.
+2. **El mismo `mmrSize` con distinto `epochDigest` daba VERDE** (§712, §714). En la 0.1.0, el sobre
+   de extensión; desde la 0.2.0, también el de consumo; desde la 0.3.0, también el ancla en modo 3.
+   Con el mismo tamaño, la consistencia del MMR es la identidad: dos cabezas firmadas en el mismo
+   sitio de la historia, con contenidos distintos, pasaban. Y con la misma clave y un `mmrSize`
+   mayor, nada miraba el índice embebido. **Cerrado**: `extension: mismo mmrSize y digest
+   distinto` y `extension: el indice embebido no crece`. El ancla gana el modo 5, que delata esas
+   dos cabezas: `VERDE: BIFURCACION` (§714). El testigo agrupa por el índice que la firma acredita y
+   se detiene con la clase `bifurcacion`.
+3. **El resto FRI no se comparaba con su compromiso** (§713). De la 0.3.0 a la 0.4.3. `winter-fri`
+   0.13.1 mete el compromiso del resto en la moneda, y su verificador no lo comprueba: quien prueba
+   podía elegir el resto después de ver las consultas. El alcance en solidez no se cuantificó.
+   Medido: con las opciones de la casa, el plegado contrasta el resto con 35 a 40 posiciones.
+   **Cerrado** en el canal del fork y en la segunda implementación:
+   `FriVerificationFailed(RemainderCommitmentMismatch)`.
+4. **Una prueba admitía más de una escritura** (§711, §715). De la 0.3.0 a la 0.4.3. Otros bytes de
+   la misma prueba verificaban igual: una longitud con bytes de más, una fila o un grupo de más,
+   una capa FRI de más, o el número de restricciones con un múltiplo de `2^32` sumado. El veredicto
+   sobre el enunciado no cambiaba, pero la huella de los bytes no identificaba la prueba, y la
+   guarda del §654 en la capa se esquivaba (el matiz de la 3.4). **Cerrado**: una sola escritura,
+   en el lector del fork y en el canal del verificador; y la capa guarda además la huella del
+   contenido.
+5. **El juez de la edad trabajaba en proporción a `2^m` antes de mirar la prueba** (§717, §721). De
+   la 0.3.0 a la 0.4.3. `m` sale del `nextPending` de una cabeza que el mando verifica con la clave
+   que ella trae, así que la elegía quien enviaba el paquete. Medido antes del arreglo: 63,2 s y
+   531 MB con `m = 23`. **Cerrado**: `M_MAX` vale 13, el `m` más alto que cabe en las dos cotas del
+   RFC-0007 con el probador de producción. Una `m` mayor es ROJO antes de leer la prueba,
+   `edad: m = N fuera de 3..=13`, en milisegundos. El probador aplica el mismo tope.
+6. **Un acta de rotación con un `mmrSize` no canónico** (§718). Sólo la 0.4.3, la primera que lee
+   actas. Severidad baja. Su lector no aplicaba la cota `< p`, y la firma sólo ata el elemento
+   reducido: un acta firmada con `mmrSize = N` daba VERDE presentada con `N + p`, medido con el
+   binario de la 0.4.3. No rompe la conservación ni suplanta a un operador. **Cerrado**:
+   `actas[i]: mmrSize: … no es canonico`. La misma pasada lleva la regla de la 3.8 a las fronteras
+   que faltaban: el juez, el almacén, la instantánea y el testigo.
+7. **La banda y el cobro pendiente acotaban el saldo a 63 bits, no a 62** (§723). De la 0.3.0 a la
+   0.4.3, leído en sus commits. Severidad baja. El RFC-0017 bajó a 62 bits las AIR vivas (§641,
+   §719); las dos del kit se quedaron en 63. Con una hoja de saldo en `[2^62, 2^63)`, la prueba de la
+   banda verificaba un rango que la hoja no cumple. Medido con el kit de antes del arreglo: un sobre
+   de rechazo `InsufficientBalance` con su cabeza firmada daba VERDE. La capa no firma esa hoja: su
+   carga y su instantánea la rechazan, medido. Sólo la alcanza quien firma una raíz fuera de la
+   capa. **Cerrado**: la v2 de las dos AIR fuerza a cero el bit 62 de cada segmento. Una prueba v1
+   vale con el superior desde `2^32 - 2`, o si es la ya publicada, que el kit reconoce por su
+   huella; por debajo, salida 3. La v2 cambia las pruebas que viajan sin subir `zkssl/0.4`: como la
+   ruptura del RFC-0017 (§826), la paga el corte `zkssl/0.5`. Lleva la fe de erratas de la D-3 del
+   RFC-0017, redactada con el arreglo.
+8. **Dos operadores de acuerdo refutaban un conflicto genuino sin que nada lo delatara** (§722).
+   Sólo la 0.4.3. Severidad media. La sección 2.5 de `spec/PAQUETE.md` decía que no podían firmarse
+   una historia común, y era falso. Medido antes del arreglo, con dos nodos reales: un libro nuevo
+   copia el diario de otro, se declara su heredero con un acta, y su cabeza refuta el conflicto.
+   **Cerrado** en lo que se puede ver: la `procedencia` de las actas fija el relevo en el MMR. Los
+   ocho sitios que exigen continuidad —la extensión, el consumo y las seis cabezas de la
+   completitud— exigen que cada cabeza caiga en el relevo de su tramo, por los dos bordes:
+   `RELEVO: …`. El sobre del solapamiento da VERDE a una cabeza firmada fuera del relevo de su
+   tramo. El nodo gana `--relevo-minimo`.
+
+**Y el de la capa: una emisión delegada se reenviaba cuando el estado volvía atrás** (§716). La
+capa verificaba la emisión delegada y la emisión a pendiente contra un compromiso que sólo ata el
+estado —las raíces de antes y de después, el importe, el suministro y el tope—, sin contador ni
+registro de lo ya aplicado. Una quema, o una desemisión, devuelve la raíz y el suministro a los de
+antes de emitir, y entonces la misma autorización de los custodios volvía a emitir. Medido antes del
+arreglo: emitir 250.000, quemar y reenviar daba `Ok`, con dos entradas `Mint` y una sola
+autorización; en bucle, tres reenvíos aceptados, 750.000 redimidos y 250.000 en saldo con una
+autorización. Donde se anotó, el agregado cuadraba: es un fallo de autorización, no de
+conservación. La capa no tiene release, y el nodo no expone la emisión delegada, salvo `dev_fund`
+con `--dev`. **Cerrado**: lo que firman los custodios lleva el contador de emisiones de la capa, y
+un reenvío es `AutorizacionConsumida`. Una autorización firmada con el formato de antes, sin
+contador, ya no emite: `StaleState`.
+
+**Alcance.** Ninguno de los ocho del kit crea saldo ni gasta sin autorización. El 2 y el 8 rompían
+la detección: el kit daba VERDE a una historia que no se sostiene, o no delataba la fabricada. El 3
+quitaba una comprobación del verificador STARK, sin alcance medido. El 7 daba un VERDE falso sobre
+lo que dice la hoja comprometida. El 1 y el 5 eran de disponibilidad: un 101 en vez de ROJO, y un
+coste que elegía quien envía. El 4 y el 6 dejaban que los bytes, o el entero, dijeran otra cosa que
+lo firmado. El de la capa sí emitía sin autorización nueva: una de los custodios valía para más de
+una emisión.
+
+**Residuo**:
+
+- **La refutación fabricada sigue VERDE** (8). Prueba una historia de cabezas, no de estado. La
+  detección pide una cabeza de la clave que se fue firmada desde su relevo, y que alguien la
+  guarde. Alternar los dos libros, rellenar el MMR con el contador saltado o volver a firmar el
+  relevo no dejan evidencia que un sobre juzgue. El testigo no aplica el relevo. Y el relevo delata
+  a un operador honrado que rota desde un diario restaurado sin seguir la D-G del RFC-0015.
+- **El alcance en solidez del resto FRI** (3) no se cuantificó.
+- **La CPU del juez de la edad sigue lineal en `2^m`** hasta el tope (5). Un libro que pase de
+  `2^13` posiciones de pendiente no tiene prueba de edad.
+- **La v1 de la banda se acepta desde la cota** (7). La cota está derivada y su frontera probada en
+  enteros, no buscada contra el circuito con un probador. Ningún vector ejercita el cobro pendiente
+  por el mando con un superior pequeño.
+- **La huella del contenido no persiste** (4). Tras reiniciar el nodo, la defensa es el lector y el
+  canal del fork. El cierre de fondo es el nonce del tren `zkssl/0.5`.
+- **En `wasm32-wasip1` la red del pánico no recoge nada** (1): allí un pánico aborta.
+- **Volver atrás el almacén entero de la capa**, registro incluido, devuelve el contador, y el
+  reenvío vuelve a valer (§716). Es la clase de la bifurcación (2): la capa no puede saber que su
+  disco es viejo. Congelar, gobernar y recuperar, que ya llevaban su contador, no ganan la causa con
+  nombre: su reenvío cae con `StaleState`.
+- **Upstream.** El 1, el 3 y el 4 están también en winterfell 0.13.1, del que viene el fork. Su
+  mantenedor recibió el aviso el 22-10-2026, con los tres parches y sin plazo acordado; en
+  upstream todavía no están arreglados.
+
+**Lo que conviene hacer.**
+
+- Actualizar a la 0.4.4.
+- Un VERDE de la 0.4.3 o anterior sobre una extensión, un consumo o un ancla con el mismo
+  `mmrSize`, sobre un acta, sobre un rechazo `InsufficientBalance` o sobre una extensión, un consumo
+  o una completitud entre dos claves se vuelve a juzgar con la 0.4.4.
+- Una salida 101 de una release anterior es un rechazo, nunca un VERDE.
+- Quien rote la clave de un nodo reconstruye antes el diario (la D-G del RFC-0015) y arranca con
+  `--relevo-minimo`.
+- Quien use la emisión delegada de la capa pide de nuevo a los custodios las autorizaciones
+  firmadas con el formato de antes: ya no emiten.
+
+Se preparó sin publicar y se publica de una vez con su arreglo, como pide la sección 5, con la
+enmienda del §724. Con este sello salen, como piden la sección 5 y `spec/rfc/PROCESO.md` §«Fallos
+de seguridad», la release `arqueo-verify-v0.4.4` y su aviso de seguridad, que nombra las afectadas
+—de la 0.1.0 a la 0.4.3, cada punto con las suyas— y la primera que lo arregla, la 0.4.4. Los
+publica el autor: hasta el asiento que registre la release (§726), la vigente sigue siendo la 0.4.3
+(`doc/KIT.md` §0). El mismo acto corrige también la capa, sus circuitos, el nodo y el testigo, que
+no tienen release: su aviso es esta sección y sus asientos, del §711 al §723. `AUDITORIA.md` §711 a
+§725.
+
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
 Desde agosto de 2026 esto no es solo una capa: hay cable, nodo, SDK y un

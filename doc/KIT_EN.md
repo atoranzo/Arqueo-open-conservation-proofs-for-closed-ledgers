@@ -27,6 +27,54 @@ running its twelve catalogues from inside the tarball — in the `AUDITORIA.md` 
 this release (§818). It recomposes heads up to **v6**, the one the node signs today, and reads
 twelve families: the twelve of section 11 of the `spec/PAQUETE.md` that travels in its tarball, the twelfth being rotation (§649), and it is the first published release that carries it. ⚠️ **Corrected in §807**: it said «the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor»; section 11 at commit `a4e888d` names eleven families, the co-signed anchor among them, and the tree's names twelve (`FAMILIAS` in `tools/artefacto.sh`:31). ⚠️ **§818**: until here this paragraph gave `arqueo-verify-v0.4.2`, published at <https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.2>, on commit `a4e888d`, as the current release, with its two hashes —abridged in its paragraph, below; in full, with its 16,677,910 bytes and its 368 files, in entry §671—, and said «reads eleven families: the eleven of section 11 of the `spec/PAQUETE.md` that travels in its tarball, the eleventh being the co-signed anchor (§633, §634); the tree's section 11 already counts twelve, with rotation (§649), which no published release carries», which was true of 0.4.2.
 
+⚠️ **0.4.4 is CUT and not published (§725), and it is a security fix.** The current release remains
+0.4.3 until the entry that registers 0.4.4 pins its fingerprint (§726). The fingerprints entry §725
+gives are those of the machine of the session that cut it, not those of the release: with the same
+fingerprint, the kit is only shown rebuildable within one same machine (below, «Reproducing the
+kit, for whoever does not trust the download»). It was prepared in private (`spec/rfc/PROCESO.md`
+§«Fallos de seguridad»; `SECURITY.md` §5, with the amendment of §724) and it changes verdicts within
+`0.4.x`, which is what R6 f of RFC-0021 allows with its advisory and the list of what changes. **The
+defects it fixes** are eight, described in section 3.18 of `SECURITY.md`, each with the releases it
+reaches:
+
+1. a malformed proof made the kit exit with **101** instead of ROJO (§711), from 0.3.0 to 0.4.3;
+2. with the same `mmrSize` and a different `epochDigest`, the extension envelope gave VERDE since
+   0.1.0, the consumption one since 0.2.0 and the anchor in mode 3 since 0.3.0, and with the same key
+   nothing checked that the embedded index grew (§712, §714);
+3. the FRI remainder was not compared with its commitment (§713), from 0.3.0 to 0.4.3;
+4. a proof admitted more than one encoding, and its hash did not identify it (§711, §715), from
+   0.3.0 to 0.4.3;
+5. the age judge did work proportional to `2^m` before looking at the proof, with an `m` chosen by
+   whoever sends the envelope (§717, §721), from 0.3.0 to 0.4.3;
+6. a rotation act with a non-canonical `mmrSize` gave VERDE (§718), only 0.4.3;
+7. the band and the pending claim bounded the balance to 63 bits, not 62, and an
+   `InsufficientBalance` rejection over a leaf with a balance in `[2^62, 2^63)` gave VERDE (§723),
+   from 0.3.0 to 0.4.3;
+8. two colluding operators refuted a genuine conflict without anything giving it away, because the
+   `procedencia` of the acts did not pin the handover (§722), only 0.4.3.
+
+None creates balance or spends without authorisation; 2, 7 and 8 gave a VERDE that does not hold.
+**What changes against 0.4.3**, also for whoever did not cheat: an age proof with `m` above 13 is
+ROJO before it is read; an `InsufficientBalance` rejection with a v1 band and the upper bound below
+`2^32 - 2` gives exit **3**, «DECLARADA, NO PROBADA», and so does a completeness resolution with that
+band, after the checks of its arm —the only such one already published, the one in
+`rechazo/saldo-insuficiente.json`, stays VERDE—; an extension, a consumption or a completeness
+envelope between two keys with a head outside the handover of its stretch is ROJO, `RELEVO: …`; and
+the band and pending-claim proofs a node of this tree produces are v2, which 0.4.3 and earlier do not
+verify. **Measured** with the published 0.4.3 (binary `1b120e597897e005…`) and the 0.4.4 of this
+tree, exit code and last line of each vector, over the 499 of the twelve families: the 399 that
+travel in its tarball, with the same bytes, give the same code and the same last line with both, and
+so do the five the tree gained in §852. Of the 95 of this series, 26 give the same with both; twelve,
+the same code with another last line, the named cause or verdict (§714, §717, §718, §721, §722); and
+57, another code: 40 from VERDE to ROJO —the negatives of the same `mmrSize` and of the clock in the
+extension, the consumption and the anchor (§712, §714), of the FRI remainder (§713), of the fork
+envelope (§714), of a single encoding (§715), of the non-canonical act (§718) and of the handover
+(§722)—, seven from 101 to ROJO (§711, §715), six from ROJO to VERDE —the four v2 proofs of the band
+and the claim (§723) and the two overlaps outside the handover (§722)— and four from VERDE to 3, the
+window ones (§723). 0.4.4 gives all 499 the code their manifests pin, and 0.4.3 gives it to 442. The
+40 preserved ones under `spec/vectors/0.3/` and `0.4/` give the same with both. The detail, vector by
+vector, is in entry §725.
+
 ⚠️ ~~**0.4.3 is CUT and not published (§815), and it is a security fix.** The current release remains
 0.4.2 until the entry that registers 0.4.3 pins its fingerprint.~~ ⚠️ **§818: published and
 current.** The author published it with its security advisory, `GHSA-6p4m-qg2w-8r6j` (<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/security/advisories/GHSA-6p4m-qg2w-8r6j>), which
@@ -124,7 +172,10 @@ commit `1528943`, tarball `2fe9030a310a1e0b…`). It recomposes heads up to v4: 
 its own tarball it works, and the envelopes born later — `edad`, `prenda`, `cobro_pendiente`,
 `completitud` and the `ancla`, with v5 and v6 heads — it rejects with exit 1 ("tipo desconocido",
 unknown type). It fails closed: it never gives a false GREEN (measured on 2026-09-30; `BACKLOG.md`,
-entry 107).
+entry 107). ⚠️ §725: it does give one in point 2 of 0.4.4, like 0.1.0: with the same
+`mmrSize` and a different `epochDigest`, its extension and consumption envelopes give VERDE
+(`SECURITY.md` §3.18; read in its code, `crates/zk-ssl-verify/src/mmr.rs` at `1528943`, which with
+the same size only compares the peaks, and not measured with its binary).
 
 Every release carries a tag and is produced on the commit its `VERSION` file names; the tarball's
 hash is published **next to its commit**, on the release page and in the `AUDITORIA.md` entry that
@@ -145,7 +196,10 @@ state of the completeness envelope, «resolution declared, not proven», which i
 and without `ROJO`, because it is not one. The texts are in Spanish; the rule names are what the
 conformance manifests check. ⚠️ §801: until here it said «exit 0 … exit 1 … exit 2 on wrong usage»,
 without the 3, which the command gives since §573 (`spec/PAQUETE.md` §«6. El contrato del mando»;
-RFC-0021, fact 6).
+RFC-0021, fact 6). ⚠️ §725: since 0.4.4, exit `3` is also given by the `InsufficientBalance`
+rejection envelope with a v1 band and the upper bound below `2^32 - 2` (§723), and a panic while
+verifying no longer exits with `101`: it prints `ROJO: el verificador entro en panico: …` and exits
+with `1` (§711). 0.4.3 and earlier give exit `3` only in the completeness envelope.
 
 What of this is promised —what does not change within a `0.N.x` line, what breaks it and what
 keeps verifying after a break— is said in `spec/RPC.md` §«Versionado y compatibilidad» (§801): no

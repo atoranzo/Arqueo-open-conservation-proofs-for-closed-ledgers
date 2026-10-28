@@ -3932,7 +3932,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   «tipo desconocido»; y el `ancla` del §593 (cabeza v6), medida en el §596 contra
   `main` en ab79a50: sus tres vectores, salida 1, «tipo desconocido: ancla».
   **Falla cerrada, nunca un VERDE falso.** Declarado ya en
-  `doc/KIT.md` y `doc/KIT_EN.md` (seccion 0) y en los dos README.
+  `doc/KIT.md` y `doc/KIT_EN.md` (seccion 0) y en los dos README. ⚠️ §725: sí lo da en el punto 2 de la 0.4.4, como la 0.1.0: con el mismo `mmrSize` y distinto `epochDigest`, la extensión da VERDE desde la 0.1.0 y el consumo desde la 0.2.0, y la razón (c) de abajo, «no hay aceptacion falsa que cerrar», tampoco se sostiene (`SECURITY.md` §3.18; `doc/KIT.md`, sección 0, y los dos README, con su marca).
   **Decision (2026-09-30, sesion de ECST): A LA COLA, no inmediata**, por tres
   razones del proyecto: (a) publicar es acto manual del autor, con huellas
   medidas desde fuera y dos sellos (D-K5 del §442), no algo que un asistente

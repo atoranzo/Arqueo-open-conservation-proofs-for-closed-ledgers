@@ -27,6 +27,55 @@ corriendo sus doce catálogos desde dentro del tarball— en el asiento de `AUDI
 esta release (§818). Recompone cabezas hasta la **v6**, la que el nodo firma hoy, y lee doce
 familias: las doce de la sección 11 del `spec/PAQUETE.md` que viaja en su tarball, la duodécima la de la rotación (§649), y es la primera release publicada que la lleva. ⚠️ **Corregido en el §807**: decía «las diez de la sección 11 de `spec/PAQUETE.md` y la del ancla cofirmada»; la sección 11 del commit `a4e888d` nombra once familias, el ancla cofirmada entre ellas, y la del árbol doce (`FAMILIAS` en `tools/artefacto.sh`:31). ⚠️ **§818**: hasta aquí este párrafo daba como vigente la `arqueo-verify-v0.4.2`, publicada en <https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.2>, sobre el commit `a4e888d`, con sus dos huellas —abreviadas en su párrafo, abajo; enteras, con sus 16.677.910 B y sus 368 ficheros, en el asiento §671—, y decía «lee once familias: las once de la sección 11 del `spec/PAQUETE.md` que viaja en su tarball, la undécima la del ancla cofirmada (§633, §634); la del árbol cuenta ya doce, con la rotación (§649), que ninguna release publicada lleva», que era lo cierto de la 0.4.2.
 
+⚠️ **La 0.4.4 está CORTADA y no publicada (§725), y es un arreglo de seguridad.** La vigente sigue
+siendo la 0.4.3 hasta que el asiento que registre la 0.4.4 fije su huella (§726). Las huellas que da
+el asiento §725 son las de la máquina de la sesión que la cortó, no las de la release: con la misma
+huella, el kit sólo está demostrado reconstruible dentro de una misma máquina (abajo, «Reproducir el
+kit, para quien no se fíe de la descarga»). Se preparó en privado (`spec/rfc/PROCESO.md` §«Fallos de
+seguridad»; `SECURITY.md` §5, con la enmienda del §724) y cambia veredictos dentro de `0.4.x`, que
+es lo que la R6 f del RFC-0021 permite con su aviso y la lista de lo que cambia. **Los defectos que
+corrige** son ocho, descritos en la sección 3.18 de `SECURITY.md`, cada uno con las releases que
+alcanza:
+
+1. una prueba mal formada hacía salir al kit con **101** en vez de ROJO (§711), de la 0.3.0 a la
+   0.4.3;
+2. con el mismo `mmrSize` y distinto `epochDigest`, el sobre de extensión daba VERDE desde la 0.1.0,
+   el de consumo desde la 0.2.0 y el ancla en modo 3 desde la 0.3.0, y con la misma clave nada
+   miraba que el índice embebido creciera (§712, §714);
+3. el resto FRI no se comparaba con su compromiso (§713), de la 0.3.0 a la 0.4.3;
+4. una prueba admitía más de una escritura, y su huella no la identificaba (§711, §715), de la
+   0.3.0 a la 0.4.3;
+5. el juez de la edad trabajaba en proporción a `2^m` antes de mirar la prueba, con una `m` que
+   elige quien envía el sobre (§717, §721), de la 0.3.0 a la 0.4.3;
+6. un acta de rotación con un `mmrSize` no canónico daba VERDE (§718), sólo la 0.4.3;
+7. la banda y el cobro pendiente acotaban el saldo a 63 bits, no a 62, y un rechazo
+   `InsufficientBalance` sobre una hoja con un saldo de `[2^62, 2^63)` daba VERDE (§723), de la
+   0.3.0 a la 0.4.3;
+8. dos operadores de acuerdo refutaban un conflicto genuino sin que nada lo delatara, porque la
+   `procedencia` de las actas no fijaba el relevo (§722), sólo la 0.4.3.
+
+Ninguno crea saldo ni gasta sin autorización; el 2, el 7 y el 8 daban un VERDE que no se sostiene.
+**Lo que cambia frente a la 0.4.3**, también para quien no hizo trampa: una prueba de edad con `m`
+mayor que 13 es ROJO antes de leerla; un rechazo `InsufficientBalance` con una banda de la v1 y el
+superior bajo `2^32 - 2` da la salida **3**, «DECLARADA, NO PROBADA», y una resolución de completitud
+con esa banda también, después de las comprobaciones de su brazo —la única así ya publicada, la de
+`rechazo/saldo-insuficiente.json`, sigue VERDE—; una extensión, un consumo o un sobre de completitud
+entre dos claves con una cabeza fuera del relevo de su tramo es ROJO, `RELEVO: …`; y las pruebas de
+la banda y del cobro pendiente que da un nodo de este árbol son de la v2, que la 0.4.3 y las
+anteriores no verifican. **Medido** con la 0.4.3 publicada (binario `1b120e597897e005…`) y la 0.4.4
+de este árbol, código de salida y última línea de cada vector, sobre los 499 de las doce familias:
+los 399 que viajan en su tarball, con los mismos bytes, dan con las dos el mismo código y la misma
+última línea, y los cinco que el árbol ganó en el §852, también. De los 95 de esta serie, 26 dan lo
+mismo con las dos; doce, el mismo código con otra última línea, la causa o el veredicto con nombre (§714,
+§717, §718, §721, §722); y 57, otro código: 40 de VERDE a ROJO —los negativos del mismo `mmrSize` y
+del reloj en la extensión, el consumo y el ancla (§712, §714), del resto FRI (§713), del sobre de la
+bifurcación (§714), de una sola escritura (§715), del acta no canónica (§718) y del relevo (§722)—,
+siete de 101 a ROJO (§711, §715), seis de ROJO a VERDE —las cuatro pruebas de la v2 de la banda y
+del cobro (§723) y los dos solapamientos fuera del relevo (§722)— y cuatro de VERDE a 3, los de la
+ventana (§723). La 0.4.4 da a los 499 el código que pinan sus manifiestos, y la 0.4.3, a 442. Los 40
+conservados de `spec/vectors/0.3/` y `0.4/` dan lo mismo con las dos. El detalle, vector a vector, va
+en el asiento §725.
+
 ⚠️ ~~**La 0.4.3 está CORTADA y no publicada (§815), y es un arreglo de seguridad.** La vigente sigue
 siendo la 0.4.2 hasta que el asiento que registre la 0.4.3 fije su huella.~~ ⚠️ **§818: publicada y
 vigente.** El autor la publicó con su aviso de seguridad, `GHSA-6p4m-qg2w-8r6j` (<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/security/advisories/GHSA-6p4m-qg2w-8r6j>), que nombra
@@ -122,7 +171,10 @@ lleva.
 tarball `2fe9030a310a1e0b…`). Recompone cabezas hasta la v4: con los vectores de su propio tarball
 funciona, y los sobres que nacieron después —`edad`, `prenda`, `cobro_pendiente`, `completitud` y el
 `ancla`, con cabezas v5 y v6— los rechaza con salida 1 («tipo desconocido»). Falla cerrada: nunca da
-un VERDE falso (medido el 2026-09-30; `BACKLOG.md`, entrada 107).
+un VERDE falso (medido el 2026-09-30; `BACKLOG.md`, entrada 107). ⚠️ §725: sí lo da en el punto 2 de la 0.4.4, como la
+0.1.0: con el mismo `mmrSize` y distinto `epochDigest`, sus sobres de extensión y de consumo dan
+VERDE (`SECURITY.md` §3.18; leído en su código, `crates/zk-ssl-verify/src/mmr.rs` de `1528943`, que
+con el mismo tamaño sólo compara las cimas, y no medido con su binario).
 
 Cada release lleva un tag y se produce sobre el commit que su fichero `VERSION` nombra; la huella
 del tarball se publica **con su commit al lado**, en la página de la release y en el asiento de
@@ -141,7 +193,11 @@ binario no es estático, y se dice. El contrato del mando es de una línea: `./z
 con nombre (`ROJO: …`) si no, `2` si el uso es incorrecto, y `3` en el cuarto estado del sobre de
 completitud, «resolución declarada, no probada», que se escribe con su nombre y sin `ROJO`, porque
 no lo es. ⚠️ §801: hasta aquí decía «sale 0 … 1 … 2 si el uso es incorrecto», y no contaba el 3, que
-el mando da desde el §573 (`spec/PAQUETE.md` §«6. El contrato del mando»; RFC-0021, hecho 6).
+el mando da desde el §573 (`spec/PAQUETE.md` §«6. El contrato del mando»; RFC-0021, hecho 6). ⚠️ §725:
+desde la 0.4.4, el `3` lo da también el sobre de rechazo `InsufficientBalance` con una banda de la
+v1 y el superior bajo `2^32 - 2` (§723), y un pánico al verificar ya no sale con `101`: sale
+`ROJO: el verificador entro en panico: …`, con `1` (§711). La 0.4.3 y las anteriores dan el `3`
+sólo en el sobre de completitud.
 
 Qué de esto se promete —qué no cambia dentro de una línea `0.N.x`, qué lo rompe y qué sigue
 verificando después de una ruptura— lo dice `spec/RPC.md` §«Versionado y compatibilidad» (§801):

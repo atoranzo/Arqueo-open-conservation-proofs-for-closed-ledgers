@@ -2,6 +2,7 @@
 name = "zk-ssl-hash"
 version = "0.1.0"
 edition = "2021"
+license.workspace = true
 
 # ⚠️ Los subcrates SUELTOS, no el paraguas `winterfell`: ese arrastra
 # `winter-prover`, `winter-air` y `winter-verifier`, y el objetivo de este
