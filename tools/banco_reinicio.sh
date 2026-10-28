@@ -134,7 +134,7 @@ grep -q 'mirado 10 veces' "$DIR/otro.out" \
 # ⚠️ §813: era una sola sonda de 2 s, y son hasta cinco seguidas: la misma sonda que `arranca`, que
 # hace hasta cien con 0,1 s entre una y otra. Medido el 15-10-2026 con ocho `yes` en 4 CPU, una sonda de 2 s a
 # un nodo vivo queda sin respuesta 10 de 100 veces SIN segundo nodo y 5 de 100 con el (la 123 del
-# BACKLOG). Lo que se comprueba es que sigue vivo y contesta.
+# BACKLOG). Lo que se comprueba es que sigue vivo y contesta. ⚠️ §866: medido, el nodo no contestaba mientras firmaba su latido, dentro de un hilo del ejecutor; desde el §866 el latido va en su hilo (la 123). Las cinco sondas se quedan: volver a una es del autor.
 contesta(){ for _ in 1 2 3 4 5; do kill -0 "$P" 2>/dev/null || return 1; vivo "$PORT" && return 0; done; return 1; }
 contesta || fallo "el primer nodo dejo de contestar cuando el segundo intento abrir su libro"
 msg "DOS NODOS: el segundo se niega con su nombre tras su espera ($MS ms, exit $RC) y el primero sigue contestando"

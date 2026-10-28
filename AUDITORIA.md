@@ -74101,3 +74101,294 @@ cada `fichero:N` del árbol fuera de este registro:
 
 En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
 y salió VERDE.
+
+## §866 — la 123, medida y cerrada: el latido firmaba en un hilo del ejecutor de tokio y, mientras, el nodo no aceptaba conexiones, también sin carga; el latido pasa a su propio hilo, «latido», y el RPC contesta mientras se firma, con cuatro tests y sus falsadores
+
+El commit que lleva este asiento, sobre el §862. Cierra la 123 del `BACKLOG.md` con su medida, el
+arreglo en el nodo y sus tests. Cambia `crates/zk-ssl-node/src/latido.rs` —el arranque del latido,
+la firma de `latir`, siete marcas, cuatro tests con su ayudante al final del módulo de tests y el
+trait `Firmar` al final del fichero— y `crates/zk-ssl-node/src/main.rs` —dos líneas de `main` y el
+enrutador en su fn, al final—; pone al día el pin del nodo en `tools/canon.sh`, los totales de
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` y la cifra del nodo de la sección 14 de los dos `PAPER`;
+cierra la 123 en el `BACKLOG.md`, con su nota, una marca en la del §829 y la cuenta del «Estado», y
+marca la 17 y la 18; marca las dos filas de REND-10 de `doc/blueprint-v2.md` y una línea de
+`tools/banco_reinicio.sh`; y lleva este asiento. Diez ficheros con este, ninguno nuevo, con 638
+inserciones y 34 borrados (`git diff --stat`). Es el §866, el primero libre del rango del autor, el
+§860-§889, tras los §863 a §865. Se escribió, se midió y se probó sobre `213b0b0`, el §726, y se
+porta sobre el §862, la E3 del RFC-0020, que no toca el nodo (`git diff 213b0b0` contra el §862, en
+`crates/zk-ssl-node`, sale vacío) y sí el kit, del que el nodo depende: lo medido, los binarios y lo
+que se corrió con `cargo` son de aquel árbol, y en este lo corre el canon del final; las cifras, los
+contadores y las citas de abajo son las de este árbol, rehechas al portarlo.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. Lo que decidió el autor: que la 123
+se haga ahora, el 28-10-2026, tras la 0.4.4, y que antes se mida el mecanismo, como recomendaba la
+nota del §829 («arreglar `latir` más adelante, cuando se mida el mecanismo»). Lo que decide la
+sesión, declarado y reversible: medir sobre el binario de `213b0b0` antes de tocar nada, y no
+arreglar si la medida no señalaba al ejecutor; el diseño, un hilo del sistema, y no `spawn_blocking`
+—la letra de REND-10— ni `block_in_place`; el trait `Firmar`, que sólo existe para los tests; los
+cuatro tests, con el latido del de TCP a 200 ms y no a cero; cerrar la 123; llevar la mitad de
+despacho de REND-10 en una línea de su nota y no en una entrada nueva; poner al día la cifra del
+nodo de la sección 14 de los dos `PAPER`, que no es de este sello; y dejar los guiones de la medida
+fuera del árbol, descritos aquí con lo que hace falta para repetirlos (un `tools/banco_latido.sh` es
+un paso posible, y no se da).
+
+**Las dos revisiones.** Dos revisiones de la sesión leyeron el sello y repitieron sus cifras, sus
+citas y sus falsadores; lo que encontraron se arregla aquí, cada cosa en su sitio. El falsador del
+test de TCP no caía siempre: con el latido a cero, bajo la mutación pasó 1 de 17 veces sin carga
+añadida y 5 de 8 con ocho `yes` (abajo, en los tests). Y al repetir los cuatro con ocho `yes` para
+este arreglo, sin mutación ninguna, cayó uno 2 de 18 veces; la vez que se miró, el del despacho, en
+su espera de 30 s: `cuenta`, que abre y fondea, tarda 0,6 s sin carga y de 10 a 23 s con ella
+(medido con una copia instrumentada del test, deshecha); ahora espera el tope de los demás, 120 s, y
+con ocho `yes` los cuatro pasaron 12 de 12 veces. El fuente de tokio 1.53.1 sí estaba en el disco,
+en el registro de cargo del contenedor, y este asiento decía que no: se ha leído, y se cita abajo.
+Seis frases de este asiento no eran exactas: la carga de los dos controles con `--latido 0`; que
+ningún otro `cargo` corriera «durante» las series, que sale de dos instantáneas; el `nice` del
+`cargo tree`; los 804 ms del §829 como de otra máquina, que no está medido; los latidos en que sí se
+contestó con escrituras, 5 y 6 de 18 y no 5 y 7, que eran las sondas; y lo que distingue a un
+candado. Y además: el pánico en `latir`, que va ahora en «Lo que NO hace»; el comentario del test
+del despacho, que daba por atado lo que no ataba, y que ahora ata la era; la primera línea del
+comentario de `arrancar` y la `:66` y la `:143` de `latido.rs`, que cambiaban sin su marca; el
+rótulo «Lo que hace»; la nota del §829, que seguía diciendo «Sigue abierta»; una línea de la nota
+nueva, de 112 columnas; y la cifra del nodo de la sección 14 de los `PAPER`, en 115, el pin de antes
+del §519, que no es de este sello y se pone al día.
+
+**Dónde y cómo se midió.** En el contenedor de 4 CPU de la sesión, el 28-10-2026, de las 10:22 a las
+11:07 UTC. El binario de antes es el release de `zk-ssl-node` de `213b0b0`, compilado por la sesión
+con `--locked` en un directorio de target propio (sha256 `64bb262ec012d08d…`, igual byte a byte que
+el de la validación de `213b0b0`); el de después, el del sello (`e0d439093aa2d779…`, abajo). Un
+guion arranca el nodo como `arranca` de `tools/banco_reinicio.sh` —`--latido 1`, `--clave-fichero`
+con la semilla del banco y `--custodia fichero`, y `--diario`, `--ledger`, `--contador-recepcion` e
+`--indice-firma` en un directorio nuevo bajo `$HOME`—, pero con `--log info` y `NO_COLOR=1`; espera
+a que conteste a un método desconocido, para que toda línea «ok» de `zkssl_supply` sea de la serie,
+y deja pasar 2,5 s. Hace entonces 100 sondas `zkssl_supply` en serie, cada una con
+`curl -s --max-time 2 -w '%{time_connect} %{time_starttransfer} %{time_total} %{http_code}'`, la
+hora de `$EPOCHREALTIME` antes y después de `curl` y 0,2 s de pausa. Cada 50 ms lee la cola de la
+escucha: el `rx_queue` del socket en LISTEN de `/proc/net/tcp`, que en una escucha es
+`sk_ack_backlog`, las conexiones que el núcleo completó y nadie ha aceptado (lo que `ss` da como
+`Recv-Q`; `ss` no está en el contenedor). Apunta `uptime` y los `cargo` y `rustc` vivos al empezar y
+al acabar. Y un segundo guion lo cruza con las líneas «ok … ms=» y «cabeza de epoca FIRMADA … ms=»
+del nodo, con su hora: un latido es `[hora − ms, hora]`; una sonda es lenta si su `time_total` pasa
+de 100 ms; y su «ok» es la línea que cae entre su envío y su vuelta. Las series: S0, así; S1, sin
+`--clave`; S2, con `TOKIO_WORKER_THREADS` a 1 y a 8; S3, con un chorro de `dev_openSeeded` en serie
+a la vez, el de M.1 (con `--dev --max-accounts 1000000`); S4, con ocho `yes` a `nice` 0 y el nodo a
+`nice` 0; y S5, con los ocho `yes` y el nodo a `nice` 10, la receta del §829. Primero, todas con el
+binario de antes; después, cada una con el de antes y enseguida con el de después; S4 y S5, una
+tercera vez; y el chorro de escrituras con `--latido 0`, con los dos binarios, de control. Sin los
+`yes`, la carga de 1 minuto va de 0,3 a 1,0, salvo en esos dos controles, que corrieron justo detrás
+de la tercera S4 y todavía con su carga: de 8,8 a 6,3 con el binario de después y, enseguida, de 6,3
+a 5,4 con el de antes. Al acabar cada serie con `yes`, de 4,1 a 9,1. En las instantáneas de `cargo`
+y `rustc` vivos, al empezar y al acabar cada serie, no hay ningún otro salvo en tres de las cuatro
+últimas —la tercera S4 con cada binario y el control de escrituras con el de antes—, en que otra
+sesión corría `cargo tree`, a `nice` 0, y un `cargo test` de `zk-ssl-verify`, a `nice` 10: esas tres
+van con esa carga. Que entre una instantánea y la otra no corriera ningún otro es deducido.
+
+**Lo medido antes**, en `213b0b0`. Sin carga, en las ocho series con clave, `latir` dura de 236 a
+265 ms de mediana —no los 804 ms del §829, que midió otra sesión sobre `7ed7e17`, 37 commits antes
+de `213b0b0` y siete de ellos en el nodo: otra máquina u otro binario, sin medir cuál, deducido— y
+ocupa del 19 al 21 % del tiempo; de 12 a 19 sondas de 100 tardan de 0,1 a 0,30 s, y todas solapan un
+latido; de las rápidas, empiezan dentro de un latido 0 o 1 por serie, y 5 y 7 con el chorro de
+escrituras. Cada sonda lenta conecta en menos de 0,5 ms, la cola de la escucha vale 1 o 2 durante el
+latido y 0 fuera de él (de 58 a 80 de entre 90 y 100 muestras dentro de un latido, frente a 6 como
+mucho de unas 350 fuera), el manejador del nodo tarda 0 o 1 ms, y su «ok» sale de 0,2 a 2 ms DESPUÉS
+de la línea FIRMADA. Los controles: sin `--clave`, `latir` dura 0,8 ms y no hay ninguna lenta; con
+`TOKIO_WORKER_THREADS` a 1 y a 8, 18 o 19 lentas en cada serie, como sin él; con el chorro de
+escrituras, 13 y 12 lentas, y 16 de 2.569 y 17 de 2.384 escrituras pasan de 100 ms (292 y 366 ms la
+peor), mientras que con `--latido 0` ninguna de 2.432 (18,1 ms la peor). Con ocho `yes` y el nodo a
+`nice` 0, `latir` dura de 548 a 628 ms de mediana, y 20 de 100 sondas tardan hasta 0,51, 0,59 y
+0,80 s, ninguna sin respuesta; con el nodo a `nice` 10, de 4,6 a 4,8 s, ocupa el 82 % del tiempo, y
+quedan sin respuesta 16, 31 y 23 de 100: con 2 s de plazo, un cliente del cable daba por caído a un
+nodo vivo.
+
+**Lo que dice, deducido.** Un candado que retuviera al RPC daría un manejador que empieza durante la
+firma y espera a que acabe: largo, y con su «ok» a la par del final de `latir`, antes de la línea
+FIRMADA, que sale tras `conservar`. El manejador tarda 0 o 1 ms y su «ok» sale después de esa línea:
+la petición no entraba en el nodo hasta que el latido acababa, así que no es un candado, como ya
+decía el código (`latir` suelta el del estado antes de firmar). Lo que espera es la conexión, en la
+cola de la escucha: el núcleo completa el saludo y nadie la acepta hasta que `latir` acaba. Y no es
+que falten hilos, porque con 8 sale lo mismo que con 1: es el ejecutor. `latir` corría entera, firma
+incluida, dentro de un `tokio::spawn`, en un hilo de tokio, y en la mayoría de los latidos ningún
+otro hilo atendía la E/S mientras tanto. El mecanismo dentro de tokio, que el sello daba de memoria,
+se leyó después, en la revisión, en el fuente de tokio 1.53.1 del registro de cargo del contenedor,
+el que fija el `Cargo.lock` y del que se compilaron los dos binarios, y encaja (en
+`src/runtime/scheduler/multi_thread/`): al temporizador del latido lo atiende el hilo que espera en
+el controlador de E/S y del reloj, que pone la tarea en su ranura LIFO y no avisa a nadie, porque
+sólo avisa si la ranura ya estaba ocupada, y nunca mientras está en el controlador
+(`worker.rs:1376-1407`); al salir del controlador, sólo despierta a otro hilo si tiene más de una
+tarea (`worker.rs:910-918` y `:1206-1213`); y con una sola, la del latido, se pone a firmar sin que
+nadie más espere en el controlador. Encaja también con que en algunos latidos sí se contestara (5 y
+6 de 18 con el chorro de escrituras; 2 de 11 en la primera S5, con todas las sondas de su ventana
+rápidas): cuando el temporizador salta con otra tarea lista, otro hilo despierta y toma la E/S. Que
+las lentas acabaran «de 7 a 11 ms antes» de la línea FIRMADA, como medía el §829, es el arranque de
+`curl`: la hora de envío se toma antes de lanzarlo, y aquí `curl` tarda una mediana de 7 ms fuera de
+su `time_total` (17 ms con los `yes`). Y M.1 no lo vio en su máquina y su fecha (§252), con cero
+escrituras afectadas; aquí, con su chorro, sí lo hay.
+
+**Lo que hace.**
+
+**El arreglo.** `arrancar` (`crates/zk-ssl-node/src/latido.rs:413-443`, con las mismas líneas) lanza
+el latido en un hilo del sistema llamado «latido», con `std::thread::Builder`, y duerme con
+`std::thread::sleep`; el bucle, la cuenta de latidos, `conservar` y las líneas del registro no
+cambian, y devuelve el error de lanzar el hilo, que `main` convierte en un error de arranque en la
+misma línea (`main.rs:2151`): sin hilo del latido, el nodo no arranca. `latir` no cambia por dentro;
+su firmante pasa de `Option<&mut FirmanteCabeza>` a `Option<&mut dyn Firmar>` (`:143`), y las
+llamadas de hoy, con `Some(&mut f)` o `None`, siguen igual. `Firmar` (`:1106-1121`) pide sólo firmar
+un digest, y su única implementación en el binario es la de `FirmanteCabeza`, que llama a su
+`firmar` de siempre: reserva el índice con su fsync, firma y se autoverifica. El enrutador de `main`
+sale a `enrutador` (`main.rs:9497-9502`), el mismo `POST /` a `handle`, para que un test sirva por
+TCP el del binario. Se conserva lo que dependía de que el bucle fuera uno y secuencial: el orden de
+las cabezas y del diario, el `mmr_t` contiguo (§714) y una sola cabeza en vuelo; el firmante se
+mueve una vez al hilo y sólo lo toca él (§636), y el `File::try_lock` del guardián es del descriptor
+(§709). Las miradas a la PARADA y a la marca de fallo en vuelo (§815) siguen en su sitio, y el orden
+de los candados no cambia. Un pánico en `latir` mata el hilo, como antes mataba la tarea, y el nodo
+sigue sirviendo sin cabezas nuevas, como antes (abajo, en «Lo que NO hace»).
+
+**Los tests y sus falsadores.** Cuatro, al final del módulo de tests de `latido.rs`, con un firmante
+real al que se le retiene la firma (`FirmanteRetenido`): avisa por un canal desde dentro de la firma
+y espera a que el test la suelte; si el test cae antes, la firma sale con error y sin firmar, y las
+que pasan de su guion se quedan paradas sin gastar CPU. El orden lo dan los canales; los tiempos son
+topes, para que un fallo caiga en vez de colgarse.
+`el_latido_corre_en_su_hilo_y_no_en_un_hilo_del_ejecutor`, lanzado desde dentro de un runtime de dos
+hilos, ve la firma pedida desde el hilo «latido» y fuera del ejecutor.
+`el_rpc_contesta_por_tcp_mientras_el_latido_firma` sirve el enrutador con `axum::serve` en un
+runtime de dos hilos, con el latido a 200 ms, y con la firma retenida y sin cabeza todavía,
+`zkssl_supply` por TCP, con una petición HTTP/1.1 a mano y 30 s de tope de lectura, contesta 200 con
+`result`; soltada, la cabeza sale con el índice 1, se sirve por TCP y verifica.
+`mientras_se_firma_ningun_candado_del_nodo_esta_tomado` toma con `try_lock` los ocho candados del
+nodo con la firma retenida. Y
+`con_la_firma_retenida_el_despacho_lee_y_escribe_y_la_cabeza_es_la_compuesta_antes` lee y abre una
+cuenta por `dispatch` con la firma retenida; mientras se firma la 1, la era publicada sigue en 0 y
+la que fija `era_al_recibir` es la 1; la cabeza que sale lleva el `seq` de antes de la escritura, la
+siguiente la recoge con el índice 2, y el guardián coincide en el 2. Que un recibo de esa ventana
+caiga en la cabeza 2 no lo ata, porque no emite ninguno: se deduce de la D-D.
+
+Los falsadores, aplicados a mano y deshechos, con `cmp` contra la copia de antes. Con el
+`tokio::spawn` y el `tokio::time::sleep(cada).await` de antes en `arrancar`, cae el primero —la
+firma se pide desde `tokio-rt-worker`— y el de TCP —la lectura caduca a los 30 s, `WouldBlock`—, y
+los otros dos pasan. Con `let _g = app.estado.lock();` delante de la firma, caen el de TCP, el de
+los candados, en el del estado, y el del despacho, que no contesta en el tope, 120 s, y el del hilo
+pasa. Y con `era_al_recibir` una cabeza por delante, cae el del despacho, en la era. El de TCP
+llevaba en el sello el latido a cero, y su falsador cayó las seis veces que se corrió; la revisión
+lo corrió más, con el binario de la mutación, y vio que así no caía siempre: pasó 1 de 17 veces sin
+carga añadida y 5 de 8 con ocho `yes` a `nice` 0. Con cero, el `tokio::time::sleep` puede vencer ya
+al registrarse, y entonces se dispara dentro de su propio `poll` (`src/runtime/time/mod.rs:436-438`
+de tokio 1.53.1); la tarea, despertada mientras corre, vuelve a la cola como un `yield`, que sí
+avisa a otro hilo (`src/runtime/task/harness.rs:156-161`, y `handle.rs:120-121` y
+`worker.rs:1376-1407` del planificador), y ese otro atendía la escucha. En el nodo, con `cada` de 1
+o de 60 s, el temporizador salta siempre desde el controlador. Con el latido a 200 ms, el falsador
+del de TCP, corrido suelto (`--exact`) con el binario de la mutación y a `nice` 10, cayó 12 de 12
+veces sin `yes`, con la carga de 1 minuto de 0,0 a 3,2 de otras tareas de la máquina, y 8 de 8 con
+ocho `yes` a `nice` 0, con la carga de 3,9 a 8,1. Los cuatro pasan en release, y el nodo entero, 244
+de 244 en 35 s y sin avisos; siguen en verde los 13 de antes de `latido.rs`, la carrera A5 con hilos
+reales, los de la marca de fallo en vuelo, el de la PARADA, los dos del `mmr_t` y
+`pedir_la_cabeza_firmada_no_firma_otra`. Sin `dev`, el nodo compila con su aviso exacto, el de
+`podar`.
+
+**Lo medido después**, con las mismas series y el binario de antes intercalado. Sin carga, 0 lentas
+de 100 en S0, S1, S2 con 1 y con 8, y S3, con `latir` igual de larga (de 237 a 252 ms) y de 18 a 22
+sondas que empiezan dentro de un latido y contestan; la cola de la escucha, 0 durante el latido (1
+muestra de 85 en S3); y las escrituras del chorro, 0 de 2.749 de más de 100 ms (17,6 ms la peor),
+como el control sin latido. Con ocho `yes` y el nodo a `nice` 0, 0 lentas de 200 (16,2 y 25,5 ms la
+peor); con el nodo a `nice` 10, 0 sin respuesta y 0 lentas de 200 (44,7 y 44,6 ms la peor), con
+`latir` de 4,6 s y el 82 % del tiempo, y con 83 y 82 sondas que empiezan dentro de un latido. Es el
+nodo, y con la máquina sobresuscrita de la receta un plazo de 2 s ya no da por caído a un nodo vivo:
+el «Qué la cierra» de la 123, cumplido, sin cifra que escribir en el cable. Lo que no se ha medido:
+una máquina más estrangulada que la receta, en la que la escucha tampoco tendría CPU; y la mitad de
+despacho de REND-10, abajo. El binario de después se compiló antes de corregir el comentario de un
+test; el del árbol del sello (`afaa4e7a30c02022…`) difiere de él sólo en los sufijos internos de los
+símbolos de LLVM (`strings`), y con él se repitieron al final S0 y S5, con otra sesión compilando a
+`nice` 10 (la carga, de 1,3 a 6,7): 0 lentas de 100, y 0 sin respuesta y 0 lentas de 100, con
+`latir` de hasta 7,1 s y 73,3 ms la peor. Tras las revisiones, el release del árbol tal como se
+commiteó sobre `213b0b0` (`b25e460dea0baf0b…`) difiere del del sello sólo en esos mismos sufijos
+(`strings`), y las series no se repitieron con él; el de este árbol lleva además el kit del §862, y
+tampoco se repitieron con él.
+
+**Lo que cambia, y dónde se dice.** Mientras se firma la cabeza k+1, el RPC ya contesta en cualquier
+nodo, y un recibo que entra en esa ventana declara la era k+1 —el índice publicado sigue en k— y cae
+en la cabeza k+2. No es nuevo: la D-D del RFC-0010 lo contempla desde la enmienda del §681 («o la
+era menos uno cuando el recibo llegó mientras se firmaba»), y lo dicen `main.rs:4558-4559` y
+`registro_recepcion.rs:251`; antes pasaba sólo en los latidos en que otro hilo atendía la E/S, que
+aquí son 5 y 6 de 18 con escrituras, y ahora en todos, durante lo que dura `latir`, casi toda ella
+firma (unos 0,24 s aquí sin carga; 0,8 ms sin clave). Ninguno dice lo contrario, y no se marcan. Una
+PARADA que llega durante la firma deja salir la cabeza ya compuesta, el caso que el §815 aceptó
+(«Una cabeza se firmó 17 ms antes de la PARADA … que describe un estado que el disco tiene»), con la
+ventana de la firma; el latido siguiente no compone. Y una cofirma que llega mientras se firma se
+juzga contra la cabeza que se sirve, sin esperar a la nueva: `tools/banco_cofirma.sh:326-329` espera
+los rechazos «no es de la época en curso» como excepción; deducido, no medido, porque ese banco no
+se corre aquí.
+
+**Las marcas**, al final de su línea. En `latido.rs`: la `:61`, que decía que cruzar un `await`
+bloquearía el ejecutor (también lo bloqueaba sin cruzarlo); la `:66`, el `FirmaError` que pide el
+trait; la `:113` y la `:132`, detrás de las del §892 (no era el candado sino el hilo, y las
+escrituras tampoco se libraban aquí); la `:143`, la firma de `latir`; la `:408`, la primera línea
+del comentario de `arrancar`, que decía «en una tarea de fondo»; y la `:412`, la CORRECCIÓN del
+«`tokio::spawn` y no un hilo», que se corrige y no se borra (§247). En `main.rs`, las dos líneas de
+`main` que cambian, con la suya. En el `BACKLOG.md`: la 123 pasa a `[x]`, con su nota detrás de la
+del §829 —lo medido antes y después, el arreglo, los tests y lo que no cierra— y dos marcas en la
+del §829: en su `:3713` (ya no es un `tokio::spawn`, y la `main.rs:1755` es hoy la `:1894`) y en su
+`:3723`, que decía «Sigue abierta»; la 17, en su `:2748`, y la 18, en su `:2871`. En
+`doc/blueprint-v2.md`, las dos filas de REND-10, la `:285` y la `:428`: la mitad del latido, hecha
+con un hilo, que espera la firma por construcción, y la del despacho, como estaba. Y en
+`tools/banco_reinicio.sh:137`, que las cinco sondas se quedan.
+
+**Los contadores.** El pin del nodo en `tools/canon.sh`, de 240 a 244, con su crónica «§866: 240 ->
+244»; `check_tests`, de 2235 a 2239 declarados; el TOTAL DE SELLO, de 2073 a 2077, y el TOTAL CON
+LARGOS, de 2213 a 2217, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, y en este, «240 del nodo»
+pasa a 244; y el «Estado» del `BACKLOG.md`, de 40 abiertas y 90 resueltas a 39 y 91, contadas con
+`grep`, con «y el §866, que cierra la 123». La cifra del nodo de la sección 14 de `PAPER.md`
+(`:1067`) y de `PAPER_EN.md` (`:1025`), la de `cargo test -p zk-ssl-node`, pasa de 115 a 244: decía
+115, el pin de antes del §519, que lo pasó a 122, y `check_cifras` no la ve; las otras dos de ese
+bloque, la capa y los circuitos, ya son las del canon. No cambian `check_modulos` (216 ficheros),
+los vectores (605), los avisos del nodo (ninguno en sus tests, y el de `podar`, exacto, en el
+binario con `dev` y sin él), el `Cargo.lock` ni el kit.
+
+**Las citas por línea que se mueven.** Ninguna del árbol vivo. `latido.rs` pasa de 859 líneas a
+1121: las 262 nuevas van al final del módulo de tests y detrás de él, y lo demás cambia una línea
+por una, así que la `:413-421` y la `:429-431` de la 123, la `:72` de la 12, la 77 y la 123, y las
+del blueprint siguen donde estaban. `main.rs` pasa de 9495 a 9502, con las siete al final. El
+`BACKLOG.md` pasa de 5442 a 5486: las 44 de la nota van dentro de la 123, y ninguna cita viva apunta
+más allá de su `:3080` (`git grep`). En `AUDITORIA.md`, de 74103 a 74394, con este asiento al final.
+Los demás ficheros no ganan ni pierden ninguna línea: cada trozo de `git diff -U0` cambia una por
+una.
+
+**Lo que NO hace.**
+
+- No toca `handle`, que llama a `despachar` síncrono en un hilo del ejecutor (`main.rs:2617`): es la
+  mitad de despacho de REND-10, la misma clase de defecto, sin medir, y va como una línea en la nota
+  de la 123, no como entrada nueva. Ni fija `worker_threads` en `#[tokio::main]` (`main.rs:1894`).
+- No cambia `latir` por dentro, ni `firma_cabeza.rs`, ni `diario.rs`, ni un `Cargo.toml`.
+- No hace que un pánico en `latir` pare el nodo ni lo diga: mata el hilo «latido», cuyo `JoinHandle`
+  se tira (`latido.rs:442`), y el nodo sigue contestando sin cabezas nuevas, como antes con la
+  tarea. Que un pánico no deje un nodo que parece vivo y no late no se cumplía antes ni se cumple
+  ahora, y no tiene test: es una decisión del autor.
+- No vuelve a una sola sonda en el DOS NODOS de `tools/banco_reinicio.sh`, que es del autor, ni
+  corre su receta (ocho `yes` y el banco a `nice` 10): aquí, con el nodo a `nice` 10, `latir` dura
+  unos 4,6 s, menos que los 10 s de sus cinco sondas, y su ROJO tampoco saldría antes del arreglo
+  (deducido, no corrido).
+- No mide con `--latido 60`: el 1,32 % del §829 sigue deducido, y aquí, con 240 ms, sería un 0,4 %
+  (deducido); después del arreglo, la cadencia no cambia lo que contesta el RPC.
+- No toca la D-D del RFC-0010, ni `SECURITY.md`, ni `spec/RPC.md`: nada dice lo contrario, y no hay
+  plazo del cable que escribir.
+- No toca la lista de `doc/KIT.md` y `doc/KIT_EN.md` de los sellos que cambian las fuentes del nodo,
+  como el §865, que no la empezó a mantener sello a sello.
+- No marca `doc/ecst/VERIFICACION.md:632`, que dice que el `FirmanteCabeza` «lo posee una sola tarea
+  tokio»: es un registro generado y fechado, del árbol `71c5aad`, y está excluido.
+- No corrige la cita `latido.rs:473` de la 12 (`BACKLOG.md:1747`), que no cae en la hoja del MMR
+  desde el §714 —hoy es la `:479`—: este sello no la mueve.
+- No añade `tools/banco_latido.sh` ni deja los guiones en el árbol.
+- No toca `crates/zk-ssl-guardian`, ni `crates/zk-ssl-verify`, ni `winter-*`, ni `zk-ssl-air`, ni
+  `stark-experiment`, ni `ceremony`, ni `tools/check_constraint_layout.py`. No reescribe ningún
+  asiento ni la nota del §829, que es de su fecha y sólo gana su marca.
+
+**Lo medido sobre este árbol, antes de commitearlo**, desde la raíz y con este asiento en su sitio:
+`check_cifras`, 26 cifras y ninguna contradice el canon; `check_tests`, 2239 declarados;
+`check_modulos`, 216 ficheros; `check_vectores`, 605 vectores y 1370 líneas de 19 manifiestos con su
+huella, ninguno movido; `check_catalogo`, 236 textos del kit y 302 entradas de §5;
+`check_superficie`, la lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas;
+`verificar_citas`, 0 fantasmas, 0 secciones muertas y 249 encabezados citados, 0 muertos, y el
+registro con 829 encabezados y 0 citas muertas; `check_nucleo`, 183 filas; y `check_figures`,
+`check_columns`, `check_constraint_layout`, `check_dominios`, `check_publicadas`, `check_techo` y
+`check_curvas`. Todas salen con 0, y `git diff --check`, limpio.
+
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.

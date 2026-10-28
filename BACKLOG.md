@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 40 abiertas, 90 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 39 abiertas, 91 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, y el §864, que cierra la 94.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, y el §866, que cierra la 123.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -2745,7 +2745,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `--comparar` de los diarios lo ve, que es el cerebro dividido de un failover. Y la 123 mide que
   una sonda de 2 s puede dar por caído a un nodo vivo con la máquina sobresuscrita: el disparador de
   un failover falso. La parte del firmante es la familia de la 92 y la 124, y esta entrada no la
-  decide. Lo dice, con marca, `SECURITY.md` §2, en la viñeta del índice de la clave de firma.
+  decide. Lo dice, con marca, `SECURITY.md` §2, en la viñeta del índice de la clave de firma. ⚠️ §866: lo de la 123 era el nodo, que no contestaba mientras firmaba su latido; arreglado, con la máquina sobresuscrita de su receta una sonda de 2 s ya no da por caído al nodo vivo (la 123, cerrada). El cerebro dividido no cambia.
   ⚠️ **§860: el «Comprobable» envejeció.** Medido sobre `d4d6d45`: el `grep` da 5 líneas
   (`snapshot.rs:79`, `log.rs:93`, `store.rs:45`, `migration.rs:111` y `:167`), y ninguna implementa
   nada: las tres primeras declaran que no hay réplica o comentan otra cosa, la cuarta es un
@@ -2868,7 +2868,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   su registro de serie; otras seis pasadas, de otro agente y con otra tarea en
   la maquina, dan en el SOLAPE 180 mas, 176 y 4. Ninguno se niega, y ningun
   `WouldBlock` llego a error. Lo que ese banco aun dio en ROJO, con el nodo a
-  menos prioridad que la carga, es la 123, no esta. `AUDITORIA.md` §829.
+  menos prioridad que la carga, es la 123, no esta. `AUDITORIA.md` §829. ⚠️ §866: medida y cerrada: era el latido, que firmaba en un hilo del ejecutor.
 
 - [ ] **19. Sin log de escritura anticipada — y la consecuencia que se
   describia NO existe.** **Comprobable**: `grep -rn "write_ahead|journal"
@@ -3644,7 +3644,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   entrada: el transporte del publicador del medio, que no enlaza TLS y, si lo necesita, amplía R4
   en un sello propio.
 
-- [ ] **123. Un nodo vivo que no contesta en 2 s con la máquina sobresuscrita (§813).** Medido el
+- [x] **123. Un nodo vivo que no contesta en 2 s con la máquina sobresuscrita (§813).** Medido el
   15-10-2026 sobre `b6994c3`, en 4 CPU con ocho `yes` y carga de 6,6 a 8,7, para el DOS NODOS de
   `tools/banco_reinicio.sh`: de 100 sondas `zkssl_supply` con 2 s de tope a un nodo vivo en cada
   caso (200 en total), **10 quedan sin respuesta SIN segundo nodo y 5 CON él**. Las que contestan
@@ -3710,7 +3710,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   - **La pista del mecanismo, sin medir.** `latir` es síncrona y corre dentro de un `tokio::spawn`
     (`crates/zk-ssl-node/src/latido.rs:413-421`), y `#[tokio::main]` no fija `worker_threads`
     (`crates/zk-ssl-node/src/main.rs:1755`): leído. Lo que retiene al RPC —el ejecutor, un candado o
-    la escucha— NO está medido.
+    la escucha— NO está medido. ⚠️ §866: medido, es el ejecutor (abajo); hasta el §866 corría dentro de un `tokio::spawn`, y la `main.rs:1755` es hoy la `:1894`.
   - **Lo que comprobó la sesión que lo sella.** El banco arranca sus dos nodos —el de `arranca`, la
     `:60` de `tools/banco_reinicio.sh`, y el segundo del DOS NODOS, la `:116`— con `--latido 1` y
     `--log warn` (`:62` y `:118`), con el que no sale la línea del latido, un `tracing::info!`
@@ -3720,7 +3720,51 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     el chat de la otra («sí a todo lo recomendado») y confirmó en el de la que lo sella («si»):
     sellar ahora solo esta nota, con la medida y su control; arreglar `latir` más adelante, cuando
     se mida el mecanismo; y no alargar las sondas del DOS NODOS, descartado porque taparía esta
-    entrada. Sigue abierta; lo que pide y lo que la cierra no cambian. `AUDITORIA.md` §829.
+    entrada. Sigue abierta; lo que pide y lo que la cierra no cambian. `AUDITORIA.md` §829. ⚠️ §866: cerrada, abajo.
+
+  ✅ **CERRADA en el §866**, que la hace ahora, el 28-10-2026, tras la 0.4.4, como decidió el autor,
+  y mide antes el mecanismo, como pedía la nota del §829. **Lo medido**, en el contenedor de 4 CPU
+  de la sesión, sobre el binario release de `213b0b0`, con guiones de la sesión fuera del árbol que
+  el asiento describe: el nodo como el del banco, con `--latido 1` y `--log info`; 100 sondas
+  `zkssl_supply` por serie, con `curl --max-time 2`, 0,2 s entre una y otra y la hora de envío de
+  `$EPOCHREALTIME`; las líneas «ok … ms=» y «cabeza de epoca FIRMADA … ms=» del nodo, con su hora; y
+  la cola de la escucha cada 50 ms (el `rx_queue` del socket en LISTEN de `/proc/net/tcp`). Sin
+  carga, en ocho series, `latir` dura de 236 a 265 ms de mediana —no los 804 del §829, de otra
+  sesión y sobre `7ed7e17`: otra máquina u otro binario, deducido— y ocupa del 19 al 21 % del
+  tiempo; con clave, de 12 a 19 sondas de 100 tardan de 0,1 a 0,30 s, todas solapan un latido, y de
+  las rápidas empiezan dentro de uno 0 o 1, y 5 y 7 con escrituras. **Dónde se va el tiempo**: en la
+  cola de la escucha, antes de que el nodo acepte. Una sonda lenta conecta en menos de 0,5 ms —el
+  núcleo completa el saludo—, la cola vale 1 o 2 durante el latido y 0 fuera, el manejador del nodo
+  tarda 0 o 1 ms y su «ok» sale de 0,2 a 2 ms DESPUÉS de la línea FIRMADA. Que las lentas acabaran
+  «de 7 a 11 ms antes» de esa línea es el arranque de `curl`, que aquí tarda una mediana de 7 ms
+  fuera de su `time_total`. Los controles: sin `--clave`, 0 lentas; con `TOKIO_WORKER_THREADS` a 1 y
+  a 8, 18 o 19 en cada serie; y con un chorro de escrituras en serie, el de M.1 (`dev_openSeeded`),
+  12 y 13, con 16 y 17 escrituras de más de 100 ms (366 ms la peor), que la nota esperaba en cero.
+  No es un candado —`latir` lo suelta antes de firmar y el manejador no espera—, sino el ejecutor:
+  `latir` corría entera en un hilo de tokio, y en la mayoría de los latidos nadie atendía la escucha
+  mientras tanto (deducido de lo medido; el fuente de tokio 1.53.1, leído después, encaja: el
+  asiento). Con ocho `yes` y el nodo a `nice` 0, `latir` dura de 548 a 628 ms, y 20 de 100 sondas
+  tardan hasta 0,8 s, ninguna sin respuesta; con el nodo a `nice` 10, de 4,6 a 4,8 s, y quedan sin
+  respuesta 16, 31 y 23 de 100: **un cliente del cable con 2 s de plazo daba por caído a un nodo
+  vivo**. **El arreglo**: el latido corre en su propio hilo del sistema, «latido», con el mismo
+  bucle y `latir` sin cambiar por dentro (`crates/zk-ssl-node/src/latido.rs:413-443`); lanzarlo
+  puede fallar, y el arranque no sigue. Sus cuatro tests, en el módulo de tests de `latido.rs`,
+  retienen la firma de un firmante real: `el_latido_corre_en_su_hilo_y_no_en_un_hilo_del_ejecutor`,
+  `el_rpc_contesta_por_tcp_mientras_el_latido_firma`,
+  `mientras_se_firma_ningun_candado_del_nodo_esta_tomado` y
+  `con_la_firma_retenida_el_despacho_lee_y_escribe_y_la_cabeza_es_la_compuesta_antes`. Con el
+  `tokio::spawn` de antes caen los dos primeros, el de TCP con el latido a 200 ms, las 20 veces que
+  se corrió (a cero no caía siempre); con el candado del estado tomado alrededor de la firma, los
+  tres últimos. **Después**, con las mismas series y el binario de antes intercalado: sin carga, 0
+  lentas de 100 en cada serie, y las escrituras, 0 de más de 100 ms (17,6 ms la peor); con ocho
+  `yes`, 0 lentas de 200 con el nodo a `nice` 0 (25,5 ms la peor) y 0 sin respuesta de 200 con el
+  nodo a `nice` 10 (44,7 ms la peor), con `latir` igual de larga, 4,6 s. **Qué la cierra**,
+  cumplido: es el nodo, y va el arreglo con sus tests; con la máquina sobresuscrita de la receta, un
+  plazo de 2 s ya no da por caído al nodo, y no hay cifra que escribir en el cable. Lo que no
+  cierra: una máquina más estrangulada que la receta, sin medir; y la mitad de despacho de REND-10
+  (`doc/blueprint-v2.md:285`): `handle` llama a `despachar`, síncrono, en un hilo del ejecutor
+  (`crates/zk-ssl-node/src/main.rs:2617`), la misma clase de defecto, sin medir, que va en esta
+  línea y no en una entrada nueva. `AUDITORIA.md` §866.
 
 - [ ] **124. Nada ata una clave de firma a un solo libro ni a un solo contador (§813).** Medido el
   15-10-2026, en la revisión del §813: un nodo B arranca con la MISMA `--clave-fichero` que un nodo
