@@ -29,7 +29,8 @@
 //! filas aleatorias de las columnas reales, que en una AIR cuyas restricciones las toquen con grado
 //! >= 2 entran en los trozos del cociente de forma no lineal (objecion 1 del §897) y en una AIR que
 //! las toque solo linealmente y con coeficientes publicos son una mascara lineal mas, independiente
-//! del testigo, que este instrumento NO mide (la 134 de `BACKLOG.md`: M_lin, por AIR); y no cambia
+//! del testigo, que este instrumento NO mide (la 134 de `BACKLOG.md`: M_lin, por AIR; ⚠️ §900: la mide
+//! `instrumento_mlin`, con la misma O, la misma K y los mismos desafios); y no cambia
 //! la promesa de la casa. El veredicto, con precision: R3 con M = {columna aleatoria,
 //! aleatorizadores} no se cumple; que lo que FRI abre no sea simulable no lo dice este modulo.
 
@@ -45,7 +46,7 @@ use crate::instrumento_cota::Geometria;
 use crate::proof_options;
 
 /// El campo de produccion con su extension cuadratica, donde vive D.
-type E = QuadExtension<BaseElement>;
+pub(crate) type E = QuadExtension<BaseElement>;
 /// El factor de plegado de FRI en produccion.
 const PLEGADO: usize = 8;
 
@@ -83,7 +84,7 @@ pub(crate) struct Desafios {
     pub alfas: Vec<E>,
 }
 
-type Moneda = DefaultRandomCoin<Blake3_256<BaseElement>>;
+pub(crate) type Moneda = DefaultRandomCoin<Blake3_256<BaseElement>>;
 
 pub(crate) fn desafios(g: &Geometria, semilla: u64) -> Desafios {
     let lde = 2 * g.t * proof_options().blowup_factor();
@@ -109,13 +110,13 @@ pub(crate) fn desafios(g: &Geometria, semilla: u64) -> Desafios {
     Desafios { posiciones, z, cc_columna, cc_trozos, alfas }
 }
 
-fn saca<F: FieldElement<BaseField = BaseElement>>(moneda: &mut Moneda) -> F {
+pub(crate) fn saca<F: FieldElement<BaseField = BaseElement>>(moneda: &mut Moneda) -> F {
     moneda.draw::<F>().expect("la moneda no dio un elemento")
 }
 
 // ---- polinomios sobre E, en orden ascendente ----
 
-fn mul(a: &[E], b: &[E]) -> Vec<E> {
+pub(crate) fn mul(a: &[E], b: &[E]) -> Vec<E> {
     let mut r = vec![E::ZERO; a.len() + b.len() - 1];
     for (i, &x) in a.iter().enumerate() {
         if x == E::ZERO {
@@ -129,7 +130,7 @@ fn mul(a: &[E], b: &[E]) -> Vec<E> {
 }
 
 /// Π (x − raiz).
-fn de_raices(raices: &[E]) -> Vec<E> {
+pub(crate) fn de_raices(raices: &[E]) -> Vec<E> {
     let mut p = vec![E::ONE];
     for &r in raices {
         p = mul(&p, &[-r, E::ONE]);
@@ -137,19 +138,19 @@ fn de_raices(raices: &[E]) -> Vec<E> {
     p
 }
 
-fn con_largo(mut p: Vec<E>, largo: usize) -> Vec<E> {
+pub(crate) fn con_largo(mut p: Vec<E>, largo: usize) -> Vec<E> {
     assert!(p.len() <= largo, "un polinomio de grado {} no cabe en {largo}", p.len() - 1);
     p.resize(largo, E::ZERO);
     p
 }
 
 /// El conjugado de E sobre F: el Frobenius, e^p.
-fn conjugado(e: E) -> E {
+pub(crate) fn conjugado(e: E) -> E {
     e.exp(BaseElement::MODULUS)
 }
 
 /// Cada elemento de E, sus dos coordenadas sobre F.
-fn sobre_f(v: &[E]) -> Vec<BaseElement> {
+pub(crate) fn sobre_f(v: &[E]) -> Vec<BaseElement> {
     v.iter().flat_map(|e| [e.base_element(0), e.base_element(1)]).collect()
 }
 
@@ -192,9 +193,9 @@ pub(crate) fn rango_de<F: FieldElement>(mut a: Vec<Vec<F>>) -> usize {
 // ---- la mirilla: lo que FRI abre de un polinomio ----
 
 /// La geometria de FRI de una prueba y los desafios, listos para observar polinomios.
-struct Mirilla {
-    largo: usize,
-    lde: usize,
+pub(crate) struct Mirilla {
+    pub largo: usize,
+    pub lde: usize,
     capas: usize,
     resto: usize,
     posiciones: Vec<usize>,
@@ -202,11 +203,11 @@ struct Mirilla {
     twiddles: Vec<BaseElement>,
     inv_twiddles: Vec<BaseElement>,
     /// Las filas sobre E que devuelve `observa`.
-    filas: usize,
+    pub filas: usize,
 }
 
 impl Mirilla {
-    fn nueva(g: &Geometria, d: &Desafios) -> Self {
+    pub(crate) fn nueva(g: &Geometria, d: &Desafios) -> Self {
         let largo = 2 * g.t;
         let blowup = proof_options().blowup_factor();
         let lde = largo * blowup;
@@ -237,7 +238,7 @@ impl Mirilla {
     /// Lo que FRI abre de `d` (grado ≤ L − 2, `largo` coeficientes): capa a capa, la hoja entera
     /// del coset de plegado de cada posicion, y el resto. El mismo pliegue y el mismo offset que
     /// el probador de winter-fri.
-    fn observa(&self, d: &[E]) -> Vec<E> {
+    pub(crate) fn observa(&self, d: &[E]) -> Vec<E> {
         assert_eq!(d.len(), self.largo);
         let blowup = self.lde / self.largo;
         let mut evals = fft::evaluate_poly_with_offset(d, &self.twiddles, BaseElement::GENERATOR, blowup);

@@ -353,6 +353,21 @@ escrito y revisado: la sal se va y la prueba adelgaza.
 > 131); y la semilla repetida devuelve dos constantes que cada prueba sola oculta (por qué la
 > semilla es fresca, §652). Esta decisión, la D-A y la promesa no cambian: el censo.
 
+> ⚠️ **§900 (la 134 del HVZK): M_lin, medida AIR a AIR.** Las filas aleatorias de las columnas
+> reales que entran en las restricciones sólo linealmente y con coeficiente público —constantes,
+> periódicos o los elementos aleatorios del tramo auxiliar— son una máscara más, independiente del
+> testigo, que el §898 no contaba. `crates/zk-ssl/src/instrumento_mlin.rs` sondea las 23 AIR en
+> cada canon —qué columnas entran así, cuáles con grado ≥ 2 y cuáles linealmente pero con la
+> pendiente de otra columna— y mide R3 con ella por familia, con la misma O, la misma K y los
+> mismos desafíos del §898: en dieciséis de veintitrés —las seis de T = 1024, las nueve de T = 512 y
+> la solvencia— R3 se cumple con la construcción de hoy, y las lineales con los aleatorizadores
+> bastan solas; MerkleAir y FrozenClimbAir (T = 256, la sbox en todas sus columnas) no tienen
+> ninguna y siguen con la R3 del §898; las cinco de T = 64 no tienen M_lin que medir y siguen en la
+> 131. Es una cota inferior: el instrumento condiciona cada columna lineal a sus 2q + 6 tocados,
+> más de lo que el verificador ve de ella (la 135 de `BACKLOG.md`). Quién necesita la 133 para R3:
+> esas siete; las otras dieciséis, no. El argumento, el censo y las cifras, en el apartado 14 de
+> `doc/ocultacion-hvzk.md`. Esta decisión, la D-A y la promesa no cambian: el censo, hasta A4.
+
 ### D-J — Las cifras de bytes pasan a bandas y el azar sale del sistema
 
 Una prueba oculta no es determinista: con otra semilla pesa distinto (E1, E2 y E4 del SPIKE-B-P4:
@@ -865,7 +880,11 @@ con dos columnas, clavada por geometría en cada canon (`R3_MEDIDO_LABORATORIO`)
 de todas las pruebas: es del corte 0.5 (RFC-0018), nunca de `zkssl/0.4`; la marca v2 de su D-G
 tendría que llevar las columnas aleatorias, un byte más, y la de laboratorio se va entonces. Y R3
 verde no es HVZK: cubre lo que FRI abre; lo tocado por columna (L1, la 131) y lo que depende de la
-AIR (L6) siguen como estaban, y la promesa sigue siendo el censo.
+AIR (L6) siguen como estaban, y la promesa sigue siendo el censo. ⚠️ §900: la 134 dice qué
+familias la necesitan para R3 con la construcción de hoy: MerkleAir y FrozenClimbAir, sin ninguna
+columna lineal, y las cinco de T = 64, que antes necesitan la 131; las otras dieciséis cumplen R3
+con la máscara lineal de sus propias columnas (`doc/ocultacion-hvzk.md`, apartado 14). Sigue
+siendo la salida independiente del álgebra de cada AIR, y la del corte.
 
 Gana dos columnas sobre F frente a una sobre E: pureza (ninguna restricción ni aserción de más) y
 coste (una columna más de 2T elementos de F por prueba, frente a un tramo auxiliar nuevo donde no

@@ -59,7 +59,9 @@
 //! de Lagrange en el conjunto tocado, y una tabla declarada por AIR, [`INDEPENDIENTE_DE_LA_AIR`],
 //! dice que familias la cumplen (T >= 256) y cuales no (las cinco con T = 64); un cambio en
 //! cualquier sentido es rojo. El argumento, con sus lemas, lo que mide cada test de aqui y lo que
-//! no cubre, es `doc/ocultacion-hvzk.md`.
+//! no cubre, es `doc/ocultacion-hvzk.md`. §900 (la 134): el mismo test sondea las 23 AIR —que columnas
+//! entran linealmente con coeficiente publico— contra el censo declarado de `instrumento_mlin` y mide
+//! R3 con M_lin en la solvencia, contra lo clavado.
 
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -131,7 +133,7 @@ pub(crate) fn anota(fila: &str, pr: &[u8]) {
     ANOTADAS.with(|a| a.borrow_mut().push((fila.to_string(), pr.to_vec())));
 }
 
-fn recoge() -> Vec<(String, Vec<u8>)> {
+pub(crate) fn recoge() -> Vec<(String, Vec<u8>)> {
     ANOTADAS.with(|a| a.borrow_mut().drain(..).collect())
 }
 
@@ -602,7 +604,7 @@ fn probadores_que_encienden(src: &Path) -> usize {
 }
 
 /// La AIR que nombra una fila de `asierta`: lo que va entre el ultimo parentesis.
-fn air_de(fila: &str) -> String {
+pub(crate) fn air_de(fila: &str) -> String {
     fila.rsplit('(').next().unwrap_or("").trim_end_matches(')').to_string()
 }
 
@@ -775,6 +777,88 @@ fn la_cota_de_ocultacion_de_los_23_probadores_con_fila() {
     }
     assert_eq!(geometrias.len(), crate::instrumento_r3::R3_MEDIDO.len(), "geometrias de produccion");
     assert!(mal.is_empty(), "R3 no es lo clavado:\n{}", mal.join("\n"));
+
+    // §900 (la 134): el censo de la sonda, AIR a AIR, contra lo declarado en CENSO_134 -cuantas
+    // columnas entran linealmente con coeficiente publico, cuantas con pendiente del testigo,
+    // cuantas no linealmente- y el veredicto, coherente con el censo y con lo clavado; y M_lin
+    // medida en la solvencia, la familia barata, contra lo clavado (las demas, en el test largo de
+    // instrumento_mlin, clavadas tambien)
+    use crate::instrumento_mlin::{self, Veredicto};
+    let mut mal = Vec::new();
+    let mut sondeadas: BTreeSet<String> = BTreeSet::new();
+    for (fila, bytes) in &pruebas {
+        let air = air_de(fila);
+        let g = crate::instrumento_r3::canonica(&geometria::<E>(fila, bytes).expect("geometria"));
+        if g.m != 64 || !sondeadas.insert(air.clone()) {
+            continue;
+        }
+        let p = Proof::from_bytes(bytes).expect("la prueba se deserializa");
+        let Some(sonda) = instrumento_mlin::sonda_de(&air, p.trace_info(), p.options()) else {
+            mal.push(format!("{air}: sin sonda"));
+            continue;
+        };
+        let censo = instrumento_mlin::sondea(&*sonda, 1);
+        let (l, t, n) = censo.cuenta();
+        let libres = instrumento_mlin::libres_de(&g);
+        println!(
+            "[134] {air}: T {} · {} reales · {l} lineales · {t} con pendiente del testigo · {n} no lineales · \
+             {libres} libres por lineal",
+            g.t,
+            sonda.reales()
+        );
+        match instrumento_mlin::censo_declarado(&air) {
+            None => mal.push(format!("{air}: sin fila en CENSO_134")),
+            Some((dt_, r, dl, dt, dn, veredicto)) => {
+                if (dt_, r, dl, dt, dn) != (g.t, sonda.reales(), l, t, n) {
+                    mal.push(format!(
+                        "{air}: censo medido (T {}, {}, {l}, {t}, {n}) y declarado (T {dt_}, {r}, {dl}, {dt}, {dn})",
+                        g.t,
+                        sonda.reales()
+                    ));
+                }
+                let esperado = if libres == 0 {
+                    Some(Veredicto::NoCabe)
+                } else if l == 0 {
+                    Some(Veredicto::SinLineales)
+                } else {
+                    match instrumento_mlin::medido(&air) {
+                        Some(m) if m.0 == g.t && m.1 == g.trozos => {
+                            Some(if m.5 == m.2 { Veredicto::Cumple } else { Veredicto::NoCumple })
+                        },
+                        Some(m) => {
+                            mal.push(format!("{air}: la fila de MLIN_MEDIDO es de T {} y {} trozos", m.0, m.1));
+                            None
+                        },
+                        None => {
+                            mal.push(format!("{air}: con lineales y sin fila en MLIN_MEDIDO"));
+                            None
+                        },
+                    }
+                };
+                if let Some(e) = esperado {
+                    if veredicto != e {
+                        mal.push(format!("{air}: el veredicto declarado es {veredicto:?} y lo medido dice {e:?}"));
+                    }
+                }
+            },
+        }
+        if air == "SolvencyAir" {
+            let m = instrumento_mlin::mide(&*sonda, &g, &censo.lineales(), 1, instrumento_mlin::TODAS);
+            println!("{}", instrumento_mlin::linea(&air, &g, &m));
+            let r3 = crate::instrumento_r3::clavado(&g).map(|c| c.3).expect("la solvencia tiene fila en R3_MEDIDO");
+            if m.rango_sin_lineales != r3 {
+                mal.push(format!("{air}: sin lineales da {} y R3_MEDIDO dice {r3}", m.rango_sin_lineales));
+            }
+            let medida = (g.t, g.trozos, m.rango_k, r3, m.rango_lineales, m.rango_mascaras);
+            match instrumento_mlin::medido(&air) {
+                None => mal.push(format!("{air}: sin fila en MLIN_MEDIDO: {medida:?}")),
+                Some(c) if c != medida => mal.push(format!("{air}: medido {medida:?} y clavado {c:?}")),
+                Some(_) => {},
+            }
+        }
+    }
+    assert_eq!(sondeadas.len(), FILAS.len(), "familias sondeadas");
+    assert!(mal.is_empty(), "la 134 no es lo clavado:\n{}", mal.join("\n"));
 }
 
 /// **El juguete con la geometria de produccion cumple la cota, y verifica.** `WorkAir` con 128

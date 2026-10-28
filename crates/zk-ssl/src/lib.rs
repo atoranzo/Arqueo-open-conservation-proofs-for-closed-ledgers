@@ -1488,6 +1488,8 @@ mod instrumento_cota;
 mod instrumento_r3;
 #[cfg(test)]
 mod instrumento_falsadores_hvzk;
+#[cfg(test)]
+mod instrumento_mlin;
 
 // §840 (la 51 de BACKLOG.md): el censo de los `native_leaf` y la guarda de que las estrechas no
 // llegan a produccion. Solo tests. Al final, por lo mismo que el anterior.

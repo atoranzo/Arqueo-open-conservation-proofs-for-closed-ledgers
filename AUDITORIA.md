@@ -74447,3 +74447,152 @@ cualquier otra—, y lo miden el cable, 27 de 27, los pares STARK, 76 de 76, y l
 huellas. Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en
 los sellos anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola
 corrida: no hubo roja.
+
+## §900 — La 134 del HVZK, medida: la sonda de linealidad de las columnas reales y M_lin —la máscara de las filas aleatorias de las columnas que entran en las restricciones linealmente y con coeficiente público— medida contra lo que FRI abre, AIR a AIR, con la misma O, la misma K y los mismos desafíos del §898; dieciséis de las veintitrés familias cumplen R3 con la construcción de hoy y siete no, con nombre: MerkleAir y FrozenClimbAir, sin ninguna columna lineal, y las cinco de T = 64; el censo de las 23 en cada canon y la solvencia medida en cada canon; la 134 cerrada y la 135 abierta
+
+El commit que lleva este asiento, sobre `9701a4f7` (el §899, la punta de la rama de la sesión).
+Toca sólo tests y documentos: `crates/zk-ssl/src/instrumento_mlin.rs`, nuevo y sólo de tests
+(`cfg(test)` en `lib.rs`), con la sonda, la medida, el juguete de las tres entradas, el despacho de
+las 23 AIR por su nombre y las dos tablas selladas, `CENSO_134` y `MLIN_MEDIDO`;
+`crates/zk-ssl/src/instrumento_r3.rs`, que abre al crate su mirilla y sus ayudantes —sin cambiar una
+cifra— y gana una nota en su cabecera; `crates/zk-ssl/src/instrumento_cota.rs`, cuyo test de las
+23 familias sondea cada AIR contra el censo declarado y mide M_lin en la solvencia contra lo
+clavado, y abre `recoge` y `air_de` al crate; `crates/zk-ssl/src/lib.rs`, dos líneas;
+`tools/canon.sh`, la fila de `zk-ssl`, 558 -> 561 pasan y 7 -> 8 ignorados, con su crónica; los
+totales y las copias del pin en `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `ARQUITECTURA.md` (con
+su marca), `CONTRIBUTING.md` (con su marca), `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y
+`doc/ecst/VERIFICACION.md`, y en `PAPER.md` y `PAPER_EN.md` la cuenta de ignorados, que decía 18 y
+son 21 —la suma de la columna de ignorados de la tabla de sello, y los instrumentos que cuenta
+`check_tests`—, con su marca; `doc/ocultacion-hvzk.md`, el apartado 14 y las marcas §900 en la
+cabecera, en H6 y la H12 nueva, en el enunciado del apartado 8, en la objeción 1 del §898 y en lo
+que pide a A4; `spec/rfc/0009-lo-que-revela-una-prueba.md`, una nota a la D-I y otra a la D-AL;
+`spec/rfc/0018-el-tren-0-5.md`, una nota en la E5; `BACKLOG.md`, la 134 cerrada, la 135 abierta y
+notas a la 130, la 131, la 132 —a medias— y la 133; y este asiento. Ni el fork, ni ningún
+probador, ni ningún AIR, ni el cable, ni vectores: nada de producción cambia un byte. Lo escribe y
+lo commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre tras el §899. El
+canon de este commit se dice al final.
+
+**De dónde sale.** La orden del autor —la 134, antes o después de la 133: que diga qué familias
+necesitan la 133 y cuáles no—, y la objeción 1 de la revisión del §898, que la abrió: en una AIR
+cuyas restricciones toquen una columna sólo linealmente y con coeficientes públicos, las filas
+aleatorias de esa columna son una máscara lineal más, independiente del testigo, que el
+instrumento de R3 no contaba. La regla de la casa: medir antes de decidir, y lo medido, clavado.
+
+**Lo que hace.**
+
+1. **La sonda.** `Sonda`, lo que el instrumento necesita de una AIR oculta sin saber su tipo, y
+   que `Oculta<A>` implementa para toda `A`: anchuras, trozos del contexto, columnas periódicas y
+   la composición C en un punto con un marco, calculada como la calcula el probador —la
+   combinación de las transiciones, principales y auxiliares, entre su divisor, más cada grupo de
+   aserciones entre el suyo—. Por columna real, en tres puntos de E al azar, con dos marcos al azar
+   y un desplazamiento δ, para la fila actual y la siguiente: afín en la entrada si la segunda
+   diferencia es nula, pública si la pendiente en el otro marco es la misma. Tres veredictos:
+   lineal con coeficiente público, no lineal, lineal con pendiente del testigo. Schwartz-Zippel
+   sobre E. Un juguete de cuatro columnas —grado 3; un transporte; lineal con la pendiente de la
+   primera; lineal con pendiente periódica— es su prueba de vida, con dos semillas.
+2. **M_lin, y R3 con ella.** De cada columna lineal, lo libre tras condicionarla a los 2q + 6
+   tocados de L1: P_ρ = Z_real·V_toc·w, w ∈ F[x] de grado < T − 2q − 6; entra en D por el camino
+   directo, cc_i·Q[P_ρ], y por el del cociente, C(P_ρ) − C(0) —lineal en P_ρ, con la pendiente de
+   cada columna en cada punto del dominio de restricciones precalculada—, troceado como `segmentar`
+   con paso s = L − m y cada trozo con su coeficiente de DEEP. Lo que el verificador ve de los
+   trozos —cada uno en las q posiciones, en z y en z·g— lo descuenta el núcleo conjunto con los
+   aleatorizadores: rango(O∘M) = rango([abiertos | O∘D]) − rango(abiertos), sobre combinaciones
+   aleatorias de todo el espacio, más que su rango puede ser. Con la misma O, la misma K y los
+   mismos desafíos del instrumento de R3. Dos asertos dentro de la medida: que C(P_ρ) cabe en los N
+   trozos —si el numerador no se anulara donde el divisor, el interpolado no sería un polinomio—
+   y que las máscaras no salen de K, por rangos.
+3. **Se valida contra lo clavado.** Sin columnas lineales la medida reproduce lo del §898: en el
+   juguete 424 sin determinar, 254 de máscara y 80 de aleatorizadores solos; en la solvencia, 632
+   y 378, en cada canon. Con las dos lineales del juguete, 38 libres cada una, la máscara crece
+   exactamente en sus 76 dimensiones, dentro de K: 156 con los aleatorizadores, 330 las tres.
+4. **El censo y la medida, sellados.** `CENSO_134`: por AIR, T, las columnas reales y cuántas
+   entran de cada manera, y el veredicto; lo mide la sonda en cada canon, en el test de las 23
+   familias, con la traza y las opciones de una prueba real de cada una, con m = 64, y unas
+   entradas públicas vacías, que ninguna AIR mira al construirse salvo la edad, que va con unas de
+   ocho hojas. `MLIN_MEDIDO`: por familia con lineales y T ≥ 256, lo que FRI abre sin determinar,
+   la máscara del §898, la de las lineales con los aleatorizadores y las tres juntas; la solvencia
+   en cada canon, las demás en `mide_m_lin_en_las_23_familias`, un instrumento ignorado que se
+   corre a mano, con `MLIN_SOLO` para repetir una familia. Un test de la tabla exige que cada fila
+   sea coherente consigo misma y con lo clavado en `instrumento_r3`.
+5. **Los textos**: el apartado 14 del documento, con el censo, lo medido, lo que dice y lo que
+   vale; la H12; las notas a la D-I y a la D-AL, a la E5 del tren, y al BACKLOG.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release. Los tres tests del instrumento, 3 de
+3 en 19,6 s: la sonda en el juguete, [no lineal, lineal, testigo, lineal] con las semillas 1 y 2;
+el juguete sin lineales en 424, 254 y 80, y con las dos en 156 y 330; y la tabla, coherente. El
+test largo, en dos corridas: la primera, 2090 s, con once familias medidas hasta un fallo del
+propio test en la edad —construía la AIR con las entradas públicas de la prueba de
+`instrumento_edad`, de 64 hojas y 1024 filas, y la familia es la de ocho hojas y 128: corregido
+con unas entradas de ocho hojas, n = 5 y k = 2—; la segunda, con `MLIN_SOLO` para las siete que
+faltaban y la sonda en las 23, 523 s. La sonda no cambia con la semilla en ninguna. Lo medido,
+sobre F, con la semilla 1:
+
+| familias | T, trozos | sin determinar | §898: columna y aleatorizadores | lineales y aleatorizadores | las tres | R3 con M_lin | s por familia |
+|---|---|---|---|---|---|---|---|
+| SendAir (30 lineales de 58), SendV2Air (34 de 62), ClaimAir (29 de 57), ClaimAirV2 (33 de 61), BurnAir (21 de 48), DoubleEntryAir (15 de 41) | 1024, 8 | 1016 | 766 | 1016 | 1016 | se cumple | 293, 314, 287, 308, 243, 214 |
+| PrendaAir (17 de 42), MintPendingClimbAir (13 de 39), AuditAir (17 de 31), BandaAir (13 de 27), CobroPendienteAir (18 de 44), PagoEnCursoAir (18 de 44), CreditClimbAir (13 de 39), MintClimbAir (16 de 42), RecoveryClimbAir (17 de 43) | 512, 8 | 760 | 510 | 760 | 760 | se cumple | 100, 94, 101, 93, 101, 100, 92, 98, 100 |
+| SolvencyAir (4 de 5) | 256, 2 | 632 | 378 | 632 | 632 | se cumple | 15 |
+| MerkleAir (0 de 13), FrozenClimbAir (0 de 25) | 256, 9 | 632 | 382 | — | 382 | no se cumple (§898) | — |
+| NullifierThresholdAir (8 de 21), ThresholdAir (7 de 34), EdadAir (4 de 83, y 7 con pendiente del testigo; 6 auxiliares), RefundAir (0 de 12), RefundAirV2 (4 de 16) | 64, 15 | 168 | 126 | — | — | no cabe: T − 2q − 6 < 0 | — |
+
+En ninguna AIR sin tramo auxiliar hay una columna lineal con pendiente del testigo. El test de las
+23 familias, con el censo de las 23 y la solvencia medida (632, 378, 632, 632), 1 de 1 en 139,6 s
+(eran 118,1). `check_tests`, 2246 declarados y 21 instrumentos (eran 2242 y 20); `check_modulos`,
+220 (eran 219); `verificar_citas`, 0 en sus tres cuentas; `check_cifras`, 26 cifras y ninguna
+contradice el canon; `check_publicadas` y `check_figures`, OK.
+
+**Lo que dice.** Dieciséis de las veintitrés familias cumplen R3 con la construcción de hoy una
+vez contada M_lin —todas las de T ≥ 512 y la solvencia—, y en todas las lineales con los
+aleatorizadores llegan a K sin la columna aleatoria: cada columna lineal entra en D con su propio
+coeficiente de DEEP por el camino directo y con los de los trozos por el del cociente, direcciones
+distintas de E en cada punto, lo que a la columna aleatoria sola, con un coeficiente, le faltaba.
+MerkleAir y FrozenClimbAir no tienen ninguna columna lineal —la sbox toca todas, como preveía la
+134— y siguen con la R3 del §898: necesitan la 133. Las cinco de T = 64 no tienen M_lin que medir y
+siguen en la 131. **Qué familias necesitan la 133 para R3**: esas siete —cinco del cable: la
+autorización delegada, la edad, los dos reembolsos y la subida de la congelación delegada—; las
+otras dieciséis, no. Lo que la 134 da a A4: para las dieciséis, lo que `doc/ocultacion-hvzk.md`
+demuestra vale con la construcción de hoy, bajo sus hipótesis; de las siete, lo que les falta,
+con nombre.
+
+**Lo que NO hace.** No cambia la promesa: sigue siendo el censo hasta A4, y lo que A4 enuncie lo
+enuncia A4. Es una cota inferior de M_lin: condiciona cada columna lineal a sus 2q + 6 tocados,
+más de lo que el verificador ve de ella (q + 4 y las aperturas de los trozos, que el núcleo
+conjunto ya descuenta); la cuenta fina es un lema nuevo, L1' para las lineales, y podría
+aprovechar las columnas lineales de las cinco de T = 64 sin más filas: la 135, del autor. No cuenta
+las filas aleatorias del tramo auxiliar (sólo la edad lo tiene, con T = 64). No mide los desafíos
+de ninguna prueba real: los elige el test, como en el §898. No decide la 133 ni la 131: dice quién
+las necesita. No toca un byte de producción ni del fork. No es A4.
+
+**Lo que es del autor.** La 135; cerrar la 132, que queda a medias con su medida en verde, y la
+130, con A4; qué enuncia A4 para las dieciséis y cómo nombra a las siete; y el número de este
+asiento.
+
+**Contadores.** `zk-ssl` 558 -> 561, con los ignorados 7 -> 8 por su instrumento;
+`stark-experiment` sin cambio. TOTAL DE SELLO 2080 -> 2083 y CON LARGOS 2220 -> 2223, en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests` 2242 -> 2246; `check_modulos`
+219 -> 220. `BACKLOG.md` pasa a 45 abiertas y 91 resueltas: cierra la 134 y abre la 135. Ningún
+vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 572 s de reloj (de su arranque a su salida)
+y 377 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 5,86 al
+empezar: la de una corrida anterior del propio canon, que la sesión paró a los pocos minutos, antes
+de su tabla de tests, para quitar dos warnings de `instrumento_mlin` —un `mut` de más y una
+constante sin uso— que el pin de cero no admite; se dice porque fue así, y esa corrida parada no
+cuenta como corrida. Las 19 filas del nivel, en su pin, con 2083 tests que pasan (la suma de la
+columna «pasan»), la de `zk-ssl` en 561 pasan y 8 ignorados, 188 s, y la de `stark-experiment` en
+489 y 13, 17 s; las tres del fork, `winter-air` 64, `winter-prover` 7 y `winter-verifier` 0, en su
+pin; la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (43 s)»;
+`check_tests` en 2246 y 21 instrumentos —⚠️ este asiento decía 2245 en su «Medido» y en sus
+contadores, la cuenta de antes de añadir el test de la tabla del censo; corregido tras el canon a
+lo que el canon contó, y las seis herramientas de documentos y de censo vueltas a correr en verde
+sobre el asiento corregido—; `check_modulos` en 220; las once herramientas del bucle «2 ter»; la
+puerta de los vectores, en 605 ficheros y 1370 líneas de 19 manifiestos; `check_catalogo`, en 236
+textos y 302 entradas; el cable, en 27 de 27; la segunda implementación, con el núcleo en 34 de
+34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, igual desde
+dos raíces, con el binario `b25bbac687e17145` —el mismo del §899: nada de producción ni del fork
+cambia— y el tarball `7d332eb7b96b7632`, que cambia con las fuentes, como en cada asiento. Corrió
+con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
+anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida
+completa: no hubo roja.

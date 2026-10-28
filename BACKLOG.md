@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 45 abiertas, 90 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 45 abiertas, 91 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §896, que abre la 130, el §897, que abre la 131 y la 132, y el §898, que abre la 133 y la 134.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, y el §900, que cierra la 134 y abre la 135.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1444,6 +1444,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   con las dos máscaras que no dependen de la AIR (la 133), así que A4 no puede enunciar HVZK para
   ninguna familia con el argumento de A2; la 134 mide si alguna AIR aporta la máscara que falta.
   QUEDAN A4 y A5: sigue abierta.
+  ✅ a medias (§900): la 134, hecha (`crates/zk-ssl/src/instrumento_mlin.rs`): dieciséis de las
+  veintitrés familias —las seis de T = 1024, las nueve de T = 512 y la solvencia— cumplen R3 con la
+  construcción de hoy una vez contada la máscara lineal de sus propias columnas, M_lin, y siete no,
+  con nombre: MerkleAir y FrozenClimbAir, sin columnas lineales (la 133), y las cinco de T = 64 (la
+  131). A4 puede enunciar para las dieciséis lo que `doc/ocultacion-hvzk.md` demuestra con sus
+  hipótesis, y dejar fuera a las siete por su nombre. QUEDAN A4 y A5: sigue abierta.
 
 - [ ] **131. Cinco familias abren más puntos de los que sus filas aleatorias enmascaran: T = 64
   frente a 2q + 6 = 90 (§897).** Medido en cada canon desde el §897 (`INDEPENDIENTE_DE_LA_AIR`,
@@ -1462,6 +1468,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ §898: medido en el juguete (`crates/zk-ssl/src/instrumento_falsadores_hvzk.rs`): con T = 64
   lo tocado dice el testigo entre dos candidatos, y con T = 128 no; no es una recuperación, es una
   distribución que cambia con el testigo. Y la salida por T = 128 no basta sola: la 133 va antes.
+  ⚠️ §900: con T = 64 no hay M_lin que medir, T − 2q − 6 < 0; la sonda cuenta 8, 7, 4, 0 y 4
+  columnas lineales en los dos umbrales, la edad (con siete más de pendiente del testigo) y los
+  dos reembolsos, que la cuenta fina de la 135 podría aprovechar sin más filas; es un lema nuevo,
+  no una medida.
 
 - [ ] **132. La solvencia no tiene máscaras que cubran lo que FRI abre de DEEP: 506 dimensiones
   frente a unas 630 (§897).** `SolvencyAir` (T = 256, dos trozos) cumple la cuenta de lo tocado —la
@@ -1479,6 +1489,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ §898: no es sólo la solvencia, y T = 512 no la salvaría: R3 no se cumple en ninguna geometría,
   por la estructura de la máscara (la 133). La salida de esta entrada es la de la 133, y la
   decisión, una.
+  ✅ a medias (§900): medida en cada canon: la solvencia cumple R3 con M_lin, 632 de 632, con sus
+  cuatro columnas lineales —saldo, importe, límite y acumulador, que entran en todas sus
+  restricciones linealmente y con coeficientes constantes o periódicos— y el aleatorizador, sin la
+  columna aleatoria (`MLIN_MEDIDO`). La salida de esta entrada era la 134, no la 133; lo que queda
+  es del autor, con A4 delante.
 
 - [ ] **133. La máscara de DEEP vive en F y DEEP en E: R3 no se cumple en ninguna geometría de
   producción (§898).** Medido en cada canon desde el §898 (`R3_MEDIDO`,
@@ -1512,8 +1527,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   columna y `verify` rechaza la de laboratorio. QUEDA el corte: encenderla en los 23 con las
   columnas en la marca v2 (RFC-0018 E5), y la decisión de ese byte en la marca v2, del autor: sigue
   abierta.
+  ⚠️ §900: la 134 dice quién la necesita para R3 con la construcción de hoy: MerkleAir y
+  FrozenClimbAir, sin ninguna columna lineal, y las cinco de T = 64, que antes necesitan la 131;
+  las otras dieciséis cumplen R3 con la máscara lineal de sus columnas, sin ella. Sigue siendo la
+  salida que no depende del álgebra de cada AIR.
 
-- [ ] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
+- [x] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
   las restricciones, que el instrumento de R3 no cuenta (§898).** Lo puso la revisión escéptica del
   §898: la objeción 1 del §897 —las filas aleatorias de las columnas reales no son una máscara
   lineal— vale para columnas que entran en alguna restricción con grado ≥ 2 o con coeficientes del
@@ -1532,6 +1551,35 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   núcleo de las aperturas, y mida R3 con M ∪ M_lin; en el sello o en `--largo` con su pin. **Qué la
   cierra**: ese instrumento con su veredicto por familia. Lo que diga decide qué familias necesitan
   la 133 y cuáles no.
+  ✅ §900: medida. `crates/zk-ssl/src/instrumento_mlin.rs`: la sonda de linealidad por columna
+  sobre cada AIR oculta sin su tipo —afín en la entrada por la segunda diferencia, pública por la
+  pendiente en dos marcos; Schwartz-Zippel sobre E— y M_lin —lo libre de las filas aleatorias de
+  las lineales tras los 2q + 6 tocados de L1, por el camino directo y por el de los trozos, con el
+  núcleo conjunto con los aleatorizadores—, medida contra O|_K con la misma O, la misma K y los
+  mismos desafíos del §898, que sin lineales reproduce. El censo de las 23 en cada canon
+  (`CENSO_134`) y la medida por familia (`MLIN_MEDIDO`; la solvencia en cada canon, las demás en
+  el test largo, una vez): dieciséis de veintitrés cumplen R3 con la construcción de hoy —las seis
+  de T = 1024, las nueve de T = 512 y la solvencia—, y en todas las lineales con los aleatorizadores
+  llegan solas; MerkleAir y FrozenClimbAir no tienen ninguna columna lineal, la sbox toca todas, y
+  siguen con la R3 del §898; las cinco de T = 64 no tienen M_lin que medir. **Qué familias
+  necesitan la 133 para R3**: esas siete; las dieciséis, no. Lo que queda fuera es la cuenta fina,
+  la 135.
+
+- [ ] **135. La cuenta fina de M_lin: condicionar cada columna lineal a lo que el verificador ve
+  de ella, no a lo que toca (§900).** El instrumento de la 134 (`crates/zk-ssl/src/instrumento_mlin.rs`)
+  condiciona las filas aleatorias de cada columna lineal a sus 2q + 6 tocados, como pide L1 de
+  `doc/ocultacion-hvzk.md`: la fila siguiente de cada posición y g²·z se dan por vistos, aunque el
+  verificador sólo los ve a través de C(x_j) y C(z·g), una suma de todas las columnas con q + 2
+  valores de E en total. Es una cota inferior de M_lin: lo que el verificador ve de una columna
+  lineal son q + 4 dimensiones sobre F, y lo que ve de los trozos son las aperturas de cada trozo,
+  que el núcleo conjunto del instrumento ya descuenta. Con la cuenta fina cada columna lineal
+  tendría T − q − 4 libres (210 con T = 256, 18 con T = 64) en vez de T − 2q − 6 (166, ninguna):
+  para las familias de T = 64 con columnas lineales sería un argumento nuevo —L1' para las
+  lineales: que lo residual de (P(g·x_j))_j haga uniforme (C(x_j))_j—, el L6 que nadie ha
+  escrito, y podría rescatarlas sin más filas (la 131). **Qué pide**: escribir L1' en el documento,
+  con su demostración o su contraejemplo, y entonces medir con la base V_ab en vez de V_toc, en el
+  mismo instrumento. **Qué la cierra**: el lema escrito y la medida; hasta entonces, la 134 vale con
+  su cuenta gruesa y las cinco de T = 64 siguen en la 131.
 
 ## D. Declaradas, acotadas, sin urgencia
 

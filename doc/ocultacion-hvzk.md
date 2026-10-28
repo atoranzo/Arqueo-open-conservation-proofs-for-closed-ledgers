@@ -29,7 +29,14 @@ máscara lineal propia, donde sus columnas entran sólo linealmente en las restr
 134 de `BACKLOG.md`, sin medir), o del testigo (L6)—, y nadie lo ha argumentado. La salida
 independiente de la AIR es la 133: que la máscara de DEEP viva en E, en un corte futuro. El
 enunciado del apartado 8 no se puede hacer hoy para ninguna familia; la promesa sigue siendo el
-censo.
+censo. ⚠️ **§900 (la 134): M_lin, medida (apartado 14).** En dieciséis de las veintitrés familias
+—las seis de T = 1024, las nueve de T = 512 y la solvencia— R3 se cumple con la construcción de hoy
+una vez contadas las filas aleatorias de las columnas que entran en las restricciones linealmente y
+con coeficiente público, y en todas ellas esas filas con los aleatorizadores bastan solas;
+MerkleAir y FrozenClimbAir (T = 256) no tienen ninguna columna así y siguen con la R3 del §898; las
+cinco de T = 64 no tienen M_lin que medir (la 131). Para las dieciséis, la proposición del
+apartado 8 vale con la construcción de hoy, bajo las demás hipótesis; la promesa sigue siendo el
+censo hasta A4.
 
 **La nota, no leída.** La nota 2024/1037 de ePrint —Ulrich Haböck y Al Kindi, «A note on adding
 zero-knowledge to STARKs», recibida el 26 de junio de 2024 y revisada por última vez el 22 de
@@ -400,12 +407,13 @@ instrumento la mide con ocho hojas.
 | H3: z fuera de F y de H, sin coincidencias de conjugados | supuesta, fallo < 2^{−60} por prueba | L1 | no se mide: las posiciones y z no viajan |
 | H4: q + 2 ≤ m, Vandermonde de rango pleno sobre E | medida, en cada canon | L2 | `rango_pleno`; el mutante m = 43; el mutante del árbol |
 | H5: s ≥ 1, N ≥ 2, y ≠ 0 | demostrada | L2 | los asertos de `segmentar` |
-| H6: R3, suficiente: las dos máscaras independientes del testigo cubren lo que FRI abre | **medida en el §898: con M = {columna, aleatorizadores}, falsa en las cinco geometrías** | L3 | `instrumento_r3`, en cada canon, con sus cifras clavadas (apartado 13) |
+| H6: R3, suficiente: las dos máscaras independientes del testigo cubren lo que FRI abre | **medida en el §898: con M = {columna, aleatorizadores}, falsa en las cinco geometrías**; ⚠️ §900: con M_lin (H12), verdadera en dieciséis familias y falsa en MerkleAir y FrozenClimbAir (apartado 14) | L3 | `instrumento_r3`, en cada canon, con sus cifras clavadas (apartado 13); `instrumento_mlin`, el censo en cada canon y la medida por familia (apartado 14) |
 | H7: Blake3 como oráculo aleatorio programable | modelo | L0, L4, L5 | — |
 | H8: la sal es fresca | supuesta | L4 | `SECURITY.md` §3.11; los tests de `sal.rs` miden tamaño y efecto, no frescura |
 | H9: ninguna semilla se repite | supuesta; lo que cuesta, medido en el juguete (§898) | L5 | `instrumento_falsadores_hvzk`: dos pruebas con la misma semilla dan sus dos constantes |
 | H10: la moneda de las máscaras no comparte estado con la pública | demostrada | L5 | `generate_proof_oculto`, `segmentar` |
 | H11: T ≥ 2q + 6 | medida: 18 familias sí, 5 no; y lo que cuesta, en el juguete (§898) | L1, L6 | `INDEPENDIENTE_DE_LA_AIR`; con T = 64 lo tocado dice el testigo, con T = 128 no |
+| H12 (§900): las filas aleatorias de una columna que entra en C linealmente y con coeficiente público son una máscara más, M_lin: uniformes en un núcleo que no depende del testigo una vez condicionadas a S_toc, con imagen lineal y pública en D | medida: qué columnas lo son, en cada canon, AIR a AIR; y R3 con M_lin, por familia | L3 | `instrumento_mlin`: `CENSO_134` y `MLIN_MEDIDO` (apartado 14) |
 
 ## 5. El simulador
 
@@ -521,7 +529,11 @@ que la construcción tendría si la máscara de DEEP viviera en E (la 133), no d
 las cinco geometrías (apartado 13), y la proposición vale para ella, bajo las demás hipótesis,
 para las dieciocho familias con T ≥ 2q + 6, la solvencia incluida; no para las cinco con T = 64
 (L1). Es lo que A4 podrá enunciar cuando el corte la encienda, y no antes: hoy ninguna prueba de
-producción la lleva. **Nada de esto es una promesa
+producción la lleva. ⚠️ §900: con R3 medida CON M_lin (H12, apartado 14), la proposición vale
+para la construcción de hoy, bajo las demás hipótesis, para **dieciséis familias**: las seis de
+T = 1024, las nueve de T = 512 y la solvencia; **no** para MerkleAir ni FrozenClimbAir (T = 256, sin
+ninguna columna lineal: su R3 es la del §898) ni para las cinco con T = 64 (L1). Es lo que A4 puede
+enunciar, con estas palabras y con las siete fuera por su nombre. **Nada de esto es una promesa
 de la casa**: A4 decidirá, con A3 sellada, qué se promete y para qué familias, y hasta entonces la
 promesa es el censo.
 
@@ -629,7 +641,8 @@ y los tres falsadores, y puso seis objeciones:
    constantes o periódicos, y sus filas aleatorias son una máscara lineal independiente del testigo
    que el instrumento no cuenta y que puede cubrir lo que falta. **Cerrada**: el veredicto se
    enuncia como «R3 con M = {columna, aleatorizadores} no se cumple», la cabecera del instrumento y
-   este apartado lo dicen, y medir M_lin por AIR es la 134.
+   este apartado lo dicen, y medir M_lin por AIR es la 134. ⚠️ §900: medida (apartado 14): la
+   máscara existe en dieciséis familias y cubre todo lo que falta; en la solvencia, 632 de 632.
 2. **(media) El apartado 13 afirmaba más de lo medido**: «H6 es falsa, el simulador no reproduce …
    en ninguna familia», y «faltan exactamente 250, la segunda coordenada», que es una inferencia.
    **Cerrada**: reescrito como arriba, y la inferencia dicha como inferencia.
@@ -672,7 +685,11 @@ simular salvo lo de la objeción 1; y que el documento no afirma HVZK en ningún
   con las palabras de este documento —el censo sigue, y lo que falta y por qué— y dejar la promesa
   de HVZK para lo que la 134 mida AIR a AIR o para el corte que lleve la 133. ⚠️ §899: la 133 está
   medida y construida en laboratorio (apartado 13): A4 puede decir qué tendrá la construcción del
-  corte, con R3 en verde, y qué tiene la de hoy, sin él.
+  corte, con R3 en verde, y qué tiene la de hoy, sin él. ⚠️ §900: la 134 está medida (apartado
+  14): con la construcción de hoy, R3 se cumple con M_lin en dieciséis familias y no en siete,
+  con nombre; A4 puede enunciar para las dieciséis lo que este documento demuestra, con sus
+  hipótesis, y decir de las siete lo que les falta: la 133 a MerkleAir y FrozenClimbAir, y la
+  131 —o la 135— a las cinco de T = 64.
 - **A5**: la sal es lo que hace L4 incondicional. Sin ella, (a) necesita que cada hoja no abierta
   tenga entropía frente al oráculo —la fila entera de la traza en un punto de Λ la tiene por L1, el
   vector de los trozos por L2, y los ocho valores de un coset de FRI sólo por R3— y (b) desaparece.
@@ -799,3 +816,125 @@ falsador en `falsadores_oculta` lo mide, y la cota de las dos columnas está cla
 en cada canon (`R3_MEDIDO_LABORATORIO`), junto a la de una. Lo que no cambia: L1 y la 131 (las
 cinco de T = 64 siguen fuera), L6 y la 134, y la promesa. Lo que la 133 deja al corte 0.5: encender
 las dos columnas en los 23 probadores con las columnas en la marca v2 (RFC-0018 E5).
+
+## 14. La 134, medida (§900)
+
+**Lo que mide.** El §898 midió R3 con las dos máscaras que no dependen de la AIR y el §897 dejó una
+objeción abierta (apartado 11, la 1 del §898): las filas aleatorias de una columna real cuyas
+restricciones la toquen sólo linealmente y con coeficientes públicos —constantes, periódicos, o
+los elementos aleatorios del tramo auxiliar, que son del verificador— son una máscara lineal más,
+M_lin, independiente del testigo. `crates/zk-ssl/src/instrumento_mlin.rs` la mide, sobre cada AIR
+oculta sin saber su tipo: `Sonda`, que `Oculta<A>` implementa para toda `A`, da las anchuras, los
+trozos del contexto, las columnas periódicas y la composición C en un punto con un marco,
+calculada como la calcula el probador —la combinación de las transiciones, principales y
+auxiliares, entre su divisor, más cada grupo de aserciones entre el suyo—. Dos pasos:
+
+1. **La sonda.** Para cada columna real, en tres puntos x de E al azar, con dos marcos al azar, f y
+   f', y un desplazamiento δ, para la fila actual y para la siguiente: C es afín en la entrada si
+   C(f + 2δe) − C(f) = 2·(C(f + δe) − C(f)), y la pendiente es pública si en f' es la misma que en
+   f. Tres veredictos por columna: lineal con coeficiente público; no lineal, grado ≥ 2 en ella;
+   lineal con pendiente del testigo, la multiplica otra columna. Schwartz-Zippel sobre E: que una
+   no lineal pase por lineal en los tres puntos es un suceso del orden de 2^{−120}. En un juguete
+   de cuatro columnas —grado 3; un transporte; lineal con la pendiente de la primera; lineal con
+   una pendiente periódica— la sonda da exactamente eso, con dos semillas.
+2. **M_lin, y R3 con ella.** De cada columna lineal queda libre, tras condicionarla a los 2q + 6
+   tocados de L1, P_ρ = Z_real·V_toc·w —Z_real nula en las T filas reales, V_toc en los tocados y
+   sus conjugados, w ∈ F[x] de grado < T − 2q − 6—, y entra en D por dos caminos: el directo,
+   cc_i·Q[P_ρ], y el del cociente, C(P_ρ) − C(0), lineal en P_ρ —la pendiente de cada columna en
+   cada punto del dominio de restricciones, precalculada—, troceado como `segmentar` con paso
+   s = L − m y cada trozo con su coeficiente de DEEP. Lo que el verificador ve de los trozos —cada
+   uno en las q posiciones, en z y en z·g— lo descuenta el núcleo CONJUNTO con los aleatorizadores:
+   rango(O∘M) = rango([abiertos | O∘D]) − rango(abiertos), sobre combinaciones aleatorias de todo el
+   espacio de parámetros, más que su rango puede ser; con la misma O, la misma K y los mismos
+   desafíos que el instrumento de R3. Dos comprobaciones dentro de la medida: que C(P_ρ) cabe en
+   los N trozos de paso s —que es como se nota que el numerador se anula donde el divisor; si no,
+   el interpolado no sería un polinomio—, y que las máscaras no salen de K, por rangos: el de las
+   máscaras con K, menos el de los abiertos, es el de K.
+
+**Cómo se valida.** Sin columnas lineales la medida reproduce exactamente lo clavado del §898 —en
+el juguete, 424 sin determinar, 254 de máscara y 80 de aleatorizadores solos; en la solvencia, en
+cada canon, 632 y 378—: la misma O, la misma K y el mismo subespacio, con otro muestreo y el núcleo
+conjunto en vez del residuo por aleatorizador. Con las dos lineales del juguete, 38 libres cada una
+(T − 2q − 6 con T = 128), la máscara crece en exactamente sus 76 dimensiones, dentro de K: 156 =
+80 + 76 con los aleatorizadores, 330 = 254 + 76 las tres.
+
+**El censo**, medido en cada canon sobre las 23 familias (`CENSO_134`), con la traza y las
+opciones de una prueba real de cada una —con m = 64—, la sonda con dos semillas y las entradas
+públicas vacías, que ninguna AIR mira al construirse salvo la edad, que va con unas de ocho hojas:
+
+| AIR | T | reales | lineales, coeficiente público | lineales, pendiente del testigo | no lineales | libres por lineal (T − 2q − 6) | veredicto |
+|---|---|---|---|---|---|---|---|
+| SendAir | 1024 | 58 | 30 | 0 | 28 | 934 | cumple |
+| SendV2Air | 1024 | 62 | 34 | 0 | 28 | 934 | cumple |
+| ClaimAir | 1024 | 57 | 29 | 0 | 28 | 934 | cumple |
+| ClaimAirV2 | 1024 | 61 | 33 | 0 | 28 | 934 | cumple |
+| BurnAir | 1024 | 48 | 21 | 0 | 27 | 934 | cumple |
+| DoubleEntryAir | 1024 | 41 | 15 | 0 | 26 | 934 | cumple |
+| PrendaAir | 512 | 42 | 17 | 0 | 25 | 422 | cumple |
+| MintPendingClimbAir | 512 | 39 | 13 | 0 | 26 | 422 | cumple |
+| AuditAir | 512 | 31 | 17 | 0 | 14 | 422 | cumple |
+| BandaAir | 512 | 27 | 13 | 0 | 14 | 422 | cumple |
+| CobroPendienteAir | 512 | 44 | 18 | 0 | 26 | 422 | cumple |
+| PagoEnCursoAir | 512 | 44 | 18 | 0 | 26 | 422 | cumple |
+| CreditClimbAir | 512 | 39 | 13 | 0 | 26 | 422 | cumple |
+| MintClimbAir | 512 | 42 | 16 | 0 | 26 | 422 | cumple |
+| RecoveryClimbAir | 512 | 43 | 17 | 0 | 26 | 422 | cumple |
+| SolvencyAir | 256 | 5 | 4 | 0 | 1 | 166 | cumple |
+| MerkleAir | 256 | 13 | 0 | 0 | 13 | 166 | sin lineales: necesita la 133 |
+| FrozenClimbAir | 256 | 25 | 0 | 0 | 25 | 166 | sin lineales: necesita la 133 |
+| NullifierThresholdAir | 64 | 21 | 8 | 0 | 13 | 0 | no cabe: la 131 antes |
+| ThresholdAir | 64 | 34 | 7 | 0 | 27 | 0 | no cabe: la 131 antes |
+| EdadAir | 64 | 83 + 6 aux | 4 | 7 | 72 | 0 | no cabe: la 131 antes |
+| RefundAir | 64 | 12 | 0 | 0 | 12 | 0 | no cabe: la 131 antes |
+| RefundAirV2 | 64 | 16 | 4 | 0 | 12 | 0 | no cabe: la 131 antes |
+
+En ninguna AIR sin tramo auxiliar hay una columna lineal con pendiente del testigo: las columnas o
+entran con grado ≥ 2 —las de los hashes, los bits de los rangos— o entran linealmente con
+coeficientes constantes o periódicos —los transportes de raíces, importes y contadores—. En la
+edad, siete columnas principales entran linealmente con la pendiente de otra, por las lecturas del
+tramo auxiliar.
+
+**Lo medido** (`MLIN_MEDIDO`; la solvencia en cada canon, las demás en el test largo
+`mide_m_lin_en_las_23_familias`, una vez, con la semilla 1), sobre F:
+
+| AIR | T, trozos | sin determinar (O sobre K) | §898: columna y aleatorizadores | lineales y aleatorizadores | las tres | R3 con M_lin |
+|---|---|---|---|---|---|---|
+| SendAir, SendV2Air, ClaimAir, ClaimAirV2, BurnAir, DoubleEntryAir | 1024, 8 | 1016 | 766 | **1016** | 1016 | se cumple |
+| PrendaAir, MintPendingClimbAir, AuditAir, BandaAir, CobroPendienteAir, PagoEnCursoAir, CreditClimbAir, MintClimbAir, RecoveryClimbAir | 512, 8 | 760 | 510 | **760** | 760 | se cumple |
+| SolvencyAir | 256, 2 | 632 | 378 | **632** | 632 | se cumple |
+| MerkleAir, FrozenClimbAir | 256, 9 | 632 | 382 | — (sin lineales) | 382 | no se cumple (§898) |
+
+Los tiempos, en el contenedor de la sesión: de 15 s (la solvencia) a 314 s (SendV2Air) por
+familia, con las eliminaciones sobre F como coste dominante.
+
+**Lo que dice.** Dieciséis de las veintitrés familias cumplen R3 con la construcción de hoy una vez
+contada M_lin: todas las de T ≥ 512 y la solvencia. En todas, las lineales con los aleatorizadores
+llegan a K sin la columna aleatoria, y la razón es la que el §898 señaló al revés: cada columna
+lineal entra en D con su propio coeficiente de DEEP en E por el camino directo y con los de los
+trozos por el del cociente —direcciones distintas de E en cada punto que FRI abre—, mientras que la
+columna aleatoria sola, con un único coeficiente, movía una coordenada de dos. MerkleAir y
+FrozenClimbAir no tienen ninguna columna lineal —la sbox de grado 7 de Rescue toca todas, como
+preveía la 134—: su R3 es la del §898, 382 de 632, y **necesitan la 133**. Las cinco de T = 64 no
+tienen M_lin que medir, T − 2q − 6 < 0, y siguen en la 131; tienen 8, 7, 4, 0 y 4 columnas lineales,
+que la cuenta fina de la 135 podría aprovechar sin más filas, con un lema que nadie ha escrito.
+**Qué familias necesitan la 133 para R3**: siete, MerkleAir, FrozenClimbAir y las cinco de T = 64
+(éstas, la 131 antes); las otras dieciséis, no. De las siete, cinco son del cable —la autorización
+delegada, la edad, los dos reembolsos y la subida de la congelación delegada—; el umbral conjunto y
+el camino de Merkle no lo son.
+
+**Lo que vale.** L3 no cambia: K, O, lo público y la condición son los mismos; crece M con una
+máscara más que cumple lo que L3 pide de una máscara —las filas aleatorias de una columna lineal,
+condicionadas a S_toc, son uniformes en el núcleo de la evaluación en S_toc, que no depende del
+testigo, y su imagen en D es lineal y pública—, y el paso S5 del simulador del apartado 5 —D̃
+uniforme en la clase de K— queda justificado por R3 con ella, como dice L3. Con L1 (las dieciocho
+de T ≥ 256) y las demás hipótesis, la proposición del apartado 8 vale para las dieciséis con la
+construcción de hoy. R3 con
+M_lin es suficiente, no necesaria: el instrumento condiciona cada columna lineal a sus 2q + 6
+tocados, más de lo que el verificador ve de ella (la 135), así que un «no se cumple» no es un
+contraejemplo; para MerkleAir y FrozenClimbAir no hace falta la cuenta fina: no tienen columna que
+contar.
+
+**Lo que no hace.** No cuenta las filas aleatorias del tramo auxiliar (sólo la edad lo tiene, con
+T = 64). No mide los desafíos de ninguna prueba real: la geometría y las opciones son las de una
+prueba de cada familia, y los desafíos los elige el test, como en el §898. No toca un byte de
+producción: el instrumento es sólo de tests. No es una promesa: lo que A4 enuncie, lo enuncia A4.
