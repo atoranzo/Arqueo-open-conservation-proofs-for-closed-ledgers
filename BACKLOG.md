@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 41 abiertas, 90 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 43 abiertas, 90 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, y el §896, que abre la 130.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §896, que abre la 130, y el §897, que abre la 131 y la 132.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1429,6 +1429,43 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   o retirarla en un corte futuro, nunca en `zkssl/0.4`. Restricciones: ni motor nuevo, ni nivel
   poscuántico del STARK, ni `zkssl/0.4` roto. Hasta A4 nada de la casa dice «HVZK»: la promesa
   sigue siendo el censo. **Qué la cierra**: A4 sellada y la D-I decidida.
+  ✅ a medias (§897): A2, escrita: `doc/ocultacion-hvzk.md`, con el simulador, los lemas L0 a L6
+  atados a los tests del §896 y del §897, la tabla de hipótesis —medida, de modelo o supuesta— y lo
+  que no cubre; corrige la cuenta del §896 (46 dimensiones sobre F por columna y 44 sobre E por
+  trozo, sin «dirección residual», que era pública) y mide lo que una prueba TOCA, 2q + 6 = 90
+  frente a T: las cinco familias con T = 64 quedan sin argumento independiente de la AIR (la 131);
+  la condición R3 —que la columna aleatoria y los aleatorizadores del cociente cubran lo que FRI
+  abre de DEEP— queda SIN medir, es lo primero de A3, y a la solvencia le falla por cuenta (la
+  132). QUEDAN A3, A4 y A5: sigue abierta.
+
+- [ ] **131. Cinco familias abren más puntos de los que sus filas aleatorias enmascaran: T = 64
+  frente a 2q + 6 = 90 (§897).** Medido en cada canon desde el §897 (`INDEPENDIENTE_DE_LA_AIR`,
+  `crates/zk-ssl/src/instrumento_cota.rs`): en NullifierThresholdAir, ThresholdAir, EdadAir con ocho
+  hojas, RefundAir y RefundAirV2 la traza oculta lleva 64 filas aleatorias por columna, y lo que una
+  prueba toca por columna —las 42 posiciones y sus filas siguientes, z, z·g y g²·z— son 90
+  dimensiones sobre F: el lema L1 de `doc/ocultacion-hvzk.md` no las cubre, y para ellas el
+  argumento de A2 necesita un lema que depende de la AIR (L6, enunciado y no demostrado) o más
+  filas aleatorias, T = 128, el doble de filas y de coste para esas cinco, que cambia sus pruebas y
+  por eso es de un corte futuro, nunca de `zkssl/0.4` (la D-AG del RFC-0009 acolchó a 64 con la
+  cuenta de 44). Dos de las cinco son del cable, los dos umbrales; la edad con 16 hojas o más
+  (T ≥ 128) cumple la cuenta, pero el instrumento sólo la mide con ocho. **Qué la cierra**: la
+  decisión del autor —L6 por AIR, o T = 128 en el corte que lo lleve— y, si es T = 128, el sello que
+  lo haga con la cota de los tocados en verde para las cinco. Hasta entonces, lo que A4 enuncie
+  para las demás no vale para ellas.
+
+- [ ] **132. La solvencia no tiene máscaras que cubran lo que FRI abre de DEEP: 506 dimensiones
+  frente a unas 630 (§897).** `SolvencyAir` (T = 256, dos trozos) cumple la cuenta de lo tocado —la
+  131 no la toca—, pero lo que FRI abre del polinomio DEEP, los cosets de plegado de la capa 0, la
+  capa 1 y el resto, son unas 716 dimensiones sobre F, 630 sin determinar, y las dos máscaras que no
+  dependen del testigo —la columna aleatoria, con 466 libres, y el único aleatorizador del cociente,
+  con 40— suman 506: la condición R3 de `doc/ocultacion-hvzk.md` (L3 y apartado 6) le falla por
+  pura cuenta, con q = 42 y con q = 40, antes de medir ningún rango. Lo que la enmascararía de más
+  son las filas aleatorias de sus columnas reales, que entran en los trozos con el grado de sus
+  restricciones y de forma que depende del testigo: nadie lo ha argumentado. Las salidas: una
+  máscara propia de DEEP —el «polinomio aleatorio antes de FRI» del issue 9, del grado de D— en un
+  corte futuro, nunca en `zkssl/0.4`; o T = 512 para la solvencia, donde la columna aleatoria sola
+  llega por cuenta (978 frente a unas 758). **Qué la cierra**: la decisión del autor y, con ella, el
+  sello que mida R3 en verde para la solvencia. Hasta entonces, lo que A4 enuncie no vale para ella.
 
 ## D. Declaradas, acotadas, sin urgencia
 

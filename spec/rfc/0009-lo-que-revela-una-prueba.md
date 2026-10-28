@@ -316,6 +316,25 @@ escrito y revisado: la sal se va y la prueba adelgaza.
 > rango pleno; y dos mutantes con nombre, m = 43 y T = 32, en rojo. El argumento que este párrafo
 > pide sigue sin escribirse: es A2, y hasta A4 esta decisión y la D-A no cambian lo que prometen.
 
+> ⚠️ **§897 (A2 del HVZK): la cuenta del §896, corregida, y el argumento, escrito.** La «abertura
+> más» del §896 no lo es: el valor de DEEP en la raíz del factor lineal se calcula del marco OOD, es
+> público, y no hay nada que enmascarar en él. Las cuentas buenas son por cuerpo: lo que se abre de
+> una columna principal son q + 4 dimensiones sobre F —las q posiciones viven en F; z y z·g en E—,
+> 46 con q = 42, frente a las T filas aleatorias, que viven en F; lo que se abre de un trozo, q + 2
+> puntos de E, 44, frente a los m coeficientes de E de cada aleatorizador. Y lo que se abre no es
+> todo lo que se toca: la suma de los trozos en cada posición vale C(x_j), que lee la fila
+> siguiente, y la de z·g vale C(z·g), que lee g²·z, así que las filas aleatorias tienen que cubrir
+> 2q + 3 puntos por columna, 2q + 6 = 90 dimensiones sobre F. Las 18 familias con T ≥ 256 lo
+> cumplen y las cinco con T = 64 —los dos umbrales, los dos reembolsos y la edad con ocho hojas—
+> no, medido en cada canon desde el §897, y para ellas no hay argumento independiente de la AIR
+> (la 131 de `BACKLOG.md`). Que la columna aleatoria «enmascare DEEP en todas las direcciones menos
+> una» tampoco es cierto en general: FRI abre de DEEP los cosets de plegado enteros, las capas y el
+> resto, y que las máscaras que no dependen del testigo —la columna aleatoria y los aleatorizadores
+> del cociente— cubran eso es una condición de rango que nadie ha medido (R3), y que a la
+> solvencia, con dos trozos, le falla por cuenta (la 132 de `BACKLOG.md`). El argumento, con su
+> simulador, sus lemas y la lista de lo medido, lo de modelo y lo supuesto, es
+> `doc/ocultacion-hvzk.md`; esta decisión y la D-A siguen sin cambiar lo que prometen hasta A4.
+
 ### D-J — Las cifras de bytes pasan a bandas y el azar sale del sistema
 
 Una prueba oculta no es determinista: con otra semilla pesa distinto (E1, E2 y E4 del SPIKE-B-P4:

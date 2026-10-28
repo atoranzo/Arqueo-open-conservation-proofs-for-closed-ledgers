@@ -16,18 +16,23 @@
 //!   (`num_unique_queries`, leido de la prueba) y en `z` y `z·g` (el marco OOD); de cada trozo del
 //!   cociente, lo mismo: `QuotientOodFrame` lleva los trozos en `z` y en `z·g`. Las posiciones no
 //!   viajan en la prueba -las deriva el verificador de la moneda-; su NUMERO si.
-//! - **La direccion residual.** DEEP suma cada columna y cada trozo con su coeficiente, y FRI abre
-//!   combinaciones de ese polinomio en sus capas y entrega su resto entero. La columna aleatoria
-//!   entra en DEEP como `c·u(x)·(2x − z − z·g)`, con `u` uniforme de grado 2T − 3 (lo que queda de
-//!   un polinomio uniforme de grado < 2T tras revelar `r(z)` y `r(z·g)`), asi que enmascara DEEP en
-//!   todas las direcciones menos UNA, la de la raiz de ese factor lineal. Por eso cada cota cuenta
-//!   una abertura mas de las que se ven, [`DIRECCION_RESIDUAL`]: es lo que A2 tiene que demostrar
-//!   (su lema L3) y lo que aqui se cuenta sin demostrar.
-//! - **La cota, por objeto.** Por columna: `q + 2 + 1 <= T`, las T filas aleatorias que el
-//!   envoltorio `Oculta<A>` pone detras de las reales (RFC-0009 D-G). Por trozo del cociente:
-//!   `q + 2 + 1 <= m`, el grado de los aleatorizadores de `segmentar`; m viaja en la marca (D-S).
-//!   Los N trozos llevan N − 1 aleatorizadores que se cancelan en la suma, y la relacion que se
-//!   cancela es publica en cada punto: la cota es por trozo y no depende de N.
+//! - **La direccion residual, que no lo era (⚠️ §897).** DEEP suma cada columna y cada trozo con
+//!   su coeficiente, y FRI abre combinaciones de ese polinomio en sus capas y entrega su resto
+//!   entero. La columna aleatoria entra en DEEP a traves del factor lineal `2x − z − z·g`, que se
+//!   anula en `x0 = (z + z·g)/2`; hasta el §897 este modulo contaba por eso una abertura mas por
+//!   objeto, `DIRECCION_RESIDUAL`, «lo que A2 tiene que demostrar». A2 lo demostro al reves: el
+//!   valor de DEEP en `x0` se calcula del marco OOD, es publico, y no es una abertura que
+//!   enmascarar ni una fuga (`doc/ocultacion-hvzk.md`, L3). El modulo ya no la cuenta. Lo que
+//!   FRI abre de DEEP mas alla de las posiciones -las otras siete evaluaciones de cada coset de
+//!   plegado, las capas y el resto- es la condicion R3 de ese documento, que este modulo NO mide.
+//! - **La cota, por objeto.** Por columna principal: las `q` posiciones viven en F y `z`, `z·g`
+//!   en E, asi que lo abierto son `q + 4` dimensiones sobre F frente a las T filas aleatorias
+//!   que el envoltorio `Oculta<A>` pone detras de las reales (RFC-0009 D-G); ⚠️ §897: hasta aqui
+//!   decia `q + 2 + 1 <= T`, y `rango_pleno` ya exigia las `q + 4`. Por trozo del cociente:
+//!   `q + 2` puntos de E frente a los m coeficientes de los aleatorizadores de `segmentar`, que
+//!   viven en E; m viaja en la marca (D-S); ⚠️ §897: decia `q + 2 + 1 <= m`. Los N trozos llevan
+//!   N − 1 aleatorizadores que se cancelan en la suma, y la relacion que se cancela es publica en
+//!   cada punto: la cota es por trozo y no depende de N.
 //! - **El rango.** Que las aberturas de una columna sean uniformes no lo da solo el numero: la
 //!   matriz de los polinomios de Lagrange de las filas aleatorias, evaluados en los puntos
 //!   abiertos, tiene que ser de rango pleno -es una matriz de Cauchy, con los puntos fuera del
@@ -42,6 +47,18 @@
 //!
 //! Lo que NO hace: no demuestra nada, eso es A2; no mide las posiciones reales ni `z`; no toca la
 //! promesa de `SECURITY.md` §3.bis ni la D-A: hasta A4 la casa promete cero literales, no HVZK.
+//!
+//! ⚠️ **§897 (A2): la cuenta de arriba es la de los puntos que se VEN, y no basta.** Los trozos
+//! del cociente abren en cada consulta `x_j` la suma `Σ_k x_j^{ks}·h'_k(x_j) = C(x_j)`, que
+//! depende de la fila siguiente, `T(g·x_j)`; y el marco OOD de los trozos en `z·g` revela
+//! `C(z·g)`, que toca `T(g²·z)`. Los puntos que las filas aleatorias tienen que enmascarar por
+//! columna son `2q + 3`, y como las filas aleatorias de la traza principal viven en F y los
+//! puntos fuera del dominio en E, son `2q + 6` dimensiones sobre F: 90 con q = 42. Desde el §897
+//! el instrumento mide tambien esa cuenta -[`Aberturas::tocados`]- y el rango SOBRE F de la matriz
+//! de Lagrange en el conjunto tocado, y una tabla declarada por AIR, [`INDEPENDIENTE_DE_LA_AIR`],
+//! dice que familias la cumplen (T >= 256) y cuales no (las cinco con T = 64); un cambio en
+//! cualquier sentido es rojo. El argumento, con sus lemas, lo que mide cada test de aqui y lo que
+//! no cubre, es `doc/ocultacion-hvzk.md`.
 
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -69,9 +86,36 @@ use crate::proof_options;
 /// El campo de produccion con su extension cuadratica: donde viven `z`, `z·g` y los trozos.
 type E = QuadExtension<BaseElement>;
 
-/// Lo que DEEP y FRI dejan pasar de cada objeto ademas de lo que se ve: una direccion (la
-/// cabecera, y A2, L3).
-pub(crate) const DIRECCION_RESIDUAL: usize = 1;
+/// §897: las familias que cumplen la cota INDEPENDIENTE de la AIR -las filas aleatorias cubren,
+/// sobre F, los `2q + 6` puntos que la prueba toca por columna, [`Aberturas::tocados`]- y las que
+/// no. Lo que mide el test tiene que ser esto, AIR a AIR; una T o una q que lo cambie es rojo.
+/// Las cinco de T = 64 no lo cumplen: para ellas el argumento de A2 necesita su lema L6, que
+/// depende de la AIR, o mas filas aleatorias (la 131 de `BACKLOG.md`).
+pub(crate) const INDEPENDIENTE_DE_LA_AIR: &[(&str, bool)] = &[
+    ("SendAir", true),
+    ("SendV2Air", true),
+    ("ClaimAir", true),
+    ("ClaimAirV2", true),
+    ("PrendaAir", true),
+    ("MintPendingClimbAir", true),
+    ("NullifierThresholdAir", false),
+    ("ThresholdAir", false),
+    ("AuditAir", true),
+    ("BurnAir", true),
+    ("SolvencyAir", true),
+    ("DoubleEntryAir", true),
+    ("BandaAir", true),
+    ("EdadAir", false),
+    ("CobroPendienteAir", true),
+    ("PagoEnCursoAir", true),
+    ("MerkleAir", true),
+    ("RefundAir", false),
+    ("RefundAirV2", false),
+    ("CreditClimbAir", true),
+    ("MintClimbAir", true),
+    ("FrozenClimbAir", true),
+    ("RecoveryClimbAir", true),
+];
 
 // ---- las pruebas que pasan por `asierta`, anotadas en el hilo que las produce ----
 
@@ -149,19 +193,35 @@ pub(crate) fn geometria<F: FieldElement>(nombre: &str, pr: &[u8]) -> Result<Geom
     })
 }
 
-/// Las aberturas que la cota cuenta de cada objeto: las vistas y, con la residual, las que un
-/// simulador tiene que enmascarar.
+/// Las aberturas que la cota cuenta de cada objeto: los puntos que se ven y lo que miden en el
+/// cuerpo de cada aleatorizador. ⚠️ §897: hasta aqui llevaba `a_enmascarar`, las vistas mas una
+/// «direccion residual» que no era una abertura.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Aberturas {
+    /// Los puntos abiertos por objeto: las `q` posiciones, `z` y `z·g`.
     pub vistas: usize,
-    pub a_enmascarar: usize,
+    /// §897: lo abierto por columna principal, en dimensiones sobre F: `q` posiciones de F y dos
+    /// puntos de E, `q + 4`; es lo que las T filas aleatorias, que viven en F, tienen que cubrir.
+    pub dims_columna: usize,
+    /// §897: lo abierto por trozo, en dimensiones sobre E: `q + 2`, frente a los m coeficientes
+    /// de cada aleatorizador, que viven en E.
+    pub dims_trozo: usize,
+    /// §897: lo que la prueba TOCA por columna principal, en dimensiones sobre F: las `q`
+    /// posiciones, sus `q` siguientes (`g·x_j`, por `Q(x_j)`) y los tres puntos fuera del dominio
+    /// (`z`, `z·g` y `g²·z`, por `Q(z·g)`), a dos dimensiones cada uno: `2q + 6`.
+    pub tocados: usize,
+    /// §897: si las T filas aleatorias cubren los tocados: la cota independiente de la AIR.
+    pub independiente: bool,
 }
 
 /// La cota, sobre la geometria: por columna frente a T, por trozo frente a m. Devuelve las
 /// aberturas contadas, o cada desigualdad que no se cumple, con su nombre.
 pub(crate) fn asierta_cota(nombre: &str, g: &Geometria) -> Result<Aberturas, String> {
     let vistas = g.q + 2;
-    let a_enmascarar = vistas + DIRECCION_RESIDUAL;
+    // §897: q posiciones de F y dos puntos de E son q + 4 dimensiones sobre F por columna, y
+    // q + 2 puntos de E por trozo
+    let dims_columna = g.q + 2 * 2;
+    let dims_trozo = g.q + 2;
     let mut mal = Vec::new();
     if g.q < 1 || g.q > g.consultas {
         mal.push(format!("q = {}, fuera de 1..={}", g.q, g.consultas));
@@ -169,22 +229,22 @@ pub(crate) fn asierta_cota(nombre: &str, g: &Geometria) -> Result<Aberturas, Str
     if g.m >= 2 * g.t {
         mal.push(format!("m = {} no cabe en una traza de {} filas: el verificador la rechaza", g.m, 2 * g.t));
     }
-    if a_enmascarar > g.t {
+    if dims_columna > g.t {
         mal.push(format!(
-            "columnas: {vistas} aberturas vistas + {DIRECCION_RESIDUAL} residual = {a_enmascarar} \
-             frente a T = {} filas aleatorias",
+            "columnas: {vistas} puntos abiertos, {dims_columna} dimensiones sobre F, frente a T = {} \
+             filas aleatorias",
             g.t
         ));
     }
-    if a_enmascarar > g.m {
+    if dims_trozo > g.m {
         mal.push(format!(
-            "trozos: {vistas} aberturas vistas + {DIRECCION_RESIDUAL} residual = {a_enmascarar} \
-             frente a m = {}",
+            "trozos: {vistas} puntos abiertos, {dims_trozo} dimensiones sobre E, frente a m = {}",
             g.m
         ));
     }
+    let tocados = 2 * g.q + 6;
     if mal.is_empty() {
-        Ok(Aberturas { vistas, a_enmascarar })
+        Ok(Aberturas { vistas, dims_columna, dims_trozo, tocados, independiente: tocados <= g.t })
     } else {
         Err(format!("{nombre}: {}", mal.join("; ")))
     }
@@ -224,11 +284,49 @@ fn rango(mut a: Vec<Vec<E>>) -> usize {
     r
 }
 
-/// Los puntos abiertos que el test elige para la geometria (q, T): `q` posiciones distintas del
-/// dominio LDE de la traza oculta (el coset del `domain_offset` de las opciones, fuera del dominio
-/// de la traza), `z` y
-/// `z·g` en la extension, y la raiz del factor lineal de la direccion residual, (z + z·g)/2.
-fn puntos(q: usize, t: usize) -> Vec<E> {
+/// El rango SOBRE F de una matriz con filas en E: cada fila de E son sus dos filas de
+/// coordenadas sobre F. Es el rango que vale para las columnas principales, cuyas filas
+/// aleatorias viven en F y se evaluan en puntos de E (§897).
+fn rango_f(a: &[Vec<E>]) -> usize {
+    let mut b: Vec<Vec<BaseElement>> = Vec::with_capacity(2 * a.len());
+    for fila in a {
+        b.push(fila.iter().map(|e| e.base_element(0)).collect());
+        b.push(fila.iter().map(|e| e.base_element(1)).collect());
+    }
+    let filas = b.len();
+    if filas == 0 {
+        return 0;
+    }
+    let cols = b[0].len();
+    let mut r = 0;
+    for c in 0..cols {
+        if r == filas {
+            break;
+        }
+        let Some(piv) = (r..filas).find(|&i| b[i][c] != BaseElement::ZERO) else {
+            continue;
+        };
+        b.swap(r, piv);
+        let inv = b[r][c].inv();
+        let fila_r: Vec<BaseElement> = b[r].iter().map(|&x| x * inv).collect();
+        b[r] = fila_r.clone();
+        for (i, fila) in b.iter_mut().enumerate() {
+            if i != r && fila[c] != BaseElement::ZERO {
+                let f = fila[c];
+                for (x, y) in fila.iter_mut().zip(fila_r.iter()) {
+                    *x -= f * *y;
+                }
+            }
+        }
+        r += 1;
+    }
+    r
+}
+
+/// Las `q` posiciones del dominio LDE de la traza oculta que el test elige (el coset del
+/// `domain_offset` de las opciones, fuera del dominio de la traza) y los dos puntos fuera del
+/// dominio, `z` y `z·g`: lo que se ABRE de cada objeto.
+fn puntos_abiertos(q: usize, t: usize) -> Vec<E> {
     let largo = 2 * t;
     let lde = largo * proof_options().blowup_factor();
     let omega = BaseElement::get_root_of_unity(lde.trailing_zeros());
@@ -241,12 +339,33 @@ fn puntos(q: usize, t: usize) -> Vec<E> {
         })
         .collect();
     let z = E::new(BaseElement::new(0x2545_F491_4F6C_DD1D), BaseElement::new(0x1234_5678_9ABC_DEF1));
-    let zg = z * E::from(g);
-    let x0 = (z + zg) * E::from(BaseElement::new(2)).inv();
-    pts.extend([z, zg, x0]);
-    let distintos: BTreeSet<[u8; 16]> = pts.iter().map(|e| elemento_a_bytes(*e)).collect();
-    assert_eq!(distintos.len(), pts.len(), "dos puntos elegidos coinciden");
-    pts
+    pts.push(z);
+    pts.push(z * E::from(g));
+    distintos(pts)
+}
+
+/// §897: lo que la prueba TOCA por columna: los abiertos, la fila siguiente de cada posicion
+/// (`g·x_j`, que `Q(x_j)` lee) y `g²·z` (que `Q(z·g)` lee). Sin repetidos: una siguiente que
+/// coincide con otra posicion abierta cuenta una vez.
+fn puntos_tocados(q: usize, t: usize) -> Vec<E> {
+    let largo = 2 * t;
+    let g = E::from(BaseElement::get_root_of_unity(largo.trailing_zeros()));
+    let abiertos = puntos_abiertos(q, t);
+    let mut pts = abiertos.clone();
+    for (i, &y) in abiertos.iter().enumerate() {
+        if i < q {
+            pts.push(y * g);
+        }
+    }
+    let zg = abiertos[q + 1];
+    pts.push(zg * g);
+    distintos(pts)
+}
+
+/// Los puntos, sin repetidos y en su orden.
+fn distintos(pts: Vec<E>) -> Vec<E> {
+    let mut vistos: BTreeSet<[u8; 16]> = BTreeSet::new();
+    pts.into_iter().filter(|e| vistos.insert(elemento_a_bytes(*e))).collect()
 }
 
 /// Los dieciseis bytes de un elemento de la extension, para distinguir puntos.
@@ -289,24 +408,28 @@ fn matriz_de_vandermonde(pts: &[E], m: usize) -> Vec<Vec<E>> {
         .collect()
 }
 
-/// Las dos matrices de la geometria (q, T, m), de rango pleno: tantas filas independientes como
-/// puntos abiertos, con la residual. Si no, dice cual y con que rango.
+/// Las matrices de la geometria (q, T, m), de rango pleno sobre los puntos ABIERTOS: la de
+/// Lagrange de las T filas aleatorias, sobre F (§897: antes sobre E, que no es el cuerpo de las
+/// filas aleatorias de la traza principal), y la de Vandermonde de grado < m, sobre E, que es el
+/// cuerpo de los aleatorizadores. Si no, dice cual y con que rango.
 pub(crate) fn rango_pleno(nombre: &str, g: &Geometria) -> Result<(), String> {
-    let pts = puntos(g.q, g.t);
-    let n = pts.len();
+    let pts = puntos_abiertos(g.q, g.t);
+    let n_e = pts.len();
+    // sobre F, cada punto de E son dos dimensiones y cada punto de F una (q + 2 * 2)
+    let n_f = g.q + 2 * 2;
     let mut mal = Vec::new();
-    let rl = rango(matriz_de_lagrange(&pts, g.t));
-    if rl != n {
+    let rl = rango_f(&matriz_de_lagrange(&pts, g.t));
+    if rl != n_f {
         mal.push(format!(
-            "columnas: la matriz de Lagrange de las T = {} filas aleatorias en los {n} puntos tiene \
-             rango {rl}",
+            "columnas: la matriz de Lagrange de las T = {} filas aleatorias en los {n_e} puntos \
+             abiertos tiene rango {rl} sobre F, y los puntos son {n_f} dimensiones",
             g.t
         ));
     }
     let rv = rango(matriz_de_vandermonde(&pts, g.m));
-    if rv != n {
+    if rv != n_e {
         mal.push(format!(
-            "trozos: la matriz de Vandermonde de grado < m = {} en los {n} puntos tiene rango {rv}",
+            "trozos: la matriz de Vandermonde de grado < m = {} en los {n_e} puntos tiene rango {rv}",
             g.m
         ));
     }
@@ -315,6 +438,16 @@ pub(crate) fn rango_pleno(nombre: &str, g: &Geometria) -> Result<(), String> {
     } else {
         Err(format!("{nombre}: {}", mal.join("; ")))
     }
+}
+
+/// §897: el rango sobre F de la matriz de Lagrange de las T filas aleatorias en los puntos
+/// TOCADOS, y las dimensiones que esos puntos piden. Pleno cuando `independiente`; si no, el
+/// rango es a lo sumo T y lo dice: es la medida de la 131 de `BACKLOG.md`.
+pub(crate) fn rango_de_los_tocados(g: &Geometria) -> (usize, usize) {
+    let pts = puntos_tocados(g.q, g.t);
+    let dims = pts.iter().filter(|e| e.base_element(1) == BaseElement::ZERO).count()
+        + 2 * pts.iter().filter(|e| e.base_element(1) != BaseElement::ZERO).count();
+    (rango_f(&matriz_de_lagrange(&pts, g.t)), dims)
 }
 
 // ---- el juguete: WorkAir con la ocultacion que el test le da ----
@@ -474,7 +607,19 @@ fn air_de(fila: &str) -> String {
 
 /// Una linea por prueba, con lo medido.
 fn linea(fila: &str, g: &Geometria, ab: Option<Aberturas>) -> String {
-    let a = ab.map(|a| format!("{} vistas, {} a enmascarar", a.vistas, a.a_enmascarar));
+    let a = ab.map(|a| {
+        format!(
+            "{} puntos abiertos: {} dimensiones sobre F por columna frente a T = {}, {} sobre E por \
+             trozo frente a m = {}; tocados {} sobre F frente a T: {}",
+            a.vistas,
+            a.dims_columna,
+            g.t,
+            a.dims_trozo,
+            g.m,
+            a.tocados,
+            if a.independiente { "cubre" } else { "NO cubre" }
+        )
+    });
     format!(
         "[A1] {fila}: q {} de {} · T {} · m {} · {} + {} columnas · {} trozos · FRI {} capas y resto \
          de {} · {} B · aberturas por columna y por trozo: {}",
@@ -539,8 +684,31 @@ fn la_cota_de_ocultacion_de_los_23_probadores_con_fila() {
         }
         let cota = asierta_cota(fila, &g);
         println!("{}", linea(fila, &g, cota.as_ref().ok().copied()));
-        if let Err(e) = cota {
-            mal.push(e);
+        match cota {
+            Err(e) => mal.push(e),
+            Ok(ab) => {
+                // §897: lo medido tiene que ser lo declarado, AIR a AIR
+                let air = air_de(fila);
+                match INDEPENDIENTE_DE_LA_AIR.iter().find(|(a, _)| *a == air) {
+                    None => mal.push(format!("{fila}: sin fila en INDEPENDIENTE_DE_LA_AIR")),
+                    Some((_, declarado)) if *declarado != ab.independiente => mal.push(format!(
+                        "{fila}: tocados {} frente a T = {}: {} y la tabla dice {}",
+                        ab.tocados,
+                        g.t,
+                        if ab.independiente { "cubre" } else { "no cubre" },
+                        if *declarado { "cubre" } else { "no cubre" }
+                    )),
+                    Some(_) => {}
+                }
+                let (rango, dims) = rango_de_los_tocados(&g);
+                println!("[A1] {fila}: rango sobre F en los tocados {rango} de {dims} dimensiones");
+                if ab.independiente && rango != dims {
+                    mal.push(format!("{fila}: cubre y el rango en los tocados es {rango} de {dims}"));
+                }
+                if !ab.independiente && rango != g.t {
+                    mal.push(format!("{fila}: no cubre y el rango en los tocados es {rango}, no T = {}", g.t));
+                }
+            }
         }
         if let Err(e) = rango_pleno(fila, &g) {
             mal.push(e);
@@ -550,19 +718,23 @@ fn la_cota_de_ocultacion_de_los_23_probadores_con_fila() {
     assert!(mal.is_empty(), "la cota de ocultacion no se cumple:\n{}", mal.join("\n"));
 }
 
-/// **El juguete con la geometria de produccion cumple la cota, y verifica.** `WorkAir` con 64
-/// filas reales y m = 64, las consultas y el blowup de produccion: 45 a enmascarar frente a T = 64
-/// y m = 64, rango pleno, y el verificador la acepta.
+/// **El juguete con la geometria de produccion cumple la cota, y verifica.** `WorkAir` con 128
+/// filas reales (⚠️ §897: eran 64, que no cubre los 90 tocados) y m = 64, las consultas y el
+/// blowup de produccion: 46 dimensiones sobre F frente a T = 128 y 44 sobre E frente a m = 64,
+/// 90 tocados cubiertos, rango pleno, y el verificador la acepta.
 #[test]
 fn el_juguete_con_la_geometria_de_produccion_cumple_la_cota_y_verifica() {
-    let bytes = prueba_juguete(64, 64);
-    verifica_juguete(&bytes, 64).expect("la prueba del juguete verifica");
+    let bytes = prueba_juguete(128, 64);
+    verifica_juguete(&bytes, 128).expect("la prueba del juguete verifica");
     let g = geometria::<Base128>("juguete", &bytes).expect("la geometria se lee");
-    assert_eq!((g.t, g.m, g.ancho), (64, 64, 2), "la geometria del juguete");
+    assert_eq!((g.t, g.m, g.ancho), (128, 64, 2), "la geometria del juguete");
     assert!(g.trozos >= 2, "el cociente oculto va en dos trozos al menos: {}", g.trozos);
     let ab = asierta_cota("juguete", &g).expect("la cota se cumple");
     println!("{}", linea("juguete (WorkAir)", &g, Some(ab)));
-    assert_eq!(ab.a_enmascarar, g.q + 2 + DIRECCION_RESIDUAL);
+    assert_eq!((ab.vistas, ab.dims_columna, ab.dims_trozo), (g.q + 2, g.q + 4, g.q + 2));
+    assert!(ab.independiente, "T = 128 cubre los {} tocados", ab.tocados);
+    let (rango, dims) = rango_de_los_tocados(&g);
+    assert_eq!(rango, dims, "rango pleno sobre F en los tocados");
     rango_pleno("juguete", &g).expect("rango pleno");
 }
 
@@ -570,17 +742,19 @@ fn el_juguete_con_la_geometria_de_produccion_cumple_la_cota_y_verifica() {
 /// verificando: m decide la ocultacion, no la solidez (RFC-0009 D-H).
 #[test]
 fn el_mutante_m_43_deja_los_trozos_sin_cota_y_sigue_verificando() {
-    let bytes = prueba_juguete(64, 43);
-    verifica_juguete(&bytes, 64).expect("m = 43 no toca la solidez: verifica");
+    let bytes = prueba_juguete(128, 43);
+    verifica_juguete(&bytes, 128).expect("m = 43 no toca la solidez: verifica");
     let g = geometria::<Base128>("m 43", &bytes).expect("la geometria se lee");
     assert_eq!(g.m, 43, "la marca lleva m = 43");
-    // El mutante tiene dientes solo si la prueba abre 41 o 42 posiciones unicas: con 40, 43 a
-    // enmascarar frente a m = 43 cumple. El juguete es determinista (sin sal, semillas fijas).
-    assert!(g.q >= 41, "el juguete abre {} posiciones unicas y m = 43 no caeria", g.q);
+    // §897: con la cuenta buena, q + 2 puntos de E frente a m, el mutante m = 43 tiene dientes
+    // solo si la prueba abre las 42 posiciones unicas: con 41, 43 frente a 43 cumple. El juguete
+    // es determinista (sin sal, semillas fijas) y abre 42; el mutante que cae con toda prueba de
+    // produccion, que abre de 40 a 42, es m <= 41.
+    assert_eq!(g.q, 42, "el juguete abre {} posiciones unicas y m = 43 no caeria", g.q);
     let e = asierta_cota("m 43", &g).expect_err("los trozos no tienen cota con m = 43");
     assert!(e.contains("trozos:") && e.contains("frente a m = 43"), "{e}");
-    assert!(!e.contains("columnas:"), "las columnas siguen con cota (T = 64): {e}");
-    let r = rango_pleno("m 43", &g).expect_err("la Vandermonde de grado < 43 no da 45 filas");
+    assert!(!e.contains("columnas:"), "las columnas siguen con cota (T = 128): {e}");
+    let r = rango_pleno("m 43", &g).expect_err("la Vandermonde de grado < 43 no da 44 filas");
     assert!(r.contains("trozos:") && r.contains("rango 43"), "{r}");
 }
 
@@ -594,22 +768,26 @@ fn el_mutante_t_32_deja_las_columnas_sin_cota() {
     assert_eq!((g.t, g.m), (32, 32));
     let e = asierta_cota("T 32", &g).expect_err("las columnas no tienen cota con T = 32");
     assert!(e.contains("columnas:") && e.contains("frente a T = 32"), "{e}");
-    let r = rango_pleno("T 32", &g).expect_err("la Lagrange de 32 filas no da 45");
+    let r = rango_pleno("T 32", &g).expect_err("la Lagrange de 32 filas no da 46 dimensiones");
     assert!(r.contains("columnas:") && r.contains("rango 32"), "{r}");
 }
 
-/// **El rango es pleno con puntos distintos y cae con uno repetido**: la prueba de vida de la
-/// eliminacion, sobre la geometria de produccion mas corta (q 42, T 64, m 64).
+/// **El rango es pleno con puntos distintos y cae con uno repetido**: la prueba de vida de las
+/// dos eliminaciones, sobre F y sobre E, con la geometria de produccion (q 42, m 64) en T = 128,
+/// que cubre los tocados, y en T = 64, que no (§897).
 #[test]
 fn el_rango_es_pleno_con_puntos_distintos_y_cae_con_uno_repetido() {
-    let pts = puntos(42, 64);
-    assert_eq!(pts.len(), 45);
-    assert_eq!(rango(matriz_de_lagrange(&pts, 64)), 45);
-    assert_eq!(rango(matriz_de_vandermonde(&pts, 64)), 45);
-    let mut repetido = pts.clone();
+    let abiertos = puntos_abiertos(42, 128);
+    assert_eq!(abiertos.len(), 44);
+    assert_eq!(rango_f(&matriz_de_lagrange(&abiertos, 128)), 46, "q + 2 puntos de E, sobre F");
+    assert_eq!(rango(matriz_de_vandermonde(&abiertos, 64)), 44);
+    let mut repetido = abiertos.clone();
     repetido[7] = repetido[3];
-    assert_eq!(rango(matriz_de_lagrange(&repetido, 64)), 44);
-    assert_eq!(rango(matriz_de_vandermonde(&repetido, 64)), 44);
-    // y con mas puntos que filas aleatorias, el rango es el de las filas
-    assert_eq!(rango(matriz_de_lagrange(&pts, 32)), 32);
+    assert_eq!(rango_f(&matriz_de_lagrange(&repetido, 128)), 45);
+    assert_eq!(rango(matriz_de_vandermonde(&repetido, 64)), 43);
+    // los tocados: 2q + 3 puntos, 2q + 6 dimensiones sobre F; T = 128 los cubre y T = 64 no
+    let tocados = puntos_tocados(42, 128);
+    assert_eq!(tocados.len(), 87, "sin repetidos entre las posiciones y sus siguientes");
+    assert_eq!(rango_f(&matriz_de_lagrange(&tocados, 128)), 90);
+    assert_eq!(rango_f(&matriz_de_lagrange(&puntos_tocados(42, 64), 64)), 64);
 }

@@ -1,0 +1,612 @@
+# La ocultación del fork, con su simulador: el argumento de A2 (§897)
+
+**Estado**: documento de trabajo de la 130 de `BACKLOG.md` (A2 del HVZK), escrito en el §897 por la
+sesión, y **revisable**: cada objeción con su cierre va en el apartado 11 y en el asiento que la
+lleve. **No es una promesa.** Lo que la casa promete sigue siendo el censo —«una prueba que verifica
+demuestra la transición que enuncia y no publica literal ningún valor de columna constante de su
+traza», RFC-0009 D-A y `SECURITY.md` §3.bis— hasta que A4, con A3 sellada, decida qué se promete y
+con qué palabras. Nada de lo que sigue cambia `SECURITY.md`, el RFC-0009 más allá de la nota de su
+D-I, ni la regla 3 del PROCESO; ningún texto vivo dice HVZK de nada que exista.
+
+**Qué es.** El argumento de ocultación del probador oculto del fork de winterfell 0.13.1
+(`crates/winter-prover`, `crates/winter-air`, `crates/winter-verifier`, con la sal de
+`crates/zk-ssl-air/src/sal.rs`) tal como está implementado, con su simulador y sus lemas, cada
+lema atado al test del §896 y del §897 que mide su hipótesis (`crates/zk-ssl/src/instrumento_cota.rs`),
+la lista de hipótesis con su clase —medida, demostrada, de modelo o supuesta—, lo que no cubre y
+dónde el fork se aparta de la nota 2024/1037.
+
+**Qué da, en una frase.** Para diecisiete de las veintitrés familias, la vista del verificador
+honesto se simula sin el testigo si se cumple una condición suficiente que nadie ha medido, R3: que
+las dos máscaras que no dependen del testigo —la columna aleatoria y los aleatorizadores del
+cociente— cubran lo que FRI abre del polinomio DEEP (apartados 3 y 6). Para seis familias el
+argumento no llega: las cinco con T = 64, porque sus filas aleatorias no cubren lo que una prueba
+toca (L1, L6), y la solvencia, porque sus máscaras tienen menos dimensiones que lo que FRI abre y
+R3 le falla por pura cuenta (L3). La 131 y la 132 de `BACKLOG.md` llevan las decisiones. Hasta que
+R3 esté medida (A3) y las seis tengan su salida, el enunciado del apartado 8 es condicional.
+
+**La nota, no leída.** La nota 2024/1037 de ePrint —Ulrich Haböck y Al Kindi, «A note on adding
+zero-knowledge to STARKs», recibida el 26 de junio de 2024 y revisada por última vez el 22 de
+febrero de 2025, según lo que devuelve una búsqueda de su página— no se pudo leer desde el
+contenedor de esta sesión: `eprint.iacr.org` no resuelve, y para leerla desde una sesión en la nube
+hay que permitir ese dominio en la red de la sesión. El apartado 10 compara con lo que la casa sabía
+de ella por el RFC-0009 y con su resumen; la comparación apartado por apartado queda pendiente.
+
+**Convención.** «Demostrado» es lo que este documento demuestra; «medido», lo que un test del árbol
+mide en cada canon; «modelo», una hipótesis estándar que ningún test puede medir (el oráculo
+aleatorio); «supuesto», lo que ni se demuestra ni se mide, con su probabilidad de fallo cuando se
+acota. Los ⚠️ marcan lo que el §896 decía y este documento corrige.
+
+## 1. El protocolo, tal como está implementado
+
+**Notación.** F es el campo de producción, el de 64 bits de winterfell (`f64`, p = 2^64 − 2^32 + 1);
+E su extensión cuadrática, donde viven z, los coeficientes del cociente y el polinomio DEEP
+(`FieldExtension::Quadratic` en `proof_options()`, `crates/zk-ssl/src/lib.rs`); conj es la
+conjugación de E sobre F. La traza real tiene T filas, potencia de dos con T ≥ 64 (RFC-0009 D-AG),
+W columnas principales y W_aux auxiliares; la oculta, L = 2T filas. H = ⟨g⟩ ⊂ F es el dominio de la
+traza oculta, con g de orden L; las filas reales son h_0 … h_{T−1} y las aleatorias h_T … h_{L−1}.
+Λ = 7·⟨ω⟩ es el dominio LDE, con ω de orden 16L (blowup 16) y 7 el generador de F*
+(`domain_offset`, `crates/winter-air/src/options.rs`); como 7 tiene orden p − 1, que no es potencia
+de dos, 7 ∉ ⟨ω⟩ y Λ ∩ H = ∅: ninguna posición abierta cae en una fila, y 0 ∉ Λ. Las opciones de
+producción (`proof_options()`): 42 consultas, blowup 16, molienda de 21 bits, extensión cuadrática,
+plegado 8 y resto de grado ≤ 31 en FRI, lote lineal. q es el número de posiciones únicas que abre
+una prueba, de 40 a 42 según la corrida, leído de ella (`num_unique_queries`).
+
+- **P1. Filas y columna aleatorias** (`generate_proof_oculto`, `crates/winter-prover/src/lib.rs`).
+  Una moneda `DefaultRandomCoin<Blake3>` se siembra con Blake3(semilla_filas), semilla de 32 bytes
+  de `OsRng` por prueba (`ocultacion_encendida`, `crates/stark-experiment/src/lib.rs`;
+  `sal::semilla`). De esa moneda salen, columna a columna, T elementos de F detrás de las T filas
+  reales de cada columna principal; después L elementos de F para una columna principal más —la
+  columna aleatoria, sin ninguna restricción—; y después, si hay tramo auxiliar, T elementos de E
+  detrás de las filas reales de cada columna auxiliar. El meta de la traza lleva la marca con m
+  (D-S); la traza real se comprueba contra el AIR interno antes de ocultarla (D-AH).
+- **P2. El envoltorio** `Oculta<A>` (`crates/winter-air/src/air/oculta.rs`): presenta al núcleo un
+  AIR de L filas con W + 1 columnas principales y las exenciones de transición del interno más T
+  —las restricciones de transición no se imponen entre una fila aleatoria y la siguiente, ni entre
+  la última real y la primera aleatoria— y delega en el interno transiciones, aserciones (que
+  nombran filas reales, porque el interno ve T), columnas periódicas y tramo auxiliar. Sube el
+  factor del dominio de restricciones si hace falta; eso sólo lo usa el probador.
+- **P3. Los polinomios de columna.** Para cada columna, el polinomio P ∈ F[x] (E[x] en las
+  auxiliares) de grado < L que interpola sus L valores sobre H. Su evaluación sobre Λ se
+  compromete con `MerkleConSal` (P5), una hoja por punto de Λ con la fila entera del tramo.
+- **P4. El cociente y sus trozos** (`segmentar`, `crates/winter-prover/src/constraints/composition_poly.rs`;
+  `num_constraint_composition_columns`, `crates/winter-air/src/air/context.rs`). Con los
+  coeficientes α de las restricciones, sacados de la moneda tras el compromiso de la traza, el
+  polinomio de composición C(x) = Σ_c α_c·C_c(x)/Z_c(x) —transiciones sobre el marco (P(x), P(g·x))
+  de todas las columnas, y aserciones— tiene grado < N·s, con s = L − m y N el número de trozos.
+  Se parte C(x) = Σ_{k<N} x^{k·s}·h_k(x), con deg h_k < s, y cada trozo se enmascara:
+  h'_k = h_k + x^s·r_k − r_{k−1}, con r_{−1} = r_{N−1} = 0 y r_0 … r_{N−2} ∈ E[x] de grado < m,
+  uniformes de una moneda sembrada con Blake3(semilla_cociente), la otra semilla de 32 bytes. La
+  suma telescopa: Σ_k y^{k·s}·h'_k(y) = C(y) para todo y. Cada h'_k tiene grado < L y se
+  compromete, evaluado sobre Λ, con `MerkleConSal`. m = 64 en las 28 pruebas (`M_OCULTACION`).
+- **P5. El compromiso con sal** (`MerkleConSal`, `crates/zk-ssl-air/src/sal.rs`): cada hoja es
+  Blake3(item ‖ sal) con sal = Blake3(32 bytes de `OsRng`), fresca por hoja; la apertura lleva el
+  camino y la sal. Lo usan la traza, los trozos y las capas de FRI (winter-fri construye sus capas
+  con `V::new`); el resto de FRI no va en un árbol: se compromete como Blake3 de sus coeficientes y
+  viaja entero.
+- **P6. El punto fuera del dominio.** z ∈ E sale de la moneda tras el compromiso del cociente. El
+  probador manda el marco OOD de la traza —P_i(z) y P_i(z·g) de cada columna, principal (la
+  aleatoria incluida) y auxiliar— y el del cociente, h'_k(z) y h'_k(z·g) de cada trozo
+  (`QuotientOodFrame`). El verificador comprueba Σ_k z^{k·s}·h'_k(z) = C(z), con C(z) calculado
+  del marco de la traza (`crates/winter-verifier/src/lib.rs`, paso 3); en z·g no comprueba nada:
+  esos valores entran en DEEP.
+- **P7. DEEP** (`crates/winter-prover/src/composer/mod.rs`, `crates/winter-verifier/src/composer.rs`).
+  Con un coeficiente cc por columna y por trozo, sacado de la moneda tras el marco OOD (lote
+  lineal): D(x) = Σ_i cc_i·Q[P_i](x) + Σ_k cc'_k·Q[h'_k](x), con
+  Q[P](x) = (P(x) − P(z))/(x − z) + (P(x) − P(z·g))/(x − z·g). Es un polinomio de grado ≤ L − 2
+  sobre E, y el probador aserta que el grado es exactamente L − 2.
+- **P8. FRI** (winter-fri 0.13.1, sin bifurcar). Sobre D evaluado en Λ: en cada capa los valores se
+  agrupan de ocho en ocho —los cosets de plegado, {x : x^8 = c}— en una hoja, se comprometen con
+  `MerkleConSal`, sale α_i de la moneda y se pliega. Para las trazas de la casa son una capa
+  (T = 64) o dos (T ≥ 256), y el resto, de 8 a 32 coeficientes según la longitud, viaja entero
+  (§896, tabla).
+- **P9. Molienda y posiciones.** El probador busca un nonce con 21 ceros a la izquierda en el hash
+  de la moneda; de la moneda con el nonce salen 42 posiciones de Λ, con repeticiones, y el probador
+  abre las únicas: q ≤ 42. Las posiciones no viajan; las deriva el verificador.
+- **P10. Aberturas.** En cada posición x_j: la fila entera de la traza principal (las W + 1
+  columnas) y de la auxiliar, con su sal y su camino; el valor de cada trozo h'_k(x_j), con su sal;
+  y en FRI, en cada capa, la hoja entera del coset de plegado de la posición plegada —ocho
+  valores, uno de ellos el de la posición— con su sal.
+- **P11. El verificador** (`perform_verification`): reconstruye la moneda, comprueba la molienda,
+  la consistencia OOD en z y las aperturas contra las raíces, calcula D(x_j) de las aperturas y de
+  los marcos con la fórmula de P7 y se lo da a FRI, que comprueba que el valor calculado es el que
+  la hoja de la capa 0 lleva en su posición, pliega cada coset con α_i y comprueba la capa
+  siguiente, y al final el resto.
+- **P12. Lo público por diseño.** Las entradas públicas, el contexto (longitudes, anchos, opciones,
+  la marca con m) y lo que el sobre, el recibo o la operación lleven en claro (RFC-0009 D-B,
+  columna «público por diseño»). No es objeto de este argumento.
+
+## 2. La vista del verificador honesto
+
+Lo que recibe, en orden: (V1) las raíces de la traza principal y, si la hay, de la auxiliar; (V2)
+el marco OOD de la traza, 2(W + 1 + W_aux) valores de E; (V3) la raíz del cociente; (V4) el marco
+OOD del cociente, 2N valores de E; (V5) las raíces de las capas de FRI y el resto entero; (V6) el
+nonce; (V7) en cada posición única x_j, la fila principal (W + 1 valores de F), la auxiliar (W_aux
+de E), los N trozos (E), y sus sales y caminos; (V8) en cada capa de FRI y cada posición plegada,
+los ocho valores del coset, con sal y camino. Más lo que él mismo deriva: los desafíos (los
+elementos del tramo auxiliar, α, z, cc, α_i, el nonce y las posiciones) y lo que calcula de lo
+anterior: C(z), D(x_j) y —aunque no lo comprueba— C(x_j) = Σ_k x_j^{k·s}·h'_k(x_j),
+C(z·g) = Σ_k (z·g)^{k·s}·h'_k(z·g) y D(x₀), con x₀ = (z + z·g)/2 (L3).
+
+Los conjuntos de puntos, por columna:
+
+- **Abiertos**, S_ab = {x_1 … x_q} ∪ {z, z·g}: q + 2 puntos. Las posiciones viven en F y los dos de
+  fuera en E, así que lo abierto de una columna principal mide **q + 4 dimensiones sobre F** (46 con
+  q = 42); lo de una auxiliar, q + 2 sobre E; lo de un trozo, **q + 2 sobre E** (44).
+- **Tocados**, S_toc = S_ab ∪ {g·x_1 … g·x_q} ∪ {g²·z}: 2q + 3 puntos, porque C(x_j) lee el marco
+  (P(x_j), P(g·x_j)) y C(z·g) lee (P(z·g), P(g²·z)). Mide **2q + 6 dimensiones sobre F** por
+  columna principal (90 con q = 42) y 2q + 3 sobre E por auxiliar. Un g·x_j que coincide con otra
+  posición abierta cuenta una vez.
+- **x₀** = (z + z·g)/2 ∈ E, donde el factor lineal con el que cada objeto entra en DEEP se anula.
+
+## 3. Los lemas
+
+Cada lema dice qué demuestra, con qué hipótesis, y qué test mide esa hipótesis sobre las 28 pruebas
+reales de los 23 probadores con fila (`la_cota_de_ocultacion_de_los_23_probadores_con_fila`, en
+cada canon) o sobre el juguete, `WorkAir` con 128 filas reales, m = 64 y las consultas y el blowup
+de producción.
+
+### L0 — La transcripción y el oráculo
+
+Fiat–Shamir con la moneda `DefaultRandomCoin<Blake3>`: cada desafío es Blake3 de lo comprometido
+hasta entonces. El argumento se hace sobre el protocolo interactivo con verificador honesto —el
+simulador elige los desafíos, uniformes, antes de construir nada— y pasa al no interactivo en el
+modelo de oráculo aleatorio programable: el simulador fija las salidas de Blake3 en los prefijos de
+su transcripción para que la moneda dé sus desafíos, y falla sólo si el adversario ya había
+consultado uno de esos prefijos, que llevan raíces frescas (L4) y tienen entropía de sobra. La
+molienda no depende del testigo: la búsqueda del nonce —el primero cuyo hash con la moneda lleva
+21 ceros— corre sobre salidas del oráculo que el simulador NO fija, para que el nonce salga con su
+distribución; lo que fija son las salidas de después, las que `draw_integers` deriva del nonce
+para las posiciones. **Clase: modelo.** Ningún test la mide; es la hipótesis estándar de
+toda prueba de Fiat–Shamir, y la casa ya la usa para la solidez.
+
+### L1 — Las filas aleatorias cubren un conjunto de puntos si su cuenta sobre F cabe en T
+
+**Enunciado.** Sea P = P_real + Σ_{r=T}^{L−1} ρ_r·L_r el polinomio de una columna principal, con ρ
+uniforme en F^T y L_r la base de Lagrange sobre H. Sea S ⊂ E \ H finito, S_F = S ∩ F, S_E = S \ F,
+y S̄ = S_F ∪ S_E ∪ conj(S_E). Si los puntos de S̄ son distintos dos a dos y |S_F| + 2|S_E| ≤ T,
+entonces (P(y))_{y∈S} es uniforme en F^{S_F} × E^{S_E}, para cualquier P_real. Para una columna
+auxiliar, con ρ uniforme en E^T: uniforme en E^S si |S| ≤ T y los puntos de S son distintos. Para la
+columna aleatoria, con sus L valores uniformes en F: lo mismo con L en lugar de T.
+
+**Demostración.** Un polinomio de grado < L que vale 0 en las T filas reales es Z_real·R, con
+Z_real = Π_{r<T}(x − h_r) y R ∈ F[x] de grado < T, y la correspondencia ρ ↦ Σ ρ_r·L_r ↦ R es
+biyectiva: Z_real no se anula en las filas aleatorias, y evaluar R en T puntos distintos, escalado
+por constantes no nulas, es biyectivo. Así P(y) = P_real(y) + Z_real(y)·R(y) con Z_real(y) ≠ 0 fuera
+de H, y la uniformidad de (P(y))_S equivale a que la evaluación ev_S: F[x]_{<T} → F^{S_F} × E^{S_E}
+sea sobreyectiva. Para R ∈ F[x], R(conj y) = conj R(y): el valor en un punto de E lleva el de su
+conjugado. Dado un objetivo (v_y)_{S_F}, (w_y)_{S_E}, se extiende a S̄ con conj(w_y) en conj(y); la
+Vandermonde de E[x]_{<T} sobre S̄ es sobreyectiva si los puntos son distintos y |S̄| ≤ T, y da una
+solución R' ∈ E[x]; conj(R') resuelve el mismo sistema, y R = (R' + conj R')/2 ∈ F[x]_{<T} también
+(2 es invertible en F). Recíprocamente, si |S_F| + 2|S_E| > T la dimensión no alcanza, y si y y
+conj(y) están los dos en S_E, el objetivo con w_{conj y} ≠ conj(w_y) no se alcanza. En las auxiliares
+es la Vandermonde de E[x]_{<T} sobre S sin más. ∎
+
+**Lo que mide el instrumento.** `rango_f(matriz_de_lagrange(S, T))`, el rango sobre F de la matriz
+(L_r(y))_{y∈S, T≤r<L}, es el rango de ev_S —la matriz de Lagrange es la de ev_S compuesta con la
+biyección de arriba—, y el test lo exige igual a |S_F| + 2|S_E|:
+
+- sobre S_ab, `rango_pleno`: 46 de 46 en las 28 pruebas (45 de 45 en la que abrió 41 posiciones
+  únicas; q + 4 ≤ T, con T ≥ 64);
+- sobre S_toc, `rango_de_los_tocados`: 90 de 90 en las 19 pruebas de las 18 familias con T ≥ 256, y
+  T de 2q + 6 —64 de 90, o 64 de 88 en la que abrió 41— en las 9 pruebas de las 5 familias con
+  T = 64 (NullifierThresholdAir, ThresholdAir, EdadAir con ocho hojas, RefundAir, RefundAirV2), que
+  la tabla `INDEPENDIENTE_DE_LA_AIR` declara y el test contrasta en los dos sentidos;
+- el mutante T = 32 (`el_mutante_t_32_deja_las_columnas_sin_cota`): 46 frente a 32, rango 32;
+- la prueba de vida (`el_rango_es_pleno_con_puntos_distintos_y_cae_con_uno_repetido`): con un punto
+  repetido el rango baja en uno; 87 puntos tocados distintos dan 90 dimensiones con T = 128 y 64
+  con T = 64.
+
+**Hipótesis.** (H1, medida) la cuenta, q + 4 ≤ T sobre S_ab y 2q + 6 ≤ T sobre S_toc, por familia,
+con el q leído de cada prueba; el rango pleno que el instrumento calcula es sobre posiciones que
+elige el test y un z fijo, una prueba de vida de la lema, no una medida sobre las posiciones
+reales. (H2, demostrada) Λ ∩ H = ∅ y las posiciones son
+distintas (el probador abre únicas). (H3, supuesta, con probabilidad de fallo acotada) z ∉ F ∪ H y
+ningún conjugado de z, z·g, g²·z coincide con otro de los tres: cada coincidencia es una ecuación no
+trivial en z, de la forma z^{p−1} = g^e, con a lo sumo p − 1 soluciones en E, así que la
+probabilidad total es menor que 2^{−60} por prueba; el instrumento usa un z fijo que las cumple, y
+las posiciones y el z reales no viajan (§896, «lo que NO hace»). Una coincidencia entre g·x_j y otra
+posición abierta reduce S_toc y no estorba: el simulador muestrea por punto distinto.
+
+### L2 — Los trozos abren, en cada punto, un vector uniforme de su hiperplano
+
+**Enunciado.** Sea S un conjunto de puntos distintos de E \ {0} con |S| ≤ m. Con r_0 … r_{N−2}
+uniformes e independientes en E[x]_{<m}, los vectores (h'_k(y))_{k<N}, y ∈ S, son independientes
+entre sí, y cada uno es uniforme en el hiperplano afín {v ∈ E^N : Σ_k y^{k·s}·v_k = C(y)},
+cualesquiera que sean los h_k.
+
+**Demostración.** Para y fijo, la aplicación (r_0(y), …, r_{N−2}(y)) ↦ (y^s·r_0(y),
+y^s·r_1(y) − r_0(y), …, y^s·r_{N−2}(y) − r_{N−3}(y), −r_{N−2}(y)) es lineal e inyectiva —triangular
+desde la última coordenada— y su imagen está en el hiperplano Σ_k y^{k·s}·u_k = 0, porque la suma
+telescopa; el hiperplano tiene dimensión N − 1, la del dominio: es el hiperplano entero. Y
+(r_k(y))_{y∈S} es uniforme en E^S para cada k, independiente de los otros k, porque la Vandermonde
+de E[x]_{<m} sobre S tiene rango |S| cuando |S| ≤ m y los puntos son distintos. Sumar h_k(y), fijo,
+traslada el hiperplano a C(y). ∎
+
+**Lo que mide el instrumento.** `rango(matriz_de_vandermonde(S_ab, m))` sobre E: 44 de 44 en las
+28 pruebas (q + 2 ≤ m = 64); el mutante m = 43 del juguete
+(`el_mutante_m_43_deja_los_trozos_sin_cota_y_sigue_verificando`): 44 frente a 43, rango 43, y la
+prueba sigue verificando (m decide la ocultación, no la solidez, RFC-0009 D-H); y el mutante del
+árbol, `M_OCULTACION` 64 → 43, corrido en el §897 con la cuenta corregida: en rojo las 23 pruebas
+que abrieron 42 posiciones únicas —«trozos: 44 puntos abiertos, 44 dimensiones sobre E, frente a
+m = 43» y rango 43— y en verde las cuatro que abrieron 41 y la que abrió 40, como dice la
+desigualdad. En una primera corrida el mismo mutante cayó antes en otra puerta, la banda de bytes
+de D-AC: con m = 43 los trozos son menos y una prueba de RefundAirV2 con q = 41 adelgazó por debajo
+de su banda (38.595 B frente a 39.019), y `asierta` paró el test antes de juzgar la cota. ⚠️ El
+§896 contaba q + 2 + 1 ≤ m, puso en rojo las 28 de su corrida y decía que m = 43 caía con q ≥ 41;
+con la cuenta buena, q + 2 ≤ m, m = 43 cae sólo con q = 42, m = 42 con q ≥ 41, y m ≤ 41 con toda
+prueba de producción (q de 40 a 42). El instrumento lo dice así desde el §897.
+
+**Hipótesis.** (H4, medida) q + 2 ≤ m y el rango pleno. (H5, demostrada) s = L − m ≥ 1 y N ≥ 2
+(`segmentar` lo aserta), y ≠ 0 (0 ∉ Λ; z = 0 tiene probabilidad p^{−2}). Lo que el lema NO dice:
+nada de los h_k ni de C(y). Lo que el verificador aprende de los trozos en y es exactamente C(y), y
+L1 y L6 dicen qué es C(y).
+
+### L3 — DEEP y FRI: lo determinado, lo que se abre de más y la condición R3
+
+**Lo determinado.** D(x_j), en las q posiciones, lo calcula el verificador de V2, V4 y V7: no es
+información nueva. Y en x₀ = (z + z·g)/2: para cualquier P,
+Q[P](x) = [P(x)·(2x − z − z·g) − P(z)·(x − z·g) − P(z·g)·(x − z)] / ((x − z)(x − z·g)), y en x₀ el
+primer término se anula, así que Q[P](x₀) = 2·(P(z·g) − P(z))/(z·g − z): la pendiente entre los dos
+valores del marco. Luego D(x₀) = 2·[Σ_i cc_i·(P_i(z·g) − P_i(z)) + Σ_k cc'_k·(h'_k(z·g) − h'_k(z))]
+/ (z·g − z) es público. ⚠️ El §896 contaba esa dirección como «una abertura más que un simulador
+tiene que enmascarar» (`DIRECCION_RESIDUAL`, la nota de la D-I): no lo es. La máscara de la columna
+aleatoria se anula en x₀, cierto; pero el valor de D en x₀ no depende del testigo más que a través
+del marco OOD, que ya es de la vista: ni fuga ni abertura. El instrumento ya no la cuenta.
+
+**Lo que se abre de más.** FRI abre de D mucho más que D(x_j): en la capa 0, los otros siete
+valores del coset de plegado de cada posición; en cada capa siguiente, los ocho valores del coset
+de la posición plegada, que son funcionales lineales de D —la capa i es el pliegue de la i − 1 con
+α_i (`apply_drp`), un polinomio de grado < L/8^i—; y el resto entero. Llámese O a la aplicación
+lineal que lleva D ∈ E[x]_{≤L−2} a todo lo que FRI abre de él, los D(x_j) incluidos. Su rango no
+es el número de valores abiertos: con c₀ cosets distintos en la capa 0 y c₁ en la capa 1 (c₀ y
+c₁ ≤ q), la capa 0 aporta 8c₀ dimensiones sobre E; la capa 1, a lo sumo L/8 —la dimensión del
+espacio de su polinomio—, de las que c₀ ya estaban (el pliegue de cada coset abierto); y el resto
+no aporta nada cuando la capa anterior ya lo determina (8c₁ ≥ L/8, siempre en la casa). Con q = 42
+y los cosets distintos: T = 64, 127 sobre E y 254 sobre F, todo D —FRI entrega D entero—; T = 256,
+358 y 716; T = 512, 422 y 844; T = 1024, 550 y 1100, de las 1022, 2046 y 4094 dimensiones que mide
+D. Y lo que queda sin determinar, rango_F(O|_K) con K el núcleo de las q + 1 condiciones de abajo,
+es el rango de O menos 2q y menos lo que D(x₀) añada (0 o 2): unas 168, 630, 758 y 1014. ⚠️ La
+primera versión de este documento, en el §897 y antes de su revisión, contaba filas en vez de
+rangos —704, 1276, 1292 y 1324— y decía que con T = 256 FRI entregaba D entero; no es así:
+716 < 1022.
+
+**Las máscaras, y cuáles cuentan.** De los tres aleatorizadores, sólo dos entran en D de forma
+lineal e independiente del testigo: la columna aleatoria, que no está en ninguna restricción y
+entra sólo por cc_R·Q[R], y los aleatorizadores r_k del cociente, que entran por
+Σ_k cc'_k·Q[x^s·r_k − r_{k−1}]. Las filas aleatorias de las columnas reales NO: entran en D por
+Q[P_i], lineal, pero también por los trozos h_k, que son los de
+C(x) = Σ_c α_c·C_c(P(x), P(g·x))/Z_c(x), y C depende de los polinomios de columna enteros —las
+exenciones quitan factores del divisor, no términos del numerador— con el grado de cada
+restricción: en los puntos abiertos no se nota, porque C(y) sólo lee el marco tocado y L1 y L2 lo
+absorben, pero FRI abre D en los x_j·μ con μ ≠ 1 y en las capas, donde entran los h_k(x_j·μ), que
+dependen de las filas aleatorias de forma polinómica y, en su parte lineal, del testigo. Lo mismo
+las auxiliares. Así que, condicionada la vista a lo abierto, a lo tocado y a los valores de los
+r_k en S_ab, D = D_resto + M_R(ρ_R) + M_r(r_res): D_resto depende del testigo, de las filas
+aleatorias de las columnas reales y de lo condicionado, de cualquier forma; ρ_R es lo libre de la
+columna aleatoria, L − q − 4 dimensiones sobre F (sus L valores menos los q + 4 abiertos); r_res,
+lo libre de los aleatorizadores, 2(m − q − 2) por cada uno de los N − 1 (sus m coeficientes de E
+menos sus valores en los q + 2 puntos abiertos). M_R y M_r son lineales sobre F e inyectivas (el
+núcleo de P ↦ Q[P] son las constantes, que lo residual no contiene), independientes de D_resto, y
+valen 0 en x_j y en x₀, porque lo residual no mueve los valores en S_ab y Q[·](x₀) sólo depende
+de ellos: im(M_R), im(M_r) ⊆ K = {D : D(x_j) = 0 ∀j, D(x₀) = 0}, y D_resto está en el espacio afín
+de D.
+
+**La condición R3.** La vista real de FRI es O(D_resto) + O(M_R ρ_R + M_r r_res); la del simulador
+(apartado 5, S5) es uniforme en O(D_0) + O(K), con D_0 cualquier polinomio con los valores
+determinados. Si **rango_F(O∘[M_R | M_r]) = rango_F(O|_K)**, entonces O(M_R ρ_R + M_r r_res) es
+uniforme en O(K) e independiente de D_resto, y la vista real es uniforme en O(D_resto) + O(K) =
+O(D_0) + O(K): la misma. R3 es **suficiente**, no necesaria: si falla, lo que quede sin cubrir lo
+mueven las filas aleatorias de las columnas reales de una forma que depende de la AIR y del
+testigo, como en L6, y ningún instrumento lineal lo mide. ⚠️ La primera versión de este documento
+la enunciaba como «si y sólo si», con las filas aleatorias de las columnas reales dentro de M; la
+revisión escéptica del §897 lo corrigió (apartado 11, objeciones 1 y 2). Es una condición de rango
+sobre matrices que se construyen de la geometría (q, T, m, N, capas, resto) y de los desafíos
+(posiciones, z, cc, α_i), como las de L1 y L2, y **nadie la ha medido**: ni el §896 ni el §897.
+Las cuentas de dimensión, necesarias y no suficientes, con q = 42: las máscaras suman a lo sumo
+(L − q − 4) + 40·(N − 1); con T = 1024 (L = 2048, N = 8), 2002 + 280 frente a unas 1014, y la
+columna aleatoria sola llega por cuenta; con T = 512 (N = 8), 978 + 280 frente a unas 758, y la
+columna sola también; con T = 256, 466 + 320 = 786 frente a unas 630 en MerkleAir y FrozenClimbAir
+(N = 9), a medir, y **466 + 40 = 506 frente a unas 630 en SolvencyAir (N = 2): R3 falla por cuenta,
+y con q = 40 y cosets repetidos sigue fallando**; con T = 64, 82 + 560 frente a unas 168, pero
+esas cinco ya quedaron fuera por L1. ⚠️ Lo que la nota de la D-I del §896 daba por hecho —«la
+columna aleatoria … enmascara DEEP en todas las direcciones menos una»— no es cierto en general:
+la columna aleatoria entra en DEEP como cc_R·Q[R] con R ∈ F[x]_{<L}, y Q[R] recorre una imagen de
+dimensión L − q − 4 sobre F dentro de un espacio de 2(L − 1); con T = 64 y T = 256 no puede
+enmascarar sola lo que FRI abre, y en todas la uniformidad depende del rango conjunto.
+
+**Hipótesis.** (H6, **no medida**) R3, suficiente. Es lo primero que A3 tiene que medir, y el
+apartado 6 dice cómo; las matrices son pequeñas y cabe en el sello. Si R3 falla en una familia, el
+argumento de este documento NO vale para ella: en la solvencia falla por cuenta, y la salida es la
+de la 132, una máscara propia de DEEP o más filas (apartado 10).
+
+### L4 — Las hojas saladas esconden lo que no se abre y dejan equivocar lo que se abre
+
+**Enunciado** (modelo de oráculo aleatorio programable, Blake3). Con sal fresca de 256 bits por
+hoja: (a) el digest Blake3(item ‖ sal) de una hoja no abierta es indistinguible de uniforme para
+quien no conoce la sal, salvo que consulte el oráculo en ese (item ‖ sal), probabilidad 2^{−256}
+por consulta; (b) para una hoja abierta, un simulador que comprometió un digest uniforme puede
+después elegir el item y una sal fresca y programar Blake3(item ‖ sal) := ese digest, consistente
+salvo esa misma probabilidad. Luego las raíces y los caminos de la traza, los trozos y las capas de
+FRI no dicen nada de las hojas no abiertas. El simulador del apartado 5 usa (a) y no (b): elige los
+desafíos de antemano y compromete lo que va a abrir; (b) es lo que usaría un simulador que no
+pudiera, y es lo que A5 pesa al decidir la sal. El resto de FRI no lleva sal: viaja entero, y su
+compromiso Blake3(resto) no esconde nada ni tiene que esconderlo.
+
+**Lo que mide el árbol.** `crates/zk-ssl-air/src/sal.rs`: `la_sal_pesa_treinta_y_dos_bytes_por_hoja_abierta`,
+`la_sal_mueve_la_raiz_y_dos_compromisos_de_lo_mismo_difieren`, `una_sal_ajena_o_un_item_ajeno_rechazan`
+y `una_sal_de_menos_falla_cerrada`; que el `VC` de los 23 probadores y del kit es `MerkleConSal` lo
+exige el censo de D-Z. **Hipótesis.** (H7, modelo) Blake3 como oráculo aleatorio programable.
+(H8, supuesta, `SECURITY.md` §3.11) `OsRng` da bytes frescos: una sal repetida entre dos hojas del
+mismo árbol rompe (a) sólo para esas dos; ningún test lo comprueba ni puede.
+
+### L5 — Las semillas y la moneda: el azar de las máscaras
+
+Las filas y la columna aleatorias y los aleatorizadores no son uniformes: son salidas de
+`DefaultRandomCoin<Blake3>` sembrada con Blake3(semilla), 32 bytes de `OsRng` por prueba y por
+uso (filas y cociente, dos semillas). En el modelo de L4, las salidas de la moneda con una semilla
+que el adversario no ha consultado son uniformes e independientes; la ventaja de un distinguidor es
+la de adivinar 256 bits, por consulta. Los dos usos tienen semillas distintas, así que las filas y
+los aleatorizadores son independientes entre sí y de la sal. **Lo que mide el árbol.**
+`crates/stark-experiment/src/falsadores_oculta.rs`: `la_semilla_de_produccion_son_32_bytes_frescos`
+(§652) y `el_ultimo_byte_de_cada_semilla_mueve_la_prueba`, que cambia el byte 31 de cada semilla y
+exige que la prueba cambie. **Hipótesis.** (H7, modelo) como en L4. (H9, supuesta) ninguna semilla
+se repite entre dos pruebas: con la misma semilla de filas, dos pruebas de dos testigos abren
+P(x_j) − P'(x_j) = P_real(x_j) − P'_real(x_j) en cada posición común, y la diferencia de los testigos
+sale en claro; es el falsador de A3. (H10, demostrada) la moneda de las máscaras no comparte estado
+con la pública: se siembra aparte, en el probador, y la pública no la ve.
+
+### L6 — Lo que depende de la AIR, enunciado y no demostrado
+
+Para una familia con 2q + 6 > T —las cinco de T = 64— L1 no cubre S_toc: los valores tocados de una
+columna principal viven en una variedad afín de dimensión T dentro de 2q + 6 sobre F, y C(x_j) y
+C(z·g) dependen del testigo a través de P(g·x_j) y P(g²·z) de una forma que la AIR decide. Un
+argumento para esas familias tendría que demostrar, AIR a AIR, que la distribución de (C(x_j))_j y
+C(z·g) dada lo abierto no depende del testigo —por ejemplo, porque la aplicación de lo residual de
+(P(g·x_j))_j en (C(x_j))_j es sobreyectiva sobre E^q para toda traza real—, y eso depende del
+álgebra de sus transiciones. No se intenta aquí, y la fuga no es un escrúpulo: en el juguete, cuya
+transición es x_{i+1} = x_i³ + 42, C(x_j) da P(g·x_j) despejando, y con T = 64 la vista depende del
+testigo —87 evaluaciones de una columna de grado < 128 que 64 filas aleatorias no cubren—; no es
+una recuperación por álgebra lineal (quedan 23 ecuaciones lineales sobre 64 valores reales, y la
+ligadura que sobra es cúbica), es una distribución que cambia con el testigo, y el falsador de A3
+es un distinguidor (apartado 12). Las salidas: L6 por AIR, o T ≥ 2q + 6 = 90, es decir T = 128 para las cinco —el doble de
+filas y de coste para ellas, en un corte futuro, nunca en `zkssl/0.4`— (la 131 de `BACKLOG.md`);
+la edad con 16 hojas o más (T = 8·2^m con m ≥ 4) ya cumple la cuenta, medida sólo en la cota: el
+instrumento la mide con ocho hojas.
+
+## 4. Las hipótesis, con su clase
+
+| hipótesis | clase | lema | qué la mide o la sostiene |
+|---|---|---|---|
+| H1: q + 4 ≤ T sobre S_ab y 2q + 6 ≤ T sobre S_toc | medida, en cada canon; el rango, prueba de vida sobre puntos del test | L1 | `rango_pleno`, `rango_de_los_tocados`, `INDEPENDIENTE_DE_LA_AIR`; el mutante T = 32; la prueba de vida |
+| H2: Λ ∩ H = ∅, posiciones únicas | demostrada | L1 | el orden de 7; el `dedup` del verificador |
+| H3: z fuera de F y de H, sin coincidencias de conjugados | supuesta, fallo < 2^{−60} por prueba | L1 | no se mide: las posiciones y z no viajan |
+| H4: q + 2 ≤ m, Vandermonde de rango pleno sobre E | medida, en cada canon | L2 | `rango_pleno`; el mutante m = 43; el mutante del árbol |
+| H5: s ≥ 1, N ≥ 2, y ≠ 0 | demostrada | L2 | los asertos de `segmentar` |
+| H6: R3, suficiente: las dos máscaras independientes del testigo cubren lo que FRI abre | **no medida**; falla por cuenta en la solvencia | L3 | nadie: A3, apartado 6 |
+| H7: Blake3 como oráculo aleatorio programable | modelo | L0, L4, L5 | — |
+| H8: la sal es fresca | supuesta | L4 | `SECURITY.md` §3.11; los tests de `sal.rs` miden tamaño y efecto, no frescura |
+| H9: ninguna semilla se repite | supuesta | L5 | el falsador de A3 |
+| H10: la moneda de las máscaras no comparte estado con la pública | demostrada | L5 | `generate_proof_oculto`, `segmentar` |
+| H11: T ≥ 2q + 6 | medida: 18 familias sí, 5 no | L1, L6 | `INDEPENDIENTE_DE_LA_AIR` |
+
+## 5. El simulador
+
+S recibe la AIR, las entradas públicas, el contexto (T, W, W_aux, m, N, opciones) y nada del
+testigo.
+
+- **S1. Los desafíos.** Muestrea, uniformes: los elementos aleatorios del tramo auxiliar si lo hay,
+  los α de las restricciones, z ∈ E (vuelve a muestrear si viola H3), los cc de DEEP, los α_i de
+  FRI, y 42 posiciones de Λ con repetición, de las que toma las únicas; el nonce, con la misma
+  búsqueda que el probador. En el protocolo no interactivo, programa el oráculo para que la moneda
+  los dé (L0).
+- **S2. La traza en los puntos tocados.** Para cada columna principal real y cada auxiliar,
+  muestrea uniformes sus valores en S_toc (F o E); para la columna aleatoria, en S_ab. Un punto que
+  aparece dos veces se muestrea una vez. Válido por L1 si 2q + 6 ≤ T (H11).
+- **S3. El cociente en los puntos abiertos.** Calcula C(y) para y ∈ S_ab con las fórmulas públicas
+  del verificador (`evaluate_constraints`) sobre los marcos de S2 —(y, g·y) para y = x_j, (z, z·g)
+  y (z·g, g²·z)— y muestrea (h'_k(y))_k uniforme en el hiperplano Σ_k y^{k·s}·v_k = C(y). Válido
+  por L2 (H4).
+- **S4. Lo determinado de DEEP.** d_j = D(x_j) con la fórmula de P7 sobre S2, S3 y los cc;
+  d₀ = D(x₀) con la fórmula de L3.
+- **S5. DEEP y FRI.** Muestrea D̃ uniforme en {D ∈ E[x]_{≤L−2} : D(x_j) = d_j, D(x₀) = d₀},
+  condicionado a grado exactamente L − 2 como el probador aserta (diferencia 2^{−128}), y corre FRI
+  honesto sobre D̃ en Λ con los α_i de S1: capas, resto, cosets. Coincide con la vista real si R3
+  (H6), que es suficiente.
+- **S6. Los compromisos.** Para la traza, el cociente y cada capa de FRI: un árbol cuyas hojas
+  abiertas son las de S2, S3 y S5 con sal fresca, y cuyas hojas no abiertas son digests uniformes
+  (L4). El resto de FRI, entero, es el de S5.
+- **S7. La transcripción.** V1 … V8 con lo anterior. El verificador la acepta: la consistencia OOD
+  por S3, D(x_j) por S4, FRI por S5, las aperturas por S6, la molienda por S1.
+
+**Por qué la distribución es la real** (bajo H1 … H11): los desafíos son uniformes en los dos
+lados; los valores tocados, uniformes e independientes por columna (L1), y el verificador real ve
+menos que el simulador —los tocados que no se abren—, así que igualar la vista extendida iguala la
+vista; los trozos, uniformes en su hiperplano dado C(y) (L2), con C(y) la misma función de los
+tocados en los dos lados; lo que FRI abre, uniforme en el mismo espacio afín si R3 (L3); las hojas
+no abiertas, indistinguibles (L4); y las máscaras reales son salidas de la moneda, indistinguibles
+de uniformes (L5). Todo salvo L1 y L2 descansa en el modelo de L0 y L4: el enunciado es de
+ocultación **estadística en el modelo de oráculo aleatorio programable**, con ventaja acotada por
+el 2^{−60} de H3 más las consultas al oráculo entre 2^{−256}, y **computacional fuera de él**, con
+Blake3 en el lugar del oráculo.
+
+## 6. La condición R3, como instrumento
+
+**O**, filas: para cada posición única x_j, los ocho puntos de su coset de plegado en Λ,
+{x_j·μ : μ^8 = 1} —D evaluado ahí: 8c₀ filas sobre E, de las que las de las posiciones mismas son
+lo determinado—; para cada capa i ≥ 1, los ocho valores del coset de la posición plegada, cada uno
+un funcional lineal de D: el pliegue de winter-fri con α_i aplicado a los cosets de la capa
+anterior (`apply_drp`); y el resto, sus coeficientes, funcionales lineales de D (la interpolación
+de la última capa). El rango de O es el de L3, no su número de filas. **M**, columnas, sólo las dos
+fuentes que entran en D de forma lineal e independiente del testigo: la columna aleatoria,
+cc_R·Q[L_r] para cada una de sus L filas, restringido al núcleo de la evaluación en S_ab
+(L − q − 4 columnas sobre F tras el cambio de base); y cada aleatorizador r_k,
+(cc'_k·Q[x^{s+d}] − cc'_{k+1}·Q[x^d])_{d<m}, restringido al núcleo de la evaluación en S_ab
+(2(m − q − 2) columnas sobre F). Las filas aleatorias de las columnas reales y auxiliares no van en
+M (L3). **La comparación**: rango_F(O∘M) frente a rango_F(O|_K), con una base de K construida de la
+de E[x]_{≤L−2} con las q + 1 condiciones lineales. Iguales: R3 se cumple para esos desafíos. Un
+atajo suficiente: si rango_F(O∘M_R) = rango_F(O|_K) con M_R la columna aleatoria sola, R3 vale por
+ella sola; con T ≥ 512 la cuenta de dimensión lo permite (978 frente a unas 758; 2002 frente a unas
+1014), con T = 256 no (466 frente a unas 630).
+
+Como en L1 y L2, el rango para unos desafíos que elige el test es la instancia medida. Que valga
+para los reales: sobre z, cc y α_i, una caída de rango es una condición polinómica (un menor que se
+anula) y su probabilidad se acota por el grado sobre |E|; sobre las posiciones no es polinómica, y
+el instrumento tiene que probar varias elecciones y decirlo. El coste es pequeño: M tiene a lo sumo
+L − q − 4 + 40·(N − 1) columnas —2282 con T = 1024 y N = 8— y O a lo sumo 2·(8c₀ + 8c₁ + resto)
+filas sobre F, 1408; construir O∘M y eliminar cabe en el sello. Lo que el instrumento de A3 tiene
+que imprimir, por familia: rango_F(O), rango_F(O|_K), rango_F(O∘M) y rango_F(O∘M_R), y el veredicto.
+
+## 7. Lo que el argumento no cubre
+
+- Las cinco familias con T = 64 (L6, H11): NullifierThresholdAir y ThresholdAir, que son del cable,
+  RefundAir, RefundAirV2 y EdadAir con ocho hojas.
+- La solvencia (SolvencyAir, T = 256 con dos trozos): R3 le falla por cuenta de dimensión (L3), y
+  no tiene argumento.
+- R3 (H6), en las otras diecisiete, hasta que A3 la mida.
+- La dependencia de los trozos del cociente en las filas aleatorias de las columnas reales fuera de
+  los puntos abiertos (L3): no es lineal ni independiente del testigo, y este documento no la usa
+  como máscara; donde R3 se cumple no estorba, y donde falla es lo que queda.
+- La solidez: este documento no la toca; el probador oculto sigue probando lo que decía (RFC-0009
+  D-H, y la foto de D-R).
+- Lo público por diseño (P12) y lo que el nodo ve por ser nodo (RFC-0009, «Seguridad»).
+- La semilla repetida (H9), la sal repetida (H8), un `OsRng` predecible: fuera del modelo,
+  `SECURITY.md` §3.11.
+- Blake3 fuera del modelo de oráculo aleatorio, y un adversario cuántico: «nivel cuántico: no
+  medido», sin cambio.
+- Los canales laterales del probador (tiempo, memoria) y lo que la capa, el SDK o el kit revelen
+  fuera de los bytes de la prueba.
+- Las pruebas de la 0.3 (`spec/vectors/0.3/`), que no ocultan, y las dos del catálogo de rechazos
+  (RFC-0009 D-P).
+- Las posiciones y el z reales de cada prueba (H3 se supone, no se mide), y los desafíos reales de
+  R3 (apartado 6).
+- La auditoría ajena del fork y de la construcción (H7 de `SECURITY.md`): este documento la pide,
+  no la sustituye.
+
+## 8. El enunciado
+
+**Proposición (condicional).** Bajo H1 … H11 —en particular R3 (H6), suficiente y no medida, y
+T ≥ 2q + 6 (H11)— existe un simulador S, el del apartado 5, tal que, para toda traza real que el
+AIR interno acepta, la vista del verificador honesto del protocolo oculto y la salida de S son
+estadísticamente indistinguibles en el modelo de oráculo aleatorio programable, con ventaja menor
+que 2^{−60} más Q·2^{−256} para Q consultas al oráculo. Puede enunciarse, a falta de medir R3, para
+diecisiete familias. **Para las cinco familias con T = 64 no se enuncia**: les falta L6 o T = 128.
+**Para la solvencia tampoco**: R3 le falla por cuenta (L3, la 132). **Nada de esto es una promesa
+de la casa**: A4 decidirá, con A3 sellada, qué se promete y para qué familias, y hasta entonces la
+promesa es el censo.
+
+## 9. Lo medido en A1 y lo que A2 corrige
+
+| el §896 decía | lo que es | dónde |
+|---|---|---|
+| 45 a enmascarar por columna y por trozo: 44 vistas más una «dirección residual» | por columna, q + 4 = 46 dimensiones sobre F; por trozo, q + 2 = 44 sobre E; la residual es pública, no una abertura | L3; el instrumento, `Aberturas`; la nota de la D-I |
+| la columna aleatoria enmascara DEEP en todas las direcciones menos una | enmascara una imagen de dimensión L − q − 4 sobre F de un espacio de 2(L − 1); la uniformidad de lo que FRI abre es R3, sin medir | L3 |
+| la cota más ajustada es T = 64, 45 frente a 64, diecinueve de holgura | la cuenta por columna es la de lo tocado, 2q + 6 = 90, y T = 64 no la cumple: cinco familias sin argumento independiente de la AIR | L1, L6, la 131 |
+| el rango de la Lagrange, sobre E | sobre F, porque las filas aleatorias principales viven en F: 46 ≤ T, no 44 | el instrumento, `rango_f` |
+| m = 43 cae con q ≥ 41 | con q + 2 ≤ m, cae sólo con q = 42, medido en el §897 (23 rojas con q = 42, cinco verdes con q ≤ 41); m ≤ 41 cae con toda prueba de producción | L2 |
+
+Lo medido en el §897, con el instrumento corregido (`cargo test -p zk-ssl --release --locked
+instrumento_cota`): 28 pruebas de 23 AIR, 23 probadores que encienden; en todas, m = 64 y 44 puntos
+abiertos por objeto con q = 42 (45 y 43 en la que abrió 41), 46 dimensiones sobre F por columna
+frente a T de 64 a 1024, 44 sobre E por trozo frente a m = 64, rango pleno en los dos; tocados 90
+frente a T: cubre, con rango 90 de 90, en las 19 pruebas con T ≥ 256; NO cubre, con rango 64 de
+90, en las 9 con T = 64. Anchos, con la columna aleatoria: de 6 (SolvencyAir) a 84 + 6 auxiliares
+(EdadAir); trozos, 2 (SolvencyAir), 8 (T ≥ 512), 9 (MerkleAir, FrozenClimbAir) y 15 (T = 64). El
+juguete, T = 128: 46 frente a 128, 44 frente a 64, 90 tocados cubiertos con rango 90 de 90, 4
+trozos, una capa de FRI y resto de 32, y verifica; sus rangos los calcula el instrumento en el
+campo de producción, con su extensión, sobre la geometría del juguete, que vive en f128 sin
+extensión —allí z ∈ F y lo abierto por columna serían q + 2—: es una medida de la geometría, no del
+juguete.
+
+## 10. Dónde el fork se aparta de la nota 2024/1037
+
+Lo que la casa sabía de la nota por el RFC-0009 (D-G, D-I): el cociente se parte con paso 2T − m y
+sus trozos se aleatorizan con polinomios de grado < m que se cancelan en la suma (su apartado 4.2,
+el único que el RFC cita), con m ≥ 44 por «las 42 consultas, z y z·g», que es la cuenta de L2 sobre
+E; las filas aleatorias y el polinomio aleatorio antes de FRI vienen del issue 9 de winterfell, y la
+sal de las hojas también. Lo que devuelve una búsqueda de su página: que trata la ocultación de los
+argumentos univariados con FRI como compromiso sobre campos pequeños; que se detiene en dos
+técnicas, «la aleatorización con polinomios sobre el campo base» y «partir el cociente en polinomios
+de grado menor»; que revisita la construcción de 2019 que cita y subraya su paso de enmascarado; y
+que la descomposición del cociente es una fuente conocida de errores, en la literatura y en el
+código. Con eso, lo que se puede decir, y lo que no:
+
+- **El cociente** (L2): la construcción del fork es la que el RFC describe y la cuenta q + 2 ≤ m es
+  la que la nota pide según el RFC. Pendiente: contrastar con el texto si la nota cuenta también
+  los trozos en z·g (`QuotientOodFrame`, que es de winterfell 0.13 y no del issue).
+- **La máscara de DEEP** (L3): el fork enmascara con una columna aleatoria de la traza, R ∈ F[x]_{<L},
+  que entra en DEEP por el cociente, cc_R·Q[R]: L − q − 4 grados de libertad sobre F. Un polinomio
+  aleatorio del grado de D sumado a D —lo que el issue 9 llama «el polinomio aleatorio antes de
+  FRI» y lo que el resumen de la nota llama el paso de enmascarado de la construcción de 2019—
+  tendría 2(L − 1) y haría R3 automática. Si la nota construye la máscara como una columna del
+  campo base, la cuenta de R3 es suya también; si la suma a D, el fork se aparta de ella aquí, y
+  R3 es el precio, que en la solvencia no se paga: con dos trozos, R3 le falla por cuenta (L3).
+  **Pendiente de leerla.**
+- **Lo tocado** (L1): la cuenta de la D-I, 44 por columna frente a T, no contaba g·x_j ni g²·z; si
+  la nota los cuenta, la D-AG se decidió con una cuenta menor que la suya. Pendiente.
+- **La sal** (L4): el issue la pide para la traza; el fork la pone en la traza, los trozos y FRI.
+  Qué pide la nota, pendiente.
+- **La extensión**: el fork saca z y los aleatorizadores de E y las filas aleatorias principales
+  de F; la cuenta sobre F de L1 (dos dimensiones por punto de E) es consecuencia de eso, y si la
+  nota la hace, pendiente.
+
+## 11. Objeciones y cierres
+
+La revisión escéptica del §897 —un agente de la sesión con el documento, el fork, winter-fri y el
+instrumento delante, sin las conclusiones— puso ocho objeciones, dos altas. Cada una, y cómo quedó:
+
+1. **(alta) Las filas aleatorias de las columnas reales no son una máscara lineal de D.** Entran en
+   los trozos del cociente a través de C, con el grado de cada restricción, y su parte lineal
+   depende del testigo; en los puntos abiertos L1 y L2 lo absorben, en los x_j·μ y en las capas no.
+   La primera versión las contaba en M y enunciaba R3 como «si y sólo si». **Cerrada**: M son la
+   columna aleatoria y los aleatorizadores, R3 es suficiente y no necesaria, y si falla lo que queda
+   depende de la AIR y del testigo (L3, apartado 6, apartado 7).
+2. **(alta) El rango de O no es su número de filas.** Las capas pliegan: la capa 1 aporta a lo sumo
+   L/8 dimensiones sobre E y el resto ninguna. Con T = 256, 716 sobre F y no 1276, y FRI no entrega
+   D entero. Con las cuentas buenas, la solvencia —T = 256 con dos trozos— tiene 506 dimensiones de
+   máscara frente a unas 630 sin determinar: R3 le falla por cuenta. **Cerrada**: rangos en lugar de
+   filas en L3 y en el apartado 6, los «frente a» rehechos, la solvencia fuera del enunciado del
+   apartado 8 y en la 132.
+3. **(media) La cabecera y el enunciado sobredimensionaban.** «Una condición» que era «si y sólo
+   si» y «dieciocho familias». **Cerrada**: diecisiete familias, R3 suficiente, la solvencia aparte,
+   y la no linealidad de los trozos en el apartado 7.
+4. **(media) La «recuperación por álgebra lineal» del juguete con T = 64 no estaba justificada.**
+   Despejar P(g·x_j) de C(x_j) vale, pero 87 evaluaciones de una columna de grado < 128 son 87
+   ecuaciones sobre 128 incógnitas, y la ligadura que sobra es cúbica. **Cerrada**: la fuga con
+   T = 64 es distribucional y el falsador de A3 es un distinguidor; la recuperación lineal se queda
+   para T = 32 con una columna constante (L6, apartado 12).
+5. **(baja) La molienda.** La búsqueda del nonce corre sobre salidas del oráculo que el simulador
+   no fija; lo programable son las de después, de las que salen las posiciones. **Cerrada** en L0.
+6. **(baja) Los rangos del juguete** los calcula el instrumento en el campo de producción, con su
+   extensión, y el juguete vive en f128 sin ella. **Cerrada**: dicho en el apartado 9.
+7. **(baja) «Medida» en H1** podía leerse como medida sobre las posiciones reales. **Cerrada**: lo
+   medido es la cuenta; el rango es una prueba de vida sobre puntos del test (L1, tabla).
+8. **(baja) Una cifra y una cita.** «46 de 46 en las 28 con q = 42» no contaba la prueba que abrió
+   41, y el apartado 11 remitía a un asiento que aún no llevaba las objeciones. **Cerrada**: la
+   cifra, en L1; las objeciones, aquí y en el asiento.
+
+Lo que la revisión dio por correcto, con el código delante: el orden de los compromisos y de los
+desafíos, las dos monedas y sus semillas (P1, P4, P6, P7); `segmentar` y el número de trozos; la
+demostración de L1 entera, con las exenciones en las últimas filas; L2; Q[P](x₀) y que D(x₀) es
+público; que K es el espacio correcto y que las dos máscaras lícitas caen en él; lo que FRI abre y
+cómo; la sal y los tests que se citan; el simulador, paso a paso, y que nada del `Proof` queda sin
+simular salvo lo de la objeción 1; y que el documento no afirma HVZK en ningún sitio.
+
+## 12. Lo que pide a A3, A4 y A5
+
+- **A3**, en este orden: (1) el instrumento de R3 del apartado 6, por familia, en el sello o en
+  `--largo` con su pin; (2) el falsador de la recuperación por álgebra lineal, en el juguete: con
+  T = 32 y una columna constante, las q + 4 ecuaciones de L1 sobre T + 1 incógnitas devuelven la
+  constante; y para la 131, con T = 64 en el juguete, un distinguidor y no una recuperación: de
+  C(x_j) se despeja P(g·x_j), como dice L6, pero las 2q + 3 evaluaciones de una columna de grado
+  < 2T son 87 ecuaciones lineales sobre 128 incógnitas, y la ligadura que sobra, x_{i+1} = x_i³ + 42,
+  es cúbica; lo que se mide es que la vista cambia con el testigo, no que el testigo salga; (3) la
+  semilla repetida en dos pruebas, en sello (H9); (4) el distinguidor estadístico sólo si cabe en
+  `--largo` con su pin, y si no, declarado fuera.
+- **A4**: la promesa nueva sólo con R3 medida en verde y con las cinco familias de la 131 dichas
+  aparte; las palabras, las del apartado 8 y no más; H7 conservada hasta una revisión ajena; «nivel
+  cuántico: no medido», intacto.
+- **A5**: la sal es lo que hace L4 incondicional. Sin ella, (a) necesita que cada hoja no abierta
+  tenga entropía frente al oráculo —la fila entera de la traza en un punto de Λ la tiene por L1, el
+  vector de los trozos por L2, y los ocho valores de un coset de FRI sólo por R3— y (b) desaparece.
+  La recomendación de este documento al autor es conservarla hasta que R3 esté medida, y decidir
+  después con la cuenta de las hojas delante.
