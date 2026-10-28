@@ -368,6 +368,14 @@ escrito y revisado: la sal se va y la prueba adelgaza.
 > esas siete; las otras dieciséis, no. El argumento, el censo y las cifras, en el apartado 14 de
 > `doc/ocultacion-hvzk.md`. Esta decisión, la D-A y la promesa no cambian: el censo, hasta A4.
 
+> ⚠️ **§902 (A5 del HVZK): decidida por el autor: la sal se queda.** El argumento está escrito
+> (§897) y medido (§898 y §900), y la recomienda: es lo que hace incondicional el lema L4 de
+> `doc/ocultacion-hvzk.md`; sin ella, la hoja de un coset de FRI sólo tendría entropía por R3, que
+> está en verde en dieciséis familias y no en siete. Retirarla rompería el cable y sería del corte;
+> no entra en el 0.5. La reversibilidad de esta decisión sigue en pie: con la revisión ajena del
+> argumento (la 136 de `BACKLOG.md`) el autor podrá volver a pesarla con la cuenta de las hojas
+> delante.
+
 ### D-J — Las cifras de bytes pasan a bandas y el azar sale del sistema
 
 Una prueba oculta no es determinista: con otra semilla pesa distinto (E1, E2 y E4 del SPIKE-B-P4:
@@ -896,7 +904,8 @@ prefiere el tramo auxiliar.
 **Estado: decidida en el §901 por la sesión, con el criterio que el autor dictó para A4 —«no puede
 enunciar HVZK para ninguna familia con el argumento de A2; lo que puede decir es el censo y lo que
 falta, y dejar la promesa para lo que la 134 mida o para el corte que lleve la 133»—; REVERSIBLE;
-entra con su aceptación.**
+entra con su aceptación.** ⚠️ §902: aceptada por el autor por el camino (b): la promesa no cambia,
+y lo que queda escrito espera la revisión ajena del argumento (la 136 de `BACKLOG.md`).
 
 **Lo que hay delante.** A1 (§896) midió la cota de ocultación por familia; A2 (§897) escribió el
 argumento con su simulador y sus lemas, `doc/ocultacion-hvzk.md`, revisado dos veces en adversario

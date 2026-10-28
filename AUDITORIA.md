@@ -74671,3 +74671,72 @@ el artefacto reproducible, igual desde dos raíces, con el binario `b25bbac687e1
 Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
 anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no
 hubo roja.
+
+## §902 — Las decisiones del autor tras A4: la D-AM aceptada por el camino (b), la promesa sigue siendo el censo y lo escrito espera la revisión ajena; A5 decidida, la sal se queda (D-I); la 130 y la 132 cerradas, la 136 abierta
+
+El commit que lleva este asiento, sobre `dbb1a6d4` (el §901, la punta de la rama de la sesión).
+Toca sólo documentos: `spec/rfc/0009-lo-que-revela-una-prueba.md`, una nota en la D-I y otra en el
+estado de la D-AM; `doc/ocultacion-hvzk.md`, su cabecera y A5 en el apartado 12; `BACKLOG.md`, la
+130 y la 132 cerradas, la 136 abierta, el estado y la cadena de recuentos; y este asiento. Ningún
+test, ningún pin, ningún vector, nada del fork ni de producción. Lo escribe y lo commitea Claude,
+en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre tras el §901. El canon de este
+commit se dice al final.
+
+**De dónde sale.** El autor, en esta sesión y con sus palabras: pidió los siguientes pasos, aceptó
+el orden que la sesión propuso —aceptar lo sellado y decidir la D-AM, A5 en el mismo asiento, la
+revisión ajena en paralelo con el corte, y las cinco de T = 64 dentro del corte— y, a las tres
+preguntas de la sesión, respondió: la D-AM por el camino (b), «dejarla escrita, sin prometer»; A5,
+«conservarla»; y lo siguiente, «el dosier de revisión ajena». Este asiento registra las dos
+decisiones y deja el dosier para el que sigue. La entrada en `main` es del autor y no de la sesión
+(`GENAI.md` §«Fuera del paso 4», «Quién acepta»): esta rama sigue siendo la rama de la sesión.
+
+**Lo que hace.**
+
+1. **La D-AM, aceptada por (b).** La promesa no cambia: el censo. Lo que la D-AM deja escrito para
+   dieciséis familias —ocultación simulable sin el testigo, con sus hipótesis con nombre— espera la
+   revisión ajena del argumento, que es la 136. Nada de `SECURITY.md` cambia, porque (b) es lo que
+   el §901 dejó.
+2. **A5, decidida: la sal se queda.** Nota en la D-I del RFC-0009 y en el apartado 12 del documento:
+   es lo que hace incondicional el lema L4; sin ella la hoja de un coset de FRI sólo tendría
+   entropía por R3, en verde en dieciséis familias y no en siete; retirarla rompería el cable y
+   sería del corte; no entra en el 0.5; y la reversibilidad sigue, con la revisión ajena delante.
+3. **Las entradas.** La 130 se cierra por su propio criterio —A4 sellada y la D-I decidida—, con lo
+   que sigue abierto repartido en sus entradas: la 136 (la revisión), la 133 (el corte), la 131 y
+   la 135. La 132 se cierra: la solvencia cumple R3 con la máscara lineal de sus columnas, medida
+   en cada canon desde el §900, y no necesita ni la 133 ni T = 512. La 136 nace: el dosier, el
+   revisor y lo que decida.
+
+**Medido.** Nada nuevo: este asiento no mide. Las cuatro herramientas de documentos sobre el árbol
+con este asiento: `verificar_citas`, 0 en sus tres cuentas; `check_cifras`, 26 cifras y ninguna
+contradice el canon; `check_publicadas` y `check_figures`, OK.
+
+**Lo que NO hace.** No promete HVZK de nada: ningún texto vivo lo dice de nada que exista. No
+retira la sal ni cambia un byte de ninguna prueba. No lleva nada a `main`. No escribe el dosier:
+es el asiento siguiente. No toca la 131, la 133 ni la 135.
+
+**Lo que es del autor.** Llevar a `main` del §896 al §902; la 136 cuando el dosier exista: elegir
+al revisor; y el número de este asiento.
+
+**Contadores.** Ningún pin cambia: `zk-ssl` 561 y 8, `stark-experiment` 489 y 13, TOTAL DE SELLO
+2083 y CON LARGOS 2223, `check_tests` 2246 y 21 instrumentos, `check_modulos` 220. `BACKLOG.md`
+pasa a 44 abiertas y 93 resueltas: cierra la 130 y la 132, abre la 136. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 420 s de reloj (de su arranque a su salida)
+y 255 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,27 al
+empezar y recién arrancada —el contenedor de la sesión llevaba cuatro minutos encendido: se
+reinició entre el canon del §901 y este, y el árbol salió del reinicio con las mismas cuatro
+modificaciones de este asiento, ni una más—. Las 19 filas del nivel, en su pin, con 2083 tests que
+pasan (la suma de la columna «pasan»), la de `zk-ssl` en 561 pasan y 8 ignorados, 159 s, y la de
+`stark-experiment` en 489 y 13, 19 s; las tres del fork, `winter-air` 64, `winter-prover` 7 y
+`winter-verifier` 0, en su pin; la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12
+con features (1 s)»; `check_tests` en 2246 y 21 instrumentos; `check_modulos` en 220; las once
+herramientas del bucle «2 ter»; la puerta de los vectores, en 605 ficheros y 1370 líneas de 19
+manifiestos; `check_catalogo`, en 236 textos y 302 entradas; el cable, en 27 de 27; la segunda
+implementación, con el núcleo en 34 de 34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y
+el artefacto reproducible, igual desde dos raíces, con el binario `b25bbac687e17145` —el mismo del
+§899 al §901— y el tarball `a013fe8b98a6779b`, que cambia con las fuentes, como en cada asiento.
+Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
+anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no
+hubo roja.

@@ -11,7 +11,8 @@ D-I, ni la regla 3 del PROCESO; ningún texto vivo dice HVZK de nada que exista.
 decidido en la D-AM del RFC-0009: la promesa sigue siendo el censo; lo que se podría prometer para
 dieciséis familias con la construcción de hoy —la proposición del apartado 8, bajo las hipótesis
 del apartado 4 con la H12 del §900— queda escrito allí con sus palabras y es del autor; las siete
-que no, con nombre y con lo que les falta.
+que no, con nombre y con lo que les falta. ⚠️ §902: el autor acepta ese camino y decide A5: la sal
+se queda (RFC-0009 D-I); lo escrito espera la revisión ajena (la 136 de `BACKLOG.md`).
 
 **Qué es.** El argumento de ocultación del probador oculto del fork de winterfell 0.13.1
 (`crates/winter-prover`, `crates/winter-air`, `crates/winter-verifier`, con la sal de
@@ -698,7 +699,7 @@ simular salvo lo de la objeción 1; y que el documento no afirma HVZK en ningún
   tenga entropía frente al oráculo —la fila entera de la traza en un punto de Λ la tiene por L1, el
   vector de los trozos por L2, y los ocho valores de un coset de FRI sólo por R3— y (b) desaparece.
   La recomendación de este documento al autor es conservarla hasta que R3 esté medida, y decidir
-  después con la cuenta de las hojas delante.
+  después con la cuenta de las hojas delante. ⚠️ §902: decidida por el autor: se conserva.
 
 ## 13. A3, medido (§898)
 

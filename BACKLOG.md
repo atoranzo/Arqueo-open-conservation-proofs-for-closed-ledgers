@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 45 abiertas, 91 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 44 abiertas, 93 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, y el §901, que no mueve ninguna.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, y el §902, que cierra la 130 y la 132 y abre la 136.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1404,7 +1404,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   que el operador no la cambie, y no impone su origen; si lo impusiera, cerraría la rotación
   precomprometida en la sal.
 
-- [ ] **130. HVZK de la ocultación: el argumento, los falsadores más allá del censo y la promesa
+- [x] **130. HVZK de la ocultación: el argumento, los falsadores más allá del censo y la promesa
   (A2 a A5; la cota, medida en el §896).** La ocultación está encendida desde el §538 y lo que la
   casa promete es el censo: «ningún valor de columna constante sale literal» (RFC-0009 D-A,
   `SECURITY.md` §3.bis). Cero literales no es HVZK: la suite de E2 cuenta, no simula, y lo que
@@ -1456,6 +1456,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   falta; `SECURITY.md` §3.bis y §3.11 ganan su nota; la regla 3 del PROCESO, la H7 y «frente a un
   adversario cuántico: no medido», intactos. QUEDAN A5, del autor, y la aceptación de lo que la
   D-AM deja escrito: sigue abierta.
+  ✅ §902: cerrada. A4 sellada (§901) y aceptada por el autor por el camino (b): la promesa sigue
+  siendo el censo, y lo que se podría prometer para dieciséis familias queda escrito en la D-AM a
+  la espera de la revisión ajena (la 136); y la D-I decidida por el autor: la sal se queda (A5). Lo
+  que esta entrada pedía está hecho: el argumento (§897), los falsadores más allá del censo (§898),
+  R3 medida (§898 a §900) y la promesa decidida con sus palabras (§901). Lo que sigue abierto tiene
+  su entrada: la revisión (136), la 133 en el corte, la 131 y la 135.
 
 - [ ] **131. Cinco familias abren más puntos de los que sus filas aleatorias enmascaran: T = 64
   frente a 2q + 6 = 90 (§897).** Medido en cada canon desde el §897 (`INDEPENDIENTE_DE_LA_AIR`,
@@ -1479,7 +1485,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   dos reembolsos, que la cuenta fina de la 135 podría aprovechar sin más filas; es un lema nuevo,
   no una medida.
 
-- [ ] **132. La solvencia no tiene máscaras que cubran lo que FRI abre de DEEP: 506 dimensiones
+- [x] **132. La solvencia no tiene máscaras que cubran lo que FRI abre de DEEP: 506 dimensiones
   frente a unas 630 (§897).** `SolvencyAir` (T = 256, dos trozos) cumple la cuenta de lo tocado —la
   131 no la toca—, pero lo que FRI abre del polinomio DEEP, los cosets de plegado de la capa 0, la
   capa 1 y el resto, son unas 716 dimensiones sobre F, 630 sin determinar, y las dos máscaras que no
@@ -1500,6 +1506,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   restricciones linealmente y con coeficientes constantes o periódicos— y el aleatorizador, sin la
   columna aleatoria (`MLIN_MEDIDO`). La salida de esta entrada era la 134, no la 133; lo que queda
   es del autor, con A4 delante.
+  ✅ §902: cerrada. Con A4 aceptada por el autor: la solvencia cumple R3 con la máscara lineal de
+  sus propias columnas, medida en cada canon, y no necesita ni la 133 ni T = 512; lo que se promete
+  de ella es lo de todas, el censo, hasta la revisión ajena (la 136).
 
 - [ ] **133. La máscara de DEEP vive en F y DEEP en E: R3 no se cumple en ninguna geometría de
   producción (§898).** Medido en cada canon desde el §898 (`R3_MEDIDO`,
@@ -1586,6 +1595,18 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   con su demostración o su contraejemplo, y entonces medir con la base V_ab en vez de V_toc, en el
   mismo instrumento. **Qué la cierra**: el lema escrito y la medida; hasta entonces, la 134 vale con
   su cuenta gruesa y las cinco de T = 64 siguen en la 131.
+
+- [ ] **136. La revisión ajena del argumento de ocultación: el dosier, quién lo revisa y lo que
+  decida (§902).** La D-AM del RFC-0009 deja escrito lo que se podría prometer para dieciséis
+  familias —ocultación simulable sin el testigo, con sus hipótesis con nombre— y pone como condición
+  una revisión ajena del argumento de A2 con la 134 (`doc/ocultacion-hvzk.md`, apartados 1 a 14) y
+  de sus tres instrumentos (`instrumento_cota`, `instrumento_r3`, `instrumento_mlin`); H7 —ni el
+  fork ni la construcción están auditados— se conserva hasta entonces. Las dos revisiones que hay
+  son de la propia sesión, en adversario (§897, §898), y no cuentan como ajenas. **Qué pide**: un
+  dosier que diga a un revisor externo qué leer, en qué orden y cómo reproducir cada cifra; un
+  revisor que no sea de la casa; y sus objeciones con su cierre en el apartado 11 del documento,
+  como las de la sesión. **Qué la cierra**: la revisión hecha y, con ella, la decisión del autor
+  sobre la D-AM —prometer para las dieciséis, o no— con su asiento.
 
 ## D. Declaradas, acotadas, sin urgencia
 
