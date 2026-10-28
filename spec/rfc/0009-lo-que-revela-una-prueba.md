@@ -952,7 +952,9 @@ argumento escrito.
 
 **Qué le falta a lo escrito para ser promesa.** (1) La aceptación del autor, que decide sobre lo
 medido (`doc/METODO.md` §7) y de quien es toda promesa; (2) una revisión ajena del argumento de A2
-con la 134, que es lo que A4 pedía al conservar H7; (3) para las dieciséis, nada más: ni la cuenta
+con la 134, que es lo que A4 pedía al conservar H7 (⚠️ §903: su dosier es
+`doc/ocultacion-hvzk-dosier.md`; el revisor lo elige el autor, la 136 de `BACKLOG.md`); (3) para
+las dieciséis, nada más: ni la cuenta
 fina de la 135 ni la 133 hacen falta. Si el autor acepta, cambian D-A —su «lo que no se promete»
 pasa a ser, para las dieciséis, la lista de hipótesis de arriba, y para las siete, lo de hoy—,
 `SECURITY.md` §3.bis y la cabecera de `doc/ocultacion-hvzk.md`; hasta entonces, nada.

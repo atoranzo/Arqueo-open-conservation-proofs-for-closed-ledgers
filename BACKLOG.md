@@ -1607,6 +1607,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   revisor que no sea de la casa; y sus objeciones con su cierre en el apartado 11 del documento,
   como las de la sesión. **Qué la cierra**: la revisión hecha y, con ella, la decisión del autor
   sobre la D-AM —prometer para las dieciséis, o no— con su asiento.
+  ✅ a medias (§903): el dosier, escrito: `doc/ocultacion-hvzk-dosier.md`, con qué revisar, qué
+  leer y en qué orden, lo que se afirma con su clase y dónde se mide, cómo reproducir cada cifra,
+  dónde atacar y cómo se registra lo que diga. QUEDAN el revisor, que elige el autor, la revisión
+  y la decisión: sigue abierta.
 
 ## D. Declaradas, acotadas, sin urgencia
 

@@ -74740,3 +74740,63 @@ el artefacto reproducible, igual desde dos raíces, con el binario `b25bbac687e1
 Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
 anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no
 hubo roja.
+
+## §903 — El dosier para la revisión ajena del argumento de ocultación (la 136): qué se pide revisar, qué leer y en qué orden, lo que se afirma con su clase y dónde se mide, cómo reproducir cada cifra, dónde atacar y cómo se registra lo que diga
+
+El commit que lleva este asiento, sobre `ba1f27d4` (el §902, la punta de la rama de la sesión).
+Toca sólo documentos: `doc/ocultacion-hvzk-dosier.md`, nuevo; `BACKLOG.md`, la 136 a medias;
+`spec/rfc/0009-lo-que-revela-una-prueba.md`, un puntero en la D-AM; `doc/ocultacion-hvzk.md`, un
+puntero en su cabecera; y este asiento. Ningún test, ningún pin, ningún vector, nada del fork ni
+de producción. Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube, no el
+autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el
+siguiente libre tras el §902. El canon de este commit se dice al final.
+
+**De dónde sale.** El autor, al elegir lo siguiente tras el §902: «el dosier de revisión ajena»,
+el paso 4 del orden que aceptó. La D-AM pone la revisión ajena como condición de lo que deja
+escrito, y H7 —ni el fork ni la construcción están auditados— se conserva hasta que exista.
+
+**Lo que hace.** Un documento de siete apartados para un revisor que no sea de la casa: (1) qué se
+pide revisar, en una frase: la proposición de la D-AM para dieciséis familias y por qué no está
+establecida para las otras siete; (2) qué leer y en qué orden, con el tiempo que lleva: las
+decisiones del RFC-0009, el argumento entero, el código del fork y los instrumentos con el
+documento al lado, y la crónica del §896 al §902; (3) lo que se afirma, con su clase —modelo,
+medida, demostrada, supuesta— y dónde se mide, lema a lema; (4) cómo reproducir cada cifra: los
+seis mandatos de `cargo test` y el canon, con sus tiempos, las constantes clavadas y de dónde
+salen los desafíos de cada instrumento; (5) dónde atacar, nueve filos que la sesión no pudo
+comprobar por sí misma o donde el argumento es más fino —la cuenta de L1 y la 135, lo público de
+D, el núcleo conjunto de la 134, la réplica de la composición y la validación que falta contra una
+AIR con periódicas, la sonda y las entradas públicas, los desafíos del test frente a los reales, la
+sal, la nota 2024/1037 y el fork— y lo que queda fuera, dicho; (6) cómo se registra lo que diga:
+el apartado 11 del documento, un asiento, y la decisión del autor después; (7) lo que el dosier
+no es. No elige revisor: lo elige el autor.
+
+**Medido.** Nada nuevo: este asiento no mide. Las cuatro herramientas de documentos sobre el árbol
+con el dosier y este asiento: `verificar_citas`, 0 en sus tres cuentas; `check_cifras`, 26 cifras
+y ninguna contradice el canon; `check_publicadas` y `check_figures`, OK.
+
+**Lo que NO hace.** No promete nada ni cambia ninguna promesa. No elige al revisor ni le escribe.
+No mide. No toca ningún test ni ningún pin. No cierra la 136: quedan el revisor, la revisión y la
+decisión.
+
+**Lo que es del autor.** Elegir al revisor y darle el dosier; llevar a `main` del §896 al §903; y
+el número de este asiento.
+
+**Contadores.** Ningún pin cambia: `zk-ssl` 561 y 8, `stark-experiment` 489 y 13, TOTAL DE SELLO
+2083 y CON LARGOS 2223, `check_tests` 2246 y 21 instrumentos, `check_modulos` 220. `BACKLOG.md`
+sigue en 44 abiertas y 93 resueltas: la 136 queda a medias. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 368 s de reloj (de su arranque a su salida)
+y 222 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,32 al
+empezar. Las 19 filas del nivel, en su pin, con 2083 tests que pasan (la suma de la columna
+«pasan»), la de `zk-ssl` en 561 pasan y 8 ignorados, 147 s, y la de `stark-experiment` en 489 y 13,
+17 s; las tres del fork, `winter-air` 64, `winter-prover` 7 y `winter-verifier` 0, en su pin; la
+puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (1 s)»; `check_tests`
+en 2246 y 21 instrumentos; `check_modulos` en 220; las once herramientas del bucle «2 ter»; la
+puerta de los vectores, en 605 ficheros y 1370 líneas de 19 manifiestos; `check_catalogo`, en 236
+textos y 302 entradas; el cable, en 27 de 27; la segunda implementación, con el núcleo en 34 de
+34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, igual desde
+dos raíces, con el binario `b25bbac687e17145` —el mismo del §899 al §902— y el tarball
+`5e0937572ca8f540`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR`
+propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.
