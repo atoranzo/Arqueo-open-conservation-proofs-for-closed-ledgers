@@ -16,19 +16,19 @@ rebuilt from its commit; with the same hash, that is only shown within one same 
 
 ## 0. Download, and check the download before believing it
 
-The current release is `arqueo-verify-v0.4.3`, published at
-<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.3>,
-produced on commit `5fd5212b9f6e04c4c619655ffe969ab04116477a`:
-tarball `arqueo-verify-0.4.3-x86_64-unknown-linux-gnu.tar.gz`, sha256
-`0bb21f4f5dfe7575264268f281c19648cbf3da38b4fd6809c4eea067592aa4b0` (21,737,865 bytes, 420 files);
-binary `1b120e597897e00530508506b2ade934b042e3fc3f9c1138d895de25d37c8844`. Both hashes are
+The current release is `arqueo-verify-v0.4.4`, published at
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.4>,
+produced on commit `95bc4572bca27f63033ba5bbc499ef2d95a4b40b`:
+tarball `arqueo-verify-0.4.4-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`70b11f36a534bd342388ed9cb964e6ba83d4edfd45237c26255aad6b01550777` (29,916,251 bytes, 520 files);
+binary `feaba669275c82ce0aa7ca65e80446a498f908f99b6ecc69928d6a3ca808e505`. Both hashes are
 measured from the outside — `curl` download, the asset's `digest` in the API, the downloaded kit
 running its twelve catalogues from inside the tarball — in the `AUDITORIA.md` entry that registers
-this release (§818). It recomposes heads up to **v6**, the one the node signs today, and reads
-twelve families: the twelve of section 11 of the `spec/PAQUETE.md` that travels in its tarball, the twelfth being rotation (§649), and it is the first published release that carries it. ⚠️ **Corrected in §807**: it said «the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor»; section 11 at commit `a4e888d` names eleven families, the co-signed anchor among them, and the tree's names twelve (`FAMILIAS` in `tools/artefacto.sh`:31). ⚠️ **§818**: until here this paragraph gave `arqueo-verify-v0.4.2`, published at <https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.2>, on commit `a4e888d`, as the current release, with its two hashes —abridged in its paragraph, below; in full, with its 16,677,910 bytes and its 368 files, in entry §671—, and said «reads eleven families: the eleven of section 11 of the `spec/PAQUETE.md` that travels in its tarball, the eleventh being the co-signed anchor (§633, §634); the tree's section 11 already counts twelve, with rotation (§649), which no published release carries», which was true of 0.4.2.
+this release (§726). It recomposes heads up to **v6**, the one the node signs today, and reads
+twelve families: the twelve of section 11 of the `spec/PAQUETE.md` that travels in its tarball, the same as 0.4.3, the first published release with the twelfth, rotation (§649). ⚠️ **Corrected in §807**: it said «the ten of section 11 of `spec/PAQUETE.md` and the co-signed anchor»; section 11 at commit `a4e888d` names eleven families, the co-signed anchor among them, and the tree's names twelve (`FAMILIAS` in `tools/artefacto.sh`:31). ⚠️ **§818**: until here this paragraph gave `arqueo-verify-v0.4.2`, published at <https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.2>, on commit `a4e888d`, as the current release, with its two hashes —abridged in its paragraph, below; in full, with its 16,677,910 bytes and its 368 files, in entry §671—, and said «reads eleven families: the eleven of section 11 of the `spec/PAQUETE.md` that travels in its tarball, the eleventh being the co-signed anchor (§633, §634); the tree's section 11 already counts twelve, with rotation (§649), which no published release carries», which was true of 0.4.2. ⚠️ **§726**: until §726 this paragraph gave `arqueo-verify-v0.4.3`, published at <https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.3>, on commit `5fd5212`, as the current release, with its two hashes —abridged in its paragraph, below; in full, with its 21,737,865 bytes and its 420 files, in entry §818—, and said «the twelfth being rotation (§649), and it is the first published release that carries it», which was true of 0.4.3.
 
-⚠️ **0.4.4 is CUT and not published (§725), and it is a security fix.** The current release remains
-0.4.3 until the entry that registers 0.4.4 pins its fingerprint (§726). The fingerprints entry §725
+⚠️ ~~**0.4.4 is CUT and not published (§725), and it is a security fix.** The current release remains
+0.4.3 until the entry that registers 0.4.4 pins its fingerprint (§726).~~ ⚠️ **§726: published and current.** The author published it on 2026-10-28 with its security advisory, `GHSA-gq4j-w7rw-p96f` (<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/security/advisories/GHSA-gq4j-w7rw-p96f>), of high severity, which names the releases up to 0.4.3 as affected, each defect with its own, and 0.4.4 as fixed, and §726 registers it with its fingerprint, above: he produced it on his machine, with `rustc` 1.97.1 and GCC 15.2.0, and its binary is not the `451f186fcd68697f…` of §725, built on another one with 1.97.0 and GCC 13.3.0. **It is a security fix.** The fingerprints entry §725
 gives are those of the machine of the session that cut it, not those of the release: with the same
 fingerprint, the kit is only shown rebuildable within one same machine (below, «Reproducing the
 kit, for whoever does not trust the download»). It was prepared in private (`spec/rfc/PROCESO.md`
@@ -73,7 +73,7 @@ envelope (§714), of a single encoding (§715), of the non-canonical act (§718)
 and the claim (§723) and the two overlaps outside the handover (§722)— and four from VERDE to 3, the
 window ones (§723). 0.4.4 gives all 499 the code their manifests pin, and 0.4.3 gives it to 442. The
 40 preserved ones under `spec/vectors/0.3/` and `0.4/` give the same with both. The detail, vector by
-vector, is in entry §725.
+vector, is in entry §725. ⚠️ §726: with the published 0.4.4 binary, `feaba669275c82ce…`, over the vectors of its tarball, the same counts: 499 and 442, and 430, twelve and 57 (§726).
 
 ⚠️ ~~**0.4.3 is CUT and not published (§815), and it is a security fix.** The current release remains
 0.4.2 until the entry that registers 0.4.3 pins its fingerprint.~~ ⚠️ **§818: published and
@@ -123,6 +123,12 @@ the published 0.4.2 (binary `7734376463d120b0…`) and the tree's 0.4.3 over the
 
 The records of the measurement and the full list, vector by vector, go in entry §815.
 
+**0.4.3 is still published and is no longer current** (`arqueo-verify-v0.4.3`, commit `5fd5212`,
+tarball `0bb21f4f5dfe7575…`, binary `1b120e597897e005…`). It has the eight defects of section 3.18
+of `SECURITY.md` that 0.4.4 fixes, above, and it is the only one with 6 and 8: it reads a rotation
+act with a non-canonical `mmrSize`, and it does not tie the handover between two keys to the head
+history. Its advisory is `GHSA-gq4j-w7rw-p96f`, which names it affected (§726). Use 0.4.4.
+
 **0.4.2 is still published and is no longer current** (`arqueo-verify-v0.4.2`, commit `a4e888d`,
 tarball `33acdc9a8fe38f03…`, binary `7734376463d120b0…`). It has the defect of the notice above,
 which 0.4.3 fixes (§815): it accepts no resolution of a reception receipt that the node rejected
@@ -132,20 +138,21 @@ operator has nothing to resolve that receipt with and, once the window is over, 
 RESUELTA EN LA VENTANA». And the list of what changes, above, measures others that 0.4.3 fixes: it
 gives GREEN to a `StaleState` that does not resolve (§682) and to a co-signature whose version does
 not fit in a byte (§780), and gives «NO RESUELTA EN LA VENTANA», a RED against the operator, to an
-envelope anyone can forge by inflating the declared `index` of the current head (§681). Use 0.4.3.
+envelope anyone can forge by inflating the declared `index` of the current head (§681). ~~Use 0.4.3.~~
+It also has those of 3.18 of `SECURITY.md` that 0.4.4 fixes, all but 6 and 8: use 0.4.4 (§726).
 
 **0.4.1 is still published and is no longer current** (`arqueo-verify-v0.4.1`, commit `ff1f06f`,
 tarball `505de994f243bc76…`). It has three defects that 0.4.2 fixes: it reads a `u64` of the
 envelope with a `+` or leading zeros (§662); it counts the same co-signature repeated as several
 witnesses in a v2 package (§663); and it reads an XMSS key with the alternate OID `0x00010005` as the
 published one, so it gives GREEN to a "conflict between two ledgers" with a single ledger written
-twice (§664). ~~Use 0.4.2.~~ Use 0.4.3 (§818).
+twice (§664). ~~Use 0.4.2.~~ ~~Use 0.4.3 (§818).~~ Use 0.4.4 (§726).
 
 **0.4.0 is still published and is no longer current** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). It has one defect that 0.4.1 fixes: a proof with extra nodes inside a
 Merkle batch verifies anyway, with different bytes (§659). The verdict on the statement does not
 change — the altered proof proves the same as the original — but its bytes no longer identify the
-operation. ~~Use 0.4.2.~~ Use 0.4.3 (§818). Both read the same eleven families and give the same verdicts to every
+operation. ~~Use 0.4.2.~~ ~~Use 0.4.3 (§818).~~ Use 0.4.4 (§726). Both read the same eleven families and give the same verdicts to every
 published vector. ⚠️ **§818**: «both» are 0.4.0 and 0.4.1; 0.4.3 reads twelve and changes the
 verdicts the notice, above, lists.
 
@@ -155,7 +162,7 @@ section 3.9 of `SECURITY.md`: a hex field with a multibyte character, or a hidde
 emptied, make it exit with **101** (panic) instead of RED (§650, §651); a proof with trailing bytes
 is read as if they were not there (§653); and it accepts the four negatives of the canonical reading
 (RFC-0016, §640). It fails with the wrong code, never with a false GREEN for those cases; still,
-use ~~0.4.2~~ 0.4.3 (§818).
+use ~~0.4.2~~ ~~0.4.3 (§818)~~ 0.4.4 (§726).
 
 ⚠️ **In 0.3.0, an outdated sentence travels in its `NOTICE`, declared; 0.4.0 carries the corrected one.** That tarball's `NOTICE` says the
 witness hiding in the winterfell fork is switched on only by `Prover::ocultacion`, "which no ARQUEO
@@ -360,7 +367,7 @@ measured on 2026-10-15 (§823), except the 41 registry paths of (ii), compared o
   1.97.1 outside the machine that produced it; built here from its code with 1.94.1, as the canon of
   §817 built it, it comes out with another hash. Its published binary, `1b120e597897e005…`, carries
   what set 0.4.2 apart from its rebuild: the same eleven `rust-src` paths and a `.comment` that
-  names GCC 15.2.0 (§823, read with `strings` and `readelf`, without running it).
+  names GCC 15.2.0 (§823, read with `strings` and `readelf`, without running it). ⚠️ §726: 0.4.3 was the current release from §818 to §726, which registers 0.4.4. Nor is this one on record as rebuilt outside the machine that produced it: on that machine, the author's `--sello` canon on its commit, with the same `rustc` 1.97.1, gives the release's binary, `feaba669275c82ce…`; on another one, that of the session that cut it, with 1.97.0 and GCC 13.3.0, it comes out as `451f186fcd68697f…` (§725).
 - **What the hash depends on, besides `rustc` and `Cargo.lock`.** (i) If `rust-src` is installed, the
   standard library's paths enter the binary with its toolchain's name, because no rule of `b6994c3`
   takes them to `/rustc/<commit-hash>`: with `RUSTUP_HOME` under `HOME`, the `$HOME` one only changes

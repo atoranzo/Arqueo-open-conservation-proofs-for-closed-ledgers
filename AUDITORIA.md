@@ -73609,3 +73609,177 @@ en solidez del resto FRI no se cuantificó, la CPU del juez de la edad sigue lin
 v1 de la banda se acepta desde la cota, la huella del contenido no persiste, en `wasm32-wasip1` la red
 del pánico no recoge nada, volver atrás el almacén entero de la capa devuelve el contador, y en
 winterfell los puntos 1, 3 y 4 siguen sin arreglo.
+
+## §726 — el kit 0.4.4, registrado: publicado con su aviso de seguridad y medido desde fuera
+
+El commit que lleva este asiento, sobre `95bc457` (el §725). Registra la release del arreglo de
+seguridad del kit que el §725 cortó —los ocho defectos del verificador de `SECURITY.md` §3.18—,
+producida sobre `95bc457`, el commit del corte mismo: la base de este asiento es el commit de la
+release, y lo que el §725 midió con la 0.4.4 del árbol —la lista de lo que cambia frente a la 0.4.3—
+es, por eso, lo de la release. Este asiento lo vuelve a medir con el binario de la release,
+descargado (abajo). Toca la sección 0 de `doc/KIT.md` y de `doc/KIT_EN.md`, y una línea de su
+apartado «Reproducir el kit, para quien no se fíe de la descarga»; el párrafo del kit y la fila del
+verificador de `README.md` y `README_EN.md`; la fila del verificador de `RESUMEN_BILINGUE.md`, en sus
+dos lenguas, y de `RESUMEN_EJECUTIVO.md`; la pregunta 17 de `PREGUNTAS.md` y de `QUESTIONS.md`; la
+3.4, la 3.9, la 3.15 y la 3.18 de `SECURITY.md`; una celda de la tabla de cifras de foto de
+`doc/integracion-vertical-evaluacion.md`; dos líneas del RFC-0019; las seis citas por línea a la
+sección 0 del RFC-0021 y la de cada README; y este asiento. Ni código, ni tests, ni pines, ni
+vectores.
+
+Lo escribe y lo comprueba una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El tag, la release y el aviso
+los creó el autor en su máquina, porque esta sesión no tiene credenciales para ello, el 28-10-2026:
+el tag anotado a las 05:59:39 UTC, la release a las 06:00:27 y el aviso a las 06:01:15. El número es
+el que el §725 le dio.
+
+**La víspera, en la máquina del autor**, lo que el asiento del corte no podía llevar, porque se corrió
+sobre su commit: el canon `--sello` sobre `95bc457`, en WSL, con `rustc` 1.97.1 (8bab26f4f
+2026-07-14), salió VERDE: los 19 crates en sus pines, con 940 s de tests, 2230 tests declarados y 605
+vectores; las doce familias, la segunda implementación y las aserciones de depuración en verde; y el
+artefacto, reproducible entre rutas, con el binario `feaba669275c82ce…`, el mismo que lleva el asset,
+y el tarball `21e367097bdde4db…`. Ese tarball no es el de la release: se produjo antes que el tag, y
+el de la release lleva en su `VERSION` el `describe` del tag, `arqueo-verify-v0.4.4-0-g95bc457`
+(deducido del orden; esta sesión no ha visto aquel `VERSION`). La sesión que cortó la 0.4.4 había
+dado, en su máquina, con `rustc` 1.97.0 y GCC 13.3.0, el binario `451f186fcd68697f…` (§725): con la
+misma huella, el kit sólo está demostrado reconstruible dentro de una misma máquina (§823, §824), y
+la huella que vale es la del asset. Las cifras de la víspera son las que el autor pasó a la sesión, que
+no las ha medido en aquella máquina.
+
+**La release, medida desde fuera**, desde esta sesión, en una máquina que no produjo el tarball, el
+28-10-2026 hacia las 06:03 UTC. `arqueo-verify-v0.4.4`, tag anotado del autor —el objeto
+`be01e8a453b149abf298ec7d0872fc26d561dbdc`— sobre `95bc4572bca27f63033ba5bbc499ef2d95a4b40b`
+(`git ls-remote`: el tag y su `^{}`), publicada el 2026-10-28 a las 06:00:27 UTC (`published_at` de la
+API de GitHub: ni borrador ni prerelease), en https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.4. Un
+asset, `arqueo-verify-0.4.4-x86_64-unknown-linux-gnu.tar.gz`, de 29.916.251 B, con `digest` sha256
+`70b11f36a534bd342388ed9cb964e6ba83d4edfd45237c26255aad6b01550777` en la API; las notas de la release
+dan ese sha256, esos bytes, 520 ficheros y el binario de abajo. Descargado por `curl` desde la URL
+pública a un directorio vacío: el mismo sha256 y el mismo tamaño; 520 ficheros y 15 directorios, sin
+enlaces, y `sha256sum -c SHA256SUMS` da 519 OK y ninguno mal (los 520 menos el propio
+`SHA256SUMS`); el binario dentro es `feaba669275c82ce0aa7ca65e80446a498f908f99b6ecc69928d6a3ca808e505`,
+de 3.050.168 B. `VERSION` nombra el commit, `95bc4572bca27f63033ba5bbc499ef2d95a4b40b`,
+`describe=arqueo-verify-v0.4.4-0-g95bc457`, rustc 1.97.1 (8bab26f4f 2026-07-14) y cargo 1.97.1, el
+`cc` GCC 15.2.0 (Ubuntu 15.2.0-16ubuntu1), la glibc del host 2.43 y `glibc_max=GLIBC_2.34`: la huella
+del binario depende del toolchain y del host, como `tools/artefacto.sh` declara. De los otros 519
+ficheros, 516 salen iguales byte a byte (`cmp`) que en el árbol de `95bc457` —los 499 vectores y los
+doce manifiestos de las doce familias, `spec/PAQUETE.md`, `tools/conformidad.sh`, `NOTICE` y las dos
+licencias—, y los otros tres los escribe la herramienta: `SHA256SUMS`, `VERSION` y
+`THIRD-PARTY.txt`, que lista 61 paquetes, con `zk-ssl-hash v0.1.0 MIT OR Apache-2.0`, la licencia del
+punto 2 del §725.
+
+**El aviso.** El GitHub Security Advisory `GHSA-gq4j-w7rw-p96f`, de severidad alta, sin vector CVSS
+y sin CVE, publicado el 2026-10-28 a las 06:01:15 UTC (API de GitHub), en https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/security/advisories/GHSA-gq4j-w7rw-p96f:
+el paquete `arqueo-verify`, afectadas `<= 0.4.3` y arreglada la 0.4.4. Su texto nombra los ocho
+defectos, cada uno con las releases que alcanza —de la 0.3.0 a la 0.4.3 todos menos el 6 y el 8, que
+sólo alcanzan a la 0.4.3, y a la 0.1.0 y la 0.2.0 sólo el 2—, como pedían la sección 5 de
+`SECURITY.md`, `spec/rfc/PROCESO.md` §«Fallos de seguridad» y el §725. Sus referencias son
+`AUDITORIA.md` del §711 al §725 y las notas de la release: este asiento no existía, y añadirlo,
+editando el aviso, lo hace el autor. El defecto de cada punto, lo que cambia y lo que conviene hacer
+siguen en la sección 0 de `doc/KIT.md`, en la 3.18 de `SECURITY.md` y en sus asientos.
+
+**El kit descargado, corriendo.** Desde dentro del tarball, sin repositorio, `conformidad.sh` sobre sus
+doce manifiestos: paquete 94/94, consumo 20/20, conflicto 17/17, rechazo 88/88, edad 39/39,
+pendiente 13/13, pago 28/28, prenda 11/11, completitud 86/86, ancla 44/44, ancla cofirmada 27/27 y
+rotación 48/48: 515 de 515 entradas, sobre los 499 `.json`, cada negativo con su causa, y el binario
+`feaba669275c82ce` en cada línea final.
+
+**La 0.4.3 publicada y la 0.4.4 publicada, vector a vector.** El tarball de la 0.4.3, descargado otra
+vez el 28-10-2026 de la URL de su release: sha256 `0bb21f4f5dfe7575…`, 21.737.865 B y el binario
+`1b120e597897e005…`, los del §818. Cada uno de los dos binarios sobre cada `.json` que nombra un
+manifiesto del tarball de la 0.4.4, desde su directorio y con la entrada estándar vacía, el código
+de salida y la última línea no vacía: la 0.4.4 da a los 499 el código que pinan, y la 0.4.3, a 442;
+430 dan con las dos el mismo código y la misma última línea, doce el mismo código y otra línea, y 57
+otro código —40 de 0 a 1, siete de 101 a 1, seis de 1 a 0 y cuatro de 0 a 3—; y `paquete/no-existe.json`,
+la entrada sin fichero, da 1 con las dos. Son las cuentas que el §725 midió con la 0.4.4 del árbol:
+el binario de la release las da también. El detalle de cada vector sigue en el §725; las salidas de
+esta medida quedan en los registros de la sesión, fuera del árbol.
+
+**Lo que hace.** `doc/KIT.md` y `doc/KIT_EN.md`, sección 0: la 0.4.4 es la vigente, con sus dos
+huellas enteras, sus bytes, sus ficheros y este asiento, y el párrafo lleva una marca que cita lo que
+decía de la 0.4.3; lo que decía que la 0.4.4 estaba cortada y no publicada y que la vigente seguía
+siendo la 0.4.3 queda tachado, sin borrar, con su marca del §726: publicada y vigente, con el aviso,
+su enlace y su severidad, y producida en la máquina del autor, que no es la del §725; y el párrafo de
+lo medido, otra: el binario publicado da las mismas cuentas, arriba. Un párrafo nuevo, delante del
+de la 0.4.2: la 0.4.3 sigue publicada y ya no es la vigente, con sus dos huellas abreviadas, los
+ocho defectos de la 3.18 —el 6 y el 8, sólo ella—, su aviso y «Use la 0.4.4». El «Use la 0.4.3» de
+la 0.4.2 queda tachado, con los de la 3.18 que también tiene, todos menos el 6 y el 8; y
+los «Use la 0.4.3 (§818)» de la 0.4.1, la 0.4.0 y la 0.3.0, tachados, dicen la 0.4.4. En «Reproducir
+el kit», la línea que llamaba a la 0.4.3 «la vigente desde el §818» lleva una marca: lo fue hasta este
+asiento, y la 0.4.4 tampoco consta rehecha fuera de la máquina que la produjo; en ella, el canon del
+autor da el binario de la release, y en la de la sesión del §725 sale otro. `README.md` y
+`README_EN.md`: el párrafo del kit da la 0.4.4 como vigente, con su commit, y la marca del §725 que la
+daba por cortada y no publicada queda tachada en lo que ya no es cierto, con otra del §726 que nombra
+el aviso y la vigente de antes; la fila del verificador dice «publicada como `arqueo-verify-v0.4.4`
+(§726)», con el aviso, y una marca al final de la cadena cita lo que decía. El bilingüe en sus dos
+lenguas y el resumen ejecutivo, igual, con su marca. `PREGUNTAS.md` y `QUESTIONS.md`, en la 17,
+nombran la 0.4.4, con su marca. `SECURITY.md`: la 3.9 da la 0.4.4 como la vigente de hoy, con su
+marca; la 3.15, que decía «la vigente es la 0.4.3», lleva otra; la 3.18 tacha «hasta el asiento que
+registre la release (§726), la vigente sigue siendo la 0.4.3» y nombra la release, el aviso, su enlace
+y su severidad, como el §818 en la 3.15; y la 3.4, que decía que las escrituras de más de una prueba
+las rechaza el kit compilado desde el §715, añade la 0.4.4 publicada. La celda del kit de
+`doc/integracion-vertical-evaluacion.md`, la de «hoy», lleva una marca: la vigente es la 0.4.4, y las
+dos clausuras de al lado, que la marca del §818 daba por no recontadas, contadas otra vez en
+`95bc457` con `cargo tree -p <crate> -e normal --prefix none --locked`, siguen en 61 (`zk-ssl-verify`)
+y 68 (`zk-ssl`), y el `THIRD-PARTY.txt` de la release lista los 61. Y el RFC-0019, en dos líneas,
+cada una con su marca: el párrafo de la E1 y la E2, que decía de la 0.4.3 «desde el §818, que la
+registra con su huella, es la vigente», y la fila «E3, el resto» de la tabla de etapas, que decía
+del rechazo por `ProofFailed` o `VerificationFailed` «que desde la 0.4.3, la vigente (§818), se
+declara»: la 0.4.4 también declara las dos causas, y sus tres vectores de `completitud/` —la vía
+directa con cada una y el lote con `VerificationFailed`, entre los 86 de arriba— dan 3,
+«DECLARADA, NO PROBADA», con el binario publicado.
+
+**Las citas por línea que el párrafo nuevo corre**, con su marca. El párrafo de la 0.4.3 son seis
+líneas, con la vacía, y el de la 0.4.2 gana una: siete en cada manual. Las seis de `doc/KIT.md` en el
+RFC-0021 —`:125-177`, `:136-142`, `:143-149`, `:151-157`, `:179-181` y `:191-193`— pasan a
+`:131-184`, `:143-149`, `:150-156`, `:158-164`, `:186-188` y `:198-200`, y la `:147` de `README.md` y
+la `:148` de `README_EN.md`, a la `:154` y la `:155`. Caen donde caían; la primera, del párrafo de la
+0.4.2 al de la 0.2.0, sin el de la 0.4.3, porque la fila del RFC-0021 nombra las cinco de su fecha.
+Las de antes del párrafo nuevo no se mueven: la línea 19 de `doc/KIT.md`, que cita
+`doc/integracion-vertical-evaluacion.md`, sigue siendo la de la release vigente, y la 27 y la 28 de
+los dos manuales, que citan los README, las de las familias. El párrafo de la vigente y el del aviso
+de la 0.4.4 cambian por dentro sin ganar líneas.
+
+Lo que `git grep` da con `0.4.3`, `0.4.4`, «vigente», «current release», «no publicada» y «not
+published», fuera de este registro y de `spec/vectors/`, y no se toca, uno a uno: los «0.4.3» de
+`getrandom`, `fs2` y `hex`, el «0.4.33» de `log` y el comentario de `crates/zk-ssl-medio/Cargo.toml`,
+que son de otros crates; el `version = "0.4.4"` de `crates/zk-ssl-verify/Cargo.toml`, sus filas en
+los `Cargo.lock` y el «zk-ssl-verify 0.4.4 ruta» de la `CLAUSURA_DEL_KIT`, que son el kit y ya lo
+decían; los comentarios de `crates/zk-ssl-verify/src/main.rs`, `tools/banco_completitud.sh` y
+`tools/banco_recibo_agregado.sh`, que dicen desde cuándo declara la 0.4.3, que son código; lo que
+dicen de la 0.4.3 el RFC-0007, el RFC-0010, el RFC-0017, las otras líneas del RFC-0019, `spec/PAQUETE.md`,
+`spec/README.md`, `spec/RPC.md`, el ECST en sus dos lenguas y `tools/segunda/README.md`, que sigue
+siendo cierto; los hechos del RFC-0016 —la release vigente al girarlo y al aceptarlo, la 0.4.3— y el
+«al aceptarse el RFC-0016» de la 3.8 de `SECURITY.md`, que son de su fecha; las demás líneas de la
+3.15 y de la 3.18 de `SECURITY.md`, que dicen qué hace cada una, y el «Con este sello salen» de la
+3.18, que es del sello del corte; los párrafos de «Reproducir el kit» que miden la 0.4.3 y su
+commit, que siguen siendo ciertos; las entradas del `BACKLOG.md`, que no se reescriben; los «vigente»
+que hablan de cabezas, raíces o reglas, no del kit; la marca del §818 en el párrafo de la 0.4.0 de los
+dos manuales, «la 0.4.3 lee doce y cambia los veredictos que dice el aviso, arriba», que sigue
+siendo cierta; el «como la 0.4.2» del final de la sección 0, que pone un ejemplo que sigue siendo
+cierto; y las citas por línea de `doc/ecst/VERIFICACION.md` y de `doc/ecst/borrador/` a `doc/KIT.md`,
+a los README y a `SECURITY.md`, que son de su fecha.
+
+**Lo que NO hace.** No retira la 0.4.3 ni las anteriores, que siguen publicadas y se marcan, no se
+borran. No edita el aviso. Ni un test ni un pin se mueven, ni un vector; ningún contador cambia: el
+TOTAL DE SELLO sigue en 2068 y el TOTAL CON LARGOS en 2208, `check_tests` en 2230 declarados, los
+vectores en 605 `.json` y 1370 líneas de manifiesto, ninguno movido, y `check_superficie` en 0
+novedades. El `BACKLOG.md` no abre ni cierra ninguna entrada: 40 abiertas y 90 resueltas. No vuelve a
+medir con la 0.4.4 del árbol: mide la publicada. No toca la capa, el nodo ni el testigo, que no
+tienen release: su aviso sigue siendo la 3.18 de `SECURITY.md`. Ninguna puerta del canon ata la
+release que nombran los documentos: `check_publicadas` no mira el tag, el commit ni las huellas, y
+`check_superficie` lo declara de sí (`tools/check_superficie.py`:80). Que cada documento diga la
+0.4.4 lo comprobó `git grep`, a mano.
+
+**Lo medido sobre este árbol, antes de commitearlo**, desde la raíz y con este asiento en su sitio:
+`check_cifras`, 26 cifras y ninguna contradice el canon; `check_tests`, 2230 declarados;
+`check_modulos`, 216 ficheros; `check_vectores`, 605 vectores y 1370 líneas de 19 manifiestos con su
+huella, ninguno movido; `check_catalogo`, 236 textos del kit y 302 entradas de §5; `check_superficie`,
+la lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas; `verificar_citas`, 0 fantasmas, 0
+secciones muertas y 247 encabezados citados, 0 muertos, y el registro con 827 encabezados y 0 citas
+muertas; `check_nucleo`, 180 filas; y `check_figures`, `check_columns`, `check_constraint_layout`,
+`check_dominios`, `check_publicadas`, `check_techo` y `check_curvas`. Todas salen con 0.
+
+**El canon, después.** Este asiento no lleva el resultado del canon de su propio árbol: la sesión
+corre `--sello` sobre el commit que lo lleva, después de commitearlo y tras tocar todo `.rs` de
+`crates/` para que cargo lo recompile entero. Una de sus puertas, `verificar_citas`, lee este
+registro, y el resultado de un canon que incluye el asiento no cabe en él. Si no sale VERDE, este
+commit se rehace.

@@ -227,9 +227,9 @@ protege a nadie.
 
 ### 17. ¿Cómo compruebo un expediente sin el nodo, sin red y sin fiarme del autor?
 
-Con el kit ([`doc/KIT.md`](./doc/KIT.md)): una descarga, la release `arqueo-verify-v0.4.3`, cuya
+Con el kit ([`doc/KIT.md`](./doc/KIT.md)): una descarga, la release `arqueo-verify-v0.4.4`, cuya
 huella se publica con su commit al lado (⚠️ §818: decía `arqueo-verify-v0.4.2`, la vigente hasta el
-§818, que sigue publicada con los defectos que la 0.4.3 corrige). El verificador es una CLI de una
+§818, que sigue publicada con los defectos que la 0.4.3 corrige; ⚠️ §726: decía `arqueo-verify-v0.4.3`, la vigente hasta el §726, que sigue publicada con los ocho defectos que la 0.4.4 corrige). El verificador es una CLI de una
 línea: `./zk-ssl-verify <fichero.json>` sale 0 y escribe `VERDE: …` si el fichero se sostiene, 1 y el
 **primer** fallo con nombre (`ROJO: …`) si no. Cinco pasos: un expediente que cuadra; uno
 manipulado que no cuadra, con la regla rota nombrada; la misma etiqueta en dos libros, detectada

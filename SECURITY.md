@@ -505,7 +505,7 @@ mira las dos huellas.
 - **El cierre de fondo** sigue siendo el que dice el §659: el nonce en toda transición deudora, que
   pide el tren `zkssl/0.5`.
 - **Los kits publicados hasta la 0.4.3** aceptan esas escrituras. Las rechaza el kit compilado
-  desde el §715.
+  desde el §715. ⚠️ §726: y la 0.4.4, publicada.
 
 ⚠️ **El problema existió y se retiró con su camino.** La vía de un paso
 derivaba la posición del marcador del propio marcador, con colisión por
@@ -687,7 +687,7 @@ La versión nueva del kit está publicada: `arqueo-verify-v0.4.0` (§658); la `v
 por los dos primeros y por la cola. ⚠️ **Y una variante de la cola, por dentro (§659)**: nodos de más
 dentro de un lote de Merkle no movían la raíz, así que la prueba verificaba con otros bytes y el
 índice de pruebas aplicadas del §654 se esquivaba; la capa y el kit los rechazan desde el §659, y la
-vigente era `arqueo-verify-v0.4.1` (§661), y después `arqueo-verify-v0.4.2` (§671), que corrige además los §662 a §664; hoy es `arqueo-verify-v0.4.3` (§818), que corrige además el F3 de la 3.15 (§815). ⚠️ §818: decía «hoy es `arqueo-verify-v0.4.2` (§671)». `AUDITORIA.md` §637, §641,
+vigente era `arqueo-verify-v0.4.1` (§661), y después `arqueo-verify-v0.4.2` (§671), que corrige además los §662 a §664; después `arqueo-verify-v0.4.3` (§818), que corrige además el F3 de la 3.15 (§815); hoy es `arqueo-verify-v0.4.4` (§726), que corrige además los ocho de la 3.18. ⚠️ §818: decía «hoy es `arqueo-verify-v0.4.2` (§671)». ⚠️ §726: decía «hoy es `arqueo-verify-v0.4.3` (§818)». `AUDITORIA.md` §637, §641,
 §650 a §656.
 
 ### 3.10 Las claves de custodio y de gobernanza: de cuatro elementos en el cable, de uno en el libro de `dev` — ⚠️ CONSTRUIDO (§683, §684, §701) y DECLARADO
@@ -1309,7 +1309,8 @@ como piden la sección 5 y `spec/rfc/PROCESO.md` §«Fallos de seguridad», la r
 registre la release, la vigente sigue siendo la 0.4.2~~ (`doc/KIT.md` §0). ⚠️ §818: los publicó
 después del sello: la release `arqueo-verify-v0.4.3`, sobre `5fd5212`, y el aviso `GHSA-6p4m-qg2w-8r6j`, de
 severidad media (CVSS 4,3) (<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/security/advisories/GHSA-6p4m-qg2w-8r6j>), con esas afectadas y esa arreglada; el §818 registra la release
-con su huella, y la vigente es la 0.4.3. F1 y F2 son del nodo, que
+con su huella, y la vigente es la 0.4.3. ⚠️ §726: lo fue hasta el §726; la vigente es la 0.4.4,
+que corrige los ocho de la 3.18. F1 y F2 son del nodo, que
 no tiene release: su aviso es esta sección y el asiento. `AUDITORIA.md` §815.
 
 ### 3.16 La importación con clave aceptaba una instantánea en claro — ⚠️ MEDIDO, cerrado en la biblioteca (§817)
@@ -1908,8 +1909,12 @@ Se preparó sin publicar y se publica de una vez con su arreglo, como pide la se
 enmienda del §724. Con este sello salen, como piden la sección 5 y `spec/rfc/PROCESO.md` §«Fallos
 de seguridad», la release `arqueo-verify-v0.4.4` y su aviso de seguridad, que nombra las afectadas
 —de la 0.1.0 a la 0.4.3, cada punto con las suyas— y la primera que lo arregla, la 0.4.4. Los
-publica el autor: hasta el asiento que registre la release (§726), la vigente sigue siendo la 0.4.3
-(`doc/KIT.md` §0). El mismo acto corrige también la capa, sus circuitos, el nodo y el testigo, que
+publica el autor: ~~hasta el asiento que registre la release (§726), la vigente sigue siendo la 0.4.3~~
+(`doc/KIT.md` §0). ⚠️ §726: los publicó después del sello, el 28-10-2026: la release
+`arqueo-verify-v0.4.4`, sobre `95bc457`, y el aviso `GHSA-gq4j-w7rw-p96f`, de severidad alta y sin
+vector CVSS (<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/security/advisories/GHSA-gq4j-w7rw-p96f>),
+que nombra afectadas las releases hasta la 0.4.3, cada punto con las suyas, y arreglada la 0.4.4; el
+§726 registra la release con su huella, y la vigente es la 0.4.4. El mismo acto corrige también la capa, sus circuitos, el nodo y el testigo, que
 no tienen release: su aviso es esta sección y sus asientos, del §711 al §723. `AUDITORIA.md` §711 a
 §725.
 
