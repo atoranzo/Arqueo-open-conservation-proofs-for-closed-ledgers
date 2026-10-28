@@ -74596,3 +74596,78 @@ cambia— y el tarball `7d332eb7b96b7632`, que cambia con las fuentes, como en c
 con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
 anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida
 completa: no hubo roja.
+
+## §901 — A4 del HVZK, hecha como la D-AM del RFC-0009 con el criterio que el autor dictó: la promesa sigue siendo el censo; lo que se podría prometer con la construcción de hoy —ocultación simulable sin el testigo para dieciséis familias, bajo las hipótesis del documento con la máscara lineal del §900— queda escrito con sus palabras y es del autor; las siete que no, con nombre y con lo que les falta; `SECURITY.md` §3.bis y §3.11 ganan su nota, y la regla 3 del PROCESO, la H7 y «frente a un adversario cuántico: no medido» siguen intactos
+
+El commit que lleva este asiento, sobre `39d0658c` (el §900, la punta de la rama de la sesión).
+Toca sólo documentos: `spec/rfc/0009-lo-que-revela-una-prueba.md`, la D-AM y una nota en su
+sección de seguridad; `SECURITY.md`, una nota en §3.bis y otra en §3.11; `doc/ocultacion-hvzk.md`,
+una nota en su cabecera; `BACKLOG.md`, la 130 a medias y la cadena de recuentos; y este asiento.
+Ningún test, ningún pin, ningún vector, nada del fork ni de producción. Lo escribe y lo commitea
+Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre tras el §900. El canon de este
+commit se dice al final.
+
+**De dónde sale.** La orden del autor, con sus palabras: «A4, con esto delante: no puede enunciar
+HVZK para ninguna familia con el argumento de A2. Lo que puede decir es el censo y lo que falta, y
+dejar la promesa para lo que la 134 mida o para el corte que lleve la 133». La 134 está medida
+(§900): dieciséis familias cumplen la condición suficiente con la construcción de hoy y siete no.
+La sesión la lee así: A4 dice el censo y lo que falta, deja escrito, con sus palabras exactas, lo
+que la medida de la 134 permitiría prometer, y la promesa misma queda en manos de quien es toda
+promesa de la casa, el autor (`doc/METODO.md` §7); la otra lectura —prometer ya para las
+dieciséis— queda a una aceptación de distancia, y se dice en la D-AM como camino (a).
+
+**Lo que hace.**
+
+1. **La D-AM.** Lo que hay delante (A1, A2, A3, la 133 y la 134); lo que se promete, que no cambia
+   (D-A tal como quedó en el §538); lo que se podría prometer, en una cita con sus palabras: para
+   dieciséis familias con nombre, con la construcción de `zkssl/0.4` tal como está, la vista del
+   verificador honesto se simula sin el testigo —estadísticamente indistinguible en el modelo de
+   oráculo aleatorio programable, con la ventaja del enunciado del documento—, bajo las hipótesis
+   de su apartado 4 con su clase: medidas, demostradas, y supuestas o de modelo (H3, H7, H8, H9);
+   lo que no cubre, con nombre: MerkleAir y FrozenClimbAir, que necesitan la 133, y las cinco de
+   T = 64, que necesitan la 131 o la 135 y después la 133 o la 134 otra vez; qué le falta a lo
+   escrito para ser promesa: la aceptación del autor y una revisión ajena del argumento; los tres
+   caminos pesados, con (b) ganando por pureza e imagen fiel, reversible hacia (a) con la
+   aceptación; y A5, que sigue siendo del autor con la recomendación del documento, conservar la
+   sal.
+2. **Las notas.** `SECURITY.md` §3.bis: lo que hay detrás de «no se promete que nada se deduzca»,
+   medido y escrito, las dieciséis y las siete, y que lo que se podría prometer no se promete;
+   §3.11: la sal fresca y las semillas no repetidas como dos de las hipótesis con nombre, con lo
+   medido en el juguete del §898; la sección de seguridad del RFC-0009; la cabecera del documento;
+   la 130 a medias.
+
+**Medido.** Nada nuevo: este asiento no mide; cita lo medido en el §896, el §897, el §898, el §899
+y el §900, con sus asientos y sus tests en cada canon. Las cuatro herramientas de documentos, sobre
+el árbol con este asiento: `verificar_citas`, 0 en sus tres cuentas; `check_cifras`, 26 cifras y
+ninguna contradice el canon; `check_publicadas`, OK; `check_figures`, OK.
+
+**Lo que NO hace.** No promete HVZK de nada: ningún texto vivo lo dice de nada que exista, antes y
+después de este asiento. No cambia D-A, ni el censo, ni la regla 3 del PROCESO, ni la frase H7
+—ni el fork ni la construcción están auditados, y el argumento de A2 con la 134 no tiene revisión
+ajena—, ni «frente a un adversario cuántico: no medido». No decide A5. No toca ningún test ni
+ningún pin. No cierra la 130: quedan A5 y la aceptación del autor de lo que la D-AM deja escrito.
+
+**Lo que es del autor.** Aceptar o no lo que la D-AM deja escrito, y con qué palabras entraría en
+D-A y en `SECURITY.md`; pedir la revisión ajena, o no; A5; la 135; y el número de este asiento.
+
+**Contadores.** Ningún pin cambia: `zk-ssl` 561 y 8, `stark-experiment` 489 y 13, TOTAL DE SELLO
+2083 y CON LARGOS 2223, `check_tests` 2246 y 21 instrumentos, `check_modulos` 220. `BACKLOG.md`
+sigue en 45 abiertas y 91 resueltas: la 130 queda a medias. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 370 s de reloj (de su arranque a su salida)
+y 223 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 0,15 al
+empezar. Las 19 filas del nivel, en su pin, con 2083 tests que pasan (la suma de la columna
+«pasan»), la de `zk-ssl` en 561 pasan y 8 ignorados, 148 s, y la de `stark-experiment` en 489 y 13,
+18 s; las tres del fork, `winter-air` 64, `winter-prover` 7 y `winter-verifier` 0, en su pin; la
+puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (1 s)», ya compilados
+por el canon del §900; `check_tests` en 2246 y 21 instrumentos; `check_modulos` en 220; las once
+herramientas del bucle «2 ter»; la puerta de los vectores, en 605 ficheros y 1370 líneas de 19
+manifiestos; `check_catalogo`, en 236 textos y 302 entradas; el cable, en 27 de 27; la segunda
+implementación, con el núcleo en 34 de 34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y
+el artefacto reproducible, igual desde dos raíces, con el binario `b25bbac687e17145` —el mismo del
+§899 y del §900— y el tarball `5b79914ecb2b1c32`, que cambia con las fuentes, como en cada asiento.
+Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
+anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no
+hubo roja.

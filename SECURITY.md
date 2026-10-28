@@ -835,7 +835,10 @@ sin una abstracción común (siete hasta el §702, que añade la sal del KDF de 
 Si ese generador es predecible o se repite, la ocultación no protege el testigo, la clave de
 gasto se puede adivinar, los nonces pueden repetirse y dos ficheros cifrados pueden compartir
 sal. Ningún test lo comprueba, ni puede. Fiat-Shamir no usa azar: la moneda sale de lo que la
-prueba compromete.
+prueba compromete. ⚠️ §901: la sal fresca y las semillas de la ocultación no repetidas son dos de
+las hipótesis con nombre de lo que la D-AM del RFC-0009 deja escrito y no promete (H8 y H9 de
+`doc/ocultacion-hvzk.md`); medido en el juguete del §898, dos pruebas con la misma semilla de filas
+devuelven lo que cada una sola oculta.
 
 ### 3.12 El guardián del índice arrancaba a veces en tmpfs — ⚠️ MEDIDO, cerrado en Linux (§740)
 
@@ -1968,7 +1971,23 @@ y también trae dos defensas que antes no existían.
   llevando lo que llevaban, y del catálogo de rechazos de la 0.3 siguen
   derivándose dos claves de gasto de sandbox. La regla del API —la clave no
   viaja— se cumple desde el §538 en lo que la suite mide; entre el §521 y el
-  §538 no se cumplía, y los asientos lo dicen.
+  §538 no se cumplía, y los asientos lo dicen. ⚠️ **§901 (A4 del HVZK;
+  RFC-0009 D-AM):** lo que hay detrás de «no se promete que nada se deduzca»,
+  medido y escrito: el argumento de ocultación del fork con su simulador
+  (`doc/ocultacion-hvzk.md`, §897), la condición que le faltaba, medida por
+  geometría (§898), y la máscara de las columnas de cada AIR, medida por
+  familia (§900). Con la construcción de `zkssl/0.4` esa condición suficiente
+  se cumple en dieciséis de las veintitrés familias —las seis de T = 1024,
+  las nueve de T = 512 y la solvencia— y no en siete: MerkleAir y
+  FrozenClimbAir, que necesitan una máscara de DEEP en E (la 133 de
+  `BACKLOG.md`, de un corte futuro), y las cinco con 64 filas reales —los dos
+  umbrales, la edad y los dos reembolsos—, a las que sus filas aleatorias no
+  cubren lo que la prueba toca (la 131). Lo que se podría prometer para las
+  dieciséis —ocultación simulable sin el testigo, estadística en el modelo
+  de oráculo aleatorio programable, bajo hipótesis con nombre, entre ellas la
+  sal fresca y las semillas no repetidas de §3.11— está escrito en la D-AM
+  con sus palabras y **no se promete**: es del autor, y el argumento no tiene
+  revisión ajena (H7). La promesa de esta sección no cambia.
 - **El cable rechaza lo que no entiende**: DTOs con
   `deny_unknown_fields`, hex canónico, digests de anchura fija.
 - **Los vectores de conformidad son una defensa, no solo documentación.**

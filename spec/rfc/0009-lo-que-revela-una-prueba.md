@@ -891,6 +891,77 @@ coste (una columna más de 2T elementos de F por prueba, frente a un tramo auxil
 lo hay). **Reversible** hacia la columna sobre E, que el instrumento mide igual, si el corte
 prefiere el tramo auxiliar.
 
+### D-AM — La promesa tras A1, A2, A3 y la 134: sigue siendo el censo; lo que se podría prometer, para qué familias y bajo qué hipótesis, queda escrito con sus palabras y es del autor
+
+**Estado: decidida en el §901 por la sesión, con el criterio que el autor dictó para A4 —«no puede
+enunciar HVZK para ninguna familia con el argumento de A2; lo que puede decir es el censo y lo que
+falta, y dejar la promesa para lo que la 134 mida o para el corte que lleve la 133»—; REVERSIBLE;
+entra con su aceptación.**
+
+**Lo que hay delante.** A1 (§896) midió la cota de ocultación por familia; A2 (§897) escribió el
+argumento con su simulador y sus lemas, `doc/ocultacion-hvzk.md`, revisado dos veces en adversario
+por la propia sesión (su apartado 11) y por nadie ajeno; A3 (§898) midió la condición R3 y la halló
+falsa en todas las geometrías con las dos máscaras que no dependen de la AIR; la 133 (§899) la
+cumplió en laboratorio con dos columnas aleatorias; y la 134 (§900) midió la máscara lineal de las
+columnas de cada AIR, con la que R3 se cumple en dieciséis familias con la construcción de hoy y no
+en siete.
+
+**Lo que se promete: lo mismo.** D-A, tal como quedó en el §538: «una prueba de Arqueo que verifica
+demuestra la transición que enuncia y no publica literal ningún valor de columna constante de su
+traza». Lo que no se promete: que nada se deduzca de lo que se abre. `SECURITY.md` §3.bis y §3.11,
+la regla 3 del PROCESO —la clave de gasto no viaja jamás—, la confianza residual de D-A y la frase
+H7 —ni el fork ni la construcción están auditados— no cambian; «frente a un adversario cuántico: no
+medido» tampoco. Ningún texto vivo dice HVZK de nada que exista.
+
+**Lo que se podría prometer, con sus palabras, y no se promete hasta que el autor lo acepte.**
+
+> Para dieciséis de las veintitrés familias con fila en la tabla de D-B —SendAir, SendV2Air,
+> ClaimAir, ClaimAirV2, BurnAir y DoubleEntryAir (T = 1024); PrendaAir, MintPendingClimbAir,
+> AuditAir, BandaAir, CobroPendienteAir, PagoEnCursoAir, CreditClimbAir, MintClimbAir y
+> RecoveryClimbAir (T = 512); y SolvencyAir (T = 256)—, con la construcción de `zkssl/0.4` tal como
+> está —T filas aleatorias por columna, una columna aleatoria, el cociente cegado con m = 64 y las
+> hojas saladas—, la vista del verificador honesto se simula sin el testigo: para toda traza real
+> que la AIR acepta, la vista y la salida del simulador del apartado 5 de `doc/ocultacion-hvzk.md`
+> son estadísticamente indistinguibles en el modelo de oráculo aleatorio programable, con ventaja
+> menor que 2^{−60} más Q·2^{−256} para Q consultas al oráculo: ocultación simulable, estadística
+> en ese modelo y computacional en lo que H7, Blake3 como oráculo, tiene de computacional. Bajo las
+> hipótesis del apartado 4 de ese documento: las medidas en cada canon (H1, H4 y H11, y H6 con
+> H12, la máscara lineal, medida por familia), las demostradas (H2, H5 y H10) y las supuestas o de
+> modelo, que ningún test mide: H3, z fuera de F y de H y sin coincidencias de conjugados, con
+> fallo acotado por prueba; H7, el oráculo aleatorio programable; H8, la sal fresca; H9, ninguna
+> semilla de la ocultación repetida. Y bajo el argumento tal como está escrito: revisado dos veces
+> en adversario por la sesión, y por nadie ajeno al proyecto.
+
+**Lo que no cubre, con nombre.** MerkleAir y FrozenClimbAir (T = 256): ninguna de sus columnas
+entra linealmente en sus restricciones —la sbox toca todas—, R3 es la del §898 y falla; necesitan
+la 133. NullifierThresholdAir, ThresholdAir, EdadAir, RefundAir y RefundAirV2 (T = 64): L1 no las
+cubre —2q + 6 = 90 puntos tocados frente a 64 filas aleatorias— y no hay máscara lineal que medir;
+necesitan la 131 (T = 128) o el lema de la 135, y después la 133 o la medida de la 134 otra vez.
+Cinco de las siete son del cable: la autorización delegada, la edad, los dos reembolsos y la
+subida de la congelación delegada. Para las siete no se podría prometer nada hoy con ningún
+argumento escrito.
+
+**Qué le falta a lo escrito para ser promesa.** (1) La aceptación del autor, que decide sobre lo
+medido (`doc/METODO.md` §7) y de quien es toda promesa; (2) una revisión ajena del argumento de A2
+con la 134, que es lo que A4 pedía al conservar H7; (3) para las dieciséis, nada más: ni la cuenta
+fina de la 135 ni la 133 hacen falta. Si el autor acepta, cambian D-A —su «lo que no se promete»
+pasa a ser, para las dieciséis, la lista de hipótesis de arriba, y para las siete, lo de hoy—,
+`SECURITY.md` §3.bis y la cabecera de `doc/ocultacion-hvzk.md`; hasta entonces, nada.
+
+**Caminos pesados.** (a) Prometer HVZK para las dieciséis ahora, con las hipótesis delante. (b) No
+cambiar la promesa, escribir lo que se podría prometer con sus palabras y dejarlo a la aceptación
+del autor. (c) No escribir nada hasta el corte que lleve la 133 y encienda las dos columnas, cuando
+R3 vale por geometría y sin el álgebra de cada AIR. Gana (b): pureza —una promesa de seguridad es
+del autor, la casa no ha dicho HVZK de nada que exista y el argumento no tiene revisión ajena— e
+imagen fiel —lo medido y lo demostrado se dicen con nombre y con sus hipótesis, y las siete
+familias, con lo que les falta—; (a) queda a una aceptación de distancia y (c) desperdiciaría lo
+medido. **Reversible** hacia (a) con la aceptación del autor, y hacia (c) si prefiere esperar al
+corte.
+
+**A5, la sal.** Sigue siendo del autor (D-I): el documento recomienda conservarla —es lo que hace
+L4 incondicional, y sin ella la hoja de un coset de FRI sólo tiene entropía por R3, que ahora está
+medida en verde en dieciséis familias y no en siete—; esta decisión no la toca.
+
 ## Compatibilidad
 
 - `zkssl/0.3` **no subió** hasta E3b-2; **desde el §538 el cable es `zkssl/0.4`**: ningún
@@ -977,7 +1048,10 @@ deuda.
 - **Lo que el censo no ve:** que no salga nada literal no es, por sí solo, ocultación (D-A, hasta
   el §538; desde entonces la sostiene la construcción encendida). Más allá del censo,
   la E3 descansa en el argumento de la D-I y en la construcción de la nota 2024/1037. Ni el fork ni
-  la ocultación están auditados (H7).
+  la ocultación están auditados (H7). ⚠️ §901: el argumento está escrito y medido
+  (`doc/ocultacion-hvzk.md`, §896 a §900): su condición suficiente se cumple con la construcción de
+  hoy en dieciséis familias y no en siete, con nombre; lo que se podría prometer para las dieciséis,
+  con sus hipótesis, lo deja escrito la D-AM y no lo promete: es del autor, y H7 se conserva.
 - **Fallar cerrado:** con la marca, el verificador rechaza con error una traza que no se puede
   partir o un m que no cabe en ella (D-H), y desde el §534 rechaza, antes de construir ningún AIR,
   un meta que no está vacío ni es la marca (D-S). Los AIR que asertan su ancho en `new` —`AuditAir`,

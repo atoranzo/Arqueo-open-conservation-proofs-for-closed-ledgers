@@ -7,7 +7,11 @@ cambia está marcado con §898 donde toca y reunido en el apartado 13. **No es u
 demuestra la transición que enuncia y no publica literal ningún valor de columna constante de su
 traza», RFC-0009 D-A y `SECURITY.md` §3.bis— hasta que A4, con A3 sellada, decida qué se promete y
 con qué palabras. Nada de lo que sigue cambia `SECURITY.md`, el RFC-0009 más allá de la nota de su
-D-I, ni la regla 3 del PROCESO; ningún texto vivo dice HVZK de nada que exista.
+D-I, ni la regla 3 del PROCESO; ningún texto vivo dice HVZK de nada que exista. ⚠️ §901 (A4):
+decidido en la D-AM del RFC-0009: la promesa sigue siendo el censo; lo que se podría prometer para
+dieciséis familias con la construcción de hoy —la proposición del apartado 8, bajo las hipótesis
+del apartado 4 con la H12 del §900— queda escrito allí con sus palabras y es del autor; las siete
+que no, con nombre y con lo que les falta.
 
 **Qué es.** El argumento de ocultación del probador oculto del fork de winterfell 0.13.1
 (`crates/winter-prover`, `crates/winter-air`, `crates/winter-verifier`, con la sal de

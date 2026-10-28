@@ -19,7 +19,7 @@ cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, 
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, y el §900, que cierra la 134 y abre la 135.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, y el §901, que no mueve ninguna.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1450,6 +1450,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   con nombre: MerkleAir y FrozenClimbAir, sin columnas lineales (la 133), y las cinco de T = 64 (la
   131). A4 puede enunciar para las dieciséis lo que `doc/ocultacion-hvzk.md` demuestra con sus
   hipótesis, y dejar fuera a las siete por su nombre. QUEDAN A4 y A5: sigue abierta.
+  ✅ a medias (§901): A4, hecha como la D-AM del RFC-0009 con el criterio que el autor dictó: la
+  promesa no cambia —el censo—; lo que se podría prometer para las dieciséis, con sus palabras y
+  sus hipótesis, queda escrito y es del autor, y las siete que no, con nombre y con lo que les
+  falta; `SECURITY.md` §3.bis y §3.11 ganan su nota; la regla 3 del PROCESO, la H7 y «frente a un
+  adversario cuántico: no medido», intactos. QUEDAN A5, del autor, y la aceptación de lo que la
+  D-AM deja escrito: sigue abierta.
 
 - [ ] **131. Cinco familias abren más puntos de los que sus filas aleatorias enmascaran: T = 64
   frente a 2q + 6 = 90 (§897).** Medido en cada canon desde el §897 (`INDEPENDIENTE_DE_LA_AIR`,
