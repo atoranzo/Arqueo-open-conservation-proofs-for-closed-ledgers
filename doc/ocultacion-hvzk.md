@@ -516,7 +516,12 @@ que 2^{−60} más Q·2^{−256} para Q consultas al oráculo. Puede enunciarse,
 diecisiete familias. **Para las cinco familias con T = 64 no se enuncia**: les falta L6 o T = 128.
 **Para la solvencia tampoco**: R3 le falla por cuenta (L3, la 132). ⚠️ §898: **con R3 medida y
 falsa en las cinco geometrías, hoy no se enuncia para ninguna familia**; vale como enunciado de lo
-que la construcción tendría si la máscara de DEEP viviera en E (la 133), no de lo que tiene. **Nada de esto es una promesa
+que la construcción tendría si la máscara de DEEP viviera en E (la 133), no de lo que tiene.
+⚠️ §899: con la construcción de laboratorio de la 133 —dos columnas aleatorias—, R3 se cumple en
+las cinco geometrías (apartado 13), y la proposición vale para ella, bajo las demás hipótesis,
+para las dieciocho familias con T ≥ 2q + 6, la solvencia incluida; no para las cinco con T = 64
+(L1). Es lo que A4 podrá enunciar cuando el corte la encienda, y no antes: hoy ninguna prueba de
+producción la lleva. **Nada de esto es una promesa
 de la casa**: A4 decidirá, con A3 sellada, qué se promete y para qué familias, y hasta entonces la
 promesa es el censo.
 
@@ -665,7 +670,9 @@ simular salvo lo de la objeción 1; y que el documento no afirma HVZK en ningún
   cuántico: no medido», intacto. ⚠️ §898: R3 está medida y en rojo en todas: A4 no puede enunciar
   HVZK para ninguna familia con el argumento de este documento. Lo que A4 puede hacer es decir eso
   con las palabras de este documento —el censo sigue, y lo que falta y por qué— y dejar la promesa
-  de HVZK para lo que la 134 mida AIR a AIR o para el corte que lleve la 133.
+  de HVZK para lo que la 134 mida AIR a AIR o para el corte que lleve la 133. ⚠️ §899: la 133 está
+  medida y construida en laboratorio (apartado 13): A4 puede decir qué tendrá la construcción del
+  corte, con R3 en verde, y qué tiene la de hoy, sin él.
 - **A5**: la sal es lo que hace L4 incondicional. Sin ella, (a) necesita que cada hoja no abierta
   tenga entropía frente al oráculo —la fila entera de la traza en un punto de Λ la tiene por L1, el
   vector de los trozos por L2, y los ocho valores de un coset de FRI sólo por R3— y (b) desaparece.
@@ -766,3 +773,29 @@ posiciones son las de la prueba.
 **Lo que A3 no hace.** No ataca ninguna prueba de la casa ni ningún AIR del cable: el juguete es el
 juguete, y lo que dice de las familias reales es lo que dicen sus geometrías. No toca la promesa.
 No decide la 131, la 132 ni la 133. No lee la nota.
+
+**§899: la 133, medida y construida en laboratorio.** El instrumento de R3 mide también otras
+máscaras (`Mascaras`): k columnas aleatorias sobre F, cada una con su coeficiente de DEEP en E, y
+una columna aleatoria sobre E, cuya imagen residual es exactamente K por construcción
+(V·(x − z)(x − z·g)·E[x]_{<L−q−2} ↦ cc·V·ℓ·v). Lo medido, sobre F, con la semilla 1:
+
+| geometría (T, trozos, capas, resto) | sin determinar | dos columnas sobre F: columnas / juntas | tres: columnas / juntas | una sobre E: columna |
+|---|---|---|---|---|
+| 64, 15, 1, 16 | 168 | 164 / **168** | 164 / 168 | 168 |
+| 256, 2, 2, 8 | 632 | 632 / **632** | 632 / 632 | 632 |
+| 256, 9, 2, 8 | 632 | 632 / **632** | 632 / 632 | 632 |
+| 512, 8, 2, 16 | 760 | 760 / **760** | 760 / 760 | 760 |
+| 1024, 8, 2, 32 | 1016 | 1016 / **1016** | 1016 / 1016 | 1016 |
+| 128, 4, 1, 32 (el juguete) | 424 | 420 / **424** | 420 / 424 | 424 |
+
+Dos columnas sobre F bastan en todas: con T ≥ 256 cubren solas lo que FRI abre sin determinar, y
+con T = 64 y en el juguete les faltan cuatro dimensiones que los aleatorizadores ponen. Tres no
+añaden nada. La columna sobre E lo cubre sola, como dice su construcción. Se elige la de dos
+columnas sobre F (RFC-0009 D-AL): no toca el tramo auxiliar, que winterfell sólo admite con una
+restricción y una aserción propias, y es un parámetro, `Ocultacion::columnas`. Lo que hay en el
+árbol: con `columnas: 1`, la construcción de `zkssl/0.4` byte a byte; con 2, la de laboratorio,
+con la marca `arqueo:oculta:lab` que `verify` rechaza y sólo `verify_laboratorio` acepta; un
+falsador en `falsadores_oculta` lo mide, y la cota de las dos columnas está clavada por geometría
+en cada canon (`R3_MEDIDO_LABORATORIO`), junto a la de una. Lo que no cambia: L1 y la 131 (las
+cinco de T = 64 siguen fuera), L6 y la 134, y la promesa. Lo que la 133 deja al corte 0.5: encender
+las dos columnas en los 23 probadores con las columnas en la marca v2 (RFC-0018 E5).

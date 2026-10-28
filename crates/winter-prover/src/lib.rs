@@ -596,8 +596,14 @@ pub trait Prover {
         // §652 (CRIPTO-01): los 32 bytes de la semilla, no 8.
         moneda.reseed(Blake3_256::<Self::BaseField>::hash(&semilla));
 
-        // la traza principal: T filas aleatorias detras de las reales y una columna aleatoria
+        // la traza principal: T filas aleatorias detras de las reales y las columnas aleatorias
+        // (una en produccion; §899: mas de una en laboratorio)
         let t = trace.info().length();
+        assert!(
+            (1..=255).contains(&ocultacion.columnas),
+            "ocultacion: {} columnas aleatorias; son de 1 a 255",
+            ocultacion.columnas
+        );
         // D-AG / D-AH: una traza corta para ese m es un Err nombrado, no un panico
         if ocultacion.m >= 2 * t {
             return Err(ProverError::OcultacionNoCabe { m: ocultacion.m, filas: 2 * t });
@@ -612,13 +618,20 @@ pub trait Prover {
             }
             columnas.push(col);
         }
-        columnas.push((0..2 * t).map(|_| sacar::<Self::BaseField>(&mut moneda)).collect());
+        for _ in 0..ocultacion.columnas {
+            columnas.push((0..2 * t).map(|_| sacar::<Self::BaseField>(&mut moneda)).collect());
+        }
+        let marca = if ocultacion.columnas == 1 {
+            ::air::Marca { m: ocultacion.m }.escribir()
+        } else {
+            ::air::MarcaLaboratorio { m: ocultacion.m, columnas: ocultacion.columnas }.escribir()
+        };
         let info_oculta = TraceInfo::new_multi_segment(
-            trace.info().main_trace_width() + 1,
+            trace.info().main_trace_width() + ocultacion.columnas,
             trace.info().aux_segment_width(),
             trace.info().get_num_aux_segment_rand_elements(),
             2 * t,
-            ::air::Marca { m: ocultacion.m }.escribir(),
+            marca,
         );
         let principal_oculta = ColMatrix::new(columnas);
 
@@ -738,6 +751,13 @@ pub trait Prover {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Ocultacion {
     pub m: usize,
+    /// §899 (la 133 de `BACKLOG.md`): cuantas columnas aleatorias se anaden a la traza principal.
+    /// Con 1, la construccion de `zkssl/0.4`, byte a byte, con su marca de produccion; con 2 o
+    /// mas, la de LABORATORIO: cada columna entra en DEEP con su propio coeficiente de E, y dos
+    /// cubren las dos coordenadas de cada valor que FRI abre, lo que una sola no puede
+    /// (`doc/ocultacion-hvzk.md`, apartado 13). Lleva la marca de laboratorio, que el verificador
+    /// de produccion rechaza: solo `verify_laboratorio` la acepta, hasta el corte 0.5.
+    pub columnas: usize,
     /// §652 (CRIPTO-01): 32 bytes cada una. Con un `u64` las filas aleatorias de cada columna
     /// salian de 2^64 semillas posibles, y una columna constante del testigo -la clave de gasto,
     /// la de un custodio- se despejaba de una prueba con unas 2^74 compresiones (ESTIMADO).

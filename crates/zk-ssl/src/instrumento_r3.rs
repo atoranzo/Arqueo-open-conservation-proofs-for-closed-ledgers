@@ -277,9 +277,30 @@ fn transpuesta<const N: usize>(v: &[E]) -> Vec<[E; N]> {
 
 // ---- la medida ----
 
-/// Mide R3 para la geometria `g` con los desafios de `semilla`; con `con_o`, tambien el rango de
-/// O entera, que informa y no decide.
+/// Las mascaras que se miden: cuantas columnas aleatorias sobre F -la construccion de hoy lleva
+/// una- y si hay una columna aleatoria sobre E (la 133: una columna del tramo auxiliar, o un
+/// polinomio aleatorio de E[x] del grado de D, que es lo mismo para R3).
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Mascaras {
+    pub columnas_f: usize,
+    pub columna_e: bool,
+}
+
+/// La construccion de hoy: una columna aleatoria sobre F.
+pub(crate) const DE_HOY: Mascaras = Mascaras { columnas_f: 1, columna_e: false };
+
+/// §899, la 133: la construccion de laboratorio, dos columnas aleatorias sobre F, cada una con su
+/// coeficiente de DEEP en E: juntas cubren las dos coordenadas de cada valor que FRI abre.
+pub(crate) const LABORATORIO: Mascaras = Mascaras { columnas_f: 2, columna_e: false };
+
+/// Mide R3 para la geometria `g` con los desafios de `semilla` y la construccion de hoy; con
+/// `con_o`, tambien el rango de O entera, que informa y no decide.
 pub(crate) fn mide(g: &Geometria, semilla: u64, con_o: bool) -> MedidaR3 {
+    mide_con(g, semilla, con_o, DE_HOY)
+}
+
+/// Mide R3 con las mascaras que se le digan.
+pub(crate) fn mide_con(g: &Geometria, semilla: u64, con_o: bool, mascaras: Mascaras) -> MedidaR3 {
     let d = desafios(g, semilla);
     let mirilla = Mirilla::nueva(g, &d);
     let largo = mirilla.largo;
@@ -319,21 +340,43 @@ pub(crate) fn mide(g: &Geometria, semilla: u64, con_o: bool) -> MedidaR3 {
         .collect();
     let rango_k = 2 * rango_de(filas_k);
 
-    // la columna aleatoria: Φ·u con u ∈ F[x] de grado < L − q − 4, combinaciones aleatorias
-    let phi = {
-        let conj = [conjugado(z), conjugado(zg)];
-        let mut p = mul(&ell, &v_pos);
-        p = mul(&p, &de_raices(&conj));
-        p.iter().map(|c| *c * d.cc_columna).collect::<Vec<E>>()
-    };
+    // las columnas aleatorias sobre F: Σ_c Φ_c·u_c con u_c ∈ F[x] de grado < L − q − 4,
+    // combinaciones aleatorias del espacio de todas juntas, mas que su rango puede ser; cada
+    // columna con su coeficiente de DEEP, como en la prueba
+    let conj = [conjugado(z), conjugado(zg)];
+    let base_f = mul(&mul(&ell, &v_pos), &de_raices(&conj));
     let libres_r = largo - g.q - 4;
-    let n_r = libres_r.min(rango_k) + 8;
-    let filas_columna: Vec<Vec<BaseElement>> = (0..n_r)
-        .map(|_| {
-            let u: Vec<E> = (0..libres_r).map(|_| E::from(saca::<BaseElement>(&mut moneda))).collect();
-            sobre_f(&mirilla.observa(&con_largo(mul(&phi, &u), largo)))
+    let phis: Vec<Vec<E>> = (0..mascaras.columnas_f)
+        .map(|c| {
+            let cc = if c == 0 { d.cc_columna } else { saca::<E>(&mut moneda) };
+            base_f.iter().map(|x| *x * cc).collect()
         })
         .collect();
+    let n_r = (mascaras.columnas_f * libres_r).min(rango_k) + 8;
+    let mut filas_columna: Vec<Vec<BaseElement>> = Vec::new();
+    for _ in 0..n_r {
+        let mut p = vec![E::ZERO; largo];
+        for phi in &phis {
+            let u: Vec<E> = (0..libres_r).map(|_| E::from(saca::<BaseElement>(&mut moneda))).collect();
+            for (x, y) in p.iter_mut().zip(mul(phi, &u)) {
+                *x += y;
+            }
+        }
+        filas_columna.push(sobre_f(&mirilla.observa(&p)));
+    }
+    // la columna aleatoria sobre E, si la hay: cc·V·ℓ·x^i, i < L − q − 2, exactamente K
+    if mascaras.columna_e {
+        let cc: E = saca(&mut moneda);
+        let base_e: Vec<E> = mul(&ell, &v_pos).iter().map(|x| *x * cc).collect();
+        let libres_e = largo - g.q - 2;
+        let n_e = libres_e.min(rango_k / 2 + 4);
+        for _ in 0..n_e {
+            let v: Vec<E> = (0..libres_e).map(|_| saca(&mut moneda)).collect();
+            let fila = mirilla.observa(&con_largo(mul(&base_e, &v), largo));
+            filas_columna.push(sobre_f(&fila));
+            filas_columna.push(sobre_f(&fila.iter().map(|e| *e * E::new(BaseElement::ZERO, BaseElement::ONE)).collect::<Vec<E>>()));
+        }
+    }
     let rango_columna = rango_de(filas_columna.clone());
 
     // los aleatorizadores: (cc'_k·x^s − cc'_{k+1})·V·ℓ·x^i, i < m − q − 2, un espacio sobre E
@@ -406,7 +449,32 @@ pub(crate) const R3_MEDIDO: &[(usize, usize, usize, usize, usize, usize, usize, 
 
 /// La fila de `R3_MEDIDO` de una geometria, si la tiene.
 pub(crate) fn clavado(g: &Geometria) -> Option<(usize, usize, usize, usize)> {
-    R3_MEDIDO
+    fila_de(R3_MEDIDO, g)
+}
+
+/// §899 (la 133): lo medido con la construccion de LABORATORIO, dos columnas aleatorias sobre F,
+/// clavado como lo de hoy: en las cinco geometrias las dos columnas y los aleatorizadores juntos
+/// cubren todo lo que FRI abre sin determinar -R3 se cumple-, y con T >= 256 las dos columnas
+/// solas; un cambio en cualquier cifra es rojo.
+pub(crate) const R3_MEDIDO_LABORATORIO: &[(usize, usize, usize, usize, usize, usize, usize, usize)] = &[
+    // T, trozos, capas, resto, sin determinar, columnas, trozos, juntas
+    (64, 15, 1, 16, 168, 164, 80, 168),
+    (256, 2, 2, 8, 632, 632, 40, 632),
+    (256, 9, 2, 8, 632, 632, 80, 632),
+    (512, 8, 2, 16, 760, 760, 80, 760),
+    (1024, 8, 2, 32, 1016, 1016, 80, 1016),
+];
+
+/// La fila de `R3_MEDIDO_LABORATORIO` de una geometria, si la tiene.
+pub(crate) fn clavado_laboratorio(g: &Geometria) -> Option<(usize, usize, usize, usize)> {
+    fila_de(R3_MEDIDO_LABORATORIO, g)
+}
+
+fn fila_de(
+    tabla: &[(usize, usize, usize, usize, usize, usize, usize, usize)],
+    g: &Geometria,
+) -> Option<(usize, usize, usize, usize)> {
+    tabla
         .iter()
         .find(|f| f.0 == g.t && f.1 == g.trozos && f.2 == g.capas_fri && f.3 == g.resto)
         .map(|f| (f.4, f.5, f.6, f.7))
@@ -453,6 +521,23 @@ mod tests {
         assert!(m.cumple(), "con cuatro consultas las mascaras cubren lo que FRI abre");
     }
 
+    /// **§899 (la 133): el juguete con dos columnas aleatorias cumple R3, y con una columna sobre E
+    /// tambien, exactamente K.** Las dos columnas solas cubren K menos cuatro dimensiones (420 de
+    /// 424) y los aleatorizadores ponen el resto; la columna sobre E, que es K por construccion,
+    /// lo cubre sola.
+    #[test]
+    fn el_juguete_con_dos_columnas_cumple_r3_y_con_una_sobre_e_tambien() {
+        let g = geo(42, 128, 64, 4, 1, 32);
+        let m = mide_con(&g, 1, false, LABORATORIO);
+        println!("{} · laboratorio", linea("juguete (WorkAir)", &g, &m));
+        assert_eq!((m.rango_k, m.rango_columna, m.rango_trozos, m.rango_mascaras), (424, 420, 80, 424));
+        assert!(m.cumple());
+        let e = mide_con(&g, 1, false, Mascaras { columnas_f: 1, columna_e: true });
+        println!("{} · una columna sobre E", linea("juguete (WorkAir)", &g, &e));
+        assert_eq!((e.rango_k, e.rango_columna, e.rango_mascaras), (424, 424, 424));
+        assert!(e.cumple());
+    }
+
     /// **La tabla clavada tiene una fila por geometria de produccion, y ninguna cumple.**
     #[test]
     fn la_tabla_clavada_es_de_las_cinco_geometrias_y_ninguna_cumple() {
@@ -460,6 +545,13 @@ mod tests {
         for f in R3_MEDIDO {
             assert!(f.7 < f.4, "T = {}: {} de mascara frente a {} sin determinar", f.0, f.7, f.4);
             assert!(f.5 <= f.7 && f.6 <= f.7);
+        }
+        // §899: la de laboratorio, las mismas cinco geometrias, y todas cumplen
+        assert_eq!(R3_MEDIDO_LABORATORIO.len(), 5);
+        for (f, l) in R3_MEDIDO.iter().zip(R3_MEDIDO_LABORATORIO) {
+            assert_eq!((f.0, f.1, f.2, f.3, f.4), (l.0, l.1, l.2, l.3, l.4), "la misma geometria y el mismo K");
+            assert_eq!(l.7, l.4, "T = {}: el laboratorio cubre todo lo que FRI abre", l.0);
+            assert!(l.5 <= l.7 && l.6 <= l.7);
         }
     }
 }

@@ -483,7 +483,7 @@ const fn s32(n: u64) -> [u8; 32] {
 }
 
 fn ocultacion_juguete(m: usize) -> Ocultacion {
-    Ocultacion { m, semilla_filas: s32(0xc07a_0001), semilla_cociente: s32(0xc07a_0002) }
+    Ocultacion { m, semilla_filas: s32(0xc07a_0001), semilla_cociente: s32(0xc07a_0002), columnas: 1 }
 }
 
 struct ProbadorJuguete {
@@ -743,6 +743,22 @@ fn la_cota_de_ocultacion_de_los_23_probadores_con_fila() {
         }
         if m.cumple() {
             mal.push(format!("{nombre}: R3 se cumple, y lo clavado dice que no"));
+        }
+        // §899 (la 133): la construccion de laboratorio, dos columnas aleatorias, cumple R3 en
+        // esta geometria, con sus cifras clavadas
+        let lab = crate::instrumento_r3::mide_con(g, 1, false, crate::instrumento_r3::LABORATORIO);
+        println!("{} · laboratorio", crate::instrumento_r3::linea(&nombre, g, &lab));
+        match crate::instrumento_r3::clavado_laboratorio(g) {
+            None => mal.push(format!("{nombre}: sin fila en R3_MEDIDO_LABORATORIO")),
+            Some(clavado) => {
+                let medido = (lab.rango_k, lab.rango_columna, lab.rango_trozos, lab.rango_mascaras);
+                if medido != clavado {
+                    mal.push(format!("{nombre}, laboratorio: medido {medido:?} y clavado {clavado:?}"));
+                }
+            }
+        }
+        if !lab.cumple() {
+            mal.push(format!("{nombre}: el laboratorio no cumple R3"));
         }
         if g.t == 64 {
             // la geometria barata, con las otras consultas que una prueba abre y otra semilla de

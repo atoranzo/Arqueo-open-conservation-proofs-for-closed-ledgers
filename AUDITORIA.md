@@ -74319,3 +74319,131 @@ quedaba en él el mismo fichero que en los dos sellos anteriores,
 tres medidas más de T = 64 y un aserto en los falsadores, y los textos sin rebajar—: VERDE, 562 s de
 reloj y 347 s de tests, con el mismo binario y el mismo tarball; se dice, y no vale como sello,
 porque el árbol cambió después.
+
+## §899 — La 133 del HVZK, medida y construida en laboratorio: dos columnas aleatorias sobre F, cada una con su coeficiente de DEEP, cumplen R3 en las cinco geometrías de producción y en el juguete —clavado en cada canon— y una columna sobre E deja libre exactamente K; `Ocultacion::columnas`, la marca de laboratorio `arqueo:oculta:lab` y `verify_laboratorio`, con su falsador, sin tocar un byte de `zkssl/0.4`; la D-AL del RFC-0009 y la E5 del tren 0.5
+
+El commit que lleva este asiento, sobre `d6fbf34a` (el §898, la punta de la rama de la sesión).
+Toca el fork: `crates/winter-air/src/marca.rs`, que gana `MarcaLaboratorio` —`arqueo:oculta:lab`, m y
+las columnas en un byte, 22 bytes—, `MarcaError::Columnas`, `Marca::columnas_de` y un `m_de` que lee
+también la de laboratorio, con `Marca::leer` intacto; `crates/winter-air/src/lib.rs`, que la exporta;
+`crates/winter-air/src/air/oculta.rs`, cuyo envoltorio resta de la traza las columnas que la marca
+declara; `crates/winter-prover/src/lib.rs`, donde `Ocultacion` gana `columnas` y
+`generate_proof_oculto` añade tantas columnas aleatorias como diga y escribe la marca de producción
+con una y la de laboratorio con más; y `crates/winter-verifier/src/lib.rs`, con el despacho del
+envoltorio factorizado en `verificar_oculta` —lo que `verify` hacía en su sitio, sin cambiar un
+byte de su conducta— y `verify_laboratorio`, que sólo acepta la marca de laboratorio. Fuera del
+fork: `crates/stark-experiment/src/lib.rs`, donde `ocultacion_encendida` pone `columnas: 1`;
+`crates/stark-experiment/src/falsadores_oculta.rs`, el falsador 10 y su `const`;
+`crates/stark-experiment/Cargo.toml`, que gana `winter-verifier` como dependencia de desarrollo, y
+`Cargo.lock`, una línea; `crates/zk-ssl/src/instrumento_r3.rs`, que mide otras máscaras
+(`Mascaras`: k columnas sobre F, una sobre E), clava las de laboratorio (`R3_MEDIDO_LABORATORIO`) y
+gana un test; `crates/zk-ssl/src/instrumento_cota.rs`, cuyo test de las 23 familias mide también el
+laboratorio por geometría; los dos `Ocultacion` de los instrumentos de `zk-ssl`, con `columnas: 1`;
+`tools/canon.sh`, las filas de `zk-ssl` y de `stark-experiment`, con sus pines de 557 a 558 y de
+488 a 489 y sus crónicas; los totales y las copias de los dos pines en `PAPER.md`, `PAPER_EN.md`,
+`PRINCIPIOS.md`, `ARQUITECTURA.md` (con su marca), `CONTRIBUTING.md` (con su marca),
+`doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`;
+`spec/rfc/0009-lo-que-revela-una-prueba.md`, la D-AL; `spec/rfc/0018-el-tren-0-5.md`, la etapa E5 y
+una nota a la D-G; `BACKLOG.md`, la 133 a medias; `doc/ocultacion-hvzk.md`, las marcas §899 y el
+cierre del apartado 13; y este asiento. Ni vectores, ni ningún probador de producción, ni ningún
+AIR, ni el cable: con `columnas: 1` el probador hace las mismas extracciones de la moneda en el
+mismo orden y escribe la misma marca, y `verify` sigue leyendo la marca de producción con
+`Marca::leer` y rechazando cualquier otra. Lo escribe y lo commitea Claude, en una sesión de Claude
+Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+El número es el siguiente libre tras el §898. El canon de este commit se dice al final.
+
+**De dónde sale.** La orden del autor de hacer la 133 —que la máscara de DEEP viva en E, en un
+corte futuro, nunca en `zkssl/0.4`—, la 134 y A4. Este asiento es la 133; la 134 y A4 van después,
+cada una con su sello. Y la regla de la casa: medir antes de construir.
+
+**Lo que hace.**
+
+1. **Mide las máscaras candidatas** con el instrumento de R3 del §898, que gana `Mascaras`: k
+   columnas aleatorias sobre F, cada una con su coeficiente de DEEP sacado de la moneda de
+   desafíos, como en la prueba; y una columna aleatoria sobre E, cuyo residuo tras lo abierto es
+   V·(x − z)(x − z·g)·E[x]_{<L−q−2} y cuya imagen en D, cc·V·ℓ·v, es K entero por construcción. Las
+   k columnas se muestrean juntas, Σ_c Φ_c·u_c, con más combinaciones que rango puede haber.
+2. **Elige dos columnas sobre F** (RFC-0009 D-AL): cumplen R3 en todas las geometrías, no tocan el
+   tramo auxiliar —que winterfell sólo admite con una restricción de transición y una aserción
+   propias (`context.rs`), y una columna aleatoria no admite ninguna de las dos que no sea
+   idénticamente cero— y cuestan una columna más de 2T elementos de F por prueba.
+3. **La construye en laboratorio.** `Ocultacion::columnas`; el probador añade las columnas detrás
+   de las filas aleatorias, en el orden de siempre, así que con 1 los bytes son los de `zkssl/0.4`;
+   con 2 o más escribe la marca de laboratorio; el envoltorio lee de la marca cuántas columnas
+   quitar; `verify` rechaza la marca de laboratorio como meta desconocido, que es lo que D-S promete
+   de toda marca que no sea la suya, y `verify_laboratorio` la acepta y sólo a ella. El falsador 10
+   de `falsadores_oculta` lo mide de las dos maneras.
+4. **Clava la cota de laboratorio** en el test de las 23 familias: por geometría de producción,
+   las cifras de las dos columnas, y que R3 se cumple; y en `instrumento_r3`, el juguete con dos
+   columnas y con una sobre E.
+5. **Los textos**: la D-AL, la E5 del tren con la nota a la D-G, la 133 a medias y el documento.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release. La exploración de las máscaras
+(`explora_mascaras`, un test ignorado que después se quitó; las dieciocho medidas en 262 s), sobre
+F y con la semilla 1, lo que FRI abre sin determinar frente a lo que cubren las columnas solas y
+las columnas con los aleatorizadores:
+
+| geometría | sin determinar | dos columnas sobre F | tres | una sobre E |
+|---|---|---|---|---|
+| T = 64, 15 trozos | 168 | 164 / 168, cumple | 164 / 168 | 168 / 168 |
+| T = 256, 2 trozos | 632 | 632 / 632, cumple | 632 / 632 | 632 / 632 |
+| T = 256, 9 trozos | 632 | 632 / 632, cumple | 632 / 632 | 632 / 632 |
+| T = 512, 8 trozos | 760 | 760 / 760, cumple | 760 / 760 | 760 / 760 |
+| T = 1.024, 8 trozos | 1016 | 1016 / 1016, cumple | 1016 / 1016 | 1016 / 1016 |
+| el juguete, T = 128, 4 trozos | 424 | 420 / 424, cumple | 420 / 424 | 424 / 424 |
+
+Los tiempos por geometría, de 0,8 s (T = 64) a 37 s (T = 1.024) con dos columnas, 56 s con tres y
+34 s con la de E. El falsador 10, 1 de 1 en 0,01 s: con dos columnas, ancho 3, 512 filas, la marca
+`arqueo:oculta:lab\x40\x00\x00\x00\x02`, `Marca::leer` la rechaza como desconocida, `verify`
+rechaza sin pánico, `verify_laboratorio` acepta y rechaza el público más uno; con una columna, ancho
+2 y la marca de siempre, `verify` acepta y el laboratorio rechaza; y una marca de laboratorio con
+una columna es `MarcaError::Columnas`.
+Los tests de `zk-ssl`, en release y con `--locked`: `instrumento_r3`, 3 de 3 en 4,1 s, con el
+juguete de dos columnas en 420 de 424 solas y 424 juntas, y la columna sobre E en 424 sola; los tres
+falsadores del §898, 3 de 3; y el test de las 23 familias, 1 de 1 en 118,1 s (eran 67), con las
+cinco geometrías de laboratorio en sus cifras clavadas y R3 cumplida en todas. Los falsadores de
+la ocultación de `stark-experiment`, también en depuración, con los asertos de grados de winterfell
+encendidos: 12 de 12 en 0,6 s. Sin ningún warning.
+
+**Lo medido sobre este árbol, antes del canon**, desde la raíz y con este asiento en su sitio:
+`verificar_citas`, 0 fantasmas, 0 secciones muertas, 247 encabezados citados y 0 muertos, y el
+registro con 0 citas muertas; `check_cifras`, 26 cifras y ninguna contradice el canon;
+`check_publicadas` y `check_figures`, 0; `check_tests`, 2242 declarados y 20 instrumentos;
+`check_modulos`, 219 ficheros.
+
+**Lo que NO hace.** No enciende las dos columnas en ningún probador de producción: los 23 siguen
+con una, sus pruebas son las de `zkssl/0.4` byte a byte y el kit sigue rechazando toda marca que no
+sea la suya, la de laboratorio incluida. No decide la marca v2 del corte: la D-AL le pide un byte y
+la D-G es del autor. No es HVZK: R3 verde con dos columnas cubre lo que FRI abre; L1 (las cinco de
+T = 64, la 131) y L6 (la 134) siguen como estaban, y la promesa sigue siendo el censo hasta A4. No
+mide la construcción de laboratorio sobre una prueba real más allá del falsador 10: R3 se mide por
+geometría, con desafíos del test, como en el §898. No pone la columna sobre E: la mide y la deja
+como alternativa reversible. No toca la sal (A5).
+
+**Lo que es del autor.** La 133 como decisión del corte: las dos columnas en la marca v2 de la
+D-G (un byte), o la columna sobre E; la 134, antes o después; y el número de este asiento.
+
+**Contadores.** `zk-ssl` 557 -> 558 y `stark-experiment` 488 -> 489. TOTAL DE SELLO 2078 -> 2080 y
+CON LARGOS 2218 -> 2220, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests` 2240 -> 2242;
+`check_modulos` 219, sin cambio. `BACKLOG.md` sigue en 45 abiertas y 90 resueltas: la 133 queda a
+medias. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 703 s de reloj (de su arranque a su salida)
+y 456 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de 1,03 al
+empezar. Las 19 filas del nivel, en su pin, con 2080 tests que pasan (la suma de la columna
+«pasan»), la de `zk-ssl` en 558 pasan y 7 ignorados, 154 s, y la de `stark-experiment` en 489 y 13,
+34 s; las tres del fork, `winter-air` 64, `winter-prover` 7 y `winter-verifier` 0, en su pin; la
+puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (44 s)»; `check_tests`
+en 2242 y 20 instrumentos; `check_modulos` en 219; las once herramientas del bucle «2 ter»; la
+puerta de los vectores, en 605 ficheros y 1370 líneas de 19 manifiestos; `check_catalogo`, en 236
+textos y 302 entradas; el cable, en 27 de 27; la segunda implementación, con el núcleo en 34 de 34,
+sus pares STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, igual desde dos
+raíces, con el binario `b25bbac687e17145` y el tarball `bc94a30744ff1bc8`. El binario del kit
+cambia respecto al §898 (`451f186fcd68697f`), y se dice por qué: el kit compila el fork, y el fork
+gana `MarcaLaboratorio`, `verify_laboratorio` y el despacho factorizado; lo que el kit hace con una
+prueba no cambia —`verify` sigue leyendo la marca de producción con `Marca::leer` y rechazando
+cualquier otra—, y lo miden el cable, 27 de 27, los pares STARK, 76 de 76, y los vectores, con sus
+huellas. Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en
+los sellos anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola
+corrida: no hubo roja.

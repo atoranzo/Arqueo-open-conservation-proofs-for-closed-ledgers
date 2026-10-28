@@ -837,6 +837,41 @@ Gana producirlos en el bloque frente a llevarlos en el bloque: fail-closed (sin 
 hay commit) e imagen fiel (un vector es lo que su versión produjo). **Reversible** hacia vectores
 sembrados si D-X cambiara.
 
+### D-AL — La máscara de DEEP tiene que vivir en E: dos columnas aleatorias, en laboratorio hasta el corte
+
+**Estado: construida en laboratorio, apagada (§899).** El §898 midió que la columna aleatoria de
+D-G no enmascara lo que FRI abre del polinomio DEEP: vive en F y, en cada valor de E que FRI abre,
+mueve una sola de sus dos coordenadas; con los aleatorizadores del cociente, que aportan 80
+dimensiones en total, la condición R3 de `doc/ocultacion-hvzk.md` no se cumple en ninguna
+geometría de producción (la 133 de `BACKLOG.md`). Lo que la cumple, medido con el mismo instrumento
+en las cinco geometrías y en el juguete: dos columnas aleatorias sobre F, cada una con su
+coeficiente de DEEP en E —juntas cubren las dos coordenadas de cada punto, y con T ≥ 256 cubren
+solas todo lo que FRI abre sin determinar—, o una columna aleatoria sobre E, que deja libre
+exactamente K por construcción. Se elige la de dos columnas: no toca el tramo auxiliar, que
+winterfell sólo admite con una restricción y una aserción propias, y es un parámetro en
+`Ocultacion` (`columnas`), un bucle en el probador y una resta en el envoltorio.
+
+**Lo que hay en el árbol desde el §899.** `Ocultacion::columnas`: con 1, la construcción de
+`zkssl/0.4`, byte a byte —las mismas extracciones de la moneda, la misma marca—; con 2 o más, la de
+laboratorio, que escribe la marca de laboratorio, `arqueo:oculta:lab`, m y las columnas en un byte,
+22 bytes, y que `verify` rechaza como meta desconocido, igual que a otra versión de la marca (D-S):
+sólo `verify_laboratorio` la acepta, y ningún juez de producción lo llama. Los 23 probadores siguen
+con una columna (`ocultacion_encendida`). Un falsador en `falsadores_oculta` lo mide: con dos
+columnas, ancho + 2, la marca de laboratorio, rechazo sin pánico en `verify` y aceptación en el
+laboratorio; con una, lo de siempre, y la de producción no entra en el laboratorio. La cota de R3
+con dos columnas, clavada por geometría en cada canon (`R3_MEDIDO_LABORATORIO`).
+
+**Lo que falta, y es del corte.** Encender las dos columnas en los 23 probadores cambia los bytes
+de todas las pruebas: es del corte 0.5 (RFC-0018), nunca de `zkssl/0.4`; la marca v2 de su D-G
+tendría que llevar las columnas aleatorias, un byte más, y la de laboratorio se va entonces. Y R3
+verde no es HVZK: cubre lo que FRI abre; lo tocado por columna (L1, la 131) y lo que depende de la
+AIR (L6) siguen como estaban, y la promesa sigue siendo el censo.
+
+Gana dos columnas sobre F frente a una sobre E: pureza (ninguna restricción ni aserción de más) y
+coste (una columna más de 2T elementos de F por prueba, frente a un tramo auxiliar nuevo donde no
+lo hay). **Reversible** hacia la columna sobre E, que el instrumento mide igual, si el corte
+prefiere el tramo auxiliar.
+
 ## Compatibilidad
 
 - `zkssl/0.3` **no subió** hasta E3b-2; **desde el §538 el cable es `zkssl/0.4`**: ningún

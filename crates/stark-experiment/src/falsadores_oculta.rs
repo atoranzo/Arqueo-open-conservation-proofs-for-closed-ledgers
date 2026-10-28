@@ -25,12 +25,18 @@
 //!    de que el cociente oculto aserte, tambien en release.
 //! 9. `m_que_no_cabe_da_err` (D-AG, D-AH, 5.A-395): m >= 2T es un `Err` nombrado, no un panico;
 //!    16 filas con m = 64 era el caso de los reembolsos antes del acolchado.
+//! 10. `laboratorio_dos_columnas` (§899, la 133 de `BACKLOG.md`): con dos columnas aleatorias la
+//!     prueba lleva la marca de laboratorio y ancho + 2; `verify` la rechaza con error, sin panico,
+//!     como a cualquier meta que no es la marca de produccion, y `verify_laboratorio` la acepta;
+//!     y al reves, la de produccion no entra en el laboratorio. Con una columna, la marca y el
+//!     ancho son los de siempre: `zkssl/0.4` no cambia.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Mutex;
 
-use winter_air::{Marca, MarcaError, Oculta};
+use winter_air::{Marca, MarcaError, MarcaLaboratorio, Oculta};
 use winter_prover::{Ocultacion, ProverError};
+use winter_verifier::verify_laboratorio;
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, Hasher, MerkleTree};
 use winterfell::math::fields::f128::BaseElement as Base128;
 use winterfell::math::fields::f64::BaseElement as Base;
@@ -63,6 +69,7 @@ const OC: Ocultacion = Ocultacion {
     m: 64,
     semilla_filas: s32(0xf11a_0001),
     semilla_cociente: s32(0xc0c1_0001),
+    columnas: 1,
 };
 
 /// Las opciones de la casa para los circuitos y la foto: 32/8/0/None/8/31.
@@ -191,6 +198,16 @@ fn verificar_work(bytes: &[u8], publico: Base128) -> Result<(), String> {
     let proof = Proof::from_bytes(bytes).map_err(|e| format!("leer: {e:?}"))?;
     let acc = AcceptableOptions::OptionSet(vec![opciones()]);
     verify::<WorkAir, Blake3W, DefaultRandomCoin<Blake3W>, MerkleTree<Blake3W>>(
+        proof, publico, &acc,
+    )
+    .map_err(|e| format!("{e:?}"))
+}
+
+/// §899: verifica unos bytes como prueba de laboratorio de WorkAir.
+fn verificar_laboratorio_work(bytes: &[u8], publico: Base128) -> Result<(), String> {
+    let proof = Proof::from_bytes(bytes).map_err(|e| format!("leer: {e:?}"))?;
+    let acc = AcceptableOptions::OptionSet(vec![opciones()]);
+    verify_laboratorio::<WorkAir, Blake3W, DefaultRandomCoin<Blake3W>, MerkleTree<Blake3W>>(
         proof, publico, &acc,
     )
     .map_err(|e| format!("{e:?}"))
@@ -340,6 +357,38 @@ fn m_que_no_cabe_da_err() {
         Ok(Ok(_)) => panic!("probo con m = 64 en una traza oculta de 32 filas"),
         Err(_) => panic!("el probador entra en PANICO en vez de devolver Err (5.A-395)"),
     }
+}
+
+/// 10. §899 (la 133): la ocultacion de laboratorio, con dos columnas aleatorias.
+#[test]
+fn laboratorio_dos_columnas() {
+    let bytes = prueba_work(256, Some(Ocultacion { columnas: 2, ..OC }));
+    let proof = Proof::from_bytes(&bytes).expect("leer");
+    assert_eq!(proof.trace_info().main_trace_width(), 1 + 2, "ancho + 2");
+    assert_eq!(proof.trace_info().length(), 512, "2T");
+    assert_eq!(
+        MarcaLaboratorio::leer(proof.trace_info().meta()),
+        Ok(Some(MarcaLaboratorio { m: 64, columnas: 2 })),
+        "la marca de laboratorio, con m y las columnas"
+    );
+    assert_eq!(Marca::leer(proof.trace_info().meta()), Err(MarcaError::Desconocida));
+    rechaza_sin_panico(&bytes, resultado(256), "la prueba de laboratorio en verify");
+    verificar_laboratorio_work(&bytes, resultado(256)).expect("verify_laboratorio la acepta");
+    assert!(
+        verificar_laboratorio_work(&bytes, resultado(256) + Base128::ONE).is_err(),
+        "el laboratorio tambien rechaza un publico mas uno"
+    );
+    // la de produccion: la marca y el ancho de siempre, y no entra en el laboratorio
+    let v1 = prueba_work(256, Some(OC));
+    let proof = Proof::from_bytes(&v1).expect("leer");
+    assert_eq!(proof.trace_info().main_trace_width(), 1 + 1);
+    assert_eq!(Marca::leer(proof.trace_info().meta()), Ok(Some(Marca { m: 64 })));
+    assert!(verificar_laboratorio_work(&v1, resultado(256)).is_err(), "la de produccion no es de laboratorio");
+    verificar_work(&v1, resultado(256)).expect("y verify la acepta, como siempre");
+    // y la marca de laboratorio, byte a byte: el prefijo, m y las columnas
+    assert_eq!(MarcaLaboratorio { m: 64, columnas: 2 }.escribir(), b"arqueo:oculta:lab\x40\x00\x00\x00\x02");
+    assert_eq!(MarcaLaboratorio::leer(b"arqueo:oculta:lab\x40\x00\x00\x00\x01"), Err(MarcaError::Columnas));
+    assert_eq!(MarcaLaboratorio::leer(b"arqueo:oculta:1\x40\x00\x00\x00"), Err(MarcaError::Desconocida));
 }
 
 // EL JUGUETE DEL CENSO: UNA COLUMNA CONSTANTE Y OTRA EN EL TRAMO AUXILIAR

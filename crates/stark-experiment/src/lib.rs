@@ -95,6 +95,9 @@ pub fn ocultacion_encendida() -> winter_prover::Ocultacion {
         m: zk_ssl_air::M_OCULTACION,
         semilla_filas: zk_ssl_air::sal::semilla(),
         semilla_cociente: zk_ssl_air::sal::semilla(),
+        // §899: una columna aleatoria, la construccion de zkssl/0.4; la de laboratorio (la 133)
+        // no la enciende ningun probador de produccion hasta el corte 0.5
+        columnas: 1,
     }
 }
 pub mod circuit_credit_climb;

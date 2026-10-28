@@ -128,45 +128,7 @@ where
             pub_inputs,
             proof.options().clone(),
         );
-        return match air.options().field_extension() {
-            FieldExtension::None => {
-                let public_coin = RandCoin::new(&public_coin_seed);
-                let channel = VerifierChannel::new(&air, proof)?;
-                perform_verification::<::air::Oculta<AIR>, AIR::BaseField, HashFn, RandCoin, VC>(
-                    air,
-                    channel,
-                    public_coin,
-                )
-            },
-            FieldExtension::Quadratic => {
-                if !<QuadExtension<AIR::BaseField>>::is_supported() {
-                    return Err(VerifierError::UnsupportedFieldExtension(2));
-                }
-                let public_coin = RandCoin::new(&public_coin_seed);
-                let channel = VerifierChannel::new(&air, proof)?;
-                perform_verification::<
-                    ::air::Oculta<AIR>,
-                    QuadExtension<AIR::BaseField>,
-                    HashFn,
-                    RandCoin,
-                    VC,
-                >(air, channel, public_coin)
-            },
-            FieldExtension::Cubic => {
-                if !<CubeExtension<AIR::BaseField>>::is_supported() {
-                    return Err(VerifierError::UnsupportedFieldExtension(3));
-                }
-                let public_coin = RandCoin::new(&public_coin_seed);
-                let channel = VerifierChannel::new(&air, proof)?;
-                perform_verification::<
-                    ::air::Oculta<AIR>,
-                    CubeExtension<AIR::BaseField>,
-                    HashFn,
-                    RandCoin,
-                    VC,
-                >(air, channel, public_coin)
-            },
-        };
+        return verificar_oculta::<AIR, HashFn, RandCoin, VC>(air, proof, public_coin_seed);
     }
 
     // create AIR instance for the computation specified in the proof
@@ -207,6 +169,104 @@ where
                 channel,
                 public_coin,
             )
+        },
+    }
+}
+
+/// ARQUEO (§899, la 133 de `BACKLOG.md`): el verificador de LABORATORIO. Acepta solo la marca de
+/// laboratorio -`arqueo:oculta:lab`, m y dos o mas columnas aleatorias-, que `verify` rechaza como
+/// meta desconocido; la marca de produccion y el meta vacio son error aqui, como la de laboratorio
+/// lo es alli. Ningun juez de produccion lo llama: el kit y la capa siguen en `verify`, y una prueba
+/// de laboratorio no verifica en `zkssl/0.4`. Lo demas es lo mismo: el envoltorio `Oculta<AIR>`,
+/// que lee de la marca cuantas columnas quitar, y `perform_verification`.
+pub fn verify_laboratorio<AIR, HashFn, RandCoin, VC>(
+    proof: Proof,
+    pub_inputs: AIR::PublicInputs,
+    acceptable_options: &AcceptableOptions,
+) -> Result<(), VerifierError>
+where
+    AIR: Air,
+    HashFn: ElementHasher<BaseField = AIR::BaseField>,
+    RandCoin: RandomCoin<BaseField = AIR::BaseField, Hasher = HashFn>,
+    VC: VectorCommitment<HashFn>,
+{
+    acceptable_options.validate::<HashFn>(&proof)?;
+    let mut public_coin_seed = proof.context.to_elements();
+    public_coin_seed.append(&mut pub_inputs.to_elements());
+    let marca = match ::air::MarcaLaboratorio::leer(proof.trace_info().meta()) {
+        Ok(Some(marca)) => marca,
+        _ => {
+            return Err(VerifierError::ProofDeserializationError(alloc::string::String::from(
+                "meta de traza que no es la marca de laboratorio",
+            )))
+        },
+    };
+    if proof.trace_info().length() < 16
+        || proof.trace_info().main_trace_width() < marca.columnas + 1
+        || marca.m >= proof.trace_info().length()
+    {
+        return Err(VerifierError::ProofDeserializationError(alloc::string::String::from(
+            "traza oculta de laboratorio mal formada",
+        )));
+    }
+    let air = ::air::Oculta::<AIR>::new(
+        proof.trace_info().clone(),
+        pub_inputs,
+        proof.options().clone(),
+    );
+    verificar_oculta::<AIR, HashFn, RandCoin, VC>(air, proof, public_coin_seed)
+}
+
+/// El despacho del envoltorio por la extension del campo: lo que `verify` hacia en su sitio y,
+/// desde el §899, comparte con `verify_laboratorio`.
+fn verificar_oculta<AIR, HashFn, RandCoin, VC>(
+    air: ::air::Oculta<AIR>,
+    proof: Proof,
+    public_coin_seed: Vec<AIR::BaseField>,
+) -> Result<(), VerifierError>
+where
+    AIR: Air,
+    HashFn: ElementHasher<BaseField = AIR::BaseField>,
+    RandCoin: RandomCoin<BaseField = AIR::BaseField, Hasher = HashFn>,
+    VC: VectorCommitment<HashFn>,
+{
+    match air.options().field_extension() {
+        FieldExtension::None => {
+            let public_coin = RandCoin::new(&public_coin_seed);
+            let channel = VerifierChannel::new(&air, proof)?;
+            perform_verification::<::air::Oculta<AIR>, AIR::BaseField, HashFn, RandCoin, VC>(
+                air,
+                channel,
+                public_coin,
+            )
+        },
+        FieldExtension::Quadratic => {
+            if !<QuadExtension<AIR::BaseField>>::is_supported() {
+                return Err(VerifierError::UnsupportedFieldExtension(2));
+            }
+            let public_coin = RandCoin::new(&public_coin_seed);
+            let channel = VerifierChannel::new(&air, proof)?;
+            perform_verification::<
+                ::air::Oculta<AIR>,
+                QuadExtension<AIR::BaseField>,
+                HashFn,
+                RandCoin,
+                VC,
+            >(air, channel, public_coin)
+        },
+        FieldExtension::Cubic => {
+            if !<CubeExtension<AIR::BaseField>>::is_supported() {
+                return Err(VerifierError::UnsupportedFieldExtension(3));
+            }
+            let public_coin = RandCoin::new(&public_coin_seed);
+            let channel = VerifierChannel::new(&air, proof)?;
+            perform_verification::<
+                ::air::Oculta<AIR>,
+                CubeExtension<AIR::BaseField>,
+                HashFn,
+                RandCoin,
+                VC,
+            >(air, channel, public_coin)
         },
     }
 }

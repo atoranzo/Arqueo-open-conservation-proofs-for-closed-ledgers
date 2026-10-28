@@ -1503,6 +1503,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   el mismo instrumento. **Qué la cierra**: la decisión del autor y el sello del corte que la lleve,
   con R3 en verde en las cinco geometrías. Hasta entonces, A4 no puede enunciar HVZK para ninguna
   familia con el argumento de A2, y la promesa sigue siendo el censo.
+  ✅ a medias (§899): medida y construida en laboratorio. Medido con el instrumento de R3: con dos
+  columnas aleatorias sobre F, cada una con su coeficiente de DEEP, R3 se cumple en las cinco
+  geometrías y en el juguete (168, 632, 632, 760, 1016 y 424: todo lo que FRI abre sin
+  determinar), con tres también, y una columna sobre E deja libre exactamente K; elegidas las dos
+  columnas (RFC-0009 D-AL). Construida: `Ocultacion::columnas`, la marca de laboratorio
+  `arqueo:oculta:lab` y `verify_laboratorio`, con su falsador; los 23 probadores siguen con una
+  columna y `verify` rechaza la de laboratorio. QUEDA el corte: encenderla en los 23 con las
+  columnas en la marca v2 (RFC-0018 E5), y la decisión de ese byte en la marca v2, del autor: sigue
+  abierta.
 
 - [ ] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
   las restricciones, que el instrumento de R3 no cuenta (§898).** Lo puso la revisión escéptica del

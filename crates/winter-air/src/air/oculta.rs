@@ -57,8 +57,12 @@ impl<A: Air> Air for Oculta<A> {
     fn new(info: TraceInfo, pub_inputs: Self::PublicInputs, options: ProofOptions) -> Self {
         let l = info.length();
         let t = l / 2;
+        // §899 (la 133): las columnas aleatorias las dice la marca: una la de produccion, mas la
+        // de laboratorio; sin marca no hay envoltorio, y quien llama ya lo comprobo
+        let columnas = crate::Marca::columnas_de(info.meta());
+        assert!(columnas >= 1, "Oculta: el meta de la traza no es una marca");
         let info_interna = TraceInfo::new_multi_segment(
-            info.main_trace_width() - 1,
+            info.main_trace_width() - columnas,
             info.aux_segment_width(),
             info.get_num_aux_segment_rand_elements(),
             t,

@@ -36,3 +36,5 @@ probador-v1 = []
 [dev-dependencies]
 winter-air = "=0.13.1"
 winter-prover = "=0.13.1"
+# §899 (la 133): `verify_laboratorio`, que el paraguas `winterfell` no reexporta; solo tests.
+winter-verifier = "=0.13.1"
