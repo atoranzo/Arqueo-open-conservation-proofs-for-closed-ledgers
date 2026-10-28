@@ -409,11 +409,11 @@ sería faltar al principio de transparencia.
 - Cinco paradigmas implementados y medidos.
 - Capa de liquidación con ciclo monetario completo, persistencia,
   auditoría y verificación de integridad.
-- **2083 tests en la compuerta de sello** —561 de la capa, 489 de
-  circuitos, **240 del nodo**, 34 de la ceremonia, 17 de liquidación, **220
+- **2092 tests en la compuerta de sello** —561 de la capa, 489 de
+  circuitos, **244 del nodo**, 34 de la ceremonia, 17 de liquidación, **225
   del verificador independiente**, **175 del testigo**, y los del SDK, el
   cable, el puente ISO, el árbol del medio y el fork de winterfell—,
-  **2223 contando los pines de `--largo` y `--completo`**, y **1364 declarados** (⚠️ §865: del §497; hoy los cuenta, con otra regla, `tools/check_tests.py`).
+  **2232 contando los pines de `--largo` y `--completo`**, y **1364 declarados** (⚠️ §865: del §497; hoy los cuenta, con otra regla, `tools/check_tests.py`).
   0 fallos y 21 warnings **pinchados** (no crecen). Cada propiedad de
   seguridad con test discriminante.
 

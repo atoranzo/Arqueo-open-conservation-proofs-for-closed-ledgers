@@ -73784,6 +73784,614 @@ corre `--sello` sobre el commit que lo lleva, después de commitearlo y tras toc
 registro, y el resultado de un canon que incluye el asiento no cabe en él. Si no sale VERDE, este
 commit se rehace.
 
+## §862 — RFC-0020 E3, el despacho por esquema: el verificador elige el verificador por el esquema, con un conjunto aceptado y otro emitido y el implícito para las cabezas y las cofirmas v1 a v6, y rechaza con su número, antes de leer la clave, el esquema que el registro no asigna y el que no se acepta; el acta juzga la firma de la clave que se va con el esquema de la previa, y la segunda implementación pasa por el despacho; ni un byte del cable ni un veredicto del mando cambian
+
+El commit que lleva este asiento, sobre el §726. Construye la E3 del RFC-0020, el despacho por
+esquema, que su tabla de etapas daba «sin construir», y avanza con ella la 87 del `BACKLOG.md` sin
+cerrarla. Toca `crates/zk-ssl-verify` (`src/lib.rs` y `src/actas.rs`); la segunda implementación
+(`tools/segunda/nucleo.py`, `juez_nucleo.py`, `juez_cabezas.py`, `cable.py` y su `README.md`);
+`spec/NUCLEO.md`; el RFC-0020 y el RFC-0021; una línea de `spec/README.md` y otra de `spec/RPC.md`;
+la sección 0 de `doc/KIT.md` y de `doc/KIT_EN.md`; la 87 del `BACKLOG.md`; el pin y la crónica de la
+fila del kit en `tools/canon.sh`; los totales de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y este
+asiento. Diecinueve ficheros fuera de él, ninguno nuevo. Ni un vector, ni un KAT, ni una huella, ni
+el `Cargo.lock`, ni la versión del crate, que sigue en 0.4.4. Es el §862, libre en el rango del
+autor, el §860-§889. El §863, el §864 y el §865 dijeron que un sello de la E3 del RFC-0020 no iba en
+su cadena, porque cambia la biblioteca del kit y quedaba para después de la 0.4.4: la 0.4.4 está
+publicada y registrada (§725, §726), y llega ahora. No se porta del borrador de aquella pila, que
+iba sobre el §816 y no está en este árbol (el §864 contaba allí el kit con 196 tests): se escribe
+sobre `213b0b0`, donde el kit pasa de 220 a 225, y cada cita de este asiento se comprobó en él.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+**Quién lo decide.** Del autor son el RFC y sus siete decisiones, que tomó en el §799 —entre ellas,
+la séptima: la E2 y la E3 antes del corte, la E4 en él—, y las de este sello: que la E3 se haga
+ahora, el 28-10-2026, tras la 0.4.4, sobre `213b0b0`; que avance la 87 y no la cierre, porque la
+cierra la E4, en el corte `zkssl/0.5`; que la versión del kit en el árbol siga en la 0.4.4; y que la
+sección 0 de los dos manuales diga, con su marca, que la 0.4.4 publicada no lleva el despacho y lo
+que gana la biblioteca del árbol, sin que cambie ningún byte del cable ni ningún veredicto de S1 a
+S6 ni del binario, y sin que cambien las cifras de la segunda implementación. Las de detalle las
+delegó en la sesión. Son de la sesión, declaradas como tales, y se pueden revisar:
+
+- los nombres: `Esquema::ACEPTADOS`, `Esquema::EMITIDOS` y `Esquema::IMPLICITO`;
+  `VerificaError::EsquemaNoRegistrado` y `VerificaError::EsquemaNoAceptado`; los privados
+  `de_la_version`, `aceptado_en`, `aceptado` y `recuperar`; `entrada_aceptada`, `conjuntos_validos`
+  y `entrada_de_la_clave` en la segunda; y los de los cinco tests;
+- el texto de `EsquemaNoAceptado`, «esquema {n:#x} ({nombre}): esta en el registro de esquemas
+  (spec/NUCLEO.md, seccion 6) y este verificador no lo acepta; acepta …», que nombra el conjunto
+  aceptado de producción y no la lista con que se llamó; y que el de un número fuera del registro
+  sea el texto del registro, el de `EsquemaNoRegistrado` del §800;
+- que el implícito valga para todo byte de versión hasta la E4: así la v7 sigue cayendo por
+  `PreambuloDistinto` y una versión fuera del conjunto, con el error de siempre;
+- que `de_la_version` dé el número y no un `Esquema`: con una sola variante, un `Esquema` no puede
+  ser otro, y el falsador de su test no se podría escribir;
+- que `firma_sobre`, en el acta, reciba el acta cuya clave firma y no el número suelto: la clave y
+  su esquema salen así de la misma acta, y no se pueden cruzar;
+- que las tres constantes, las tres funciones privadas y `recuperar` vayan en `lib.rs` junto a lo
+  que acompañan —`TODOS`, el `impl Esquema` y `clave_desde_bytes`— y no en un segundo `impl` al
+  final del fichero: corren las líneas de debajo de la `:304`, cuyas citas vivas están todas
+  fechadas o marcadas (abajo); y que la nota de la 87 del `BACKLOG.md` vaya, como las del §790, el
+  §799 y el §800, en líneas propias al final de su entrada;
+- que `tools/segunda/verificador.py` no pase por el despacho, y que `juez_cabezas.py` y `cable.py`
+  sí, con las mismas cifras; y que `juez_nucleo.py` gane la regla de los dos conjuntos, con su
+  falsador;
+- que el conjunto aceptado no entre en la lista de `spec/RPC.md` §«Versionado y compatibilidad» ni
+  en la R3 de `tools/check_superficie.py` (abajo, «Lo que NO hace»);
+- que la divergencia de la segunda implementación con las claves XMSS^MT de otros OID se declare y
+  no se arregle aquí (abajo);
+- y que las citas rancias ajenas no se toquen, salvo las que este sello corre: la de
+  `spec/RPC.md:308-309` (abajo).
+
+**Lo que hace.**
+
+1. **El despacho, en `crates/zk-ssl-verify/src/lib.rs`.** `impl Esquema` gana, detrás de `TODOS`,
+   tres constantes públicas: `ACEPTADOS`, el productor del conjunto que este verificador acepta, con
+   el molde de `COFIRMA_V_MAX` (la regla 2 de la D-E del RFC-0020); `EMITIDOS`, lo que firman el
+   nodo y el testigo, con el de `COFIRMA_VERSION`, que nadie lee en producción hasta la E4; e
+   `IMPLICITO`, `0x1_0000_0005`, el esquema de una cabeza o una cofirma cuyo preámbulo no lo lleva
+   (la D-B). Las tres valen hoy lo mismo, porque el registro tiene una entrada. Y tres funciones
+   privadas, sin `pub(crate)`, que el censo de `spec/NUCLEO.md` no cuenta: `de_la_version`, que da
+   el número del implícito para todo byte de versión; `aceptado_en`, que mira el registro y después
+   la lista que se le pasa; y `aceptado`, sobre `ACEPTADOS`. Detrás de `clave_desde_bytes`,
+   `recuperar(esquema, clave, firma)`, privada: primero `aceptado(esquema)?`, y después, en el brazo
+   de su esquema, lo que `verificar_cabeza` y `verificar_cofirma` hacían con `Conjunto` fijado —la
+   clave por `clave_desde_bytes`, la firma de RFC 8391 y `verify()`—, con un brazo por entrada del
+   registro: el compilador marca el `match` el día que el registro gane otra. Las dos funciones
+   llaman a `recuperar` con `de_la_version(c.version_formato)`, y lo demás no cambia, ni el orden de
+   sus errores. `VerificaError` gana dos variantes al final, sin `#[non_exhaustive]`, como las ocho
+   que el §722 dio a `RotacionError` dentro de la 0.4.x: `EsquemaNoRegistrado(EsquemaNoRegistrado)`
+   y `EsquemaNoAceptado(Esquema)`, con sus textos. Llevan marca la doc de `Esquema`, que decía
+   «Apagado. Nadie lo lee todavia», y la de `preambulo_v7`. En los docs nuevos no hay ningún bloque
+   de código: el pin cuenta los doctests.
+2. **El acta, en `src/actas.rs`.** `firma_sobre` recibe el acta cuya clave firma —su clave y su
+   esquema llegan juntos— y verifica por `recuperar`. `verificar_acta` mira primero si el esquema
+   del acta se acepta, con `Esquema::aceptado` en vez de compararlo con la constante, y lo rechaza
+   con el mismo `EsquemaDesconocido` y el mismo texto, que pina
+   `spec/vectors/rotacion/MANIFIESTO.txt:43`; las reglas siguen antes que las firmas; la firma de la
+   clave que entra se verifica con el esquema del acta, y la de la que se va, con el de la previa
+   (la D-D), que hasta aquí no se miraba. La constante `ESQUEMA_XMSSMT_SHA2_40_8_256` se queda, con
+   su marca: la escriben el nodo y el testigo en sus actas. Los `use` de `Signature`, `Conjunto` y
+   `clave_desde_bytes` salen del módulo, y sus tests ganan el de `crate::Conjunto`, que les llegaba
+   por `super::*`.
+3. **Cinco tests, 220 -> 225.** En `lib.rs`, en un módulo nuevo al final del fichero,
+   `atado_de_los_dos_conjuntos_de_esquemas`:
+   `el_nodo_no_emite_un_esquema_que_el_verificador_no_acepte`, que ata lo emitido a lo aceptado y lo
+   aceptado al registro, sin conjuntos vacíos ni repetidos;
+   `el_esquema_implicito_es_el_del_acta_y_el_de_todo_preambulo_sin_esquema`, que lo fija en
+   `0x1_0000_0005`, en la constante del acta y en los dos conjuntos, y que `de_la_version` lo da
+   para los 256 bytes;
+   `un_esquema_fuera_del_registro_se_rechaza_con_su_numero_antes_de_leer_la_clave`, con 0, 5,
+   `0x0001_0005`, `0x2_0000_0001` y `u64::MAX` y una clave y una firma vacías, que dan
+   `EsquemaNoRegistrado` con su número y el texto del registro y no `ClaveIlegible`, que sí da el
+   implícito; y `un_esquema_registrado_que_no_se_acepta_se_rechaza_con_su_numero`, donde
+   `aceptado_en` con una lista vacía da `EsquemaNoAceptado` con su texto pinado, y lo que el
+   registro no asigna no llega a la lista. En `actas.rs`, al final de sus tests, sobre la escena y
+   sin firmar nada nuevo, `la_firma_de_la_que_se_va_se_juzga_con_el_esquema_de_la_previa`: una
+   previa con `0x2_0000_0001` y la firma de la vieja da `FirmaDeLaAnterior(EsquemaNoRegistrado)`;
+   una firma de la vieja vacía, que con la previa de la escena da `FirmaDeLaAnterior(NoVerifica)`,
+   da con la de `0x2_0000_0001` el mismo rechazo por el esquema; sin la firma de la vieja, `Ok`; y
+   la que entra con `0x1_0000_0006` da `EsquemaDesconocido` con el texto del vector.
+4. **La segunda implementación.** `nucleo.py` gana, detrás de `registro_valido`,
+   `ESQUEMA_IMPLICITO`, `ESQUEMAS_ACEPTADOS` y `ESQUEMAS_EMITIDOS`; `entrada_aceptada`, que da la
+   entrada de un esquema aceptado o un `ValueError` con los dos textos del kit, el del registro
+   antes que el del conjunto; y `conjuntos_validos`, la regla del atado. `juez_nucleo.py` se la pasa
+   a sus conjuntos con el KAT del registro, con un falsador: un conjunto aceptado vacío tiene que
+   caer. En `juez_cabezas.py`, `partir`, en su sitio, toma el largo de la firma de la entrada y no
+   del OID; `entrada_de_la_clave`, nueva detrás de él, elige la entrada y exige una clave de su
+   escritura, el largo y el prefijo que la entrada declara; y `juzgar_cabeza`, `juzgar_cofirma` y el
+   falsador pasan por ella con el implícito antes de leer la clave. `cable.py` pasa por el despacho
+   en un paso «6 bis», antes del ancla de la clave, y le da a `partir` la entrada; sus textos no
+   cambian, y sigue anclando la clave por el OID de la casa y midiendo con ese OID la firma y su
+   índice, sin cotejar la clave con la entrada. El `README.md` de la segunda gana un párrafo con las
+   cifras. `verificador.py` no se toca.
+5. **Los documentos.** En el RFC-0020, con sus marcas: la línea de estado —la E3, construida en el
+   §862; sigue PROPUESTO—, la lista de asientos, la fila E3 de la tabla —«**construida (§862)**», y
+   una marca en «nada cambia de veredicto» que dice lo que cambia en la biblioteca—, el hecho 1 —con
+   lo que `cable.py` sigue leyendo del OID—, la regla 6 de la D-E —el acta conserva su texto, porque
+   lo pina un vector publicado: cambiarlo sería la R1 del RFC-0021, y su R6 b lo mudaría—, «Lo que
+   se descarta», y una nota al final de la Motivación que fecha sus citas por línea (abajo). En el
+   RFC-0021, la lista de asientos y la R2, con su marca. En `spec/NUCLEO.md`, las tres filas del
+   censo, NÚCLEO de la familia FIRMA, en la `:106`, la `:114` y la `:119`, por su orden en la
+   familia y todas detrás de la `:93`, y los totales; marcas en la regla de extensión, en la familia
+   FIRMA de la sección 5 y en las dos frases de la sección 6 que decían que el despacho era la E3; y
+   su historia. En `spec/README.md`, «E3 built (§862)», con su marca. En la sección 0 de los dos
+   manuales, un párrafo nuevo antes de «## 1.», sin la frase del contrato del mando que lee la R5 de
+   `check_superficie`: el árbol lleva la E3 y ninguna release la lleva, lo que gana la biblioteca,
+   que su versión sigue en 0.4.4 y su API queda fuera de la promesa, que el mando no cambia un byte
+   del cable, un veredicto ni un texto, y que el binario del árbol ya no es el de la release. Y en
+   la 87 del `BACKLOG.md`, una nota: la avanza, y sigue abierta.
+
+**La superficie.** De S1 a S6 (la D-A del RFC-0021) no cambia ningún byte ni ningún veredicto: S1 a
+S3 no se tocan —ni el cable, ni las pruebas, ni lo que se firma, ni sus KAT—, y S4 a S6 se midieron
+(abajo). Cambia la biblioteca, que la misma D-A deja fuera de la promesa, en su decisión 2: tres
+constantes, dos variantes y un rechazo. Con una previa de un esquema que el registro no asigna y la
+firma de la clave que se va, `verificar_acta` da, si llega a juzgarla,
+`FirmaDeLaAnterior(EsquemaNoRegistrado)`, antes de leer la clave de la previa: lo que daba `Ok` pasa
+a rojo, y lo que ya caía —por `IndiceDeLaAnterior` o por otra causa de `FirmaDeLaAnterior`, como
+`NoVerifica` o `FirmaIlegible`— cae por esa, con otro texto. Por la SemVer de Cargo, una variante
+nueva en un `enum` público exhaustivo es un cambio incompatible; el crate no se publica en
+crates.io, y su release es el tarball del binario (S6). Fuera de la biblioteca nadie hace `match`
+sobre `VerificaError`: el testigo lo mira con un `if let` (`crates/zk-ssl-cli/src/witness.rs:2600`),
+medido con `git grep` de `VerificaError::` y de `ActaError::` fuera de los dos ficheros. El binario
+del árbol sí cambia —ya no es el de la release, aunque lleve su número—, y lo dicen los manuales.
+
+**Medido**, en la máquina de la sesión, de 4 CPU y con `rustc` 1.97.0, cada `cargo` con `--locked` y
+`nice -n 10` y otro `cargo` de otra tarea corriendo a la vez en otro árbol, sobre este árbol: lo de
+`cargo` y lo de la segunda, antes de escribir este asiento; las herramientas, con él en su sitio:
+
+- `cargo test -p zk-ssl-verify --release`: 225 que pasan —137 de la biblioteca, 87 del binario y el
+  doctest `no_run`—, 0 ignorados y 0 avisos. Con el perfil `aserciones`, el del «1 bis», los mismos
+  225 y 0 avisos. `cargo test -p zk-ssl-cli -p zk-ssl-node --release --no-run` compila con 0 avisos:
+  los dos dependen del kit, y sus tests no se corrieron aquí.
+- El binario del árbol, con `cargo build --release -p zk-ssl-verify` dos veces, sale las dos con la
+  misma huella, `48a47a67bbad3890`; el del mismo árbol sin este sello, el de `git archive 213b0b0`
+  compilado igual en la misma máquina, con `61faa27c8693cd24`. Ninguno es el de la release, que se
+  produjo en la del autor. Con `tools/conformidad.sh` sobre los doce manifiestos de `FAMILIAS`, el
+  del árbol da 515 de 515 entradas (94, 20, 17, 88, 39, 13, 28, 11, 86, 44, 27 y 48). Y los dos,
+  sobre cada fichero que nombra una de esas 515 líneas, llamados como los llama el arnés —desde la
+  raíz, con la ruta del manifiesto y la entrada estándar vacía—: 500 entradas, los 499 `.json` y
+  `paquete/no-existe.json`, y las 500 con el mismo código de salida, la misma salida estándar y el
+  mismo error, byte a byte. Antes de cada compilación se tocaron los `.rs` del crate: `cargo` decide
+  por la fecha, y el artefacto se llama igual desde cualquier copia del árbol
+  (`zk_ssl_verify-e218fc558824b696`), así que uno compilado antes desde otras fuentes, más nuevo que
+  estas, pasaría por fresco. La primera versión de este asiento daba una huella, `431b1d43c7657b8d`,
+  que no salía de las fuentes que medía, sino de un binario así; la del commit de aquella versión
+  era `1eff69137bc8f840`, y la de este árbol, con los cambios de su revisión, es la de arriba.
+- `rustfmt --edition 2021 --check` sobre una copia de `src/`: lo nuevo no añade ninguna diferencia,
+  y quedan las de antes, 56 en `lib.rs` y 1 en `actas.rs`, como en `213b0b0`. El árbol no pasa el
+  `cargo fmt --all -- --check` que pide `CONTRIBUTING.md`, ni lo pasaba, y el canon no lo corre.
+- La segunda, con Python: `juez_cabezas.py`, 630 de 685 cabezas, 15 de 20 cofirmas, 512 ficheros, 60
+  con alguna que no verifica y 0 positivos, antes y después, en 38 y 39 s. La única línea que cambia
+  es el motivo de `conflicto/rechazo-conf-oid-alterno.json`, que decía «OID 0x00010005 no es un
+  XMSS^MT de RFC 8391» y ahora dice que la clave, que abre con `00010005`, no es de la escritura de
+  su esquema; su manifiesto no pina ese texto. `cable.py` con `tools/conformidad.sh` sobre el
+  manifiesto del cable, 27 de 27, con las mismas líneas; `juez_nucleo.py`, 34 de 34;
+  `juez_cadena.py`, que importa `cable.py`, 30 de 30 cadenas; y `verificador.py`, que no se toca y
+  lee el `nucleo.py` nuevo, con el arnés sobre las seis familias que el canon le da, 250 de 250
+  entradas. Los ficheros de Python no cambian con la revisión, y `juez_cabezas.py`, `cable.py` y
+  `juez_nucleo.py` se volvieron a correr después, con las mismas cifras.
+- Las herramientas, desde la raíz y con este asiento en su sitio: `check_cifras`, 26 cifras y 22
+  pines; `check_tests`, 2235 declarados; `check_nucleo`, 120 elementos de verify y 64 de hash, 183
+  filas; `check_catalogo`, 236 textos del kit y 302 entradas de §5; `check_superficie`, 29
+  comparaciones y 0 novedades; `check_modulos`, 216; `check_vectores`, 605 vectores y 1370 líneas de
+  19 manifiestos, ninguno movido; `verificar_citas`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `check_dominios`, `check_publicadas`, `check_techo` y `check_curvas`.
+  Todas salen con 0, y `git diff --check`, limpio.
+
+**Deducido**, de leer el código y sin medirlo: que el mando y el nodo no alcanzan lo que cambia en
+la biblioteca. El mando juzga las actas por `verificar_cadena` —también `juzgar_continuidad` y
+`juzgar_historia`, por `juzgar_rotacion`—, que da a cada acta como previa la anterior, ya juzgada
+con su esquema; el testigo, por `juzgar_rotacion`; y el nodo llama a `verificar_acta` al firmar un
+acta (`crates/zk-ssl-node/src/firma_cabeza.rs:278`) con una previa de su cadena, que juzga antes con
+`verificar_cadena` (`crates/zk-ssl-node/src/main.rs:808`). Y que el mando no alcanza las dos
+variantes nuevas: le llega siempre el esquema implícito, que se acepta, y el texto de
+`EsquemaDesconocido` no cambia. Las 500 salidas iguales de arriba lo sostienen sobre los vectores
+publicados, no sobre cualquier sobre que se pueda escribir.
+
+**Los falsadores.** Cada test nuevo cae con su mutante, aplicado a mano en la copia de trabajo, con
+el test corrido solo (`cargo test -p zk-ssl-verify --release --locked --lib <nombre> -- --exact`) y
+deshecho después, con el `sha256sum` de `lib.rs` y `actas.rs` igual al de antes:
+
+- `ACEPTADOS` vacío: cae `el_nodo_no_emite_un_esquema_que_el_verificador_no_acepte`, con «el nodo
+  emite 0x100000005 y este verificador no lo acepta».
+- `de_la_version(7)` da `0x1_0000_0006`: cae
+  `el_esquema_implicito_es_el_del_acta_y_el_de_todo_preambulo_sin_esquema` en la v7, con 4294967302
+  frente a 4294967301; y con el mismo mutante cae también la guarda del §800,
+  `la_entrada_de_hoy_es_lo_que_xmss_escribe_y_el_v7_no_lo_acepta_nadie`, que da
+  `EsquemaNoRegistrado(0x100000006)` en vez de `PreambuloDistinto`.
+- `recuperar` lee la clave antes que el esquema: cae
+  `un_esquema_fuera_del_registro_se_rechaza_con_su_numero_antes_de_leer_la_clave`, con
+  `ClaveIlegible("0 bytes: no caben ni los 4 del OID")` en vez de `EsquemaNoRegistrado(0)`.
+- `aceptado_en` no mira la lista: cae
+  `un_esquema_registrado_que_no_se_acepta_se_rechaza_con_su_numero`, con «fuera del conjunto».
+- la firma de la que se va, con el esquema del acta que entra (un acta con la clave de la previa y
+  el esquema de la nueva): cae `la_firma_de_la_que_se_va_se_juzga_con_el_esquema_de_la_previa`, con
+  `Ok(())` en vez de `FirmaDeLaAnterior(EsquemaNoRegistrado(0x200000001))`.
+- la que entra, con el esquema de la previa: cae el mismo test, con
+  `Firma(EsquemaNoRegistrado(0x200000001))` en vez de `FirmaDeLaAnterior(…)`.
+- `firma_sobre` lee el índice de la firma antes que su esquema: cae el mismo test en la firma vacía
+  de la vieja, con `FirmaDeLaAnterior(FirmaSinIndice { bytes: 0, esperado: 5 })`.
+- En la segunda, con `ESQUEMAS_ACEPTADOS` vacío, `juez_cabezas.py` da 0 de 685 cabezas y 73
+  positivos rotos, y sale con 1; `cable.py`, 17 de 27; y `juez_nucleo.py`, ROJO en
+  `registro_de_esquemas`, 33 de 34: los tres pasan por el despacho. Con `conjuntos_validos` ciega,
+  `juez_nucleo.py` da ROJO por su falsador. Deshechos los dos, con el `sha256sum` de los cuatro
+  ficheros igual al de antes.
+
+**Contadores.** La fila `zk-ssl-verify` de `tools/canon.sh`, 220 -> 225, con su crónica al final de
+la fila. El TOTAL DE SELLO, 2068 -> 2073, y CON LARGOS, 2208 -> 2213, en `PAPER.md`, `PAPER_EN.md` y
+`PRINCIPIOS.md`, y en el desglose de `PRINCIPIOS.md` el verificador independiente, 220 -> 225.
+`check_tests`, 2230 -> 2235. `check_nucleo`, de 117 a 120 elementos de verify, NÚCLEO de 143 a 146 y
+de 180 a 183 filas. `check_catalogo`: las siete filas `opaco` de `Display:VerificaError` pasan de 7
+textos a 9, y su línea final no cambia. No se mueven: los vectores, los 34 KAT, `check_modulos`,
+`check_superficie`, los pines del nodo y del testigo, ni las cifras de la segunda. El `BACKLOG.md`
+sigue en 40 abiertas y 90 resueltas, contadas con `grep -c` de las casillas a principio de línea,
+como su línea «Estado», que no cambia: la 87 sigue abierta.
+
+**Las citas por línea que se mueven**, medidas con `git diff -U0` frente a `213b0b0` y cruzadas con
+cada `fichero:N` del árbol fuera de este registro:
+
+- `crates/zk-ssl-verify/src/lib.rs`, de 2279 a 2518 líneas: las inserciones empiezan detrás de la
+  `:304`, y los tests nuevos van al final. Por debajo de la `:304` hay una cita viva sin fecha, la
+  de la R2 del RFC-0021 al molde de `COFIRMA_V_MAX` (`lib.rs:308-314`), que ya no caía en su sitio
+  en `213b0b0`, donde el molde estaba en la `:422-428`; lleva su marca, con la `:465-471` de hoy.
+  Las demás que caen por debajo son medida fechada: las 23 del RFC-0020, que su cabecera da en
+  `8c02941` y que ahora una nota fecha; las del RFC-0005 y del RFC-0006, que fechó el §890; la de
+  `doc/blueprint-v2.md`, que dice su commit; y las de `doc/ecst/VERIFICACION.md` y
+  `doc/ecst/borrador/`, de su árbol. Las de `doc/ecst/ECST.md:769` y `ECST_EN.md:776` (`:166`) y las
+  otras tres del RFC-0021 —la del hecho 3 (`:165-170`) y las dos de sus tablas (`:181-210`)— quedan
+  por encima y no se mueven.
+- `crates/zk-ssl-verify/src/actas.rs`, de 1699 a 1757: sale la `:18`, el `use` de `Signature`, y la
+  `:19-41` sube una, con el `use` de `crate` de la `:25` cambiado; la marca de la constante, una
+  línea en la `:41`, devuelve lo de debajo a su sitio. Desde la `:42` hasta la `:879` cada línea
+  sigue en su número: `firma_sobre` cambia sus siete primeras líneas, la `:176-182`, por siete, y la
+  `:202`, la `:228` y la `:236` cambian una por una. El `use` de los tests entra en la `:880` y
+  corre una la `:880-1698`, y el test va al final. En la `:19-41` sólo caen la `:35-38` y la
+  `:35-49` del RFC-0020, que son de `8c02941`; nadie cita por línea la `:880-1698`; y la de
+  `tools/check_catalogo.py:358` (`actas.rs:329`), que ya no caía en su sitio, no se mueve.
+- `tools/segunda/juez_cabezas.py`, de 220 a 234: nada cambia por encima de la `:71`, así que la
+  `:51-68` del RFC-0021 y la `:66` del RFC-0020 siguen en su sitio; la `:71-75` y la `:91-92` del
+  hecho 1 del RFC-0020 describían la elección por el OID, y llevan su marca. `nucleo.py`,
+  `juez_nucleo.py` y `cable.py` no tienen citas por línea.
+- `spec/NUCLEO.md`, de 587 a 597: las tres filas entran en la `:106`, la `:114` y la `:119`, así que
+  las cinco de `spec/RPC.md:305`, todas por encima de la `:93`, siguen en su sitio. Las dos de
+  `spec/RPC.md:308-309` (`:233-235` y `:226`), que ya no caían en el suyo, quedan tres líneas más
+  lejos: llevan su marca, en la misma línea, con la `:249`, la `:251-252` y la `:242` de hoy. Las
+  cuatro del RFC-0020 son de `8c02941`, y la nota las fecha también.
+- `doc/KIT.md` y `doc/KIT_EN.md`, de 572 a 584 y de 579 a 592: el párrafo nuevo va detrás de la
+  `:217` y de la `:220`, y ninguna cita del árbol a los manuales pasa de la `:200`.
+  `tools/segunda/README.md`, de 818 a 836, sin citas por línea. `BACKLOG.md`, de 5435 a 5442, con la
+  nota detrás de la `:949`: las citas de `doc/ecst/VERIFICACION.md` a sus líneas son de su árbol,
+  `71c5aad`.
+- El RFC-0020, de 362 a 383, no lo cita nadie por línea. Los demás ficheros cambian sus líneas en su
+  sitio, sin ganar ni perder ninguna. `AUDITORIA.md`, de 73785 a 74103 líneas, gana este asiento al
+  final.
+
+**Lo que NO hace.**
+
+- No construye la E4 ni la E5: `VersionCabeza::V7` no entra en el conjunto, nadie firma ni acepta un
+  preámbulo v7, el nodo y el testigo no leen `EMITIDOS` y siguen escribiendo la constante del acta,
+  y la 87 sigue abierta. No registra un segundo esquema (la 108). No corta release: la versión sigue
+  en 0.4.4, y una 0.4.5 que lleve la E3 antes del corte, que la R3 del RFC-0021 permitiría porque no
+  rompe S1 a S4, la decide el autor.
+- No lleva el conjunto aceptado a la lista de `spec/RPC.md` §«Versionado y compatibilidad» ni a la
+  R3 de `tools/check_superficie.py`. La R1 del RFC-0021 cuenta como ruptura que un esquema salga de
+  un conjunto aceptado, y hoy ninguna compuerta lo vería; entraría como aditivo (su R2), con claves
+  del tipo `firma.acepta` y `firma.emite`, y es un paso posible para otro sello.
+- No toca `tools/segunda/verificador.py`, que sigue eligiendo por el OID de la clave: acepta, como
+  antes de este sello, claves XMSS^MT de 68 bytes con los OID 1 a 4 y 6 a 8, que el kit rechaza
+  (`clave_desde_bytes` y el `InvalidOid` de `xmss`), así que con un sobre así la segunda daría VERDE
+  donde el kit da ROJO. Ningún vector lo cubre, y no se mide aquí: es una divergencia declarada de
+  la segunda implementación, anterior a este sello, que `juez_cabezas.py` deja de tener y
+  `verificador.py` conserva. Tampoco pasa `cable.py` por `entrada_de_la_clave`: ancla la clave por
+  el OID de la casa, como antes, y no la coteja con la entrada, que con un esquema da lo mismo.
+- No cambia el texto del acta, que pina un vector publicado, ni ningún texto del mando ni de
+  `spec/PAQUETE.md` §5, que el binario no alcanza; `check_catalogo` cuenta los dos nuevos como
+  `opaco`, sin enumerar.
+- No arregla las citas rancias ajenas que no corre: la lista de asientos del RFC-0021 calla el §865,
+  que tocó el fichero, y la marca nueva dice sólo que acababa en el §852; ni la del comentario de
+  `crates/zk-ssl-cli/src/nucleo_kat.rs` que dice «apagados» del registro y los preámbulos v7 del
+  §800, que es de su fecha y está en un crate que este sello no toca. Ni la deriva de `rustfmt` que
+  el árbol ya tenía.
+- No corre los tests del nodo ni del testigo, sólo los compila: los dos dependen del kit y no ganan
+  ni pierden un test. No corre `--bancos`, `--largo`, `--completo` ni `--conservados`.
+- No toca `crates/zk-ssl-guardian`, ni `winter-*`, ni `crates/zk-ssl-air`, ni
+  `crates/stark-experiment`, ni `crates/ceremony`, ni `tools/check_constraint_layout.py`. No
+  reescribe ningún asiento: lo que el §800 dijo de la E3 y lo que el §863, el §864 y el §865 dijeron
+  de su sello son de su fecha.
+
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.
+
+## §866 — la 123, medida y cerrada: el latido firmaba en un hilo del ejecutor de tokio y, mientras, el nodo no aceptaba conexiones, también sin carga; el latido pasa a su propio hilo, «latido», y el RPC contesta mientras se firma, con cuatro tests y sus falsadores
+
+El commit que lleva este asiento, sobre el §862. Cierra la 123 del `BACKLOG.md` con su medida, el
+arreglo en el nodo y sus tests. Cambia `crates/zk-ssl-node/src/latido.rs` —el arranque del latido,
+la firma de `latir`, siete marcas, cuatro tests con su ayudante al final del módulo de tests y el
+trait `Firmar` al final del fichero— y `crates/zk-ssl-node/src/main.rs` —dos líneas de `main` y el
+enrutador en su fn, al final—; pone al día el pin del nodo en `tools/canon.sh`, los totales de
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` y la cifra del nodo de la sección 14 de los dos `PAPER`;
+cierra la 123 en el `BACKLOG.md`, con su nota, una marca en la del §829 y la cuenta del «Estado», y
+marca la 17 y la 18; marca las dos filas de REND-10 de `doc/blueprint-v2.md` y una línea de
+`tools/banco_reinicio.sh`; y lleva este asiento. Diez ficheros con este, ninguno nuevo, con 638
+inserciones y 34 borrados (`git diff --stat`). Es el §866, el primero libre del rango del autor, el
+§860-§889, tras los §863 a §865. Se escribió, se midió y se probó sobre `213b0b0`, el §726, y se
+porta sobre el §862, la E3 del RFC-0020, que no toca el nodo (`git diff 213b0b0` contra el §862, en
+`crates/zk-ssl-node`, sale vacío) y sí el kit, del que el nodo depende: lo medido, los binarios y lo
+que se corrió con `cargo` son de aquel árbol, y en este lo corre el canon del final; las cifras, los
+contadores y las citas de abajo son las de este árbol, rehechas al portarlo.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. Lo que decidió el autor: que la 123
+se haga ahora, el 28-10-2026, tras la 0.4.4, y que antes se mida el mecanismo, como recomendaba la
+nota del §829 («arreglar `latir` más adelante, cuando se mida el mecanismo»). Lo que decide la
+sesión, declarado y reversible: medir sobre el binario de `213b0b0` antes de tocar nada, y no
+arreglar si la medida no señalaba al ejecutor; el diseño, un hilo del sistema, y no `spawn_blocking`
+—la letra de REND-10— ni `block_in_place`; el trait `Firmar`, que sólo existe para los tests; los
+cuatro tests, con el latido del de TCP a 200 ms y no a cero; cerrar la 123; llevar la mitad de
+despacho de REND-10 en una línea de su nota y no en una entrada nueva; poner al día la cifra del
+nodo de la sección 14 de los dos `PAPER`, que no es de este sello; y dejar los guiones de la medida
+fuera del árbol, descritos aquí con lo que hace falta para repetirlos (un `tools/banco_latido.sh` es
+un paso posible, y no se da).
+
+**Las dos revisiones.** Dos revisiones de la sesión leyeron el sello y repitieron sus cifras, sus
+citas y sus falsadores; lo que encontraron se arregla aquí, cada cosa en su sitio. El falsador del
+test de TCP no caía siempre: con el latido a cero, bajo la mutación pasó 1 de 17 veces sin carga
+añadida y 5 de 8 con ocho `yes` (abajo, en los tests). Y al repetir los cuatro con ocho `yes` para
+este arreglo, sin mutación ninguna, cayó uno 2 de 18 veces; la vez que se miró, el del despacho, en
+su espera de 30 s: `cuenta`, que abre y fondea, tarda 0,6 s sin carga y de 10 a 23 s con ella
+(medido con una copia instrumentada del test, deshecha); ahora espera el tope de los demás, 120 s, y
+con ocho `yes` los cuatro pasaron 12 de 12 veces. El fuente de tokio 1.53.1 sí estaba en el disco,
+en el registro de cargo del contenedor, y este asiento decía que no: se ha leído, y se cita abajo.
+Seis frases de este asiento no eran exactas: la carga de los dos controles con `--latido 0`; que
+ningún otro `cargo` corriera «durante» las series, que sale de dos instantáneas; el `nice` del
+`cargo tree`; los 804 ms del §829 como de otra máquina, que no está medido; los latidos en que sí se
+contestó con escrituras, 5 y 6 de 18 y no 5 y 7, que eran las sondas; y lo que distingue a un
+candado. Y además: el pánico en `latir`, que va ahora en «Lo que NO hace»; el comentario del test
+del despacho, que daba por atado lo que no ataba, y que ahora ata la era; la primera línea del
+comentario de `arrancar` y la `:66` y la `:143` de `latido.rs`, que cambiaban sin su marca; el
+rótulo «Lo que hace»; la nota del §829, que seguía diciendo «Sigue abierta»; una línea de la nota
+nueva, de 112 columnas; y la cifra del nodo de la sección 14 de los `PAPER`, en 115, el pin de antes
+del §519, que no es de este sello y se pone al día.
+
+**Dónde y cómo se midió.** En el contenedor de 4 CPU de la sesión, el 28-10-2026, de las 10:22 a las
+11:07 UTC. El binario de antes es el release de `zk-ssl-node` de `213b0b0`, compilado por la sesión
+con `--locked` en un directorio de target propio (sha256 `64bb262ec012d08d…`, igual byte a byte que
+el de la validación de `213b0b0`); el de después, el del sello (`e0d439093aa2d779…`, abajo). Un
+guion arranca el nodo como `arranca` de `tools/banco_reinicio.sh` —`--latido 1`, `--clave-fichero`
+con la semilla del banco y `--custodia fichero`, y `--diario`, `--ledger`, `--contador-recepcion` e
+`--indice-firma` en un directorio nuevo bajo `$HOME`—, pero con `--log info` y `NO_COLOR=1`; espera
+a que conteste a un método desconocido, para que toda línea «ok» de `zkssl_supply` sea de la serie,
+y deja pasar 2,5 s. Hace entonces 100 sondas `zkssl_supply` en serie, cada una con
+`curl -s --max-time 2 -w '%{time_connect} %{time_starttransfer} %{time_total} %{http_code}'`, la
+hora de `$EPOCHREALTIME` antes y después de `curl` y 0,2 s de pausa. Cada 50 ms lee la cola de la
+escucha: el `rx_queue` del socket en LISTEN de `/proc/net/tcp`, que en una escucha es
+`sk_ack_backlog`, las conexiones que el núcleo completó y nadie ha aceptado (lo que `ss` da como
+`Recv-Q`; `ss` no está en el contenedor). Apunta `uptime` y los `cargo` y `rustc` vivos al empezar y
+al acabar. Y un segundo guion lo cruza con las líneas «ok … ms=» y «cabeza de epoca FIRMADA … ms=»
+del nodo, con su hora: un latido es `[hora − ms, hora]`; una sonda es lenta si su `time_total` pasa
+de 100 ms; y su «ok» es la línea que cae entre su envío y su vuelta. Las series: S0, así; S1, sin
+`--clave`; S2, con `TOKIO_WORKER_THREADS` a 1 y a 8; S3, con un chorro de `dev_openSeeded` en serie
+a la vez, el de M.1 (con `--dev --max-accounts 1000000`); S4, con ocho `yes` a `nice` 0 y el nodo a
+`nice` 0; y S5, con los ocho `yes` y el nodo a `nice` 10, la receta del §829. Primero, todas con el
+binario de antes; después, cada una con el de antes y enseguida con el de después; S4 y S5, una
+tercera vez; y el chorro de escrituras con `--latido 0`, con los dos binarios, de control. Sin los
+`yes`, la carga de 1 minuto va de 0,3 a 1,0, salvo en esos dos controles, que corrieron justo detrás
+de la tercera S4 y todavía con su carga: de 8,8 a 6,3 con el binario de después y, enseguida, de 6,3
+a 5,4 con el de antes. Al acabar cada serie con `yes`, de 4,1 a 9,1. En las instantáneas de `cargo`
+y `rustc` vivos, al empezar y al acabar cada serie, no hay ningún otro salvo en tres de las cuatro
+últimas —la tercera S4 con cada binario y el control de escrituras con el de antes—, en que otra
+sesión corría `cargo tree`, a `nice` 0, y un `cargo test` de `zk-ssl-verify`, a `nice` 10: esas tres
+van con esa carga. Que entre una instantánea y la otra no corriera ningún otro es deducido.
+
+**Lo medido antes**, en `213b0b0`. Sin carga, en las ocho series con clave, `latir` dura de 236 a
+265 ms de mediana —no los 804 ms del §829, que midió otra sesión sobre `7ed7e17`, 37 commits antes
+de `213b0b0` y siete de ellos en el nodo: otra máquina u otro binario, sin medir cuál, deducido— y
+ocupa del 19 al 21 % del tiempo; de 12 a 19 sondas de 100 tardan de 0,1 a 0,30 s, y todas solapan un
+latido; de las rápidas, empiezan dentro de un latido 0 o 1 por serie, y 5 y 7 con el chorro de
+escrituras. Cada sonda lenta conecta en menos de 0,5 ms, la cola de la escucha vale 1 o 2 durante el
+latido y 0 fuera de él (de 58 a 80 de entre 90 y 100 muestras dentro de un latido, frente a 6 como
+mucho de unas 350 fuera), el manejador del nodo tarda 0 o 1 ms, y su «ok» sale de 0,2 a 2 ms DESPUÉS
+de la línea FIRMADA. Los controles: sin `--clave`, `latir` dura 0,8 ms y no hay ninguna lenta; con
+`TOKIO_WORKER_THREADS` a 1 y a 8, 18 o 19 lentas en cada serie, como sin él; con el chorro de
+escrituras, 13 y 12 lentas, y 16 de 2.569 y 17 de 2.384 escrituras pasan de 100 ms (292 y 366 ms la
+peor), mientras que con `--latido 0` ninguna de 2.432 (18,1 ms la peor). Con ocho `yes` y el nodo a
+`nice` 0, `latir` dura de 548 a 628 ms de mediana, y 20 de 100 sondas tardan hasta 0,51, 0,59 y
+0,80 s, ninguna sin respuesta; con el nodo a `nice` 10, de 4,6 a 4,8 s, ocupa el 82 % del tiempo, y
+quedan sin respuesta 16, 31 y 23 de 100: con 2 s de plazo, un cliente del cable daba por caído a un
+nodo vivo.
+
+**Lo que dice, deducido.** Un candado que retuviera al RPC daría un manejador que empieza durante la
+firma y espera a que acabe: largo, y con su «ok» a la par del final de `latir`, antes de la línea
+FIRMADA, que sale tras `conservar`. El manejador tarda 0 o 1 ms y su «ok» sale después de esa línea:
+la petición no entraba en el nodo hasta que el latido acababa, así que no es un candado, como ya
+decía el código (`latir` suelta el del estado antes de firmar). Lo que espera es la conexión, en la
+cola de la escucha: el núcleo completa el saludo y nadie la acepta hasta que `latir` acaba. Y no es
+que falten hilos, porque con 8 sale lo mismo que con 1: es el ejecutor. `latir` corría entera, firma
+incluida, dentro de un `tokio::spawn`, en un hilo de tokio, y en la mayoría de los latidos ningún
+otro hilo atendía la E/S mientras tanto. El mecanismo dentro de tokio, que el sello daba de memoria,
+se leyó después, en la revisión, en el fuente de tokio 1.53.1 del registro de cargo del contenedor,
+el que fija el `Cargo.lock` y del que se compilaron los dos binarios, y encaja (en
+`src/runtime/scheduler/multi_thread/`): al temporizador del latido lo atiende el hilo que espera en
+el controlador de E/S y del reloj, que pone la tarea en su ranura LIFO y no avisa a nadie, porque
+sólo avisa si la ranura ya estaba ocupada, y nunca mientras está en el controlador
+(`worker.rs:1376-1407`); al salir del controlador, sólo despierta a otro hilo si tiene más de una
+tarea (`worker.rs:910-918` y `:1206-1213`); y con una sola, la del latido, se pone a firmar sin que
+nadie más espere en el controlador. Encaja también con que en algunos latidos sí se contestara (5 y
+6 de 18 con el chorro de escrituras; 2 de 11 en la primera S5, con todas las sondas de su ventana
+rápidas): cuando el temporizador salta con otra tarea lista, otro hilo despierta y toma la E/S. Que
+las lentas acabaran «de 7 a 11 ms antes» de la línea FIRMADA, como medía el §829, es el arranque de
+`curl`: la hora de envío se toma antes de lanzarlo, y aquí `curl` tarda una mediana de 7 ms fuera de
+su `time_total` (17 ms con los `yes`). Y M.1 no lo vio en su máquina y su fecha (§252), con cero
+escrituras afectadas; aquí, con su chorro, sí lo hay.
+
+**Lo que hace.**
+
+**El arreglo.** `arrancar` (`crates/zk-ssl-node/src/latido.rs:413-443`, con las mismas líneas) lanza
+el latido en un hilo del sistema llamado «latido», con `std::thread::Builder`, y duerme con
+`std::thread::sleep`; el bucle, la cuenta de latidos, `conservar` y las líneas del registro no
+cambian, y devuelve el error de lanzar el hilo, que `main` convierte en un error de arranque en la
+misma línea (`main.rs:2151`): sin hilo del latido, el nodo no arranca. `latir` no cambia por dentro;
+su firmante pasa de `Option<&mut FirmanteCabeza>` a `Option<&mut dyn Firmar>` (`:143`), y las
+llamadas de hoy, con `Some(&mut f)` o `None`, siguen igual. `Firmar` (`:1106-1121`) pide sólo firmar
+un digest, y su única implementación en el binario es la de `FirmanteCabeza`, que llama a su
+`firmar` de siempre: reserva el índice con su fsync, firma y se autoverifica. El enrutador de `main`
+sale a `enrutador` (`main.rs:9497-9502`), el mismo `POST /` a `handle`, para que un test sirva por
+TCP el del binario. Se conserva lo que dependía de que el bucle fuera uno y secuencial: el orden de
+las cabezas y del diario, el `mmr_t` contiguo (§714) y una sola cabeza en vuelo; el firmante se
+mueve una vez al hilo y sólo lo toca él (§636), y el `File::try_lock` del guardián es del descriptor
+(§709). Las miradas a la PARADA y a la marca de fallo en vuelo (§815) siguen en su sitio, y el orden
+de los candados no cambia. Un pánico en `latir` mata el hilo, como antes mataba la tarea, y el nodo
+sigue sirviendo sin cabezas nuevas, como antes (abajo, en «Lo que NO hace»).
+
+**Los tests y sus falsadores.** Cuatro, al final del módulo de tests de `latido.rs`, con un firmante
+real al que se le retiene la firma (`FirmanteRetenido`): avisa por un canal desde dentro de la firma
+y espera a que el test la suelte; si el test cae antes, la firma sale con error y sin firmar, y las
+que pasan de su guion se quedan paradas sin gastar CPU. El orden lo dan los canales; los tiempos son
+topes, para que un fallo caiga en vez de colgarse.
+`el_latido_corre_en_su_hilo_y_no_en_un_hilo_del_ejecutor`, lanzado desde dentro de un runtime de dos
+hilos, ve la firma pedida desde el hilo «latido» y fuera del ejecutor.
+`el_rpc_contesta_por_tcp_mientras_el_latido_firma` sirve el enrutador con `axum::serve` en un
+runtime de dos hilos, con el latido a 200 ms, y con la firma retenida y sin cabeza todavía,
+`zkssl_supply` por TCP, con una petición HTTP/1.1 a mano y 30 s de tope de lectura, contesta 200 con
+`result`; soltada, la cabeza sale con el índice 1, se sirve por TCP y verifica.
+`mientras_se_firma_ningun_candado_del_nodo_esta_tomado` toma con `try_lock` los ocho candados del
+nodo con la firma retenida. Y
+`con_la_firma_retenida_el_despacho_lee_y_escribe_y_la_cabeza_es_la_compuesta_antes` lee y abre una
+cuenta por `dispatch` con la firma retenida; mientras se firma la 1, la era publicada sigue en 0 y
+la que fija `era_al_recibir` es la 1; la cabeza que sale lleva el `seq` de antes de la escritura, la
+siguiente la recoge con el índice 2, y el guardián coincide en el 2. Que un recibo de esa ventana
+caiga en la cabeza 2 no lo ata, porque no emite ninguno: se deduce de la D-D.
+
+Los falsadores, aplicados a mano y deshechos, con `cmp` contra la copia de antes. Con el
+`tokio::spawn` y el `tokio::time::sleep(cada).await` de antes en `arrancar`, cae el primero —la
+firma se pide desde `tokio-rt-worker`— y el de TCP —la lectura caduca a los 30 s, `WouldBlock`—, y
+los otros dos pasan. Con `let _g = app.estado.lock();` delante de la firma, caen el de TCP, el de
+los candados, en el del estado, y el del despacho, que no contesta en el tope, 120 s, y el del hilo
+pasa. Y con `era_al_recibir` una cabeza por delante, cae el del despacho, en la era. El de TCP
+llevaba en el sello el latido a cero, y su falsador cayó las seis veces que se corrió; la revisión
+lo corrió más, con el binario de la mutación, y vio que así no caía siempre: pasó 1 de 17 veces sin
+carga añadida y 5 de 8 con ocho `yes` a `nice` 0. Con cero, el `tokio::time::sleep` puede vencer ya
+al registrarse, y entonces se dispara dentro de su propio `poll` (`src/runtime/time/mod.rs:436-438`
+de tokio 1.53.1); la tarea, despertada mientras corre, vuelve a la cola como un `yield`, que sí
+avisa a otro hilo (`src/runtime/task/harness.rs:156-161`, y `handle.rs:120-121` y
+`worker.rs:1376-1407` del planificador), y ese otro atendía la escucha. En el nodo, con `cada` de 1
+o de 60 s, el temporizador salta siempre desde el controlador. Con el latido a 200 ms, el falsador
+del de TCP, corrido suelto (`--exact`) con el binario de la mutación y a `nice` 10, cayó 12 de 12
+veces sin `yes`, con la carga de 1 minuto de 0,0 a 3,2 de otras tareas de la máquina, y 8 de 8 con
+ocho `yes` a `nice` 0, con la carga de 3,9 a 8,1. Los cuatro pasan en release, y el nodo entero, 244
+de 244 en 35 s y sin avisos; siguen en verde los 13 de antes de `latido.rs`, la carrera A5 con hilos
+reales, los de la marca de fallo en vuelo, el de la PARADA, los dos del `mmr_t` y
+`pedir_la_cabeza_firmada_no_firma_otra`. Sin `dev`, el nodo compila con su aviso exacto, el de
+`podar`.
+
+**Lo medido después**, con las mismas series y el binario de antes intercalado. Sin carga, 0 lentas
+de 100 en S0, S1, S2 con 1 y con 8, y S3, con `latir` igual de larga (de 237 a 252 ms) y de 18 a 22
+sondas que empiezan dentro de un latido y contestan; la cola de la escucha, 0 durante el latido (1
+muestra de 85 en S3); y las escrituras del chorro, 0 de 2.749 de más de 100 ms (17,6 ms la peor),
+como el control sin latido. Con ocho `yes` y el nodo a `nice` 0, 0 lentas de 200 (16,2 y 25,5 ms la
+peor); con el nodo a `nice` 10, 0 sin respuesta y 0 lentas de 200 (44,7 y 44,6 ms la peor), con
+`latir` de 4,6 s y el 82 % del tiempo, y con 83 y 82 sondas que empiezan dentro de un latido. Es el
+nodo, y con la máquina sobresuscrita de la receta un plazo de 2 s ya no da por caído a un nodo vivo:
+el «Qué la cierra» de la 123, cumplido, sin cifra que escribir en el cable. Lo que no se ha medido:
+una máquina más estrangulada que la receta, en la que la escucha tampoco tendría CPU; y la mitad de
+despacho de REND-10, abajo. El binario de después se compiló antes de corregir el comentario de un
+test; el del árbol del sello (`afaa4e7a30c02022…`) difiere de él sólo en los sufijos internos de los
+símbolos de LLVM (`strings`), y con él se repitieron al final S0 y S5, con otra sesión compilando a
+`nice` 10 (la carga, de 1,3 a 6,7): 0 lentas de 100, y 0 sin respuesta y 0 lentas de 100, con
+`latir` de hasta 7,1 s y 73,3 ms la peor. Tras las revisiones, el release del árbol tal como se
+commiteó sobre `213b0b0` (`b25e460dea0baf0b…`) difiere del del sello sólo en esos mismos sufijos
+(`strings`), y las series no se repitieron con él; el de este árbol lleva además el kit del §862, y
+tampoco se repitieron con él.
+
+**Lo que cambia, y dónde se dice.** Mientras se firma la cabeza k+1, el RPC ya contesta en cualquier
+nodo, y un recibo que entra en esa ventana declara la era k+1 —el índice publicado sigue en k— y cae
+en la cabeza k+2. No es nuevo: la D-D del RFC-0010 lo contempla desde la enmienda del §681 («o la
+era menos uno cuando el recibo llegó mientras se firmaba»), y lo dicen `main.rs:4558-4559` y
+`registro_recepcion.rs:251`; antes pasaba sólo en los latidos en que otro hilo atendía la E/S, que
+aquí son 5 y 6 de 18 con escrituras, y ahora en todos, durante lo que dura `latir`, casi toda ella
+firma (unos 0,24 s aquí sin carga; 0,8 ms sin clave). Ninguno dice lo contrario, y no se marcan. Una
+PARADA que llega durante la firma deja salir la cabeza ya compuesta, el caso que el §815 aceptó
+(«Una cabeza se firmó 17 ms antes de la PARADA … que describe un estado que el disco tiene»), con la
+ventana de la firma; el latido siguiente no compone. Y una cofirma que llega mientras se firma se
+juzga contra la cabeza que se sirve, sin esperar a la nueva: `tools/banco_cofirma.sh:326-329` espera
+los rechazos «no es de la época en curso» como excepción; deducido, no medido, porque ese banco no
+se corre aquí.
+
+**Las marcas**, al final de su línea. En `latido.rs`: la `:61`, que decía que cruzar un `await`
+bloquearía el ejecutor (también lo bloqueaba sin cruzarlo); la `:66`, el `FirmaError` que pide el
+trait; la `:113` y la `:132`, detrás de las del §892 (no era el candado sino el hilo, y las
+escrituras tampoco se libraban aquí); la `:143`, la firma de `latir`; la `:408`, la primera línea
+del comentario de `arrancar`, que decía «en una tarea de fondo»; y la `:412`, la CORRECCIÓN del
+«`tokio::spawn` y no un hilo», que se corrige y no se borra (§247). En `main.rs`, las dos líneas de
+`main` que cambian, con la suya. En el `BACKLOG.md`: la 123 pasa a `[x]`, con su nota detrás de la
+del §829 —lo medido antes y después, el arreglo, los tests y lo que no cierra— y dos marcas en la
+del §829: en su `:3713` (ya no es un `tokio::spawn`, y la `main.rs:1755` es hoy la `:1894`) y en su
+`:3723`, que decía «Sigue abierta»; la 17, en su `:2748`, y la 18, en su `:2871`. En
+`doc/blueprint-v2.md`, las dos filas de REND-10, la `:285` y la `:428`: la mitad del latido, hecha
+con un hilo, que espera la firma por construcción, y la del despacho, como estaba. Y en
+`tools/banco_reinicio.sh:137`, que las cinco sondas se quedan.
+
+**Los contadores.** El pin del nodo en `tools/canon.sh`, de 240 a 244, con su crónica «§866: 240 ->
+244»; `check_tests`, de 2235 a 2239 declarados; el TOTAL DE SELLO, de 2073 a 2077, y el TOTAL CON
+LARGOS, de 2213 a 2217, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, y en este, «240 del nodo»
+pasa a 244; y el «Estado» del `BACKLOG.md`, de 40 abiertas y 90 resueltas a 39 y 91, contadas con
+`grep`, con «y el §866, que cierra la 123». La cifra del nodo de la sección 14 de `PAPER.md`
+(`:1067`) y de `PAPER_EN.md` (`:1025`), la de `cargo test -p zk-ssl-node`, pasa de 115 a 244: decía
+115, el pin de antes del §519, que lo pasó a 122, y `check_cifras` no la ve; las otras dos de ese
+bloque, la capa y los circuitos, ya son las del canon. No cambian `check_modulos` (216 ficheros),
+los vectores (605), los avisos del nodo (ninguno en sus tests, y el de `podar`, exacto, en el
+binario con `dev` y sin él), el `Cargo.lock` ni el kit.
+
+**Las citas por línea que se mueven.** Ninguna del árbol vivo. `latido.rs` pasa de 859 líneas a
+1121: las 262 nuevas van al final del módulo de tests y detrás de él, y lo demás cambia una línea
+por una, así que la `:413-421` y la `:429-431` de la 123, la `:72` de la 12, la 77 y la 123, y las
+del blueprint siguen donde estaban. `main.rs` pasa de 9495 a 9502, con las siete al final. El
+`BACKLOG.md` pasa de 5442 a 5486: las 44 de la nota van dentro de la 123, y ninguna cita viva apunta
+más allá de su `:3080` (`git grep`). En `AUDITORIA.md`, de 74103 a 74394, con este asiento al final.
+Los demás ficheros no ganan ni pierden ninguna línea: cada trozo de `git diff -U0` cambia una por
+una.
+
+**Lo que NO hace.**
+
+- No toca `handle`, que llama a `despachar` síncrono en un hilo del ejecutor (`main.rs:2617`): es la
+  mitad de despacho de REND-10, la misma clase de defecto, sin medir, y va como una línea en la nota
+  de la 123, no como entrada nueva. Ni fija `worker_threads` en `#[tokio::main]` (`main.rs:1894`).
+- No cambia `latir` por dentro, ni `firma_cabeza.rs`, ni `diario.rs`, ni un `Cargo.toml`.
+- No hace que un pánico en `latir` pare el nodo ni lo diga: mata el hilo «latido», cuyo `JoinHandle`
+  se tira (`latido.rs:442`), y el nodo sigue contestando sin cabezas nuevas, como antes con la
+  tarea. Que un pánico no deje un nodo que parece vivo y no late no se cumplía antes ni se cumple
+  ahora, y no tiene test: es una decisión del autor.
+- No vuelve a una sola sonda en el DOS NODOS de `tools/banco_reinicio.sh`, que es del autor, ni
+  corre su receta (ocho `yes` y el banco a `nice` 10): aquí, con el nodo a `nice` 10, `latir` dura
+  unos 4,6 s, menos que los 10 s de sus cinco sondas, y su ROJO tampoco saldría antes del arreglo
+  (deducido, no corrido).
+- No mide con `--latido 60`: el 1,32 % del §829 sigue deducido, y aquí, con 240 ms, sería un 0,4 %
+  (deducido); después del arreglo, la cadencia no cambia lo que contesta el RPC.
+- No toca la D-D del RFC-0010, ni `SECURITY.md`, ni `spec/RPC.md`: nada dice lo contrario, y no hay
+  plazo del cable que escribir.
+- No toca la lista de `doc/KIT.md` y `doc/KIT_EN.md` de los sellos que cambian las fuentes del nodo,
+  como el §865, que no la empezó a mantener sello a sello.
+- No marca `doc/ecst/VERIFICACION.md:632`, que dice que el `FirmanteCabeza` «lo posee una sola tarea
+  tokio»: es un registro generado y fechado, del árbol `71c5aad`, y está excluido.
+- No corrige la cita `latido.rs:473` de la 12 (`BACKLOG.md:1747`), que no cae en la hoja del MMR
+  desde el §714 —hoy es la `:479`—: este sello no la mueve.
+- No añade `tools/banco_latido.sh` ni deja los guiones en el árbol.
+- No toca `crates/zk-ssl-guardian`, ni `crates/zk-ssl-verify`, ni `winter-*`, ni `zk-ssl-air`, ni
+  `stark-experiment`, ni `ceremony`, ni `tools/check_constraint_layout.py`. No reescribe ningún
+  asiento ni la nota del §829, que es de su fecha y sólo gana su marca.
+
+**Lo medido sobre este árbol, antes de commitearlo**, desde la raíz y con este asiento en su sitio:
+`check_cifras`, 26 cifras y ninguna contradice el canon; `check_tests`, 2239 declarados;
+`check_modulos`, 216 ficheros; `check_vectores`, 605 vectores y 1370 líneas de 19 manifiestos con su
+huella, ninguno movido; `check_catalogo`, 236 textos del kit y 302 entradas de §5;
+`check_superficie`, la lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas;
+`verificar_citas`, 0 fantasmas, 0 secciones muertas y 249 encabezados citados, 0 muertos, y el
+registro con 829 encabezados y 0 citas muertas; `check_nucleo`, 183 filas; y `check_figures`,
+`check_columns`, `check_constraint_layout`, `check_dominios`, `check_publicadas`, `check_techo` y
+`check_curvas`. Todas salen con 0, y `git diff --check`, limpio.
+
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.
 ## §896 — A1 del HVZK: la cota de ocultación, medida sobre las pruebas reales de los 23 probadores con fila y atada en el canon: 45 aberturas a enmascarar por columna y por trozo frente a T ≥ 64 filas aleatorias y m = 64, el rango pleno de sus matrices, y dos mutantes con nombre; abre la 130
 
 El commit que lleva este asiento, sobre `213b0b0` (el §726, la punta de `main` al empezar la
@@ -74800,3 +75408,70 @@ dos raíces, con el binario `b25bbac687e17145` —el mismo del §899 al §902—
 `5e0937572ca8f540`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR`
 propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.
+
+## §904 — La rama de la sesión entra en `main` por orden del autor: la fusión de `origin/main` (el §862 y el §866, que entraron antes) con el §896 al §903, los cinco conflictos resueltos a mano —los dos registros concatenados en su orden de entrada, el estado del BACKLOG recontado y los totales de tests sumados por los dos lados—, el canon de sello en VERDE sobre el árbol fusionado, y el empuje a `main`
+
+El commit que lleva este asiento es el de la fusión: sus dos padres son `30e3adf7` (el §903, la
+punta de la rama de la sesión) y `f349c299` (`origin/main`, el §866). Toca lo que la fusión toca:
+de `origin/main` entran el §862 (RFC-0020 E3, el despacho por esquema: `crates/zk-ssl-verify`,
+`crates/zk-ssl-node`, `tools/segunda`, `spec/NUCLEO.md`, `spec/RPC.md`, los dos `doc/KIT`) y el
+§866 (la 123: el latido del nodo), tal como el autor los llevó a `main`, sin cambiar un byte de
+ellos; de la rama, del §896 al §903. Los cinco ficheros que los dos lados tocaban a la vez se
+resolvieron así: `AUDITORIA.md`, los asientos de `main` (§862, §866) delante y los de la rama
+(§896 a §903) detrás, en el orden en que entran; `BACKLOG.md`, el estado recontado —39 abiertas y
+91 resueltas en `main` tras la 123, más las siete que la rama abre (130 a 136) menos las tres que
+cierra (130, 132, 134): 43 abiertas y 94 resueltas— y la cadena de recuentos con el §866 en su
+sitio; `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, los totales sumados por los dos lados —de
+2068 de sello y 2208 con largos en la base, `main` ponía 9 (el nodo 240 -> 244 y el verificador
+220 -> 225) y la rama 15 (la capa 547 -> 561 y los circuitos 488 -> 489): 2092 y 2232— y las
+cifras por crate con las de cada lado (la capa 561 y 8 ignorados, el nodo 244, el verificador
+225). `tools/canon.sh` fusionó solo: cada lado tocaba filas distintas, y la suma de su columna
+«pasan» es la de los documentos. Lo escribe y lo commitea Claude, en una sesión de Claude Code en
+la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El
+número es el siguiente libre tras el §903. El canon de este commit se dice al final.
+
+**De dónde sale.** La orden del autor, con sus palabras: «HACER: Llevar la rama a main». Según
+`GENAI.md` (§«Fuera del paso 4», «Quién acepta») la entrada en `main` es la aceptación del autor;
+aquí la ejecuta la sesión por su orden expresa, y este asiento lo dice. Lo que entra con ella, del
+§896 al §903: A1, A2, A3, la 133, la 134, A4, las decisiones del autor del §902 y el dosier de la
+136.
+
+**Lo que hace.** La fusión, sin reescribir la historia de ninguno de los dos lados; la resolución
+de arriba; el canon sobre el árbol fusionado; y el empuje de la rama y de `main`.
+
+**Medido.** Las cuatro herramientas de documentos sobre el árbol fusionado, antes del canon:
+`verificar_citas`, 0 en sus tres cuentas; `check_cifras`, ninguna cifra contradice el canon;
+`check_publicadas` y `check_figures`, OK. Lo que midió cada lado está en sus asientos.
+
+**Lo que NO hace.** No cambia nada de lo que cada lado trae: ningún texto, ningún test, ningún
+vector. No decide nada: las decisiones de la rama son las del §902 y las de `main`, las suyas.
+
+**Lo que es del autor.** Lo de siempre tras una entrada en `main`: volver a correr el canon en su
+máquina si quiere, como `GENAI.md` deja a su mano.
+
+**Contadores.** Los de la fusión: `zk-ssl` 561 y 8, `stark-experiment` 489 y 13, `zk-ssl-node`
+244, `zk-ssl-verify` 225; TOTAL DE SELLO 2092 y CON LARGOS 2232; `BACKLOG.md` en 43 abiertas y 94
+resueltas. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre el árbol
+fusionado, con este asiento en su sitio y sin este párrafo: VERDE, 471 s de reloj (de su arranque
+a su salida) y 285 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU con carga de
+0,13 al empezar. Las 19 filas del nivel, en su pin, con 2092 tests que pasan (la suma de la columna
+«pasan»), la de `zk-ssl` en 561 pasan y 8 ignorados, 148 s, la de `stark-experiment` en 489 y 13,
+18 s, la de `zk-ssl-node` en 244, 41 s, y la de `zk-ssl-verify` en 225, 13 s; las tres del fork,
+`winter-air` 64, `winter-prover` 7 y `winter-verifier` 0, en su pin; la puerta de los binarios,
+con «OK 24 objetivos en 8 paquetes, 12 con features (11 s)»; `check_tests` en 2255 declarados —los
+2246 de la rama más los nueve de `main`— y 21 instrumentos; `check_modulos` en 220; las once
+herramientas del bucle «2 ter»; la puerta de los vectores, en 605 ficheros y 1370 líneas de 19
+manifiestos; `check_catalogo`, en 236 textos y 302 entradas; el cable, en 27 de 27; la segunda
+implementación, con el núcleo en 34 de 34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y
+el artefacto reproducible, igual desde dos raíces, con el binario `30a7452dc043e5f7` y el tarball
+`623a492e5b7c84cb`. El binario del kit cambia respecto al §903 (`b25bbac687e17145`), y se dice por
+qué: entra el §862 de `main`, que toca `crates/zk-ssl-verify`, el código del kit; lo que el kit
+hace lo miden el cable, 27 de 27, los pares STARK, 76 de 76, y los vectores con sus huellas, y lo
+que ese asiento cambió lo dice él. Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en
+él el mismo fichero que en los sellos anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se
+investiga aquí. Una sola corrida: no hubo roja. Antes de ella, la sesión quitó del árbol la copia
+de trabajo de un revisor independiente que había lanzado bajo `.claude/worktrees/` —ajena a git,
+y que las herramientas de documentos leían como parte del árbol—; el revisor volvió a lanzarse
+sobre una copia fuera del repositorio, y su informe es del asiento que lo registre.

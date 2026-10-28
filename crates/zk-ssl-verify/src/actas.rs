@@ -15,14 +15,13 @@
 //! primera hoja de la clave que entra firma su acta, asi que su firma lleva dentro el `desde`.
 
 use serde_json::{json, Value};
-use xmss::Signature;
 use zk_ssl_hash::{acta_digest, digest_from_bytes, digest_to_bytes};
 
 // ⚠️ Reexportados para que quien arme un acta -el nodo- nombre la clave con la MISMA huella con
 // que este juez la compara, sin depender de `zk-ssl-hash` por su cuenta.
 pub use zk_ssl_hash::{huella_de_clave, Digest};
 
-use crate::{clave_desde_bytes, indice_de_firma, Conjunto, VerificaError};
+use crate::{indice_de_firma, recuperar, Esquema, VerificaError};
 
 /// Separacion de dominio de **la firma de un acta**. Sin version dentro, por lo mismo que
 /// [`crate::DOMINIO`] (§236): la version va en el preambulo. Distinto de la cabeza y de la
@@ -39,6 +38,7 @@ pub const ACTA_VERSION: u8 = 1;
 /// ⚠️ §800 · Desde el registro de esquemas (RFC-0020, E2) el numero sale de [`crate::Esquema`],
 /// que dice cual de los dos registros de RFC 8391 es la familia 1: el de XMSS^MT. El valor no
 /// cambia, y el KAT del acta, tampoco. Hasta aqui era el literal `(1 << 32) | 0x0000_0005`.
+/// ⚠️ §862 · La E3 mira [`Esquema::ACEPTADOS`] y no esta, que escriben el nodo y el testigo.
 pub const ESQUEMA_XMSSMT_SHA2_40_8_256: u64 = crate::Esquema::XmssMtSha2_40_8_256 as u64;
 
 /// El preambulo exacto que firma un acta. **Es superficie de conformidad**, con su KAT en
@@ -173,13 +173,13 @@ impl core::fmt::Display for ActaError {
 impl std::error::Error for ActaError {}
 
 /// Verifica una firma sobre un mensaje exacto y devuelve el indice que lleva dentro.
-fn firma_sobre(clave: &[u8], mensaje: &[u8], firma: &[u8]) -> Result<u64, VerificaError> {
-    let vk = clave_desde_bytes(clave)?;
-    let sig = Signature::<Conjunto>::try_from(firma)
-        .map_err(|e| VerificaError::FirmaIlegible(format!("{e:?}")))?;
-    let recuperado = vk
-        .verify(&sig)
-        .map_err(|e| VerificaError::NoVerifica(format!("{e:?}")))?;
+fn firma_sobre(de: &Acta, mensaje: &[u8], firma: &[u8]) -> Result<u64, VerificaError> {
+    // ⚠️ §862 · Con la clave del acta `de` y el verificador de SU esquema (RFC-0020, E3): la
+    // clave y su esquema llegan juntos, de la misma acta, y no se cruzan. La que entra firma con
+    // el del acta, y la que se va, con el de la previa (la D-D). `recuperar` elige el verificador
+    // y rechaza con su numero, antes de leer la clave, el esquema que no se acepta; hasta aqui,
+    // `clave_desde_bytes` y `Conjunto` fijado, que son su brazo de hoy.
+    let recuperado = recuperar(de.esquema, &de.clave, firma)?;
     // ⚠️ El paso que no se puede saltar, como en `verificar_cabeza`: `verify()` devuelve el
     // mensaje que la firma lleva dentro, y una firma legitima de otra cosa pasaria sin esto.
     if recuperado != mensaje {
@@ -199,7 +199,7 @@ fn firma_sobre(clave: &[u8], mensaje: &[u8], firma: &[u8]) -> Result<u64, Verifi
 /// la nueva y la vieja, porque ninguna firma la rescata. Despues, las firmas.
 pub fn verificar_acta(a: &ActaFirmada, previa: Option<&Acta>) -> Result<(), ActaError> {
     let acta = &a.acta;
-    if acta.esquema != ESQUEMA_XMSSMT_SHA2_40_8_256 {
+    if Esquema::aceptado(acta.esquema).is_err() {
         return Err(ActaError::EsquemaDesconocido(acta.esquema));
     }
     match (&acta.procedencia, previa) {
@@ -225,7 +225,7 @@ pub fn verificar_acta(a: &ActaFirmada, previa: Option<&Acta>) -> Result<(), Acta
         }
     }
     let pre = preambulo_acta(ACTA_VERSION, &digest_to_bytes(&acta.digest()));
-    let embebido = firma_sobre(&acta.clave, &pre, &a.firma).map_err(ActaError::Firma)?;
+    let embebido = firma_sobre(acta, &pre, &a.firma).map_err(ActaError::Firma)?;
     if embebido != acta.desde {
         return Err(ActaError::IndiceDeLaFirma {
             desde: acta.desde,
@@ -233,7 +233,7 @@ pub fn verificar_acta(a: &ActaFirmada, previa: Option<&Acta>) -> Result<(), Acta
         });
     }
     if let (Some(f), Some(previa)) = (&a.firma_anterior, previa) {
-        let e = firma_sobre(&previa.clave, &pre, f).map_err(ActaError::FirmaDeLaAnterior)?;
+        let e = firma_sobre(previa, &pre, f).map_err(ActaError::FirmaDeLaAnterior)?;
         if e <= previa.desde || e >= acta.desde {
             return Err(ActaError::IndiceDeLaAnterior {
                 previo: previa.desde,
@@ -877,6 +877,7 @@ fn q_de(v: &Value, campo: &str) -> Result<u64, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Conjunto; // ⚠️ §862: llegaba por `super::*`, del `use` que el despacho quito arriba
     use std::sync::OnceLock;
     use xmss::{KeyPair, SigningKey};
     use zk_ssl_hash::as_digest;
@@ -1695,5 +1696,62 @@ mod tests {
         }
         let borde = con("mmrSize", p - 1).expect("p - 1 es canonico");
         assert_eq!(borde.acta.procedencia.map(|x| x.mmr_size), Some(p - 1));
+    }
+
+    /// ⚠️ §862 · **La firma de la que se va se juzga con el esquema de la PREVIA** (la D-D del
+    /// RFC-0020), y el de la que entra, con el suyo. Sobre la escena, sin firmar nada nuevo: con
+    /// una previa de un esquema que el registro no asigna y la firma de la vieja, la biblioteca da
+    /// `FirmaDeLaAnterior(EsquemaNoRegistrado)` si la juzga, sin verificarla. Es lo que cambia
+    /// en la biblioteca: lo que hasta aqui daba `Ok` pasa a rojo, y lo que ya caia -por
+    /// `IndiceDeLaAnterior` o por otra causa de `FirmaDeLaAnterior`; aqui, una firma vacia, que
+    /// con la previa de la escena da `NoVerifica`- cae ahora por el esquema, con su texto. Ni el
+    /// binario ni el nodo lo alcanzan: les llega la previa ya juzgada. Sin la firma de la vieja, su
+    /// esquema no se mira. La que entra, con un esquema que no se conoce, se rechaza con el texto
+    /// de siempre, el que pina el vector `rotacion/neg-esquema-ajeno.json`. Falsador: verificar la
+    /// de la vieja con `acta.esquema`.
+    #[test]
+    fn la_firma_de_la_que_se_va_se_juzga_con_el_esquema_de_la_previa() {
+        let e = escena();
+        let mut previa = e.genesis.acta.clone();
+        previa.esquema = 0x2_0000_0001;
+        let fuera = Err(ActaError::FirmaDeLaAnterior(
+            VerificaError::EsquemaNoRegistrado(crate::EsquemaNoRegistrado(0x2_0000_0001)),
+        ));
+        assert_eq!(
+            verificar_acta(&e.rotacion, Some(&previa)),
+            fuera,
+            "la firma de la vieja, con el esquema de la previa"
+        );
+        let mut vacia = e.rotacion.clone();
+        vacia.firma_anterior = Some(Vec::new());
+        let leida = verificar_acta(&vacia, Some(&e.genesis.acta)).expect_err("una firma vacia");
+        assert!(
+            matches!(
+                &leida,
+                ActaError::FirmaDeLaAnterior(VerificaError::NoVerifica(_))
+            ),
+            "con la previa de la escena, la firma vacia de la vieja no verifica: {leida:?}"
+        );
+        assert_eq!(
+            verificar_acta(&vacia, Some(&previa)),
+            fuera,
+            "con la previa ajena, la misma firma cae por el esquema, sin verificarla"
+        );
+        let mut sin = e.rotacion.clone();
+        sin.firma_anterior = None;
+        assert_eq!(
+            verificar_acta(&sin, Some(&previa)),
+            Ok(()),
+            "sin la firma de la vieja, el esquema de la previa no se mira"
+        );
+        let mut ajena = e.rotacion.clone();
+        ajena.acta.esquema = 0x1_0000_0006;
+        let err =
+            verificar_acta(&ajena, Some(&e.genesis.acta)).expect_err("un esquema que no se conoce");
+        assert_eq!(err, ActaError::EsquemaDesconocido(0x1_0000_0006));
+        assert_eq!(
+            err.to_string(),
+            "el acta presenta una clave de esquema 0x100000006, que este verificador no conoce"
+        );
     }
 }

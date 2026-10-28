@@ -215,6 +215,18 @@ sin la condición de la máquina: con la misma huella sólo está demostrado en 
 0.4.2 rehecha desde su commit en otra sale con otra (abajo, «Reproducir el kit, para quien no se fíe
 de la descarga»). Lo que juzgaba sí lo juzga igual: la rehecha pasa sus once catálogos.
 
+⚠️ §862: **el árbol lleva la E3 del RFC-0020, el despacho por esquema, y ninguna release la lleva**:
+la 0.4.4 publicada, sobre `95bc457`, no la trae. La biblioteca del árbol gana tres constantes
+—`Esquema::ACEPTADOS`, `Esquema::EMITIDOS` y `Esquema::IMPLICITO`—, dos variantes de `VerificaError`
+—`EsquemaNoRegistrado` y `EsquemaNoAceptado`— y un rechazo: `verificar_acta`, con una previa de un
+esquema que el registro no asigna y la firma de la clave que se va, da, si llega a juzgarla,
+`FirmaDeLaAnterior(EsquemaNoRegistrado)`, antes de leer su clave; lo que daba `Ok` pasa a rojo, y lo
+que ya caía ahí cae por esa causa. Su versión sigue siendo la 0.4.4: la API de `zk-ssl-verify` como
+biblioteca queda fuera de la promesa (la D-A del RFC-0021 y su decisión 2). El mando no alcanza nada
+de eso, porque le llegan siempre el esquema implícito y la previa ya juzgada: no cambia un byte del
+cable, ni un veredicto, ni un texto. Lo que sí cambia es el binario: el que sale de este árbol ya no
+es el de la release, aunque lleve su número, y la huella que vale es la de arriba.
+
 ## 1. Un expediente que cuadra
 
 ```bash

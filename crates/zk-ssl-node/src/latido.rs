@@ -58,12 +58,12 @@
 //!
 //! ⚠️ El `Mutex` es de `std`: **no cruza un `await`**. Se toma, se calcula,
 //! se firma y se suelta **dentro de un bloque síncrono**; se duerme fuera.
-//! Cruzarlo bloquearía el ejecutor entero.
+//! Cruzarlo bloquearía el ejecutor entero. ⚠️ §866: y sin cruzarlo también: `latir` es síncrona, firma incluida, y corría en un hilo del ejecutor de tokio, que mientras tanto no atendía la escucha (medido en la 123 del BACKLOG); desde el §866 corre en su propio hilo, el de [`arrancar`].
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crate::firma_cabeza::{CabezaFirmada, FirmanteCabeza};
+use crate::firma_cabeza::{CabezaFirmada, FirmaError, FirmanteCabeza}; // ⚠️ §866: `FirmaError`, para el trait [`Firmar`] del final del fichero
 use crate::App;
 use zk_ssl::foto_pendientes::FotoPendientes;
 use zk_ssl::log::EpochHead;
@@ -110,7 +110,7 @@ pub struct Latido {
 /// medidos (S.3), y retener el candado durante ese tiempo pararía todas
 /// las escrituras del nodo — un latido de 144 ms cada 60 s es un 0,24 %
 /// del reloj, pero **retenido es un 0,24 % de parada total**, y no hace
-/// falta: la cabeza ya está leída. ⚠️ §892: el 0,24 % es de la firma sola; `latir` entera dura unos 804 ms medidos sin carga, y el RPC no contesta mientras dura (BACKLOG 123, §829).
+/// falta: la cabeza ya está leída. ⚠️ §892: el 0,24 % es de la firma sola; `latir` entera dura unos 804 ms medidos sin carga, y el RPC no contesta mientras dura (BACKLOG 123, §829). ⚠️ §866: medido, no era el candado, que se suelta antes de firmar, sino el hilo: `latir` corría en un hilo del ejecutor y nadie aceptaba conexiones; desde el §866 corre en el suyo, y el RPC contesta mientras firma (`el_rpc_contesta_por_tcp_mientras_el_latido_firma`).
 ///
 /// ## ⚠️ MEDIDO en M.1 (§252), y hasta entonces solo afirmado
 ///
@@ -129,7 +129,7 @@ pub struct Latido {
 ///
 /// **Nueve firmas solapadas, CERO escrituras afectadas.** El pico de la
 /// fase con firma quedó **+6,9 ms** sobre el p99 del control — muy lejos
-/// de los **144,5 ms** que costaría una firma bloqueante. ⚠️ §892: M.1 midió escrituras en serie; las sondas de lectura del RPC sí se paran mientras dura `latir` (BACKLOG 123, §829).
+/// de los **144,5 ms** que costaría una firma bloqueante. ⚠️ §892: M.1 midió escrituras en serie; las sondas de lectura del RPC sí se paran mientras dura `latir` (BACKLOG 123, §829). ⚠️ §866: y las escrituras tampoco se libraban, aquí: con un chorro de `dev_openSeeded` en serie contra el binario de `213b0b0`, 16 de 2.569 pasaron de 100 ms (292 ms la peor), por el ejecutor y no por el candado (la 123 del BACKLOG).
 ///
 /// ⚠️ **Si el candado se retuviera, se vería en el MÁXIMO, no en la
 /// media**: las escrituras van en serie, así que se retrasaría **una por
@@ -140,7 +140,7 @@ pub struct Latido {
 /// lleva prueba STARK y es mucho más caro que abrir cuenta; la
 /// concurrencia real —las escrituras van en serie **a propósito**, porque
 /// en paralelo se mide rendimiento y no latencia—; y otra máquina.
-pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result<Latido> {
+pub fn latir(app: &App, firmante: Option<&mut dyn Firmar>) -> anyhow::Result<Latido> { // ⚠️ §866: era `Option<&mut FirmanteCabeza>`; `dyn Firmar`, para que los tests de la 123 retengan la firma (el trait, al final del fichero)
     // ⚠️⚠️ §815 · EN PARADA NO SE COMPONE NI SE FIRMA (F2). La PARADA (§530, §655) dice que la
     // memoria puede ir por delante del disco -un candado envenenado a medio mutar, o el almacen
     // que fallo despues de que la capa mutara-, y una cabeza compuesta desde esa memoria acredita
@@ -405,19 +405,19 @@ pub(crate) fn avisar_acumulacion(app: &App, pagos: usize) {
     );
 }
 
-/// Lanza el latido en una tarea de fondo.
+/// Lanza el latido en una tarea de fondo. ⚠️ §866: en su propio hilo del sistema, «latido», y ya no en una tarea de tokio (la CORRECCIÓN, abajo).
 ///
 /// ⚠️ `tokio::spawn` y no un hilo: `main` es `async` y el ejecutor ya
 /// existe. Pero **el candado es de `std`**, así que [`latir`] es síncrona
-/// y se llama entera entre dos `await` — nunca a caballo de uno.
-pub fn arrancar(app: Arc<App>, mut firmante: Option<FirmanteCabeza>, cada: Duration) {
-    tokio::spawn(async move {
+/// y se llama entera entre dos `await` — nunca a caballo de uno. ⚠️ CORRECCIÓN (§866), corregida y no borrada (§247): un hilo, y no `tokio::spawn`. Llamada entera entre dos `await`, `latir` ocupaba un hilo del ejecutor mientras firmaba, y en un nodo ocioso nadie más atendía la escucha: el RPC no contestaba (medido en la 123 del BACKLOG). Ahora corre en su hilo del sistema, «latido», con el mismo bucle; lanzarlo puede fallar, y el arranque no sigue.
+pub fn arrancar<F: Firmar + 'static>(app: Arc<App>, mut firmante: Option<F>, cada: Duration) -> std::io::Result<()> {
+    std::thread::Builder::new().name("latido".into()).spawn(move || {
         let mut n: u64 = 0;
         loop {
-            tokio::time::sleep(cada).await;
+            std::thread::sleep(cada);
             n += 1;
             let t = Instant::now();
-            match latir(&app, firmante.as_mut()) {
+            match latir(&app, firmante.as_mut().map(|f| f as &mut dyn Firmar)) {
                 Ok(l) => {
                     let ms = t.elapsed().as_secs_f64() * 1000.0;
                     // ⚠️ HASTA §241 ESTO SE TIRABA: se registraba una línea y
@@ -439,7 +439,7 @@ pub fn arrancar(app: Arc<App>, mut firmante: Option<FirmanteCabeza>, cada: Durat
                 Err(e) => tracing::error!(latido = n, error = %e, "el latido fallo"),
             }
         }
-    });
+    }).map(drop)
 }
 
 /// Guarda la última cabeza, **con su propio candado**.
@@ -855,5 +855,267 @@ mod tests {
     fn la_cadencia_por_defecto_es_la_decidida() {
         // §121: una vez por minuto, decidido tras medir el almacenamiento.
         assert_eq!(LATIDO_POR_DEFECTO_S, 60);
+    }
+
+    // ── ⚠️ §866 · LA 123: el latido en su hilo, y el RPC que contesta mientras se firma ──
+    //
+    // Medido sobre `213b0b0`: con `latir` dentro de un `tokio::spawn`, la firma ocupaba un hilo del
+    // ejecutor y, en un nodo ocioso, nadie atendia la escucha; el nucleo completaba la conexion y el
+    // RPC no contestaba hasta que el latido volvia a su `sleep`. Estos tests retienen la firma a
+    // medio latido con un firmante REAL (`FirmanteRetenido`) y miran el nodo mientras tanto. El
+    // orden lo dan canales; los tiempos son solo topes para que un fallo caiga en vez de colgarse.
+
+    /// ⚠️ §866 · Lo que un `FirmanteRetenido` cuenta de cada firma que le piden: el hilo desde el que
+    /// se la piden y si ese hilo es del ejecutor de tokio.
+    struct Llamada {
+        hilo: Option<String>,
+        en_el_ejecutor: bool,
+    }
+
+    /// ⚠️ §866 · Un firmante REAL al que se le RETIENE la firma. Sus primeras `guion` firmas avisan
+    /// por `aviso` y esperan a `suelta` antes de firmar de verdad; si el test cae antes de soltarla,
+    /// `suelta` se cierra y la firma sale con error, sin firmar. Las que pasan del guion se quedan
+    /// paradas sin gastar CPU: un latido en su hilo no sigue firmando cuando el test ya ha acabado.
+    struct FirmanteRetenido {
+        real: FirmanteCabeza,
+        guion: usize,
+        llamadas: usize,
+        aviso: std::sync::mpsc::Sender<Llamada>,
+        suelta: std::sync::mpsc::Receiver<()>,
+    }
+
+    impl Firmar for FirmanteRetenido {
+        fn firmar(&mut self, epoch_digest: &[u8; 32]) -> Result<CabezaFirmada, FirmaError> {
+            self.llamadas += 1;
+            if self.llamadas > self.guion {
+                loop {
+                    std::thread::park();
+                }
+            }
+            let _ = self.aviso.send(Llamada {
+                hilo: std::thread::current().name().map(str::to_owned),
+                en_el_ejecutor: tokio::runtime::Handle::try_current().is_ok(),
+            });
+            if self.suelta.recv().is_err() {
+                return Err(FirmaError::Xmss("el test cayo sin soltar la firma: no se firma".into()));
+            }
+            self.real.firmar(epoch_digest)
+        }
+    }
+
+    /// La otra punta de un `FirmanteRetenido`: sus avisos, su suelta y la clave publica del real.
+    struct Retencion {
+        avisos: std::sync::mpsc::Receiver<Llamada>,
+        suelta: std::sync::mpsc::Sender<()>,
+        clave_publica: Vec<u8>,
+    }
+
+    fn retenido(nombre: &str, guion: usize) -> (FirmanteRetenido, Retencion) {
+        let real = FirmanteCabeza::desde_semilla(&semilla(), en_disco(nombre)).expect("abrir");
+        let clave_publica = real.clave_publica();
+        let (aviso, avisos) = std::sync::mpsc::channel();
+        let (soltar, suelta) = std::sync::mpsc::channel();
+        (
+            FirmanteRetenido { real, guion, llamadas: 0, aviso, suelta },
+            Retencion { avisos, suelta: soltar, clave_publica },
+        )
+    }
+
+    /// El tope de las esperas de estos tests, que solo existe para que un fallo caiga: una firma
+    /// cuesta aqui unos 0,25 s en release y unos 13 s en depuracion (§643); abrir y fondear una
+    /// cuenta, 0,6 s en release, y de 10 a 23 s con ocho `yes` y el test a `nice` 10.
+    const TOPE: Duration = Duration::from_secs(120);
+
+    /// Un runtime de tokio de dos hilos, el sabor de `#[tokio::main]`, que no se suelta nunca: con un
+    /// hilo del ejecutor retenido (los falsadores), soltarlo esperaria a ese hilo para siempre.
+    fn runtime() -> &'static tokio::runtime::Runtime {
+        Box::leak(Box::new(
+            tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(2)
+                .enable_all()
+                .build()
+                .expect("runtime"),
+        ))
+    }
+
+    /// Una peticion JSON-RPC por TCP, a mano: HTTP/1.1 con `Connection: close`, leida hasta el
+    /// final, con 30 s de tope de lectura.
+    fn por_tcp(dir: std::net::SocketAddr, metodo: &str) -> std::io::Result<String> {
+        use std::io::{Read, Write};
+        let cuerpo = format!(r#"{{"jsonrpc":"2.0","id":1,"method":"{metodo}","params":{{}}}}"#);
+        let mut s = std::net::TcpStream::connect_timeout(&dir, Duration::from_secs(5))?;
+        s.set_read_timeout(Some(Duration::from_secs(30)))?;
+        write!(
+            s,
+            "POST / HTTP/1.1\r\nHost: {dir}\r\nContent-Type: application/json\r\n\
+             Content-Length: {}\r\nConnection: close\r\n\r\n{cuerpo}",
+            cuerpo.len()
+        )?;
+        let mut r = String::new();
+        s.read_to_string(&mut r)?;
+        Ok(r)
+    }
+
+    fn contesta(r: &str) -> bool {
+        r.starts_with("HTTP/1.1 200") && r.contains("\"result\"")
+    }
+
+    /// ⚠️ §866 · LA 123, EL HILO. El latido corre en su propio hilo del sistema, «latido», y no en un
+    /// hilo del ejecutor de tokio, aunque se lance desde dentro de un runtime, como en `main`.
+    /// Falsador, corrido: con el `tokio::spawn` de antes en `arrancar`, la firma se pide desde un
+    /// «tokio-rt-worker», dentro del ejecutor, y cae.
+    #[test]
+    fn el_latido_corre_en_su_hilo_y_no_en_un_hilo_del_ejecutor() {
+        let rt = runtime();
+        let _dentro = rt.enter();
+        let app = Arc::new(crate::tests::nodo(30));
+        let (f, r) = retenido("en_su_hilo", 1);
+        arrancar(app, Some(f), Duration::ZERO).expect("lanzar el latido");
+        let ll = r.avisos.recv_timeout(TOPE).expect("el latido llega a la firma");
+        assert_eq!(ll.hilo.as_deref(), Some("latido"), "la firma se pide desde el hilo del latido");
+        assert!(!ll.en_el_ejecutor, "y ese hilo no es del ejecutor de tokio");
+    }
+
+    /// ⚠️ §866 · LA 123, EL SINTOMA. Con la firma del latido retenida, el nodo contesta por TCP: la
+    /// escucha de axum, en un runtime de dos hilos, acepta y el despacho responde; y al soltarla la
+    /// cabeza sale firmada con el indice 1, se sirve por TCP y verifica. Es lo que, medido sobre
+    /// `213b0b0`, no pasaba en un nodo ocioso. El latido duerme 200 ms, y no cero: con cero, el
+    /// `tokio::time::sleep` de antes podia vencer dentro de su propio `poll` y la tarea volvia a la
+    /// cola como un `yield`, con aviso a otro hilo, que atendia la escucha (tokio 1.53.1,
+    /// `runtime/time/mod.rs:436-438` y `runtime/task/harness.rs:156-161`), y el falsador no caia
+    /// siempre. Falsador, corrido 20 veces: con el `tokio::spawn` de antes en `arrancar`, la lectura
+    /// de la sonda caduca a los 30 s y cae.
+    #[test]
+    fn el_rpc_contesta_por_tcp_mientras_el_latido_firma() {
+        let rt = runtime();
+        let _dentro = rt.enter();
+        let app = Arc::new(crate::tests::nodo(30));
+        let escucha = rt.block_on(tokio::net::TcpListener::bind("127.0.0.1:0")).expect("escucha");
+        let dir = escucha.local_addr().expect("direccion");
+        let enrutador = crate::enrutador(app.clone());
+        let _servidor = rt.spawn(async move { axum::serve(escucha, enrutador).await });
+        let antes = por_tcp(dir, "zkssl_supply").expect("premisa: el nodo contesta por TCP");
+        assert!(contesta(&antes), "premisa: el nodo contesta antes del latido: {antes}");
+        let (f, r) = retenido("rpc_por_tcp", 1);
+        arrancar(app.clone(), Some(f), Duration::from_millis(200)).expect("lanzar el latido");
+        r.avisos.recv_timeout(TOPE).expect("el latido llega a la firma");
+        assert!(
+            app.ultima_cabeza.lock().expect("cabeza").is_none(),
+            "premisa: la firma esta retenida y no hay cabeza"
+        );
+        let durante = por_tcp(dir, "zkssl_supply").expect("con la firma retenida, el nodo contesta por TCP");
+        assert!(contesta(&durante), "con la firma retenida, el nodo contesta: {durante}");
+        r.suelta.send(()).expect("soltar la firma");
+        let t = Instant::now();
+        while app.ultima_cabeza.lock().expect("cabeza").is_none() {
+            assert!(t.elapsed() < TOPE, "soltada la firma, la cabeza no sale");
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        let servida = por_tcp(dir, "zkssl_signedEpochHead").expect("la cabeza firmada, por TCP");
+        assert!(contesta(&servida) && servida.contains("\"available\":true"), "{servida}");
+        let u = app.ultima_cabeza.lock().expect("cabeza");
+        let l = u.as_ref().expect("cabeza");
+        let c = l.firma.as_ref().expect("la cabeza va firmada");
+        assert_eq!(c.indice, 1, "la primera cabeza lleva el indice 1");
+        crate::firma_cabeza::verificar_cabeza(&r.clave_publica, &l.epoch_digest, c)
+            .expect("y verifica");
+    }
+
+    /// ⚠️ §866 · LA 123, LA GUARDA. Mientras se firma, ningun candado del nodo esta tomado: el del
+    /// estado, los de recepcion y registro, los de la cabeza, las hojas y el arbol del MMR, el del
+    /// indice del diario y el de las cofirmas. El candado se suelta antes de firmar desde el §241, y
+    /// esto lo ata: lo que dejaba al RPC sin contestar era el hilo, no un candado. Falsador, corrido:
+    /// tomar el candado del estado alrededor de la firma; cae en el primero.
+    #[test]
+    fn mientras_se_firma_ningun_candado_del_nodo_esta_tomado() {
+        let app = Arc::new(crate::tests::nodo(30));
+        let (mut f, r) = retenido("candados", 1);
+        let a = app.clone();
+        let h = std::thread::spawn(move || {
+            latir(&a, Some(&mut f)).map(|l| l.firma.map(|c| c.indice))
+        });
+        r.avisos.recv_timeout(TOPE).expect("el latido llega a la firma");
+        assert!(app.estado.try_lock().is_ok(), "el candado del estado esta libre mientras se firma");
+        assert!(app.recepcion.try_lock().is_ok(), "el del contador de recepcion");
+        assert!(app.registro.try_lock().is_ok(), "el del registro de recepcion");
+        assert!(app.ultima_cabeza.try_lock().is_ok(), "el de la ultima cabeza");
+        assert!(app.hojas_mmr.try_lock().is_ok(), "el de las hojas del MMR");
+        assert!(app.arbol_mmr.try_lock().is_ok(), "el del arbol del MMR");
+        assert!(app.indice_diario.try_lock().is_ok(), "el del indice del diario");
+        assert!(app.cofirmas.try_lock().is_ok(), "el de las cofirmas");
+        r.suelta.send(()).expect("soltar la firma");
+        let indice = h.join().expect("el hilo del latido").expect("latir");
+        assert_eq!(indice, Some(1), "y la cabeza sale firmada con el indice 1");
+    }
+
+    /// ⚠️ §866 · LA 123, LO QUE CAMBIA. Con la firma retenida, el despacho lee y escribe; la cabeza
+    /// que sale es la compuesta antes de la escritura, y la escritura entra en la siguiente, que
+    /// lleva el indice 2 con el guardian a la par. Mientras se firma la cabeza 1, la era publicada
+    /// sigue en 0, y la que fija un recibo que llega en esa ventana (`era_al_recibir`) es la 1. Que
+    /// caiga en la cabeza 2 no lo ata este test, que no emite ningun recibo: se deduce de la D-D
+    /// del RFC-0010, que lo contempla («cuando el recibo llego mientras se firmaba», §681), y en un
+    /// nodo ocioso no se daba porque el despacho esperaba. Falsadores, corridos: tomar el candado
+    /// del estado alrededor de la firma, y el despacho no contesta en el tope y cae; y fijar al
+    /// recibir la era de una cabeza mas, y cae en la era.
+    #[test]
+    fn con_la_firma_retenida_el_despacho_lee_y_escribe_y_la_cabeza_es_la_compuesta_antes() {
+        let app = Arc::new(crate::tests::nodo(30));
+        let seq_antes = latir(&app, None).expect("componer sin firmar").seq;
+        let (f, r) = retenido("despacho", 1);
+        let a = app.clone();
+        let h = std::thread::spawn(move || {
+            let mut f = f;
+            let l = latir(&a, Some(&mut f));
+            (l, f)
+        });
+        r.avisos.recv_timeout(TOPE).expect("el latido llega a la firma");
+        let (hecho, leido) = std::sync::mpsc::channel();
+        let a = app.clone();
+        std::thread::spawn(move || {
+            let lee = crate::dispatch(&a, "zkssl_supply", json!({})).is_ok();
+            crate::tests::cuenta(&a, 902, 1_000);
+            let _ = hecho.send(lee);
+        });
+        let lee = leido
+            .recv_timeout(TOPE)
+            .expect("con la firma retenida, el despacho lee y escribe");
+        assert!(lee, "y la lectura sale bien");
+        assert_eq!(
+            app.indice_firma.load(std::sync::atomic::Ordering::Acquire),
+            0,
+            "mientras se firma la cabeza 1, la era publicada sigue en 0"
+        );
+        assert_eq!(crate::era_al_recibir(&app), 1, "y un recibo de esa ventana fija la era 1");
+        r.suelta.send(()).expect("soltar la firma");
+        let (l1, mut f) = h.join().expect("el hilo del latido");
+        let l1 = l1.expect("latir");
+        assert_eq!(l1.firma.as_ref().expect("firmada").indice, 1);
+        assert_eq!(l1.seq, seq_antes, "la cabeza es la compuesta antes de la escritura");
+        let l2 = latir(&app, Some(&mut f.real)).expect("latir 2");
+        assert!(l2.seq > seq_antes, "la escritura entra en la cabeza siguiente");
+        assert_eq!(l2.firma.as_ref().expect("firmada").indice, 2);
+        assert_eq!(app.indice_firma.load(std::sync::atomic::Ordering::Acquire), 2);
+        assert_eq!(
+            f.real.reconciliar().expect("reconciliar"),
+            Reconciliacion::Coincide { indice: 2 },
+            "el guardian y la clave van juntos"
+        );
+    }
+}
+
+/// ⚠️ §866 · **Lo que el latido pide a su firmante: firmar un digest.** [`latir`] lo toma como
+/// `dyn Firmar` para que los tests de la 123 puedan RETENER la firma a medio latido y mirar, mientras
+/// tanto, en qué hilo corre, qué candados hay tomados y si el RPC contesta. En el binario no abre
+/// ningún camino: lo implementa [`FirmanteCabeza`] con su `firmar` de siempre —reserva el índice con
+/// su fsync, firma y se autoverifica—, y nada más. `Send` porque el firmante viaja, una vez, al hilo
+/// del latido. Va al final del fichero, detrás de los tests, para no mover ninguna línea citada.
+pub trait Firmar: Send {
+    /// Firma `epoch_digest`, como el `firmar` de [`FirmanteCabeza`].
+    fn firmar(&mut self, epoch_digest: &[u8; 32]) -> Result<CabezaFirmada, FirmaError>;
+}
+
+impl Firmar for FirmanteCabeza {
+    fn firmar(&mut self, epoch_digest: &[u8; 32]) -> Result<CabezaFirmada, FirmaError> {
+        FirmanteCabeza::firmar(self, epoch_digest)
     }
 }

@@ -50,7 +50,7 @@ el núcleo acepta tiene **un solo productor**: `VersionCabeza` en `zk-ssl-verify
 exhaustivo cuyo texto («v2, v3, v4, v5 o v6» desde el §558; «v2, v3, v4 o v5» desde el §451) se deriva de sus variantes y del que el mando y el testigo
 **consumen**, sin repetirlo. Una composición nueva es una variante nueva: el compilador marca cada
 `match` que la olvide, y `VERSION_FORMATO` tiene que ser miembro (atado en los tests del crate).
-Una `formatVersion` fuera del conjunto se rechaza con texto y **sin truncar**: `0x103` no es un 3.
+Una `formatVersion` fuera del conjunto se rechaza con texto y **sin truncar**: `0x103` no es un 3. ⚠️ §862: el conjunto de esquemas que se aceptan sigue el mismo molde —`Esquema::ACEPTADOS`, con `Esquema::EMITIDOS` atado a él como `VERSION_FORMATO` al de versiones—, y un esquema fuera del registro o del conjunto se rechaza con su número, sin truncar (RFC-0020, E3).
 
 **Segunda mitad — lo que no se firma no existe para el núcleo.** Una clave del sobre que ninguna
 composición ni ningún preámbulo lee no puede alterar lo que se comprueba; el verificador de
@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 117 elementos alcanzables en `zk-ssl-verify` y 64 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 143, REFERENCIA 14, REGISTRO 18). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 120 elementos alcanzables en `zk-ssl-verify` y 64 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 146, REFERENCIA 14, REGISTRO 18). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`, `actas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -103,6 +103,7 @@ real de sus llaves, no por la primera marca.
 | `epoch_digest_v6` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `params_digest` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `DOMINIO_PARAMS` | `hash/lib.rs` | NÚCLEO | CABEZA | `const` |
+| `ACEPTADOS` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `ANCHO_INDICE` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `COFIRMA_VERSION` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `COFIRMA_V_MAX` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
@@ -110,10 +111,12 @@ real de sus llaves, no por la primera marca.
 | `Conjunto` | `verify/lib.rs` | NÚCLEO | FIRMA | `type` |
 | `DOMINIO` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `DOMINIO_COFIRMA` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
+| `EMITIDOS` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `EntradaEsquema` | `verify/lib.rs` | NÚCLEO | FIRMA | `struct` |
 | `Esquema` | `verify/lib.rs` | NÚCLEO | FIRMA | `enum` |
 | `EsquemaNoRegistrado` | `verify/lib.rs` | REFERENCIA | FIRMA | `struct` |
 | `FIRMA_RFC_BYTES` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
+| `IMPLICITO` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `OFFSET_MT_UPSTREAM` | `verify/lib.rs` | REFERENCIA | FIRMA | `const` |
 | `TODAS` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `TODOS` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
@@ -270,7 +273,7 @@ real de sus llaves, no por la primera marca.
   uno haría colisionar o dejaría de verificar lo custodiado. Desde el §800, también el registro de
   esquemas, con lo que declara cada entrada, y los dos preámbulos v7 (RFC-0020, E2), que nadie
   firma todavía: un número de esquema que cambiara de dueño haría que una firma custodiada dijera
-  otro esquema.
+  otro esquema. ⚠️ §862: y desde la E3, los dos conjuntos del despacho, el aceptado y el emitido, y el esquema implícito de v1 a v6: un esquema que saliera del aceptado dejaría sin verificar lo que firmó.
 - **ACUSES** — las reglas del árbol de acuses y su composición: el nodo las construye y el
   verificador las comprueba llamando las mismas (§274).
 - **MMR** — el MMR de cabezas: la hoja, el nodo, la cima, la inclusión y la consistencia (§291).
@@ -365,7 +368,7 @@ clave en hex, los largos como número y los dos sí-o-no como booleanos de JSON.
   sobre el v7 no la acepta hoy ningún verificador. Sus KAT son `preambulo_v7.json` y
   `preambulo_cofirma_v7.json`; el de la cofirma lleva dos esquemas distintos, para fijar su orden,
   y el del operador no está en el registro: el preámbulo compone bytes, y si un número está en el
-  registro lo comprueba quien verifica (la E3).
+  registro lo comprueba quien verifica (la E3). ⚠️ §862: desde la E3 lo comprueba, antes de leer la clave; los dos preámbulos v7 siguen apagados, y una firma sobre ellos sigue sin aceptarse.
 
 - **El registro de esquemas** (RFC-0020, D-A; §800). El número con que se nombra el esquema de una
   firma es el `esquema` del acta, un `u64` con la familia en los 32 bits altos y el parámetro de
@@ -388,7 +391,7 @@ clave en hex, los largos como número y los dos sí-o-no como booleanos de JSON.
   `as_digest` (DERIVADO de la regla 2 de la canonicidad). Ninguna otra entrada se asigna aquí: qué
   esquema sería el B lo mide la entrada 108 del `BACKLOG.md`, y su número lo da el registro cuando
   entre. Está **apagado**: nadie lo lee todavía —el verificador fija `Conjunto` en su código y el
-  acta compara con su constante—; elegir el verificador por el esquema es la E3 del RFC-0020.
+  acta compara con su constante—; elegir el verificador por el esquema es la E3 del RFC-0020. ⚠️ §862: eso valía hasta la E3, que lo lee: el verificador elige por el esquema, con un conjunto aceptado y otro emitido (`Esquema::ACEPTADOS` y `Esquema::EMITIDOS`); el de una cabeza o una cofirma v1 a v6 es el implícito (`Esquema::IMPLICITO`); y el acta mira el conjunto aceptado y verifica la firma de la clave que se va con el esquema del acta previa. Nadie firma todavía con el esquema dentro: es la E4.
 
 - **Las composiciones**, en el orden exacto de los merges: `native_leaf = merge(merge(pk,
   embeber(saldo)), embeber(nonce))` y la salteada `merge(hoja, salt)`; `path_root` sube desde la
@@ -463,6 +466,13 @@ clave en hex, los largos como número y los dos sí-o-no como booleanos de JSON.
 
 ## 8. Historia
 
+- §862 — el despacho por esquema en `zk-ssl-verify` (RFC-0020, E3): `ACEPTADOS`, `EMITIDOS` e
+  `IMPLICITO` en `Esquema`, y dos variantes de `VerificaError`, `EsquemaNoRegistrado` y
+  `EsquemaNoAceptado`. La cabeza, la cofirma y el acta eligen el verificador por el esquema, y uno
+  que no se acepta se rechaza con su número antes de leer la clave. Tres filas nuevas, familia
+  FIRMA; las variantes no ganan fila, que es del tipo, y el despacho es privado. Ningún byte, ni
+  un KAT, ni un veredicto del mando cambian: con un solo esquema registrado, el de hoy es el
+  implícito y se acepta.
 - §722 — `relevo_del_acta`, `CabezaDeLaCadena`,
   `juzgar_historia`, `Relevo`, con `contiene`, y `relevo_del_tramo` en el módulo `actas`: la
   `procedencia` de un acta fija en el MMR de cabezas el sitio del cambio de clave, y dos cabezas de

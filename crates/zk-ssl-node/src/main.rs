@@ -2148,12 +2148,12 @@ async fn main() -> anyhow::Result<()> {
 
     if args.latido > 0 {
         tracing::info!(cada_s = args.latido, "latido de cabezas de epoca en marcha");
-        latido::arrancar(app.clone(), firmante, Duration::from_secs(args.latido));
+        latido::arrancar(app.clone(), firmante, Duration::from_secs(args.latido)).map_err(|e| anyhow::anyhow!("no se pudo lanzar el hilo del latido: {e}"))?; // ⚠️ §866: un hilo propio, «latido», y no una tarea del ejecutor (la 123)
     } else {
         tracing::warn!("--latido 0: NO se emiten cabezas de epoca");
     }
 
-    let router = Router::new().route("/", post(handle)).with_state(app);
+    let router = enrutador(app); // ⚠️ §866: el mismo enrutador, en su fn al final del fichero, para que un test lo sirva por TCP
     tracing::info!(listen = %args.listen, "zk-ssl-node escuchando (JSON-RPC 2.0, spec/RPC.md)");
 
     let listener = tokio::net::TcpListener::bind(args.listen).await?;
@@ -9492,4 +9492,11 @@ mod tests_canonicidad {
             assert_eq!(arranca(bandera, P - 1), "ARRANCA", "{bandera} = p - 1");
         }
     }
+}
+
+/// ⚠️ §866 · El enrutador del nodo: un solo `POST /` a [`handle`], con el estado. Sale de `main` a
+/// su fn para que el test de la 123 (`el_rpc_contesta_por_tcp_mientras_el_latido_firma`) sirva por
+/// TCP EL MISMO que sirve el binario, y va al final del fichero para no mover ninguna linea citada.
+fn enrutador(app: std::sync::Arc<App>) -> Router {
+    Router::new().route("/", post(handle)).with_state(app)
 }

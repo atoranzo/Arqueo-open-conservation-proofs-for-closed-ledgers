@@ -3,10 +3,11 @@
 - **Estado:** PROPUESTO (§790) — el texto, sus etapas y sus siete decisiones, escritos sobre lo
   medido en el árbol en `8c02941`. El autor lo aceptó en el §799, con sus siete decisiones TOMADAS,
   en cada una la que el texto recomienda: ver «Decisiones (del autor, §799)». La E2, el núcleo
-  apagado, construida en el §800; las demás, sin construir: ACEPTADO llega con ellas, porque el paso
+  apagado, construida en el §800, y la E3, el despacho, en el §862; las demás, sin construir: ACEPTADO llega con ellas, porque el paso
   a ACEPTADO exige construir sus etapas (regla 4 del PROCESO). ⚠️ §799: hasta aquí decía «Ninguna
   decisión está tomada y ninguna etapa construida: adoptarlo, en todo o en parte, es del autor».
   ⚠️ §800: hasta aquí decía «Ninguna etapa construida: ACEPTADO llega con ellas».
+  ⚠️ §862: hasta aquí decía «La E2, el núcleo apagado, construida en el §800; las demás, sin construir».
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude, en una sesión de Claude Code en la nube (§790): midió el árbol y
   redactó el borrador, fuera del paso 4 de `GENAI.md` — ver [`GENAI.md`](../../GENAI.md)
@@ -20,7 +21,7 @@
   byte de versión elige recompositor), §297 (la cofirma), §406 (`VersionCabeza`), §643 y §644 (el
   acta, con su esquema, y su opt-in), §699 (lo que una versión no identifica), §790 (este borrador),
   §799 (la aceptación del autor, con sus siete decisiones), §800 (la E2: el registro y los dos
-  preámbulos v7, apagados), §826 (la superficie que rompe la E4, en su tabla), §852 (las dos citas de `spec/vectors/paquete/MANIFIESTO.txt` de las siete líneas que se mudan, que sus cinco negativos corrieron, con su marca). ⚠️ §826: acababa en el §800, y callaba el §852, que tocó este fichero con su marca.
+  preámbulos v7, apagados), §826 (la superficie que rompe la E4, en su tabla), §852 (las dos citas de `spec/vectors/paquete/MANIFIESTO.txt` de las siete líneas que se mudan, que sus cinco negativos corrieron, con su marca), §862 (la E3: el despacho por esquema, construido, con sus marcas). ⚠️ §826: acababa en el §800, y callaba el §852, que tocó este fichero con su marca. ⚠️ §862: acababa en el §852.
 - **Backlog:** la **87** (agilidad criptográfica: el esquema de firma no está versionado), que este
   RFC no cierra hasta que se construya; con la **84** (cambiar de esquema es una rotación) y la
   **108** (qué esquema sería el B: no se mide aquí).
@@ -31,7 +32,7 @@
 |---|---|---|---|
 | E1 — la regla, escrita | este texto: el identificador, dónde entra, la regla de la transición y su coste | no | **escrita (§790) y decidida (§799)** ⚠️ §799: hasta aquí decía «propuesta (§790)» |
 | E2 — el núcleo, apagado | el registro de esquemas en `spec/NUCLEO.md` §6, el preámbulo v7 de la cabeza y el de la cofirma con sus KAT, y la segunda implementación que los reproduce; nadie los firma todavía | no (aditivo: el registro, dos funciones y tres KAT) | **construida (§800)**: `Esquema` y `preambulo_v7`/`preambulo_cofirma_v7` en `zk-ssl-verify`, `registro_de_esquemas.json`, `preambulo_v7.json` y `preambulo_cofirma_v7.json` en `spec/vectors/nucleo/`, y `tools/segunda` que los reproduce; ni el nodo, ni el testigo, ni el kit los firman ni los aceptan ⚠️ §800: hasta aquí decía «sin construir» |
-| E3 — el despacho | el verificador elige el verificador por el esquema, con un conjunto aceptado y otro emitido; un esquema que no se acepta se rechaza con su número | no (con un solo esquema registrado, nada cambia de veredicto) | sin construir |
+| E3 — el despacho | el verificador elige el verificador por el esquema, con un conjunto aceptado y otro emitido; un esquema que no se acepta se rechaza con su número | no (con un solo esquema registrado, nada cambia de veredicto) ⚠️ §862: ninguno del cable ni de S1 a S6; cambia la biblioteca, que la D-A del RFC-0021 deja fuera de la promesa: `verificar_acta` con una previa de un esquema que el registro no asigna y la firma de la clave que se va da, si llega a juzgarla, `FirmaDeLaAnterior(EsquemaNoRegistrado)`, antes de leer su clave, así que lo que daba `Ok` pasa a rojo y lo que ya caía —por `IndiceDeLaAnterior` o por otra causa de `FirmaDeLaAnterior`— cae por esa, con su texto; ni el kit ni el nodo lo alcanzan, porque les llega la previa ya juzgada | **construida (§862)**: `Esquema::ACEPTADOS`, `Esquema::EMITIDOS` y `Esquema::IMPLICITO` en `zk-ssl-verify`, atados en un test; `verificar_cabeza`, `verificar_cofirma` y `verificar_acta` eligen el verificador por el esquema —el implícito para todo byte de versión hasta la E4— y rechazan con su número el que no está en el registro y el que no se acepta, antes de leer la clave (`VerificaError::EsquemaNoRegistrado` y `::EsquemaNoAceptado`); el acta juzga la firma de la clave que se va con el esquema de la previa, y conserva su texto; `tools/segunda/juez_cabezas.py` y `cable.py` pasan por el despacho, `verificador.py` no; la v7 sigue apagada ⚠️ §862: hasta aquí decía «sin construir» |
 | E4 — el corte | `VersionCabeza::V7` en el conjunto; el nodo firma y sirve v7 con `esquema`; el testigo cofirma v7; el kit lee `esquema` en cada cabeza de sus sobres; los vectores que cambian de texto, mudados a `0.4/` | **sí**: S3, la cabeza y la cofirma v7, con su `esquema` bajo la firma; S1, porque el cable las sirve; y S4, porque el kit lee `esquema` en cada cabeza de sus sobres; en S5 no rompe: las siete líneas de manifiesto que cambian de texto se mudan a `0.4/` con sus vectores (R6 b). ⚠️ §826: decía «**sí**», sin la superficie que pide la R5 del RFC-0021 | sin construir; en el sello del corte `zkssl/0.5`, como decidió el autor en el §799 (decisión 7) ⚠️ §799: hasta aquí decía «si el autor lo decide así» |
 | E5 — la transición, medida | un segundo esquema registrado, una rotación A -> B en un nodo real y una cabeza de A juzgada por contención bajo B, en un banco | según el esquema B | sin construir; espera a la 108 y a la elección del autor |
 
@@ -60,7 +61,7 @@ Tres hechos más, del código:
    adjunto (`tools/segunda/juez_cabezas.py:71-75` y `:91-92`;
    `tools/segunda/kat_xmss/xmss.py:151-163`). Con un esquema, las dos cosas dan lo mismo; con dos,
    quien verifica tiene que saber cuál antes de verificar, y eso es lo que la 87 pide atar a la
-   firma.
+   firma. ⚠️ §862: desde la E3, el verificador elige por el esquema, y `juez_cabezas.py` y `cable.py` también: toman la entrada del registro del esquema de la firma —en v1 a v6, el implícito— y de ella el largo con que `partir` parte la firma; `partir` sigue en la `:71-75` y recibe la entrada, y la `:103-106` pasa la clave por el despacho —que exige una clave del largo y el prefijo de la entrada— antes de leer su OID y partir la firma, así que el OID que el juez lee después, para el índice embebido, es el de una clave ya cotejada. `cable.py` no coteja la clave con la entrada: sigue anclándola por el OID de la casa y midiendo con ese OID el largo de la firma y su índice, que con un solo esquema da lo mismo. `tools/segunda/verificador.py` sigue eligiendo por el OID.
 2. **El OID de la clave no identifica el esquema ni dentro de RFC 8391.** Sus dos registros, XMSS y
    XMSS^MT, empiezan los dos en 1, y el 5 es válido en los dos (`lib.rs:535-537`, §240). El acta lo
    resuelve con la familia en los 32 bits altos: `ESQUEMA_XMSSMT_SHA2_40_8_256 = (1 << 32) |
@@ -89,6 +90,18 @@ Distintas son 60 —49 de cabeza, 9 de acta y 2 de cofirma—: muchos vectores d
 capturas. Cada firma mide 18.469 B más su preámbulo (`FIRMA_RFC_BYTES`, `lib.rs:287`; el test
 de `lib.rs:821`). Medido con un recorrido de Python que busca en cada vector las cadenas hex de
 18.469 B más un preámbulo y lee el dominio que lo abre.
+
+⚠️ §862: las 23 citas por línea de este documento a `crates/zk-ssl-verify/src/lib.rs` y a
+`actas.rs`, y las cuatro de la tabla de arriba a `spec/NUCLEO.md`, son del árbol que declara su
+cabecera, `8c02941`, que el §800 ya dio por medida fechada, y este clon no lo tiene: no se han
+cotejado allí. En `213b0b0` ya no caían en su sitio —`preambulo`, que la tabla cita en la
+`lib.rs:426-432`, estaba en la `:540`; el rechazo del esquema de `verificar_acta`, citado en la
+`actas.rs:196-199`, en la `:202-204`; y los preámbulos de `spec/NUCLEO.md`, citados en la
+`:329-331`, en la `:351-353`—, y la E3 corre más las de `lib.rs` y las de `spec/NUCLEO.md`, y una
+línea la `actas.rs:35-38` y la `:35-49` —`preambulo` pasa a la `:610`, y los preámbulos, a la
+`:354-356`— y deja en la `:202-204` el rechazo del acta. No se cambian por las de hoy, que el
+siguiente sello volvería a mover: cada pieza se encuentra por el nombre que el texto da a su lado.
+Las de `tools/segunda/juez_cabezas.py` del hecho 1 llevan su marca.
 
 ## Diseño
 
@@ -197,7 +210,12 @@ escritura de clave, el compromiso de la pre-rotación no diría cuál. Es la dec
    de A es DERIVADO de leer el código; lo mide la E5.
 6. **Un esquema que el verificador no acepta se rechaza con su número**, antes de mirar nada más,
    como ya hace `verificar_acta` (`actas.rs:198-199`), y con el texto del registro. Falla cerrada:
-   un verificador que no conoce B no da VERDE a una cabeza de B, ni la prueba con A.
+   un verificador que no conoce B no da VERDE a una cabeza de B, ni la prueba con A. ⚠️ §862: así
+   lo hacen desde la E3 la cabeza y la cofirma, con el texto del registro para el número que no está
+   en él y otro, con su nombre, para el que está y no se acepta; el acta conserva el suyo, «el acta
+   presenta una clave de esquema {e:#x}, que este verificador no conoce», porque lo pina un vector
+   publicado (`spec/vectors/rotacion/MANIFIESTO.txt:43`) y cambiarlo sería una ruptura (la R1 del
+   RFC-0021; su R6 b lo mudaría).
 
 ### D-F — El coste
 
@@ -324,7 +342,10 @@ cada una, la tomada y las descartadas. El RFC sigue PROPUESTO hasta que se const
 - **Probar los verificadores aceptados en orden** hasta que uno dé VERDE: el resultado lo decide
   el más débil del conjunto, y una firma no dice cuál la aceptó.
 - **Leer el esquema de la clave**, como hace hoy la segunda: el OID es ambiguo dentro de RFC 8391
-  (hecho 2) y no va firmado.
+  (hecho 2) y no va firmado. ⚠️ §862: desde la E3, `juez_cabezas.py` y `cable.py` toman el esquema
+  del despacho, el implícito, y no de la clave; el juez lee el OID sólo de una clave ya cotejada con
+  la entrada, para el índice, y `cable.py`, sin cotejarla, para anclarla y medir la firma;
+  `verificador.py` elige todavía por él.
 
 ## Seguridad
 

@@ -430,6 +430,12 @@ def juzgar(ruta):
     if v not in VERSIONES:
         raise no_verifica(f"formatVersion {v}: el testigo recompone cabezas v2, v3, v4, v5 o v6")
     declarado = q(cab, "index")
+    # 6 bis · ⚠️ §862 · el esquema, antes que la clave (RFC-0020, E3): el de una cabeza v2 a v6 es el
+    #     implicito, y este consumidor lo acepta; uno que no aceptara se rechazaria con su numero.
+    try:
+        entrada = N.entrada_aceptada(N.ESQUEMA_IMPLICITO)
+    except ValueError as e:
+        raise no_verifica(str(e))
     # 7 · el ancla de la clave: con la memoria fresca se fija la que llega (TOFU), si es una clave
     #     de la familia que la casa firma.
     pk = bytes.fromhex(cab["publicKey"][2:])
@@ -443,8 +449,9 @@ def juzgar(ruta):
         xmss.parsear_clave(pk)
     except ValueError as e:
         raise no_verifica(f"clave publica ilegible: {e}")
-    # 8 · la firma: la de RFC 8391 va delante y el mensaje firmado detras (juez_cabezas.partir).
-    firma, mensaje = J.partir(bytes.fromhex(cab["signature"][2:]), oid)
+    # 8 · la firma: la de RFC 8391 va delante y el mensaje firmado detras (juez_cabezas.partir), con la
+    #     entrada de su esquema (⚠️ §862: hasta aqui, con el OID de la clave).
+    firma, mensaje = J.partir(bytes.fromhex(cab["signature"][2:]), entrada)
     if len(firma) != xmss.largo_firma(oid) or not xmss.verificar(pk, mensaje, firma):
         raise no_verifica("la firma no verifica")
     # 9 · y lo que firma tiene que ser el preambulo de ESTA cabeza: dominio, version y digest servido.
