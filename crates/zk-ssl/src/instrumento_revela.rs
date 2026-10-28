@@ -254,6 +254,8 @@ fn asierta(fila: &str, pr: &[u8], celdas: &[Celda]) {
         }
     }
     let prueba = winterfell::Proof::from_bytes(pr).expect("la prueba se deserializa");
+    // A1 del HVZK (§896): el instrumento de la cota lee, en su hilo, cada prueba que pasa por aqui.
+    crate::instrumento_cota::anota(fila, pr);
     let q = prueba.num_unique_queries as usize;
     let tope = proof_options().num_queries();
     assert!(q >= 1 && q <= tope, "{fila}: q = {q}, fuera de 1..={tope}");
@@ -1036,11 +1038,38 @@ fn revela_la_subida_de_la_recuperacion() {
     asierta("subida de la recuperacion delegada (RecoveryClimbAir)", &p.to_bytes(), &celdas);
 }
 
+/// §896 (A1 del HVZK): las 21 filas de la tabla, en el hilo que llama, para el instrumento de la
+/// cota, que lee de `anota` cada prueba que `asierta` cuenta. Las funciones de fila siguen siendo
+/// privadas y con su atributo de test: el censo de las bandas las busca por `fn `.
+pub(crate) fn todas_las_filas() {
+    revela_el_envio();
+    revela_el_cobro();
+    revela_la_prenda();
+    revela_la_emision_a_pendiente();
+    revela_la_autorizacion_delegada();
+    revela_la_gobernanza_delegada();
+    revela_el_umbral_conjunto();
+    revela_la_auditoria();
+    revela_la_quema();
+    revela_la_solvencia();
+    revela_el_double_entry();
+    revela_la_banda();
+    revela_la_edad();
+    revela_el_sobre_de_cobro();
+    revela_el_sobre_de_pago();
+    revela_el_camino_de_merkle();
+    revela_la_apertura_del_reembolso();
+    revela_la_subida_de_credito();
+    revela_la_subida_de_la_emision();
+    revela_la_subida_de_la_congelacion();
+    revela_la_subida_de_la_recuperacion();
+}
+
 // ======================= EL CENSO DEL CABLE (D-L) =======================
 
 /// Cada AIR con su fila de la tabla. `true`: la verifica la capa, el par de umbral o el kit (el
 /// cable). `false`: experimental, en la tabla pero fuera del cable.
-const FILAS: &[(&str, &str, bool)] = &[
+pub(crate) const FILAS: &[(&str, &str, bool)] = &[
     ("SendAir", "envio", true),
     ("SendV2Air", "envio", true),
     ("ClaimAir", "cobro", true),
@@ -1280,7 +1309,7 @@ fn alguna_prueba_mira(texto: &str, air: &str) -> bool {
 /// que siguen siendo de solo tests: cada uno es un fichero de esa carpeta que oculta, y
 /// `stark-experiment/src/lib.rs` lo declara una sola vez, `mod <x>;` sin `pub`, en la linea que
 /// sigue a `#[cfg(test)]`. Asi un probador de produccion no se esconde en esta lista.
-const SOLO_DE_TESTS: &[&str] = &["falsadores_resto"];
+pub(crate) const SOLO_DE_TESTS: &[&str] = &["falsadores_resto"];
 
 /// El censo de las bandas, leido de los fuentes y no tecleado: cada fichero de
 /// `crates/stark-experiment/src` cuyo probador oculta tiene banda, y una sola AIR, la de la

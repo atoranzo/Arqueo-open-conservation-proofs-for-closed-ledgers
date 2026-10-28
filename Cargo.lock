@@ -3584,6 +3584,8 @@ dependencies = [
  "sha2",
  "sled",
  "stark-experiment",
+ "winter-air",
+ "winter-prover",
  "winterfell",
  "zeroize",
  "zk-ssl-air",

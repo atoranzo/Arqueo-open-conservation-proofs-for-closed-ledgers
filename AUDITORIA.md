@@ -73783,3 +73783,148 @@ corre `--sello` sobre el commit que lo lleva, después de commitearlo y tras toc
 `crates/` para que cargo lo recompile entero. Una de sus puertas, `verificar_citas`, lee este
 registro, y el resultado de un canon que incluye el asiento no cabe en él. Si no sale VERDE, este
 commit se rehace.
+
+## §896 — A1 del HVZK: la cota de ocultación, medida sobre las pruebas reales de los 23 probadores con fila y atada en el canon: 45 aberturas a enmascarar por columna y por trozo frente a T ≥ 64 filas aleatorias y m = 64, el rango pleno de sus matrices, y dos mutantes con nombre; abre la 130
+
+El commit que lleva este asiento, sobre `213b0b0` (el §726, la punta de `main` al empezar la
+sesión). Toca `crates/zk-ssl/src/instrumento_cota.rs`, nuevo y sólo de tests;
+`crates/zk-ssl/src/instrumento_revela.rs`, que hace `pub(crate)` `FILAS` y `SOLO_DE_TESTS`, gana
+`todas_las_filas`, que llama a sus 21 funciones de fila, y una línea en `asierta`, la que anota cada
+prueba que cuenta;
+`crates/zk-ssl/src/lib.rs`, que declara el módulo bajo `#[cfg(test)]`; `crates/zk-ssl/Cargo.toml`, que
+gana `winter-air` y `winter-prover` como dependencias de desarrollo, y `Cargo.lock`, dos líneas en la
+lista de `zk-ssl` y ningún paquete nuevo; `tools/canon.sh`, la fila de `zk-ssl`, con su pin de 547 a
+552 y su crónica; los totales de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; el «547» de la capa en
+`ARQUITECTURA.md` (tres: dos sin marca y el de la nota del §839 con la suya), `CONTRIBUTING.md` (el de
+la misma nota, con su marca), `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `doc/INSTITUCIONAL.md` y
+`doc/INSTITUTIONAL.md`; `spec/rfc/0009-lo-que-revela-una-prueba.md`, una nota en la D-I; `BACKLOG.md`,
+que abre la 130 y recuenta su cabecera; y este asiento. Ni vectores, ni ningún probador, ni ningún
+AIR, ni el cable, ni una línea de código fuera de `#[cfg(test)]`. Lo escribe y lo commitea Claude, en
+una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`. El número es el siguiente libre tras el §895: esta sesión no tiene rango
+asignado por el autor, y lo dice. El canon de este commit, `bash tools/canon.sh --sello`, corrido
+por la sesión sobre su árbol limpio, con este asiento en su sitio y sin esta frase: VERDE, 367 s de
+reloj (de su arranque a su salida) y 222 s de tests (la línea «total» de la tabla), en una máquina
+de 4 CPU con carga de 0,20 al empezar. Las 19 filas del nivel, en su pin, con 2073 tests que pasan
+(la suma de la columna «pasan»), y la de `zk-ssl` en 552 pasan y 7 ignorados; la puerta de los
+binarios, con «OK 24 objetivos en 8 paquetes, 12 con features (1 s)», en caliente; `check_tests`
+en 2235 y 20 instrumentos; `check_modulos` en 217; las once herramientas del bucle «2 ter»; la
+puerta de los vectores, en 605 ficheros y 1370 líneas de 19 manifiestos; `check_catalogo`, en 236
+textos y 302 entradas; el cable, en 27 de 27; la segunda implementación, con el núcleo en 34 de 34,
+sus pares STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, con el binario
+`451f186fcd68697f` y el tarball `adb18ed7fbbd0614`. Corrió con un `TMPDIR` propio y vacío, y al
+acabar quedaba en él un fichero, `zkssl_canonicidad_ventana_<pid>.cerrojo`, el cerrojo de un test
+que no es de este sello y que las tres corridas de antes dejaron igual; no se investiga aquí.
+
+Antes hubo tres corridas, y se dicen. La primera, sobre este árbol con otro nombre del módulo,
+ROJA en `check_curvas`, R1 en las cuatro raíces: a la caché de cargo del clon le faltaban las
+fuentes de paquetes que aquí no se compilan (`anstyle-wincon`, `bitflags` 1.x, `r-efi`), el caso
+del §843; sus 19 filas de tests, VERDES, en 687 s. Lo arregló `cargo fetch`. La segunda, ROJA en la
+fila de `zk-ssl`, 550 de 552: los dos censos de `instrumento_revela` caían por la primera versión
+de este sello, que hacía `pub(crate)` las 21 funciones de fila —el censo de las bandas las busca
+por «fn » y dejó de verlas— y llamaba `cota_ocultacion.rs` al módulo, cuyo `verify` del juguete el
+censo del cable contaba como una AIR del cable sin fila; la sesión había corrido su módulo y no la
+suite entera antes del canon, y eso es lo que falló. Las filas vuelven a ser privadas detrás de
+`todas_las_filas`, y el módulo se llama `instrumento_cota.rs`, que el censo del cable deja fuera con
+los demás instrumentos. La tercera, VERDE, 482 s de reloj y 291 s de tests, con `check_tests` en
+2236: un literal del atributo de test en un comentario de `todas_las_filas`, que la herramienta
+cuenta como texto; se reescribe, y la cuarta es la VERDE de arriba.
+
+**De dónde sale.** El autor encarga, para la propuesta a NLnet Restack, un paquete de trabajo que
+cierre el HVZK de la ocultación en cinco pasos y en este orden: A1, la cota medida; A2, el argumento
+con su simulador; A3, los falsadores más allá del censo; A4, la promesa nueva; A5, la D-I decidida.
+Con una regla: cero literales no es HVZK, y nada de la casa dice HVZK antes de A4. Este sello es A1,
+y sólo A1. La D-I del RFC-0009 dice en prosa lo que un simulador necesita —«44 puntos abiertos por
+columna, las 42 consultas, z y z·g, frente a T filas aleatorias»— y nadie lo había medido por
+familia: la suite de E2 cuenta literales (D-B, D-M) y el nivel del §697 cuenta bits, y ninguno
+cuenta aberturas frente a aleatorizadores.
+
+**Lo que hace.**
+
+1. **La geometría, leída de la prueba.** De cada prueba oculta: `q`, las posiciones únicas que abre
+   (`num_unique_queries`); T, la mitad de su longitud, porque la traza oculta mide 2T (D-G); m, de
+   la marca (D-S, con `Marca::leer`, el único lector); los anchos; los trozos del cociente, el
+   único N con el que el marco OOD se lee entero y sin resto; las capas de FRI y los elementos de
+   su resto; y los bytes. Las posiciones no viajan en la prueba —las deriva el verificador de la
+   moneda, como hace `tools/segunda/stark.py`—; su número sí.
+2. **La cota, por objeto.** De cada columna de la traza, principal y auxiliar, el verificador
+   recibe `q` valores en el LDE y dos fuera del dominio, `z` y `z·g`; de cada trozo del cociente,
+   lo mismo, porque `QuotientOodFrame` lleva los trozos en los dos puntos y no sólo en `z`: la
+   cuenta de la D-I vale por trozo igual que por columna. Y una abertura más que no se ve: la
+   columna aleatoria entra en DEEP como `c·u(x)·(2x − z − z·g)`, con `u` uniforme de grado 2T − 3
+   —lo que queda de un polinomio uniforme de grado < 2T tras revelar `r(z)` y `r(z·g)`—, y
+   enmascara DEEP, sus capas FRI y su resto en todas las direcciones menos una, la de la raíz de
+   ese factor, que es un funcional de las columnas y de los trozos en un punto más. La cota exige
+   `q + 2 + 1 ≤ T` por columna y `q + 2 + 1 ≤ m` por trozo. Los N trozos llevan N − 1
+   aleatorizadores de `segmentar` que se cancelan en la suma, y la relación que se cancela es
+   pública en cada punto: la cota no depende de N.
+3. **El rango.** Que las aberturas sean uniformes no lo da sólo el número: la matriz de los
+   polinomios de Lagrange de las T filas aleatorias en los puntos abiertos —una de Cauchy, con los
+   puntos fuera del dominio de la traza— y la de Vandermonde de grado < m tienen que ser de rango
+   pleno. Se calculan en el campo de producción con su extensión cuadrática, para la geometría
+   (q, T, m) de cada prueba, sobre `q` posiciones distintas del coset del LDE, un `z`, su `z·g` y
+   la raíz del factor, elegidos por el test: la lema vale para cualesquiera puntos distintos fuera
+   del dominio, y las posiciones reales no viajan.
+4. **Los tests**, cinco en `zk-ssl`, en release. `la_cota_de_ocultacion_de_los_23_probadores_con_fila`
+   produce en su hilo las 28 pruebas de las 21 filas de `instrumento_revela` —`asierta` las anota en
+   un registro por hilo, y el test lee sólo las suyas—, exige que las AIR que pasaron sean
+   exactamente las 23 de `FILAS` y que `FILAS` cuente lo que cuenta el fuente, un fichero de
+   `stark-experiment` por probador que llama a `crate::ocultacion_encendida(` menos los de
+   `SOLO_DE_TESTS`, la regla del §713 y del §842, y en cada prueba la cota, el rango y, en las del
+   cable, las opciones de producción. El juguete, `WorkAir` con las 42 consultas y el blowup de
+   producción, 64 filas reales y m = 64, cumple la cota y verifica. Dos mutantes con nombre:
+   m = 43 deja los trozos sin cota —«trozos: 44 aberturas vistas + 1 residual = 45 frente a
+   m = 43»— y la prueba sigue verificando, porque m decide la ocultación y no la solidez (D-H); y
+   T = 32, con m = 32 para que quepa, deja las columnas sin cota. Y la eliminación tiene su prueba
+   de vida: el rango es pleno con puntos distintos y cae con uno repetido.
+
+**Medido**, en el contenedor de la sesión (4 CPU), con `cargo test -p zk-ssl --release --locked
+instrumento_cota`: 5 de 5 en 25,9 s, sin ningún warning; y la suite entera de `zk-ssl`, en release,
+552 pasan y 7 ignorados en 106,7 s. Las 28 pruebas, de 23 AIR, y 23 probadores que encienden:
+
+| T | familias | `q` únicas | vistas / a enmascarar | trozos | FRI | bytes |
+|---|---|---|---|---|---|---|
+| 64 | NullifierThresholdAir (cuatro pruebas), ThresholdAir, EdadAir (dos, con ocho hojas), RefundAir, RefundAirV2 | 40 a 42 | 42 a 44 / 43 a 45 | 15 | una capa, resto de 16 | 38.837 a 80.116 |
+| 256 | SolvencyAir, MerkleAir, FrozenClimbAir | 42 | 44 / 45 | 2 y 9 | dos capas, resto de 8 | 43.979 a 55.469 |
+| 512 | PrendaAir, MintPendingClimbAir, AuditAir, BandaAir (dos), CobroPendienteAir, PagoEnCursoAir, CreditClimbAir, MintClimbAir, RecoveryClimbAir | 41 a 42 | 43 a 44 / 44 a 45 | 8 | dos capas, resto de 16 | 60.101 a 68.838 |
+| 1.024 | SendAir, SendV2Air, ClaimAir, ClaimAirV2, BurnAir, DoubleEntryAir | 42 | 44 / 45 | 8 | dos capas, resto de 32 | 72.470 a 80.587 |
+
+m = 64 en las 28. La cota más ajustada es la de T = 64: 45 frente a 64, diecinueve de holgura, la
+misma que frente a m en todas. El rango, pleno en las 28; el juguete, con 5 trozos. La edad abre
+también sus 6 columnas del tramo auxiliar, con la misma cuenta.
+
+**El mutante del árbol**, en el propio árbol y con su `target`, revertido al acabar y comprobado
+con `git status`: `M_OCULTACION` de 64 a 43 en `crates/zk-ssl-air/src/lib.rs`, y
+`la_cota_de_ocultacion_de_los_23_probadores_con_fila`: ROJO, 28 de 28, cada una con su nombre,
+«trozos: 44 aberturas vistas + 1 residual = 45 frente a m = 43» y «la matriz de Vandermonde de
+grado < m = 43 en los 45 puntos tiene rango 43» en las 24 que abrieron 42 posiciones únicas, y
+44 frente a 43 y rango 43 en las 4 que abrieron 41. Medido, y dicho: m = 43 cae cuando la prueba
+abre 41 o 42 posiciones únicas; con 40, 43 a enmascarar frente a 43 cumple, y en esa corrida
+ninguna abrió 40. El mutante que cae con toda prueba de producción es m ≤ 42; el test
+del juguete en sello, que es determinista, exige abrir al menos 41 para que su m = 43 tenga
+dientes.
+
+**Lo medido sobre este árbol, antes del canon**, desde la raíz y con este asiento en su sitio:
+`verificar_citas`, 0 fantasmas, 0 secciones muertas, 247 encabezados citados y 0 muertos, y el
+registro con 0 citas muertas —la primera pasada dio 4, las de este asiento antes de existir, y un
+fantasma, el nombre del documento de A2, que la 130 citaba antes de que A2 lo escriba y que este
+asiento tampoco escribe: se cita sin nombre—; `check_cifras`, 26 cifras y ninguna contradice el canon —la primera pasada dio
+una, el pin a mano de `doc/ecst/VERIFICACION.md:1549`, que se mueve como lo movió el §723—;
+`check_tests`, 2235 declarados y 20 instrumentos; `check_modulos`, 217 ficheros; `check_publicadas`
+y `check_figures`, 0.
+
+**Lo que NO hace.** No demuestra nada: la dirección residual se cuenta sin su lema, y el simulador
+no está escrito (A2). No mide las posiciones reales ni `z`: el rango se comprueba sobre puntos que
+elige el test. No toca la promesa: `SECURITY.md` §3.bis, la D-A y la regla 3 del PROCESO siguen
+diciendo cero literales, y ni este asiento ni ningún texto vivo dicen HVZK de nada que exista. No
+toca la sal ni la D-I más allá de su nota medida (A5). No corre el distinguidor estadístico (A3).
+No cambia ningún probador, ningún AIR, el cable ni los vectores. No mide el coste en tiempo de la
+fila: el test produce otra vez las 28 pruebas de la suite de E2, en un hilo, y su coste va dentro
+del de la fila de `zk-ssl`.
+
+**Lo que es del autor.** El orden A2 → A3 → A4 → A5, que la 130 escribe; el revisor ajeno de A6; y
+el número de este asiento, que la sesión tomó como el siguiente libre.
+
+**Contadores.** `zk-ssl` 547 -> 552. TOTAL DE SELLO 2068 -> 2073 y CON LARGOS 2208 -> 2213, en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests` 2230 -> 2235; `check_modulos` 216 -> 217.
+`BACKLOG.md` pasa de 40 abiertas y 90 resueltas a 41 y 90: abre la 130. Ningún vector.

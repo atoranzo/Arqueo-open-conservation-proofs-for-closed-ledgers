@@ -304,6 +304,18 @@ FRI, las combinaciones que abren las capas frente a la columna aleatoria que las
 Gana quedársela: pureza (nada se retira sin su argumento). **Reversible** cuando el argumento esté
 escrito y revisado: la sal se va y la prueba adelgaza.
 
+> ⚠️ **§896 (A1 del HVZK): la cuenta de arriba, medida por familia, y una abertura más.** El marco
+> OOD lleva también los trozos del cociente en `z·g` (`QuotientOodFrame`), así que las 44 aberturas
+> vistas son por columna Y por trozo; y DEEP y FRI dejan pasar una dirección más —la columna
+> aleatoria entra en DEEP como `c·u(x)·(2x − z − z·g)`, con `u` uniforme de grado 2T − 3, y
+> enmascara todo salvo la raíz de ese factor—, que un simulador tiene que contar: 45 a enmascarar.
+> Medido sobre las 28 pruebas reales de los 23 probadores con fila, en cada canon
+> (`crates/zk-ssl/src/instrumento_cota.rs`): `q` de 40 a 42 posiciones únicas, 42 a 44 vistas y 43 a
+> 45 a enmascarar, frente a T de 64, 256, 512 o 1.024 filas aleatorias y m = 64 en todas; las
+> matrices de Lagrange de las T filas aleatorias y de Vandermonde de grado < m en esos puntos, de
+> rango pleno; y dos mutantes con nombre, m = 43 y T = 32, en rojo. El argumento que este párrafo
+> pide sigue sin escribirse: es A2, y hasta A4 esta decisión y la D-A no cambian lo que prometen.
+
 ### D-J — Las cifras de bytes pasan a bandas y el azar sale del sistema
 
 Una prueba oculta no es determinista: con otra semilla pesa distinto (E1, E2 y E4 del SPIKE-B-P4:

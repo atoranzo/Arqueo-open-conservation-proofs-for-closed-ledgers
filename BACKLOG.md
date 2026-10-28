@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 40 abiertas, 90 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 41 abiertas, 90 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, y el §864, que cierra la 94.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, y el §896, que abre la 130.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1403,6 +1403,32 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ §860: una restricción de la 52 (D-1): la prueba de apertura ata la sal como entrada pública, para
   que el operador no la cambie, y no impone su origen; si lo impusiera, cerraría la rotación
   precomprometida en la sal.
+
+- [ ] **130. HVZK de la ocultación: el argumento, los falsadores más allá del censo y la promesa
+  (A2 a A5; la cota, medida en el §896).** La ocultación está encendida desde el §538 y lo que la
+  casa promete es el censo: «ningún valor de columna constante sale literal» (RFC-0009 D-A,
+  `SECURITY.md` §3.bis). Cero literales no es HVZK: la suite de E2 cuenta, no simula, y lo que
+  sostiene la ocultación más allá del censo es la construcción de la nota 2024/1037 con la cota de
+  la D-I, que nadie había medido por familia ni argumentado para la composición exacta del fork
+  (H7). El §896 mide la cota (A1): lo que el verificador recibe de cada columna y de cada trozo del
+  cociente, con la dirección que DEEP y FRI dejan pasar, frente a las T filas aleatorias y al m de
+  la marca, en las pruebas reales de los 23 probadores con fila, con el rango pleno de sus matrices
+  y dos mutantes con nombre. **Lo que pide, en este orden y sin saltarse ninguno**: A2, el argumento
+  escrito para el protocolo tal como está implementado —el simulador y los lemas: el rango de
+  Cauchy por columna, Vandermonde y la cancelación en los trozos, la uniformidad de DEEP salvo una
+  dirección, las hojas saladas en el modelo de oráculo aleatorio y la moneda sembrada con 32
+  bytes—, cada lema atado al test del §896 que mide su hipótesis, con la lista de hipótesis (medida
+  o supuesta) y de lo que no cubre, en un documento propio bajo `doc/`, citado desde el RFC-0009; A3, los
+  falsadores más allá del censo: la recuperación del secreto por álgebra lineal cuando m o T bajan
+  de la cota, en un juguete, y la semilla repetida en dos pruebas, en sello; el distinguidor
+  estadístico sólo si cabe en `--largo` con su pin, y si no, declarado fuera; A4, la promesa nueva,
+  sólo con A2 y A3 sellados: una decisión del RFC-0009 con la promesa exacta de HVZK computacional
+  bajo las hipótesis de A2, `SECURITY.md` §3.bis y §3.11, la regla 3 del PROCESO y la confianza
+  residual de D-A, con la frase H7 conservada hasta una revisión ajena y sin tocar «nivel
+  cuántico: no medido»; A5, la D-I decidida por el autor con el argumento delante: conservar la sal
+  o retirarla en un corte futuro, nunca en `zkssl/0.4`. Restricciones: ni motor nuevo, ni nivel
+  poscuántico del STARK, ni `zkssl/0.4` roto. Hasta A4 nada de la casa dice «HVZK»: la promesa
+  sigue siendo el censo. **Qué la cierra**: A4 sellada y la D-I decidida.
 
 ## D. Declaradas, acotadas, sin urgencia
 

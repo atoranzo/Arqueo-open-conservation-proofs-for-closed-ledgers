@@ -60,6 +60,13 @@ argon2 = { version = "=0.5.3", default-features = false, features = ["zeroize"] 
 # lock (la declaran el nodo y el cli, y la trae `argon2`).
 zeroize = "1"
 
+[dev-dependencies]
+# §896 (A1 del HVZK, RFC-0009 D-I): `Marca` y `Ocultacion` no salen por el paraguas `winterfell`,
+# que no esta bifurcado, y `instrumento_cota` los necesita: m se lee de la marca y el probador
+# juguete de sus mutantes devuelve su `Ocultacion`. Solo tests, como en `stark-experiment` (D-V).
+winter-air = "=0.13.1"
+winter-prover = "=0.13.1"
+
 [features]
 # Expone `tests_support` como sandbox para herramientas (zk-ssl-cli/node).
 # Solo visibilidad; en compilacion normal no cambia nada. Ver PARCHES.md.
