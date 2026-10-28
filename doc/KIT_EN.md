@@ -146,7 +146,8 @@ tarball `505de994f243bc76…`). It has three defects that 0.4.2 fixes: it reads 
 envelope with a `+` or leading zeros (§662); it counts the same co-signature repeated as several
 witnesses in a v2 package (§663); and it reads an XMSS key with the alternate OID `0x00010005` as the
 published one, so it gives GREEN to a "conflict between two ledgers" with a single ledger written
-twice (§664). ~~Use 0.4.2.~~ ~~Use 0.4.3 (§818).~~ Use 0.4.4 (§726).
+twice (§664). ~~Use 0.4.2.~~ ~~Use 0.4.3 (§818).~~ Use 0.4.4 (§726). ⚠️ §727: 0.4.1 also has those of
+3.18 of `SECURITY.md` that 0.4.4 fixes, all but 6 and 8 (`GHSA-gq4j-w7rw-p96f`).
 
 **0.4.0 is still published and is no longer current** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). It has one defect that 0.4.1 fixes: a proof with extra nodes inside a
@@ -154,7 +155,8 @@ Merkle batch verifies anyway, with different bytes (§659). The verdict on the s
 change — the altered proof proves the same as the original — but its bytes no longer identify the
 operation. ~~Use 0.4.2.~~ ~~Use 0.4.3 (§818).~~ Use 0.4.4 (§726). Both read the same eleven families and give the same verdicts to every
 published vector. ⚠️ **§818**: «both» are 0.4.0 and 0.4.1; 0.4.3 reads twelve and changes the
-verdicts the notice, above, lists.
+verdicts the notice, above, lists. ⚠️ §727: 0.4.0 also has those of 3.18 of `SECURITY.md` that 0.4.4
+fixes, all but 6 and 8 (`GHSA-gq4j-w7rw-p96f`).
 
 **Release 0.3.0 is still published and is no longer the current one** (`arqueo-verify-v0.3.0`,
 commit `65cabfb`, tarball `06648502e0171fea…`). It has four defects that 0.4.0 fixes, described in
@@ -162,7 +164,8 @@ section 3.9 of `SECURITY.md`: a hex field with a multibyte character, or a hidde
 emptied, make it exit with **101** (panic) instead of RED (§650, §651); a proof with trailing bytes
 is read as if they were not there (§653); and it accepts the four negatives of the canonical reading
 (RFC-0016, §640). It fails with the wrong code, never with a false GREEN for those cases; still,
-use ~~0.4.2~~ ~~0.4.3 (§818)~~ 0.4.4 (§726).
+use ~~0.4.2~~ ~~0.4.3 (§818)~~ 0.4.4 (§726). ⚠️ §727: 0.3.0 also has those of 3.18 of `SECURITY.md`
+that 0.4.4 fixes, all but 6 and 8 (`GHSA-gq4j-w7rw-p96f`).
 
 ⚠️ **In 0.3.0, an outdated sentence travels in its `NOTICE`, declared; 0.4.0 carries the corrected one.** That tarball's `NOTICE` says the
 witness hiding in the winterfell fork is switched on only by `Prover::ocultacion`, "which no ARQUEO
