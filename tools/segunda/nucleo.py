@@ -445,6 +445,52 @@ def registro_valido(registro):
     return fallos
 
 
+# ─── §862 · el despacho por esquema (RFC-0020, E3; su D-E, reglas 1, 2 y 6) ──────────────────────
+# Los dos conjuntos y el implicito, como `Esquema::ACEPTADOS`, `Esquema::EMITIDOS` y
+# `Esquema::IMPLICITO` del kit: el aceptado es lo que este juez acepta; el emitido, con lo que firman
+# el nodo y el testigo, y se ata al aceptado en `juez_nucleo.py`; el implicito, el de un preambulo
+# que no lleva esquema -v1 a v6, y hasta la E4 todo byte de version-. No los fija ningun KAT: son
+# del verificador, no de los bytes, y por eso no van en el registro.
+ESQUEMA_IMPLICITO = (1 << 32) | 0x0000_0005
+ESQUEMAS_ACEPTADOS = (ESQUEMA_IMPLICITO,)
+ESQUEMAS_EMITIDOS = (ESQUEMA_IMPLICITO,)
+
+
+def entrada_aceptada(esquema, aceptados=ESQUEMAS_ACEPTADOS, registro=None):
+    """La entrada del registro de un esquema que este juez acepta, o ValueError con su numero y el
+    texto del kit: primero el registro y despues el conjunto, antes de leer ninguna clave."""
+    registro = REGISTRO_DE_ESQUEMAS if registro is None else registro
+    asignados = ", ".join(f"{e['esquema']:#x} ({e['nombre']})" for e in registro)
+    entrada = next((e for e in registro if e["esquema"] == esquema), None)
+    if entrada is None:
+        raise ValueError(f"esquema {esquema:#x}: no esta en el registro de esquemas (spec/NUCLEO.md, seccion 6), "
+                         f"que asigna {asignados}")
+    if esquema not in aceptados:
+        acepta = ", ".join(f"{e['esquema']:#x} ({e['nombre']})" for e in registro if e["esquema"] in ESQUEMAS_ACEPTADOS)
+        raise ValueError(f"esquema {esquema:#x} ({entrada['nombre']}): esta en el registro de esquemas "
+                         f"(spec/NUCLEO.md, seccion 6) y este verificador no lo acepta; acepta {acepta}")
+    return entrada
+
+
+def conjuntos_validos(registro, aceptados=ESQUEMAS_ACEPTADOS, emitidos=ESQUEMAS_EMITIDOS,
+                      implicito=ESQUEMA_IMPLICITO):
+    """La regla 2 de la D-E del RFC-0020, como el atado del kit: el implicito se emite, lo emitido se
+    acepta y lo aceptado esta en el registro; ningun conjunto vacio ni con un esquema repetido.
+    Devuelve los fallos."""
+    fallos = []
+    asignados = {e["esquema"] for e in registro}
+    for nombre, conjunto in (("aceptados", aceptados), ("emitidos", emitidos)):
+        if not conjunto:
+            fallos.append(f"el conjunto de {nombre} esta vacio")
+        if len(set(conjunto)) != len(conjunto):
+            fallos.append(f"el conjunto de {nombre} repite un esquema")
+    if implicito not in emitidos:
+        fallos.append(f"el implicito {implicito:#x} no se emite")
+    fallos += [f"se emite {e:#x} y no se acepta" for e in emitidos if e not in aceptados]
+    fallos += [f"se acepta {e:#x} y no esta en el registro" for e in aceptados if e not in asignados]
+    return fallos
+
+
 # ─── autotest de las primitivas, contra referencias ajenas a la casa ──────────────────────────
 # BLAKE3: salida del crate `blake3 1.8.5` (el del Cargo.lock) sobre el patron byte i = i % 251.
 _BLAKE3_REFERENCIA = {

@@ -302,6 +302,11 @@ impl TryFrom<u64> for VersionCabeza {
 /// y el acta sigue comparando con su constante. Elegir el verificador por el esquema es la E3, y
 /// firmar con el, la E4, en el corte `zkssl/0.5`.
 ///
+/// ⚠️ §862 · **Lo de arriba valia hasta la E3 del RFC-0020**, que ya lo lee: [`verificar_cabeza`],
+/// [`verificar_cofirma`] y el acta eligen el verificador por el esquema, con un conjunto aceptado
+/// ([`Self::ACEPTADOS`]) y otro emitido ([`Self::EMITIDOS`]), y el esquema de un preambulo que no
+/// lo lleva -v1 a v6- es el implicito ([`Self::IMPLICITO`]). Firmar con el sigue siendo la E4.
+///
 /// Tres reglas, atadas en los tests de este fichero:
 /// - **el cero no se asigna**, como en la marca v2 de la D-G del RFC-0018: un firmante que no
 ///   declare su esquema no escribe un numero valido;
@@ -346,6 +351,21 @@ impl Esquema {
     /// Todos, en orden: el registro entero, del que se derivan su KAT y el texto de un numero
     /// que no esta.
     pub const TODOS: [Esquema; 1] = [Esquema::XmssMtSha2_40_8_256];
+    /// ⚠️ §862 · **Los esquemas que este verificador ACEPTA** (RFC-0020, E3; la regla 2 de su
+    /// D-E): el productor del conjunto aceptado, con el molde de [`COFIRMA_V_MAX`]. Crece como el
+    /// de versiones de cabeza, y pierde un esquema solo por la regla 5 de la D-E -cuando se rompe-,
+    /// que es una ruptura con su version (la R1 del RFC-0021). Un numero del registro que no esta
+    /// aqui se rechaza con el, antes de leer la clave: [`VerificaError::EsquemaNoAceptado`].
+    pub const ACEPTADOS: [Esquema; 1] = [Esquema::XmssMtSha2_40_8_256];
+    /// ⚠️ §862 · **Los esquemas con que firman el nodo y el testigo** (la misma regla 2): el molde
+    /// de [`COFIRMA_VERSION`], lo que se ESCRIBE frente a lo que se ACEPTA. Quien lee puede ir por
+    /// delante de quien escribe y nunca al reves, y lo ata un test. Hasta la E4 nadie lo lee en
+    /// produccion: el nodo y el testigo escriben [`actas::ESQUEMA_XMSSMT_SHA2_40_8_256`] en sus
+    /// actas, que vale lo mismo, y sus cabezas y cofirmas no dicen esquema.
+    pub const EMITIDOS: [Esquema; 1] = [Esquema::XmssMtSha2_40_8_256];
+    /// ⚠️ §862 · **El esquema implicito** (RFC-0020, D-B y la regla 1 de la D-E): el de una cabeza
+    /// o una cofirma cuyo preambulo no lo lleva -v1 a v6-, el unico que firmo nunca una cabeza.
+    pub const IMPLICITO: Esquema = Esquema::XmssMtSha2_40_8_256;
     /// El numero, tal como lo escriben el acta y el preambulo v7.
     pub fn as_u64(self) -> u64 {
         self as u64
@@ -364,6 +384,29 @@ impl Esquema {
                 con_estado: true,
             },
         }
+    }
+    /// ⚠️ §862 · El numero de esquema que firma un preambulo de esta version (la regla 1 de la D-E).
+    /// Hasta la E4 es el implicito para TODO byte: la v7 no esta en el conjunto y su preambulo no se
+    /// compone aqui, asi que una firma sobre el v7 sigue cayendo por `PreambuloDistinto`, y una
+    /// version fuera del conjunto, con el error de siempre. Con la E4, la v7 dira el suyo. Privada,
+    /// como las dos de abajo: la API publica gana solo las tres constantes y dos variantes.
+    fn de_la_version(_version: u8) -> u64 {
+        Esquema::IMPLICITO.as_u64()
+    }
+    /// ⚠️ §862 · El despacho (la regla 6 de la D-E): el esquema, si el registro lo asigna y
+    /// `aceptados` lo lleva; si no, el rechazo con su numero, que llega primero al registro y
+    /// despues al conjunto. Falla cerrada.
+    fn aceptado_en(n: u64, aceptados: &[Esquema]) -> Result<Esquema, VerificaError> {
+        let e = Esquema::try_from(n).map_err(VerificaError::EsquemaNoRegistrado)?;
+        if aceptados.contains(&e) {
+            Ok(e)
+        } else {
+            Err(VerificaError::EsquemaNoAceptado(e))
+        }
+    }
+    /// ⚠️ §862 · [`Self::aceptado_en`] sobre [`Self::ACEPTADOS`]: el de produccion.
+    fn aceptado(n: u64) -> Result<Esquema, VerificaError> {
+        Esquema::aceptado_en(n, &Esquema::ACEPTADOS)
     }
 }
 
@@ -495,6 +538,18 @@ pub enum VerificaError {
     IndiceDiscordante { declarado: u64, embebido: u64 },
     /// La firma no llega ni al ancho del indice, asi que no lo lleva.
     FirmaSinIndice { bytes: usize, esperado: usize },
+    /// ⚠️ §862 · **El esquema no esta en el registro** (RFC-0020, la regla 6 de la D-E): se rechaza
+    /// con su numero, sin truncar, y con el texto del registro, antes de leer la clave.
+    ///
+    /// ⚠️ Esta y la de abajo entran al final y sin `#[non_exhaustive]`, como las ocho que el §722
+    /// dio a `RotacionError`: la API de este crate como biblioteca queda fuera de la promesa (la
+    /// D-A del RFC-0021 y su decision 2), y el binario no las alcanza: le llega siempre el
+    /// implicito.
+    EsquemaNoRegistrado(EsquemaNoRegistrado),
+    /// ⚠️ §862 · **El esquema esta en el registro y este verificador no lo acepta** (las reglas 2 y
+    /// 6 de la D-E): se rechaza con su numero, su nombre y lo que se acepta. Hoy no lo da nadie en
+    /// produccion: el registro tiene una entrada, y se acepta.
+    EsquemaNoAceptado(Esquema),
 }
 
 impl core::fmt::Display for VerificaError {
@@ -525,6 +580,21 @@ impl core::fmt::Display for VerificaError {
                 "la firma mide {bytes} bytes y el indice de hoja ocupa \
                  {esperado}: no lleva indice que comprobar"
             ),
+            VerificaError::EsquemaNoRegistrado(e) => write!(f, "{e}"),
+            VerificaError::EsquemaNoAceptado(e) => {
+                let aceptados: Vec<String> = Esquema::ACEPTADOS
+                    .iter()
+                    .map(|a| format!("{:#x} ({})", a.as_u64(), a.entrada().nombre))
+                    .collect();
+                write!(
+                    f,
+                    "esquema {:#x} ({}): esta en el registro de esquemas (spec/NUCLEO.md, \
+                     seccion 6) y este verificador no lo acepta; acepta {}",
+                    e.as_u64(),
+                    e.entrada().nombre,
+                    aceptados.join(", ")
+                )
+            }
         }
     }
 }
@@ -613,6 +683,10 @@ const VERSION_CON_ESQUEMA: u8 = 7;
 /// y [`verificar_cabeza`] rechaza una firma sobre el con `PreambuloDistinto` (atado en los
 /// tests). El esquema entra como llega: si esta en el registro ([`Esquema`]) lo comprueba quien
 /// verifica (E3), igual que [`preambulo`] no comprueba la version.
+///
+/// ⚠️ §862 · La E3 esta construida y no lo enciende: [`verificar_cabeza`] pide el verificador del
+/// esquema implicito para todo byte de version, asi que una firma sobre el v7 sigue cayendo por
+/// `PreambuloDistinto`. Quien comprueba el esquema es el despacho, antes de leer la clave.
 pub fn preambulo_v7(esquema: u64, epoch_digest: &[u8; 32]) -> Vec<u8> {
     let mut v = Vec::with_capacity(DOMINIO.len() + 1 + 8 + 32);
     v.extend_from_slice(DOMINIO);
@@ -821,6 +895,29 @@ pub fn clave_desde_bytes(rfc: &[u8]) -> Result<VerifyingKey<Conjunto>, VerificaE
         .map_err(|e| VerificaError::ClaveIlegible(format!("{e:?}")))
 }
 
+/// ⚠️ §862 · **El despacho por esquema** (RFC-0020, E3; las reglas 1, 2 y 6 de su D-E): verifica
+/// `firma` con el verificador de SU esquema y devuelve el mensaje que lleva dentro. El esquema se
+/// mira primero -que el registro lo asigne y que este verificador lo acepte-, y uno que no pasa se
+/// rechaza con su numero ANTES de leer la clave: un verificador que no conoce B no da VERDE a una
+/// firma de B, ni la prueba con A. No se prueban los verificadores en orden (el RFC lo descarta):
+/// el esquema elige uno, con un brazo por entrada del registro, y el compilador marca el `match`
+/// el dia que el registro gane otra. El de la familia 1 es lo que [`verificar_cabeza`] y
+/// [`verificar_cofirma`] hacian con `Conjunto` fijado: [`clave_desde_bytes`], RFC 8391, `verify()`.
+///
+/// Privada a proposito: la API publica sigue siendo [`verificar_cabeza`], [`verificar_cofirma`] y
+/// `actas::verificar_acta`, que la llaman.
+fn recuperar(esquema: u64, clave: &[u8], firma: &[u8]) -> Result<Vec<u8>, VerificaError> {
+    match Esquema::aceptado(esquema)? {
+        Esquema::XmssMtSha2_40_8_256 => {
+            let vk = clave_desde_bytes(clave)?;
+            let sig = Signature::<Conjunto>::try_from(firma)
+                .map_err(|e| VerificaError::FirmaIlegible(format!("{e:?}")))?;
+            vk.verify(&sig)
+                .map_err(|e| VerificaError::NoVerifica(format!("{e:?}")))
+        }
+    }
+}
+
 /// **La función del testigo.** Verifica una cabeza firmada **sin la clave
 /// privada, sin el nodo y sin el operador**: solo con lo publicado.
 ///
@@ -843,12 +940,12 @@ pub fn verificar_cabeza(
     epoch_digest: &[u8; 32],
     c: &CabezaFirmada,
 ) -> Result<(), VerificaError> {
-    let vk = clave_desde_bytes(clave_publica)?;
-    let sig = Signature::<Conjunto>::try_from(c.firma.as_slice())
-        .map_err(|e| VerificaError::FirmaIlegible(format!("{e:?}")))?;
-    let recuperado = vk
-        .verify(&sig)
-        .map_err(|e| VerificaError::NoVerifica(format!("{e:?}")))?;
+    // ⚠️ §862 · El despacho (RFC-0020, E3): el verificador lo elige el esquema que la version
+    // declara -hasta la E4, el implicito para todo byte-, y uno que no se acepta se rechaza con su
+    // numero antes de leer la clave. Hasta aqui leia la clave con `clave_desde_bytes` y la firma
+    // con `Conjunto` fijado en el codigo; `recuperar` hace lo mismo, en el brazo de su esquema.
+    let esquema = Esquema::de_la_version(c.version_formato);
+    let recuperado = recuperar(esquema, clave_publica, &c.firma)?;
     // ⚠️ EL PASO QUE NO SE PUEDE SALTAR.
     let esperado = preambulo(c.version_formato, epoch_digest);
     if recuperado != esperado {
@@ -895,12 +992,12 @@ pub fn verificar_cofirma(
     clave_del_operador: &[u8],
     c: &CabezaFirmada,
 ) -> Result<(), VerificaError> {
-    let vk = clave_desde_bytes(clave_del_testigo)?;
-    let sig = Signature::<Conjunto>::try_from(c.firma.as_slice())
-        .map_err(|e| VerificaError::FirmaIlegible(format!("{e:?}")))?;
-    let recuperado = vk
-        .verify(&sig)
-        .map_err(|e| VerificaError::NoVerifica(format!("{e:?}")))?;
+    // ⚠️ §862 · El despacho, como en `verificar_cabeza`: el esquema del TESTIGO, que en una cofirma
+    // v1 a v6 es el implicito (la cofirma lleva la version de la cabeza que cofirma, §780). Hasta
+    // aqui la clave del testigo se leia con `clave_desde_bytes` y la firma con `Conjunto` fijado;
+    // `recuperar` hace lo mismo en el brazo de su esquema, y antes rechaza el que no se acepta.
+    let esquema = Esquema::de_la_version(c.version_formato);
+    let recuperado = recuperar(esquema, clave_del_testigo, &c.firma)?;
     // ⚠️ EL PASO QUE NO SE PUEDE SALTAR.
     let esperado = preambulo_cofirma(c.version_formato, epoch_digest, clave_del_operador)?;
     if recuperado != esperado {
@@ -2275,5 +2372,147 @@ mod tests {
                 "{t}"
             );
         }
+    }
+}
+
+// ⚠️ §862 · el despacho por esquema (RFC-0020, E3): los dos conjuntos, el implicito y los dos
+//    rechazos con su numero. Este modulo va al final del fichero, detras de los tests de arriba,
+//    para no correr ninguna de sus lineas; lo que el despacho pone fuera de los tests -constantes,
+//    funciones, variantes y textos- si corre las de debajo de la `:304`, como dice el §862.
+#[cfg(test)]
+mod atado_de_los_dos_conjuntos_de_esquemas {
+    use super::*;
+
+    /// ⚠️⚠️ **EL ATADO**, con el molde de `el_testigo_no_estampa_una_version_que_el_lector_no_lea`:
+    /// lo que el nodo y el testigo firman lo acepta este verificador, y lo que acepta esta en el
+    /// registro; ninguno de los dos conjuntos esta vacio ni repite un esquema. Falsador: ACEPTADOS
+    /// vacio cae aqui, con el numero que el nodo emite y este verificador no acepta.
+    #[test]
+    fn el_nodo_no_emite_un_esquema_que_el_verificador_no_acepte() {
+        assert!(
+            !Esquema::EMITIDOS.is_empty(),
+            "el nodo y el testigo firman con algun esquema"
+        );
+        for (i, e) in Esquema::EMITIDOS.iter().enumerate() {
+            assert!(
+                Esquema::ACEPTADOS.contains(e),
+                "el nodo emite {:#x} y este verificador no lo acepta",
+                e.as_u64()
+            );
+            assert!(
+                !Esquema::EMITIDOS[i + 1..].contains(e),
+                "{:#x}, dos veces emitido",
+                e.as_u64()
+            );
+        }
+        assert!(
+            !Esquema::ACEPTADOS.is_empty(),
+            "un verificador que no acepta nada no verifica nada"
+        );
+        for (i, e) in Esquema::ACEPTADOS.iter().enumerate() {
+            assert!(
+                Esquema::TODOS.contains(e),
+                "{:#x} se acepta y no esta en el registro",
+                e.as_u64()
+            );
+            assert!(
+                !Esquema::ACEPTADOS[i + 1..].contains(e),
+                "{:#x}, dos veces aceptado",
+                e.as_u64()
+            );
+            assert_eq!(
+                Esquema::aceptado(e.as_u64()),
+                Ok(*e),
+                "y el despacho lo da por aceptado"
+            );
+        }
+    }
+
+    /// El esquema implicito (la D-B): `0x1_0000_0005`, el numero del acta, en los dos conjuntos, y
+    /// el de todo byte de version hasta la E4 -el 7 tambien, que asi sigue cayendo por
+    /// `PreambuloDistinto` en el test del §800-. Falsador: que `de_la_version(7)` de otro numero.
+    #[test]
+    fn el_esquema_implicito_es_el_del_acta_y_el_de_todo_preambulo_sin_esquema() {
+        assert_eq!(Esquema::IMPLICITO.as_u64(), 0x1_0000_0005);
+        assert_eq!(
+            Esquema::IMPLICITO.as_u64(),
+            actas::ESQUEMA_XMSSMT_SHA2_40_8_256,
+            "el implicito es el que el acta escribe"
+        );
+        assert!(
+            Esquema::ACEPTADOS.contains(&Esquema::IMPLICITO),
+            "se acepta"
+        );
+        assert!(
+            Esquema::EMITIDOS.contains(&Esquema::IMPLICITO),
+            "y se emite"
+        );
+        for v in 0..=u8::MAX {
+            assert_eq!(
+                Esquema::de_la_version(v),
+                Esquema::IMPLICITO.as_u64(),
+                "v{v}"
+            );
+        }
+    }
+
+    /// La regla 6 de la D-E, con un numero que el registro no asigna: el cero, el OID solo, el OID
+    /// con el bit del apano, otra familia y el techo. Se rechaza con su numero, sin truncar, y con
+    /// el texto del registro, y ANTES de leer la clave: con una clave y una firma vacias, lo que
+    /// sale es el esquema y no `ClaveIlegible`. Falsador: leer la clave antes que el esquema.
+    #[test]
+    fn un_esquema_fuera_del_registro_se_rechaza_con_su_numero_antes_de_leer_la_clave() {
+        for n in [0u64, 5, 0x0001_0005, 0x2_0000_0001, u64::MAX] {
+            assert_eq!(
+                recuperar(n, &[], &[]),
+                Err(VerificaError::EsquemaNoRegistrado(EsquemaNoRegistrado(n))),
+                "{n:#x}"
+            );
+        }
+        let e = recuperar(0x2_0000_0001, &[], &[]).expect_err("fuera del registro");
+        assert_eq!(
+            e.to_string(),
+            "esquema 0x200000001: no esta en el registro de esquemas (spec/NUCLEO.md, seccion 6), \
+             que asigna 0x100000005 (XMSSMT-SHA2_40/8_256)"
+        );
+        assert!(
+            matches!(
+                recuperar(Esquema::IMPLICITO.as_u64(), &[], &[]),
+                Err(VerificaError::ClaveIlegible(_))
+            ),
+            "con un esquema aceptado si se llega a leer la clave"
+        );
+    }
+
+    /// Las reglas 2 y 6 de la D-E, con un numero que el registro asigna y el conjunto no lleva: se
+    /// rechaza con su numero y su nombre, y con lo que se acepta. El texto nombra el conjunto de
+    /// produccion, `Esquema::ACEPTADOS`, y no la lista de la llamada: un conjunto vacio solo existe
+    /// en este test, y por eso el texto nombra aqui como aceptado el mismo numero que rechaza. El
+    /// registro se mira antes que el conjunto. Falsador: que `aceptado_en` no mire la lista.
+    #[test]
+    fn un_esquema_registrado_que_no_se_acepta_se_rechaza_con_su_numero() {
+        let n = Esquema::IMPLICITO.as_u64();
+        assert_eq!(
+            Esquema::aceptado_en(n, &Esquema::ACEPTADOS),
+            Ok(Esquema::IMPLICITO)
+        );
+        let e = Esquema::aceptado_en(n, &[]).expect_err("fuera del conjunto");
+        assert_eq!(
+            e,
+            VerificaError::EsquemaNoAceptado(Esquema::XmssMtSha2_40_8_256)
+        );
+        assert_eq!(
+            e.to_string(),
+            "esquema 0x100000005 (XMSSMT-SHA2_40/8_256): esta en el registro de esquemas \
+             (spec/NUCLEO.md, seccion 6) y este verificador no lo acepta; acepta 0x100000005 \
+             (XMSSMT-SHA2_40/8_256)"
+        );
+        assert_eq!(
+            Esquema::aceptado_en(0x2_0000_0001, &[]),
+            Err(VerificaError::EsquemaNoRegistrado(EsquemaNoRegistrado(
+                0x2_0000_0001
+            ))),
+            "lo que el registro no asigna no llega al conjunto"
+        );
     }
 }

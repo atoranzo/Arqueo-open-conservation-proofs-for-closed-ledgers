@@ -68,11 +68,24 @@ def recomponer(c):
     return v, d
 
 
-def partir(firmado, oid):
+def partir(firmado, entrada):
     """La firma de RFC 8391 va DELANTE y el mensaje detras (medido: los cinco primeros bytes son el
-    indice embebido, y los ultimos 50 o 124 el preambulo)."""
-    largo = xmss.largo_firma(oid)
+    indice embebido, y los ultimos 50 o 124 el preambulo). ⚠️ §862: el largo, el que su esquema declara."""
+    largo = entrada["firma_bytes"]
     return firmado[:largo], firmado[largo:]
+
+
+def entrada_de_la_clave(esquema, pk):
+    """⚠️ §862 · El despacho por esquema (RFC-0020, E3): la entrada del registro del esquema que firma
+    -en una cabeza o una cofirma v1 a v6, el implicito, y hasta la E4 en toda version-, si este juez
+    lo acepta, y una clave de la escritura que esa entrada declara: su largo y su prefijo. Hasta aqui
+    `partir` tomaba el largo del OID de la clave, y el OID dice el esquema solo a medias (el hecho 2
+    del RFC-0020). Lanza ValueError con el numero del esquema, o con lo que la clave no cumple."""
+    entrada = N.entrada_aceptada(esquema)
+    if len(pk) != entrada["clave_bytes"] or not pk.startswith(entrada["clave_prefijo"]):
+        raise ValueError(f"la clave ({len(pk)} bytes, abre con {pk[:4].hex()}) no es de {entrada['nombre']}, "
+                         f"que son {entrada['clave_bytes']} bytes y abren con {entrada['clave_prefijo'].hex()}")
+    return entrada
 
 
 def juzgar_cabeza(c):
@@ -88,8 +101,9 @@ def juzgar_cabeza(c):
         return False, f"epochDigest ilegible: {ex}", None
     try:
         pk = hexbytes(c["publicKey"])
+        entrada = entrada_de_la_clave(N.ESQUEMA_IMPLICITO, pk)  # ⚠️ §862: el esquema, antes que la clave
         oid, _, _ = xmss.parsear_clave(pk)
-        firma, mensaje = partir(hexbytes(c["signature"]), oid)
+        firma, mensaje = partir(hexbytes(c["signature"]), entrada)
     except ValueError as ex:
         return False, f"clave o firma ilegible: {ex}", None
     if mensaje != N.preambulo(v, d):
@@ -114,8 +128,9 @@ def juzgar_cofirma(co):
         d = dig(co["epochDigest"])
         pk_t = hexbytes(co["clavePublicaTestigo"])
         pk_op = hexbytes(co["clavePublicaOperador"])
-        oid, _, _ = xmss.parsear_clave(pk_t)
-        firma, mensaje = partir(hexbytes(co["firma"]), oid)
+        entrada = entrada_de_la_clave(N.ESQUEMA_IMPLICITO, pk_t)  # ⚠️ §862: el del testigo, el implicito
+        xmss.parsear_clave(pk_t)
+        firma, mensaje = partir(hexbytes(co["firma"]), entrada)
     except (KeyError, ValueError, TypeError) as ex:
         return False, f"cofirma: {type(ex).__name__} {ex}"
     # §780: el preambulo lleva la version en UN byte, y lo que no cabe se rechaza con el texto del
@@ -160,8 +175,7 @@ def manifiesto_de(directorio):
 def falsador(c):
     """Un byte volteado en la firma y uno en el preambulo: las dos tienen que NO verificar."""
     pk = hexbytes(c["publicKey"])
-    oid, _, _ = xmss.parsear_clave(pk)
-    firma, mensaje = partir(hexbytes(c["signature"]), oid)
+    firma, mensaje = partir(hexbytes(c["signature"]), entrada_de_la_clave(N.ESQUEMA_IMPLICITO, pk))  # ⚠️ §862
     f2 = bytearray(firma); f2[len(f2) // 2] ^= 0x01
     m2 = bytearray(mensaje); m2[-1] ^= 0x01
     return (not xmss.verificar(pk, mensaje, bytes(f2))) and (not xmss.verificar(pk, bytes(m2), firma))

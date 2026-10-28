@@ -947,6 +947,13 @@ instrumentacion) al grupo E.*
   tres KAT que `tools/segunda` reproduce—, y apagada: ni el nodo, ni el testigo, ni el kit los
   firman ni los aceptan. Lo de arriba, «ninguna etapa está construida», valía hasta aquí. Sigue
   abierta: lo que la cierra, el esquema dentro de lo que se firma, llega con la E4, en el corte.
+  ⚠️ §862: la E3 del RFC-0020 está construida, el 28-10-2026, tras la 0.4.4: el verificador elige
+  el verificador por el esquema, con un conjunto aceptado y otro emitido (`Esquema::ACEPTADOS` y
+  `Esquema::EMITIDOS`, atados en un test) y el implícito para v1 a v6, y rechaza con su número, antes
+  de leer la clave, el esquema que el registro no asigna y el que no se acepta; el acta juzga la
+  firma de la clave que se va con el esquema de la previa; la segunda implementación pasa por el
+  despacho en `juez_cabezas.py` y en `cable.py`. La avanza y no la cierra: ninguna cabeza ni
+  cofirma firma todavía su esquema, y eso llega con la E4, en el corte. Sigue abierta.
 
 - [ ] **88. Sucesión: qué pasa el día que el autor pare.** El proyecto
   lo lleva **una persona** con asistencia de IA, con una disciplina que

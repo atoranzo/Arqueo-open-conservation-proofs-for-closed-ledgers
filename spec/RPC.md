@@ -306,7 +306,7 @@ son NÚCLEO, con fila (`NUCLEO.md:93`, `:84`, `:92`, `:86`, `:85`) y KAT
 (`spec/vectors/nucleo/native_merge.json`, `as_digest.json`, `embeber.json`,
 `digest_to_bytes.json`, `digest_from_bytes.json`); `digest_of_proof`, los dos
 sellos y `COMPROMISO_AUSENTE` tienen fila de clase REGISTRO (`NUCLEO.md:233-235`
-y `:226`) y no tienen KAT.
+y `:226`) y no tienen KAT. ⚠️ §862: esas dos citas ya no caían en su sitio, y las tres filas que el §862 añade a la familia FIRMA del censo las corren tres más: hoy `digest_of_proof` está en la `:249`, los dos sellos en la `:251-252` y `COMPROMISO_AUSENTE` en la `:242`.
 
 Hasta el §797 ningún texto de `spec/` daba la fórmula: la regla 3 de arriba la
 dice en prosa. Fuera de `spec/` sí estaba escrita con las dos eras, pero sólo

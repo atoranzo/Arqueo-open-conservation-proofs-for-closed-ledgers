@@ -139,6 +139,24 @@ escritura. La salida sobre el árbol del §850 es 491 de 543 cabezas, 10 de 15 c
 positivo falle, y un fichero con el código 1 en su manifiesto y todas sus cabezas `OK` no lo cuenta.
 Este sello no toca `juez_cabezas.py`: la escritura del cable la juzga `cable.py`, abajo.
 
+⚠️ §862: **el despacho por esquema** (la E3 del RFC-0020). `nucleo.py` gana los dos conjuntos y el
+implícito del kit —`ESQUEMAS_ACEPTADOS`, `ESQUEMAS_EMITIDOS` y `ESQUEMA_IMPLICITO`— y
+`entrada_aceptada`, que da la entrada del registro de un esquema aceptado, o el rechazo con su
+número y el texto del kit; `juez_nucleo.py` les pasa la regla del atado —el implícito se emite, lo
+emitido se acepta y lo aceptado está en el registro—, con el KAT del registro y un falsador, un
+conjunto aceptado vacío. `juez_cabezas.py` ya no saca el largo de la firma del OID de la clave: cada
+cabeza, cada cofirma y el falsador eligen la entrada del esquema de su firma —el implícito, en v1 a
+v6— y exigen después una clave de su escritura, el largo y el prefijo que la entrada declara; y
+`cable.py` pasa por el mismo despacho antes de leer la clave, con sus textos de siempre, aunque
+sigue anclando la clave por su OID y midiendo con él la firma, sin cotejarla con la entrada. Las
+cifras no cambian: 630 de 685 cabezas, 15 de 20 cofirmas, 512 ficheros, 60 con alguna que no
+verifica y 0 positivos, con el despacho y sin él, y el cable, 27 de 27; sólo cambia el motivo de un
+negativo, `conflicto/rechazo-conf-oid-alterno.json`, cuya clave abre con `00010005` y ahora no es de
+la escritura del esquema. Con el conjunto aceptado vacío, el juez da 0 de 685 y 73 positivos rotos,
+el cable 17 de 27 y `juez_nucleo.py` ROJO en `registro_de_esquemas`: los tres pasan por él.
+`verificador.py` no pasa por el despacho y sigue eligiendo por el OID: lo decidió el §862, y se
+puede revisar.
+
 **El segundo verificador.** `verificador.py` pasa, con el mismo arnés y los mismos manifiestos
 que el binario de referencia, las seis familias que no exigen STARK (⚠️ §810: decía «las cinco»;
 la sexta, `ancla-cofirmada`, es del §810):

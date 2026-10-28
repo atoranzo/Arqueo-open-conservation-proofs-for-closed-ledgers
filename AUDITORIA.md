@@ -73783,3 +73783,321 @@ corre `--sello` sobre el commit que lo lleva, después de commitearlo y tras toc
 `crates/` para que cargo lo recompile entero. Una de sus puertas, `verificar_citas`, lee este
 registro, y el resultado de un canon que incluye el asiento no cabe en él. Si no sale VERDE, este
 commit se rehace.
+
+## §862 — RFC-0020 E3, el despacho por esquema: el verificador elige el verificador por el esquema, con un conjunto aceptado y otro emitido y el implícito para las cabezas y las cofirmas v1 a v6, y rechaza con su número, antes de leer la clave, el esquema que el registro no asigna y el que no se acepta; el acta juzga la firma de la clave que se va con el esquema de la previa, y la segunda implementación pasa por el despacho; ni un byte del cable ni un veredicto del mando cambian
+
+El commit que lleva este asiento, sobre el §726. Construye la E3 del RFC-0020, el despacho por
+esquema, que su tabla de etapas daba «sin construir», y avanza con ella la 87 del `BACKLOG.md` sin
+cerrarla. Toca `crates/zk-ssl-verify` (`src/lib.rs` y `src/actas.rs`); la segunda implementación
+(`tools/segunda/nucleo.py`, `juez_nucleo.py`, `juez_cabezas.py`, `cable.py` y su `README.md`);
+`spec/NUCLEO.md`; el RFC-0020 y el RFC-0021; una línea de `spec/README.md` y otra de `spec/RPC.md`;
+la sección 0 de `doc/KIT.md` y de `doc/KIT_EN.md`; la 87 del `BACKLOG.md`; el pin y la crónica de la
+fila del kit en `tools/canon.sh`; los totales de `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; y este
+asiento. Diecinueve ficheros fuera de él, ninguno nuevo. Ni un vector, ni un KAT, ni una huella, ni
+el `Cargo.lock`, ni la versión del crate, que sigue en 0.4.4. Es el §862, libre en el rango del
+autor, el §860-§889. El §863, el §864 y el §865 dijeron que un sello de la E3 del RFC-0020 no iba en
+su cadena, porque cambia la biblioteca del kit y quedaba para después de la 0.4.4: la 0.4.4 está
+publicada y registrada (§725, §726), y llega ahora. No se porta del borrador de aquella pila, que
+iba sobre el §816 y no está en este árbol (el §864 contaba allí el kit con 196 tests): se escribe
+sobre `213b0b0`, donde el kit pasa de 220 a 225, y cada cita de este asiento se comprobó en él.
+
+Lo hizo Claude, en una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+
+**Quién lo decide.** Del autor son el RFC y sus siete decisiones, que tomó en el §799 —entre ellas,
+la séptima: la E2 y la E3 antes del corte, la E4 en él—, y las de este sello: que la E3 se haga
+ahora, el 28-10-2026, tras la 0.4.4, sobre `213b0b0`; que avance la 87 y no la cierre, porque la
+cierra la E4, en el corte `zkssl/0.5`; que la versión del kit en el árbol siga en la 0.4.4; y que la
+sección 0 de los dos manuales diga, con su marca, que la 0.4.4 publicada no lleva el despacho y lo
+que gana la biblioteca del árbol, sin que cambie ningún byte del cable ni ningún veredicto de S1 a
+S6 ni del binario, y sin que cambien las cifras de la segunda implementación. Las de detalle las
+delegó en la sesión. Son de la sesión, declaradas como tales, y se pueden revisar:
+
+- los nombres: `Esquema::ACEPTADOS`, `Esquema::EMITIDOS` y `Esquema::IMPLICITO`;
+  `VerificaError::EsquemaNoRegistrado` y `VerificaError::EsquemaNoAceptado`; los privados
+  `de_la_version`, `aceptado_en`, `aceptado` y `recuperar`; `entrada_aceptada`, `conjuntos_validos`
+  y `entrada_de_la_clave` en la segunda; y los de los cinco tests;
+- el texto de `EsquemaNoAceptado`, «esquema {n:#x} ({nombre}): esta en el registro de esquemas
+  (spec/NUCLEO.md, seccion 6) y este verificador no lo acepta; acepta …», que nombra el conjunto
+  aceptado de producción y no la lista con que se llamó; y que el de un número fuera del registro
+  sea el texto del registro, el de `EsquemaNoRegistrado` del §800;
+- que el implícito valga para todo byte de versión hasta la E4: así la v7 sigue cayendo por
+  `PreambuloDistinto` y una versión fuera del conjunto, con el error de siempre;
+- que `de_la_version` dé el número y no un `Esquema`: con una sola variante, un `Esquema` no puede
+  ser otro, y el falsador de su test no se podría escribir;
+- que `firma_sobre`, en el acta, reciba el acta cuya clave firma y no el número suelto: la clave y
+  su esquema salen así de la misma acta, y no se pueden cruzar;
+- que las tres constantes, las tres funciones privadas y `recuperar` vayan en `lib.rs` junto a lo
+  que acompañan —`TODOS`, el `impl Esquema` y `clave_desde_bytes`— y no en un segundo `impl` al
+  final del fichero: corren las líneas de debajo de la `:304`, cuyas citas vivas están todas
+  fechadas o marcadas (abajo); y que la nota de la 87 del `BACKLOG.md` vaya, como las del §790, el
+  §799 y el §800, en líneas propias al final de su entrada;
+- que `tools/segunda/verificador.py` no pase por el despacho, y que `juez_cabezas.py` y `cable.py`
+  sí, con las mismas cifras; y que `juez_nucleo.py` gane la regla de los dos conjuntos, con su
+  falsador;
+- que el conjunto aceptado no entre en la lista de `spec/RPC.md` §«Versionado y compatibilidad» ni
+  en la R3 de `tools/check_superficie.py` (abajo, «Lo que NO hace»);
+- que la divergencia de la segunda implementación con las claves XMSS^MT de otros OID se declare y
+  no se arregle aquí (abajo);
+- y que las citas rancias ajenas no se toquen, salvo las que este sello corre: la de
+  `spec/RPC.md:308-309` (abajo).
+
+**Lo que hace.**
+
+1. **El despacho, en `crates/zk-ssl-verify/src/lib.rs`.** `impl Esquema` gana, detrás de `TODOS`,
+   tres constantes públicas: `ACEPTADOS`, el productor del conjunto que este verificador acepta, con
+   el molde de `COFIRMA_V_MAX` (la regla 2 de la D-E del RFC-0020); `EMITIDOS`, lo que firman el
+   nodo y el testigo, con el de `COFIRMA_VERSION`, que nadie lee en producción hasta la E4; e
+   `IMPLICITO`, `0x1_0000_0005`, el esquema de una cabeza o una cofirma cuyo preámbulo no lo lleva
+   (la D-B). Las tres valen hoy lo mismo, porque el registro tiene una entrada. Y tres funciones
+   privadas, sin `pub(crate)`, que el censo de `spec/NUCLEO.md` no cuenta: `de_la_version`, que da
+   el número del implícito para todo byte de versión; `aceptado_en`, que mira el registro y después
+   la lista que se le pasa; y `aceptado`, sobre `ACEPTADOS`. Detrás de `clave_desde_bytes`,
+   `recuperar(esquema, clave, firma)`, privada: primero `aceptado(esquema)?`, y después, en el brazo
+   de su esquema, lo que `verificar_cabeza` y `verificar_cofirma` hacían con `Conjunto` fijado —la
+   clave por `clave_desde_bytes`, la firma de RFC 8391 y `verify()`—, con un brazo por entrada del
+   registro: el compilador marca el `match` el día que el registro gane otra. Las dos funciones
+   llaman a `recuperar` con `de_la_version(c.version_formato)`, y lo demás no cambia, ni el orden de
+   sus errores. `VerificaError` gana dos variantes al final, sin `#[non_exhaustive]`, como las ocho
+   que el §722 dio a `RotacionError` dentro de la 0.4.x: `EsquemaNoRegistrado(EsquemaNoRegistrado)`
+   y `EsquemaNoAceptado(Esquema)`, con sus textos. Llevan marca la doc de `Esquema`, que decía
+   «Apagado. Nadie lo lee todavia», y la de `preambulo_v7`. En los docs nuevos no hay ningún bloque
+   de código: el pin cuenta los doctests.
+2. **El acta, en `src/actas.rs`.** `firma_sobre` recibe el acta cuya clave firma —su clave y su
+   esquema llegan juntos— y verifica por `recuperar`. `verificar_acta` mira primero si el esquema
+   del acta se acepta, con `Esquema::aceptado` en vez de compararlo con la constante, y lo rechaza
+   con el mismo `EsquemaDesconocido` y el mismo texto, que pina
+   `spec/vectors/rotacion/MANIFIESTO.txt:43`; las reglas siguen antes que las firmas; la firma de la
+   clave que entra se verifica con el esquema del acta, y la de la que se va, con el de la previa
+   (la D-D), que hasta aquí no se miraba. La constante `ESQUEMA_XMSSMT_SHA2_40_8_256` se queda, con
+   su marca: la escriben el nodo y el testigo en sus actas. Los `use` de `Signature`, `Conjunto` y
+   `clave_desde_bytes` salen del módulo, y sus tests ganan el de `crate::Conjunto`, que les llegaba
+   por `super::*`.
+3. **Cinco tests, 220 -> 225.** En `lib.rs`, en un módulo nuevo al final del fichero,
+   `atado_de_los_dos_conjuntos_de_esquemas`:
+   `el_nodo_no_emite_un_esquema_que_el_verificador_no_acepte`, que ata lo emitido a lo aceptado y lo
+   aceptado al registro, sin conjuntos vacíos ni repetidos;
+   `el_esquema_implicito_es_el_del_acta_y_el_de_todo_preambulo_sin_esquema`, que lo fija en
+   `0x1_0000_0005`, en la constante del acta y en los dos conjuntos, y que `de_la_version` lo da
+   para los 256 bytes;
+   `un_esquema_fuera_del_registro_se_rechaza_con_su_numero_antes_de_leer_la_clave`, con 0, 5,
+   `0x0001_0005`, `0x2_0000_0001` y `u64::MAX` y una clave y una firma vacías, que dan
+   `EsquemaNoRegistrado` con su número y el texto del registro y no `ClaveIlegible`, que sí da el
+   implícito; y `un_esquema_registrado_que_no_se_acepta_se_rechaza_con_su_numero`, donde
+   `aceptado_en` con una lista vacía da `EsquemaNoAceptado` con su texto pinado, y lo que el
+   registro no asigna no llega a la lista. En `actas.rs`, al final de sus tests, sobre la escena y
+   sin firmar nada nuevo, `la_firma_de_la_que_se_va_se_juzga_con_el_esquema_de_la_previa`: una
+   previa con `0x2_0000_0001` y la firma de la vieja da `FirmaDeLaAnterior(EsquemaNoRegistrado)`;
+   una firma de la vieja vacía, que con la previa de la escena da `FirmaDeLaAnterior(NoVerifica)`,
+   da con la de `0x2_0000_0001` el mismo rechazo por el esquema; sin la firma de la vieja, `Ok`; y
+   la que entra con `0x1_0000_0006` da `EsquemaDesconocido` con el texto del vector.
+4. **La segunda implementación.** `nucleo.py` gana, detrás de `registro_valido`,
+   `ESQUEMA_IMPLICITO`, `ESQUEMAS_ACEPTADOS` y `ESQUEMAS_EMITIDOS`; `entrada_aceptada`, que da la
+   entrada de un esquema aceptado o un `ValueError` con los dos textos del kit, el del registro
+   antes que el del conjunto; y `conjuntos_validos`, la regla del atado. `juez_nucleo.py` se la pasa
+   a sus conjuntos con el KAT del registro, con un falsador: un conjunto aceptado vacío tiene que
+   caer. En `juez_cabezas.py`, `partir`, en su sitio, toma el largo de la firma de la entrada y no
+   del OID; `entrada_de_la_clave`, nueva detrás de él, elige la entrada y exige una clave de su
+   escritura, el largo y el prefijo que la entrada declara; y `juzgar_cabeza`, `juzgar_cofirma` y el
+   falsador pasan por ella con el implícito antes de leer la clave. `cable.py` pasa por el despacho
+   en un paso «6 bis», antes del ancla de la clave, y le da a `partir` la entrada; sus textos no
+   cambian, y sigue anclando la clave por el OID de la casa y midiendo con ese OID la firma y su
+   índice, sin cotejar la clave con la entrada. El `README.md` de la segunda gana un párrafo con las
+   cifras. `verificador.py` no se toca.
+5. **Los documentos.** En el RFC-0020, con sus marcas: la línea de estado —la E3, construida en el
+   §862; sigue PROPUESTO—, la lista de asientos, la fila E3 de la tabla —«**construida (§862)**», y
+   una marca en «nada cambia de veredicto» que dice lo que cambia en la biblioteca—, el hecho 1 —con
+   lo que `cable.py` sigue leyendo del OID—, la regla 6 de la D-E —el acta conserva su texto, porque
+   lo pina un vector publicado: cambiarlo sería la R1 del RFC-0021, y su R6 b lo mudaría—, «Lo que
+   se descarta», y una nota al final de la Motivación que fecha sus citas por línea (abajo). En el
+   RFC-0021, la lista de asientos y la R2, con su marca. En `spec/NUCLEO.md`, las tres filas del
+   censo, NÚCLEO de la familia FIRMA, en la `:106`, la `:114` y la `:119`, por su orden en la
+   familia y todas detrás de la `:93`, y los totales; marcas en la regla de extensión, en la familia
+   FIRMA de la sección 5 y en las dos frases de la sección 6 que decían que el despacho era la E3; y
+   su historia. En `spec/README.md`, «E3 built (§862)», con su marca. En la sección 0 de los dos
+   manuales, un párrafo nuevo antes de «## 1.», sin la frase del contrato del mando que lee la R5 de
+   `check_superficie`: el árbol lleva la E3 y ninguna release la lleva, lo que gana la biblioteca,
+   que su versión sigue en 0.4.4 y su API queda fuera de la promesa, que el mando no cambia un byte
+   del cable, un veredicto ni un texto, y que el binario del árbol ya no es el de la release. Y en
+   la 87 del `BACKLOG.md`, una nota: la avanza, y sigue abierta.
+
+**La superficie.** De S1 a S6 (la D-A del RFC-0021) no cambia ningún byte ni ningún veredicto: S1 a
+S3 no se tocan —ni el cable, ni las pruebas, ni lo que se firma, ni sus KAT—, y S4 a S6 se midieron
+(abajo). Cambia la biblioteca, que la misma D-A deja fuera de la promesa, en su decisión 2: tres
+constantes, dos variantes y un rechazo. Con una previa de un esquema que el registro no asigna y la
+firma de la clave que se va, `verificar_acta` da, si llega a juzgarla,
+`FirmaDeLaAnterior(EsquemaNoRegistrado)`, antes de leer la clave de la previa: lo que daba `Ok` pasa
+a rojo, y lo que ya caía —por `IndiceDeLaAnterior` o por otra causa de `FirmaDeLaAnterior`, como
+`NoVerifica` o `FirmaIlegible`— cae por esa, con otro texto. Por la SemVer de Cargo, una variante
+nueva en un `enum` público exhaustivo es un cambio incompatible; el crate no se publica en
+crates.io, y su release es el tarball del binario (S6). Fuera de la biblioteca nadie hace `match`
+sobre `VerificaError`: el testigo lo mira con un `if let` (`crates/zk-ssl-cli/src/witness.rs:2600`),
+medido con `git grep` de `VerificaError::` y de `ActaError::` fuera de los dos ficheros. El binario
+del árbol sí cambia —ya no es el de la release, aunque lleve su número—, y lo dicen los manuales.
+
+**Medido**, en la máquina de la sesión, de 4 CPU y con `rustc` 1.97.0, cada `cargo` con `--locked` y
+`nice -n 10` y otro `cargo` de otra tarea corriendo a la vez en otro árbol, sobre este árbol: lo de
+`cargo` y lo de la segunda, antes de escribir este asiento; las herramientas, con él en su sitio:
+
+- `cargo test -p zk-ssl-verify --release`: 225 que pasan —137 de la biblioteca, 87 del binario y el
+  doctest `no_run`—, 0 ignorados y 0 avisos. Con el perfil `aserciones`, el del «1 bis», los mismos
+  225 y 0 avisos. `cargo test -p zk-ssl-cli -p zk-ssl-node --release --no-run` compila con 0 avisos:
+  los dos dependen del kit, y sus tests no se corrieron aquí.
+- El binario del árbol, con `cargo build --release -p zk-ssl-verify` dos veces, sale las dos con la
+  misma huella, `48a47a67bbad3890`; el del mismo árbol sin este sello, el de `git archive 213b0b0`
+  compilado igual en la misma máquina, con `61faa27c8693cd24`. Ninguno es el de la release, que se
+  produjo en la del autor. Con `tools/conformidad.sh` sobre los doce manifiestos de `FAMILIAS`, el
+  del árbol da 515 de 515 entradas (94, 20, 17, 88, 39, 13, 28, 11, 86, 44, 27 y 48). Y los dos,
+  sobre cada fichero que nombra una de esas 515 líneas, llamados como los llama el arnés —desde la
+  raíz, con la ruta del manifiesto y la entrada estándar vacía—: 500 entradas, los 499 `.json` y
+  `paquete/no-existe.json`, y las 500 con el mismo código de salida, la misma salida estándar y el
+  mismo error, byte a byte. Antes de cada compilación se tocaron los `.rs` del crate: `cargo` decide
+  por la fecha, y el artefacto se llama igual desde cualquier copia del árbol
+  (`zk_ssl_verify-e218fc558824b696`), así que uno compilado antes desde otras fuentes, más nuevo que
+  estas, pasaría por fresco. La primera versión de este asiento daba una huella, `431b1d43c7657b8d`,
+  que no salía de las fuentes que medía, sino de un binario así; la del commit de aquella versión
+  era `1eff69137bc8f840`, y la de este árbol, con los cambios de su revisión, es la de arriba.
+- `rustfmt --edition 2021 --check` sobre una copia de `src/`: lo nuevo no añade ninguna diferencia,
+  y quedan las de antes, 56 en `lib.rs` y 1 en `actas.rs`, como en `213b0b0`. El árbol no pasa el
+  `cargo fmt --all -- --check` que pide `CONTRIBUTING.md`, ni lo pasaba, y el canon no lo corre.
+- La segunda, con Python: `juez_cabezas.py`, 630 de 685 cabezas, 15 de 20 cofirmas, 512 ficheros, 60
+  con alguna que no verifica y 0 positivos, antes y después, en 38 y 39 s. La única línea que cambia
+  es el motivo de `conflicto/rechazo-conf-oid-alterno.json`, que decía «OID 0x00010005 no es un
+  XMSS^MT de RFC 8391» y ahora dice que la clave, que abre con `00010005`, no es de la escritura de
+  su esquema; su manifiesto no pina ese texto. `cable.py` con `tools/conformidad.sh` sobre el
+  manifiesto del cable, 27 de 27, con las mismas líneas; `juez_nucleo.py`, 34 de 34;
+  `juez_cadena.py`, que importa `cable.py`, 30 de 30 cadenas; y `verificador.py`, que no se toca y
+  lee el `nucleo.py` nuevo, con el arnés sobre las seis familias que el canon le da, 250 de 250
+  entradas. Los ficheros de Python no cambian con la revisión, y `juez_cabezas.py`, `cable.py` y
+  `juez_nucleo.py` se volvieron a correr después, con las mismas cifras.
+- Las herramientas, desde la raíz y con este asiento en su sitio: `check_cifras`, 26 cifras y 22
+  pines; `check_tests`, 2235 declarados; `check_nucleo`, 120 elementos de verify y 64 de hash, 183
+  filas; `check_catalogo`, 236 textos del kit y 302 entradas de §5; `check_superficie`, 29
+  comparaciones y 0 novedades; `check_modulos`, 216; `check_vectores`, 605 vectores y 1370 líneas de
+  19 manifiestos, ninguno movido; `verificar_citas`, `check_figures`, `check_columns`,
+  `check_constraint_layout`, `check_dominios`, `check_publicadas`, `check_techo` y `check_curvas`.
+  Todas salen con 0, y `git diff --check`, limpio.
+
+**Deducido**, de leer el código y sin medirlo: que el mando y el nodo no alcanzan lo que cambia en
+la biblioteca. El mando juzga las actas por `verificar_cadena` —también `juzgar_continuidad` y
+`juzgar_historia`, por `juzgar_rotacion`—, que da a cada acta como previa la anterior, ya juzgada
+con su esquema; el testigo, por `juzgar_rotacion`; y el nodo llama a `verificar_acta` al firmar un
+acta (`crates/zk-ssl-node/src/firma_cabeza.rs:278`) con una previa de su cadena, que juzga antes con
+`verificar_cadena` (`crates/zk-ssl-node/src/main.rs:808`). Y que el mando no alcanza las dos
+variantes nuevas: le llega siempre el esquema implícito, que se acepta, y el texto de
+`EsquemaDesconocido` no cambia. Las 500 salidas iguales de arriba lo sostienen sobre los vectores
+publicados, no sobre cualquier sobre que se pueda escribir.
+
+**Los falsadores.** Cada test nuevo cae con su mutante, aplicado a mano en la copia de trabajo, con
+el test corrido solo (`cargo test -p zk-ssl-verify --release --locked --lib <nombre> -- --exact`) y
+deshecho después, con el `sha256sum` de `lib.rs` y `actas.rs` igual al de antes:
+
+- `ACEPTADOS` vacío: cae `el_nodo_no_emite_un_esquema_que_el_verificador_no_acepte`, con «el nodo
+  emite 0x100000005 y este verificador no lo acepta».
+- `de_la_version(7)` da `0x1_0000_0006`: cae
+  `el_esquema_implicito_es_el_del_acta_y_el_de_todo_preambulo_sin_esquema` en la v7, con 4294967302
+  frente a 4294967301; y con el mismo mutante cae también la guarda del §800,
+  `la_entrada_de_hoy_es_lo_que_xmss_escribe_y_el_v7_no_lo_acepta_nadie`, que da
+  `EsquemaNoRegistrado(0x100000006)` en vez de `PreambuloDistinto`.
+- `recuperar` lee la clave antes que el esquema: cae
+  `un_esquema_fuera_del_registro_se_rechaza_con_su_numero_antes_de_leer_la_clave`, con
+  `ClaveIlegible("0 bytes: no caben ni los 4 del OID")` en vez de `EsquemaNoRegistrado(0)`.
+- `aceptado_en` no mira la lista: cae
+  `un_esquema_registrado_que_no_se_acepta_se_rechaza_con_su_numero`, con «fuera del conjunto».
+- la firma de la que se va, con el esquema del acta que entra (un acta con la clave de la previa y
+  el esquema de la nueva): cae `la_firma_de_la_que_se_va_se_juzga_con_el_esquema_de_la_previa`, con
+  `Ok(())` en vez de `FirmaDeLaAnterior(EsquemaNoRegistrado(0x200000001))`.
+- la que entra, con el esquema de la previa: cae el mismo test, con
+  `Firma(EsquemaNoRegistrado(0x200000001))` en vez de `FirmaDeLaAnterior(…)`.
+- `firma_sobre` lee el índice de la firma antes que su esquema: cae el mismo test en la firma vacía
+  de la vieja, con `FirmaDeLaAnterior(FirmaSinIndice { bytes: 0, esperado: 5 })`.
+- En la segunda, con `ESQUEMAS_ACEPTADOS` vacío, `juez_cabezas.py` da 0 de 685 cabezas y 73
+  positivos rotos, y sale con 1; `cable.py`, 17 de 27; y `juez_nucleo.py`, ROJO en
+  `registro_de_esquemas`, 33 de 34: los tres pasan por el despacho. Con `conjuntos_validos` ciega,
+  `juez_nucleo.py` da ROJO por su falsador. Deshechos los dos, con el `sha256sum` de los cuatro
+  ficheros igual al de antes.
+
+**Contadores.** La fila `zk-ssl-verify` de `tools/canon.sh`, 220 -> 225, con su crónica al final de
+la fila. El TOTAL DE SELLO, 2068 -> 2073, y CON LARGOS, 2208 -> 2213, en `PAPER.md`, `PAPER_EN.md` y
+`PRINCIPIOS.md`, y en el desglose de `PRINCIPIOS.md` el verificador independiente, 220 -> 225.
+`check_tests`, 2230 -> 2235. `check_nucleo`, de 117 a 120 elementos de verify, NÚCLEO de 143 a 146 y
+de 180 a 183 filas. `check_catalogo`: las siete filas `opaco` de `Display:VerificaError` pasan de 7
+textos a 9, y su línea final no cambia. No se mueven: los vectores, los 34 KAT, `check_modulos`,
+`check_superficie`, los pines del nodo y del testigo, ni las cifras de la segunda. El `BACKLOG.md`
+sigue en 40 abiertas y 90 resueltas, contadas con `grep -c` de las casillas a principio de línea,
+como su línea «Estado», que no cambia: la 87 sigue abierta.
+
+**Las citas por línea que se mueven**, medidas con `git diff -U0` frente a `213b0b0` y cruzadas con
+cada `fichero:N` del árbol fuera de este registro:
+
+- `crates/zk-ssl-verify/src/lib.rs`, de 2279 a 2518 líneas: las inserciones empiezan detrás de la
+  `:304`, y los tests nuevos van al final. Por debajo de la `:304` hay una cita viva sin fecha, la
+  de la R2 del RFC-0021 al molde de `COFIRMA_V_MAX` (`lib.rs:308-314`), que ya no caía en su sitio
+  en `213b0b0`, donde el molde estaba en la `:422-428`; lleva su marca, con la `:465-471` de hoy.
+  Las demás que caen por debajo son medida fechada: las 23 del RFC-0020, que su cabecera da en
+  `8c02941` y que ahora una nota fecha; las del RFC-0005 y del RFC-0006, que fechó el §890; la de
+  `doc/blueprint-v2.md`, que dice su commit; y las de `doc/ecst/VERIFICACION.md` y
+  `doc/ecst/borrador/`, de su árbol. Las de `doc/ecst/ECST.md:769` y `ECST_EN.md:776` (`:166`) y las
+  otras tres del RFC-0021 —la del hecho 3 (`:165-170`) y las dos de sus tablas (`:181-210`)— quedan
+  por encima y no se mueven.
+- `crates/zk-ssl-verify/src/actas.rs`, de 1699 a 1757: sale la `:18`, el `use` de `Signature`, y la
+  `:19-41` sube una, con el `use` de `crate` de la `:25` cambiado; la marca de la constante, una
+  línea en la `:41`, devuelve lo de debajo a su sitio. Desde la `:42` hasta la `:879` cada línea
+  sigue en su número: `firma_sobre` cambia sus siete primeras líneas, la `:176-182`, por siete, y la
+  `:202`, la `:228` y la `:236` cambian una por una. El `use` de los tests entra en la `:880` y
+  corre una la `:880-1698`, y el test va al final. En la `:19-41` sólo caen la `:35-38` y la
+  `:35-49` del RFC-0020, que son de `8c02941`; nadie cita por línea la `:880-1698`; y la de
+  `tools/check_catalogo.py:358` (`actas.rs:329`), que ya no caía en su sitio, no se mueve.
+- `tools/segunda/juez_cabezas.py`, de 220 a 234: nada cambia por encima de la `:71`, así que la
+  `:51-68` del RFC-0021 y la `:66` del RFC-0020 siguen en su sitio; la `:71-75` y la `:91-92` del
+  hecho 1 del RFC-0020 describían la elección por el OID, y llevan su marca. `nucleo.py`,
+  `juez_nucleo.py` y `cable.py` no tienen citas por línea.
+- `spec/NUCLEO.md`, de 587 a 597: las tres filas entran en la `:106`, la `:114` y la `:119`, así que
+  las cinco de `spec/RPC.md:305`, todas por encima de la `:93`, siguen en su sitio. Las dos de
+  `spec/RPC.md:308-309` (`:233-235` y `:226`), que ya no caían en el suyo, quedan tres líneas más
+  lejos: llevan su marca, en la misma línea, con la `:249`, la `:251-252` y la `:242` de hoy. Las
+  cuatro del RFC-0020 son de `8c02941`, y la nota las fecha también.
+- `doc/KIT.md` y `doc/KIT_EN.md`, de 572 a 584 y de 579 a 592: el párrafo nuevo va detrás de la
+  `:217` y de la `:220`, y ninguna cita del árbol a los manuales pasa de la `:200`.
+  `tools/segunda/README.md`, de 818 a 836, sin citas por línea. `BACKLOG.md`, de 5435 a 5442, con la
+  nota detrás de la `:949`: las citas de `doc/ecst/VERIFICACION.md` a sus líneas son de su árbol,
+  `71c5aad`.
+- El RFC-0020, de 362 a 383, no lo cita nadie por línea. Los demás ficheros cambian sus líneas en su
+  sitio, sin ganar ni perder ninguna. `AUDITORIA.md`, de 73785 a 74103 líneas, gana este asiento al
+  final.
+
+**Lo que NO hace.**
+
+- No construye la E4 ni la E5: `VersionCabeza::V7` no entra en el conjunto, nadie firma ni acepta un
+  preámbulo v7, el nodo y el testigo no leen `EMITIDOS` y siguen escribiendo la constante del acta,
+  y la 87 sigue abierta. No registra un segundo esquema (la 108). No corta release: la versión sigue
+  en 0.4.4, y una 0.4.5 que lleve la E3 antes del corte, que la R3 del RFC-0021 permitiría porque no
+  rompe S1 a S4, la decide el autor.
+- No lleva el conjunto aceptado a la lista de `spec/RPC.md` §«Versionado y compatibilidad» ni a la
+  R3 de `tools/check_superficie.py`. La R1 del RFC-0021 cuenta como ruptura que un esquema salga de
+  un conjunto aceptado, y hoy ninguna compuerta lo vería; entraría como aditivo (su R2), con claves
+  del tipo `firma.acepta` y `firma.emite`, y es un paso posible para otro sello.
+- No toca `tools/segunda/verificador.py`, que sigue eligiendo por el OID de la clave: acepta, como
+  antes de este sello, claves XMSS^MT de 68 bytes con los OID 1 a 4 y 6 a 8, que el kit rechaza
+  (`clave_desde_bytes` y el `InvalidOid` de `xmss`), así que con un sobre así la segunda daría VERDE
+  donde el kit da ROJO. Ningún vector lo cubre, y no se mide aquí: es una divergencia declarada de
+  la segunda implementación, anterior a este sello, que `juez_cabezas.py` deja de tener y
+  `verificador.py` conserva. Tampoco pasa `cable.py` por `entrada_de_la_clave`: ancla la clave por
+  el OID de la casa, como antes, y no la coteja con la entrada, que con un esquema da lo mismo.
+- No cambia el texto del acta, que pina un vector publicado, ni ningún texto del mando ni de
+  `spec/PAQUETE.md` §5, que el binario no alcanza; `check_catalogo` cuenta los dos nuevos como
+  `opaco`, sin enumerar.
+- No arregla las citas rancias ajenas que no corre: la lista de asientos del RFC-0021 calla el §865,
+  que tocó el fichero, y la marca nueva dice sólo que acababa en el §852; ni la del comentario de
+  `crates/zk-ssl-cli/src/nucleo_kat.rs` que dice «apagados» del registro y los preámbulos v7 del
+  §800, que es de su fecha y está en un crate que este sello no toca. Ni la deriva de `rustfmt` que
+  el árbol ya tenía.
+- No corre los tests del nodo ni del testigo, sólo los compila: los dos dependen del kit y no ganan
+  ni pierden un test. No corre `--bancos`, `--largo`, `--completo` ni `--conservados`.
+- No toca `crates/zk-ssl-guardian`, ni `winter-*`, ni `crates/zk-ssl-air`, ni
+  `crates/stark-experiment`, ni `crates/ceremony`, ni `tools/check_constraint_layout.py`. No
+  reescribe ningún asiento: lo que el §800 dijo de la E3 y lo que el §863, el §864 y el §865 dijeron
+  de su sello son de su fecha.
+
+En la sesión se corrió el canon entero, `--sello`, sobre este árbol y con este asiento en su sitio,
+y salió VERDE.

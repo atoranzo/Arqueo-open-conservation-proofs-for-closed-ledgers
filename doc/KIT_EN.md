@@ -218,6 +218,19 @@ rebuilt from its commit on another one comes out with another hash (below, «Rep
 whoever does not trust the download»). What it judged it does judge the same way: the rebuilt one
 passes its eleven catalogues.
 
+⚠️ §862: **the tree carries E3 of RFC-0020, dispatch by scheme, and no release carries it**: the
+published 0.4.4, on `95bc457`, does not have it. The tree's library gains three constants
+—`Esquema::ACEPTADOS`, `Esquema::EMITIDOS` and `Esquema::IMPLICITO`—, two variants of
+`VerificaError` —`EsquemaNoRegistrado` and `EsquemaNoAceptado`— and one rejection: `verificar_acta`,
+with a previous act whose scheme the registry does not assign and the outgoing key's signature,
+gives, once it judges it, `FirmaDeLaAnterior(EsquemaNoRegistrado)`, before reading its key; what
+gave `Ok` turns red, and what already failed there falls for it. Its version is still 0.4.4: the API
+of `zk-ssl-verify` as a library is outside the promise (RFC-0021's D-A and its decision 2). The
+command reaches none of it, because it always gets the implicit scheme and a previous act already
+judged: not a byte of the wire changes, nor a verdict, nor a text. What does change is the binary:
+the one this tree builds is no longer the release's, though it carries its number, and the hash that
+counts is the one above.
+
 ## 1. A file that adds up
 
 ```bash

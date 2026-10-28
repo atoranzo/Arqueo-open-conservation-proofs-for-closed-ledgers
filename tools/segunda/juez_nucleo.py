@@ -21,6 +21,10 @@ mismo tipo en el mismo catalogo.
 de las entradas del registro de esquemas, no un hex. Este juez la compara entera con el registro de
 `nucleo.py`, escrito desde NUCLEO.md seccion 6, y antes le pasa las reglas del registro a los dos,
 con un falsador: una entrada gemela que comparte la escritura de la clave tiene que caer.
+
+§862 · Y con el mismo KAT, los dos conjuntos del despacho por esquema (RFC-0020, E3) y el implicito
+de `nucleo.py`: el implicito se emite, lo emitido se acepta y lo aceptado esta en el registro, con
+un falsador: un conjunto aceptado vacio tiene que caer. No los fija el KAT, que es del registro.
 """
 import hashlib
 import json
@@ -205,6 +209,13 @@ def calcular(fn, e, notas):
         gemela = {**N.REGISTRO_DE_ESQUEMAS[0], "esquema": N.REGISTRO_DE_ESQUEMAS[0]["esquema"] + (6 << 32)}
         if not N.registro_valido(N.REGISTRO_DE_ESQUEMAS + [gemela]):
             raise ValueError("falsador: una entrada gemela que comparte la escritura de la clave NO cae")
+        # §862 · los dos conjuntos del despacho (RFC-0020, E3) y el implicito, contra el registro, con
+        #    su falsador: un conjunto aceptado vacio tiene que caer.
+        conjuntos = N.conjuntos_validos(N.REGISTRO_DE_ESQUEMAS)
+        if conjuntos:
+            raise ValueError(f"los conjuntos del despacho de nucleo.py no cumplen su regla: {conjuntos}")
+        if not N.conjuntos_validos(N.REGISTRO_DE_ESQUEMAS, aceptados=()):
+            raise ValueError("falsador: un conjunto aceptado vacio NO cae")
         return registro_en_json(N.REGISTRO_DE_ESQUEMAS)
     if fn == "recibo_digest":
         return dig(N.recibo_digest(e["hash_prueba"], e["era"], e["n"]))
