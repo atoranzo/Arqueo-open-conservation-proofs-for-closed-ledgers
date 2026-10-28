@@ -40,7 +40,7 @@ use winter_fri::folding::{apply_drp, fold_positions};
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, RandomCoin};
 use winterfell::math::fields::f64::BaseElement;
 use winterfell::math::fields::QuadExtension;
-use winterfell::math::{fft, FieldElement, StarkField};
+use winterfell::math::{fft, polynom, FieldElement, StarkField};
 
 use crate::instrumento_cota::Geometria;
 use crate::proof_options;
@@ -285,14 +285,26 @@ fn transpuesta<const N: usize>(v: &[E]) -> Vec<[E; N]> {
 pub(crate) struct Mascaras {
     pub columnas_f: usize,
     pub columna_e: bool,
+    /// §908 (la D-AL bis): las dos columnas sobre F entran en DEEP como UNA sobre E, con los
+    /// coeficientes cc y cc·ν (ν = (0, 1), fuera de F) en vez de dos independientes.
+    pub pareadas: bool,
 }
 
 /// La construccion de hoy: una columna aleatoria sobre F.
-pub(crate) const DE_HOY: Mascaras = Mascaras { columnas_f: 1, columna_e: false };
+pub(crate) const DE_HOY: Mascaras = Mascaras { columnas_f: 1, columna_e: false, pareadas: false };
 
 /// §899, la 133: la construccion de laboratorio, dos columnas aleatorias sobre F, cada una con su
 /// coeficiente de DEEP en E: juntas cubren las dos coordenadas de cada valor que FRI abre.
-pub(crate) const LABORATORIO: Mascaras = Mascaras { columnas_f: 2, columna_e: false };
+pub(crate) const LABORATORIO: Mascaras = Mascaras { columnas_f: 2, columna_e: false, pareadas: false };
+
+/// §908: las dos columnas de laboratorio pareadas como una sobre E (cc y cc·ν): lo que el lema L9
+/// de `doc/ocultacion-hvzk.md` pide para que las mascaras cubran K entero sin medir.
+pub(crate) const PAREADAS: Mascaras = Mascaras { columnas_f: 2, columna_e: false, pareadas: true };
+
+/// ν = (0, 1): el elemento de E fuera de F con el que se parean las dos columnas.
+pub(crate) fn nu() -> E {
+    E::new(BaseElement::ZERO, BaseElement::ONE)
+}
 
 /// Mide R3 para la geometria `g` con los desafios de `semilla` y la construccion de hoy; con
 /// `con_o`, tambien el rango de O entera, que informa y no decide.
@@ -349,7 +361,13 @@ pub(crate) fn mide_con(g: &Geometria, semilla: u64, con_o: bool, mascaras: Masca
     let libres_r = largo - g.q - 4;
     let phis: Vec<Vec<E>> = (0..mascaras.columnas_f)
         .map(|c| {
-            let cc = if c == 0 { d.cc_columna } else { saca::<E>(&mut moneda) };
+            let cc = if c == 0 {
+                d.cc_columna
+            } else if mascaras.pareadas {
+                d.cc_columna * nu()
+            } else {
+                saca::<E>(&mut moneda)
+            };
             base_f.iter().map(|x| *x * cc).collect()
         })
         .collect();
@@ -413,6 +431,129 @@ pub(crate) fn mide_con(g: &Geometria, semilla: u64, con_o: bool, mascaras: Masca
     MedidaR3 { filas: mirilla.filas, rango_o, rango_k, rango_columna, rango_trozos, rango_mascaras }
 }
 
+/// §908 (L9): lo que las mascaras cubren de K ENTERO, sin pasar por O: el rango sobre F, en el
+/// espacio de coeficientes, de las columnas aleatorias solas, de los aleatorizadores solos y de
+/// las dos juntas, frente a 2·dim_E K = 2(L − q − 2). Con las columnas pareadas, L9 dice que las
+/// juntas dan K entero para cualesquiera posiciones; con las de hoy o las de laboratorio sin
+/// parear, lo que den. Las posiciones son las de `d`, que pueden ser las adversas de
+/// `instrumento_mlin::adversa`.
+pub(crate) fn cubren_k(g: &Geometria, d: &Desafios, semilla: u64, mascaras: Mascaras) -> (usize, usize, usize, usize) {
+    let largo = 2 * g.t;
+    let lde = largo * proof_options().blowup_factor();
+    let omega = BaseElement::get_root_of_unity(lde.ilog2());
+    let g_traza = E::from(BaseElement::get_root_of_unity(largo.ilog2()));
+    let x: Vec<E> = d
+        .posiciones
+        .iter()
+        .map(|&p| E::from(BaseElement::GENERATOR * omega.exp(p as u64)))
+        .collect();
+    let (z, zg) = (d.z, d.z * g_traza);
+    let ell = vec![-(z + zg), E::from(BaseElement::new(2))];
+    let v_pos = de_raices(&x);
+    let s = largo - g.m;
+    let dim_k = 2 * (largo - g.q - 2);
+    let mut moneda = Moneda::new(&[BaseElement::new(semilla ^ 0x908)]);
+    // las columnas sobre F: combinaciones aleatorias de Σ_c Φ_c·u_c, mas que su rango
+    let conj = [conjugado(z), conjugado(zg)];
+    let base_f = mul(&mul(&ell, &v_pos), &de_raices(&conj));
+    let libres_r = largo - g.q - 4;
+    let phis: Vec<Vec<E>> = (0..mascaras.columnas_f)
+        .map(|c| {
+            let cc = if c == 0 {
+                d.cc_columna
+            } else if mascaras.pareadas {
+                d.cc_columna * nu()
+            } else {
+                saca::<E>(&mut moneda)
+            };
+            base_f.iter().map(|x| *x * cc).collect()
+        })
+        .collect();
+    let mut columnas: Vec<Vec<BaseElement>> = Vec::new();
+    for _ in 0..(mascaras.columnas_f * libres_r + 8) {
+        let mut p = vec![E::ZERO; largo];
+        for phi in &phis {
+            let u: Vec<E> = (0..libres_r).map(|_| E::from(saca::<BaseElement>(&mut moneda))).collect();
+            for (a, b) in p.iter_mut().zip(mul(phi, &u)) {
+                *a += b;
+            }
+        }
+        columnas.push(sobre_f(&p));
+    }
+    if mascaras.columna_e {
+        let cc: E = saca(&mut moneda);
+        let base_e: Vec<E> = mul(&ell, &v_pos).iter().map(|x| *x * cc).collect();
+        for i in 0..largo - g.q - 2 {
+            let mut p = vec![E::ZERO; i];
+            p.extend_from_slice(&base_e);
+            let p = con_largo(p, largo);
+            columnas.push(sobre_f(&p));
+            columnas.push(sobre_f(&p.iter().map(|e| *e * nu()).collect::<Vec<E>>()));
+        }
+    }
+    let rango_columnas = rango_de(columnas.clone());
+    // los aleatorizadores: (cc'_k·x^s − cc'_{k+1})·V·ℓ·x^i, un espacio sobre E, con su base sobre F
+    let libres_v = g.m.saturating_sub(g.q + 2);
+    let mut trozos: Vec<Vec<BaseElement>> = Vec::new();
+    for k in 0..g.trozos.saturating_sub(1) {
+        let mut w = vec![E::ZERO; s + 1];
+        w[0] = -d.cc_trozos[k + 1];
+        w[s] = d.cc_trozos[k];
+        let w = mul(&mul(&w, &v_pos), &ell);
+        for i in 0..libres_v {
+            let mut p = vec![E::ZERO; i];
+            p.extend_from_slice(&w);
+            let p = con_largo(p, largo);
+            trozos.push(sobre_f(&p));
+            trozos.push(sobre_f(&p.iter().map(|e| *e * nu()).collect::<Vec<E>>()));
+        }
+    }
+    let rango_trozos = rango_de(trozos.clone());
+    let mut juntas = columnas;
+    juntas.extend(trozos);
+    let rango_juntas = rango_de(juntas);
+    assert!(rango_juntas <= dim_k, "las mascaras salen de K: {rango_juntas} > {dim_k}");
+    (dim_k, rango_columnas, rango_trozos, rango_juntas)
+}
+
+/// §908 (L9), el criterio del lema, barato: el rango sobre F de ev(M_r), la imagen de los
+/// aleatorizadores del cociente evaluados en (z̄, z̄·g) ∈ E², frente a 4. Con las columnas
+/// pareadas, M_par = ker(ev|_K), asi que M_par + M_r = K si y solo si este rango es 4; es lo que
+/// `cubren_k` mide entero en las geometrias pequenas y lo que se puede medir en cada canon en las
+/// grandes sin rangos de 4008 × 4096.
+pub(crate) fn ev_de_los_aleatorizadores(g: &Geometria, d: &Desafios) -> usize {
+    let largo = 2 * g.t;
+    let lde = largo * proof_options().blowup_factor();
+    let omega = BaseElement::get_root_of_unity(lde.ilog2());
+    let g_traza = E::from(BaseElement::get_root_of_unity(largo.ilog2()));
+    let x: Vec<E> = d
+        .posiciones
+        .iter()
+        .map(|&p| E::from(BaseElement::GENERATOR * omega.exp(p as u64)))
+        .collect();
+    let (z, zg) = (d.z, d.z * g_traza);
+    let ell = vec![-(z + zg), E::from(BaseElement::new(2))];
+    let v_pos = de_raices(&x);
+    let s = largo - g.m;
+    let puntos = [conjugado(z), conjugado(zg)];
+    let libres_v = g.m.saturating_sub(g.q + 2);
+    let mut filas: Vec<Vec<BaseElement>> = Vec::new();
+    for k in 0..g.trozos.saturating_sub(1) {
+        let mut w = vec![E::ZERO; s + 1];
+        w[0] = -d.cc_trozos[k + 1];
+        w[s] = d.cc_trozos[k];
+        let w = mul(&mul(&w, &v_pos), &ell);
+        for i in 0..libres_v {
+            let mut p = vec![E::ZERO; i];
+            p.extend_from_slice(&w);
+            let ev: Vec<E> = puntos.iter().map(|y| polynom::eval(&p, *y)).collect();
+            filas.push(sobre_f(&ev));
+            filas.push(sobre_f(&ev.iter().map(|e| *e * nu()).collect::<Vec<E>>()));
+        }
+    }
+    rango_de(filas)
+}
+
 /// Una linea por medida.
 pub(crate) fn linea(nombre: &str, g: &Geometria, m: &MedidaR3) -> String {
     format!(
@@ -469,6 +610,25 @@ pub(crate) const R3_MEDIDO_LABORATORIO: &[(usize, usize, usize, usize, usize, us
 /// La fila de `R3_MEDIDO_LABORATORIO` de una geometria, si la tiene.
 pub(crate) fn clavado_laboratorio(g: &Geometria) -> Option<(usize, usize, usize, usize)> {
     fila_de(R3_MEDIDO_LABORATORIO, g)
+}
+
+/// §908 (L9): lo que las mascaras cubren de K entero, en el espacio de coeficientes y sin pasar
+/// por O, con las dos columnas PAREADAS (cc y cc·ν), clavado por geometria: 2·dim_E K, las
+/// columnas solas, los aleatorizadores solos y las dos juntas; las juntas tienen que dar K entero
+/// en las cinco, con la semilla 1 y con las posiciones adversas (`instrumento_mlin::adversa`), y
+/// un cambio en cualquier cifra es rojo.
+pub(crate) const K_ENTERO_PAREADAS: &[(usize, usize, usize, usize, usize, usize, usize, usize)] = &[
+    // T, trozos, capas, resto, 2·dim K, columnas, trozos, juntas
+    (64, 15, 1, 16, 168, 164, 80, 168),
+    (256, 2, 2, 8, 936, 932, 40, 936),
+    (256, 9, 2, 8, 936, 932, 80, 936),
+    (512, 8, 2, 16, 1960, 1956, 80, 1960),
+    (1024, 8, 2, 32, 4008, 4004, 80, 4008),
+];
+
+/// La fila de `K_ENTERO_PAREADAS` de una geometria, si la tiene.
+pub(crate) fn clavado_k_entero(g: &Geometria) -> Option<(usize, usize, usize, usize)> {
+    fila_de(K_ENTERO_PAREADAS, g)
 }
 
 fn fila_de(
@@ -533,10 +693,70 @@ mod tests {
         println!("{} · laboratorio", linea("juguete (WorkAir)", &g, &m));
         assert_eq!((m.rango_k, m.rango_columna, m.rango_trozos, m.rango_mascaras), (424, 420, 80, 424));
         assert!(m.cumple());
-        let e = mide_con(&g, 1, false, Mascaras { columnas_f: 1, columna_e: true });
+        let e = mide_con(&g, 1, false, Mascaras { columnas_f: 1, columna_e: true, pareadas: false });
         println!("{} · una columna sobre E", linea("juguete (WorkAir)", &g, &e));
         assert_eq!((e.rango_k, e.rango_columna, e.rango_mascaras), (424, 424, 424));
         assert!(e.cumple());
+    }
+
+    /// **§908 (L9): con las dos columnas pareadas como una sobre E, las mascaras cubren K ENTERO
+    /// en el juguete y en las cinco geometrias, con la semilla 1 y con las posiciones adversas;
+    /// con una columna no, y con las dos sin parear tambien, salvo el suceso cc₂/cc₁ ∈ F.** Se
+    /// mide en el espacio de coeficientes, sin pasar por O: lo que L9 enuncia, no lo que FRI abre.
+    #[test]
+    fn con_las_columnas_pareadas_las_mascaras_cubren_k_entero() {
+        // el criterio del lema en las cinco geometrias y el juguete: 4 de 4, con las dos instancias
+        for g in [geo(42, 128, 64, 4, 1, 32), geo(42, 64, 64, 15, 1, 16), geo(42, 256, 64, 2, 2, 8), geo(42, 256, 64, 9, 2, 8), geo(42, 512, 64, 8, 2, 16), geo(42, 1024, 64, 8, 2, 32)] {
+            for (nombre, d) in [("semilla 1", desafios(&g, 1)), ("adversa 1", crate::instrumento_mlin::adversa(&g, 1))] {
+                let r = ev_de_los_aleatorizadores(&g, &d);
+                println!("[908] T {} · {} trozos · {nombre} · ev(M_r) de rango {r} sobre F, de 4", g.t, g.trozos);
+                assert_eq!(r, 4, "T {}: los aleatorizadores llenan las dos coordenadas de (z̄, z̄·g) ({nombre})", g.t);
+            }
+        }
+        // y K entero, medido en el espacio de coeficientes, en las pequenas; las grandes, en el largo
+        let juguete = geo(42, 128, 64, 4, 1, 32);
+        let geos = [juguete.clone(), geo(42, 64, 64, 15, 1, 16), geo(42, 256, 64, 2, 2, 8), geo(42, 256, 64, 9, 2, 8)];
+        let mut mal = Vec::new();
+        k_entero(&geos, &juguete, &mut mal);
+        assert!(mal.is_empty(), "K entero no es lo clavado:\n{}", mal.join("\n"));
+    }
+
+    /// **§908: K entero en las geometrias grandes, T = 512 y 1024** (`#[ignore]`: rangos de hasta
+    /// 4008 × 4096 sobre F, media hora en release; lo medido queda clavado en `K_ENTERO_PAREADAS`,
+    /// y el criterio del lema se mide en cada canon).
+    #[test]
+    #[ignore = "instrumento de medida: media hora en release; lo medido queda clavado"]
+    fn k_entero_en_las_geometrias_grandes() {
+        let juguete = geo(42, 128, 64, 4, 1, 32);
+        let mut mal = Vec::new();
+        k_entero(&[geo(42, 512, 64, 8, 2, 16), geo(42, 1024, 64, 8, 2, 32)], &juguete, &mut mal);
+        assert!(mal.is_empty(), "K entero no es lo clavado:\n{}", mal.join("\n"));
+    }
+
+    /// K entero con una columna, con dos sin parear y con dos pareadas, en las geometrias dadas,
+    /// con la semilla 1 y con las posiciones adversas, contra lo clavado (el juguete no se clava).
+    fn k_entero(geos: &[Geometria], juguete: &Geometria, mal: &mut Vec<String>) {
+        for g in geos {
+            for (nombre, d) in [("semilla 1", desafios(g, 1)), ("adversa 1", crate::instrumento_mlin::adversa(g, 1))] {
+                let hoy = cubren_k(g, &d, 1, DE_HOY);
+                let lab = cubren_k(g, &d, 1, LABORATORIO);
+                let par = cubren_k(g, &d, 1, PAREADAS);
+                println!(
+                    "[908] T {} · {} trozos · {nombre} · 2·dim K {} · hoy (una columna): columna {} · trozos {} · juntas {} · laboratorio (dos sin parear): {} / {} / {} · pareadas: {} / {} / {}",
+                    g.t, g.trozos, par.0, hoy.1, hoy.2, hoy.3, lab.1, lab.2, lab.3, par.1, par.2, par.3
+                );
+                assert_eq!(par.1, 2 * (2 * g.t - g.q - 4), "T {}: las pareadas solas son E[x] de grado < L − q − 4", g.t);
+                assert_eq!(par.3, par.0, "T {}: con las pareadas, las juntas son K entero ({nombre})", g.t);
+                assert!(hoy.3 < hoy.0, "T {}: con una columna no se cubre K entero", g.t);
+                if g.t != juguete.t {
+                    match clavado_k_entero(g) {
+                        None => mal.push(format!("T {}, {} trozos: sin fila en K_ENTERO_PAREADAS: {par:?}", g.t, g.trozos)),
+                        Some(c) if c != par => mal.push(format!("T {}, {} trozos ({nombre}): medido {par:?} y clavado {c:?}", g.t, g.trozos)),
+                        Some(_) => {},
+                    }
+                }
+            }
+        }
     }
 
     /// **La tabla clavada tiene una fila por geometria de produccion, y ninguna cumple.**

@@ -30,10 +30,10 @@ identical conditions, and we document a methodological error of our own —
 mixing debug and release build figures — that was detected and corrected
 during the work.
 
-The reference implementation comprises **2096 executable tests in the seal
+The reference implementation comprises **2097 executable tests in the seal
 gate** (55 of them are winterfell 0.13.1's own, brought in by the fork of
-§533) —2236 counting the pins of the long and complete levels, and 1349
-declared (⚠️ §865: from §493; today `tools/check_tests.py` counts them, by another rule)—, with 21 ignored and declared (⚠️ §900: it said 18; they are the sum of the ignored column of the seal table of `tools/canon.sh`, and the instruments `tools/check_tests.py` counts), and is
+§533) —2237 counting the pins of the long and complete levels, and 1349
+declared (⚠️ §865: from §493; today `tools/check_tests.py` counts them, by another rule)—, with 22 ignored and declared (⚠️ §908: it said 21; ⚠️ §900: it said 18; they are the sum of the ignored column of the seal table of `tools/canon.sh`, and the instruments `tools/check_tests.py` counts), and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
 limitations in detail.
@@ -1020,7 +1020,7 @@ non-stable compilers are used.
 # Or all at once, with the canon's pinned counts checked:
 bash tools/canon.sh --sello
 
-cargo test -p zk-ssl --release              # layer: 563 tests (8 ignored)
+cargo test -p zk-ssl --release              # layer: 564 tests (9 ignored)
 cargo test -p stark-experiment --release    # circuits: 490 tests (13 ignored)
 cargo test -p zk-ssl-node --release         # node: 244
 cargo test -p zk-ssl --release metrics -- --nocapture

@@ -75833,3 +75833,95 @@ fork cambia— y el tarball `7b05f064a5389f98`, que cambia con las fuentes, como
 con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
 anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Dos arranques, una
 corrida entera: la primera murió con el contenedor antes de compilar nada, y la segunda es ésta.
+
+## §908 — El alcance del corte 0.5 para ZK en las 23 familias, propuesto al autor (RFC-0018 D-H): las dos columnas aleatorias pareadas como una sobre E en DEEP (la D-AL bis del RFC-0009), con el lema L9 —con ellas las máscaras cubren K entero para cualesquiera posiciones y AIR, y R3 pasa de hipótesis medida a teorema, sin ningún |F| en la cuenta—, medido en el instrumento de R3 en las cinco geometrías y el juguete con la semilla 1 y con las posiciones adversas; y T = 128 para las cinco de T = 64; ni un byte de producción cambia
+
+El commit que lleva este asiento, sobre `e922168a` (el §907). Toca sólo tests y documentos:
+`crates/zk-ssl/src/instrumento_r3.rs`, que gana `Mascaras::pareadas` y `PAREADAS`, `nu`,
+`cubren_k` —el rango de las máscaras como subespacio de K, en el espacio de coeficientes y sin
+pasar por O—, `ev_de_los_aleatorizadores` —el criterio del lema, barato—, la tabla
+`K_ENTERO_PAREADAS`, un test de sello y uno largo, ignorado y declarado; `crates/zk-ssl/src/instrumento_mlin.rs`,
+cuya `adversa` desplaza la terna forzada cuando repite una posición (con T = 64 y la semilla 1 la
+primera repetía una; con T ≥ 128 nada cambia y lo clavado del §907 sigue); `tools/canon.sh`, la
+fila de `zk-ssl`, 563 -> 564, con su crónica; los totales y las copias del pin en `PAPER.md`,
+`PAPER_EN.md`, `PRINCIPIOS.md`, `ARQUITECTURA.md`, `CONTRIBUTING.md` (con su marca),
+`doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`;
+`spec/rfc/0009-lo-que-revela-una-prueba.md`, la D-AL bis como nota de la D-AL, propuesta;
+`spec/rfc/0018-el-tren-0-5.md`, la D-H, el alcance del corte para ZK, propuesta;
+`doc/ocultacion-hvzk.md`, el apartado 17 con el lema L9 y lo medido; `BACKLOG.md`, notas en la 131
+y la 133; y este asiento. Ni el fork, ni ningún probador, ni ningún AIR, ni el cable, ni vectores.
+Lo escribe y lo commitea Claude, en una sesión de Claude Code en la nube, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre
+tras el §907. El canon de este commit se dice al final.
+
+**De dónde sale.** El autor, tras el §907: «quiero ZK»; y a la pregunta de la sesión —prometer ya
+para dieciséis (el camino a de la D-AM), o preparar el corte para las 23— eligió el corte. Antes
+había dicho: «El corte 0.5 con la E3 (marca v2) y la E5 (las dos columnas) … Cuando quieras
+arrancarlo, dime el alcance y lo preparo». Esto es el alcance, con la pieza que faltaba.
+
+**Lo que hace.**
+
+1. **La observación** (apartado 17 del documento, D-AL bis del RFC-0009): todo lo que el §907 deja
+   medido y no acotado —la capa 1, las coincidencias, la solvencia, el |F| de L8— viene de que la
+   máscara de DEEP vive en F. Con las dos columnas de laboratorio del §899 y dos coeficientes de
+   DEEP independientes, lo libre es E[x] sólo si cc₂/cc₁ ∉ F; con cc₂ := cc₁·ν lo es siempre: las
+   dos columnas son una sobre E, R₀ + ν·R₁, sin cambiar un byte de la prueba ni la solidez.
+2. **El lema L9**, escrito con su demostración: M_par + M_r = K —las columnas pareadas y los
+   aleatorizadores cubren K ENTERO, no sólo lo que FRI abre— para cualesquiera posiciones, α_i y
+   AIR, salvo cc'_{k+1} = cc'_k·z̄^s para todo k, probabilidad ≤ |E|^{−(N−1)}. La demostración es de
+   cuatro líneas: M_par es el núcleo de la evaluación de K en (z̄, z̄·g), y los aleatorizadores
+   llenan esas dos coordenadas. Con él, R3 deja de medirse y el argumento no depende de la AIR.
+3. **La medida**: `cubren_k`, el rango sobre F en el espacio de coeficientes de las columnas
+   solas, los aleatorizadores solos y las dos juntas, frente a 2·dim_E K, con una columna, con dos
+   sin parear y con dos pareadas, en el juguete y en las cinco geometrías, con la semilla 1 y con
+   las posiciones adversas del §907; `K_ENTERO_PAREADAS` lo clava.
+4. **El alcance del corte** (RFC-0018 D-H, propuesta): las dos columnas pareadas en los 23
+   probadores con la marca v2 (E5 + E3), T = 128 en las cinco de T = 64 (la 131), los jueces, el
+   catálogo, `tools/segunda` y los vectores; en orden, con lo que cuesta y lo que no es.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release y con `--locked`:
+
+el test de sello, 55 s: el criterio del lema, ev(M_r) de rango 4 sobre F, de 4, en las cinco
+geometrías de producción y el juguete, con la semilla 1 y con la adversa; y K entero en el espacio
+de coeficientes en el juguete (424 de 424), T = 64 (168 de 168) y las dos de T = 256 (936 de 936),
+con las pareadas solas en 2(L − q − 4): 420, 164 y 932. El test largo, corrido una vez entero sobre
+las seis geometrías con las tres construcciones y las dos instancias, 1.755 s: T = 512, 1960 de 1960
+(las pareadas solas, 1956) y T = 1024, 4008 de 4008 (4004); con una columna, 1022 y 2046; con dos
+sin parear, lo mismo que pareadas. Una corrida anterior del mismo test murió en T = 64 porque la
+terna adversa repetía una posición; de ahí el desplazamiento de `adversa`, que no cambia las
+instancias con T ≥ 128 (lo clavado del §907 sigue). `check_tests`, 2261 declarados y 22
+instrumentos (eran 2259 y 21: el test de sello y el largo); `check_modulos`, 221; `check_cifras`, OK
+con los totales nuevos.
+
+**Lo que NO hace.** No enciende nada ni decide nada: la D-AL bis y la D-H son propuestas, y el
+corte lo prepara el autor. No cambia el enunciado de hoy ni la promesa. No demuestra L9 sobre las
+pruebas reales del corte, que no existen: lo demuestra sobre la construcción y lo mide sobre las
+geometrías. No cierra la 131 ni la 133: dice cómo las cerraría el corte. No toca H3 ni la 137.
+
+**Lo que es del autor.** Aceptar o cambiar la D-AL bis y la D-H; preparar el corte; y después del
+corte y de la revisión humana, la promesa.
+
+**Contadores.** `zk-ssl` 563 -> 564, con 9 ignorados (eran 8: el instrumento de las geometrías
+grandes); los demás sin cambio. TOTAL DE SELLO 2096 -> 2097 y CON LARGOS 2236 -> 2237, en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`, con 22 ignorados declarados (eran 21); `check_tests`
+2259 -> 2261 y 22 instrumentos; `check_modulos` 221. `BACKLOG.md` sigue en 44 abiertas y 95 resueltas.
+Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 457 s de reloj (de su arranque a su salida)
+y 312 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU, con la compilación a
+dos trabajos como en el §907. Las 19 filas del nivel, en su pin, con 2097 tests que pasan (la suma
+de la columna «pasan»), la de `zk-ssl` en 564 pasan y 9 ignorados, 236 s, y la de
+`stark-experiment` en 490 y 13, 17 s; las tres del fork, `winter-air` 64, `winter-prover` 7 y
+`winter-verifier` 0, en su pin; la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12
+con features (1 s)»; `check_tests` en 2261 y 22 instrumentos; `check_modulos` en 221; las once
+herramientas del bucle «2 ter»; la puerta de los vectores, en 605 ficheros y 1370 líneas de 19
+manifiestos, con las huellas de `550375e` —la base en `origin/main`— en las del árbol;
+`check_catalogo`, en 236 textos y 302 entradas; la conformidad, 0.5 IDÉNTICO y las cuatro
+versiones anteriores RECHAZADAS; el cable, en 27 de 27; la segunda implementación, con el núcleo en
+34 de 34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, igual
+desde dos raíces, con el binario `31c70dcb83ef951b` —el mismo del §906 y del §907: nada de
+producción ni del fork cambia— y el tarball `afd672015dd3f841`, que cambia con las fuentes, como en
+cada asiento. Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero
+que en los sellos anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí.
+Una sola corrida: no hubo roja.

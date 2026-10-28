@@ -1323,3 +1323,72 @@ solvencia entera, donde 166 < 294 y las cuatro columnas juntas son una condició
 conjunto; L8 dice dónde está el filo y por qué el denominador es |F|. El pánico del aserto de grado
 (la 137) y la guarda de las aserciones periódicas (la 138), del fork. Y la revisión de la 136, que
 es de una persona que elige el autor: esta no la sustituye, y le ahorra lo que ya está visto.
+
+## 17. Lo que el corte haría del argumento: R3 como teorema con las columnas pareadas (§908)
+
+**La observación.** Todo lo que el apartado 16 deja medido y no acotado —la capa 1, las
+coincidencias coset–tocado, la solvencia, y el |F| en el denominador de L8— viene de una sola
+cosa: la máscara de DEEP vive en F. Con las dos columnas aleatorias de la D-AL (§899) y dos
+coeficientes de DEEP independientes, cc₁ y cc₂, lo que las dos dejan libre en D es
+2(x − x₀)·V_pos·(x − z̄)(x − z̄·g)·{cc₁·u₀ + cc₂·u₁} con u_i ∈ F[x]_{<L−q−4}, que es un espacio
+sobre E —E[x]_{<L−q−4} entero— si y sólo si cc₂/cc₁ ∉ F. Con cc₂ := cc₁·ν, ν ∈ E \ F fijo, lo es
+siempre: las dos columnas son una columna sobre E, R₀ + ν·R₁, con un solo coeficiente, y el
+argumento entero pasa a ser E-lineal. Es la D-AL bis del RFC-0009, propuesta; no cambia un byte de
+la prueba, y es una línea en el compositor de DEEP del probador y otra en el del verificador.
+
+### L9 — Con las columnas pareadas, las máscaras cubren K entero, para cualesquiera posiciones (§908)
+
+**Enunciado.** Sea M_par = 2(x − x₀)·V_pos·(x − z̄)(x − z̄·g)·E[x]_{<L−q−4} lo que las dos columnas
+pareadas dejan libre en D, y M_r = Σ_k (cc'_k·x^s − cc'_{k+1})·V_pos·(2x − z − z·g)·E[x]_{<m−q−2}
+lo que dejan los aleatorizadores del cociente (L2, L7). Entonces M_par + M_r = K para cualesquiera
+posiciones, α_i y AIR, salvo que cc'_{k+1} = cc'_k·z̄^s para todo k < N − 1, un suceso de
+probabilidad ≤ |E|^{−(N−1)} sobre los coeficientes de DEEP de los trozos; bajo H3 (z ∉ F).
+
+**Demostración.** K = (x − x₀)·V_pos·E[x]_{<L−q−2}. Sea ev: K → E², k ↦ (k(z̄), k(z̄·g)). Como
+(x − x₀)·V_pos no se anula en z̄ ni en z̄·g (z̄ ∉ F ⊇ Λ, y z̄ = x₀ pediría z̄/z = (1 + g)/2 ∈ F de
+norma 1, es decir g = 1 o g = −3), ev es sobreyectiva —E[x]_{<L−q−2} interpola dos valores en dos
+puntos— y ker(ev) = {k ∈ K : (x − z̄)(x − z̄·g) | k} = M_par. Luego K = M_par + M_r si y sólo si
+ev(M_r) = E². Tómese un k y v ∈ E[x]_{<m−q−2}: ev de su término es (A·v(z̄), B·v(z̄·g)) con
+A = (cc'_k·z̄^s − cc'_{k+1})·V_pos(z̄)·(2z̄ − z − z·g) y B lo mismo en z̄·g. V_pos(z̄) ≠ 0 (z̄ ∉ F);
+2z̄ − z − z·g = 0 es el caso g ∈ {1, −3} de arriba, y 2z̄·g − z − z·g = 0 pediría (1 + g)/(2g) de
+norma 1, g ∈ {1, −1/3}: ninguno es un generador de orden L ≥ 128. Queda cc'_{k+1} = cc'_k·z̄^s,
+probabilidad 1/|E| por k, independientes. Si A ≠ 0 y B ≠ 0, como m − q − 2 = 20 ≥ 2,
+(v(z̄), v(z̄·g)) recorre E² cuando v recorre E[x]_{<m−q−2}, y ev(M_r) = E². ∎
+
+**Lo que da.** R3 (H6) deja de ser una hipótesis medida: las máscaras independientes del testigo
+cubren K ENTERO —no sólo lo que FRI abre de él— para cualesquiera posiciones, α_i y AIR; ni M_lin
+(H12), ni la cuenta fina (H13), ni L6, ni L8 (H14) hacen falta para el enunciado, y siguen como
+instrumentos de guarda. El simulador del apartado 5 no cambia: S5 muestrea D̃ uniforme en la clase
+de K, y ahora la distribución real es exactamente ésa. La cuenta de la ventaja queda en 2^{−60}
+(H3) + 2^{−128} (S5) + Q·2^{−256} (L0) + |E|^{−(N−1)} (L9), sin ε_R3 y sin ningún |F|. Lo que la
+proposición sigue pidiendo: L1 por geometría (T ≥ 2q + 6, la 131 para las cinco de T = 64), L2
+(q + 2 ≤ m), H3, y el modelo de L0, L4 y L5.
+
+**Medido** (`instrumento_r3::cubren_k`, `K_ENTERO_PAREADAS`), en el espacio de coeficientes y sin
+pasar por O, sobre F, con la semilla 1 y con las posiciones adversas del §907:
+
+| geometría | instancias | 2·dim_E K | una columna (hoy): columna · aleatorizadores · juntas | dos sin parear (D-AL): columnas · aleatorizadores · juntas | dos pareadas (D-AL bis): columnas · aleatorizadores · juntas | ev(M_r), de 4 |
+|---|---|---|---|---|---|---|
+| juguete, T = 128, 4 trozos | semilla 1 y adversa | 424 | 210 · 80 · 254 | 420 · 80 · 424 | 420 · 80 · **424** | 4 |
+| T = 64, 15 trozos | ídem | 168 | 82 · 80 · 126 | 164 · 80 · 168 | 164 · 80 · **168** | 4 |
+| T = 256, 2 trozos | ídem | 936 | 466 · 40 · 506 | 932 · 40 · 936 | 932 · 40 · **936** | 4 |
+| T = 256, 9 trozos | ídem | 936 | 466 · 80 · 510 | 932 · 80 · 936 | 932 · 80 · **936** | 4 |
+| T = 512, 8 trozos | ídem | 1960 | 978 · 80 · 1022 | 1956 · 80 · 1960 | 1956 · 80 · **1960** | 4 |
+| T = 1024, 8 trozos | ídem | 4008 | 2002 · 80 · 2046 | 4004 · 80 · 4008 | 4004 · 80 · **4008** | 4 |
+
+En las doce medidas —seis geometrías, la semilla 1 y la adversa del §907— las columnas pareadas
+solas dan 2(L − q − 4), cuatro dimensiones sobre F menos que K (las de z̄ y z̄·g), y con los
+aleatorizadores K entero: lo que L9 dice, cifra a cifra; las dos sin parear dan lo mismo en estas
+semillas, donde cc₂/cc₁ ∉ F; una columna, la mitad más los aleatorizadores. El criterio del lema
+—ev(M_r), el rango sobre F de los aleatorizadores evaluados en (z̄, z̄·g)— es 4 de 4 en las doce.
+Lo que cuesta medirlo entero: 1.755 s las seis geometrías con las tres construcciones, casi todo
+en T = 1024, con rangos de 4008 × 4096 sobre F; por eso el sello mide entero el juguete, T = 64 y
+las dos de T = 256 (55 s) y el criterio en las seis, y el test largo de `instrumento_r3`
+(`k_entero_en_las_geometrias_grandes`, ignorado y declarado) mide entero T = 512 y 1024, con sus
+cifras clavadas en `K_ENTERO_PAREADAS`.
+
+
+**Lo que no hace.** No enciende nada: la D-AL bis es una propuesta y el corte es del autor (RFC-0018
+D-H). No cambia el enunciado de hoy (apartado 8 con el 16): la construcción de `zkssl/0.4` sigue
+siendo la que es, con una columna. No toca H3, cuyo 2^{−60} es ahora el término mayor, ni el 2^{−128}
+de S5 (la 137).

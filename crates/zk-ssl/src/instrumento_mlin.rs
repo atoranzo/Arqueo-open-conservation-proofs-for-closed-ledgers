@@ -464,22 +464,28 @@ pub(crate) fn mide_con_base(
 /// nuevos en vez de catorce), una coincidencia coset-tocado (p₃ = p₂ + 3·|Λ|/8 − blowup:
 /// g·x₃ = x₂·μ³, el siguiente de una posicion cae en el coset de otra, donde el camino
 /// directo de toda columna lineal vale cero) y una posicion que es la siguiente de otra
-/// (p₅ = p₄ − blowup: g·x₅ = x₄, un tocado menos). Las q posiciones siguen siendo distintas, y
-/// z, los coeficientes y los α son los de la semilla.
+/// (p₅ = p₄ − blowup: g·x₅ = x₄, un tocado menos). Las q posiciones siguen siendo distintas —si
+/// una forzada repite otra, las tres parejas se toman una posicion mas alla, y asi hasta que
+/// quepan (§908: con T = 64 y la semilla 1 la primera terna repetia una)—, y z, los coeficientes y
+/// los α son los de la semilla.
 pub(crate) fn adversa(g: &Geometria, semilla: u64) -> Desafios {
-    let mut d = desafios(g, semilla);
     let blowup = proof_options().blowup_factor();
     let lde = 2 * g.t * blowup;
     let octavo = lde / 8;
     assert!(g.q >= 6, "la instancia adversa fuerza tres parejas: q = {}", g.q);
-    let p = &mut d.posiciones;
-    p[1] = (p[0] + octavo) % lde;
-    p[3] = (p[2] + 3 * octavo + lde - blowup) % lde;
-    p[5] = (p[4] + lde - blowup) % lde;
-    p.sort_unstable();
-    let distintas: BTreeSet<usize> = p.iter().copied().collect();
-    assert_eq!(distintas.len(), g.q, "la instancia adversa repite una posicion");
-    d
+    for desde in 0..=(g.q - 6) {
+        let mut d = desafios(g, semilla);
+        let p = &mut d.posiciones;
+        p[desde + 1] = (p[desde] + octavo) % lde;
+        p[desde + 3] = (p[desde + 2] + 3 * octavo + lde - blowup) % lde;
+        p[desde + 5] = (p[desde + 4] + lde - blowup) % lde;
+        p.sort_unstable();
+        let distintas: BTreeSet<usize> = p.iter().copied().collect();
+        if distintas.len() == g.q {
+            return d;
+        }
+    }
+    panic!("la instancia adversa no cabe sin repetir una posicion (T = {}, semilla {semilla})", g.t)
 }
 
 /// Cuantas parejas de las posiciones `p` hay de cada clase que `adversa` fuerza, modulo |Λ|:

@@ -910,6 +910,24 @@ prefiere el tramo auxiliar.
 ⚠️ §906: la marca v2 de laboratorio (RFC-0018 D-G) lleva ya el byte de columnas que esta decisión
 pide, y el probador la escribe con las columnas que se le pidan; apagada hasta el corte.
 
+⚠️ §908 — **D-AL bis, propuesta de la sesión, decide el autor: las dos columnas entran en DEEP
+como UNA sobre E.** Con dos coeficientes de DEEP independientes, cc₁ y cc₂, lo que las dos columnas
+dejan libre en D es 2(x − x₀)·V_pos·(x − z̄)(x − z̄·g)·{cc₁·u₀ + cc₂·u₁}, que es E[x] sólo si
+cc₂/cc₁ ∉ F: un suceso de probabilidad 1 − 1/|F|, y la razón de que las cotas del argumento sobre
+los desafíos lleven |F| = 2^64 en el denominador (`doc/ocultacion-hvzk.md`, L8). Con cc₂ := cc₁·ν,
+ν un elemento fijo de E fuera de F, las dos columnas son una sobre E, R₀ + ν·R₁, con un solo
+coeficiente, y el lema L9 del apartado 17 del documento dice que entonces las máscaras cubren K
+entero —no sólo lo que FRI abre— para cualesquiera posiciones, α_i y AIR, salvo un suceso de
+probabilidad ≤ |E|^{−(N−1)}: R3 deja de ser una hipótesis medida y pasa a ser un teorema, y con él
+el argumento no depende de la AIR. No cambia un byte de la prueba respecto a esta decisión —las
+mismas dos columnas, las mismas aperturas— ni la solidez: la combinación de DEEP sigue teniendo un
+coeficiente por polinomio, y R₀ + ν·R₁ no entra en ninguna restricción. Lo que cambia: una línea
+en el compositor de DEEP del probador y otra en el del verificador, en el sello del corte. Medido
+en el instrumento de R3 (`cubren_k`, `K_ENTERO_PAREADAS`): en las cinco geometrías y en el juguete,
+con la semilla 1 y con las posiciones adversas del §907, las máscaras pareadas dan K entero; sin
+parear, también, salvo ese suceso; con una columna, no. **Reversible**: es un parámetro del
+compositor, y la medida de D-AL sigue valiendo si no se parea.
+
 ### D-AM — La promesa tras A1, A2, A3 y la 134: sigue siendo el censo; lo que se podría prometer, para qué familias y bajo qué hipótesis, queda escrito con sus palabras y es del autor
 
 **Estado: decidida en el §901 por la sesión, con el criterio que el autor dictó para A4 —«no puede

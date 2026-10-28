@@ -1493,6 +1493,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   no una medida.
   ⚠️ §905: la cuenta fina, medida: no rescata a ninguna de las cinco hoy; con la 133 cubriría al
   umbral conjunto, y las otras cuatro siguen necesitando T = 128.
+  ⚠️ §908: el alcance del corte para ZK (RFC-0018 D-H, propuesta) lleva las cinco a T = 128, el
+  umbral conjunto incluido: con 128 no queda ninguna hipótesis por AIR.
 
 - [x] **132. La solvencia no tiene máscaras que cubran lo que FRI abre de DEEP: 506 dimensiones
   frente a unas 630 (§897).** `SolvencyAir` (T = 256, dos trozos) cumple la cuenta de lo tocado —la
@@ -1562,6 +1564,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ §907: una razón más, del lema L8: con la columna aleatoria en F la aplicación cuyo rango es
   R3 es F-lineal y la cota sobre los desafíos lleva |F| = 2^64 en el denominador; con la máscara
   de DEEP en E todo sería E-lineal y la cota iría sobre |E|.
+  ⚠️ §908: y la salida que lo arregla sin cambiar un byte: las dos columnas de laboratorio
+  PAREADAS como una sobre E en DEEP (coeficientes cc y cc·ν), la D-AL bis del RFC-0009; con ella
+  el lema L9 (`doc/ocultacion-hvzk.md`, apartado 17) hace de R3 un teorema para cualesquiera
+  posiciones y AIR, medido en las cinco geometrías (`K_ENTERO_PAREADAS`). Es la pieza 1 del alcance
+  del corte (RFC-0018 D-H).
 
 - [x] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
   las restricciones, que el instrumento de R3 no cuenta (§898).** Lo puso la revisión escéptica del
