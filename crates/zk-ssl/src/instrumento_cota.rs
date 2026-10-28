@@ -61,7 +61,9 @@
 //! cualquier sentido es rojo. El argumento, con sus lemas, lo que mide cada test de aqui y lo que
 //! no cubre, es `doc/ocultacion-hvzk.md`. §900 (la 134): el mismo test sondea las 23 AIR —que columnas
 //! entran linealmente con coeficiente publico— contra el censo declarado de `instrumento_mlin` y mide
-//! R3 con M_lin en la solvencia, contra lo clavado.
+//! R3 con M_lin en la solvencia, contra lo clavado. §907: y la huella de la composicion de cada AIR
+//! contra `HUELLA_C`, y la solvencia ademas con las semillas 2 y 3 y con la instancia adversa,
+//! contra `MLIN_INSTANCIAS`.
 
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -806,6 +808,18 @@ fn la_cota_de_ocultacion_de_los_23_probadores_con_fila() {
             g.t,
             sonda.reales()
         );
+        // §907 (la O3 de la revision del agente): la huella de la composicion, clavada por
+        // familia; un cambio en las restricciones de una AIR que conserve el censo no mueve
+        // ninguna otra guarda del canon, y el rango de M_lin de las quince que no se remiden aqui
+        // se midio una vez: la huella obliga a remedirlas
+        let h = instrumento_mlin::huella(&*sonda);
+        match instrumento_mlin::huella_declarada(&air) {
+            None => mal.push(format!("{air}: sin huella en HUELLA_C: {h}")),
+            Some(c) if c != h => mal.push(format!(
+                "{air}: la huella de la composicion es {h} y la clavada {c}: la AIR cambio; remide la 134 (el test largo) y vuelve a clavar MLIN_MEDIDO, MLIN_INSTANCIAS y HUELLA_C"
+            )),
+            Some(_) => {},
+        }
         match instrumento_mlin::censo_declarado(&air) {
             None => mal.push(format!("{air}: sin fila en CENSO_134")),
             Some((dt_, r, dl, dt, dn, veredicto)) => {
@@ -869,6 +883,42 @@ fn la_cota_de_ocultacion_de_los_23_probadores_con_fila() {
                 None => mal.push(format!("{air}: sin fila en MLIN_MEDIDO: {medida:?}")),
                 Some(c) if c != medida => mal.push(format!("{air}: medido {medida:?} y clavado {c:?}")),
                 Some(_) => {},
+            }
+            // §907 (la O1): la misma medida con las semillas 2 y 3 enteras y con la instancia
+            // adversa -las posiciones de `adversa` (una colision de cosets, una coincidencia
+            // coset-tocado y una posicion siguiente de otra), lo demas de la semilla 1-, y lo que
+            // ponen las lineales solas, contra MLIN_INSTANCIAS
+            instrumento_mlin::contrasta_instancia(
+                &air,
+                "semilla 1",
+                (m.rango_k, m.rango_lineales, m.rango_mascaras, m.rango_solo_lineales),
+                &mut mal,
+            );
+            for (nombre, d, semilla) in [
+                ("semilla 2", crate::instrumento_r3::desafios(&g, 2), 2u64),
+                ("semilla 3", crate::instrumento_r3::desafios(&g, 3), 3),
+                ("adversa 1", instrumento_mlin::adversa(&g, 1), 1),
+            ] {
+                let m = instrumento_mlin::mide_con_desafios(
+                    &*sonda,
+                    &g,
+                    &censo.lineales(),
+                    &d,
+                    semilla,
+                    instrumento_mlin::INSTANCIA,
+                    instrumento_mlin::Base::Tocados,
+                );
+                let [col, coi, sig] = instrumento_mlin::parejas_adversas(&g, &d.posiciones);
+                println!(
+                    "[907] {air} · {nombre} · {col} colisiones, {coi} coincidencias, {sig} siguientes · {}",
+                    instrumento_mlin::linea(&air, &g, &m)
+                );
+                instrumento_mlin::contrasta_instancia(
+                    &air,
+                    nombre,
+                    (m.rango_k, m.rango_lineales, m.rango_mascaras, m.rango_solo_lineales),
+                    &mut mal,
+                );
             }
         }
     }

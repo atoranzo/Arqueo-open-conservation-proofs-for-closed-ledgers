@@ -29,8 +29,9 @@ T = 64— no está establecido, por lo que el apartado 14 dice de cada una.
    (4), el simulador paso a paso (5), la condición R3 como instrumento (6), lo que no cubre (7), el
    enunciado (8), lo medido en A1 y lo corregido (9), dónde el fork se aparta de la nota 2024/1037
    (10), las objeciones de las dos revisiones de la sesión con su cierre (11), lo que pide a A3, A4
-   y A5 (12), A3 medido (13) y la 134 medida (14). Las marcas ⚠️ §n dicen qué decía antes cada
-   pasaje y por qué cambió. Medio día.
+   y A5 (12), A3 medido (13) y la 134 medida (14); ⚠️ §905 y §907: la 135 medida con su lema L1'
+   (15) y la revisión del agente cerrada, con L7, L8 y las instancias medidas (16). Las marcas
+   ⚠️ §n dicen qué decía antes cada pasaje y por qué cambió. Medio día.
 3. **El código que el argumento describe**, con el documento al lado: en el fork,
    `crates/winter-prover/src/lib.rs` (`generate_proof_oculto`: las filas, la columna, las dos
    monedas y sus semillas), `crates/winter-prover/src/constraints/composition_poly.rs`
@@ -43,7 +44,10 @@ T = 64— no está establecido, por lo que el apartado 14 dice de cada una.
    `instrumento_falsadores_hvzk.rs` (los tres falsadores del juguete, con la moneda rehecha de una
    prueba real) e `instrumento_mlin.rs` (la 134: la sonda, M_lin y R3 por familia). Un día.
 4. **La crónica**: los asientos §896 a §902 de `AUDITORIA.md`: qué midió cada uno, qué corrigió del
-   anterior y las objeciones que cada revisión de la sesión puso. Una hora.
+   anterior y las objeciones que cada revisión de la sesión puso. Una hora. ⚠️ §907: y el §905 (la
+   135) y el §907 (la revisión del agente), más `doc/ocultacion-hvzk-revision-agente.md`, el informe
+   íntegro de esa revisión: lo que leyó, sus siete objeciones y lo que dio por correcto con qué.
+   Una hora más.
 
 ## 3. Lo que se afirma, con su clase y dónde se mide
 
@@ -53,7 +57,8 @@ T = 64— no está establecido, por lo que el apartado 14 dice de cada una.
 | L1: las T filas aleatorias cubren los 2q + 6 puntos tocados por columna, sobre F, en 18 familias | medida en cada canon | `instrumento_cota`: `INDEPENDIENTE_DE_LA_AIR`, `rango_de_los_tocados`, `rango_pleno`; el mutante T = 32 |
 | L2: los m coeficientes de cada aleatorizador cubren los q + 2 puntos abiertos por trozo, sobre E | medida en cada canon | `instrumento_cota`: `rango_pleno` (Vandermonde); el mutante m = 43 |
 | L3: lo que FRI abre de DEEP es simulable si las máscaras independientes del testigo cubren O|_K (R3) | demostrado como condición suficiente; R3 medida | `instrumento_r3`: `R3_MEDIDO` (falsa con la columna y los aleatorizadores), `R3_MEDIDO_LABORATORIO` (verdadera con dos columnas); `instrumento_mlin`: `MLIN_MEDIDO` (verdadera con M_lin en dieciséis familias) |
-| H12: las filas aleatorias de una columna que entra linealmente con coeficiente público son una máscara más | medida en cada canon (el censo) y por familia | `instrumento_mlin`: `CENSO_134`, la sonda; el juguete reproduce lo clavado sin lineales y suma exactamente lo libre con ellas |
+| H12: las filas aleatorias de una columna que entra linealmente con coeficiente público son una máscara más | medida en cada canon (el censo) y por familia; ⚠️ §907: en cada canon sólo el censo de las 23 y el rango de la solvencia; el rango de las otras quince se midió en el test largo y lo guarda la huella de cada composición, `HUELLA_C` (la O3 de la revisión del agente); y demostrada como lema, L7 | `instrumento_mlin`: `CENSO_134`, la sonda; el juguete reproduce lo clavado sin lineales y suma exactamente lo libre con ellas |
+| H14 (§907): R3 con M_lin vale en los desafíos reales | demostrada en la capa 0 con T ≥ 512 fuera de las coincidencias coset–tocado (L8, fallo ≤ 7c₀/\|F\|); medida en lo demás en tres instancias por familia, una adversa | `instrumento_mlin`: `adversa`, `MLIN_INSTANCIAS`; la solvencia en cada canon, las quince en el test largo |
 | L4: las hojas saladas esconden lo no abierto | demostrado con la sal fresca (H8, supuesta) | `crates/zk-ssl-air/src/sal.rs`, tests de tamaño y efecto; la frescura no se mide |
 | L5: las máscaras salen de monedas propias, sembradas aparte de la pública | demostrado por el código; H9 (ninguna semilla repetida), supuesta | `generate_proof_oculto`, `segmentar`; el falsador de la semilla repetida |
 | L6: lo que depende de la AIR con T = 64 | enunciado, no demostrado | el distinguidor del juguete con T = 64 |
@@ -119,7 +124,13 @@ Lo que la sesión no pudo comprobar por sí misma, o donde el filo es más fino:
    dos pruebas del testigo.)
 6. **Los desafíos del test frente a los de la prueba.** Los rangos se miden con posiciones, z y
    coeficientes elegidos por el test; el argumento es que el rango es genérico (Schwartz-Zippel
-   sobre E). ¿Hay desafíos reales con rango menor, y con qué probabilidad?
+   sobre E). ¿Hay desafíos reales con rango menor, y con qué probabilidad? ⚠️ §907: la revisión
+   del agente atacó aquí (su O1): las posiciones reales no son genéricas —colisiones de cosets en
+   más de la mitad de las pruebas de la solvencia, coincidencias coset–tocado con frecuencia
+   Θ(1)—; y «sobre E» era un error: la aplicación es F-lineal y la cota va sobre |F|. Lo que hay
+   ahora: L8 para la capa 0 con T ≥ 512, tres instancias medidas por familia —una adversa— y la
+   cuenta de la ventaja rehecha (apartado 16 del documento). Lo que sigue abierto: una cota para
+   la capa 1, las coincidencias y T = 256, que hoy sólo están medidas.
 7. **La sal (L4).** Con R3 en verde, ¿hace falta la sal? Qué fallaría sin ella, hoja a hoja: la
    fila de la traza en un punto de Λ (L1), el vector de los trozos (L2) y los ocho valores de un
    coset de FRI (sólo R3). El autor decidió conservarla (A5, §902).
@@ -141,9 +152,78 @@ Cada objeción va al apartado 11 de `doc/ocultacion-hvzk.md` con su cierre —o 
 tiene—, como las de las dos revisiones de la sesión; un asiento de `AUDITORIA.md` dice quién
 revisó, qué objetó y qué cambió; y después decide el autor sobre la D-AM, con su asiento. La casa
 corrige en su sitio y marca lo que cambia: un revisor que encuentre un error no verá el error
-borrado, sino corregido con una nota que dice qué decía.
+borrado, sino corregido con una nota que dice qué decía. ⚠️ §907: así se registró la primera
+revisión desde fuera de la sesión, la de un agente (apartado 8 de este dosier): su informe entero
+en `doc/ocultacion-hvzk-revision-agente.md`, sus siete objeciones con su cierre en el apartado 11
+del documento, lo que pidió escribir y medir en el apartado 16, y el asiento §907.
 
 ## 7. Lo que este dosier no es
 
 No es una promesa ni cambia ninguna. No es una auditoría del fork. No mide nada: dice dónde está
 cada medida y cómo volver a hacerla. Y no sustituye al revisor: la casa no lo elige aquí.
+
+## 8. La revisión del agente (§907), y lo que cambió con ella
+
+Antes de que el autor elija al revisor, la sesión pidió una revisión a un agente externo a ella
+—otra instancia, sin la crónica ni las conclusiones, con este dosier y una copia del árbol del §903
+delante, en lectura pura—. No cuenta como la revisión ajena de la 136, y sirve para que el revisor
+humano no gaste su tiempo en lo que ya está visto: el informe íntegro es
+`doc/ocultacion-hvzk-revision-agente.md`. No encontró un paso falso ni una medida que mida otra
+cosa; puso siete objeciones, ninguna alta: una instancia de desafíos por familia y posiciones no
+genéricas (O1), el lema del núcleo conjunto sin escribir (O2), el rango de quince familias sin
+guarda en el canon (O3), la cuenta de la ventaja incompleta (O4), dos imprecisiones de la vista
+(O5), la molienda del rasgo `concurrent` (O6) y el pánico del aserto de grado del DEEP (O7). El §907
+las cerró —L7 y L8 escritos, tres instancias medidas por familia con una adversa, la huella de cada
+composición clavada, la cuenta rehecha, los textos corregidos— salvo lo que es del fork o sigue
+sin cota, y lo dice: la capa 1, las coincidencias coset–tocado y T = 256 están medidas y no
+acotadas; el pánico es la 137 de `BACKLOG.md`; y una corrección que la revisión no vio: la cota
+sobre los desafíos va sobre |F| = 2^64, no sobre |E|, porque la columna aleatoria vive en F. Lo que
+el revisor humano encontrará, por tanto, es un argumento con una tercera revisión encima y con sus
+huecos nombrados; el apartado 5 sigue valiendo, con el 6 reescrito.
+
+## 9. La carta al revisor, para el autor
+
+La elección del revisor es del autor (la 136). Un borrador de carta, en inglés, para cuando la haga;
+los nombres los pone él. La elección natural son los autores de la nota ePrint 2024/1037, de la que
+es la construcción del fork; segunda, quien mantiene winterfell, para la otra mitad de H7; tercera,
+cualquier criptógrafo con STARKs y FRI que acepte una revisión pública con sus objeciones
+registradas.
+
+> Subject: Request for an external review of a zero-knowledge argument for a winterfell 0.13.1
+> fork built on ePrint 2024/1037
+>
+> I maintain Arqueo, an open-source settlement layer whose proofs are STARKs produced by a fork of
+> winterfell 0.13.1. Since its zkssl/0.4 cut the fork hides the witness with the construction of
+> the note "A note on adding zero-knowledge to STARKs" (ePrint 2024/1037): T random rows behind each
+> trace column, one random column, a blinded quotient with randomizers of degree < m, and salted
+> Merkle leaves. The repository, its reasoning and every measurement are public.
+>
+> I am writing to ask whether you would review the hiding argument written for that
+> implementation. It is a simulator-based argument (honest-verifier, statistical in the
+> programmable random-oracle model), with every hypothesis classified as measured, proven,
+> modelled or assumed, and each measured hypothesis tied to a test that re-measures it on every
+> build. Two things found while measuring may interest you as readers of the construction:
+>
+> 1. With the random column living in the base field F while the DEEP polynomial lives in the
+>    quadratic extension E, the column masks only one of the two E-coordinates of each value FRI
+>    opens; together with the quotient randomizers it leaves what FRI opens of DEEP uncovered in
+>    every production geometry (a rank condition we call R3). Two random columns, each with its
+>    own DEEP coefficient, cover it in all geometries; so does one random column over E.
+> 2. For AIRs whose columns enter the constraints linearly with public coefficients, the random
+>    rows of those columns are an additional witness-independent linear mask that, in 16 of our
+>    23 proof families, covers the gap with the current construction. Two families (hash-only
+>    AIRs) have no such column, and five families with T = 64 rows are not covered by the base
+>    lemma at all. A layer-0 coverage lemma holds for any query positions when T ≥ 512; what
+>    depends on the positions beyond it is measured on several instances, not bounded.
+>
+> The review package is a single document, `doc/ocultacion-hvzk-dosier.md`: what to read and in
+> which order (about two days), each claim with its class and where it is measured, the commands
+> that reproduce every figure, the places where we think the argument is thinnest, and a first
+> review by an automated reader whose objections are recorded with their resolution. We would
+> record your objections verbatim, with their resolution or without one, in the document and in
+> the project's audit log, under your name if you consent, and the project's author decides
+> afterwards what, if anything, is promised to users. Nothing is promised today: the only claim
+> the project makes about hiding is a measured census of literal values.
+>
+> Please let me know whether this is something you would be willing to do, under what conditions,
+> and in what time frame. I would also welcome a pointer to someone you consider better placed.

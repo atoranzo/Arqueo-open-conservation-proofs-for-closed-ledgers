@@ -967,7 +967,16 @@ FrozenClimbAir por la 133; los otros cuatro de T = 64 esperan a la 131.
 **Qué le falta a lo escrito para ser promesa.** (1) La aceptación del autor, que decide sobre lo
 medido (`doc/METODO.md` §7) y de quien es toda promesa; (2) una revisión ajena del argumento de A2
 con la 134, que es lo que A4 pedía al conservar H7 (⚠️ §903: su dosier es
-`doc/ocultacion-hvzk-dosier.md`; el revisor lo elige el autor, la 136 de `BACKLOG.md`); (3) para
+`doc/ocultacion-hvzk-dosier.md`; el revisor lo elige el autor, la 136 de `BACKLOG.md`; ⚠️ §907:
+la primera revisión desde fuera de la sesión está hecha y cerrada, y es de un agente, no de una
+persona —`doc/ocultacion-hvzk-revision-agente.md`; apartados 11 y 16 del documento—: ninguna
+objeción alta; dejó escritos dos lemas que faltaban, L7 y L8, tres instancias de desafíos medidas
+por familia con una adversa, la huella de cada composición clavada, y la cuenta de la ventaja
+rehecha: ≤ 2^{−60} + 2^{−128} + Q·2^{−256} + ε_R3, con ε_R3 ≤ 7c₀/|F| ≈ 2^{−55,8} en lo que L8
+demuestra —la capa 0 con T ≥ 512— y medido, no acotado, en la capa 1, las coincidencias
+coset–tocado y la solvencia; la cota sobre los desafíos va sobre |F| = 2^64 y no sobre |E|, porque
+la columna aleatoria vive en F, y eso es una razón más para la 133. La revisión de la 136 sigue
+siendo de una persona); (3) para
 las dieciséis, nada más: ni la cuenta
 fina de la 135 ni la 133 hacen falta. Si el autor acepta, cambian D-A —su «lo que no se promete»
 pasa a ser, para las dieciséis, la lista de hipótesis de arriba, y para las siete, lo de hoy—,

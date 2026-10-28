@@ -1989,7 +1989,12 @@ y también trae dos defensas que antes no existían.
   de oráculo aleatorio programable, bajo hipótesis con nombre, entre ellas la
   sal fresca y las semillas no repetidas de §3.11— está escrito en la D-AM
   con sus palabras y **no se promete**: es del autor, y el argumento no tiene
-  revisión ajena (H7). La promesa de esta sección no cambia.
+  revisión ajena (H7). La promesa de esta sección no cambia. ⚠️ §907: la
+  primera revisión desde fuera de la sesión —de un agente, no de una
+  persona— no encontró un paso falso; dejó dos lemas escritos y la cuenta de
+  la ventaja del argumento rehecha, con lo que depende de las posiciones
+  reales demostrado en parte y medido en el resto, y con la cota sobre los
+  desafíos sobre |F| = 2^64, no sobre |E|. Sigue sin prometerse nada más.
 - **El cable rechaza lo que no entiende**: DTOs con
   `deny_unknown_fields`, hex canónico, digests de anchura fija.
 - **Los vectores de conformidad son una defensa, no solo documentación.**

@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 42 abiertas, 95 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 44 abiertas, 95 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, y el §905, que cierra la 135.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, y el §907, que abre la 137 y la 138.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1559,6 +1559,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   más filas; los otros cuatro de T = 64 necesitan además la 131.
   ⚠️ §906: la marca v2 del corte lleva el byte de columnas, en laboratorio y apagada (RFC-0018
   D-G); lo que queda es encenderla en el sello del corte.
+  ⚠️ §907: una razón más, del lema L8: con la columna aleatoria en F la aplicación cuyo rango es
+  R3 es F-lineal y la cota sobre los desafíos lleva |F| = 2^64 en el denominador; con la máscara
+  de DEEP en E todo sería E-lineal y la cota iría sobre |E|.
 
 - [x] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
   las restricciones, que el instrumento de R3 no cuenta (§898).** Lo puso la revisión escéptica del
@@ -1630,6 +1633,37 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   leer y en qué orden, lo que se afirma con su clase y dónde se mide, cómo reproducir cada cifra,
   dónde atacar y cómo se registra lo que diga. QUEDAN el revisor, que elige el autor, la revisión
   y la decisión: sigue abierta.
+  ✅ a medias (§907): la primera revisión desde fuera de la sesión, hecha y cerrada: de un agente
+  —otra instancia, con el dosier y una copia del árbol del §903, en lectura pura—, no de una
+  persona; su informe íntegro en `doc/ocultacion-hvzk-revision-agente.md`, sus siete objeciones
+  (ninguna alta) con su cierre en el apartado 11 del documento, y lo que pidió —los lemas L7 y L8,
+  tres instancias de desafíos por familia con una adversa, la huella de cada composición, la cuenta
+  de la ventaja rehecha— en el apartado 16; el dosier lleva en su apartado 9 un borrador de carta
+  al revisor. No cuenta como la revisión ajena: QUEDAN el revisor humano, que elige el autor, su
+  revisión y la decisión: sigue abierta.
+
+- [ ] **137. El aserto de grado del DEEP hace pánico con un testigo válido, contra la D-AH (§907).**
+  `generate_proof_oculto` (`crates/winter-prover/src/lib.rs`) aserta
+  `trace_length − 2 == deep_composition_poly.degree()`, heredado del `generate_proof` de
+  winterfell: el coeficiente director de D se anula con probabilidad ≈ 2^{−128} para un testigo
+  VÁLIDO, y entonces el probador entra en pánico en vez de devolver un `Err` —la D-AH del RFC-0009
+  dice que un testigo malo es un `Err`, nunca un pánico, y aquí ni siquiera es malo—. Lo vio la
+  revisión del agente (su O7). No toca la ocultación: el simulador condiciona al mismo grado y la
+  diferencia es el 2^{−128} que el apartado 16 de `doc/ocultacion-hvzk.md` suma. **Qué pide**: un
+  `ProverError` en lugar del aserto, en el camino oculto y, si se quiere, en el de winterfell; un
+  test con un D forzado de grado menor, si se puede construir, o la constancia de que no. **Qué la
+  cierra**: el `Err` en el fork con su test, en un sello aparte: toca el camino de producción.
+
+- [ ] **138. Una `Assertion::periodic` o `sequence` de una AIR interna se exigiría en las filas
+  aleatorias de `Oculta` (§907).** `ConstraintDivisor::from_assertion(assertion, L)` toma el
+  número de pasos sobre L = 2T, así que una aserción periódica de una AIR interna caería también
+  en las T filas aleatorias; hoy ninguna de las 23 la usa (las entradas públicas de las 22 son
+  valores de `Assertion::single` y la edad no tiene periódicas), y si una lo hiciera el probador
+  oculto fallaría en el aserto de `segmentar`, sin fugar nada. Lo vio la revisión del agente al
+  leer el fork (su apartado 4.7). **Qué pide**: una guarda en `Oculta::new` o en el probador oculto
+  —rechazar con `Err` una AIR interna con aserciones de paso mayor que cero— y un test que la mida;
+  o, si alguna AIR futura las necesita, exigirlas sólo en las T filas reales. **Qué la cierra**: la
+  guarda con su test, en un sello aparte: toca el fork.
 
 ## D. Declaradas, acotadas, sin urgencia
 

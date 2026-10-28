@@ -75683,3 +75683,153 @@ cambia es ninguna prueba, y lo miden los vectores en sus huellas y la conformida
 `313f83554509cadb`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio
 y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.
+
+## §907 — La revisión del agente del argumento de ocultación, cerrada: siete objeciones, ninguna alta —los lemas L7 (el núcleo conjunto) y L8 (la cobertura de la capa 0 por puntos, para cualesquiera posiciones) escritos y demostrados, tres instancias de desafíos medidas por familia con una adversa que fuerza una colisión de cosets, una coincidencia coset–tocado y una posición siguiente de otra, la huella de la composición de cada familia clavada, la cuenta de la ventaja rehecha con la cota sobre |F| y no sobre |E|, y los textos corregidos—; la 136 sigue abierta para el revisor humano, y se abren la 137 y la 138
+
+El commit que lleva este asiento, sobre `8211839c` (el §906). Toca sólo tests y documentos:
+`crates/zk-ssl/src/instrumento_mlin.rs`, que gana `adversa` (la instancia de desafíos con las tres
+parejas forzadas), `parejas_adversas`, `mide_con_desafios` (la medida con unos desafíos dados;
+`mide_con_base` pasa a llamarla), la variante y el campo de las lineales solas
+(`rango_solo_lineales`), `huella` (la huella de la composición de una AIR) y las tablas
+`MLIN_INSTANCIAS` y `HUELLA_C` con sus lectores, un test del juguete y la semilla 2 y la adversa en
+el test largo; `crates/zk-ssl/src/instrumento_cota.rs`, cuyo test de las 23 familias compara la
+huella de cada AIR y mide la solvencia con las semillas 2 y 3 y con la adversa, contra lo clavado;
+`doc/ocultacion-hvzk.md`, el apartado 16 con los dos lemas, la cuenta y lo medido, la tercera
+revisión en el apartado 11, la H12 y la H14 en la tabla, y las notas §907 en el apartado 2, P5, L0,
+S5, el apartado 5, el 6, el 7, el 8 y el 14; `doc/ocultacion-hvzk-revision-agente.md`, nuevo, el
+informe íntegro del agente con una cabecera que dice qué es; `doc/ocultacion-hvzk-dosier.md`, los
+apartados 2, 3, 5 y 6 anotados y dos nuevos, el 8 (la revisión del agente) y el 9 (un borrador de
+carta al revisor, para el autor); `spec/rfc/0009-lo-que-revela-una-prueba.md`, una nota en la
+D-AM; `SECURITY.md`, una frase en §3.bis; `BACKLOG.md`, la 136 a medias, una nota en la 133, las
+137 y 138 nuevas, el estado y la cadena; `tools/canon.sh`, la fila de `zk-ssl`, 562 -> 563, con
+su crónica; los totales y las copias del pin en `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`ARQUITECTURA.md`, `CONTRIBUTING.md` (con su marca), `doc/INSTITUCIONAL.md`,
+`doc/INSTITUTIONAL.md` y `doc/ecst/VERIFICACION.md`; y este asiento. Ni el fork, ni ningún
+probador, ni ningún AIR, ni el cable, ni vectores. Lo escribe y lo commitea Claude, en una sesión
+de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide
+`CLAUDE.md`. El número es el siguiente libre tras el §906. El canon de este commit se dice al
+final.
+
+**De dónde sale.** La orden del autor del §903 en adelante: «Elegir al revisor y darle el dosier
+(la 136)». Al revisor humano lo elige el autor; mientras, la sesión dio el dosier a un agente
+externo a ella —otra instancia de Claude Code, sin la crónica ni las conclusiones—, con una copia
+del árbol del §903 hecha con `git archive` en el espacio de trabajo de la sesión, en lectura pura:
+no ejecutó nada ni tocó ningún fichero. (Un primer intento con un árbol de trabajo de git dentro
+del clon, `.claude/worktrees/`, se abortó antes de que el agente escribiera su informe: las
+herramientas de documentos del canon veían los ficheros dos veces y daban centenares de
+contradicciones falsas; el árbol se quitó y el canon del §903 corrió limpio. Lección anotada: en
+este clon, ninguna copia dentro del árbol.) El informe llegó entre el §903 y el §905, y se cierra
+aquí, después de la marca v2 del §906, como se dijo al autor.
+
+**Lo que dijo.** Siete objeciones, ninguna alta, y ningún paso falso: (O1, media) R3 con M_lin
+medida en una sola instancia de desafíos por familia, con unas posiciones que no son genéricas
+—dos de 42 comparten coset de plegado en más de la mitad de las pruebas de la solvencia, y con
+frecuencia Θ(1) por prueba un punto del coset de una posición es el siguiente de otra, donde el
+camino directo de toda columna lineal vale cero—, y una cota de la proposición sin término para
+ellas; (O2, media) el lema que justifica el núcleo conjunto de la 134, sin escribir; (O3, media)
+el rango de quince de las dieciséis familias, medido una vez y sin guarda: un cambio en las
+restricciones que conserve el censo no movía ninguna; (O4, baja) la cuenta de la ventaja
+incompleta; (O5, baja) dos imprecisiones de la vista, la hoja salada y dos campos de la `Proof`;
+(O6, baja) L0 describía la molienda del rasgo `concurrent` apagado sin decirlo; (O7, baja) el
+aserto de grado del DEEP hace pánico con un testigo válido. Y lo que dio por correcto, con el
+código delante, está en su informe y resumido en el apartado 11.
+
+**Lo que hace.**
+
+1. **L7, el núcleo conjunto** (apartado 16): condicionada a la vista y a lo que no depende de
+   (w, r), la pareja de lo libre de las lineales y los aleatorizadores es uniforme en un
+   trasladado del núcleo conjunto de las aperturas de los trozos, y el trasladado depende del
+   testigo pero el núcleo no; la fibra no es vacía por la triangularidad de L2 y H4. Es lo que el
+   instrumento aplicaba desde el §900; H12 pasa de medida a demostrada, con su rango medido.
+2. **L8, la cobertura de la capa 0 por puntos**: la columna aleatoria cubre una coordenada en los
+   7c₀ puntos de la capa 0 para cualesquiera posiciones, exacto (Vandermonde); una columna lineal
+   con cc_i/cc_R ∉ F cubre la otra en los que no son tocados, con el camino del cociente
+   descontado por un menor cuya parte de grado máximo es la de Vandermonde, salvo con
+   probabilidad ≤ |P₀'|/|F|; con T ≥ 512 eso es toda la capa 0 fuera de las coincidencias, con
+   fallo ≤ 2^{−55,8}. Lo que no cubre, dicho: la capa 1, la segunda coordenada en las
+   coincidencias y la solvencia (166 < 294).
+3. **Una corrección que la revisión no vio**: el apartado 6 decía que la caída de rango sobre los
+   desafíos se acota «por el grado sobre |E|»; la aplicación es F-lineal y sus menores son
+   polinomios en las coordenadas sobre F de los desafíos: la cota va sobre |F| = 2^64. Para unas
+   posiciones fijas con una instancia medida en rango pleno, del orden de 2^{−51}; por puntos,
+   2^{−55,8}. El denominador es de la construcción —la columna aleatoria vive en F— y es una razón
+   más para la 133, anotada en ella.
+4. **Lo medido**: la instancia adversa, la semilla 2 (y la 3 en la solvencia), y lo que ponen las
+   lineales solas; `MLIN_INSTANCIAS` lo clava; la solvencia en cada canon.
+5. **La huella de la composición** de cada familia, `huella` y `HUELLA_C`, comparada en cada
+   canon: Blake3 de las cuentas de la AIR y de C en cuatro puntos con cuatro marcos de una moneda
+   fija. Un cambio en las restricciones de una AIR es rojo y obliga a remedir la 134.
+6. **Los textos**: la vista (el compromiso del resto y `num_unique_queries`), P5 (la hoja es
+   `merge(hash_elements(fila), sal)`), L0 (el rasgo `concurrent`, apagado), S5 (el pánico, la 137),
+   la cuenta de la ventaja en el apartado 5 y en el 8, las notas del 6, el 7 y el 14, la tercera
+   revisión en el 11, y el informe íntegro en el árbol. La 138, la guarda de las aserciones
+   periódicas bajo `Oculta`, que el agente vio al leer el fork. El dosier anota lo que cambió y
+   lleva un borrador de carta al revisor, sin nombres: los pone el autor.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release y con `--locked`. El juguete
+(T = 128, |Λ| = 4096): las posiciones de la semilla 1 traen ya 1 colisión y 5 coincidencias, y la
+adversa 2, 4 y 1; con ella, 39 libres por lineal (un tocado menos), 424 sin determinar, 254, 158 y
+332 —lo mismo que la semilla 1 con la base gruesa más las dos dimensiones del tocado que no está—,
+y las lineales solas 0: con cuatro trozos, los abiertos fijan las 76 libres; la huella, estable y
+de 64 hexadecimales; y las parejas de cada semilla en las geometrías de producción —las posiciones
+sólo dependen de |Λ| y q—: con T = 256, la semilla 1 trae 0 colisiones y 3 coincidencias, la 2, 0 y
+1, la 3, 2 y 1, y la adversa 1, 4 y 1 siguiente; con T = 512 y 1024, las semillas 1 y 2 ninguna, la
+3 una colisión y la adversa una de cada; 11,3 s. Los cinco tests de `instrumento_mlin`, 5 de 5 con 1 ignorado. El test
+de las 23 familias, 222 s: las 23 huellas, y la solvencia en cuatro instancias (semilla 1: 0
+colisiones y 3 coincidencias; semilla 2: 0 y 1; semilla 3: 2 y 1; adversa: 1, 4 y 1 siguiente), con
+R3 con M_lin cumplida en las cuatro —632, 632, 604 y 618 de 632, 632, 604 y 618: cada colisión
+quita 14 a K y lo mismo a la máscara— y las lineales solas en 587 de 632: el aleatorizador pone
+45. El test largo de las 23 familias, en dos corridas porque un reinicio del contenedor mató la primera
+en la undécima familia —6.153 s hasta ahí, diez familias enteras; 1.806 s la segunda, con las seis que
+faltaban y la cuenta fina de la edad y el reembolso v2 (`MLIN_SOLO`)—, con la semilla 2 y la adversa
+en las quince restantes:
+
+| familias | semilla 1: K · lineales y aleatorizadores · las tres · lineales solas | semilla 2 (0 parejas) | adversa (1 colisión, 1 coincidencia, 1 siguiente) |
+|---|---|---|---|
+| las seis de T = 1024 | 1016 · 1016 · 1016 · 1016 | 1016 · 1016 · 1016 | 1002 · 1002 · 1002 |
+| las nueve de T = 512 | 760 · 760 · 760 · 760 | 760 · 760 · 760 | 746 · 746 · 746 |
+
+R3 con M_lin se cumple en las 48 instancias; con T ≥ 512 las lineales solas, sin columna ni
+aleatorizadores, cubren K entero. Por familia: la semilla 1, de 279 a 425 s con T = 1024 y de 118 a
+133 s con T = 512; la semilla 2 y la adversa, de 189 a 296 s y de 77 a 90 s.
+
+`check_tests`, 2259 declarados y 21 instrumentos (eran 2258); `check_modulos`, 221; `check_cifras`,
+OK con los totales nuevos; `verificar_citas`, OK con el §907.
+
+**Lo que NO hace.** No cambia la promesa de la casa ni la D-AM: lo escrito sigue escrito y sin
+prometer, y la cuenta de la ventaja que ahora lleva es más honesta y más alta que la de antes
+(2^{−55,8} donde había 2^{−60}, y «medido, no acotado» donde no había nada). No es la revisión
+ajena de la 136: el agente no es una persona, y lo dice en cada sitio. No acota la capa 1, las
+coincidencias ni la solvencia: las mide. No toca el fork: la 137 y la 138 son suyas y van en
+sellos aparte. No vuelve a medir R3 del §898 con una segunda semilla sin M_lin: la segunda semilla
+que está en el árbol es con M_lin. No elige al revisor ni manda la carta.
+
+**Lo que es del autor.** El revisor humano y la carta; la decisión sobre la D-AM después de él; la
+137 y la 138, que tocan el fork; y llevar este sello a `main`.
+
+**Contadores.** `zk-ssl` 562 -> 563, con 8 ignorados; los demás sin cambio. TOTAL DE SELLO
+2095 -> 2096 y CON LARGOS 2235 -> 2236, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`;
+`check_tests` 2258 -> 2259; `check_modulos` 221. `BACKLOG.md` pasa a 44 abiertas y 95 resueltas:
+abre la 137 y la 138, y la 136 queda a medias. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 517 s de reloj (de su arranque a su salida)
+y 344 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU recién reiniciada —el
+contenedor se reinició dos veces en este sello: una a mitad del test largo, que se relanzó para las
+seis familias que faltaban, y otra al arrancar el primer canon, que se relanzó entero con la
+compilación a dos trabajos (`CARGO_BUILD_JOBS=2`); ninguna de las dos toca lo medido—. Las 19 filas
+del nivel, en su pin, con 2096 tests que pasan (la suma de la columna «pasan»), la de `zk-ssl` en
+563 pasan y 8 ignorados, 242 s —la solvencia en cuatro instancias y las 23 huellas van dentro—, y
+la de `stark-experiment` en 490 y 13, 19 s; las tres del fork, `winter-air` 64, `winter-prover` 7 y
+`winter-verifier` 0, en su pin; la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12
+con features (2 s)»; `check_tests` en 2259 y 21 instrumentos; `check_modulos` en 221; las once
+herramientas del bucle «2 ter»; la puerta de los vectores, en 605 ficheros y 1370 líneas de 19
+manifiestos, con las huellas de `550375e` —la base en `origin/main`— en las del árbol;
+`check_catalogo`, en 236 textos y 302 entradas; la conformidad, 0.5 IDÉNTICO y las cuatro
+versiones anteriores RECHAZADAS; el cable, en 27 de 27; la segunda implementación, con el núcleo en
+34 de 34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, igual
+desde dos raíces, con el binario `31c70dcb83ef951b` —el mismo del §906: nada de producción ni del
+fork cambia— y el tarball `7b05f064a5389f98`, que cambia con las fuentes, como en cada asiento. Corrió
+con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos
+anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Dos arranques, una
+corrida entera: la primera murió con el contenedor antes de compilar nada, y la segunda es ésta.

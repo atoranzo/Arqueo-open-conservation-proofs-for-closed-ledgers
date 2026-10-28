@@ -39,6 +39,17 @@
 //! no caben con la gruesa: ninguna se rescata hoy); con T = 64 no hay M_lin que medir con la
 //! cuenta gruesa, T − 2q − 6 < 0, y esas cinco familias siguen en la 131; no mide los desafios de
 //! ninguna prueba real; y no cambia la promesa de la casa.
+//!
+//! §907 (la revision del agente, apartados 11 y 16 del documento): la medida corre ademas en mas
+//! instancias de desafios -otra semilla entera y una ADVERSA, `adversa`, con las posiciones que el
+//! azar da a veces y la semilla 1 no tenia: una colision de cosets en la capa 0, una coincidencia
+//! coset-tocado y una posicion siguiente de otra- (`mide_con_desafios`, `MLIN_INSTANCIAS`; la
+//! solvencia en cada canon con las semillas 2 y 3 y la adversa, las otras quince en el test
+//! largo); mide lo que ponen las lineales solas, sin aleatorizadores (`rango_solo_lineales`); y
+//! clava la huella de la composicion de cada familia (`huella`, `HUELLA_C`), que el canon compara:
+//! un cambio en las restricciones de una AIR que conserve el censo obliga a remedir. Lo que
+//! justifica el nucleo conjunto es el lema L7, y lo que vale para cualesquiera posiciones en la
+//! capa 0 con T >= 512 es el lema L8, los dos en el apartado 16.
 
 use std::collections::BTreeSet;
 
@@ -64,7 +75,7 @@ use stark_experiment::merkle::{MerkleAir, MerklePublicInputs};
 use stark_experiment::solvency::{SolvencyAir, SolvencyPublicInputs};
 use winter_air::{Air, AirContext, Assertion, Marca, Oculta, TransitionConstraintDegree};
 use winter_prover::Ocultacion;
-use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, MerkleTree, RandomCoin};
+use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, Digest, ElementHasher, MerkleTree, RandomCoin};
 use winterfell::math::fields::f64::BaseElement;
 use winterfell::math::{fft, polynom, ExtensionOf, FieldElement, StarkField};
 use winterfell::matrix::ColMatrix;
@@ -82,7 +93,7 @@ use zk_ssl_air::{EdadAir, EdadPublicInputs};
 
 use crate::instrumento_cota::Geometria;
 use crate::instrumento_r3::{
-    con_largo, conjugado, de_raices, desafios, mul, rango_de, saca, sobre_f, Mirilla, Moneda, E,
+    con_largo, conjugado, de_raices, desafios, mul, rango_de, saca, sobre_f, Desafios, Mirilla, Moneda, E,
 };
 use crate::proof_options;
 
@@ -341,6 +352,9 @@ pub(crate) struct MedidaLin {
     pub rango_lineales: usize,
     /// rango sobre F de O∘{columna, aleatorizadores, M_lin}, las tres juntas.
     pub rango_mascaras: usize,
+    /// §907: rango sobre F de O∘M_lin sola, sin aleatorizadores ni columna: lo que ponen las
+    /// lineales por si mismas con los trozos abiertos fijos; cero si no se mide.
+    pub rango_solo_lineales: usize,
 }
 
 impl MedidaLin {
@@ -357,11 +371,19 @@ pub(crate) struct Variantes {
     pub lineales: bool,
     /// La inclusion de las mascaras en K, por rangos: una eliminacion mas.
     pub inclusion: bool,
+    /// §907: las lineales solas, sin aleatorizadores: una eliminacion mas.
+    pub solo_lineales: bool,
 }
 
-pub(crate) const TODAS: Variantes = Variantes { sin_lineales: true, lineales: true, inclusion: true };
+pub(crate) const TODAS: Variantes = Variantes { sin_lineales: true, lineales: true, inclusion: true, solo_lineales: true };
 /// Las del test largo: sin la variante del §898, que ya esta clavada por geometria.
-pub(crate) const LARGO: Variantes = Variantes { sin_lineales: false, lineales: true, inclusion: true };
+pub(crate) const LARGO: Variantes = Variantes { sin_lineales: false, lineales: true, inclusion: true, solo_lineales: false };
+/// §907: las del test largo con las lineales solas.
+pub(crate) const LARGO_SOLO: Variantes = Variantes { sin_lineales: false, lineales: true, inclusion: true, solo_lineales: true };
+/// §907: las de una instancia mas de desafios (otra semilla, la adversa): las tres juntas y las
+/// lineales con los aleatorizadores, que es lo que decide; sin la inclusion, ya medida en la
+/// instancia 1 de la misma geometria.
+pub(crate) const INSTANCIA: Variantes = Variantes { sin_lineales: false, lineales: true, inclusion: false, solo_lineales: false };
 
 /// Las dimensiones libres por columna lineal que deja L1 en una geometria: T − (2q + 6), o cero
 /// si no caben (T = 64).
@@ -432,11 +454,77 @@ pub(crate) fn mide_con_base(
     var: Variantes,
     base: Base,
 ) -> MedidaLin {
+    mide_con_desafios(s, g, lineales, &desafios(g, semilla), semilla, var, base)
+}
+
+/// §907 (la O1 de la revision del agente): una instancia ADVERSA de desafios para la geometria:
+/// los de `desafios(g, semilla)` con tres parejas de posiciones forzadas, que el azar da con
+/// frecuencia Θ(1) por prueba y una semilla cualquiera no tiene por que dar: una colision de
+/// cosets en la capa 0 (p₁ = p₀ + |Λ|/8: x₁ = x₀·μ, el mismo coset de plegado, siete puntos
+/// nuevos en vez de catorce), una coincidencia coset-tocado (p₃ = p₂ + 3·|Λ|/8 − blowup:
+/// g·x₃ = x₂·μ³, el siguiente de una posicion cae en el coset de otra, donde el camino
+/// directo de toda columna lineal vale cero) y una posicion que es la siguiente de otra
+/// (p₅ = p₄ − blowup: g·x₅ = x₄, un tocado menos). Las q posiciones siguen siendo distintas, y
+/// z, los coeficientes y los α son los de la semilla.
+pub(crate) fn adversa(g: &Geometria, semilla: u64) -> Desafios {
+    let mut d = desafios(g, semilla);
+    let blowup = proof_options().blowup_factor();
+    let lde = 2 * g.t * blowup;
+    let octavo = lde / 8;
+    assert!(g.q >= 6, "la instancia adversa fuerza tres parejas: q = {}", g.q);
+    let p = &mut d.posiciones;
+    p[1] = (p[0] + octavo) % lde;
+    p[3] = (p[2] + 3 * octavo + lde - blowup) % lde;
+    p[5] = (p[4] + lde - blowup) % lde;
+    p.sort_unstable();
+    let distintas: BTreeSet<usize> = p.iter().copied().collect();
+    assert_eq!(distintas.len(), g.q, "la instancia adversa repite una posicion");
+    d
+}
+
+/// Cuantas parejas de las posiciones `p` hay de cada clase que `adversa` fuerza, modulo |Λ|:
+/// colisiones de coset en la capa 0 (x_b = x_a·μ^t, t = 1..7; cada pareja una vez), coincidencias
+/// coset-tocado (g·x_b = x_a·μ^t, t = 1..7) y siguientes (g·x_b = x_a).
+pub(crate) fn parejas_adversas(g: &Geometria, p: &[usize]) -> [usize; 3] {
+    let blowup = proof_options().blowup_factor();
+    let lde = 2 * g.t * blowup;
+    let octavo = lde / 8;
+    let mut n = [0usize; 3];
+    for &a in p {
+        for &b in p {
+            let dif = (b + lde - a) % lde;
+            if dif != 0 && dif % octavo == 0 {
+                n[0] += 1;
+            }
+            if (dif + blowup) % lde != 0 && (dif + blowup) % octavo == 0 {
+                n[1] += 1;
+            }
+            if (dif + blowup) % lde == 0 {
+                n[2] += 1;
+            }
+        }
+    }
+    n[0] /= 2;
+    n
+}
+
+/// `mide_con_base` con unos desafios dados -los de `desafios` o los de `adversa`-; la semilla
+/// siembra lo demas: los coeficientes de DEEP de las columnas reales, los de las restricciones,
+/// los elementos del tramo auxiliar y el muestreo.
+pub(crate) fn mide_con_desafios(
+    s: &dyn Sonda,
+    g: &Geometria,
+    lineales: &[usize],
+    d: &Desafios,
+    semilla: u64,
+    var: Variantes,
+    base: Base,
+) -> MedidaLin {
     assert_eq!(s.largo(), 2 * g.t, "la traza oculta no es la de la geometria");
     assert_eq!(s.trozos(), g.trozos, "los trozos de la prueba no son los del contexto");
     assert!(lineales.iter().all(|&i| i < s.reales()), "una columna lineal fuera de la traza");
-    let d = desafios(g, semilla);
-    let mirilla = Mirilla::nueva(g, &d);
+    assert_eq!(d.posiciones.len(), g.q, "los desafios no son de la geometria");
+    let mirilla = Mirilla::nueva(g, d);
     let largo = mirilla.largo;
     let lde = mirilla.lde;
     let omega = BaseElement::get_root_of_unity(lde.ilog2());
@@ -539,7 +627,7 @@ pub(crate) fn mide_con_base(
     // una combinacion aleatoria del espacio de parametros, observada: [abiertos | O∘D]
     let abiertos_y: Vec<E> = x_pos.iter().copied().chain([z, zg]).collect();
     let n_abiertos = 2 * n_trozos * abiertos_y.len();
-    let muestra = |moneda: &mut Moneda, con_columna: bool, con_lineales: bool| -> Vec<BaseElement> {
+    let muestra = |moneda: &mut Moneda, con_columna: bool, con_lineales: bool, con_aleatorizadores: bool| -> Vec<BaseElement> {
         let mut c_lin = vec![E::ZERO; ce_tam];
         let mut directa = vec![E::ZERO; ce_tam];
         if con_lineales && con_lin {
@@ -573,11 +661,13 @@ pub(crate) fn mide_con_base(
                 t
             })
             .collect();
-        for k in 0..n_trozos - 1 {
-            for j in 0..g.m {
-                let v: E = saca(moneda);
-                trozos[k][s_paso + j] += v;
-                trozos[k + 1][j] -= v;
+        if con_aleatorizadores {
+            for k in 0..n_trozos - 1 {
+                for j in 0..g.m {
+                    let v: E = saca(moneda);
+                    trozos[k][s_paso + j] += v;
+                    trozos[k + 1][j] -= v;
+                }
             }
         }
         let mut fila = Vec::with_capacity(n_abiertos + 2 * mirilla.filas);
@@ -612,7 +702,7 @@ pub(crate) fn mide_con_base(
     };
 
     // las tres juntas
-    let filas: Vec<Vec<BaseElement>> = (0..n_muestras).map(|_| muestra(&mut moneda, true, true)).collect();
+    let filas: Vec<Vec<BaseElement>> = (0..n_muestras).map(|_| muestra(&mut moneda, true, true, true)).collect();
     let (ra, rj) = rangos(&filas);
     let rango_mascaras = rj - ra;
     assert!(rango_mascaras <= rango_k, "las mascaras salen de K: {rango_mascaras} > {rango_k}");
@@ -627,14 +717,22 @@ pub(crate) fn mide_con_base(
         assert_eq!(r, rango_k, "las mascaras salen de K: con K dan {r}, y K es {rango_k}");
     }
     let rango_sin_lineales = if var.sin_lineales {
-        let filas: Vec<Vec<BaseElement>> = (0..n_muestras).map(|_| muestra(&mut moneda, true, false)).collect();
+        let filas: Vec<Vec<BaseElement>> = (0..n_muestras).map(|_| muestra(&mut moneda, true, false, true)).collect();
         let (a, j) = rangos(&filas);
         j - a
     } else {
         0
     };
     let rango_lineales = if var.lineales {
-        let filas: Vec<Vec<BaseElement>> = (0..n_muestras).map(|_| muestra(&mut moneda, false, true)).collect();
+        let filas: Vec<Vec<BaseElement>> = (0..n_muestras).map(|_| muestra(&mut moneda, false, true, true)).collect();
+        let (a, j) = rangos(&filas);
+        j - a
+    } else {
+        0
+    };
+    // §907: las lineales solas, con los trozos abiertos fijos y sin aleatorizador que los mueva
+    let rango_solo_lineales = if var.solo_lineales {
+        let filas: Vec<Vec<BaseElement>> = (0..n_muestras).map(|_| muestra(&mut moneda, false, true, false)).collect();
         let (a, j) = rangos(&filas);
         j - a
     } else {
@@ -647,6 +745,7 @@ pub(crate) fn mide_con_base(
         rango_sin_lineales,
         rango_lineales,
         rango_mascaras,
+        rango_solo_lineales,
     }
 }
 
@@ -735,7 +834,7 @@ pub(crate) fn linea(nombre: &str, g: &Geometria, m: &MedidaLin) -> String {
     format!(
         "[134] {nombre}: q {} · T {} · m {} · {} trozos · {} columnas lineales con {} libres sobre F cada \
          una · sin determinar (O sobre K): {} · mascaras: columna y aleatorizadores {} · lineales y \
-         aleatorizadores {} · las tres {} · R3 con M_lin {}",
+         aleatorizadores {} · las tres {} · lineales solas {} · R3 con M_lin {}",
         g.q,
         g.t,
         g.m,
@@ -746,8 +845,46 @@ pub(crate) fn linea(nombre: &str, g: &Geometria, m: &MedidaLin) -> String {
         m.rango_sin_lineales,
         m.rango_lineales,
         m.rango_mascaras,
+        m.rango_solo_lineales,
         if m.cumple() { "SE CUMPLE" } else { "NO se cumple" }
     )
+}
+
+/// §907 (la O3 de la revision del agente): la huella de la composicion de una AIR: Blake3 de sus
+/// cuentas (L, columnas reales y auxiliares, elementos auxiliares, factor del dominio, trozos,
+/// transiciones y aserciones) y de C en cuatro puntos de E con cuatro marcos al azar de una moneda
+/// fija, con unos coeficientes y unos elementos auxiliares fijos. Cambia con cualquier cambio en
+/// las restricciones de la AIR -otra pendiente, otra asercion, otro orden de columnas, otro grado,
+/// otra periodica- y no con un comentario ni con el testigo; `HUELLA_C` la clava por familia y el
+/// canon la compara: un cambio obliga a remedir la 134 (el test largo) y a volver a clavar
+/// `MLIN_MEDIDO`, `MLIN_INSTANCIAS` y `HUELLA_C`, porque el censo solo guarda la estructura, no el
+/// rango.
+pub(crate) fn huella(s: &dyn Sonda) -> String {
+    let mut moneda = Moneda::new(&[BaseElement::new(0x907)]);
+    let coefs = coeficientes(s, &mut moneda);
+    let aux = aleatorios(s, &mut moneda);
+    let cuentas = [
+        s.largo(),
+        s.reales(),
+        s.auxiliares(),
+        s.aleatorios_aux(),
+        s.ce(),
+        s.trozos(),
+        s.transiciones(),
+        s.aserciones(),
+    ];
+    let mut valores: Vec<E> = cuentas.iter().map(|&n| E::from(BaseElement::new(n as u64))).collect();
+    for _ in 0..4 {
+        let x: E = saca(&mut moneda);
+        let per = s.periodicas(x);
+        let f = marco_al_azar(s, &mut moneda);
+        valores.extend(s.composicion(&[&f], &[x], &[per], &coefs, &aux));
+    }
+    Blake3_256::<BaseElement>::hash_elements(&valores)
+        .as_bytes()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
 }
 
 // ---- las 23 AIR con fila, sin su tipo ----
@@ -1000,6 +1137,112 @@ pub(crate) const MLIN_MEDIDO: &[(&str, usize, usize, usize, usize, usize, usize)
     ("MintClimbAir", 512, 8, 760, 510, 760, 760),
     ("RecoveryClimbAir", 512, 8, 760, 510, 760, 760),
 ];
+
+/// §907: lo medido en mas instancias de desafios, clavado: por AIR e instancia -«semilla 1», la
+/// de `MLIN_MEDIDO`, con lo que ponen las lineales solas; «semilla 2», otra entera; «adversa 1»,
+/// las posiciones de `adversa` con lo demas de la semilla 1-, lo que FRI abre sin determinar,
+/// las lineales con los aleatorizadores, las tres juntas y las lineales solas (cero donde no se
+/// mide). La solvencia, con la semilla 3 ademas, en cada canon; las otras quince, en el test
+/// largo.
+pub(crate) const MLIN_INSTANCIAS: &[(&str, &str, usize, usize, usize, usize)] = &[
+    // AIR, instancia, sin determinar, lineales y aleatorizadores, las tres, lineales solas
+    ("SolvencyAir", "semilla 1", 632, 632, 632, 587),
+    ("SolvencyAir", "semilla 2", 632, 632, 632, 0),
+    ("SolvencyAir", "semilla 3", 604, 604, 604, 0),
+    ("SolvencyAir", "adversa 1", 618, 618, 618, 0),
+    ("SendAir", "semilla 1", 1016, 1016, 1016, 1016),
+    ("SendAir", "semilla 2", 1016, 1016, 1016, 0),
+    ("SendAir", "adversa 1", 1002, 1002, 1002, 0),
+    ("SendV2Air", "semilla 1", 1016, 1016, 1016, 1016),
+    ("SendV2Air", "semilla 2", 1016, 1016, 1016, 0),
+    ("SendV2Air", "adversa 1", 1002, 1002, 1002, 0),
+    ("ClaimAir", "semilla 1", 1016, 1016, 1016, 1016),
+    ("ClaimAir", "semilla 2", 1016, 1016, 1016, 0),
+    ("ClaimAir", "adversa 1", 1002, 1002, 1002, 0),
+    ("ClaimAirV2", "semilla 1", 1016, 1016, 1016, 1016),
+    ("ClaimAirV2", "semilla 2", 1016, 1016, 1016, 0),
+    ("ClaimAirV2", "adversa 1", 1002, 1002, 1002, 0),
+    ("PrendaAir", "semilla 1", 760, 760, 760, 760),
+    ("PrendaAir", "semilla 2", 760, 760, 760, 0),
+    ("PrendaAir", "adversa 1", 746, 746, 746, 0),
+    ("MintPendingClimbAir", "semilla 1", 760, 760, 760, 760),
+    ("MintPendingClimbAir", "semilla 2", 760, 760, 760, 0),
+    ("MintPendingClimbAir", "adversa 1", 746, 746, 746, 0),
+    ("AuditAir", "semilla 1", 760, 760, 760, 760),
+    ("AuditAir", "semilla 2", 760, 760, 760, 0),
+    ("AuditAir", "adversa 1", 746, 746, 746, 0),
+    ("BurnAir", "semilla 1", 1016, 1016, 1016, 1016),
+    ("BurnAir", "semilla 2", 1016, 1016, 1016, 0),
+    ("BurnAir", "adversa 1", 1002, 1002, 1002, 0),
+    ("DoubleEntryAir", "semilla 1", 1016, 1016, 1016, 1016),
+    ("DoubleEntryAir", "semilla 2", 1016, 1016, 1016, 0),
+    ("DoubleEntryAir", "adversa 1", 1002, 1002, 1002, 0),
+    ("BandaAir", "semilla 1", 760, 760, 760, 760),
+    ("BandaAir", "semilla 2", 760, 760, 760, 0),
+    ("BandaAir", "adversa 1", 746, 746, 746, 0),
+    ("CobroPendienteAir", "semilla 1", 760, 760, 760, 760),
+    ("CobroPendienteAir", "semilla 2", 760, 760, 760, 0),
+    ("CobroPendienteAir", "adversa 1", 746, 746, 746, 0),
+    ("PagoEnCursoAir", "semilla 1", 760, 760, 760, 760),
+    ("PagoEnCursoAir", "semilla 2", 760, 760, 760, 0),
+    ("PagoEnCursoAir", "adversa 1", 746, 746, 746, 0),
+    ("CreditClimbAir", "semilla 1", 760, 760, 760, 760),
+    ("CreditClimbAir", "semilla 2", 760, 760, 760, 0),
+    ("CreditClimbAir", "adversa 1", 746, 746, 746, 0),
+    ("MintClimbAir", "semilla 1", 760, 760, 760, 760),
+    ("MintClimbAir", "semilla 2", 760, 760, 760, 0),
+    ("MintClimbAir", "adversa 1", 746, 746, 746, 0),
+    ("RecoveryClimbAir", "semilla 1", 760, 760, 760, 760),
+    ("RecoveryClimbAir", "semilla 2", 760, 760, 760, 0),
+    ("RecoveryClimbAir", "adversa 1", 746, 746, 746, 0),
+];
+
+/// La fila de una instancia medida de una AIR.
+pub(crate) fn instancia(air: &str, nombre: &str) -> Option<(usize, usize, usize, usize)> {
+    MLIN_INSTANCIAS.iter().find(|f| f.0 == air && f.1 == nombre).map(|f| (f.2, f.3, f.4, f.5))
+}
+
+/// Contrasta una instancia medida con su fila clavada, y anota la diferencia en `mal`.
+pub(crate) fn contrasta_instancia(air: &str, nombre: &str, fila: (usize, usize, usize, usize), mal: &mut Vec<String>) {
+    match instancia(air, nombre) {
+        None => mal.push(format!("{air}: sin fila en MLIN_INSTANCIAS para «{nombre}»: {fila:?}")),
+        Some(c) if c != fila => mal.push(format!("{air}: «{nombre}» medida {fila:?} y clavada {c:?}")),
+        Some(_) => {},
+    }
+}
+
+/// §907: la huella de la composicion de cada familia (`huella`), clavada. Un cambio es rojo y
+/// obliga a remedir la 134.
+pub(crate) const HUELLA_C: &[(&str, &str)] = &[
+    ("SendAir", "b48ba41ebec5b46dc8bcf048df73ea85987fd71bf36fcefa1c54903ebd6cf5aa"),
+    ("SendV2Air", "444aabff12eeeecf3b32a121976ea375a2e9e7de509c2a6d5a793a407b593a44"),
+    ("ClaimAir", "a547e40855ffc7c80a3a9d72a0227bae1b15db368bf94b48c3161e259fd3509b"),
+    ("ClaimAirV2", "b340e41e3b0ecafb03248e614211fdffeacb8830ab23ee8e77523c5cc46a4f39"),
+    ("PrendaAir", "4dfc9c7dbde97441ad05e2e005dcf3bb54d54d1949b2d60f51391e8878eac04b"),
+    ("MintPendingClimbAir", "ca9d6a91c16f725d017c09392f4c56c3fc9c9d5a581f1e10588b8b28ee2ed1b5"),
+    ("NullifierThresholdAir", "967175be602f8b795bcee3623095aa473f874982af9aad245f6d60357d47995b"),
+    ("ThresholdAir", "eadde73958d7d484d347d1585c36100c24db6b138d12184c4cd63091db491f83"),
+    ("AuditAir", "f54f9e18802900dc316956f75fbee94b77d44804ad4bf39377506528753562d8"),
+    ("BurnAir", "402f50103d97b7f71cc44cbf32a8d44ac623efa70e166a0fb98cc9aa52e630e1"),
+    ("SolvencyAir", "a174f7d3196f7d6c75c3b9869e80104a82a134cc6f2909135b4dfce53f308c62"),
+    ("DoubleEntryAir", "16497250642fbf4c4c7482c568062a1722fc51ccbe574cd5c34c299052655970"),
+    ("BandaAir", "2138d6ec1ef9f4dbb0ef33e06b67c023819b729dec93b5a2c2640850636146d8"),
+    ("EdadAir", "7cce3dff0e7f96de5cb18d3f0d71f551021545460429cfe48f2409a8a9c6d0e5"),
+    ("CobroPendienteAir", "e5444d5df31cb411d712681713a534f885908fc5ed0ca31fd04dab5fc122e204"),
+    ("PagoEnCursoAir", "6c09934aff559f2842cac065f87a25a07c92cf5e3cc4821a52cc6f32edf96e4f"),
+    ("MerkleAir", "b37c3c68fcfbd5b46b326e587096e11f7bcaf55fa3b7cd5038f7b79030b46d61"),
+    ("RefundAir", "b6530c4cdd56923fd2a6c68eeade6ce0e06e2c0aa3beb90bbc57f4086f69be6f"),
+    ("RefundAirV2", "df616e740c3215dbb51c1de888c6bd10ce3225fc81818d371b2db94574373ada"),
+    ("CreditClimbAir", "096aca064fc6224ab4669f9e5d333162a5f871fa1c7f73d8c3c43c2ed724497d"),
+    ("MintClimbAir", "0dbe1557dbe93116cda542d0e15cc8a825dbf55d4b432a04a7a7c55f57e90079"),
+    ("FrozenClimbAir", "c2c94f89f7c3d508711137ff88b633f200ceb3a042b6488e43bcb4ea35a808d2"),
+    ("RecoveryClimbAir", "350c8d406ef50b02b66b07c5893f91ed8b5559219585c36910bd1798cc2f758b"),
+];
+
+/// La huella clavada de una AIR.
+pub(crate) fn huella_declarada(air: &str) -> Option<&'static str> {
+    HUELLA_C.iter().find(|f| f.0 == air).map(|f| f.1)
+}
 
 /// La fila del censo de una AIR: (T, reales, lineales, testigo, no lineales, veredicto).
 pub(crate) fn censo_declarado(air: &str) -> Option<(usize, usize, usize, usize, usize, Veredicto)> {
@@ -1331,13 +1574,28 @@ mod tests {
             }
             if libres_de(&g) > 0 && l > 0 && se_mide {
                 let t0 = std::time::Instant::now();
-                let m = mide(&*s, &g, &censo.lineales(), 1, LARGO);
+                let m = mide(&*s, &g, &censo.lineales(), 1, LARGO_SOLO);
                 println!("{} · {:?}", linea(&air, &g, &m), t0.elapsed());
                 let medida = (g.t, g.trozos, m.rango_k, instrumento_r3_clavado(&g), m.rango_lineales, m.rango_mascaras);
                 match medido(&air) {
                     None => mal.push(format!("{air}: sin fila en MLIN_MEDIDO: {medida:?}")),
                     Some(clavado) if clavado != medida => mal.push(format!("{air}: medido {medida:?} y clavado {clavado:?}")),
                     Some(_) => {},
+                }
+                // §907 (la O1): la misma medida con la semilla 2 entera y con la instancia adversa
+                // -las posiciones de `adversa`, lo demas de la semilla 1-, y lo que ponen las
+                // lineales solas, contra MLIN_INSTANCIAS
+                contrasta_instancia(&air, "semilla 1", (m.rango_k, m.rango_lineales, m.rango_mascaras, m.rango_solo_lineales), &mut mal);
+                for (nombre, d, semilla) in [("semilla 2", desafios(&g, 2), 2u64), ("adversa 1", adversa(&g, 1), 1)] {
+                    let t0 = std::time::Instant::now();
+                    let m = mide_con_desafios(&*s, &g, &censo.lineales(), &d, semilla, INSTANCIA, Base::Tocados);
+                    let [col, coi, sig] = parejas_adversas(&g, &d.posiciones);
+                    println!(
+                        "[907] {air} · {nombre} · {col} colisiones, {coi} coincidencias, {sig} siguientes · {} · {:?}",
+                        linea(&air, &g, &m),
+                        t0.elapsed()
+                    );
+                    contrasta_instancia(&air, nombre, (m.rango_k, m.rango_lineales, m.rango_mascaras, m.rango_solo_lineales), &mut mal);
                 }
             }
         }
@@ -1365,6 +1623,46 @@ mod tests {
         // hacer uniforme C(S_ab) -el nucleo conjunto fija cada trozo en S_ab- y quedan 78, frente
         // a las 2 · 38 = 76 de la gruesa
         assert_eq!((fina.rango_lineales, fina.rango_mascaras), (158, 332));
+    }
+
+    /// **§907: la instancia adversa fuerza las tres parejas, la medida la admite y la huella es
+    /// estable.** En el juguete (|Λ| = 4096, blowup 16) las posiciones de `adversa` llevan al menos
+    /// una colision de cosets en la capa 0, una coincidencia coset-tocado y una posicion siguiente
+    /// de otra, con la z y los coeficientes de la semilla; con ellas la medida no sale de K, las
+    /// lineales con los aleatorizadores no bajan de las lineales solas -que aqui son cero: con
+    /// cuatro trozos, los abiertos fijan las 76 libres de las dos lineales-, y la huella de la
+    /// composicion es la misma dos veces, 64 hexadecimales.
+    #[test]
+    fn la_instancia_adversa_fuerza_las_tres_parejas_y_la_huella_es_estable() {
+        let (s, g) = juguete();
+        let d1 = desafios(&g, 1);
+        let da = adversa(&g, 1);
+        assert_eq!(da.posiciones.len(), g.q);
+        assert_eq!((da.z, da.cc_columna, da.alfas.clone()), (d1.z, d1.cc_columna, d1.alfas.clone()), "solo cambian las posiciones");
+        let [col, coi, sig] = parejas_adversas(&g, &da.posiciones);
+        println!("[907] juguete: parejas de la semilla 1 {:?} · de la adversa {:?}", parejas_adversas(&g, &d1.posiciones), [col, coi, sig]);
+        assert!(col >= 1 && coi >= 1 && sig >= 1, "{col} {coi} {sig}");
+        let t0 = std::time::Instant::now();
+        let m = mide_con_desafios(&*s, &g, &[1, 3], &da, 1, TODAS, Base::Tocados);
+        println!("{} · {:?}", linea("juguete adversa", &g, &m), t0.elapsed());
+        assert!(m.rango_mascaras <= m.rango_k && m.rango_lineales >= m.rango_solo_lineales, "{m:?}");
+        assert_eq!(m.rango_solo_lineales, 0, "cuatro trozos abiertos fijan las 76 libres");
+        let h = huella(&*s);
+        assert_eq!(h, huella(&*s));
+        assert_eq!(h.len(), 64, "{h}");
+        println!("[907] huella del juguete {h}");
+        // y en las geometrias de produccion (las posiciones solo dependen de |Λ| y q): lo que
+        // traen las semillas 1, 2 y 3 y la adversa, que es lo que las tablas del apartado 16 citan
+        for (t, trozos, capas_fri, resto) in [(256, 2, 2, 8), (256, 9, 2, 8), (512, 8, 2, 16), (1024, 8, 2, 32)] {
+            let g = Geometria { q: 42, consultas: 42, t, m: 64, ancho: 2, ancho_aux: 0, trozos, capas_fri, resto, bytes: 0 };
+            let de = |d: &Desafios| parejas_adversas(&g, &d.posiciones);
+            let adv = de(&adversa(&g, 1));
+            println!(
+                "[907] T {t}, {trozos} trozos: parejas (colisiones, coincidencias, siguientes) de la semilla 1 {:?}, la 2 {:?}, la 3 {:?} y la adversa {:?}",
+                de(&desafios(&g, 1)), de(&desafios(&g, 2)), de(&desafios(&g, 3)), adv
+            );
+            assert!(adv[0] >= 1 && adv[1] >= 1 && adv[2] >= 1, "T {t}: la adversa fuerza las tres parejas: {adv:?}");
+        }
     }
 
     /// La mascara del §898 de una geometria, clavada en `instrumento_r3` (las dos juntas).
