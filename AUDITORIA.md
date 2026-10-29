@@ -75925,3 +75925,92 @@ producción ni del fork cambia— y el tarball `afd672015dd3f841`, que cambia co
 cada asiento. Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero
 que en los sellos anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí.
 Una sola corrida: no hubo roja.
+
+## §909 — Las decisiones del autor —«Hacer todo»: la D-AL bis del RFC-0009 aceptada y la D-H del RFC-0018 decidida— y la pieza (a) del corte construida en el fork: las columnas aleatorias, cuando son dos o más, entran en DEEP pareadas como una sobre E (cc, cc·ν, cc·ν²) en el probador y en el verificador a la vez, con `verify_laboratorio_sin_parear` como falsador de que el pareado está en vigor; la prueba de producción, con una columna, no cambia; y la rama entra en `main`
+
+El commit que lleva este asiento, sobre `ff2e3955` (el §908). Toca el fork en su camino de
+laboratorio, tests y documentos: `crates/winter-air/src/air/oculta.rs`, donde `Oculta<A>` guarda
+sus columnas y si parea, gana `sin_parear` y `columnas`, y sobrescribe
+`get_deep_composition_coefficients` —el mismo lote y el mismo orden en la moneda que winterfell, y
+después el pareado—, con `nu_de_pareado` (ν, el (0, 1) de E sobre F) y `parear_deep` (la k-ésima
+columna aleatoria lleva cc·ν^k) y un test; `crates/winter-air/src/air/mod.rs` y `src/lib.rs`, que
+los exportan; `crates/winter-verifier/src/lib.rs`, `verify_laboratorio` partido en
+`verify_laboratorio_con` con `verify_laboratorio_sin_parear` al lado;
+`crates/stark-experiment/src/falsadores_oculta.rs`, el falsador 12 con el juguete sobre la
+extensión cuadrática; `tools/canon.sh`, las filas de `winter-air`, 64 -> 65, y
+`stark-experiment`, 490 -> 491, con su crónica; los totales y las copias del pin en `PAPER.md`,
+`PAPER_EN.md`, `PRINCIPIOS.md`, `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`;
+`spec/rfc/0009-lo-que-revela-una-prueba.md`, la D-AL bis aceptada y construida;
+`spec/rfc/0018-el-tren-0-5.md`, la D-H decidida, con lo que decía; `doc/ocultacion-hvzk.md`, una
+nota en el apartado 17; `BACKLOG.md`, una nota en la 133; y este asiento. Ningún probador de
+producción, ningún AIR, el cable ni los vectores: con una columna aleatoria `parear_deep` no toca
+nada y las pruebas de `zkssl/0.4` siguen byte a byte (el falsador 12 lo mide en la de producción
+del juguete, y la conformidad del canon en las de la casa). Lo escribe y lo commitea Claude, en
+una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`,
+como pide `CLAUDE.md`. El número es el siguiente libre tras el §908. El canon de este commit se
+dice al final.
+
+**De dónde sale.** El autor, a la lista de lo que falta para ZK (§908 y después): «Hacer todo».
+Eso decide la D-AL bis y la D-H tal como las propuso el §908, pide la entrada de la rama en
+`main` —que el autor ya había dicho que es la aceptación de la sesión y no la hace él (§904)— y
+arranca los sellos de laboratorio, la 137, la 138 y el corte. Lo que el autor no puede delegar
+—el revisor humano de la 136 y la carta, y la aceptación de la promesa— queda suyo.
+
+**Lo que hace.**
+
+1. **El pareado en el fork**: `Oculta<A>` sobrescribe los coeficientes de DEEP: los saca como
+   winterfell —`draw_linear`, `draw_algebraic` o `draw_horner`, el mismo lote y el mismo orden en
+   la moneda, así que ningún otro desafío se mueve— y, si parea y hay dos o más columnas
+   aleatorias, pone en la k-ésima cc·ν^k, con cc el coeficiente de la primera y ν = (0, 1).
+   Probador y verificador pasan por el mismo método, así que la prueba no cambia de forma, sólo de
+   combinación; con una columna, o sin extensión (ν no existe), no cambia nada.
+2. **El falsador** (`laboratorio_columnas_pareadas`): sobre la extensión cuadrática, la prueba de
+   laboratorio con dos y con tres columnas verifica pareando y NO sin parear, con el fallo en DEEP
+   frente a FRI y sin pánico; sin extensión, las dos verifican, porque nada se parea; la de
+   producción, con una columna, en su marca y su ancho de siempre. Y ν y el pareado, en su test
+   de `winter-air`: (0, 1) sobre la extensión, ninguno sobre F, cc·ν en la segunda y cc·ν² en una
+   tercera, nada con una.
+3. **Las decisiones, anotadas** donde viven: la D-AL bis «aceptada por el autor y construida»,
+   la D-H «decidida», con lo que decían.
+4. **La entrada en `main`**: tras este sello, `main` avanza del §904 al §909 por avance directo;
+   los cinco sellos vienen cada uno con su canon en VERDE.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release y con `--locked`: `winter-air`, 65
+de 65 en 1,1 s; los falsadores de la ocultación del núcleo, 14 de 14 en 0,05 s con el duodécimo;
+el primer intento del falsador, sobre el juguete sin extensión, decía que el probador no pareaba:
+no hay ν sin extensión, y el falsador pasó a la extensión cuadrática y dejó el caso sin extensión
+como lo que es, las dos verifican. `check_tests`, 2263 declarados y 22 instrumentos (eran 2261);
+`check_modulos`, 221; `check_cifras`, OK con los totales nuevos.
+
+**Lo que NO hace.** No enciende las dos columnas en ningún probador de producción: eso es el
+sello del corte, con la marca v2 y T = 128. No cambia la segunda implementación (`tools/segunda`),
+que sólo juzga pruebas de producción con una columna; el corte le enseñará el pareado. No toca la
+137 ni la 138. No cambia la promesa.
+
+**Lo que es del autor.** El revisor humano y la carta; la aceptación de la promesa tras el corte.
+
+**Contadores.** `winter-air` 64 -> 65 y `stark-experiment` 490 -> 491; los demás sin cambio.
+TOTAL DE SELLO 2097 -> 2099 y CON LARGOS 2237 -> 2239, en `PAPER.md`, `PAPER_EN.md` y
+`PRINCIPIOS.md`; `check_tests` 2261 -> 2263; `check_modulos` 221. `BACKLOG.md` sigue en 44
+abiertas y 95 resueltas. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 1250 s de reloj (de su arranque a su
+salida) y 921 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU, con la
+compilación a dos trabajos y el fork recompilado entero. Las 19 filas del nivel, en su pin, con
+2099 tests que pasan (la suma de la columna «pasan»), la de `zk-ssl` en 564 pasan y 9 ignorados,
+388 s, la de `stark-experiment` en 491 y 13, 47 s, y la de `winter-air` en 65, 2 s; las otras
+dos del fork, `winter-prover` 7 y `winter-verifier` 0, en su pin; la puerta de los binarios, con
+«OK 24 objetivos en 8 paquetes, 12 con features»; `check_tests` en 2263 y 22 instrumentos;
+`check_modulos` en 221; las once herramientas del bucle «2 ter»; la puerta de los vectores, en 605
+ficheros y 1370 líneas de 19 manifiestos, con las huellas de `550375e` —la base en `origin/main`—
+en las del árbol; `check_catalogo`, en 236 textos y 302 entradas; la conformidad, 0.5 IDÉNTICO y
+las cuatro versiones anteriores RECHAZADAS —las pruebas de producción, con una columna, no
+cambian—; el cable, en 27 de 27; la segunda implementación, con el núcleo en 34 de 34, sus pares
+STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, igual desde dos raíces,
+con el binario `c91d9cfe4046f605` —**cambia** respecto al `31c70dcb83ef951b` del §906 al §908, y debe:
+el fork lleva el pareado en `Oculta<A>` y `verify_laboratorio_sin_parear`; lo que no cambia es
+ninguna prueba, y lo miden la conformidad y los vectores en sus huellas— y el tarball `1de1f7d67aebebfb`,
+que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio y vacío, y al
+acabar quedaba en él el mismo fichero que en los sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.

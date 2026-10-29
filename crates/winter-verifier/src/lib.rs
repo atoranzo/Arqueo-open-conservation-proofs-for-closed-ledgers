@@ -190,6 +190,39 @@ where
     RandCoin: RandomCoin<BaseField = AIR::BaseField, Hasher = HashFn>,
     VC: VectorCommitment<HashFn>,
 {
+    verify_laboratorio_con::<AIR, HashFn, RandCoin, VC>(proof, pub_inputs, acceptable_options, true)
+}
+
+/// ARQUEO (§909; RFC-0009 D-AL bis, en LABORATORIO): `verify_laboratorio` con las columnas
+/// aleatorias SIN parear en DEEP. El probador las parea siempre, asi que una prueba suya con dos
+/// columnas no verifica aqui: es el falsador de que el pareado esta en vigor, y nada mas. Ningun
+/// juez de produccion lo llama.
+pub fn verify_laboratorio_sin_parear<AIR, HashFn, RandCoin, VC>(
+    proof: Proof,
+    pub_inputs: AIR::PublicInputs,
+    acceptable_options: &AcceptableOptions,
+) -> Result<(), VerifierError>
+where
+    AIR: Air,
+    HashFn: ElementHasher<BaseField = AIR::BaseField>,
+    RandCoin: RandomCoin<BaseField = AIR::BaseField, Hasher = HashFn>,
+    VC: VectorCommitment<HashFn>,
+{
+    verify_laboratorio_con::<AIR, HashFn, RandCoin, VC>(proof, pub_inputs, acceptable_options, false)
+}
+
+fn verify_laboratorio_con<AIR, HashFn, RandCoin, VC>(
+    proof: Proof,
+    pub_inputs: AIR::PublicInputs,
+    acceptable_options: &AcceptableOptions,
+    parear: bool,
+) -> Result<(), VerifierError>
+where
+    AIR: Air,
+    HashFn: ElementHasher<BaseField = AIR::BaseField>,
+    RandCoin: RandomCoin<BaseField = AIR::BaseField, Hasher = HashFn>,
+    VC: VectorCommitment<HashFn>,
+{
     acceptable_options.validate::<HashFn>(&proof)?;
     let mut public_coin_seed = proof.context.to_elements();
     public_coin_seed.append(&mut pub_inputs.to_elements());
@@ -209,11 +242,11 @@ where
             "traza oculta de laboratorio mal formada",
         )));
     }
-    let air = ::air::Oculta::<AIR>::new(
-        proof.trace_info().clone(),
-        pub_inputs,
-        proof.options().clone(),
-    );
+    let air = if parear {
+        ::air::Oculta::<AIR>::new(proof.trace_info().clone(), pub_inputs, proof.options().clone())
+    } else {
+        ::air::Oculta::<AIR>::sin_parear(proof.trace_info().clone(), pub_inputs, proof.options().clone())
+    };
     verificar_oculta::<AIR, HashFn, RandCoin, VC>(air, proof, public_coin_seed)
 }
 

@@ -1569,6 +1569,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   el lema L9 (`doc/ocultacion-hvzk.md`, apartado 17) hace de R3 un teorema para cualesquiera
   posiciones y AIR, medido en las cinco geometrías (`K_ENTERO_PAREADAS`). Es la pieza 1 del alcance
   del corte (RFC-0018 D-H).
+  ⚠️ §909: la D-AL bis aceptada por el autor y construida en el fork, con su falsador; la D-H
+  decidida. QUEDA encenderla en los 23 con la marca v2, en el sello del corte.
 
 - [x] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
   las restricciones, que el instrumento de R3 no cuenta (§898).** Lo puso la revisión escéptica del

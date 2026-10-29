@@ -51,7 +51,7 @@ pub use air::{
 
 /// ARQUEO (RFC-0009 E3a): el envoltorio que oculta la traza dentro del nucleo, apagado mientras
 /// ningun probador lo encienda (`Prover::ocultacion`, en `winter-prover`).
-pub use air::Oculta;
+pub use air::{nu_de_pareado, parear_deep, Oculta};
 
 /// ARQUEO (RFC-0009 E3a-2): la marca que lleva el meta de la traza de una prueba oculta, con m
 /// dentro; con el meta vacio, la prueba es la de winterfell tal cual. Un solo lector para el

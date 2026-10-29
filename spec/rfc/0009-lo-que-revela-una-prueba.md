@@ -927,6 +927,13 @@ en el instrumento de R3 (`cubren_k`, `K_ENTERO_PAREADAS`): en las cinco geometr�
 con la semilla 1 y con las posiciones adversas del §907, las máscaras pareadas dan K entero; sin
 parear, también, salvo ese suceso; con una columna, no. **Reversible**: es un parámetro del
 compositor, y la medida de D-AL sigue valiendo si no se parea.
+⚠️ §909: **aceptada por el autor** («Hacer todo», 29 de octubre de 2026) y **construida en el
+fork**: `Oculta<A>` saca los coeficientes de DEEP como winterfell y parea las columnas aleatorias
+cuando son dos o más (`parear_deep`, `nu_de_pareado`: la k-ésima lleva cc·ν^k), en el probador y
+en el verificador a la vez, así que la prueba no cambia de forma; `verify_laboratorio_sin_parear`
+es el falsador: una prueba de laboratorio con dos o tres columnas verifica pareando y no sin
+parear, y la de producción, con una columna, es byte a byte la de antes. Encenderla en los 23
+probadores sigue siendo del corte (RFC-0018 D-H).
 
 ### D-AM — La promesa tras A1, A2, A3 y la 134: sigue siendo el censo; lo que se podría prometer, para qué familias y bajo qué hipótesis, queda escrito con sus palabras y es del autor
 

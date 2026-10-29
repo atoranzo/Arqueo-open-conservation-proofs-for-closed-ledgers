@@ -539,4 +539,4 @@ pub trait Air: Send + Sync {
 }
 
 mod oculta;
-pub use oculta::Oculta;
+pub use oculta::{nu_de_pareado, parear_deep, Oculta};

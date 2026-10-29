@@ -1389,6 +1389,10 @@ cifras clavadas en `K_ENTERO_PAREADAS`.
 
 
 **Lo que no hace.** No enciende nada: la D-AL bis es una propuesta y el corte es del autor (RFC-0018
-D-H). No cambia el enunciado de hoy (apartado 8 con el 16): la construcción de `zkssl/0.4` sigue
+D-H). ⚠️ §909: la D-AL bis está aceptada y construida en el fork —`Oculta<A>` parea los
+coeficientes de DEEP de las columnas aleatorias cuando son dos o más, en el probador y en el
+verificador—, y el falsador `laboratorio_columnas_pareadas` mide que está en vigor: la prueba de
+laboratorio verifica pareando y no con `verify_laboratorio_sin_parear`; la de producción, con una
+columna, no cambia. Lo que queda encendido es lo de siempre; el corte la lleva a los 23. No cambia el enunciado de hoy (apartado 8 con el 16): la construcción de `zkssl/0.4` sigue
 siendo la que es, con una columna. No toca H3, cuyo 2^{−60} es ahora el término mayor, ni el 2^{−128}
 de S5 (la 137).

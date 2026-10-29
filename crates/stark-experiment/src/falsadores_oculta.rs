@@ -34,11 +34,12 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Mutex;
 
-use winter_air::{Marca, MarcaError, MarcaLaboratorio, MarcaV2, Oculta};
+use winter_air::{nu_de_pareado, parear_deep, Marca, MarcaError, MarcaLaboratorio, MarcaV2, Oculta};
 use winter_prover::{CamposV2, Ocultacion, ProverError};
-use winter_verifier::{verify_laboratorio, verify_v2};
+use winter_verifier::{verify_laboratorio, verify_laboratorio_sin_parear, verify_v2};
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, Hasher, MerkleTree};
 use winterfell::math::fields::f128::BaseElement as Base128;
+use winterfell::math::fields::QuadExtension;
 use winterfell::math::fields::f64::BaseElement as Base;
 use winterfell::math::{ExtensionOf, FieldElement, ToElements};
 use winterfell::matrix::ColMatrix;
@@ -211,6 +212,28 @@ fn verificar_laboratorio_work(bytes: &[u8], publico: Base128) -> Result<(), Stri
     verify_laboratorio::<WorkAir, Blake3W, DefaultRandomCoin<Blake3W>, MerkleTree<Blake3W>>(
         proof, publico, &acc,
     )
+    .map_err(|e| format!("{e:?}"))
+}
+
+/// §909: los bytes de una prueba de WorkAir con la extension cuadratica (las opciones del censo),
+/// que es donde hay un ν con el que parear; el juguete de los demas falsadores vive sin extension.
+fn prueba_work_e(n: usize, ocultacion: Option<Ocultacion>) -> Vec<u8> {
+    let probador = ProbadorWork { opciones: opciones_censo(), ocultacion };
+    probador.prove(build_trace(Base128::new(3), n)).expect("probar WorkAir sobre E").to_bytes()
+}
+
+/// §909: verifica unos bytes como prueba de laboratorio de WorkAir sobre E, pareando las columnas
+/// en DEEP o sin parearlas.
+fn verificar_laboratorio_work_e(bytes: &[u8], publico: Base128, parear: bool) -> Result<(), String> {
+    let proof = Proof::from_bytes(bytes).map_err(|e| format!("leer: {e:?}"))?;
+    let acc = AcceptableOptions::OptionSet(vec![opciones_censo()]);
+    if parear {
+        verify_laboratorio::<WorkAir, Blake3W, DefaultRandomCoin<Blake3W>, MerkleTree<Blake3W>>(proof, publico, &acc)
+    } else {
+        verify_laboratorio_sin_parear::<WorkAir, Blake3W, DefaultRandomCoin<Blake3W>, MerkleTree<Blake3W>>(
+            proof, publico, &acc,
+        )
+    }
     .map_err(|e| format!("{e:?}"))
 }
 
@@ -401,6 +424,56 @@ fn laboratorio_dos_columnas() {
     assert_eq!(MarcaLaboratorio { m: 64, columnas: 2 }.escribir(), b"arqueo:oculta:lab\x40\x00\x00\x00\x02");
     assert_eq!(MarcaLaboratorio::leer(b"arqueo:oculta:lab\x40\x00\x00\x00\x01"), Err(MarcaError::Columnas));
     assert_eq!(MarcaLaboratorio::leer(b"arqueo:oculta:1\x40\x00\x00\x00"), Err(MarcaError::Desconocida));
+}
+
+/// 12. §909 (RFC-0009 D-AL bis, en laboratorio): las dos columnas aleatorias entran en DEEP
+/// pareadas como una sobre E. Sobre la extension cuadratica -las opciones del censo; el juguete de
+/// los demas falsadores vive sin extension, donde no hay ν- el probador parea siempre: la prueba
+/// de laboratorio con dos columnas verifica en `verify_laboratorio`, que parea, y NO en
+/// `verify_laboratorio_sin_parear`, sin panico, con el fallo donde toca, en DEEP frente a FRI; con
+/// tres columnas, lo mismo (cc, cc·ν, cc·ν²); sin extension, no hay nada que parear y las dos
+/// verifican; y la prueba de produccion, con una columna, es la de siempre en su marca y su ancho.
+/// ν es (0, 1) y el pareado pone cc·ν en la segunda columna.
+#[test]
+fn laboratorio_columnas_pareadas() {
+    type E = QuadExtension<Base128>;
+    let nu = nu_de_pareado::<E>().expect("ν");
+    assert_eq!(nu, E::new(Base128::ZERO, Base128::ONE));
+    let mut cc = vec![E::from(Base128::new(7)); 4];
+    parear_deep(&mut cc, 1, 2);
+    assert_eq!(cc[2], E::from(Base128::new(7)) * nu, "la segunda aleatoria lleva cc·ν");
+    assert!(nu_de_pareado::<Base128>().is_none(), "sin extension no hay ν");
+    for columnas in [2usize, 3] {
+        let bytes = prueba_work_e(256, Some(Ocultacion { columnas, ..OC }));
+        verificar_laboratorio_work_e(&bytes, resultado(256), true).expect("pareadas: verify_laboratorio la acepta");
+        match catch_unwind(AssertUnwindSafe(|| verificar_laboratorio_work_e(&bytes, resultado(256), false))) {
+            Ok(Err(e)) => assert!(
+                e.contains("Fri") || e.contains("Deep") || e.contains("Inconsistent") || e.contains("Query"),
+                "sin parear falla donde toca, en DEEP frente a FRI: {e}"
+            ),
+            Ok(Ok(())) => panic!("{columnas} columnas: sin parear verifica, asi que el probador no parea"),
+            Err(_) => panic!("{columnas} columnas: el verificador sin parear entra en panico"),
+        }
+    }
+    // sin extension no hay ν: las dos verifican, porque nada se parea
+    let sin_e = prueba_work(256, Some(Ocultacion { columnas: 2, ..OC }));
+    verificar_laboratorio_work(&sin_e, resultado(256)).expect("sin extension, pareando");
+    verificar_laboratorio_sin_parear_work(&sin_e, resultado(256)).expect("sin extension, sin parear: lo mismo");
+    // con una columna no hay pareado: la de produccion, como siempre
+    let v1 = prueba_work(256, Some(OC));
+    let proof = Proof::from_bytes(&v1).expect("leer");
+    assert_eq!((proof.trace_info().main_trace_width(), Marca::leer(proof.trace_info().meta())), (2, Ok(Some(Marca { m: 64 }))));
+    verificar_work(&v1, resultado(256)).expect("verify la acepta, como siempre");
+}
+
+/// §909: `verify_laboratorio_sin_parear` sobre el juguete sin extension.
+fn verificar_laboratorio_sin_parear_work(bytes: &[u8], publico: Base128) -> Result<(), String> {
+    let proof = Proof::from_bytes(bytes).map_err(|e| format!("leer: {e:?}"))?;
+    let acc = AcceptableOptions::OptionSet(vec![opciones()]);
+    verify_laboratorio_sin_parear::<WorkAir, Blake3W, DefaultRandomCoin<Blake3W>, MerkleTree<Blake3W>>(
+        proof, publico, &acc,
+    )
+    .map_err(|e| format!("{e:?}"))
 }
 
 /// 11. §906 (RFC-0018 D-G y E3, en laboratorio): la marca v2 con el byte de columnas. El probador
