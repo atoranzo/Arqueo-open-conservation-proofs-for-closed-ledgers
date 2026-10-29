@@ -137,7 +137,7 @@ rigiera. La `arqueo-verify-v0.4.2` no las lleva: se construyó desde `a4e888d`, 
 las dos, y la registró el §671. Las lleva la 0.4.3, que el §815 cortó como arreglo de seguridad
 dentro de `0.4.x` (R6 f), con la lista de lo que cambia, la E1 y la E2 entre ello, en la sección 0
 de `doc/KIT.md`. El autor la publicó el 21-10-2026 con su aviso, `GHSA-6p4m-qg2w-8r6j`, producida
-sobre `5fd5212`, y desde el §818, que la registra con su huella, es la vigente (`doc/KIT.md` §0). ⚠️ §726: lo fue hasta el §726, que registra la 0.4.4, la vigente desde entonces; la 0.4.4 lleva también la E1 y la E2.
+sobre `5fd5212`, y desde el §818, que la registra con su huella, es la vigente (`doc/KIT.md` §0). ⚠️ §726: lo fue hasta el §726, que registra la 0.4.4, la vigente desde entonces; la 0.4.4 lleva también la E1 y la E2. ⚠️ §917: y lo fue hasta el §917, que registra la 0.5.0 (`zkssl/0.5`), con la E1 y la E2 dentro y el resto de la E3 en `zkssl/0.6` (§913).
 Sus commits, `41f765d` (§681) y `b0b6770` (§682), salen en
 `git log a4e888d..5fd5212 -- crates/zk-ssl-verify/src`, de la 0.4.2 al commit de la 0.4.3.
 

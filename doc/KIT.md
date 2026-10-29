@@ -16,9 +16,25 @@ dice?» es «descárguelo y córralo usted», y sólo vale si la descarga existe
 
 ## 0. Descargar, y comprobar la descarga antes de creerla
 
-⚠️ **§914, el corte `zkssl/0.5`.** El kit del árbol es desde el §914 la **0.5.0** (D-E del RFC-0018): habla `zkssl/0.5`, juzga las pruebas por su marca v2 antes que nada y rechaza con nombre las de `zkssl/0.4` y anteriores (`marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x`; R6 e del RFC-0021). La release vigente **publicada** sigue siendo la 0.4.4, de abajo, hasta que el autor publique la 0.5.0 con su tarball y sus huellas (⚠️ §916: la **0.5.0 está cortada y no publicada**; sus huellas en la máquina de la sesión, sobre el árbol del §916 —el kit no cambia desde el §914—: tarball `arqueo-verify-0.5.0-x86_64-unknown-linux-gnu.tar.gz`, sha256 `9530ea78fc9b864bd49f58ed3571e16e5f3524ff056f730a033734a4a7b41e95` (31.960.589 B, 538 ficheros), binario `62cb56f5e10b4577f5bf7ac4c65d0d0240202d011fdb2e1426bce24e14b7ae6c` (2.596.312 B); la publica el autor, con el tag anotado `arqueo-verify-v0.5.0` sobre el commit que lleva el §916 y la release con el tarball que `bash tools/artefacto.sh` construye sobre ese commit, cuyo `VERSION` llevará el `describe` del tag, y el asiento que la registre fijará las huellas medidas desde fuera, como hizo el §726 con la 0.4.4); quien custodie sobres de `zkssl/0.4` los juzga con la 0.4.4, y sus vectores viven bajo `spec/vectors/0.4/`.
+⚠️ **§914, el corte `zkssl/0.5`.** El kit del árbol es desde el §914 la **0.5.0** (D-E del RFC-0018): habla `zkssl/0.5`, juzga las pruebas por su marca v2 antes que nada y rechaza con nombre las de `zkssl/0.4` y anteriores (`marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x`; R6 e del RFC-0021). La release vigente **publicada** sigue siendo la 0.4.4, de abajo, hasta que el autor publique la 0.5.0 con su tarball y sus huellas (⚠️ §916: la **0.5.0 está cortada y no publicada**; sus huellas en la máquina de la sesión, sobre el árbol del §916 —el kit no cambia desde el §914—: tarball `arqueo-verify-0.5.0-x86_64-unknown-linux-gnu.tar.gz`, sha256 `9530ea78fc9b864bd49f58ed3571e16e5f3524ff056f730a033734a4a7b41e95` (31.960.589 B, 538 ficheros), binario `62cb56f5e10b4577f5bf7ac4c65d0d0240202d011fdb2e1426bce24e14b7ae6c` (2.596.312 B); la publica el autor, con el tag anotado `arqueo-verify-v0.5.0` sobre el commit que lleva el §916 y la release con el tarball que `bash tools/artefacto.sh` construye sobre ese commit, cuyo `VERSION` llevará el `describe` del tag, y el asiento que la registre fijará las huellas medidas desde fuera, como hizo el §726 con la 0.4.4; ⚠️ §917: publicada por el autor el 29-10-2026 y medida desde fuera: es la vigente, abajo); quien custodie sobres de `zkssl/0.4` los juzga con la 0.4.4, y sus vectores viven bajo `spec/vectors/0.4/`.
 
-La release vigente es `arqueo-verify-v0.4.4`, publicada en
+La release vigente es `arqueo-verify-v0.5.0` (§917), publicada en
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.5.0>,
+producida por el autor sobre el commit `966f642970300855e469360234ba6c1012fcecdd` (§916):
+tarball `arqueo-verify-0.5.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`212bf7fbfab9ad2939736750f5dd8824fff4d47e7d11647e75fd5944e6c680ae` (31.964.196 B, 538 ficheros);
+binario `a19a8c2c597cf6b6c0a2182df086b56fa238ae622c23b6e3e46719e0f7479fb7` (2.600.128 B). Las dos
+huellas están medidas desde fuera —descarga por `curl`, el `digest` del asset en la API, el kit
+descargado corriendo sus doce catálogos desde dentro del tarball— en el asiento de `AUDITORIA.md`
+que registra esta release (§917). Habla `zkssl/0.5` (§914, el corte del tren): juzga toda prueba por
+su marca v2 antes que nada y rechaza con nombre las de `zkssl/0.4` y anteriores («marca v1: prueba
+de zkssl/0.4; la juzga el kit 0.4.x», medido con la release contra un sobre de la 0.4); recompone
+cabezas hasta la **v6** y lee las doce familias de la sección 11 del `spec/PAQUETE.md` que viaja en
+su tarball, las mismas que la 0.4.4. No es un arreglo de seguridad: es la primera ruptura del cable
+bajo la política del RFC-0021 (su E4), y quien custodie sobres de `zkssl/0.4` los sigue juzgando con
+la 0.4.4, que sigue publicada (R6 e).
+
+⚠️ §917: ~~La release vigente es~~ La vigente del §726 al §917, que sigue publicada y juzga los sobres de `zkssl/0.4`, es `arqueo-verify-v0.4.4`, publicada en
 <https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.4>,
 producida sobre el commit `95bc4572bca27f63033ba5bbc499ef2d95a4b40b`:
 tarball `arqueo-verify-0.4.4-x86_64-unknown-linux-gnu.tar.gz`, sha256
@@ -128,7 +144,7 @@ Los registros de la medida y la lista entera, vector a vector, van en el asiento
 tarball `0bb21f4f5dfe7575…`, binario `1b120e597897e005…`). Tiene los ocho defectos de la sección 3.18
 de `SECURITY.md` que la 0.4.4 corrige, arriba, y es la única con el 6 y el 8: lee un acta de rotación
 con un `mmrSize` no canónico, y no ata a la historia de cabezas el relevo entre dos claves. Su aviso
-es `GHSA-gq4j-w7rw-p96f`, que la nombra afectada (§726). Use la 0.4.4.
+es `GHSA-gq4j-w7rw-p96f`, que la nombra afectada (§726). Use la 0.4.4 (⚠️ §917: para sobres de `zkssl/0.5`, la 0.5.0).
 
 **La 0.4.2 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.2`, commit `a4e888d`,
 tarball `33acdc9a8fe38f03…`, binario `7734376463d120b0…`). Tiene el defecto del aviso de arriba,
@@ -147,14 +163,14 @@ tarball `505de994f243bc76…`). Tiene tres defectos que la 0.4.2 corrige: lee un
 `+` o con ceros a la izquierda (§662); cuenta la misma cofirma repetida como varios testigos en el
 paquete v2 (§663); y lee una clave XMSS con el OID alterno `0x00010005` como la publicada, con lo que
 da VERDE a un «conflicto entre dos libros» con un solo libro escrito dos veces (§664). ~~Use la 0.4.2.~~
-~~Use la 0.4.3 (§818).~~ Use la 0.4.4 (§726). ⚠️ §727: la 0.4.1 tiene además los de la 3.18 de
+~~Use la 0.4.3 (§818).~~ Use la 0.4.4 (§726; ⚠️ §917: para sobres de `zkssl/0.5`, la 0.5.0). ⚠️ §727: la 0.4.1 tiene además los de la 3.18 de
 `SECURITY.md` que la 0.4.4 corrige, todos menos el 6 y el 8 (`GHSA-gq4j-w7rw-p96f`).
 
 **La 0.4.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). Tiene un defecto que la 0.4.1 corrige: una prueba con nodos de más
 dentro de un lote de Merkle verifica igual, con otros bytes (§659). El veredicto sobre el enunciado
 no cambia —la prueba retocada prueba lo mismo que la original—, pero sus bytes dejan de identificar
-la operación. ~~Use la 0.4.2.~~ ~~Use la 0.4.3 (§818).~~ Use la 0.4.4 (§726). Las dos leen las mismas once familias y dan los mismos veredictos a
+la operación. ~~Use la 0.4.2.~~ ~~Use la 0.4.3 (§818).~~ Use la 0.4.4 (§726; ⚠️ §917: para sobres de `zkssl/0.5`, la 0.5.0). Las dos leen las mismas once familias y dan los mismos veredictos a
 todos los vectores publicados. ⚠️ **§818**: «las dos» son la 0.4.0 y la 0.4.1; la 0.4.3 lee doce y
 cambia los veredictos que dice el aviso, arriba. ⚠️ §727: la 0.4.0 tiene además los de la 3.18 de
 `SECURITY.md` que la 0.4.4 corrige, todos menos el 6 y el 8 (`GHSA-gq4j-w7rw-p96f`).
@@ -376,7 +392,7 @@ el mismo binario (misma huella, compilado con `--remap-path-prefix`) y el mismo 
   la máquina que la produjo; compilada aquí desde su código con el 1.94.1, como la compiló el canon
   del §817, sale con otra huella. Su binario publicado, `1b120e597897e005…`, lleva lo mismo que
   separó a la 0.4.2 de su rehecha: las mismas once rutas de `rust-src` y una `.comment` que nombra
-  GCC 15.2.0 (§823, leído con `strings` y `readelf`, sin ejecutarlo). ⚠️ §726: la 0.4.3 fue la vigente del §818 al §726, que registra la 0.4.4. Tampoco ésta consta rehecha fuera de la máquina que la produjo: en ella, el canon `--sello` del autor sobre su commit, con el mismo `rustc` 1.97.1, da el binario de la release, `feaba669275c82ce…`; en otra, la de la sesión que la cortó, con el 1.97.0 y GCC 13.3.0, sale `451f186fcd68697f…` (§725).
+  GCC 15.2.0 (§823, leído con `strings` y `readelf`, sin ejecutarlo). ⚠️ §726: la 0.4.3 fue la vigente del §818 al §726, que registra la 0.4.4. ⚠️ §917: y la 0.4.4 lo fue del §726 al §917, que registra la 0.5.0, producida en la máquina del autor con `rustc` 1.97.1, GCC 15.2.0 y glibc 2.43 (binario `a19a8c2c597cf6b6…`); en la máquina de la sesión, sobre el mismo árbol y con `rustc` 1.97.0, el canon da otro (`62cb56f5e10b4577…`, §914 a §916): tampoco consta rehecha fuera de la máquina que la produjo. Tampoco ésta consta rehecha fuera de la máquina que la produjo: en ella, el canon `--sello` del autor sobre su commit, con el mismo `rustc` 1.97.1, da el binario de la release, `feaba669275c82ce…`; en otra, la de la sesión que la cortó, con el 1.97.0 y GCC 13.3.0, sale `451f186fcd68697f…` (§725).
 - **De qué depende la huella, además del `rustc` y del `Cargo.lock`.** (i) Si `rust-src` está
   instalado, las rutas de la biblioteca estándar entran en el binario con el nombre de su toolchain,
   porque ninguna regla de `b6994c3` las lleva a `/rustc/<commit-hash>`: con `RUSTUP_HOME` bajo

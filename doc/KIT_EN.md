@@ -16,7 +16,23 @@ rebuilt from its commit; with the same hash, that is only shown within one same 
 
 ## 0. Download, and check the download before believing it
 
-The current release is `arqueo-verify-v0.4.4`, published at
+The current release is `arqueo-verify-v0.5.0` (§917), published at
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.5.0>,
+produced by the author on commit `966f642970300855e469360234ba6c1012fcecdd` (§916):
+tarball `arqueo-verify-0.5.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`212bf7fbfab9ad2939736750f5dd8824fff4d47e7d11647e75fd5944e6c680ae` (31,964,196 B, 538 files);
+binary `a19a8c2c597cf6b6c0a2182df086b56fa238ae622c23b6e3e46719e0f7479fb7` (2,600,128 B). Both
+fingerprints are measured from outside — download by `curl`, the asset's `digest` in the API, the
+downloaded kit running its twelve catalogues from inside the tarball — in the `AUDITORIA.md` entry
+that registers this release (§917). It speaks `zkssl/0.5` (§914, the cut of the train): it judges
+every proof by its v2 mark before anything else and rejects by name those of `zkssl/0.4` and
+earlier ("marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x", measured with the release against a
+0.4 envelope); it recomposes heads up to **v6** and reads the twelve families of section 11 of the
+`spec/PAQUETE.md` that travels in its tarball, the same as 0.4.4. It is not a security fix: it is the
+first break of the wire under the RFC-0021 policy (its E4), and whoever keeps `zkssl/0.4` envelopes
+keeps judging them with 0.4.4, which stays published (R6 e).
+
+⚠️ §917: ~~The current release is~~ The current one from §726 to §917, still published and judging `zkssl/0.4` envelopes, is `arqueo-verify-v0.4.4`, published at
 <https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.4>,
 produced on commit `95bc4572bca27f63033ba5bbc499ef2d95a4b40b`:
 tarball `arqueo-verify-0.4.4-x86_64-unknown-linux-gnu.tar.gz`, sha256
@@ -127,7 +143,7 @@ The records of the measurement and the full list, vector by vector, go in entry 
 tarball `0bb21f4f5dfe7575…`, binary `1b120e597897e005…`). It has the eight defects of section 3.18
 of `SECURITY.md` that 0.4.4 fixes, above, and it is the only one with 6 and 8: it reads a rotation
 act with a non-canonical `mmrSize`, and it does not tie the handover between two keys to the head
-history. Its advisory is `GHSA-gq4j-w7rw-p96f`, which names it affected (§726). Use 0.4.4.
+history. Its advisory is `GHSA-gq4j-w7rw-p96f`, which names it affected (§726). Use 0.4.4 (⚠️ §917: for `zkssl/0.5` envelopes, 0.5.0).
 
 **0.4.2 is still published and is no longer current** (`arqueo-verify-v0.4.2`, commit `a4e888d`,
 tarball `33acdc9a8fe38f03…`, binary `7734376463d120b0…`). It has the defect of the notice above,
@@ -146,14 +162,14 @@ tarball `505de994f243bc76…`). It has three defects that 0.4.2 fixes: it reads 
 envelope with a `+` or leading zeros (§662); it counts the same co-signature repeated as several
 witnesses in a v2 package (§663); and it reads an XMSS key with the alternate OID `0x00010005` as the
 published one, so it gives GREEN to a "conflict between two ledgers" with a single ledger written
-twice (§664). ~~Use 0.4.2.~~ ~~Use 0.4.3 (§818).~~ Use 0.4.4 (§726). ⚠️ §727: 0.4.1 also has those of
+twice (§664). ~~Use 0.4.2.~~ ~~Use 0.4.3 (§818).~~ Use 0.4.4 (§726; ⚠️ §917: for `zkssl/0.5` envelopes, 0.5.0). ⚠️ §727: 0.4.1 also has those of
 3.18 of `SECURITY.md` that 0.4.4 fixes, all but 6 and 8 (`GHSA-gq4j-w7rw-p96f`).
 
 **0.4.0 is still published and is no longer current** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). It has one defect that 0.4.1 fixes: a proof with extra nodes inside a
 Merkle batch verifies anyway, with different bytes (§659). The verdict on the statement does not
 change — the altered proof proves the same as the original — but its bytes no longer identify the
-operation. ~~Use 0.4.2.~~ ~~Use 0.4.3 (§818).~~ Use 0.4.4 (§726). Both read the same eleven families and give the same verdicts to every
+operation. ~~Use 0.4.2.~~ ~~Use 0.4.3 (§818).~~ Use 0.4.4 (§726; ⚠️ §917: for `zkssl/0.5` envelopes, 0.5.0). Both read the same eleven families and give the same verdicts to every
 published vector. ⚠️ **§818**: «both» are 0.4.0 and 0.4.1; 0.4.3 reads twelve and changes the
 verdicts the notice, above, lists. ⚠️ §727: 0.4.0 also has those of 3.18 of `SECURITY.md` that 0.4.4
 fixes, all but 6 and 8 (`GHSA-gq4j-w7rw-p96f`).

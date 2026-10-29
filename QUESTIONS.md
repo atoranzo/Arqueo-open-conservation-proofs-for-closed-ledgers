@@ -231,7 +231,7 @@ sentence above protects nobody.
 
 With the kit ([`doc/KIT_EN.md`](./doc/KIT_EN.md)): one download, the release
 `arqueo-verify-v0.4.4`, whose fingerprint is published next to its commit (⚠️ §818: it said
-`arqueo-verify-v0.4.2`, the current one until §818, still published with the defects 0.4.3 fixes; ⚠️ §726: it said `arqueo-verify-v0.4.3`, the current one until §726, still published with the eight defects 0.4.4 fixes).
+`arqueo-verify-v0.4.2`, the current one until §818, still published with the defects 0.4.3 fixes; ⚠️ §726: it said `arqueo-verify-v0.4.3`, the current one until §726, still published with the eight defects 0.4.4 fixes; ⚠️ §917: the current one is `arqueo-verify-v0.5.0`, `zkssl/0.5`, and 0.4.4 stays published for `zkssl/0.4` envelopes).
 The verifier is a one-line CLI: `./zk-ssl-verify <file.json>` exits 0 and prints `VERDE: …` if the file holds, 1 and
 the **first** failure by name (`ROJO: …`) if not. Five steps: a file that adds up; a tampered one
 that does not, with the broken rule named; the same label in two ledgers, detected from the two

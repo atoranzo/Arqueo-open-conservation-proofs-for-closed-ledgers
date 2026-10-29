@@ -76956,3 +76956,101 @@ binario `62cb56f5e10b4577` —el mismo del §914 y el §915— y el tarball `953
 las huellas de arriba. Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo
 fichero que en los sellos anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga
 aquí. Una sola corrida: no hubo roja.
+
+## §917 — La release `arqueo-verify-v0.5.0`, publicada por el autor el 29 de octubre de 2026 y medida desde fuera: el tag anotado sobre el commit del §916, el asset con el `digest` de la API, la descarga con el mismo sha256 y el mismo tamaño, 538 ficheros con 537 sumas OK y 534 iguales byte a byte al árbol, el binario `a19a8c2c597cf6b6…`, el kit descargado corriendo sus doce catálogos desde dentro del tarball y rechazando con nombre un sobre de `zkssl/0.4`; la vigente es la 0.5.0 y la 0.4.4 sigue publicada para los sobres de `zkssl/0.4`
+
+El commit que lleva este asiento, sobre `966f6429` (el §916). Toca sólo documentos: `doc/KIT.md` y
+`doc/KIT_EN.md` §0 (el párrafo de la vigente, el de la 0.4.4 con su marca, el de «Reproducir el kit»
+y los tres «Use la 0.4.4»), `README.md` y `README_EN.md` (el párrafo del kit y la fila del
+verificador), `RESUMEN_EJECUTIVO.md`, `RESUMEN_BILINGUE.md` en sus dos lenguas, `PREGUNTAS.md` y
+`QUESTIONS.md` (la 17), `SECURITY.md` (la 3.4, la 3.9, la 3.15 y la 3.18, una marca cada una),
+`doc/integracion-vertical-evaluacion.md` (la celda del kit) y `spec/rfc/0019-…` (una marca en la fila
+de la E1 y la E2); y este asiento. Ningún `.rs`, ningún vector, ningún pin. Lo escribe y lo commitea
+Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`; la release la produjo y la publicó el autor en la suya. El número
+es el siguiente libre tras el §916. El canon de este commit se dice al final.
+
+**De dónde sale.** Del §916, que dejó la 0.5.0 cortada con las huellas de la máquina de la sesión y
+dijo que publicarla era de la mano del autor. El autor la publicó el 29-10-2026, desde WSL en su
+máquina, con los pasos que la sesión le dio: el clon de `main` en `966f6429`, el tag anotado, el
+tarball con `bash tools/artefacto.sh` sobre ese commit y la release en GitHub con el tarball y las
+dos huellas en sus notas. Este asiento hace para la 0.5.0 lo que el §726 hizo para la 0.4.4: medirla
+desde fuera, desde una máquina que no la produjo, y registrarla como vigente.
+
+**La release, medida desde fuera**, desde esta sesión, el 29-10-2026 entre las 17:35 y las 17:50 UTC.
+`arqueo-verify-v0.5.0`, tag anotado del autor —el objeto `41497097bcce24cca9c996893d98a71c6bbe7bb0`,
+«arqueo-verify 0.5.0», fechado a las 17:20:09 UTC— sobre `966f642970300855e469360234ba6c1012fcecdd`
+(`git ls-remote`: el tag y su `^{}`), publicada a las 17:27:32 UTC (`published_at` de la API de
+GitHub: ni borrador ni prerelease; la release 428181874), en
+https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.5.0.
+Un asset, `arqueo-verify-0.5.0-x86_64-unknown-linux-gnu.tar.gz`, de 31.964.196 B, con `digest` sha256
+`212bf7fbfab9ad2939736750f5dd8824fff4d47e7d11647e75fd5944e6c680ae` en la API; las notas de la release
+dan ese sha256, esos bytes, 538 ficheros y el binario de abajo, y son las mismas cifras que el guion
+imprimió en la máquina del autor. Descargado por `curl` desde la URL pública a un directorio vacío:
+el mismo sha256 y el mismo tamaño; 553 entradas, 538 ficheros y 15 directorios, sin enlaces ni rutas
+absolutas, y `sha256sum -c SHA256SUMS` da 537 OK y ninguno mal (los 538 menos el propio
+`SHA256SUMS`); el binario dentro, `zk-ssl-verify`, es
+`a19a8c2c597cf6b6c0a2182df086b56fa238ae622c23b6e3e46719e0f7479fb7`, de 2.600.128 B. `VERSION` nombra
+el commit, `966f642970300855e469360234ba6c1012fcecdd`, `describe=arqueo-verify-v0.5.0-0-g966f642`,
+rustc 1.97.1 (8bab26f4f 2026-07-14) y cargo 1.97.1, el `cc` GCC 15.2.0 (Ubuntu 15.2.0-16ubuntu1), la
+glibc del host 2.43 y `glibc_max=GLIBC_2.34`. De los otros 534 ficheros, los 534 salen iguales byte a
+byte que en el árbol de `966f6429` —los 517 vectores y los doce manifiestos de las doce familias,
+`spec/PAQUETE.md`, `conformidad.sh` (el `tools/conformidad.sh` del árbol), `NOTICE` y las dos
+licencias—, y los otros cuatro los escribe la herramienta: `SHA256SUMS`, `VERSION`,
+`THIRD-PARTY.txt`, que lista 61 paquetes con `zk-ssl-hash v0.1.0 MIT OR Apache-2.0`, y el binario.
+**El kit descargado, desde dentro del tarball**, con su `conformidad.sh` y sus doce manifiestos:
+paquete 94 de 94, consumo 20 de 20, conflicto 17 de 17, rechazo 90 de 90, edad 50 de 50, pendiente
+13 de 13, pago 27 de 27, prenda 12 de 12, completitud 86 de 86, ancla 44 de 44, ancla cofirmada 27 de
+27 y rotación 48 de 48: las 528 entradas dicen lo que deben, las mismas cuentas que el canon da al
+kit del árbol. Y contra un sobre de `zkssl/0.4` del árbol, `spec/vectors/0.4/edad/edad-todos.json`,
+la release sale con 1 y «ROJO: edad: marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x», después
+de recomponer su cabeza: la R6 e del RFC-0021, medida con el binario publicado.
+
+**Lo que no es lo mismo, y por qué.** El binario de la release, `a19a8c2c…`, no es el que el canon
+de la sesión da sobre el mismo árbol, `62cb56f5e10b4577…` (§914, §915 y §916): la sesión compila con
+`rustc` 1.97.0 y el autor con 1.97.1, y la huella del kit depende del toolchain y del host, como
+`tools/artefacto.sh` declara y el §823 y el §824 midieron; con la misma huella, el kit sólo está
+demostrado reconstruible dentro de una misma máquina. La huella que vale es la del asset, y es la que
+`doc/KIT.md` §0 lleva desde este asiento. El tarball del §916 (`9530ea78…`) tampoco es el de la
+release: se produjo antes del tag, y el de la release lleva en su `VERSION` el `describe` del tag.
+
+**Lo que hace en los documentos.** `doc/KIT.md` §0 y `doc/KIT_EN.md` §0: un párrafo nuevo delante del
+de la 0.4.4, la 0.5.0 como vigente con sus dos huellas medidas desde fuera, lo que habla y lo que
+rechaza, y que no es un arreglo de seguridad sino la primera ruptura del cable bajo la política
+(RFC-0021 E4), con la 0.4.4 publicada para los sobres de `zkssl/0.4` (R6 e); el párrafo de la 0.4.4
+gana su marca, «la vigente del §726 al §917»; la nota del §916 dice que está publicada; la línea de
+«Reproducir el kit» dice en qué máquina se produjo y que tampoco consta rehecha fuera de ella; y los
+tres «Use la 0.4.4» ganan su paréntesis: para sobres de `zkssl/0.5`, la 0.5.0. Los dos README, el
+bilingüe, el ejecutivo, las preguntas en sus dos lenguas, `SECURITY.md` (3.4, 3.9, 3.15 y 3.18), la
+evaluación vertical y el RFC-0019, cada uno con la marca del §917 donde decían que la vigente era la
+0.4.4; ninguna frase se borra.
+
+**Lo que NO hace.** No publica aviso de seguridad: la 0.5.0 no corrige ningún defecto que la 0.4.4
+tenga; cambia el cable, con su aviso en `spec/RPC.md` desde el §914. No retira la 0.4.4, que sigue
+publicada y juzga los sobres de su versión. No rehace el binario fuera de la máquina que lo produjo
+ni afirma que se pueda. No toca ningún código, pin ni vector. No cierra la 116 ni la 136.
+
+**Lo que es del autor.** Nada de esta release: está publicada y registrada. Quedan, como antes, el
+revisor de la 136 y la 116.
+
+**Contadores.** Ninguno se mueve. `BACKLOG.md`: 38 abiertas y 101 resueltas.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre este árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 434 s de reloj (de su arranque a su
+salida) y 266 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU, en caliente. Las
+19 filas del nivel, en su pin, con 2104 tests que pasan (la suma de la columna «pasan»), la de
+`zk-ssl` en 565 pasan y 9 ignorados, 187 s, la de `stark-experiment` en 492 y 13, y la de
+`zk-ssl-air` en 69; las tres del fork en su pin; la puerta de los binarios, con «OK 24 objetivos en
+8 paquetes, 12 con features»; `check_tests` en 2268 y 22 instrumentos; `check_modulos` en 224; las
+once herramientas del bucle «2 ter», con `check_publicadas` atando la release vigente a sus citas y
+`verificar_citas` con 0 encabezados muertos y el §917 en el registro; la puerta de los vectores, en
+702 ficheros y 1740 líneas de 24 manifiestos, 78 lápidas —la segunda pasada, contra la base en
+`origin/main`, no corrió: HEAD y `origin/main` eran el mismo commit, el §916—; `check_catalogo`, en
+236 textos y 301 entradas; la conformidad, 0.5 IDÉNTICO y las cuatro versiones anteriores
+RECHAZADAS; el cable, en 27 de 27; la segunda implementación, con el núcleo en 35 de 35, sus pares
+STARK en 89 de 89, 36 de 36 falsadores y la cadena en 30 de 30; y el artefacto reproducible, igual
+desde dos raíces, con el binario `62cb56f5e10b4577` —el de la sesión desde el §914, que no es el de
+la release, como dice el asiento— y el tarball `abf181c959909c84`, que cambia con las fuentes, como
+en cada asiento. Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero
+que en los sellos anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una
+sola corrida: no hubo roja.
