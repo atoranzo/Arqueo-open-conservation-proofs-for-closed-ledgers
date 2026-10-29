@@ -83,7 +83,7 @@ de `AUDITORIA.md` que la registra. El guion completo, con la salida esperada de 
 familias de sobres, la duodécima la de la rotación (§649); la 0.2.0, que se queda en la v4,
 sigue publicada y rechaza lo posterior —falla cerrada, nunca un VERDE falso—. ⚠️ §725: sí lo da en el punto 2 de la 0.4.4, como la 0.1.0 (`SECURITY.md` §3.18; `doc/KIT.md`, sección 0). Medido y declarado
 en `doc/KIT.md`, sección 0. ⚠️ **Corregido en el §794**: decía «lee las diez familias de sobres»;
-desde la 0.4.0 son once (`doc/KIT.md`:27-28, :154; ⚠️ §823: decía :40, que corrieron el §815, con su aviso de la 0.4.3, y el §818, que la da por vigente; ⚠️ §725: decía :98, que corre el aviso de la 0.4.4; ⚠️ §726: decía :147, que corre el párrafo de la 0.4.3, publicada y ya no vigente), y el árbol monta ya doce, con la rotación
+desde la 0.4.0 son once (`doc/KIT.md`:27-28, :155; ⚠️ §823: decía :40, que corrieron el §815, con su aviso de la 0.4.3, y el §818, que la da por vigente; ⚠️ §725: decía :98, que corre el aviso de la 0.4.4; ⚠️ §726: decía :147, que corre el párrafo de la 0.4.3, publicada y ya no vigente; ⚠️ §727: decía :154, que corre la línea que gana el párrafo de la 0.4.1 con el aviso que le afecta), y el árbol monta ya doce, con la rotación
 (§649; `FAMILIAS` en `tools/artefacto.sh`:31), que ninguna release publicada lleva. ⚠️ **§818**:
 la vigente era la `arqueo-verify-v0.4.2`, sobre `a4e888d`, y este párrafo decía «lee once familias
 de sobres, la undécima la del ancla cofirmada (§634)»; la 0.4.3 es la primera release publicada que

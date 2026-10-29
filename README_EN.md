@@ -84,7 +84,7 @@ tarball's fingerprint is published next to its commit, on the release page and i
 reads twelve envelope families, the twelfth rotation's (§649); release 0.2.0, which
 stops at v4, is still published and rejects what came later — it fails closed, never a false
 GREEN. ⚠️ §725: it does give one in point 2 of 0.4.4, like 0.1.0 (`SECURITY.md` §3.18; `doc/KIT_EN.md`, section 0). Measured and declared in `doc/KIT_EN.md`, section 0. ⚠️ **Corrected in §794**: it said «reads
-the ten envelope families»; since 0.4.0 they are eleven (`doc/KIT_EN.md`:27-28, :155; ⚠️ §823: it said :41, which §815, with its notice on 0.4.3, and §818, which makes it current, shifted; ⚠️ §725: it said :100, which the notice on 0.4.4 shifts; ⚠️ §726: it said :148, which the paragraph on 0.4.3, published and no longer current, shifts), and the tree
+the ten envelope families»; since 0.4.0 they are eleven (`doc/KIT_EN.md`:27-28, :156; ⚠️ §823: it said :41, which §815, with its notice on 0.4.3, and §818, which makes it current, shifted; ⚠️ §725: it said :100, which the notice on 0.4.4 shifts; ⚠️ §726: it said :148, which the paragraph on 0.4.3, published and no longer current, shifts; ⚠️ §727: it said :155, which the line the paragraph on 0.4.1 gains, with the advisory that affects it, shifts), and the tree
 already assembles twelve, with rotation (§649; `FAMILIAS` in `tools/artefacto.sh`:31), which no
 published release carries. ⚠️ **§818**: the current release was `arqueo-verify-v0.4.2`, on
 `a4e888d`, and this paragraph said «reads eleven envelope families, the eleventh the co-signed

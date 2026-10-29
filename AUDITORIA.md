@@ -75476,6 +75476,146 @@ de trabajo de un revisor independiente que había lanzado bajo `.claude/worktree
 y que las herramientas de documentos leían como parte del árbol—; el revisor volvió a lanzarse
 sobre una copia fuera del repositorio, y su informe es del asiento que lo registre.
 
+## §727 — tres leves que un revisor de la sesión dejó en el §726: el resultado de la segunda pasada del canon de la sesión sobre `95bc457`, que su asiento no llevaba; el §726 en las listas de asientos del RFC-0019 y del RFC-0021, y el §714, el §725 y el §865, que ya faltaban en la del RFC-0021; y el aviso de la 0.4.4 en los párrafos de la 0.4.1, la 0.4.0 y la 0.3.0 de los dos manuales, con las siete citas por línea que corre
+
+El commit que lleva este asiento, sobre el §904 (`550375e`), el `main` público del día. Arregla las
+tres observaciones leves que dejó el revisor del §726 —un agente que la sesión lanzó sobre su commit
+antes de entregarlo, que no lo escribió, sólo lo leyó y corrió herramientas, y que no es el revisor
+de la fusión del §904—, ninguna de la release ni del aviso: lo que el asiento del registro tenía que
+llevar y no llevó, dos listas de asientos que callaban sellos que tocaron su fichero, y tres
+párrafos de la sección 0 de los manuales que no decían lo que el aviso dice de su release. Toca la
+sección 0 de `doc/KIT.md` y de `doc/KIT_EN.md`, en los párrafos de la 0.4.1, la 0.4.0 y la 0.3.0; la
+cabecera del RFC-0019; la cabecera del RFC-0021 y cinco de sus citas por línea a `doc/KIT.md`; la
+cita por línea a su manual del párrafo del kit de `README.md` y de `README_EN.md`; y este asiento.
+Seis ficheros fuera de él, ninguno nuevo. Ni código, ni tests, ni pines, ni vectores. Es el §727,
+libre en el §711-§739, el rango de la serie de la 0.4.4 (`RESERVADOS`, en
+`tools/verificar_citas.py`), tras el §726.
+
+Lo escribe y lo comprueba una sesión de Claude Code en la nube, y lo commitea esa sesión, no el autor
+en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md` y como los asientos de la serie.
+Lo que decide la sesión, declarado y reversible: dónde va cada frase y cada marca, con qué palabras,
+y no marcar el §726 en su línea (abajo, «Correcciones a asientos anteriores»).
+
+**1. La segunda pasada del canon sobre `95bc457`.** El §725 midió el canon `--sello` sobre un commit
+con su mismo árbol salvo el párrafo de su resultado, que no cabe en el commit que mide; y como una
+puerta del canon, `verificar_citas`, lee `AUDITORIA.md`, la sesión lo repitió sobre el commit del
+corte mismo, `95bc457`, el de la release. Ese resultado no cabía en el asiento del corte, y le tocaba
+al del registro: el §726 dio la víspera del autor y la release medida desde fuera, y no lo dio. Es
+éste. El 28-10-2026, de las 05:18:15 a las 05:23:37 UTC, en el contenedor de la sesión, con `rustc`
+1.97.0 (2d8144b78 2026-07-07) y 4 CPU, sin tocar ningún fichero y con lo que cargo tenía compilado
+de la primera pasada —los dos árboles sólo difieren en las 17 líneas de aquel párrafo de
+`AUDITORIA.md` (`git diff --stat`), que cargo no lee—, el canon `--sello` sobre `95bc457` salió
+VERDE, con salida 0: los 19 crates del nivel en sus pines, con 180 s de tests y el TOTAL DE SELLO en
+2068; 2230 tests declarados y 216 ficheros `.rs`; las once herramientas del «2 ter»; 605 vectores y
+1370 líneas de 19 manifiestos, ninguno movido; el catálogo, la conformidad, las doce familias, la
+segunda implementación, el nodo, la clase de cada uno de los 22 miembros y las aserciones de
+depuración en los cinco crates sin el probador, con sus pines; y el artefacto, igual desde dos
+raíces y sin rutas de la máquina, con los doce catálogos en verde desde fuera y desde dentro del
+tarball: binario `451f186fcd68697f…`, el de la primera pasada, y tarball `001f257bc681505b…`,
+reproducible. No es el tarball `3986234fa5738e2d…` de la primera porque su `VERSION` nombra otro
+commit: los 520 ficheros que el §726 enumera no llevan `AUDITORIA.md`. Que el commit era `95bc457`
+lo da el registro de referencias del clon (`git reflog`): `HEAD` en `95bc457` desde las 05:18:01,
+cuando se hizo, hasta las 06:02:54, sin otro movimiento en medio. Son huellas de la máquina de la
+sesión, no las de la release, que el §726 dio. El registro de la corrida queda en los de la sesión,
+fuera del árbol.
+
+**2. Las listas de asientos de los dos RFC.** `git log --format=%s` sobre cada fichero. El RFC-0019
+lo tocaron el §675, el §679, el §681, el §682, el §707, el §726, el §773, el §815 y el §826, y su
+lista los nombraba todos menos el §726, que le puso dos marcas: la de la vigente, en el párrafo de
+la E1 y la E2, y la de la fila «E3, el resto». El RFC-0021, el §714, el §716, el §725, el §726, el
+§790, el §799, el §800, el §801, el §807, el §810, el §823, el §826, el §852, el §862 y el §865, y
+su lista callaba el §714 —la versión del diario del testigo, en «Fuera de la promesa», con su
+marca—, el §725 y el §726 —las seis citas por línea a `doc/KIT.md` que cada uno corrió, con las
+suyas— y el §865 —el RFC-0023 en el corte `zkssl/0.5`, con sus marcas en la fila E4 de la tabla de
+etapas y en «Compatibilidad»—. El §862 ya está en la del RFC-0021, y ni el §866 ni el §896 al §904
+tocan ninguno de los dos. Cada uno entra por su número, como el §716 en la del RFC-0021, con lo que
+hizo entre paréntesis, y este sello también, porque toca los dos ficheros; y cada lista gana una
+marca, «⚠️ §727: …callaba…», delante de las que ya tenía, como el §862 puso la suya delante de la
+del §826. Es la costumbre del §826, que marcó así la misma omisión en las dos listas («callaba el
+§815, que tocó este fichero»; «callaba el §800, el §801, el §807, el §810, el §823 y el §852, que
+tocaron este fichero»).
+
+**3. El aviso en los párrafos de la 0.4.1, la 0.4.0 y la 0.3.0.** El aviso, `GHSA-gq4j-w7rw-p96f`, da
+afectadas de la 0.3.0 a la 0.4.3 por todos los defectos menos el 6 y el 8 (§726). El §726 lo dijo en
+el párrafo de la 0.4.2 («Tiene además los de la 3.18 de `SECURITY.md` que la 0.4.4 corrige, todos
+menos el 6 y el 8») y no en los de la 0.4.1, la 0.4.0 y la 0.3.0, donde sólo cambió «Use la 0.4.3
+(§818)» por «Use la 0.4.4 (§726)»: quien leía el de la 0.4.1 leía tres defectos que la 0.4.2
+corrige, y nada más. Cada uno gana ahora, al final, la misma frase, con el aviso y su marca: «⚠️
+§727: la 0.4.1 tiene además los de la 3.18 de `SECURITY.md` que la 0.4.4 corrige, todos menos el 6 y
+el 8 (`GHSA-gq4j-w7rw-p96f`)», y lo mismo con la 0.4.0 y la 0.3.0; en `doc/KIT_EN.md`, «⚠️ §727:
+0.4.1 also has those of 3.18 of `SECURITY.md` that 0.4.4 fixes, all but 6 and 8
+(`GHSA-gq4j-w7rw-p96f`)», y lo mismo. La frase nombra su release porque en el párrafo de la 0.4.0 va
+detrás de la marca del §818, que habla de la 0.4.3, y se escribe igual en los tres.
+
+**Las citas por línea que se mueven**, medidas con `git diff -U0` frente a `550375e` y cruzadas con
+cada cita `doc/KIT.md:N` y `doc/KIT_EN.md:N` del árbol fuera de este registro (`git grep`), con cada
+destino comprobado a mano en el fichero de hoy. Cada frase son dos líneas donde había una:
+`doc/KIT.md` pasa de 584 a 587 líneas y `doc/KIT_EN.md` de 592 a 595, con una más detrás de la
+`:148`, la `:156` y la `:164` del primero y de la `:149`, la `:157` y la `:165` del segundo.
+
+- En el RFC-0021, cinco, cada una con su marca, «⚠️ §727: decía …», detrás de la del §726: la
+  `:131-184` de la fila «un kit viejo sigue publicado», que va del párrafo de la 0.4.2 al final del
+  de la 0.2.0, pasa a la `:131-187`; la `:150-156`, la 0.4.0, a la `:151-158`; la `:158-164`, la
+  0.3.0, a la `:160-167`; la `:198-200`, «sale 0 … 1 … 2», a la `:201-203`; y la `:186-188` de S6,
+  el tag, el commit y las dos huellas, juntos, a la `:189-191`. La `:143-149`, la de la 0.4.1, no se
+  mueve: el párrafo gana su línea por abajo y ocupa hoy la `:143-149` entera, sin la vacía de debajo,
+  que la cita incluía desde el §726; cae en su sitio, y queda sin marca.
+- En `README.md`, la `:154` del párrafo del kit —«Las dos leen las mismas once familias», en el
+  párrafo de la 0.4.0— pasa a la `:155`, y en `README_EN.md`, la `:155`, la misma frase, a la `:156`,
+  cada una con su marca detrás de la del §726. La `:27-28` de los dos, que es la de las familias,
+  queda por encima y no se mueve.
+- Las de `doc/ecst/VERIFICACION.md` y `doc/ecst/borrador/` a `doc/KIT.md` son de su árbol, como dijo
+  el §726, y las de los asientos, de su fecha. El §862 no añadió ninguna: su párrafo de la sección 0
+  pasa de la `:218` a la `:221` en `doc/KIT.md` y de la `:221` a la `:224` en `doc/KIT_EN.md`, y
+  ninguna cita del árbol a los manuales pasa de la `:203`.
+- El RFC-0019, el RFC-0021 y los dos README cambian sus líneas en su sitio, sin ganar ni perder
+  ninguna, así que nadie que los cite por línea se mueve. `AUDITORIA.md`, de 75477 a 75617 líneas,
+  gana este asiento al final.
+
+**Correcciones a asientos anteriores, aquí y no en ellos.** El §726 no se reescribe ni gana una marca
+en su línea. Es la forma que el §860 da a su apartado, «Correcciones a asientos anteriores, aquí y no
+en ellos, salvo la marca del §16.1, en su línea»: corrige en el asiento que viene detrás y sólo marca
+en su sitio el §16.1, como el §778 marcó la tabla del §3 entre sus «cuatro textos vivos». Aquí se
+elige esa forma, la del §860, y no es una regla de la casa sin excepciones: la casa también ha
+corregido asientos publicados en su sitio, con su marca: el §303 en el §302 y el §333 en el §332,
+nombrando allí el §247, y el §382 en el §82.4, que lo nombra en su propio asiento. Lo que el §726
+tenía que decir del canon de la sesión lo dice el punto 1.
+
+**Lo que NO hace.**
+
+- No edita el aviso ni la release, ni toca `SECURITY.md`: la 3.18 ya dice qué releases alcanza cada
+  defecto.
+- No toca el párrafo de la 0.2.0, que no nombra el aviso pero dice desde el §725 que le alcanza el
+  punto 2, el único de los ocho que el aviso le da, como a la 0.1.0, que no tiene párrafo; ni el de
+  la 0.4.3, que ya lo nombra.
+- No añade a los párrafos de la 0.4.1, la 0.4.0 y la 0.3.0 el defecto del aviso de la 0.4.3,
+  `GHSA-6p4m-qg2w-8r6j`, que también los nombra afectados (`SECURITY.md` §3.15) y que el §818, al
+  registrarla, tampoco les puso: es la misma desigualdad con el aviso de antes, que el revisor sólo
+  citó como precedente. Lo dice, para la sección entera, el párrafo de aquel aviso, y llevarlo a cada
+  párrafo es un paso posible para otro sello.
+- No marca la `:143-149` del RFC-0021, que cae en su sitio, ni toca las citas fechadas de
+  `doc/ecst/`.
+- No mide con ningún binario ni corre tests fuera del canon, y ningún contador cambia: el TOTAL DE
+  SELLO sigue en 2092 y el TOTAL CON LARGOS en 2232, `check_tests` en 2255 declarados, los vectores
+  en 605 `.json` y 1370 líneas de manifiesto, ninguno movido, `check_superficie` en 0 novedades, y el
+  `BACKLOG.md` en 43 abiertas y 94 resueltas, sin abrir ni cerrar ninguna.
+
+**Lo medido sobre este árbol, antes de commitearlo**, desde la raíz y con este asiento en su sitio:
+`check_cifras`, 26 cifras y ninguna contradice el canon; `check_tests`, 2255 declarados;
+`check_modulos`, 220 ficheros; `check_vectores`, 605 vectores y 1370 líneas de 19 manifiestos con su
+huella, ninguno movido; `check_catalogo`, 236 textos del kit y 302 entradas de §5; `check_superficie`,
+la lista de `zkssl/0.4` en 29 comparaciones y 0 novedades aditivas; `verificar_citas`, 0 fantasmas, 0
+secciones muertas y 250 encabezados citados, 0 muertos, y el registro con 839 encabezados y 0 citas
+muertas; `check_nucleo`, 183 filas; y `check_figures`, `check_columns`, `check_constraint_layout`,
+`check_dominios`, `check_publicadas`, `check_techo` y `check_curvas`. Todas salen con 0, y `git diff
+--check`, limpio.
+
+**El canon, después.** Como en el §726, este asiento no lleva el resultado del canon de su propio
+árbol: la sesión corre `--sello` sobre el commit que lo lleva, después de commitearlo y tras tocar
+todo `.rs` de `crates/` para que cargo lo recompile entero. Una de sus puertas, `verificar_citas`,
+lee este registro, y el resultado de un canon que incluye el asiento no cabe en él. Si no sale
+VERDE, este commit se rehace.
+
 ## §905 — La 135, medida: la cuenta fina de M_lin —condicionar cada columna lineal a lo que el verificador ve de ella, no a lo que la prueba toca— con su lema L1' escrito y demostrado, y medida en cada canon en las familias que no caben con la cuenta gruesa: no rescata hoy a ninguna de las cinco de T = 64 —Λ sólo es sobreyectiva en el umbral conjunto, y a ése R3 con la base fina le faltan diez dimensiones—; lo que deja para el corte: con la 133 y L1', el umbral conjunto queda cubierto sin más filas, y los otros cuatro necesitan la 131; la 135 cerrada
 
 El commit que lleva este asiento, sobre `550375e2` (el §904, la fusión, que es también `main`).
@@ -76013,4 +76153,59 @@ el fork lleva el pareado en `Oculta<A>` y `verify_laboratorio_sin_parear`; lo qu
 ninguna prueba, y lo miden la conformidad y los vectores en sus huellas— y el tarball `1de1f7d67aebebfb`,
 que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio y vacío, y al
 acabar quedaba en él el mismo fichero que en los sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.
+
+## §910 — La rama de la sesión vuelve a entrar en `main` por orden del autor («Hacer todo»): la fusión de `origin/main` —el §727 del autor sobre el §904— con el §905 al §909, el único conflicto, el registro, resuelto a mano con el §727 en su orden de entrada tras el §904, el canon de sello en VERDE sobre el árbol fusionado, y el empuje a `main`
+
+El commit que lleva este asiento es la fusión: sus padres son `4146d32f` (el §909, la punta de la
+rama `claude/keen-wozniak-wndpef`) y `1bdc07fb` (el §727, la punta de `origin/main`, que el autor
+puso sobre el §904 el 28 de octubre). Toca lo que la fusión trae de `main`: `AUDITORIA.md`, con el
+asiento §727 en su sitio; `README.md`, `README_EN.md`, `doc/KIT.md`, `doc/KIT_EN.md`,
+`spec/rfc/0019-la-completitud-que-no-se-esquiva.md` y
+`spec/rfc/0021-la-politica-de-compatibilidad.md`, tal como vienen de `main`; y este asiento. Ningún
+código, ningún vector. Lo hace y lo commitea Claude, en una sesión de Claude Code en la nube, no
+el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el
+siguiente libre tras el §909. El canon de este commit se dice al final.
+
+**De dónde sale.** «Hacer todo» (§909) incluye llevar la rama a `main`, que el autor dejó dicho en
+el §904 que es la aceptación de la sesión y no la hace él. Al ir a empujar el §909 como avance
+directo, `origin/main` no era un ancestro de la rama: el autor había puesto en `main` el §727
+—tres leves del §726, con el canon repetido sobre `95bc457`, las listas de asientos de dos RFC y el
+aviso de la 0.4.4 en los manuales— sobre el §904, con su fecha de autor anterior al §904 y su
+entrada en `main` posterior. Se fusiona como en el §904: un commit de fusión, el registro resuelto a
+mano y el canon sobre el árbol fusionado.
+
+**Lo que hace.** `git merge --no-commit --no-ff origin/main` sobre el §909: seis ficheros entran
+solos; `AUDITORIA.md` da el único conflicto, porque los dos lados añaden asientos al final. Se
+resuelve con el §727 insertado tras el §904 y antes del §905, en su orden de entrada en `main`, y
+el §905 al §909 detrás, íntegros; ninguna línea de ninguno de los dos lados se pierde ni se cambia,
+y ningún marcador queda. Después, las herramientas de documentos sobre el árbol fusionado, el
+canon de sello, este asiento con su párrafo del canon, el commit y el empuje a la rama y a `main`.
+
+**Medido**: las once herramientas del bucle «2 ter», `check_tests` y `check_modulos` sobre el árbol
+fusionado, en verde con las cifras del §909 (2263 declarados, 22 instrumentos, 221 ficheros); el
+canon, abajo.
+
+**Lo que NO hace.** No toca el §727 ni nada de lo que trae: lo del autor entra como está. No mueve
+pines ni contadores: la fusión no añade tests. No decide nada.
+
+**Contadores.** Sin cambio: TOTAL DE SELLO 2099 y CON LARGOS 2239; `check_tests` 2263;
+`check_modulos` 221. `BACKLOG.md` sigue en 44 abiertas y 95 resueltas. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre el árbol
+fusionado, con este asiento en su sitio y sin este párrafo: VERDE, 458 s de reloj (de su
+arranque a su salida) y 309 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU,
+con la compilación a dos trabajos. Las 19 filas del nivel, en su pin, con 2099 tests que pasan (la
+suma de la columna «pasan»), la de `zk-ssl` en 564 pasan y 9 ignorados, 234 s, y la de
+`stark-experiment` en 491 y 13, 16 s; las tres del fork, `winter-air` 65, `winter-prover` 7 y
+`winter-verifier` 0, en su pin; la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12
+con features»; `check_tests` en 2263 y 22 instrumentos; `check_modulos` en 221; las once
+herramientas del bucle «2 ter»; la puerta de los vectores, en 605 ficheros y 1370 líneas de 19
+manifiestos, con las huellas de `550375e` —la base en `origin/main`, ahora el §727— en las del árbol;
+`check_catalogo`, en 236 textos y 302 entradas; la conformidad, 0.5 IDÉNTICO y las cuatro
+versiones anteriores RECHAZADAS; el cable, en 27 de 27; la segunda implementación, con el núcleo en
+34 de 34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, igual
+desde dos raíces, con el binario `c91d9cfe4046f605` —el mismo del §909: la fusión no trae código— y el
+tarball `a5993bbb83e5418f`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR`
+propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.

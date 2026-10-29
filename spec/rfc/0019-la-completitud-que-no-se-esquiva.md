@@ -13,7 +13,7 @@
   E2 cambia el veredicto de dos vectores publicados (⚠️ §826: decía «de un vector publicado»). E3, la hoja del recibo, sí cambia el cable (su
   núcleo entra en el §773 sin cambiarlo).
 - **Asiento(s) de AUDITORIA:** §675 (este borrador), §679 (las decisiones), §681 (la D-A y E1), §682
-  (E2), §707 (lo que ata `digest_pi`, por la D-G del RFC-0018), §773 (E3, primera pieza: el núcleo), §815 (la versión fuerte de `ProofFailed` y `VerificationFailed`, que la E3 lleva también), §826 (la tabla de etapas y la cabecera, corregida). ⚠️ §826: acababa en el §773, y callaba el §815, que tocó este fichero con su párrafo de la E3.
+  (E2), §707 (lo que ata `digest_pi`, por la D-G del RFC-0018), §726 (la vigente, la 0.4.4, con sus marcas en el párrafo de la E1 y la E2 y en la fila «E3, el resto»), §727 (esta lista, con su marca), §773 (E3, primera pieza: el núcleo), §815 (la versión fuerte de `ProofFailed` y `VerificationFailed`, que la E3 lleva también), §826 (la tabla de etapas y la cabecera, corregida). ⚠️ §727: callaba el §726, que tocó este fichero con dos marcas; él y el §727 entran por su número, delante del §773. ⚠️ §826: acababa en el §773, y callaba el §815, que tocó este fichero con su párrafo de la E3.
 
 ## Motivación
 

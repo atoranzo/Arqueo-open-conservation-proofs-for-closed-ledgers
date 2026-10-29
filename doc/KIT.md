@@ -145,7 +145,8 @@ tarball `505de994f243bc76…`). Tiene tres defectos que la 0.4.2 corrige: lee un
 `+` o con ceros a la izquierda (§662); cuenta la misma cofirma repetida como varios testigos en el
 paquete v2 (§663); y lee una clave XMSS con el OID alterno `0x00010005` como la publicada, con lo que
 da VERDE a un «conflicto entre dos libros» con un solo libro escrito dos veces (§664). ~~Use la 0.4.2.~~
-~~Use la 0.4.3 (§818).~~ Use la 0.4.4 (§726).
+~~Use la 0.4.3 (§818).~~ Use la 0.4.4 (§726). ⚠️ §727: la 0.4.1 tiene además los de la 3.18 de
+`SECURITY.md` que la 0.4.4 corrige, todos menos el 6 y el 8 (`GHSA-gq4j-w7rw-p96f`).
 
 **La 0.4.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.4.0`, commit `65d1e89`,
 tarball `90184e41299e737a…`). Tiene un defecto que la 0.4.1 corrige: una prueba con nodos de más
@@ -153,7 +154,8 @@ dentro de un lote de Merkle verifica igual, con otros bytes (§659). El veredict
 no cambia —la prueba retocada prueba lo mismo que la original—, pero sus bytes dejan de identificar
 la operación. ~~Use la 0.4.2.~~ ~~Use la 0.4.3 (§818).~~ Use la 0.4.4 (§726). Las dos leen las mismas once familias y dan los mismos veredictos a
 todos los vectores publicados. ⚠️ **§818**: «las dos» son la 0.4.0 y la 0.4.1; la 0.4.3 lee doce y
-cambia los veredictos que dice el aviso, arriba.
+cambia los veredictos que dice el aviso, arriba. ⚠️ §727: la 0.4.0 tiene además los de la 3.18 de
+`SECURITY.md` que la 0.4.4 corrige, todos menos el 6 y el 8 (`GHSA-gq4j-w7rw-p96f`).
 
 **La 0.3.0 sigue publicada y ya no es la vigente** (`arqueo-verify-v0.3.0`, commit `65cabfb`,
 tarball `06648502e0171fea…`). Tiene cuatro defectos que la 0.4.0 corrige, descritos en la sección 3.9
@@ -161,7 +163,8 @@ de `SECURITY.md`: un campo hex con un carácter multibyte, o una prueba oculta c
 hacen salir con **101** (pánico) en vez de ROJO (§650, §651); una prueba con bytes de cola se lee
 igual que sin ellos (§653); y acepta los cuatro negativos de la lectura canónica (RFC-0016, §640).
 Falla con un código que no es el suyo, nunca con un VERDE falso para esos casos; aun así, use la
-~~0.4.2~~ ~~0.4.3 (§818)~~ 0.4.4 (§726).
+~~0.4.2~~ ~~0.4.3 (§818)~~ 0.4.4 (§726). ⚠️ §727: la 0.3.0 tiene además los de la 3.18 de
+`SECURITY.md` que la 0.4.4 corrige, todos menos el 6 y el 8 (`GHSA-gq4j-w7rw-p96f`).
 
 ⚠️ **En la 0.3.0, una frase vieja viaja en su `NOTICE`, declarada; la 0.4.0 lleva el corregido.** El `NOTICE` de aquel tarball dice que la
 ocultación del testigo del fork de winterfell la enciende sólo `Prover::ocultacion`, «que ningún
