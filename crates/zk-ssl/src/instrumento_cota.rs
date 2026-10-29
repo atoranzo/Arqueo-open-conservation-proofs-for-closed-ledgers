@@ -70,7 +70,7 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 use stark_experiment::{build_trace, WorkAir};
-use winter_air::Marca;
+use winter_air::{Marca, MarcaV2};
 use winter_prover::Ocultacion;
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, MerkleTree};
 use winterfell::math::fields::f128::BaseElement as Base128;
@@ -94,8 +94,10 @@ type E = QuadExtension<BaseElement>;
 /// §897: las familias que cumplen la cota INDEPENDIENTE de la AIR -las filas aleatorias cubren,
 /// sobre F, los `2q + 6` puntos que la prueba toca por columna, [`Aberturas::tocados`]- y las que
 /// no. Lo que mide el test tiene que ser esto, AIR a AIR; una T o una q que lo cambie es rojo.
-/// Las cinco de T = 64 no lo cumplen: para ellas el argumento de A2 necesita su lema L6, que
-/// depende de la AIR, o mas filas aleatorias (la 131 de `BACKLOG.md`).
+/// Hasta el §914 las cinco de T = 64 no lo cumplian: para ellas el argumento de A2 necesitaba su
+/// lema L6, que depende de la AIR, o mas filas aleatorias (la 131 de `BACKLOG.md`). El corte
+/// zkssl/0.5 (§914, RFC-0018 D-H) las sube a T = 128, que cubre los 90 tocados: las 23 cumplen la
+/// cota independiente de la AIR.
 pub(crate) const INDEPENDIENTE_DE_LA_AIR: &[(&str, bool)] = &[
     ("SendAir", true),
     ("SendV2Air", true),
@@ -103,19 +105,19 @@ pub(crate) const INDEPENDIENTE_DE_LA_AIR: &[(&str, bool)] = &[
     ("ClaimAirV2", true),
     ("PrendaAir", true),
     ("MintPendingClimbAir", true),
-    ("NullifierThresholdAir", false),
-    ("ThresholdAir", false),
+    ("NullifierThresholdAir", true),
+    ("ThresholdAir", true),
     ("AuditAir", true),
     ("BurnAir", true),
     ("SolvencyAir", true),
     ("DoubleEntryAir", true),
     ("BandaAir", true),
-    ("EdadAir", false),
+    ("EdadAir", true),
     ("CobroPendienteAir", true),
     ("PagoEnCursoAir", true),
     ("MerkleAir", true),
-    ("RefundAir", false),
-    ("RefundAirV2", false),
+    ("RefundAir", true),
+    ("RefundAirV2", true),
     ("CreditClimbAir", true),
     ("MintClimbAir", true),
     ("FrozenClimbAir", true),
@@ -165,16 +167,27 @@ pub(crate) struct Geometria {
     pub bytes: usize,
 }
 
+/// La m de la marca del meta: la v2 de produccion (§914, zkssl/0.5) o la v1, que siguen
+/// escribiendo los probadores juguete de los instrumentos (`Ocultacion` sin `marca_v2`).
+pub(crate) fn m_de_la_marca(meta: &[u8]) -> Result<usize, String> {
+    match MarcaV2::leer(meta) {
+        Ok(Some(marca)) => return Ok(marca.m),
+        Ok(None) => return Err("sin marca: no es una prueba oculta".to_string()),
+        Err(_) => {},
+    }
+    match Marca::leer(meta) {
+        Ok(Some(marca)) => Ok(marca.m),
+        Ok(None) => Err("sin marca: no es una prueba oculta".to_string()),
+        Err(e) => Err(format!("un meta que no es la marca: {e:?}")),
+    }
+}
+
 /// Lee la geometria de unos bytes de prueba. `F` es el elemento con el que viajan `z`, los trozos
 /// y el resto: el campo de produccion con su extension para las pruebas de la casa.
 pub(crate) fn geometria<F: FieldElement>(nombre: &str, pr: &[u8]) -> Result<Geometria, String> {
     let p = Proof::from_bytes(pr).map_err(|e| format!("{nombre}: no se lee: {e:?}"))?;
     let info = p.trace_info();
-    let m = match Marca::leer(info.meta()) {
-        Ok(Some(marca)) => marca.m,
-        Ok(None) => return Err(format!("{nombre}: sin marca: no es una prueba oculta")),
-        Err(e) => return Err(format!("{nombre}: un meta que no es la marca: {e:?}")),
-    };
+    let m = m_de_la_marca(info.meta()).map_err(|e| format!("{nombre}: {e}"))?;
     let largo = info.length();
     if largo % 2 != 0 || largo < 16 {
         return Err(format!("{nombre}: traza de {largo} filas: no se parte en dos"));

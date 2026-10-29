@@ -251,6 +251,7 @@ pub type CobroPendienteAirV1 = CobroPendienteAirDe<1>;
 /// §913: la forma en claro de esta familia, para el juez unico (`crate::juez`); la v1 y la v2
 /// tienen la misma traza.
 impl<const V: u8> crate::juez::Juez for CobroPendienteAirDe<V> {
+    const NOMBRE: &'static str = "CobroPendienteAir";
     fn forma(_: &CobroPendientePublicInputs) -> crate::juez::Forma {
         crate::juez::Forma::fija(ANCHO, TRAZA)
     }
@@ -532,11 +533,13 @@ impl<const V: u8> Air for CobroPendienteAirDe<V> {
 /// ([`crate::la_causa_de_la_que_llego_mas_lejos`]). Por [`verificar_contra_cabeza`] el superior
 /// es [`MAX_VALOR`]: una prueba de la v1 se sigue aceptando, y dice lo que parece.
 pub fn verificar(prueba: &[u8], pi: &CobroPendientePublicInputs) -> Result<(), String> {
+    // §914 (RFC-0018 D-G): la marca v2 antes que nada, de la cabeza; despues el enunciado; despues
+    // la prueba entera, sus opciones y su forma oculta, por el juez unico; los textos, los de siempre
+    crate::marca_del_kit::<CobroPendienteAirDe<2>>(prueba)?;
     comprobar_enunciado(pi)?;
     let proof =
         Proof::from_bytes(prueba).map_err(|e| format!("la prueba no se deserializa: {e:?}"))?;
-    // §913: la forma oculta y la marca (§651) las deriva y comprueba el juez unico, antes de
-    // construir ninguna AIR, y la verificacion lleva su politica; los textos son los de siempre
+    crate::juez::comprobar_opciones(&proof).or_else(crate::rechazo_del_kit)?;
     crate::juez::comprobar_forma(proof.trace_info(), &<CobroPendienteAirDe<2> as crate::juez::Juez>::forma(pi))
         .or_else(crate::rechazo_del_kit)?;
     let v2 = crate::juez::juzgar::<CobroPendienteAirDe<2>>(proof.clone(), pi.clone()).or_else(crate::rechazo_del_kit);
@@ -591,6 +594,8 @@ pub fn verificar_contra_cabeza(
     af: &AfirmacionCobro,
     cabeza: &CabezaCobro,
 ) -> Result<CobroPendientePublicInputs, String> {
+    // §914 (RFC-0018 D-G): la marca antes que nada, tambien antes de comparar con la cabeza
+    crate::marca_del_kit::<CobroPendienteAirDe<2>>(prueba)?;
     if af.nacido >= cabeza.seq {
         return Err(format!(
             "nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza \
@@ -732,17 +737,17 @@ mod tests {
     }
 
     /// **D-K (S495): un nacido que no es anterior a la cabeza se rechaza ANTES de la prueba**:
-    /// tres bytes que no son prueba no llegan al juez; con un `seq` posterior, si llegan.
+    /// una cabeza con la marca y nada detras (§914: la marca va antes, D-G) no llega al juez; con un `seq` posterior, si llegan.
     #[test]
     fn un_nacido_que_no_es_anterior_a_la_cabeza_se_rechaza_antes_de_la_prueba() {
         let af = AfirmacionCobro { receptor: d(3), nacido: 1000, inferior: 100 };
         for seq in [1000, 999, 0] {
             let cab = CabezaCobro { seq, pending_root: d(1), pmeta_root: d(2) };
-            let e = verificar_contra_cabeza(&[1, 2, 3], &af, &cab).unwrap_err();
+            let e = verificar_contra_cabeza(&crate::juez::solo_cabeza::<CobroPendienteAir>(), &af, &cab).unwrap_err();
             assert!(e.contains("no es anterior a la cabeza"), "seq {seq}: {e}");
         }
         let cab = CabezaCobro { seq: 1001, pending_root: d(1), pmeta_root: d(2) };
-        let e = verificar_contra_cabeza(&[1, 2, 3], &af, &cab).unwrap_err();
+        let e = verificar_contra_cabeza(&crate::juez::solo_cabeza::<CobroPendienteAir>(), &af, &cab).unwrap_err();
         assert!(!e.contains("no es anterior a la cabeza"), "con seq 1001 tenia que llegar: {e}");
     }
 

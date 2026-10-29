@@ -121,7 +121,7 @@ mod tests {
             MarcaV2 { m, familia, version, perfil, columnas }.escribir()
         };
         assert_eq!(crate::comprobar_marca_v2(&v2(64, 7, 1, 1, 2), 7), Ok((64, 2)));
-        assert_eq!(crate::comprobar_marca_v2(&v2(64, 23, 1, 1, 1), 23), Ok((64, 1)));
+        assert_eq!(crate::comprobar_marca_v2(&v2(64, 23, 1, 1, 2), 23), Ok((64, 2)));
         let casos: Vec<(Vec<u8>, u16, &str)> = vec![
             (Vec::new(), 7, "marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version"),
             (Marca { m: 64 }.escribir(), 7, "marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x"),
@@ -135,6 +135,10 @@ mod tests {
             (v2(64, 7, 2, 1, 2), 7, "marca: version 2 de la AIR de la familia 7; se acepta 1"),
             (v2(64, 7, 1, 2, 2), 7, "marca: perfil 2 desconocido"),
             (v2(32, 7, 1, 1, 2), 7, "marca: m = 32; la construccion pide m = 64"),
+            // §914 (1h bis): una columna, la de zkssl/0.4 en una marca v2; hasta el §914 pasaba y el
+            // fork entraba en panico al construir la AIR interna con un ancho de menos
+            (v2(64, 7, 1, 1, 1), 7, "marca: 1 columnas; la construccion pide 2"),
+            (v2(64, 7, 1, 1, 3), 7, "marca: 3 columnas; la construccion pide 2"),
         ];
         for (meta, familia, texto) in casos {
             assert_eq!(crate::comprobar_marca_v2(&meta, familia), Err(texto.to_string()), "{meta:?}");

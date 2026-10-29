@@ -590,13 +590,13 @@ remeasured on 2026-10-14 at `b6491ef` with the same test, in section 2.2).
 
 The layer's production options — 42 queries, blowup 16, grinding 21 and
 quadratic extension — give, over its hidden proofs, 127 conjectured bits
-and, provable, 59 under UDR and 80 to 88 under LDR depending on the
+and, provable, 59 under UDR and 80 to 86 under LDR depending on the
 circuit; the age proof drops with its `m`, down to 68 with `m = 13`,
 its cap since §717.
 Tests bind these figures (§697), and the table is in `SECURITY.md`
 §3.11. The conjectured formula does not discount the DEEP term, which
 grows with the trace length: with it, the conjectured level is 112.8 to
-116.8 depending on the circuit, and drops to 106.8 in the age proof with
+115.8 depending on the circuit, and drops to 106.8 in the age proof with
 `m = 13` (§708). What it would cost to bring them to 128 provable bits
 is not measured, and neither is their level against a quantum adversary.
 

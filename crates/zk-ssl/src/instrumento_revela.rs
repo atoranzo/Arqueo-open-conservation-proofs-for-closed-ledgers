@@ -1266,11 +1266,11 @@ const BANDAS: &[(&str, &str, usize, (usize, usize))] = &[
     ("circuit_frozen_climb", "FrozenClimbAir", 512, (52_358, 60_935)),
     ("merkle", "MerkleAir", 512, (48_348, 55_824)),
     ("solvency", "SolvencyAir", 512, (39_739, 47_696)),
-    ("circuit_edad", "EdadAir", 128, (71_645, 84_021)),
-    ("circuit_threshold", "ThresholdAir", 128, (44_718, 51_521)),
-    ("circuit_threshold_single_nullifier", "NullifierThresholdAir", 128, (38_990, 47_138)),
-    ("circuit_refund", "RefundAir", 128, (35_988, 43_325)),
-    ("circuit_refund_v2", "RefundAirV2", 128, (39_019, 45_376)),
+    ("circuit_edad", "EdadAir", 256, (71_645, 84_021)),
+    ("circuit_threshold", "ThresholdAir", 256, (44_718, 51_521)),
+    ("circuit_threshold_single_nullifier", "NullifierThresholdAir", 256, (38_990, 47_138)),
+    ("circuit_refund", "RefundAir", 256, (35_988, 43_325)),
+    ("circuit_refund_v2", "RefundAirV2", 256, (39_019, 45_376)),
 ];
 
 /// La prueba de `fila` frente a la banda de su familia: la AIR entre parentesis al final del

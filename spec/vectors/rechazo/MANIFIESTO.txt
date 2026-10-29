@@ -118,28 +118,34 @@ rechazo-rech-inexistente-cabeza-adulterada.json|1|cabeza: los campos NO recompon
 # un importe DERIVADO del fondeo, el borde exacto) y ocho negativos, uno por regla del brazo
 # decimo. Seis son UNA mutacion; el pedido cero y el techo son ESCENAS de dos campos -los dos
 # requested a la vez-, y se declara. El rojo de la cuenta otra lo escribe winterfell (0.13.1).
-saldo-insuficiente.json|0|VERDE: InsufficientBalance se sostiene sobre el estado comprometido
 rechazo-rech-banda-con-saldo.json|1|data: esta causa no publica el saldo: la banda lo prueba sin el
 rechazo-rech-banda-importe-otro.json|1|data: el importe que el nodo dice no es el que la prueba acota
 rechazo-rech-banda-cabeza-distinta.json|1|la cabeza (seq 5) no es la del rechazo (seq 6)
-rechazo-rech-banda-cuenta-otra.json|1|banda: InconsistentOodConstraintEvaluations
 rechazo-rech-banda-sin-prueba.json|1|banda: falta prueba o no es cadena 0x
 rechazo-rech-banda-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
 rechazo-rech-banda-pedido-cero.json|1|la causa NO se sostiene: pedir 0 no puede pasar de ningun saldo
-rechazo-rech-banda-techo.json|1|banda: los limites 0 y 4611686018427387904 pasan del techo 4611686018427387903
-# §723, la ventana del saldo privado: la banda v2 (los tres segmentos de rango en 62 bits).
-# Con la v1 y un superior bajo 2^32 - 2, un saldo de la ventana [2^62, 2^63) tambien pasa la banda,
-# y el juez no distingue la prueba honesta de la fabricada: el kit da el cuarto estado. El positivo
-# saldo-insuficiente.json, de arriba, es una banda de la v1 con el superior 1000, y sigue VERDE con
-# su linea: el kit reconoce esa prueba ya publicada por la huella de su contenido y su enunciado,
-# en una lista cerrada (PUBLICADAS_V1 de zk-ssl-air), y ninguna otra. El positivo de la v2 es la
-# captura del banco (tools/banco_rechazo.sh, que lo nombra saldo-insuficiente-banda-v2.json). Los
-# tres de la ventana los arma un operador con su propia clave XMSS de test y una raiz de cuentas de
-# UNA hoja que su capa no firmaria (saldo 2^63 - 2^32 + 1002, pedido 1001), con
-# tools/vectores/ventana_banda.py: el de la v1, con el probador de la casa, daba VERDE con el kit
-# de antes; el de la v2, con un probador que no comprueba la traza y recorta el cociente,
-# cae en la coherencia OOD; y el control, con la misma forma y una hoja honesta (saldo 1000), verifica.
-saldo-insuficiente-banda-v2.json|0|VERDE: InsufficientBalance se sostiene sobre el estado comprometido
-rechazo-rech-banda-ventana-v1.json|3|DECLARADA, NO PROBADA: banda: prueba de la v1 con segmentos de 63 bits
-rechazo-rech-banda-ventana-v2.json|1|banda: InconsistentOodConstraintEvaluations
-rechazo-banda-ventana-control.json|0|VERDE: InsufficientBalance se sostiene sobre el estado comprometido
+# zkssl/0.5 (§914, el corte del tren: RFC-0018 D-G y D-H; RFC-0009 D-AL bis). Los vectores con prueba
+# de esta familia -los de la banda del brazo decimo- RENACEN con la version del cable en el nombre: la
+# marca v2 (familia 13, version 1, perfil 1, m = 64, dos columnas) y el juez que la lee ANTES del
+# enunciado. Los de zkssl/0.4 viven bajo spec/vectors/0.4/rechazo/ con sus lineas, y los verifica el
+# zk-ssl-verify del arbol en cbe95d70 (§913). Los seis negativos de la banda que caen antes de la prueba
+# siguen arriba con sus bytes. El positivo y los dos negativos de su regla salen de UNA corrida de
+# `tools/banco_rechazo.sh --guardar` (BANCO-RECHAZO VERDE; el mapa de nombres, el de la cabecera): el nodo
+# prueba la banda v2 (§723), asi que `saldo-insuficiente-0.5.json` ES la captura de la v2 y
+# `saldo-insuficiente-banda-v2` no renace; la lista cerrada `PUBLICADAS_V1` queda como lo que fue, porque
+# la v1 publicada cae por su marca antes de llegar a ella. Jamas se reescriben (regla 2 del PROCESO).
+saldo-insuficiente-0.5.json|0|VERDE: InsufficientBalance se sostiene sobre el estado comprometido
+rechazo-rech-banda-cuenta-otra-0.5.json|1|banda: InconsistentOodConstraintEvaluations
+rechazo-rech-banda-techo-0.5.json|1|banda: los limites 0 y 4611686018427387904 pasan del techo 4611686018427387903
+# §914, los negativos de la MARCA v2 (RFC-0018 D-G) de esta familia, de `saldo-insuficiente-0.5.json` con
+# `tools/vectores/marca_v2.py`: la positiva de zkssl/0.4 (1c), el meta vacio (1b) y la familia 5 (1e).
+neg-v2-marca-v1.json|1|banda: marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x
+neg-v2-meta-vacio.json|1|banda: marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version
+neg-v2-familia-ajena.json|1|banda: marca: la prueba es de la familia 5; se pide la 13
+# §914, los tres de la ventana del saldo privado (§723), renacidos con `tools/vectores/ventana_banda.py`:
+# el operador arma la cabeza con su clave XMSS de test y prueba con el probador de la casa, que escribe
+# la marca v2 de la banda; la v1 honesta sigue dando el cuarto estado, la v2 maliciosa cae en la
+# coherencia OOD y el control verifica. No son reproducibles byte a byte: cada corrida da otra prueba.
+rechazo-rech-banda-ventana-v1-0.5.json|3|DECLARADA, NO PROBADA: banda: prueba de la v1 con segmentos de 63 bits
+rechazo-rech-banda-ventana-v2-0.5.json|1|banda: InconsistentOodConstraintEvaluations
+rechazo-banda-ventana-control-0.5.json|0|VERDE: InsufficientBalance se sostiene sobre el estado comprometido

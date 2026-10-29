@@ -76542,3 +76542,215 @@ del §912, porque el kit lleva `zk-ssl-air` y con él el juez— y el tarball `0
 cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio y vacío, y al acabar
 quedaba en él el mismo fichero que en los sellos anteriores,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.
+
+## §914 — El corte del tren, `zkssl/0.5` (RFC-0018 D-G y D-H, sólo la D-H, como decidió el autor en el §913; RFC-0009 D-AL bis): la marca v2 encendida en los 23 probadores y leída antes que nada por el juez único, los cinco jueces del kit y `tools/segunda`, con un rechazo más que la tabla de la D-G no preveía, el 1h bis de las columnas, que el barrido byte a byte del kit hizo escribir; las dos columnas aleatorias pareadas en DEEP como único camino de producción; T = 128 en las cinco familias de 64 y la edad desde m = 4; el kit 0.5.0, el OpenRPC y las tres escrituras del cable en `zkssl/0.5`; 78 vectores de seis familias mudados a `0.4/` con su kit, por tramos, y 97 nuevos; el registro de las familias en vigor, con su KAT y su atadura; y la cota, R3 y M_lin remedidas sobre la construcción del corte
+
+El commit que lleva este asiento, sobre `cbe95d70` (el §913). Es el sello del corte que el
+RFC-0018 pedía desde el §826 y cuyo alcance fijó el autor el 29 de octubre de 2026 (las cuatro
+decisiones de la D-H, registradas en el §913): sólo la D-H (b), la ZK; el juez único antes, hecho
+en el §913; las mismas opciones de prueba; y la versión del cable en el nombre de los vectores que
+renacen. Toca el fork por su uso y no por su código, los circuitos, la capa, el kit, el nodo, el
+cable, el cli, cuatro herramientas y dos nuevas, la segunda implementación, los vectores y los
+documentos: `crates/stark-experiment/src/lib.rs`, `ocultacion_encendida(air)` con las dos columnas
+(`COLUMNAS_ALEATORIAS`) y la marca v2 de la familia del registro (`CamposV2`), y `verify_casa`,
+el `verify` de sus tests, que juzga con `verify_v2` del fork y la familia del nombre del tipo; los
+23 probadores pasando su nombre, con `circuit_threshold.rs` y `circuit_threshold_single_nullifier.rs`
+a `TRACE_LENGTH = 128`, `circuit_refund.rs` y `circuit_refund_v2.rs` a `CICLOS = 16` y
+`circuit_edad.rs` con el suelo en `M_MIN` (dieciséis hojas) y sus tests sobre dieciséis;
+`crates/zk-ssl-air/src/lib.rs`, `M_MIN = 4`, el 1h bis en `comprobar_marca_v2`, la v1 fuera
+(`comprobar_marca` de 19 bytes, muerta), `marca_del_kit`; `juez.rs`, la marca v2 leída antes que
+nada en `juzgar` y `comprobar_marca::<AIR>` con la familia del registro; `familias.rs`, los casos del
+1h bis; los cuatro jueces del kit con su familia; `crates/zk-ssl/src`, `metrics.rs` por el juez
+único, `lib.rs` sin su envoltorio de `verify`, los tests de la cabeza en los bytes de la marca de
+25 y los cinco instrumentos remedidos (`instrumento_cota.rs` con `m_de_la_marca` e
+`INDEPENDIENTE_DE_LA_AIR` en las 23, `instrumento_r3.rs` con la geometría de T = 128,
+`instrumento_mlin.rs` con el censo, `MLIN_MEDIDO`, `MLIN_INSTANCIAS` y `HUELLA_C` de las cinco,
+`instrumento_revela.rs` con las cinco bandas a 256 filas, `instrumento_falsadores_hvzk.rs` leyendo
+la marca por el instrumento, y `nivel_de_produccion.rs` midiendo desde 128); `crates/zk-ssl-verify`,
+la versión `0.5.0` (D-E) y `main.rs` con sus vectores en `-0.5` y la marca de 25 en sus tests;
+`crates/zk-ssl-wire/src/openrpc.rs` y `spec/openrpc.json`, `zkssl/0.5` y el aviso de
+compatibilidad reescrito (§699, §914); `crates/zk-ssl-cli/src/conformance.rs` no cambia de texto
+—su `spec:` ya decía `zkssl/0.5` desde el §716— y `witness.rs` lee los vectores `-0.5`;
+`crates/zk-ssl-node/src/main.rs`, `zkssl/0.5`, los bytes de la marca en sus tests y el test de los
+vectores del nodo, que acepta un vector de una versión anterior cuando ningún paso suyo pregunta la
+versión; `crates/zk-ssl-cli/Cargo.toml` y `nucleo_kat.rs`, el KAT `registro_de_familias` con
+`zk-ssl-air` como dependencia de tests (cero nodos nuevos en la clausura, que ya lo llevaba);
+`tools/conservados.sh`, los tramos por kit; `tools/check_catalogo.py`, `comprobar_marca_v2` como
+productor en las cinco filas del kit; `tools/check_publicadas.py`, las anclas de `M_MIN` y de las
+columnas del juez, y el suelo de `MINIMO_CELDAS_F` en 66; `tools/check_nucleo.py`, la R5;
+`tools/canon.sh`, el comentario de la segunda (35 KAT); `tools/vectores/marca_v2.py`, nuevo;
+`maleabilidad.py`, `canonicidad.py`, `coste_edad.py` (y su binario, que escribe la marca v2 de la
+edad con las dos columnas), `ventana_banda.py` y los dos `Cargo.lock` de esos binarios, al kit
+`0.5.0`; `tools/segunda/stark.py` y `airs.py`, la marca v2 como único camino, con `FAMILIA` por
+clase, `COLUMNAS_ALEATORIAS`, el 1h bis y la v1 sólo nombrada; `juez_nucleo.py` y `nucleo.py`, el
+registro de familias y su marca; `spec/vectors/`, 78 vectores de seis familias mudados a `0.4/`
+con sus líneas y cinco manifiestos conservados nuevos, 97 vectores nuevos, nueve manifiestos
+tocados por detrás y `HUELLAS.sha256`; `spec/PAQUETE.md`, `spec/RPC.md` (las notas y la lista de
+la superficie), `spec/NUCLEO.md`, `spec/README.md`, los RFC 0005, 0009, 0018 y 0021,
+`SECURITY.md`, `BACKLOG.md`, los dos README, `doc/KIT.md`, `doc/ocultacion-hvzk.md`,
+`tools/segunda/README.md` y las citas del nivel en doce documentos; y este asiento. Lo escribe y
+lo commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre tras el §913. El
+canon de este commit se dice al final.
+
+**De dónde sale.** De la D-H del RFC-0018 tal como la dejó el autor: (b) encender en los 23
+probadores lo que el árbol tenía construido en laboratorio desde el §899, el §906, el §909 y el
+§912 —las dos columnas pareadas (RFC-0009 D-AL bis, la 133), la marca v2 (D-G, la 118) y su juez
+en el orden de la D-G— y llevar las cinco familias de T = 64 a 128 (la 131), en un solo sello,
+porque cada una de las tres rompe la superficie (2) y la ruptura se paga una vez (RFC-0021, R6).
+Lo que no se decidió aquí: el fork no cambia una línea; los textos del juez son los del §912, letra
+por letra; y las opciones de prueba son las del §684.
+
+**Lo que hace.**
+
+1. **La marca v2, encendida y única.** `ocultacion_encendida(air)` recibe el nombre de la AIR,
+   busca su familia en `zk_ssl_air::familias` —una AIR fuera del registro es un error de quien
+   construye: pánico al probar, y cada probador lo ejerce en sus tests— y pide al fork dos
+   columnas y la marca v2 con la versión inicial y el perfil de producción. La leen antes que nada,
+   con `comprobar_marca_v2` y los textos de la D-G: `juzgar` (el juez único, por el que pasan los
+   21 sitios del §913), los cinco jueces del kit (`marca_del_kit`) y `tools/segunda`. La marca v1 de
+   19 bytes se reconoce sólo para nombrarla (1c, «marca v1: prueba de zkssl/0.4; la juzga el kit
+   0.4.x») y la de laboratorio del §899 cae como desconocida; `comprobar_marca`, el lector de la v1,
+   muere. El juez único deriva la forma oculta de la clara con la m y las columnas que la marca
+   declara, como en el §913, y la forma del cable es una: ancho + 2, el tramo auxiliar tal cual y 2T.
+2. **El 1h bis.** El barrido byte a byte de la cabecera en el kit
+   (`la_cabecera_byte_a_byte_es_err_y_nunca_panico`) puso el byte de columnas de una marca v2 a 1
+   y el kit entró en pánico: la marca pasaba (m, familia, versión y perfil bien), la forma también
+   —exige la constante, dos, no lo que la marca dice— y el fork construía la AIR interna con un
+   ancho de menos. Desde este sello `comprobar_marca_v2` exige que las columnas de la marca sean las
+   de la construcción, `COLUMNAS_ALEATORIAS`, con nombre: «marca: 1 columnas; la construccion pide
+   2», detrás de la m (1h) y antes del enunciado; en el kit, en la segunda, en el catálogo (§5 y
+   §6.1 de `spec/PAQUETE.md`) y en un vector, `neg-v2-columnas`. La tabla de la D-G gana la fila.
+3. **T = 128 en las cinco** (la 131): los dos umbrales a 128 filas reales, los dos reembolsos a
+   dieciséis ciclos y la edad desde dieciséis hojas, `M_MIN = 4` (el texto del enunciado,
+   `m = {} fuera de {M_MIN}..={M_MAX}`, sin el tope en los vectores, como en el §717). L1 cubre
+   las 23 por geometría (2q + 6 = 90 ≤ 128) y `INDEPENDIENTE_DE_LA_AIR` lo dice en las 23 (eran
+   18): la cuenta fina del §905 ya no se corre en ninguna familia.
+4. **El corte en la superficie**: `zkssl/0.5` en las tres escrituras del cable (`openrpc.rs`,
+   `conformance.rs`, el nodo), el OpenRPC regenerado con el aviso de compatibilidad reescrito, el
+   kit `0.5.0`, la lista de la superficie de `spec/RPC.md` (702 `.json`, 1740 líneas, 24
+   manifiestos) y `check_superficie` con cero novedades fuera de su lista. El kit 0.5 rechaza por la
+   marca toda prueba de `zkssl/0.4`, así que, regla 2 del PROCESO y R6 b del RFC-0021, **78
+   vectores de seis familias se mudan enteros** a `spec/vectors/0.4/<familia>/` con sus líneas: 31
+   de la edad, 20 del pago, 6 del pendiente, 4 de la prenda, 7 del rechazo y 10 de la completitud
+   (que se suman a los dos del §682 en su manifiesto). Los juzga el `zk-ssl-verify` del árbol en
+   `cbe95d70`, el último sello del cable 0.4, que `tools/conservados.sh` construye de su commit;
+   como `0.4/completitud` lleva ahora dos kits, el guion aprende los **tramos**: cada línea del
+   manifiesto va con el kit que su cabecera nombró por última vez, la unicidad de la tabla es por
+   (catálogo, kit) y un directorio con varios kits se juzga por tramos. Los negativos que caen
+   antes de la prueba —los `neg-sin-*`, `neg-cabeza-v4`, `neg-emisor-no-canonico` y sus hermanos en
+   las otras familias— se quedan con sus bytes y su veredicto.
+5. **Los 97 vectores nuevos**, todos con la versión del cable en el nombre salvo los que nacen
+   aquí (`neg-v2-*`, el KAT): los positivos y los negativos de su regla, de una corrida de cada
+   banco sobre un nodo real (`banco_edad`, `banco_pago`, `banco_pendiente`, `banco_prenda`,
+   `banco_rechazo` y `banco_recibo_agregado`, todos VERDES; la edad corrió dos veces porque la
+   primera corrida compartió el árbol con una compilación de la sesión y el banco, que exige el
+   árbol intacto, dijo ROJO con razón); los de la maleabilidad, del coste de la edad, de la
+   canonicidad, de la ventana de la banda y del resto ajeno, de sus guiones de `tools/vectores/`,
+   que desde aquí llevan la marca v2 y las dos columnas (`maleabilidad.py` gana los dos del §711,
+   que eran a mano); y los de la marca v2, de `marca_v2.py`, nuevo: quince en la edad (los catorce
+   de la tabla de la D-G, con los dos largos en 26 y 24 porque la marca tiene 25 bytes desde el
+   §899, y el 1h bis) y tres en cada una de las otras cuatro familias del kit (la positiva de 0.4
+   con sus bytes, el meta vacío y otra familia). Dos decisiones sin autor que se registran: el
+   vector del nodo `abrir-identidad-con-cuenta.json` sigue diciendo `zkssl/0.4` y se queda, porque
+   ningún paso suyo pregunta la versión y el test lo acepta así; y `saldo-insuficiente-banda-v2` y
+   los `cobro-v2-*` no renacen, porque el nodo de hoy prueba con la v2 y sus hermanos `-0.5` ya son
+   esa prueba.
+6. **El registro de las familias, en vigor** (NUCLEO §4 bis): su KAT, `registro_de_familias.json`,
+   el segundo que no es de una `fn`: la lista de las 23 con la familia, la versión de la AIR y el
+   perfil como QUANTITY, el nombre de la AIR y los 25 bytes de su marca, con la m y las columnas de
+   la casa como entradas; lo emite `nucleo_kat` desde `zk_ssl_air::familias` y lo reproduce la
+   segunda (`nucleo.py` escribe la marca desde la tabla de la spec, con sus reglas y un falsador: una
+   AIR con dos números cae); y la R5 de `check_nucleo.py` ata la tabla a `FAMILIAS`, las dos listas
+   iguales y numeradas 1..23.
+7. **Los instrumentos, remedidos sobre la construcción del corte**: la cota de ocultación (A1), en
+   verde en las 28 pruebas de los 23 probadores, leyendo la m de la marca v2 (`m_de_la_marca`, con
+   la v1 sólo para los juguetes); R3 con las columnas pareadas en las cinco geometrías de
+   producción, la de T = 128 nueva (`R3_MEDIDO_LABORATORIO` es desde el corte la de producción;
+   `K_ENTERO_PAREADAS`, en T = 128, 424 de 424; sin parear, 254 de 424); M_lin en las cuatro de
+   T = 128 con columnas lineales, del test largo (`MLIN_MEDIDO`, `MLIN_INSTANCIAS`): el umbral
+   conjunto cumple R3 con su máscara lineal sola (424 de 424), la autorización delegada, la edad y
+   el reembolso v2 no (406 de 424) y el reembolso v1 no tiene lineales, así que a esas cuatro R3 se
+   la dan las dos columnas pareadas, por L9; el censo de la 134 y `HUELLA_C` de las cinco; y las
+   bandas de bytes, las cinco a 256 filas sin mover un byte de banda: 41.314 a 46.067 B los
+   umbrales y los reembolsos, 80.298 a 82.254 B la edad con dieciséis hojas.
+8. **Los documentos**: el catálogo de `spec/PAQUETE.md` con las ocho causas de la marca y el
+   suelo de la edad, su §9 y su historia; `spec/RPC.md`, pagada la ruptura del §641-§684 y la
+   superficie (2) con identificador; `spec/NUCLEO.md`, el §4 bis en vigor, el KAT en §6 y la
+   historia; los RFC 0018 (las etapas E3, E5 y el corte, construidas, y lo medido en la D-H), 0009
+   (D-H, D-S, D-AD, D-AL bis y «lo que no cubre»), 0021 (la E4, construida) y 0005; `SECURITY.md`
+   §3.11, la fila de 256 filas (LDR 86, 115,8) y la edad desde m = 4, con las citas del nivel en
+   FIVE_BACKENDS, PAPER, PAPER_EN, PRINCIPIOS, INSTITUCIONAL, INSTITUTIONAL, ZENODO y la evaluación
+   vertical; `BACKLOG.md`, la 118, la 131 y la 133 cerradas; `doc/KIT.md` §0 (la release publicada
+   sigue siendo la 0.4.4 hasta que el autor publique la 0.5.0); `doc/ocultacion-hvzk.md`, dos
+   notas; los dos README, 727 ficheros; y el README de la segunda.
+
+**Medido.** La conformidad de las seis familias con prueba, VERDE con el kit 0.5: edad 50 de 50,
+pago 27 de 27, pendiente 13 de 13, prenda 12 de 12, rechazo 90 de 90, completitud 86 de 86, y el
+paquete 94 de 94. `bash tools/canon.sh --conservados`: VERDE, once catálogos con tres kits, cada
+uno el de su commit —`0eda58c` (binario `a2cce0c5bdb6b4b5`), `41f765d` (`d2927707462483e3`) y
+`cbe95d70` (`7442ffc8f64509f6`)—, el de `0.4/completitud` por sus dos tramos; para construir el
+kit de un commit el clon de la sesión, que era superficial, se profundizó (`git fetch --unshallow`),
+y la corrida en seco dijo antes «no es antepasado de HEAD» por eso y no por el guion. La segunda
+implementación: `stark.py`, 89 de 89 pares (pruebas juzgadas: 103; 44 caen antes), 36 de 36
+falsadores y su autotest; `juez_nucleo.py`, 35 de 35. `check_vectores`: 702 ficheros `.json` y
+1740 líneas de 24 manifiestos, 78 lápidas, cada vector con su huella, y la segunda pasada contra
+`origin/main` (`cbe95d70`) con los 78 movidos a su versión con sus bytes. `check_catalogo`: 236
+textos y 301 entradas. `check_superficie`, `check_publicadas`, `check_cifras`, `check_tests`
+(2268 declarados, 22 instrumentos), `check_modulos` (224) y `check_nucleo` (183 filas; R5, 23
+familias), VERDES. Las suites, en sus pines: `zk-ssl-air` 69, `zk-ssl-verify` 225, `zk-ssl-node`
+244, `zk-ssl-cli` 175, `zk-ssl-wire` 27; las de `zk-ssl` y `stark-experiment`, en el canon de
+abajo. El coste del corte, medido: seis bytes más de meta por prueba (25 frente a 19), ninguna
+banda de bytes movida, y la edad con dieciséis hojas en vez de ocho.
+
+**Lo que NO hace.** No cambia el fork: la atadura de la marca a la semilla y el pareado son los
+del §899 y el §906, con sus falsadores. No publica la release 0.5.0: `doc/KIT.md` §0 lo dice, la
+vigente publicada sigue siendo la 0.4.4 y los sobres de `zkssl/0.4` se juzgan con ella. No pasa
+ningún RFC a ACEPTADO: la regla 4 del PROCESO se cumple en lo medido y la palabra es del autor. No
+construye lo que el autor dejó para `zkssl/0.6` (la E4 del RFC-0020, la E3b del RFC-0021 y el
+resto de la E3 del RFC-0019). No escribe la proposición para las 23 de `doc/ocultacion-hvzk.md`
+ni toca la promesa, que sigue siendo el censo: es del asiento siguiente, y su aceptación, del
+autor. No da entrada a la marca en la lista de `check_superficie` (la superficie (2) tiene
+identificador y la herramienta aún no lo lee): queda dicho en `spec/RPC.md`. No reescribe ningún
+vector ni ninguna línea: 78 mudanzas con sus bytes y 97 nacimientos, nada más (las huellas lo
+miden). No investiga el fichero que el canon deja en su `TMPDIR` (§913).
+
+**Lo que es del autor.** El ACEPTADO del RFC-0018 (D-G y D-H) con la E3, la E5 y el corte
+construidos, y la nota de la E4 del RFC-0021; la release 0.5.0 con su tarball y sus huellas; la
+proposición para las 23 cuando esté escrita, y la revisión ajena de la 136; y la 116, que
+sigue abierta como la dejó.
+
+**Contadores.** Los pines de las suites no se mueven: `zk-ssl` 565, `stark-experiment` 492,
+`zk-ssl-verify` 225, `zk-ssl-node` 244, `zk-ssl-cli` 175, `zk-ssl-wire` 27, `zk-ssl-air` 69;
+TOTAL DE SELLO 2104 y CON LARGOS 2244; `check_tests` 2268; `check_modulos` 224. Los vectores:
+605 -> 702 ficheros `.json`, 1370 -> 1740 líneas, 19 -> 24 manifiestos, 78 lápidas; `spec/vectors/`
+625 -> 727 ficheros. `check_catalogo` 302 -> 301 entradas. La segunda, 34 -> 35 KAT. `BACKLOG.md`
+pasa a 38 abiertas y 101 resueltas: cierra la 118, la 131 y la 133.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre este árbol,
+con este asiento en su sitio y sin este párrafo: dos corridas. La primera, ROJA por un solo fallo,
+`verificar_citas.py`: la sesión había renombrado un encabezado de `spec/RPC.md`, «Lo que
+`zkssl/0.4` no identifica todavía», que la historia cita por su nombre tres veces; el título volvió
+tal cual, la nota del §914 fue a su cuerpo, y una cita en prosa de la misma página pasó a «La lista
+de `zkssl/0.5`» con su aviso. Todo lo demás de esa corrida, VERDE, con las 19 filas del nivel en su
+pin (845 s de reloj, 605 s de tests, con la capa y los circuitos por recompilar). La segunda,
+VERDE: 425 s de reloj (de su arranque a su salida) y 263 s de tests (la línea «total» de la tabla),
+en una máquina de 4 CPU, en caliente. Las 19 filas del nivel, en su pin, con 2104 tests que pasan
+(la suma de la columna «pasan»), la de `zk-ssl` en 565 pasan y 9 ignorados, 186 s, la de
+`stark-experiment` en 492 y 13, la de `zk-ssl-verify` en 225, `zk-ssl-node` en 244, `zk-ssl-cli`
+en 175, `zk-ssl-wire` en 27 y `zk-ssl-air` en 69; las tres del fork, `winter-air` 65,
+`winter-prover` 7 y `winter-verifier` 0, en su pin; la puerta de los binarios, con «OK 24 objetivos
+en 8 paquetes, 12 con features»; `check_tests` en 2268 y 22 instrumentos; `check_modulos` en 224;
+las once herramientas del bucle «2 ter», `check_constraint_layout` con sus 35 circuitos y
+`check_nucleo` con su R5; la puerta de los vectores, en 702 ficheros y 1740 líneas de 24
+manifiestos, cada uno con su huella, 78 lápidas, y la segunda pasada contra la base en
+`origin/main`, `cbe95d7`, con sus huellas en las del árbol; `check_catalogo`, en 236 textos y 301
+entradas; la conformidad, 0.5 IDÉNTICO y las cuatro versiones anteriores RECHAZADAS; el cable, en
+27 de 27; el nodo, con su vector; las seis familias con prueba y las demás, cada una en todas sus
+entradas, con el binario `88ebef2870a57a40` del kit 0.5.0; la segunda implementación, con el núcleo
+en 35 de 35, sus pares STARK en 89 de 89 (pruebas juzgadas: 103; 44 caen antes), 36 de 36
+falsadores, la cadena en 30 de 30 y sus catálogos; y el artefacto reproducible, igual desde dos
+raíces, con el binario `62cb56f5e10b4577` —otro que el del §913, porque el kit es el 0.5.0— y el
+tarball `1cc39833038dc77d`, que cambia con las fuentes, como en cada asiento. Corrió con un
+`TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí.

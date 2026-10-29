@@ -460,6 +460,7 @@ impl Air for PrendaAir {
 
 /// §913: la forma en claro de esta familia, para el juez unico (`crate::juez`).
 impl crate::juez::Juez for PrendaAir {
+    const NOMBRE: &'static str = "PrendaAir";
     fn forma(_: &PrendaPublicInputs) -> crate::juez::Forma {
         crate::juez::Forma::fija(ANCHO, TRAZA)
     }
@@ -473,10 +474,11 @@ impl crate::juez::Juez for PrendaAir {
 /// comprobar aparte: la prenda no lleva cotas, asi que no hay resta que pueda dar la vuelta en
 /// el campo.
 pub fn verificar(prueba: &[u8], pi: &PrendaPublicInputs) -> Result<(), String> {
+    // §914 (RFC-0018 D-G): la marca v2 antes que nada, de la cabeza; despues la prueba entera, sus
+    // opciones y su forma oculta, por el juez unico; los textos, los de siempre
+    crate::marca_del_kit::<PrendaAir>(prueba)?;
     let proof =
         Proof::from_bytes(prueba).map_err(|e| format!("la prueba no se deserializa: {e:?}"))?;
-    // §913: la forma oculta, la marca (§651) y la verificacion con la politica del juez, por el
-    // juez unico; los textos son los de siempre
     crate::juez::juzgar::<PrendaAir>(proof, pi.clone()).or_else(crate::rechazo_del_kit)
 }
 

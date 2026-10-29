@@ -6,7 +6,7 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 | fichero | qué es |
 |---|---|
 | `nucleo.py` | la **segunda implementación del NÚCLEO** (`spec/NUCLEO.md`, sección 6) en Python, sin dependencias: el campo de Goldilocks, la permutación Rescue-Prime `Rp64_256`, BLAKE3, la serialización, los dominios, los preámbulos y las composiciones, en el orden exacto de los merges; desde el §800, también los dos preámbulos v7 y el registro de esquemas del RFC-0020, con sus reglas, que el juez comprueba con un falsador |
-| `juez_nucleo.py` | el **juez**: corre los 34 KAT de `spec/vectors/nucleo/` contra `nucleo.py` y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto. ⚠️ §797: hasta aquí decía «es el único llamador de `nucleo.py`», y ya no lo era: lo importan también `juez_cabezas.py:23`, `verificador.py:31` y `stark.py:30`, y desde el §797 `cable.py` y `juez_cadena.py`. ⚠️ §852: decía `verificador.py:25`, rancia desde el §810, que llevó el `import` a la `:30`; el `import re` del §852 lo lleva a la `:31` |
+| `juez_nucleo.py` | el **juez**: corre los 35 KAT de `spec/vectors/nucleo/` contra `nucleo.py` (⚠️ §914: 34 hasta el corte) y dice `OK` o `ROJO` por vector, más las `NOTA` sobre lo que la sección 6 deja abierto. ⚠️ §797: hasta aquí decía «es el único llamador de `nucleo.py`», y ya no lo era: lo importan también `juez_cabezas.py:23`, `verificador.py:31` y `stark.py:30`, y desde el §797 `cable.py` y `juez_cadena.py`. ⚠️ §852: decía `verificador.py:25`, rancia desde el §810, que llevó el `import` a la `:30`; el `import re` del §852 lo lleva a la `:31` |
 | `kat_xmss/xmss.py` | la **verificación XMSS^MT de RFC 8391** para `XMSSMT-SHA2_40/8_256`, el conjunto que la casa firma, escrita desde el texto del RFC y de ningún crate; solo verificar |
 | `juez_cabezas.py` | el **juez de las cabezas firmadas**: para cada cabeza y cofirma de los vectores recompone el `epochDigest` por versión, compara el preámbulo recuperado, verifica la firma con `kat_xmss/xmss.py` y comprueba el índice embebido (`PAQUETE.md`, 2/3 y sección 8); con un falsador que voltea un byte |
 | `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—, y desde el §649 las `actas` que unen dos claves de un operador en la extensión y el consumo (RFC-0015: el lector, las reglas de la cadena y sus firmas XMSS), y desde el §686 el sobre del solapamiento —desde el §722, con el relevo de la historia común: `juzgar_historia` en la extensión y el consumo, cada cabeza en el relevo de su tramo por sus dos bordes, y el mismo juicio en el solapamiento—, escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario; desde el §693 declara lo que no lee, en `NO_SOPORTADOS`, y lo dice con el texto reservado `NO SOPORTADO`; y desde el §810 lee el sobre del **ancla cofirmada** (RFC-0013 E4a), que no exige STARK sino el medio: la cabeza, la nota con su firma ML-DSA-44, las cofirmas y la inclusión, con `mldsa44.py` y `medio.py` |
@@ -79,8 +79,8 @@ done
 
 ## Lo medido
 
-**La segunda implementación.** 34 de 34 vectores reproducidos byte a byte (26 hasta el §643, que
-añade los tres del acta, 29 hasta el §773, que añade `digest_pi` y la hoja v2 del recibo, y 31 hasta el §800, que añade el registro de esquemas y los dos preámbulos v7 del RFC-0020), escritos desde la sección 6 de `NUCLEO.md` y de ningún `.rs` de la casa.
+**La segunda implementación.** 35 de 35 vectores reproducidos byte a byte (26 hasta el §643, que
+añade los tres del acta, 29 hasta el §773, que añade `digest_pi` y la hoja v2 del recibo, 31 hasta el §800, que añade el registro de esquemas y los dos preámbulos v7 del RFC-0020, y 34 hasta el §914, que añade el registro de las familias de la marca v2), escritos desde la sección 6 de `NUCLEO.md` y de ningún `.rs` de la casa.
 La permutación sale de la fuente de `winter-crypto 0.13.1`, que es la primitiva y no la casa, y se
 valida en el autotest contra el vector que ese crate atribuye a la implementación Sage; BLAKE3 se
 escribe desde la especificación pública y se valida contra 19 salidas del crate `blake3 1.8.5` del
@@ -276,6 +276,7 @@ negativos de la edad y el pago (`neg-marca-m32`, `neg-meta-vacio` y `neg-marca-m
 con el `stark.py` anterior el juez da 28 de 34 pares; con este, 34 de 34, 48 pruebas juzgadas, 35
 vectores que caen antes del juez y 33 de 33 falsadores callados. La comprobación se leyó del kit,
 como las AIR; su texto y sus cuatro lecturas los da también `spec/PAQUETE.md` §5.
+⚠️ §914: desde el corte `zkssl/0.5` la segunda lee la **marca v2** antes que nada (`comprobar_marca_v2`, con la familia que declara cada clase, `FAMILIA`, el registro de `spec/NUCLEO.md` §4 bis), con los textos de la D-G del RFC-0018 letra por letra y el 1h bis de las columnas; exige la forma con las dos columnas que la marca declara y las parea en DEEP (`parear_deep`). La marca v1 sólo se nombra (`marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x`), y los textos de arriba son los de `zkssl/0.4`. Medido en el sello: 89 de 89 pares (pruebas juzgadas: 103; 44 caen antes), 36 de 36 falsadores.
 
 **Las causas de una prueba mal formada, como el kit (§711).** Desde el §711 el fork de winterfell
 valida lo que lee de una prueba antes de construir, y la rechaza con una causa con nombre

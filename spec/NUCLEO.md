@@ -1,7 +1,7 @@
 # El núcleo congelado — lo que un verificador recompone y no cambia
 
 - **Estado:** normativa vigente desde §407 (RFC-0005, etapa E1)
-- **Versión del protocolo:** `zkssl/0.4` — este documento no la mueve: el núcleo no cruza el cable
+- **Versión del protocolo:** `zkssl/0.5` (§914; ⚠️ §914: decía `zkssl/0.4`) — este documento no la mueve: el núcleo no cruza el cable
 - **Origen:** `spec/rfc/0005-nucleo-congelado.md` (D-A, D-B, D-C); asiento que lo sella: §407
 - **Implementación de referencia:** los crates `zk-ssl-verify` y `zk-ssl-hash`; el binario `zk-ssl-verify`
 - **Atado:** `tools/check_nucleo.py`, en el canon: la tabla de este documento y los `pub` del árbol dicen lo mismo en las dos direcciones
@@ -59,7 +59,7 @@ del cable de la referencia rechace además claves desconocidas es elección decl
 implementación, no regla del formato.
 
 **Familias nuevas** entran con su `tipo` o su dominio, sus vectores y su RFC. Si necesitan entrar
-bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del preámbulo. Qué de esto se promete —que el conjunto sólo crece, y que una versión nueva que el nodo emita rompe el cable y sube `zkssl/0.N`— lo dice `RPC.md` §«Versionado y compatibilidad» (§801), y `tools/check_superficie.py` compara en cada canon `VersionCabeza::TODAS` y `VERSION_FORMATO` con su lista.
+bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del preámbulo. ⚠️ §914: y las pruebas, por su marca v2: la familia y la versión de su AIR están en el registro de §4 bis (RFC-0018 D-G), y una prueba de otra versión del cable o de una familia que no es la pedida se rechaza con nombre antes de leerla. Qué de esto se promete —que el conjunto sólo crece, y que una versión nueva que el nodo emita rompe el cable y sube `zkssl/0.N`— lo dice `RPC.md` §«Versionado y compatibilidad» (§801), y `tools/check_superficie.py` compara en cada canon `VersionCabeza::TODAS` y `VERSION_FORMATO` con su lista.
 
 ## 4. El censo
 
@@ -258,7 +258,7 @@ real de sus llaves, no por la primera marca.
 | `reverificar` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `fn` |
 | `reverificar_con` | `verify/reverificacion.rs` | REGISTRO | REGISTRO | `fn` |
 
-### 4 bis. El registro de las familias de la marca v2 (laboratorio, §906)
+### 4 bis. El registro de las familias de la marca v2 (laboratorio, §906; en vigor, §914)
 
 ⚠️ **§906:** la marca v2 del corte 0.5 (RFC-0018 D-G) lleva la familia de la prueba en un `u16`, la
 versión de su AIR en otro y el perfil de opciones en un byte, y desde el §899 las columnas
@@ -271,6 +271,7 @@ a `spec/vectors/nucleo/`. Ningún probador de producción escribe la marca v2 y 
 (`Marca::leer` la rechaza como desconocida); la escribe el probador que la pide
 (`Ocultacion::marca_v2`) y la lee `verify_v2`, de laboratorio, con las causas de la D-G en su
 orden. El cero no se asigna en ningún campo; el perfil 255 queda reservado para otro motor.
+⚠️ **§914: en vigor desde el corte `zkssl/0.5`.** Los 23 probadores escriben la marca v2 (`ocultacion_encendida(air)`, con la familia de este registro), y la leen antes que nada el juez único (`zk_ssl_air::juez`), los cinco jueces del kit y `tools/segunda`, con las causas de la D-G y una más: las columnas que la marca declara son las de la construcción, dos (1h bis). La versión de cada AIR sigue siendo la 1 y el perfil el 1 (las opciones de producción). Los KAT de las 23 marcas siguen en los tests de `familias.rs`, y van además a `spec/vectors/nucleo/registro_de_familias.json`, que la segunda implementación reproduce (`tools/segunda/juez_nucleo.py`).
 
 | familia | AIR |
 |---|---|
@@ -349,7 +350,12 @@ que dé estos bytes en cada uno da los mismos bytes en todo lo que se firma. Son
 referencia, y se declara: fijan la propiedad «dos implementaciones dan estos bytes». Desde el §800
 hay uno que no es de una `fn`: `registro_de_esquemas.json` fija el registro de esquemas entero
 (abajo), y su `salida` es la LISTA de sus entradas, con el número como QUANTITY, el prefijo de la
-clave en hex, los largos como número y los dos sí-o-no como booleanos de JSON.
+clave en hex, los largos como número y los dos sí-o-no como booleanos de JSON. Desde el §914 hay
+otro: `registro_de_familias.json` fija el registro de las familias de la marca v2 de la sección 4
+bis entero (RFC-0018 D-G), y su `salida` es la LISTA de sus 23 entradas, cada una con la familia,
+la versión de su AIR y el perfil como QUANTITY, el nombre de la AIR y los 25 bytes de su marca en
+hex, con la m y las columnas de la casa como `entradas`; `tools/check_nucleo.py` (R5) ata la tabla
+a su productor, `zk_ssl_air::familias`.
 
 - **La permutación**: Rescue-Prime `Rp64_256`, tal como la implementa `winter-crypto =0.13.1`,
   sobre el campo de Goldilocks (`winter-math =0.13.1`, `f64::BaseElement`). Un `Digest` son cuatro
@@ -509,6 +515,12 @@ clave en hex, los largos como número y los dos sí-o-no como booleanos de JSON.
 
 ## 8. Historia
 
+- §914 — el registro de las familias de la marca v2 (sección 4 bis) **en vigor**, con el corte
+  `zkssl/0.5` (RFC-0018 D-G y D-H): los 23 probadores escriben la marca y los jueces la leen antes
+  que nada; su KAT, `registro_de_familias.json`, que la segunda implementación reproduce, y la R5 de
+  `tools/check_nucleo.py`, que ata la tabla a `zk_ssl_air::familias`. Ninguna fila nueva en el
+  censo: el registro vive en `zk-ssl-air`, fuera de los dos crates del censo. Ningún byte del núcleo
+  se mueve.
 - §862 — el despacho por esquema en `zk-ssl-verify` (RFC-0020, E3): `ACEPTADOS`, `EMITIDOS` e
   `IMPLICITO` en `Esquema`, y dos variantes de `VerificaError`, `EsquemaNoRegistrado` y
   `EsquemaNoAceptado`. La cabeza, la cofirma y el acta eligen el verificador por el esquema, y uno

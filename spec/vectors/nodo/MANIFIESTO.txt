@@ -19,4 +19,9 @@
 # view_id_of_wide, derive_leaf_salt_wide} sobre zk_ssl::tests_support::wide_key; el indice, public_id[0] mod 2^32,
 # la capacidad del arbol de cuentas (TREE_DEPTH 32), con sondeo lineal: la colocacion que spec/RPC.md llama
 # "public_id mod capacidad".
+# §914 (el corte zkssl/0.5, RFC-0018): lo decidio el corte, como anuncia la cabecera: este vector no se muda. Dice
+# `spec: zkssl/0.4` porque lo emitio un nodo de esa version, pero ninguno de sus pasos pide la version ni lleva una
+# prueba, y un nodo zkssl/0.5 responde lo mismo, paso a paso (el test lo exige): su veredicto no cambia, y lo que no
+# cambia de veredicto ni de texto se queda con sus bytes (R6 b del RFC-0021). El test acepta un vector de una version
+# anterior del cable solo si ningun paso pide la version; uno que la pida, o cuyas respuestas cambien, se mudaria.
 abrir-identidad-con-cuenta.json|-32000|IdentityUnavailable

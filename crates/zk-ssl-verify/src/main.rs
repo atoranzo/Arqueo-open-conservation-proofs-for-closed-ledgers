@@ -4757,7 +4757,7 @@ mod tests_marca_651 {
     fn sin_meta(hex: &str) -> String {
         let b = hex_a_bytes(hex).unwrap();
         let largo = u16::from_le_bytes([b[4], b[5]]) as usize;
-        assert_eq!(largo, 19, "la prueba de la casa lleva la marca de 19 bytes");
+        assert_eq!(largo, 25, "la prueba de la casa lleva la marca v2 de 25 bytes (§914)");
         let mut c = b[0..4].to_vec();
         c.extend_from_slice(&[0, 0]);
         c.extend_from_slice(&b[6 + largo..]);
@@ -4896,14 +4896,16 @@ mod tests_marca_651 {
     #[test]
     fn una_banda_de_la_v1_no_es_verde() {
         let raiz = format!("{}/../../spec/vectors/rechazo", env!("CARGO_MANIFEST_DIR"));
-        let r = correr(&format!("{raiz}/rechazo-rech-banda-ventana-v1.json"));
+        let r = correr(&format!("{raiz}/rechazo-rech-banda-ventana-v1-0.5.json"));
         assert_eq!(codigo_de_salida(&r), 3, "{r:?}");
         let e = r.unwrap_err();
         let prefijo = format!("{DECLARADA_NO_PROBADA}banda: {}", zk_ssl_air::PRUEBA_V1_EN_LA_VENTANA);
         assert!(e.starts_with(&prefijo), "{e}");
-        let r = correr(&format!("{raiz}/rechazo-rech-banda-ventana-v2.json"));
+        let r = correr(&format!("{raiz}/rechazo-rech-banda-ventana-v2-0.5.json"));
         assert_eq!(r, Err("banda: InconsistentOodConstraintEvaluations".to_string()));
-        for v in ["rechazo-banda-ventana-control", "saldo-insuficiente-banda-v2", "saldo-insuficiente"] {
+        // §914: la captura del banco es la v2 y `saldo-insuficiente-banda-v2` no renace; la v1 publicada,
+        // bajo `0.4/`, cae por su marca (zk-ssl-air, `la_v1_publicada_cae_por_su_marca_bajo_el_kit_0_5`)
+        for v in ["rechazo-banda-ventana-control-0.5", "saldo-insuficiente-0.5"] {
             let r = correr(&format!("{raiz}/{v}.json"));
             assert_eq!(codigo_de_salida(&r), 0, "{v}: {r:?}");
         }
@@ -4922,9 +4924,9 @@ mod tests_marca_651 {
             format!("{DECLARADA_NO_PROBADA}{que}: banda: {}", zk_ssl_air::PRUEBA_V1_EN_LA_VENTANA)
         };
         for (v, que) in [
-            ("rechazo-banda-v1-declarada", "resolucion.sobre"),
-            ("lote-banda-v1-declarada", "resolucion.sobre"),
-            ("prenda-banda-v1-declarada", "resolucion.rechazo"),
+            ("rechazo-banda-v1-declarada-0.5", "resolucion.sobre"),
+            ("lote-banda-v1-declarada-0.5", "resolucion.sobre"),
+            ("prenda-banda-v1-declarada-0.5", "resolucion.rechazo"),
         ] {
             let r = correr(&format!("{raiz}/{v}.json"));
             assert_eq!(codigo_de_salida(&r), 3, "{v}: {r:?}");
@@ -4932,11 +4934,11 @@ mod tests_marca_651 {
         }
         for (v, causa) in [
             (
-                "neg-lote-banda-v1-operacion-fuera",
+                "neg-lote-banda-v1-operacion-fuera-0.5",
                 "resolucion.sobre.data: la operacion 1 no esta en un lote de 1",
             ),
             (
-                "neg-prenda-banda-v1-marca-otra",
+                "neg-prenda-banda-v1-marca-otra-0.5",
                 "resolucion.rechazo: el consumo que la capa rechazo no es la marca de este sobre",
             ),
         ] {
@@ -4948,23 +4950,23 @@ mod tests_marca_651 {
 
     #[test]
     fn la_prueba_de_edad_sin_marca_es_rojo() {
-        caso("edad/edad-todos.json", &["prueba"]);
+        caso("edad/edad-todos-0.5.json", &["prueba"]);
     }
     #[test]
     fn la_prueba_de_banda_sin_marca_es_rojo() {
-        caso("rechazo/saldo-insuficiente.json", &["banda", "prueba"]);
+        caso("rechazo/saldo-insuficiente-0.5.json", &["banda", "prueba"]);
     }
     #[test]
     fn la_prueba_del_cobro_pendiente_sin_marca_es_rojo() {
-        caso("pendiente/cobro-inferior-0.json", &["prueba"]);
+        caso("pendiente/cobro-inferior-0-0.5.json", &["prueba"]);
     }
     #[test]
     fn la_prueba_del_pago_en_curso_sin_marca_es_rojo() {
-        caso("pago/pago-t-seq.json", &["prueba"]);
+        caso("pago/pago-t-seq-0.5.json", &["prueba"]);
     }
     #[test]
     fn la_prueba_de_la_prenda_sin_marca_es_rojo() {
-        caso("prenda/prenda.json", &["prueba"]);
+        caso("prenda/prenda-0.5.json", &["prueba"]);
     }
 }
 
@@ -4976,7 +4978,7 @@ mod tests_cola_653 {
 
     #[test]
     fn una_prueba_con_bytes_de_cola_es_rojo() {
-        let base = format!("{}/../../spec/vectors/prenda/prenda.json", env!("CARGO_MANIFEST_DIR"));
+        let base = format!("{}/../../spec/vectors/prenda/prenda-0.5.json", env!("CARGO_MANIFEST_DIR"));
         assert_eq!(codigo_de_salida(&correr(&base)), 0, "el positivo va primero y solo");
         let mut v: serde_json::Value =
             serde_json::from_str(&std::fs::read_to_string(&base).unwrap()).unwrap();
@@ -5000,10 +5002,10 @@ mod tests_puerta {
     use zk_ssl_air::pago_en_curso::verificar_contra_cabeza as juez_pago;
 
     pub(super) const VECTORES: [&str; 4] = [
-        "edad/edad-todos.json",
-        "pago/pago-t-frontera.json",
-        "prenda/prenda.json",
-        "pendiente/cobro-inferior-importe.json",
+        "edad/edad-todos-0.5.json",
+        "pago/pago-t-frontera-0.5.json",
+        "prenda/prenda-0.5.json",
+        "pendiente/cobro-inferior-importe-0.5.json",
     ];
 
     pub(super) fn vector(nombre: &str) -> serde_json::Value {
@@ -5446,7 +5448,7 @@ mod tests_resto {
     #[test]
     fn un_resto_que_no_es_el_comprometido_es_rojo_con_su_causa() {
         let ruta = format!(
-            "{}/../../spec/vectors/edad/neg-prueba-resto-ajeno.json",
+            "{}/../../spec/vectors/edad/neg-prueba-resto-ajeno-0.5.json",
             env!("CARGO_MANIFEST_DIR")
         );
         let e = correr(&ruta).unwrap_err();
@@ -5878,13 +5880,13 @@ mod tests_coste_edad {
     /// causas, y no se ignora.
     #[test]
     fn un_paquete_de_edad_de_m_alto_se_rechaza_en_milisegundos() {
-        let (t_honesto, r) = por_el_mando(&vector("edad/edad-todos.json"));
+        let (t_honesto, r) = por_el_mando(&vector("edad/edad-todos-0.5.json"));
         assert_eq!(r, Ok(()), "el honesto");
         let casos = [
-            ("edad/neg-m-sobre-tope.json", "edad: m = 17 fuera de 3..="),
-            ("edad/neg-m-mayor-legible.json", "edad: m = 23 fuera de 3..="),
-            ("edad/neg-m-13-fabricada.json", "edad: InconsistentOodConstraintEvaluations"),
-            ("edad/neg-m-14-sobre-tope.json", "edad: m = 14 fuera de 3..="),
+            ("edad/neg-m-sobre-tope-0.5.json", "edad: m = 17 fuera de 4..="),
+            ("edad/neg-m-mayor-legible-0.5.json", "edad: m = 23 fuera de 4..="),
+            ("edad/neg-m-13-fabricada-0.5.json", "edad: InconsistentOodConstraintEvaluations"),
+            ("edad/neg-m-14-sobre-tope-0.5.json", "edad: m = 14 fuera de 4..="),
         ];
         for (nombre, causa) in casos {
             let (t, r) = por_el_mando(&vector(nombre));
@@ -5928,7 +5930,7 @@ mod tests_canonicidad {
 
     #[test]
     fn pago_importe_y_t_alias_son_err_con_la_prueba_real() {
-        let p = vector("pago/pago-t-frontera.json");
+        let p = vector("pago/pago-t-frontera-0.5.json");
         let prueba = prueba_de(&p);
         let Juez::Pago(af, c) = juez_de(&p) else { panic!("no es un pago") };
         assert_eq!(enlazar_pago(&prueba, &af, &c).map(|pi| pi.importe.as_int()), Ok(af.importe));
@@ -5947,7 +5949,7 @@ mod tests_canonicidad {
 
     #[test]
     fn cobro_inferior_alias_es_err_con_la_prueba_real() {
-        for nombre in ["pendiente/cobro-inferior-importe.json", "pendiente/cobro-inferior-0.json"] {
+        for nombre in ["pendiente/cobro-inferior-importe-0.5.json", "pendiente/cobro-inferior-0-0.5.json"] {
             let p = vector(nombre);
             let prueba = prueba_de(&p);
             let Juez::Cobro(af, c) = juez_de(&p) else { panic!("no es un cobro") };
@@ -5965,7 +5967,7 @@ mod tests_canonicidad {
     /// el sobre de todos con un emisor nombrado que no es un indice de cuenta.
     #[test]
     fn edad_alias_del_emisor_es_err_con_la_prueba_real() {
-        let p = vector("edad/edad-todos.json");
+        let p = vector("edad/edad-todos-0.5.json");
         let prueba = prueba_de(&p);
         let Juez::Edad(af, c) = juez_de(&p) else { panic!("no es de edad") };
         let pi = verificar_contra_cabeza(&prueba, &af, &c).expect("el honesto");

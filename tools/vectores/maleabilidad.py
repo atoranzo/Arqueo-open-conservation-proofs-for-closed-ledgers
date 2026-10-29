@@ -7,7 +7,11 @@ lineas van AL FINAL del MANIFIESTO (nunca se reescribe un vector ni una linea).
 
 Un lector que recuerda cuantos bytes ocupa cada `usize` de la prueba, y que escribe lo que lee:
 cada mutacion cambia UNA cosa y deja el resto byte a byte. Sale de `edad-todos.json` y de
-`pago-t-frontera.json` (en el pago, sin la fila de mas, que no cabe).
+`pago-t-frontera.json` (en el pago, sin la fila de mas, que no cabe). §914 (el corte zkssl/0.5):
+sale de `edad-todos-0.5.json` y de `pago-t-frontera-0.5.json`, los positivos de la 0.5, y escribe
+`neg-prueba-<mutacion>-0.5.json`; los de la 0.4 viven bajo `spec/vectors/0.4/`. Y lleva ademas las
+dos mutaciones de UN byte del §711, que hasta el §914 se hicieron a mano: el numero de consultas de
+las opciones a cero y el de consultas unicas a cero.
 
 uso: python3 -I tools/vectores/maleabilidad.py <arbol> <salida>
 """
@@ -193,6 +197,16 @@ def cola_lote_fri(t):  # el mismo, dentro del lote de la capa FRI 0
     t['capas'][0]['lote']['cola'] = b'\0'
 
 
+def opciones_cero(t):  # §711: el numero de consultas de las opciones (su primer byte) a cero
+    c = bytearray(t['cabeza'])
+    c[-10] = 0
+    t['cabeza'] = bytes(c)
+
+
+def consultas_cero(t):  # §711: el numero de consultas unicas a cero
+    t['unicas'] = 0
+
+
 def particiones_cero(t):  # las particiones de las opciones (su noveno byte) a cero
     c = bytearray(t['cabeza'])
     c[-2] = 0
@@ -209,12 +223,14 @@ def fri_particiones_64(t):  # las particiones FRI: 2^64
 
 MALEABLES = ['usize-no-minimo', 'lote-usize-no-minimo', 'fri-usize-no-minimo', 'restricciones-alias',
              'capa-fri-de-mas', 'grupo-fri-de-mas', 'fila-de-mas', 'nodo-de-mas', 'cola']
-PANICOS = ['particiones-cero', 'marco-ood-3', 'fri-particiones-64']
+PANICOS = ['opciones-cero', 'consultas-cero', 'particiones-cero', 'marco-ood-3', 'fri-particiones-64']
 # la cola DENTRO de cada apertura y del lote FRI (la segunda implementacion las aceptaba y el kit
 # no). Van detras: los vectores de las listas de arriba no cambian.
 COLAS = ['cola-apertura-traza', 'cola-apertura-cociente', 'cola-lote-fri']
-PLAN = [('edad', 'edad-todos.json', MALEABLES + PANICOS + COLAS),
-        ('pago', 'pago-t-frontera.json', [m for m in MALEABLES if m != 'fila-de-mas'] + COLAS)]
+# §914: en el pago, los dos del §711 tambien (hasta el §914, a mano)
+PLAN = [('edad', 'edad-todos-0.5.json', MALEABLES + PANICOS + COLAS),
+        ('pago', 'pago-t-frontera-0.5.json', [m for m in MALEABLES if m != 'fila-de-mas'] + PANICOS[:2] + COLAS)]
+SUFIJO = '-0.5'  # §914: los vectores que renacen en la 0.5 llevan la version del cable en el nombre
 
 
 def main():
@@ -230,10 +246,10 @@ def main():
             globals()[m.replace('-', '_')](t)
             nb = escribir(t)
             assert nb != b
-            ruta = os.path.join(salida, familia, f'neg-prueba-{m}.json')
+            ruta = os.path.join(salida, familia, f'neg-prueba-{m}{SUFIJO}.json')
             with open(ruta, 'w') as f:
                 f.write(json.dumps(dict(d, prueba='0x' + nb.hex())))
-            print(f'{familia}/neg-prueba-{m}.json\t{len(b)} -> {len(nb)} bytes')
+            print(f'{familia}/neg-prueba-{m}{SUFIJO}.json\t{len(b)} -> {len(nb)} bytes')
 
 
 if __name__ == '__main__':

@@ -29,21 +29,24 @@
 # pina (5.A-404).
 # UN VERDE AQUI ES MEDIA PRENDA (D-AS): el mando no mira si la marca esta bajo el `consRoot` de
 # esa cabeza -no tiene arbol que mirar-, y esa otra mitad se pide con `zkssl_consumoPath`.
-prenda.json|0|hay un pendiente que solo puede cobrar quien
-prenda-publicada.json|0|hay un pendiente que solo puede cobrar quien
 neg-sin-enunciado.json|1|falta enunciado
 neg-sin-prueba.json|1|falta prueba o no es cadena 0x
 neg-sin-cabeza.json|1|falta cabeza
 neg-sin-firma.json|1|cabeza: falta signature
 neg-cabeza-v4.json|1|exige una cabeza v5
-neg-receptor-mentido.json|1|prenda:
-neg-marca-mentida.json|1|prenda:
-# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. Las lineas de
-# `neg-receptor-mentido` y `neg-marca-mentida` de arriba pinan el prefijo `prenda:`, y eso lo pasa
-# tambien quien no verifica nada: la segunda implementacion, que no lee este sobre, los pasaba con su
-# ROJO de sobre no leido (medido). No se reescriben (regla 2 del PROCESO): estas dos lineas NUEVAS
-# pinan la causa, el nombre que le da winter-verifier 0.13.1, el del Cargo.lock, como ya hace
-# `rechazo/`. Que sea la MISMA para los dos campos no la hace generica: los dos mienten el enunciado.
-# Caduca con la dependencia, y se declara: si la renombra, las lineas se mueven a su version.
-neg-receptor-mentido.json|1|prenda: InconsistentOodConstraintEvaluations
-neg-marca-mentida.json|1|prenda: InconsistentOodConstraintEvaluations
+# zkssl/0.5 (§914, el corte del tren: RFC-0018 D-G y D-H; RFC-0009 D-AL bis). Los vectores con prueba
+# de esta familia RENACEN con la version del cable en el nombre: la marca v2 (familia 5, version 1,
+# perfil 1, m = 64, dos columnas) y el juez que la lee ANTES del enunciado. Los de zkssl/0.4 viven bajo
+# spec/vectors/0.4/prenda/ con sus lineas, y los verifica el zk-ssl-verify del arbol en cbe95d70 (§913).
+# Los negativos de arriba que caen antes de la prueba siguen con sus bytes. Los dos positivos y los dos
+# negativos de su regla se CAPTURAN de UNA corrida de `tools/banco_prenda.sh --guardar` (BANCO-PRENDA
+# VERDE) y no se re-derivan, como entonces. Jamas se reescriben (regla 2 del PROCESO).
+prenda-0.5.json|0|hay un pendiente que solo puede cobrar quien
+prenda-publicada-0.5.json|0|hay un pendiente que solo puede cobrar quien
+neg-receptor-mentido-0.5.json|1|prenda: InconsistentOodConstraintEvaluations
+neg-marca-mentida-0.5.json|1|prenda: InconsistentOodConstraintEvaluations
+# §914, los negativos de la MARCA v2 (RFC-0018 D-G) de esta familia, de `prenda-publicada-0.5.json` con
+# `tools/vectores/marca_v2.py`: la positiva de zkssl/0.4 (1c), el meta vacio (1b) y la familia 14 (1e).
+neg-v2-marca-v1.json|1|prenda: marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x
+neg-v2-meta-vacio.json|1|prenda: marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version
+neg-v2-familia-ajena.json|1|prenda: marca: la prueba es de la familia 14; se pide la 5

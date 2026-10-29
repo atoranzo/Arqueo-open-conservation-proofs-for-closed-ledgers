@@ -1108,7 +1108,7 @@ ANCLAS_CABLEADO = _cableado(CABLEADO)
 # cuyo codigo, sin sangria ni comentario de cola `//`, es la regla; un `/* */` no se distingue, y
 # el rojo LONGITUD no da la linea (`:0`).
 ANCLAS_LONGITUD = (
-    (FUENTE_JUEZ, "let exige = (self.ancho + 1, self.ancho_aux, self.aleatorios, 2 * self.longitud);", 1),
+    (FUENTE_JUEZ, "let exige = (self.ancho + COLUMNAS_ALEATORIAS, self.ancho_aux, self.aleatorios, 2 * self.longitud);", 1),
     (FUENTE_EDAD, "let filas = 2 * (CICLO << m);", 2),
 )
 # F.1 b): los KAT del fork, los `assert_eq!` de `mod tests` de security.rs con lote LINEAL en las
@@ -1184,9 +1184,10 @@ AJENAS_NIVEL = (
 )
 # Lo medido al nacer el atado, en el §796: 154 cifras en 51 frases, y 68 celdas -12 de la tabla de
 # longitud fija, 44 de las dos de la edad y 12 de la de la comparacion-. Es un suelo, no una
-# cuenta: crecer no lo toca, y encoger es un rojo que obliga a bajarlo con su asiento.
+# cuenta: crecer no lo toca, y encoger es un rojo que obliga a bajarlo con su asiento. ⚠️ §914: 66
+# celdas, 42 de las dos de la edad: la columna de m = 3 sale con el suelo en 4 (T = 128).
 MINIMO_CIFRAS_F = 154
-MINIMO_CELDAS_F = 68
+MINIMO_CELDAS_F = 66  # ⚠️ §914: 68 -> 66, la columna de m = 3 de las dos tablas de la edad sale con T = 128 (M_MIN = 4)
 # Las marcas que eligen configuracion. «ocult-» precedido de «sin» o «ni» es de la comparacion.
 MARCA_PRODUCCION = re.compile(
     r"producci[oó]n|\bproduction\b|(?<!sin )(?<!ni )\bocult[ao]s?\b|\bhidden\b|proof_options|"
@@ -2156,11 +2157,15 @@ def derivacion():
                        "mismas m"))
     # ⚠️ §717: el tope de m. Las m que el enunciado admite salen del juez, `comprobar_enunciado`
     # con su `M_MAX`, no se teclean; las del test tienen que ser esas, todas (cabecera, F.0).
+    # ⚠️ §914: el suelo es `M_MIN`, una constante como el tope (sube de 3 a 4 con T = 128), y el
+    # juez compara con las dos; se leen las dos constantes y la comparacion que las usa.
     tope = re.search(r"^pub const M_MAX: u32 = (\d+);", src_edad, re.M)
-    suelo = re.search(r"if pi\.m < (\d+) \|\| pi\.m > M_MAX \{", src_edad)
-    if not tope or not suelo:
-        fallos.append((rel_edad, 0, "TEST", "no se leen `pub const M_MAX: u32 = <n>;` ni el "
-                       "rango de `comprobar_enunciado`: sin ellos no se sabe que m admite el juez"))
+    suelo = re.search(r"^pub const M_MIN: u32 = (\d+);", src_edad, re.M)
+    guarda = re.search(r"if pi\.m < M_MIN \|\| pi\.m > M_MAX \{", src_edad)
+    if not tope or not suelo or not guarda:
+        fallos.append((rel_edad, 0, "TEST", "no se leen `pub const M_MAX: u32 = <n>;`, `pub const "
+                       "M_MIN: u32 = <n>;` ni el rango de `comprobar_enunciado` con las dos: sin "
+                       "ellos no se sabe que m admite el juez"))
         return fallos, None, {}
     m_max, m_min = int(tope.group(1)), int(suelo.group(1))
     admitidas = list(range(m_min, m_max + 1))

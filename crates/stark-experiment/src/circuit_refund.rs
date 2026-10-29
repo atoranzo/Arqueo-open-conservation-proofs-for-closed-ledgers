@@ -56,7 +56,7 @@ pub const NUM_MERGES: usize = 2;
 /// siguen permutando detras del compromiso sin que nada los aserte. La traza oculta pide
 /// T >= 64: el fork exige m < 2T con m = 64, y las 44 aberturas por columna (42 consultas,
 /// z y z*g) piden al menos 44 filas aleatorias (D-I). Antes, 16 filas: la mas corta de la casa.
-pub const CICLOS: usize = 8;
+pub const CICLOS: usize = 16; // §914 (RFC-0018 D-H): T = 128, antes 8 ciclos (64 filas, D-AG)
 pub const TRACE_LENGTH: usize = CICLOS * CYCLE_LENGTH;
 /// Una sola vía de estado Rescue; sin columnas extra.
 pub const TRACE_WIDTH: usize = STATE_WIDTH;
@@ -346,6 +346,7 @@ impl Air for RefundAir {
 /// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
 /// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
 impl zk_ssl_air::juez::Juez for RefundAir {
+    const NOMBRE: &'static str = "RefundAir";
     fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
         zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
     }
@@ -395,7 +396,7 @@ impl Prover for RefundProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("RefundAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -437,7 +438,7 @@ impl Prover for RefundProver {
 mod tests {
 
     use super::*;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension};
 
     fn default_options() -> ProofOptions {
         ProofOptions::new(
@@ -493,7 +494,7 @@ mod tests {
         let proof = prover.prove(trace).expect("la generacion no deberia fallar");
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        let ok = verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let ok = crate::verify_casa::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             RefundPublicInputs {
                 commitment: native_refund_commitment(receptor, salt, importe),
@@ -517,7 +518,7 @@ mod tests {
         let proof = prover.prove(trace).expect("prueba");
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        let mal = verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let mal = crate::verify_casa::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             RefundPublicInputs {
                 commitment: native_refund_commitment(receptor, salt, importe),
@@ -544,7 +545,7 @@ mod tests {
         ajeno[0] += BaseElement::ONE;
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        let mal = verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let mal = crate::verify_casa::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             RefundPublicInputs {
                 commitment: ajeno,

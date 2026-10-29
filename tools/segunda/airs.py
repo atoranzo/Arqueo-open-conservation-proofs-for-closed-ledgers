@@ -124,9 +124,9 @@ class Air:
     ancho_aux = 0
     aleatorios = 0
 
-    def forma(self, p, columnas=1):
-        """La forma de traza de la familia: el ancho mas las columnas aleatorias (una en zkssl/0.4;
-        las que diga la marca v2 desde el corte, §912), el tramo auxiliar y 2T."""
+    def forma(self, p, columnas):
+        """La forma de traza de la familia: el ancho mas las columnas aleatorias que declara la
+        marca v2 (dos en zkssl/0.5; una en zkssl/0.4, §912, §914), el tramo auxiliar y 2T."""
         forma = (p.ancho, p.ancho_aux, p.aleatorios, p.L)
         pide = (self.ancho + columnas, self.ancho_aux, self.aleatorios, 2 * self.traza)
         if forma != pide:
@@ -158,6 +158,7 @@ class Air:
 class Banda(Air):
     """La banda del saldo bajo una raiz, sin titularidad (RFC-0007 E5, corte 4a)."""
     nombre = "banda"
+    FAMILIA = 13  # §914: la familia de la marca v2, el registro de NUCLEO §4 bis (`zk_ssl_air::familias`)
     traza = 512
     ancho = 27
     LARGO_SEGMENTO, SEGMENTOS = 64, 3
@@ -296,6 +297,7 @@ DOMINIO_PRENDA = int.from_bytes(b"PREND_V1", "big")        # zk-ssl-hash, u64::f
 class Prenda(Air):
     """Un pendiente que solo puede cobrar quien tiene la clave del receptor (RFC-0008 E3)."""
     nombre = "prenda"
+    FAMILIA = 5  # §914: la familia de la marca v2, el registro de NUCLEO §4 bis (`zk_ssl_air::familias`)
     traza = 512
     ancho = 42
     C_A, COL_BIT, COL_RECEPTOR, COL_IMPORTE, COL_KEY, COL_SAL, COL_X, C_B = 0, 12, 13, 17, 18, 22, 26, 30
@@ -453,6 +455,7 @@ def _periodicas_dos_carriles(air, desde_b, segmentos, bit62=False):
 class CobroPendiente(Air):
     """Un pendiente a nombre del receptor por al menos `inferior`, nacido en `nacido`."""
     nombre = "cobro"
+    FAMILIA = 15  # §914: la familia de la marca v2, el registro de NUCLEO §4 bis (`zk_ssl_air::familias`)
     traza = 512
     ancho = 44
     MAX_VALOR = 0x3fffffffffffffff
@@ -574,6 +577,7 @@ class PagoEnCurso(Air):
     """Un pendiente a nombre del receptor por `importe` EXACTO que quien lo pago no puede
     revertir antes de `t`, nacido en `nacido`."""
     nombre = "pago"
+    FAMILIA = 16  # §914: la familia de la marca v2, el registro de NUCLEO §4 bis (`zk_ssl_air::familias`)
     traza = 512
     ancho = 44
     MAX_VALOR = 0x3fffffffffffffff
@@ -700,7 +704,8 @@ def raiz_desde_subraiz(sub, m, profundidad=PROFUNDIDAD):
 
 
 def m_canonico(n):
-    return 3 if n <= 8 else (n - 1).bit_length()
+    # §914: el suelo sube de 3 a 4 (`Edad.M_MIN`), con T = 128
+    return Edad.M_MIN if n <= (1 << Edad.M_MIN) else (n - 1).bit_length()
 
 
 class Edad(Air):
@@ -708,6 +713,7 @@ class Edad(Air):
     (RFC-0007 E4b-2). La unica AIR multisegmento del paquete: un multiconjunto por derivada
     logaritmica en una traza auxiliar de 6 columnas con 2 aleatorios."""
     nombre = "edad"
+    FAMILIA = 14  # §914: la familia de la marca v2, el registro de NUCLEO §4 bis (`zk_ssl_air::familias`)
     ancho, ancho_aux, aleatorios = 83, 6, 2
     num_aserciones_aux = 2
     BITS = 32
@@ -724,6 +730,9 @@ class Edad(Air):
     # ⚠️ Se cambia en los dos sitios a la vez, y con vectores nuevos: `neg-m-13-fabricada.json` y
     # `neg-m-14-sobre-tope.json` (spec/vectors/edad/) fijan el tope en 13 (§721).
     M_MAX = 13
+    # §914, el suelo de m: el `M_MIN` de zk-ssl-air (un test de alli lo compara con esta linea); con
+    # T = 128 la traza en claro, `CICLO << m`, pide m >= 4
+    M_MIN = 4
 
     def __init__(self, seq, pending_root, pmeta_root, next_pending, t, k, emisor,
                  subraiz_pend, subraiz_meta):
@@ -738,8 +747,8 @@ class Edad(Air):
 
     def enunciado(self):
         # comprobar_enunciado, y la subida de las subraices (verificar_contra_cabeza)
-        if self.m < 3 or self.m > self.M_MAX:
-            raise Rechazo(f"m = {self.m} fuera de 3..={self.M_MAX}")
+        if self.m < self.M_MIN or self.m > self.M_MAX:
+            raise Rechazo(f"m = {self.m} fuera de {self.M_MIN}..={self.M_MAX}")
         if self.n > (1 << self.m):
             raise Rechazo(f"n = {self.n} no cabe en 2^{self.m}")
         if self.t >= (1 << self.BITS) or self.seq >= (1 << self.BITS):

@@ -711,8 +711,9 @@ for M in spec/vectors/*/MANIFIESTO.txt; do
 done
 
 # ── 3 duodecies · la SEGUNDA implementacion (BACKLOG 85; tools/segunda/) ──
-# Otro codigo, en Python y sin dependencias, reproduce el nucleo congelado desde NUCLEO.md (34 KAT
-# desde el §800; ⚠️ §800: aqui decia 26, y eran 31: el §643 y el §773 anadieron cinco sin subirla)
+# Otro codigo, en Python y sin dependencias, reproduce el nucleo congelado desde NUCLEO.md (35 KAT
+# desde el §914, que anade el registro de las familias de la marca v2; 34 desde el §800; ⚠️ §800:
+# aqui decia 26, y eran 31: el §643 y el §773 anadieron cinco sin subirla)
 # y verifica las cabezas firmadas de TODOS los vectores con XMSS^MT escrito desde RFC 8391
 # (tools/segunda/kat_xmss/xmss.py, dentro del directorio extraible). Esta
 # aqui por lo mismo que las herramientas del bucle (2 ter): un KAT nuevo o una version nueva de

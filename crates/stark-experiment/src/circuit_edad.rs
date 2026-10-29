@@ -26,7 +26,7 @@ use zk_ssl_hash::{meta_pendiente_hoja, native_merge, DOMINIO_META_PENDIENTE};
 pub use zk_ssl_air::{
     carril, codificar, m_canonico, opciones, potencias, raiz_desde_subraiz, subraiz, verificar,
     verificar_contra_cabeza, Afirmacion, CabezaEdad, Digest, EdadAir, EdadPublicInputs, ALEATORIOS,
-    ANCHO, ANCHO_AUX, BITS, CICLO, ESTADO, M_MAX, PROFUNDIDAD,
+    ANCHO, ANCHO_AUX, BITS, CICLO, ESTADO, M_MAX, M_MIN, PROFUNDIDAD,
 };
 use zk_ssl_air::{
     C_A, C_ACT, C_B, C_BITS, C_CICLO, C_CUENTA, C_EMISOR, C_FUERA, C_M, C_NACIDO, C_P, C_QA, C_QS,
@@ -73,12 +73,12 @@ pub fn celdas_del_libro(
     if en.t >= (1u64 << BITS) || en.seq >= (1u64 << BITS) {
         return Err(format!("T = {} o seq = {} no caben en {BITS} bits", en.t, en.seq));
     }
-    let tam = hojas.len().next_power_of_two().max(8);
+    let tam = hojas.len().next_power_of_two().max(1 << zk_ssl_air::M_MIN); // §914: el suelo, m >= 4
     // §717, el coste del juez de la edad: el juez no acepta m > M_MAX, asi que el probador
     // no prueba lo que no se aceptaria. La misma causa que `comprobar_enunciado`.
     let m = tam.trailing_zeros();
     if m > M_MAX {
-        return Err(format!("m = {m} fuera de 3..={M_MAX}"));
+        return Err(format!("m = {m} fuera de {M_MIN}..={M_MAX}"));
     }
     let nombrado = BaseElement::new(en.emisor);
     let mut celdas = Vec::with_capacity(tam);
@@ -239,7 +239,7 @@ pub fn probar_con(
     let m_traza = (traza.info.length() / CICLO).trailing_zeros();
     for m in [traza.pi.m, m_traza] {
         if m > M_MAX {
-            return Err(format!("m = {m} fuera de 3..={M_MAX}"));
+            return Err(format!("m = {m} fuera de {M_MIN}..={M_MAX}"));
         }
     }
     let pi = traza.pi.clone();
@@ -390,7 +390,7 @@ impl Prover for EdadProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("EdadAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -659,13 +659,14 @@ mod tests {
     /// la traza falsa no viola nada y su prueba verifica con `k = 7`, tambien contra la cabeza del
     /// libro sin meta en la 5 (medido con el AIR cambiado a mano y restaurado).
     ///
-    /// Las ocho posiciones estan vivas: con el selector cambiado, vivo tendria que ser igual a los
-    /// dos lados de cada enlace, y asi la falsificacion no tropieza con nada mas.
+    /// Las dieciseis posiciones estan vivas (§914: el suelo son 16 hojas, m = 4; eran ocho): con el
+    /// selector cambiado, vivo tendria que ser igual a los dos lados de cada enlace, y asi la
+    /// falsificacion no tropieza con nada mas. Las nueve ultimas son jovenes y no cuentan.
     #[test]
     #[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
     fn un_vivo_que_se_apaga_en_la_fila_6_no_verifica() {
-        let hojas: Vec<Digest> = (0..8).map(d).collect();
-        let mut meta: Vec<Option<(u64, u64)>> = (0..8).map(|p| Some((p % 3, 10 * p))).collect();
+        let hojas: Vec<Digest> = (0..16).map(d).collect();
+        let mut meta: Vec<Option<(u64, u64)>> = (0..16).map(|p| Some((p % 3, 10 * p))).collect();
         meta[5] = None;
         let e = en(70, 0, true);
         let err = celdas_del_libro(&hojas, &meta, &e).err().expect("tenia que fallar");
@@ -677,7 +678,7 @@ mod tests {
         let mut celdas = celdas_del_libro(&hojas, &eleccion, &e).expect("celdas");
         assert!(celdas[5].qa && celdas[5].qs, "el nacido elegido tiene que contar");
         celdas[5].vivo = false;
-        let mut traza = trazar(&celdas, 8, &e);
+        let mut traza = trazar(&celdas, 16, &e);
         let honesta = traza.enunciado().clone();
         assert_eq!(honesta.subraiz_meta, cabeza_meta(&meta), "la meta es la del libro");
         assert_eq!(honesta.k, 6, "las otras siete: seis viejas");
@@ -714,7 +715,7 @@ mod tests {
         let e = en(70, 0, true);
         let n = (1usize << M_MAX) + 1;
         let err = celdas_del_libro(&vec![d(1); n], &vec![None; n], &e).err().expect("el tope");
-        assert_eq!(err, format!("m = {} fuera de 3..={M_MAX}", M_MAX + 1));
+        assert_eq!(err, format!("m = {} fuera de {M_MIN}..={M_MAX}", M_MAX + 1));
         let n = 1usize << M_MAX;
         let err = celdas_del_libro(&vec![d(1); n], &vec![None; n], &e).err().expect("sin meta");
         assert!(err.contains("sin meta"), "en el tope tenia que llegar a las celdas: {err}");
@@ -732,7 +733,7 @@ mod tests {
     /// probador y entra en panico en la matriz de la traza.
     #[test]
     fn el_probador_rechaza_m_14() {
-        let causa = "m = 14 fuera de 3..=13";
+        let causa = format!("m = 14 fuera de {M_MIN}..=13");
         let e = en(70, 0, true);
         let n = (1usize << 13) + 1;
         let err = construir(&vec![d(1); n], &vec![None; n], &e).err().expect("el libro de m = 14");

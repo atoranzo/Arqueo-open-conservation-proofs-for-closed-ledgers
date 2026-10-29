@@ -16,6 +16,8 @@ dice?» es «descárguelo y córralo usted», y sólo vale si la descarga existe
 
 ## 0. Descargar, y comprobar la descarga antes de creerla
 
+⚠️ **§914, el corte `zkssl/0.5`.** El kit del árbol es desde el §914 la **0.5.0** (D-E del RFC-0018): habla `zkssl/0.5`, juzga las pruebas por su marca v2 antes que nada y rechaza con nombre las de `zkssl/0.4` y anteriores (`marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x`; R6 e del RFC-0021). La release vigente **publicada** sigue siendo la 0.4.4, de abajo, hasta que el autor publique la 0.5.0 con su tarball y sus huellas; quien custodie sobres de `zkssl/0.4` los juzga con la 0.4.4, y sus vectores viven bajo `spec/vectors/0.4/`.
+
 La release vigente es `arqueo-verify-v0.4.4`, publicada en
 <https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.4.4>,
 producida sobre el commit `95bc4572bca27f63033ba5bbc499ef2d95a4b40b`:

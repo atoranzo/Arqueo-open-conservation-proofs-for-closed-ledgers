@@ -1,0 +1,53 @@
+# PRENDA, CONSERVADO bajo el kit 0.4 (§914, el corte del tren zkssl/0.5: RFC-0018 D-G y D-H; R6 b del
+# RFC-0021): estos vectores llevan pruebas de zkssl/0.4 -la marca v1 de 19 bytes, `arqueo:oculta:1`, y
+# una columna aleatoria- y el kit 0.5 del arbol las rechaza por su marca antes del enunciado
+# (`marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x`, el paso 1c de la D-G). Se MUEVEN aqui
+# enteros, byte a byte, con sus lineas de manifiesto, y no se reescriben (regla 2 del PROCESO); los
+# que renacen en la 0.5 viven en `../../prenda/` con la version del cable en el nombre (`-0.5`), y los
+# negativos de esta familia que caen ANTES de la prueba siguen alli con sus bytes. Dicen lo que este
+# manifiesto exige con el zk-ssl-verify del arbol en cbe95d70 (§913, el ultimo sello del cable 0.4),
+# corrido con tools/conformidad.sh.
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Contexto de la familia, copiado de su manifiesto vivo (las lineas de abajo que no son entradas son suyas):
+# Los DOS positivos se CAPTURAN de las CAPTURAS-546 de un nodo real: la boca del prendador
+# (`zk-ssl-cli prueba-prenda`, S543) los escribio con el nodo VIVO, abriendo el keystore del
+# receptor que la siembra sella (S544), contra la cabeza v5 de seq 5 que ese nodo firmo, sobre un
+# pendiente v2 nacido en 4 por 250000 y con delta 96. El segundo ademas PUBLICO la marca con
+# `zkssl_pledge` bajo el MISMO latido (`--publicar`), y eso NO se ve en el sobre: los dos afirman
+# lo mismo bajo la misma cabeza, asi que el mando imprime para los dos el mismo veredicto y este
+# manifiesto los pina con el mismo texto. Su productor es `tools/banco_prenda.sh`, que SI vive en
+# el arbol (S545). La cabeza no viaja aparte: va entera dentro de los dos sobres (D-J).
+# ESTA FAMILIA SE CAPTURA Y NO SE RE-DERIVA: desde que el probador oculta (S538), dos pruebas del
+# MISMO enunciado bajo la MISMA cabeza no dan los mismos bytes. Van cuatro medidas -- 68.068 y
+# 66.333 B en el PASTE-545-M, 67.145 y 66.398 B en estas capturas --, asi que aqui NO se pina
+# ningun peso y correr el banco otra vez NO reproduce estos ficheros: se copian de la captura o no
+# existen.
+# Los siete negativos salen de `prenda-publicada.json` por UNA mutacion cada uno, uno por regla
+# producible; jamas se reescriben (regla 2 del PROCESO).
+# OJO con `neg-receptor-mentido` y `neg-marca-mentida`: los dos campos del enunciado son entradas
+# PUBLICAS del AIR, asi que mentirlos deja la prueba sin verificar lo que el sobre dice; el texto
+# que sigue al prefijo lo pone WINTERFELL y es el MISMO para los dos, asi que se pina SOLO el
+# prefijo `prenda:`, que es lo que antepone el mando y lo unico que la casa gobierna.
+# Los CINCO ficheros de la siembra NO son vectores -el mando no los lee- y cuatro se declaran por
+# su huella: `aviso.json` `17f86def80cdf3c0` (204 B), `credencial.json` `f1dfac359b900273`
+# (195 B), `retorno.json` `bbcb7817ae6ec804` (106 B) y `credencial-pagador.json`
+# `b81e717890643437` (195 B), las MISMAS que declaran los catalogos del cobro y del pago porque la
+# siembra es determinista. El QUINTO, el `keystore.json` del receptor (S544), NO se declara: su
+# cifrado lleva un nonce aleatorio y cambia en cada corrida. El banco lo escribe en modo 600 y lo
+# exige, pero una captura que cruza de sistema de ficheros pierde el modo, asi que tampoco eso se
+# pina (5.A-404).
+# UN VERDE AQUI ES MEDIA PRENDA (D-AS): el mando no mira si la marca esta bajo el `consRoot` de
+# esa cabeza -no tiene arbol que mirar-, y esa otra mitad se pide con `zkssl_consumoPath`.
+prenda.json|0|hay un pendiente que solo puede cobrar quien
+prenda-publicada.json|0|hay un pendiente que solo puede cobrar quien
+neg-receptor-mentido.json|1|prenda:
+neg-marca-mentida.json|1|prenda:
+# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. Las lineas de
+# `neg-receptor-mentido` y `neg-marca-mentida` de arriba pinan el prefijo `prenda:`, y eso lo pasa
+# tambien quien no verifica nada: la segunda implementacion, que no lee este sobre, los pasaba con su
+# ROJO de sobre no leido (medido). No se reescriben (regla 2 del PROCESO): estas dos lineas NUEVAS
+# pinan la causa, el nombre que le da winter-verifier 0.13.1, el del Cargo.lock, como ya hace
+# `rechazo/`. Que sea la MISMA para los dos campos no la hace generica: los dos mienten el enunciado.
+# Caduca con la dependencia, y se declara: si la renombra, las lineas se mueven a su version.
+neg-receptor-mentido.json|1|prenda: InconsistentOodConstraintEvaluations
+neg-marca-mentida.json|1|prenda: InconsistentOodConstraintEvaluations

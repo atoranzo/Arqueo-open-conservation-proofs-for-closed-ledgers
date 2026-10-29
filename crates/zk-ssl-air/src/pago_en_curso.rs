@@ -511,6 +511,7 @@ impl Air for PagoEnCursoAir {
 
 /// §913: la forma en claro de esta familia, para el juez unico (`crate::juez`).
 impl crate::juez::Juez for PagoEnCursoAir {
+    const NOMBRE: &'static str = "PagoEnCursoAir";
     fn forma(_: &PagoEnCursoPublicInputs) -> crate::juez::Forma {
         crate::juez::Forma::fija(ANCHO, TRAZA)
     }
@@ -522,11 +523,12 @@ impl crate::juez::Juez for PagoEnCursoAir {
 /// traza que la prueba declara -ancho, sin segmento auxiliar y longitud [`TRAZA`]- y acepta SOLO
 /// [`opciones`]. Nunca entra en panico por lo que traiga la prueba.
 pub fn verificar(prueba: &[u8], pi: &PagoEnCursoPublicInputs) -> Result<(), String> {
+    // §914 (RFC-0018 D-G): la marca v2 antes que nada, de la cabeza; despues el enunciado; despues
+    // la prueba entera, sus opciones y su forma oculta, por el juez unico; los textos, los de siempre
+    crate::marca_del_kit::<PagoEnCursoAir>(prueba)?;
     comprobar_enunciado(pi)?;
     let proof =
         Proof::from_bytes(prueba).map_err(|e| format!("la prueba no se deserializa: {e:?}"))?;
-    // §913: la forma oculta, la marca (§651) y la verificacion con la politica del juez, por el
-    // juez unico; los textos son los de siempre
     crate::juez::juzgar::<PagoEnCursoAir>(proof, pi.clone()).or_else(crate::rechazo_del_kit)
 }
 
@@ -563,6 +565,8 @@ pub fn verificar_contra_cabeza(
     af: &AfirmacionPago,
     cabeza: &CabezaPago,
 ) -> Result<PagoEnCursoPublicInputs, String> {
+    // §914 (RFC-0018 D-G): la marca antes que nada, tambien antes de comparar con la cabeza
+    crate::marca_del_kit::<PagoEnCursoAir>(prueba)?;
     if af.nacido >= cabeza.seq {
         return Err(format!(
             "nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza \
@@ -708,17 +712,17 @@ mod tests {
     }
 
     /// **D-K, el molde de E1: un nacido que no es anterior a la cabeza se rechaza ANTES de la
-    /// prueba**: tres bytes que no son prueba no llegan al juez; con un `seq` posterior, si.
+    /// prueba**: una cabeza con la marca y nada detras (§914: la marca va antes, D-G) no llega al juez; con un `seq` posterior, si.
     #[test]
     fn un_nacido_que_no_es_anterior_a_la_cabeza_se_rechaza_antes_de_la_prueba() {
         let af = AfirmacionPago { receptor: d(3), importe: 250_000, t: 1100, nacido: 1040 };
         for seq in [1040, 1039, 0] {
             let cab = CabezaPago { seq, pending_root: d(1), pmeta_root: d(2) };
-            let e = verificar_contra_cabeza(&[1, 2, 3], &af, &cab).unwrap_err();
+            let e = verificar_contra_cabeza(&crate::juez::solo_cabeza::<PagoEnCursoAir>(), &af, &cab).unwrap_err();
             assert!(e.contains("no es anterior a la cabeza"), "seq {seq}: {e}");
         }
         let cab = CabezaPago { seq: 1041, pending_root: d(1), pmeta_root: d(2) };
-        let e = verificar_contra_cabeza(&[1, 2, 3], &af, &cab).unwrap_err();
+        let e = verificar_contra_cabeza(&crate::juez::solo_cabeza::<PagoEnCursoAir>(), &af, &cab).unwrap_err();
         assert!(!e.contains("no es anterior a la cabeza"), "con seq 1041 tenia que llegar: {e}");
     }
 

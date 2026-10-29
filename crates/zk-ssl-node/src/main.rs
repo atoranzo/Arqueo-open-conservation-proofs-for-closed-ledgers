@@ -3187,7 +3187,8 @@ fn dispatch_con_estado(
 
     match method {
         // ── lectura ────────────────────────────────────────────────
-        "zkssl_protocolVersion" => Ok(json!("zkssl/0.4")),
+        // §914: el corte del tren (RFC-0018): zkssl/0.4 -> zkssl/0.5
+        "zkssl_protocolVersion" => Ok(json!("zkssl/0.5")),
 
         "zkssl_params" => Ok(serde_json::to_value(wire::ParamsDto {
             regulatory_limit: Q(l.regulatory_limit()),
@@ -5108,8 +5109,9 @@ mod tests {
         };
         let mut malo = params.clone();
         let mut h = malo["receipt"]["proof"].as_str().expect("la prueba en hex").to_string();
-        assert_eq!(&h[2 + 68..2 + 70], "2a", "el byte 34 son las 42 consultas de la casa");
-        h.replace_range(2 + 68..2 + 70, "00");
+        // §914: la marca v2 tiene 25 bytes, seis mas que la v1; las consultas pasan del byte 34 al 40
+        assert_eq!(&h[2 + 80..2 + 82], "2a", "el byte 40 son las 42 consultas de la casa");
+        h.replace_range(2 + 80..2 + 82, "00");
         malo["receipt"]["proof"] = json!(h);
         let r = despachar(&app, "zkssl_applySend", || dispatch(&app, "zkssl_applySend", malo));
         let e = r.expect_err("una prueba con cero consultas no puede dar Ok");
@@ -6909,7 +6911,7 @@ mod tests {
         let app = nodo(30);
         assert_eq!(
             dispatch(&app, "zkssl_protocolVersion", json!([])).expect("version"),
-            json!("zkssl/0.4")
+            json!("zkssl/0.5")
         );
         let h = dispatch(&app, "zkssl_epochHead", json!({})).expect("epochHead");
         assert!(h["signature"].is_null(), "epochHead NO debe llevar firma");
@@ -6942,7 +6944,7 @@ mod tests {
         let v = dispatch(&app, "zkssl_protocolVersion", json!([])).expect("version");
         // ⚠️ Si esto cambia, cambia el CABLE. spec/RPC.md §versionado: lo
         // que sube version es que cambien los VALORES que viajan.
-        assert_eq!(v, json!("zkssl/0.4"));
+        assert_eq!(v, json!("zkssl/0.5"));
     }
 
     #[test]
@@ -8091,8 +8093,9 @@ mod tests {
         let (app, pv, l) = escena("pledge_cero_consultas");
         let s = sobre_de_prenda(&app, &pv, 0xB519, &l);
         let mut malo = s.clone();
-        assert_eq!(malo.prueba[34], 42, "el byte 34 son las 42 consultas de la casa");
-        malo.prueba[34] = 0;
+        // §914: con la marca v2 de 25 bytes, el byte de las consultas es el 40
+        assert_eq!(malo.prueba[40], 42, "el byte 40 son las 42 consultas de la casa");
+        malo.prueba[40] = 0;
         let v = despachar(&app, "zkssl_pledge", || pledge(&app, &malo))
             .expect("un sobre malo no es un error del que llama");
         assert_eq!(v["accepted"], json!(false), "{v}");
@@ -9412,14 +9415,26 @@ mod tests_vectores_del_nodo {
                 &app,
                 &json!({ "jsonrpc": "2.0", "id": 0, "method": "zkssl_protocolVersion" }),
             );
-            assert_eq!(
-                version["result"], v["spec"],
-                "{fichero}: el vector es de {} y el nodo habla {}; cuando suba la version, el corte \
-                 decide si se muda a spec/vectors/<version>/ (R6 b del RFC-0021)",
-                v["spec"], version["result"]
-            );
             let pasos = v["pasos"].as_array().unwrap_or_else(|| panic!("{fichero}: sin `pasos`"));
             assert!(!pasos.is_empty(), "{fichero}: sin pasos");
+            // §914 (el corte zkssl/0.5): un vector del nodo de una version ANTERIOR del cable sigue
+            // valiendo si ninguno de sus pasos pide la version -lo que fija es un error del cable y
+            // sus respuestas, que no cambian- y se queda en su sitio con sus bytes; el que cambie lo
+            // que dice se muda a spec/vectors/<version>/ (R6 b del RFC-0021). Lo decidio el corte,
+            // como preveia la cabecera del manifiesto (la 90).
+            let pide_version = pasos
+                .iter()
+                .any(|p| p["peticion"]["method"] == "zkssl_protocolVersion");
+            let de_hoy = version["result"] == v["spec"];
+            let anterior = v["spec"].as_str().is_some_and(|e| e.starts_with("zkssl/0."))
+                && version["result"].as_str().is_some_and(|h| h.starts_with("zkssl/0."))
+                && v["spec"].as_str() < version["result"].as_str();
+            assert!(
+                de_hoy || (anterior && !pide_version),
+                "{fichero}: el vector es de {} y el nodo habla {}; uno de una version anterior vale \
+                 solo si ningun paso pide la version (§914, R6 b del RFC-0021)",
+                v["spec"], version["result"]
+            );
             let mut juzgados = Vec::new();
             for (i, paso) in pasos.iter().enumerate() {
                 let esperado = &paso["respuesta"];

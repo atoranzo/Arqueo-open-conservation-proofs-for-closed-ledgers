@@ -72,7 +72,7 @@ use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 pub const CUSTODIAN_DOMAIN: u64 = 0x43555354; // "CUST"
 
 pub const CYCLE_LENGTH: usize = 8;
-pub const TRACE_LENGTH: usize = 64;
+pub const TRACE_LENGTH: usize = 128; // §914 (RFC-0018 D-H): T = 128, antes 64
 /// Profundidad del árbol de custodios: hasta 16.
 pub const CUSTODIAN_DEPTH: usize = 4;
 /// Bits de las comprobaciones de rango. Los índices son pequeños.
@@ -724,7 +724,7 @@ impl Prover for ThresholdProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("ThresholdAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -766,7 +766,7 @@ impl Prover for ThresholdProver {
 mod tests {
     use super::*;
     use crate::native::derive_public_id;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension};
 
     /// §683 (RFC-0018 E2): las dos derivaciones anchas, con la clave rellenada con ceros, dan
     /// EXACTAMENTE la identidad estrecha, y una clave con algo en sus otros tres elementos da otra.
@@ -878,7 +878,7 @@ mod tests {
         };
 
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        verify::<ThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        crate::verify_casa::<ThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             ThresholdPublicInputs {
                 custodian_set_root: declared_root,
@@ -944,7 +944,7 @@ mod tests {
         let proof = prover.prove(trace).expect("la traza valida deberia probar");
 
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        let v = verify::<ThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let v = crate::verify_casa::<ThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             ThresholdPublicInputs {
                 custodian_set_root: root,

@@ -160,6 +160,7 @@ por aquí sino por la primera mitad, como versión nueva del preámbulo con sus 
 versión, y su coste (una composición `epoch_digest` nueva, el cable aditivo, el verificador lector
 hasta esa versión, los vectores) se mide antes de escribirla. Es el camino previsto para la
 unicidad entre libros de D-C.
+⚠️ §914: las pruebas que viajan tienen desde `zkssl/0.5` su identificador dentro, la marca v2 del RFC-0018 (D-G): la familia, la versión de su AIR y el perfil, con el registro de familias en `spec/NUCLEO.md` §4 bis; una familia o una versión de AIR nueva entra por ese registro, y lo que no está en él el juez lo rechaza con nombre antes de leer la prueba. Es la misma regla de extensión —se firma y crece sólo por versión— aplicada a la prueba.
 
 ### D-C — El núcleo no identifica nada fuera del libro
 

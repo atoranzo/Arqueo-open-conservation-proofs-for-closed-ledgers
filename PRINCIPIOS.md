@@ -367,9 +367,9 @@ conviven con 29 (UDR) y 63 (LDR) demostrables, y cerrarla cuesta 127.274 B
 en vez de 39.048 (⚠️ §806: decía «125,6 KB en vez de 36,7»; remedido el
 2026-10-14 sobre `b6491ef`, en `FIVE_BACKENDS.md` §4). Con las opciones de
 producción —42 consultas, blowup 16,
-molienda 21— y sobre las pruebas ocultas: 127 conjeturados (112,8-116,8
+molienda 21— y sobre las pruebas ocultas: 127 conjeturados (112,8-115,8
 según el circuito con el término DEEP, que la fórmula no descuenta, §708),
-59 en UDR y 80-88 en LDR según el circuito, menos en la edad con `m` alta;
+59 en UDR y 80-86 en LDR según el circuito, menos en la edad con `m` alta;
 lo fijan tests (§697) y la tabla está en `SECURITY.md` §3.11. Frente a un
 adversario cuántico, el nivel no está medido. ⚠️ **Corregido en el §698**:
 hasta entonces decía «127 bits conviven con 29-63», sin decir de qué

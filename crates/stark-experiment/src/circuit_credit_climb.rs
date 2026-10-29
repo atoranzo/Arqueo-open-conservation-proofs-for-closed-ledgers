@@ -534,6 +534,7 @@ impl Air for CreditClimbAir {
 /// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
 /// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
 impl zk_ssl_air::juez::Juez for CreditClimbAir {
+    const NOMBRE: &'static str = "CreditClimbAir";
     fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
         zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
     }
@@ -587,7 +588,7 @@ impl Prover for CreditClimbProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("CreditClimbAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -632,7 +633,7 @@ mod tests {
         derive_leaf_salt_wide, derive_public_id_wide, native_climb, native_leaf_salted,
     };
     use crate::merkle::native_merge;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension};
 
     fn default_options() -> ProofOptions {
         ProofOptions::new(
@@ -737,7 +738,7 @@ mod tests {
         let prover = CreditClimbProver::new(default_options());
         let proof = prover.prove(trace).expect("la generacion no deberia fallar");
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        let ok = verify::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let ok = crate::verify_casa::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             s.public_inputs.clone(),
             &min_opts,
@@ -756,7 +757,7 @@ mod tests {
         let mut pi = s.public_inputs.clone();
         pi.amount = BaseElement::new(501);
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        let mal = verify::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let mal = crate::verify_casa::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof, pi, &min_opts,
         );
         assert!(mal.is_err(), "otro importe NO debe verificar");
@@ -782,7 +783,7 @@ mod tests {
         let proof = prover.prove(trace).expect("prueba");
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
         // Se verifica contra las raíces del LEGÍTIMO: no casan.
-        let mal = verify::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let mal = crate::verify_casa::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             legitimo.public_inputs.clone(),
             &min_opts,

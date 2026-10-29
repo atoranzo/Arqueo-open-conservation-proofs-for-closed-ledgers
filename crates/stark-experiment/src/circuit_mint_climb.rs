@@ -732,6 +732,7 @@ impl Air for MintClimbAir {
 /// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
 /// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
 impl zk_ssl_air::juez::Juez for MintClimbAir {
+    const NOMBRE: &'static str = "MintClimbAir";
     fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
         zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
     }
@@ -788,7 +789,7 @@ impl Prover for MintClimbProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("MintClimbAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -834,7 +835,7 @@ mod tests {
         native_leaf, native_leaf_salted,
     };
     use crate::merkle::native_merge;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, Prover};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension, Prover};
 
     const MAX_SUPPLY: u64 = 100_000_000;
 
@@ -924,7 +925,7 @@ mod tests {
             Ok(Ok(pr)) => pr,
         };
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        crate::verify_casa::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof, s.public_inputs.clone(), &min_opts,
         ).map_err(|e| format!("verificacion fallo: {e:?}"))
     }
@@ -1061,7 +1062,7 @@ mod tests {
                 Ok(Err(_)) => false,    // prove Err
                 Ok(Ok(proof)) => {
                     let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-                    verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                    crate::verify_casa::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                         proof, s.public_inputs.clone(), &min_opts,
                     ).is_ok()
                 }
@@ -1096,7 +1097,7 @@ mod tests {
                 Ok(Err(_)) => false,    // prove Err
                 Ok(Ok(proof)) => {
                     let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-                    verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                    crate::verify_casa::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                         proof, s.public_inputs.clone(), &min_opts,
                     ).is_ok()
                 }

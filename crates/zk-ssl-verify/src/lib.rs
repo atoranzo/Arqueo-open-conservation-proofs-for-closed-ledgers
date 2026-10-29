@@ -1902,7 +1902,7 @@ mod tests {
         zk-ssl-guardian 0.1.0 ruta
         zk-ssl-hash 0.1.0 ruta
         zk-ssl-medio 0.1.0 ruta
-        zk-ssl-verify 0.4.4 ruta
+        zk-ssl-verify 0.5.0 ruta
         zmij 1.0.23 crates.io
     ";
 

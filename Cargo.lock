@@ -3623,6 +3623,7 @@ dependencies = [
  "xmss",
  "zeroize",
  "zk-ssl",
+ "zk-ssl-air",
  "zk-ssl-guardian",
  "zk-ssl-hash",
  "zk-ssl-medio",
@@ -3698,7 +3699,7 @@ dependencies = [
 
 [[package]]
 name = "zk-ssl-verify"
-version = "0.4.4"
+version = "0.5.0"
 dependencies = [
  "serde_json",
  "winter-math",

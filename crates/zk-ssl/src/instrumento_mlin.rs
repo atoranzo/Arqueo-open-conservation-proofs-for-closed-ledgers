@@ -1053,13 +1053,13 @@ pub(crate) fn sonda_de(air: &str, info: &TraceInfo, opciones: &ProofOptions) -> 
         "EdadAir" => {
             // la edad mira sus entradas al construirse: el numero de hojas, 2^m, y las aserciones,
             // que dependen de n (en las filas 8·(n − 1) y 8·n) y de k; las de la familia son las de
-            // ocho hojas (T = 64, 128 filas ocultas) y el enunciado de todos los emisores, que es
-            // el que prueban sus dos filas del testigo de D-B
-            assert_eq!(info.length(), 128, "la edad de la familia ya no es la de ocho hojas: cambia m y n aqui");
+            // dieciseis hojas (§914: T = 128, 256 filas ocultas; hasta el §914, ocho, T = 64) y el
+            // enunciado de todos los emisores, que es el que prueban sus dos filas del testigo de D-B
+            assert_eq!(info.length(), 256, "la edad de la familia ya no es la de dieciseis hojas: cambia m y n aqui");
             let pi = EdadPublicInputs {
                 subraiz_pend: d,
                 subraiz_meta: d,
-                m: 3,
+                m: 4,
                 n: 5,
                 seq: 100,
                 t: 70,
@@ -1102,19 +1102,19 @@ pub(crate) const CENSO_134: &[(&str, usize, usize, usize, usize, usize, Veredict
     ("ClaimAirV2", 1024, 61, 33, 0, 28, Veredicto::Cumple),
     ("PrendaAir", 512, 42, 17, 0, 25, Veredicto::Cumple),
     ("MintPendingClimbAir", 512, 39, 13, 0, 26, Veredicto::Cumple),
-    ("NullifierThresholdAir", 64, 21, 8, 0, 13, Veredicto::NoCabe),
-    ("ThresholdAir", 64, 34, 7, 0, 27, Veredicto::NoCabe),
+    ("NullifierThresholdAir", 128, 21, 8, 0, 13, Veredicto::NoCumple),
+    ("ThresholdAir", 128, 34, 7, 0, 27, Veredicto::Cumple),
     ("AuditAir", 512, 31, 17, 0, 14, Veredicto::Cumple),
     ("BurnAir", 1024, 48, 21, 0, 27, Veredicto::Cumple),
     ("SolvencyAir", 256, 5, 4, 0, 1, Veredicto::Cumple),
     ("DoubleEntryAir", 1024, 41, 15, 0, 26, Veredicto::Cumple),
     ("BandaAir", 512, 27, 13, 0, 14, Veredicto::Cumple),
-    ("EdadAir", 64, 83, 4, 7, 72, Veredicto::NoCabe),
+    ("EdadAir", 128, 83, 4, 7, 72, Veredicto::NoCumple),
     ("CobroPendienteAir", 512, 44, 18, 0, 26, Veredicto::Cumple),
     ("PagoEnCursoAir", 512, 44, 18, 0, 26, Veredicto::Cumple),
     ("MerkleAir", 256, 13, 0, 0, 13, Veredicto::SinLineales),
-    ("RefundAir", 64, 12, 0, 0, 12, Veredicto::NoCabe),
-    ("RefundAirV2", 64, 16, 4, 0, 12, Veredicto::NoCabe),
+    ("RefundAir", 128, 12, 0, 0, 12, Veredicto::SinLineales),
+    ("RefundAirV2", 128, 16, 4, 0, 12, Veredicto::NoCumple),
     ("CreditClimbAir", 512, 39, 13, 0, 26, Veredicto::Cumple),
     ("MintClimbAir", 512, 42, 16, 0, 26, Veredicto::Cumple),
     ("FrozenClimbAir", 256, 25, 0, 0, 25, Veredicto::SinLineales),
@@ -1139,6 +1139,11 @@ pub(crate) const MLIN_MEDIDO: &[(&str, usize, usize, usize, usize, usize, usize)
     ("BandaAir", 512, 8, 760, 510, 760, 760),
     ("CobroPendienteAir", 512, 8, 760, 510, 760, 760),
     ("PagoEnCursoAir", 512, 8, 760, 510, 760, 760),
+    // §914 (el corte zkssl/0.5): las cuatro de T = 128 con lineales, medidas con el test largo
+    ("NullifierThresholdAir", 128, 10, 424, 254, 318, 406),
+    ("ThresholdAir", 128, 10, 424, 254, 346, 424),
+    ("EdadAir", 128, 10, 424, 254, 232, 406),
+    ("RefundAirV2", 128, 10, 424, 254, 232, 406),
     ("CreditClimbAir", 512, 8, 760, 510, 760, 760),
     ("MintClimbAir", 512, 8, 760, 510, 760, 760),
     ("RecoveryClimbAir", 512, 8, 760, 510, 760, 760),
@@ -1192,6 +1197,19 @@ pub(crate) const MLIN_INSTANCIAS: &[(&str, &str, usize, usize, usize, usize)] = 
     ("PagoEnCursoAir", "semilla 1", 760, 760, 760, 760),
     ("PagoEnCursoAir", "semilla 2", 760, 760, 760, 0),
     ("PagoEnCursoAir", "adversa 1", 746, 746, 746, 0),
+    // §914: las cuatro de T = 128 con lineales
+    ("NullifierThresholdAir", "semilla 1", 424, 318, 406, 216),
+    ("NullifierThresholdAir", "semilla 2", 424, 318, 406, 0),
+    ("NullifierThresholdAir", "adversa 1", 424, 324, 408, 0),
+    ("ThresholdAir", "semilla 1", 424, 346, 424, 178),
+    ("ThresholdAir", "semilla 2", 424, 346, 424, 0),
+    ("ThresholdAir", "adversa 1", 424, 353, 424, 0),
+    ("EdadAir", "semilla 1", 424, 232, 406, 73),
+    ("EdadAir", "semilla 2", 424, 232, 406, 0),
+    ("EdadAir", "adversa 1", 424, 236, 410, 0),
+    ("RefundAirV2", "semilla 1", 424, 232, 406, 68),
+    ("RefundAirV2", "semilla 2", 424, 232, 406, 0),
+    ("RefundAirV2", "adversa 1", 424, 236, 410, 0),
     ("CreditClimbAir", "semilla 1", 760, 760, 760, 760),
     ("CreditClimbAir", "semilla 2", 760, 760, 760, 0),
     ("CreditClimbAir", "adversa 1", 746, 746, 746, 0),
@@ -1219,6 +1237,9 @@ pub(crate) fn contrasta_instancia(air: &str, nombre: &str, fila: (usize, usize, 
 
 /// §907: la huella de la composicion de cada familia (`huella`), clavada. Un cambio es rojo y
 /// obliga a remedir la 134.
+// §914 (el corte zkssl/0.5): las cinco de T = 64 pasan a T = 128 y su huella cambia con la longitud
+// de la traza, remedida en este sello (`la_cota_de_ocultacion_de_los_23_probadores_con_fila`); las
+// otras dieciocho no se mueven: las dos columnas aleatorias no entran en la composicion.
 pub(crate) const HUELLA_C: &[(&str, &str)] = &[
     ("SendAir", "b48ba41ebec5b46dc8bcf048df73ea85987fd71bf36fcefa1c54903ebd6cf5aa"),
     ("SendV2Air", "444aabff12eeeecf3b32a121976ea375a2e9e7de509c2a6d5a793a407b593a44"),
@@ -1226,19 +1247,19 @@ pub(crate) const HUELLA_C: &[(&str, &str)] = &[
     ("ClaimAirV2", "b340e41e3b0ecafb03248e614211fdffeacb8830ab23ee8e77523c5cc46a4f39"),
     ("PrendaAir", "4dfc9c7dbde97441ad05e2e005dcf3bb54d54d1949b2d60f51391e8878eac04b"),
     ("MintPendingClimbAir", "ca9d6a91c16f725d017c09392f4c56c3fc9c9d5a581f1e10588b8b28ee2ed1b5"),
-    ("NullifierThresholdAir", "967175be602f8b795bcee3623095aa473f874982af9aad245f6d60357d47995b"),
-    ("ThresholdAir", "eadde73958d7d484d347d1585c36100c24db6b138d12184c4cd63091db491f83"),
+    ("NullifierThresholdAir", "758f04c9e15701cfa370d15931ac5daac1e8fefdcf736c8442cb5b04dd4f3024"),
+    ("ThresholdAir", "bcca676aa3f54a334d6157aa978d181f723e7cfab269ed1a8703aa0d628cd29c"),
     ("AuditAir", "f54f9e18802900dc316956f75fbee94b77d44804ad4bf39377506528753562d8"),
     ("BurnAir", "402f50103d97b7f71cc44cbf32a8d44ac623efa70e166a0fb98cc9aa52e630e1"),
     ("SolvencyAir", "a174f7d3196f7d6c75c3b9869e80104a82a134cc6f2909135b4dfce53f308c62"),
     ("DoubleEntryAir", "16497250642fbf4c4c7482c568062a1722fc51ccbe574cd5c34c299052655970"),
     ("BandaAir", "2138d6ec1ef9f4dbb0ef33e06b67c023819b729dec93b5a2c2640850636146d8"),
-    ("EdadAir", "7cce3dff0e7f96de5cb18d3f0d71f551021545460429cfe48f2409a8a9c6d0e5"),
+    ("EdadAir", "aed9074eb7e68c0b64277ca4aa01f695d58ad9c69d7bbc3feb0990f382a1251f"),
     ("CobroPendienteAir", "e5444d5df31cb411d712681713a534f885908fc5ed0ca31fd04dab5fc122e204"),
     ("PagoEnCursoAir", "6c09934aff559f2842cac065f87a25a07c92cf5e3cc4821a52cc6f32edf96e4f"),
     ("MerkleAir", "b37c3c68fcfbd5b46b326e587096e11f7bcaf55fa3b7cd5038f7b79030b46d61"),
-    ("RefundAir", "b6530c4cdd56923fd2a6c68eeade6ce0e06e2c0aa3beb90bbc57f4086f69be6f"),
-    ("RefundAirV2", "df616e740c3215dbb51c1de888c6bd10ce3225fc81818d371b2db94574373ada"),
+    ("RefundAir", "1b0b93aea35924eb0dcdfc599dba4007895ca984bc92872b720073ee2756304e"),
+    ("RefundAirV2", "f721f7292654b249b50299de5303a957a7b147297feb5ee46dbc9141659accd5"),
     ("CreditClimbAir", "096aca064fc6224ab4669f9e5d333162a5f871fa1c7f73d8c3c43c2ed724497d"),
     ("MintClimbAir", "0dbe1557dbe93116cda542d0e15cc8a825dbf55d4b432a04a7a7c55f57e90079"),
     ("FrozenClimbAir", "c2c94f89f7c3d508711137ff88b633f200ceb3a042b6488e43bcb4ea35a808d2"),
@@ -1263,7 +1284,9 @@ pub(crate) fn medido(air: &str) -> Option<(usize, usize, usize, usize, usize, us
 /// §905 (la 135): lo medido con la cuenta fina en las familias que no caben con la gruesa
 /// (T = 64), clavado: por AIR, T, trozos, el rango de Λ sobre F y su blanco (2q + 2), y, si Λ es
 /// sobreyectiva, R3 con la base fina: lo que FRI abre sin determinar, las lineales con los
-/// aleatorizadores y las tres juntas (cero si no se mide). Con la semilla 1.
+/// aleatorizadores y las tres juntas (cero si no se mide). Con la semilla 1. ⚠️ §914: desde el
+/// corte zkssl/0.5 ninguna familia tiene T = 64 -las cinco pasan a 128, con 38 libres por lineal-,
+/// asi que la cuenta fina no se corre en ninguna: la tabla queda como lo medido entonces.
 pub(crate) const FINA_MEDIDO: &[(&str, usize, usize, usize, usize, usize, usize, usize)] = &[
     // AIR, T, trozos, rango de Λ, blanco, sin determinar, lineales y aleatorizadores, las tres
     ("NullifierThresholdAir", 64, 15, 36, 86, 0, 0, 0),
@@ -1696,6 +1719,7 @@ mod tests {
             // plegado 8, resto de 32 elementos): lo que leen las pruebas reales en instrumento_cota
             let (capas_fri, resto) = match t {
                 64 => (1, 16),
+                128 => (1, 32), // §914: las cinco de T = 64 pasan a 128 (RFC-0018 D-H)
                 256 => (2, 8),
                 512 => (2, 16),
                 1024 => (2, 32),
@@ -1721,12 +1745,12 @@ mod tests {
                     necesitan += 1;
                 },
                 Veredicto::SinLineales => {
-                    assert!(t >= 256 && l == 0, "{air}: sin lineales con T = {t} y {l} lineales");
+                    assert!(t >= 128 && l == 0, "{air}: sin lineales con T = {t} y {l} lineales");
                     assert!(medido(air).is_none(), "{air}: sin lineales y con medida");
                     necesitan += 1;
                 },
                 Veredicto::Cumple | Veredicto::NoCumple => {
-                    assert!(t >= 256 && l >= 1, "{air}: medido con T = {t} y {l} lineales");
+                    assert!(t >= 128 && l >= 1, "{air}: medido con T = {t} y {l} lineales");
                     let (mt, trozos, k, sin, lin, tres) = medido(air).unwrap_or_else(|| panic!("{air}: sin medida"));
                     assert_eq!(mt, t, "{air}: la medida es de otra T");
                     let (ck, _, trozos_solos, c_sin) =

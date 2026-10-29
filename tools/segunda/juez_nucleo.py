@@ -25,6 +25,13 @@ con un falsador: una entrada gemela que comparte la escritura de la clave tiene 
 §862 · Y con el mismo KAT, los dos conjuntos del despacho por esquema (RFC-0020, E3) y el implicito
 de `nucleo.py`: el implicito se emite, lo emitido se acepta y lo aceptado esta en el registro, con
 un falsador: un conjunto aceptado vacio tiene que caer. No los fija el KAT, que es del registro.
+
+§914 · Y otro que no es de una `fn`: `registro_de_familias` (RFC-0018 D-G, el corte zkssl/0.5) trae
+como `salida` la LISTA de las 23 familias de la marca v2 de NUCLEO.md seccion 4 bis, cada una con su
+numero, su AIR, la version de su AIR, su perfil y los 25 bytes de su marca, y como `entradas` la m y
+las columnas de la casa. Este juez escribe cada marca con `nucleo.py` desde la tabla de la spec y la
+compara byte a byte, y antes le pasa las reglas del registro a los dos, con un falsador: una AIR con
+dos numeros tiene que caer.
 """
 import hashlib
 import json
@@ -74,6 +81,7 @@ ESQUEMA = {
     "recibo_digest": {"hash_prueba": D, "era": U, "n": U},
     "recibo_digest_v2": {"hash_prueba": D, "digest_pi": D, "era": U, "n": U},
     "registro_de_esquemas": {},
+    "registro_de_familias": {"m": U, "columnas": U},
 }
 
 
@@ -131,6 +139,17 @@ def registro_en_json(registro):
 
 def registro_de_json(lista):
     return [{**x, "esquema": int(x["esquema"], 16), "clave_prefijo": hexbytes(x["clave_prefijo"])} for x in lista]
+
+
+def familias_en_json(registro, m, columnas):
+    """El registro de familias con la escritura del KAT: los numeros como QUANTITY, la marca en hex."""
+    return [{"familia": hex(f), "air": air, "version": hex(N.VERSION_INICIAL), "perfil": hex(N.PERFIL_PRODUCCION),
+             "marca": hx(N.marca_v2(m, f, N.VERSION_INICIAL, N.PERFIL_PRODUCCION, columnas))}
+            for f, air in registro]
+
+
+def familias_de_json(lista):
+    return [(int(x["familia"], 16), x["air"]) for x in lista]
 
 
 def cabeza_v1(e):
@@ -217,6 +236,14 @@ def calcular(fn, e, notas):
         if not N.conjuntos_validos(N.REGISTRO_DE_ESQUEMAS, aceptados=()):
             raise ValueError("falsador: un conjunto aceptado vacio NO cae")
         return registro_en_json(N.REGISTRO_DE_ESQUEMAS)
+    if fn == "registro_de_familias":
+        propios = N.registro_de_familias_valido(N.REGISTRO_DE_FAMILIAS)
+        if propios:
+            raise ValueError(f"el registro de familias de nucleo.py no cumple sus reglas: {propios}")
+        gemela = N.REGISTRO_DE_FAMILIAS + [(len(N.REGISTRO_DE_FAMILIAS) + 1, N.REGISTRO_DE_FAMILIAS[0][1])]
+        if not N.registro_de_familias_valido(gemela):
+            raise ValueError("falsador: una AIR con dos numeros NO cae")
+        return familias_en_json(N.REGISTRO_DE_FAMILIAS, e["m"], e["columnas"])
     if fn == "recibo_digest":
         return dig(N.recibo_digest(e["hash_prueba"], e["era"], e["n"]))
     if fn == "recibo_digest_v2":
@@ -245,6 +272,10 @@ def juzgar(directorio):
                 ajenos = N.registro_valido(registro_de_json(salida))
                 if ajenos:
                     raise ValueError(f"el registro del KAT no cumple sus reglas: {ajenos}")
+            if fn == "registro_de_familias":
+                ajenos = N.registro_de_familias_valido(familias_de_json(salida))
+                if ajenos:
+                    raise ValueError(f"el registro de familias del KAT no cumple sus reglas: {ajenos}")
         except Exception as ex:  # un KAT que no se puede leer es un ROJO con nombre
             print(f"ROJO {fn}: {type(ex).__name__}: {ex}")
             continue
@@ -281,6 +312,9 @@ def main(argv):
                  "seq, n, t, los contadores y as_digest.x como numero hex (dos codificaciones, un catalogo)")
     notas.append("formato: registro_de_esquemas no es de una fn; su salida es la lista de las entradas del registro, "
                  "con el esquema como numero hex, el prefijo de la clave en hex, los largos como numero y dos booleanos")
+    notas.append("formato: registro_de_familias tampoco es de una fn; su salida es la lista de las 23 familias de la "
+                 "marca v2 (NUCLEO.md seccion 4 bis), con la familia, la version y el perfil como numero hex, la AIR por "
+                 "su nombre y los 25 bytes de la marca en hex; la m y las columnas de la casa van como entradas")
     notas.append("hoja_de_acuse: RPC.md (zkssl_ackPath) la da como acuse_digest(hashPrueba, epoca, n) y RPC.md (El acuse "
                  "en la respuesta) dice epoca = logSeq + 1; NUCLEO.md seccion 6 lo escribe desde el S622; "
                  "con seq + 1 el KAT " + ("la sostiene" if verde.get("hoja_de_acuse") else "NO la sostiene")

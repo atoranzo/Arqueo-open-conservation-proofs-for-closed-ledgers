@@ -93,7 +93,7 @@ use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 /// sería la propia identidad y revelaría al firmante.
 pub use crate::nullifier::NULLIFIER_DOMAIN;
 
-pub const TRACE_LENGTH: usize = 64;
+pub const TRACE_LENGTH: usize = 128; // §914 (RFC-0018 D-H): T = 128, antes 64
 
 const COL_BIT: usize = STATE_WIDTH; // 12
 /// §684 (RFC-0018 E2): la clave del custodio o del gobernador en CUATRO columnas, constantes en
@@ -565,6 +565,7 @@ impl Air for NullifierThresholdAir {
 /// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
 /// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
 impl zk_ssl_air::juez::Juez for NullifierThresholdAir {
+    const NOMBRE: &'static str = "NullifierThresholdAir";
     fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
         zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
     }
@@ -624,7 +625,7 @@ impl Prover for NullifierThresholdProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("NullifierThresholdAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -753,11 +754,15 @@ pub fn verify_threshold_pair(
     // 3 bis (S529, §651; §913). Las dos tienen la forma EXACTA del AIR del umbral, con la
     //    marca de la casa, antes de construirlo: una TRACE_INFO ajena panicaria en AIR::new.
     //    La forma oculta la deriva el juez unico de la forma en claro de este AIR.
+    //    §914 (RFC-0018 D-G): la marca v2 de la familia, antes que la forma; sin ella, la misma
+    //    causa: una prueba sin marca o con otra no es de este AIR.
     let forma = <NullifierThresholdAir as zk_ssl_air::juez::Juez>::forma(&inputs_a);
-    if zk_ssl_air::juez::comprobar_forma(proof_a.trace_info(), &forma).is_err()
-        || zk_ssl_air::juez::comprobar_forma(proof_b.trace_info(), &forma).is_err()
-    {
-        return Err(PairRejection::WrongTraceWidth);
+    for p in [&proof_a, &proof_b] {
+        if zk_ssl_air::juez::comprobar_marca::<NullifierThresholdAir>(p.trace_info().meta()).is_err()
+            || zk_ssl_air::juez::comprobar_forma(p.trace_info(), &forma).is_err()
+        {
+            return Err(PairRejection::WrongTraceWidth);
+        }
     }
 
     // 4. Y las dos pruebas son validas: el juez unico, con SU politica de aceptacion (§913; hasta
@@ -775,7 +780,7 @@ pub fn verify_threshold_pair(
 mod tests {
     use super::*;
     use crate::circuit_threshold::{build_custodian_set, CUSTODIAN_DOMAIN};
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension};
 
     fn default_options() -> ProofOptions {
         ProofOptions::new(
@@ -812,7 +817,7 @@ mod tests {
             Ok(Err(_)) => false,
             Ok(Ok(proof)) => {
                 let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-                verify::<
+                crate::verify_casa::<
                     NullifierThresholdAir,
                     Blake3,
                     DefaultRandomCoin<Blake3>,
@@ -826,7 +831,7 @@ mod tests {
     fn prueba_traza(trace: TraceTable<BaseElement>, declared: NullifierThresholdPublicInputs) -> bool {
         let prover = NullifierThresholdProver::new(default_options());
         match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace))) {
-            Ok(Ok(proof)) => verify::<NullifierThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            Ok(Ok(proof)) => crate::verify_casa::<NullifierThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                 proof,
                 declared,
                 &AcceptableOptions::OptionSet(vec![default_options()]),
@@ -1084,7 +1089,7 @@ mod tests {
         // D-AD (RFC-0009) la prueba declara ancho + 1 (la columna de ocultacion) y en
         // zkssl/0.4 solo vale esa forma.
         let mut bytes = pa.to_bytes();
-        assert_eq!(bytes[0] as usize, TRACE_WIDTH + 1, "byte0 es el ancho principal OCULTO");
+        assert_eq!(bytes[0] as usize, TRACE_WIDTH + zk_ssl_air::COLUMNAS_ALEATORIAS, "byte0 es el ancho principal OCULTO");
         bytes[0] = TRACE_WIDTH as u8;
         let pa_mala = Proof::from_bytes(&bytes).expect("deserializa con la forma mutada");
         assert_eq!(
@@ -1105,7 +1110,7 @@ mod tests {
         let (pb, ib) = autorizar(keys[2], &paths[2], op);
         let bytes = pa.to_bytes();
         let largo = u16::from_le_bytes([bytes[4], bytes[5]]) as usize;
-        assert_eq!(largo, winter_air::marca::LARGO, "la prueba de la casa lleva la marca");
+        assert_eq!(largo, winter_air::marca::LARGO_V2, "la prueba de la casa lleva la marca v2 (§914)");
         let mut sin_meta = bytes[0..4].to_vec();
         sin_meta.extend_from_slice(&[0, 0]);
         sin_meta.extend_from_slice(&bytes[6 + largo..]);
@@ -1225,7 +1230,7 @@ mod tests {
                     nullifier: derive_nullifier(keys[2], otra),
                     operation: declarada,
                 };
-                verify::<
+                crate::verify_casa::<
                     NullifierThresholdAir,
                     Blake3,
                     DefaultRandomCoin<Blake3>,

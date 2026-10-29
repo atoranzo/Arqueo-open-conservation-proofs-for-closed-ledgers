@@ -1,5 +1,6 @@
-# Arqueo JSON-RPC — especificación v0.4 (`zkssl/0.4`)
+# Arqueo JSON-RPC — especificación v0.5 (`zkssl/0.5`)
 ⚠️ **`zkssl/0.4` no identifica qué pruebas acepta un nodo** (§699): las pruebas cambiaron sin subirla en el §641, el §680 y el §684, y así sigue hasta el corte de `zkssl/0.5`; y `vectors/zkssl-0.2.json` se re-emitió tres veces bajo su versión. El detalle, en «Versionado» (§«Notas operativas»). ⚠️ §723: y en el §723, ya bajo la promesa de «Versionado y compatibilidad», las de la banda y el cobro pendiente, que no las acepta un nodo sino el kit en sus sobres: pasan a su v2, que la 0.4.3 no verifica, y lo paga el mismo corte, como la E2 del RFC-0017 (§826).
+⚠️ **§914, el corte del tren (RFC-0018 D-G y D-H): `zkssl/0.5`.** Toda prueba lleva la marca v2 con su familia, la versión de su AIR y su perfil, y el juez la lee antes que nada; dos columnas aleatorias pareadas en DEEP (RFC-0009 D-AL bis) y T ≥ 128 en todas las familias; el kit 0.5.0 rechaza con nombre las pruebas de `zkssl/0.4` y anteriores (D-E; R6 e del RFC-0021). Lo que el párrafo de arriba dice de `zkssl/0.4` es historia: desde `zkssl/0.5` la marca identifica la prueba.
 > **Qué cambió de `0.1` a `0.2` (§209, etapa 1 del RFC-0002).** Un solo
 > cambio, y no está en los métodos: **`proof_digest` deja de calcularse
 > con un hash algebraico**. Con él cambian `chain` y la cabeza de época,
@@ -77,7 +78,7 @@ RFC-0009 (D-A, D-C). Ver `SECURITY.md`.
 
 | método | params | result |
 |---|---|---|
-| `zkssl_protocolVersion` | — | `"zkssl/0.4"` |
+| `zkssl_protocolVersion` | — | `"zkssl/0.5"` |
 | `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot, governanceRoot: Digest, refundTtl, maxCustodianUses: Q}` |
 | `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, consRoot, consCount, paramsDigest, pmetaRoot, nextPending, nextIndex, totalSupply, recepRoot, recepCount, epochDigest}` |
 | `zkssl_supply` | — | `{total, pending: Q}` |
@@ -1589,7 +1590,7 @@ del §850, una sola mutacion de la escritura cada uno y ninguna del valor: el `i
 delante (`0x06`), la QUANTITY `mmrSize` con un cero delante (`0x05`) y el `epochDigest` en
 mayusculas. La QUANTITY va sin ceros delante (la seccion «Codificación») y el hex, en el canonico,
 `0x` y `[0-9a-f]` por pares (`hex_canonico`, en «La composición de `chain`», y los esquemas DATA,
-Digest y Q de «La lista de `zkssl/0.4`»); el testigo los rechaza al tipar, como `forma del cable`. Y
+Digest y Q de «La lista de `zkssl/0.5`»; ⚠️ §914: decía 0.4); el testigo los rechaza al tipar, como `forma del cable`. Y
 una entrada sin fichero, `no-existe.json`: una respuesta que no se puede leer -el fichero no existe,
 es un directorio o no es UTF-8- tambien sale con `ROJO: respuesta ilegible · …` y exit `1`; hasta el
 §850 el testigo daba ahi el error de E/S, con exit `1` y sin linea `ROJO:`.
@@ -1618,7 +1619,7 @@ si la distingue, y por eso el manifiesto pina clase y texto. Abrir una clase sub
 - Parámetros de un ledger persistido: inmutables
   (`ParameterMismatch` al reabrir con otros valores).
 - Versionado: ⚠️ §801: la regla la escribe «Versionado y compatibilidad», al final de este documento (§801), que rige desde el §799, el sello en que el autor aceptó el RFC-0021 con sus decisiones (⚠️ §826: decía «desde el sello que acepte el RFC-0021»; el §799 lo dejó PROPUESTO hasta sus etapas); esta entrada cuenta lo de antes, que no se reescribe. Bajo aquélla la compatibilidad la gobiernan seis superficies, cada una con su identificador —lo que hoy les falta lo declara allí—, y la versión del cable sube con toda ruptura del cable, de las pruebas que viajan o de lo firmado, también con una versión de cabeza nueva que el nodo emita, que de la v3 a la v6 no la subió (RFC-0021, hecho 3). `zkssl_protocolVersion` gobierna compatibilidad. **La
-  versión vigente es `zkssl/0.4`** desde §538 (la `0.3` rigió desde §354, la `0.2` desde §209), y lo
+  versión vigente es `zkssl/0.5`** desde el §914, el corte del tren (RFC-0018; la `0.4` rigió desde §538, la `0.3` desde §354, la `0.2` desde §209), y lo
   que la sube es que
   cambien los **valores que viajan**, no el tamaño de la superficie:
   añadir un método de forma aditiva —como `zkssl_applyMany` en §222— no
@@ -1697,8 +1698,10 @@ identifique.
 
 ### Lo que `zkssl/0.4` no identifica todavía
 
+⚠️ §914: el título se queda, porque se cita por su nombre; lo que sigue lo escribió `zkssl/0.4`, y desde el corte `zkssl/0.5` la segunda de las tres, la de las pruebas, está identificada por la marca v2 (las notas de abajo lo dicen donde toca).
+
 Cada superficie ha de tener un identificador, y un productor del que se derivan las demás
-escrituras (R7 del RFC-0021). Hoy faltan tres:
+escrituras (R7 del RFC-0021). Hoy faltan tres (⚠️ §914: dos; la segunda, la de las pruebas, la tiene desde el corte):
 
 - **La versión del cable no tiene un productor.** La escriben, sin que nada las ate, la respuesta
   del nodo a `zkssl_protocolVersion`, el OpenRPC, dos veces, y la emisión de los vectores de
@@ -1718,15 +1721,15 @@ escrituras (R7 del RFC-0021). Hoy faltan tres:
   los tres segmentos de rango a 62 bits (la corrección de la D-3 del RFC-0017). Es una ruptura de
   (2) que no sube la versión, y la paga el corte `zkssl/0.5`, como la de la E2 de aquel RFC (§826,
   su «Compatibilidad»). Hasta el corte, el kit juzga la v2 y, si no verifica, la v1, y la 0.4.3 y
-  las anteriores no verifican la v2.
+  las anteriores no verifican la v2. ⚠️ §914: **pagada y resuelta**: desde `zkssl/0.5` toda prueba lleva la marca v2 (RFC-0018 D-G) con su familia, la versión de su AIR y su perfil, el juez la lee antes que nada, y una prueba de `zkssl/0.4` cae con nombre (`marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x`); el registro de familias y versiones es `NUCLEO.md` §4 bis, y la regla de extensión de la D-G sube la versión de la AIR con lo que cambie.
 - **La cabeza y la cofirma no dicen con qué esquema de firma se firmaron**: lo firmado no lo nombra
   (el acta nombra, desde el §643, el de la clave que entra). Meterlo dentro es el RFC-0020 (la 87),
   aceptado con el RFC-0021 en el §799.
 
-### La lista de `zkssl/0.4`
+### La lista de `zkssl/0.5`
 
 Lo que es hoy cada superficie que tiene entrada, leído de su productor y fijado en el §801 para
-`zkssl/0.4`: la versión vigente, y con otra versión, otra lista. `tools/check_superficie.py`, en el
+`zkssl/0.4` y en el §914 para `zkssl/0.5`: la versión vigente, y con otra versión, otra lista. `tools/check_superficie.py`, en el
 bucle del canon (la E3a del RFC-0021), lo vuelve a leer de cada productor y lo compara con esta lista: una entrada que su
 productor ya no da, o da cambiada, es ROJO; lo aditivo que nadie emite todavía —un método, un
 parámetro opcional, un `tipo`, un vector, una versión aceptada que nadie emite— se cuenta y no es
@@ -1743,10 +1746,10 @@ los productores, en esta misma forma, y no escribe nada.
 | `vectores.json`, `vectores.lineas`, `manifiesto` | (5) | `vectors/`; sus huellas las mira `tools/check_vectores.py`, que el canon corre |
 | `kit.salida`, `familia` | (6) | `codigo_de_salida` y el uso, en el kit, frente a `PAQUETE.md` §6 y a la sección 0 de `doc/KIT.md`; `FAMILIAS`, en `tools/artefacto.sh` |
 
-La superficie (2) no tiene entrada: no tiene identificador (arriba).
+La superficie (2) no tiene entrada: no tiene identificador (arriba). ⚠️ §914: lo tiene, la marca v2 (familia, versión de la AIR y perfil, `NUCLEO.md` §4 bis); su entrada en la lista, con `tools/check_superficie.py` leyéndola del registro, queda para un sello posterior.
 
 ```superficie
-cable zkssl/0.4
+cable zkssl/0.5
 cable.escrituras zk-ssl-node/src/main.rs zk-ssl-wire/src/openrpc.rs×2
 escenario zkssl/0.5
 metodo zkssl_protocolVersion() -> ProtocolVersion
@@ -1781,7 +1784,7 @@ metodo zkssl_keyActs() -> KeyActs
 esquema Bool boolean
 esquema DATA string pattern ^0x([0-9a-f][0-9a-f])*$
 esquema Digest string pattern ^0x[0-9a-f]{64}$
-esquema ProtocolVersion string const zkssl/0.4
+esquema ProtocolVersion string const zkssl/0.5
 esquema Q string pattern ^0x[0-9a-f]+$
 cabeza.acepta v2 v3 v4 v5 v6
 cabeza.emite v6
@@ -1791,13 +1794,18 @@ acta.emite 1
 sobre.v 1 2
 sobre.tipo extension consumo conflicto rechazo edad cobro_pendiente pago_en_curso prenda completitud ancla ancla-cofirmada solapamiento
 kit.salida 0 1 2 3
-vectores.json 605
-vectores.lineas 1370
+vectores.json 702
+vectores.lineas 1740
 manifiesto 0.3/edad/MANIFIESTO.txt
 manifiesto 0.3/pago/MANIFIESTO.txt
 manifiesto 0.3/pendiente/MANIFIESTO.txt
 manifiesto 0.3/rechazo/MANIFIESTO.txt
 manifiesto 0.4/completitud/MANIFIESTO.txt
+manifiesto 0.4/edad/MANIFIESTO.txt
+manifiesto 0.4/pago/MANIFIESTO.txt
+manifiesto 0.4/pendiente/MANIFIESTO.txt
+manifiesto 0.4/prenda/MANIFIESTO.txt
+manifiesto 0.4/rechazo/MANIFIESTO.txt
 manifiesto ancla-cofirmada/MANIFIESTO.txt
 manifiesto ancla/MANIFIESTO.txt
 manifiesto cable/MANIFIESTO.txt

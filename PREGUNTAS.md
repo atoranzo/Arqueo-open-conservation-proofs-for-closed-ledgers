@@ -25,7 +25,7 @@ dentro de la prueba de cada pago, y esa prueba la verifica el nodo, no el tercer
 Debajo hay una capa de liquidación en Rust con pagos en dos fases probados con STARK, y el trabajo
 comparativo que fundamentó su diseño: el mismo circuito en cinco sistemas de prueba
 ([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)). Antes se llamaba ZK-SSL; cambió el nombre del
-proyecto, no los identificadores publicados (`zkssl/0.3` entonces y `zkssl/0.4` desde el
+proyecto, no los identificadores publicados (`zkssl/0.3` entonces, `zkssl/0.4` desde el asiento 538 y `zkssl/0.5` desde el 914; ⚠️ §914: decía `zkssl/0.4` desde el
 asiento 538, por la ocultación; `zk-ssl-*`).
 
 ### 2. ¿Qué NO es?

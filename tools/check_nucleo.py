@@ -16,6 +16,10 @@
 #      un numero tecleado (PRECISION 16). Las DOS mitades desde el S561: la
 #      del por-clase se declaraba aqui y no se cruzaba, y el parentesis del
 #      censo envejecio cuatro filas en el S558 sin que nada lo viera.
+#  R5  (§914, RFC-0018 D-G) la tabla del registro de las familias de la marca v2 (seccion 4 bis)
+#      y `FAMILIAS` de crates/zk-ssl-air/src/familias.rs, su unico productor, son la misma lista,
+#      en el mismo orden, numerada 1..n: una familia en un sitio y no en el otro, u otro numero,
+#      es rojo. El KAT de las 23 marcas es `spec/vectors/nucleo/registro_de_familias.json`.
 #
 # Como se deriva (el mismo instrumento que el PASTE-407-M2 de la sesion 97):
 #  - las zonas de test se recortan por ANIDAMIENTO REAL DE LLAVES desde cada
@@ -35,6 +39,7 @@ RAIZ = os.environ.get('CANON_RAIZ') or os.path.normpath(
 DOC = os.environ.get('NUCLEO_DOC') or os.path.join('spec', 'NUCLEO.md')  # NUCLEO_DOC: solo para ensayar el gate contra una copia
 VERIFY = os.path.join('crates', 'zk-ssl-verify', 'src')
 HASH = os.path.join('crates', 'zk-ssl-hash', 'src', 'lib.rs')
+FAMILIAS_RS = os.path.join('crates', 'zk-ssl-air', 'src', 'familias.rs')
 CLASES = ('NUCLEO', 'REFERENCIA', 'LIBRO', 'REGISTRO')
 ITEM = re.compile(r'^\s*pub(?:\((?:crate|super)\))?\s+(?:unsafe\s+)?'
                   r'(fn|const|static|struct|enum|mod|use|type|trait)\s+([A-Za-z_][A-Za-z0-9_]*)?')
@@ -181,6 +186,41 @@ def declarados_por_clase(doc):
     return d if set(d) == set(CLASES) else None
 
 
+def familias_del_doc(doc):
+    """R5: las filas `| n | `Air` |` de la tabla de la seccion 4 bis, en su orden."""
+    L = open(doc, encoding='utf-8').read().split('\n')
+    ini = next((i for i, l in enumerate(L) if l.startswith('### 4 bis.')), None)
+    if ini is None:
+        return None
+    fin = next((i for i in range(ini + 1, len(L)) if L[i].startswith('## ')), len(L))
+    filas = []
+    for l in L[ini:fin]:
+        m = re.match(r'^\|\s*(\d+)\s*\|\s*`([A-Za-z0-9_]+)`\s*\|\s*$', l)
+        if m:
+            filas.append((int(m.group(1)), m.group(2)))
+    return filas
+
+
+def familias_del_arbol(ruta):
+    """R5: las entradas de `FAMILIAS` en familias.rs, en su orden, fuera de las zonas de test."""
+    L = open(ruta, encoding='utf-8').read().split('\n')
+    zt = zonas_test(L)
+    dentro, filas = False, []
+    for i, l in enumerate(L):
+        if any(a <= i < b for a, b in zt):
+            continue
+        if re.match(r'^pub const FAMILIAS\b', l):
+            dentro = True
+            continue
+        if dentro:
+            if l.startswith('];'):
+                break
+            m = re.match(r'^\s*\((\d+),\s*"([A-Za-z0-9_]+)"\),', l)
+            if m:
+                filas.append((int(m.group(1)), m.group(2)))
+    return filas
+
+
 def main():
     os.chdir(RAIZ)
     rojo = []
@@ -241,6 +281,21 @@ def main():
             if dc[c] != por_clase.get(c, 0):
                 rojo.append(f'R4: el documento declara {dc[c]} de clase {c} y la tabla '
                             f'tiene {por_clase.get(c, 0)}: corregir el desglose del censo')
+    # R5 (§914): el registro de las familias de la marca v2, la tabla y su productor
+    fd = familias_del_doc(DOC)
+    fa = familias_del_arbol(FAMILIAS_RS) if os.path.exists(FAMILIAS_RS) else []
+    if not fd:
+        rojo.append(f'R5: la tabla del registro de familias (seccion 4 bis de {DOC}) no se encuentra')
+    elif not fa:
+        rojo.append(f'R5: `FAMILIAS` no se encuentra en {FAMILIAS_RS}')
+    else:
+        if fd != fa:
+            solo_doc = [x for x in fd if x not in fa]
+            solo_arbol = [x for x in fa if x not in fd]
+            rojo.append(f'R5: la tabla de la seccion 4 bis y `FAMILIAS` ({FAMILIAS_RS}) no son la misma lista: '
+                        f'solo en la tabla {solo_doc}, solo en el arbol {solo_arbol}, orden o numero distinto')
+        if [n for n, _ in fd] != list(range(1, len(fd) + 1)):
+            rojo.append(f'R5: la tabla de la seccion 4 bis no esta numerada 1..{len(fd)} en su orden')
     if rojo:
         for r in rojo:
             print('  ROJO ' + r)
@@ -248,7 +303,8 @@ def main():
         return 1
     print(f'check_nucleo: la tabla de {DOC} y el censo dicen lo mismo en las dos direcciones: '
           f'{nv} elementos de verify + {nh} de hash = {len(F)} filas '
-          f'({", ".join(f"{k} {v}" for k, v in sorted(por_clase.items()))})')
+          f'({", ".join(f"{k} {v}" for k, v in sorted(por_clase.items()))}); '
+          f'R5: las {len(fd)} familias de la marca v2 de la seccion 4 bis son las de `FAMILIAS`')
     return 0
 
 

@@ -946,6 +946,7 @@ impl Air for BurnAir {
 /// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
 /// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
 impl zk_ssl_air::juez::Juez for BurnAir {
+    const NOMBRE: &'static str = "BurnAir";
     fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
         zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
     }
@@ -1007,7 +1008,7 @@ impl Prover for BurnProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("BurnAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -1053,7 +1054,7 @@ mod tests {
         native_leaf, native_leaf_salted,
     };
     use crate::merkle::native_merge;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, VerifierError};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension, VerifierError};
 
     const SK: u64 = 0xA11CE;
 
@@ -1202,7 +1203,7 @@ mod tests {
         };
 
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        crate::verify_casa::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             s.public_inputs.clone(),
             &min_opts,
@@ -1229,7 +1230,7 @@ mod tests {
         let prover = BurnProver::new(default_options());
         let proof = prover.prove(trace).expect("la destruccion valida deberia probar");
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        let v = verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let v = crate::verify_casa::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             s.public_inputs.clone(),
             &min_opts,
@@ -1321,7 +1322,7 @@ mod tests {
         let prover = BurnProver::new(default_options());
         let proof = prover.prove(trace).expect("prove");
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        let v = verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let v = crate::verify_casa::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof, declared, &min_opts,
         );
         assert!(v.is_err());
@@ -1578,7 +1579,7 @@ mod tests {
                 Ok(Err(_)) => false,    // prove Err
                 Ok(Ok(proof)) => {
                     let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-                    verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                    crate::verify_casa::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                         proof, s.public_inputs.clone(), &min_opts,
                     ).is_ok()
                 }
@@ -1624,7 +1625,7 @@ mod tests {
                 Ok(Err(_)) => false,    // prove Err
                 Ok(Ok(proof)) => {
                     let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-                    verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                    crate::verify_casa::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                         proof, s.public_inputs.clone(), &min_opts,
                     ).is_ok()
                 }
@@ -1693,7 +1694,7 @@ mod tests {
         rellena_acumuladores(&mut t);
         let prover = BurnProver::new(default_options());
         match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(t))) {
-            Ok(Ok(proof)) => verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            Ok(Ok(proof)) => crate::verify_casa::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                 proof,
                 s.public_inputs.clone(),
                 &AcceptableOptions::OptionSet(vec![default_options()]),
@@ -1844,7 +1845,8 @@ mod tests {
             .prove(trace)
             .expect("sin ocultacion, en release el probador no comprueba la traza");
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        let r = verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let r = // sin ocultar no hay marca v2: el verify del fork, no el de la casa (§914)
+        winterfell::verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             s.public_inputs.clone(),
             &min_opts,

@@ -674,6 +674,7 @@ impl Air for AuditAir {
 /// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
 /// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
 impl zk_ssl_air::juez::Juez for AuditAir {
+    const NOMBRE: &'static str = "AuditAir";
     fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
         zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
     }
@@ -728,7 +729,7 @@ impl Prover for AuditProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("AuditAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -773,7 +774,7 @@ mod tests {
     };
     use super::*;
     use crate::merkle::native_merge;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension};
 
     const SK: u64 = 0xA11CE;
 
@@ -857,7 +858,7 @@ mod tests {
             Err(_) | Ok(Err(_)) => false,
             Ok(Ok(proof)) => {
                 let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-                verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                crate::verify_casa::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     proof, declared, &min_opts,
                 )
                 .is_ok()
@@ -882,7 +883,7 @@ mod tests {
         let prover = AuditProver::new(default_options());
         let proof = prover.prove(trace).expect("prove");
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        let v = verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let v = crate::verify_casa::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             pi(root, id, 1_000_000, 1_000_000),
             &min_opts,
@@ -1138,7 +1139,7 @@ mod tests {
                 Ok(Err(_)) => false,    // prove Err
                 Ok(Ok(proof)) => {
                     let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-                    verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                    crate::verify_casa::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                         proof, pi(root, id, 900_000, 1_100_000), &min_opts,
                     ).is_ok()
                 }
@@ -1173,7 +1174,7 @@ mod tests {
                 Ok(Err(_)) => false,    // prove Err
                 Ok(Ok(proof)) => {
                     let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-                    verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                    crate::verify_casa::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                         proof, pi(root, id, 900_000, 1_100_000), &min_opts,
                     ).is_ok()
                 }

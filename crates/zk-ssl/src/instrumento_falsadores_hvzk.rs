@@ -42,7 +42,7 @@
 use std::collections::BTreeSet;
 
 use winter_air::proof::merge_ood_evaluations;
-use winter_air::{Air, AirContext, Assertion, Marca, Oculta, TransitionConstraintDegree};
+use winter_air::{Air, AirContext, Assertion, Oculta, TransitionConstraintDegree};
 use winter_prover::Ocultacion;
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, ElementHasher, MerkleTree, RandomCoin};
 use winterfell::math::fields::f64::BaseElement;
@@ -252,7 +252,7 @@ fn vista(bytes: &[u8]) -> Vista {
     let capas = air.options().to_fri_options().num_fri_layers(lde);
     let n = air.context().num_constraint_composition_columns();
     let ancho = air.trace_info().main_trace_width();
-    let m = Marca::leer(proof.trace_info().meta()).expect("meta").expect("marca").m;
+    let m = crate::instrumento_cota::m_de_la_marca(proof.trace_info().meta()).expect("marca");
 
     // la moneda: el contexto y las entradas publicas, y despues lo que la prueba compromete
     let mut semilla: Vec<BaseElement> = proof.context.to_elements();

@@ -117,7 +117,7 @@ pub fn comprobar_emisor(emisor: u64) -> Result<(), String> {
 
 /// **El tope de `m`** (§717, el coste del juez de la edad): la prueba cubre el subarbol
 /// `[0, 2^m)`, y [`comprobar_enunciado`] rechaza `m > M_MAX` ANTES de leer la prueba y de construir
-/// el AIR, con la causa `m = .. fuera de 3..=M_MAX`.
+/// el AIR, con la causa `m = .. fuera de M_MIN..=M_MAX` (⚠️ §914: hasta el §914, `3..=M_MAX`).
 ///
 /// Por que hace falta: la traza oculta mide `2 * 8 * 2^m` filas y el envoltorio de ocultacion
 /// declara `1 + 8 * 2^m` exenciones de transicion, asi que el juez paga un coste lineal en `2^m`
@@ -149,6 +149,11 @@ pub fn comprobar_emisor(emisor: u64) -> Result<(), String> {
 /// la prueba y `neg-m-14-sobre-tope.json` cae por el tope, asi que juntos fijan el tope en 13. Un
 /// tope nuevo pide vectores nuevos; los de hoy no se reescriben.
 pub const M_MAX: u32 = 13;
+
+/// §914 (RFC-0018 D-H, T = 128 en las cinco familias de T = 64): el suelo de `m` de la edad sube
+/// de 3 a 4, porque la traza en claro mide `CICLO << m` y pide T >= 128 (⚠️ §914: era 3 desde la
+/// D-AG del RFC-0009, con T >= 64).
+pub const M_MIN: u32 = 4;
 
 /// **§723, la ventana de la v1 de la banda y del cobro pendiente.** En la v1 los tres
 /// segmentos de rango de [`banda`] y de [`cobro_pendiente`] eran de 63 bits. El valor que acotan
@@ -259,25 +264,21 @@ pub const AUXILIARES: usize = 5 + 3 + 1;
 /// guardas de forma la exigen.
 pub const M_OCULTACION: usize = 64;
 
-/// §651 (D3-META): la marca del meta es parte de la FORMA. El verificador del fork elige el modo
-/// leyendo el meta que pone quien envia la prueba: con el meta vaciado, una prueba de forma oculta
-/// (ancho + 1, 2T) pasaba la guarda de forma y llegaba a `AIR::new` en claro, que entra en panico
-/// por el ancho (`assert_eq!`). Toda guarda de forma llama a esto ANTES de construir ningun AIR:
-/// solo la marca de la casa, con su `m`, es una prueba que se juzga.
-pub fn comprobar_marca(meta: &[u8]) -> Result<(), String> {
-    match winter_air::Marca::leer(meta) {
-        Ok(Some(winter_air::Marca { m: M_OCULTACION })) => Ok(()),
-        otra => Err(format!(
-            "marca de la ocultacion {otra:?}; el enunciado pide m = {M_OCULTACION}"
-        )),
-    }
-}
+/// §914 (el corte zkssl/0.5; RFC-0009 D-AL bis, RFC-0018 D-H): las columnas aleatorias de toda
+/// prueba de la casa, DOS, pareadas como una sobre E en DEEP. Un solo productor: el probador las
+/// escribe en la marca v2 y el juez unico exige la forma oculta con ellas.
+pub const COLUMNAS_ALEATORIAS: usize = 2;
 
-/// §912 (RFC-0018 D-G, en LABORATORIO hasta el corte): el paso 1 del juez de la marca v2, 1b a
-/// 1h, con sus textos -los mismos que `verify_v2` del fork y que `tools/segunda`, letra por
-/// letra-: la marca antes que nada, sin construir ninguna AIR ni leer el resto de la prueba.
-/// Devuelve m y las columnas aleatorias que declara. Ningun juez de produccion lo llama en
-/// `zkssl/0.4`: en el corte sustituye a `comprobar_marca` en el kit, la capa y la pareja umbral.
+/// §912 (RFC-0018 D-G), en produccion desde el corte zkssl/0.5 (§914): el paso 1 del juez de la
+/// marca v2, 1b a 1h, con sus textos -los mismos que `verify_v2` del fork y que `tools/segunda`,
+/// letra por letra-: la marca antes que nada, sin construir ninguna AIR ni leer el resto de la
+/// prueba. Devuelve m y las columnas aleatorias que declara. Lo llaman los cinco jueces del kit
+/// ([`marca_del_kit`]), la capa y la pareja umbral por el juez unico ([`juez::comprobar_marca`]).
+/// §651 (D3-META): la marca del meta es parte de la FORMA, y se mira ANTES de construir ninguna
+/// AIR: con el meta vaciado, una prueba de forma oculta llegaba a `AIR::new` en claro, que entraba
+/// en panico por el ancho. Hasta el §914 ese sitio era `comprobar_marca`, el lector de la marca v1
+/// de zkssl/0.4, con el texto `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`; una
+/// prueba con esa marca cae ahora en 1c, y la juzga el kit 0.4.x.
 pub fn comprobar_marca_v2(meta: &[u8], familia: u16) -> Result<(usize, usize), String> {
     use winter_air::{Marca, MarcaError, MarcaV2};
     let marca = match MarcaV2::leer(meta) {
@@ -306,21 +307,39 @@ pub fn comprobar_marca_v2(meta: &[u8], familia: u16) -> Result<(usize, usize), S
     if marca.m != M_OCULTACION {
         return Err(format!("marca: m = {}; la construccion pide m = {M_OCULTACION}", marca.m));
     }
+    // §914 (1h bis): las columnas que declara son las de la construccion. Sin esto, una marca con
+    // otra cifra pasaba la forma -que exige la constante- y el fork construia la AIR interna con
+    // un ancho de menos, que entraba en panico (el barrido byte a byte del kit lo vio).
+    if marca.columnas as usize != COLUMNAS_ALEATORIAS {
+        return Err(format!("marca: {} columnas; la construccion pide {COLUMNAS_ALEATORIAS}", marca.columnas));
+    }
     Ok((marca.m, marca.columnas as usize))
 }
 
 /// §913: el texto con que los cinco jueces del kit dicen un [`juez::Rechazo`], los de siempre: la
-/// forma con «pide», la marca con el texto de [`comprobar_marca`] y el error del fork por su
+/// forma con «pide», la marca con el texto de [`comprobar_marca_v2`] y el error del fork por su
 /// `Debug`. Los catalogos de `spec/PAQUETE.md` §5 los citan tal cual. Siempre es `Err`: los jueces
 /// lo encadenan con `or_else`.
 pub fn rechazo_del_kit(r: juez::Rechazo) -> Result<(), String> {
     match r {
+        juez::Rechazo::Cabeza => Err("la prueba no se deserializa: sin cabeza".to_string()),
         juez::Rechazo::Forma { real: forma, exige } => {
             Err(format!("forma de traza {forma:?}; el enunciado pide {:?}", exige))
         },
         juez::Rechazo::Marca(m) => Err(m),
         juez::Rechazo::Verificador(e) => Err(format!("{e:?}")),
     }
+}
+
+/// §914 (RFC-0018 D-G): el paso 1 del juez del kit, la marca ANTES que nada, leida de la cabeza de
+/// la prueba sin deserializar el resto (1a) y juzgada con las causas 1b a 1h; con los textos del
+/// kit. Los cinco jueces empiezan por aqui, antes del enunciado.
+pub fn marca_del_kit<J: juez::Juez>(prueba: &[u8]) -> Result<(), String> {
+    let meta = match juez::meta_de_la_cabeza(prueba) {
+        Ok(meta) => meta,
+        Err(r) => return rechazo_del_kit(r),
+    };
+    juez::comprobar_marca::<J>(meta).map(|_| ()).or_else(rechazo_del_kit)
 }
 
 /// §711: las causas con nombre de una prueba mal formada, del fork de winterfell, la unica fuente:
@@ -451,11 +470,11 @@ impl ToElements<BaseElement> for EdadPublicInputs {
 /// enunciado tiene una sola escritura. El emisor es un indice de cuenta, menor que `2^32`, y con
 /// todos es 0.
 ///
-/// Desde el §717, `m` va de 3 a [`M_MAX`] (antes, a 24). Por encima, el juez pagaria un coste
-/// lineal en `2^m` antes de mirar la prueba.
+/// Desde el §717, `m` va de [`M_MIN`] a [`M_MAX`] (antes, a 24; ⚠️ §914: el suelo sube de 3 a 4).
+/// Por encima, el juez pagaria un coste lineal en `2^m` antes de mirar la prueba.
 pub fn comprobar_enunciado(pi: &EdadPublicInputs) -> Result<(), String> {
-    if pi.m < 3 || pi.m > M_MAX {
-        return Err(format!("m = {} fuera de 3..={M_MAX}", pi.m));
+    if pi.m < M_MIN || pi.m > M_MAX {
+        return Err(format!("m = {} fuera de {M_MIN}..={M_MAX}", pi.m));
     }
     if pi.n > (1u64 << pi.m) {
         return Err(format!("n = {} no cabe en 2^{}", pi.n, pi.m));
@@ -846,6 +865,7 @@ impl Air for EdadAir {
 
 /// §913: la forma en claro de la edad, para el juez unico: la longitud depende de `m`.
 impl juez::Juez for EdadAir {
+    const NOMBRE: &'static str = "EdadAir";
     fn forma(pi: &EdadPublicInputs) -> juez::Forma {
         juez::Forma { ancho: ANCHO, ancho_aux: ANCHO_AUX, aleatorios: ALEATORIOS, longitud: CICLO << pi.m }
     }
@@ -858,11 +878,13 @@ impl juez::Juez for EdadAir {
 /// a construir el AIR, y acepta SOLO [`opciones`]. Nunca entra en panico por lo que traiga la
 /// prueba.
 pub fn verificar(prueba: &[u8], pi: &EdadPublicInputs) -> Result<(), String> {
+    // §914 (RFC-0018 D-G): la marca v2 antes que nada; despues el enunciado; despues la prueba
+    marca_del_kit::<EdadAir>(prueba)?;
     comprobar_enunciado(pi)?;
     let proof =
         Proof::from_bytes(prueba).map_err(|e| format!("la prueba no se deserializa: {e:?}"))?;
-    // §913: la forma oculta -ancho + 1, el tramo auxiliar tal cual y 2 * CICLO * 2^m filas-, la
-    // marca (§651) y la verificacion con la politica del juez, por el juez unico
+    // §913: la forma oculta -ancho + 2, el tramo auxiliar tal cual y 2 * CICLO * 2^m filas-, las
+    // opciones y la verificacion con la politica del juez, por el juez unico
     juez::juzgar::<EdadAir>(proof, pi.clone()).or_else(rechazo_del_kit)
 }
 
@@ -924,13 +946,13 @@ pub struct Afirmacion {
     pub subraiz_meta: Digest,
 }
 
-/// **La `m` de una marca**: el menor `m >= 3` con `n <= 2^m`, la que usa el probador
-/// (`next_power_of_two`, al menos 8). Una marca, un subarbol: un enunciado tiene una sola forma
-/// (decision D-2 de E4b-2; el suelo sube de 1 a 3 en D-AG del RFC-0009: la traza oculta pide
-/// T >= 64 y la traza mide 8 * 2^m). No desborda: para `n > 2^63` da 64, que el enunciado rechaza.
+/// **La `m` de una marca**: el menor `m >= M_MIN` con `n <= 2^m`, la que usa el probador
+/// (`next_power_of_two`, al menos `1 << M_MIN`). Una marca, un subarbol: un enunciado tiene una
+/// sola forma (decision D-2 de E4b-2; el suelo sube de 1 a 3 en D-AG del RFC-0009, con T >= 64, y
+/// de 3 a 4 en el §914, con T >= 128). No desborda: para `n > 2^63` da 64, que el enunciado rechaza.
 pub fn m_canonico(n: u64) -> u32 {
-    if n <= 8 {
-        3
+    if n <= (1u64 << M_MIN) {
+        M_MIN
     } else {
         64 - (n - 1).leading_zeros()
     }
@@ -946,6 +968,8 @@ pub fn verificar_contra_cabeza(
     af: &Afirmacion,
     cabeza: &CabezaEdad,
 ) -> Result<EdadPublicInputs, String> {
+    // §914 (RFC-0018 D-G): la marca antes que nada, tambien antes de componer con la cabeza
+    marca_del_kit::<EdadAir>(prueba)?;
     let m = m_canonico(cabeza.next_pending);
     let pi = EdadPublicInputs {
         subraiz_pend: af.subraiz_pend,
@@ -1081,13 +1105,14 @@ mod tests {
     /// (`next_power_of_two`, al menos 8 desde D-AG), y no desborda en los extremos.
     #[test]
     fn la_m_de_una_marca_es_la_minima() {
+        // §914: el suelo sube de 3 a 4 (M_MIN), con T = 128
         let tabla = [
-            (0, 3),
-            (1, 3),
-            (2, 3),
-            (3, 3),
-            (5, 3),
-            (8, 3),
+            (0, 4),
+            (1, 4),
+            (2, 4),
+            (3, 4),
+            (5, 4),
+            (8, 4),
             (9, 4),
             (13, 4),
             (16, 4),
@@ -1100,7 +1125,7 @@ mod tests {
             assert_eq!(m_canonico(n), m, "n = {n}");
         }
         for n in 0..300u64 {
-            let del_probador = (n as usize).next_power_of_two().max(8) as u64;
+            let del_probador = (n as usize).next_power_of_two().max(1 << M_MIN) as u64;
             assert_eq!(1u64 << m_canonico(n), del_probador, "n = {n}");
         }
     }
@@ -1126,8 +1151,12 @@ mod tests_sal {
     /// Las lineas de CODIGO -no de comentario- que llaman a `verify` con sus tipos. La aguja se
     /// arma por partes para que este mismo fuente no la contenga.
     fn llamadas(fuente: &str) -> Vec<&str> {
-        let aguja = concat!("verify", "::<");
-        fuente.lines().filter(|l| !l.trim_start().starts_with("//") && l.contains(aguja)).collect()
+        // §914: el juez llama a `verify_v2`, el verificador de la marca v2 del fork
+        let agujas = [concat!("verify", "::<"), concat!("verify_v2", "::<")];
+        fuente
+            .lines()
+            .filter(|l| !l.trim_start().starts_with("//") && agujas.iter().any(|a| l.contains(a)))
+            .collect()
     }
 
     /// Cada modulo, con sus llamadas contadas y todas con sal. Devuelve cuantas hubo.
@@ -1203,8 +1232,7 @@ mod tests_nivel {
     const UDR_ACTUAL: u32 = 59;
 
     /// El piso declarado de la LDR, en bits, para cada `m` (§697): lo que la funcion da hoy.
-    const PISO_LDR: [(u32, u32); 11] = [
-        (3, 88),
+    const PISO_LDR: [(u32, u32); 10] = [
         (4, 86),
         (5, 84),
         (6, 82),
@@ -1305,8 +1333,7 @@ mod tests_nivel {
     /// ese termino pone a la conjeturada, la cifra que `SECURITY.md` §3.11 publica junto a los 127
     /// que devuelve la funcion. Las familias de longitud fija tienen las longitudes de `m` = 3, 5,
     /// 6 y 7: 128, 512, 1024 y 2048 filas de traza oculta.
-    const CONJETURADA_CON_DEEP: [(u32, u32); 11] = [
-        (3, 1168),
+    const CONJETURADA_CON_DEEP: [(u32, u32); 10] = [
         (4, 1158),
         (5, 1148),
         (6, 1138),
@@ -1497,7 +1524,7 @@ mod tests_coste {
     use std::time::{Duration, Instant};
 
     use winter_air::proof::{Commitments, Context, OodFrame, Queries};
-    use winter_air::{Air, Marca, Oculta};
+    use winter_air::{Air, Oculta};
     use winter_crypto::{BatchMerkleProof, Hasher};
     use winter_math::fields::QuadExtension;
     use winter_verifier::{ByteWriter, Deserializable, Serializable};
@@ -1518,8 +1545,9 @@ mod tests_coste {
 
     fn info_de(m: u32) -> TraceInfo {
         let l = 2 * (CICLO << m);
-        let marca = Marca { m: M_OCULTACION }.escribir();
-        TraceInfo::new_multi_segment(ANCHO + 1, ANCHO_AUX, ALEATORIOS, l, marca)
+        // §914: la marca v2 de la edad y las dos columnas aleatorias
+        let marca = familias::marca_v2_de("EdadAir", COLUMNAS_ALEATORIAS as u8).expect("registro").escribir();
+        TraceInfo::new_multi_segment(ANCHO + COLUMNAS_ALEATORIAS, ANCHO_AUX, ALEATORIOS, l, marca)
     }
 
     fn digest(k: u8) -> <Blake3 as Hasher>::Digest {
@@ -1559,11 +1587,11 @@ mod tests_coste {
         b.write_u8(q as u8);
         let fri_raices = (0..=capas).map(|i| digest(10 + i as u8)).collect();
         b.write(Commitments::new::<Blake3>(vec![digest(1), digest(2)], digest(3), fri_raices));
-        b.write(tabla(ld, q, vec![BaseElement::new(5); ANCHO + 1]));
+        b.write(tabla(ld, q, vec![BaseElement::new(5); ANCHO + COLUMNAS_ALEATORIAS]));
         b.write(tabla(ld, q, vec![E::from(BaseElement::new(6)); ANCHO_AUX]));
         b.write(tabla(ld, q, vec![E::from(BaseElement::new(8)); ncomp]));
         let mut ood: Vec<u8> = Vec::new();
-        for (ancho, base) in [(ANCHO + 1 + ANCHO_AUX, 1u64), (ncomp, 3)] {
+        for (ancho, base) in [(ANCHO + COLUMNAS_ALEATORIAS + ANCHO_AUX, 1u64), (ncomp, 3)] {
             let mut marco: Vec<u8> = vec![2];
             for i in 0..2 * ancho {
                 marco.write(E::from(BaseElement::new(i as u64 + base)));
@@ -1633,10 +1661,10 @@ mod tests_coste {
     #[test]
     fn m_sobre_el_tope_cae_antes_de_leer_la_prueba() {
         let sobre = (1u64 << M_MAX) + 1;
-        let e = verificar_contra_cabeza(&[], &AF, &cabeza(sobre)).expect_err("vacia");
-        assert_eq!(e, format!("m = {} fuera de 3..={M_MAX}", M_MAX + 1));
+        let e = verificar_contra_cabeza(&juez::solo_cabeza::<EdadAir>(), &AF, &cabeza(sobre)).expect_err("vacia");
+        assert_eq!(e, format!("m = {} fuera de {M_MIN}..={M_MAX}", M_MAX + 1));
         let (t, e) = rechazo(&fabricar(23), &cabeza(1 << 23), 3);
-        assert_eq!(e, format!("m = 23 fuera de 3..={M_MAX}"));
+        assert_eq!(e, format!("m = 23 fuera de {M_MIN}..={M_MAX}"));
         assert!(t < Duration::from_millis(50), "m = 23 sobre el tope tardo {t:?}");
         let e = verificar_contra_cabeza(&[], &AF, &cabeza(1 << M_MAX)).expect_err("vacia");
         assert!(e.starts_with("la prueba no se deserializa"), "en el tope: {e}");
@@ -1664,12 +1692,12 @@ mod tests_coste {
     /// causa es `InconsistentOodConstraintEvaluations`.
     #[test]
     fn m_14_cae_por_el_tope_en_milisegundos() {
-        let causa = "m = 14 fuera de 3..=13";
+        let causa = format!("m = 14 fuera de {M_MIN}..=13");
         let (t, e) = rechazo(&fabricar(14), &cabeza(1 << 14), 3);
         assert_eq!(e, causa, "la fabricada de m = 14");
         eprintln!("rechazo: m = 14 sobre el tope en {t:?}");
         assert!(t < Duration::from_millis(50), "m = 14 sobre el tope tardo {t:?}");
-        assert_eq!(comprobar_enunciado(&pi_de(14)), Err(causa.to_string()), "el enunciado");
+        assert_eq!(comprobar_enunciado(&pi_de(14)), Err(causa.clone()), "el enunciado");
     }
 
     /// La segunda implementacion tiene el mismo tope: su `M_MAX` (`tools/segunda/airs.py`) es una
@@ -1682,7 +1710,10 @@ mod tests_coste {
             fuente.lines().map(str::trim).filter(|l| l.starts_with("M_MAX = ")).collect();
         assert_eq!(lineas, vec![format!("M_MAX = {M_MAX}")], "el tope de la segunda");
         assert!(fuente.contains("self.m > self.M_MAX"), "la segunda no usa su tope");
-        assert!(fuente.contains(r#"f"m = {self.m} fuera de 3..={self.M_MAX}""#), "otra causa");
+        assert!(fuente.contains(r#"f"m = {self.m} fuera de {self.M_MIN}..={self.M_MAX}""#), "otra causa");
+        let suelos: Vec<&str> =
+            fuente.lines().map(str::trim).filter(|l| l.starts_with("M_MIN = ")).collect();
+        assert_eq!(suelos, vec![format!("M_MIN = {M_MIN}")], "el suelo de la segunda (§914)");
     }
 
     /// En el tope, la prueba fabricada llega a la coherencia OOD y cae alli, y rechazarla no cuesta
@@ -1696,13 +1727,13 @@ mod tests_coste {
     #[test]
     fn el_coste_de_rechazar_no_crece_con_m() {
         let ood = "InconsistentOodConstraintEvaluations";
-        let (t3, e3) = rechazo(&fabricar(3), &cabeza(8), 5);
-        assert_eq!(e3, ood, "m = 3");
+        let (t3, e3) = rechazo(&fabricar(M_MIN), &cabeza(1 << M_MIN), 5);
+        assert_eq!(e3, ood, "m = {M_MIN}");
         let (tt, et) = rechazo(&fabricar(M_MAX), &cabeza(1 << M_MAX), 5);
         assert_eq!(et, ood, "m = {M_MAX}");
         let cociente = tt.as_secs_f64() / t3.as_secs_f64();
-        eprintln!("rechazo: m = 3 {t3:?}, m = {M_MAX} {tt:?}, cociente {cociente:.1}");
-        assert!(cociente < 10.0, "m = {M_MAX}: {tt:?} frente a {t3:?} en m = 3 ({cociente:.1})");
+        eprintln!("rechazo: m = {M_MIN} {t3:?}, m = {M_MAX} {tt:?}, cociente {cociente:.1}");
+        assert!(cociente < 10.0, "m = {M_MAX}: {tt:?} frente a {t3:?} en m = {M_MIN} ({cociente:.1})");
     }
 }
 
@@ -1726,8 +1757,8 @@ mod tests_canonicidad {
     fn cabeza_edad() -> CabezaEdad {
         CabezaEdad {
             seq: 1000,
-            pending_root: raiz_desde_subraiz(SP, 3, PROFUNDIDAD),
-            pmeta_root: raiz_desde_subraiz(SM, 3, PROFUNDIDAD),
+            pending_root: raiz_desde_subraiz(SP, M_MIN, PROFUNDIDAD),
+            pmeta_root: raiz_desde_subraiz(SM, M_MIN, PROFUNDIDAD),
             next_pending: 5,
         }
     }
@@ -1743,7 +1774,8 @@ mod tests_canonicidad {
     fn edad_alias_del_emisor_es_err() {
         let c = cabeza_edad();
         for x in [7 + P, P, 1 << 32, u64::MAX] {
-            let e = verificar_contra_cabeza(&[], &af(Some(x)), &c).expect_err("alias aceptado");
+            let e = verificar_contra_cabeza(&juez::solo_cabeza::<EdadAir>(), &af(Some(x)), &c)
+                .expect_err("alias aceptado");
             assert_eq!(e, format!("emisor = {x} no es un indice de cuenta: no cabe en 32 bits"));
         }
         for x in [0, 7, (1 << 32) - 2, (1 << 32) - 1] {
@@ -1779,12 +1811,12 @@ mod tests_canonicidad {
     /// mismo y cae, tambien por `verificar` directo (por donde pasaba `emisor = p`).
     #[test]
     fn edad_todos_con_emisor_es_err() {
-        let pi = verificar_contra_cabeza(&[], &af(None), &cabeza_edad()).expect_err("vacia");
+        let pi = verificar_contra_cabeza(&juez::solo_cabeza::<EdadAir>(), &af(None), &cabeza_edad()).expect_err("vacia");
         assert!(pi.starts_with(NO_LEE), "{pi}");
         let bien = EdadPublicInputs {
             subraiz_pend: SP,
             subraiz_meta: SM,
-            m: 3,
+            m: M_MIN,
             n: 5,
             seq: 1000,
             t: 70,
@@ -1800,7 +1832,7 @@ mod tests_canonicidad {
         ];
         for (x, causa) in causas {
             let malo = EdadPublicInputs { emisor: x, ..bien.clone() };
-            assert_eq!(verificar(&[], &malo).expect_err("todos con emisor"), causa);
+            assert_eq!(verificar(&juez::solo_cabeza::<EdadAir>(), &malo).expect_err("todos con emisor"), causa);
         }
     }
 
@@ -1817,11 +1849,12 @@ mod tests_canonicidad {
     fn pago_importe_y_t_alias_son_err() {
         let c = cabeza_pago();
         let m = pago::MAX_VALOR;
-        let e = pago::verificar_contra_cabeza(&[], &af_pago(250_000 + P, 100), &c).unwrap_err();
+        let cab = juez::solo_cabeza::<pago::PagoEnCursoAir>();
+        let e = pago::verificar_contra_cabeza(&cab, &af_pago(250_000 + P, 100), &c).unwrap_err();
         assert_eq!(e, format!("el importe {} pasa del techo {m}", 250_000 + P));
-        let e = pago::verificar_contra_cabeza(&[], &af_pago(250_000, 100 + P), &c).unwrap_err();
+        let e = pago::verificar_contra_cabeza(&cab, &af_pago(250_000, 100 + P), &c).unwrap_err();
         assert_eq!(e, format!("T {} o nacido 4 pasan del techo {m}", 100 + P));
-        let e = pago::verificar_contra_cabeza(&[], &af_pago(m + 1, 100), &c).unwrap_err();
+        let e = pago::verificar_contra_cabeza(&cab, &af_pago(m + 1, 100), &c).unwrap_err();
         assert_eq!(e, format!("el importe {} pasa del techo {m}", m + 1));
         let e = pago::verificar_contra_cabeza(&[], &af_pago(m, m), &c).unwrap_err();
         assert!(e.starts_with(NO_LEE), "en el techo: {e}");
@@ -1834,7 +1867,7 @@ mod tests_canonicidad {
         let af = |inferior| cobro::AfirmacionCobro { receptor: SP, nacido: 4, inferior };
         let m = cobro::MAX_VALOR;
         for x in [1 + P, P, m + 1] {
-            let e = cobro::verificar_contra_cabeza(&[], &af(x), &c).unwrap_err();
+            let e = cobro::verificar_contra_cabeza(&juez::solo_cabeza::<cobro::CobroPendienteAir>(), &af(x), &c).unwrap_err();
             assert_eq!(e, format!("las cotas {x} y {m} pasan del techo {m}"));
         }
         for x in [0, 1, m] {

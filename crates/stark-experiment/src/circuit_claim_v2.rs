@@ -1070,6 +1070,7 @@ impl Air for ClaimAirV2 {
 /// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
 /// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
 impl zk_ssl_air::juez::Juez for ClaimAirV2 {
+    const NOMBRE: &'static str = "ClaimAirV2";
     fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
         zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
     }
@@ -1143,7 +1144,7 @@ impl Prover for ClaimV2Prover {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("ClaimAirV2"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -1188,7 +1189,7 @@ mod tests {
     use crate::native::{derive_leaf_salt_wide, derive_public_id_wide, native_climb,
         native_leaf_salted};
     use winterfell::math::ToElements;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, ProverError, VerifierError};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension, ProverError, VerifierError};
 
     const SK: u64 = 0xA11CE;
 
@@ -1378,7 +1379,7 @@ mod tests {
             Ok(Err(_)) => false,
             Ok(Ok(proof)) => {
                 let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-                verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                crate::verify_casa::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     proof,
                     s.public_inputs.clone(),
                     &min_opts,
@@ -1765,7 +1766,8 @@ mod tests {
             .prove(trace_de(&s))
             .expect("sin ocultacion, en release el probador no comprueba la traza");
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        let r = verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let r = // sin ocultar no hay marca v2: el verify del fork, no el de la casa (§914)
+        winterfell::verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             s.public_inputs.clone(),
             &min_opts,

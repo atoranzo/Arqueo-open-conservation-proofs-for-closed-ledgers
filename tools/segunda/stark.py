@@ -276,6 +276,7 @@ PREFIJO_MARCA_V2 = b"arqueo:oculta:2"         # winter-air marca.rs `PREFIJO_V2`
 LARGO_MARCA_V2 = len(PREFIJO_MARCA_V2) + 10   # `LARGO_V2`
 PERFIL_RESERVADO = 255                        # `PERFIL_RESERVADO`: otro motor; no se acepta
 PERFIL_PRODUCCION = 1                         # zk-ssl-air familias.rs `PERFIL_PRODUCCION`
+COLUMNAS_ALEATORIAS = 2                       # zk-ssl-air lib.rs `COLUMNAS_ALEATORIAS` (§914)
 VERSION_INICIAL = 1                           # zk-ssl-air familias.rs `VERSION_INICIAL`
 
 
@@ -368,25 +369,6 @@ def lectura_de_marca(meta):
     return f"Ok(Some(Marca {{ m: {m} }}))", m
 
 
-def comprobar_marca(meta):
-    """`zk_ssl_air::comprobar_marca` (§651, §706): la marca es parte de la FORMA, y solo la de la
-    casa, con m = M_OCULTACION, es una prueba que se juzga. Un meta vacio no es una prueba sin
-    ocultar: es un rechazo. El texto es el del kit, letra por letra, para que las dos
-    implementaciones fallen por la misma causa (spec/PAQUETE.md, seccion 6.1)."""
-    lectura, m = lectura_de_marca(meta)
-    if m != M_OCULTACION:
-        raise Rechazo(f"marca de la ocultacion {lectura}; el enunciado pide m = {M_OCULTACION}")
-
-
-def marca_de(meta):
-    """El despacho de `winter-verifier` por `Marca::leer`: vacio -> sin marca; la marca -> su m;
-    otra cosa -> error. Detras de `comprobar_marca` solo le llega la de la casa."""
-    lectura, m = lectura_de_marca(meta)
-    if lectura.startswith("Err"):
-        raise deser("meta de traza desconocido")
-    return m
-
-
 def lectura_de_marca_v2(meta):
     """`MarcaV2::leer` del fork (§906), escrito como su `Debug`, y los campos si los hay: vacio,
     `Ok(None)`; sin el prefijo v2, `Err(Desconocida)` -la v1 y la de laboratorio incluidas-; con
@@ -433,6 +415,9 @@ def comprobar_marca_v2(meta, familia, version=VERSION_INICIAL, perfil=PERFIL_PRO
         raise Rechazo(f"marca: perfil {p} desconocido")
     if m != M_OCULTACION:
         raise Rechazo(f"marca: m = {m}; la construccion pide m = {M_OCULTACION}")
+    # §914 (1h bis): las columnas que declara son las de la construccion, dos
+    if columnas != COLUMNAS_ALEATORIAS:
+        raise Rechazo(f"marca: {columnas} columnas; la construccion pide {COLUMNAS_ALEATORIAS}")
     return m, columnas
 
 
@@ -771,34 +756,24 @@ def capas_fri(lde, opciones):
     return n
 
 
-def verificar(prueba, air, opciones_aceptadas=OPCIONES_KIT, familia=None):
+def verificar(prueba, air, opciones_aceptadas=OPCIONES_KIT):
     """Verifica `prueba` (bytes) contra `air` (con sus entradas publicas). Devuelve None o lanza
-    `Rechazo` con el nombre del error que daria `winter-verifier`. Con `familia` (§912, en
-    laboratorio hasta el corte): el juez de la D-G, la marca v2 antes que nada, y despues el
-    enunciado, la forma con sus columnas y las opciones."""
-    if familia is None:
-        air.enunciado()
-        p = leer_prueba(prueba)
-        # el orden del juez de la AIR en el kit (p. ej. banda::verificar), antes de construirla: la
-        # forma de traza, la marca (§651) y solo entonces `verify`, que valida antes que nada las
-        # opciones. Hasta el §706 aqui iban la forma, las opciones y la marca, sin exigir su m.
-        air.forma(p)
-        comprobar_marca(p.meta)
-        columnas = 1
-        if p.opciones != opciones_aceptadas:
-            raise Rechazo("UnacceptableProofOptions")
-        m = marca_de(p.meta)
-    else:
-        # D-G: la cabeza y la marca, sin deserializar el resto; el enunciado; la prueba entera
-        p = leer_cabeza(prueba)
-        m, columnas = comprobar_marca_v2(p.meta, familia)
-        air.enunciado()
-        p = leer_prueba(prueba)
-        if p.opciones != opciones_aceptadas:
-            raise Rechazo("UnacceptableProofOptions")
-        air.forma(p, columnas)
+    `Rechazo` con el nombre del error que daria `winter-verifier`. El juez de la D-G (RFC-0018,
+    §912; en produccion desde el corte zkssl/0.5, §914): la marca v2 antes que nada, de la cabeza,
+    con la familia que declara la clase (`air.FAMILIA`, el registro de NUCLEO §4 bis); despues el
+    enunciado; despues la prueba entera, sus opciones y la forma con las columnas de la marca. El
+    orden es el de `zk_ssl_air::juez::juzgar` y de los cinco `verificar` del kit. Una prueba de
+    zkssl/0.4, con la marca v1, cae en la marca: la juzga el kit 0.4.x."""
+    # D-G: la cabeza y la marca, sin deserializar el resto; el enunciado; la prueba entera
+    p = leer_cabeza(prueba)
+    m, columnas = comprobar_marca_v2(p.meta, air.FAMILIA)
+    air.enunciado()
+    p = leer_prueba(prueba)
+    if p.opciones != opciones_aceptadas:
+        raise Rechazo("UnacceptableProofOptions")
+    air.forma(p, columnas)
     semilla = elementos_del_contexto(p) + air.entradas()
-    # detras de comprobar_marca, m es M_OCULTACION; la guarda queda como la del despacho del fork
+    # detras de comprobar_marca_v2, m es M_OCULTACION; la guarda queda como la del despacho del fork
     if m is not None and (p.L < 16 or p.ancho < columnas + 1 or m >= p.L):
         raise deser("traza oculta mal formada")
     ctx = Contexto(air, p, m)
@@ -1126,17 +1101,16 @@ def autotest():
     # la raiz de la unidad tiene el orden que dice
     w = raiz_unidad(10)
     assert pow(w, 1024, P) == 1 and pow(w, 512, P) != 1
-    # la marca (§706): la de la casa pasa; cualquier otra cae con el texto del kit, que escribe lo
-    # leido con el `Debug` de `Result<Option<Marca>, MarcaError>`
+    # la marca v1 de zkssl/0.4 (§706), que desde el §914 solo sirve para nombrarla: cae en 1c
     casa = PREFIJO_MARCA + M_OCULTACION.to_bytes(4, "little")
-    assert comprobar_marca(casa) is None and marca_de(casa) == M_OCULTACION
+    assert lectura_de_marca(casa) == (f"Ok(Some(Marca {{ m: {M_OCULTACION} }}))", M_OCULTACION)
     # §912: la marca v2 y el juez de la D-G, letra por letra los textos de zk-ssl-air
     # (`comprobar_marca_v2`, el test `el_juez_de_la_marca_v2_rechaza_en_el_orden_de_la_d_g`)
     def v2(m, familia, version, perfil, columnas):
         return (PREFIJO_MARCA_V2 + m.to_bytes(4, "little") + familia.to_bytes(2, "little")
                 + version.to_bytes(2, "little") + bytes([perfil, columnas]))
     assert comprobar_marca_v2(v2(64, 7, 1, 1, 2), 7) == (64, 2)
-    assert comprobar_marca_v2(v2(64, 23, 1, 1, 1), 23) == (64, 1)
+    assert comprobar_marca_v2(v2(64, 23, 1, 1, 2), 23) == (64, 2)
     for meta, familia, texto in (
             (b"", 7, "marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version"),
             (casa, 7, "marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x"),
@@ -1149,6 +1123,7 @@ def autotest():
             (v2(64, 8, 1, 1, 2), 7, "marca: la prueba es de la familia 8; se pide la 7"),
             (v2(64, 7, 2, 1, 2), 7, "marca: version 2 de la AIR de la familia 7; se acepta 1"),
             (v2(64, 7, 1, 2, 2), 7, "marca: perfil 2 desconocido"),
+            (v2(64, 7, 1, 1, 1), 7, "marca: 1 columnas; la construccion pide 2"),
             (v2(32, 7, 1, 1, 2), 7, "marca: m = 32; la construccion pide m = 64"),
             (v2(32, 8, 2, 2, 2), 7, "marca: la prueba es de la familia 8; se pide la 7")):
         try:
@@ -1168,15 +1143,12 @@ def autotest():
     parear_deep(una, 4, 1)
     assert una == cc
     assert NU == phi
+    # las cuatro lecturas de la v1 que el kit 0.4.x nombraba (`Marca::leer`, por su `Debug`)
     for meta, lectura in ((b"", "Ok(None)"),
                           (PREFIJO_MARCA + (32).to_bytes(4, "little"), "Ok(Some(Marca { m: 32 }))"),
                           (b"arqueo:oculta:2" + casa[15:], "Err(Desconocida)"),
                           (casa + b"\x00", "Err(Largo)")):
-        try:
-            comprobar_marca(meta)
-            raise AssertionError(f"la marca {meta!r} pasa")
-        except Rechazo as e:
-            assert str(e) == f"marca de la ocultacion {lectura}; el enunciado pide m = 64", str(e)
+        assert lectura_de_marca(meta)[0] == lectura, (meta, lectura_de_marca(meta))
     pares_fijos_del_orden()
     resto_atado()
     una_sola_escritura()
@@ -1185,7 +1157,7 @@ def autotest():
 
 def pares_fijos_del_orden():
     """§711: el marco OOD y las capas FRI se juzgan en el orden de Rust (`OodFrame::parse` y
-    `VerifierChannel::new` del fork). Cuatro pares fijos sobre `spec/vectors/edad/edad-todos.json`,
+    `VerifierChannel::new` del fork). Cuatro pares fijos sobre `spec/vectors/edad/edad-todos-0.5.json`,
     medidos contra el kit; los dos que llevan dos fallos daban aqui otra causa antes de este orden:
 
     1. el byte de filas del cociente a 3: el kit da `... marco OOD fuera de rango: expected a
@@ -1201,7 +1173,7 @@ def pares_fijos_del_orden():
     import json
     import juez_stark as J  # aqui y no arriba: juez_stark importa este modulo
     S = J.S  # el modulo que juez_stark carga, con SU `Rechazo`
-    with open(os.path.join(J.VECTORES, "edad", "edad-todos.json")) as f:
+    with open(os.path.join(J.VECTORES, "edad", "edad-todos-0.5.json")) as f:
         [(_, prueba, air)] = J.par_edad(json.load(f))
     p = S.leer_prueba(prueba)
     # el marco OOD: la longitud del de la traza en `i`, la del cociente en `j`
@@ -1249,11 +1221,11 @@ def resto_atado():
     `read_remainder`: antes del grado y del plegado). Dos pares fijos, medidos contra el kit y
     contra la segunda de antes del §713:
 
-    1. `spec/vectors/edad/neg-prueba-resto-ajeno.json`: su ultimo compromiso FRI es el hash de OTRO
+    1. `spec/vectors/edad/neg-prueba-resto-ajeno-0.5.json`: su ultimo compromiso FRI es el hash de OTRO
        resto y la prueba lleva el de verdad. El kit da `FriVerificationFailed(
        RemainderCommitmentMismatch)`; aqui, la misma. Antes del §713, VERDE en los dos: el falsador
        de la demo, en Python.
-    2. `edad-todos.json` con el bit bajo del primer byte del resto volteado: el kit da la misma
+    2. `edad-todos-0.5.json` con el bit bajo del primer byte del resto volteado: el kit da la misma
        causa, porque el compromiso se mira antes que el plegado. Antes del §713, en los dos,
        `FriVerificationFailed(InvalidRemainderFolding)`."""
     import json
@@ -1261,10 +1233,10 @@ def resto_atado():
     S = J.S  # el modulo que juez_stark carga, con SU `Rechazo`
     causa = "FriVerificationFailed(RemainderCommitmentMismatch)"
     pares = []
-    with open(os.path.join(J.VECTORES, "edad", "neg-prueba-resto-ajeno.json")) as f:
+    with open(os.path.join(J.VECTORES, "edad", "neg-prueba-resto-ajeno-0.5.json")) as f:
         [(_, prueba, air)] = J.par_edad(json.load(f))
     pares.append(("el vector del resto ajeno", prueba, air))
-    with open(os.path.join(J.VECTORES, "edad", "edad-todos.json")) as f:
+    with open(os.path.join(J.VECTORES, "edad", "edad-todos-0.5.json")) as f:
         [(_, prueba, air)] = J.par_edad(json.load(f))
     S.verificar(prueba, air)  # el de partida verifica: lo que cae, cae por el bit
     b = bytearray(prueba)
@@ -1280,7 +1252,7 @@ def resto_atado():
 
 def una_sola_escritura():
     """§715, la maleabilidad de los bytes de la prueba: una prueba tiene UNA escritura.
-    Ocho pares fijos, los vectores de `spec/vectors/edad/` que salen de `edad-todos.json`, medidos
+    Ocho pares fijos, los vectores de `spec/vectors/edad/` que salen de `edad-todos-0.5.json` (§914), medidos
     contra el kit; con la segunda de antes, los ocho daban VERDE:
 
     1. un `usize` del lote de la traza escrito con un byte de mas: el kit da la causa del `usize`;
@@ -1294,14 +1266,14 @@ def una_sola_escritura():
     import juez_stark as J  # aqui y no arriba: juez_stark importa este modulo
     S = J.S  # el modulo que juez_stark carga, con SU `Rechazo`
     for nombre, causa in [
-        ("neg-prueba-lote-usize-no-minimo.json", S.USIZE),
-        ("neg-prueba-usize-no-minimo.json", S.USIZE),
-        ("neg-prueba-fila-de-mas.json", "TraceQueryDoesNotMatchCommitment"),
-        ("neg-prueba-nodo-de-mas.json", "TraceQueryDoesNotMatchCommitment"),
-        ("neg-prueba-cola.json", "UnconsumedBytes"),
-        ("neg-prueba-cola-apertura-traza.json", "not all bytes were consumed"),
-        ("neg-prueba-cola-apertura-cociente.json", "not all bytes were consumed"),
-        ("neg-prueba-cola-lote-fri.json", "not all bytes were consumed"),
+        ("neg-prueba-lote-usize-no-minimo-0.5.json", S.USIZE),
+        ("neg-prueba-usize-no-minimo-0.5.json", S.USIZE),
+        ("neg-prueba-fila-de-mas-0.5.json", "TraceQueryDoesNotMatchCommitment"),
+        ("neg-prueba-nodo-de-mas-0.5.json", "TraceQueryDoesNotMatchCommitment"),
+        ("neg-prueba-cola-0.5.json", "UnconsumedBytes"),
+        ("neg-prueba-cola-apertura-traza-0.5.json", "not all bytes were consumed"),
+        ("neg-prueba-cola-apertura-cociente-0.5.json", "not all bytes were consumed"),
+        ("neg-prueba-cola-lote-fri-0.5.json", "not all bytes were consumed"),
     ]:
         with open(os.path.join(J.VECTORES, "edad", nombre)) as f:
             [(_, prueba, air)] = J.par_edad(json.load(f))

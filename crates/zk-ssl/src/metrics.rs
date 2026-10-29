@@ -283,8 +283,6 @@ pub(crate) mod tests {
             .expect("aplicar cobro");
         let claim_apply = t.elapsed().as_secs_f64() * 1000.0;
 
-        let accepted = AcceptableOptions::OptionSet(vec![proof_options()]);
-
         // ===== VERIFICAR, Y SOLO VERIFICAR =====
         //
         // Ni arbol, ni disco, ni las comprobaciones de estado de la capa.
@@ -295,12 +293,9 @@ pub(crate) mod tests {
         for i in 0..=N {
             let p = winterfell::Proof::from_bytes(&envio.proof).expect("prueba");
             let t = Instant::now();
-            verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                p,
-                envio.public_inputs.clone(),
-                &accepted,
-            )
-            .expect("el envio honesto debe verificar");
+            // §914: por el juez unico, con su politica (la de `proof_options()`) y la marca v2
+            zk_ssl_air::juez::juzgar::<SendAir>(p, envio.public_inputs.clone())
+                .expect("el envio honesto debe verificar");
             // La primera es calentamiento y no cuenta.
             if i > 0 {
                 send_ver += t.elapsed().as_secs_f64() * 1000.0;
@@ -312,12 +307,8 @@ pub(crate) mod tests {
         for i in 0..=N {
             let p = winterfell::Proof::from_bytes(&cobro.proof).expect("prueba");
             let t = Instant::now();
-            verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                p,
-                cobro.public_inputs.clone(),
-                &accepted,
-            )
-            .expect("el cobro honesto debe verificar");
+            zk_ssl_air::juez::juzgar::<ClaimAir>(p, cobro.public_inputs.clone())
+                .expect("el cobro honesto debe verificar");
             if i > 0 {
                 claim_ver += t.elapsed().as_secs_f64() * 1000.0;
             }

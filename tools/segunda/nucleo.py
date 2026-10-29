@@ -445,6 +445,75 @@ def registro_valido(registro):
     return fallos
 
 
+# ─── §914 · el registro de las familias de la marca v2 (RFC-0018 D-G; NUCLEO.md seccion 4 bis) ───
+# La marca v2 que toda prueba lleva en el meta de su traza desde el corte zkssl/0.5: el prefijo, m
+# (u32), la familia (u16), la version de la AIR (u16), el perfil (u8) y las columnas aleatorias (u8),
+# 25 bytes, todos little-endian. Las 23 familias, en el orden de la tabla de la seccion 4 bis -el de
+# la D-B del RFC-0009-, escritas desde la spec y de ningun .rs; la version inicial es 1 y el perfil
+# de produccion, 1. El cero no se asigna en ningun campo; el perfil 255 esta reservado para otro motor.
+PREFIJO_MARCA_V2 = b"arqueo:oculta:2"
+PERFIL_RESERVADO = 255
+VERSION_INICIAL = 1
+PERFIL_PRODUCCION = 1
+REGISTRO_DE_FAMILIAS = [
+    (1, "SendAir"),
+    (2, "SendV2Air"),
+    (3, "ClaimAir"),
+    (4, "ClaimAirV2"),
+    (5, "PrendaAir"),
+    (6, "MintPendingClimbAir"),
+    (7, "NullifierThresholdAir"),
+    (8, "ThresholdAir"),
+    (9, "AuditAir"),
+    (10, "BurnAir"),
+    (11, "SolvencyAir"),
+    (12, "DoubleEntryAir"),
+    (13, "BandaAir"),
+    (14, "EdadAir"),
+    (15, "CobroPendienteAir"),
+    (16, "PagoEnCursoAir"),
+    (17, "MerkleAir"),
+    (18, "RefundAir"),
+    (19, "RefundAirV2"),
+    (20, "CreditClimbAir"),
+    (21, "MintClimbAir"),
+    (22, "FrozenClimbAir"),
+    (23, "RecoveryClimbAir"),
+]
+
+
+def marca_v2(m, familia, version, perfil, columnas):
+    """Los 25 bytes de la marca v2 (RFC-0018 D-G): el prefijo y los cinco campos, little-endian.
+    Un campo a cero, el perfil reservado o una m que no cabe en cuatro bytes son un error de quien
+    construye, no de quien lee."""
+    if not 0 <= m < 2**32:
+        raise ValueError("marca v2: m no cabe en cuatro bytes")
+    if familia == 0 or version == 0 or perfil == 0:
+        raise ValueError("marca v2: un campo a cero")
+    if perfil == PERFIL_RESERVADO:
+        raise ValueError("marca v2: el perfil 255 esta reservado")
+    if columnas < 1:
+        raise ValueError("marca v2: sin columnas aleatorias")
+    return (PREFIJO_MARCA_V2 + m.to_bytes(4, "little") + familia.to_bytes(2, "little")
+            + version.to_bytes(2, "little") + bytes([perfil, columnas]))
+
+
+def registro_de_familias_valido(registro):
+    """Las reglas del registro, de NUCLEO.md seccion 4 bis: el cero no se asigna, los numeros son
+    1..n en su orden, sin repetir, y ninguna AIR tiene dos numeros. Devuelve los fallos."""
+    fallos = []
+    nombres = set()
+    for i, (familia, air) in enumerate(registro, start=1):
+        if familia == 0:
+            fallos.append("el cero no se asigna")
+        if familia != i:
+            fallos.append(f"la familia {familia} ({air}) no es la {i} de la tabla")
+        if air in nombres:
+            fallos.append(f"{air} con dos numeros")
+        nombres.add(air)
+    return fallos
+
+
 # ─── §862 · el despacho por esquema (RFC-0020, E3; su D-E, reglas 1, 2 y 6) ──────────────────────
 # Los dos conjuntos y el implicito, como `Esquema::ACEPTADOS`, `Esquema::EMITIDOS` y
 # `Esquema::IMPLICITO` del kit: el aceptado es lo que este juez acepta; el emitido, con lo que firman

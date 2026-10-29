@@ -1,0 +1,170 @@
+{
+  "entradas": {
+    "columnas": "0x2",
+    "m": "0x40"
+  },
+  "fn": "registro_de_familias",
+  "salida": [
+    {
+      "air": "SendAir",
+      "familia": "0x1",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000010001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "SendV2Air",
+      "familia": "0x2",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000020001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "ClaimAir",
+      "familia": "0x3",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000030001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "ClaimAirV2",
+      "familia": "0x4",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000040001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "PrendaAir",
+      "familia": "0x5",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000050001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "MintPendingClimbAir",
+      "familia": "0x6",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000060001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "NullifierThresholdAir",
+      "familia": "0x7",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000070001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "ThresholdAir",
+      "familia": "0x8",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000080001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "AuditAir",
+      "familia": "0x9",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000090001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "BurnAir",
+      "familia": "0xa",
+      "marca": "0x61727175656f3a6f63756c74613a32400000000a0001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "SolvencyAir",
+      "familia": "0xb",
+      "marca": "0x61727175656f3a6f63756c74613a32400000000b0001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "DoubleEntryAir",
+      "familia": "0xc",
+      "marca": "0x61727175656f3a6f63756c74613a32400000000c0001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "BandaAir",
+      "familia": "0xd",
+      "marca": "0x61727175656f3a6f63756c74613a32400000000d0001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "EdadAir",
+      "familia": "0xe",
+      "marca": "0x61727175656f3a6f63756c74613a32400000000e0001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "CobroPendienteAir",
+      "familia": "0xf",
+      "marca": "0x61727175656f3a6f63756c74613a32400000000f0001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "PagoEnCursoAir",
+      "familia": "0x10",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000100001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "MerkleAir",
+      "familia": "0x11",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000110001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "RefundAir",
+      "familia": "0x12",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000120001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "RefundAirV2",
+      "familia": "0x13",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000130001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "CreditClimbAir",
+      "familia": "0x14",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000140001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "MintClimbAir",
+      "familia": "0x15",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000150001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "FrozenClimbAir",
+      "familia": "0x16",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000160001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    },
+    {
+      "air": "RecoveryClimbAir",
+      "familia": "0x17",
+      "marca": "0x61727175656f3a6f63756c74613a3240000000170001000102",
+      "perfil": "0x1",
+      "version": "0x1"
+    }
+  ]
+}

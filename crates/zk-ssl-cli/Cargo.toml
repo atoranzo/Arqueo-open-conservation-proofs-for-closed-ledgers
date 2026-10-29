@@ -99,3 +99,10 @@ zeroize = "1"
 # `ppv-lite86` 0.2.21 y `zerocopy` 0.8.55. La puerta de clausura del cli
 # (`prenda::tests`, 5.A-359) fija los crates del arbol que entran.
 zk-ssl-sdk = { path = "../zk-ssl-sdk" }
+
+[dev-dependencies]
+# ⚠️ **§914 (RFC-0018 D-G y E3, el corte `zkssl/0.5`).** El KAT del registro de las familias de
+#    la marca v2, `registro_de_familias`, lo compone `nucleo_kat` desde `zk_ssl_air::familias`, el
+#    unico productor del registro. Solo tests; el crate ya entra en la clausura del cli por
+#    `zk-ssl-verify` (`la_clausura_del_cli_son_catorce_crates_del_arbol_y_no_el_nodo`): CERO nodos.
+zk-ssl-air = { path = "../zk-ssl-air" }

@@ -261,6 +261,12 @@ TABLA=$(cat <<'FIN_TABLA'
 0.3/pendiente     0eda58c9ae234b3cdbfabad754cca655a684dc14  10  S538 (D-AB); §620, 9 de 9; §693, +1 linea con la causa
 0.3/rechazo       0eda58c9ae234b3cdbfabad754cca655a684dc14   9  S538 (D-AB): los nueve con prueba que el banco regenera; §620, 9 de 9
 0.4/completitud   41f765db550ad0dba6e9338cef107a919cdfc5c2   2  §682 (RFC-0019 E2, D-C): el VERDE de un StaleState, de antes del cuarto estado; el canon del §681 los paso
+0.4/completitud   cbe95d7032bcb024e65abe806a855fcf34eda5ef  10  §914 (el corte zkssl/0.5, R6 b): la prenda aceptada y sus cuatro derivados (§614) y los cinco de la banda v1 (§723), pruebas de zkssl/0.4 que el kit 0.5 rechaza por la marca; su tramo, bajo su mencion (punto 10)
+0.4/edad          cbe95d7032bcb024e65abe806a855fcf34eda5ef  32  §914 (el corte zkssl/0.5, R6 b): las 31 pruebas de zkssl/0.4 de la edad, con la doble linea de neg-cota-movida; las juzga el kit 0.4.4 del §913, el ultimo sello del cable 0.4
+0.4/pago          cbe95d7032bcb024e65abe806a855fcf34eda5ef  21  §914 (R6 b): las 20 pruebas de zkssl/0.4 del pago, con la doble linea de neg-importe-mentido
+0.4/pendiente     cbe95d7032bcb024e65abe806a855fcf34eda5ef   7  §914 (R6 b): las seis del cobro pendiente, la v1 y la v2 del §723, con la doble linea de neg-inferior-por-encima
+0.4/prenda        cbe95d7032bcb024e65abe806a855fcf34eda5ef   6  §914 (R6 b): las cuatro de la prenda, con las dobles lineas del §693
+0.4/rechazo       cbe95d7032bcb024e65abe806a855fcf34eda5ef   7  §914 (R6 b): las siete bandas del brazo decimo, la v1 publicada y las del §723 incluidas
 FIN_TABLA
 )
 
@@ -330,6 +336,61 @@ sys.stdout.buffer.write(''.join(h + '\n' for h in hexes).encode('utf-8'))
 PY
 }
 
+# §914 (punto 10): las ENTRADAS de un manifiesto que juzga el kit $2, por TRAMOS: cada entrada es
+# del ultimo kit que nombra un comentario por encima de ella («zk-ssl-verify del arbol en <hex>»,
+# leido como en `nombrados_de`); si el manifiesto nombra un solo kit, todas son suyas. Una entrada
+# sin kit por encima, en un manifiesto que nombra dos, es ROJO (exit 3): ningun kit la juzgaria.
+# Imprime las lineas de las entradas, tal cual.
+tramo_de() {
+  python3 -I - "$1" "$2" <<'PY'
+import re, sys, unicodedata
+def norma(s):
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Cf')
+    s = unicodedata.normalize('NFKC', s)
+    return re.sub(r'\s+', ' ', s).strip().lower()
+pat = re.compile(r'zk-ssl-verify`? ?del ?(?:arbol|\u00e1rbol) ?en ?`?([0-9a-f]{7,}\w*)')
+crudo = open(sys.argv[1], 'rb').read()
+try:
+    texto = crudo.decode('utf-8')
+except UnicodeDecodeError:
+    texto = crudo.decode('latin-1')
+sha = sys.argv[2]
+lineas = texto.split('\n')
+if lineas and lineas[-1] == '':
+    lineas.pop()
+entradas, b, actual, nombrados = [], None, None, set()
+def cierra():
+    global b, actual
+    if b is not None:
+        hs = pat.findall(b)
+        if hs:
+            actual = hs[-1]; nombrados.update(hs)
+    b = None
+for linea in lineas:
+    if linea.startswith('#'):
+        t = norma(linea.lstrip('#'))
+        if b is None:
+            b = t
+        elif t:
+            b = b + t if b == '' or b.endswith('-') else b + ' ' + t
+        continue
+    cierra()
+    if linea.split('|', 1)[0] == '':
+        continue
+    entradas.append((actual, linea))
+cierra()
+if len(nombrados) <= 1:
+    for _, l in entradas:
+        print(l)
+    sys.exit(0)
+for h, l in entradas:
+    if h is None:
+        sys.stderr.write('entrada sin kit por encima: %s\n' % l.split('|', 1)[0]); sys.exit(3)
+    if sha.startswith(h):
+        print(l)
+PY
+}
+
 # ── 1 · la lista, leida del arbol, contra la tabla ──────────────
 msg "== CONSERVADOS · los catalogos de spec/vectors/<version>/ contra la tabla =="
 EN_ARBOL=""
@@ -345,7 +406,7 @@ for d in spec/vectors/[0-9]*.[0-9]*/; do
   done
 done
 EN_ARBOL=$(LC_ALL=C sort -u <<< "${EN_ARBOL%$'\n'}")
-EN_TABLA=$(awk 'NF && $1 !~ /^#/ {print $1}' <<< "$TABLA" | LC_ALL=C sort)
+EN_TABLA=$(awk 'NF && $1 !~ /^#/ {print $1}' <<< "$TABLA" | LC_ALL=C sort -u)
 n_a=$(grep -c . <<< "$EN_ARBOL"); n_t=$(grep -c . <<< "$EN_TABLA")
 msg "  conservados en el arbol: $n_a · filas en la tabla: $n_t"
 # ⚠️ Here-string, NO tuberia: el punto 6 de la cabecera del canon.
@@ -356,12 +417,14 @@ for c in $EN_TABLA; do
   grep -qxF "$c" <<< "$EN_ARBOL" || falla "la fila '$c' no corresponde a ningun spec/vectors/<version>/<familia>/"
 done
 [ "$n_t" -gt 0 ] || falla "la tabla no tiene ninguna fila: un nivel que no mira nada no es VERDE"
-[ "$(awk 'NF && $1 !~ /^#/ {print $1}' <<< "$TABLA" | LC_ALL=C sort | uniq -d | wc -l)" = "0" ] \
-  || falla "la tabla repite un catalogo"
+# §914 (punto 10): un catalogo puede tener una fila por KIT -un tramo cada una-; lo que no se repite
+# es el par catalogo-kit.
+[ "$(awk 'NF && $1 !~ /^#/ {print $1 " " $2}' <<< "$TABLA" | LC_ALL=C sort | uniq -d | wc -l)" = "0" ] \
+  || falla "la tabla repite un catalogo con el mismo kit"
 
 # ── 2 · cada fila: el commit, su cabecera y su pin ──────────────
-declare -A SHA_DE=() PIN_DE=()
-CATS=()     # los catalogos con fila y manifiesto, en el orden de la tabla
+declare -A SHA_DE=() PIN_DE=() DIR_DE=() FILAS_DE=() NOMBRA_DE=()
+CATS=()     # los catalogos con fila y manifiesto, en el orden de la tabla: «catalogo@kit» (punto 10)
 KITS=()     # los commits, cada uno una vez, en el orden de la tabla
 declare -A KIT_OK=() CATS_DE=()
 SUPERFICIAL=$(git rev-parse --is-shallow-repository 2>/dev/null || echo "?")
@@ -373,19 +436,27 @@ while read -r dir sha pin resto; do
   if ! [[ "$pin" =~ ^[0-9]+$ ]]; then falla "$dir: el pin de entradas no es un numero: '$pin'"; continue; fi
   [ -d "spec/vectors/$dir" ] || continue      # ya es ROJO arriba, con su nombre
   if [ ! -f "$man" ]; then falla "$dir: conservado sin MANIFIESTO.txt"; continue; fi
-  # el commit lo dicen dos (punto 2)
-  if ! NOMBRADOS=$(nombrados_de "$man"); then
-    falla "$dir: no se pudo leer la cabecera de su manifiesto (python3 fallo)"
-  elif [ -z "$NOMBRADOS" ]; then
-    falla "$dir: la cabecera de su manifiesto no nombra el kit ('zk-ssl-verify del arbol en <commit>')"
-  else
-    for nm in $NOMBRADOS; do
-      [[ "$sha" == "$nm"* ]] || falla "$dir: la cabecera nombra $nm y la tabla ${sha:0:12}  ->  MEDIR, la cabecera no se reescribe"
-    done
+  key="$dir@${sha:0:12}"
+  FILAS_DE[$dir]="${FILAS_DE[$dir]:-}$sha "
+  # el commit lo dicen dos (punto 2): la fila, y una mencion de su cabecera que sea su prefijo; con
+  # varios kits (punto 10), cada mencion tiene que ser de alguna fila, y se mira tras el bucle
+  if [ -z "${NOMBRA_DE[$dir]+x}" ]; then
+    if ! NOMBRA_DE[$dir]=$(nombrados_de "$man"); then
+      falla "$dir: no se pudo leer la cabecera de su manifiesto (python3 fallo)"; NOMBRA_DE[$dir]=""
+    elif [ -z "${NOMBRA_DE[$dir]}" ]; then
+      falla "$dir: la cabecera de su manifiesto no nombra el kit ('zk-ssl-verify del arbol en <commit>')"
+    fi
   fi
-  # el pin, contra el manifiesto (punto 7)
-  ne=$(entradas_de "$man")
-  [ "$ne" = "$pin" ] || falla "$dir: el manifiesto tiene $ne entradas y la tabla pina $pin  ->  MEDIR y editar tools/conservados.sh, fila '$dir'"
+  nombrado=0
+  for nm in ${NOMBRA_DE[$dir]}; do [[ "$sha" == "$nm"* ]] && nombrado=1; done
+  [ -z "${NOMBRA_DE[$dir]}" ] || [ $nombrado = 1 ] \
+    || falla "$dir: la tabla pina el kit ${sha:0:12} y la cabecera no lo nombra (nombra: $(tr '\n' ' ' <<< "${NOMBRA_DE[$dir]}"))  ->  MEDIR, la cabecera no se reescribe"
+  # el pin, contra el manifiesto (punto 7): las entradas del tramo de este kit (punto 10)
+  if ! TRAMO=$(tramo_de "$man" "$sha"); then
+    falla "$dir: el tramo del kit ${sha:0:12} no se pudo leer (una entrada sin kit por encima, o python3 fallo)"; TRAMO=""
+  fi
+  ne=$(grep -c . <<< "$TRAMO")
+  [ "$ne" = "$pin" ] || falla "$dir: el tramo del kit ${sha:0:12} tiene $ne entradas y la tabla pina $pin  ->  MEDIR y editar tools/conservados.sh, fila '$dir'"
   # el commit es del arbol (punto 3), con su crate y su arnes
   if [ -z "${KIT_OK[$sha]+x}" ]; then
     KITS+=("$sha"); KIT_OK[$sha]=1; CATS_DE[$sha]=""
@@ -405,9 +476,17 @@ while read -r dir sha pin resto; do
         || { falla "kit ${sha:0:12}: en su commit no hay tools/conformidad.sh, el arnes que su cabecera afirma"; KIT_OK[$sha]=0; }
     fi
   fi
-  CATS+=("$dir"); SHA_DE[$dir]=$sha; PIN_DE[$dir]=$pin
-  CATS_DE[$sha]+="$dir "
+  CATS+=("$key"); SHA_DE[$key]=$sha; PIN_DE[$key]=$pin; DIR_DE[$key]=$dir
+  CATS_DE[$sha]+="$key "
 done <<< "$TABLA"
+# punto 10: toda mencion de una cabecera es de alguna fila de su catalogo
+for dir in "${!NOMBRA_DE[@]}"; do
+  for nm in ${NOMBRA_DE[$dir]}; do
+    hay=0
+    for sha in ${FILAS_DE[$dir]}; do [[ "$sha" == "$nm"* ]] && hay=1; done
+    [ $hay = 1 ] || falla "$dir: la cabecera nombra $nm y ninguna fila de la tabla lo lleva  ->  MEDIR, la cabecera no se reescribe"
+  done
+done
 [ "${#CATS[@]}" -gt 0 ] || falla "ningun catalogo que juzgar"
 msg "  ${#CATS[@]} catalogo(s), ${#KITS[@]} kit(s); rustc de la maquina: $(rustc -V 2>/dev/null || echo 'NINGUNO')"
 [ $rojo -eq 0 ] && msg "  OK  cada conservado tiene fila, cada fila su directorio, su cabecera la nombra y su pin cuadra"
@@ -430,8 +509,10 @@ if [ $EN_SECO = 1 ]; then
     msg "      arnes de su commit $a_c · arnes del arbol $a_a$([ "$a_c" = "$a_a" ] && echo ' (el MISMO)')"
     msg "      \$ git worktree add --detach $TMPB/conservado-$c.XXXXXX/arbol $sha"
     msg "      \$ (cd <arbol> && CARGO_TARGET_DIR=\$T timeout ${TOPE}s cargo build --release --locked -p zk-ssl-verify)"
-    for dir in ${CATS_DE[$sha]}; do
-      msg "      \$ bash <arbol>/tools/conformidad.sh \$T/release/zk-ssl-verify spec/vectors/$dir/MANIFIESTO.txt   # su commit, ${PIN_DE[$dir]} entradas"
+    for key in ${CATS_DE[$sha]}; do
+      dir=${DIR_DE[$key]}; tr_=""
+      [ "$(wc -w <<< "${FILAS_DE[$dir]}")" -gt 1 ] && tr_=" (su tramo, en un directorio temporal)"
+      msg "      \$ bash <arbol>/tools/conformidad.sh \$T/release/zk-ssl-verify spec/vectors/$dir/MANIFIESTO.txt   # su commit, ${PIN_DE[$key]} entradas$tr_"
       msg "      \$ bash tools/conformidad.sh \$T/release/zk-ssl-verify spec/vectors/$dir/MANIFIESTO.txt          # el arbol"
     done
     msg "      \$ git worktree remove --force <arbol>"
@@ -501,21 +582,36 @@ anotar() { trap 'PEND=130' INT; trap 'PEND=143' TERM; }
 trap limpiar EXIT
 atender
 
-# $1 catalogo, $2 binario, $3 arnes, $4 etiqueta -> deja en RES «OK k/n» o «ROJO k/n»; cada ROJO del
-# arnes entra por falla con su nombre, como en el 3 bis del canon.
+# $1 catalogo@kit, $2 binario, $3 arnes, $4 etiqueta -> deja en RES «OK k/n» o «ROJO k/n»; cada ROJO
+# del arnes entra por falla con su nombre, como en el 3 bis del canon. §914 (punto 10): si el
+# catalogo tiene varios kits, el arnes corre sobre el TRAMO de este -sus entradas y sus vectores,
+# copiados a un directorio temporal bajo el del kit-, porque el arnes exige que todo .json del
+# directorio tenga entrada y juzga el manifiesto entero; con un solo kit, sobre el manifiesto tal cual.
 juzgar() {
-  local dir=$1 bin=$2 arn=$3 et=$4 man="spec/vectors/$1/MANIFIESTO.txt" f rc ok n
-  f="$LOGS/${dir//\//_}.$et.txt"
+  local key=$1 bin=$2 arn=$3 et=$4 dir=${1%@*} sha12=${1#*@} man f rc ok n td
+  man="spec/vectors/$dir/MANIFIESTO.txt"
+  f="$LOGS/${dir//\//_}.$sha12.$et.txt"
+  if [ "$(wc -w <<< "${FILAS_DE[$dir]}")" -gt 1 ]; then
+    td="$p/tramo-$sha12-${dir//\//_}"
+    rm -rf "$td"; mkdir -p "$td"
+    { echo "# tramo del kit $sha12 de spec/vectors/$dir/MANIFIESTO.txt (tools/conservados.sh, punto 10)";
+      tramo_de "$man" "${SHA_DE[$key]}"; } > "$td/MANIFIESTO.txt" || { RES="ROJO ?/?"; falla "$dir: el tramo de $sha12 no se pudo escribir"; return 1; }
+    while IFS='|' read -r VF R; do
+      case "$VF" in ''|'#'*) continue ;; esac
+      [ -f "spec/vectors/$dir/$VF" ] && cp "spec/vectors/$dir/$VF" "$td/$VF"
+    done < "$td/MANIFIESTO.txt"
+    man="$td/MANIFIESTO.txt"
+  fi
   timeout 600 bash "$arn" "$bin" "$man" > "$f" 2>&1; rc=$?
   read -r ok n < <(sed -n 's/^conformidad: \([0-9]*\) de \([0-9]*\) entradas.*/\1 \2/p' "$f" | tail -n 1)
   ok=${ok:-?}; n=${n:-?}
-  if [ "$rc" = "0" ] && [ "$ok" = "$n" ] && [ "$n" = "${PIN_DE[$dir]}" ]; then RES="OK $ok/$n"; return 0; fi
+  if [ "$rc" = "0" ] && [ "$ok" = "$n" ] && [ "$n" = "${PIN_DE[$key]}" ]; then RES="OK $ok/$n"; return 0; fi
   RES="ROJO $ok/$n"
-  while IFS= read -r L; do falla "$dir, arnes del $et: $L"; done < <(grep '^ROJO' "$f" | sed 's/^ROJO //')
-  if [ "$n" != "${PIN_DE[$dir]}" ]; then
-    falla "$dir, arnes del $et: juzgo $n entradas y la tabla pina ${PIN_DE[$dir]} (exit $rc)  ->  $f"
+  while IFS= read -r L; do falla "$dir ($sha12), arnes del $et: $L"; done < <(grep '^ROJO' "$f" | sed 's/^ROJO //')
+  if [ "$n" != "${PIN_DE[$key]}" ]; then
+    falla "$dir ($sha12), arnes del $et: juzgo $n entradas y la tabla pina ${PIN_DE[$key]} (exit $rc)  ->  $f"
   elif ! grep -q '^ROJO' "$f"; then
-    falla "$dir, arnes del $et: exit $rc sin nombrar la entrada ($(tail -n 1 "$f"))"
+    falla "$dir ($sha12), arnes del $et: exit $rc sin nombrar la entrada ($(tail -n 1 "$f"))"
   fi
   return 1
 }
@@ -528,8 +624,8 @@ FMT='%-18s %-8s %-14s %-18s %s'
 for sha in "${KITS[@]}"; do
   c=${sha:0:12}; tgt="$CONS_DIR/$c/target"; log="$LOGS/kit-$c.log"
   if [ "${KIT_OK[$sha]}" != "1" ]; then
-    for dir in ${CATS_DE[$sha]}; do FILAS+=("$(printf "$FMT" "$dir" "${sha:0:7}" '-' 'SIN KIT' 'SIN KIT')")
-      falla "$dir: sin juzgar, su kit ${sha:0:12} no se construye (arriba)"; done
+    for key in ${CATS_DE[$sha]}; do FILAS+=("$(printf "$FMT" "${DIR_DE[$key]}" "${sha:0:7}" '-' 'SIN KIT' 'SIN KIT')")
+      falla "${DIR_DE[$key]}: sin juzgar, su kit ${sha:0:12} no se construye (arriba)"; done
     continue
   fi
   [ $FRIO = 1 ] && rm -rf "$tgt"
@@ -569,14 +665,15 @@ for sha in "${KITS[@]}"; do
   if [ $CONSTRUIDO = 1 ]; then
     B="$tgt/release/zk-ssl-verify"
     msg "   kit $c: binario $(h16 "$B") · ${RV:-rustc ?} · $T_K s"
-    for dir in ${CATS_DE[$sha]}; do
-      juzgar "$dir" "$B" "$wt/tools/conformidad.sh" commit; R1=$RES
-      juzgar "$dir" "$B" "tools/conformidad.sh" arbol; R2=$RES
-      FILAS+=("$(printf "$FMT" "$dir" "${sha:0:7}" "$(entradas_de "spec/vectors/$dir/MANIFIESTO.txt")(${PIN_DE[$dir]})" "$R1" "$R2")")
+    for key in ${CATS_DE[$sha]}; do
+      dir=${DIR_DE[$key]}
+      juzgar "$key" "$B" "$wt/tools/conformidad.sh" commit; R1=$RES
+      juzgar "$key" "$B" "tools/conformidad.sh" arbol; R2=$RES
+      FILAS+=("$(printf "$FMT" "$dir" "${sha:0:7}" "$(tramo_de "spec/vectors/$dir/MANIFIESTO.txt" "$sha" | grep -c .)(${PIN_DE[$key]})" "$R1" "$R2")")
     done
   else
-    for dir in ${CATS_DE[$sha]}; do FILAS+=("$(printf "$FMT" "$dir" "${sha:0:7}" '-' 'SIN KIT' 'SIN KIT')")
-      falla "$dir: sin juzgar, su kit $c no se construyo"; done
+    for key in ${CATS_DE[$sha]}; do FILAS+=("$(printf "$FMT" "${DIR_DE[$key]}" "${sha:0:7}" '-' 'SIN KIT' 'SIN KIT')")
+      falla "${DIR_DE[$key]}: sin juzgar, su kit $c no se construyo"; done
   fi
   # el worktree se va en cuanto sus catalogos estan juzgados (punto 9), y se comprueba
   quitar_wt "$wt" "$log" || falla "kit $c: git worktree remove --force fallo (¿bloqueado?);\

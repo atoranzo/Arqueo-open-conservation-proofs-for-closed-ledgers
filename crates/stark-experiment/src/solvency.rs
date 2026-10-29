@@ -349,7 +349,7 @@ impl Prover for SolvencyProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("SolvencyAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -390,7 +390,7 @@ impl Prover for SolvencyProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, Proof};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension, Proof};
 
     fn default_options() -> ProofOptions {
         ProofOptions::new(
@@ -421,7 +421,7 @@ mod tests {
         };
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        verify::<SolvencyAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        crate::verify_casa::<SolvencyAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             SolvencyPublicInputs {
                 regulatory_limit: BaseElement::new(limit),
@@ -493,7 +493,7 @@ mod tests {
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
         let verification =
-            verify::<SolvencyAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            crate::verify_casa::<SolvencyAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                 proof,
                 SolvencyPublicInputs {
                     regulatory_limit: BaseElement::new(999_999),
@@ -520,7 +520,7 @@ mod tests {
             Ok(Err(_)) => { /* Err: detectado */ }
             Ok(Ok(proof)) => {
                 let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-                let verification = verify::<
+                let verification = crate::verify_casa::<
                     SolvencyAir,
                     Blake3,
                     DefaultRandomCoin<Blake3>,

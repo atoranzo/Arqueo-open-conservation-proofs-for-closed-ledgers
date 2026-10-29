@@ -578,11 +578,15 @@ pub(crate) fn linea(nombre: &str, g: &Geometria, m: &MedidaR3) -> String {
 
 /// Lo medido, clavado: por geometria de produccion -T, trozos, capas de FRI y resto, con q = 42
 /// y m = 64-, lo que FRI abre sin determinar (el rango de O sobre K, sobre F) y lo que cubren las
-/// mascaras: la columna aleatoria, los aleatorizadores y las dos juntas. En ninguna se cumple R3,
-/// y un cambio en cualquier cifra es rojo: la medida es la del §898, con la semilla 1.
+/// mascaras de UNA columna aleatoria, la construccion de zkssl/0.4: la columna, los
+/// aleatorizadores y las dos juntas. En ninguna se cumple R3, y un cambio en cualquier cifra es
+/// rojo: la medida es la del §898, con la semilla 1. ⚠️ §914 (el corte zkssl/0.5, RFC-0018 D-H):
+/// las cinco familias de T = 64 pasan a T = 128 -la geometria de 64 filas y 15 trozos deja de
+/// existir en produccion, y entra la de 128 y 10 trozos, medida aqui-, y la construccion de
+/// produccion es la de DOS columnas, la de [`R3_MEDIDO_LABORATORIO`], que cumple R3 en las cinco.
 pub(crate) const R3_MEDIDO: &[(usize, usize, usize, usize, usize, usize, usize, usize)] = &[
     // T, trozos, capas, resto, sin determinar, columna, trozos, juntas
-    (64, 15, 1, 16, 168, 82, 80, 126),
+    (128, 10, 1, 32, 424, 210, 80, 254),
     (256, 2, 2, 8, 632, 338, 40, 378),
     (256, 9, 2, 8, 632, 338, 80, 382),
     (512, 8, 2, 16, 760, 466, 80, 510),
@@ -600,7 +604,7 @@ pub(crate) fn clavado(g: &Geometria) -> Option<(usize, usize, usize, usize)> {
 /// solas; un cambio en cualquier cifra es rojo.
 pub(crate) const R3_MEDIDO_LABORATORIO: &[(usize, usize, usize, usize, usize, usize, usize, usize)] = &[
     // T, trozos, capas, resto, sin determinar, columnas, trozos, juntas
-    (64, 15, 1, 16, 168, 164, 80, 168),
+    (128, 10, 1, 32, 424, 420, 80, 424),
     (256, 2, 2, 8, 632, 632, 40, 632),
     (256, 9, 2, 8, 632, 632, 80, 632),
     (512, 8, 2, 16, 760, 760, 80, 760),
@@ -619,7 +623,7 @@ pub(crate) fn clavado_laboratorio(g: &Geometria) -> Option<(usize, usize, usize,
 /// un cambio en cualquier cifra es rojo.
 pub(crate) const K_ENTERO_PAREADAS: &[(usize, usize, usize, usize, usize, usize, usize, usize)] = &[
     // T, trozos, capas, resto, 2·dim K, columnas, trozos, juntas
-    (64, 15, 1, 16, 168, 164, 80, 168),
+    (128, 10, 1, 32, 424, 420, 80, 424),
     (256, 2, 2, 8, 936, 932, 40, 936),
     (256, 9, 2, 8, 936, 932, 80, 936),
     (512, 8, 2, 16, 1960, 1956, 80, 1960),
@@ -706,7 +710,7 @@ mod tests {
     #[test]
     fn con_las_columnas_pareadas_las_mascaras_cubren_k_entero() {
         // el criterio del lema en las cinco geometrias y el juguete: 4 de 4, con las dos instancias
-        for g in [geo(42, 128, 64, 4, 1, 32), geo(42, 64, 64, 15, 1, 16), geo(42, 256, 64, 2, 2, 8), geo(42, 256, 64, 9, 2, 8), geo(42, 512, 64, 8, 2, 16), geo(42, 1024, 64, 8, 2, 32)] {
+        for g in [geo(42, 128, 64, 4, 1, 32), geo(42, 128, 64, 10, 1, 32), geo(42, 256, 64, 2, 2, 8), geo(42, 256, 64, 9, 2, 8), geo(42, 512, 64, 8, 2, 16), geo(42, 1024, 64, 8, 2, 32)] {
             for (nombre, d) in [("semilla 1", desafios(&g, 1)), ("adversa 1", crate::instrumento_mlin::adversa(&g, 1))] {
                 let r = ev_de_los_aleatorizadores(&g, &d);
                 println!("[908] T {} · {} trozos · {nombre} · ev(M_r) de rango {r} sobre F, de 4", g.t, g.trozos);
@@ -715,7 +719,7 @@ mod tests {
         }
         // y K entero, medido en el espacio de coeficientes, en las pequenas; las grandes, en el largo
         let juguete = geo(42, 128, 64, 4, 1, 32);
-        let geos = [juguete.clone(), geo(42, 64, 64, 15, 1, 16), geo(42, 256, 64, 2, 2, 8), geo(42, 256, 64, 9, 2, 8)];
+        let geos = [juguete.clone(), geo(42, 128, 64, 10, 1, 32), geo(42, 256, 64, 2, 2, 8), geo(42, 256, 64, 9, 2, 8)];
         let mut mal = Vec::new();
         k_entero(&geos, &juguete, &mut mal);
         assert!(mal.is_empty(), "K entero no es lo clavado:\n{}", mal.join("\n"));
@@ -748,7 +752,8 @@ mod tests {
                 assert_eq!(par.1, 2 * (2 * g.t - g.q - 4), "T {}: las pareadas solas son E[x] de grado < L − q − 4", g.t);
                 assert_eq!(par.3, par.0, "T {}: con las pareadas, las juntas son K entero ({nombre})", g.t);
                 assert!(hoy.3 < hoy.0, "T {}: con una columna no se cubre K entero", g.t);
-                if g.t != juguete.t {
+                // §914: la geometria entera, no solo T: la de 128 filas y 10 trozos es de produccion
+                if (g.t, g.trozos) != (juguete.t, juguete.trozos) {
                     match clavado_k_entero(g) {
                         None => mal.push(format!("T {}, {} trozos: sin fila en K_ENTERO_PAREADAS: {par:?}", g.t, g.trozos)),
                         Some(c) if c != par => mal.push(format!("T {}, {} trozos ({nombre}): medido {par:?} y clavado {c:?}", g.t, g.trozos)),

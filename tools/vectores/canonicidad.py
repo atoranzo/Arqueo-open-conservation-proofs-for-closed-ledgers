@@ -49,16 +49,22 @@ def acta_mmr_size(d):
     proc["mmrSize"] = mas_p(proc["mmrSize"])
 
 
-# (familia, positivo, negativo, mutacion, sangria)
+# (directorio del negativo, positivo, negativo, mutacion, sangria, directorio del positivo). §914
+# (el corte zkssl/0.5): los positivos de la 0.4 viven bajo `spec/vectors/0.4/`, y los negativos que
+# salieron de ellos y caen antes de la prueba siguen en su familia con sus bytes; el que caia en el
+# enunciado, `neg-emisor-fuera-de-cuentas`, se mudo con ellos a `0.4/edad/` -el juez de la 0.5 mira
+# la marca antes que el enunciado- y renace de `edad-todos-0.5.json` con la version en el nombre.
 VECTORES = [
     ("edad", "edad-todos.json", "neg-emisor-no-canonico.json",
-     lambda d: edad_emisor(d, hex(P)), None),
-    ("edad", "edad-todos.json", "neg-emisor-fuera-de-cuentas.json",
-     lambda d: edad_emisor(d, hex(1 << 32)), None),
-    ("pago", "pago-t-frontera.json", "neg-importe-alias.json", pago_importe, None),
-    ("pago", "pago-t-frontera.json", "neg-t-alias.json", pago_t, None),
-    ("pendiente", "cobro-inferior-importe.json", "neg-inferior-alias.json", cobro_inferior, None),
-    ("rotacion", "rotacion-un-eslabon.json", "neg-acta-mmrsize-alias.json", acta_mmr_size, 1),
+     lambda d: edad_emisor(d, hex(P)), None, "0.4/edad"),
+    ("0.4/edad", "edad-todos.json", "neg-emisor-fuera-de-cuentas.json",
+     lambda d: edad_emisor(d, hex(1 << 32)), None, "0.4/edad"),
+    ("edad", "edad-todos-0.5.json", "neg-emisor-fuera-de-cuentas-0.5.json",
+     lambda d: edad_emisor(d, hex(1 << 32)), None, "edad"),
+    ("pago", "pago-t-frontera.json", "neg-importe-alias.json", pago_importe, None, "0.4/pago"),
+    ("pago", "pago-t-frontera.json", "neg-t-alias.json", pago_t, None, "0.4/pago"),
+    ("pendiente", "cobro-inferior-importe.json", "neg-inferior-alias.json", cobro_inferior, None, "0.4/pendiente"),
+    ("rotacion", "rotacion-un-eslabon.json", "neg-acta-mmrsize-alias.json", acta_mmr_size, 1, "rotacion"),
 ]
 
 
@@ -68,8 +74,8 @@ def main():
         sys.exit(2)
     raiz = os.path.join(sys.argv[1], "spec", "vectors")
     rc = 0
-    for familia, positivo, negativo, mutar, sangria in VECTORES:
-        with open(os.path.join(raiz, familia, positivo), "rb") as f:
+    for familia, positivo, negativo, mutar, sangria, de in VECTORES:
+        with open(os.path.join(raiz, de, positivo), "rb") as f:
             d = json.loads(f.read())
         mutar(d)
         texto = json.dumps(d, indent=sangria).encode()

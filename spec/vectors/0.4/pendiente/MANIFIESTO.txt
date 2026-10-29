@@ -1,0 +1,42 @@
+# COBRO PENDIENTE, CONSERVADO bajo el kit 0.4 (§914, el corte del tren zkssl/0.5: RFC-0018 D-G y D-H; R6 b del
+# RFC-0021): estos vectores llevan pruebas de zkssl/0.4 -la marca v1 de 19 bytes, `arqueo:oculta:1`, y
+# una columna aleatoria- y el kit 0.5 del arbol las rechaza por su marca antes del enunciado
+# (`marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x`, el paso 1c de la D-G). Se MUEVEN aqui
+# enteros, byte a byte, con sus lineas de manifiesto, y no se reescriben (regla 2 del PROCESO); los
+# que renacen en la 0.5 viven en `../../pendiente/` con la version del cable en el nombre (`-0.5`), y los
+# negativos de esta familia que caen ANTES de la prueba siguen alli con sus bytes. Dicen lo que este
+# manifiesto exige con el zk-ssl-verify del arbol en cbe95d70 (§913, el ultimo sello del cable 0.4),
+# corrido con tools/conformidad.sh.
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Contexto de la familia, copiado de su manifiesto vivo (las lineas de abajo que no son entradas son suyas):
+# Los DOS positivos se REUNEN de las CAPTURAS-498-S498 de un nodo real: la boca del cobrador
+# (`zk-ssl-cli prueba-cobro`, S497) los escribio con el nodo VIVO, contra la cabeza v5 de seq 5 que
+# ese nodo firmo, sobre un pendiente v2 nacido en 4 por 250000. Son las dos formas de D-N: la
+# existencia (`inferior = 0`) y la banda ajustada (`inferior = importe`). Su productor es
+# `tools/banco_pendiente.sh`, que SI vive en el arbol (S498). La cabeza no viaja aparte: va entera
+# dentro de los dos sobres (D-J). El aviso y la credencial del escenario NO son vectores -el mando
+# no los lee- y se declaran por su huella: `aviso.json` `17f86def80cdf3c0` (204 B) y
+# `credencial.json` `f1dfac359b900273` (195 B); el banco los reproduce.
+# Los siete negativos salen de `cobro-inferior-importe.json` por UNA mutacion cada uno, uno por
+# regla producible (D-Q); jamas se reescriben (regla 2 del PROCESO).
+# OJO con `neg-inferior-por-encima`: el texto que sigue al prefijo lo pone WINTERFELL
+# (`InconsistentOodConstraintEvaluations`) y no la casa, asi que caducaria con la dependencia. Se
+# pina SOLO el prefijo `cobro:`, que es lo que antepone el mando y lo unico que la casa gobierna.
+cobro-inferior-0.json|0|por al menos 0, nacido en 4
+cobro-inferior-importe.json|0|por al menos 250000, nacido en 4
+neg-nacido-igual-seq.json|1|no es anterior a la cabeza de seq
+neg-inferior-por-encima.json|1|cobro:
+# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. La linea de
+# `neg-inferior-por-encima` de arriba pina el prefijo `cobro:`, que no dice por que cae. No se
+# reescribe (regla 2 del PROCESO): esta linea NUEVA pina la causa, el nombre que le da winter-verifier
+# 0.13.1, el del Cargo.lock, como ya hace `rechazo/`. Caduca con la dependencia, y se declara: si la
+# renombra, la linea se mueve a su version con su vector; no se reescribe.
+neg-inferior-por-encima.json|1|cobro: InconsistentOodConstraintEvaluations
+# §723, la v2 del cobro pendiente (los tres segmentos de rango en 62 bits): los dos positivos
+# de arriba son de la v1, con el superior MAX_VALOR, donde la v1 no deja pasar ningun importe fuera
+# de la banda, y siguen VERDE. Estos dos son las mismas dos formas de D-N con la v2, COPIADOS tal
+# cual de una corrida de `tools/banco_pendiente.sh --guardar <dir>` con el nodo que prueba con la v2
+# (BANCO-PENDIENTE VERDE, exit 0; el aviso y la credencial, con las huellas de arriba). Un kit que
+# solo implemente la v1 los rechaza por la coherencia OOD. Jamas se reescriben (regla 2 del PROCESO).
+cobro-v2-inferior-0.json|0|por al menos 0, nacido en 4
+cobro-v2-inferior-importe.json|0|por al menos 250000, nacido en 4

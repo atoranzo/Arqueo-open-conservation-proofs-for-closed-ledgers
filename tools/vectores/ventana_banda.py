@@ -28,19 +28,22 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 PRENDA = os.path.normpath(os.path.join(AQUI, "..", "..", "spec", "vectors", "completitud",
                                        "prenda-rechazada-por-la-capa.json"))
 
+# §914 (el corte zkssl/0.5): los ocho renacen con la version del cable en el nombre; sus pruebas
+# llevan la marca v2 de la banda y las dos columnas (el probador de `stark-experiment`, por su
+# `ocultacion_encendida`). Los de la 0.4 viven bajo `spec/vectors/0.4/`.
 VECTORES = {
     # familia: [(fichero, caso del binario)]
     "rechazo": [
-        ("rechazo-rech-banda-ventana-v1.json", "ventana-v1"),
-        ("rechazo-rech-banda-ventana-v2.json", "ventana-v2"),
-        ("rechazo-banda-ventana-control.json", "control"),
+        ("rechazo-rech-banda-ventana-v1-0.5.json", "ventana-v1"),
+        ("rechazo-rech-banda-ventana-v2-0.5.json", "ventana-v2"),
+        ("rechazo-banda-ventana-control-0.5.json", "control"),
     ],
     "completitud": [
-        ("rechazo-banda-v1-declarada.json", "completitud-v1"),
-        ("lote-banda-v1-declarada.json", "lote-v1"),
-        ("neg-lote-banda-v1-operacion-fuera.json", "lote-v1-operacion-fuera"),
-        ("prenda-banda-v1-declarada.json", "prenda-v1"),
-        ("neg-prenda-banda-v1-marca-otra.json", "prenda-v1-marca-otra"),
+        ("rechazo-banda-v1-declarada-0.5.json", "completitud-v1"),
+        ("lote-banda-v1-declarada-0.5.json", "lote-v1"),
+        ("neg-lote-banda-v1-operacion-fuera-0.5.json", "lote-v1-operacion-fuera"),
+        ("prenda-banda-v1-declarada-0.5.json", "prenda-v1"),
+        ("neg-prenda-banda-v1-marca-otra-0.5.json", "prenda-v1-marca-otra"),
     ],
 }
 

@@ -14,117 +14,12 @@
 # OJO con `neg-cota-movida`: el texto que sigue al prefijo lo pone WINTERFELL
 # (`InconsistentOodConstraintEvaluations`) y no la casa, asi que caducaria con la dependencia. Se
 # pina SOLO el prefijo `edad:`, que es lo que antepone el mando y lo unico que la casa gobierna.
-edad-todos.json|0|VERDE: bajo la cabeza de seq 10, a lo sumo 2 posiciones vivas de cualquier emisor
-edad-caja-vacia.json|0|VERDE: bajo la cabeza de seq 10, a lo sumo 0 posiciones vivas de cualquier emisor
 neg-sin-enunciado.json|1|falta enunciado
 neg-sin-subraices.json|1|falta subraices
 neg-sin-prueba.json|1|falta prueba
 neg-sin-cabeza.json|1|falta cabeza
 neg-sin-firma.json|1|falta signature
 neg-cabeza-v4.json|1|exige una cabeza v5
-neg-subraiz-pend.json|1|no es el pendingRoot de la cabeza
-neg-subraiz-meta.json|1|no es el pmetaRoot de la cabeza
-neg-cota-movida.json|1|edad:
-# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. La linea de
-# `neg-cota-movida` de arriba pina el prefijo `edad:`, y eso lo pasa tambien quien no verifica nada:
-# la segunda implementacion, que no lee este sobre, lo pasaba con su ROJO de sobre no leido (medido).
-# No se reescribe (regla 2 del PROCESO): esta linea NUEVA pina la causa, el nombre que le da
-# winter-verifier 0.13.1, el del Cargo.lock, como ya hace `rechazo/`. Caduca con la dependencia, y se
-# declara: si la renombra, la linea se mueve a su version con su vector; no se reescribe.
-neg-cota-movida.json|1|edad: InconsistentOodConstraintEvaluations
-# §706 (spec/PAQUETE.md, seccion 6.1): la MARCA de la ocultacion, que es parte de la forma (§651),
-# y el ORDEN en que el juez la mira. Tres negativos de la clave `prueba` de `edad-todos.json`, la de
-# los nueve de arriba: en `neg-marca-m32` los cuatro bytes de m de la marca -los bytes 21 a 24 de la
-# prueba- pasan de 64 a 32; en `neg-meta-vacio` la longitud del meta -los bytes 4 y 5- pasa de 19 a
-# 0, y los 19 de la marca salen; y `neg-marca-m32-y-opciones` es una ESCENA, y se declara: la m de
-# la marca a 32 y, ademas, el primer byte de las opciones -el 34, las consultas- de 42 a 43, porque
-# con un solo defecto el orden no se ve. El juez mira la forma, despues la marca y despues las
-# opciones, y nombra la marca con el texto de `zk_ssl_air::comprobar_marca`, que gobierna la casa:
-# lo que sigue a `marca de la ocultacion` es el `Debug` de lo que lee `Marca::leer`, el lector del
-# fork. Fijan que la segunda implementacion falla igual: hasta el §706 daba otra causa en los tres,
-# `ProofDeserializationError("queries")` en los dos primeros y `UnacceptableProofOptions` en el tercero.
-# Vale para el cable zkssl/0.4 y su marca v1: si la marca o su texto cambian de version, las lineas
-# se mueven a su version con sus vectores; no se reescriben.
-neg-marca-m32.json|1|edad: marca de la ocultacion Ok(Some(Marca { m: 32 })); el enunciado pide m = 64
-neg-meta-vacio.json|1|edad: marca de la ocultacion Ok(None); el enunciado pide m = 64
-neg-marca-m32-y-opciones.json|1|edad: marca de la ocultacion Ok(Some(Marca { m: 32 })); el enunciado pide m = 64
-# §711 (spec/PAQUETE.md, seccion 6.1): dos negativos NUEVOS que salen de `edad-todos.json` por UNA mutacion
-# de UN byte de la prueba cada uno, y que antes del §711 hacian entrar en panico al kit (salida 101,
-# medido): el byte 34 -el numero de consultas de las opciones- a cero, en `winter-air/src/options.rs`,
-# y el byte 46 -el numero de consultas unicas- a cero, en `proof/queries.rs`, dentro de `verify`. Ahora
-# son ROJO con su causa, que pone el fork de winterfell (`crates/winter-air/src/causa.rs`, una sola
-# fuente) y repite la segunda implementacion. No se reescriben (regla 2 del PROCESO).
-neg-prueba-opciones-cero.json|1|prueba mal formada: opciones fuera de rango
-neg-prueba-consultas-cero.json|1|prueba mal formada: consultas fuera de rango
-# §713 (spec/PAQUETE.md, seccion 6.1): un negativo NUEVO, CAPTURADO y no derivado: la misma corrida
-# que `tools/banco_edad.sh` (semillas 7 y 8, clave '37', cabeza v6 de seq 10), con un nodo compilado
-# con el canal de antes del §713 -el nodo verifica su propia prueba antes de escribir el sobre- y
-# contra `winter-fri` 0.13.1 y el parche `tools/vectores/resto_ajeno.diff`: su ultimo compromiso FRI
-# es el hash de OTRO resto -el mismo con su primer coeficiente mas uno- y la prueba lleva el resto de
-# verdad, en una corrida coherente con ese compromiso. El sobre honesto de la misma cabeza da VERDE.
-# Antes del §713 este daba VERDE tambien (salida 0, medido con el kit y con la segunda
-# implementacion): `winter-fri` 0.13.1 no ata el resto a su compromiso. La causa es la variante que
-# `winter-fri` define y no usa; la pone el canal del fork (`crates/winter-verifier/src/channel.rs`,
-# `read_remainder`) y la repite `tools/segunda/stark.py`. Lo produce `tools/vectores/resto_ajeno.sh`.
-# Jamas se reescribe (regla 2 del PROCESO).
-neg-prueba-resto-ajeno.json|1|edad: FriVerificationFailed(RemainderCommitmentMismatch)
-# §715 (spec/PAQUETE.md, seccion 6.1), la maleabilidad de los bytes de la prueba: doce negativos
-# NUEVOS que salen de `edad-todos.json` por UNA mutacion de su prueba cada uno, con
-# `tools/vectores/maleabilidad.py`. Una prueba tiene UNA escritura: hasta este
-# arreglo, de los bytes de una prueba salian otros, sin el testigo, que verificaban igual y tenian
-# otra huella. Con el kit de antes de este arreglo dieron VERDE y salida 0 (medido): un `usize`
-# escrito con un byte de mas -el numero de restricciones, la cuenta de nodos del lote de la traza y
-# la de la capa FRI 0-, un grupo de mas en la capa FRI 0 con su sal, y una fila de mas en cada tabla
-# con su sal (las consultas unicas de 40 a 41). Las causas: la del `usize`, que pone el lector del
-# fork (`crates/winter-air/src/causa.rs`, una sola fuente), y las de una apertura que no casa con su
-# compromiso, que pone el canal del fork. La segunda implementacion las repite. Los demas ya eran
-# ROJO en el kit y se fijan aqui como formas de la misma clase: el numero de restricciones mas 2^32
-# en su escritura minima (el mismo `as u32` en el transcript), una capa FRI de mas, un nodo de mas
-# en el lote de la traza (§659) y un byte de cola (§653); la segunda implementacion daba VERDE en el
-# nodo y en la cola (medido). Y tres bytes que antes del §711 hacian entrar en panico al lector -salida
-# 101; en el nodo, PARADA-: las particiones de las opciones a cero, el marco OOD de la traza con 3
-# filas y las particiones FRI a 64. Jamas se reescriben (regla 2 del PROCESO).
-neg-prueba-usize-no-minimo.json|1|prueba mal formada: usize no canonico
-neg-prueba-lote-usize-no-minimo.json|1|prueba mal formada: usize no canonico
-neg-prueba-fri-usize-no-minimo.json|1|prueba mal formada: usize no canonico
-neg-prueba-restricciones-alias.json|1|prueba mal formada: contexto fuera de rango
-neg-prueba-capa-fri-de-mas.json|1|prueba mal formada: FRI fuera de rango
-neg-prueba-grupo-fri-de-mas.json|1|edad: FriVerificationFailed(LayerCommitmentMismatch)
-neg-prueba-fila-de-mas.json|1|edad: TraceQueryDoesNotMatchCommitment
-neg-prueba-nodo-de-mas.json|1|edad: TraceQueryDoesNotMatchCommitment
-neg-prueba-cola.json|1|UnconsumedBytes
-neg-prueba-particiones-cero.json|1|prueba mal formada: opciones fuera de rango
-neg-prueba-marco-ood-3.json|1|prueba mal formada: marco OOD fuera de rango
-neg-prueba-fri-particiones-64.json|1|prueba mal formada: FRI fuera de rango
-# §715 (spec/PAQUETE.md, seccion 6.1), la cola dentro de una apertura: tres negativos NUEVOS que
-# salen de `edad-todos.json` con el mismo guion, cada uno con un byte 0x00 al final DENTRO de una
-# apertura -la de la traza, la del cociente- o del lote de la capa FRI 0, y su longitud corregida.
-# El kit ya los rechazaba; la segunda implementacion los aceptaba, VERDE (medido): una divergencia.
-# Es el mismo error de winter-utils que la cola de la prueba entera (`UnconsumedBytes`), por su
-# `Display`. Jamas se reescriben (regla 2 del PROCESO).
-neg-prueba-cola-apertura-traza.json|1|not all bytes were consumed
-neg-prueba-cola-apertura-cociente.json|1|not all bytes were consumed
-neg-prueba-cola-lote-fri.json|1|not all bytes were consumed
-# §717, el coste del juez de la edad: tres negativos que NO salen de `edad-todos.json` (mutar el
-# `nextPending` de una cabeza real cae antes, en el `epochDigest`): son paquetes de atacante, que
-# cualquiera arma sin la clave del operador, sin libro y sin probar. La cabeza v5 va firmada con una
-# clave XMSS de TEST de semilla fija -el mando verifica la firma con la clave que trae la cabeza- y
-# la prueba esta FABRICADA: solo tiene la forma que el lector y la guarda de forma esperan. `m` sale
-# del `nextPending` de esa cabeza, y el juez pagaba, antes de la primera comprobacion contra la
-# prueba, CPU y memoria lineales en 2^m por las exenciones del envoltorio de la prueba: con el kit
-# de antes de este arreglo los tres daban ROJO (salida 1) en la coherencia OOD, tras 0,07 s de CPU
-# en `m = 13`, 1,1 s en `m = 17` y mas de un minuto y 531 MB en `m = 23` (medido). Ahora el
-# enunciado rechaza `m` sobre su tope, 13, ANTES de leer la prueba, y en el tope y por debajo el
-# juez evalua las exenciones en flujo. Las `m` van fijas y cada vector dice lo mismo con cualquier
-# tope de 13 a 16: `m = 17` y `m = 23` caen por el tope, y se pina su causa con su `m` y sin el
-# tope (`fuera de 3..=`); `m = 13` llega a la prueba y cae en la coherencia OOD, y se pina la causa
-# entera, que pone el fork de winterfell (§533). La prueba de los dos de encima del tope no se lee,
-# y aun asi es la fabricada entera: es el ataque mismo, el que el kit de antes pagaba, y una
-# regresion del tope lo volveria a pagar. Lo que la delata es la causa pinada. Los produce
-# `tools/vectores/coste_edad.py`. Jamas se reescriben (regla 2 del PROCESO).
-neg-m-sobre-tope.json|1|edad: m = 17 fuera de 3..=
-neg-m-mayor-legible.json|1|edad: m = 23 fuera de 3..=
-neg-m-13-fabricada.json|1|edad: InconsistentOodConstraintEvaluations
 # §718, la canonicidad u64 -> campo: dos negativos que salen de `edad-todos.json` por UNA mutacion
 # cada uno -anaden `enunciado.emisor`-, con `tools/vectores/canonicidad.py`. El emisor es un indice
 # de cuenta, y el juez lo reduce modulo p: la prueba del emisor X verificaba en la API de zk-ssl-air
@@ -134,13 +29,82 @@ neg-m-13-fabricada.json|1|edad: InconsistentOodConstraintEvaluations
 # cae en el enunciado, ANTES de leer la prueba; la segunda implementacion da la misma causa. Jamas
 # se reescriben (regla 2 del PROCESO).
 neg-emisor-no-canonico.json|1|emisor: 0xffffffff00000001 no es canonico
-neg-emisor-fuera-de-cuentas.json|1|edad: emisor = 4294967296 no es un indice de cuenta
-# §721, el tope de m de la edad fijado en 13: los tres negativos del §717 valen con cualquier tope
-# de 13 a 16, asi que ninguno fija el valor. Lo fija este, de la misma familia de atacante y con la
-# misma clave XMSS de TEST: `nextPending` = 2^13 + 1, la marca mas pequena sobre 13, y una prueba
-# FABRICADA de `m = 14`. Con el tope en 13 cae por el tope, ANTES de leer la prueba; con 14 llegaria
-# a la prueba y caeria en la coherencia OOD, otra causa. Junto con `neg-m-13-fabricada.json`, el
-# tope queda en 13 y en ningun otro valor: con 12, aquel cae por el tope; con 14 o mas, este llega
-# a la prueba. Se pina la causa con su `m` y sin el tope, como los de arriba. Lo produce
-# `tools/vectores/coste_edad.py`. Jamas se reescribe (regla 2 del PROCESO).
-neg-m-14-sobre-tope.json|1|edad: m = 14 fuera de 3..=
+# zkssl/0.5 (§914, el corte del tren: RFC-0018 D-G y D-H; RFC-0009 D-AL bis). Los vectores con prueba
+# de esta familia RENACEN con la version del cable en el nombre: la marca v2 (25 bytes: familia 14,
+# version 1 de la AIR, perfil 1, m = 64, dos columnas aleatorias pareadas en DEEP), el juez que la lee
+# ANTES del enunciado y la edad desde m = 4 (T = 128). Los de zkssl/0.4 viven bajo spec/vectors/0.4/edad/
+# con sus lineas, y los verifica el zk-ssl-verify del arbol en cbe95d70 (§913). Los negativos de arriba
+# que caen antes de la prueba -los cuatro `neg-sin-*`, `neg-cabeza-v4` y `neg-emisor-no-canonico`- no
+# cambian de veredicto y siguen con sus bytes. Los dos positivos y los tres negativos de su regla salen
+# de UNA corrida de `tools/banco_edad.sh --guardar` (BANCO-EDAD VERDE, semillas 7 y 8, cabeza v6 de
+# seq 10), como los de la 0.4; cada negativo, UNA mutacion. Jamas se reescriben (regla 2 del PROCESO).
+edad-todos-0.5.json|0|VERDE: bajo la cabeza de seq 10, a lo sumo 2 posiciones vivas de cualquier emisor
+edad-caja-vacia-0.5.json|0|VERDE: bajo la cabeza de seq 10, a lo sumo 0 posiciones vivas de cualquier emisor
+neg-subraiz-pend-0.5.json|1|no es el pendingRoot de la cabeza
+neg-subraiz-meta-0.5.json|1|no es el pmetaRoot de la cabeza
+neg-cota-movida-0.5.json|1|edad: InconsistentOodConstraintEvaluations
+# §914, los negativos de la MARCA v2 (RFC-0018 D-G, su tabla): catorce, de `edad-todos-0.5.json` por UNA
+# mutacion cada uno salvo los dos que la D-G pide con la positiva de zkssl/0.4 -`neg-v2-marca-v1`, sus
+# bytes tal cual, y `neg-v2-largo-v1`, su marca v1 con un byte de mas-, con `tools/vectores/marca_v2.py`.
+# Fijan el paso 1 del juez, en su orden: 1b el meta vacio, 1c la marca v1, 1d la desconocida (otro
+# prefijo, 26 o 24 bytes -la marca v2 tiene 25 desde el §899, no 24-, la v1 de 20, el perfil 255), 1e
+# otra familia (la 16, el pago), 1f otra version de la AIR, 1g otro perfil, 1h otra m, y 3b una opcion
+# tocada con la marca buena. Las dos ESCENAS caen por la marca y no por lo otro: `familia-y-forma` (la
+# familia ajena Y un ancho de mas) y `m-y-opciones` (otra m Y una opcion tocada), como la del §706.
+# Sustituyen a los tres del §706 (`neg-marca-m32`, `neg-meta-vacio`, `neg-marca-m32-y-opciones`), que se
+# mudaron a su version. La segunda implementacion da los mismos textos, letra por letra.
+neg-v2-marca-v1.json|1|edad: marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x
+neg-v2-meta-vacio.json|1|edad: marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version
+neg-v2-prefijo-otro.json|1|edad: marca desconocida
+neg-v2-largo-26.json|1|edad: marca desconocida
+neg-v2-largo-24.json|1|edad: marca desconocida
+neg-v2-largo-v1.json|1|edad: marca desconocida
+neg-v2-familia-ajena.json|1|edad: marca: la prueba es de la familia 16; se pide la 14
+neg-v2-version-air.json|1|edad: marca: version 2 de la AIR de la familia 14; se acepta 1
+neg-v2-perfil.json|1|edad: marca: perfil 2 desconocido
+neg-v2-perfil-reservado.json|1|edad: marca desconocida
+neg-v2-m-otra.json|1|edad: marca: m = 32; la construccion pide m = 64
+neg-v2-opciones.json|1|edad: UnacceptableProofOptions
+# §914, 1h bis, el que el barrido byte a byte del kit (`la_cabecera_byte_a_byte_es_err_y_nunca_panico`) hizo
+# escribir: el byte de columnas de la marca a 1 -la de zkssl/0.4 en una marca v2-. Hasta este sello la
+# marca pasaba, la forma tambien (exige la constante, dos) y el fork construia la AIR interna con un ancho
+# de menos, que entraba en panico; el juez la rechaza ahora en el paso 1, con nombre.
+neg-v2-columnas.json|1|edad: marca: 1 columnas; la construccion pide 2
+neg-v2-familia-y-forma.json|1|edad: marca: la prueba es de la familia 16; se pide la 14
+neg-v2-m-y-opciones.json|1|edad: marca: m = 32; la construccion pide m = 64
+# §914, los del §711 y el §715 (la maleabilidad de los bytes de la prueba), renacidos de
+# `edad-todos-0.5.json` con `tools/vectores/maleabilidad.py`, que desde el §914 lleva tambien los dos
+# del §711 (hasta entonces, a mano): las mismas mutaciones y las mismas causas que en la 0.4.
+neg-prueba-opciones-cero-0.5.json|1|prueba mal formada: opciones fuera de rango
+neg-prueba-consultas-cero-0.5.json|1|prueba mal formada: consultas fuera de rango
+neg-prueba-usize-no-minimo-0.5.json|1|prueba mal formada: usize no canonico
+neg-prueba-lote-usize-no-minimo-0.5.json|1|prueba mal formada: usize no canonico
+neg-prueba-fri-usize-no-minimo-0.5.json|1|prueba mal formada: usize no canonico
+neg-prueba-restricciones-alias-0.5.json|1|prueba mal formada: contexto fuera de rango
+neg-prueba-capa-fri-de-mas-0.5.json|1|prueba mal formada: FRI fuera de rango
+neg-prueba-grupo-fri-de-mas-0.5.json|1|edad: FriVerificationFailed(LayerCommitmentMismatch)
+neg-prueba-fila-de-mas-0.5.json|1|edad: TraceQueryDoesNotMatchCommitment
+neg-prueba-nodo-de-mas-0.5.json|1|edad: TraceQueryDoesNotMatchCommitment
+neg-prueba-cola-0.5.json|1|UnconsumedBytes
+neg-prueba-particiones-cero-0.5.json|1|prueba mal formada: opciones fuera de rango
+neg-prueba-marco-ood-3-0.5.json|1|prueba mal formada: marco OOD fuera de rango
+neg-prueba-fri-particiones-64-0.5.json|1|prueba mal formada: FRI fuera de rango
+neg-prueba-cola-apertura-traza-0.5.json|1|not all bytes were consumed
+neg-prueba-cola-apertura-cociente-0.5.json|1|not all bytes were consumed
+neg-prueba-cola-lote-fri-0.5.json|1|not all bytes were consumed
+# §914, los del §717 y el §721 (el coste del juez de la edad), renacidos con `tools/vectores/coste_edad.py`:
+# la prueba fabricada lleva ahora la marca v2 de la edad y las dos columnas, para pasar el paso 1 del
+# juez y caer donde dice; el suelo del enunciado es 4 (`M_MIN`, con T = 128), y la causa se pina con su
+# `m` y sin el tope, como entonces. `m = 13` llega a la prueba y cae en la coherencia OOD.
+neg-m-sobre-tope-0.5.json|1|edad: m = 17 fuera de 4..=
+neg-m-mayor-legible-0.5.json|1|edad: m = 23 fuera de 4..=
+neg-m-13-fabricada-0.5.json|1|edad: InconsistentOodConstraintEvaluations
+neg-m-14-sobre-tope-0.5.json|1|edad: m = 14 fuera de 4..=
+# §914, el del §718 que caia en el enunciado, renacido de `edad-todos-0.5.json` con
+# `tools/vectores/canonicidad.py`: el juez de la 0.5 mira la marca antes que el enunciado.
+neg-emisor-fuera-de-cuentas-0.5.json|1|edad: emisor = 4294967296 no es un indice de cuenta
+# §914, el del §713 (el resto FRI atado a su compromiso), CAPTURADO otra vez con `tools/vectores/resto_ajeno.sh`
+# sobre el arbol del corte: el mismo camino que `tools/banco_edad.sh` con un nodo compilado con el canal de antes
+# del §713 y el parche de `winter-fri`; su prueba lleva la marca v2 y las dos columnas, y el kit 0.5 da la misma
+# causa que el 0.4 al de entonces. El sobre honesto de la misma cabeza dio VERDE (RESTO-AJENO VERDE).
+neg-prueba-resto-ajeno-0.5.json|1|edad: FriVerificationFailed(RemainderCommitmentMismatch)

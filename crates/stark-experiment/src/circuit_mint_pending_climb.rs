@@ -704,6 +704,7 @@ impl Air for MintPendingClimbAir {
 /// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
 /// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
 impl zk_ssl_air::juez::Juez for MintPendingClimbAir {
+    const NOMBRE: &'static str = "MintPendingClimbAir";
     fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
         zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
     }
@@ -760,7 +761,7 @@ impl Prover for MintPendingClimbProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("MintPendingClimbAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -803,7 +804,7 @@ mod tests {
     use super::*;
     use crate::native::derive_public_id;
     use crate::merkle::native_merge;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, VerifierError};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension, VerifierError};
 
     const SUPPLY_OLD: u64 = 10_000_000;
     const MAX_SUPPLY: u64 = 100_000_000;
@@ -938,7 +939,7 @@ mod tests {
             Ok(Ok(p)) => p,
         };
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        crate::verify_casa::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof, inputs, &min_opts,
         )
         .map_err(|e| format!("verificacion fallo: {e:?}"))
@@ -1268,7 +1269,8 @@ mod tests {
             .prove(trace)
             .expect("sin ocultacion, en release el probador no comprueba la traza");
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        let r = verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let r = // sin ocultar no hay marca v2: el verify del fork, no el de la casa (§914)
+        winterfell::verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof, inputs, &min_opts,
         );
         assert_eq!(

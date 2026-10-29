@@ -89,17 +89,26 @@ pub mod circuit_send;
 pub mod circuit_send_v2;
 /// E3b2-M3: el compromiso con sal, un solo tipo para las dos orillas (D-X, D-AF).
 pub use zk_ssl_air::sal::MerkleConSal;
-/// E3b2-M3: la ocultacion de los probadores con fila (D-Z, D-AE): m 64, semillas.
-pub fn ocultacion_encendida() -> winter_prover::Ocultacion {
+/// E3b2-M3: la ocultacion de los probadores con fila (D-Z, D-AE): m 64, semillas. §914 (el corte
+/// zkssl/0.5; RFC-0018 D-G y D-H, RFC-0009 D-AL bis): las dos columnas aleatorias, pareadas como
+/// una sobre E en DEEP, y la marca v2 con la familia de la AIR -por su nombre en el registro de
+/// `zk_ssl_air::familias`-, su version inicial y el perfil de produccion. Una AIR que no esta en el
+/// registro es un error de quien construye: entra en panico al probar, y cada probador lo ejerce en
+/// sus tests. ⚠️ §914: hasta el corte, una columna y sin marca v2 (la v1 con m).
+pub fn ocultacion_encendida(air: &str) -> winter_prover::Ocultacion {
+    use zk_ssl_air::familias::{familia_de, PERFIL_PRODUCCION, VERSION_INICIAL};
+    let familia =
+        familia_de(air).unwrap_or_else(|| panic!("{air}: sin familia en el registro de la marca v2"));
     winter_prover::Ocultacion {
         m: zk_ssl_air::M_OCULTACION,
         semilla_filas: zk_ssl_air::sal::semilla(),
         semilla_cociente: zk_ssl_air::sal::semilla(),
-        // §899: una columna aleatoria, la construccion de zkssl/0.4; la de laboratorio (la 133)
-        // no la enciende ningun probador de produccion hasta el corte 0.5
-        columnas: 1,
-        // §906: ni la marca v2 (RFC-0018 D-G), construida en laboratorio y apagada hasta el corte
-        marca_v2: None,
+        columnas: zk_ssl_air::COLUMNAS_ALEATORIAS,
+        marca_v2: Some(winter_prover::CamposV2 {
+            familia,
+            version: VERSION_INICIAL,
+            perfil: PERFIL_PRODUCCION,
+        }),
     }
 }
 pub mod circuit_credit_climb;
@@ -132,6 +141,31 @@ pub mod solvency;
 mod kat_probador;
 // §723, la ventana del saldo privado: el KAT de la banda v2, con el montaje de la foto.
 // Solo tests, y solo en release.
+/// §914: el `verify` de los tests de los probadores con fila. Sus pruebas llevan la marca v2
+/// (`ocultacion_encendida`), asi que se juzgan con `verify_v2` del fork, con la familia del
+/// registro -por el nombre del tipo de la AIR, como en el censo del nivel-, la version inicial y
+/// el perfil de produccion, y con las opciones que cada test acepte. Solo tests: la produccion
+/// juzga por el juez unico (`zk_ssl_air::juez`).
+#[cfg(test)]
+pub(crate) fn verify_casa<AIR, H, R, VC>(
+    proof: winterfell::Proof,
+    pi: AIR::PublicInputs,
+    acc: &winterfell::AcceptableOptions,
+) -> Result<(), winterfell::VerifierError>
+where
+    AIR: winterfell::Air,
+    H: winterfell::crypto::ElementHasher<BaseField = AIR::BaseField>,
+    R: winterfell::crypto::RandomCoin<BaseField = AIR::BaseField, Hasher = H>,
+    VC: winterfell::crypto::VectorCommitment<H>,
+{
+    use zk_ssl_air::familias::{familia_de, PERFIL_PRODUCCION, VERSION_INICIAL};
+    let nombre = core::any::type_name::<AIR>().rsplit("::").next().unwrap_or("");
+    let nombre = nombre.split('<').next().unwrap_or(nombre);
+    let nombre = nombre.strip_suffix("De").unwrap_or(nombre);
+    let familia = familia_de(nombre).unwrap_or_else(|| panic!("{nombre}: sin familia en el registro"));
+    winter_verifier::verify_v2::<AIR, H, R, VC>(proof, pi, acc, familia, VERSION_INICIAL, PERFIL_PRODUCCION)
+}
+
 #[cfg(test)]
 mod kat_banda_v2;
 // RFC-0009 E3a-2 (S534): los siete falsadores de D-K, con el modo oculto solo en ellos, y
@@ -306,7 +340,7 @@ impl Prover for WorkProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, Proof};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension, Proof};
 
     fn native_result(start: BaseElement, n: usize) -> BaseElement {
         let mut x = start;
@@ -341,7 +375,7 @@ mod tests {
         let proof: Proof = prover.prove(trace).expect("la generacion de la prueba no deberia fallar");
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        let verification = verify::<WorkAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        let verification = winterfell::verify::<WorkAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
             proof,
             result,
             &min_opts,

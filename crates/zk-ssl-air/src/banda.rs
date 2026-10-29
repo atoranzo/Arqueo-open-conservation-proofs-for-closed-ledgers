@@ -214,6 +214,7 @@ pub type BandaAirV1 = BandaAirDe<1>;
 /// §913: la forma en claro de esta familia, para el juez unico (`crate::juez`); la v1 y la v2
 /// tienen la misma traza.
 impl<const V: u8> crate::juez::Juez for BandaAirDe<V> {
+    const NOMBRE: &'static str = "BandaAir";
     fn forma(_: &BandaPublicInputs) -> crate::juez::Forma {
         crate::juez::Forma::fija(ANCHO, TRAZA)
     }
@@ -503,7 +504,7 @@ pub struct PublicadaV1 {
 /// reproduce la huella. ⚠️ No crece: una prueba nueva es de la v2. La segunda implementacion
 /// lleva la misma lista (`PUBLICADAS_V1` de `tools/segunda/airs.py`; un test de aqui las compara).
 pub const PUBLICADAS_V1: &[PublicadaV1] = &[PublicadaV1 {
-    vector: "spec/vectors/rechazo/saldo-insuficiente.json",
+    vector: "spec/vectors/0.4/rechazo/saldo-insuficiente.json", // §914: mudado a su version
     huella: "95d8fd37865d8d0c8322535b6b8c5edbd0a6eadee05c78dba1a27a19742c32de",
     raiz: "87b9805f534c39aecaa316fd0d8203f6feab81ba9a8ac7780f033ed465c69f1d",
     cuenta: "d38feef2725224670cef36f48f56313698363536f76355e95bea532a29660862",
@@ -538,11 +539,13 @@ fn verificar_con(
     pi: &BandaPublicInputs,
     publicadas: &[PublicadaV1],
 ) -> Result<(), String> {
+    // §914 (RFC-0018 D-G): la marca v2 antes que nada, de la cabeza; despues el enunciado; despues
+    // la prueba entera, sus opciones y su forma oculta, por el juez unico; los textos, los de siempre
+    crate::marca_del_kit::<BandaAirDe<2>>(prueba)?;
     comprobar_enunciado(pi)?;
     let proof =
         Proof::from_bytes(prueba).map_err(|e| format!("la prueba no se deserializa: {e:?}"))?;
-    // §913: la forma oculta y la marca (§651) las deriva y comprueba el juez unico, antes de
-    // construir ninguna AIR, y la verificacion lleva su politica; los textos son los de siempre
+    crate::juez::comprobar_opciones(&proof).or_else(crate::rechazo_del_kit)?;
     crate::juez::comprobar_forma(proof.trace_info(), &<BandaAirDe<2> as crate::juez::Juez>::forma(pi))
         .or_else(crate::rechazo_del_kit)?;
     let v2 = crate::juez::juzgar::<BandaAirDe<2>>(proof.clone(), pi.clone()).or_else(crate::rechazo_del_kit);
@@ -713,7 +716,8 @@ mod tests {
     /// La prueba y el enunciado que el mando compone de un sobre de rechazo `InsufficientBalance`
     /// de `spec/vectors/rechazo/`: la raiz de la cabeza, la cuenta de la banda y `[0, pedido - 1]`.
     fn del_vector(fichero: &str) -> (Vec<u8>, BandaPublicInputs) {
-        let ruta = format!("{}/../../spec/vectors/rechazo/{fichero}", env!("CARGO_MANIFEST_DIR"));
+        // §914: los vectores de zkssl/0.4 viven bajo su version (R6 b del RFC-0021)
+        let ruta = format!("{}/../../spec/vectors/0.4/rechazo/{fichero}", env!("CARGO_MANIFEST_DIR"));
         let t = std::fs::read_to_string(&ruta).expect("el vector");
         let dg = |c: &str| zk_ssl_hash::digest_from_bytes(&de_hex(campo(&t, c))).expect("digest");
         let pedido = u64::from_str_radix(campo(&t, "requested").trim_start_matches("0x"), 16)
@@ -727,34 +731,28 @@ mod tests {
         (de_hex(campo(&t, "prueba")), pi)
     }
 
-    /// **§723, la v1 ya publicada.** La prueba de `saldo-insuficiente.json` es de la v1,
-    /// con el superior 1000, bajo la cota: sin la lista seria la causa de la ventana, y con ella
-    /// verifica, porque su huella y su enunciado son los de [`PUBLICADAS_V1`]. Falsadores: con la
-    /// lista vacia, o con UN byte de su huella cambiado, la misma prueba da la causa de la ventana;
-    /// la del operador de la ventana (`rechazo-rech-banda-ventana-v1.json`, v1 que verifica) no esta
-    /// en la lista; y la publicada con otro superior no verifica.
+    /// **§723, la v1 ya publicada; §914, bajo el kit 0.5.** La prueba de `saldo-insuficiente.json`
+    /// es de la v1 con la marca v1, el superior 1000 bajo la cota: bajo el kit 0.4.x verificaba por
+    /// la lista de [`PUBLICADAS_V1`] (su huella y su enunciado). Desde el corte zkssl/0.5 toda
+    /// prueba de `zkssl/0.4` cae por su marca, antes del enunciado (RFC-0018 D-G, 1c; D-E, R6 e
+    /// del RFC-0021): la juzga el kit 0.4.x, y la lista queda como lo que fue. Con la lista y sin
+    /// ella, la misma causa; con otro superior, la misma causa.
     #[test]
-    fn la_v1_publicada_se_reconoce_por_su_huella_y_su_enunciado() {
-        let ventana = |r: Result<(), String>| {
-            r.as_ref().is_err_and(|e| e.starts_with(crate::PRUEBA_V1_EN_LA_VENTANA))
+    fn la_v1_publicada_cae_por_su_marca_bajo_el_kit_0_5() {
+        let marca_v1 = |r: Result<(), String>| {
+            r.as_ref().is_err_and(|e| e == "marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x")
         };
         let (prueba, pi) = del_vector("saldo-insuficiente.json");
         let e = &PUBLICADAS_V1[0];
         assert_eq!((pi.lower.as_int(), pi.upper.as_int()), (e.inferior, e.superior));
         assert!(!crate::v1_sin_ventana(e.superior), "la publicada esta bajo la cota");
-        assert_eq!(verificar(&prueba, &pi), Ok(()), "la publicada, con la lista");
-        assert!(ventana(verificar_con(&prueba, &pi, &[])), "sin la lista, la ventana");
-        let mut huella = e.huella.to_string();
-        let otro = if huella.starts_with('0') { "1" } else { "0" };
-        huella.replace_range(0..1, otro);
-        let tocada = [PublicadaV1 { huella: Box::leak(huella.into_boxed_str()), ..*e }];
-        assert!(ventana(verificar_con(&prueba, &pi, &tocada)), "un byte de la huella cambiado");
+        assert!(marca_v1(verificar(&prueba, &pi)), "la publicada, con la lista: por la marca");
+        assert!(marca_v1(verificar_con(&prueba, &pi, &[])), "sin la lista, por la marca");
         let (falsa, pi_falsa) = del_vector("rechazo-rech-banda-ventana-v1.json");
-        assert!(ventana(verificar(&falsa, &pi_falsa)), "la del operador no esta en la lista");
+        assert!(marca_v1(verificar(&falsa, &pi_falsa)), "la del operador, por la marca");
         let mut otro_superior = pi.clone();
         otro_superior.upper = BaseElement::new(999);
-        assert!(verificar(&prueba, &otro_superior).is_err(), "con otro enunciado no verifica");
-        assert!(!ventana(verificar(&prueba, &otro_superior)), "y no por la ventana");
+        assert!(marca_v1(verificar(&prueba, &otro_superior)), "con otro enunciado, por la marca");
     }
 
     /// La segunda implementacion lleva la MISMA lista: su `PUBLICADAS_V1` (`tools/segunda/airs.py`),

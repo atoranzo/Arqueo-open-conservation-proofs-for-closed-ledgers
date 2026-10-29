@@ -44,6 +44,7 @@ MerkleAir y FrozenClimbAir (T = 256) no tienen ninguna columna así y siguen con
 cinco de T = 64 no tienen M_lin que medir (la 131). Para las dieciséis, la proposición del
 apartado 8 vale con la construcción de hoy, bajo las demás hipótesis; la promesa sigue siendo el
 censo hasta A4.
+⚠️ **§914 (el corte `zkssl/0.5`, RFC-0018 D-H):** la construcción de producción es desde el corte la de las dos columnas aleatorias pareadas como una sobre E (D-AL bis, L9) en las 23 familias, con T = 128 en las cinco que tenían 64: R3 medida en verde en las cinco geometrías (apartado 13, `K_ENTERO_PAREADAS`), L1 cubriendo las 23 (`INDEPENDIENTE_DE_LA_AIR`), la cota de A1 en verde en las 28 pruebas. Lo que este documento dice de «hoy» desde aquí hasta el apartado 17 describe `zkssl/0.4`; la proposición para las 23, con sus hipótesis y su cuenta, se escribe en el asiento siguiente, y la promesa sigue siendo el censo hasta que el autor la acepte.
 
 **La nota, no leída.** La nota 2024/1037 de ePrint —Ulrich Haböck y Al Kindi, «A note on adding
 zero-knowledge to STARKs», recibida el 26 de junio de 2024 y revisada por última vez el 22 de
@@ -537,7 +538,7 @@ semilla de T ≥ 256 era una corrida de exploración que no estaba en el árbol 
 ## 7. Lo que el argumento no cubre
 
 - Las cinco familias con T = 64 (L6, H11): NullifierThresholdAir y ThresholdAir, que son del cable,
-  RefundAir, RefundAirV2 y EdadAir con ocho hojas.
+  RefundAir, RefundAirV2 y EdadAir con ocho hojas. ⚠️ §914: ya no hay familias con T = 64: las cinco pasan a 128 en el corte, y L1 las cubre (H11 se cumple en las 23).
 - La solvencia (SolvencyAir, T = 256 con dos trozos): R3 le falla por cuenta de dimensión (L3), y
   no tiene argumento.
 - R3 (H6), en las otras diecisiete, hasta que A3 la mida. ⚠️ §898: medida, falla en todas: hoy el

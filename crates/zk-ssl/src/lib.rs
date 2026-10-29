@@ -170,12 +170,11 @@ use winterfell::math::fields::f64::BaseElement;
 use winterfell::math::FieldElement;
 use winterfell::{BatchingMethod, FieldExtension, ProofOptions, Prover};
 // §913: el `verify` del fork, sus opciones, su moneda, el compromiso con sal y el hasher ya no
-// los usa ningun sitio de produccion de la capa: pasan por el juez unico. Los tests (`metrics.rs`,
-// el nivel, los censos) siguen usandolos.
+// los usa ningun sitio de produccion de la capa: pasan por el juez unico. Los tests (el nivel, los
+// censos) siguen usandolos; desde el §914 tambien `metrics.rs` mide por el juez.
 #[cfg(test)]
-use winterfell::{crypto::hashers::Blake3_256, crypto::DefaultRandomCoin, verify, AcceptableOptions};
-#[cfg(test)]
-use stark_experiment::MerkleConSal;
+use winterfell::crypto::hashers::Blake3_256;
+
 // §913 (ARQ-01, la 117): el juez unico de verificacion; los quince sitios de la capa lo llaman.
 use zk_ssl_air::juez::juzgar;
 
@@ -225,8 +224,8 @@ pub type AccountIndex = u64;
 
 /// Opciones de prueba del sistema: 42 consultas, blowup 16, molienda 21 y extensión cuadrática.
 ///
-/// Sobre las pruebas ocultas dan **127 bits conjeturados** (112,8-116,8 con el término DEEP) y,
-/// demostrables, UDR 59 y LDR 80-88 según la traza (80 en envío, cobro y quema; la edad baja con
+/// Sobre las pruebas ocultas dan **127 bits conjeturados** (112,8-115,8 con el término DEEP) y,
+/// demostrables, UDR 59 y LDR 80-86 según la traza (80 en envío, cobro y quema; la edad baja con
 /// `m`): lo fijan los tests del §697. Los 39.048 y 127.274 B de `FIVE_BACKENDS.md` §4 (⚠️ §806: decía «36,7 y 125,6 KB») son del circuito
 /// de comparación, con 32 y 120 consultas y sin ocultar. El nivel cuántico no está medido.
 pub fn proof_options() -> ProofOptions {
@@ -310,6 +309,7 @@ pub(crate) fn comprobar_forma(
 pub(crate) fn rechazo(prefijo: &str, r: zk_ssl_air::juez::Rechazo) -> LayerError {
     use zk_ssl_air::juez::Rechazo;
     LayerError::VerificationFailed(match r {
+        Rechazo::Cabeza => "prueba mal formada: sin cabeza".to_string(),
         Rechazo::Forma { real, exige } => {
             format!("forma de traza {real:?}; el enunciado exige {exige:?}")
         },
@@ -1224,7 +1224,8 @@ impl SovereignLayer {
 
 #[cfg(test)]
 mod guarda_forma {
-    use super::{comprobar_forma, LayerError};
+    use super::{comprobar_forma, rechazo, LayerError};
+    use stark_experiment::circuit_audit::AuditAir;
     use winterfell::TraceInfo;
 
     /// La marca del meta, escrita a mano: el prefijo y m en cuatro bytes LE.
@@ -1272,7 +1273,8 @@ mod guarda_forma {
             .send(BaseElement::new(SK_ALICE), a, &ea, receptor, salt_de(0x651), 250_000)
             .expect("envio");
         let largo = u16::from_le_bytes([envio.proof[4], envio.proof[5]]) as usize;
-        assert_eq!(largo, 19, "la prueba de la casa lleva la marca de 19 bytes");
+        // §914: la marca v2 de zkssl/0.5, 25 bytes (`winter_air::marca::LARGO_V2`)
+        assert_eq!(largo, 25, "la prueba de la casa lleva la marca v2 de 25 bytes");
         let mut sin_meta = envio.proof[0..4].to_vec();
         sin_meta.extend_from_slice(&[0, 0]);
         sin_meta.extend_from_slice(&envio.proof[6 + largo..]);
@@ -1283,8 +1285,9 @@ mod guarda_forma {
         let r = r.expect("CRITICO: el meta vaciado no puede hacer entrar en panico a la capa");
         assert!(matches!(r, Err(LayerError::VerificationFailed(ref m)) if m.contains("marca")), "{r:?}");
     }
-    /// §711: un envio honesto con el byte 34 de su prueba -las consultas de las opciones- a cero, y
-    /// otro con el 46 -las consultas unicas- a cero. Antes: `apply_send` entraba en panico en
+    /// §711: un envio honesto con el byte de su prueba de las consultas de las opciones a cero, y
+    /// otro con el de las consultas unicas a cero (el 34 y el 46 con la marca v1 de 19 bytes; desde
+    /// el §914, con la marca v2 de 25, el 40 y el 52). Antes: `apply_send` entraba en panico en
     /// `winter-air` (`options.rs:143` y `queries.rs:97`), con el candado del nodo tomado. Ahora:
     /// `VerificationFailed` con la causa del fork, SIN pasar por la red -que no puede esconder lo
     /// que arregla el verificador-, el libro sin tocar, y el envio honesto se aplica despues.
@@ -1302,7 +1305,7 @@ mod guarda_forma {
             .expect("envio");
         let honesta = envio.proof.clone();
         let raiz = (layer.state_root(), layer.transition_log().len());
-        for (byte, causa) in [(34, zk_ssl_air::causa::OPCIONES), (46, zk_ssl_air::causa::CONSULTAS)]
+        for (byte, causa) in [(40, zk_ssl_air::causa::OPCIONES), (52, zk_ssl_air::causa::CONSULTAS)]
         {
             envio.proof = honesta.clone();
             assert_ne!(envio.proof[byte], 0);
@@ -1328,32 +1331,39 @@ mod guarda_forma {
     #[test]
     fn una_forma_ajena_da_err_no_panico() {
         // ancho ajeno
-        let i = TraceInfo::new(99, 512);
+        let i = TraceInfo::new(99, 1024);
         assert!(matches!(
             comprobar_forma(&i, 44, 0, 0, 512),
             Err(LayerError::VerificationFailed(_))
         ));
         // longitud ajena
-        let j = TraceInfo::new(44, 128);
+        let j = TraceInfo::new(46, 128);
         assert!(comprobar_forma(&j, 44, 0, 0, 512).is_err());
-        // la forma EXACTA pasa, y desde D-AD (RFC-0009) es la OCULTA: ancho + 1 y 2T,
-        // y desde el §651 (D3-META) con la MARCA de la casa en el meta
-        let k = TraceInfo::with_meta(45, 1024, marca(64));
+        // la forma EXACTA pasa, y desde D-AD (RFC-0009) es la OCULTA: desde el §914, ancho + 2 (las
+        // dos columnas aleatorias) y 2T
+        let k = TraceInfo::new(46, 1024);
         assert!(comprobar_forma(&k, 44, 0, 0, 512).is_ok());
-        // §651: la forma oculta con el meta VACIO llegaba a `AIR::new` y entraba en panico
-        let sin_marca = TraceInfo::new(45, 1024);
-        assert!(matches!(
-            comprobar_forma(&sin_marca, 44, 0, 0, 512),
-            Err(LayerError::VerificationFailed(m)) if m.contains("marca")
-        ));
-        // §651: otra m tampoco es la de la casa
-        assert!(comprobar_forma(&TraceInfo::with_meta(45, 1024, marca(4)), 44, 0, 0, 512).is_err());
-        // la forma APAGADA -la del AIR- se rechaza: en zkssl/0.4 solo hay una forma
+        // la de zkssl/0.4, con una columna, y la APAGADA -la del AIR- se rechazan: en 0.5 solo hay
+        // una forma
+        assert!(comprobar_forma(&TraceInfo::new(45, 1024), 44, 0, 0, 512).is_err());
         let apagada = TraceInfo::new(44, 512);
         assert!(matches!(
             comprobar_forma(&apagada, 44, 0, 0, 512),
             Err(LayerError::VerificationFailed(_))
         ));
+        // §651, §914: la marca va aparte y ANTES, en el paso 1 del juez (la D-G del RFC-0018), con
+        // el texto de la capa: el meta vacio (1b), la v1 (1c), otra familia (1e); y la de la casa pasa
+        use zk_ssl_air::juez::comprobar_marca;
+        let texto = |meta: &[u8]| match rechazo("", comprobar_marca::<AuditAir>(meta).unwrap_err()) {
+            LayerError::VerificationFailed(t) => t,
+            otro => panic!("{otro:?}"),
+        };
+        assert!(texto(&[]).starts_with("marca: meta vacio"));
+        assert!(texto(&marca(64)).starts_with("marca v1: prueba de zkssl/0.4"));
+        let ajena = zk_ssl_air::familias::marca_v2_de("SendAir", 2).unwrap().escribir();
+        assert!(texto(&ajena).starts_with("marca: la prueba es de la familia 1; se pide la 9"));
+        let propia = zk_ssl_air::familias::marca_v2_de("AuditAir", 2).unwrap().escribir();
+        assert_eq!(comprobar_marca::<AuditAir>(&propia), Ok((64, 2)));
     }
 }
 
@@ -1369,8 +1379,12 @@ mod tests_sal {
     /// Las lineas de CODIGO -no de comentario- que llaman a `verify` con sus tipos. La aguja se
     /// arma por partes para que este mismo fuente no la contenga.
     fn llamadas(fuente: &str) -> Vec<&str> {
-        let aguja = concat!("verify", "::<");
-        fuente.lines().filter(|l| !l.trim_start().starts_with("//") && l.contains(aguja)).collect()
+        // §914: el juez unico llama a `verify_v2` del fork, con la marca v2 (RFC-0018 D-G)
+        let agujas = [concat!("verify", "::<"), concat!("verify_v2", "::<")];
+        fuente
+            .lines()
+            .filter(|l| !l.trim_start().starts_with("//") && agujas.iter().any(|a| l.contains(a)))
+            .collect()
     }
 
     /// Cada modulo, con sus llamadas contadas y todas con sal. Devuelve cuantas hubo.

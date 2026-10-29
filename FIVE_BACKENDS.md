@@ -163,9 +163,9 @@ en vez de 36,7»— y aun así sigue siendo el generador más rápido.
 
 ⚠️ **No son las cifras de producción.** Las opciones de la capa —42 queries,
 blowup 16, grinding 21 y extensión cuadrática— dan, sobre sus pruebas
-ocultas, 127 bits conjeturados —112,8-116,8 según la longitud con el término
+ocultas, 127 bits conjeturados —112,8-115,8 según la longitud con el término
 DEEP, que la fórmula de la conjeturada no descuenta (§708)— y, demostrables,
-59 en UDR y 80-88 en LDR según la longitud del circuito, menos en la prueba
+59 en UDR y 80-86 en LDR según la longitud del circuito, menos en la prueba
 de edad cuanto mayor es su `m`. Lo fijan tests desde el §697, y la tabla por
 circuito y por `m` está en [`SECURITY.md`](./SECURITY.md) §3.11. Lo que
 costaría llevar esas pruebas a 128 bits demostrables no está medido, y su

@@ -1,7 +1,7 @@
 # El paquete de evidencia portable — especificación del sobre y del mando
 
 - **Estado:** normativa vigente desde §397 (RFC-0004, etapa E1)
-- **Versión del protocolo:** `zkssl/0.4` — este documento no la mueve: el paquete no cruza el cable
+- **Versión del protocolo:** `zkssl/0.5` (§914; ⚠️ §914: decía `zkssl/0.4`) — este documento no la mueve: el paquete no cruza el cable
 - **Origen:** `spec/rfc/0004-paquete-de-evidencia.md`; asiento que lo sella: §397
 - **Implementación de referencia:** el binario `zk-ssl-verify` (`crates/zk-ssl-verify/src/main.rs`)
 
@@ -367,7 +367,7 @@ donde el valor es una respuesta del cable sin reescribir.
   repite. Y `m` —el subárbol `[0, 2^m)` que la prueba cubre— lo **deriva** el mando de
   `nextPending`, el menor que la cubre y al menos 3: un enunciado tiene una sola forma.
 - **`m` tiene tope** (§717): el juez rechaza `m` por encima de `zk_ssl_air::M_MAX`, 13,
-  **antes** de leer la prueba, con `m = {} fuera de 3..={M_MAX}`. El juez paga un coste lineal en
+  **antes** de leer la prueba, con `m = {} fuera de {M_MIN}..={M_MAX}` (⚠️ §914: `3..=` hasta el corte; el suelo es `M_MIN`, 4, con T = 128). El juez paga un coste lineal en
   `2^m` antes de la primera comprobación contra la prueba, y el mando no fija la clave del
   operador: sin el tope, un paquete con una cabeza de firma propia y una prueba que sólo tiene la
   forma elegía ese coste. 13 es la mayor `m` cuya prueba, con la traza oculta de producción, cabe
@@ -1188,7 +1188,7 @@ de los **mismos productores** de arriba, con su hueco relleno distinto.
 - `la causa NO se sostiene: el suministro resultante ({seria}) no supera el tope ({tope})`
 - `data: esta causa no publica el saldo: la banda lo prueba sin el` · `falta banda (la prueba de la desigualdad)`
 - `data: el importe que el nodo dice no es el que la prueba acota` · `la causa NO se sostiene: pedir 0 no puede pasar de ningun saldo`
-- `banda: falta prueba o no es cadena 0x` · `banda: {e}`, donde `{e}` es el rojo de `zk_ssl_air::banda::verificar`: `los limites {l} y {u} pasan del techo {MAX_VALOR}`, `banda vacia: inferior {l} sobre superior {u}`, `la prueba no se deserializa: …`, `forma de traza …`, `marca de la ocultacion …` (el de la edad), `prueba de la v1 con segmentos de 63 bits: con el superior {u}, bajo {COTA_V1}, no acota el saldo privado: un saldo de la ventana [2^62, 2^63) tambien la pasa` (§723: el juez lo da, y el mando no lo imprime como ROJO sino en el cuarto estado, abajo), o el que escribe winterfell (§478)
+- `banda: falta prueba o no es cadena 0x` · `banda: {e}`, donde `{e}` es el rojo de `zk_ssl_air::banda::verificar`: `los limites {l} y {u} pasan del techo {MAX_VALOR}`, `banda vacia: inferior {l} sobre superior {u}`, `la prueba no se deserializa: …`, `forma de traza …`, los de la marca v2 (`marca: …`, `marca v1: …`, `marca desconocida` y `la prueba no se deserializa: sin cabeza`: los ocho de la edad, antes que nada, §914), `prueba de la v1 con segmentos de 63 bits: con el superior {u}, bajo {COTA_V1}, no acota el saldo privado: un saldo de la ventana [2^62, 2^63) tambien la pasa` (§723: el juez lo da, y el mando no lo imprime como ROJO sino en el cuarto estado, abajo), o el que escribe winterfell (§478)
 - `DECLARADA, NO PROBADA: {m}` — desde el §723, el cuarto estado del sobre de rechazo, con salida 3 y sin `ROJO`. La banda v2 (los segmentos de rango a 62 bits; la corrección de la D-3 del RFC-0017): una banda de la v1 verifica solo con el superior en `2^32 - 2` o por encima, o si es la ya publicada de `PUBLICADAS_V1`. Por debajo, un saldo de la ventana `[2^62, 2^63)` también la pasa, y el sobre no sale ROJO sino con el cuarto estado: `{m}` es `banda: {e}. El operador declara InsufficientBalance con una prueba de la v1, que no lo prueba: una prueba nueva es de la v2`, con `{e}` el texto de la ventana de la lista de arriba, así que la línea empieza por `DECLARADA, NO PROBADA: banda: prueba de la v1 con segmentos de 63 bits: con el superior {u}, bajo 4294967294, no acota el saldo privado: …`; dentro de un sobre de completitud, con el sitio delante: `DECLARADA, NO PROBADA: resolucion.sobre: banda: …` o `resolucion.rechazo: banda: …`
 
 **La edad** (§465; `{e}` sale de `zk_ssl_air::verificar_contra_cabeza`)
@@ -1201,9 +1201,9 @@ firma y la familia de v5— salen de los **mismos productores** de arriba.
 - `edad: {e}`, con `{e}` uno de estos:
   - `la subraiz de pendientes, subida a 32 niveles, no es el pendingRoot de la cabeza`
   - `la subraiz de meta, subida a 32 niveles, no es el pmetaRoot de la cabeza`
-  - los del enunciado: `m = {} fuera de 3..={M_MAX}` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}` · `emisor = {} no es un indice de cuenta: no cabe en 32 bits` · `todos con emisor = {}: todos se escribe con emisor 0` (§718) — ⚠️ §706: hasta el §706 decía `1..=24`, rancio desde el §538, cuando el D-AG del RFC-0009 subió el suelo de m a 3. ⚠️ §717: hasta el §717 decía `3..=24`; desde el §717 el tope es `M_MAX`, 13 (§2.7).
+  - los del enunciado: `m = {} fuera de {M_MIN}..={M_MAX}` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}` · `emisor = {} no es un indice de cuenta: no cabe en 32 bits` · `todos con emisor = {}: todos se escribe con emisor 0` (§718) — ⚠️ §706: hasta el §706 decía `1..=24`, rancio desde el §538, cuando el D-AG del RFC-0009 subió el suelo de m a 3. ⚠️ §717: hasta el §717 decía `3..=24`; desde el §717 el tope es `M_MAX`, 13 (§2.7). ⚠️ §914: hasta el §914 decía `3..=`; desde el corte el suelo es `M_MIN`, 4, con T = 128.
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
-  - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64` — desde el §651 la marca es parte de la forma: el juez la mira después de la forma de traza y antes de las opciones, y sólo acepta la de la casa con su m. `{lectura}` es lo que lee `Marca::leer`: `Ok(None)` con el meta vacío, `Ok(Some(Marca { m: {m} }))` con otra m, `Err(Desconocida)` sin el prefijo y `Err(Largo)` con otra longitud. Lo emiten los cinco jueces del kit; hasta el §706 no estaba en este catálogo.
+  - los de la marca v2, ANTES que nada (§914, el corte `zkssl/0.5`; RFC-0018 D-G): el juez los lee de la cabeza de la prueba —los cuatro bytes, el largo del meta y el meta— sin deserializar el resto, antes del enunciado y de la prueba entera, con `zk_ssl_air::comprobar_marca_v2`, letra por letra los de `verify_v2` del fork y de la segunda implementación: `la prueba no se deserializa: sin cabeza` (1a: la prueba no llega a la cabeza) · `marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version` (1b) · `marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x` (1c: la marca de 19 bytes de `zkssl/0.4`) · `marca desconocida` (1d: sin el prefijo `arqueo:oculta:2`, con otra longitud que 25, un campo a cero, el perfil 255 o cero columnas) · `marca: la prueba es de la familia {}; se pide la {}` (1e; las familias, en `spec/NUCLEO.md` §4 bis) · `marca: version {} de la AIR de la familia {}; se acepta {}` (1f) · `marca: perfil {} desconocido` (1g) · `marca: m = {}; la construccion pide m = {}` (1h; m = 64) · `marca: {} columnas; la construccion pide {}` (1h bis, §914: las columnas que la marca declara son las de la construcción, dos; sin esto una marca con otra cifra pasaba la forma y el fork entraba en pánico al construir la AIR). ⚠️ §914: hasta el §914 el texto era `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el del lector de la marca v1 (§651, §706), que el juez miraba después de la forma de traza y antes de las opciones, con `{lectura}` lo que leía `Marca::leer`; desde el corte una prueba con esa marca cae en 1c, y la juzga el kit 0.4.x.
 
 **El cobro pendiente** (§495; `{e}` sale de `zk_ssl_air::cobro_pendiente`)
 
@@ -1216,7 +1216,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
   - `nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza que la firma`
   - los del enunciado: `las cotas {l} y {u} pasan del techo {MAX_VALOR}` · `banda vacia: inferior {l} sobre superior {u}` · `nacido {} pasa del techo {MAX_VALOR}` (§718); y, sobre el `u64` tal como llega y antes de reducir (§718, la canonicidad), `las cotas {l} y {u} pasan del techo {MAX_VALOR}` con `{l}` la cota inferior del sobre, y el `nacido` de arriba
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
-  - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el de la edad
+  - los de la marca v2, antes que nada (§914): los ocho de la edad
   - `prueba de la v1 con segmentos de 63 bits: con el superior {u}, bajo {COTA_V1}, no acota el importe privado: un importe de la ventana [2^62, 2^63) tambien la pasa` — §723: el de la v1 con un superior bajo la cota; contra la cabeza el superior es `MAX_VALOR` y no sale
 
 **El pago en curso** (§506; `{e}` sale de `zk_ssl_air::pago_en_curso`)
@@ -1232,7 +1232,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
   - `nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza que la firma` — el del cobro, letra por letra, y como allí antes de tocar la prueba
   - los del enunciado: `el importe {i} pasa del techo {MAX_VALOR}` · `T {t} o nacido {n} pasan del techo {MAX_VALOR}` · `nacido {n} posterior a T {t}: el plazo iria hacia atras`
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
-  - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el de la edad
+  - los de la marca v2, antes que nada (§914): los ocho de la edad
 
 **La prenda** (§520; `{e}` sale de `zk_ssl_air::prenda`)
 
@@ -1240,7 +1240,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
 - `prenda: {e}`, con `{e}` uno de estos:
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` ·
     `{e:?}`, el error de `winter-verifier`
-  - `marca de la ocultacion {lectura:?}; el enunciado pide m = 64`, el de la edad
+  - los de la marca v2, antes que nada (§914): los ocho de la edad
 
 `falta enunciado`, `falta prueba o no es cadena 0x` y `falta cabeza` son los de la edad, letra
 por letra. **No hay rechazo por marca no publicada**: este brazo no lo comprueba, y el VERDE lo
@@ -1533,7 +1533,7 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | causa | qué la nombra en la línea del ROJO |
 |---|---|
 | **ilegible** — el fichero no se lee, o no es JSON | `no se puede leer` · `JSON ilegible` |
-| **fuera del contrato** — una versión o un tipo que el mando no lee | `el paquete no declara su version` · `el paquete declara v:` · `tipo desconocido` · `version {cv} desconocida` · `kind desconocido` · `el ancla no declara v 1` |
+| **fuera del contrato** — una versión o un tipo que el mando no lee | `el paquete no declara su version` · `el paquete declara v:` · `tipo desconocido` · `version {cv} desconocida` · `kind desconocido` · `el ancla no declara v 1` · `marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x` y `marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version` (§914: una prueba de otra versión del cable, que este kit no juzga; la R6 e del RFC-0021 y la D-E del RFC-0018) |
 | **campo ausente, de más o mal escrito** | `falta {campo}` · `no es cadena` · `no es lista` · `no booleano` · `sin 0x` · `hex impar` · `hex: cifra no admitida` · `cantidad hex no minima` · `bytes, se esperaban 32` · `no es canonico` · `no lleva {ajeno}` · `no es una cabeza (objeto)` (§714: la `rama` del ancla que no es un objeto) |
 | **cabeza fuera de su familia** | `no era available:true` · `formatVersion {v}:` · `exige una cabeza v5` · `exige cabezas v4` |
 | **recomposición** — los campos no dan el digest firmado | `NO recomponen` |
@@ -1541,7 +1541,7 @@ pone `winter-verifier` 0.13.1, la versión del `Cargo.lock`: el de la variante d
 | **camino que no sube** | `RaizDistinta` · `el camino NO sube` · `NO extiende` · `el isRight recibido NO es el de la posicion` · `no tiene los {n} niveles` |
 | **no casa con lo comprometido** — otra cabeza, otro operador, otra clave, otro dato | `OTRA cabeza` · `OTRO operador` · `claves DISTINTAS` · `la MISMA clave` · `no es el comprometido` · `no es el pendingRoot de la cabeza` · `no esta en un lote de` y `no es la marca de este sobre` (§723: la operación que el lote no tiene y el consumo que no es la marca de la prenda, en una resolución por rechazo, 2.11; con una banda de la v1 bajo la cota, también salen antes del cuarto estado) |
 | **la regla no se sostiene** — la causa, la ventana, el tramo, el orden, el enunciado | `la causa NO se sostiene` · `NO RESUELTA EN LA VENTANA` · `SOLAPAMIENTO` · `no es anterior a la cabeza de seq` · `pasan del techo` · `mismo mmrSize y digest distinto` y `el indice embebido no crece` (§712: el reloj de la extensión, del consumo y del ancla del modo 3, 2.3) · `bifurcacion: mmrSize distinto` y `bifurcacion: las dos cabezas son LA MISMA` (§714: el modo 5 del ancla, 2.12) · `fuera de 3..=` (§717: una `m` de la edad sobre su tope, `m = {} fuera de 3..={M_MAX}`, 2.7; se pina con su `m` y sin el tope) · `no es un indice de cuenta` y `todos se escribe con emisor 0` (§718: el emisor de la edad, 2.7) · `pasa del techo` (un entero del pago o del cobro sobre su techo; desde el §718, también tal como llega, antes de reducir, 2.9 y sección 5) · `RELEVO` y `no hay solapamiento` (§722: una cabeza fuera del relevo de su tramo en los ocho sitios de 2.3, y una dentro de su tramo y de su relevo en el sobre del solapamiento, 2.14) |
-| **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca de la ocultacion` (§706; la marca es parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) · `prueba mal formada: usize no canonico` (§715: un `usize` de la prueba que no está en su escritura mínima; la pone el lector del fork, `crates/winter-air/src/proof/acotado.rs`, con el texto de `causa.rs`) · `UnconsumedBytes` y `not all bytes were consumed` (§715: bytes de sobra tras la prueba, o dentro de una apertura o del lote de una capa FRI; son el mismo error de winter-utils, `DeserializationError::UnconsumedBytes`, por su `Debug` y por su `Display`) |
+| **prueba mal formada** | `la prueba no se deserializa` · `forma de traza` · `marca desconocida`, `marca: la prueba es de la familia …`, `marca: version …`, `marca: perfil …`, `marca: m = …` y `marca: … columnas` (§914, RFC-0018 D-G: la marca v2, antes que nada; las de otra versión del cable van arriba, en «fuera del contrato»; hasta el §914, `marca de la ocultacion`, §706, la marca v1, parte de la forma desde el §651) · `prueba mal formada: {qué} fuera de rango`, con `{qué}` uno de `opciones`, `traza`, `contexto`, `consultas`, `marco OOD`, `FRI` y `lote` (§711; la pone el fork de winterfell, `crates/winter-air/src/causa.rs`, y la de `lote` `zk-ssl-air/src/sal.rs`, dentro de `la prueba no se deserializa`) · `prueba mal formada: usize no canonico` (§715: un `usize` de la prueba que no está en su escritura mínima; la pone el lector del fork, `crates/winter-air/src/proof/acotado.rs`, con el texto de `causa.rs`) · `UnconsumedBytes` y `not all bytes were consumed` (§715: bytes de sobra tras la prueba, o dentro de una apertura o del lote de una capa FRI; son el mismo error de winter-utils, `DeserializationError::UnconsumedBytes`, por su `Debug` y por su `Display`) |
 | **opciones no aceptadas** | `UnacceptableProofOptions` · `InsufficientConjecturedSecurity` · `InsufficientProvenSecurity` |
 | **OOD inconsistente** — las evaluaciones fuera del dominio no cuadran con las restricciones: la prueba no prueba ese enunciado, que en los vectores es uno mentido o, desde el §717, una prueba fabricada que sólo tiene la forma | `InconsistentOodConstraintEvaluations` |
 | **consulta que no casa con el compromiso** | `TraceQueryDoesNotMatchCommitment` · `ConstraintQueryDoesNotMatchCommitment` · `FriVerificationFailed(RemainderCommitmentMismatch)` (§713: el resto FRI que no es el comprometido; la pone el canal del fork, `crates/winter-verifier/src/channel.rs`) · `FriVerificationFailed(LayerCommitmentMismatch)` (§715: un grupo de más en una capa FRI; la pone el canal del fork, que exige tantos grupos como posiciones plegadas, y desde el §715 también una fila de la traza o del cociente de más da la variante de la tabla) |
@@ -2004,6 +2004,8 @@ releva en el `mmrSize` de la cabeza de B—: la extensión de la refutación cae
 de la posterior, y el solapamiento de esa misma cabeza delata. Con el relevo de un solo borde la
 misma cadena daba dos VERDE contrarios, en el kit y en la segunda (medido). Ninguno reescrito.
 
+**Desde el §914, el corte `zkssl/0.5`** (RFC-0018 D-G y D-H; RFC-0009 D-AL bis): toda prueba lleva la marca v2 —25 bytes: la familia, la versión de su AIR, el perfil, m y las dos columnas aleatorias, pareadas en DEEP— y el juez la lee ANTES que nada; las cinco familias de T = 64 pasan a 128 y la edad empieza en `m = 4`. El kit 0.5 rechaza por la marca toda prueba de `zkssl/0.4`, así que **setenta y ocho vectores de seis familias cambian de veredicto o de texto y se MUDAN enteros**, con sus líneas, a `spec/vectors/0.4/<familia>/` (regla 2 del PROCESO, R6 b del RFC-0021): 31 de `edad/`, 20 de `pago/`, 6 de `pendiente/`, 4 de `prenda/`, 7 de `rechazo/` y 10 de `completitud/`; los juzga el `zk-ssl-verify` del árbol en `cbe95d70` (§913, el último sello del cable 0.4), que `tools/conservados.sh` construye de su commit —por tramos desde este sello: `0.4/completitud` lleva también los dos del §682 con el suyo—. Los negativos que caen antes de la prueba se quedan con sus bytes. Lo que renace lo hace con la versión del cable en el nombre (`-0.5`, la decisión 4 del autor en el §913): los positivos y los negativos de su regla, de una corrida de cada banco (`banco_edad`, `banco_pago`, `banco_pendiente`, `banco_prenda`, `banco_rechazo`, `banco_recibo_agregado`, todos VERDES; en el pendiente y el rechazo el nodo prueba con la v2, así que `cobro-v2-*` y `saldo-insuficiente-banda-v2` no renacen); los de la maleabilidad, del coste, de la canonicidad, de la ventana y del resto ajeno, de sus guiones de `tools/vectores/`; y los negativos de la MARCA v2 que la D-G preveía, `neg-v2-*`, de `tools/vectores/marca_v2.py`, nuevo: quince en la edad —los catorce de la tabla y `neg-v2-columnas`, el 1h bis que el barrido byte a byte del kit hizo escribir— y tres en cada una de las otras cuatro familias (la positiva de 0.4 con sus bytes, el meta vacío y otra familia). Noventa y seis vectores nuevos; cada uno con su línea y su causa (sección 6.1, la clase «fuera del contrato» para la v1 y el meta vacío). La segunda implementación juzga los 89 pares con prueba como el kit, letra por letra (`tools/segunda/juez_stark.py`). Ninguno reescrito.
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -2147,6 +2149,10 @@ misma cadena daba dos VERDE contrarios, en el kit y en la segunda (medido). Ning
   gana `--relevo-minimo` para la emergencia de la D-G. La refutación sigue siendo posible, y se
   declara con lo que queda (2.5 y 8). Trece vectores nuevos en `rotacion/`, ninguno reescrito
   (sección 9).
+- §914 — el corte `zkssl/0.5`: la marca v2 antes que nada, con sus ocho causas en el catálogo
+  (sección 5, la edad; la v1 y el meta vacío en «fuera del contrato», 6.1), el suelo de la edad en 4,
+  y setenta y ocho vectores de seis familias mudados a `0.4/` con noventa y seis nuevos bajo
+  `zkssl/0.5` (sección 9); ninguno reescrito.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
 
 ## 11. El artefacto

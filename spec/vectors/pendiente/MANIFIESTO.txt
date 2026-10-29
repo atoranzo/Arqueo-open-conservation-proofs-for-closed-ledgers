@@ -18,31 +18,30 @@
 # OJO con `neg-inferior-por-encima`: el texto que sigue al prefijo lo pone WINTERFELL
 # (`InconsistentOodConstraintEvaluations`) y no la casa, asi que caducaria con la dependencia. Se
 # pina SOLO el prefijo `cobro:`, que es lo que antepone el mando y lo unico que la casa gobierna.
-cobro-inferior-0.json|0|por al menos 0, nacido en 4
-cobro-inferior-importe.json|0|por al menos 250000, nacido en 4
 neg-sin-enunciado.json|1|falta enunciado
 neg-sin-prueba.json|1|falta prueba o no es cadena 0x
 neg-sin-cabeza.json|1|falta cabeza
 neg-sin-firma.json|1|falta signature
 neg-cabeza-v4.json|1|exige una cabeza v5
-neg-nacido-igual-seq.json|1|no es anterior a la cabeza de seq
-neg-inferior-por-encima.json|1|cobro:
-# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. La linea de
-# `neg-inferior-por-encima` de arriba pina el prefijo `cobro:`, que no dice por que cae. No se
-# reescribe (regla 2 del PROCESO): esta linea NUEVA pina la causa, el nombre que le da winter-verifier
-# 0.13.1, el del Cargo.lock, como ya hace `rechazo/`. Caduca con la dependencia, y se declara: si la
-# renombra, la linea se mueve a su version con su vector; no se reescribe.
-neg-inferior-por-encima.json|1|cobro: InconsistentOodConstraintEvaluations
 # §718, la canonicidad u64 -> campo: un negativo que sale de `cobro-inferior-importe.json` por UNA
 # mutacion, `inferior + p`, con `tools/vectores/canonicidad.py`. La API de zk-ssl-air acotaba el
 # valor ya reducido (medido: Ok con el alias); el lector del kit ya lo rechazaba (§640) y se fija
 # aqui. Jamas se reescribe (regla 2 del PROCESO).
 neg-inferior-alias.json|1|inferior: 0xffffffff0003d091 no es canonico
-# §723, la v2 del cobro pendiente (los tres segmentos de rango en 62 bits): los dos positivos
-# de arriba son de la v1, con el superior MAX_VALOR, donde la v1 no deja pasar ningun importe fuera
-# de la banda, y siguen VERDE. Estos dos son las mismas dos formas de D-N con la v2, COPIADOS tal
-# cual de una corrida de `tools/banco_pendiente.sh --guardar <dir>` con el nodo que prueba con la v2
-# (BANCO-PENDIENTE VERDE, exit 0; el aviso y la credencial, con las huellas de arriba). Un kit que
-# solo implemente la v1 los rechaza por la coherencia OOD. Jamas se reescriben (regla 2 del PROCESO).
-cobro-v2-inferior-0.json|0|por al menos 0, nacido en 4
-cobro-v2-inferior-importe.json|0|por al menos 250000, nacido en 4
+# zkssl/0.5 (§914, el corte del tren: RFC-0018 D-G y D-H; RFC-0009 D-AL bis). Los vectores con prueba
+# de esta familia RENACEN con la version del cable en el nombre: la marca v2 (familia 15, version 1,
+# perfil 1, m = 64, dos columnas) y el juez que la lee ANTES del enunciado. Los de zkssl/0.4 viven bajo
+# spec/vectors/0.4/pendiente/ con sus lineas, y los verifica el zk-ssl-verify del arbol en cbe95d70
+# (§913). Los negativos de arriba que caen antes de la prueba siguen con sus bytes. Los dos positivos y
+# los dos negativos de su regla salen de UNA corrida de `tools/banco_pendiente.sh --guardar`
+# (BANCO-PENDIENTE VERDE); el nodo prueba con la v2 del cobro (§723), asi que los dos positivos son de la
+# v2 y la pareja `cobro-v2-*` no renace: desde la 0.5 son los mismos. Jamas se reescriben (regla 2).
+cobro-inferior-0-0.5.json|0|por al menos 0, nacido en 4
+cobro-inferior-importe-0.5.json|0|por al menos 250000, nacido en 4
+neg-nacido-igual-seq-0.5.json|1|no es anterior a la cabeza de seq
+neg-inferior-por-encima-0.5.json|1|cobro: InconsistentOodConstraintEvaluations
+# §914, los negativos de la MARCA v2 (RFC-0018 D-G) de esta familia, de `cobro-inferior-importe-0.5.json`
+# con `tools/vectores/marca_v2.py`: la positiva de zkssl/0.4 (1c), el meta vacio (1b) y la familia 16 (1e).
+neg-v2-marca-v1.json|1|cobro: marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x
+neg-v2-meta-vacio.json|1|cobro: marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version
+neg-v2-familia-ajena.json|1|cobro: marca: la prueba es de la familia 16; se pide la 15

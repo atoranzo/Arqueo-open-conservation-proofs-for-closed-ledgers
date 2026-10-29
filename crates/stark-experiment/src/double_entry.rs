@@ -854,7 +854,7 @@ impl Prover for DoubleEntryProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("DoubleEntryAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -895,7 +895,7 @@ impl Prover for DoubleEntryProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension};
 
     fn default_options() -> ProofOptions {
         ProofOptions::new(
@@ -1024,7 +1024,7 @@ mod tests {
         };
 
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
-        verify::<DoubleEntryAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        crate::verify_casa::<DoubleEntryAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof, declared, &min_opts,
         )
         .map_err(|e| format!("verificacion fallo: {e:?}"))

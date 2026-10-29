@@ -384,6 +384,8 @@ escrito y revisado: la sal se va y la prueba adelgaza.
 > columnas lineales. Lo que deja para el corte: con la 133 y L1', el umbral conjunto queda cubierto
 > sin más filas; la autorización delegada, la edad y los dos reembolsos necesitan la 131.
 
+> ⚠️ **§914 (el corte `zkssl/0.5`, RFC-0018 D-H): las cinco de T = 64 pasan a T = 128.** L1 las cubre por geometría (2q + 6 = 90 ≤ 128), `INDEPENDIENTE_DE_LA_AIR` dice «cubre» en las 23, y la cota de ocultación (A1) se mide en verde en las 28 pruebas de los 23 probadores, con la marca v2 y las dos columnas pareadas (D-AL bis). La 131 queda cerrada por T = 128; la cuenta fina del §905 ya no se corre en ninguna familia.
+
 ### D-J — Las cifras de bytes pasan a bandas y el azar sale del sistema
 
 Una prueba oculta no es determinista: con otra semilla pesa distinto (E1, E2 y E4 del SPIKE-B-P4:
@@ -539,6 +541,7 @@ la marca frente a caer al AIR de siempre: fail-closed (medido en la 172: con la 
 fork apagado caía al AIR de siempre con una traza de ancho 2 y `WorkAir::new` entraba en pánico).
 **Reversible** si algún AIR de la casa llega a escribir en el meta (D-H): entonces la marca se
 muda y lo dice aquí.
+⚠️ §914: desde el corte `zkssl/0.5` la marca de producción es la **v2** (RFC-0018 D-G): `arqueo:oculta:2`, m, la familia, la versión de la AIR, el perfil y las columnas, 25 bytes, con un solo lector en el fork (`MarcaV2::leer`) y un solo juez en el kit (`comprobar_marca_v2`, que exige además las columnas de la construcción, dos); la v1 de 19 bytes se reconoce sólo para nombrarla —`marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x`— y no se acepta. m sigue viajando dentro, y sigue siendo 64.
 
 ### D-T — Un solo productor de m: el meta de la traza
 
@@ -736,6 +739,7 @@ par mutado a la forma apagada da `WrongTraceWidth`—.
 oculta se deriva de la clara que cada familia declara —ancho + 1, el tramo auxiliar tal cual, 2T— y
 se comprueba con la marca antes de construir ninguna AIR, en un solo sitio por el que pasan los 21;
 `comprobar_forma` de la capa queda para sus tests.
+⚠️ §914: la única forma del cable `zkssl/0.5` es ancho + 2 —las dos columnas aleatorias de la D-AL bis—, el tramo auxiliar tal cual y 2T, con T ≥ 128 en las 23 familias; la de `zkssl/0.4` (ancho + 1) cae por su marca antes de llegar a la forma, y una marca v2 con otra cifra de columnas cae también en la marca (el 1h bis de la D-G del RFC-0018).
 
 Gana una sola forma frente a admitir las dos por la marca: pureza (un cable, una forma; menos eras
 silenciosas) y fail-closed (coherente con D-AB). **Reversible** hacia el doble despacho por la marca
@@ -953,6 +957,7 @@ probadores sigue siendo del corte (RFC-0018 D-H).
 ⚠️ §912: `tools/segunda` parea igual, en laboratorio: `parear_deep` sobre los coeficientes de DEEP
 de las columnas aleatorias que declara la marca v2, con ν = φ = (0, 1), y su autotest lo mide
 contra el pareado del fork; su camino de producción, con la marca v1 y una columna, no cambia.
+⚠️ §914: **encendida** en los 23 probadores en el sello del corte (`ocultacion_encendida`, `COLUMNAS_ALEATORIAS = 2`, la marca v2 con el byte de columnas), y es el único camino de producción del kit, de la capa, de la pareja y de `tools/segunda`; R3 remedida en verde en las cinco geometrías, la de T = 128 incluida (`K_ENTERO_PAREADAS`).
 
 ### D-AM — La promesa tras A1, A2, A3 y la 134: sigue siendo el censo; lo que se podría prometer, para qué familias y bajo qué hipótesis, queda escrito con sus palabras y es del autor
 
@@ -1007,6 +1012,7 @@ argumento escrito.
 ⚠️ §905: la cuenta fina (la 135) está medida y no cambia esto hoy; para el corte sí: con la 133 y
 el lema L1', el umbral conjunto entra en lo que se podría prometer sin más filas, con MerkleAir y
 FrozenClimbAir por la 133; los otros cuatro de T = 64 esperan a la 131.
+⚠️ §914: con el corte `zkssl/0.5` las siete tienen lo que les faltaba: las cinco de T = 64 pasan a 128 (L1 las cubre) y las dos columnas pareadas dan R3 por L9 a MerkleAir, FrozenClimbAir y las demás, medido (`K_ENTERO_PAREADAS`, `INDEPENDIENTE_DE_LA_AIR`). Lo que se puede prometer con eso, y con qué palabras, lo escribe el asiento siguiente (la proposición para las 23 en `doc/ocultacion-hvzk.md`); la revisión ajena y la aceptación son del autor, y hasta entonces la promesa sigue siendo el censo.
 
 **Qué le falta a lo escrito para ser promesa.** (1) La aceptación del autor, que decide sobre lo
 medido (`doc/METODO.md` §7) y de quien es toda promesa; (2) una revisión ajena del argumento de A2

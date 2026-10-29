@@ -49,7 +49,7 @@ const UDR_ACTUAL: u32 = 59;
 /// Las T que mide el primer test, una prueba por longitud, fijadas como valor y no tomadas de los
 /// circuitos: solo cambian con un asiento (§839). El censo exige que la T de cada AIR de longitud
 /// fija del cable este aqui, y que las familias del primer test den estas y ninguna mas.
-const LONGITUDES_MEDIDAS: [usize; 4] = [64, 256, 512, 1024];
+const LONGITUDES_MEDIDAS: [usize; 4] = [128, 256, 512, 1024]; // §914: 64 -> 128 (RFC-0018 D-H)
 
 // Claves estrechas y valores dentro del rango de la capa de test (limite 500_000, suministro
 // 100_000_000), como el reembolso v2 del instrumento de D-B.

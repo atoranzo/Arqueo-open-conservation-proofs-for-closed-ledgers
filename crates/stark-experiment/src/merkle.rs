@@ -394,7 +394,7 @@ impl Prover for MerkleProver {
 
     /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
     fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
-        Some(crate::ocultacion_encendida())
+        Some(crate::ocultacion_encendida("MerkleAir"))
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -435,7 +435,7 @@ impl Prover for MerkleProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, Proof};
+    use winterfell::{AcceptableOptions, BatchingMethod, FieldExtension, Proof};
 
     fn default_options() -> ProofOptions {
         ProofOptions::new(
@@ -499,7 +499,7 @@ mod tests {
             .expect("la generacion de la prueba no deberia fallar");
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        let verification = verify::<MerkleAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let verification = crate::verify_casa::<MerkleAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             MerklePublicInputs { root: expected_root },
             &min_opts,
@@ -521,7 +521,7 @@ mod tests {
         let proof = prover.prove(trace).expect("la generacion no deberia fallar");
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        let verification = verify::<MerkleAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+        let verification = crate::verify_casa::<MerkleAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             MerklePublicInputs {
                 root: digest_from(999_999),
@@ -569,7 +569,7 @@ mod tests {
             Ok(Ok(proof)) => {
                 let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
                 let verification =
-                    verify::<MerkleAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+                    crate::verify_casa::<MerkleAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                         proof,
                         MerklePublicInputs { root: expected_root },
                         &min_opts,

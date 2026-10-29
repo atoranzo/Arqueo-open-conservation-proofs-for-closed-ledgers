@@ -26,68 +26,11 @@
 # OJO tambien con los PESOS, y por eso aqui NO se pina ninguno: los dos positivos son del MISMO
 # pendiente bajo la MISMA cabeza y pesan distinto -55.317 B y 54.888 B-, porque lo unico que
 # cambia entre ellos, `t`, cambia el transcript y con el las consultas de FRI (5.A-324).
-pago-t-seq.json|0|antes de 5. Nada sobre quien lo cobrara
-pago-t-frontera.json|0|antes de 100. Nada sobre quien lo cobrara
 neg-sin-enunciado.json|1|falta enunciado
 neg-sin-prueba.json|1|falta prueba o no es cadena 0x
 neg-sin-cabeza.json|1|falta cabeza
 neg-sin-firma.json|1|falta signature
 neg-cabeza-v4.json|1|exige una cabeza v5
-neg-nacido-igual-seq.json|1|no es anterior a la cabeza de seq
-neg-importe-mentido.json|1|pago:
-# §693 (spec/PAQUETE.md, seccion 6.1): un negativo nombra su CAUSA, no solo su sujeto. La linea de
-# `neg-importe-mentido` de arriba pina el prefijo `pago:`, que no dice por que cae. No se reescribe
-# (regla 2 del PROCESO): esta linea NUEVA pina la causa, el nombre que le da winter-verifier 0.13.1,
-# el del Cargo.lock, como ya hace `rechazo/`. Caduca con la dependencia, y se declara: si la
-# renombra, la linea se mueve a su version con su vector; no se reescribe.
-neg-importe-mentido.json|1|pago: InconsistentOodConstraintEvaluations
-# §706 (spec/PAQUETE.md, seccion 6.1): la MARCA de la ocultacion, que es parte de la forma (§651),
-# y el ORDEN en que el juez la mira. Tres negativos de la clave `prueba` de `pago-t-frontera.json`,
-# la de los siete de arriba: en `neg-marca-m32` los cuatro bytes de m de la marca -los bytes 21 a 24
-# de la prueba- pasan de 64 a 32; en `neg-meta-vacio` la longitud del meta -los bytes 4 y 5- pasa de
-# 19 a 0, y los 19 de la marca salen; y `neg-marca-m32-y-opciones` es una ESCENA, y se declara: la m
-# de la marca a 32 y, ademas, el primer byte de las opciones -el 34, las consultas- de 42 a 43,
-# porque con un solo defecto el orden no se ve. El juez mira la forma, despues la marca y despues
-# las opciones, y nombra la marca con el texto de `zk_ssl_air::comprobar_marca`, que gobierna la
-# casa: lo que sigue a `marca de la ocultacion` es el `Debug` de lo que lee `Marca::leer`, el lector
-# del fork. Fijan que la segunda implementacion falla igual: hasta el §706 daba otra causa en los
-# tres, `InconsistentOodConstraintEvaluations` en el primero, `ProofDeserializationError("queries")`
-# en el segundo y `UnacceptableProofOptions` en el tercero.
-# Vale para el cable zkssl/0.4 y su marca v1: si la marca o su texto cambian de version, las lineas
-# se mueven a su version con sus vectores; no se reescriben.
-neg-marca-m32.json|1|pago: marca de la ocultacion Ok(Some(Marca { m: 32 })); el enunciado pide m = 64
-neg-meta-vacio.json|1|pago: marca de la ocultacion Ok(None); el enunciado pide m = 64
-neg-marca-m32-y-opciones.json|1|pago: marca de la ocultacion Ok(Some(Marca { m: 32 })); el enunciado pide m = 64
-# §711 (spec/PAQUETE.md, seccion 6.1): dos negativos NUEVOS que salen de `pago-t-frontera.json` por UNA mutacion
-# de UN byte de la prueba cada uno, y que antes del §711 hacian entrar en panico al kit (salida 101,
-# medido): el byte 34 -el numero de consultas de las opciones- a cero, en `winter-air/src/options.rs`,
-# y el byte 46 -el numero de consultas unicas- a cero, en `proof/queries.rs`, dentro de `verify`. Ahora
-# son ROJO con su causa, que pone el fork de winterfell (`crates/winter-air/src/causa.rs`, una sola
-# fuente) y repite la segunda implementacion. No se reescriben (regla 2 del PROCESO).
-neg-prueba-opciones-cero.json|1|prueba mal formada: opciones fuera de rango
-neg-prueba-consultas-cero.json|1|prueba mal formada: consultas fuera de rango
-# §715 (spec/PAQUETE.md, seccion 6.1), la maleabilidad de los bytes de la prueba: ocho negativos
-# NUEVOS que salen de `pago-t-frontera.json` por UNA mutacion de su prueba cada uno, con
-# `tools/vectores/maleabilidad.py`; las mismas formas que en `edad/` salvo la fila de
-# mas, que no cabe (las consultas unicas de esta prueba ya son las 42 de las opciones). Con el kit
-# de antes de este arreglo, VERDE y salida 0 en los tres `usize` escritos de mas y en el grupo FRI
-# de mas (medido); la segunda implementacion daba VERDE ademas en el nodo de mas y en la cola. Jamas
-# se reescriben (regla 2 del PROCESO).
-neg-prueba-usize-no-minimo.json|1|prueba mal formada: usize no canonico
-neg-prueba-lote-usize-no-minimo.json|1|prueba mal formada: usize no canonico
-neg-prueba-fri-usize-no-minimo.json|1|prueba mal formada: usize no canonico
-neg-prueba-restricciones-alias.json|1|prueba mal formada: contexto fuera de rango
-neg-prueba-capa-fri-de-mas.json|1|prueba mal formada: FRI fuera de rango
-neg-prueba-grupo-fri-de-mas.json|1|pago: FriVerificationFailed(LayerCommitmentMismatch)
-neg-prueba-nodo-de-mas.json|1|pago: TraceQueryDoesNotMatchCommitment
-neg-prueba-cola.json|1|UnconsumedBytes
-# §715 (spec/PAQUETE.md, seccion 6.1), la cola dentro de una apertura: las tres colas de `edad/`
-# -un byte 0x00 al final dentro de la apertura de la traza, de la del cociente y del lote de la capa
-# FRI 0, con su longitud corregida-, sobre `pago-t-frontera.json`. El kit ya las rechazaba; la
-# segunda implementacion las aceptaba (medido). Jamas se reescriben (regla 2 del PROCESO).
-neg-prueba-cola-apertura-traza.json|1|not all bytes were consumed
-neg-prueba-cola-apertura-cociente.json|1|not all bytes were consumed
-neg-prueba-cola-lote-fri.json|1|not all bytes were consumed
 # §718, la canonicidad u64 -> campo: dos negativos que salen de `pago-t-frontera.json` por UNA
 # mutacion cada uno, `importe + p` y `t + p`, con `tools/vectores/canonicidad.py`. La API de
 # zk-ssl-air (`verificar_contra_cabeza`) acotaba el valor ya reducido, y la prueba de 250000
@@ -96,3 +39,35 @@ neg-prueba-cola-lote-fri.json|1|not all bytes were consumed
 # reescriben (regla 2 del PROCESO).
 neg-importe-alias.json|1|importe: 0xffffffff0003d091 no es canonico
 neg-t-alias.json|1|t: 0xffffffff00000065 no es canonico
+# zkssl/0.5 (§914, el corte del tren: RFC-0018 D-G y D-H; RFC-0009 D-AL bis). Los vectores con prueba
+# de esta familia RENACEN con la version del cable en el nombre: la marca v2 (familia 16, version 1,
+# perfil 1, m = 64, dos columnas) y el juez que la lee ANTES del enunciado. Los de zkssl/0.4 viven bajo
+# spec/vectors/0.4/pago/ con sus lineas, y los verifica el zk-ssl-verify del arbol en cbe95d70 (§913).
+# Los negativos de arriba que caen antes de la prueba siguen con sus bytes. Los dos positivos y los dos
+# negativos de su regla salen de UNA corrida de `tools/banco_pago.sh --guardar` (BANCO-PAGO VERDE),
+# como los de la 0.4. Jamas se reescriben (regla 2 del PROCESO).
+pago-t-seq-0.5.json|0|antes de 5. Nada sobre quien lo cobrara
+pago-t-frontera-0.5.json|0|antes de 100. Nada sobre quien lo cobrara
+neg-nacido-igual-seq-0.5.json|1|no es anterior a la cabeza de seq
+neg-importe-mentido-0.5.json|1|pago: InconsistentOodConstraintEvaluations
+# §914, los negativos de la MARCA v2 (RFC-0018 D-G) de esta familia: la positiva de zkssl/0.4 con sus
+# bytes (1c), el meta vacio (1b) y otra familia del kit, la 15 (1e), de `pago-t-frontera-0.5.json` con
+# `tools/vectores/marca_v2.py`; el resto de la tabla lo cubre la edad. Sustituyen a los tres del §706.
+neg-v2-marca-v1.json|1|pago: marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x
+neg-v2-meta-vacio.json|1|pago: marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version
+neg-v2-familia-ajena.json|1|pago: marca: la prueba es de la familia 15; se pide la 16
+# §914, los del §711 y el §715, renacidos de `pago-t-frontera-0.5.json` con
+# `tools/vectores/maleabilidad.py`: las mismas mutaciones y las mismas causas que en la 0.4.
+neg-prueba-opciones-cero-0.5.json|1|prueba mal formada: opciones fuera de rango
+neg-prueba-consultas-cero-0.5.json|1|prueba mal formada: consultas fuera de rango
+neg-prueba-usize-no-minimo-0.5.json|1|prueba mal formada: usize no canonico
+neg-prueba-lote-usize-no-minimo-0.5.json|1|prueba mal formada: usize no canonico
+neg-prueba-fri-usize-no-minimo-0.5.json|1|prueba mal formada: usize no canonico
+neg-prueba-restricciones-alias-0.5.json|1|prueba mal formada: contexto fuera de rango
+neg-prueba-capa-fri-de-mas-0.5.json|1|prueba mal formada: FRI fuera de rango
+neg-prueba-grupo-fri-de-mas-0.5.json|1|pago: FriVerificationFailed(LayerCommitmentMismatch)
+neg-prueba-nodo-de-mas-0.5.json|1|pago: TraceQueryDoesNotMatchCommitment
+neg-prueba-cola-0.5.json|1|UnconsumedBytes
+neg-prueba-cola-apertura-traza-0.5.json|1|not all bytes were consumed
+neg-prueba-cola-apertura-cociente-0.5.json|1|not all bytes were consumed
+neg-prueba-cola-lote-fri-0.5.json|1|not all bytes were consumed

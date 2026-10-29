@@ -9,7 +9,7 @@
 //! byte en cada corrida.
 
 use winter_air::proof::{Commitments, Context, OodFrame, Queries};
-use winter_air::{Air, Marca, Oculta, TraceInfo};
+use winter_air::{Air, Oculta, TraceInfo};
 use winter_crypto::hashers::Blake3_256;
 use winter_crypto::{BatchMerkleProof, Hasher};
 use winter_math::fields::f64::BaseElement;
@@ -18,9 +18,10 @@ use winter_math::FieldElement;
 use winter_verifier::{ByteWriter, Deserializable, Serializable};
 use xmss::KeyPair;
 use zk_ssl_air::sal::{MerkleConSal, VariasConSal};
+use zk_ssl_air::familias::marca_v2_de;
 use zk_ssl_air::{
     m_canonico, opciones, raiz_desde_subraiz, EdadAir, EdadPublicInputs, ALEATORIOS, ANCHO,
-    ANCHO_AUX, CICLO, M_OCULTACION, PROFUNDIDAD,
+    ANCHO_AUX, CICLO, COLUMNAS_ALEATORIAS, PROFUNDIDAD,
 };
 use zk_ssl_hash::{digest_to_bytes, epoch_digest_v5, Digest};
 use zk_ssl_verify::{preambulo, Conjunto};
@@ -37,10 +38,13 @@ fn pi_de(m: u32) -> EdadPublicInputs {
     EdadPublicInputs { subraiz_pend: SP, subraiz_meta: SM, m, n, seq, t, emisor, todos, k }
 }
 
+/// La forma de la casa desde el §914 (zkssl/0.5): las dos columnas aleatorias y la marca v2 de la
+/// edad (familia 14, version 1, perfil 1, m = 64, dos columnas), para que el paquete pase el paso 1
+/// del juez (la marca, RFC-0018 D-G) y caiga donde el vector dice: en el enunciado o en la prueba.
 fn info_de(m: u32) -> TraceInfo {
     let l = 2 * (CICLO << m);
-    let marca = Marca { m: M_OCULTACION }.escribir();
-    TraceInfo::new_multi_segment(ANCHO + 1, ANCHO_AUX, ALEATORIOS, l, marca)
+    let marca = marca_v2_de("EdadAir", COLUMNAS_ALEATORIAS as u8).expect("la edad esta en el registro").escribir();
+    TraceInfo::new_multi_segment(ANCHO + COLUMNAS_ALEATORIAS, ANCHO_AUX, ALEATORIOS, l, marca)
 }
 
 fn digest(k: u8) -> <B3 as Hasher>::Digest {
@@ -78,11 +82,11 @@ fn fabricar(m: u32) -> Vec<u8> {
     b.write_u8(q as u8);
     let fri_raices = (0..=capas).map(|i| digest(10 + i as u8)).collect();
     b.write(Commitments::new::<B3>(vec![digest(1), digest(2)], digest(3), fri_raices));
-    b.write(tabla(ld, q, vec![BaseElement::new(5); ANCHO + 1]));
+    b.write(tabla(ld, q, vec![BaseElement::new(5); ANCHO + COLUMNAS_ALEATORIAS]));
     b.write(tabla(ld, q, vec![E::from(BaseElement::new(6)); ANCHO_AUX]));
     b.write(tabla(ld, q, vec![E::from(BaseElement::new(8)); ncomp]));
     let mut ood: Vec<u8> = Vec::new();
-    for (ancho, base) in [(ANCHO + 1 + ANCHO_AUX, 1u64), (ncomp, 3)] {
+    for (ancho, base) in [(ANCHO + COLUMNAS_ALEATORIAS + ANCHO_AUX, 1u64), (ncomp, 3)] {
         let mut marco: Vec<u8> = vec![2];
         for i in 0..2 * ancho {
             marco.write(E::from(BaseElement::new(i as u64 + base)));

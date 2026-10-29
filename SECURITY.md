@@ -746,24 +746,30 @@ Lo que sigue valiendo un elemento, y se dice aquí:
 consultas, blowup 16, molienda de 21 bits y extensión cuadrática (`proof_options()` en
 `crates/zk-ssl/src/lib.rs`; la edad usa las mismas, y un test lo exige). Sobre la forma oculta
 de cada prueba, la función de `winter-air` (`proof/security.rs`, la de upstream) da **127 bits
-conjeturados** —de 112,8 a 116,8 según la longitud con el término DEEP, que su fórmula no
+conjeturados** —de 112,8 a 115,8 según la longitud con el término DEEP, que su fórmula no
 descuenta (abajo)— y, demostrables, **59 en UDR** (decodificación única) en todas, y en
 LDR (decodificación en lista) lo que dé la longitud de la traza:
 
 | traza oculta | LDR | conjeturada, con el DEEP | pruebas |
 |---|---|---|---|
-| 128 filas | **88** | 116,8 | las dos aperturas del reembolso y el umbral (T = 64) |
+| 256 filas | **86** | 115,8 | las dos aperturas del reembolso, el umbral y la autorización delegada (T = 128) |
 | 512 filas | **84** | 114,8 | la subida de congelados (T = 256) |
 | 1.024 filas | **82** | 113,8 | el crédito, las subidas de emisión, de emisión a pendiente y de recuperación, la auditoría y las cuatro del kit de longitud fija (T = 512) |
 | 2.048 filas | **80** | 112,8 | envío, cobro y quema (T = 1.024) |
 
-**La edad baja con `m`.** Su traza oculta tiene 2^(m+4) filas, con `m` el logaritmo del número
-de pendientes que cubre, y pierde dos bits de LDR cada vez que la traza se dobla:
+⚠️ **§914** (el corte zkssl/0.5, RFC-0018 D-H): la primera fila era la de 128 filas, con T = 64, y
+sus cifras eran las que la tabla de la edad daba entonces para `m = 3`; las cinco familias que la
+ocupaban pasan a T = 128, y la edad empieza en `m = 4`.
 
-| `m` | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| LDR | 88 | 86 | 84 | 82 | 80 | 78 | 76 | 74 | 72 | 70 | 68 |
-| con el DEEP | 116,8 | 115,8 | 114,8 | 113,8 | 112,8 | 111,8 | 110,8 | 109,8 | 108,8 | 107,8 | 106,8 |
+**La edad baja con `m`.** Su traza oculta tiene 2^(m+4) filas, con `m` el logaritmo del número
+de pendientes que cubre, y pierde dos bits de LDR cada vez que la traza se dobla (⚠️ §914: el
+enunciado admite `m` desde 4, `zk_ssl_air::M_MIN`, con T = 128; la columna de `m = 3` era la de
+zkssl/0.4):
+
+| `m` | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| LDR | 86 | 84 | 82 | 80 | 78 | 76 | 74 | 72 | 70 | 68 |
+| con el DEEP | 115,8 | 114,8 | 113,8 | 112,8 | 111,8 | 110,8 | 109,8 | 108,8 | 107,8 | 106,8 |
 
 | `m` | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -772,7 +778,7 @@ de pendientes que cubre, y pierde dos bits de LDR cada vez que la traza se dobla
 
 Conjeturada 127 y UDR 59 en todas; la fila «con el DEEP» es la conjeturada contando el término
 DEEP (abajo). Con `m = 24`, que el enunciado admite, la prueba no se puede generar hoy.
-⚠️ **§717:** desde el §717 el enunciado admite `m` de 3 a 13 (`zk_ssl_air::M_MAX`), y el juez
+⚠️ **§717:** desde el §717 el enunciado admite `m` de 3 a 13 (`zk_ssl_air::M_MAX`; ⚠️ §914: de 4 a 13, `M_MIN`), y el juez
 rechaza las demás antes de leer la prueba. La segunda tabla, de 14 a 24, queda como lo que da la
 función para longitudes que el juez ya no acepta, y la frase de `m = 24` dejó de ser cierta. El tope
 sale del coste del juez y de las cotas de la puerta del RFC-0007, no del nivel: con `m = 13` la LDR
@@ -2046,9 +2052,9 @@ y también trae dos defensas que antes no existían.
 ⚠️ **La reserva que toca hacerse**: «post-cuántico» aquí significa *sin
 supuestos de curva*, no *invulnerable*, y el nivel frente a un adversario
 cuántico **no está medido** (§3.11). Lo medido es clásico: 127 bits
-conjeturados —112,8-116,8 según el circuito con el término DEEP, que la
+conjeturados —112,8-115,8 según el circuito con el término DEEP, que la
 fórmula no descuenta, y menos en la edad— y, demostrables, 59 en UDR y
-80-88 en LDR según el circuito, menos en la edad con `m` alta (§3.11). El
+80-86 en LDR según el circuito, menos en la edad con `m` alta (§3.11). El
 techo de **63 bits de solidez** que este proyecto midió y publicó
 (hallazgo 3) es el de una configuración sin extensión de campo; la de
 producción usa la cuadrática. Un sistema con miles de validadores y años

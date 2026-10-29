@@ -29,6 +29,13 @@
 //! su `salida` es la LISTA de sus entradas, con el numero como QUANTITY, el prefijo de la clave
 //! en hex, los largos como numero y los dos si-o-no como booleanos de JSON.
 //!
+//! §914 · Otro que no es de una `fn`: `registro_de_familias` (RFC-0018 D-G y E3, el corte
+//! `zkssl/0.5`) fija entero el registro de las familias de la marca v2 de `spec/NUCLEO.md` §4 bis:
+//! su `salida` es la LISTA de las 23 entradas, cada una con la familia, la version de la AIR y el
+//! perfil como QUANTITY, el nombre de la AIR y los 25 bytes de su marca v2 en hex; la m y las
+//! columnas de la casa van como `entradas`. Su productor es `zk_ssl_air::familias`, el unico del
+//! registro; la segunda implementacion lo escribe desde la tabla de la spec (`juez_nucleo.py`).
+//!
 //! ⚠️ El test tambien exige que **cada fichero del directorio tenga su caso y cada caso su
 //! fichero**: un vector huerfano o uno de menos es ROJO, igual que en `tools/conformidad.sh`.
 
@@ -86,6 +93,17 @@ fn casos() -> Vec<(&'static str, Value)> {
     let nonce = element_from_bytes(&9u64.to_le_bytes()).unwrap_or_else(|_| panic!("nonce"));
     let siete = element_from_bytes(&7u64.to_le_bytes()).unwrap_or_else(|_| panic!("siete"));
     let clave_op: [u8; 2] = [0xcc, 0xcc];
+    // §914 · El registro de las familias de la marca v2, entrada a entrada, con su marca de 25 bytes.
+    let familias: Vec<Value> = zk_ssl_air::familias::FAMILIAS
+        .iter()
+        .map(|(familia, air)| {
+            let marca = zk_ssl_air::familias::marca_v2_de(air, zk_ssl_air::COLUMNAS_ALEATORIAS as u8)
+                .unwrap_or_else(|| panic!("familia {air}"));
+            json!({"familia": q(u64::from(*familia)), "air": air,
+                   "version": q(u64::from(marca.version)), "perfil": q(u64::from(marca.perfil)),
+                   "marca": hx(&marca.escribir())})
+        })
+        .collect();
     // §800 · El registro de esquemas entero, entrada a entrada, con lo que declara cada una.
     let registro: Vec<Value> = Esquema::TODOS
         .iter()
@@ -235,6 +253,10 @@ fn casos() -> Vec<(&'static str, Value)> {
                 .unwrap_or_else(|_| panic!("clave corta")))})),
         ("registro_de_esquemas", json!({"fn": "registro_de_esquemas", "entradas": {},
             "salida": registro})),
+        ("registro_de_familias", json!({"fn": "registro_de_familias",
+            "entradas": {"m": q(zk_ssl_air::M_OCULTACION as u64),
+                         "columnas": q(zk_ssl_air::COLUMNAS_ALEATORIAS as u64)},
+            "salida": familias})),
     ]
 }
 

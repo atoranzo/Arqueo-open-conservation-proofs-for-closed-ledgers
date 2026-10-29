@@ -83,7 +83,7 @@ cargo run -p zk-ssl-cli -- --log debug simulate
 ```
 
 ⚠️ **Corregido en el §807**: la orden de conformidad apuntaba a `spec/vectors/zkssl-0.3.json`, y
-el cable es `zkssl/0.4` desde el §538: con ese fichero el binario sale con 1 y `los vectores son de
+el cable es `zkssl/0.5` desde el §914 (⚠️ §914: decía `zkssl/0.4` desde el §538): con ese fichero el binario sale con 1 y `los vectores son de
 OTRA version: zkssl/0.3 …`, que es lo que el canon exige de él (`tools/canon.sh`, «3 ·
 conformidad»). Con `zkssl-0.4.json` sale con 0 y `CONFORMIDAD: 6 entradas + suministro +
 pendiente, todo IDENTICO en lo que el circuito fija`: `proof_digest`, `chain` y `epoch_digest` no
@@ -91,7 +91,7 @@ se reproducen con la ocultación (RFC-0009, D-AI), así que «campo a campo» no
 
 ⚠️ **Corregido en el §716**: la orden apuntaba a `spec/vectors/zkssl-0.4.json`. Desde el §716 el
 compromiso de las dos emisiones lleva el contador de emisiones, y el escenario sube a `zkssl/0.5`
-con el cable en `zkssl/0.4` hasta el corte (RFC-0018): con `zkssl-0.4.json` el binario sale con 1
+con el cable en `zkssl/0.4` hasta el corte (RFC-0018; ⚠️ §914: el corte está hecho y el cable dice `zkssl/0.5`, la del escenario): con `zkssl-0.4.json` el binario sale con 1
 y `los vectores son de OTRA version: zkssl/0.4 …`, como con la 0.3, y lo que el párrafo de arriba
 dice de la 0.4 lo da desde el §716 `zkssl-0.5.json`.
 

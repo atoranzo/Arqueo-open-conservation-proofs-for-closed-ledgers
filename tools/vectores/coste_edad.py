@@ -25,14 +25,17 @@ import tempfile
 # cuarta (§721) no, y con la tercera fija el tope. Sobre el tope, m = 17 y m = 23 (la mayor que el
 # lector de la prueba admite); por debajo o en el tope, m = 13. Cada uno de los tres primeros
 # ficheros se nombra por lo que es con cualquier tope de ese rango.
+# §914 (el corte zkssl/0.5): los cuatro renacen con la version del cable en el nombre; la prueba
+# fabricada lleva la marca v2 de la edad y las dos columnas (el binario), para que el paquete pase
+# el paso 1 del juez y caiga donde dice: en el enunciado (`fuera de 4..=`) o en la prueba.
 VECTORES = [
     # (fichero, m de la prueba fabricada, nextPending)
-    ("neg-m-sobre-tope.json", 17, (1 << 16) + 1),
-    ("neg-m-mayor-legible.json", 23, 1 << 23),
-    ("neg-m-13-fabricada.json", 13, 1 << 13),
+    ("neg-m-sobre-tope-0.5.json", 17, (1 << 16) + 1),
+    ("neg-m-mayor-legible-0.5.json", 23, 1 << 23),
+    ("neg-m-13-fabricada-0.5.json", 13, 1 << 13),
     # §721, con el tope en 13: la marca mas pequena sobre el tope. Este SI depende del tope: cae
     # por el tope con 13 y llega a la prueba con 14, asi que junto con el de m = 13 fija el tope.
-    ("neg-m-14-sobre-tope.json", 14, (1 << 13) + 1),
+    ("neg-m-14-sobre-tope-0.5.json", 14, (1 << 13) + 1),
 ]
 
 

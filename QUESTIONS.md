@@ -26,7 +26,7 @@ party (question 3).
 Underneath there is a settlement layer in Rust with two-phase payments proved with STARKs, and the
 comparative work that grounded its design: the same circuit in five proof systems
 ([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)). It used to be called ZK-SSL; the project's name
-changed, its published identifiers did not (`zkssl/0.3` then, `zkssl/0.4` since audit
+changed, its published identifiers did not (`zkssl/0.3` then, `zkssl/0.4` since audit entry 538 and `zkssl/0.5` since 914; ⚠️ §914: it said `zkssl/0.4` since audit
 entry 538 because of hiding; `zk-ssl-*`).
 
 ### 2. What is it NOT?

@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 41 abiertas, 98 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 38 abiertas, 101 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, el §907, que abre la 137 y la 138, el §911, que las cierra, el §912, que no mueve ninguna, y el §913, que cierra la 117.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, el §907, que abre la 137 y la 138, el §911, que las cierra, el §912, que no mueve ninguna, el §913, que cierra la 117, y el §914, que cierra la 118, la 131 y la 133.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1385,7 +1385,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   corte (RFC-0018 D-E); hasta entonces el binario del árbol lo lleva sin release. El autor lo pidió
   antes del corte el 29-10-2026, en la decisión del alcance (RFC-0018 D-H, §913).
 
-- [ ] **118. Cómo se identifica una prueba: la marca v2 del RFC-0018, la D-G, en estado de
+- [x] **118. Cómo se identifica una prueba: la marca v2 del RFC-0018, la D-G, en estado de
   propuesta (§707).** Hoy una prueba STARK de la casa sólo lleva la marca de la ocultación,
   `arqueo:oculta:1` y m, 19 bytes en el meta de su traza; la familia la elige quien llama, y una
   prueba de otra versión de su AIR cae con un error de winterfell y no con su nombre (§699). El
@@ -1408,6 +1408,14 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `leer_cabeza`, la forma con las columnas de la marca y el pareado de la D-AL bis), letra por letra
   los textos de `verify_v2` del fork (§906), cada uno con su test; ningún juez de producción los
   llama hasta el corte, que es lo que cierra esta entrada.
+  ✅ §914: el corte `zkssl/0.5`. La marca v2 la escriben los 23 probadores (`ocultacion_encendida(air)`, con
+  la familia del registro de `spec/NUCLEO.md` §4 bis, en vigor) y la leen ANTES que nada el juez único
+  (`zk_ssl_air::juez`), los cinco jueces del kit (`marca_del_kit`) y `tools/segunda`, con las causas de la D-G
+  en su orden y una más, el 1h bis: las columnas que declara son las de la construcción (sin ella, el barrido
+  byte a byte del kit llegaba a un pánico del fork). Los textos, en `spec/PAQUETE.md` §5 y §6.1 (la v1 y el
+  meta vacío, «fuera del contrato»); los vectores, `neg-v2-*` en las cinco familias del kit (quince en la edad,
+  tres en las demás), los de `0.4` mudados a su versión con su kit; el OpenRPC y las tres escrituras del cable
+  en `zkssl/0.5`; el kit `0.5.0`. El fork no cambia: la atadura de la marca a la semilla la mide su test del §906.
 
 - [ ] **119. Abrir una cuenta prueba que se tiene la clave (§802).** Desde el §802 abrir rechaza una
   identidad que ya tiene cuenta o que una recuperación retiró (`SECURITY.md` §3.13), y eso agrava la
@@ -1488,7 +1496,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   R3 medida (§898 a §900) y la promesa decidida con sus palabras (§901). Lo que sigue abierto tiene
   su entrada: la revisión (136), la 133 en el corte, la 131 y la 135.
 
-- [ ] **131. Cinco familias abren más puntos de los que sus filas aleatorias enmascaran: T = 64
+- [x] **131. Cinco familias abren más puntos de los que sus filas aleatorias enmascaran: T = 64
   frente a 2q + 6 = 90 (§897).** Medido en cada canon desde el §897 (`INDEPENDIENTE_DE_LA_AIR`,
   `crates/zk-ssl/src/instrumento_cota.rs`): en NullifierThresholdAir, ThresholdAir, EdadAir con ocho
   hojas, RefundAir y RefundAirV2 la traza oculta lleva 64 filas aleatorias por columna, y lo que una
@@ -1513,6 +1521,13 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   umbral conjunto, y las otras cuatro siguen necesitando T = 128.
   ⚠️ §908: el alcance del corte para ZK (RFC-0018 D-H, propuesta) lleva las cinco a T = 128, el
   umbral conjunto incluido: con 128 no queda ninguna hipótesis por AIR.
+  ✅ §914: T = 128 en las cinco, en el sello del corte: los dos umbrales y los dos reembolsos a 128 filas
+  reales (`TRACE_LENGTH`, `CICLOS = 16`) y la edad desde dieciséis hojas (`M_MIN = 4`); la cota de los tocados
+  en verde para las 23 (`INDEPENDIENTE_DE_LA_AIR`, 2q + 6 = 90 ≤ 128), medida en cada canon sobre las
+  pruebas de producción; la huella de la composición y el censo de la 134 remedidos para las cinco, y M_lin
+  medida en las cuatro con lineales (el umbral conjunto cumple R3 con su máscara lineal; las otras tres no, y
+  R3 se la dan las dos columnas pareadas de la 133). SECURITY §3.11: la fila de 256 filas (LDR 86) y la edad
+  desde `m = 4`.
 
 - [x] **132. La solvencia no tiene máscaras que cubran lo que FRI abre de DEEP: 506 dimensiones
   frente a unas 630 (§897).** `SolvencyAir` (T = 256, dos trozos) cumple la cuenta de lo tocado —la
@@ -1539,7 +1554,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   sus propias columnas, medida en cada canon, y no necesita ni la 133 ni T = 512; lo que se promete
   de ella es lo de todas, el censo, hasta la revisión ajena (la 136).
 
-- [ ] **133. La máscara de DEEP vive en F y DEEP en E: R3 no se cumple en ninguna geometría de
+- [x] **133. La máscara de DEEP vive en F y DEEP en E: R3 no se cumple en ninguna geometría de
   producción (§898).** Medido en cada canon desde el §898 (`R3_MEDIDO`,
   `crates/zk-ssl/src/instrumento_r3.rs`): lo que FRI abre del polinomio DEEP sin determinar —los
   cosets de plegado enteros de la capa 0, la capa 1 y el resto— son 168, 632, 760 y 1016
@@ -1589,6 +1604,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   del corte (RFC-0018 D-H).
   ⚠️ §909: la D-AL bis aceptada por el autor y construida en el fork, con su falsador; la D-H
   decidida. QUEDA encenderla en los 23 con la marca v2, en el sello del corte.
+  ✅ §914: encendida en los 23 probadores en el sello del corte (`COLUMNAS_ALEATORIAS = 2`, el byte de
+  columnas en la marca v2, pareadas en DEEP), y es el único camino de producción; R3 remedida en verde en las
+  cinco geometrías de producción, la de T = 128 incluida (`R3_MEDIDO_LABORATORIO`, que es la de producción
+  desde el corte, y `K_ENTERO_PAREADAS`: 424 de 424 en T = 128). El byte de columnas lo decidió el autor con
+  la D-H (§913); una marca con otra cifra se rechaza con nombre (1h bis de la D-G).
 
 - [x] **134. Medir M_lin por AIR: la máscara lineal de las columnas que entran sólo linealmente en
   las restricciones, que el instrumento de R3 no cuenta (§898).** Lo puso la revisión escéptica del

@@ -7369,7 +7369,7 @@ mod tests {
             "../../../spec/vectors/0.4/completitud/lote-rechazado-con-prueba.json"
         ))["resolucion"]["sobre"]["cabeza"]
             .clone();
-        let g2 = sobre_indice(include_str!("../../../spec/vectors/completitud/prenda-aceptada.json"))
+        let g2 = sobre_indice(include_str!("../../../spec/vectors/completitud/prenda-aceptada-0.5.json"))
             ["resolucion"]["sobre"]["cabeza"]
             .clone();
         let r = auditar_lineas(&[linea_indice(&g1), linea_indice(&g2)]);
@@ -7513,7 +7513,7 @@ mod tests_canonicidad {
     #[test]
     fn testigo_cabeza_alias_no_verifica() {
         let v5 = ["seq", "n", "nextPending", "nextIndex", "totalSupply", "mmrSize", "consCount"];
-        comprueba(&cabeza("edad/edad-todos.json"), &v5);
+        comprueba(&cabeza("edad/edad-todos-0.5.json"), &v5);
         let mut v6 = v5.to_vec();
         v6.push("recepCount");
         comprueba(&cabeza("ancla-cofirmada/cofirmada-un-testigo.json"), &v6);
@@ -7524,7 +7524,7 @@ mod tests_canonicidad {
     /// y la honesta que llega despues ancla en su `t`.
     #[test]
     fn historia_no_ancla_en_alias() {
-        let c = cabeza("edad/edad-todos.json");
+        let c = cabeza("edad/edad-todos-0.5.json");
         let t0 = leer_q(&c["mmrSize"]).unwrap();
         let mut alias = c.clone();
         alias["mmrSize"] = json!(format!("{:#x}", t0 + P));
