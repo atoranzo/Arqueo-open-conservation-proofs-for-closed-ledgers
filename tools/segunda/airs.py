@@ -124,9 +124,11 @@ class Air:
     ancho_aux = 0
     aleatorios = 0
 
-    def forma(self, p):
+    def forma(self, p, columnas=1):
+        """La forma de traza de la familia: el ancho mas las columnas aleatorias (una en zkssl/0.4;
+        las que diga la marca v2 desde el corte, §912), el tramo auxiliar y 2T."""
         forma = (p.ancho, p.ancho_aux, p.aleatorios, p.L)
-        pide = (self.ancho + 1, self.ancho_aux, self.aleatorios, 2 * self.traza)
+        pide = (self.ancho + columnas, self.ancho_aux, self.aleatorios, 2 * self.traza)
         if forma != pide:
             raise Rechazo(f"forma de traza {forma}; el enunciado pide {pide}")
 

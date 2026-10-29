@@ -76323,3 +76323,99 @@ probador, y este sello cambia el fork sólo en `winter-prover`— y el tarball `
 cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio y vacío, y al acabar
 quedaba en él el mismo fichero que en los sellos anteriores,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.
+
+## §912 — El juez de la marca v2 del kit y la segunda implementación con la v2 y el pareado, en laboratorio hasta el corte (RFC-0018 D-G y E3; RFC-0009 D-AL bis): `comprobar_marca_v2` en `zk-ssl-air` rechaza en el orden de la D-G, 1b a 1h, con los textos de `verify_v2` letra por letra, y `tools/segunda` lee la marca v2 antes que nada, pide la forma con las columnas que declara y parea las aleatorias en DEEP; ningún juez de producción los llama
+
+El commit que lleva este asiento, sobre `618c46e6` (el §911). Toca el kit en un productor
+nuevo, la segunda implementación y documentos: `crates/zk-ssl-air/src/lib.rs`,
+`comprobar_marca_v2(meta, familia) -> Result<(m, columnas), String>`, junto a `comprobar_marca`;
+`crates/zk-ssl-air/src/familias.rs`, su test, `el_juez_de_la_marca_v2_rechaza_en_el_orden_de_la_d_g`;
+`tools/segunda/stark.py`, `PREFIJO_MARCA_V2` y sus constantes, `lectura_de_marca_v2`,
+`comprobar_marca_v2`, `leer_cabeza`, `NU` y `parear_deep`, `verificar(..., familia)` con el camino
+de la D-G, el pareado en `componer_deep` y el autotest; `tools/segunda/airs.py`, `forma(p, columnas)`;
+`tools/canon.sh`, la fila de `zk-ssl-air`, 66 -> 67, con su crónica; los totales en `PAPER.md`,
+`PAPER_EN.md` y `PRINCIPIOS.md`; `spec/rfc/0018-el-tren-0-5.md`, una nota en la fila de la E3;
+`spec/rfc/0009-lo-que-revela-una-prueba.md`, una nota en la D-AL bis; `BACKLOG.md`, una nota en la
+118 y la cadena; y este asiento. Ningún juez de producción cambia: `comprobar_marca`, los cinco
+jueces del kit, `comprobar_forma` de la capa y la pareja umbral siguen con la marca v1, y la
+segunda, llamada como hasta hoy —sin `familia`—, corre el mismo camino que ayer. Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre tras el §911. El
+canon de este commit se dice al final.
+
+**De dónde sale.** «Hacer todo» (§909) y la lista del §908 para el corte: la D-H manda que los
+jueces del corte lean la marca v2 en el orden de la D-G, con el kit, la capa, la pareja umbral y
+`tools/segunda` igualados; el §906 dejó en el fork `verify_v2` con los textos, y faltaban el
+productor del kit —un solo sitio, como hoy `comprobar_marca`, para que los jueces del corte lo
+llamen y no repitan los textos— y la segunda, que la regla 4 del PROCESO y la E3 piden igualada
+con la referencia antes de que la referencia cambie. Se hace antes del corte y apagado, para que
+el sello del corte sea el de los probadores, los jueces y los vectores, y no también el de los
+textos.
+
+**Lo que hace.**
+
+1. **`comprobar_marca_v2`** (`zk-ssl-air`): el paso 1 del juez de la D-G, antes de construir
+   ninguna AIR y sin leer más que el meta. Las causas, en su orden y con los textos de `verify_v2`,
+   letra por letra: el meta vacío (1b, «prueba anterior a zkssl/0.4; la juzga el kit de su
+   version»), la marca v1 (1c, «la juzga el kit 0.4.x»), cualquier otro meta —otro prefijo, la de
+   laboratorio, otra longitud, un campo a cero, el perfil 255 o ninguna columna— (1d, «marca
+   desconocida»), otra familia (1e), otra versión de la AIR (1f, con `VERSION_INICIAL`), otro
+   perfil (1g, con `PERFIL_PRODUCCION`) y otra m (1h, con `M_OCULTACION`). Devuelve m y las
+   columnas aleatorias que la marca declara, que es lo que el juez de forma del corte necesita
+   (ancho + columnas). El test lo mide con trece casos y el orden: una marca con la familia, la
+   versión, el perfil y la m mal cae por la familia.
+2. **`tools/segunda`**, la misma lectura, en Python: `lectura_de_marca_v2` escribe el `Debug` del
+   `MarcaV2::leer` del fork y devuelve sus campos; `comprobar_marca_v2` tiene los trece casos y los
+   textos del test de `zk-ssl-air` en su autotest; `leer_cabeza` lee los cuatro bytes y el meta sin
+   deserializar el resto, que es lo que la D-G pide para juzgar la marca antes que nada (1a, «la
+   prueba no se deserializa», si ni eso llega); `verificar(prueba, air, opciones, familia)` corre
+   el camino de la D-G cuando se le da la familia —la cabeza y la marca, el enunciado, la prueba
+   entera, las opciones y la forma con las columnas de la marca— y el de siempre si no;
+   `Air.forma(p, columnas)` pide `ancho + columnas` en vez de `ancho + 1`; y `componer_deep` parea
+   los coeficientes de las columnas aleatorias como el fork desde el §909, `cc·ν^k` con ν = φ,
+   nada con una columna. El autotest mide el pareado con dos y tres columnas y con una, y que ν es
+   la φ de la extensión.
+3. **Lo igualado.** Los textos viven en tres sitios —`verify_v2` del fork, `comprobar_marca_v2`
+   del kit y el de la segunda— y dos tests los atan dos a dos: el del kit, a los literales de
+   `verify_v2`, y el autotest de la segunda, a los del kit. En el corte, el catálogo de
+   `spec/PAQUETE.md` §5 y §6.1 y `tools/check_catalogo.py` los atarán al cuarto, el texto que el
+   usuario lee.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release y con `--locked`: `zk-ssl-air`, 67 de 67 en 0,06 s
+(6,5 s de reloj con la compilación en caliente); la segunda implementación, `juez_nucleo.py` en 34 de
+34 y `juez_stark.py` en 76 de 76 pares, 90 pruebas juzgadas y 44 vectores que caen antes del juez, con
+45 de 45 falsadores que callan, en 13 s, todo por el camino de ayer —ningún vector publicado lleva la
+marca v2—; y su autotest, con los trece casos de la marca v2 y el pareado con una, dos y tres
+columnas, OK.
+
+**Lo que NO hace.** No enciende nada: ningún probador escribe la marca v2 en producción y ningún
+juez de producción la pide; las pruebas de `zkssl/0.4` siguen byte a byte y la segunda las juzga
+por el camino de ayer. No cambia los textos de la D-G ni añade causas. No toca el fork. No mueve
+la 118, que cierra el corte, ni la 117: el juez único, si va, llamará a este productor.
+
+**Lo que es del autor.** Nada en este sello.
+
+**Contadores.** `zk-ssl-air` 66 -> 67; los demás sin cambio. TOTAL DE SELLO 2100 -> 2101 y CON
+LARGOS 2240 -> 2241, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests` 2264 -> 2265;
+`check_modulos` 223. `BACKLOG.md` sigue en 42 abiertas y 97 resueltas. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre este árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 1259 s de reloj (de su arranque a su
+salida) y 959 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU, con la
+compilación a dos trabajos y el kit por recompilar. Las 19 filas del nivel, en su pin, con 2101
+tests que pasan (la suma de la columna «pasan»), la de `zk-ssl` en 564 pasan y 9 ignorados,
+383 s, la de `stark-experiment` en 492 y 13, 170 s, y la de `zk-ssl-air` en 67; las tres
+del fork, `winter-air` 65, `winter-prover` 7 y `winter-verifier` 0, en su pin; la puerta de los
+binarios, con «OK 24 objetivos en 8 paquetes, 12 con features»; `check_tests` en 2265 y 22
+instrumentos; `check_modulos` en 223; las once herramientas del bucle «2 ter»,
+`check_constraint_layout` con sus 35 circuitos; la puerta de los vectores, en 605 ficheros y 1370
+líneas de 19 manifiestos, cada uno con su huella —la segunda pasada, contra la base en
+`origin/main`, no corrió: HEAD y `origin/main` eran el mismo commit, el §911—; `check_catalogo`, en
+236 textos y 302 entradas; la conformidad, 0.5 IDÉNTICO y las cuatro versiones anteriores
+RECHAZADAS; el cable, en 27 de 27; la segunda implementación, con el núcleo en 34 de 34, sus pares
+STARK en 76 de 76 y la cadena en 30 de 30, por el camino de ayer; y el artefacto reproducible, igual
+desde dos raíces, con el binario `ba403e5ab0a19def` —otro que el `c91d9cfe4046f605` del §909 al §911:
+el kit lleva `zk-ssl-air`, y `comprobar_marca_v2` entra en él aunque nadie lo llame— y el tarball
+`74c001ab90d4415d`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio y
+vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.

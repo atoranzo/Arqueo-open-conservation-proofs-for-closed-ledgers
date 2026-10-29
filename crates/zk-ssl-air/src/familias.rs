@@ -109,6 +109,43 @@ mod tests {
 
     /// **El registro tiene las 23 familias, numeradas de 1 a 23 en su orden, y cada marca v2 da
     /// sus bytes del KAT**; la de produccion y la de laboratorio la rechazan como desconocida.
+    /// **§912 (RFC-0018 D-G, en laboratorio): el juez de la marca v2 rechaza en el orden de la
+    /// D-G con sus textos, letra por letra los de `verify_v2` y de `tools/segunda`:** el meta vacio
+    /// (1b), la marca v1 (1c), otro prefijo, la de laboratorio, otra longitud, un campo a cero o
+    /// el perfil 255 (1d), otra familia (1e), otra version (1f), otro perfil (1g) y otra m (1h); y
+    /// acepta la de la casa con sus columnas.
+    #[test]
+    fn el_juez_de_la_marca_v2_rechaza_en_el_orden_de_la_d_g() {
+        use winter_air::{Marca, MarcaLaboratorio, MarcaV2};
+        let v2 = |m: usize, familia: u16, version: u16, perfil: u8, columnas: u8| {
+            MarcaV2 { m, familia, version, perfil, columnas }.escribir()
+        };
+        assert_eq!(crate::comprobar_marca_v2(&v2(64, 7, 1, 1, 2), 7), Ok((64, 2)));
+        assert_eq!(crate::comprobar_marca_v2(&v2(64, 23, 1, 1, 1), 23), Ok((64, 1)));
+        let casos: Vec<(Vec<u8>, u16, &str)> = vec![
+            (Vec::new(), 7, "marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version"),
+            (Marca { m: 64 }.escribir(), 7, "marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x"),
+            (MarcaLaboratorio { m: 64, columnas: 2 }.escribir(), 7, "marca desconocida"),
+            (b"arqueo:oculta:3\x40\x00\x00\x00\x07\x00\x01\x00\x01\x02".to_vec(), 7, "marca desconocida"),
+            (b"arqueo:oculta:2\x40\x00\x00\x00\x07\x00\x01\x00\x01".to_vec(), 7, "marca desconocida"),
+            (b"arqueo:oculta:2\x40\x00\x00\x00\x00\x00\x01\x00\x01\x02".to_vec(), 7, "marca desconocida"),
+            (b"arqueo:oculta:2\x40\x00\x00\x00\x07\x00\x01\x00\xff\x02".to_vec(), 7, "marca desconocida"),
+            (b"arqueo:oculta:2\x40\x00\x00\x00\x07\x00\x01\x00\x01\x00".to_vec(), 7, "marca desconocida"),
+            (v2(64, 8, 1, 1, 2), 7, "marca: la prueba es de la familia 8; se pide la 7"),
+            (v2(64, 7, 2, 1, 2), 7, "marca: version 2 de la AIR de la familia 7; se acepta 1"),
+            (v2(64, 7, 1, 2, 2), 7, "marca: perfil 2 desconocido"),
+            (v2(32, 7, 1, 1, 2), 7, "marca: m = 32; la construccion pide m = 64"),
+        ];
+        for (meta, familia, texto) in casos {
+            assert_eq!(crate::comprobar_marca_v2(&meta, familia), Err(texto.to_string()), "{meta:?}");
+        }
+        // el orden: una marca con la familia, la version, el perfil y la m mal cae por la familia
+        assert_eq!(
+            crate::comprobar_marca_v2(&v2(32, 8, 2, 2, 2), 7),
+            Err("marca: la prueba es de la familia 8; se pide la 7".to_string())
+        );
+    }
+
     #[test]
     fn el_registro_de_familias_y_su_kat() {
         assert_eq!(FAMILIAS.len(), 23);

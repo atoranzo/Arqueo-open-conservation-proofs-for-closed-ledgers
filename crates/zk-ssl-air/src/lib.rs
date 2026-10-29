@@ -273,6 +273,42 @@ pub fn comprobar_marca(meta: &[u8]) -> Result<(), String> {
     }
 }
 
+/// §912 (RFC-0018 D-G, en LABORATORIO hasta el corte): el paso 1 del juez de la marca v2, 1b a
+/// 1h, con sus textos -los mismos que `verify_v2` del fork y que `tools/segunda`, letra por
+/// letra-: la marca antes que nada, sin construir ninguna AIR ni leer el resto de la prueba.
+/// Devuelve m y las columnas aleatorias que declara. Ningun juez de produccion lo llama en
+/// `zkssl/0.4`: en el corte sustituye a `comprobar_marca` en el kit, la capa y la pareja umbral.
+pub fn comprobar_marca_v2(meta: &[u8], familia: u16) -> Result<(usize, usize), String> {
+    use winter_air::{Marca, MarcaError, MarcaV2};
+    let marca = match MarcaV2::leer(meta) {
+        Ok(Some(marca)) => marca,
+        Ok(None) => {
+            return Err("marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version".to_string())
+        },
+        Err(MarcaError::Desconocida) if Marca::leer(meta).is_ok() => {
+            return Err("marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x".to_string())
+        },
+        Err(_) => return Err("marca desconocida".to_string()),
+    };
+    if marca.familia != familia {
+        return Err(format!("marca: la prueba es de la familia {}; se pide la {familia}", marca.familia));
+    }
+    if marca.version != familias::VERSION_INICIAL {
+        return Err(format!(
+            "marca: version {} de la AIR de la familia {familia}; se acepta {}",
+            marca.version,
+            familias::VERSION_INICIAL
+        ));
+    }
+    if marca.perfil != familias::PERFIL_PRODUCCION {
+        return Err(format!("marca: perfil {} desconocido", marca.perfil));
+    }
+    if marca.m != M_OCULTACION {
+        return Err(format!("marca: m = {}; la construccion pide m = {M_OCULTACION}", marca.m));
+    }
+    Ok((marca.m, marca.columnas as usize))
+}
+
 /// §711: las causas con nombre de una prueba mal formada, del fork de winterfell, la unica fuente:
 /// el kit, la capa y sus tests las nombran desde aqui.
 pub use winter_air::causa;

@@ -19,7 +19,7 @@ cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, 
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, el §907, que abre la 137 y la 138, y el §911, que las cierra.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, el §907, que abre la 137 y la 138, el §911, que las cierra, y el §912, que no mueve ninguna.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1390,6 +1390,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   en el RFC-0005 (D-B). Medido sobre `679a035`, en las pruebas de `spec/vectors/`: fuera de `0.3/`,
   62 llevan la v1 (58 con m = 64, y las cuatro de m = 32 del §706) y 25 el meta vacío (las de los
   recibos de los lotes de rechazo y los dos negativos del §706); las 34 de `0.3/`, el meta vacío.
+  ⚠️ §912: en laboratorio, antes del corte: el juez de la marca del kit (`comprobar_marca_v2` en
+  `zk-ssl-air`, 1b a 1h con sus textos en el orden de la D-G) y `tools/segunda` (`comprobar_marca_v2`,
+  `leer_cabeza`, la forma con las columnas de la marca y el pareado de la D-AL bis), letra por letra
+  los textos de `verify_v2` del fork (§906), cada uno con su test; ningún juez de producción los
+  llama hasta el corte, que es lo que cierra esta entrada.
 
 - [ ] **119. Abrir una cuenta prueba que se tiene la clave (§802).** Desde el §802 abrir rechaza una
   identidad que ya tiene cuenta o que una recuperación retiró (`SECURITY.md` §3.13), y eso agrava la

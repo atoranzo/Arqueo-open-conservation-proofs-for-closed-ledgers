@@ -33,9 +33,9 @@ obtenidas en condiciones idénticas, y documentamos un error metodológico
 propio —mezcla de compilaciones de depuración y optimizadas— detectado y
 corregido durante el trabajo.
 
-La implementación de referencia consta de **2100 pruebas ejecutables en la
+La implementación de referencia consta de **2101 pruebas ejecutables en la
 compuerta de sello** (55 son las de winterfell 0.13.1, que el fork del §533
-trae consigo) —2240 contando los pines de los niveles largo y completo, y
+trae consigo) —2241 contando los pines de los niveles largo y completo, y
 1364 declaradas (⚠️ §865: del §497; hoy las cuenta, con otra regla, `tools/check_tests.py`)—, con 22 ignoradas y declaradas (⚠️ §908: decía 21; ⚠️ §900: decía 18; son la suma de la columna de ignorados de la tabla de sello de `tools/canon.sh`, y los instrumentos que cuenta `tools/check_tests.py`), y
 está disponible públicamente. **No ha sido auditada por terceros y no
 implementa consenso distribuido**; discutimos en detalle las implicaciones

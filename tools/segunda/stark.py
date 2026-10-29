@@ -270,6 +270,13 @@ MODULO = (P).to_bytes(8, "little")
 PREFIJO_MARCA = b"arqueo:oculta:1"            # winter-air marca.rs `PREFIJO`
 LARGO_MARCA = len(PREFIJO_MARCA) + 4          # `LARGO`: el prefijo y los cuatro bytes de m
 M_OCULTACION = 64                             # zk-ssl-air lib.rs `M_OCULTACION` (§651)
+# §912 (RFC-0018 D-G, en laboratorio hasta el corte): la marca v2, `arqueo:oculta:2`, m (u32), la
+# familia (u16), la version de la AIR (u16), el perfil (u8) y las columnas aleatorias (u8); 25 bytes
+PREFIJO_MARCA_V2 = b"arqueo:oculta:2"         # winter-air marca.rs `PREFIJO_V2`
+LARGO_MARCA_V2 = len(PREFIJO_MARCA_V2) + 10   # `LARGO_V2`
+PERFIL_RESERVADO = 255                        # `PERFIL_RESERVADO`: otro motor; no se acepta
+PERFIL_PRODUCCION = 1                         # zk-ssl-air familias.rs `PERFIL_PRODUCCION`
+VERSION_INICIAL = 1                           # zk-ssl-air familias.rs `VERSION_INICIAL`
 
 
 class Prueba:
@@ -281,6 +288,19 @@ def leer_queries(r):
     q.valores = r.tomar(r.usize())
     q.apertura = r.tomar(r.usize())
     return q
+
+
+def leer_cabeza(b):
+    """§912 (D-G, paso 1): la cabeza de la prueba -los cuatro bytes, el largo del meta y el meta-
+    sin deserializar el resto; lo que no llega a eso es `la prueba no se deserializa` (1a)."""
+    try:
+        r = Lector(b)
+        p = Prueba()
+        p.ancho, p.ancho_aux, p.aleatorios, log_l = r.u8(), r.u8(), r.u8(), r.u8()
+        p.meta = r.tomar(r.u16())
+    except Exception:
+        raise Rechazo("la prueba no se deserializa")
+    return p
 
 
 def leer_prueba(b):
@@ -365,6 +385,70 @@ def marca_de(meta):
     if lectura.startswith("Err"):
         raise deser("meta de traza desconocido")
     return m
+
+
+def lectura_de_marca_v2(meta):
+    """`MarcaV2::leer` del fork (§906), escrito como su `Debug`, y los campos si los hay: vacio,
+    `Ok(None)`; sin el prefijo v2, `Err(Desconocida)` -la v1 y la de laboratorio incluidas-; con
+    otra longitud que 25, `Err(Largo)`; un campo a cero o el perfil 255, `Err(Cero)`; ninguna
+    columna, `Err(Columnas)`; si no, `Ok(Some(MarcaV2 { .. }))` y (m, familia, version, perfil,
+    columnas)."""
+    if not meta:
+        return "Ok(None)", None
+    if not meta.startswith(PREFIJO_MARCA_V2):
+        return "Err(Desconocida)", None
+    if len(meta) != LARGO_MARCA_V2:
+        return "Err(Largo)", None
+    r = meta[len(PREFIJO_MARCA_V2):]
+    m = int.from_bytes(r[0:4], "little")
+    familia = int.from_bytes(r[4:6], "little")
+    version = int.from_bytes(r[6:8], "little")
+    perfil, columnas = r[8], r[9]
+    if familia == 0 or version == 0 or perfil == 0 or perfil == PERFIL_RESERVADO:
+        return "Err(Cero)", None
+    if columnas == 0:
+        return "Err(Columnas)", None
+    return (f"Ok(Some(MarcaV2 {{ m: {m}, familia: {familia}, version: {version}, perfil: {perfil}, "
+            f"columnas: {columnas} }}))", (m, familia, version, perfil, columnas))
+
+
+def comprobar_marca_v2(meta, familia, version=VERSION_INICIAL, perfil=PERFIL_PRODUCCION):
+    """El paso 1 del juez de la D-G (RFC-0018), 1b a 1h, con los textos de `verify_v2` del fork y
+    de `zk_ssl_air::comprobar_marca_v2`, letra por letra: la marca antes que nada. Devuelve
+    (m, columnas)."""
+    if not meta:
+        raise Rechazo("marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version")
+    lectura_v1, m1 = lectura_de_marca(meta)
+    if m1 is not None:
+        raise Rechazo("marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x")
+    lectura, campos = lectura_de_marca_v2(meta)
+    if campos is None:
+        raise Rechazo("marca desconocida")
+    m, f, v, p, columnas = campos
+    if f != familia:
+        raise Rechazo(f"marca: la prueba es de la familia {f}; se pide la {familia}")
+    if v != version:
+        raise Rechazo(f"marca: version {v} de la AIR de la familia {familia}; se acepta {version}")
+    if p != perfil:
+        raise Rechazo(f"marca: perfil {p} desconocido")
+    if m != M_OCULTACION:
+        raise Rechazo(f"marca: m = {m}; la construccion pide m = {M_OCULTACION}")
+    return m, columnas
+
+
+# §912 (RFC-0009 D-AL bis; el §909 del fork): ν = φ = (0, 1), y las columnas aleatorias, cuando son
+# dos o mas, entran en DEEP pareadas: la k-esima lleva cc·ν^k, con cc el coeficiente de la primera
+NU = E2(0, 1)
+
+
+def parear_deep(cc, reales, columnas):
+    """`winter_air::parear_deep`: nada con una columna; con dos o mas, cc·ν^k en la k-esima."""
+    if columnas < 2:
+        return
+    potencia = UNO
+    for k in range(1, columnas):
+        potencia = potencia * NU
+        cc[reales + k] = cc[reales] * potencia
 
 
 # ─── la semilla de Fiat-Shamir (Context::to_elements ++ pub_inputs.to_elements) ───────────────
@@ -687,24 +771,38 @@ def capas_fri(lde, opciones):
     return n
 
 
-def verificar(prueba, air, opciones_aceptadas=OPCIONES_KIT):
+def verificar(prueba, air, opciones_aceptadas=OPCIONES_KIT, familia=None):
     """Verifica `prueba` (bytes) contra `air` (con sus entradas publicas). Devuelve None o lanza
-    `Rechazo` con el nombre del error que daria `winter-verifier`."""
-    air.enunciado()
-    p = leer_prueba(prueba)
-    # el orden del juez de la AIR en el kit (p. ej. banda::verificar), antes de construirla: la
-    # forma de traza, la marca (§651) y solo entonces `verify`, que valida antes que nada las
-    # opciones. Hasta el §706 aqui iban la forma, las opciones y la marca, sin exigir su m.
-    air.forma(p)
-    comprobar_marca(p.meta)
-    if p.opciones != opciones_aceptadas:
-        raise Rechazo("UnacceptableProofOptions")
+    `Rechazo` con el nombre del error que daria `winter-verifier`. Con `familia` (§912, en
+    laboratorio hasta el corte): el juez de la D-G, la marca v2 antes que nada, y despues el
+    enunciado, la forma con sus columnas y las opciones."""
+    if familia is None:
+        air.enunciado()
+        p = leer_prueba(prueba)
+        # el orden del juez de la AIR en el kit (p. ej. banda::verificar), antes de construirla: la
+        # forma de traza, la marca (§651) y solo entonces `verify`, que valida antes que nada las
+        # opciones. Hasta el §706 aqui iban la forma, las opciones y la marca, sin exigir su m.
+        air.forma(p)
+        comprobar_marca(p.meta)
+        columnas = 1
+        if p.opciones != opciones_aceptadas:
+            raise Rechazo("UnacceptableProofOptions")
+        m = marca_de(p.meta)
+    else:
+        # D-G: la cabeza y la marca, sin deserializar el resto; el enunciado; la prueba entera
+        p = leer_cabeza(prueba)
+        m, columnas = comprobar_marca_v2(p.meta, familia)
+        air.enunciado()
+        p = leer_prueba(prueba)
+        if p.opciones != opciones_aceptadas:
+            raise Rechazo("UnacceptableProofOptions")
+        air.forma(p, columnas)
     semilla = elementos_del_contexto(p) + air.entradas()
-    m = marca_de(p.meta)
     # detras de comprobar_marca, m es M_OCULTACION; la guarda queda como la del despacho del fork
-    if m is not None and (p.L < 16 or p.ancho < 2 or m >= p.L):
+    if m is not None and (p.L < 16 or p.ancho < columnas + 1 or m >= p.L):
         raise deser("traza oculta mal formada")
     ctx = Contexto(air, p, m)
+    ctx.columnas = columnas
     # ── VerifierChannel::new ──
     if p.modulo != MODULO:
         raise Rechazo("InconsistentBaseField")
@@ -802,6 +900,8 @@ def verificar(prueba, air, opciones_aceptadas=OPCIONES_KIT):
 
     moneda.resembrar(hash_e2(ood_act + oq_act + ood_sig + oq_sig))
     deep = [moneda.sacar() for _ in range(ancho_t + ncc)]
+    # §912 (D-AL bis): las columnas aleatorias, las ultimas de la traza principal, pareadas
+    parear_deep(deep, p.ancho - ctx.columnas, ctx.columnas)
 
     # FriVerifier::new
     alfas = []
@@ -1030,6 +1130,44 @@ def autotest():
     # leido con el `Debug` de `Result<Option<Marca>, MarcaError>`
     casa = PREFIJO_MARCA + M_OCULTACION.to_bytes(4, "little")
     assert comprobar_marca(casa) is None and marca_de(casa) == M_OCULTACION
+    # §912: la marca v2 y el juez de la D-G, letra por letra los textos de zk-ssl-air
+    # (`comprobar_marca_v2`, el test `el_juez_de_la_marca_v2_rechaza_en_el_orden_de_la_d_g`)
+    def v2(m, familia, version, perfil, columnas):
+        return (PREFIJO_MARCA_V2 + m.to_bytes(4, "little") + familia.to_bytes(2, "little")
+                + version.to_bytes(2, "little") + bytes([perfil, columnas]))
+    assert comprobar_marca_v2(v2(64, 7, 1, 1, 2), 7) == (64, 2)
+    assert comprobar_marca_v2(v2(64, 23, 1, 1, 1), 23) == (64, 1)
+    for meta, familia, texto in (
+            (b"", 7, "marca: meta vacio, prueba anterior a zkssl/0.4; la juzga el kit de su version"),
+            (casa, 7, "marca v1: prueba de zkssl/0.4; la juzga el kit 0.4.x"),
+            (b"arqueo:oculta:lab" + (64).to_bytes(4, "little") + b"\x02", 7, "marca desconocida"),
+            (b"arqueo:oculta:3" + v2(64, 7, 1, 1, 2)[15:], 7, "marca desconocida"),
+            (v2(64, 7, 1, 1, 2)[:-1], 7, "marca desconocida"),
+            (v2(64, 0, 1, 1, 2), 7, "marca desconocida"),
+            (v2(64, 7, 1, 255, 2), 7, "marca desconocida"),
+            (v2(64, 7, 1, 1, 0), 7, "marca desconocida"),
+            (v2(64, 8, 1, 1, 2), 7, "marca: la prueba es de la familia 8; se pide la 7"),
+            (v2(64, 7, 2, 1, 2), 7, "marca: version 2 de la AIR de la familia 7; se acepta 1"),
+            (v2(64, 7, 1, 2, 2), 7, "marca: perfil 2 desconocido"),
+            (v2(32, 7, 1, 1, 2), 7, "marca: m = 32; la construccion pide m = 64"),
+            (v2(32, 8, 2, 2, 2), 7, "marca: la prueba es de la familia 8; se pide la 7")):
+        try:
+            comprobar_marca_v2(meta, familia)
+            raise AssertionError(f"la marca v2 {meta!r} pasa")
+        except Rechazo as e:
+            assert str(e) == texto, (str(e), texto)
+    # el pareado (§909, D-AL bis): cc·ν en la segunda, cc·ν² en una tercera, nada con una
+    cc = [E2(i + 1, 10 + i) for i in range(6)]
+    pareado = list(cc)
+    parear_deep(pareado, 3, 2)
+    assert pareado[:4] == cc[:4] and pareado[4] == cc[3] * NU and pareado[5] == cc[5]
+    tres = list(cc)
+    parear_deep(tres, 2, 3)
+    assert (tres[2], tres[3], tres[4]) == (cc[2], cc[2] * NU, cc[2] * NU * NU)
+    una = list(cc)
+    parear_deep(una, 4, 1)
+    assert una == cc
+    assert NU == phi
     for meta, lectura in ((b"", "Ok(None)"),
                           (PREFIJO_MARCA + (32).to_bytes(4, "little"), "Ok(Some(Marca { m: 32 }))"),
                           (b"arqueo:oculta:2" + casa[15:], "Err(Desconocida)"),

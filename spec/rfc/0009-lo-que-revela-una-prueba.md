@@ -946,6 +946,9 @@ en el verificador a la vez, así que la prueba no cambia de forma; `verify_labor
 es el falsador: una prueba de laboratorio con dos o tres columnas verifica pareando y no sin
 parear, y la de producción, con una columna, es byte a byte la de antes. Encenderla en los 23
 probadores sigue siendo del corte (RFC-0018 D-H).
+⚠️ §912: `tools/segunda` parea igual, en laboratorio: `parear_deep` sobre los coeficientes de DEEP
+de las columnas aleatorias que declara la marca v2, con ν = φ = (0, 1), y su autotest lo mide
+contra el pareado del fork; su camino de producción, con la marca v1 y una columna, no cambia.
 
 ### D-AM — La promesa tras A1, A2, A3 y la 134: sigue siendo el censo; lo que se podría prometer, para qué familias y bajo qué hipótesis, queda escrito con sus palabras y es del autor
 
