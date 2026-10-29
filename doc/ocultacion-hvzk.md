@@ -14,7 +14,7 @@ del apartado 4 con la H12 del §900— queda escrito allí con sus palabras y es
 que no, con nombre y con lo que les falta. ⚠️ §902: el autor acepta ese camino y decide A5: la sal
 se queda (RFC-0009 D-I); lo escrito espera la revisión ajena (la 136 de `BACKLOG.md`). ⚠️ §903: el
 dosier para esa revisión —qué revisar, qué leer, cómo reproducir cada cifra y dónde atacar— es
-`doc/ocultacion-hvzk-dosier.md`.
+`doc/ocultacion-hvzk-dosier.md`. ⚠️ §915: con el corte `zkssl/0.5` sellado (§914), la proposición para las veintitrés familias con la construcción de producción —las dos columnas pareadas, T ≥ 128, m = 64, las hojas saladas— está escrita en el apartado 18, con sus hipótesis y su cuenta, y lo que se podría prometer con ella, con sus palabras, en la D-AM del RFC-0009 (su borrador del §915). **Sigue sin ser una promesa**: es del autor, y el argumento espera la revisión ajena de la 136, que desde aquí es de los apartados 1 a 18 con la construcción del corte.
 
 **Qué es.** El argumento de ocultación del probador oculto del fork de winterfell 0.13.1
 (`crates/winter-prover`, `crates/winter-air`, `crates/winter-verifier`, con la sal de
@@ -45,6 +45,7 @@ cinco de T = 64 no tienen M_lin que medir (la 131). Para las dieciséis, la prop
 apartado 8 vale con la construcción de hoy, bajo las demás hipótesis; la promesa sigue siendo el
 censo hasta A4.
 ⚠️ **§914 (el corte `zkssl/0.5`, RFC-0018 D-H):** la construcción de producción es desde el corte la de las dos columnas aleatorias pareadas como una sobre E (D-AL bis, L9) en las 23 familias, con T = 128 en las cinco que tenían 64: R3 medida en verde en las cinco geometrías (apartado 13, `K_ENTERO_PAREADAS`), L1 cubriendo las 23 (`INDEPENDIENTE_DE_LA_AIR`), la cota de A1 en verde en las 28 pruebas. Lo que este documento dice de «hoy» desde aquí hasta el apartado 17 describe `zkssl/0.4`; la proposición para las 23, con sus hipótesis y su cuenta, se escribe en el asiento siguiente, y la promesa sigue siendo el censo hasta que el autor la acepte.
+⚠️ **§915: con la construcción del corte, en una frase.** Para las veintitrés familias, la vista del verificador honesto se simula sin el testigo con el argumento independiente de la AIR: L1 por geometría (2q + 6 = 90 ≤ 128 ≤ T, en las 23), L2 (q + 2 = 44 ≤ m = 64), L9 (las dos columnas pareadas y los aleatorizadores cubren K entero, para cualesquiera posiciones: R3 es teorema, no hipótesis), L4 con la sal y L5 con las semillas, en el modelo de L0; ni M_lin, ni la cuenta fina, ni L6, ni L8 hacen falta, y quedan como instrumentos de guarda. La ventaja: 2^{−60} (H3) + 2^{−128} (S5) + Q·2^{−256} (L0) + |E|^{−(N−1)} (L9), sin ningún |F|. Lo que queda es lo que ningún test mide —H3, H7, H8 y H9— y la revisión ajena; la promesa sigue siendo el censo hasta que el autor la acepte (apartado 18).
 
 **La nota, no leída.** La nota 2024/1037 de ePrint —Ulrich Haböck y Al Kindi, «A note on adding
 zero-knowledge to STARKs», recibida el 26 de junio de 2024 y revisada por última vez el 22 de
@@ -431,15 +432,15 @@ medida: no rescata hoy a ninguna de las cinco; al umbral conjunto lo cubriría c
 | H3: z fuera de F y de H, sin coincidencias de conjugados | supuesta, fallo < 2^{−60} por prueba | L1 | no se mide: las posiciones y z no viajan |
 | H4: q + 2 ≤ m, Vandermonde de rango pleno sobre E | medida, en cada canon | L2 | `rango_pleno`; el mutante m = 43; el mutante del árbol |
 | H5: s ≥ 1, N ≥ 2, y ≠ 0 | demostrada | L2 | los asertos de `segmentar` |
-| H6: R3, suficiente: las dos máscaras independientes del testigo cubren lo que FRI abre | **medida en el §898: con M = {columna, aleatorizadores}, falsa en las cinco geometrías**; ⚠️ §900: con M_lin (H12), verdadera en dieciséis familias y falsa en MerkleAir y FrozenClimbAir (apartado 14) | L3 | `instrumento_r3`, en cada canon, con sus cifras clavadas (apartado 13); `instrumento_mlin`, el censo en cada canon y la medida por familia (apartado 14) |
+| H6: R3, suficiente: las dos máscaras independientes del testigo cubren lo que FRI abre | **medida en el §898: con M = {columna, aleatorizadores}, falsa en las cinco geometrías**; ⚠️ §900: con M_lin (H12), verdadera en dieciséis familias y falsa en MerkleAir y FrozenClimbAir (apartado 14) | L3 | `instrumento_r3`, en cada canon, con sus cifras clavadas (apartado 13); `instrumento_mlin`, el censo en cada canon y la medida por familia (apartado 14) ⚠️ §915: con `zkssl/0.5`, demostrada (L9, apartado 17) y medida además en las cinco geometrías de producción, la de T = 128 incluida (`K_ENTERO_PAREADAS`, apartado 18) |
 | H7: Blake3 como oráculo aleatorio programable | modelo | L0, L4, L5 | — |
 | H8: la sal es fresca | supuesta | L4 | `SECURITY.md` §3.11; los tests de `sal.rs` miden tamaño y efecto, no frescura |
 | H9: ninguna semilla se repite | supuesta; lo que cuesta, medido en el juguete (§898) | L5 | `instrumento_falsadores_hvzk`: dos pruebas con la misma semilla dan sus dos constantes |
 | H10: la moneda de las máscaras no comparte estado con la pública | demostrada | L5 | `generate_proof_oculto`, `segmentar` |
-| H11: T ≥ 2q + 6 | medida: 18 familias sí, 5 no; y lo que cuesta, en el juguete (§898) | L1, L6 | `INDEPENDIENTE_DE_LA_AIR`; con T = 64 lo tocado dice el testigo, con T = 128 no |
-| H12 (§900): las filas aleatorias de una columna que entra en C linealmente y con coeficiente público son una máscara más, M_lin: uniformes en un núcleo que no depende del testigo una vez condicionadas a S_toc, con imagen lineal y pública en D | medida: qué columnas lo son, en cada canon, AIR a AIR; y R3 con M_lin, por familia; ⚠️ §907: demostrada como lema, con el núcleo conjunto que descuenta lo abierto de los trozos (L7) | L3, L7 | `instrumento_mlin`: `CENSO_134` y `MLIN_MEDIDO` (apartado 14) |
-| H13 (§905): Λ, lo que C ve en S_ab de las columnas lineales condicionadas a lo visto, es sobreyectiva: C(S_ab) uniforme e independiente del testigo sin pasar por S_toc | medida, por familia, en las que no caben con la gruesa: sólo en el umbral conjunto | L1' | `instrumento_mlin`: `sobreyectiva`, `FINA_MEDIDO` (apartado 15) |
-| H14 (§907): R3 con M_lin vale en los desafíos reales, no sólo en la instancia medida | demostrada en la capa 0 con T ≥ 512 fuera de las coincidencias coset–tocado, para cualesquiera posiciones, con fallo ≤ 7c₀/\|F\| (L8); medida en lo demás, en tres instancias por familia —la semilla 2, la 3 en la solvencia, y una adversa con una colisión de cosets, una coincidencia y una posición siguiente de otra—, con la huella de cada composición clavada | L7, L8 | `instrumento_mlin`: `adversa`, `MLIN_INSTANCIAS`, `HUELLA_C` (apartado 16) |
+| H11: T ≥ 2q + 6 | medida: 18 familias sí, 5 no; y lo que cuesta, en el juguete (§898) | L1, L6 | `INDEPENDIENTE_DE_LA_AIR`; con T = 64 lo tocado dice el testigo, con T = 128 no ⚠️ §915: medida, 23 familias sí: T ≥ 128 ≥ 90 en todas (`INDEPENDIENTE_DE_LA_AIR`) |
+| H12 (§900): las filas aleatorias de una columna que entra en C linealmente y con coeficiente público son una máscara más, M_lin: uniformes en un núcleo que no depende del testigo una vez condicionadas a S_toc, con imagen lineal y pública en D | medida: qué columnas lo son, en cada canon, AIR a AIR; y R3 con M_lin, por familia; ⚠️ §907: demostrada como lema, con el núcleo conjunto que descuenta lo abierto de los trozos (L7) | L3, L7 | `instrumento_mlin`: `CENSO_134` y `MLIN_MEDIDO` (apartado 14) ⚠️ §915: instrumento de guarda; la proposición del apartado 18 no la necesita |
+| H13 (§905): Λ, lo que C ve en S_ab de las columnas lineales condicionadas a lo visto, es sobreyectiva: C(S_ab) uniforme e independiente del testigo sin pasar por S_toc | medida, por familia, en las que no caben con la gruesa: sólo en el umbral conjunto | L1' | `instrumento_mlin`: `sobreyectiva`, `FINA_MEDIDO` (apartado 15) ⚠️ §915: instrumento de guarda; la proposición del apartado 18 no la necesita |
+| H14 (§907): R3 con M_lin vale en los desafíos reales, no sólo en la instancia medida | demostrada en la capa 0 con T ≥ 512 fuera de las coincidencias coset–tocado, para cualesquiera posiciones, con fallo ≤ 7c₀/\|F\| (L8); medida en lo demás, en tres instancias por familia —la semilla 2, la 3 en la solvencia, y una adversa con una colisión de cosets, una coincidencia y una posición siguiente de otra—, con la huella de cada composición clavada | L7, L8 | `instrumento_mlin`: `adversa`, `MLIN_INSTANCIAS`, `HUELLA_C` (apartado 16) ⚠️ §915: instrumento de guarda; la proposición del apartado 18 no la necesita |
 
 ## 5. El simulador
 
@@ -593,6 +594,7 @@ medido era una instancia de desafíos por familia, y las posiciones reales no so
 con T ≥ 512, fuera de las coincidencias coset–tocado— y, para el resto —la capa 1, las
 coincidencias y la solvencia entera—, lo que dicen las instancias medidas, que no es una cota.
 Sigue sin ser una promesa.
+⚠️ §915: la proposición para las veintitrés con la construcción de `zkssl/0.5` —todas, la solvencia y las cinco de T = 128 incluidas, sin excepción por su nombre— es la del apartado 18, con la cuenta de L9; lo de arriba describe `zkssl/0.4`. Sigue sin ser una promesa.
 
 ## 9. Lo medido en A1 y lo que A2 corrige
 
@@ -811,6 +813,7 @@ simular salvo lo de la objeción 1; y que el documento no afirma HVZK en ningún
   con nombre; A4 puede enunciar para las dieciséis lo que este documento demuestra, con sus
   hipótesis, y decir de las siete lo que les falta: la 133 a MerkleAir y FrozenClimbAir, y la
   131 —o la 135— a las cinco de T = 64.
+  ⚠️ §915: el corte está sellado (§914): A4 puede enunciar para las veintitrés lo que el apartado 18 demuestra con la construcción de `zkssl/0.5`, con sus hipótesis y sin ninguna familia fuera por su nombre; las palabras están en la D-AM del RFC-0009 (el borrador del §915), y la promesa sigue siendo el censo hasta que el autor la acepte.
 - **A5**: la sal es lo que hace L4 incondicional. Sin ella, (a) necesita que cada hoja no abierta
   tenga entropía frente al oráculo —la fila entera de la traza en un punto de Λ la tiene por L1, el
   vector de los trozos por L2, y los ocho valores de un coset de FRI sólo por R3— y (b) desaparece.
@@ -1400,3 +1403,65 @@ laboratorio verifica pareando y no con `verify_laboratorio_sin_parear`; la de pr
 columna, no cambia. Lo que queda encendido es lo de siempre; el corte la lleva a los 23. No cambia el enunciado de hoy (apartado 8 con el 16): la construcción de `zkssl/0.4` sigue
 siendo la que es, con una columna. No toca H3, cuyo 2^{−60} es ahora el término mayor, ni el 2^{−128}
 de S5 (la 137).
+
+## 18. La proposición para las 23 con la construcción de `zkssl/0.5` (§915)
+
+**Lo que cambió con el corte** (§914: RFC-0018 D-H; RFC-0009 D-AL bis). Desde `zkssl/0.5` toda
+prueba de producción de las veintitrés familias lleva dos columnas aleatorias pareadas en DEEP como
+una sobre E (L9), T filas aleatorias por columna con T ≥ 128 en todas —las cinco que tenían 64
+pasan a 128—, el cociente cegado con m = 64 y las hojas saladas. La marca v2 que la identifica
+(25 bytes: m, la familia, la versión de la AIR, el perfil y las columnas) es constante por familia
+y no depende del testigo: entra en la vista como lo que ya era público por diseño. Nada más del
+argumento cambia: el simulador del apartado 5 es el mismo, con S5 muestreando D̃ uniforme en la
+clase de K, que con L9 es exactamente la distribución real.
+
+**Las hipótesis, con el corte.** De la tabla del apartado 4:
+
+| hipótesis | con `zkssl/0.5` | qué la mide o la sostiene |
+|---|---|---|
+| H1 (q + 4 ≤ T sobre S_ab, 2q + 6 ≤ T sobre S_toc) y H11 (T ≥ 2q + 6) | medidas, en las 23: 2q + 6 = 90 ≤ 128 ≤ T | `INDEPENDIENTE_DE_LA_AIR`, «cubre» en las 23; `rango_de_los_tocados` y `rango_pleno`, en cada canon |
+| H2 (Λ ∩ H = ∅, posiciones únicas) | demostrada | L1 |
+| H3 (z fuera de F y de H, sin coincidencias de conjugados) | supuesta, fallo < 2^{−60} por prueba | no se mide |
+| H4 (q + 2 ≤ m) | medida: 44 ≤ 64 | `rango_pleno`; el mutante m = 43 |
+| H5, H10 | demostradas | L2, L5 |
+| H6 (R3) | **demostrada**: L9, para cualesquiera posiciones, α_i y AIR; y medida en las cinco geometrías de producción, K entero | `K_ENTERO_PAREADAS`: en cada canon, las geometrías de T ≤ 256 enteras y el criterio ev(M_r) en todas; el test largo, T = 512 y 1024 |
+| H7 (Blake3 como oráculo aleatorio programable) | modelo | — |
+| H8 (la sal es fresca), H9 (ninguna semilla se repite) | supuestas | `SECURITY.md` §3.11; el falsador de la semilla repetida |
+| H12, H13, H14 (M_lin, la cuenta fina, los desafíos reales de R3 con M_lin) | **no hacen falta**: L9 cubre K entero sin ellas; siguen como instrumentos de guarda | `instrumento_mlin`, en cada canon y en su test largo |
+
+**Proposición (condicional, para las veintitrés).** Bajo H1, H2, H3, H4, H5, H7, H8, H9, H10 y
+H11 —H6 es L9—, para cada una de las veintitrés familias con fila en la tabla de D-B del RFC-0009
+con la construcción de `zkssl/0.5`, existe un simulador S, el del apartado 5, tal que, para toda
+traza real que la AIR interna acepta, la vista del verificador honesto del protocolo oculto y la
+salida de S son estadísticamente indistinguibles en el modelo de oráculo aleatorio programable, con
+ventaja menor que 2^{−60} (H3) + 2^{−128} (S5) + Q·2^{−256} (L0) + |E|^{−(N−1)} (L9) para Q
+consultas al oráculo, donde N es el número de trozos del cociente de la geometría: 2 en la
+solvencia (2^{−128}) y 8, 9 o 10 en las demás. Ninguna familia queda fuera por su nombre, y ninguna
+necesita una hipótesis propia de su AIR (L6 no se usa). Lo que la proposición no dice: nada de la
+solidez, nada frente a un adversario cuántico, nada de los canales laterales y nada de lo público
+por diseño (apartado 7, lo que sigue en pie).
+
+**Lo medido sobre la construcción del corte** (§914 y §915):
+
+| qué | dónde | resultado |
+|---|---|---|
+| la cota de A1 (H1, H4, H11) sobre las pruebas de producción | `instrumento_cota`, en cada canon | 28 pruebas de los 23 probadores: q de 40 a 42, 90 tocados frente a T ≥ 128, rango pleno; «cubre» en las 23 |
+| R3 con las columnas pareadas: K entero | `instrumento_r3`, `K_ENTERO_PAREADAS`, con la semilla 1 y las posiciones adversas del §907 | las cinco geometrías de producción: T = 128 con 10 trozos, 424 = 420 + 80 (con una columna, 254 de 424); T = 256 con 2 y con 9 trozos, 936; T = 512, 1960; T = 1024, 4008; ev(M_r) 4 de 4 en todas |
+| M_lin en las cuatro de T = 128 con columnas lineales (guarda) | `instrumento_mlin`, el test largo (§914) | el umbral conjunto cumple R3 con su máscara lineal sola (424 de 424); la autorización delegada, la edad y el reembolso v2 no (406 de 424); el reembolso v1 no tiene lineales: a esas cuatro R3 se la da L9 |
+| el censo de la 134 y la huella de cada composición | `CENSO_134`, `HUELLA_C` | las cinco de T = 128 remedidas (§914); las dieciocho restantes no cambian de traza ni de AIR |
+| las bandas de bytes | `instrumento_revela`, `BANDAS` | las cinco de T = 128 entran en sus bandas; ningún byte de banda movido |
+| K entero en las geometrías grandes, el test largo (§915) | `instrumento_r3`, `k_entero_en_las_geometrias_grandes`, en release sobre el árbol del corte, 1.695 s | T = 512: 1956 + 80 = 1960 de 1960; T = 1024: 4004 + 80 = 4008 de 4008, con la semilla 1 y con las posiciones adversas; con una columna, 1022 y 2046: las cifras de `K_ENTERO_PAREADAS` |
+| M_lin en las 23 familias, el test largo (§915) | `instrumento_mlin`, `mide_m_lin_en_las_23_familias`, en release sobre el árbol del corte, 8.499 s | las 23, cada una con sus tres instancias (semilla 1, semilla 2 y la adversa del §907), reproducen el censo de la 134 (`CENSO_134`), `MLIN_MEDIDO`, `MLIN_INSTANCIAS` y la huella de cada composición (`HUELLA_C`) tal como están clavados: ninguna discrepancia; es guarda, no hipótesis |
+
+**Lo que no cubre**, sin cambio del apartado 7 salvo lo resuelto: la solidez; H7 —ni el fork ni la
+construcción están auditados— y la revisión ajena, que este documento pide y no sustituye; Blake3
+fuera del modelo y el adversario cuántico; los canales laterales del probador; las pruebas de la
+0.3 y las de la 0.4 conservadas bajo su versión, que son lo que eran; H3, H8 y H9, supuestas; y lo
+que el nodo ve por ser nodo y lo público por diseño.
+
+**Qué le falta para ser promesa.** (1) La aceptación del autor, de quien es toda promesa
+(`doc/METODO.md` §7): lo que se podría prometer con estas palabras está en la D-AM del RFC-0009,
+su borrador del §915, y con él cambiarían D-A, `SECURITY.md` §3.bis y la cabecera de este
+documento; (2) la revisión ajena de la 136, de una persona, que desde aquí es de los apartados 1 a
+18 con la construcción del corte, como dice el dosier; (3) nada más que medir: lo que la
+proposición pide se mide en cada canon o está demostrado. Hasta entonces, la promesa es el censo.

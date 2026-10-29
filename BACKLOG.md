@@ -19,7 +19,7 @@ cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, 
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, el §907, que abre la 137 y la 138, el §911, que las cierra, el §912, que no mueve ninguna, el §913, que cierra la 117, y el §914, que cierra la 118, la 131 y la 133.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, el §907, que abre la 137 y la 138, el §911, que las cierra, el §912, que no mueve ninguna, el §913, que cierra la 117, y el §914, que cierra la 118, la 131 y la 133, y el §915, que no mueve ninguna.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1687,6 +1687,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   tres instancias de desafíos por familia con una adversa, la huella de cada composición, la cuenta
   de la ventaja rehecha— en el apartado 16; el dosier lleva en su apartado 9 un borrador de carta
   al revisor. No cuenta como la revisión ajena: QUEDAN el revisor humano, que elige el autor, su
+  revisión y la decisión: sigue abierta.
+  ✅ a medias (§915): la proposición para las veintitrés con la construcción del corte `zkssl/0.5`,
+  escrita (apartado 18 de `doc/ocultacion-hvzk.md`), y lo que se podría prometer con ella, con sus
+  palabras, en la D-AM del RFC-0009 (su borrador del §915); el dosier dice que la revisión es desde
+  aquí de los apartados 1 a 18 con `zkssl/0.5`. QUEDAN el revisor humano, que elige el autor, su
   revisión y la decisión: sigue abierta.
 
 - [x] **137. El aserto de grado del DEEP hace pánico con un testigo válido, contra la D-AH (§907).**

@@ -19,6 +19,8 @@ son estadísticamente indistinguibles en el modelo de oráculo aleatorio program
 hipótesis de su apartado 4; y que para las otras siete —MerkleAir, FrozenClimbAir y las cinco de
 T = 64— no está establecido, por lo que el apartado 14 dice de cada una.
 
+⚠️ **§915:** desde el corte `zkssl/0.5` (§914) lo que se pide revisar es la proposición del apartado 18 de `doc/ocultacion-hvzk.md`, para las veintitrés familias con la construcción de producción —T ≥ 128, dos columnas aleatorias pareadas en DEEP como una sobre E, m = 64 y las hojas saladas—, con L9 (apartado 17) en el lugar de R3 medida y sin M_lin ni la cuenta fina; lo de arriba describe `zkssl/0.4`, que sigue siendo lo que era para los vectores conservados bajo `spec/vectors/0.4/`. El orden de lectura del apartado 2 vale, con los apartados 17 y 18 al final; las cifras del apartado 4 se reproducen igual, con `K_ENTERO_PAREADAS` y su fila de T = 128.
+
 ## 2. Qué leer, y en qué orden
 
 1. **Lo decidido y lo no decidido**: `spec/rfc/0009-lo-que-revela-una-prueba.md`, la D-A (la
@@ -63,6 +65,8 @@ T = 64— no está establecido, por lo que el apartado 14 dice de cada una.
 | L5: las máscaras salen de monedas propias, sembradas aparte de la pública | demostrado por el código; H9 (ninguna semilla repetida), supuesta | `generate_proof_oculto`, `segmentar`; el falsador de la semilla repetida |
 | L6: lo que depende de la AIR con T = 64 | enunciado, no demostrado | el distinguidor del juguete con T = 64 |
 | H3: z fuera de F y de H, sin coincidencias de conjugados | supuesta, con fallo acotado | no se mide |
+
+⚠️ §915: con la construcción del corte, L1 es medida en las 23 (no en 18), L3 queda como condición demostrada por L9 para cualesquiera posiciones (`K_ENTERO_PAREADAS`, las cinco geometrías de producción), H12 y H14 son instrumentos de guarda que la proposición no necesita y L6 no se usa; las clases de L0, L2, L4, L5 y H3 no cambian.
 
 ## 4. Cómo reproducir cada cifra
 

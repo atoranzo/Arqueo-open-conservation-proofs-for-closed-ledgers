@@ -97,6 +97,7 @@ sostiene la ocultación más allá del censo, y ni el fork ni ella están audita
 enunciado público, las raíces y lo que el sobre, el recibo o la operación llevan en claro por diseño
 (la columna «público por diseño» de la tabla sigue siendo cierta); del testigo no ve ningún literal,
 y lo que pueda deducir de las aberturas lo acota D-I, no lo mide E2.
+⚠️ §915: lo que se podría prometer con la construcción de `zkssl/0.5` para las veintitrés familias —ocultación simulable sin el testigo, bajo hipótesis con nombre— está escrito en la D-AM (su borrador del §915) y **no se promete**: esta decisión no cambia hasta que el autor lo acepte.
 
 ### D-B — La tabla: lo que sale literal, prueba a prueba
 
@@ -315,6 +316,7 @@ escrito y revisado: la sal se va y la prueba adelgaza.
 > matrices de Lagrange de las T filas aleatorias y de Vandermonde de grado < m en esos puntos, de
 > rango pleno; y dos mutantes con nombre, m = 43 y T = 32, en rojo. El argumento que este párrafo
 > pide sigue sin escribirse: es A2, y hasta A4 esta decisión y la D-A no cambian lo que prometen.
+> ⚠️ §915: desde el corte `zkssl/0.5` las dos cuentas de esta decisión están hechas para las veintitrés: por columna, 2q + 6 = 90 puntos tocados frente a T ≥ 128 filas aleatorias (L1); en DEEP y FRI, las dos columnas pareadas con los aleatorizadores cubren K entero (L9, `K_ENTERO_PAREADAS`). El argumento está escrito (`doc/ocultacion-hvzk.md`, apartado 18) y sin revisión ajena; la sal sigue donde el autor la dejó (§902), y esta decisión no se mueve hasta que él lo decida con la cuenta de las hojas delante.
 
 > ⚠️ **§897 (A2 del HVZK): la cuenta del §896, corregida, y el argumento, escrito.** La «abertura
 > más» del §896 no lo es: el valor de DEEP en la raíz del factor lineal se calcula del marco OOD, es
@@ -1031,6 +1033,12 @@ las dieciséis, nada más: ni la cuenta
 fina de la 135 ni la 133 hacen falta. Si el autor acepta, cambian D-A —su «lo que no se promete»
 pasa a ser, para las dieciséis, la lista de hipótesis de arriba, y para las siete, lo de hoy—,
 `SECURITY.md` §3.bis y la cabecera de `doc/ocultacion-hvzk.md`; hasta entonces, nada.
+
+⚠️ **§915 — Lo que se podría prometer con `zkssl/0.5`, con sus palabras, para las veintitrés, y no se promete hasta que el autor lo acepte.** Con el corte sellado (§914) y la proposición del apartado 18 de `doc/ocultacion-hvzk.md`:
+
+> Para las veintitrés familias con fila en la tabla de D-B, con la construcción de `zkssl/0.5` tal como está —T filas aleatorias por columna con T ≥ 128, dos columnas aleatorias pareadas en DEEP como una sobre E, el cociente cegado con m = 64 y las hojas saladas—, la vista del verificador honesto se simula sin el testigo: para toda traza real que la AIR acepta, la vista y la salida del simulador del apartado 5 de `doc/ocultacion-hvzk.md` son estadísticamente indistinguibles en el modelo de oráculo aleatorio programable, con ventaja menor que 2^{−60} más 2^{−128} más Q·2^{−256} más |E|^{−(N−1)} para Q consultas al oráculo y N trozos del cociente (2 en la solvencia, 8 a 10 en las demás): ocultación simulable, estadística en ese modelo y computacional en lo que H7, Blake3 como oráculo, tiene de computacional. Bajo las hipótesis del apartado 4 de ese documento con el corte (su apartado 18): las medidas en cada canon (H1, H4 y H11, en las veintitrés), las demostradas (H2, H5, H10 y, desde el corte, H6 por L9) y las supuestas o de modelo, que ningún test mide: H3, z fuera de F y de H y sin coincidencias de conjugados, con fallo acotado por prueba; H7, el oráculo aleatorio programable; H8, la sal fresca; H9, ninguna semilla de la ocultación repetida. Ninguna familia fuera por su nombre, y ninguna hipótesis propia de una AIR. Y bajo el argumento tal como está escrito: revisado en adversario por la sesión y por un agente, y por ninguna persona ajena al proyecto.
+
+**Qué le falta para ser promesa, desde el §915.** (1) La aceptación del autor; (2) la revisión ajena de la 136, de una persona, de los apartados 1 a 18 con la construcción del corte; nada más que medir. Si el autor acepta, cambian D-A —su «lo que no se promete» pasa a ser, para las veintitrés, la lista de hipótesis de arriba—, `SECURITY.md` §3.bis y la cabecera de `doc/ocultacion-hvzk.md`; hasta entonces, nada: la promesa sigue siendo el censo, y el camino sigue siendo el (b).
 
 **Caminos pesados.** (a) Prometer HVZK para las dieciséis ahora, con las hipótesis delante. (b) No
 cambiar la promesa, escribir lo que se podría prometer con sus palabras y dejarlo a la aceptación

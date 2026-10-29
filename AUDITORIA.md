@@ -76754,3 +76754,105 @@ raíces, con el binario `62cb56f5e10b4577` —otro que el del §913, porque el k
 tarball `1cc39833038dc77d`, que cambia con las fuentes, como en cada asiento. Corrió con un
 `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí.
+
+## §915 — La proposición para las 23 con la construcción de `zkssl/0.5` (A4 del HVZK, segunda vez; RFC-0009 D-AM, su borrador del §915): con las dos columnas pareadas R3 es teorema (L9) y con T ≥ 128 L1 cubre las veintitrés por geometría, así que el argumento independiente de la AIR vale para todas, sin excepción por su nombre y sin M_lin, la cuenta fina ni L6; lo que se podría prometer con ella, con sus palabras, queda escrito para el autor, y la promesa sigue siendo el censo; y las remediciones largas sobre la construcción del corte, M_lin en las 23 y K entero en T = 512 y 1024
+
+El commit que lleva este asiento, sobre `3eaee723` (el §914). Toca sólo documentos:
+`doc/ocultacion-hvzk.md`, el apartado 18, nuevo, y notas del §915 en la cabecera («Estado» y «Qué
+da, en una frase»), en cinco filas de la tabla de hipótesis del apartado 4 (H6, H11, H12, H13 y
+H14), en el enunciado del apartado 8 y en lo que el apartado 12 pide a A4;
+`spec/rfc/0009-lo-que-revela-una-prueba.md`, el borrador del §915 en la D-AM —lo que se podría
+prometer con `zkssl/0.5` para las veintitrés, con sus palabras, y qué le falta para ser promesa— y
+una nota en la D-A y otra en la D-I; `SECURITY.md`, una nota en §3.bis; `doc/ocultacion-hvzk-dosier.md`,
+una nota en «Qué se pide revisar» y otra tras la tabla de lo que se afirma; `BACKLOG.md`, la 136 a
+medias y la cadena; y este asiento. Ningún `.rs`, ninguna herramienta, ningún vector: lo que este
+asiento mide ya estaba clavado en el §914 y se remide aquí sin mover un pin. Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre tras el §914. El
+canon de este commit se dice al final.
+
+**De dónde sale.** Del §914: con el corte sellado, la construcción de producción de las veintitrés
+familias es la que el apartado 17 del documento describía como lo que el corte haría —las dos
+columnas aleatorias pareadas en DEEP como una sobre E (RFC-0009 D-AL bis, L9) y T ≥ 128 en todas—,
+y el documento decía de sí mismo, desde el apartado 8 hasta el 17, lo que `zkssl/0.4` tenía: una
+proposición para dieciséis familias con la máscara lineal de cada AIR (§900, §901) y siete fuera
+por su nombre. La D-AM del RFC-0009 (§901, aceptada por el autor en el §902 por el camino (b)) dejó
+escrito que lo que se podría prometer se escribe con sus palabras y es del autor, y la 136 pide la
+revisión ajena de lo escrito. Este asiento hace para `zkssl/0.5` lo que el §901 hizo para la 0.4:
+escribe la proposición y su borrador de promesa, y no promete.
+
+**Lo que hace.**
+
+1. **El apartado 18.** Lo que cambió con el corte (la marca v2 es constante por familia y no
+   depende del testigo; el simulador del apartado 5 no cambia, y S5 muestrea ahora exactamente la
+   distribución real por L9); la tabla de hipótesis con el corte —H1 y H11 medidas en las 23 (2q + 6
+   = 90 ≤ 128 ≤ T), H4 medida (44 ≤ 64), H6 demostrada (L9) y medida en las cinco geometrías de
+   producción, H2, H5 y H10 demostradas, H3, H8 y H9 supuestas, H7 modelo, y H12, H13 y H14 como
+   instrumentos de guarda que la proposición no necesita—; la proposición para las veintitrés, con
+   la ventaja 2^{−60} (H3) + 2^{−128} (S5) + Q·2^{−256} (L0) + |E|^{−(N−1)} (L9), con N los trozos
+   del cociente de cada geometría (2 en la solvencia, 8 a 10 en las demás) y sin ningún |F|; lo
+   medido sobre la construcción del corte, en una tabla; lo que no cubre, que es lo del apartado 7
+   menos lo resuelto; y qué le falta para ser promesa: la aceptación del autor y la revisión ajena de
+   la 136, que desde aquí es de los apartados 1 a 18 con `zkssl/0.5`; nada más que medir.
+2. **El borrador para el autor**, en la D-AM: el párrafo que, si lo acepta, pasa a ser la promesa
+   —ocultación simulable sin el testigo para las veintitrés familias con la construcción de
+   `zkssl/0.5`, estadística en el modelo de oráculo aleatorio programable, bajo H1, H4 y H11
+   medidas, H2, H5, H10 y H6 demostradas, y H3, H7, H8 y H9 supuestas o de modelo—, con lo que
+   cambiaría con él (D-A, `SECURITY.md` §3.bis y la cabecera del documento) y lo que no cambia
+   hasta entonces: nada. Las notas de la D-A, la D-I y `SECURITY.md` §3.bis apuntan al borrador y
+   dicen que no se promete.
+3. **El dosier y la 136**: la revisión ajena es desde aquí de los apartados 1 a 18 con la
+   construcción del corte; el orden de lectura vale, con el 17 y el 18 al final; las cifras se
+   reproducen igual, con `K_ENTERO_PAREADAS` y su fila de T = 128; y la tabla de lo que se afirma
+   gana su nota: L1 medida en las 23, L3 demostrada por L9, H12 y H14 de guarda, L6 sin uso.
+4. **Las remediciones largas**, los dos tests ignorados de los instrumentos, corridos en release
+   sobre el árbol del corte: `mide_m_lin_en_las_23_familias` (`instrumento_mlin`), 8.499 s en release: las 23 familias, cada
+   una con sus tres instancias (la semilla 1, la semilla 2 y la adversa del §907), reproducen el
+   censo de la 134 (`CENSO_134`), `MLIN_MEDIDO`, `MLIN_INSTANCIAS` y la huella de cada composición
+   (`HUELLA_C`) tal como están clavados, ninguna discrepancia: las cinco de T = 128 como las dejó
+   el §914 y las dieciocho restantes como las dejaron el §900 y el §907; y `k_entero_en_las_geometrias_grandes` (`instrumento_r3`), 1.695 s en release: en T = 512 y en T = 1024,
+   con la semilla 1 y con las posiciones adversas del §907, las dos columnas pareadas con los
+   aleatorizadores dan K entero —1956 + 80 = 1960 de 1960 y 4004 + 80 = 4008 de 4008—, y con una
+   columna 1022 de 1960 y 2046 de 4008: las cifras clavadas en `K_ENTERO_PAREADAS` desde el §908,
+   ahora sobre el árbol que las produce.
+
+**Medido.** Lo de arriba, y lo que el §914 dejó en cada canon: A1 en las 28 pruebas de los 23
+probadores (q de 40 a 42, 90 tocados frente a T ≥ 128, rango pleno, «cubre» en las 23); K entero
+en las cinco geometrías de producción (`K_ENTERO_PAREADAS`, ev(M_r) 4 de 4); M_lin en las cuatro de
+T = 128 con columnas lineales. Las puertas de los documentos, VERDES con el asiento en su sitio:
+`check_cifras`, `check_publicadas`, `verificar_citas` (0 encabezados muertos). El canon, al final.
+
+**Lo que NO hace.** No promete nada: D-A, la D-AM y `SECURITY.md` §3.bis y §3.11 dicen lo mismo
+que decían, con una nota que apunta al borrador; ningún texto vivo dice HVZK de nada que exista.
+No toca el fork, los instrumentos ni ningún pin: lo remedido coincide con lo clavado. No sustituye
+la revisión ajena ni elige al revisor. No reabre A5: la sal sigue donde el autor la dejó (§902).
+No toca la solidez, el nivel cuántico («no medido») ni los canales laterales.
+
+**Lo que es del autor.** La aceptación del borrador de la D-AM (o esperar a la revisión de la 136,
+como dejó dicho en el §902); el revisor de la 136; y, con la aceptación, el texto de D-A, de
+`SECURITY.md` §3.bis y de la cabecera de `doc/ocultacion-hvzk.md`, que este asiento deja
+redactados en el borrador y no aplica.
+
+**Contadores.** Ninguno se mueve: las suites, `check_tests`, `check_modulos`, los vectores, el
+catálogo y la segunda implementación quedan como en el §914. `BACKLOG.md`: 38 abiertas y 101
+resueltas, la 136 sigue a medias.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre este árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 576 s de reloj (de su arranque a su
+salida) y 337 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU, en caliente. Las
+19 filas del nivel, en su pin, con 2104 tests que pasan (la suma de la columna «pasan»), la de
+`zk-ssl` en 565 pasan y 9 ignorados, 200 s, la de `stark-experiment` en 492 y 13, y la de
+`zk-ssl-air` en 69; las tres del fork, `winter-air` 65, `winter-prover` 7 y `winter-verifier` 0,
+en su pin; la puerta de los binarios, con «OK 24 objetivos en 8 paquetes, 12 con features»;
+`check_tests` en 2268 y 22 instrumentos; `check_modulos` en 224; las once herramientas del bucle
+«2 ter», `verificar_citas` con 0 encabezados muertos y el §915 en el registro; la puerta de los
+vectores, en 702 ficheros y 1740 líneas de 24 manifiestos, cada uno con su huella, 78 lápidas —la
+segunda pasada, contra la base en `origin/main`, no corrió: HEAD y `origin/main` eran el mismo
+commit, el §914—; `check_catalogo`, en 236 textos y 301 entradas, idénticos; la conformidad, 0.5
+IDÉNTICO y las cuatro versiones anteriores RECHAZADAS; el cable, en 27 de 27; la segunda
+implementación, con el núcleo en 35 de 35, sus pares STARK en 89 de 89, 36 de 36 falsadores y la
+cadena en 30 de 30; y el artefacto reproducible, igual desde dos raíces, con el binario
+`62cb56f5e10b4577` —el mismo que el del §914: este asiento no toca un `.rs`— y el tarball
+`93349d549f10446f`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio
+y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.

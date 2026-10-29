@@ -2003,6 +2003,7 @@ y también trae dos defensas que antes no existían.
   la ventaja del argumento rehecha, con lo que depende de las posiciones
   reales demostrado en parte y medido en el resto, y con la cota sobre los
   desafíos sobre |F| = 2^64, no sobre |E|. Sigue sin prometerse nada más.
+  ⚠️ **§915 (el corte `zkssl/0.5`, §914):** la construcción de producción es desde el corte la de las dos columnas aleatorias pareadas en DEEP y T ≥ 128 en las veintitrés familias: la condición suficiente que faltaba es teorema (L9) y las filas aleatorias cubren lo que la prueba toca en todas, medido en cada canon; lo que se podría prometer para las veintitrés está escrito en la D-AM del RFC-0009 (su borrador del §915) y **no se promete**: es del autor, y el argumento espera la revisión ajena (la 136). La promesa de esta sección no cambia.
 - **El cable rechaza lo que no entiende**: DTOs con
   `deny_unknown_fields`, hex canónico, digests de anchura fija.
 - **Los vectores de conformidad son una defensa, no solo documentación.**
