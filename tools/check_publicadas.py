@@ -1181,6 +1181,8 @@ HEREDADOS_NIVEL = {
 AJENAS_NIVEL = (
     ("FIVE_BACKENDS.md", "98 bits conjeturados",
      "RISC Zero: la que declara su documentacion, no sale de ninguna constante del arbol"),
+    ("FIVE_BACKENDS_EN.md", "98 conjectured bits",
+     "RISC Zero, en el gemelo en ingles (§918): la misma cifra ajena que la fila de arriba"),
 )
 # Lo medido al nacer el atado, en el §796: 154 cifras en 51 frases, y 68 celdas -12 de la tabla de
 # longitud fija, 44 de las dos de la edad y 12 de la de la comparacion-. Es un suelo, no una
@@ -1375,6 +1377,17 @@ CITAS_RETIRADAS = (
      "128 **demostrables** costarían 125,6 KB por prueba en vez de 36,7",
      "evaluacion fechada (01-10-2026, aceptada en el §705): cita lo que la casa publicaba "
      "entonces"),
+    # Los gemelos en ingles (§918): la misma frase del original, traducida, con la misma razon.
+    ("SECURITY_EN.md", "that several documents published until §698",
+     "gemelo de SECURITY.md (§918): cita lo que otros documentos publicaban hasta el §698"),
+    ("FIVE_BACKENDS_EN.md", "the test prints are its 27.7, 32.7, 36.7 and 125.6 KB",
+     "gemelo de FIVE_BACKENDS.md (§918): la remedida del §806, lo que imprimia 9a1e2f1"),
+    ("doc/integracion-vertical-evaluacion_EN.md", "the house declares 127 conjectured, and 128 "
+     "provable would cost «125.6 KB instead of 36.7»",
+     "gemelo de la evaluacion fechada (§918): cita lo que la casa publicaba entonces"),
+    ("doc/integracion-vertical-evaluacion_EN.md", "The house declares 127 conjectured bits and "
+     "that 128 provable would cost 125.6 KB per proof instead of 36.7",
+     "gemelo de la evaluacion fechada (§918): cita lo que la casa publicaba entonces"),
 )
 # Lo medido al nacer, en el §841: las citas marcadas que el universo da. Es un suelo, como los
 # del ATADO F: encoger es un rojo que obliga a bajarlo con su asiento.

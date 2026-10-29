@@ -77054,3 +77054,131 @@ la release, como dice el asiento— y el tarball `abf181c959909c84`, que cambia 
 en cada asiento. Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo fichero
 que en los sellos anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una
 sola corrida: no hubo roja.
+
+## §918 — Los gemelos en inglés de las páginas que sólo estaban en español: 84 ficheros nuevos, uno por página —al lado del original, con `_EN` antes de la extensión, y en `spec/rfc/en/` los RFC—, generados por la sesión desde el árbol de `7766efb` y declarados como artefacto generado en la cabecera de cada uno, con el índice `TRANSLATIONS.md`; ningún fichero en español cambia; los dos README ganan una línea al final, y `tools/check_publicadas.py`, cinco excepciones para las frases traducidas que las tenían en su original; fuera, con su razón, los seis registros y cuerpos verbatim
+
+El commit que lleva este asiento, sobre `7766efb`, la punta de `main` (el §917). Añade 85 ficheros
+nuevos, todos `.md`: 84 gemelos en inglés y el índice `TRANSLATIONS.md`, 34.104 líneas frente a las
+32.180 de los originales. Toca tres existentes: `README.md` y `README_EN.md`, con una línea añadida
+al final de cada uno, sin desplazar ninguna; y `tools/check_publicadas.py`, 13 líneas añadidas en
+dos listas de excepciones, que se cuentan abajo. Y este asiento. Ni una línea de ningún fichero en
+español, ni tests, ni vectores, ni pines, ni `BACKLOG.md`. Lo escribe y lo commitea Claude, en una
+sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como
+pide `CLAUDE.md`. El número es el siguiente libre tras el §917: la sesión había reservado el §905
+sobre `1bdc07f` y, mientras traducía, la del HVZK publicó del §905 al §917; el §918 lo reservó ante
+las dos sesiones vivas, que lo confirmaron libre. El canon de este commit, `bash tools/canon.sh
+--sello`, corrido por la sesión sobre su árbol limpio, con este asiento en su sitio y sin esta
+frase: VERDE, 1322 s de reloj y 961 s de tests, en una máquina de 4 CPU con carga de 0,44 al
+empezar. Las 19 filas en su pin, con 2104 tests que pasan, y las 56 líneas «OK» de sus compuertas,
+entre ellas el artefacto reproducible, con el binario `62cb56f5e10b4577` y el tarball
+`a1274fcb0bb7c4bb`.
+
+**De dónde sale.** El autor lo encarga el 29 de octubre de 2026: que el camino de lectura del
+evaluador de NLnet Restack esté en inglés. Hasta hoy lo estaban `README_EN.md`, `doc/KIT_EN.md`,
+`doc/USE_CASES.md`, `QUESTIONS.md`, `doc/INSTITUTIONAL.md`, `doc/ZENODO.md`, `PAPER_EN.md`,
+`doc/ecst/ECST_EN.md`, `spec/README.md` y los preprints, y bilingües `GENAI.md`, `CLAUDE.md` y
+`RESUMEN_BILINGUE.md`; el orden de lectura del README manda al evaluador a `SECURITY.md` y a
+`AUDITORIA.md`, en español. El autor lo decide con la política 2.0 de NLnet delante —en vigor desde
+el 20 de octubre: ningún artefacto generado por IA, uso de lectura sólo, y su FAQ no admite la
+traducción con un LLM—, que esta sesión le había expuesto en el expediente fuera del árbol (§372),
+con la consecuencia dicha antes de empezar: estos ficheros son un artefacto generado, de los que
+la política pide declarar como base existente, y NLnet dice que pesa en la evaluación. Por eso cada
+gemelo lo dice en su cabecera, con el commit del que traduce, y el índice lo repite. La sesión
+propuso el alcance y la forma; el autor eligió «todo lo que esté en español» y la entrada por
+sello en esta rama.
+
+**Lo que hace.**
+
+1. **Los gemelos.** Uno por página en español, con el mismo contenido en el mismo orden:
+   encabezados, párrafos, listas, tablas y marcas «⚠️ §…: decía …», traducidas dentro de las
+   comillas. Quedan byte a byte los bloques de código, el código en línea, los hashes, las URL, las
+   citas de asiento y las citas por línea `fichero:N`, que siguen apuntando a los ficheros en español, con
+   sus líneas. Los nombres de sección en español que se citan como clave, las cadenas de error, la
+   salida de los programas y las palabras del autor citadas se quedan en español con una glosa
+   entre corchetes; VERDE y ROJO, como los escribe el README en inglés. Los estados de los RFC:
+   ACEPTADO → ACCEPTED, PROPUESTO → PROPOSED, y la línea `- **Estado:**` pasa a `- **Status:**`.
+2. **La cabecera de cada gemelo**, tras el H1, igual en los 84: que el original es el español y
+   prevalece; que la traducción es del commit `7766efb` (§917); que la produjo el asistente del
+   proyecto, una sesión de Claude Code, en este asiento, y que es un artefacto generado y no texto
+   del autor; y que las citas por línea son a los ficheros en español.
+3. **Dónde van.** Al lado del original, con `_EN` antes de la extensión, la convención de
+   `README_EN.md`, `PAPER_EN.md` y `doc/KIT_EN.md`. Los RFC, no: `rfcs()` de
+   `tools/check_publicadas.py` lee todo `NNNN-*.md` de `spec/rfc/` como un RFC, y un gemelo con ese
+   nombre sería un RFC repetido con su estado; van a `spec/rfc/en/` con el mismo nombre de fichero,
+   y sus enlaces relativos ganan un `../`. `check_cifras.py` excluye `spec/rfc/` por prefijo, y el
+   subdirectorio hereda la exclusión.
+4. **Las citas por encabezado desde `spec/rfc/en/`.** `verificar_citas` resuelve el fichero citado
+   primero junto al que cita: «`PROCESO.md` §«Fallos de seguridad»» desde un gemelo daba con el
+   gemelo de `PROCESO.md`, con el encabezado ya en inglés, y salía ENCABEZADO MUERTO. Las citas de
+   esa forma a un RFC o a `PROCESO.md` con gemelo pasan a la ruta desde la raíz,
+   `spec/rfc/PROCESO.md`, que resuelve contra el original: doce, contadas tras el pase.
+5. **Los enlaces.** Dentro de `](…)`, un enlace a una página en español que tiene gemelo apunta al
+   gemelo: 30. Los demás se quedan. Las citas por línea en prosa no se tocan: no son enlaces.
+6. **`TRANSLATIONS.md`**, en la raíz: la lista de los gemelos con sus líneas medidas, la convención,
+   lo que ya estaba en inglés, y los seis ficheros sin gemelo con su razón.
+7. **Una línea al final de `README.md` y de `README_EN.md`** que apunta al índice. Al final, para
+   que ninguna cita por línea a los README se mueva.
+8. **`tools/check_publicadas.py`, cinco excepciones.** Las compuertas leen todo `.md` vivo, y dos
+   listas eximen por fichero y frase lo que en el original es legítimo: `AJENAS_NIVEL` (la fila de
+   RISC Zero de `FIVE_BACKENDS.md`, «98 bits conjeturados», cifra de otro sistema) y
+   `CITAS_RETIRADAS` (cuatro frases que citan «125,6 KB» como lo que se publicaba antes, en
+   `SECURITY.md`, `FIVE_BACKENDS.md` y dos en `doc/integracion-vertical-evaluacion.md`). Sus
+   gemelos dicen lo mismo en inglés y salían ROJO NIVEL y ROJO RETIRADA. Cada lista gana la frase
+   inglesa del gemelo, con la razón del original y la marca §918: una entrada en la primera y cuatro
+   en la segunda. Desplaza 13 líneas la segunda mitad del fichero; las únicas citas por línea a esa
+   mitad, `:1734` y `:2779`, están en asientos de `AUDITORIA.md`, que citan el fichero de su fecha.
+9. **Cómo se hizo.** Una primera tanda de catorce agentes de la sesión, en paralelo y con un mismo
+   brief fuera del árbol, tradujo sobre `1bdc07f` y se paró a medias por un límite de uso. La
+   sesión pasó la rama a `7766efb` y una segunda tanda de doce completó los parciales, tradujo lo
+   que faltaba desde el original de `7766efb`, incluida la página nueva
+   `doc/ocultacion-hvzk-revision-agente.md`, y llevó a `7766efb` los 21 gemelos cuyo original
+   había cambiado, aplicando a cada uno su diff. Cada agente pasa un comprobador por pareja que
+   compara líneas, bloques de código, filas de tabla, encabezados, citas de asiento y por línea, marcas
+   ⚠️, enlaces, código en línea, URL y hashes, lista las líneas de más de 100 columnas y las que aún
+   parecen español, y rechaza cualquier identificador de modelo. Después, un guion de la sesión
+   iguala las cabeceras y reescribe las citas del punto 4, otro re-apunta los enlaces y otro genera
+   el índice.
+
+**Lo que queda fuera, y por qué.** Seis ficheros en español no tienen gemelo: `AUDITORIA.md`, el
+registro; `BACKLOG.md`, registro, que `check_cifras.py` y `check_publicadas.py` excluyen por nombre;
+`doc/ESCALADO.md` y `doc/CONFIANZA_RESIDUAL.md`, cuerpo verbatim con cabecera-mapa (§120), que
+`check_cifras.py` excluye; `doc/blueprint-v2.md`, en `EXCLUIDOS_NIVEL` y `EXCLUIDOS_RETIRADAS` de
+`check_publicadas.py`; y `doc/ecst/VERIFICACION.md`, del que `SOLO_LINEAS` lee sólo sus líneas «Lo
+que se puede afirmar». Un gemelo suyo caería bajo esas compuertas sin la exención que al original
+le dan por nombre, y extenderla a ficheros enteros es otro cambio de herramienta: lo decide el
+autor. Quedan también como están los `README.md` del fork de winterfell (`crates/winter-*/`), de
+upstream, en inglés con notas, y las páginas que ya tenían gemelo o eran bilingües.
+
+**Lo que no es uniforme, y se declara.** Los agentes resolvieron dos cosas de forma distinta, cada
+uno coherente dentro de su fichero: los números de la prosa (unos gemelos los pasan al uso inglés,
+«10,000» y «33.27»; otros los dejan como en español, «10.000» y «33,27», que en inglés pueden leerse
+mal; dentro del código, todos byte a byte), y la ortografía (unos, británica, «-ise»; otros,
+americana). Un agente corrigió «middle» por «medium» en el gemelo de `tools/segunda/README.md`, la
+palabra de los demás para el medio del RFC-0013. Y en el gemelo de `doc/METODO.md` la sesión
+devolvió `Co-Authored-By` a su sitio, tal cual lo dicen el original y `GENAI.md`, donde un agente lo
+había parafraseado.
+
+**Comprobado.** El comprobador por pareja, sobre los 84: ninguna diferencia en encabezados, filas
+de tabla, bloques de código, marcas ⚠️, citas por línea ni URL; lo que queda en código en línea y en
+hashes es de cómo cuenta él —un código en línea partido entre dos líneas, la palabra «acababa» que
+casa con un hash—, y cada agente lo explica en su informe. Ningún identificador de modelo en lo
+nuevo; en el gemelo de `doc/METODO.md`, `Co-Authored-By` y `Claude-Session:` son los del original.
+Los 84 llevan la misma cabecera, con `7766efb` y §918. Ningún enlace relativo roto fuera de los de
+la notación matemática de `doc/ocultacion-hvzk.md`, que el original escribe igual. Sobre el árbol
+con este sello salen con 0 `verificar_citas`, `check_cifras`, `check_publicadas`, `check_figures`,
+`check_tests`, `check_modulos`, `check_superficie`, `check_vectores`, `check_nucleo`,
+`check_catalogo`, `check_curvas` y `check_dominios`.
+
+**Lo que NO hace.** No cambia una línea de ningún fichero en español: ninguna cita por línea a un
+documento se mueve. No es aceptación de nada: el español es la fuente y prevalece, y lo que el autor
+corrija después en una página en español no se propaga solo a su gemelo; el gemelo dice de qué
+commit traduce, y nada en el canon compara un gemelo con su original. No traduce los seis de arriba.
+No toca `GENAI.md`, `CLAUDE.md`, `doc/METODO.md` ni `CONTRIBUTING.md`: declarar el corte del método
+es del autor. No es texto de la propuesta a NLnet ni la sustituye. No corrige nada de lo que
+traduce: lo desfasado en español está desfasado en inglés, con su marca. Ni tests, ni vectores, ni
+pines, ni `BACKLOG.md`.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2268 tests declarados y 22 instrumentos,
+`check_modulos` en 224 y el total de sello en 2104. La puerta de los vectores, en 702 ficheros
+y 1740 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 38 abiertas y 101
+resueltas.

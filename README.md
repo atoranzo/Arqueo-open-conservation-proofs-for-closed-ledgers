@@ -383,3 +383,9 @@ Las referencias al euro digital son al diseño público publicado por esas
 instituciones y se citan como contexto de un problema técnico. **Ninguna
 afirmación de este repositorio debe leerse como posición de nadie más que
 su autor.**
+
+---
+
+**Traducciones al inglés** de las páginas escritas en español, un gemelo por página, generadas por el
+asistente en el asiento §918 e indexadas en [`TRANSLATIONS.md`](./TRANSLATIONS.md); el español
+prevalece.
