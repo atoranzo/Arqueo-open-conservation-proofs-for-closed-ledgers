@@ -139,6 +139,13 @@ mod kat_banda_v2;
 // y en release.
 #[cfg(test)]
 mod falsadores_oculta;
+// §911: el falsador 13 (la 137 y la 138), un juguete por fichero: el barrido de
+// `tools/check_constraint_layout.py` lee un circuito por fichero de `src/`, y dos AIR en uno le
+// parecen una colision de ranuras. Solo tests.
+#[cfg(test)]
+mod falsadores_oculta_periodica;
+#[cfg(test)]
+mod falsadores_oculta_degenerada;
 // §713: el resto FRI atado a su compromiso. Una prueba cuyo ultimo compromiso FRI es el
 // hash de OTRO resto, fabricada sin tocar el probador (un hasher que cambia esa llamada), sobre
 // WorkAir y sobre la prueba de edad de la casa. Solo tests.

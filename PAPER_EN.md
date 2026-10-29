@@ -30,9 +30,9 @@ identical conditions, and we document a methodological error of our own —
 mixing debug and release build figures — that was detected and corrected
 during the work.
 
-The reference implementation comprises **2099 executable tests in the seal
+The reference implementation comprises **2100 executable tests in the seal
 gate** (55 of them are winterfell 0.13.1's own, brought in by the fork of
-§533) —2239 counting the pins of the long and complete levels, and 1349
+§533) —2240 counting the pins of the long and complete levels, and 1349
 declared (⚠️ §865: from §493; today `tools/check_tests.py` counts them, by another rule)—, with 22 ignored and declared (⚠️ §908: it said 21; ⚠️ §900: it said 18; they are the sum of the ignored column of the seal table of `tools/canon.sh`, and the instruments `tools/check_tests.py` counts), and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
@@ -1021,7 +1021,7 @@ non-stable compilers are used.
 bash tools/canon.sh --sello
 
 cargo test -p zk-ssl --release              # layer: 564 tests (9 ignored)
-cargo test -p stark-experiment --release    # circuits: 491 tests (13 ignored)
+cargo test -p stark-experiment --release    # circuits: 492 tests (13 ignored)
 cargo test -p zk-ssl-node --release         # node: 244
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

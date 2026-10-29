@@ -30,6 +30,10 @@
 //!     como a cualquier meta que no es la marca de produccion, y `verify_laboratorio` la acepta;
 //!     y al reves, la de produccion no entra en el laboratorio. Con una columna, la marca y el
 //!     ancho son los de siempre: `zkssl/0.4` no cambia.
+//! 11 (§906) y 12 (§909) siguen abajo. El 13 (§911, la 137 y la 138) vive en
+//! `falsadores_oculta_periodica.rs`, con su AIR degenerada en `falsadores_oculta_degenerada.rs`: el
+//! barrido de `tools/check_constraint_layout.py` lee un circuito por fichero de `src/`, y dos AIR en
+//! uno le parecen una colision de ranuras.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Mutex;
@@ -66,7 +70,7 @@ const fn s32(n: u64) -> [u8; 32] {
 }
 
 /// La ocultacion de los falsadores: m 64 (D-G) y las semillas del spike (F1 y Q1), ya de 32 bytes.
-const OC: Ocultacion = Ocultacion {
+pub(crate) const OC: Ocultacion = Ocultacion {
     m: 64,
     semilla_filas: s32(0xf11a_0001),
     semilla_cociente: s32(0xc0c1_0001),
@@ -75,7 +79,7 @@ const OC: Ocultacion = Ocultacion {
 };
 
 /// Las opciones de la casa para los circuitos y la foto: 32/8/0/None/8/31.
-fn opciones() -> ProofOptions {
+pub(crate) fn opciones() -> ProofOptions {
     ProofOptions::new(
         32,
         8,
@@ -112,7 +116,7 @@ fn cuenta(bytes: &[u8], v: u64) -> usize {
 // WORKAIR, EL CIRCUITO CANONICO, CON UN PROBADOR QUE EL TEST ENCIENDE
 // ================================================================================================
 
-type Blake3W = Blake3_256<Base128>;
+pub(crate) type Blake3W = Blake3_256<Base128>;
 
 struct ProbadorWork {
     opciones: ProofOptions,

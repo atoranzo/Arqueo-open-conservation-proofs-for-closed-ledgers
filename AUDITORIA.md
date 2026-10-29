@@ -76209,3 +76209,117 @@ desde dos raíces, con el binario `c91d9cfe4046f605` —el mismo del §909: la f
 tarball `a5993bbb83e5418f`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR`
 propio y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.
+
+## §911 — La 137 y la 138 cerradas, las dos D-AH del fork que la revisión del agente vio: el aserto de grado del DEEP pasa a `ProverError::GradoDeDeep` en el compositor, y por eso en el camino oculto y en el de winterfell; una aserción periódica o de secuencia de la AIR interna, que el envoltorio exigiría en las filas aleatorias, es `AsercionPeriodicaBajoOculta` antes de tocar la traza; y el falsador 13 mide los dos sucesos, el segundo con una AIR que en claro prueba y oculta es `Err` sin pánico, y el primero con una traza degenerada que en claro era un pánico de winterfell
+
+El commit que lleva este asiento, sobre `aa7da457` (el §910). Toca el fork en su camino de
+producción, tests y documentos: `crates/winter-prover/src/errors.rs`, dos variantes de
+`ProverError` con su texto, `GradoDeDeep { esperado, real }` y
+`AsercionPeriodicaBajoOculta { columna, primer_paso, paso }`;
+`crates/winter-prover/src/composer/mod.rs`, `add_trace_polys` devuelve `Result` y el
+`assert_eq!(self.poly_size() - 2, self.degree())` con que terminaba es el `Err`;
+`crates/winter-prover/src/lib.rs`, los dos `assert_eq!` del grado del DEEP —el de
+`generate_proof` de winterfell y el de `generate_proof_oculto`— quitados, porque el compositor ya
+lo devuelve y los dos caminos lo suben con `?`, y la guarda de las aserciones periódicas en
+`generate_proof_oculto`, tras `cabe` y antes de comprobar la traza;
+`crates/stark-experiment/src/falsadores_oculta_periodica.rs` y
+`crates/stark-experiment/src/falsadores_oculta_degenerada.rs`, nuevos, con el falsador 13, sus dos
+AIR y sus probadores, declarados en `crates/stark-experiment/src/lib.rs`;
+`crates/stark-experiment/src/falsadores_oculta.rs`, tres ayudantes en `pub(crate)` (`opciones`,
+`Blake3W` y `OC`) y la cabecera, que dice dónde vive el 13; `tools/canon.sh`, la fila de
+`stark-experiment`, 491 -> 492, con su crónica; los totales y las copias del pin en `PAPER.md`,
+`PAPER_EN.md`, `PRINCIPIOS.md`, `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`;
+`spec/rfc/0009-lo-que-revela-una-prueba.md`, una nota en la D-AH; `doc/ocultacion-hvzk.md`, dos
+notas (S5 y el apartado 16); `BACKLOG.md`, la 137 y la 138 cerradas, el estado y la cadena; y
+este asiento. Ningún probador de la casa cambia lo que emite: los dos `Err` sustituyen pánicos en
+caminos que ningún testigo válido de las 23 AIR pisa, y las pruebas de `zkssl/0.4` siguen byte a
+byte (la conformidad y la puerta de los vectores del canon lo miden). Lo escribe y lo commitea
+Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso 4 de
+`GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre tras el §910. El canon de este
+commit se dice al final.
+
+**De dónde sale.** «Hacer todo» (§909): la 137 y la 138, abiertas por el §907 con la revisión del
+agente (su O7 y su apartado 4.7), tocan el camino de producción del fork y el autor las delegó
+con lo demás; son el paso 4 de la lista del §909, antes del corte.
+
+**Lo que hace.**
+
+1. **La 137.** `assert_eq!(trace_length − 2, deep_composition_poly.degree())` era un pánico
+   heredado de winterfell, y el fork lo repetía en `generate_proof_oculto`. El aserto vive ahora
+   donde se sabe el grado, en `DeepCompositionPoly::add_trace_polys`, que devuelve
+   `Err(GradoDeDeep { esperado, real })`, y los dos caminos lo suben con `?`. Con un testigo válido
+   de las 23 AIR el suceso tiene probabilidad del orden de 2^{−128}: el coeficiente director de la
+   combinación sale de la moneda tras los compromisos y no lo elige nadie. Pero el suceso existe
+   sin esperar: una traza DEGENERADA —columnas constantes cuya transición es idénticamente nula,
+   como polinomio y no sólo sobre el dominio— deja la composición en cero y los cocientes de la
+   traza sin grado, y el `generate_proof` de winterfell, en claro, se caía con ella. El falsador la
+   construye: `DegeneradaAir`, una columna constante con la transición `next − cur` y la aserción
+   simple 7 en el paso 0, y la traza de 64 sietes; en claro es `GradoDeDeep { esperado: 62, real }`
+   con `real < 62`, sin pánico. Oculta no ocurre, porque las filas aleatorias no son constantes, y
+   el falsador no lo mide por eso. El primer intento del juguete de la 138 —una sola columna
+   constante— dio este suceso sin buscarlo, y de ahí salieron las dos AIR.
+2. **La 138.** `ConstraintDivisor::from_assertion(assertion, L)` cuenta los pasos sobre L = 2T,
+   así que una aserción periódica o de secuencia de la AIR interna caería también en las T filas
+   aleatorias, y el probador oculto moría en el aserto de `segmentar`. Ahora
+   `generate_proof_oculto` la rechaza antes de tocar la traza, `Err(AsercionPeriodicaBajoOculta
+   { columna, primer_paso, paso })`, con `stride() > 0` como criterio: `Assertion::single` tiene
+   paso 0 y pasa. Ninguna de las 23 AIR de la casa la usa (la sonda del §900 y la revisión del
+   agente lo comprobaron): la guarda es para la AIR que la use mañana.
+3. **El falsador 13** (`un_testigo_valido_nunca_hace_panico`, en
+   `falsadores_oculta_periodica.rs`): `PeriodicaAir`, dos columnas, un contador con la transición
+   `next − cur − 1` y una constante 7 con `next − cur`, y dos aserciones, la simple 0 en el paso 0
+   del contador y la periódica 7 cada cuatro pasos desde el 0 sobre la constante; en claro prueba
+   y `verify` la acepta; oculta, con la ocultación de los falsadores, es exactamente
+   `AsercionPeriodicaBajoOculta { columna: 1, primer_paso: 0, paso: 4 }`, sin pánico
+   (`catch_unwind`); el texto de `GradoDeDeep`, letra a letra; y la traza degenerada del punto 1.
+   Los dos juguetes van en ficheros propios porque `tools/check_constraint_layout.py` lee un
+   circuito por fichero de `src/`, y a dos AIR en uno les pintaba una colisión de ranuras (la 0 y
+   la 1, escritas tres y dos veces): el barrido sigue en 0 colisiones, con 35 circuitos donde
+   había 33.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release y con `--locked`: `winter-prover`,
+7 de 7 en 2,22 s; `stark-experiment`, 492 pasan y 13 ignorados en 16,47 s, y el falsador 13 solo,
+en menos de una centésima; `check_constraint_layout`, 35 circuitos y las 5 AIR del kit sin
+colisión, desborde ni ranura muerta; `check_tests`, 2264 declarados y 22 instrumentos;
+`check_modulos`, 223 ficheros declarados. Antes del cambio, el juguete de una columna constante
+caía en el `assert_eq!` del compositor con el probador en claro: el suceso de la 137, medido una
+vez sin buscarlo.
+
+**Lo que NO hace.** No cambia ninguna prueba ni ningún juez. No hace que el `Err` de `segmentar`
+suba por `Result` (lo reversible de la D-AH sigue igual). No exige las aserciones periódicas sólo
+en las T filas reales, que sería la otra salida de la 138 si una AIR las necesitara: hoy ninguna.
+No toca la ocultación ni su cuenta: el 2^{−128} del apartado 16 de `doc/ocultacion-hvzk.md` sigue
+sumado, porque el simulador condiciona al mismo suceso.
+
+**Una corrección al §910.** Su párrafo del canon dice de `550375e` que es «la base en
+`origin/main`, ahora el §727». ⚠️ §911: `550375e` es el §904, la base común de HEAD (el §909) y de
+`origin/main` (el §727, `1bdc07fb`) cuando corrió aquel canon: la puerta de los vectores imprime
+`git merge-base HEAD origin/main`, no la punta de `origin/main`. El veredicto no cambia.
+
+**Lo que es del autor.** Nada en este sello.
+
+**Contadores.** `stark-experiment` 491 -> 492; los demás sin cambio. TOTAL DE SELLO 2099 -> 2100
+y CON LARGOS 2239 -> 2240, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; `check_tests`
+2263 -> 2264; `check_modulos` 221 -> 223, los dos ficheros nuevos. `BACKLOG.md` pasa a 42 abiertas
+y 97 resueltas: cierra la 137 y la 138. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre este árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 998 s de reloj (de su arranque a su
+salida) y 768 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU, con la
+compilación a dos trabajos y los crates del fork por recompilar. Las 19 filas del nivel, en su pin,
+con 2100 tests que pasan (la suma de la columna «pasan»), la de `zk-ssl` en 564 pasan y 9
+ignorados, 377 s, y la de `stark-experiment` en 492 y 13, 18 s; las tres del fork,
+`winter-air` 65, `winter-prover` 7 y `winter-verifier` 0, en su pin; la puerta de los binarios, con
+«OK 24 objetivos en 8 paquetes, 12 con features»; `check_tests` en 2264 y 22 instrumentos;
+`check_modulos` en 223; las once herramientas del bucle «2 ter», `check_constraint_layout` con sus
+35 circuitos; la puerta de los vectores, en 605 ficheros y 1370 líneas de 19 manifiestos, cada uno
+con su huella —la segunda pasada, la de las huellas de la base en `origin/main`, no corrió: HEAD y
+`origin/main` eran el mismo commit, el §910, y el canon sólo la corre cuando difieren—;
+`check_catalogo`, en 236 textos y 302 entradas; la conformidad, 0.5 IDÉNTICO y las cuatro versiones
+anteriores RECHAZADAS; el cable, en 27 de 27; la segunda implementación, con el núcleo en 34 de 34,
+sus pares STARK en 76 de 76 y la cadena en 30 de 30; y el artefacto reproducible, igual desde dos
+raíces, con el binario `c91d9cfe4046f605` —el mismo del §909 y del §910: el kit no lleva el
+probador, y este sello cambia el fork sólo en `winter-prover`— y el tarball `3d35d88578eb8ad5`, que
+cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio y vacío, y al acabar
+quedaba en él el mismo fichero que en los sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.

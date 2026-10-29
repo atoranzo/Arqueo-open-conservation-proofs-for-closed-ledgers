@@ -467,6 +467,9 @@ testigo.
   (`crates/winter-prover/src/lib.rs`), heredado del `generate_proof` de winterfell: con
   probabilidad ≈ 2^{−128} un testigo VÁLIDO hace pánico al probador, contra la letra de la D-AH del
   RFC-0009 —ni siquiera es un testigo malo—; no toca la ocultación, y es la 137 de `BACKLOG.md`.
+  ⚠️ §911: cerrada: es `ProverError::GradoDeDeep`, un `Err` con nombre, en los dos caminos; y el
+  suceso existe sin esperar a 2^{−128}: una traza degenerada en claro, de columnas constantes, lo da
+  siempre, y oculta nunca, porque las filas aleatorias no son constantes.
 - **S6. Los compromisos.** Para la traza, el cociente y cada capa de FRI: un árbol cuyas hojas
   abiertas son las de S2, S3 y S5 con sal fresca, y cuyas hojas no abiertas son digests uniformes
   (L4). El resto de FRI, entero, es el de S5.
@@ -1321,7 +1324,7 @@ ninguna guarda.
 funcionales nuevos sobre E), la segunda coordenada en las coincidencias coset–tocado, y la
 solvencia entera, donde 166 < 294 y las cuatro columnas juntas son una condición de rango
 conjunto; L8 dice dónde está el filo y por qué el denominador es |F|. El pánico del aserto de grado
-(la 137) y la guarda de las aserciones periódicas (la 138), del fork. Y la revisión de la 136, que
+(la 137) y la guarda de las aserciones periódicas (la 138), del fork (⚠️ §911: cerradas las dos). Y la revisión de la 136, que
 es de una persona que elige el autor: esta no la sustituye, y le ahorra lo que ya está visto.
 
 ## 17. Lo que el corte haría del argumento: R3 como teorema con las columnas pareadas (§908)

@@ -36,6 +36,15 @@ pub enum ProverError {
     /// ARQUEO (RFC-0009 D-AH): la segunda cota de las exenciones del envoltorio no cabe ni con
     /// el blowup del LDE: no se prueba.
     EnvoltorioNoCabe,
+    /// ARQUEO (§911, la 137 de `BACKLOG.md`; RFC-0009 D-AH): el polinomio DEEP no tiene el grado
+    /// exacto L − 2 que el protocolo espera (esperado, real). Con un testigo valido ocurre con
+    /// probabilidad del orden de 2^-128 -el coeficiente director de la combinacion se anula-;
+    /// winterfell lo asertaba con panico, y aqui es un error con nombre, como pide la D-AH.
+    GradoDeDeep { esperado: usize, real: usize },
+    /// ARQUEO (§911, la 138 de `BACKLOG.md`): la AIR interna lleva una asercion periodica o de
+    /// secuencia (columna, primer paso, paso), que el envoltorio oculto exigiria tambien en las T
+    /// filas aleatorias: no se prueba oculta. Ninguna de las 23 AIR de la casa la usa.
+    AsercionPeriodicaBajoOculta { columna: usize, primer_paso: usize, paso: usize },
 }
 
 impl fmt::Display for ProverError {
@@ -65,6 +74,12 @@ impl fmt::Display for ProverError {
             }
             Self::EnvoltorioNoCabe => {
                 write!(f, "traza oculta: la segunda cota de las exenciones no cabe ni con el blowup")
+            }
+            Self::GradoDeDeep { esperado, real } => {
+                write!(f, "el polinomio DEEP tiene grado {real} y no el esperado {esperado}")
+            }
+            Self::AsercionPeriodicaBajoOculta { columna, primer_paso, paso } => {
+                write!(f, "traza oculta: la asercion periodica de la columna {columna} (desde el paso {primer_paso}, cada {paso}) caeria en las filas aleatorias")
             }
         }
     }

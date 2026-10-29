@@ -815,6 +815,18 @@ Gana `Err` frente a asertar: fail-closed sin pánico rige también dentro del fo
 por `CompositionPoly::new`, `DefaultConstraintCommitment::new` y los `impl Prover` de la casa: más
 ancho, la misma promesa. D-AD a D-AG —la forma oculta como única forma de la 0.4, el constructor
 de `Ocultacion`, el reexport por `stark-experiment` y las trazas cortas— llegan con el corte 2.
+⚠️ §911: dos pánicos más, que la revisión del agente vio al leer el fork (§907), pasan a `Err`: el
+aserto de grado del DEEP —`GradoDeDeep { esperado, real }`, la 137 de `BACKLOG.md`: con un testigo
+VÁLIDO de las 23 AIR salta con probabilidad del orden de 2^{−128}, y con una traza DEGENERADA en
+claro —columnas constantes cuya transición es idénticamente nula— salta siempre, porque la
+composición queda en cero y el DEEP sin grado; ahora es un error con nombre en el compositor de
+DEEP, y por eso en el camino oculto y en el de winterfell— y una aserción periódica o de secuencia
+de una AIR interna, que el envoltorio exigiría también en las T filas aleatorias
+—`AsercionPeriodicaBajoOculta { columna, primer_paso, paso }`, la 138: el probador oculto la
+rechaza antes de tocar la traza, en vez de caer en el aserto de `segmentar`; ninguna de las 23 AIR
+de la casa la usa—. El falsador 13 de la ocultación del núcleo mide los dos sucesos: una AIR con
+aserción periódica prueba y verifica en claro y oculta es `Err` sin pánico, y la traza degenerada
+en claro es `GradoDeDeep` en vez del pánico.
 
 ### D-AI — El comparador 0.4 cruza lo que el circuito fija y declara lo que no se reproduce
 

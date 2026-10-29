@@ -18,6 +18,7 @@ use utils::iter_mut;
 use utils::iterators::*;
 
 use super::{constraints::CompositionPoly, StarkDomain, TracePolyTable};
+use crate::ProverError;
 
 // DEEP COMPOSITION POLYNOMIAL
 // ================================================================================================
@@ -70,7 +71,7 @@ impl<E: FieldElement> DeepCompositionPoly<E> {
         quotient_polys: CompositionPoly<E>,
         ood_trace_states: TraceOodFrame<E>,
         ood_quotient_states: QuotientOodFrame<E>,
-    ) {
+    ) -> Result<(), ProverError> {
         assert!(self.coefficients.is_empty());
 
         // compute a second out-of-domain point offset from z by exactly trace generator; this
@@ -162,7 +163,15 @@ impl<E: FieldElement> DeepCompositionPoly<E> {
 
         // set the coefficients of the DEEP composition polynomial
         self.coefficients = trace_poly;
-        assert_eq!(self.poly_size() - 2, self.degree());
+        // ARQUEO (§911, la 137; RFC-0009 D-AH): un error con nombre donde winterfell asertaba.
+        // Lo alcanza un testigo valido cuya combinacion de DEEP baja de grado: con probabilidad
+        // del orden de 2^-128 por los coeficientes, o siempre con una traza degenerada en claro
+        // -todas las columnas constantes y las restricciones identicamente nulas-, que la
+        // ocultacion no tiene porque sus filas aleatorias no lo son.
+        if self.poly_size() - 2 != self.degree() {
+            return Err(ProverError::GradoDeDeep { esperado: self.poly_size() - 2, real: self.degree() });
+        }
+        Ok(())
     }
 
     // LOW-DEGREE EXTENSION

@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 95 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 42 abiertas, 97 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, y el §907, que abre la 137 y la 138.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, el §907, que abre la 137 y la 138, y el §911, que las cierra.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1651,7 +1651,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   al revisor. No cuenta como la revisión ajena: QUEDAN el revisor humano, que elige el autor, su
   revisión y la decisión: sigue abierta.
 
-- [ ] **137. El aserto de grado del DEEP hace pánico con un testigo válido, contra la D-AH (§907).**
+- [x] **137. El aserto de grado del DEEP hace pánico con un testigo válido, contra la D-AH (§907).**
   `generate_proof_oculto` (`crates/winter-prover/src/lib.rs`) aserta
   `trace_length − 2 == deep_composition_poly.degree()`, heredado del `generate_proof` de
   winterfell: el coeficiente director de D se anula con probabilidad ≈ 2^{−128} para un testigo
@@ -1662,8 +1662,14 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `ProverError` en lugar del aserto, en el camino oculto y, si se quiere, en el de winterfell; un
   test con un D forzado de grado menor, si se puede construir, o la constancia de que no. **Qué la
   cierra**: el `Err` en el fork con su test, en un sello aparte: toca el camino de producción.
+  ✅ §911: `ProverError::GradoDeDeep { esperado, real }` donde winterfell asertaba, en el
+  compositor de DEEP (`add_trace_polys` devuelve `Result`) y por eso en los dos caminos, el oculto
+  y el de winterfell. Y el suceso existe sin esperar a 2^{−128}: una traza DEGENERADA en claro
+  —una columna constante con la transición idénticamente nula— deja la composición en cero y el
+  DEEP sin grado; el falsador 13 lo mide: `GradoDeDeep { esperado: 62, real }` en vez del pánico.
+  Con la ocultación no ocurre: las filas aleatorias no son constantes.
 
-- [ ] **138. Una `Assertion::periodic` o `sequence` de una AIR interna se exigiría en las filas
+- [x] **138. Una `Assertion::periodic` o `sequence` de una AIR interna se exigiría en las filas
   aleatorias de `Oculta` (§907).** `ConstraintDivisor::from_assertion(assertion, L)` toma el
   número de pasos sobre L = 2T, así que una aserción periódica de una AIR interna caería también
   en las T filas aleatorias; hoy ninguna de las 23 la usa (las entradas públicas de las 22 son
@@ -1673,6 +1679,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   —rechazar con `Err` una AIR interna con aserciones de paso mayor que cero— y un test que la mida;
   o, si alguna AIR futura las necesita, exigirlas sólo en las T filas reales. **Qué la cierra**: la
   guarda con su test, en un sello aparte: toca el fork.
+  ✅ §911: la guarda en `generate_proof_oculto`, antes de tocar la traza:
+  `ProverError::AsercionPeriodicaBajoOculta { columna, primer_paso, paso }`; el falsador 13 lo
+  mide con una AIR de dos columnas, un contador y una constante, con una aserción periódica cada
+  cuatro pasos sobre la constante, que en claro prueba y verifica y oculta es `Err` sin pánico.
 
 ## D. Declaradas, acotadas, sin urgencia
 

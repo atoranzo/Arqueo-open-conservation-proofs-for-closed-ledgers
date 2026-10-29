@@ -424,7 +424,7 @@ pub trait Prover {
                 composition_poly,
                 ood_trace_states,
                 ood_evaluations,
-            );
+            )?;
 
             event!(Level::DEBUG, "degree: {}", deep_composition_poly.degree());
 
@@ -434,7 +434,6 @@ pub trait Prover {
 
         // make sure the degree of the DEEP composition polynomial is equal to trace polynomial
         // degree minus 1.
-        assert_eq!(trace_length - 2, deep_composition_poly.degree());
 
         // 5 ----- evaluate DEEP composition polynomial over LDE domain ---------------------------
         let deep_evaluations = {
@@ -653,6 +652,16 @@ pub trait Prover {
         if !air.cabe() {
             return Err(ProverError::EnvoltorioNoCabe);
         }
+        // ARQUEO (§911, la 138): una asercion periodica o de secuencia de la AIR interna se
+        // exigiria tambien en las T filas aleatorias (`ConstraintDivisor::from_assertion` cuenta
+        // los pasos sobre 2T): no se prueba oculta, con error y no con el aserto de `segmentar`
+        if let Some(a) = air.interno().get_assertions().iter().find(|a| a.stride() > 0) {
+            return Err(ProverError::AsercionPeriodicaBajoOculta {
+                columna: a.column(),
+                primer_paso: a.first_step(),
+                paso: a.stride(),
+            });
+        }
         // D-AH: la traza REAL se comprueba contra el AIR interno antes de probarla, tambien
         // en release; un testigo malo devuelve Err y los asertos del cociente oculto quedan
         // como invariantes. Con tramo auxiliar, la comprobacion espera a tenerlo.
@@ -733,8 +742,7 @@ pub trait Prover {
             composition_poly,
             ood_trace_states,
             ood_evaluations,
-        );
-        assert_eq!(trace_length - 2, deep_composition_poly.degree());
+        )?;
         let deep_evaluations = deep_composition_poly.evaluate(&domain);
 
         let fri_options = air.options().to_fri_options();
