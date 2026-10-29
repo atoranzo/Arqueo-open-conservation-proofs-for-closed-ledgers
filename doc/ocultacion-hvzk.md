@@ -14,7 +14,7 @@ del apartado 4 con la H12 del §900— queda escrito allí con sus palabras y es
 que no, con nombre y con lo que les falta. ⚠️ §902: el autor acepta ese camino y decide A5: la sal
 se queda (RFC-0009 D-I); lo escrito espera la revisión ajena (la 136 de `BACKLOG.md`). ⚠️ §903: el
 dosier para esa revisión —qué revisar, qué leer, cómo reproducir cada cifra y dónde atacar— es
-`doc/ocultacion-hvzk-dosier.md`. ⚠️ §915: con el corte `zkssl/0.5` sellado (§914), la proposición para las veintitrés familias con la construcción de producción —las dos columnas pareadas, T ≥ 128, m = 64, las hojas saladas— está escrita en el apartado 18, con sus hipótesis y su cuenta, y lo que se podría prometer con ella, con sus palabras, en la D-AM del RFC-0009 (su borrador del §915). **Sigue sin ser una promesa**: es del autor, y el argumento espera la revisión ajena de la 136, que desde aquí es de los apartados 1 a 18 con la construcción del corte.
+`doc/ocultacion-hvzk-dosier.md`. ⚠️ §915: con el corte `zkssl/0.5` sellado (§914), la proposición para las veintitrés familias con la construcción de producción —las dos columnas pareadas, T ≥ 128, m = 64, las hojas saladas— está escrita en el apartado 18, con sus hipótesis y su cuenta, y lo que se podría prometer con ella, con sus palabras, en la D-AM del RFC-0009 (su borrador del §915). **Sigue sin ser una promesa**: es del autor, y el argumento espera la revisión ajena de la 136, que desde aquí es de los apartados 1 a 18 con la construcción del corte. ⚠️ **§916: aceptada por el autor** (29-10-2026, «Aceptar todo»): la proposición del apartado 18 es desde el §916 **la promesa de la casa** para las veintitrés familias con `zkssl/0.5`, con sus hipótesis (RFC-0009 D-A y D-AM; `SECURITY.md` §3.bis); H7 se conserva y la revisión ajena de la 136 sigue pendiente, y la promesa lo dice. Lo que este documento llama «no es una promesa» desde aquí hasta el apartado 18 es la historia de cómo llegó a serlo.
 
 **Qué es.** El argumento de ocultación del probador oculto del fork de winterfell 0.13.1
 (`crates/winter-prover`, `crates/winter-air`, `crates/winter-verifier`, con la sal de
@@ -1465,3 +1465,4 @@ su borrador del §915, y con él cambiarían D-A, `SECURITY.md` §3.bis y la cab
 documento; (2) la revisión ajena de la 136, de una persona, que desde aquí es de los apartados 1 a
 18 con la construcción del corte, como dice el dosier; (3) nada más que medir: lo que la
 proposición pide se mide en cada canon o está demostrado. Hasta entonces, la promesa es el censo.
+⚠️ §916: (1) hecha: el autor aceptó el 29-10-2026 («Aceptar todo»), y la proposición es la promesa (RFC-0009 D-A); (2) sigue pendiente, y la promesa lo dice: H7 se conserva hasta la revisión de la 136.

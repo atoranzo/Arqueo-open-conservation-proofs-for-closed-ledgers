@@ -846,7 +846,7 @@ sal. Ningún test lo comprueba, ni puede. Fiat-Shamir no usa azar: la moneda sal
 prueba compromete. ⚠️ §901: la sal fresca y las semillas de la ocultación no repetidas son dos de
 las hipótesis con nombre de lo que la D-AM del RFC-0009 deja escrito y no promete (H8 y H9 de
 `doc/ocultacion-hvzk.md`); medido en el juguete del §898, dos pruebas con la misma semilla de filas
-devuelven lo que cada una sola oculta.
+devuelven lo que cada una sola oculta. ⚠️ §916: desde el §916 son hipótesis de la promesa (RFC-0009 D-A), no sólo de lo escrito.
 
 ### 3.12 El guardián del índice arrancaba a veces en tmpfs — ⚠️ MEDIDO, cerrado en Linux (§740)
 
@@ -1972,7 +1972,9 @@ y también trae dos defensas que antes no existían.
   constante de su traza** (cero literales en 100 celdas y 22 filas). Lo que
   no se promete: que nada se deduzca de lo que se abre; la cota vive en el
   RFC-0009 (D-I: 44 aberturas por columna frente a T ≥ 64 filas aleatorias)
-  y ni el fork ni la construcción están auditados (H7). Quien ve una prueba
+  y ni el fork ni la construcción están auditados (H7). ⚠️ §916: desde el
+  §916 se promete más, bajo hipótesis con nombre (la nota del §916, abajo);
+  T ≥ 128 desde el §914. Quien ve una prueba
   sigue siendo el nodo, que las recibe, y quien lea un vector o un paquete
   publicado: los de `spec/vectors/` de la 0.4 no llevan ningún literal del
   testigo; los de la 0.3, conservados bajo `spec/vectors/0.3/`, siguen
@@ -2004,6 +2006,7 @@ y también trae dos defensas que antes no existían.
   reales demostrado en parte y medido en el resto, y con la cota sobre los
   desafíos sobre |F| = 2^64, no sobre |E|. Sigue sin prometerse nada más.
   ⚠️ **§915 (el corte `zkssl/0.5`, §914):** la construcción de producción es desde el corte la de las dos columnas aleatorias pareadas en DEEP y T ≥ 128 en las veintitrés familias: la condición suficiente que faltaba es teorema (L9) y las filas aleatorias cubren lo que la prueba toca en todas, medido en cada canon; lo que se podría prometer para las veintitrés está escrito en la D-AM del RFC-0009 (su borrador del §915) y **no se promete**: es del autor, y el argumento espera la revisión ajena (la 136). La promesa de esta sección no cambia.
+  ⚠️ **§916 (aceptada por el autor el 29-10-2026, «Aceptar todo»):** la promesa de esta sección cambia por primera vez desde el §538. Lo que se promete desde el §916, además del censo: **para las veintitrés familias con la construcción de `zkssl/0.5`, la vista del verificador honesto se simula sin el testigo** —ocultación simulable, estadística en el modelo de oráculo aleatorio programable—, con ventaja menor que 2^{−60} + 2^{−128} + Q·2^{−256} + |E|^{−(N−1)}, bajo las hipótesis con nombre de la D-AM del RFC-0009 (su D-A, §916; `doc/ocultacion-hvzk.md`, apartado 18): H3, z fuera de F y de H; H7, Blake3 como oráculo aleatorio programable; H8, la sal fresca, y H9, ninguna semilla repetida (§3.11); y bajo un argumento revisado en adversario por la sesión y por un agente, no por una persona ajena: la 136 sigue abierta y H7 se conserva, ni el fork ni la construcción están auditados. Lo que sigue sin prometerse: nada frente a un adversario cuántico, nada de los canales laterales, nada fuera de esas hipótesis.
 - **El cable rechaza lo que no entiende**: DTOs con
   `deny_unknown_fields`, hex canónico, digests de anchura fija.
 - **Los vectores de conformidad son una defensa, no solo documentación.**

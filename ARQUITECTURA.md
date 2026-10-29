@@ -80,7 +80,9 @@ opera:
   ven raíces, no frente a quien mantiene el estado. Frente a quien ve
   una prueba, desde el §538 (RFC-0009 E3b-2): el probador oculta su
   testigo y la prueba no publica literal ningún valor de columna
-  constante de su traza; entre el §521 y el §538 los publicaba.
+  constante de su traza; entre el §521 y el §538 los publicaba. ⚠️ §916: y desde
+  `zkssl/0.5` la vista de la prueba se simula sin el testigo, bajo las hipótesis con
+  nombre de la D-A del RFC-0009 (aceptada por el autor en el §916).
 - **Ordena las operaciones.** Decide qué entra y en qué orden.
 - **Puede censurar.** Nada obliga a procesar la operación de nadie.
 - **Es un punto único de fallo.** Incautarlo, apagarlo o corromperlo es

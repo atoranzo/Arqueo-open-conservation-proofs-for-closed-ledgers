@@ -97,7 +97,7 @@ supervisor having ledger access or any master key. Against whoever sees
 the proof, since §538 (RFC-0009 E3b-2) the house prover hides its witness
 and the proof does not publish literally what the circuit keeps constant
 — the spend key, the balance, the recipient —; between §521 and §538 it
-published them (§521, §523).
+published them (§521, §523). ⚠️ §916: and since `zkssl/0.5` the proof's view is simulated without the witness, under the named hypotheses of RFC-0009 D-A, accepted by the author.
 
 The mechanism is selective disclosure with three modes:
 

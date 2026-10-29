@@ -97,7 +97,7 @@ tenga acceso al ledger ni a ninguna clave maestra. Frente a quien ve la
 prueba, desde el §538 (RFC-0009 E3b-2) el probador de la casa oculta su
 testigo y la prueba no publica literal lo que el circuito mantiene
 constante —la clave de gasto, el saldo, el receptor—; entre el §521 y el
-§538 lo publicaba (§521, §523).
+§538 lo publicaba (§521, §523). ⚠️ §916: y desde `zkssl/0.5` la vista de la prueba se simula sin el testigo, bajo las hipótesis con nombre de la D-A del RFC-0009, aceptada por el autor.
 
 El mecanismo es revelación selectiva con tres modos:
 

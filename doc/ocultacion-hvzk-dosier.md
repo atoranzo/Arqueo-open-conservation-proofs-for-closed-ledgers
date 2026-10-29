@@ -7,6 +7,7 @@ columna constante de su traza», RFC-0009 D-A y `SECURITY.md` §3.bis—, y lo q
 está escrito en la D-AM del RFC-0009 y espera esta revisión. El revisor no decide qué se promete:
 dice si el argumento se sostiene, dónde no, y qué no miden las medidas. Decide el autor, después,
 con un asiento.
+⚠️ §916: el autor aceptó la promesa para las veintitrés con `zkssl/0.5` (RFC-0009 D-A y D-AM, §916) antes de esta revisión, con H7 dentro: la revisión sigue pedida, y lo que diga entra por el apartado 11 del documento y, si toca la promesa, por un asiento del autor (la D-A del §916 es reversible por eso).
 
 ## 1. Qué se pide revisar, en una frase
 

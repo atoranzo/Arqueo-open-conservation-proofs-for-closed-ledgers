@@ -76856,3 +76856,103 @@ cadena en 30 de 30; y el artefacto reproducible, igual desde dos raíces, con el
 `93349d549f10446f`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio
 y vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.
+
+## §916 — «Aceptar todo»: la aceptación del autor del 29 de octubre de 2026, aplicada. La promesa de ocultación cambia por primera vez desde el §538: para las veintitrés familias con la construcción de `zkssl/0.5`, la vista de una prueba se simula sin el testigo, bajo hipótesis con nombre y con H7 dentro (RFC-0009 D-A y D-AM; `SECURITY.md` §3.bis; la cabecera de `doc/ocultacion-hvzk.md`); el RFC-0018 pasa a ACEPTADO con la D-G y la D-H; la E4 del RFC-0021, aceptada con él; y la 0.5.0, cortada con sus huellas y no publicada, porque publicarla es de la mano del autor
+
+El commit que lleva este asiento, sobre `ee01fa12` (el §915). Toca sólo documentos:
+`spec/rfc/0009-lo-que-revela-una-prueba.md` (la cabecera, la D-A con la promesa nueva y su
+confianza residual, y la D-AM con su estado), `spec/rfc/0018-el-tren-0-5.md` (el estado, ACEPTADO,
+y la D-G), `spec/rfc/0021-la-politica-de-compatibilidad.md` (el estado y la fila de la E4),
+`SECURITY.md` (§3.bis, dos notas; §3.11, una), `doc/ocultacion-hvzk.md` (la cabecera y el final del
+apartado 18), `doc/ocultacion-hvzk-dosier.md` (la cabecera), `doc/KIT.md` §0 (las huellas de la
+0.5.0), `BACKLOG.md` (la 136 y la cadena), y una nota de una frase en los textos vivos que dicen la
+promesa: `README.md`, `README_EN.md`, `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `ARQUITECTURA.md`,
+`doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `doc/APORTACION.md`; y este asiento. Ningún `.rs`,
+ninguna herramienta, ningún vector. Lo escribe y lo commitea Claude, en una sesión de Claude Code
+en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; la
+decisión es del autor, y está citada con sus palabras. El número es el siguiente libre tras el
+§915. El canon de este commit se dice al final.
+
+**De dónde sale.** Al cerrar el §915 la sesión dejó escrito lo que sólo el autor podía hacer: aceptar
+o no el borrador de promesa de la D-AM (§915), elegir al revisor de la 136, dar el ACEPTADO al
+RFC-0018 con la nota de la E4 del RFC-0021, y publicar la release 0.5.0. El autor contestó el 29 de
+octubre de 2026 con dos palabras: «Aceptar todo». Este asiento aplica lo que una aceptación puede
+aplicar y dice, con nombre, lo que no: el revisor de la 136 es una persona que el autor elige, no
+una aceptación, y la release la sube el autor con su tag y su mano (`tools/artefacto.sh`: «lo que
+este fichero NO hace: publicar»), y la sesión no tiene herramienta que la publique.
+
+**Lo que hace.**
+
+1. **La promesa.** La D-A del RFC-0009 gana su tercer tramo, «ACEPTADA en el §916»: lo que se
+   promete desde aquí, además de lo del §538, es el párrafo del borrador del §915 tal cual —para
+   las veintitrés familias con la construcción de `zkssl/0.5`, la vista del verificador honesto se
+   simula sin el testigo, ocultación simulable, estadística en el modelo de oráculo aleatorio
+   programable, con ventaja menor que 2^{−60} + 2^{−128} + Q·2^{−256} + |E|^{−(N−1)}, bajo H1, H4 y
+   H11 medidas, H2, H5, H10 y H6 (L9) demostradas, y H3, H7, H8 y H9 supuestas o de modelo—, con
+   lo que no se promete (nada cuántico, nada de canales laterales, nada fuera de las hipótesis), con
+   H7 dentro —ni el fork ni la construcción están auditados; el argumento lo revisaron la sesión y
+   un agente, ninguna persona ajena; la 136 sigue abierta y la promesa lo dice—, reversible si la
+   revisión ajena encuentra un paso falso que las medidas no vean, y con su confianza residual: lo
+   que quien ve una prueba pueda deducir, lo deduciría igual de la salida del simulador. La D-AM
+   queda aceptada por el camino (a) para las veintitrés; `SECURITY.md` §3.bis dice la promesa nueva
+   con las mismas palabras y las hipótesis de §3.11 (H8 y H9) pasan a ser hipótesis de la promesa;
+   la cabecera de `doc/ocultacion-hvzk.md` dice que la proposición del apartado 18 es la promesa de
+   la casa y que lo que el documento llama «no es una promesa» es la historia de cómo llegó a serlo;
+   el dosier dice que la revisión sigue pedida y por dónde entra lo que diga.
+2. **El RFC-0018, ACEPTADO**: la regla 4 del PROCESO quedó saldada con medida en el §914 (la spec,
+   el OpenRPC regenerado, los vectores nuevos bajo `zkssl/0.5` con los de la 0.4 conservados, las
+   suites verdes), todas sus etapas están construidas y el autor lo acepta con la D-G y la D-H; el
+   estado anterior se cita, no se borra. La E4 del RFC-0021 queda aceptada con él; el RFC-0021
+   sigue PROPUESTO por la misma regla 4, hasta su E3b, que el autor dejó para `zkssl/0.6` (§913).
+3. **La 0.5.0, cortada y no publicada.** `bash tools/artefacto.sh` sobre este árbol —el kit no cambia
+   desde el §914—: tarball `arqueo-verify-0.5.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
+   `9530ea78fc9b864bd49f58ed3571e16e5f3524ff056f730a033734a4a7b41e95`, 31.960.589 B, 538 ficheros;
+   binario `62cb56f5e10b4577f5bf7ac4c65d0d0240202d011fdb2e1426bce24e14b7ae6c`, 2.596.312 B. Son las
+   huellas de la máquina de la sesión, como las del §725 lo eran de la suya: `doc/KIT.md` §0 las
+   lleva y dice que la vigente publicada sigue siendo la 0.4.4. Lo que falta es del autor: el tag
+   anotado `arqueo-verify-v0.5.0` sobre el commit que lleva este asiento, el tarball construido con
+   `bash tools/artefacto.sh` sobre ese commit —su `VERSION` llevará el `describe` del tag, así que su
+   huella no será esta— y la release en GitHub; el asiento que la registre medirá las huellas desde
+   fuera, como hizo el §726 con la 0.4.4.
+4. **Los textos vivos.** Una frase, con su ⚠️ §916, donde la casa dice qué promete de sus pruebas:
+   los dos README, los dos PAPER, `PRINCIPIOS.md`, `ARQUITECTURA.md`, los dos institucionales y
+   `doc/APORTACION.md`; ninguna frase anterior se borra.
+
+**Medido.** El artefacto, arriba, con el mismo binario que el canon del §914 y el del §915
+(`62cb56f5e10b4577`). Las puertas de los documentos, VERDES con el asiento en su sitio:
+`check_cifras`, `check_publicadas`, `verificar_citas` (0 encabezados muertos; el §916 en el
+registro). El canon, al final.
+
+**Lo que NO hace.** No publica la release ni crea el tag: no es de la sesión, y no tiene con qué. No
+cierra la 136: la revisión ajena sigue pedida, y la promesa dice que no está hecha; el revisor lo
+elige el autor. No pasa el RFC-0021 a ACEPTADO (le falta la E3b). No decide la 116, que no estaba
+en lo que el autor aceptó: sigue abierta como la dejó. No toca ningún código, ningún pin, ningún
+vector, ni la solidez, ni el «nivel cuántico: no medido».
+
+**Lo que es del autor, después de este asiento.** El tag y la release de la 0.5.0 (punto 3), y el
+asiento que la registre con las huellas medidas desde fuera, que la sesión puede escribir cuando
+esté publicada; el revisor de la 136; y la 116.
+
+**Contadores.** Ninguno se mueve: las suites, `check_tests`, `check_modulos`, los vectores, el
+catálogo y la segunda implementación quedan como en el §914. `BACKLOG.md`: 38 abiertas y 101
+resueltas; la 136 sigue a medias.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre este árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 426 s de reloj (de su arranque a su
+salida) y 268 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU, en caliente. Las
+19 filas del nivel, en su pin, con 2104 tests que pasan (la suma de la columna «pasan»), la de
+`zk-ssl` en 565 pasan y 9 ignorados, 188 s, la de `stark-experiment` en 492 y 13, y la de
+`zk-ssl-air` en 69; las tres del fork en su pin; la puerta de los binarios, con «OK 24 objetivos en
+8 paquetes, 12 con features»; `check_tests` en 2268 y 22 instrumentos; `check_modulos` en 224; las
+once herramientas del bucle «2 ter», con `check_publicadas` atando el estado nuevo del RFC-0018 a
+sus cinco cuentas en cuatro sitios y a su fila de `spec/README.md`, y `verificar_citas` con 0
+encabezados muertos y el §916 en el registro; la puerta de los vectores, en 702 ficheros y 1740
+líneas de 24 manifiestos, 78 lápidas —la segunda pasada, contra la base en `origin/main`, no
+corrió: HEAD y `origin/main` eran el mismo commit, el §915—; `check_catalogo`, en 236 textos y 301
+entradas; la conformidad, 0.5 IDÉNTICO y las cuatro versiones anteriores RECHAZADAS; el cable, en
+27 de 27; la segunda implementación, con el núcleo en 35 de 35, sus pares STARK en 89 de 89, 36 de
+36 falsadores y la cadena en 30 de 30; y el artefacto reproducible, igual desde dos raíces, con el
+binario `62cb56f5e10b4577` —el mismo del §914 y el §915— y el tarball `9530ea78fc9b864b`, el de
+las huellas de arriba. Corrió con un `TMPDIR` propio y vacío, y al acabar quedaba en él el mismo
+fichero que en los sellos anteriores, `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga
+aquí. Una sola corrida: no hubo roja.

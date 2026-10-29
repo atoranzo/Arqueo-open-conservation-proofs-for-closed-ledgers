@@ -196,7 +196,7 @@ freezing.
 **State layer.** Maintains the Merkle trees, chains roots between
 operations, verifies proofs, and applies transitions. It takes no private
 key as an argument and, since §538 (RFC-0009 E3b-2), the proofs it
-verifies do not publish one either: the prover hides its witness. Between
+verifies do not publish one either: the prover hides its witness (⚠️ §916: and since `zkssl/0.5` the proof's view is simulated without the witness, under the named hypotheses of RFC-0009 D-A). Between
 §521 and §538 the proofs carried them in the clear — the spend key in send
 and claim proofs, and the custodian's key in every delegated authorisation
 (September 2026 corrections: §521, §523 and §538).

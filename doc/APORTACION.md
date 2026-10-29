@@ -72,7 +72,7 @@ saldo exacto sin ver el estado completo. Raro tanto en banca core como en
 redes privadas. Entre el §523 y el §538 la prueba no ocultaba su testigo —la
 de auditoría publicaba el saldo exacto y la clave de gasto, y el supervisor
 aprendía más de lo que el modo pedía—; desde el §538 (RFC-0009 E3b-2) la
-oculta y no publica literal ninguno de los dos.
+oculta y no publica literal ninguno de los dos. ⚠️ §916: y desde `zkssl/0.5` la vista de la prueba se simula sin el testigo, bajo hipótesis con nombre (RFC-0009 D-A).
 
 **Ausencia de ceremonia como decisión de soberanía.** No es preferencia
 técnica: si el setup permite crear dinero invisible, se descarta.

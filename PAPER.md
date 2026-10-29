@@ -207,7 +207,7 @@ gobernanza y congelación.
 entre operaciones, verifica las pruebas y aplica las transiciones. No
 recibe ninguna clave privada como argumento y, desde el §538 (RFC-0009
 E3b-2), tampoco la publican las pruebas que verifica: el probador oculta
-su testigo. Las pruebas la llevaban en claro entre el §521 y el §538 —la
+su testigo (⚠️ §916: y desde `zkssl/0.5` la vista de la prueba se simula sin el testigo, bajo las hipótesis con nombre de la D-A del RFC-0009). Las pruebas la llevaban en claro entre el §521 y el §538 —la
 clave de gasto en las de envío y cobro, y la del custodio en cada
 autorización delegada— (correcciones de septiembre de 2026: §521, §523 y
 §538).

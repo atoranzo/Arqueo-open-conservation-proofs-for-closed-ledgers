@@ -161,7 +161,7 @@ verifica **sin acceso al ledger**. Desde el §538 (RFC-0009 E3b-2) la
 prueba oculta su testigo: la de auditoría —un solo circuito para los tres
 modos— no publica literal el saldo exacto ni la clave de gasto; entre el
 §523 y el §538 los publicaba. Lo que no se promete: que nada se deduzca de
-lo que se abre (RFC-0009 D-A); la construcción no está auditada (H7).
+lo que se abre (RFC-0009 D-A); la construcción no está auditada (H7). ⚠️ §916: desde el §916 se promete también, para las veintitrés familias con `zkssl/0.5`, que la vista de la prueba se simula sin el testigo, bajo hipótesis con nombre (RFC-0009 D-A); H7 se conserva.
 
 **Governance Layer** — ✅
 Jerarquía de dos niveles: los **custodios** emiten y recuperan cuentas;

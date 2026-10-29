@@ -3,7 +3,7 @@
 - **Estado:** ACEPTADO — **la regla 4 del PROCESO, saldada con medida** (§527 la adopción y E1;
   §528 la E3, al diseño; E2 §531, E3a §532–§534 y E3b §535–§538, las etapas con sus puertas; el
   §538-B, el §538-C y el §538-D, la prosa, los comentarios y la spec al día; §539 este giro). Se
-  conserva como registro de lo decidido, lo medido y lo descartado.
+  conserva como registro de lo decidido, lo medido y lo descartado. ⚠️ §916: la D-A cambia lo que promete por primera vez desde el §538, por la D-AM del §915 aceptada por el autor el 29-10-2026: ocultación simulable sin el testigo para las veintitrés familias con `zkssl/0.5`, bajo hipótesis con nombre.
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172, 173, 174,
   176, 177 y 178) — ver [`GENAI.md`](../../GENAI.md)
@@ -98,6 +98,14 @@ enunciado público, las raíces y lo que el sobre, el recibo o la operación lle
 (la columna «público por diseño» de la tabla sigue siendo cierta); del testigo no ve ningún literal,
 y lo que pueda deducir de las aberturas lo acota D-I, no lo mide E2.
 ⚠️ §915: lo que se podría prometer con la construcción de `zkssl/0.5` para las veintitrés familias —ocultación simulable sin el testigo, bajo hipótesis con nombre— está escrito en la D-AM (su borrador del §915) y **no se promete**: esta decisión no cambia hasta que el autor lo acepte.
+
+**ACEPTADA en el §916 por el autor, el 29 de octubre de 2026 («Aceptar todo»): la promesa del §915, para las veintitrés familias con `zkssl/0.5`.** Lo que se promete desde el §916, con sus palabras, además de lo del §538:
+
+> Para las veintitrés familias con fila en la tabla de D-B, con la construcción de `zkssl/0.5` tal como está —T filas aleatorias por columna con T ≥ 128, dos columnas aleatorias pareadas en DEEP como una sobre E, el cociente cegado con m = 64 y las hojas saladas—, la vista del verificador honesto se simula sin el testigo: para toda traza real que la AIR acepta, la vista y la salida del simulador del apartado 5 de `doc/ocultacion-hvzk.md` son estadísticamente indistinguibles en el modelo de oráculo aleatorio programable, con ventaja menor que 2^{−60} más 2^{−128} más Q·2^{−256} más |E|^{−(N−1)} para Q consultas al oráculo y N trozos del cociente (2 en la solvencia, 8 a 10 en las demás): ocultación simulable, estadística en ese modelo y computacional en lo que H7, Blake3 como oráculo, tiene de computacional. Bajo las hipótesis del apartado 4 de ese documento con el corte (su apartado 18): las medidas en cada canon (H1, H4 y H11, en las veintitrés), las demostradas (H2, H5, H10 y, desde el corte, H6 por L9) y las supuestas o de modelo, que ningún test mide: H3, z fuera de F y de H y sin coincidencias de conjugados, con fallo acotado por prueba; H7, el oráculo aleatorio programable; H8, la sal fresca; H9, ninguna semilla de la ocultación repetida. Ninguna familia fuera por su nombre, y ninguna hipótesis propia de una AIR. Y bajo el argumento tal como está escrito: revisado en adversario por la sesión y por un agente, y por ninguna persona ajena al proyecto.
+
+Lo que no se promete: nada frente a un adversario cuántico («no medido»); nada de los canales laterales del probador; nada fuera de las hipótesis con nombre —H3, H7, H8 y H9, que ningún test mide— ni fuera del modelo de oráculo aleatorio; y la revisión ajena del argumento no está hecha: H7 se conserva —ni el fork ni la construcción están auditados— y la 136 de `BACKLOG.md` sigue abierta, con la promesa diciéndolo. La solidez se promete como antes. **Reversible** si la revisión ajena encuentra un paso falso que las medidas no vean: entonces la promesa vuelve al censo con un asiento del autor, y lo dice aquí.
+
+**Confianza residual, en una frase:** quien reciba una prueba —y el nodo las recibe todas— ve el enunciado público, las raíces y lo público por diseño; del testigo no ve ningún literal, y lo que la vista le enseña se simula sin el testigo bajo esas hipótesis: lo que pueda deducir, lo deduciría igual de la salida del simulador.
 
 ### D-B — La tabla: lo que sale literal, prueba a prueba
 
@@ -967,7 +975,7 @@ contra el pareado del fork; su camino de producción, con la marca v1 y una colu
 enunciar HVZK para ninguna familia con el argumento de A2; lo que puede decir es el censo y lo que
 falta, y dejar la promesa para lo que la 134 mida o para el corte que lleve la 133»—; REVERSIBLE;
 entra con su aceptación.** ⚠️ §902: aceptada por el autor por el camino (b): la promesa no cambia,
-y lo que queda escrito espera la revisión ajena del argumento (la 136 de `BACKLOG.md`).
+y lo que queda escrito espera la revisión ajena del argumento (la 136 de `BACKLOG.md`). ⚠️ §916: **aceptada por el autor** el 29 de octubre de 2026 («Aceptar todo»), por el camino (a) y para las veintitrés con la construcción de `zkssl/0.5`: la promesa es desde el §916 la del borrador del §915, con H7 dentro —el argumento no tiene revisión de una persona ajena, y la 136 sigue abierta—; D-A, `SECURITY.md` §3.bis y la cabecera de `doc/ocultacion-hvzk.md` cambian en el §916.
 
 **Lo que hay delante.** A1 (§896) midió la cota de ocultación por familia; A2 (§897) escribió el
 argumento con su simulador y sus lemas, `doc/ocultacion-hvzk.md`, revisado dos veces en adversario
