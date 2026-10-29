@@ -77182,3 +77182,61 @@ pines, ni `BACKLOG.md`.
 `check_modulos` en 224 y el total de sello en 2104. La puerta de los vectores, en 702 ficheros
 y 1740 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 38 abiertas y 101
 resueltas.
+## §919 — La portada de GitHub, en inglés: `.github/README.md`, un enlace simbólico a `README_EN.md`, que GitHub muestra antes que el `README.md` de la raíz; y los 60 enlaces relativos de `README_EN.md` pasan de `./` a `/`, desde la raíz del repositorio, para que resuelvan igual en la portada y en su sitio; ni una línea se mueve, ni una palabra cambia
+
+El commit que lleva este asiento, sobre `dd807ee`, la punta de `main` (el §918). Añade
+`.github/README.md`, un enlace simbólico de git a `../README_EN.md`, sin texto propio. Toca
+`README_EN.md` en 36 líneas, todas por la forma de sus enlaces, sin cambiar el número de líneas ni
+una palabra de la prosa. Y este asiento. Ni el `README.md` en español, ni código, ni tests, ni
+vectores, ni pines, ni `BACKLOG.md`. Lo escribe y lo commitea Claude, en una sesión de Claude Code
+en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El
+número es el siguiente libre tras el §918; la sesión lo reservó ante las otras dos antes de usarlo.
+El canon de este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio,
+con este asiento en su sitio y sin esta frase: VERDE, 628 s de reloj y 398 s de tests, en una
+máquina de 4 CPU con carga de 0,52 al empezar. Las 19 filas en su pin, con 2104 tests que pasan, y
+las 56 líneas «OK» de sus compuertas, entre ellas el artefacto reproducible, con el binario
+`62cb56f5e10b4577` y el tarball `07842099cb02cb98`.
+
+**De dónde sale.** El autor lo pide el 29 de octubre de 2026: que quien visite el repositorio en
+GitHub vea el inglés por defecto. GitHub elige el README de la portada por este orden: el de
+`.github/`, el de la raíz y el de `docs/`. Hasta hoy mostraba el `README.md` de la raíz, en
+español, y el inglés quedaba a un clic.
+
+**Las tres formas, y por qué esta.**
+
+1. **Cambiar los nombres**, que el `README.md` de la raíz sea el inglés: mueve todo lo que cita
+   `README.md` por línea o por nombre —las compuertas que lo nombran (`CARDINALES` y
+   `SITIOS_VECTORES` de `check_publicadas.py`, la lista de `verificar_citas.py`), las citas del
+   canon y de los documentos—, y es la página que más cita el árbol. Descartada.
+2. **Una copia en `.github/README.md`**: un tercer texto que envejece cada vez que cambie
+   `README_EN.md`, y que pediría una compuerta nueva para no quedarse atrás. Descartada.
+3. **Un enlace simbólico**, que no añade texto. Medido en la rama de la sesión antes de proponerlo:
+   GitHub sigue el enlace y pinta `README_EN.md` en la portada, pero resuelve sus enlaces relativos
+   desde `.github/` —`./SECURITY.md` salía como `.github/SECURITY.md`, roto—. Con los enlaces desde
+   la raíz, `/SECURITY.md`, la forma que GitHub documenta para un enlace relativo a la raíz del
+   repositorio, los enlaces del README en la portada de la rama van a los ficheros de la raíz y
+   ninguno a `.github/`, y `README_EN.md` visto en su sitio sigue igual. Es la elegida.
+
+**Lo que cambia para quien lee.** En GitHub, la portada muestra el inglés; su primera línea manda al
+español, `README.md`, que sigue donde estaba y sigue apuntando a su gemelo. Fuera de GitHub, cada
+visor resuelve `/` a su manera: unos contra la carpeta abierta, otros contra la raíz del disco. En
+un clon de Windows sin `core.symlinks`, `.github/README.md` queda como un fichero de una línea con
+la ruta; el clon del autor es WSL, y no le afecta.
+
+**Comprobado.** En la rama de la sesión, con los dos cambios empujados: la portada de GitHub dice
+«Read this first» y su ruta de README es `.github/README.md`; ningún enlace de la portada apunta
+dentro de `.github/`. Sobre el árbol con este sello salen con 0 `verificar_citas`, `check_cifras`,
+`check_publicadas`, `check_figures`, `check_tests`, `check_modulos`, `check_superficie`,
+`check_vectores`, `check_nucleo`, `check_catalogo`, `check_curvas`, `check_dominios`,
+`check_columns`, `check_constraint_layout` y `check_techo`. Las anclas de la propia página, `#…`, no
+cambian.
+
+**Lo que NO hace.** No cambia el `README.md` en español ni los gemelos del §918, cuyos enlaces
+siguen siendo `./`: no los pinta la portada. No toca la descripción del repositorio en GitHub, que
+es un ajuste de la web y no del árbol. No es texto nuevo: ni una frase escrita, generada ni
+traducida. Ni código, ni tests, ni vectores, ni pines, ni `BACKLOG.md`.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2268 tests declarados y 22 instrumentos,
+`check_modulos` en 224 y el total de sello en 2104. La puerta de los vectores, en 702 ficheros
+y 1740 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 38 abiertas y 101
+resueltas.

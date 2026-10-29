@@ -1,12 +1,12 @@
 # Arqueo — open conservation proofs for closed ledgers
 
-> **Español:** [`README.md`](./README.md) es esta página en español, sección por sección.
+> **Español:** [`README.md`](/README.md) es esta página en español, sección por sección.
 
 **Formerly ZK-SSL.** The project changed its name, not its published identifiers: the wire
 protocol was `zkssl/0.3`, was `zkssl/0.4` since audit entry 538 (because of hiding, RFC-0009) and is `zkssl/0.5` since audit entry 914 (the cut of the train, RFC-0018: the v2 mark and ZK in the 23 families;
 not because of the name; and that label does not say which proofs a node accepts: «Status»), the crates are still `zk-ssl-*`, and the deposits with a DOI keep
 the title they were deposited under. What this page says is verified against commit `8c02941`
-(§789), in §794; whatever changes afterwards is recorded in [`AUDITORIA.md`](./AUDITORIA.md), one
+(§789), in §794; whatever changes afterwards is recorded in [`AUDITORIA.md`](/AUDITORIA.md), one
 entry per change. ⚠️ **§794**: until here it said «verified against `main` at commit `343d3b6`», the
 one of §444; what the re-reading of §794 corrected carries its mark where it is. That re-reading
 compiled nothing: the outputs this page expects from `simulate`, from `conformance` and from the kit
@@ -58,7 +58,7 @@ It proves **conservation, not solvency**: the proofs speak of the ledger, not of
   (`AUDITORIA.md` §702: «No audita `argon2` 0.5.3»); the tree holds no record of a third-party
   audit. The RFC 9106 vector and the KATs check the output, not the code, and its pin is checked by
   a test of the layer, `argon2_entra_clavada_y_solo_por_la_capa`. What is not audited, in
-  [`SECURITY.md`](./SECURITY.md); what the first two declare, in the manifest that pins them
+  [`SECURITY.md`](/SECURITY.md); what the first two declare, in the manifest that pins them
   (`crates/zk-ssl-node/Cargo.toml`:48-52, `crates/zk-ssl-medio/Cargo.toml`:29-36), and why the third
   is pinned, in its own (`crates/zk-ssl/Cargo.toml`:45-58). ⚠️ **Corrected
   in §794**: it said «All of it in `SECURITY.md`», which says of neither dependency that it is
@@ -68,7 +68,7 @@ It proves **conservation, not solvency**: the proofs speak of the ledger, not of
   project (`AUDITORIA.md` §702), and it said «what the two dependencies declare, in the manifest that
   pins them».
 - **The six deposits with a DOI predate corrections in the tree.** What was corrected is marked,
-  not erased: [`doc/preprints/ERRATA.md`](./doc/preprints/ERRATA.md).
+  not erased: [`doc/preprints/ERRATA.md`](/doc/preprints/ERRATA.md).
 
 ---
 
@@ -80,7 +80,7 @@ One download, and five checks on the checker's own machine, offline. The current
 `arqueo-verify-v0.4.4`, produced on commit `95bc4572bca27f63033ba5bbc499ef2d95a4b40b`; the
 tarball's fingerprint is published next to its commit, on the release page and in the
 `AUDITORIA.md` entry that records it. The full script, with the expected output of every step, is
-[`doc/KIT_EN.md`](./doc/KIT_EN.md). It recomposes heads up to v6, the one the node signs today, and
+[`doc/KIT_EN.md`](/doc/KIT_EN.md). It recomposes heads up to v6, the one the node signs today, and
 reads twelve envelope families, the twelfth rotation's (§649); release 0.2.0, which
 stops at v4, is still published and rejects what came later — it fails closed, never a false
 GREEN. ⚠️ §725: it does give one in point 2 of 0.4.4, like 0.1.0 (`SECURITY.md` §3.18; `doc/KIT_EN.md`, section 0). Measured and declared in `doc/KIT_EN.md`, section 0. ⚠️ **Corrected in §794**: it said «reads
@@ -152,7 +152,7 @@ bash tools/canon.sh --lista
 
 You should see `cadena de transiciones íntegra` and `CONFORMIDAD: … todo IDENTICO`. The four
 sandbox commands — `simulate`, `trace-tx`, `inspect-state`, `conformance` — are in
-[`doc/README-CLI.md`](./doc/README-CLI.md) (Spanish); the CLI has four more that page does not
+[`doc/README-CLI.md`](/doc/README-CLI.md) (Spanish); the CLI has four more that page does not
 cover: `witness`, the witness, and `prueba-cobro`, `prueba-pago` and `prueba-prenda`, which write
 the RFC-0008 pending-item envelopes from what they ask a live node. ⚠️ **Corrected in §794**: the
 `--check` ran against `zkssl-0.3.json`, which since §538 is rejected as «de OTRA version» — the
@@ -168,22 +168,22 @@ A payment is two transitions: the payer **sends** (one leaf) and the payee **cla
 each with a proof generated on their own machine; the layer hands out paths and roots — public
 data — and verifies proofs. **The spend key does not travel through the API and, since §538, does
 not come out literally in the proof either**: the house prover hides its witness (RFC-0009 E3b-2,
-`zkssl/0.4`; ⚠️ §916: and since `zkssl/0.5` the proof's view is simulated without the witness, under named hypotheses, RFC-0009 D-A); between §521 and §538 the proof published it (see [`SECURITY.md`](./SECURITY.md)
+`zkssl/0.4`; ⚠️ §916: and since `zkssl/0.5` the proof's view is simulated without the witness, under named hypotheses, RFC-0009 D-A); between §521 and §538 the proof published it (see [`SECURITY.md`](/SECURITY.md)
 §3.bis, in Spanish). Every epoch the node signs a **head** that binds the state, the chained
 transition log and the tree of published consumptions; independent witnesses co-sign it and **pin
 the key the first time they see it**. An **evidence package** carries a signed head, an
 acknowledgement with its path and the co-signatures: a verifier that does not know the node
 recomposes it and accepts or rejects it **naming the rule**. The core is in
-[`spec/NUCLEO.md`](./spec/NUCLEO.md), the package in [`spec/PAQUETE.md`](./spec/PAQUETE.md) and the
-published consumption in [`spec/rfc/0006-consumo-publicado.md`](./spec/rfc/0006-consumo-publicado.md)
-(specification files are in Spanish; [`spec/README.md`](./spec/README.md) is the reader's guide in
+[`spec/NUCLEO.md`](/spec/NUCLEO.md), the package in [`spec/PAQUETE.md`](/spec/PAQUETE.md) and the
+published consumption in [`spec/rfc/0006-consumo-publicado.md`](/spec/rfc/0006-consumo-publicado.md)
+(specification files are in Spanish; [`spec/README.md`](/spec/README.md) is the reader's guide in
 English).
 
 ---
 
 ## What it guarantees and what it does not
 
-The same table, with the use cases, is [`doc/USE_CASES.md`](./doc/USE_CASES.md).
+The same table, with the use cases, is [`doc/USE_CASES.md`](/doc/USE_CASES.md).
 
 | # | property | what a third party checks | status |
 |---|---|---|---|
@@ -258,17 +258,17 @@ receptor».
 
 | If you are… | Start with |
 |---|---|
-| **An evaluator or an external auditor** | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`doc/USE_CASES.md`](./doc/USE_CASES.md) · [`SECURITY.md`](./SECURITY.md) · [`AUDITORIA.md`](./AUDITORIA.md) |
-| **Implementing the protocol** | [`spec/README.md`](./spec/README.md) · [`spec/RPC.md`](./spec/RPC.md) + [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) · [`spec/PAQUETE.md`](./spec/PAQUETE.md) · [`spec/rfc/`](./spec/rfc/) |
-| **A cryptographer** | [`spec/NUCLEO.md`](./spec/NUCLEO.md) · [`ARQUITECTURA.md`](./ARQUITECTURA.md) · [`doc/VERIFICACION_FORMAL.md`](./doc/VERIFICACION_FORMAL.md) + [`doc/fv/mapa_fv_capas.md`](./doc/fv/mapa_fv_capas.md) · [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md) |
-| After the reasoning behind it | [`PRINCIPIOS.md`](./PRINCIPIOS.md) · [`doc/IDEA_CENTRAL.md`](./doc/IDEA_CENTRAL.md) · [`doc/APORTACION.md`](./doc/APORTACION.md) · [`doc/CONSECUENCIAS.md`](./doc/CONSECUENCIAS.md) |
-| With questions | [`QUESTIONS.md`](./QUESTIONS.md) · [`PREGUNTAS.md`](./PREGUNTAS.md) |
-| Five minutes and not technical | [`RESUMEN_BILINGUE.md`](./RESUMEN_BILINGUE.md) · [`RESUMEN_EJECUTIVO.md`](./RESUMEN_EJECUTIVO.md) |
-| Institutions, and the limits of scale | [`doc/INSTITUTIONAL.md`](./doc/INSTITUTIONAL.md) · [`doc/INSTITUCIONAL.md`](./doc/INSTITUCIONAL.md) |
-| Coming from Zenodo | [`doc/ZENODO.md`](./doc/ZENODO.md) |
-| Contributing, or reporting a vulnerability | [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
-| After the Merkle certificate CA (MTC) that was born here | [`doc/MTC.md`](./doc/MTC.md) · <https://github.com/atoranzo/mtc-core> |
-| After the XMSS^MT known-answer vectors that were born here | [`tools/segunda/kat_xmss/`](./tools/segunda/kat_xmss/) · <https://github.com/atoranzo/xmss-kat> |
+| **An evaluator or an external auditor** | [`doc/KIT_EN.md`](/doc/KIT_EN.md) · [`doc/USE_CASES.md`](/doc/USE_CASES.md) · [`SECURITY.md`](/SECURITY.md) · [`AUDITORIA.md`](/AUDITORIA.md) |
+| **Implementing the protocol** | [`spec/README.md`](/spec/README.md) · [`spec/RPC.md`](/spec/RPC.md) + [`spec/openrpc.json`](/spec/openrpc.json) · [`spec/vectors/`](/spec/vectors/) · [`spec/PAQUETE.md`](/spec/PAQUETE.md) · [`spec/rfc/`](/spec/rfc/) |
+| **A cryptographer** | [`spec/NUCLEO.md`](/spec/NUCLEO.md) · [`ARQUITECTURA.md`](/ARQUITECTURA.md) · [`doc/VERIFICACION_FORMAL.md`](/doc/VERIFICACION_FORMAL.md) + [`doc/fv/mapa_fv_capas.md`](/doc/fv/mapa_fv_capas.md) · [`FIVE_BACKENDS.md`](/FIVE_BACKENDS.md) |
+| After the reasoning behind it | [`PRINCIPIOS.md`](/PRINCIPIOS.md) · [`doc/IDEA_CENTRAL.md`](/doc/IDEA_CENTRAL.md) · [`doc/APORTACION.md`](/doc/APORTACION.md) · [`doc/CONSECUENCIAS.md`](/doc/CONSECUENCIAS.md) |
+| With questions | [`QUESTIONS.md`](/QUESTIONS.md) · [`PREGUNTAS.md`](/PREGUNTAS.md) |
+| Five minutes and not technical | [`RESUMEN_BILINGUE.md`](/RESUMEN_BILINGUE.md) · [`RESUMEN_EJECUTIVO.md`](/RESUMEN_EJECUTIVO.md) |
+| Institutions, and the limits of scale | [`doc/INSTITUTIONAL.md`](/doc/INSTITUTIONAL.md) · [`doc/INSTITUCIONAL.md`](/doc/INSTITUCIONAL.md) |
+| Coming from Zenodo | [`doc/ZENODO.md`](/doc/ZENODO.md) |
+| Contributing, or reporting a vulnerability | [`CONTRIBUTING.md`](/CONTRIBUTING.md) · [`SECURITY.md`](/SECURITY.md) |
+| After the Merkle certificate CA (MTC) that was born here | [`doc/MTC.md`](/doc/MTC.md) · <https://github.com/atoranzo/mtc-core> |
+| After the XMSS^MT known-answer vectors that were born here | [`tools/segunda/kat_xmss/`](/tools/segunda/kat_xmss/) · <https://github.com/atoranzo/xmss-kat> |
 
 ⚠️ **§794**: the last two rows were only on the Spanish page, since §603 and §623.
 
@@ -286,14 +286,14 @@ if you intend to break the code, start there.
 
 | piece | where it is measured |
 |---|---|
-| **22 crates** in one workspace —19 of our own and the three of the winterfell 0.13.1 fork (§533)—; the canon (`tools/canon.sh`) runs every crate's tests, in release —nineteen in `--sello`; `halo2-experiment` and `plonk-experiment` from `--largo`, and `zk-core` in `--completo`—, and the eleven tools of its loop under `tools/` that watch figures, citations, domains, the core census, geometry, that no curve reaches the production binaries and that nothing promised by the protocol breaks without its list saying so. ⚠️ **Corrected in §794**: it said that `--sello` «runs every crate's tests»; the `nivel` column of its table leaves three out (the `halo2-experiment`, `plonk-experiment` and `zk-core` rows of the table in `tools/canon.sh`, its `nivel_num` function and the per-level skip of its «1 · los tests, crate a crate» block). ⚠️ **Corrected in §847**: it cited those three things by line, `:128-130`, `:154-158` and `:271`, and the table moved them. The rows, the function and the block are cited. ⚠️ **Corrected in §835**: it said they watch «that no curve reaches the production binaries»; the curve gate does not see the TLS of `ureq`, which brings curves into the cli and the SDK for transport (item 122 of `BACKLOG.md`). ⚠️ **Corrected in §838**: §835 said it does not see it; since §838 it does, and admits it only as the §106 exception for the transport of the cli and the SDK, `rustls` over `ring` under `ureq`, at a stated cost: the view key travels under a classical ECDHE | the table in [`tools/canon.sh`](./tools/canon.sh) carries the passing tests per crate; every seal updates it |
-| **Protocol `zkssl/0.5`** (§914; ⚠️ §914: it said `zkssl/0.4`): 32 JSON-RPC methods (29 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version, each one's hash fixed in `spec/vectors/HUELLAS.sha256` and checked by every canon run (§692), which since then lets none be rewritten. ⚠️ **The version does not identify which proofs a node accepts** (§699): the proofs changed without raising it in §641 (the layer's seventeen circuits), §680 (send, claim and burn) and §684 (threshold), because conformance does not compare proof bytes; measured, a node rejects a client's send when both say `zkssl/0.4` and §641 or §680 lies between them, whichever is older. This holds until the `zkssl/0.5` cut. And `zkssl-0.2.json` was re-issued three times under its own version before the hashes (§275, §278 and §281). ⚠️ **Corrected in §699**: it said «vectors per version that are never rewritten». **The promise**, written in §801: which surface is stable, what breaks it and what keeps verifying after a break, in `spec/RPC.md` §«Versionado y compatibilidad» (RFC-0021 E2); `tools/check_superficie.py` compares in every canon run that section's list with what each producer gives (E3a). ⚠️ **§723**: and once more after the promise: the kit's band and pending claim move to their v2, with the three range segments at 62 bits, and 0.4.3 and earlier do not verify what a node proves with it. It is a break of the proofs that travel under the promise, in force since §799, and the `zkssl/0.5` cut pays for it, like the one of RFC-0017's E2 (§826) | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (727 files: cable, núcleo, nodo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla, ancla cofirmada, rotación, the 0.3 catalogues under `0.3/`, the `zkssl/0.4` ones under `0.4/` —the six proof families of the kit, moved in the §914 cut, and the two completitud envelopes of §682—, the five `zkssl-0.N.json` and `HUELLAS.sha256`; ⚠️ §914: it said 625) |
-| **RFCs**: 0002, 0003, 0004, 0006, 0007 (proofs over the committed state), 0008 (the portable proofs of a pending item), 0009 (what a proof reveals), 0010 (the reception receipt), 0011 (the lying node), 0012 (the head anchor), 0014 (the batch and pledge receipt) 0016 (one value, one encoding) and 0018 (the `zkssl/0.5` train; ⚠️ §916: until here, in the other list) accepted; 0001 (the KDF at rest: Argon2id with salt and cost), 0005 (the frozen core), 0013 (the anchor's medium), 0015 (the signer's lifecycle), 0017 (the signature attests the arithmetic), 0019 (completeness that cannot be dodged), 0020 (the signature scheme inside what is signed), 0021 (the compatibility policy), 0022 (the notice in ISO 20022) and 0023 (the expiry clock) proposed | [`spec/rfc/`](./spec/rfc/) |
-| **Independent verifier** `zk-ssl-verify` 0.5.0, published as `arqueo-verify-v0.5.0` (§917), the first break of the wire under the policy (`zkssl/0.5`, RFC-0021 E4; `doc/KIT_EN.md` §0); ⚠️ §917: it said 0.4.4, published as `arqueo-verify-v0.4.4` (§726), still published for `zkssl/0.4` envelopes, a security fix that changes verdicts with its notice (RFC-0021 R6 f; `doc/KIT_EN.md` §0; `SECURITY.md` §3.18; `GHSA-gq4j-w7rw-p96f`), rebuildable from the commit its `VERSION` names; with the same hash, only shown within one same machine. ⚠️ **§823**: it said «reproducible from the commit its `VERSION` names», without the machine condition: rebuilt from its commit on another one, 0.4.2 comes out with 13 of its 35 sections different, and 0.4.3 is not on record as rebuilt with its `rustc` 1.97.1 outside the machine that produced it (`doc/KIT_EN.md` §«Reproducing the kit, for whoever does not trust the download»). ⚠️ **§794**: the `zk-ssl-verify` of this tree is not that release, though its `Cargo.toml` still says 0.4.2: since `a4e888d`, the release commit, fifteen commits change it, from §643 to §782 (`git log a4e888d..8c02941 -- crates/zk-ssl-verify/src`), and cutting the next one is the author's decision. ⚠️ **§815**: cut by the author's decision: 0.4.3 carries those commits and the fix of §815, and its `Cargo.toml` says 0.4.3. ⚠️ **§818**: it said «0.4.3, cut (§815), a security fix that changes verdicts with its notice (…); the published one is `arqueo-verify-v0.4.2`», the release the §794 note speaks of; the author published 0.4.3 on `5fd5212`, the commit of §817, and 0.4.2 is still published, no longer current. ⚠️ **§725**: it said «0.4.3, published as `arqueo-verify-v0.4.3` (§818), a security fix that changes verdicts with its notice (RFC-0021 R6 f; `doc/KIT_EN.md` §0; `GHSA-6p4m-qg2w-8r6j`)»; the series from §711 to §725 cuts 0.4.4, with the eight kit defects of `SECURITY.md` §3.18, and its `Cargo.toml` says 0.4.4. ⚠️ **§726**: it said «0.4.4, cut (§725), a security fix that changes verdicts with its notice (…); the published one is `arqueo-verify-v0.4.3` (§818), also a security fix with its notice (`GHSA-6p4m-qg2w-8r6j`)»; the author published 0.4.4 on `95bc457`, the commit of §725, and 0.4.3 is still published, no longer current | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
-| **Record**: one entry per verified change, with its commit; what is corrected is marked, not erased | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |
+| **22 crates** in one workspace —19 of our own and the three of the winterfell 0.13.1 fork (§533)—; the canon (`tools/canon.sh`) runs every crate's tests, in release —nineteen in `--sello`; `halo2-experiment` and `plonk-experiment` from `--largo`, and `zk-core` in `--completo`—, and the eleven tools of its loop under `tools/` that watch figures, citations, domains, the core census, geometry, that no curve reaches the production binaries and that nothing promised by the protocol breaks without its list saying so. ⚠️ **Corrected in §794**: it said that `--sello` «runs every crate's tests»; the `nivel` column of its table leaves three out (the `halo2-experiment`, `plonk-experiment` and `zk-core` rows of the table in `tools/canon.sh`, its `nivel_num` function and the per-level skip of its «1 · los tests, crate a crate» block). ⚠️ **Corrected in §847**: it cited those three things by line, `:128-130`, `:154-158` and `:271`, and the table moved them. The rows, the function and the block are cited. ⚠️ **Corrected in §835**: it said they watch «that no curve reaches the production binaries»; the curve gate does not see the TLS of `ureq`, which brings curves into the cli and the SDK for transport (item 122 of `BACKLOG.md`). ⚠️ **Corrected in §838**: §835 said it does not see it; since §838 it does, and admits it only as the §106 exception for the transport of the cli and the SDK, `rustls` over `ring` under `ureq`, at a stated cost: the view key travels under a classical ECDHE | the table in [`tools/canon.sh`](/tools/canon.sh) carries the passing tests per crate; every seal updates it |
+| **Protocol `zkssl/0.5`** (§914; ⚠️ §914: it said `zkssl/0.4`): 32 JSON-RPC methods (29 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version, each one's hash fixed in `spec/vectors/HUELLAS.sha256` and checked by every canon run (§692), which since then lets none be rewritten. ⚠️ **The version does not identify which proofs a node accepts** (§699): the proofs changed without raising it in §641 (the layer's seventeen circuits), §680 (send, claim and burn) and §684 (threshold), because conformance does not compare proof bytes; measured, a node rejects a client's send when both say `zkssl/0.4` and §641 or §680 lies between them, whichever is older. This holds until the `zkssl/0.5` cut. And `zkssl-0.2.json` was re-issued three times under its own version before the hashes (§275, §278 and §281). ⚠️ **Corrected in §699**: it said «vectors per version that are never rewritten». **The promise**, written in §801: which surface is stable, what breaks it and what keeps verifying after a break, in `spec/RPC.md` §«Versionado y compatibilidad» (RFC-0021 E2); `tools/check_superficie.py` compares in every canon run that section's list with what each producer gives (E3a). ⚠️ **§723**: and once more after the promise: the kit's band and pending claim move to their v2, with the three range segments at 62 bits, and 0.4.3 and earlier do not verify what a node proves with it. It is a break of the proofs that travel under the promise, in force since §799, and the `zkssl/0.5` cut pays for it, like the one of RFC-0017's E2 (§826) | [`spec/RPC.md`](/spec/RPC.md) · [`spec/openrpc.json`](/spec/openrpc.json) · [`spec/vectors/`](/spec/vectors/) (727 files: cable, núcleo, nodo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla, ancla cofirmada, rotación, the 0.3 catalogues under `0.3/`, the `zkssl/0.4` ones under `0.4/` —the six proof families of the kit, moved in the §914 cut, and the two completitud envelopes of §682—, the five `zkssl-0.N.json` and `HUELLAS.sha256`; ⚠️ §914: it said 625) |
+| **RFCs**: 0002, 0003, 0004, 0006, 0007 (proofs over the committed state), 0008 (the portable proofs of a pending item), 0009 (what a proof reveals), 0010 (the reception receipt), 0011 (the lying node), 0012 (the head anchor), 0014 (the batch and pledge receipt) 0016 (one value, one encoding) and 0018 (the `zkssl/0.5` train; ⚠️ §916: until here, in the other list) accepted; 0001 (the KDF at rest: Argon2id with salt and cost), 0005 (the frozen core), 0013 (the anchor's medium), 0015 (the signer's lifecycle), 0017 (the signature attests the arithmetic), 0019 (completeness that cannot be dodged), 0020 (the signature scheme inside what is signed), 0021 (the compatibility policy), 0022 (the notice in ISO 20022) and 0023 (the expiry clock) proposed | [`spec/rfc/`](/spec/rfc/) |
+| **Independent verifier** `zk-ssl-verify` 0.5.0, published as `arqueo-verify-v0.5.0` (§917), the first break of the wire under the policy (`zkssl/0.5`, RFC-0021 E4; `doc/KIT_EN.md` §0); ⚠️ §917: it said 0.4.4, published as `arqueo-verify-v0.4.4` (§726), still published for `zkssl/0.4` envelopes, a security fix that changes verdicts with its notice (RFC-0021 R6 f; `doc/KIT_EN.md` §0; `SECURITY.md` §3.18; `GHSA-gq4j-w7rw-p96f`), rebuildable from the commit its `VERSION` names; with the same hash, only shown within one same machine. ⚠️ **§823**: it said «reproducible from the commit its `VERSION` names», without the machine condition: rebuilt from its commit on another one, 0.4.2 comes out with 13 of its 35 sections different, and 0.4.3 is not on record as rebuilt with its `rustc` 1.97.1 outside the machine that produced it (`doc/KIT_EN.md` §«Reproducing the kit, for whoever does not trust the download»). ⚠️ **§794**: the `zk-ssl-verify` of this tree is not that release, though its `Cargo.toml` still says 0.4.2: since `a4e888d`, the release commit, fifteen commits change it, from §643 to §782 (`git log a4e888d..8c02941 -- crates/zk-ssl-verify/src`), and cutting the next one is the author's decision. ⚠️ **§815**: cut by the author's decision: 0.4.3 carries those commits and the fix of §815, and its `Cargo.toml` says 0.4.3. ⚠️ **§818**: it said «0.4.3, cut (§815), a security fix that changes verdicts with its notice (…); the published one is `arqueo-verify-v0.4.2`», the release the §794 note speaks of; the author published 0.4.3 on `5fd5212`, the commit of §817, and 0.4.2 is still published, no longer current. ⚠️ **§725**: it said «0.4.3, published as `arqueo-verify-v0.4.3` (§818), a security fix that changes verdicts with its notice (RFC-0021 R6 f; `doc/KIT_EN.md` §0; `GHSA-6p4m-qg2w-8r6j`)»; the series from §711 to §725 cuts 0.4.4, with the eight kit defects of `SECURITY.md` §3.18, and its `Cargo.toml` says 0.4.4. ⚠️ **§726**: it said «0.4.4, cut (§725), a security fix that changes verdicts with its notice (…); the published one is `arqueo-verify-v0.4.3` (§818), also a security fix with its notice (`GHSA-6p4m-qg2w-8r6j`)»; the author published 0.4.4 on `95bc457`, the commit of §725, and 0.4.3 is still published, no longer current | [`doc/KIT_EN.md`](/doc/KIT_EN.md) · [`tools/artefacto.sh`](/tools/artefacto.sh) |
+| **Record**: one entry per verified change, with its commit; what is corrected is marked, not erased | [`AUDITORIA.md`](/AUDITORIA.md) · [`BACKLOG.md`](/BACKLOG.md) |
 
 The design was chosen by measuring **the same circuit in five proof systems**
-([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)); STARK/FRI without a ceremony was the only decision
+([`FIVE_BACKENDS.md`](/FIVE_BACKENDS.md)); STARK/FRI without a ceremony was the only decision
 taken against the numbers, because a ceremony whose participants collude can create money without
 a trace. Measured times and sizes, with their dispersion, are in `AUDITORIA.md` (§130 and §131 the
 dispersion between runs, §229 the node's ceiling per RPC); they are not repeated here so that they
@@ -320,15 +320,15 @@ the Spanish page: **a published figure that is corrected is not erased, it is ma
 - **Residual Trust After Verification: A Microeconomic Account of What Proofs Cannot Eliminate** —
   [10.5281/zenodo.22076721](https://doi.org/10.5281/zenodo.22076721)
 
-Further notes: [`doc/ZENODO.md`](./doc/ZENODO.md).
+Further notes: [`doc/ZENODO.md`](/doc/ZENODO.md).
 
 ## Authorship and license
 
-**Angel Toranzo Portela**, 2026. How to cite: [`CITATION.cff`](./CITATION.cff).
+**Angel Toranzo Portela**, 2026. How to cite: [`CITATION.cff`](/CITATION.cff).
 
-Dual licensed: MIT **or** Apache-2.0, at your option. See [`LICENSE-MIT`](./LICENSE-MIT) and
-[`LICENSE-APACHE`](./LICENSE-APACHE). Both licenses require keeping the copyright notice and the
-license text in any copy or derivative; Apache-2.0 also requires honouring [`NOTICE`](./NOTICE).
+Dual licensed: MIT **or** Apache-2.0, at your option. See [`LICENSE-MIT`](/LICENSE-MIT) and
+[`LICENSE-APACHE`](/LICENSE-APACHE). Both licenses require keeping the copyright notice and the
+license text in any copy or derivative; Apache-2.0 also requires honouring [`NOTICE`](/NOTICE).
 
 ### Use of generative AI
 
@@ -337,7 +337,7 @@ This project is developed with the assistance of a generative AI model
 and accepts**; outside that step, a Claude Code session applies, checks and
 commits on its branch, its entry says so and says which gates it passed, and
 the author's acceptance is the change entering `main`. The method, its scope
-and where the per-change record lives: [`GENAI.md`](./GENAI.md).
+and where the per-change record lives: [`GENAI.md`](/GENAI.md).
 ⚠️ **Corrected in §794**: it said only «the author runs, measures and accepts,
 and only what the canon lets through gets into `main`»; `GENAI.md`
 §«Outside step 4» counts the entries a session commits since §628, and in
@@ -347,7 +347,7 @@ them the gates are those the session declares, not always the whole canon.
 
 `crates/ceremony/` **is not original code of this project**: it comes from
 `penumbra-sdk-proof-setup` (Penumbra Labs), under the same dual license. See
-[`crates/ceremony/ATTRIBUTION.md`](./crates/ceremony/ATTRIBUTION.md).
+[`crates/ceremony/ATTRIBUTION.md`](/crates/ceremony/ATTRIBUTION.md).
 
 ### ⚠️ No institutional affiliation
 
@@ -360,5 +360,5 @@ the position of anyone but its author.**
 ---
 
 **English translations** of the pages written in Spanish, one twin per page, generated by the
-assistant in audit entry §918 and indexed in [`TRANSLATIONS.md`](./TRANSLATIONS.md); the Spanish page
+assistant in audit entry §918 and indexed in [`TRANSLATIONS.md`](/TRANSLATIONS.md); the Spanish page
 prevails.
