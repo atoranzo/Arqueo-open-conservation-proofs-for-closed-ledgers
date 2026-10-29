@@ -86,23 +86,28 @@ TABLA_E = {
     # de la banda de la v1; y el juez de la banda, con sus dos versiones, vive en `verificar_con`
     'verificar_rechazo_diferido::banda: {}': ('enumera', [(A + 'banda.rs', 'fn:verificar_con'),
                                                           (A + 'banda.rs', 'fn:comprobar_enunciado'),
-                                                          (A + 'lib.rs', 'fn:comprobar_marca')]),
+                                                          (A + 'lib.rs', 'fn:comprobar_marca'),
+                                                       (A + 'lib.rs', 'fn:rechazo_del_kit')]),   # §913: el texto de la forma, por el juez unico
     'verificar_edad::edad: {}': ('enumera', [(A + 'lib.rs', 'fn:verificar_contra_cabeza'),
                                              (A + 'lib.rs', 'fn:comprobar_enunciado'),
                                              (A + 'lib.rs', 'fn:comprobar_emisor'),   # §718: la cota del emisor, que comprobar_enunciado llama
                                              (A + 'lib.rs', 'fn:verificar'),
-                                             (A + 'lib.rs', 'fn:comprobar_marca')]),
+                                             (A + 'lib.rs', 'fn:comprobar_marca'),
+                                                       (A + 'lib.rs', 'fn:rechazo_del_kit')]),   # §913: el texto de la forma, por el juez unico
     'verificar_cobro_pendiente::cobro: {}': ('enumera', [(A + 'cobro_pendiente.rs', 'fn:verificar_contra_cabeza'),
                                                          (A + 'cobro_pendiente.rs', 'fn:comprobar_enunciado'),
                                                          (A + 'cobro_pendiente.rs', 'fn:verificar'),
-                                                         (A + 'lib.rs', 'fn:comprobar_marca')]),
+                                                         (A + 'lib.rs', 'fn:comprobar_marca'),
+                                                       (A + 'lib.rs', 'fn:rechazo_del_kit')]),   # §913: el texto de la forma, por el juez unico
     'verificar_pago_en_curso::pago: {}': ('enumera', [(A + 'pago_en_curso.rs', 'fn:verificar_contra_cabeza'),
                                                       (A + 'pago_en_curso.rs', 'fn:comprobar_enunciado'),
                                                       (A + 'pago_en_curso.rs', 'fn:verificar'),
-                                                      (A + 'lib.rs', 'fn:comprobar_marca')]),
+                                                      (A + 'lib.rs', 'fn:comprobar_marca'),
+                                                       (A + 'lib.rs', 'fn:rechazo_del_kit')]),   # §913: el texto de la forma, por el juez unico
     'verificar_prenda::prenda: {}': ('enumera', [(A + 'prenda.rs', 'fn:verificar_contra_cabeza'),
                                                  (A + 'prenda.rs', 'fn:verificar'),
-                                                 (A + 'lib.rs', 'fn:comprobar_marca')]),
+                                                 (A + 'lib.rs', 'fn:comprobar_marca'),
+                                                       (A + 'lib.rs', 'fn:rechazo_del_kit')]),   # §913: el texto de la forma, por el juez unico
     'operacion_nombrada::{}: {}: el rechazo de un lote nombra su operacion (§611)': ('kit', 'u64_de'),
     'resolver_lote::resolucion.data.campos: {}': ('kit', 'u64_de'),
     'bifurcacion_del_ancla::rama: {}': ('kit', 'u64_de'),   # §714: el formatVersion de la rama

@@ -51,11 +51,8 @@ use winter_air::{
     ProofOptions, TraceInfo, TransitionConstraintDegree,
 };
 use winter_crypto::hashers::{Blake3_256, Rp64_256};
-use winter_crypto::DefaultRandomCoin;
-use crate::sal::MerkleConSal;
 use winter_math::fields::f64::BaseElement;
 use winter_math::{ExtensionOf, FieldElement, ToElements};
-use winter_verifier::{verify, AcceptableOptions};
 use zk_ssl_hash::{native_merge, DOMINIO_META_PENDIENTE};
 
 /// **El AIR de la BANDA del saldo** (RFC-0007, E5): el segundo juez de este crate.
@@ -76,6 +73,9 @@ pub mod prenda;
 pub mod sal;
 // §906 (RFC-0018 D-G, en laboratorio): el registro de las familias de la marca v2, un solo productor
 pub mod familias;
+// §913 (ARQ-01, la 117 de BACKLOG.md): el juez unico de verificacion, por el que pasa toda
+// verificacion de produccion -la capa, la pareja umbral y los cinco jueces del kit-.
+pub mod juez;
 
 /// El digest de la casa: cuatro elementos (el de `zk-ssl-hash`).
 pub type Digest = zk_ssl_hash::Digest;
@@ -307,6 +307,20 @@ pub fn comprobar_marca_v2(meta: &[u8], familia: u16) -> Result<(usize, usize), S
         return Err(format!("marca: m = {}; la construccion pide m = {M_OCULTACION}", marca.m));
     }
     Ok((marca.m, marca.columnas as usize))
+}
+
+/// §913: el texto con que los cinco jueces del kit dicen un [`juez::Rechazo`], los de siempre: la
+/// forma con «pide», la marca con el texto de [`comprobar_marca`] y el error del fork por su
+/// `Debug`. Los catalogos de `spec/PAQUETE.md` §5 los citan tal cual. Siempre es `Err`: los jueces
+/// lo encadenan con `or_else`.
+pub fn rechazo_del_kit(r: juez::Rechazo) -> Result<(), String> {
+    match r {
+        juez::Rechazo::Forma { real: forma, exige } => {
+            Err(format!("forma de traza {forma:?}; el enunciado pide {:?}", exige))
+        },
+        juez::Rechazo::Marca(m) => Err(m),
+        juez::Rechazo::Verificador(e) => Err(format!("{e:?}")),
+    }
 }
 
 /// §711: las causas con nombre de una prueba mal formada, del fork de winterfell, la unica fuente:
@@ -830,6 +844,13 @@ impl Air for EdadAir {
     }
 }
 
+/// §913: la forma en claro de la edad, para el juez unico: la longitud depende de `m`.
+impl juez::Juez for EdadAir {
+    fn forma(pi: &EdadPublicInputs) -> juez::Forma {
+        juez::Forma { ancho: ANCHO, ancho_aux: ANCHO_AUX, aleatorios: ALEATORIOS, longitud: CICLO << pi.m }
+    }
+}
+
 // ------------------------------------------------------------------ el juez
 
 /// **Verifica una prueba de edad contra su enunciado.** Comprueba ANTES la forma de la traza que
@@ -840,29 +861,9 @@ pub fn verificar(prueba: &[u8], pi: &EdadPublicInputs) -> Result<(), String> {
     comprobar_enunciado(pi)?;
     let proof =
         Proof::from_bytes(prueba).map_err(|e| format!("la prueba no se deserializa: {e:?}"))?;
-    let info = proof.trace_info();
-    let filas = CICLO << pi.m;
-    let forma = (
-        info.main_trace_width(),
-        info.aux_segment_width(),
-        info.get_num_aux_segment_rand_elements(),
-        info.length(),
-    );
-    if forma != (ANCHO + 1, ANCHO_AUX, ALEATORIOS, 2 * filas) {
-        return Err(format!(
-            "forma de traza {forma:?}; el enunciado pide {:?}",
-            (ANCHO + 1, ANCHO_AUX, ALEATORIOS, 2 * filas)
-        ));
-    }
-    // §651 (D3-META): la marca es parte de la forma; sin ella, panico en `AIR::new`.
-    comprobar_marca(info.meta())?;
-    let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
-    verify::<EdadAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-        proof,
-        pi.clone(),
-        &aceptadas,
-    )
-    .map_err(|e| format!("{e:?}"))
+    // §913: la forma oculta -ancho + 1, el tramo auxiliar tal cual y 2 * CICLO * 2^m filas-, la
+    // marca (§651) y la verificacion con la politica del juez, por el juez unico
+    juez::juzgar::<EdadAir>(proof, pi.clone()).or_else(rechazo_del_kit)
 }
 
 // ------------------------------------------------------------------ las raices nativas
@@ -1143,16 +1144,30 @@ mod tests_sal {
         total
     }
 
+    /// §913 (ARQ-01, la 117): ningun `verify` vivo en los cinco jueces del kit; el unico es el del
+    /// juez unico, `juez.rs`, y lee con sal. Y cada juez del kit llama al juez unico.
     #[test]
-    fn toda_verificacion_del_kit_lee_con_sal() {
+    fn toda_verificacion_del_kit_pasa_por_el_juez() {
         let total = todas_con_sal(&[
+            ("lib.rs", include_str!("lib.rs"), 0),
+            ("banda.rs", include_str!("banda.rs"), 0),
+            ("prenda.rs", include_str!("prenda.rs"), 0),
+            ("pago_en_curso.rs", include_str!("pago_en_curso.rs"), 0),
+            ("cobro_pendiente.rs", include_str!("cobro_pendiente.rs"), 0),
+            ("juez.rs", include_str!("juez.rs"), 1),
+        ]);
+        assert_eq!(total, 1, "la unica llamada viva a verify es la del juez");
+        let juzga = concat!("juzgar", "::<");
+        for (nombre, fuente, esperadas) in [
             ("lib.rs", include_str!("lib.rs"), 1),
-            ("banda.rs", include_str!("banda.rs"), 1),
+            ("banda.rs", include_str!("banda.rs"), 2),
             ("prenda.rs", include_str!("prenda.rs"), 1),
             ("pago_en_curso.rs", include_str!("pago_en_curso.rs"), 1),
-            ("cobro_pendiente.rs", include_str!("cobro_pendiente.rs"), 1),
-        ]);
-        assert_eq!(total, 5, "las cinco del kit");
+            ("cobro_pendiente.rs", include_str!("cobro_pendiente.rs"), 2),
+        ] {
+            let n = fuente.lines().filter(|l| !l.trim_start().starts_with("//") && l.contains(juzga)).count();
+            assert_eq!(n, esperadas, "{nombre}: llamadas al juez unico");
+        }
     }
 }
 
@@ -1478,6 +1493,7 @@ mod tests_nivel {
 /// crece con `2^m` ni en memoria ni, sobre el tope, en CPU.
 #[cfg(test)]
 mod tests_coste {
+    use crate::sal::MerkleConSal;
     use std::time::{Duration, Instant};
 
     use winter_air::proof::{Commitments, Context, OodFrame, Queries};

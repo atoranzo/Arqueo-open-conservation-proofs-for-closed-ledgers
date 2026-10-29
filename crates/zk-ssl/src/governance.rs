@@ -136,7 +136,6 @@ impl SovereignLayer {
         params.push(BaseElement::new(count_new));
         let operation = commit_operation(OP_GOVERNANCE, &params);
 
-        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
         crate::sin_panico("autorizacion", || {
             verify_threshold_pair(
                 proof_a,
@@ -151,7 +150,6 @@ impl SovereignLayer {
                 BaseElement::new(stark_experiment::circuit_governance::GOVERNANCE_DOMAIN),
                 self.governance_set_root,
                 operation,
-                &accepted,
             )
             .map_err(|r| match r {
                 PairRejection::WrongTraceWidth => LayerError::VerificationFailed(

@@ -168,11 +168,16 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use winterfell::math::fields::f64::BaseElement;
 use winterfell::math::FieldElement;
-use winterfell::{
-    crypto::hashers::Blake3_256, crypto::DefaultRandomCoin, verify,
-    AcceptableOptions, BatchingMethod, FieldExtension, ProofOptions, Prover,
-};
+use winterfell::{BatchingMethod, FieldExtension, ProofOptions, Prover};
+// §913: el `verify` del fork, sus opciones, su moneda, el compromiso con sal y el hasher ya no
+// los usa ningun sitio de produccion de la capa: pasan por el juez unico. Los tests (`metrics.rs`,
+// el nivel, los censos) siguen usandolos.
+#[cfg(test)]
+use winterfell::{crypto::hashers::Blake3_256, crypto::DefaultRandomCoin, verify, AcceptableOptions};
+#[cfg(test)]
 use stark_experiment::MerkleConSal;
+// §913 (ARQ-01, la 117): el juez unico de verificacion; los quince sitios de la capa lo llaman.
+use zk_ssl_air::juez::juzgar;
 
 use stark_experiment::circuit_audit::{
     build_trace as build_audit_trace, AuditAir, AuditProver, AuditPublicInputs, AuditWitness,
@@ -212,6 +217,7 @@ use stark_experiment::merkle::{Digest, MerklePath};
 use sparse_tree::SparseTree;
 use store::{digest_from_bytes, digest_to_bytes, StoreError};
 
+#[cfg(test)]
 type Blake3 = Blake3_256<BaseElement>;
 
 /// Índice de una cuenta dentro del árbol.
@@ -280,7 +286,9 @@ pub(crate) fn colocar(inicio: u64, cap: u64, ocupado: impl Fn(u64) -> bool) -> u
 /// que el AIR espera, ANTES de construirlo. Una guarda de solo ancho no
 /// basta: una prueba de ancho correcto con tramo auxiliar declarado o
 /// longitud ajena panica en `AIR::new` (medido, PASTE-529-M). Se aplica en
-/// los quince `verify::<...>` de la capa.
+/// los quince `verify::<...>` de la capa. ⚠️ §913: los quince sitios pasan por el juez unico
+/// (`zk_ssl_air::juez::juzgar`), que deriva y comprueba la forma; esto queda para los tests.
+#[cfg(test)]
 pub(crate) fn comprobar_forma(
     info: &winterfell::TraceInfo,
     ancho: usize,
@@ -288,23 +296,26 @@ pub(crate) fn comprobar_forma(
     aleatorios_aux: usize,
     longitud: usize,
 ) -> Result<(), LayerError> {
-    let real = (
-        info.main_trace_width(),
-        info.aux_segment_width(),
-        info.get_num_aux_segment_rand_elements(),
-        info.length(),
-    );
-    // E3b2-M3 (D-AD): la forma OCULTA, derivada de la del AIR por Oculta::new.
-    let exige = (ancho + 1, ancho_aux, aleatorios_aux, 2 * longitud);
-    if real != exige {
-        return Err(LayerError::VerificationFailed(format!(
-            "forma de traza {real:?}; el enunciado exige {exige:?}"
-        )));
-    }
-    // §651 (D3-META): y la MARCA. Con el meta vaciado, una prueba de forma oculta
-    // llegaba a `AIR::new` en claro y entraba en panico por el ancho, con el
-    // candado del nodo tomado.
-    zk_ssl_air::comprobar_marca(info.meta()).map_err(LayerError::VerificationFailed)
+    // §913: la forma oculta la deriva y la comprueba el juez unico (`zk_ssl_air::juez`), con la
+    // marca (§651), dentro de cada `juzgar`; este envoltorio queda para los tests de la capa, con su
+    // texto de siempre.
+    let forma = zk_ssl_air::juez::Forma { ancho, ancho_aux, aleatorios: aleatorios_aux, longitud };
+    zk_ssl_air::juez::comprobar_forma(info, &forma).map_err(|r| rechazo("", r))
+}
+
+/// §913: un [`zk_ssl_air::juez::Rechazo`] con los textos de la capa de siempre: la forma con
+/// «exige», la marca con el texto de `comprobar_marca`, y el error del fork por su `Debug` tras el
+/// prefijo del sitio («envio: », «cobro: », «apertura: »...; vacio en la quema y la auditoria).
+/// Ningun texto ni ningun veredicto cambia con el juez unico.
+pub(crate) fn rechazo(prefijo: &str, r: zk_ssl_air::juez::Rechazo) -> LayerError {
+    use zk_ssl_air::juez::Rechazo;
+    LayerError::VerificationFailed(match r {
+        Rechazo::Forma { real, exige } => {
+            format!("forma de traza {real:?}; el enunciado exige {exige:?}")
+        },
+        Rechazo::Marca(m) => m,
+        Rechazo::Verificador(e) => format!("{prefijo}{e:?}"),
+    })
 }
 
 /// **§711 · La red del panico de la capa.** Corre la lectura y la verificacion de una prueba
@@ -870,20 +881,8 @@ pub fn verify_audit(disclosure: &AuditDisclosure) -> Result<(), LayerError> {
     crate::sin_panico("auditoria", || {
         let proof = winterfell::Proof::from_bytes(&disclosure.proof)
             .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
-        let min_opts = AcceptableOptions::OptionSet(vec![proof_options()]);
-        crate::comprobar_forma(
-            proof.trace_info(),
-            stark_experiment::circuit_audit::TRACE_WIDTH,
-            0,
-            0,
-            stark_experiment::circuit_audit::TRACE_LENGTH,
-        )?;
-        verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-            proof,
-            disclosure.public_inputs.clone(),
-            &min_opts,
-        )
-        .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))
+        // §913: la forma, la marca y la verificacion, por el juez unico
+        juzgar::<AuditAir>(proof, disclosure.public_inputs.clone()).map_err(|r| crate::rechazo("", r))
     })
 }
 
@@ -1416,12 +1415,12 @@ mod tests_sal {
     }
 
     /// **§711: toda verificacion de una prueba AJENA en la capa va dentro de la red del panico.**
-    /// Los quince `verify` de `comprobar_forma` y las cuatro parejas de umbral: si alguien anade
-    /// una fuera, o saca una, cae. Falsador: sin el envoltorio de `validate_send`, el envio sale
-    /// fuera de la red y este test lo nombra.
+    /// Los quince sitios del juez unico (§913: `juzgar`, donde hasta entonces habia un `verify`) y
+    /// las cuatro parejas de umbral: si alguien anade una fuera, o saca una, cae. Falsador: sin el
+    /// envoltorio de `validate_send`, el envio sale fuera de la red y este test lo nombra.
     #[test]
     fn toda_verificacion_ajena_de_la_capa_va_dentro_de_la_red() {
-        let verifica = concat!("verify", "::<");
+        let verifica = concat!("juzgar", "::<");
         let umbral = concat!("verify_threshold", "_pair(");
         let mut total = 0;
         for (nombre, fuente, esperadas, aguja) in [
@@ -1459,22 +1458,67 @@ mod tests_sal {
         assert!(matches!(crate::sin_panico("envio", || Ok(7)), Ok(7)));
     }
 
+    /// **§913 (ARQ-01, la 117): toda verificacion viva de la capa pasa por el juez unico.** Ningun
+    /// `verify` vivo en los siete modulos de produccion -los quince sitios llaman a `juzgar`-,
+    /// ninguno en la pareja umbral, y el unico de la casa, el del juez (`zk-ssl-air/src/juez.rs`),
+    /// lee con sal (la propiedad del §578, ahora en un sitio). `metrics.rs` queda fuera, declarado:
+    /// mide, no juzga; `instrumento_*`, solo tests. Falsador: un `verify::<` nuevo en cualquiera de
+    /// los siete, o un sitio que deje de llamar al juez, cae aqui.
     #[test]
-    fn toda_verificacion_viva_de_la_capa_lee_con_sal() {
+    fn toda_verificacion_viva_de_la_capa_pasa_por_el_juez() {
         let total = todas_con_sal(&[
+            ("two_phase.rs", include_str!("two_phase.rs"), 0),
+            ("burn.rs", include_str!("burn.rs"), 0),
+            ("lib.rs", include_str!("lib.rs"), 0),
+            ("freeze.rs", include_str!("freeze.rs"), 0),
+            ("recovery.rs", include_str!("recovery.rs"), 0),
+            ("mint.rs", include_str!("mint.rs"), 0),
+            ("governance.rs", include_str!("governance.rs"), 0),
+            ("juez.rs", include_str!("../../zk-ssl-air/src/juez.rs"), 1),
+        ]);
+        assert_eq!(total, 1, "la unica llamada viva a verify es la del juez unico");
+        let juzga = concat!("juzgar", "::<");
+        let mut sitios = 0;
+        for (nombre, fuente, esperadas) in [
             ("two_phase.rs", include_str!("two_phase.rs"), 10),
             ("burn.rs", include_str!("burn.rs"), 1),
             ("lib.rs", include_str!("lib.rs"), 1),
             ("freeze.rs", include_str!("freeze.rs"), 1),
             ("recovery.rs", include_str!("recovery.rs"), 1),
             ("mint.rs", include_str!("mint.rs"), 1),
-        ]);
-        assert_eq!(total, 15, "los quince de `comprobar_forma`");
+        ] {
+            let n = fuente
+                .lines()
+                .filter(|l| !l.trim_start().starts_with("//") && l.contains(juzga))
+                .count();
+            assert_eq!(n, esperadas, "{nombre}: llamadas al juez unico");
+            sitios += n;
+        }
+        assert_eq!(sitios, 15, "los quince sitios de la capa");
         let umbral =
             include_str!("../../stark-experiment/src/circuit_threshold_single_nullifier.rs");
         let ini = umbral.find("pub fn verify_threshold_pair(").expect("la pareja umbral");
         let fin = umbral[ini..].find("\n}\n").expect("su cierre");
-        assert_eq!(todas_con_sal(&[("verify_threshold_pair", &umbral[ini..ini + fin], 1)]), 1);
+        let cuerpo = &umbral[ini..ini + fin];
+        assert!(llamadas(cuerpo).is_empty(), "la pareja no llama a verify: llama al juez");
+        assert_eq!(cuerpo.matches(juzga).count(), 2, "las dos pruebas de la pareja, por el juez");
+    }
+
+    /// §913: los textos de la capa no cambian con el juez unico: la forma con «exige», la marca con
+    /// el texto de `comprobar_marca`, y el error del fork tras el prefijo del sitio.
+    #[test]
+    fn el_rechazo_del_juez_lleva_los_textos_de_la_capa() {
+        use zk_ssl_air::juez::Rechazo;
+        let f = crate::rechazo("envio: ", Rechazo::Forma { real: (44, 0, 0, 512), exige: (45, 0, 0, 1024) });
+        assert!(matches!(
+            f,
+            crate::LayerError::VerificationFailed(m)
+                if m == "forma de traza (44, 0, 0, 512); el enunciado exige (45, 0, 0, 1024)"
+        ));
+        let m = crate::rechazo("envio: ", Rechazo::Marca("marca de la ocultacion Ok(None); el enunciado pide m = 64".into()));
+        assert!(matches!(m, crate::LayerError::VerificationFailed(t) if t.starts_with("marca de la ocultacion")));
+        let v = crate::rechazo("envio: ", Rechazo::Verificador(winterfell::VerifierError::UnacceptableProofOptions));
+        assert!(matches!(v, crate::LayerError::VerificationFailed(t) if t == "envio: UnacceptableProofOptions"));
     }
 }
 

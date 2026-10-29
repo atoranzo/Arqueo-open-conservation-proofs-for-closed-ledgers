@@ -1126,6 +1126,14 @@ impl Air for SendV2Air {
     }
 }
 
+/// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
+/// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
+impl zk_ssl_air::juez::Juez for SendV2Air {
+    fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
+        zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
+    }
+}
+
 pub struct SendV2Prover {
     options: ProofOptions,
 }

@@ -1157,6 +1157,9 @@ fn el_censo_del_cable_da_fila_a_cada_air_verificada() {
     let crates = zk.parent().expect("la carpeta crates");
     // Los patrones se parten en dos literales: este fichero no se censa a si mismo.
     let verifica = concat!("verify", "::<");
+    // §913: la capa y la pareja juzgan por el juez unico, `juzgar::<...>`; `verify::<` queda en
+    // `metrics.rs`, que mide, y se sigue censando
+    let juzga = concat!("juzgar", "::<");
     let mut capa = BTreeSet::new();
     let mut hay_par = false;
     for (nombre, texto) in fuentes(&zk.join("src")) {
@@ -1164,6 +1167,7 @@ fn el_censo_del_cable_da_fila_a_cada_air_verificada() {
             continue;
         }
         capa.extend(nombres_tras(&texto, verifica));
+        capa.extend(nombres_tras(&texto, juzga));
         hay_par |= texto.contains(concat!("verify_threshold", "_pair("));
     }
     let mut par = BTreeSet::new();
@@ -1171,6 +1175,7 @@ fn el_censo_del_cable_da_fila_a_cada_air_verificada() {
         let ruta = crates.join("stark-experiment/src/circuit_threshold_single_nullifier.rs");
         let texto = std::fs::read_to_string(&ruta).expect("el circuito del par de umbral");
         par.extend(nombres_tras(&texto, verifica));
+        par.extend(nombres_tras(&texto, juzga));
     }
     let mut kit = BTreeSet::new();
     for (_, texto) in fuentes(&crates.join("zk-ssl-air/src")) {

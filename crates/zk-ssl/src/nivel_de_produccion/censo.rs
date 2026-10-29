@@ -7,13 +7,14 @@
 //! derivada, no medida. Este censo lee de los fuentes que AIR verifica cada camino, toma su T del
 //! compilador, y exige que este en [`LONGITUDES_MEDIDAS`]:
 //!
-//! - **la capa:** cada llamada `crate::comprobar_forma(...)` de `crates/zk-ssl/src`, fuera de este
-//!   modulo, con su longitud escrita como `stark_experiment::circuit_<x>::TRACE_LENGTH`, y la AIR
-//!   del primer `verify::<...>` que la sigue. Otra forma de escribirla, o un circuito que
-//!   [`longitud_de_la_capa`] no conoce, es ROJO: un probador nuevo entra en la tabla, y su T, en
-//!   el primer test;
-//! - **la pareja umbral:** `verify_threshold_pair` compara la longitud con `2 * TRACE_LENGTH` de
-//!   su circuito;
+//! - **la capa:** cada llamada al juez unico, `juzgar::<...>`, de `crates/zk-ssl/src`, fuera de
+//!   este modulo (⚠️ §913: hasta entonces, cada `crate::comprobar_forma(...)` con su longitud
+//!   escrita como `stark_experiment::circuit_<x>::TRACE_LENGTH` y la AIR del `verify::<...>` que
+//!   la seguia); una AIR que [`longitud_de_la_air`] no conoce es ROJO: un probador nuevo entra en
+//!   la tabla, y su T, en el primer test;
+//! - **la pareja umbral:** `verify_threshold_pair` juzga sus dos pruebas con el juez unico, que
+//!   deriva la forma de `NullifierThresholdAir` (⚠️ §913: antes comparaba la longitud con
+//!   `2 * TRACE_LENGTH` de su circuito);
 //! - **el kit:** cada `impl Air for` de `crates/zk-ssl-air/src`, por su fichero, con la `TRAZA` de
 //!   ese fichero (⚠️ §723: y cada AIR con version, `XDe<V>`, por su familia `X`). La edad
 //!   (`EdadAir`, en `lib.rs`), cuya longitud depende de `m`, queda fuera:
@@ -25,10 +26,10 @@
 //! ATADO F de `tools/check_publicadas.py`, dan exactamente [`LONGITUDES_MEDIDAS`]. El primer test
 //! lo exige tambien sobre sus pruebas, pero solo en release; esto corre tambien en depuracion.
 //!
-//! La prueba de vida: al menos las quince llamadas de la capa (`tests_sal` en `lib.rs` cuenta los
-//! quince `verify`), la pareja umbral y las cuatro AIR de longitud fija del kit. Lo que NO ve: una
-//! llamada escrita sin el prefijo `crate::`, y una AIR del cable que no este en `FILAS`. Las agujas
-//! se arman por partes para que este fuente no las contenga.
+//! La prueba de vida: al menos las quince llamadas de la capa (la puerta del juez unico en `lib.rs`
+//! las cuenta), la pareja umbral y las cuatro AIR de longitud fija del kit. Lo que NO ve: una AIR
+//! del cable que no este en `FILAS`, y una llamada al juez con la AIR escrita por su ruta y no por
+//! su nombre. Las agujas se arman por partes para que este fuente no las contenga.
 
 use super::LONGITUDES_MEDIDAS;
 use std::path::{Path, PathBuf};
@@ -56,6 +57,28 @@ fn longitud_de_la_capa(circuito: &str) -> Option<usize> {
     })
 }
 
+/// §913: la T de una AIR de la capa, por su nombre -lo que el juez unico juzga, `juzgar::<...>`-,
+/// con el modulo de su circuito. La resuelve el compilador, como [`longitud_de_la_capa`].
+fn longitud_de_la_air(air: &str) -> Option<(&'static str, usize)> {
+    let circuito = match air {
+        "AuditAir" => "circuit_audit",
+        "BurnAir" => "circuit_burn",
+        "ClaimAir" => "circuit_claim",
+        "ClaimAirV2" => "circuit_claim_v2",
+        "CreditClimbAir" => "circuit_credit_climb",
+        "FrozenClimbAir" => "circuit_frozen_climb",
+        "MintClimbAir" => "circuit_mint_climb",
+        "MintPendingClimbAir" => "circuit_mint_pending_climb",
+        "RecoveryClimbAir" => "circuit_recovery_climb",
+        "RefundAir" => "circuit_refund",
+        "RefundAirV2" => "circuit_refund_v2",
+        "SendAir" => "circuit_send",
+        "SendV2Air" => "circuit_send_v2",
+        _ => return None,
+    };
+    longitud_de_la_capa(circuito).map(|t| (circuito, t))
+}
+
 /// La `TRAZA` de una AIR de longitud fija del kit, por su fichero en `crates/zk-ssl-air/src`.
 fn longitud_del_kit(fichero: &str) -> Option<usize> {
     Some(match fichero {
@@ -70,32 +93,6 @@ fn longitud_del_kit(fichero: &str) -> Option<usize> {
 /// Las lineas de CODIGO de un fuente, sin las de comentario, unidas con saltos de linea.
 fn codigo(fuente: &str) -> String {
     fuente.lines().filter(|l| !l.trim_start().starts_with("//")).collect::<Vec<_>>().join("\n")
-}
-
-/// Los argumentos de la llamada que empieza en `texto` (justo detras de su `(`), hasta su `)`,
-/// separados por las comas de primer nivel. None si la llamada no se cierra.
-fn argumentos(texto: &str) -> Option<Vec<String>> {
-    let (mut hondo, mut actual, mut args) = (0usize, String::new(), Vec::new());
-    for c in texto.chars() {
-        match c {
-            '(' | '[' | '{' => hondo += 1,
-            ')' | ']' | '}' if hondo == 0 => {
-                if !actual.trim().is_empty() {
-                    args.push(actual.trim().to_string());
-                }
-                return Some(args);
-            }
-            ')' | ']' | '}' => hondo -= 1,
-            ',' if hondo == 0 => {
-                args.push(actual.trim().to_string());
-                actual.clear();
-                continue;
-            }
-            _ => {}
-        }
-        actual.push(c);
-    }
-    None
 }
 
 /// Los modulos `circuit_<x>` nombrados como `circuit_<x>::TRACE_LENGTH` en `texto`, en orden.
@@ -147,8 +144,9 @@ fn cada_longitud_del_cable_tiene_su_nivel_medido() {
     // (camino, AIR, T) de cada verificador visto.
     let mut vistas: Vec<(String, String, usize)> = Vec::new();
 
-    // La capa: las llamadas a la guarda de forma, fuera del modulo del nivel.
-    let llamada = concat!("crate::comprobar", "_forma(");
+    // La capa: las llamadas al juez unico, `juzgar::<...>`, fuera del modulo del nivel (§913;
+    // hasta entonces, las guardas de forma `crate::comprobar_forma(...)` y su `verify::<`).
+    let llamada = concat!("juzgar", "::<");
     let propio = raiz.join("src").join("nivel_de_produccion");
     let mut n_capa = 0;
     for f in fuentes(&raiz.join("src")) {
@@ -159,25 +157,15 @@ fn cada_longitud_del_cable_tiene_su_nivel_medido() {
         let src = codigo(&leer(&f));
         for (i, _) in src.match_indices(llamada) {
             n_capa += 1;
-            let args = argumentos(&src[i + llamada.len()..]);
-            let longitud =
-                args.as_ref().and_then(|a| a.get(4)).map(|a| a.replace(char::is_whitespace, ""));
-            let circuito = longitud.as_deref().and_then(|l| {
-                l.strip_prefix("stark_experiment::")?.strip_suffix(concat!("::TRACE", "_LENGTH"))
-            });
-            let air: Option<String> = src[i..].find(concat!("verify", "::<")).map(|j| {
-                src[i + j + 9..].chars().take_while(|c| c.is_alphanumeric() || *c == '_').collect()
-            });
-            match circuito.and_then(|c| longitud_de_la_capa(c).map(|t| (c, t))) {
-                Some((c, t)) => vistas.push((
-                    format!("{nombre}, {c}"),
-                    air.unwrap_or_else(|| format!("{c} sin verify")),
-                    t,
-                )),
+            let air: String = src[i + llamada.len()..]
+                .chars()
+                .take_while(|c| c.is_alphanumeric() || *c == '_')
+                .collect();
+            match longitud_de_la_air(&air) {
+                Some((c, t)) => vistas.push((format!("{nombre}, {c}"), air, t)),
                 None => mal.push(format!(
-                    "{nombre}: una guarda de forma con longitud {longitud:?}, que el censo no \
-                     resuelve: un probador nuevo entra en `longitud_de_la_capa` y su T en el \
-                     primer test"
+                    "{nombre}: el juez unico juzga {air}, que el censo no resuelve: un probador \
+                     nuevo entra en `longitud_de_la_air` y su T en el primer test"
                 )),
             }
         }
@@ -190,13 +178,14 @@ fn cada_longitud_del_cable_tiene_su_nivel_medido() {
         .find(concat!("pub fn verify_threshold", "_pair("))
         .map(|ini| &src[ini..ini + src[ini..].find("\n}").unwrap_or(src.len() - ini)]);
     let n_umbral = match cuerpo {
-        Some(c) if c.contains(concat!("i.length() == 2 * TRACE", "_LENGTH")) => {
+        // §913: la pareja juzga sus dos pruebas con el juez unico, que deriva la forma de este AIR
+        Some(c) if c.contains(concat!("juzgar", "::<NullifierThresholdAir>")) => {
             let t = stark_experiment::circuit_threshold_single_nullifier::TRACE_LENGTH;
             vistas.push(("la pareja umbral".into(), "NullifierThresholdAir".into(), t));
             1
         }
         _ => {
-            mal.push("verify_threshold_pair: no se ve que compare la longitud con 2 * su T".into());
+            mal.push("verify_threshold_pair: no se ve que juzgue con el juez unico".into());
             0
         }
     };

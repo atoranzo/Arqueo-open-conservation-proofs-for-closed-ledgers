@@ -55,14 +55,11 @@ use winter_air::{
     TransitionConstraintDegree,
 };
 use winter_crypto::hashers::Rp64_256;
-use winter_crypto::DefaultRandomCoin;
-use crate::sal::MerkleConSal;
 use winter_math::fields::f64::BaseElement;
 use winter_math::{FieldElement, ToElements};
-use winter_verifier::{verify, AcceptableOptions};
 use zk_ssl_hash::DOMINIO_META_PENDIENTE;
 
-use crate::{opciones, ronda_rescue, Blake3, Digest, CICLO, ESTADO, PROFUNDIDAD, RONDAS};
+use crate::{ronda_rescue, Digest, CICLO, ESTADO, PROFUNDIDAD, RONDAS};
 
 // ------------------------------------------------------------------ la geometria
 
@@ -250,6 +247,14 @@ pub type CobroPendienteAir = CobroPendienteAirDe<2>;
 /// ⚠️ La v1, con los segmentos de 63 bits. Solo para juzgar las pruebas ya emitidas: con un
 /// superior bajo [`crate::COTA_V1`] no acota el importe privado. Nadie prueba con ella.
 pub type CobroPendienteAirV1 = CobroPendienteAirDe<1>;
+
+/// §913: la forma en claro de esta familia, para el juez unico (`crate::juez`); la v1 y la v2
+/// tienen la misma traza.
+impl<const V: u8> crate::juez::Juez for CobroPendienteAirDe<V> {
+    fn forma(_: &CobroPendientePublicInputs) -> crate::juez::Forma {
+        crate::juez::Forma::fija(ANCHO, TRAZA)
+    }
+}
 
 impl<const V: u8> Air for CobroPendienteAirDe<V> {
     type BaseField = BaseElement;
@@ -530,26 +535,15 @@ pub fn verificar(prueba: &[u8], pi: &CobroPendientePublicInputs) -> Result<(), S
     comprobar_enunciado(pi)?;
     let proof =
         Proof::from_bytes(prueba).map_err(|e| format!("la prueba no se deserializa: {e:?}"))?;
-    let info = proof.trace_info();
-    let forma = (
-        info.main_trace_width(),
-        info.aux_segment_width(),
-        info.get_num_aux_segment_rand_elements(),
-        info.length(),
-    );
-    if forma != (ANCHO + 1, 0, 0, 2 * TRAZA) {
-        return Err(format!(
-            "forma de traza {forma:?}; el enunciado pide {:?}",
-            (ANCHO + 1, 0, 0, 2 * TRAZA)
-        ));
-    }
-    // §651 (D3-META): la marca es parte de la forma; sin ella, panico en `AIR::new`.
-    crate::comprobar_marca(info.meta())?;
-    let v2 = juzgar::<2>(proof.clone(), pi);
+    // §913: la forma oculta y la marca (§651) las deriva y comprueba el juez unico, antes de
+    // construir ninguna AIR, y la verificacion lleva su politica; los textos son los de siempre
+    crate::juez::comprobar_forma(proof.trace_info(), &<CobroPendienteAirDe<2> as crate::juez::Juez>::forma(pi))
+        .or_else(crate::rechazo_del_kit)?;
+    let v2 = crate::juez::juzgar::<CobroPendienteAirDe<2>>(proof.clone(), pi.clone()).or_else(crate::rechazo_del_kit);
     if v2.is_ok() {
         return v2;
     }
-    let v1 = juzgar::<1>(proof, pi);
+    let v1 = crate::juez::juzgar::<CobroPendienteAirDe<1>>(proof, pi.clone()).or_else(crate::rechazo_del_kit);
     if v1.is_ok() {
         let u = pi.superior.as_int();
         if crate::v1_sin_ventana(u) {
@@ -563,18 +557,6 @@ pub fn verificar(prueba: &[u8], pi: &CobroPendientePublicInputs) -> Result<(), S
         ));
     }
     crate::la_causa_de_la_que_llego_mas_lejos(v2, v1)
-}
-
-/// La verificacion de winterfell con el cobro pendiente de la version `V`: la UNICA llamada del
-/// fichero.
-fn juzgar<const V: u8>(proof: Proof, pi: &CobroPendientePublicInputs) -> Result<(), String> {
-    let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
-    verify::<CobroPendienteAirDe<V>, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-        proof,
-        pi.clone(),
-        &aceptadas,
-    )
-    .map_err(|e| format!("{e:?}"))
 }
 
 // ------------------------------------------------------------------ el enlace (D-J, D-K)
@@ -640,6 +622,7 @@ pub fn verificar_contra_cabeza(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::opciones;
 
     fn d(k: u64) -> Digest {
         [

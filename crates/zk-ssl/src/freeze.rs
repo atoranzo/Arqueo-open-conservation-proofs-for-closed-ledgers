@@ -103,22 +103,10 @@ impl SovereignLayer {
         tentativo.set_leaf(account_index, frozen_leaf(now_frozen));
         let root_new = tentativo.root();
 
-        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
-
         crate::sin_panico("subida a congelados", || {
-            crate::comprobar_forma(
-                climb_proof.trace_info(),
-                stark_experiment::circuit_frozen_climb::TRACE_WIDTH,
-                0,
-                0,
-                stark_experiment::circuit_frozen_climb::TRACE_LENGTH,
-            )?;
-            verify::<FrozenClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                climb_proof,
-                FrozenClimbPublicInputs { root_a: root_old, root_b: root_new },
-                &accepted,
-            )
-            .map_err(|e| LayerError::VerificationFailed(format!("subida a congelados: {e:?}")))?;
+            // §913: la forma, la marca y la verificacion, por el juez unico
+            juzgar::<FrozenClimbAir>(climb_proof, FrozenClimbPublicInputs { root_a: root_old, root_b: root_new })
+                .map_err(|r| crate::rechazo("subida a congelados: ", r))?;
             Ok(())
         })?;
 
@@ -139,7 +127,6 @@ impl SovereignLayer {
                 BaseElement::new(CUSTODIAN_DOMAIN),
                 self.custodian_set_root,
                 operation,
-                &accepted,
             )
             .map_err(|r| match r {
                 PairRejection::WrongTraceWidth => LayerError::VerificationFailed(

@@ -162,20 +162,8 @@ impl SovereignLayer {
         crate::sin_panico("quema", || {
             let proof = winterfell::Proof::from_bytes(&receipt.proof)
                 .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
-            let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
-            crate::comprobar_forma(
-                proof.trace_info(),
-                stark_experiment::circuit_burn::TRACE_WIDTH,
-                0,
-                0,
-                stark_experiment::circuit_burn::TRACE_LENGTH,
-            )?;
-            verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                proof,
-                pi.clone(),
-                &min_opts,
-            )
-            .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))?;
+            // §913: la forma, la marca y la verificacion, por el juez unico
+            juzgar::<BurnAir>(proof, pi.clone()).map_err(|r| crate::rechazo("", r))?;
             Ok(())
         })?;
 

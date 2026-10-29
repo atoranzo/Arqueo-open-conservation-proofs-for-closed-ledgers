@@ -109,7 +109,7 @@ elección de q y de la molienda para el corte zkssl/0.5: es la entrada 116.
 | SEC-1, el cerrojo del guardián | hecho, fuera del corte 2 y en un sello propio, como el ARQ-11; con él, al firmar, los contadores van con ruta absoluta y sin valor por defecto | §709; `crates/zk-ssl-guardian/src/lib.rs`, `tools/banco_un_proceso.sh` |
 
 Sin hacer, a `c990868`: SEC-1 (`git grep 'try_lock\|_cerrojo' crates/zk-ssl-guardian/src`, 0),
-ARQ-01 (no hay `crates/zk-ssl-air/src/juez.rs`) y ARQ-02 (`crates/zk-ssl-node/Cargo.toml:21`
+ARQ-01 (no hay `crates/zk-ssl-air/src/juez.rs`; ⚠️ §913: construido, `juez.rs` con `juzgar::<J: Juez>`, la política de aceptación del juez y la puerta estructural) y ARQ-02 (`crates/zk-ssl-node/Cargo.toml:21`
 sigue con `default = ["dev"]`). SEC-1 sale de esta lista en el §709.
 
 **Correcciones.** Casi todas son cifras que el árbol movió después de `e69fadd` (§632), sobre el

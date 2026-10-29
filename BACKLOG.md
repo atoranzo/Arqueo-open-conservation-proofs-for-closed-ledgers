@@ -12,14 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 42 abiertas, 97 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
+**Estado**: 41 abiertas, 98 resueltas — **3 suspendidas** (16, 22 y 28). Casillas recontadas
 en el §620 (la línea seguía con las del §597, 45 y 63), el §621, el §622, el §696, que abre la
 115, el §697, que abre la 116, el §705, que abre la 117, el §707, que abre la 118, el §772, que
 cierra la 102, el §779, que cierra la 42 y la 104, el §783, que cierra la 18, el §802, que abre la
 119, el §812, que abre la 120 y la 121, el §835, que abre la 122, el §813, que abre la 123 y la
 124, el §814, que cierra la 41 y abre la 125, el §838, que cierra la 122, y el §860, que cierra la
 8, la 17, la 20, la 23, la 47, la 76 y la 96 y abre la 126 y la 127, el §861, que no mueve ninguna,
-el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, el §907, que abre la 137 y la 138, el §911, que las cierra, y el §912, que no mueve ninguna.
+el §815, que abre la 129, el §820, que cierra la 120, el §821, que cierra la 121, el §822, la 75, el §864, que cierra la 94, el §866, que cierra la 123, el §896, que abre la 130, el §897, que abre la 131 y la 132, el §898, que abre la 133 y la 134, el §900, que cierra la 134 y abre la 135, el §901, que no mueve ninguna, el §902, que cierra la 130 y la 132 y abre la 136, el §905, que cierra la 135, el §907, que abre la 137 y la 138, el §911, que las cierra, el §912, que no mueve ninguna, y el §913, que cierra la 117.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -1354,8 +1354,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   puerta del RFC-0007, no del nivel: con 13 la LDR es 68 y la conjeturada con el DEEP, 106,8. Los
   tests del §697 y del §708 quedan en las `m` admitidas, `SECURITY.md` §3.11 lo anota, y `PAPER.md`
   y `PAPER_EN.md` dan las cifras de `m = 13`. El piso de LDR y el umbral de UDR siguen por decidir.
+  ⚠️ §913: el autor decidió el 29-10-2026 que el corte zkssl/0.5 NO toca las opciones de prueba
+  —42 consultas, blowup 16, molienda 21, extensión cuadrática— y que la edad pasa de `m` de 3 a 13
+  a `m` de 4 a 13 por T = 128 (RFC-0018 D-H); los pisos se remiden en el corte. El nivel declarado
+  sigue por decidir: la entrada sigue abierta.
 
-- [ ] **117. El juez único de verificación, antes del corte zkssl/0.5: lo adopta el autor (§705),
+- [x] **117. El juez único de verificación, antes del corte zkssl/0.5: lo adopta el autor (§705),
   en la aceptación en bloque.** Es el ARQ-01 de `doc/blueprint-v2.md`. Hoy cada familia se
   verifica con su propia llamada y sus opciones: los 15 `verify::<…>` de la capa, que cuenta
   `toda_verificacion_viva_de_la_capa_lee_con_sal` (`crates/zk-ssl/src/lib.rs:1237`, §578), la
@@ -1371,6 +1375,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `verify::<` vivo fuera del juez, con las excepciones que declare, como la acotó el verificador del
   ARQ-01; y la versión del kit que la lleve. Medido sobre `c990868`: no hay
   `crates/zk-ssl-air/src/juez.rs`.
+  ✅ §913: `crates/zk-ssl-air/src/juez.rs` —`Juez`, `Forma`, `Rechazo`, `comprobar_forma` y
+  `juzgar`—, con la política de aceptación del juez, una: el `OptionSet` de `opciones()`, la forma
+  oculta derivada de la clara con la marca, y `MerkleConSal` con la moneda fijos; los 21 sitios pasan
+  por él (los quince de la capa, la pareja umbral y los cinco del kit), ningún texto ni veredicto
+  cambia, y la puerta es estructural: ningún `verify::<` vivo fuera de `juez.rs` en la capa ni en el
+  kit, ni en la pareja (`toda_verificacion_viva_de_la_capa_pasa_por_el_juez`,
+  `toda_verificacion_del_kit_pasa_por_el_juez`). La versión del kit que lo lleva es la 0.5.0 del
+  corte (RFC-0018 D-E); hasta entonces el binario del árbol lo lleva sin release. El autor lo pidió
+  antes del corte el 29-10-2026, en la decisión del alcance (RFC-0018 D-H, §913).
 
 - [ ] **118. Cómo se identifica una prueba: la marca v2 del RFC-0018, la D-G, en estado de
   propuesta (§707).** Hoy una prueba STARK de la casa sólo lleva la marca de la ocultación,

@@ -121,17 +121,9 @@ impl SovereignLayer {
         );
         let root_new = tentativo.root();
 
-        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
-
         crate::sin_panico("subida de recuperacion", || {
-            crate::comprobar_forma(
-                climb_proof.trace_info(),
-                stark_experiment::circuit_recovery_climb::TRACE_WIDTH,
-                0,
-                0,
-                stark_experiment::circuit_recovery_climb::TRACE_LENGTH,
-            )?;
-            verify::<RecoveryClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            // §913: la forma, la marca y la verificacion, por el juez unico
+            juzgar::<RecoveryClimbAir>(
                 climb_proof,
                 RecoveryClimbPublicInputs {
                     root_old,
@@ -139,9 +131,8 @@ impl SovereignLayer {
                     recovery_count_old: BaseElement::new(count_old),
                     recovery_count_new: BaseElement::new(count_new),
                 },
-                &accepted,
             )
-            .map_err(|e| LayerError::VerificationFailed(format!("subida de recuperacion: {e:?}")))?;
+            .map_err(|r| crate::rechazo("subida de recuperacion: ", r))?;
             Ok(())
         })?;
 
@@ -158,7 +149,6 @@ impl SovereignLayer {
                 BaseElement::new(CUSTODIAN_DOMAIN),
                 self.custodian_set_root,
                 operation,
-                &accepted,
             )
             .map_err(|r| match r {
                 PairRejection::WrongTraceWidth => LayerError::VerificationFailed(

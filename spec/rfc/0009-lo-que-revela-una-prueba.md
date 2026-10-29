@@ -732,6 +732,10 @@ en `zkssl/0.4` es la OCULTA, derivada en la propia función de la del AIR (`anch
 longitud`; el tramo auxiliar y sus aleatorios no cambian), y la apagada se rechaza: dos falsadores
 lo dicen —`guarda_forma` con la forma oculta (45, 1024) como la exacta y (44, 512) rechazada, y el
 par mutado a la forma apagada da `WrongTraceWidth`—.
+⚠️ §913: la guarda de forma vive en el juez único (`zk_ssl_air::juez`, ARQ-01, la 117): la forma
+oculta se deriva de la clara que cada familia declara —ancho + 1, el tramo auxiliar tal cual, 2T— y
+se comprueba con la marca antes de construir ninguna AIR, en un solo sitio por el que pasan los 21;
+`comprobar_forma` de la capa queda para sus tests.
 
 Gana una sola forma frente a admitir las dos por la marca: pureza (un cable, una forma; menos eras
 silenciosas) y fail-closed (coherente con D-AB). **Reversible** hacia el doble despacho por la marca

@@ -53,6 +53,8 @@ use stark_experiment::circuit_claim_v2::{
     build_trace as build_claim_trace_v2, ClaimAirV2, ClaimV2Prover,
 };
 use stark_experiment::circuit_send_v2::SendV2Air;
+// §913: la v2 de la apertura, para el juez unico (sus entradas publicas son las de la v1)
+use stark_experiment::circuit_refund_v2::RefundAirV2;
 
 /// Lo que el pagador envía al receptor **por otro canal**.
 ///
@@ -475,54 +477,26 @@ impl SovereignLayer {
         if self.pending_amounts.get(&pos).copied() != Some(receipt.amount) {
             return Err(LayerError::PendingMismatch);
         }
-        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
         crate::sin_panico("apertura", || {
             let p_ref = winterfell::Proof::from_bytes(&receipt.refund_proof)
                 .map_err(|e| LayerError::VerificationFailed(format!("apertura mal formada: {e:?}")))?;
             // D-7 a los gemelos: el ancho de la traza se compara ANTES de
             // construir el Air (su fn new lo exige con assert_eq!) -- el
             // rechazo es un Err, no un panico alcanzable desde la entrada.
+            // §913: la forma, la marca y la verificacion, por el juez unico,
+            // con su politica de aceptacion; los textos, los de siempre.
+            // Los publics del v2 SON los del v1 (la X jamas se publica,
+            // medido en el PASTE-E3a-M): RefundAirV2 reutiliza
+            // RefundPublicInputs.
+            let pi = RefundPublicInputs {
+                commitment: receipt.commitment,
+                amount: BaseElement::new(receipt.amount),
+            };
             match receipt.apertura {
-                None => {
-                    crate::comprobar_forma(
-                        p_ref.trace_info(),
-                        stark_experiment::circuit_refund::TRACE_WIDTH,
-                        0,
-                        0,
-                        stark_experiment::circuit_refund::TRACE_LENGTH,
-                    )?;
-                    verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                        p_ref,
-                        RefundPublicInputs {
-                            commitment: receipt.commitment,
-                            amount: BaseElement::new(receipt.amount),
-                        },
-                        &accepted,
-                    )
-                }
-                Some(_) => {
-                    // Los publics del v2 SON los del v1 (la X jamas se publica,
-                    // medido en el PASTE-E3a-M): RefundAirV2 reutiliza
-                    // RefundPublicInputs, ya importado arriba.
-                    use stark_experiment::circuit_refund_v2::RefundAirV2;
-                    crate::comprobar_forma(
-                        p_ref.trace_info(),
-                        stark_experiment::circuit_refund_v2::TRACE_WIDTH,
-                        0,
-                        0,
-                        stark_experiment::circuit_refund_v2::TRACE_LENGTH,
-                    )?;
-                    verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                        p_ref,
-                        RefundPublicInputs {
-                            commitment: receipt.commitment,
-                            amount: BaseElement::new(receipt.amount),
-                        },
-                        &accepted,
-                    )
-                }
+                None => juzgar::<RefundAir>(p_ref, pi),
+                Some(_) => juzgar::<RefundAirV2>(p_ref, pi),
             }
-            .map_err(|e| LayerError::VerificationFailed(format!("apertura: {e:?}")))?;
+            .map_err(|r| crate::rechazo("apertura: ", r))?;
             Ok(())
         })?;
 
@@ -740,74 +714,34 @@ impl SovereignLayer {
             ),
         );
         let root_new = tentativo.root();
-        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
         crate::sin_panico("reembolso", || {
             let p_ref = winterfell::Proof::from_bytes(&receipt.refund_proof)
                 .map_err(|e| LayerError::VerificationFailed(format!("apertura mal formada: {e:?}")))?;
             // D-7 a los gemelos: el ancho de la traza se compara ANTES de
             // construir el Air (su fn new lo exige con assert_eq!) -- el
             // rechazo es un Err, no un panico alcanzable desde la entrada.
+            // §913: por el juez unico, con su politica de aceptacion.
+            let pi = RefundPublicInputs {
+                commitment: receipt.commitment,
+                amount: BaseElement::new(receipt.amount),
+            };
             match receipt.apertura {
-                None => {
-                    crate::comprobar_forma(
-                        p_ref.trace_info(),
-                        stark_experiment::circuit_refund::TRACE_WIDTH,
-                        0,
-                        0,
-                        stark_experiment::circuit_refund::TRACE_LENGTH,
-                    )?;
-                    verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                        p_ref,
-                        RefundPublicInputs {
-                            commitment: receipt.commitment,
-                            amount: BaseElement::new(receipt.amount),
-                        },
-                        &accepted,
-                    )
-                }
-                Some(_) => {
-                    // Los publics del v2 SON los del v1 (la X jamas se publica,
-                    // medido en el PASTE-E3a-M): RefundAirV2 reutiliza
-                    // RefundPublicInputs, ya importado arriba.
-                    use stark_experiment::circuit_refund_v2::RefundAirV2;
-                    crate::comprobar_forma(
-                        p_ref.trace_info(),
-                        stark_experiment::circuit_refund_v2::TRACE_WIDTH,
-                        0,
-                        0,
-                        stark_experiment::circuit_refund_v2::TRACE_LENGTH,
-                    )?;
-                    verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                        p_ref,
-                        RefundPublicInputs {
-                            commitment: receipt.commitment,
-                            amount: BaseElement::new(receipt.amount),
-                        },
-                        &accepted,
-                    )
-                }
+                None => juzgar::<RefundAir>(p_ref, pi),
+                Some(_) => juzgar::<RefundAirV2>(p_ref, pi),
             }
-            .map_err(|e| LayerError::VerificationFailed(format!("apertura: {e:?}")))?;
+            .map_err(|r| crate::rechazo("apertura: ", r))?;
             let p_cred = winterfell::Proof::from_bytes(&receipt.credit_proof)
                 .map_err(|e| LayerError::VerificationFailed(format!("credito mal formado: {e:?}")))?;
-            // La ranura del credito tiene su propio juez de geometria.
-            crate::comprobar_forma(
-                p_cred.trace_info(),
-                stark_experiment::circuit_credit_climb::TRACE_WIDTH,
-                0,
-                0,
-                stark_experiment::circuit_credit_climb::TRACE_LENGTH,
-            )?;
-            verify::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            // La ranura del credito tiene su propio juez de geometria: la forma de su AIR.
+            juzgar::<CreditClimbAir>(
                 p_cred,
                 CreditClimbPublicInputs {
                     root_old,
                     root_new,
                     amount: BaseElement::new(receipt.amount),
                 },
-                &accepted,
             )
-            .map_err(|e| LayerError::VerificationFailed(format!("credito: {e:?}")))?;
+            .map_err(|r| crate::rechazo("credito: ", r))?;
             Ok(())
         })?;
 
@@ -1023,7 +957,6 @@ impl SovereignLayer {
         crate::sin_panico("envio", || {
             let proof = winterfell::Proof::from_bytes(&receipt.proof)
                 .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
-            let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
             // E3c-1b (RFC-0003): el aviso del recibo decide el Air, como en
             // el cobro. Un recibo v1 con X colada, o un v2 sin ella, cae
             // aqui: el Air no corresponde a la prueba.
@@ -1032,38 +965,11 @@ impl SovereignLayer {
             // new de circuit_send y circuit_send_v2): sin esta guarda, un
             // recibo con la X mal puesta ABORTARIA el hilo en vez de
             // rechazarse. El rechazo es un Err, no un panico alcanzable
-            // desde la entrada (medido en la sesion 63).
+            // desde la entrada (medido en la sesion 63). §913: la guarda y la
+            // verificacion, por el juez unico, con su politica de aceptacion.
             match receipt.notice.x {
-                None => {
-                    crate::comprobar_forma(
-                        proof.trace_info(),
-                        stark_experiment::circuit_send::TRACE_WIDTH,
-                        0,
-                        0,
-                        stark_experiment::circuit_send::TRACE_LENGTH,
-                    )?;
-                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                        proof,
-                        pi.clone(),
-                        &min_opts,
-                    )
-                    .map_err(|e| LayerError::VerificationFailed(format!("envio: {e:?}")))?
-                }
-                Some(_) => {
-                    crate::comprobar_forma(
-                        proof.trace_info(),
-                        stark_experiment::circuit_send_v2::TRACE_WIDTH,
-                        0,
-                        0,
-                        stark_experiment::circuit_send_v2::TRACE_LENGTH,
-                    )?;
-                    verify::<SendV2Air, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                        proof,
-                        pi.clone(),
-                        &min_opts,
-                    )
-                    .map_err(|e| LayerError::VerificationFailed(format!("envio v2: {e:?}")))?
-                }
+                None => juzgar::<SendAir>(proof, pi.clone()).map_err(|r| crate::rechazo("envio: ", r))?,
+                Some(_) => juzgar::<SendV2Air>(proof, pi.clone()).map_err(|r| crate::rechazo("envio v2: ", r))?,
             }
             Ok(())
         })?;
@@ -1364,41 +1270,15 @@ impl SovereignLayer {
         crate::sin_panico("cobro", || {
             let proof = winterfell::Proof::from_bytes(&receipt.proof)
                 .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
-            let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
             // D-7 a los gemelos: el ancho de la traza se compara ANTES de
             // construir el Air (su fn new lo exige con assert_eq!) -- el
             // rechazo es un Err, no un panico alcanzable desde la entrada.
+            // §913: por el juez unico, con su politica de aceptacion.
             match notice.x {
-                None => {
-                    crate::comprobar_forma(
-                        proof.trace_info(),
-                        stark_experiment::circuit_claim::TRACE_WIDTH,
-                        0,
-                        0,
-                        stark_experiment::circuit_claim::TRACE_LENGTH,
-                    )?;
-                    verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                        proof,
-                        pi.clone(),
-                        &min_opts,
-                    )
-                }
-                Some(_) => {
-                    crate::comprobar_forma(
-                        proof.trace_info(),
-                        stark_experiment::circuit_claim_v2::TRACE_WIDTH,
-                        0,
-                        0,
-                        stark_experiment::circuit_claim_v2::TRACE_LENGTH,
-                    )?;
-                    verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-                        proof,
-                        pi.clone(),
-                        &min_opts,
-                    )
-                }
+                None => juzgar::<ClaimAir>(proof, pi.clone()),
+                Some(_) => juzgar::<ClaimAirV2>(proof, pi.clone()),
             }
-            .map_err(|e| LayerError::VerificationFailed(format!("cobro: {e:?}")))?;
+            .map_err(|r| crate::rechazo("cobro: ", r))?;
             Ok(())
         })?;
 
@@ -1746,20 +1626,12 @@ impl SovereignLayer {
         tentativo.set_leaf(position, commitment);
         let root_new = tentativo.root();
 
-        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
         // D-7 a los gemelos: el ancho de la traza se compara ANTES de
         // construir el Air (su fn new lo exige con assert_eq!) -- el
         // rechazo es un Err, no un panico alcanzable desde la entrada.
+        // §913: por el juez unico, con su politica de aceptacion.
         crate::sin_panico("subida del pendiente", || {
-            crate::comprobar_forma(
-                climb_proof.trace_info(),
-                stark_experiment::circuit_mint_pending_climb::TRACE_WIDTH,
-                0,
-                0,
-                stark_experiment::circuit_mint_pending_climb::TRACE_LENGTH,
-            )?;
-
-            verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            juzgar::<MintPendingClimbAir>(
                 climb_proof,
                 MintPendingClimbPublicInputs {
                     supply_old: BaseElement::new(supply_old),
@@ -1769,9 +1641,8 @@ impl SovereignLayer {
                     pending_root_old: root_old,
                     pending_root_new: root_new,
                 },
-                &accepted,
             )
-            .map_err(|e| LayerError::VerificationFailed(format!("subida del pendiente: {e:?}")))?;
+            .map_err(|r| crate::rechazo("subida del pendiente: ", r))?;
             Ok(())
         })?;
 
@@ -1804,7 +1675,6 @@ impl SovereignLayer {
             BaseElement::new(CUSTODIAN_DOMAIN),
             self.custodian_set_root,
             operation,
-            &accepted,
         )
         .map_err(|r| match r {
             PairRejection::WrongTraceWidth => LayerError::VerificationFailed(

@@ -55,7 +55,7 @@ custodios distintos**, no una clave; y el flujo documentado es el de
 hallazgo propio. Corregido en §361; el error se registra en vez de
 borrarse.
 
-`crates/zk-ssl` — **564 tests** (9 ignorados, declarados). Material para
+`crates/zk-ssl` — **565 tests** (9 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
 El backend STARK añade **18 circuitos** verificados por separado.
 
@@ -1193,7 +1193,7 @@ tabla viva está en «Ninguna vía para crear dinero», arriba.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 36 módulos y **564 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 36 módulos y **565 tests**, frente a
 > los 2 módulos y 17 de este.
 >
 > ⚠️ §778: aquí decía **33 módulos**, la cuenta del §531, y son **34** desde

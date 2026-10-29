@@ -75,7 +75,7 @@ use zk_ssl_air::sal::MerkleConSal;
 use winterfell::math::{fields::f64::BaseElement, FieldElement, ToElements};
 use winterfell::matrix::ColMatrix;
 use winterfell::{
-    verify, AcceptableOptions, Air, AirContext, Assertion, AuxRandElements, CompositionPoly,
+    Air, AirContext, Assertion, AuxRandElements, CompositionPoly,
     CompositionPolyTrace, Proof,
     ConstraintCompositionCoefficients, DefaultConstraintCommitment, DefaultConstraintEvaluator,
     DefaultTraceLde, EvaluationFrame, PartitionOptions, ProofOptions, Prover, StarkDomain,
@@ -562,6 +562,14 @@ impl Air for NullifierThresholdAir {
     }
 }
 
+/// §913 (ARQ-01, la 117 de `BACKLOG.md`): la forma en claro de esta familia, para el juez unico
+/// (`zk_ssl_air::juez`); la politica de aceptacion es del juez, no de la familia.
+impl zk_ssl_air::juez::Juez for NullifierThresholdAir {
+    fn forma(_: &Self::PublicInputs) -> zk_ssl_air::juez::Forma {
+        zk_ssl_air::juez::Forma::fija(TRACE_WIDTH, TRACE_LENGTH)
+    }
+}
+
 pub struct NullifierThresholdProver {
     options: ProofOptions,
 }
@@ -714,7 +722,6 @@ pub fn verify_threshold_pair(
     expected_domain: BaseElement,
     expected_root: Digest,
     expected_operation: Digest,
-    accepted: &AcceptableOptions,
 ) -> Result<(), PairRejection> {
     // 0. Las dos vienen del tipo de conjunto que la capa espera. La raiz ya
     //    lo implicaria —otro dominio da otras hojas y otra raiz—, pero
@@ -743,29 +750,21 @@ pub fn verify_threshold_pair(
         return Err(PairRejection::SameCustodian);
     }
 
-    // 3 bis (S529). Las dos tienen la forma EXACTA del AIR del umbral, antes
-    //    de construirlo: una TRACE_INFO ajena panicaria en AIR::new.
-    let forma_ok = |p: &Proof| {
-        let i = p.trace_info();
-        i.main_trace_width() == TRACE_WIDTH + 1
-            && i.aux_segment_width() == 0
-            && i.get_num_aux_segment_rand_elements() == 0
-            && i.length() == 2 * TRACE_LENGTH
-            // §651 (D3-META): y la marca, sin la que `AIR::new` entra en panico.
-            && zk_ssl_air::comprobar_marca(i.meta()).is_ok()
-    };
-    if !forma_ok(&proof_a) || !forma_ok(&proof_b) {
+    // 3 bis (S529, §651; §913). Las dos tienen la forma EXACTA del AIR del umbral, con la
+    //    marca de la casa, antes de construirlo: una TRACE_INFO ajena panicaria en AIR::new.
+    //    La forma oculta la deriva el juez unico de la forma en claro de este AIR.
+    let forma = <NullifierThresholdAir as zk_ssl_air::juez::Juez>::forma(&inputs_a);
+    if zk_ssl_air::juez::comprobar_forma(proof_a.trace_info(), &forma).is_err()
+        || zk_ssl_air::juez::comprobar_forma(proof_b.trace_info(), &forma).is_err()
+    {
         return Err(PairRejection::WrongTraceWidth);
     }
 
-    // 4. Y las dos pruebas son validas.
-    let ok = |p: Proof, i: NullifierThresholdPublicInputs| {
-        verify::<NullifierThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-            p, i, accepted,
-        )
-        .is_ok()
-    };
-    if !ok(proof_a, inputs_a) || !ok(proof_b, inputs_b) {
+    // 4. Y las dos pruebas son validas: el juez unico, con SU politica de aceptacion (§913; hasta
+    //    entonces la traia quien llamaba, `accepted`).
+    if zk_ssl_air::juez::juzgar::<NullifierThresholdAir>(proof_a, inputs_a).is_err()
+        || zk_ssl_air::juez::juzgar::<NullifierThresholdAir>(proof_b, inputs_b).is_err()
+    {
         return Err(PairRejection::InvalidProof);
     }
 
@@ -1032,7 +1031,8 @@ mod tests {
         op: Digest,
     ) -> (Proof, NullifierThresholdPublicInputs) {
         let trace = build_trace(dominio(), key, path, op);
-        let prover = NullifierThresholdProver::new(default_options());
+        // §913: la pareja la juzga el juez unico con SUS opciones, las de produccion
+        let prover = NullifierThresholdProver::new(zk_ssl_air::opciones());
         let inputs = NullifierThresholdPublicInputs {
             identity_domain: dominio(),
             custodian_set_root: [
@@ -1047,10 +1047,6 @@ mod tests {
         (prover.prove(trace).expect("deberia probar"), inputs)
     }
 
-    fn opciones() -> AcceptableOptions {
-        AcceptableOptions::OptionSet(vec![default_options()])
-    }
-
     /// Dos custodios distintos del conjunto: el umbral se cumple.
     #[test]
     fn two_distinct_custodians_meet_the_threshold() {
@@ -1060,7 +1056,7 @@ mod tests {
         let (pa, ia) = autorizar(keys[1], &paths[1], op);
         let (pb, ib) = autorizar(keys[2], &paths[2], op);
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, op, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, op),
             Ok(())
         );
     }
@@ -1080,7 +1076,7 @@ mod tests {
         assert_eq!(
             verify_threshold_pair(
                 pa.clone(), ia.clone(), pb.clone(), ib.clone(),
-                dominio(), root, op, &opciones()
+                dominio(), root, op
             ),
             Ok(())
         );
@@ -1092,7 +1088,7 @@ mod tests {
         bytes[0] = TRACE_WIDTH as u8;
         let pa_mala = Proof::from_bytes(&bytes).expect("deserializa con la forma mutada");
         assert_eq!(
-            verify_threshold_pair(pa_mala, ia, pb, ib, dominio(), root, op, &opciones()),
+            verify_threshold_pair(pa_mala, ia, pb, ib, dominio(), root, op),
             Err(PairRejection::WrongTraceWidth)
         );
     }
@@ -1115,7 +1111,7 @@ mod tests {
         sin_meta.extend_from_slice(&bytes[6 + largo..]);
         let pa_mala = Proof::from_bytes(&sin_meta).expect("deserializa sin meta");
         assert_eq!(
-            verify_threshold_pair(pa_mala, ia, pb, ib, dominio(), root, op, &opciones()),
+            verify_threshold_pair(pa_mala, ia, pb, ib, dominio(), root, op),
             Err(PairRejection::WrongTraceWidth)
         );
     }
@@ -1132,7 +1128,7 @@ mod tests {
         let (pa, ia) = autorizar(keys[2], &paths[2], op);
         let (pb, ib) = autorizar(keys[2], &paths[2], op);
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, op, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, op),
             Err(PairRejection::SameCustodian),
             "SOLIDEZ: dos autorizaciones del mismo custodio no son un umbral"
         );
@@ -1166,7 +1162,7 @@ mod tests {
         let (pb, ib) = autorizar(mias[1], &paths_mias[1], op);
 
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, dominio(), root_real, op, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root_real, op),
             Err(PairRejection::WrongCustodianSet),
             "SOLIDEZ: la raiz del conjunto la pone la capa, no la prueba"
         );
@@ -1186,7 +1182,7 @@ mod tests {
         // Indice 2 y no 0, por lo mismo que arriba.
         let (pb, ib) = autorizar(mias[2], &paths_mias[2], op);
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, dominio(), root_real, op, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root_real, op),
             Err(PairRejection::WrongCustodianSet)
         );
     }
@@ -1234,7 +1230,7 @@ mod tests {
                     Blake3,
                     DefaultRandomCoin<Blake3>,
                     MerkleConSal<Blake3>,
-                >(proof, declared, &opciones())
+                >(proof, declared, &AcceptableOptions::OptionSet(vec![default_options()]))
                 .is_ok()
             }
         };
@@ -1260,7 +1256,7 @@ mod tests {
         let (pb, ib) = autorizar(keys[2], &paths[2], autorizada);
 
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, otra, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, otra),
             Err(PairRejection::WrongOperation),
             "SOLIDEZ: un par valido para una operacion no autoriza otra"
         );
@@ -1332,7 +1328,7 @@ mod tests {
         let (pb, ib) = autorizar(keys[2], &paths[2], autorizada);
 
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, pretendida, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, pretendida),
             Err(PairRejection::WrongOperation),
             "SOLIDEZ: una autorizacion para emitir 1.000 no autoriza emitir \
              1.000.000 (entrada 33 / §56)"

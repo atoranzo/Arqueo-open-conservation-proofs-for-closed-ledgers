@@ -46,14 +46,11 @@ use winter_air::{
     TransitionConstraintDegree,
 };
 use winter_crypto::hashers::Rp64_256;
-use winter_crypto::DefaultRandomCoin;
-use crate::sal::MerkleConSal;
 use winter_math::fields::f64::BaseElement;
 use winter_math::{FieldElement, ToElements};
-use winter_verifier::{verify, AcceptableOptions};
 use zk_ssl_hash::DOMINIO_META_PENDIENTE;
 
-use crate::{opciones, ronda_rescue, Blake3, Digest, CICLO, ESTADO, PROFUNDIDAD, RONDAS};
+use crate::{ronda_rescue, Digest, CICLO, ESTADO, PROFUNDIDAD, RONDAS};
 
 // ------------------------------------------------------------------ la geometria
 
@@ -512,6 +509,13 @@ impl Air for PagoEnCursoAir {
     }
 }
 
+/// §913: la forma en claro de esta familia, para el juez unico (`crate::juez`).
+impl crate::juez::Juez for PagoEnCursoAir {
+    fn forma(_: &PagoEnCursoPublicInputs) -> crate::juez::Forma {
+        crate::juez::Forma::fija(ANCHO, TRAZA)
+    }
+}
+
 // ------------------------------------------------------------------ el juez
 
 /// **Verifica una prueba de pago en curso contra su enunciado.** Comprueba ANTES la forma de la
@@ -521,28 +525,9 @@ pub fn verificar(prueba: &[u8], pi: &PagoEnCursoPublicInputs) -> Result<(), Stri
     comprobar_enunciado(pi)?;
     let proof =
         Proof::from_bytes(prueba).map_err(|e| format!("la prueba no se deserializa: {e:?}"))?;
-    let info = proof.trace_info();
-    let forma = (
-        info.main_trace_width(),
-        info.aux_segment_width(),
-        info.get_num_aux_segment_rand_elements(),
-        info.length(),
-    );
-    if forma != (ANCHO + 1, 0, 0, 2 * TRAZA) {
-        return Err(format!(
-            "forma de traza {forma:?}; el enunciado pide {:?}",
-            (ANCHO + 1, 0, 0, 2 * TRAZA)
-        ));
-    }
-    // §651 (D3-META): la marca es parte de la forma; sin ella, panico en `AIR::new`.
-    crate::comprobar_marca(info.meta())?;
-    let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
-    verify::<PagoEnCursoAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
-        proof,
-        pi.clone(),
-        &aceptadas,
-    )
-    .map_err(|e| format!("{e:?}"))
+    // §913: la forma oculta, la marca (§651) y la verificacion con la politica del juez, por el
+    // juez unico; los textos son los de siempre
+    crate::juez::juzgar::<PagoEnCursoAir>(proof, pi.clone()).or_else(crate::rechazo_del_kit)
 }
 
 // ------------------------------------------------------------------ el enlace (D-AD, D-AH)
@@ -610,6 +595,7 @@ pub fn verificar_contra_cabeza(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::opciones;
 
     fn d(k: u64) -> Digest {
         [

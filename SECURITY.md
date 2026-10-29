@@ -598,7 +598,9 @@ aperturas con sal (`zk-ssl-air/src/sal.rs`) se lee con sus cuentas acotadas, tam
 en las capas FRI. Cuatro testigos deterministas lo falsan. **Residuo, MEDIDO en el
 §578: ninguno en las vías vivas.** Toda verificación que alcanza una prueba ajena lee
 con sal: los quince `verify` de la capa, la pareja umbral de los custodios y los cinco
-del kit, y dos testigos lo atan. Los verificadores SIN sal quedan en código que
+del kit, y dos testigos lo atan. ⚠️ §913: los 21 sitios pasan por el juez único
+(`zk_ssl_air::juez::juzgar`), cuya única llamada a `verify` lee con sal; los dos testigos son
+ahora la puerta del juez único, en la capa y en el kit. Los verificadores SIN sal quedan en código que
 ninguna vía viva alcanza —`range_check` y el `ComplianceAir` de `settlement-prover`,
 experimentos, e `instrumento_edad`, sólo tests—; si una vía los alcanzara, leerían su
 lote con el `BatchMerkleProof` de upstream, sin acotar. ⚠️ **CORRECCIÓN (§578):** el

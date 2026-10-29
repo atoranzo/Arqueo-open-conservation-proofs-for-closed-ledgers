@@ -76419,3 +76419,126 @@ el kit lleva `zk-ssl-air`, y `comprobar_marca_v2` entra en él aunque nadie lo l
 `74c001ab90d4415d`, que cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio y
 vacío, y al acabar quedaba en él el mismo fichero que en los sellos anteriores,
 `zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.
+
+## §913 — El juez único de verificación (ARQ-01 del plano, la 117 de `BACKLOG.md`): `zk_ssl_air::juez::juzgar`, con la política de aceptación del juez y una —el `OptionSet` de `opciones()`, la forma oculta derivada de la clara con la marca, `MerkleConSal` y la moneda fijos—, por el que pasan los 21 sitios, los quince de la capa, la pareja umbral y los cinco del kit; ningún texto ni veredicto cambia, y la puerta es estructural: ningún `verify::<` vivo fuera de `juez.rs`; y las cuatro decisiones del autor sobre el alcance del sello del corte, registradas
+
+El commit que lleva este asiento, sobre `e9afc78c` (el §912). Toca el kit, los circuitos, la
+capa, dos herramientas y documentos: `crates/zk-ssl-air/src/juez.rs`, nuevo, con `Forma`, el
+trait `Juez`, `Rechazo`, `aceptadas`, `comprobar_forma` y `juzgar`, y dos tests;
+`crates/zk-ssl-air/src/lib.rs`, el módulo declarado, `rechazo_del_kit` con los textos del kit, el
+juez de la edad como marcador de siete líneas con su `impl Juez`, y la puerta del kit,
+`toda_verificacion_del_kit_pasa_por_el_juez`, donde estaba la del §578;
+`banda.rs`, `cobro_pendiente.rs`, `pago_en_curso.rs` y `prenda.rs`, cada juez reducido a su
+enunciado, la lectura de la prueba y la llamada al juez único, con su `impl Juez` y sin su
+`verify` local; en `crates/stark-experiment/src`, un `impl Juez` junto a cada una de las catorce
+AIR del cable (las trece de la capa y `NullifierThresholdAir`), y `verify_threshold_pair`, que
+pierde `accepted` y juzga sus dos pruebas con el juez, con sus diez tests probando con las
+opciones de producción; en `crates/zk-ssl/src`, los quince sitios —diez en `two_phase.rs`, y
+`burn.rs`, `freeze.rs`, `mint.rs`, `recovery.rs` y la auditoría de `lib.rs`— llamando a `juzgar`,
+`rechazo` con los textos de la capa, `comprobar_forma` como envoltorio sólo para sus tests, los
+cinco sitios de la pareja sin `accepted`, la puerta `toda_verificacion_viva_de_la_capa_pasa_por_el_juez`
+donde estaba el testigo del §578, un test de los textos, la red del §711 y los dos censos (el del
+nivel, `censo.rs`, y el de D-L, `instrumento_revela.rs`) leyendo `juzgar::<...>` donde leían
+`verify::<...>` y `comprobar_forma(`; `tools/check_publicadas.py`, el ancla de la forma oculta en
+`juez.rs`; `tools/check_catalogo.py`, `rechazo_del_kit` como productor del texto de la forma en las
+cinco filas del kit; `tools/canon.sh`, las filas de `zk-ssl` (564 -> 565) y `zk-ssl-air`
+(67 -> 69) con su crónica; los totales en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`;
+`BACKLOG.md`, la 117 cerrada, una nota en la 116, el estado y la cadena; `spec/rfc/0018-el-tren-0-5.md`,
+las decisiones del autor en la D-H, la fila del corte y la E3; `spec/rfc/0019-…`,
+`spec/rfc/0020-…` y `spec/rfc/0021-…`, una nota en la fila que pasa a la 0.6;
+`spec/rfc/0009-lo-que-revela-una-prueba.md`, una nota en la D-AD; `doc/blueprint-v2.md` y
+`SECURITY.md`, una nota cada uno; y este asiento. Ningún vector ni ningún texto cambia: la
+conformidad, los manifiestos y el catálogo salen idénticos (el canon lo mide). Lo escribe y lo
+commitea Claude, en una sesión de Claude Code en la nube, no el autor en su máquina, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. El número es el siguiente libre tras el §912. El
+canon de este commit se dice al final.
+
+**De dónde sale.** Antes de abrir el sello del corte, la sesión preguntó al autor por cuatro
+cosas que sólo él decide, y el autor las decidió el 29 de octubre de 2026 (RFC-0018, la nota del
+§913 en la D-H): (1) el sello del corte `zkssl/0.5` lleva sólo la D-H (b); la E4 del RFC-0020, la
+E3b del RFC-0021 y el resto de la E3 del RFC-0019, sin construir y que las tablas de sus RFC
+ponían en ese sello, pasan a la siguiente ruptura, `zkssl/0.6`; (2) el juez único de la 117, que
+adoptó en el §705 «antes del corte», se construye antes del corte y en su propio sello: este;
+(3) el corte no toca las opciones de prueba, y la edad va de `m` de 4 a 13 por T = 128; (4) los
+vectores 0.5 que renacen llevan la versión del cable en el nombre, porque la R2 de las huellas
+deja la ruta de cada vector mudado como lápida. Las cuatro están escritas donde se leen: la D-H,
+la fila del corte y la E3 del RFC-0018, las filas de los otros tres RFC, y la 116 y la 117.
+
+**Lo que hace.**
+
+1. **El juez** (`juez.rs`). `Forma { ancho, ancho_aux, aleatorios, longitud }` es la forma EN
+   CLARO que cada familia declara por el trait `Juez: Air { fn forma(pi) -> Forma }` —la edad la
+   deriva de `m`; las demás son fijas—, y `Forma::oculta` deriva la que la prueba tiene que
+   declarar: ancho + 1, el tramo auxiliar tal cual y 2T (D-AD del RFC-0009), la regla que
+   `tools/check_publicadas.py` ata. `comprobar_forma` la exige con la marca de la casa (§651)
+   antes de construir ninguna AIR, y `juzgar::<J>(proof, pi)` hace eso y la verificación del fork
+   con `aceptadas()` —un `OptionSet` con `opciones()`, el único—, `Blake3`, `DefaultRandomCoin` y
+   `MerkleConSal`: la única llamada viva a `verify` de la casa. Devuelve `Rechazo`: `Forma { real,
+   exige }`, `Marca(texto)` o `Verificador(VerifierError)`; el texto lo pone quien llama, porque el
+   kit dice «pide» y la capa «exige», y los catálogos y los manifiestos citan cada uno el suyo.
+2. **Los 21 sitios.** Los cinco jueces del kit: enunciado, lectura y `juzgar`, con `rechazo_del_kit`
+   —la banda y el cobro pendiente comprueban la forma una vez y juzgan la v2 y la v1 con el juez,
+   como antes—. Los quince de la capa: `juzgar::<AIR>(proof, pi).map_err(|r| rechazo(prefijo, r))`,
+   con el prefijo de cada sitio («envio: », «envio v2: », «cobro: », «apertura: », «credito: »,
+   «subida del pendiente: », «subida a congelados: », «subida de emision: », «subida de
+   recuperacion: », y vacío en la quema y la auditoría), dentro de la red del §711. La pareja
+   umbral: la forma de las dos con la marca, `WrongTraceWidth`; las dos por el juez,
+   `InvalidProof`; y sin `accepted`, porque la política no es de quien llama.
+3. **La puerta.** En la capa, cero `verify::<` en los siete módulos de producción, quince
+   `juzgar::<` en los seis que juzgan, ninguno de los dos en la pareja salvo sus dos `juzgar`, y
+   uno en `juez.rs` con sal; en el kit, cero en los cinco y uno en `juez.rs`, con las siete
+   llamadas al juez contadas. `metrics.rs` queda fuera, declarado: mide, no juzga;
+   `instrumento_*`, sólo tests. Los censos del nivel y de D-L leen `juzgar::<...>`: el de D-L da
+   capa 13 + par 1 + kit 5 = 19 AIR, las del cable.
+4. **Lo que no se mueve.** Los textos: `forma de traza …; el enunciado pide …` en el kit y
+   `… exige …` en la capa, la marca con el texto de `comprobar_marca`, y el error del fork por su
+   `Debug`, atados por un test de la capa y por el catálogo, que `rechazo_del_kit` produce con la
+   cadena de formato literal que `spec/PAQUETE.md` §5 cita. Los veredictos: ninguna prueba cambia
+   de lado, porque la política del juez es la que cada sitio ya tenía —`proof_options()` de la capa
+   y `opciones()` del kit son las mismas opciones, y un test de la capa las ata—.
+
+**Medido**, en el contenedor de la sesión (4 CPU), en release y con `--locked`: `zk-ssl-air`,
+69 de 69 en 0,06 s; `stark-experiment`, 492 pasan y 13 ignorados en 17,55 s, con la pareja
+probando con las opciones de producción; `zk-ssl`, 565 pasan y 9 ignorados en 232,91 s; todos los
+objetivos del espacio de trabajo compilan en release sin más avisos que los once de `ceremony`;
+`check_catalogo`, 236 textos y 302 entradas, idénticos; `check_publicadas`, VERDE con el ancla en
+`juez.rs`. Las tres primeras versiones del productor del texto de la forma del kit cayeron en
+`check_catalogo` (R4 SOBRA, cinco textos): un `format!` fuera de `Err(` no es un productor para
+el censo, y las cadenas de formato se citan literales; la cuarta, `Err(format!(...))` con
+`{forma:?}`, pasa.
+
+**Lo que NO hace.** No cambia ninguna prueba, ningún vector ni ningún texto. No toca la
+marca v2 ni el pareado: el corte los enciende en este único sitio. No construye `sobre.rs` ni el
+`Veredicto` del kit, ni la tabla de la frontera por familia de SEC-3, ni la caché de periódicas
+(ZK-8), que el corte 3 del plano ponía junto al juez: no son de la 117. No quita el parámetro
+`options` de `prove_send` y `prove_claim`: el probador sigue eligiendo, y el juez acepta lo que
+acepta. No publica un kit: la versión que lleva el juez es la 0.5.0 del corte (D-E).
+
+**Lo que es del autor.** Las cuatro decisiones de «De dónde sale», ya tomadas y escritas.
+
+**Contadores.** `zk-ssl` 564 -> 565; `zk-ssl-air` 67 -> 69; los demás sin cambio. TOTAL DE SELLO
+2101 -> 2104 y CON LARGOS 2241 -> 2244, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`;
+`check_tests` 2265 -> 2268; `check_modulos` 224, el fichero nuevo. `BACKLOG.md` pasa a 41
+abiertas y 98 resueltas: cierra la 117. Ningún vector.
+
+**El canon de este commit**, `bash tools/canon.sh --sello`, corrido por la sesión sobre este árbol,
+con este asiento en su sitio y sin este párrafo: VERDE, 1306 s de reloj (de su arranque a su
+salida) y 998 s de tests (la línea «total» de la tabla), en una máquina de 4 CPU, con la
+compilación a dos trabajos y el kit, los circuitos y la capa por recompilar. Las 19 filas del nivel,
+en su pin, con 2104 tests que pasan (la suma de la columna «pasan»), la de `zk-ssl` en 565 pasan
+y 9 ignorados, 395 s, la de `stark-experiment` en 492 y 13, 178 s —los 17 s de sus tests
+y el resto de recompilar a dos trabajos: la pareja con las opciones de producción no mueve la
+cifra de los tests—, y la de `zk-ssl-air` en 69; las tres del fork, `winter-air` 65,
+`winter-prover` 7 y `winter-verifier` 0, en su pin; la puerta de los binarios, con «OK 24 objetivos
+en 8 paquetes, 12 con features»; `check_tests` en 2268 y 22 instrumentos; `check_modulos` en 224;
+las once herramientas del bucle «2 ter», `check_constraint_layout` con sus 35 circuitos; la puerta
+de los vectores, en 605 ficheros y 1370 líneas de 19 manifiestos, cada uno con su huella —la
+segunda pasada, contra la base en `origin/main`, no corrió: HEAD y `origin/main` eran el mismo
+commit, el §912—; `check_catalogo`, en 236 textos y 302 entradas, idénticos; la conformidad, 0.5
+IDÉNTICO y las cuatro versiones anteriores RECHAZADAS; el cable, en 27 de 27; la segunda
+implementación, con el núcleo en 34 de 34, sus pares STARK en 76 de 76 y la cadena en 30 de 30; y
+el artefacto reproducible, igual desde dos raíces, con el binario `3345b5beec63a07b` —otro que el
+del §912, porque el kit lleva `zk-ssl-air` y con él el juez— y el tarball `039b24b482935929`, que
+cambia con las fuentes, como en cada asiento. Corrió con un `TMPDIR` propio y vacío, y al acabar
+quedaba en él el mismo fichero que en los sellos anteriores,
+`zkssl_canonicidad_ventana_<pid>.cerrojo`; no se investiga aquí. Una sola corrida: no hubo roja.

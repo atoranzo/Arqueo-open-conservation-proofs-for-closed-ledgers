@@ -558,6 +558,9 @@ DIR_CRATES = os.path.join(RAIZ, "crates")
 FUENTE_OPCIONES = os.path.join(DIR_CRATES, "zk-ssl", "src", "lib.rs")
 FUENTE_TEST_CAPA = os.path.join(DIR_CRATES, "zk-ssl", "src", "nivel_de_produccion.rs")
 FUENTE_EDAD = os.path.join(DIR_CRATES, "zk-ssl-air", "src", "lib.rs")
+# §913: la regla de la forma oculta de la capa (ancho + 1, el auxiliar tal cual, 2T) vive en el juez
+# unico, `zk-ssl-air/src/juez.rs` (`Forma::oculta`); hasta el §913, en `comprobar_forma` de la capa.
+FUENTE_JUEZ = os.path.join(DIR_CRATES, "zk-ssl-air", "src", "juez.rs")
 DIR_FORK = os.path.join(DIR_CRATES, "winter-air", "src")
 FUENTE_FORMULA = os.path.join(DIR_FORK, "proof", "security.rs")
 DIR_CIRCUITOS = os.path.join(DIR_CRATES, "stark-experiment", "src")
@@ -1105,7 +1108,7 @@ ANCLAS_CABLEADO = _cableado(CABLEADO)
 # cuyo codigo, sin sangria ni comentario de cola `//`, es la regla; un `/* */` no se distingue, y
 # el rojo LONGITUD no da la linea (`:0`).
 ANCLAS_LONGITUD = (
-    (FUENTE_OPCIONES, "let exige = (ancho + 1, ancho_aux, aleatorios_aux, 2 * longitud);", 1),
+    (FUENTE_JUEZ, "let exige = (self.ancho + 1, self.ancho_aux, self.aleatorios, 2 * self.longitud);", 1),
     (FUENTE_EDAD, "let filas = 2 * (CICLO << m);", 2),
 )
 # F.1 b): los KAT del fork, los `assert_eq!` de `mod tests` de security.rs con lote LINEAL en las

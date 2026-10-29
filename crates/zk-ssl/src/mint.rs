@@ -111,17 +111,9 @@ impl SovereignLayer {
         );
         let root_new = tentativo.root();
 
-        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
-
         crate::sin_panico("subida de emision", || {
-            crate::comprobar_forma(
-                climb_proof.trace_info(),
-                stark_experiment::circuit_mint_climb::TRACE_WIDTH,
-                0,
-                0,
-                stark_experiment::circuit_mint_climb::TRACE_LENGTH,
-            )?;
-            verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
+            // §913: la forma, la marca y la verificacion, por el juez unico
+            juzgar::<MintClimbAir>(
                 climb_proof,
                 MintClimbPublicInputs {
                     root_old,
@@ -131,9 +123,8 @@ impl SovereignLayer {
                     supply_new: BaseElement::new(supply_new),
                     max_supply: BaseElement::new(self.max_supply),
                 },
-                &accepted,
             )
-            .map_err(|e| LayerError::VerificationFailed(format!("subida de emision: {e:?}")))?;
+            .map_err(|r| crate::rechazo("subida de emision: ", r))?;
             Ok(())
         })?;
 
@@ -161,7 +152,6 @@ impl SovereignLayer {
                 BaseElement::new(CUSTODIAN_DOMAIN),
                 self.custodian_set_root,
                 operation,
-                &accepted,
             )
             .map_err(|r| match r {
                 PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
