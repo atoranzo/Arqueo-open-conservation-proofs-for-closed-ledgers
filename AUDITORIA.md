@@ -77240,3 +77240,83 @@ traducida. Ni código, ni tests, ni vectores, ni pines, ni `BACKLOG.md`.
 `check_modulos` en 224 y el total de sello en 2104. La puerta de los vectores, en 702 ficheros
 y 1740 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 38 abiertas y 101
 resueltas.
+## §920 — La puerta de entrada para revisores: la portada de GitHub pasa a ser una página corta en inglés —qué es, qué no es, un esquema, el estado de hoy en una tabla, por dónde empezar—, y nacen `doc/FOR_REVIEWERS.md`, la guía de treinta minutos con el mapa del repositorio, y `doc/GLOSSARY.md`, las palabras de la casa en español y en inglés; las tres, generadas por la sesión y declaradas en su cabecera; los dos README largos no cambian
+
+El commit que lleva este asiento, sobre `bb63484`, la punta de `main` (el §919). Cambia
+`.github/README.md`, que deja de ser el enlace simbólico del §919 y pasa a ser una página propia de
+60 líneas, y añade `doc/FOR_REVIEWERS.md` (115 líneas) y `doc/GLOSSARY.md` (69 líneas, 39 términos).
+Y este asiento. Ni `README.md` ni `README_EN.md`, ni ningún fichero en español, ni código, ni tests,
+ni vectores, ni pines, ni `BACKLOG.md`. Lo escribe y lo commitea Claude, en una sesión de Claude
+Code en la nube, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`.
+El número es el siguiente libre tras el §919; la sesión lo reservó ante las otras dos. El canon de
+este commit, `bash tools/canon.sh --sello`, corrido por la sesión sobre su árbol limpio, con este
+asiento en su sitio y sin esta frase: VERDE, 749 s de reloj y 464 s de tests, en una máquina de 4
+CPU con carga de 0,74 al empezar. Las 19 filas en su pin, con 2104 tests que pasan, y las 56 líneas
+«OK» de sus compuertas, entre ellas el artefacto reproducible, con el binario `62cb56f5e10b4577` y
+el tarball `84e874d35ee333eb`.
+
+**De dónde sale.** El autor trae el 29 de octubre de 2026 una propuesta para que el repositorio se
+entienda en cinco minutos: una portada de una pantalla, una guía para revisores, un mapa, un
+glosario, notas de la release, issues públicos y la descripción de GitHub. Antes de escribir, la
+sesión le expone dos cosas y el autor decide:
+
+1. **Quién escribe.** Lo que escriba una sesión ahora es documentación generada por IA después de
+   la política 2.0 de NLnet, dirigida al evaluador: hay que declararla y NLnet dice que la pesa. El
+   autor elige que lo escriba la sesión, declarado, y que el corte del método venga después.
+2. **Dónde va la puerta corta.** `README.md` y `README_EN.md` no se pueden reducir a una pantalla
+   sin cambiar herramientas: `CARDINALES` y `SITIOS_VECTORES` de `tools/check_publicadas.py` exigen
+   que publiquen la cuenta de RFC y la de vectores, `verificar_citas` les asigna su forma de citar
+   `spec/RPC.md`, y la casa no borra sus marcas ⚠️. El autor elige `.github/README.md`, la página
+   que GitHub muestra antes que la de la raíz: la portada corta, y los dos README largos se quedan
+   como están, enlazados desde ella.
+
+**Lo que hace.**
+
+1. **`.github/README.md`**, en inglés: qué es (la conservación, no la solvencia), qué no es (ni
+   cadena, ni sin confianza, ni auditado), un esquema de cinco líneas del flujo, una tabla del
+   estado de hoy —qué comprueba un tercero, qué sólo el nodo, la ocultación, la solidez, el ancla,
+   la auditoría— con el sitio donde se mide cada fila, el cable y la release vigentes, tres puntos
+   de entrada, una línea sobre la IA generativa, el idioma y la licencia. Sus enlaces van desde la
+   raíz, `/X`, porque GitHub los resuelve desde `.github/` (§919).
+2. **`doc/FOR_REVIEWERS.md`**, en inglés: la tesis; lo vigente (`zkssl/0.5`, la release 0.5.0, qué
+   comprueba un tercero y qué el nodo, con la entrada 115 del BACKLOG); la promesa de ocultación
+   del §916 con sus hipótesis por clase, tal como la da el RFC-0009 (medidas H1, H4 y H11;
+   probadas H2, H5, H10 y H6; asumidas H3, H7, H8 y H9) y la revisión ajena pendiente (la 136);
+   tres comandos del kit, tomados del README; cómo reproducir el canon y cuánto tarda, medido en
+   esta sesión; cinco limitaciones; el mapa del repositorio; y por dónde atacar, la sección 16 de
+   `AUDITORIA.md`.
+3. **`doc/GLOSSARY.md`**: 39 términos en cuatro tablas —el método y el registro, la especificación,
+   el libro, la ocultación—, cada uno con su forma española, la inglesa, qué es y el sitio que lo
+   define; la sesión comprobó con `grep` que cada término aparece en el sitio al que apunta.
+4. **La cabecera de las tres**: que las escribió el asistente del proyecto, una sesión de Claude
+   Code, en este asiento; que son un artefacto generado y no texto del autor; y que donde difieran
+   de la página que citan, manda la citada.
+
+**Lo que no se hace, y por qué.** No se reescriben `README.md` ni `README_EN.md` (arriba). No hay
+una página de arranque rápido ni un mapa en ficheros aparte, como pedía la propuesta: el arranque en
+cinco minutos ya existe, en `README_EN.md` §«Try it in five minutes» y `doc/KIT_EN.md`, y el mapa es
+una sección de la guía, para no añadir superficie. No se mueve ningún fichero a carpetas de
+«estable» y «laboratorio»: movería las citas por línea de todo el árbol. La descripción de GitHub,
+sus temas, las notas de la release y los issues no son del árbol: la sesión los deja redactados
+fuera, para que el autor los ponga en la web; los issues no se publican sin su orden. Los resúmenes
+en inglés de `SECURITY.md` y del RFC-0009 que pedía la propuesta ya existen: son sus gemelos del
+§918.
+
+**Comprobado.** Sobre el árbol con este sello salen con 0 `verificar_citas`, `check_cifras`,
+`check_publicadas`, `check_figures`, `check_tests`, `check_modulos`, `check_superficie`,
+`check_vectores`, `check_nucleo`, `check_catalogo`, `check_curvas`, `check_dominios`,
+`check_columns`, `check_constraint_layout` y `check_techo`; `check_publicadas` lee las tres
+páginas: medido con un mutante, «99 conjectured» en lugar de «127» en `.github/README.md` y en
+`doc/FOR_REVIEWERS.md` sale ROJO NIVEL en cada una, y vuelve a 0 al deshacerlo. Ningún enlace
+relativo de las tres queda roto. Los tres vectores de los comandos de la guía existen en
+`spec/vectors/`.
+
+**Lo que NO hace.** No cambia una línea de ningún fichero existente salvo `.github/README.md`. No
+toca `GENAI.md`, `CLAUDE.md`, `doc/METODO.md` ni `CONTRIBUTING.md`: el corte del método es del
+autor, y viene después. No es texto de la propuesta a NLnet. Ni código, ni tests, ni vectores, ni
+pines, ni `BACKLOG.md`.
+
+**Contadores.** Ninguno se mueve. `check_tests` sigue en 2268 tests declarados y 22 instrumentos,
+`check_modulos` en 224 y el total de sello en 2104. La puerta de los vectores, en 702 ficheros
+y 1740 líneas. `BACKLOG.md` no abre ni cierra entradas: su cabecera sigue en 38 abiertas y 101
+resueltas.
